@@ -42,13 +42,10 @@ public class Predicate implements Serializable {
   }
 
   private static final long serialVersionUID = 1L;
-  // <silentstrip lab1|lab2>
-  private Op op;
-  private int field;
+  private final Op op;
+  private final int field;
 
-  // </silentstrip>
-
-  private Field operand;
+  private final Field operand;
 
   /**
    * Constructor.
@@ -58,47 +55,30 @@ public class Predicate implements Serializable {
    * @param operand field value to compare passed in s to
    */
   public Predicate(int field, Op op, Field operand) {
-    // <strip lab1|lab2>
     this.field = field;
     this.op = op;
     this.operand = operand;
-    // </strip>
   }
 
   /**
    * @return the field number
    */
   public int getField() {
-    // <strip lab1|lab2>
     return this.field;
-    // </strip>
-    // <insert lab1|lab2>
-    // return -1;
-    // </insert>
   }
 
   /**
    * @return the operator
    */
   public Op getOp() {
-    // <strip lab1|lab2>
     return this.op;
-    // </strip>
-    // <insert lab1|lab2>
-    // return null;
-    // </insert>
   }
 
   /**
    * @return the operand
    */
   public Field getOperand() {
-    // <strip lab1|lab2>
     return this.operand;
-    // </strip>
-    // <insert lab1|lab2>
-    // return null;
-    // </insert>
   }
 
   // /**
@@ -112,13 +92,8 @@ public class Predicate implements Serializable {
   // * @return true if the comparison is true, false otherwise.
   // */
   // public boolean filter(Tuple t) {
-  // // <strip lab1|lab2>
   // Field f = t.getField(field);
   // return f.compare(op, operand);
-  // // </strip>
-  // // <insert lab1|lab2>
-  // // return false;
-  // // </insert>
   // }
 
   /**
@@ -126,13 +101,8 @@ public class Predicate implements Serializable {
    */
   @Override
   public String toString() {
-    // <strip lab1|lab2>
     String p = "";
     p += "f = " + field + " op = " + op + " operand = " + operand;
     return p;
-    // </strip>
-    // <insert lab1|lab2>
-    // return "";
-    // </insert>
   }
 }

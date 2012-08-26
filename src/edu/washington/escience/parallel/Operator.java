@@ -12,8 +12,6 @@ import edu.washington.escience.TupleBatch;
  */
 public abstract class Operator implements DbIterator {
 
-  private static final long serialVersionUID = 1L;
-
   private TupleBatch next = null;
 
   private boolean open = false;

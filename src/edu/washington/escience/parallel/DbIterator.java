@@ -1,6 +1,5 @@
 package edu.washington.escience.parallel;
 
-import java.io.Serializable;
 import java.util.NoSuchElementException;
 
 import edu.washington.escience.Schema;
@@ -13,7 +12,7 @@ import edu.washington.escience.TupleBatch;
  * iterator open methods, and in a close method, an iterator should call its children's close
  * methods.
  */
-public interface DbIterator extends Serializable {
+public interface DbIterator {
   /**
    * Closes the iterator. When the iterator is closed, calling next(), hasNext(), or rewind() should
    * fail by throwing IllegalStateException.
@@ -58,6 +57,6 @@ public interface DbIterator extends Serializable {
    * @throws DbException when rewind is unsupported.
    * @throws IllegalStateException If the iterator has not been opened
    */
-  public void rewind() throws DbException;
+  // public void rewind() throws DbException;
 
 }

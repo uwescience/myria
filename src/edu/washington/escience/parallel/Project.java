@@ -12,10 +12,9 @@ import edu.washington.escience.Type;
  */
 public class Project extends Operator {
 
-  private static final long serialVersionUID = 1L;
   private Operator child;
-  private Schema td;
-  private Integer[] outFieldIds;
+  private final Schema td;
+  private final Integer[] outFieldIds;
 
   /**
    * Constructor accepts a child operator to read tuples to apply projection to and a list of fields
@@ -77,10 +76,10 @@ public class Project extends Operator {
     super.open();
   }
 
-  @Override
-  public void rewind() throws DbException {
-    child.rewind();
-  }
+  // @Override
+  // public void rewind() throws DbException {
+  // child.rewind();
+  // }
 
   @Override
   public void setChildren(Operator[] children) {

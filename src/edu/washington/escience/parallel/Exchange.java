@@ -1,6 +1,5 @@
 package edu.washington.escience.parallel;
 
-import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -16,13 +15,12 @@ public abstract class Exchange extends Operator {
    * operator is the owner of an arriving ExchangeMessage.
    * 
    * */
-  public static class ParallelOperatorID implements Serializable {
-    private static final long serialVersionUID = 1L;
+  public static class ParallelOperatorID {
 
     /**
      * The id
      * */
-    private int oId;
+    private final int oId;
 
     private static final AtomicInteger idGenerator = new AtomicInteger();
 
@@ -55,8 +53,6 @@ public abstract class Exchange extends Operator {
       return oId + "";
     }
   }
-
-  private static final long serialVersionUID = 1L;
 
   protected final ParallelOperatorID operatorID;
 

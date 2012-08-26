@@ -8,23 +8,11 @@ import edu.washington.escience.accessmethod.JdbcAccessMethod;
 
 public class JdbcQueryScan extends Operator {
 
-  /**
-	 * 
-	 */
-  private static final long serialVersionUID = 1L;
-
   private Iterator<TupleBatch> tuples;
-  private String driverClass;
-  private String connectionString;
-  private String baseSQL;
   private Schema schema;
   private TupleBatch cache;
 
   public JdbcQueryScan(String driverClass, String connectionString, String baseSQL) {
-    this.driverClass = driverClass;
-    this.connectionString = connectionString;
-    this.baseSQL = baseSQL;
-
     tuples = JdbcAccessMethod.tupleBatchIteratorFromQuery(driverClass, connectionString, baseSQL);
     if (tuples.hasNext()) {
       cache = tuples.next();
@@ -71,12 +59,11 @@ public class JdbcQueryScan extends Operator {
     super.open();
   }
 
-  @Override
-  public void rewind() throws DbException {
-    tuples = JdbcAccessMethod.tupleBatchIteratorFromQuery(driverClass, connectionString, baseSQL);
-    cache = null;
-
-  }
+  // @Override
+  // public void rewind() throws DbException {
+  // tuples = JdbcAccessMethod.tupleBatchIteratorFromQuery(driverClass, connectionString, baseSQL);
+  // cache = null;
+  // }
 
   @Override
   public void setChildren(Operator[] children) {

@@ -11,18 +11,11 @@ public class SQLiteQueryScan extends Operator {
   /**
    * 
    */
-  private static final long serialVersionUID = 1L;
-
   private Iterator<TupleBatch> tuples;
-  private final String driverClass;
-  private final String baseSQL;
   private Schema schema;
   private TupleBatch cache;
 
   public SQLiteQueryScan(String pathToFile, String baseSQL) {
-    this.driverClass = pathToFile;
-    this.baseSQL = baseSQL;
-
     tuples = SQLiteAccessMethod.tupleBatchIteratorFromQuery(pathToFile, baseSQL);
     if (tuples.hasNext()) {
       cache = tuples.next();
@@ -69,11 +62,11 @@ public class SQLiteQueryScan extends Operator {
     super.open();
   }
 
-  @Override
-  public void rewind() throws DbException {
-    tuples = SQLiteAccessMethod.tupleBatchIteratorFromQuery(driverClass, baseSQL);
-    cache = null;
-  }
+  // @Override
+  // public void rewind() throws DbException {
+  // tuples = SQLiteAccessMethod.tupleBatchIteratorFromQuery(driverClass, baseSQL);
+  // cache = null;
+  // }
 
   @Override
   public void setChildren(Operator[] children) {
