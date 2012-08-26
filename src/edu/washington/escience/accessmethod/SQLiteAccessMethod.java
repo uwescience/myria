@@ -1,4 +1,4 @@
-package edu.washington.escience;
+package edu.washington.escience.accessmethod;
 
 import java.io.File;
 import java.util.Iterator;
@@ -7,6 +7,13 @@ import java.util.List;
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
+
+import edu.washington.escience.Column;
+import edu.washington.escience.IntColumn;
+import edu.washington.escience.Schema;
+import edu.washington.escience.StringColumn;
+import edu.washington.escience.TupleBatch;
+import edu.washington.escience.Type;
 
 public class SQLiteAccessMethod {
 

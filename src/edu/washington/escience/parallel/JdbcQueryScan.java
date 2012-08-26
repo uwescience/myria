@@ -2,11 +2,11 @@ package edu.washington.escience.parallel;
 
 import java.util.Iterator;
 
-import edu.washington.escience.JdbcAccessMethod;
 import edu.washington.escience.Schema;
 import edu.washington.escience.TupleBatch;
+import edu.washington.escience.accessmethod.JdbcAccessMethod;
 
-public class JdbcSeqScan extends Operator {
+public class JdbcQueryScan extends Operator {
 
   /**
 	 * 
@@ -20,7 +20,7 @@ public class JdbcSeqScan extends Operator {
   private Schema schema;
   private TupleBatch cache;
 
-  public JdbcSeqScan(String driverClass, String connectionString, String baseSQL) {
+  public JdbcQueryScan(String driverClass, String connectionString, String baseSQL) {
     this.driverClass = driverClass;
     this.connectionString = connectionString;
     this.baseSQL = baseSQL;

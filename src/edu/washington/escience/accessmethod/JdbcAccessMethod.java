@@ -1,4 +1,4 @@
-package edu.washington.escience;
+package edu.washington.escience.accessmethod;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -9,6 +9,13 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Iterator;
 import java.util.List;
+
+import edu.washington.escience.Column;
+import edu.washington.escience.IntColumn;
+import edu.washington.escience.Schema;
+import edu.washington.escience.StringColumn;
+import edu.washington.escience.TupleBatch;
+import edu.washington.escience.Type;
 
 /**
  * Access method for a JDBC database. Exposes data as TupleBatches.
