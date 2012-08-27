@@ -1,0 +1,1 @@
+sqlite3 myriad_sqlite_test.db
