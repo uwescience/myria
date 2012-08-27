@@ -1,4 +1,4 @@
-package edu.washington.escience.accessmethod;
+package edu.washington.escience.myriad.accessmethod;
 
 import java.io.File;
 import java.util.Iterator;
@@ -8,12 +8,12 @@ import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 
-import edu.washington.escience.Column;
-import edu.washington.escience.IntColumn;
-import edu.washington.escience.Schema;
-import edu.washington.escience.StringColumn;
-import edu.washington.escience.TupleBatch;
-import edu.washington.escience.Type;
+import edu.washington.escience.myriad.Column;
+import edu.washington.escience.myriad.IntColumn;
+import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.StringColumn;
+import edu.washington.escience.myriad.TupleBatch;
+import edu.washington.escience.myriad.Type;
 
 public class SQLiteAccessMethod {
 

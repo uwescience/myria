@@ -1,4 +1,4 @@
-package edu.washington.escience.accessmethod;
+package edu.washington.escience.myriad.accessmethod;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -10,12 +10,12 @@ import java.sql.Statement;
 import java.util.Iterator;
 import java.util.List;
 
-import edu.washington.escience.Column;
-import edu.washington.escience.IntColumn;
-import edu.washington.escience.Schema;
-import edu.washington.escience.StringColumn;
-import edu.washington.escience.TupleBatch;
-import edu.washington.escience.Type;
+import edu.washington.escience.myriad.Column;
+import edu.washington.escience.myriad.IntColumn;
+import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.StringColumn;
+import edu.washington.escience.myriad.TupleBatch;
+import edu.washington.escience.myriad.Type;
 
 /**
  * Access method for a JDBC database. Exposes data as TupleBatches.

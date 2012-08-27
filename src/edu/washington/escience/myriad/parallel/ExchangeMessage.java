@@ -1,8 +1,8 @@
-package edu.washington.escience.parallel;
+package edu.washington.escience.myriad.parallel;
 
 import java.io.Serializable;
 
-import edu.washington.escience.parallel.Exchange.ParallelOperatorID;
+import edu.washington.escience.myriad.parallel.Exchange.ParallelOperatorID;
 
 /**
  * All the messages that will change between Exchange Operators should be a sub class of

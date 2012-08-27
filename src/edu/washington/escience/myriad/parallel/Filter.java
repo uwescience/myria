@@ -1,10 +1,10 @@
-package edu.washington.escience.parallel;
+package edu.washington.escience.myriad.parallel;
 
 import java.util.NoSuchElementException;
 
-import edu.washington.escience.Predicate;
-import edu.washington.escience.Schema;
-import edu.washington.escience.TupleBatch;
+import edu.washington.escience.myriad.Predicate;
+import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatch;
 
 /**
  * Filter is an operator that implements a relational select.

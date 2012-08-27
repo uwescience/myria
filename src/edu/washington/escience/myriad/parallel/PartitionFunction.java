@@ -1,10 +1,10 @@
-package edu.washington.escience.parallel;
+package edu.washington.escience.myriad.parallel;
 
 import java.io.Serializable;
 import java.util.HashMap;
 
-import edu.washington.escience.Schema;
-import edu.washington.escience.TupleBatch;
+import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatch;
 
 /**
  * The ShuffleProducer class uses an instance of the PartitionFunction class to decide which worker

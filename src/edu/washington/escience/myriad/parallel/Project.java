@@ -1,11 +1,11 @@
-package edu.washington.escience.parallel;
+package edu.washington.escience.myriad.parallel;
 
 import java.util.ArrayList;
 import java.util.NoSuchElementException;
 
-import edu.washington.escience.Schema;
-import edu.washington.escience.TupleBatch;
-import edu.washington.escience.Type;
+import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatch;
+import edu.washington.escience.myriad.Type;
 
 /**
  * Project is an operator that implements a relational projection.

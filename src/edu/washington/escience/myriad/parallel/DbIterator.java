@@ -1,9 +1,9 @@
-package edu.washington.escience.parallel;
+package edu.washington.escience.myriad.parallel;
 
 import java.util.NoSuchElementException;
 
-import edu.washington.escience.Schema;
-import edu.washington.escience.TupleBatch;
+import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatch;
 
 /**
  * DbIterator is the iterator interface that all SimpleDB operators should implement. If the

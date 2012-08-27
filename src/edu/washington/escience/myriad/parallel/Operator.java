@@ -1,9 +1,9 @@
-package edu.washington.escience.parallel;
+package edu.washington.escience.myriad.parallel;
 
 import java.util.NoSuchElementException;
 
-import edu.washington.escience.Schema;
-import edu.washington.escience.TupleBatch;
+import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatch;
 
 /**
  * Abstract class for implementing operators. It handles <code>close</code>, <code>next</code> and

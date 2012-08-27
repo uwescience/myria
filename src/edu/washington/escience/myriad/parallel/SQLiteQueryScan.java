@@ -1,19 +1,22 @@
-package edu.washington.escience.parallel;
+package edu.washington.escience.myriad.parallel;
 
 import java.util.Iterator;
 
-import edu.washington.escience.Schema;
-import edu.washington.escience.TupleBatch;
-import edu.washington.escience.accessmethod.JdbcAccessMethod;
+import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatch;
+import edu.washington.escience.myriad.accessmethod.SQLiteAccessMethod;
 
-public class JdbcQueryScan extends Operator {
+public class SQLiteQueryScan extends Operator {
 
+  /**
+   * 
+   */
   private Iterator<TupleBatch> tuples;
   private Schema schema;
   private TupleBatch cache;
 
-  public JdbcQueryScan(String driverClass, String connectionString, String baseSQL) {
-    tuples = JdbcAccessMethod.tupleBatchIteratorFromQuery(driverClass, connectionString, baseSQL);
+  public SQLiteQueryScan(String pathToFile, String baseSQL) {
+    tuples = SQLiteAccessMethod.tupleBatchIteratorFromQuery(pathToFile, baseSQL);
     if (tuples.hasNext()) {
       cache = tuples.next();
       schema = cache.validSchema();
@@ -61,7 +64,7 @@ public class JdbcQueryScan extends Operator {
 
   // @Override
   // public void rewind() throws DbException {
-  // tuples = JdbcAccessMethod.tupleBatchIteratorFromQuery(driverClass, connectionString, baseSQL);
+  // tuples = SQLiteAccessMethod.tupleBatchIteratorFromQuery(driverClass, baseSQL);
   // cache = null;
   // }
 

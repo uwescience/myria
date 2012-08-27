@@ -1,4 +1,4 @@
-package edu.washington.escience.parallel;
+package edu.washington.escience.myriad.parallel;
 
 import java.util.concurrent.atomic.AtomicInteger;
 

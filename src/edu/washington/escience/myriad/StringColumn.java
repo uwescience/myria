@@ -1,4 +1,4 @@
-package edu.washington.escience;
+package edu.washington.escience.myriad;
 
 public class StringColumn extends Column {
   int startIndices[];

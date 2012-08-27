@@ -1,4 +1,4 @@
-package edu.washington.escience;
+package edu.washington.escience.myriad;
 
 import java.io.DataOutputStream;
 import java.io.IOException;

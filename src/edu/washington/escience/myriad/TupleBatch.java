@@ -1,10 +1,10 @@
-package edu.washington.escience;
+package edu.washington.escience.myriad;
 
 import java.util.BitSet;
 import java.util.List;
 import java.util.Objects;
 
-import edu.washington.escience.parallel.PartitionFunction;
+import edu.washington.escience.myriad.parallel.PartitionFunction;
 
 public class TupleBatch {
   public static final int BATCH_SIZE = 100;

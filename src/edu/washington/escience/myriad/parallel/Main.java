@@ -1,13 +1,13 @@
-package edu.washington.escience.parallel;
+package edu.washington.escience.myriad.parallel;
 
 import java.util.ArrayList;
 import java.util.NoSuchElementException;
 
-import edu.washington.escience.Predicate;
-import edu.washington.escience.Schema;
-import edu.washington.escience.TupleBatch;
-import edu.washington.escience.Type;
-import edu.washington.escience.accessmethod.SQLiteAccessMethod;
+import edu.washington.escience.myriad.Predicate;
+import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatch;
+import edu.washington.escience.myriad.Type;
+import edu.washington.escience.myriad.accessmethod.SQLiteAccessMethod;
 
 public class Main {
   public static void JdbcTest() throws NoSuchElementException, DbException {
