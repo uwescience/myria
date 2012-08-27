@@ -7,6 +7,7 @@ import edu.washington.escience.myriad.Predicate;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
+import edu.washington.escience.myriad.accessmethod.JdbcAccessMethod;
 import edu.washington.escience.myriad.accessmethod.SQLiteAccessMethod;
 
 public class Main {
@@ -17,12 +18,15 @@ public class Main {
     final String password = "nays26[shark";
     final String dbms = "mysql";
     final String databaseName = "myriad_test";
+    final String jdbcDriverName = "com.mysql.jdbc.Driver";
+    final String query = "select * from testtable";
+    final String insert = "INSERT INTO testtable2 VALUES(?)";
 
     String connectionString =
         "jdbc:" + dbms + "://" + host + ":" + port + "/" + databaseName + "?user=" + user
         + "&password=" + password;
     JdbcQueryScan scan =
-        new JdbcQueryScan("com.mysql.jdbc.Driver", connectionString, "select * from testtable");
+        new JdbcQueryScan(jdbcDriverName, connectionString, query);
     Filter filter1 = new Filter(Predicate.Op.GREATER_THAN_OR_EQ, 0, new Integer(50), scan);
 
     Filter filter2 = new Filter(Predicate.Op.LESS_THAN_OR_EQ, 0, new Integer(60), filter1);
@@ -49,7 +53,9 @@ public class Main {
     }
 
     while (root.hasNext()) {
-      System.out.println(root.next());
+      TupleBatch tb = root.next();
+      System.out.println(tb);
+      JdbcAccessMethod.tupleBatchInsert(jdbcDriverName, connectionString, insert, tb);
     }
 
     root.close();

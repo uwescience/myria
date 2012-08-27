@@ -1,4 +1,4 @@
-DROP TABLE testtable;
+DROP TABLE IF EXISTS testtable;
 CREATE TABLE testtable (value INTEGER, label VARCHAR(20));
 INSERT INTO testtable VALUES (11, "str11");
 INSERT INTO testtable VALUES (22, "str22");
@@ -15,3 +15,6 @@ INSERT INTO testtable VALUES (122, "str122");
 INSERT INTO testtable VALUES (133, "str133");
 INSERT INTO testtable VALUES (144, "str144");
 INSERT INTO testtable VALUES (155, "str155");
+
+DROP TABLE IF EXISTS testtable2;
+CREATE TABLE testtable2 (value VARCHAR(20));

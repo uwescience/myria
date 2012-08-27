@@ -43,29 +43,30 @@ public class JdbcAccessMethod {
       Class.forName(driverClassName);
       /* Connect to the database */
       Connection jdbcConnection = DriverManager.getConnection(connectionString);
-      /* Set read only on the connection */
-      jdbcConnection.setReadOnly(true);
 
       /* Set up and execute the query */
       PreparedStatement statement = jdbcConnection.prepareStatement(insertString);
 
       Type[] types = schema.getTypes();
 
-      for (int row = 0; row < tupleBatch.numTuples(); ++row) {
-        for (int column = 0; column < types.length; ++column) {
+      int curColumn;
+      for (int row : tupleBatch.validTupleIndices()) {
+        curColumn = 0;
+        for (int column : tupleBatch.validColumnIndices()) {
           if (types[column] == Type.DOUBLE_TYPE) {
-            statement.setDouble(column + 1, tupleBatch.getDouble(column, row));
+            statement.setDouble(curColumn + 1, tupleBatch.getDouble(column, row));
           } else if (types[column] == Type.FLOAT_TYPE) {
-            statement.setFloat(column + 1, tupleBatch.getFloat(column, row));
+            statement.setFloat(curColumn + 1, tupleBatch.getFloat(column, row));
           } else if (types[column] == Type.INT_TYPE) {
-            statement.setInt(column + 1, tupleBatch.getInt(column, row));
+            statement.setInt(curColumn + 1, tupleBatch.getInt(column, row));
           } else if (types[column] == Type.BOOLEAN_TYPE) {
-            statement.setBoolean(column + 1, tupleBatch.getBoolean(column, row));
+            statement.setBoolean(curColumn + 1, tupleBatch.getBoolean(column, row));
           } else if (types[column] == Type.STRING_TYPE) {
-            statement.setString(column + 1, tupleBatch.getString(column, row));
+            statement.setString(curColumn + 1, tupleBatch.getString(column, row));
           } else {
             throw new RuntimeException("Unexpected type: " + types[column].toString());
           }
+          curColumn++;
         }
         statement.addBatch();
       }
@@ -125,8 +126,8 @@ public class JdbcAccessMethod {
  * 
  */
 class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
-  private ResultSet resultSet;
-  private Schema schema;
+  private final ResultSet resultSet;
+  private final Schema schema;
 
   JdbcTupleBatchIterator(ResultSet resultSet, Schema schema) {
     this.resultSet = resultSet;
@@ -160,8 +161,8 @@ class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
         if (!resultSet.next()) {
           Connection connection = resultSet.getStatement().getConnection();
           resultSet.getStatement().close(); /*
-                                             * Also closes the resultSet
-                                             */
+           * Also closes the resultSet
+           */
           connection.close();
           break;
         }
