@@ -19,7 +19,7 @@ public class SQLiteQueryScan extends Operator {
     tuples = SQLiteAccessMethod.tupleBatchIteratorFromQuery(pathToFile, baseSQL);
     if (tuples.hasNext()) {
       cache = tuples.next();
-      schema = cache.validSchema();
+      schema = cache.getSchema();
     } else {
       schema = null;
       cache = null;

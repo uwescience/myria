@@ -64,7 +64,7 @@ public class SQLiteAccessMethod {
       int curColumn;
       for (int row : tupleBatch.validTupleIndices()) {
         curColumn = 0;
-        for (int column : tupleBatch.validColumnIndices()) {
+        for (int column = 0; column < tupleBatch.numColumns(); ++column) {
           if (types[column] == Type.DOUBLE_TYPE) {
             statement.bind(curColumn + 1, tupleBatch.getDouble(column, row));
           } else if (types[column] == Type.FLOAT_TYPE) {

@@ -16,7 +16,7 @@ public class JdbcQueryScan extends Operator {
     tuples = JdbcAccessMethod.tupleBatchIteratorFromQuery(driverClass, connectionString, baseSQL);
     if (tuples.hasNext()) {
       cache = tuples.next();
-      schema = cache.validSchema();
+      schema = cache.getSchema();
     } else {
       schema = null;
       cache = null;
