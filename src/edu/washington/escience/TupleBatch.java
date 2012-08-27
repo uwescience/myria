@@ -9,11 +9,11 @@ import edu.washington.escience.parallel.PartitionFunction;
 public class TupleBatch {
   public static final int BATCH_SIZE = 100;
 
-  private Schema schema;
-  private List<Column> columns;
-  private int numTuples;
-  private BitSet validTuples;
-  private BitSet validColumns;
+  private final Schema schema;
+  private final List<Column> columns;
+  private final int numTuples;
+  private final BitSet validTuples;
+  private final BitSet validColumns;
 
   public TupleBatch(Schema schema, List<Column> columns, int numTuples) {
     /* Take the input arguments directly */
@@ -119,7 +119,7 @@ public class TupleBatch {
 
   }
 
-  protected int[] validColumnIndices() {
+  public int[] validColumnIndices() {
     int[] validC = new int[validColumns.cardinality()];
     int j = 0;
     for (int i = validColumns.nextSetBit(0); i >= 0; i = validColumns.nextSetBit(i + 1)) {
@@ -127,6 +127,16 @@ public class TupleBatch {
       validC[j++] = i;
     }
     return validC;
+  }
+
+  public int[] validTupleIndices() {
+    int[] validT = new int[validTuples.cardinality()];
+    int j = 0;
+    for (int i = validTuples.nextSetBit(0); i >= 0; i = validTuples.nextSetBit(i + 1)) {
+      // operate on index i here
+      validT[j++] = i;
+    }
+    return validT;
   }
 
   public Schema validSchema() {

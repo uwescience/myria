@@ -5,7 +5,9 @@ import java.util.NoSuchElementException;
 
 import edu.washington.escience.Predicate;
 import edu.washington.escience.Schema;
+import edu.washington.escience.TupleBatch;
 import edu.washington.escience.Type;
+import edu.washington.escience.accessmethod.SQLiteAccessMethod;
 
 public class Main {
   public static void JdbcTest() throws NoSuchElementException, DbException {
@@ -55,7 +57,8 @@ public class Main {
 
   public static void SQLiteTest() throws DbException {
     final String filename = "sql/sqlite.myriad_test/myriad_sqlite_test.db";
-    final String query = "select * from testtable";
+    final String query = "SELECT * FROM testtable";
+    final String insert = "INSERT INTO testtable2 VALUES(?)";
 
     /* Scan the testtable in database */
     SQLiteQueryScan scan = new SQLiteQueryScan(filename, query);
@@ -88,7 +91,9 @@ public class Main {
 
     /* Print all the results */
     while (root.hasNext()) {
-      System.out.println(root.next());
+      TupleBatch tb = root.next();
+      System.out.println(tb);
+      SQLiteAccessMethod.tupleBatchInsert(filename, insert, tb);
     }
 
     /* Cleanup */

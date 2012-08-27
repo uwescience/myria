@@ -15,3 +15,6 @@ INSERT INTO testtable VALUES (122, "str122");
 INSERT INTO testtable VALUES (133, "str133");
 INSERT INTO testtable VALUES (144, "str144");
 INSERT INTO testtable VALUES (155, "str155");
+
+DROP TABLE testtable2;
+CREATE TABLE testtable2 (value VARCHAR(20));

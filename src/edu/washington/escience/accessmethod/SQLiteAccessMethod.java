@@ -36,6 +36,62 @@ public class SQLiteAccessMethod {
       throw new RuntimeException(e.getMessage());
     }
   }
+
+  static int sqliteBooleanToInt(boolean b) {
+    if (b)
+      return 1;
+    return 0;
+  }
+
+  public static void tupleBatchInsert(String pathToSQLiteDb, String insertString,
+      TupleBatch tupleBatch) {
+    try {
+      /* Extract the Schema */
+      Schema schema = tupleBatch.getSchema();
+
+      /* Connect to the database */
+      SQLiteConnection SQLiteConnection = new SQLiteConnection(new File(pathToSQLiteDb));
+      SQLiteConnection.open(false);
+
+      /* BEGIN TRANSACTION */
+      SQLiteConnection.exec("BEGIN TRANSACTION");
+
+      /* Set up and execute the query */
+      SQLiteStatement statement = SQLiteConnection.prepare(insertString);
+
+      Type[] types = schema.getTypes();
+
+      int curColumn;
+      for (int row : tupleBatch.validTupleIndices()) {
+        curColumn = 0;
+        for (int column : tupleBatch.validColumnIndices()) {
+          if (types[column] == Type.DOUBLE_TYPE) {
+            statement.bind(curColumn + 1, tupleBatch.getDouble(column, row));
+          } else if (types[column] == Type.FLOAT_TYPE) {
+            statement.bind(curColumn + 1, tupleBatch.getFloat(column, row));
+          } else if (types[column] == Type.INT_TYPE) {
+            statement.bind(curColumn + 1, tupleBatch.getInt(column, row));
+          } else if (types[column] == Type.BOOLEAN_TYPE) {
+            statement.bind(curColumn + 1, sqliteBooleanToInt(tupleBatch.getBoolean(column, row)));
+          } else if (types[column] == Type.STRING_TYPE) {
+            statement.bind(curColumn + 1, tupleBatch.getString(column, row));
+          } else {
+            throw new RuntimeException("Unexpected type: " + types[column].toString());
+          }
+          curColumn++;
+        }
+        statement.step();
+        statement.reset();
+      }
+      /* BEGIN TRANSACTION */
+      SQLiteConnection.exec("COMMIT TRANSACTION");
+      SQLiteConnection.dispose();
+    } catch (SQLiteException e) {
+      System.err.println(e.getMessage());
+      throw new RuntimeException(e.getMessage());
+    }
+  }
+
 }
 
 /**
@@ -45,8 +101,8 @@ public class SQLiteAccessMethod {
  * 
  */
 class SQLiteTupleBatchIterator implements Iterator<TupleBatch> {
-  private SQLiteStatement statement;
-  private Schema schema;
+  private final SQLiteStatement statement;
+  private final Schema schema;
 
   SQLiteTupleBatchIterator(SQLiteStatement statement) {
     this.statement = statement;
