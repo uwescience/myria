@@ -1,7 +1,10 @@
-package edu.washington.escience.myriad;
+package edu.washington.escience.myriad.column;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.Type;
 
 /**
  * A column of a batch of tuples.
@@ -9,7 +12,12 @@ import java.util.List;
  * @author dhalperi
  * 
  */
-public abstract class Column {
+public final class ColumnFactory {
+
+  /** Inaccessible. */
+  private ColumnFactory() {
+    throw new AssertionError();
+  }
 
   /**
    * Allocates an array of Columns to match the given Schema.
@@ -60,26 +68,4 @@ public abstract class Column {
     }
     return columns;
   }
-
-  /**
-   * Returns the element at the specified row in this column.
-   * 
-   * @param row row of element to return.
-   * @return the element at the specified row in this column.
-   */
-  public abstract Object get(int row);
-
-  /**
-   * Inserts the specified element at end of this column.
-   * 
-   * @param value element to be inserted.
-   */
-  protected abstract void put(Object value);
-
-  /**
-   * Returns the number of elements in this column.
-   * 
-   * @return the number of elements in this column.
-   */
-  public abstract int size();
 }

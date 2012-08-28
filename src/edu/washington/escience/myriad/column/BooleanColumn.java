@@ -1,8 +1,10 @@
-package edu.washington.escience.myriad;
+package edu.washington.escience.myriad.column;
 
 import java.util.BitSet;
 
 import com.google.common.base.Preconditions;
+
+import edu.washington.escience.myriad.TupleBatch;
 
 /**
  * A column of Boolean values. To save space, this implementation uses a BitSet as the internal
@@ -11,7 +13,7 @@ import com.google.common.base.Preconditions;
  * @author dhalperi
  * 
  */
-public final class BooleanColumn extends Column {
+public final class BooleanColumn implements Column {
   /** Internal representation of the column data. */
   private final BitSet data;
   /** Number of valid elements. */
@@ -40,7 +42,7 @@ public final class BooleanColumn extends Column {
   }
 
   @Override
-  protected void put(final Object value) {
+  public void put(final Object value) {
     putBoolean((Boolean) value);
   }
 

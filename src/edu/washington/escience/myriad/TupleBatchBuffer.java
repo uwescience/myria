@@ -7,6 +7,9 @@ import java.util.Objects;
 
 import com.google.common.base.Preconditions;
 
+import edu.washington.escience.myriad.column.Column;
+import edu.washington.escience.myriad.column.ColumnFactory;
+
 /**
  * Used for creating TupleBatch objects on the fly. A helper class used in, e.g., the Scatter
  * operator.
@@ -38,7 +41,7 @@ class TupleBatchBuffer {
   protected TupleBatchBuffer(final Schema schema) {
     this.schema = Objects.requireNonNull(schema);
     readyTuples = new LinkedList<TupleBatch>();
-    currentColumns = Column.allocateColumns(schema);
+    currentColumns = ColumnFactory.allocateColumns(schema);
     numColumns = schema.numFields();
     columnsReady = new BitSet(numColumns);
     numColumnsReady = 0;
@@ -55,7 +58,7 @@ class TupleBatchBuffer {
       return;
     }
     readyTuples.add(new TupleBatch(schema, currentColumns, currentNumTuples));
-    currentColumns = Column.allocateColumns(schema);
+    currentColumns = ColumnFactory.allocateColumns(schema);
     currentNumTuples = 0;
   }
 

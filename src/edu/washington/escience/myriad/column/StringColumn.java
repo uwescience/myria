@@ -1,6 +1,8 @@
-package edu.washington.escience.myriad;
+package edu.washington.escience.myriad.column;
 
 import com.google.common.base.Preconditions;
+
+import edu.washington.escience.myriad.TupleBatch;
 
 /**
  * A column of String values.
@@ -8,7 +10,7 @@ import com.google.common.base.Preconditions;
  * @author dhalperi
  * 
  */
-public final class StringColumn extends Column {
+public final class StringColumn implements Column {
   /**
    * The positions of the starts of each String in this column. Used to pack variable-length Strings
    * and yet still have fast lookup.
@@ -64,7 +66,7 @@ public final class StringColumn extends Column {
   }
 
   @Override
-  protected void put(final Object value) {
+  public void put(final Object value) {
     putString((String) value);
   }
 

@@ -1,27 +1,27 @@
-package edu.washington.escience.myriad;
+package edu.washington.escience.myriad.column;
 
-import java.nio.DoubleBuffer;
+import java.nio.LongBuffer;
 
-import com.google.common.base.Preconditions;
+import edu.washington.escience.myriad.TupleBatch;
 
 /**
- * A column of Double values.
+ * A column of Long values.
  * 
  * @author dhalperi
  * 
  */
-public final class DoubleColumn extends Column {
+public final class LongColumn implements Column {
   /** Internal representation of the column data. */
-  private final DoubleBuffer data;
+  private final LongBuffer data;
 
   /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
-  public DoubleColumn() {
-    this.data = DoubleBuffer.allocate(TupleBatch.BATCH_SIZE);
+  public LongColumn() {
+    this.data = LongBuffer.allocate(TupleBatch.BATCH_SIZE);
   }
 
   @Override
   public Object get(final int row) {
-    return Double.valueOf(getDouble(row));
+    return Long.valueOf(getLong(row));
   }
 
   /**
@@ -30,14 +30,13 @@ public final class DoubleColumn extends Column {
    * @param row row of element to return.
    * @return the element at the specified row in this column.
    */
-  public double getDouble(final int row) {
-    Preconditions.checkElementIndex(row, data.position());
+  public long getLong(final int row) {
     return data.get(row);
   }
 
   @Override
-  protected void put(final Object value) {
-    putDouble((Double) value);
+  public void put(final Object value) {
+    putLong((Long) value);
   }
 
   /**
@@ -45,8 +44,7 @@ public final class DoubleColumn extends Column {
    * 
    * @param value element to be inserted.
    */
-  public void putDouble(final double value) {
-    Preconditions.checkElementIndex(data.position(), data.capacity());
+  public void putLong(final long value) {
     data.put(value);
   }
 

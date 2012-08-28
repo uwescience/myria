@@ -1,25 +1,30 @@
-package edu.washington.escience.myriad;
+package edu.washington.escience.myriad.column;
 
-import java.nio.LongBuffer;
+import java.nio.IntBuffer;
+
+import com.google.common.base.Preconditions;
+
+import edu.washington.escience.myriad.TupleBatch;
 
 /**
- * A column of Long values.
+ * A column of Integer values.
  * 
  * @author dhalperi
  * 
  */
-public final class LongColumn extends Column {
+public final class IntColumn implements Column {
   /** Internal representation of the column data. */
-  private final LongBuffer data;
+  private final IntBuffer data;
 
   /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
-  public LongColumn() {
-    this.data = LongBuffer.allocate(TupleBatch.BATCH_SIZE);
+  public IntColumn() {
+    this.data = IntBuffer.allocate(TupleBatch.BATCH_SIZE);
   }
 
   @Override
   public Object get(final int row) {
-    return Long.valueOf(getLong(row));
+    Preconditions.checkElementIndex(row, data.position());
+    return Integer.valueOf(data.get(row));
   }
 
   /**
@@ -28,13 +33,13 @@ public final class LongColumn extends Column {
    * @param row row of element to return.
    * @return the element at the specified row in this column.
    */
-  public long getLong(final int row) {
+  public int getInt(final int row) {
     return data.get(row);
   }
 
   @Override
-  protected void put(final Object value) {
-    putLong((Long) value);
+  public void put(final Object value) {
+    putInt((Integer) value);
   }
 
   /**
@@ -42,7 +47,7 @@ public final class LongColumn extends Column {
    * 
    * @param value element to be inserted.
    */
-  public void putLong(final long value) {
+  public void putInt(final int value) {
     data.put(value);
   }
 

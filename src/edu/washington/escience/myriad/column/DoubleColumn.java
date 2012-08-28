@@ -1,27 +1,29 @@
-package edu.washington.escience.myriad;
+package edu.washington.escience.myriad.column;
 
-import java.nio.FloatBuffer;
+import java.nio.DoubleBuffer;
 
 import com.google.common.base.Preconditions;
 
+import edu.washington.escience.myriad.TupleBatch;
+
 /**
- * A column of Float values.
+ * A column of Double values.
  * 
  * @author dhalperi
  * 
  */
-public final class FloatColumn extends Column {
+public final class DoubleColumn implements Column {
   /** Internal representation of the column data. */
-  private final FloatBuffer data;
+  private final DoubleBuffer data;
 
   /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
-  public FloatColumn() {
-    this.data = FloatBuffer.allocate(TupleBatch.BATCH_SIZE);
+  public DoubleColumn() {
+    this.data = DoubleBuffer.allocate(TupleBatch.BATCH_SIZE);
   }
 
   @Override
   public Object get(final int row) {
-    return Float.valueOf(getFloat(row));
+    return Double.valueOf(getDouble(row));
   }
 
   /**
@@ -30,14 +32,14 @@ public final class FloatColumn extends Column {
    * @param row row of element to return.
    * @return the element at the specified row in this column.
    */
-  public float getFloat(final int row) {
+  public double getDouble(final int row) {
     Preconditions.checkElementIndex(row, data.position());
     return data.get(row);
   }
 
   @Override
-  protected void put(final Object value) {
-    putFloat((Float) value);
+  public void put(final Object value) {
+    putDouble((Double) value);
   }
 
   /**
@@ -45,7 +47,7 @@ public final class FloatColumn extends Column {
    * 
    * @param value element to be inserted.
    */
-  public void putFloat(final float value) {
+  public void putDouble(final double value) {
     Preconditions.checkElementIndex(data.position(), data.capacity());
     data.put(value);
   }

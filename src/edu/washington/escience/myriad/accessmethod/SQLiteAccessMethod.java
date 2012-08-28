@@ -8,13 +8,14 @@ import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 
-import edu.washington.escience.myriad.Column;
-import edu.washington.escience.myriad.DoubleColumn;
-import edu.washington.escience.myriad.LongColumn;
 import edu.washington.escience.myriad.Schema;
-import edu.washington.escience.myriad.StringColumn;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
+import edu.washington.escience.myriad.column.Column;
+import edu.washington.escience.myriad.column.ColumnFactory;
+import edu.washington.escience.myriad.column.DoubleColumn;
+import edu.washington.escience.myriad.column.LongColumn;
+import edu.washington.escience.myriad.column.StringColumn;
 
 /**
  * Access method for a SQLite database. Exposes data as TupleBatches.
@@ -189,7 +190,7 @@ class SQLiteTupleBatchIterator implements Iterator<TupleBatch> {
     /* Allocate TupleBatch parameters */
     int numFields = schema.numFields();
     Type[] types = schema.getTypes();
-    List<Column> columns = Column.allocateColumns(schema);
+    List<Column> columns = ColumnFactory.allocateColumns(schema);
 
     /**
      * Loop through resultSet, adding one row at a time. Stop when numTuples hits BATCH_SIZE or

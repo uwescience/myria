@@ -2,6 +2,14 @@ package edu.washington.escience.myriad;
 
 import java.io.Serializable;
 
+import edu.washington.escience.myriad.column.BooleanColumn;
+import edu.washington.escience.myriad.column.Column;
+import edu.washington.escience.myriad.column.DoubleColumn;
+import edu.washington.escience.myriad.column.FloatColumn;
+import edu.washington.escience.myriad.column.IntColumn;
+import edu.washington.escience.myriad.column.LongColumn;
+import edu.washington.escience.myriad.column.StringColumn;
+
 /**
  * Class representing a type in SimpleDB. Types are static objects defined by this class; hence, the
  * Type constructor is private.

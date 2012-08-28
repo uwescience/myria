@@ -11,6 +11,14 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import com.google.common.base.Preconditions;
 import com.google.common.primitives.Ints;
 
+import edu.washington.escience.myriad.column.BooleanColumn;
+import edu.washington.escience.myriad.column.Column;
+import edu.washington.escience.myriad.column.DoubleColumn;
+import edu.washington.escience.myriad.column.FloatColumn;
+import edu.washington.escience.myriad.column.IntColumn;
+import edu.washington.escience.myriad.column.LongColumn;
+import edu.washington.escience.myriad.column.StringColumn;
+
 /**
  * Container class for a batch of tuples. The goal is to amortize memory management overhead.
  * 
