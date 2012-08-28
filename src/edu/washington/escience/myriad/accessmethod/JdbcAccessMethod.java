@@ -27,7 +27,12 @@ import edu.washington.escience.myriad.Type;
  * @author dhalperi
  * 
  */
-public class JdbcAccessMethod {
+public final class JdbcAccessMethod {
+
+  /** Inaccessible. */
+  private JdbcAccessMethod() {
+    throw new AssertionError();
+  }
 
   /**
    * Insert the Tuples in this TupleBatch into the database.
@@ -37,8 +42,8 @@ public class JdbcAccessMethod {
    * @param insertString the insert statement. TODO No sanity checks at all right now.
    * @param tupleBatch the tupleBatch to be inserted
    */
-  public static void tupleBatchInsert(String driverClassName, String connectionString,
-      String insertString, TupleBatch tupleBatch) {
+  public static void tupleBatchInsert(final String driverClassName, final String connectionString,
+      final String insertString, final TupleBatch tupleBatch) {
     try {
       /* Extract the Schema */
       Schema schema = tupleBatch.getSchema();
@@ -101,8 +106,8 @@ public class JdbcAccessMethod {
    * @param queryString the query
    * @return an Iterator<TupleBatch> containing the results.
    */
-  public static Iterator<TupleBatch> tupleBatchIteratorFromQuery(String driverClassName,
-      String connectionString, String queryString) {
+  public static Iterator<TupleBatch> tupleBatchIteratorFromQuery(final String driverClassName,
+      final String connectionString, final String queryString) {
     try {
       /* Make sure JDBC driver is loaded */
       Class.forName(driverClassName);
@@ -137,10 +142,18 @@ public class JdbcAccessMethod {
  * 
  */
 class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
+  /** The results from a JDBC query that will be returned in TupleBatches by this Iterator. */
   private final ResultSet resultSet;
+  /** The Schema of the TupleBatches returned by this Iterator. */
   private final Schema schema;
 
-  JdbcTupleBatchIterator(ResultSet resultSet, Schema schema) {
+  /**
+   * Constructs a JdbcTupleBatchIterator from the given ResultSet and Schema objects.
+   * 
+   * @param resultSet the JDBC ResultSet containing the results.
+   * @param schema the Schema of the generated TupleBatch objects.
+   */
+  JdbcTupleBatchIterator(final ResultSet resultSet, final Schema schema) {
     this.resultSet = resultSet;
     this.schema = schema;
   }

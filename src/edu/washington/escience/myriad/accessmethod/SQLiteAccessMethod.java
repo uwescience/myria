@@ -16,29 +16,55 @@ import edu.washington.escience.myriad.StringColumn;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
 
-public class SQLiteAccessMethod {
+/**
+ * Access method for a SQLite database. Exposes data as TupleBatches.
+ * 
+ * @author dhalperi
+ * 
+ */
+public final class SQLiteAccessMethod {
 
-  static int sqliteBooleanToInt(boolean b) {
-    if (b)
+  /** Inaccessible. */
+  private SQLiteAccessMethod() {
+    throw new AssertionError();
+  }
+
+  /**
+   * Wrap boolean values as int values since SQLite does not support boolean natively. This function
+   * converts true to 1 and false to 0.
+   * 
+   * @param b boolean to be converted to SQLite int
+   * @return 1 if b is true; 0 if b is false
+   */
+  static int sqliteBooleanToInt(final boolean b) {
+    if (b) {
       return 1;
+    }
     return 0;
   }
 
-  public static void tupleBatchInsert(String pathToSQLiteDb, String insertString,
-      TupleBatch tupleBatch) {
+  /**
+   * Inserts a TupleBatch into the SQLite database.
+   * 
+   * @param pathToSQLiteDb filename of the SQLite database
+   * @param insertString parameterized string used to insert tuples
+   * @param tupleBatch TupleBatch that contains the data to be inserted
+   */
+  public static void tupleBatchInsert(final String pathToSQLiteDb, final String insertString,
+      final TupleBatch tupleBatch) {
     try {
       /* Extract the Schema */
       Schema schema = tupleBatch.getSchema();
 
       /* Connect to the database */
-      SQLiteConnection SQLiteConnection = new SQLiteConnection(new File(pathToSQLiteDb));
-      SQLiteConnection.open(false);
+      SQLiteConnection sqliteConnection = new SQLiteConnection(new File(pathToSQLiteDb));
+      sqliteConnection.open(false);
 
       /* BEGIN TRANSACTION */
-      SQLiteConnection.exec("BEGIN TRANSACTION");
+      sqliteConnection.exec("BEGIN TRANSACTION");
 
       /* Set up and execute the query */
-      SQLiteStatement statement = SQLiteConnection.prepare(insertString);
+      SQLiteStatement statement = sqliteConnection.prepare(insertString);
 
       Type[] types = schema.getTypes();
 
@@ -74,23 +100,30 @@ public class SQLiteAccessMethod {
         statement.reset();
       }
       /* BEGIN TRANSACTION */
-      SQLiteConnection.exec("COMMIT TRANSACTION");
-      SQLiteConnection.dispose();
+      sqliteConnection.exec("COMMIT TRANSACTION");
+      sqliteConnection.dispose();
     } catch (SQLiteException e) {
       System.err.println(e.getMessage());
       throw new RuntimeException(e.getMessage());
     }
   }
 
-  public static Iterator<TupleBatch> tupleBatchIteratorFromQuery(String pathToSQLiteDb,
-      String queryString) {
+  /**
+   * Create a SQLite Connection and then expose the results as an Iterator<TupleBatch>.
+   * 
+   * @param pathToSQLiteDb filename of the SQLite database
+   * @param queryString string containing the SQLite query to be executed
+   * @return an Iterator<TupleBatch> containing the results of the query
+   */
+  public static Iterator<TupleBatch> tupleBatchIteratorFromQuery(final String pathToSQLiteDb,
+      final String queryString) {
     try {
       /* Connect to the database */
-      SQLiteConnection SQLiteConnection = new SQLiteConnection(new File(pathToSQLiteDb));
-      SQLiteConnection.open(false);
+      SQLiteConnection sqliteConnection = new SQLiteConnection(new File(pathToSQLiteDb));
+      sqliteConnection.open(false);
 
       /* Set up and execute the query */
-      SQLiteStatement statement = SQLiteConnection.prepare(queryString);
+      SQLiteStatement statement = sqliteConnection.prepare(queryString);
 
       /* Step the statement once so we can figure out the Schema */
       statement.step();
@@ -105,27 +138,43 @@ public class SQLiteAccessMethod {
 }
 
 /**
- * Wraps a SQLite ResultSet in a Iterator<TupleBatch>.
+ * Wraps a SQLiteStatement result set in a Iterator<TupleBatch>.
  * 
  * @author dhalperi
  * 
  */
 class SQLiteTupleBatchIterator implements Iterator<TupleBatch> {
+  /** The results from a SQLite query that will be returned in TupleBatches by this Iterator. */
   private final SQLiteStatement statement;
+  /** The Schema of the TupleBatches returned by this Iterator. */
   private final Schema schema;
 
-  SQLiteTupleBatchIterator(SQLiteStatement statement) {
+  /**
+   * Wraps a SQLiteStatement result set in an Iterator<TupleBatch>.
+   * 
+   * @param statement the SQLiteStatement containing the results. If it has not yet stepped, this
+   *          constructor will step it. Then the Schema of the generated TupleBatchs will be
+   *          extracted from the statement.
+   */
+  SQLiteTupleBatchIterator(final SQLiteStatement statement) {
     this.statement = statement;
     try {
-      if (!statement.hasStepped())
+      if (!statement.hasStepped()) {
         statement.step();
+      }
       this.schema = Schema.fromSQLiteStatement(statement);
     } catch (SQLiteException e) {
       throw new RuntimeException(e.getMessage());
     }
   }
 
-  SQLiteTupleBatchIterator(SQLiteStatement statement, Schema schema) {
+  /**
+   * Wraps a SQLiteStatement result set in an Iterator<TupleBatch>.
+   * 
+   * @param statement the SQLiteStatement containing the results.
+   * @param schema the Schema describing the format of the TupleBatch containing these results.
+   */
+  SQLiteTupleBatchIterator(final SQLiteStatement statement, final Schema schema) {
     this.statement = statement;
     this.schema = schema;
   }
@@ -170,8 +219,9 @@ class SQLiteTupleBatchIterator implements Iterator<TupleBatch> {
               break;
           }
         }
-        if (!statement.step())
+        if (!statement.step()) {
           break;
+        }
       }
     } catch (SQLiteException e) {
       System.err.println("Got SQLiteException:" + e + "in TupleBatchIterator.next()");
