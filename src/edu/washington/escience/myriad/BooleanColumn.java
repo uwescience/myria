@@ -23,4 +23,19 @@ public class BooleanColumn extends Column {
     data.set(numBits, value);
     numBits++;
   }
+
+  @Override
+  public Object get(int row) {
+    return Boolean.valueOf(getBoolean(row));
+  }
+
+  @Override
+  public void put(Object value) {
+    putBoolean((Boolean) value);
+  }
+
+  @Override
+  int size() {
+    return numBits;
+  }
 }

@@ -1,5 +1,7 @@
 package edu.washington.escience.myriad;
 
+import com.google.common.base.Preconditions;
+
 public class StringColumn extends Column {
   int startIndices[];
   int endIndices[];
@@ -20,8 +22,9 @@ public class StringColumn extends Column {
     this.numStrings = 0;
   }
 
-  public String getString(int index) {
-    return data.substring(startIndices[index], endIndices[index]);
+  public String getString(int row) {
+    Preconditions.checkElementIndex(row, numStrings);
+    return data.substring(startIndices[row], endIndices[row]);
   }
 
   public void putString(String input) {
@@ -29,5 +32,20 @@ public class StringColumn extends Column {
     data.append(input);
     endIndices[numStrings] = data.length();
     numStrings++;
+  }
+
+  @Override
+  public Object get(int row) {
+    return getString(row);
+  }
+
+  @Override
+  public void put(Object value) {
+    putString((String) value);
+  }
+
+  @Override
+  int size() {
+    return numStrings;
   }
 }

@@ -16,4 +16,19 @@ public class LongColumn extends Column {
   public void putLong(long value) {
     data.put(value);
   }
+
+  @Override
+  public Object get(int row) {
+    return Long.valueOf(getLong(row));
+  }
+
+  @Override
+  public void put(Object value) {
+    putLong((Long) value);
+  }
+
+  @Override
+  int size() {
+    return data.position();
+  }
 }

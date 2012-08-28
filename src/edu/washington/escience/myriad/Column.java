@@ -54,4 +54,10 @@ public abstract class Column {
     }
     return columns;
   }
+
+  abstract Object get(int row);
+
+  abstract void put(Object value);
+
+  abstract int size();
 }

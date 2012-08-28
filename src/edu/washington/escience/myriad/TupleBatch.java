@@ -6,6 +6,8 @@ import java.util.BitSet;
 import java.util.List;
 import java.util.Objects;
 
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+
 import com.google.common.primitives.Ints;
 
 import edu.washington.escience.myriad.parallel.PartitionFunction;
@@ -139,6 +141,26 @@ public class TupleBatch {
     }
     return sb.toString();
 
+  }
+
+  private int hashCode(int row, int[] hashColumns) {
+    HashCodeBuilder hb = new HashCodeBuilder(243, 67);
+    for (int i : hashColumns) {
+      hb.append(columns.get(i).get(row));
+    }
+    return hb.toHashCode();
+  }
+
+  void appendTupleInto(int row, TupleBatchBuffer buffer) {
+    for (int i = 0; i < numColumns(); ++i) {
+      buffer.put(i, columns.get(i).get(row));
+    }
+  }
+
+  void partitionInto(TupleBatchBuffer[] destinations, int[] hashColumns) {
+    for (int i : validTupleIndices()) {
+      appendTupleInto(i, destinations[hashCode(i, hashColumns)]);
+    }
   }
 
   public int[] validTupleIndices() {

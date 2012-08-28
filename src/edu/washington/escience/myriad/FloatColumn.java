@@ -20,4 +20,19 @@ public class FloatColumn extends Column {
     Preconditions.checkElementIndex(data.position(), data.capacity());
     data.put(value);
   }
+
+  @Override
+  public Object get(int row) {
+    return Float.valueOf(getFloat(row));
+  }
+
+  @Override
+  public void put(Object value) {
+    putFloat((Float) value);
+  }
+
+  @Override
+  int size() {
+    return data.position();
+  }
 }

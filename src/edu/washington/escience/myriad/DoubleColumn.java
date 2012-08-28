@@ -20,4 +20,19 @@ public class DoubleColumn extends Column {
     Preconditions.checkElementIndex(data.position(), data.capacity());
     data.put(value);
   }
+
+  @Override
+  public Object get(int row) {
+    return Double.valueOf(getDouble(row));
+  }
+
+  @Override
+  public void put(Object value) {
+    putDouble((Double) value);
+  }
+
+  @Override
+  int size() {
+    return data.position();
+  }
 }
