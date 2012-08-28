@@ -28,6 +28,14 @@ public class TupleBatch {
     validTuples.set(0, numTuples);
   }
 
+  TupleBatch(TupleBatch from) {
+    /* Take the input arguments directly */
+    this.schema = from.schema;
+    this.columns = from.columns;
+    this.numTuples = from.numTuples;
+    this.validTuples = (BitSet) from.validTuples.clone();
+  }
+
   private TupleBatch(Schema schema, List<Column> columns, int numTuples, BitSet validTuples) {
     /* Take the input arguments directly */
     this.schema = Objects.requireNonNull(schema);
@@ -40,13 +48,18 @@ public class TupleBatch {
    * @param fieldIdx the index of all columns, not the currently valid columns
    * */
   public TupleBatch filter(int fieldIdx, Predicate.Op op, Object operand) {
-    if (this.numTuples > 0) {
-      Column columnValues = this.columns.get(fieldIdx);
-      Type columnType = this.schema.getFieldType(fieldIdx);
+    TupleBatch ret = new TupleBatch(this);
+    return ret.applyFilter(fieldIdx, op, operand);
+  }
+
+  private TupleBatch applyFilter(int fieldIdx, Predicate.Op op, Object operand) {
+    if (numTuples > 0) {
+      Column columnValues = columns.get(fieldIdx);
+      Type columnType = schema.getFieldType(fieldIdx);
       int nextSet = -1;
-      while ((nextSet = this.validTuples.nextSetBit(nextSet + 1)) >= 0) {
+      while ((nextSet = validTuples.nextSetBit(nextSet + 1)) >= 0) {
         if (!columnType.filter(op, columnValues, nextSet, operand)) {
-          this.validTuples.clear(nextSet);
+          validTuples.clear(nextSet);
         }
       }
     }
