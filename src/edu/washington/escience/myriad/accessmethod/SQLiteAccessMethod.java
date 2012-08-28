@@ -9,6 +9,7 @@ import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 
 import edu.washington.escience.myriad.Column;
+import edu.washington.escience.myriad.DoubleColumn;
 import edu.washington.escience.myriad.IntColumn;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.StringColumn;
@@ -65,18 +66,24 @@ public class SQLiteAccessMethod {
       for (int row : tupleBatch.validTupleIndices()) {
         curColumn = 0;
         for (int column = 0; column < tupleBatch.numColumns(); ++column) {
-          if (types[column] == Type.DOUBLE_TYPE) {
-            statement.bind(curColumn + 1, tupleBatch.getDouble(column, row));
-          } else if (types[column] == Type.FLOAT_TYPE) {
-            statement.bind(curColumn + 1, tupleBatch.getFloat(column, row));
-          } else if (types[column] == Type.INT_TYPE) {
-            statement.bind(curColumn + 1, tupleBatch.getInt(column, row));
-          } else if (types[column] == Type.BOOLEAN_TYPE) {
-            statement.bind(curColumn + 1, sqliteBooleanToInt(tupleBatch.getBoolean(column, row)));
-          } else if (types[column] == Type.STRING_TYPE) {
-            statement.bind(curColumn + 1, tupleBatch.getString(column, row));
-          } else {
-            throw new RuntimeException("Unexpected type: " + types[column].toString());
+          switch (types[column]) {
+            case DOUBLE_TYPE:
+              statement.bind(curColumn + 1, tupleBatch.getDouble(column, row));
+              break;
+            case INT_TYPE:
+              statement.bind(curColumn + 1, tupleBatch.getInt(column, row));
+              break;
+            case STRING_TYPE:
+              statement.bind(curColumn + 1, tupleBatch.getString(column, row));
+              break;
+            case BOOLEAN_TYPE:
+              throw new RuntimeException("SQLite does not support Boolean columns");
+              // statement.bind(curColumn + 1,
+              // sqliteBooleanToInt(tupleBatch.getBoolean(column, row)));
+            case FLOAT_TYPE:
+              throw new RuntimeException("SQLite does not support Float columns");
+            default:
+              throw new RuntimeException("Unexpected type: " + types[column].toString());
           }
           curColumn++;
         }
@@ -129,7 +136,7 @@ class SQLiteTupleBatchIterator implements Iterator<TupleBatch> {
   public TupleBatch next() {
     /* Allocate TupleBatch parameters */
     int numFields = schema.numFields();
-    Type[] fieldTypes = schema.getTypes();
+    Type[] types = schema.getTypes();
     List<Column> columns = Column.allocateColumns(schema);
 
     /**
@@ -139,11 +146,23 @@ class SQLiteTupleBatchIterator implements Iterator<TupleBatch> {
     int numTuples;
     try {
       for (numTuples = 0; numTuples < TupleBatch.BATCH_SIZE && statement.hasRow(); ++numTuples) {
-        for (int fieldIndex = 0; fieldIndex < numFields; ++fieldIndex) {
-          if (fieldTypes[fieldIndex] == Type.INT_TYPE) {
-            ((IntColumn) columns.get(fieldIndex)).putInt(statement.columnInt(fieldIndex));
-          } else if (fieldTypes[fieldIndex] == Type.STRING_TYPE) {
-            ((StringColumn) columns.get(fieldIndex)).putString(statement.columnString(fieldIndex));
+        for (int column = 0; column < numFields; ++column) {
+          switch (types[column]) {
+            case BOOLEAN_TYPE:
+              throw new RuntimeException("SQLite does not support Boolean columns");
+            case DOUBLE_TYPE:
+              ((DoubleColumn) columns.get(column)).putDouble(statement.columnDouble(column));
+              break;
+            case FLOAT_TYPE:
+              throw new RuntimeException("SQLite does not support Float columns");
+            case INT_TYPE:
+              ((IntColumn) columns.get(column)).putInt(statement.columnInt(column));
+              break;
+            case STRING_TYPE:
+              ((StringColumn) columns.get(column)).putString(statement.columnString(column));
+              break;
+            default:
+              throw new RuntimeException("Unexpected type: " + types[column].toString());
           }
         }
         if (!statement.step())

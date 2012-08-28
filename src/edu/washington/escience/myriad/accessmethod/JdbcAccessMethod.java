@@ -10,7 +10,10 @@ import java.sql.Statement;
 import java.util.Iterator;
 import java.util.List;
 
+import edu.washington.escience.myriad.BooleanColumn;
 import edu.washington.escience.myriad.Column;
+import edu.washington.escience.myriad.DoubleColumn;
+import edu.washington.escience.myriad.FloatColumn;
 import edu.washington.escience.myriad.IntColumn;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.StringColumn;
@@ -53,18 +56,24 @@ public class JdbcAccessMethod {
       for (int row : tupleBatch.validTupleIndices()) {
         curColumn = 0;
         for (int column = 0; column < tupleBatch.numColumns(); ++column) {
-          if (types[column] == Type.DOUBLE_TYPE) {
-            statement.setDouble(curColumn + 1, tupleBatch.getDouble(column, row));
-          } else if (types[column] == Type.FLOAT_TYPE) {
-            statement.setFloat(curColumn + 1, tupleBatch.getFloat(column, row));
-          } else if (types[column] == Type.INT_TYPE) {
-            statement.setInt(curColumn + 1, tupleBatch.getInt(column, row));
-          } else if (types[column] == Type.BOOLEAN_TYPE) {
-            statement.setBoolean(curColumn + 1, tupleBatch.getBoolean(column, row));
-          } else if (types[column] == Type.STRING_TYPE) {
-            statement.setString(curColumn + 1, tupleBatch.getString(column, row));
-          } else {
-            throw new RuntimeException("Unexpected type: " + types[column].toString());
+          switch (types[column]) {
+            case BOOLEAN_TYPE:
+              statement.setBoolean(curColumn + 1, tupleBatch.getBoolean(column, row));
+              break;
+            case DOUBLE_TYPE:
+              statement.setDouble(curColumn + 1, tupleBatch.getDouble(column, row));
+              break;
+            case FLOAT_TYPE:
+              statement.setFloat(curColumn + 1, tupleBatch.getFloat(column, row));
+              break;
+            case INT_TYPE:
+              statement.setInt(curColumn + 1, tupleBatch.getInt(column, row));
+              break;
+            case STRING_TYPE:
+              statement.setString(curColumn + 1, tupleBatch.getString(column, row));
+              break;
+            default:
+              throw new RuntimeException("Unexpected type: " + types[column].toString());
           }
           curColumn++;
         }
@@ -160,19 +169,31 @@ class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
       for (numTuples = 0; numTuples < TupleBatch.BATCH_SIZE; ++numTuples) {
         if (!resultSet.next()) {
           Connection connection = resultSet.getStatement().getConnection();
-          resultSet.getStatement().close(); /*
-           * Also closes the resultSet
-           */
-          connection.close();
+          resultSet.getStatement().close();
+          connection.close(); /* Also closes the resultSet */
           break;
         }
-        for (int fieldIndex = 0; fieldIndex < numFields; ++fieldIndex) {
-          if (fieldTypes[fieldIndex] == Type.INT_TYPE) {
-            /* JDBC is 1-indexed */
-            ((IntColumn) columns.get(fieldIndex)).putInt(resultSet.getInt(fieldIndex + 1));
-          } else if (fieldTypes[fieldIndex] == Type.STRING_TYPE) {
-            /* JDBC is 1-indexed */
-            ((StringColumn) columns.get(fieldIndex)).putString(resultSet.getString(fieldIndex + 1));
+        for (int colIdx = 0; colIdx < numFields; ++colIdx) {
+          int jdbcIdx = colIdx + 1;
+          /* Warning: JDBC is 1-indexed */
+          switch (fieldTypes[colIdx]) {
+            case INT_TYPE:
+              ((IntColumn) columns.get(colIdx)).putInt(resultSet.getInt(jdbcIdx));
+              break;
+            case STRING_TYPE:
+              ((StringColumn) columns.get(colIdx)).putString(resultSet.getString(jdbcIdx));
+              break;
+            case BOOLEAN_TYPE:
+              ((BooleanColumn) columns.get(colIdx)).putBoolean(resultSet.getBoolean(jdbcIdx));
+              break;
+            case DOUBLE_TYPE:
+              ((DoubleColumn) columns.get(colIdx)).putDouble(resultSet.getDouble(jdbcIdx));
+              break;
+            case FLOAT_TYPE:
+              ((FloatColumn) columns.get(colIdx)).putFloat(resultSet.getFloat(jdbcIdx));
+              break;
+            default:
+              throw new RuntimeException("Unexpected type: " + fieldTypes[colIdx].toString());
           }
         }
       }
