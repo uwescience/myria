@@ -13,9 +13,9 @@ public class BooleanColumn extends Column {
     this.numBits = 0;
   }
 
-  public boolean getBoolean(int index) {
-    Preconditions.checkElementIndex(index, numBits);
-    return data.get(index);
+  public boolean getBoolean(int row) {
+    Preconditions.checkElementIndex(row, numBits);
+    return data.get(row);
   }
 
   public void putBoolean(boolean value) {
