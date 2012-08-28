@@ -31,12 +31,25 @@ public abstract class Column {
     ArrayList<Column> columns = new ArrayList<Column>(numColumns);
 
     for (int columnIndex = 0; columnIndex < numColumns; ++columnIndex) {
-      if (columnTypes[columnIndex] == Type.INT_TYPE) {
-        columns.add(new IntColumn());
-      } else if (columnTypes[columnIndex] == Type.STRING_TYPE) {
-        columns.add(new StringColumn());
-      } else {
-        throw new UnsupportedOperationException("type " + columnTypes[columnIndex]);
+      switch (columnTypes[columnIndex]) {
+        case BOOLEAN_TYPE:
+          columns.add(new BooleanColumn());
+          break;
+        case DOUBLE_TYPE:
+          columns.add(new DoubleColumn());
+          break;
+        case FLOAT_TYPE:
+          columns.add(new FloatColumn());
+          break;
+        case INT_TYPE:
+          columns.add(new IntColumn());
+          break;
+        case LONG_TYPE:
+          columns.add(new LongColumn());
+          break;
+        case STRING_TYPE:
+          columns.add(new StringColumn());
+          break;
       }
     }
     return columns;

@@ -203,6 +203,45 @@ public enum Type implements Serializable {
     public String toString(Column column, int tupleIndex) {
       return ((StringColumn) column).getString(tupleIndex);
     }
+  },
+  LONG_TYPE() {
+    public boolean compare(Predicate.Op op, long valueInTuple, long operand) {
+      switch (op) {
+        case EQUALS:
+          return valueInTuple == operand;
+        case NOT_EQUALS:
+          return valueInTuple != operand;
+
+        case GREATER_THAN:
+          return valueInTuple > operand;
+
+        case GREATER_THAN_OR_EQ:
+          return valueInTuple >= operand;
+
+        case LESS_THAN:
+          return valueInTuple < operand;
+
+        case LESS_THAN_OR_EQ:
+          return valueInTuple <= operand;
+
+        case LIKE:
+          return valueInTuple == operand;
+      }
+
+      return false;
+    }
+
+    @Override
+    public boolean filter(Predicate.Op op, Column longColumn, int tupleIndex, Object operand) {
+      long v = ((LongColumn) longColumn).getLong(tupleIndex);
+      return this.compare(op, v, (Long) operand);
+    }
+
+    @Override
+    public String toString(Column column, int tupleIndex) {
+      return "" + ((LongColumn) column).getLong(tupleIndex);
+    }
+
   };
 
   public abstract boolean filter(Predicate.Op op, Column column, int tupleIndex, Object operand);

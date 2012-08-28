@@ -15,6 +15,7 @@ import edu.washington.escience.myriad.Column;
 import edu.washington.escience.myriad.DoubleColumn;
 import edu.washington.escience.myriad.FloatColumn;
 import edu.washington.escience.myriad.IntColumn;
+import edu.washington.escience.myriad.LongColumn;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.StringColumn;
 import edu.washington.escience.myriad.TupleBatch;
@@ -69,11 +70,12 @@ public class JdbcAccessMethod {
             case INT_TYPE:
               statement.setInt(curColumn + 1, tupleBatch.getInt(column, row));
               break;
+            case LONG_TYPE:
+              statement.setLong(curColumn + 1, tupleBatch.getLong(column, row));
+              break;
             case STRING_TYPE:
               statement.setString(curColumn + 1, tupleBatch.getString(column, row));
               break;
-            default:
-              throw new RuntimeException("Unexpected type: " + types[column].toString());
           }
           curColumn++;
         }
@@ -192,8 +194,9 @@ class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
             case FLOAT_TYPE:
               ((FloatColumn) columns.get(colIdx)).putFloat(resultSet.getFloat(jdbcIdx));
               break;
-            default:
-              throw new RuntimeException("Unexpected type: " + fieldTypes[colIdx].toString());
+            case LONG_TYPE:
+              ((LongColumn) columns.get(colIdx)).putLong(resultSet.getLong(jdbcIdx));
+              break;
           }
         }
       }

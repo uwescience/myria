@@ -69,9 +69,9 @@ public class Main {
     SQLiteQueryScan scan = new SQLiteQueryScan(filename, query);
 
     /* Filter on first column INTEGER >= 50 */
-    Filter filter1 = new Filter(Predicate.Op.GREATER_THAN_OR_EQ, 0, new Integer(50), scan);
+    Filter filter1 = new Filter(Predicate.Op.GREATER_THAN_OR_EQ, 0, new Long(50), scan);
     /* Filter on first column INTEGER <= 60 */
-    Filter filter2 = new Filter(Predicate.Op.LESS_THAN_OR_EQ, 0, new Integer(60), filter1);
+    Filter filter2 = new Filter(Predicate.Op.LESS_THAN_OR_EQ, 0, new Long(60), filter1);
 
     /* Project onto second column STRING */
     ArrayList<Integer> fieldIdx = new ArrayList<Integer>();

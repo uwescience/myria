@@ -70,14 +70,30 @@ public class Schema implements Serializable {
       /* JDBC numbers columns from 1. Yes, really. */
       // Type
       int type = rsmd.getColumnType(i + 1);
-
-      if (type == java.sql.Types.INTEGER)
-        columnTypes[i] = Type.INT_TYPE;
-      else if (type == java.sql.Types.VARCHAR || type == java.sql.Types.CHAR)
-        columnTypes[i] = Type.STRING_TYPE;
-      else {
-        throw new UnsupportedOperationException("JDBC type (java.SQL.Types) of " + type
-            + " is not supported");
+      switch (type) {
+        case java.sql.Types.BOOLEAN:
+          columnTypes[i] = Type.BOOLEAN_TYPE;
+          break;
+        case java.sql.Types.FLOAT:
+          columnTypes[i] = Type.FLOAT_TYPE;
+          break;
+        case java.sql.Types.DOUBLE:
+          columnTypes[i] = Type.DOUBLE_TYPE;
+          break;
+        case java.sql.Types.INTEGER:
+          columnTypes[i] = Type.INT_TYPE;
+          break;
+        case java.sql.Types.BIGINT:
+          /* Yes, really. http://dev.mysql.com/doc/refman/5.0/en/numeric-types.html#integer-types */
+          columnTypes[i] = Type.LONG_TYPE;
+          break;
+        case java.sql.Types.VARCHAR:
+        case java.sql.Types.CHAR:
+          columnTypes[i] = Type.STRING_TYPE;
+          break;
+        default:
+          throw new UnsupportedOperationException("JDBC type (java.SQL.Types) of " + type
+              + " is not supported");
       }
       // Name
       columnNames[i] = rsmd.getColumnName(i + 1);
@@ -107,14 +123,24 @@ public class Schema implements Serializable {
     for (int i = 0; i < columnCount; ++i) {
       // Type
       int type = statement.columnType(i);
-
-      if (type == SQLiteConstants.SQLITE_INTEGER)
-        columnTypes[i] = Type.INT_TYPE;
-      else if (type == SQLiteConstants.SQLITE_TEXT)
-        columnTypes[i] = Type.STRING_TYPE;
-      else {
-        throw new UnsupportedOperationException("SQLite type (SQLiteConstants) " + type
-            + " is not supported");
+      switch (type) {
+        case SQLiteConstants.SQLITE_INTEGER:
+          /*
+           * TODO SQLite uses variable-width ints, so there's no way to tell. Default conservatively
+           * to long. http://www.sqlite.org/datatype3.html
+           */
+          columnTypes[i] = Type.LONG_TYPE;
+          break;
+        case SQLiteConstants.SQLITE_TEXT:
+          columnTypes[i] = Type.STRING_TYPE;
+          break;
+        case SQLiteConstants.SQLITE_FLOAT:
+          /* TODO Yes really, see above. */
+          columnTypes[i] = Type.DOUBLE_TYPE;
+          break;
+        default:
+          throw new UnsupportedOperationException("SQLite type (SQLiteConstants) " + type
+              + " is not supported");
       }
       // Name
       columnNames[i] = statement.getColumnName(i);

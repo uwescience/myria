@@ -82,12 +82,16 @@ public class TupleBatch {
     return ((IntColumn) columns.get(column)).getInt(row);
   }
 
-  public Schema getSchema() {
-    return schema;
+  public long getLong(int column, int row) {
+    return ((LongColumn) columns.get(column)).getLong(row);
   }
 
   public String getString(int column, int row) {
     return ((StringColumn) columns.get(column)).getString(row);
+  }
+
+  public Schema getSchema() {
+    return schema;
   }
 
   public int numTuples() {
