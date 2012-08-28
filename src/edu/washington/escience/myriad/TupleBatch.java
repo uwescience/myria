@@ -8,6 +8,7 @@ import java.util.Objects;
 
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
+import com.google.common.base.Preconditions;
 import com.google.common.primitives.Ints;
 
 /**
@@ -45,7 +46,9 @@ public class TupleBatch {
     /* Take the input arguments directly */
     this.schema = Objects.requireNonNull(schema);
     this.columns = Objects.requireNonNull(columns);
-    this.numTuples = Objects.requireNonNull(numTuples);
+    Preconditions.checkArgument(numTuples > 0 && numTuples <= BATCH_SIZE,
+        "numTuples must be at least 1 and no more than TupleBatch.BATCH_SIZE");
+    this.numTuples = numTuples;
     /* All tuples are valid */
     this.validTuples = new BitSet(BATCH_SIZE);
     validTuples.set(0, numTuples);
@@ -62,10 +65,16 @@ public class TupleBatch {
    */
   private TupleBatch(final Schema schema, final List<Column> columns, final int numTuples,
       final BitSet validTuples) {
-    /* Take the input arguments directly */
+    /* Check and then store the input arguments */
     this.schema = Objects.requireNonNull(schema);
     this.columns = Objects.requireNonNull(columns);
-    this.numTuples = Objects.requireNonNull(numTuples);
+
+    Preconditions.checkArgument(numTuples > 0 && numTuples <= BATCH_SIZE,
+        "numTuples must be at least 1 and no more than TupleBatch.BATCH_SIZE");
+    this.numTuples = numTuples;
+
+    Preconditions.checkArgument(validTuples.size() > numTuples,
+        "validTuples must support at least numTuples elements");
     this.validTuples = (BitSet) validTuples.clone();
   }
 
@@ -76,7 +85,8 @@ public class TupleBatch {
    * @param from TupleBatch to duplicate.
    */
   TupleBatch(final TupleBatch from) {
-    /* Take the input arguments directly */
+    Objects.requireNonNull(from);
+    /* Take the input arguments directly, copying validTuples */
     this.schema = from.schema;
     this.columns = from.columns;
     this.numTuples = from.numTuples;
@@ -90,6 +100,7 @@ public class TupleBatch {
    * @param buffer buffer the row is appended to.
    */
   final void appendTupleInto(final int row, final TupleBatchBuffer buffer) {
+    Objects.requireNonNull(buffer);
     for (int i = 0; i < numColumns(); ++i) {
       buffer.put(i, columns.get(i).get(row));
     }
@@ -106,6 +117,8 @@ public class TupleBatch {
    *         removed.
    */
   private TupleBatch applyFilter(final int column, final Predicate.Op op, final Object operand) {
+    Objects.requireNonNull(op);
+    Objects.requireNonNull(operand);
     if (numTuples > 0) {
       Column columnValues = columns.get(column);
       Type columnType = schema.getFieldType(column);
@@ -133,6 +146,8 @@ public class TupleBatch {
    *         removed.
    */
   public final TupleBatch filter(final int column, final Predicate.Op op, final Object operand) {
+    Objects.requireNonNull(op);
+    Objects.requireNonNull(operand);
     TupleBatch ret = new TupleBatch(this);
     return ret.applyFilter(column, op, operand);
   }
@@ -220,6 +235,7 @@ public class TupleBatch {
    * @return the hash code value for the specified tuple using the specified key columns.
    */
   private int hashCode(final int row, final int[] hashColumns) {
+    Objects.requireNonNull(hashColumns);
     /*
      * From
      * http://commons.apache.org/lang/api-2.4/org/apache/commons/lang/builder/HashCodeBuilder.html:
@@ -255,6 +271,8 @@ public class TupleBatch {
    * @param hashColumns determines the key columns for the hash.
    */
   final void partitionInto(final TupleBatchBuffer[] destinations, final int[] hashColumns) {
+    Objects.requireNonNull(destinations);
+    Objects.requireNonNull(hashColumns);
     for (int i : validTupleIndices()) {
       appendTupleInto(i, destinations[hashCode(i, hashColumns)]);
     }
@@ -269,6 +287,7 @@ public class TupleBatch {
    * @return a projected TupleBatch.
    */
   public final TupleBatch project(final int[] remainingColumns) {
+    Objects.requireNonNull(remainingColumns);
     List<Column> newColumns = new ArrayList<Column>();
     Type[] newTypes = new Type[remainingColumns.length];
     String[] newNames = new String[remainingColumns.length];
@@ -291,6 +310,7 @@ public class TupleBatch {
    * @return a projected TupleBatch.
    */
   public final TupleBatch project(final Integer[] remainingColumns) {
+    Objects.requireNonNull(remainingColumns);
     return project(Ints.toArray(Arrays.asList(remainingColumns)));
   }
 
