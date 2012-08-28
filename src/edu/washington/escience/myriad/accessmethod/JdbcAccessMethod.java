@@ -29,11 +29,6 @@ import edu.washington.escience.myriad.Type;
  */
 public final class JdbcAccessMethod {
 
-  /** Inaccessible. */
-  private JdbcAccessMethod() {
-    throw new AssertionError();
-  }
-
   /**
    * Insert the Tuples in this TupleBatch into the database.
    * 
@@ -129,6 +124,11 @@ public final class JdbcAccessMethod {
       System.err.println(e.getMessage());
       throw new RuntimeException(e.getMessage());
     }
+  }
+
+  /** Inaccessible. */
+  private JdbcAccessMethod() {
+    throw new AssertionError();
   }
 }
 

@@ -8,7 +8,7 @@ import java.io.Serializable;
  */
 public enum Type implements Serializable {
   INT_TYPE() {
-    public boolean compare(Predicate.Op op, int valueInTuple, int operand) {
+    public boolean compare(final Predicate.Op op, final int valueInTuple, final int operand) {
       switch (op) {
         case EQUALS:
           return valueInTuple == operand;
@@ -35,19 +35,20 @@ public enum Type implements Serializable {
     }
 
     @Override
-    public boolean filter(Predicate.Op op, Column intColumn, int tupleIndex, Object operand) {
+    public boolean filter(final Predicate.Op op, final Column intColumn, final int tupleIndex,
+        final Object operand) {
       int v = ((IntColumn) intColumn).getInt(tupleIndex);
       return this.compare(op, v, (Integer) operand);
     }
 
     @Override
-    public String toString(Column column, int tupleIndex) {
+    public String toString(final Column column, final int tupleIndex) {
       return "" + ((IntColumn) column).getInt(tupleIndex);
     }
 
   },
   FLOAT_TYPE() {
-    public boolean compare(Predicate.Op op, float valueInTuple, float operand) {
+    public boolean compare(final Predicate.Op op, final float valueInTuple, final float operand) {
       switch (op) {
         case EQUALS:
           return valueInTuple == operand;
@@ -74,19 +75,20 @@ public enum Type implements Serializable {
     }
 
     @Override
-    public boolean filter(Predicate.Op op, Column floatColumn, int tupleIndex, Object operand) {
+    public boolean filter(final Predicate.Op op, final Column floatColumn, final int tupleIndex,
+        final Object operand) {
       float v = ((FloatColumn) floatColumn).getFloat(tupleIndex);
       return this.compare(op, v, (Float) operand);
     }
 
     @Override
-    public String toString(Column column, int tupleIndex) {
+    public String toString(final Column column, final int tupleIndex) {
       return "" + ((FloatColumn) column).getFloat(tupleIndex);
     }
 
   },
   DOUBLE_TYPE() {
-    public boolean compare(Predicate.Op op, double valueInTuple, double operand) {
+    public boolean compare(final Predicate.Op op, final double valueInTuple, final double operand) {
       switch (op) {
         case EQUALS:
           return valueInTuple == operand;
@@ -113,19 +115,20 @@ public enum Type implements Serializable {
     }
 
     @Override
-    public boolean filter(Predicate.Op op, Column doubleColumn, int tupleIndex, Object operand) {
+    public boolean filter(final Predicate.Op op, final Column doubleColumn, final int tupleIndex,
+        final Object operand) {
       double v = ((DoubleColumn) doubleColumn).getDouble(tupleIndex);
       return this.compare(op, v, (Double) operand);
     }
 
     @Override
-    public String toString(Column column, int tupleIndex) {
+    public String toString(final Column column, final int tupleIndex) {
       return "" + ((DoubleColumn) column).getDouble(tupleIndex);
     }
 
   },
   BOOLEAN_TYPE() {
-    public boolean compare(Predicate.Op op, boolean valueInTuple, boolean operand) {
+    public boolean compare(final Predicate.Op op, final boolean valueInTuple, final boolean operand) {
       switch (op) {
         case EQUALS:
           return valueInTuple == operand;
@@ -145,25 +148,19 @@ public enum Type implements Serializable {
     }
 
     @Override
-    public boolean filter(Predicate.Op op, Column booleanColumn, int tupleIndex, Object operand) {
+    public boolean filter(final Predicate.Op op, final Column booleanColumn, final int tupleIndex,
+        final Object operand) {
       boolean v = ((BooleanColumn) booleanColumn).getBoolean(tupleIndex);
       return this.compare(op, v, (Boolean) operand);
     }
 
     @Override
-    public String toString(Column column, int tupleIndex) {
+    public String toString(final Column column, final int tupleIndex) {
       return ((BooleanColumn) column).getBoolean(tupleIndex) + "";
     }
   },
   STRING_TYPE() {
-    /**
-     * Compare the specified field to the value of this Field. Return semantics are as specified by
-     * Field.compare
-     * 
-     * @throws IllegalCastException if val is not a StringField
-     * @see Field#compare
-     */
-    public boolean compare(Predicate.Op op, String valInTuple, String operand) {
+    public boolean compare(final Predicate.Op op, final String valInTuple, final String operand) {
 
       int cmpVal = valInTuple.compareTo(operand);
 
@@ -194,18 +191,19 @@ public enum Type implements Serializable {
     }
 
     @Override
-    public boolean filter(Predicate.Op op, Column stringColumn, int tupleIndex, Object operand) {
+    public boolean filter(final Predicate.Op op, final Column stringColumn, final int tupleIndex,
+        final Object operand) {
       String string = ((StringColumn) stringColumn).getString(tupleIndex);
       return this.compare(op, string, (String) operand);
     }
 
     @Override
-    public String toString(Column column, int tupleIndex) {
+    public String toString(final Column column, final int tupleIndex) {
       return ((StringColumn) column).getString(tupleIndex);
     }
   },
   LONG_TYPE() {
-    public boolean compare(Predicate.Op op, long valueInTuple, long operand) {
+    public boolean compare(final Predicate.Op op, final long valueInTuple, final long operand) {
       switch (op) {
         case EQUALS:
           return valueInTuple == operand;
@@ -232,13 +230,14 @@ public enum Type implements Serializable {
     }
 
     @Override
-    public boolean filter(Predicate.Op op, Column longColumn, int tupleIndex, Object operand) {
+    public boolean filter(final Predicate.Op op, final Column longColumn, final int tupleIndex,
+        final Object operand) {
       long v = ((LongColumn) longColumn).getLong(tupleIndex);
       return this.compare(op, v, (Long) operand);
     }
 
     @Override
-    public String toString(Column column, int tupleIndex) {
+    public String toString(final Column column, final int tupleIndex) {
       return "" + ((LongColumn) column).getLong(tupleIndex);
     }
 

@@ -3,6 +3,12 @@ package edu.washington.escience.myriad;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * A column of a batch of tuples.
+ * 
+ * @author dhalperi
+ * 
+ */
 public abstract class Column {
 
   /**
@@ -11,7 +17,7 @@ public abstract class Column {
    * @param schema the Schema
    * @return the list of Columns
    */
-  public static List<Column> allocateColumns(Schema schema) {
+  public static List<Column> allocateColumns(final Schema schema) {
     int numColumns = schema.numFields();
     Type[] columnTypes = new Type[numColumns];
     for (int columnIndex = 0; columnIndex < numColumns; ++columnIndex) {
@@ -26,7 +32,7 @@ public abstract class Column {
    * @param columnTypes the Types of the columns
    * @return the allocated Columns
    */
-  public static List<Column> allocateColumns(Type[] columnTypes) {
+  public static List<Column> allocateColumns(final Type[] columnTypes) {
     int numColumns = columnTypes.length;
     ArrayList<Column> columns = new ArrayList<Column>(numColumns);
 
@@ -55,9 +61,25 @@ public abstract class Column {
     return columns;
   }
 
-  abstract Object get(int row);
+  /**
+   * Returns the element at the specified row in this column.
+   * 
+   * @param row row of element to return.
+   * @return the element at the specified row in this column.
+   */
+  public abstract Object get(int row);
 
-  abstract void put(Object value);
+  /**
+   * Inserts the specified element at end of this column.
+   * 
+   * @param value element to be inserted.
+   */
+  protected abstract void put(Object value);
 
-  abstract int size();
+  /**
+   * Returns the number of elements in this column.
+   * 
+   * @return the number of elements in this column.
+   */
+  public abstract int size();
 }

@@ -24,11 +24,6 @@ import edu.washington.escience.myriad.Type;
  */
 public final class SQLiteAccessMethod {
 
-  /** Inaccessible. */
-  private SQLiteAccessMethod() {
-    throw new AssertionError();
-  }
-
   /**
    * Wrap boolean values as int values since SQLite does not support boolean natively. This function
    * converts true to 1 and false to 0.
@@ -133,6 +128,11 @@ public final class SQLiteAccessMethod {
       System.err.println(e.getMessage());
       throw new RuntimeException(e.getMessage());
     }
+  }
+
+  /** Inaccessible. */
+  private SQLiteAccessMethod() {
+    throw new AssertionError();
   }
 
 }

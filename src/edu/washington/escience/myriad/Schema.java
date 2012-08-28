@@ -10,34 +10,43 @@ import java.util.NoSuchElementException;
 import com.almworks.sqlite4java.SQLiteConstants;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
+import com.google.common.base.Preconditions;
 
 /**
  * Schema describes the schema of a tuple.
  */
-public class Schema implements Serializable {
+public final class Schema implements Serializable {
 
   /**
-   * A help class to facilitate organizing the information of each field
-   * */
-  public static class TDItem implements Serializable {
+   * A helper class to facilitate organizing the information of each field.
+   */
+  private static class TDItem implements Serializable {
 
+    /** Required for Serializable. */
     private static final long serialVersionUID = 1L;
 
-    /**
-     * The type of the field
-     * */
-    public final Type fieldType;
+    /** The type of the field. */
+    private final Type fieldType;
+
+    /** The name of the field. */
+    private final String fieldName;
 
     /**
-     * The name of the field
-     * */
-    public final String fieldName;
-
-    public TDItem(Type t, String n) {
+     * Creates a new field with the specified type and name.
+     * 
+     * @param t type of the created field.
+     * @param n name of the created field.
+     */
+    public TDItem(final Type t, final String n) {
       this.fieldName = n;
       this.fieldType = t;
     }
 
+    /**
+     * Returns the type of this field.
+     * 
+     * @return the type of this field.
+     */
     public Type getType() {
       return fieldType;
     }
@@ -48,16 +57,17 @@ public class Schema implements Serializable {
     }
   }
 
+  /** Required for Serializable. */
   private static final long serialVersionUID = 1L;
 
   /**
    * Converts a JDBC ResultSetMetaData object into a SimpleDB Schema.
    * 
-   * @param rsmd the input ResultSetMetaData
-   * @return the output Schema
-   * @throws SQLException
+   * @param rsmd the input ResultSetMetaData.
+   * @return the output Schema.
+   * @throws SQLException if JDBC throws a SQLException.
    */
-  public static Schema fromResultSetMetaData(ResultSetMetaData rsmd) throws SQLException {
+  public static Schema fromResultSetMetaData(final ResultSetMetaData rsmd) throws SQLException {
     /* How many columns in this result set? */
     int columnCount = rsmd.getColumnCount();
 
@@ -105,11 +115,11 @@ public class Schema implements Serializable {
   /**
    * Converts a SQLiteStatement object into a SimpleDB Schema.
    * 
-   * @param statement the input SQLiteStatement (must have been stepped)
-   * @return the output Schema
-   * @throws SQLiteException
+   * @param statement the input SQLiteStatement (must have been stepped).
+   * @return the output Schema.
+   * @throws SQLiteException if SQLite throws an exception.
    */
-  public static Schema fromSQLiteStatement(SQLiteStatement statement) throws SQLiteException {
+  public static Schema fromSQLiteStatement(final SQLiteStatement statement) throws SQLiteException {
     assert (statement.hasStepped());
 
     /* How many columns in this result set? */
@@ -157,7 +167,7 @@ public class Schema implements Serializable {
    * @param td2 The Schema with the last fields of the Schema
    * @return the new Schema
    */
-  public static Schema merge(Schema td1, Schema td2) {
+  public static Schema merge(final Schema td1, final Schema td2) {
     Type[] types = new Type[td1.numFields() + td2.numFields()];
     String[] names = new String[types.length];
 
@@ -172,6 +182,7 @@ public class Schema implements Serializable {
     return new Schema(types, names);
   }
 
+  /** The column type/name pairs that define this Schema. */
   private final TDItem[] tdItems;
 
   /**
@@ -181,7 +192,7 @@ public class Schema implements Serializable {
    * @param typeAr array specifying the number of and types of fields in this Schema. It must
    *          contain at least one entry.
    */
-  public Schema(Type[] typeAr) {
+  public Schema(final Type[] typeAr) {
     tdItems = new TDItem[typeAr.length];
     for (int i = 0; i < typeAr.length; i++) {
       tdItems[i] = new TDItem(typeAr[i], "");
@@ -196,7 +207,7 @@ public class Schema implements Serializable {
    *          contain at least one entry.
    * @param fieldAr array specifying the names of the fields. Note that names may be null.
    */
-  public Schema(Type[] typeAr, String[] fieldAr) {
+  public Schema(final Type[] typeAr, final String[] fieldAr) {
     tdItems = new TDItem[typeAr.length];
     for (int i = 0; i < typeAr.length; i++) {
       tdItems[i] = new TDItem(typeAr[i], fieldAr[i]);
@@ -211,16 +222,19 @@ public class Schema implements Serializable {
    * @return true if the object is equal to this Schema.
    */
   @Override
-  public boolean equals(Object o) {
-    if (!(o instanceof Schema))
+  public boolean equals(final Object o) {
+    if (!(o instanceof Schema)) {
       return false;
+    }
     Schema td = (Schema) o;
 
-    if (this.tdItems.length != td.tdItems.length)
+    if (this.tdItems.length != td.tdItems.length) {
       return false;
+    }
     for (int i = 0; i < tdItems.length; i++) {
-      if (!tdItems[i].fieldType.equals(td.tdItems[i].fieldType))
+      if (!tdItems[i].fieldType.equals(td.tdItems[i].fieldType)) {
         return false;
+      }
     }
     return true;
   }
@@ -232,10 +246,11 @@ public class Schema implements Serializable {
    * @return the index of the field that is first to have the given name.
    * @throws NoSuchElementException if no field with a matching name is found.
    */
-  public int fieldNameToIndex(String name) throws NoSuchElementException {
+  public int fieldNameToIndex(final String name) {
     for (int i = 0; i < numFields(); i++) {
-      if (tdItems[i].fieldName != null && tdItems[i].fieldName.equals(name))
+      if (tdItems[i].fieldName != null && tdItems[i].fieldName.equals(name)) {
         return i;
+      }
     }
     throw new NoSuchElementException("No field named " + name + " found");
   }
@@ -243,25 +258,32 @@ public class Schema implements Serializable {
   /**
    * Gets the (possibly null) field name of the ith field of this Schema.
    * 
-   * @param i index of the field name to return. It must be a valid index.
+   * @param index index of the field name to return. It must be a valid index.
    * @return the name of the ith field
-   * @throws NoSuchElementException if i is not a valid field reference.
+   * @throws IndexOutOfBoundsException if index is negative or not less than numFields.
    */
-  public String getFieldName(int i) throws NoSuchElementException {
-    return tdItems[i].fieldName;
+  public String getFieldName(final int index) {
+    Preconditions.checkElementIndex(index, tdItems.length);
+    return tdItems[index].fieldName;
   }
 
   /**
    * Gets the type of the ith field of this Schema.
    * 
-   * @param i The index of the field to get the type of. It must be a valid index.
+   * @param index index of the field to get the type of. It must be a valid index.
    * @return the type of the ith field
-   * @throws NoSuchElementException if i is not a valid field reference.
+   * @throws IndexOutOfBoundsException if index is negative or not less than numFields.
    */
-  public Type getFieldType(int i) throws NoSuchElementException {
-    return tdItems[i].fieldType;
+  public Type getFieldType(final int index) {
+    Preconditions.checkElementIndex(index, tdItems.length);
+    return tdItems[index].fieldType;
   }
 
+  /**
+   * Returns an array containing the types of the columns in this Schema.
+   * 
+   * @return an array containing the types of the columns in this Schema.
+   */
   public Type[] getTypes() {
     Type[] types = new Type[numFields()];
     for (int fieldIndex = 0; fieldIndex < numFields(); ++fieldIndex) {
@@ -278,8 +300,9 @@ public class Schema implements Serializable {
   }
 
   /**
+   * 
    * @return An iterator which iterates over all the field TDItems that are included in this Schema
-   * */
+   */
   public Iterator<TDItem> iterator() {
     return Arrays.asList(this.tdItems).iterator();
   }

@@ -4,35 +4,54 @@ import java.nio.FloatBuffer;
 
 import com.google.common.base.Preconditions;
 
-public class FloatColumn extends Column {
-  FloatBuffer data;
+/**
+ * A column of Float values.
+ * 
+ * @author dhalperi
+ * 
+ */
+public final class FloatColumn extends Column {
+  /** Internal representation of the column data. */
+  private final FloatBuffer data;
 
+  /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
   public FloatColumn() {
     this.data = FloatBuffer.allocate(TupleBatch.BATCH_SIZE);
   }
 
   @Override
-  public Object get(int row) {
+  public Object get(final int row) {
     return Float.valueOf(getFloat(row));
   }
 
-  public float getFloat(int row) {
+  /**
+   * Returns the element at the specified row in this column.
+   * 
+   * @param row row of element to return.
+   * @return the element at the specified row in this column.
+   */
+  public float getFloat(final int row) {
     Preconditions.checkElementIndex(row, data.position());
     return data.get(row);
   }
 
   @Override
-  public void put(Object value) {
+  protected void put(final Object value) {
     putFloat((Float) value);
   }
 
-  public void putFloat(float value) {
+  /**
+   * Inserts the specified element at end of this column.
+   * 
+   * @param value element to be inserted.
+   */
+  public void putFloat(final float value) {
     Preconditions.checkElementIndex(data.position(), data.capacity());
     data.put(value);
   }
 
   @Override
-  int size() {
+  public int size() {
     return data.position();
   }
 }
