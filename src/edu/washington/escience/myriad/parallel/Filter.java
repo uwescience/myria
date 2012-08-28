@@ -45,7 +45,7 @@ public class Filter extends Operator {
    */
   @Override
   protected TupleBatch fetchNext() throws NoSuchElementException, DbException {
-    while (child.hasNext()) {
+    if (child.hasNext()) {
       return child.next().filter(this.fieldIdx, this.op, this.operand);
     }
     return null;

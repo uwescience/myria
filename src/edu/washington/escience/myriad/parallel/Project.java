@@ -54,7 +54,7 @@ public class Project extends Operator {
    */
   @Override
   protected TupleBatch fetchNext() throws NoSuchElementException, DbException {
-    while (child.hasNext()) {
+    if (child.hasNext()) {
       return child.next().project(this.outFieldIds);
     }
     return null;
