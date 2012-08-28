@@ -144,6 +144,13 @@ public class TupleBatch {
   }
 
   private int hashCode(int row, int[] hashColumns) {
+    /*
+     * From
+     * http://commons.apache.org/lang/api-2.4/org/apache/commons/lang/builder/HashCodeBuilder.html:
+     * 
+     * You pick a hard-coded, randomly chosen, non-zero, odd number ideally different for each
+     * class.
+     */
     HashCodeBuilder hb = new HashCodeBuilder(243, 67);
     for (int i : hashColumns) {
       hb.append(columns.get(i).get(row));
