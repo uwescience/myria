@@ -1,5 +1,11 @@
 package edu.washington.escience.myriad.column;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+import com.almworks.sqlite4java.SQLiteException;
+import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myriad.TupleBatch;
@@ -54,6 +60,18 @@ public final class StringColumn implements Column {
     return getString(row);
   }
 
+  @Override
+  public void getIntoJdbc(final int row, final PreparedStatement statement, final int jdbcIndex)
+      throws SQLException {
+    statement.setString(jdbcIndex, getString(row));
+  }
+
+  @Override
+  public void getIntoSQLite(final int row, final SQLiteStatement statement, final int sqliteIndex)
+      throws SQLiteException {
+    statement.bind(sqliteIndex, getString(row));
+  }
+
   /**
    * Returns the element at the specified row in this column.
    * 
@@ -68,6 +86,17 @@ public final class StringColumn implements Column {
   @Override
   public void put(final Object value) {
     putString((String) value);
+  }
+
+  @Override
+  public void putFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException {
+    putString(resultSet.getString(jdbcIndex));
+  }
+
+  @Override
+  public void putFromSQLite(final SQLiteStatement statement, final int index)
+      throws SQLiteException {
+    putString(statement.columnString(index));
   }
 
   /**

@@ -10,12 +10,8 @@ import com.almworks.sqlite4java.SQLiteStatement;
 
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
-import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnFactory;
-import edu.washington.escience.myriad.column.DoubleColumn;
-import edu.washington.escience.myriad.column.LongColumn;
-import edu.washington.escience.myriad.column.StringColumn;
 
 /**
  * Access method for a SQLite database. Exposes data as TupleBatches.
@@ -49,9 +45,6 @@ public final class SQLiteAccessMethod {
   public static void tupleBatchInsert(final String pathToSQLiteDb, final String insertString,
       final TupleBatch tupleBatch) {
     try {
-      /* Extract the Schema */
-      Schema schema = tupleBatch.getSchema();
-
       /* Connect to the database */
       SQLiteConnection sqliteConnection = new SQLiteConnection(new File(pathToSQLiteDb));
       sqliteConnection.open(false);
@@ -62,40 +55,14 @@ public final class SQLiteAccessMethod {
       /* Set up and execute the query */
       SQLiteStatement statement = sqliteConnection.prepare(insertString);
 
-      Type[] types = schema.getTypes();
-
-      int curColumn;
       for (int row : tupleBatch.validTupleIndices()) {
-        curColumn = 0;
         for (int column = 0; column < tupleBatch.numColumns(); ++column) {
-          switch (types[column]) {
-            case DOUBLE_TYPE:
-              statement.bind(curColumn + 1, tupleBatch.getDouble(column, row));
-              break;
-            case FLOAT_TYPE:
-              /* Will be stored as 8 bytes */
-              statement.bind(curColumn + 1, tupleBatch.getFloat(column, row));
-              break;
-            case INT_TYPE:
-              statement.bind(curColumn + 1, tupleBatch.getInt(column, row));
-              break;
-            case LONG_TYPE:
-              statement.bind(curColumn + 1, tupleBatch.getLong(column, row));
-              break;
-            case STRING_TYPE:
-              statement.bind(curColumn + 1, tupleBatch.getString(column, row));
-              break;
-            case BOOLEAN_TYPE:
-              throw new RuntimeException("SQLite does not support Boolean columns");
-              // statement.bind(curColumn + 1,
-              // sqliteBooleanToInt(tupleBatch.getBoolean(column, row)));
-          }
-          curColumn++;
+          tupleBatch.getColumn(column).getIntoSQLite(row, statement, column + 1);
         }
         statement.step();
         statement.reset();
       }
-      /* BEGIN TRANSACTION */
+      /* COMMIT TRANSACTION */
       sqliteConnection.exec("COMMIT TRANSACTION");
       sqliteConnection.dispose();
     } catch (SQLiteException e) {
@@ -189,7 +156,6 @@ class SQLiteTupleBatchIterator implements Iterator<TupleBatch> {
   public TupleBatch next() {
     /* Allocate TupleBatch parameters */
     int numFields = schema.numFields();
-    Type[] types = schema.getTypes();
     List<Column> columns = ColumnFactory.allocateColumns(schema);
 
     /**
@@ -200,25 +166,7 @@ class SQLiteTupleBatchIterator implements Iterator<TupleBatch> {
     try {
       for (numTuples = 0; numTuples < TupleBatch.BATCH_SIZE && statement.hasRow(); ++numTuples) {
         for (int column = 0; column < numFields; ++column) {
-          switch (types[column]) {
-            case BOOLEAN_TYPE:
-              throw new RuntimeException("SQLite does not support Boolean columns");
-            case DOUBLE_TYPE:
-              ((DoubleColumn) columns.get(column)).putDouble(statement.columnDouble(column));
-              break;
-            case FLOAT_TYPE:
-              throw new RuntimeException("SQLite does not support Float columns");
-            case INT_TYPE:
-              throw new RuntimeException("SQLite does not support Integer columns");
-              // ((IntColumn) columns.get(column)).putInt(statement.columnInt(column));
-              // break;
-            case LONG_TYPE:
-              ((LongColumn) columns.get(column)).putLong(statement.columnLong(column));
-              break;
-            case STRING_TYPE:
-              ((StringColumn) columns.get(column)).putString(statement.columnString(column));
-              break;
-          }
+          columns.get(column).putFromSQLite(statement, column);
         }
         if (!statement.step()) {
           break;

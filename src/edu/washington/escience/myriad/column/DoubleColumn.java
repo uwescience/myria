@@ -1,7 +1,12 @@
 package edu.washington.escience.myriad.column;
 
 import java.nio.DoubleBuffer;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
+import com.almworks.sqlite4java.SQLiteException;
+import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myriad.TupleBatch;
@@ -38,6 +43,18 @@ public final class DoubleColumn implements Column {
   }
 
   @Override
+  public void getIntoJdbc(final int row, final PreparedStatement statement, final int jdbcIndex)
+      throws SQLException {
+    statement.setDouble(jdbcIndex, getDouble(row));
+  }
+
+  @Override
+  public void getIntoSQLite(final int row, final SQLiteStatement statement, final int sqliteIndex)
+      throws SQLiteException {
+    statement.bind(sqliteIndex, getDouble(row));
+  }
+
+  @Override
   public void put(final Object value) {
     putDouble((Double) value);
   }
@@ -50,6 +67,17 @@ public final class DoubleColumn implements Column {
   public void putDouble(final double value) {
     Preconditions.checkElementIndex(data.position(), data.capacity());
     data.put(value);
+  }
+
+  @Override
+  public void putFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException {
+    putDouble(resultSet.getDouble(jdbcIndex));
+  }
+
+  @Override
+  public void putFromSQLite(final SQLiteStatement statement, final int index)
+      throws SQLiteException {
+    putDouble(statement.columnDouble(index));
   }
 
   @Override

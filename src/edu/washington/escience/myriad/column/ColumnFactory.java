@@ -14,11 +14,6 @@ import edu.washington.escience.myriad.Type;
  */
 public final class ColumnFactory {
 
-  /** Inaccessible. */
-  private ColumnFactory() {
-    throw new AssertionError();
-  }
-
   /**
    * Allocates an array of Columns to match the given Schema.
    * 
@@ -67,5 +62,10 @@ public final class ColumnFactory {
       }
     }
     return columns;
+  }
+
+  /** Inaccessible. */
+  private ColumnFactory() {
+    throw new AssertionError();
   }
 }

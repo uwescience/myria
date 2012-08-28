@@ -172,6 +172,16 @@ public class TupleBatch {
   }
 
   /**
+   * Returns the column at the specified index.
+   * 
+   * @param index index of the desired column.
+   * @return the column at the specified index.
+   */
+  public final Column getColumn(final int index) {
+    return columns.get(index);
+  }
+
+  /**
    * Returns the element at the specified column and row position.
    * 
    * @param column column in which the element is stored.
@@ -258,6 +268,10 @@ public class TupleBatch {
     return hb.toHashCode();
   }
 
+  // public final TupleBatch[] partition(final PartitionFunction<?, ?> p) {
+  // return null;
+  // }
+
   /**
    * The number of columns in this TupleBatch.
    * 
@@ -266,10 +280,6 @@ public class TupleBatch {
   public final int numColumns() {
     return schema.numFields();
   }
-
-  // public final TupleBatch[] partition(final PartitionFunction<?, ?> p) {
-  // return null;
-  // }
 
   /**
    * Hash the valid tuples in this batch and partition them into the supplied TupleBatchBuffers.

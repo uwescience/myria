@@ -1,7 +1,12 @@
 package edu.washington.escience.myriad.column;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.BitSet;
 
+import com.almworks.sqlite4java.SQLiteException;
+import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myriad.TupleBatch;
@@ -42,6 +47,18 @@ public final class BooleanColumn implements Column {
   }
 
   @Override
+  public void getIntoJdbc(final int row, final PreparedStatement statement, final int jdbcIndex)
+      throws SQLException {
+    statement.setBoolean(jdbcIndex, getBoolean(row));
+  }
+
+  @Override
+  public void getIntoSQLite(final int row, final SQLiteStatement statement, final int sqliteIndex)
+      throws SQLiteException {
+    throw new UnsupportedOperationException("SQLite does not support Boolean columns.");
+  }
+
+  @Override
   public void put(final Object value) {
     putBoolean((Boolean) value);
   }
@@ -55,6 +72,17 @@ public final class BooleanColumn implements Column {
     Preconditions.checkElementIndex(numBits, TupleBatch.BATCH_SIZE);
     data.set(numBits, value);
     numBits++;
+  }
+
+  @Override
+  public void putFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException {
+    putBoolean(resultSet.getBoolean(jdbcIndex));
+  }
+
+  @Override
+  public void putFromSQLite(final SQLiteStatement statement, final int index)
+      throws SQLiteException {
+    throw new UnsupportedOperationException("SQLite does not support Boolean columns.");
   }
 
   @Override

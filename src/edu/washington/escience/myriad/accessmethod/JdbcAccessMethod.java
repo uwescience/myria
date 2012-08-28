@@ -12,15 +12,8 @@ import java.util.List;
 
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
-import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.column.BooleanColumn;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnFactory;
-import edu.washington.escience.myriad.column.DoubleColumn;
-import edu.washington.escience.myriad.column.FloatColumn;
-import edu.washington.escience.myriad.column.IntColumn;
-import edu.washington.escience.myriad.column.LongColumn;
-import edu.washington.escience.myriad.column.StringColumn;
 
 /**
  * Access method for a JDBC database. Exposes data as TupleBatches.
@@ -41,9 +34,6 @@ public final class JdbcAccessMethod {
   public static void tupleBatchInsert(final String driverClassName, final String connectionString,
       final String insertString, final TupleBatch tupleBatch) {
     try {
-      /* Extract the Schema */
-      Schema schema = tupleBatch.getSchema();
-
       /* Make sure JDBC driver is loaded */
       Class.forName(driverClassName);
       /* Connect to the database */
@@ -52,33 +42,9 @@ public final class JdbcAccessMethod {
       /* Set up and execute the query */
       PreparedStatement statement = jdbcConnection.prepareStatement(insertString);
 
-      Type[] types = schema.getTypes();
-
-      int curColumn;
       for (int row : tupleBatch.validTupleIndices()) {
-        curColumn = 0;
         for (int column = 0; column < tupleBatch.numColumns(); ++column) {
-          switch (types[column]) {
-            case BOOLEAN_TYPE:
-              statement.setBoolean(curColumn + 1, tupleBatch.getBoolean(column, row));
-              break;
-            case DOUBLE_TYPE:
-              statement.setDouble(curColumn + 1, tupleBatch.getDouble(column, row));
-              break;
-            case FLOAT_TYPE:
-              statement.setFloat(curColumn + 1, tupleBatch.getFloat(column, row));
-              break;
-            case INT_TYPE:
-              statement.setInt(curColumn + 1, tupleBatch.getInt(column, row));
-              break;
-            case LONG_TYPE:
-              statement.setLong(curColumn + 1, tupleBatch.getLong(column, row));
-              break;
-            case STRING_TYPE:
-              statement.setString(curColumn + 1, tupleBatch.getString(column, row));
-              break;
-          }
-          curColumn++;
+          tupleBatch.getColumn(column).getIntoJdbc(row, statement, column + 1);
         }
         statement.addBatch();
       }
@@ -173,7 +139,6 @@ class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
   public TupleBatch next() {
     /* Allocate TupleBatch parameters */
     int numFields = schema.numFields();
-    Type[] fieldTypes = schema.getTypes();
     List<Column> columns = ColumnFactory.allocateColumns(schema);
 
     /**
@@ -190,28 +155,8 @@ class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
           break;
         }
         for (int colIdx = 0; colIdx < numFields; ++colIdx) {
-          int jdbcIdx = colIdx + 1;
           /* Warning: JDBC is 1-indexed */
-          switch (fieldTypes[colIdx]) {
-            case INT_TYPE:
-              ((IntColumn) columns.get(colIdx)).putInt(resultSet.getInt(jdbcIdx));
-              break;
-            case STRING_TYPE:
-              ((StringColumn) columns.get(colIdx)).putString(resultSet.getString(jdbcIdx));
-              break;
-            case BOOLEAN_TYPE:
-              ((BooleanColumn) columns.get(colIdx)).putBoolean(resultSet.getBoolean(jdbcIdx));
-              break;
-            case DOUBLE_TYPE:
-              ((DoubleColumn) columns.get(colIdx)).putDouble(resultSet.getDouble(jdbcIdx));
-              break;
-            case FLOAT_TYPE:
-              ((FloatColumn) columns.get(colIdx)).putFloat(resultSet.getFloat(jdbcIdx));
-              break;
-            case LONG_TYPE:
-              ((LongColumn) columns.get(colIdx)).putLong(resultSet.getLong(jdbcIdx));
-              break;
-          }
+          columns.get(colIdx).putFromJdbc(resultSet, colIdx + 1);
         }
       }
     } catch (SQLException e) {

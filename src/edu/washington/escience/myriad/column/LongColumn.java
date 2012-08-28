@@ -1,6 +1,12 @@
 package edu.washington.escience.myriad.column;
 
 import java.nio.LongBuffer;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+
+import com.almworks.sqlite4java.SQLiteException;
+import com.almworks.sqlite4java.SQLiteStatement;
 
 import edu.washington.escience.myriad.TupleBatch;
 
@@ -24,6 +30,18 @@ public final class LongColumn implements Column {
     return Long.valueOf(getLong(row));
   }
 
+  @Override
+  public void getIntoJdbc(final int row, final PreparedStatement statement, final int jdbcIndex)
+      throws SQLException {
+    statement.setLong(jdbcIndex, getLong(row));
+  }
+
+  @Override
+  public void getIntoSQLite(final int row, final SQLiteStatement statement, final int sqliteIndex)
+      throws SQLiteException {
+    statement.bind(sqliteIndex, getLong(row));
+  }
+
   /**
    * Returns the element at the specified row in this column.
    * 
@@ -37,6 +55,17 @@ public final class LongColumn implements Column {
   @Override
   public void put(final Object value) {
     putLong((Long) value);
+  }
+
+  @Override
+  public void putFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException {
+    putLong(resultSet.getLong(jdbcIndex));
+  }
+
+  @Override
+  public void putFromSQLite(final SQLiteStatement statement, final int index)
+      throws SQLiteException {
+    putLong(statement.columnLong(index));
   }
 
   /**
