@@ -13,25 +13,25 @@ public class BooleanColumn extends Column {
     this.numBits = 0;
   }
 
+  @Override
+  public Object get(int row) {
+    return Boolean.valueOf(getBoolean(row));
+  }
+
   public boolean getBoolean(int row) {
     Preconditions.checkElementIndex(row, numBits);
     return data.get(row);
+  }
+
+  @Override
+  public void put(Object value) {
+    putBoolean((Boolean) value);
   }
 
   public void putBoolean(boolean value) {
     Preconditions.checkElementIndex(numBits, TupleBatch.BATCH_SIZE);
     data.set(numBits, value);
     numBits++;
-  }
-
-  @Override
-  public Object get(int row) {
-    return Boolean.valueOf(getBoolean(row));
-  }
-
-  @Override
-  public void put(Object value) {
-    putBoolean((Boolean) value);
   }
 
   @Override

@@ -22,9 +22,19 @@ public class StringColumn extends Column {
     this.numStrings = 0;
   }
 
+  @Override
+  public Object get(int row) {
+    return getString(row);
+  }
+
   public String getString(int row) {
     Preconditions.checkElementIndex(row, numStrings);
     return data.substring(startIndices[row], endIndices[row]);
+  }
+
+  @Override
+  public void put(Object value) {
+    putString((String) value);
   }
 
   public void putString(String input) {
@@ -32,16 +42,6 @@ public class StringColumn extends Column {
     data.append(input);
     endIndices[numStrings] = data.length();
     numStrings++;
-  }
-
-  @Override
-  public Object get(int row) {
-    return getString(row);
-  }
-
-  @Override
-  public void put(Object value) {
-    putString((String) value);
   }
 
   @Override

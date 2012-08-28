@@ -30,14 +30,6 @@ public class TupleBatch {
     validTuples.set(0, numTuples);
   }
 
-  TupleBatch(TupleBatch from) {
-    /* Take the input arguments directly */
-    this.schema = from.schema;
-    this.columns = from.columns;
-    this.numTuples = from.numTuples;
-    this.validTuples = (BitSet) from.validTuples.clone();
-  }
-
   private TupleBatch(Schema schema, List<Column> columns, int numTuples, BitSet validTuples) {
     /* Take the input arguments directly */
     this.schema = Objects.requireNonNull(schema);
@@ -46,12 +38,18 @@ public class TupleBatch {
     this.validTuples = (BitSet) validTuples.clone();
   }
 
-  /**
-   * @param fieldIdx the index of all columns, not the currently valid columns
-   * */
-  public TupleBatch filter(int fieldIdx, Predicate.Op op, Object operand) {
-    TupleBatch ret = new TupleBatch(this);
-    return ret.applyFilter(fieldIdx, op, operand);
+  TupleBatch(TupleBatch from) {
+    /* Take the input arguments directly */
+    this.schema = from.schema;
+    this.columns = from.columns;
+    this.numTuples = from.numTuples;
+    this.validTuples = (BitSet) from.validTuples.clone();
+  }
+
+  void appendTupleInto(int row, TupleBatchBuffer buffer) {
+    for (int i = 0; i < numColumns(); ++i) {
+      buffer.put(i, columns.get(i).get(row));
+    }
   }
 
   private TupleBatch applyFilter(int fieldIdx, Predicate.Op op, Object operand) {
@@ -66,6 +64,14 @@ public class TupleBatch {
       }
     }
     return this;
+  }
+
+  /**
+   * @param fieldIdx the index of all columns, not the currently valid columns
+   * */
+  public TupleBatch filter(int fieldIdx, Predicate.Op op, Object operand) {
+    TupleBatch ret = new TupleBatch(this);
+    return ret.applyFilter(fieldIdx, op, operand);
   }
 
   public boolean getBoolean(int column, int row) {
@@ -88,24 +94,45 @@ public class TupleBatch {
     return ((LongColumn) columns.get(column)).getLong(row);
   }
 
-  public String getString(int column, int row) {
-    return ((StringColumn) columns.get(column)).getString(row);
-  }
-
   public Schema getSchema() {
     return schema;
   }
 
-  public int numTuples() {
-    return numTuples;
+  public String getString(int column, int row) {
+    return ((StringColumn) columns.get(column)).getString(row);
+  }
+
+  private int hashCode(int row, int[] hashColumns) {
+    /*
+     * From
+     * http://commons.apache.org/lang/api-2.4/org/apache/commons/lang/builder/HashCodeBuilder.html:
+     * 
+     * You pick a hard-coded, randomly chosen, non-zero, odd number ideally different for each
+     * class.
+     */
+    HashCodeBuilder hb = new HashCodeBuilder(243, 67);
+    for (int i : hashColumns) {
+      hb.append(columns.get(i).get(row));
+    }
+    return hb.toHashCode();
   }
 
   public int numColumns() {
     return schema.numFields();
   }
 
+  public int numTuples() {
+    return numTuples;
+  }
+
   public TupleBatch[] partition(PartitionFunction<?, ?> p) {
     return null;
+  }
+
+  void partitionInto(TupleBatchBuffer[] destinations, int[] hashColumns) {
+    for (int i : validTupleIndices()) {
+      appendTupleInto(i, destinations[hashCode(i, hashColumns)]);
+    }
   }
 
   public TupleBatch project(int[] remainingColumns) {
@@ -141,33 +168,6 @@ public class TupleBatch {
     }
     return sb.toString();
 
-  }
-
-  private int hashCode(int row, int[] hashColumns) {
-    /*
-     * From
-     * http://commons.apache.org/lang/api-2.4/org/apache/commons/lang/builder/HashCodeBuilder.html:
-     * 
-     * You pick a hard-coded, randomly chosen, non-zero, odd number ideally different for each
-     * class.
-     */
-    HashCodeBuilder hb = new HashCodeBuilder(243, 67);
-    for (int i : hashColumns) {
-      hb.append(columns.get(i).get(row));
-    }
-    return hb.toHashCode();
-  }
-
-  void appendTupleInto(int row, TupleBatchBuffer buffer) {
-    for (int i = 0; i < numColumns(); ++i) {
-      buffer.put(i, columns.get(i).get(row));
-    }
-  }
-
-  void partitionInto(TupleBatchBuffer[] destinations, int[] hashColumns) {
-    for (int i : validTupleIndices()) {
-      appendTupleInto(i, destinations[hashCode(i, hashColumns)]);
-    }
   }
 
   public int[] validTupleIndices() {

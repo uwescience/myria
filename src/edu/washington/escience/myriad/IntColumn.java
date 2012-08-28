@@ -11,23 +11,23 @@ public class IntColumn extends Column {
     this.data = IntBuffer.allocate(TupleBatch.BATCH_SIZE);
   }
 
-  public int getInt(int index) {
-    return data.get(index);
-  }
-
-  public void putInt(int value) {
-    data.put(value);
-  }
-
   @Override
   public Object get(int row) {
     Preconditions.checkElementIndex(row, data.position());
     return Integer.valueOf(data.get(row));
   }
 
+  public int getInt(int index) {
+    return data.get(index);
+  }
+
   @Override
   public void put(Object value) {
     putInt((Integer) value);
+  }
+
+  public void putInt(int value) {
+    data.put(value);
   }
 
   @Override

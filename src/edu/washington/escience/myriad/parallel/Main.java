@@ -60,6 +60,11 @@ public class Main {
     root.close();
   }
 
+  public static void main(String[] args) throws NoSuchElementException, DbException {
+    JdbcTest();
+    SQLiteTest();
+  }
+
   public static void SQLiteTest() throws DbException {
     final String filename = "sql/sqlite.myriad_test/myriad_sqlite_test.db";
     final String query = "SELECT * FROM testtable";
@@ -103,10 +108,5 @@ public class Main {
 
     /* Cleanup */
     root.close();
-  }
-
-  public static void main(String[] args) throws NoSuchElementException, DbException {
-    JdbcTest();
-    SQLiteTest();
   }
 }

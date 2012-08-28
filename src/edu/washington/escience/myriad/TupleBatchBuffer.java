@@ -22,6 +22,12 @@ public class TupleBatchBuffer {
     numColumnsReady = 0;
   }
 
+  private void finishBatch() {
+    readyTuples.add(new TupleBatch(schema, currentColumns, currentNumTuples));
+    currentColumns = Column.allocateColumns(schema);
+    currentNumTuples = 0;
+  }
+
   protected void put(int column, Object value) {
     if (columnsReady.get(column)) {
       throw new RuntimeException(
@@ -37,11 +43,5 @@ public class TupleBatchBuffer {
         finishBatch();
       }
     }
-  }
-
-  private void finishBatch() {
-    readyTuples.add(new TupleBatch(schema, currentColumns, currentNumTuples));
-    currentColumns = Column.allocateColumns(schema);
-    currentNumTuples = 0;
   }
 }

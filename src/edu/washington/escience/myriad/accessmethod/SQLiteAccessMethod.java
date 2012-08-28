@@ -18,26 +18,6 @@ import edu.washington.escience.myriad.Type;
 
 public class SQLiteAccessMethod {
 
-  public static Iterator<TupleBatch> tupleBatchIteratorFromQuery(String pathToSQLiteDb,
-      String queryString) {
-    try {
-      /* Connect to the database */
-      SQLiteConnection SQLiteConnection = new SQLiteConnection(new File(pathToSQLiteDb));
-      SQLiteConnection.open(false);
-
-      /* Set up and execute the query */
-      SQLiteStatement statement = SQLiteConnection.prepare(queryString);
-
-      /* Step the statement once so we can figure out the Schema */
-      statement.step();
-
-      return new SQLiteTupleBatchIterator(statement, Schema.fromSQLiteStatement(statement));
-    } catch (SQLiteException e) {
-      System.err.println(e.getMessage());
-      throw new RuntimeException(e.getMessage());
-    }
-  }
-
   static int sqliteBooleanToInt(boolean b) {
     if (b)
       return 1;
@@ -96,6 +76,26 @@ public class SQLiteAccessMethod {
       /* BEGIN TRANSACTION */
       SQLiteConnection.exec("COMMIT TRANSACTION");
       SQLiteConnection.dispose();
+    } catch (SQLiteException e) {
+      System.err.println(e.getMessage());
+      throw new RuntimeException(e.getMessage());
+    }
+  }
+
+  public static Iterator<TupleBatch> tupleBatchIteratorFromQuery(String pathToSQLiteDb,
+      String queryString) {
+    try {
+      /* Connect to the database */
+      SQLiteConnection SQLiteConnection = new SQLiteConnection(new File(pathToSQLiteDb));
+      SQLiteConnection.open(false);
+
+      /* Set up and execute the query */
+      SQLiteStatement statement = SQLiteConnection.prepare(queryString);
+
+      /* Step the statement once so we can figure out the Schema */
+      statement.step();
+
+      return new SQLiteTupleBatchIterator(statement, Schema.fromSQLiteStatement(statement));
     } catch (SQLiteException e) {
       System.err.println(e.getMessage());
       throw new RuntimeException(e.getMessage());
