@@ -1,0 +1,10 @@
+You must install the protobuf libraries first. On Mac OS X with port:
+   sudo port install protobuf-java
+   sudo port install protobuf-python27  # or whatever your Python version is
+
+To compile:
+   protoc worker_task.proto --java_out=./java --python_out=./python
+
+To run the python demo:
+   cd python
+   ./worker_task_example.py

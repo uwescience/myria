@@ -1,0 +1,49 @@
+option java_package = "edu.washington.escience.myriad.proto";
+option java_outer_classname = "TransportProto";
+
+message ColumnMessage {
+  enum ColumnMessageType {
+    INT		= 0;
+    LONG	= 1;
+    FLOAT	= 2;
+    DOUBLE	= 3;
+    STRING	= 4;
+    BOOLEAN	= 5;
+  }
+
+  required ColumnMessageType type = 1;		// See enum above
+  required uint32 num_tuples = 2;
+
+  optional IntColumnMessage int_column = 3; 
+  optional LongColumnMessage long_column = 4; 
+  optional FloatColumnMessage float_column = 5; 
+  optional DoubleColumnMessage double_column = 6; 
+  optional StringColumnMessage string_column = 7; 
+  optional BooleanColumnMessage boolean_column = 8; 
+}
+
+message IntColumnMessage {
+  required bytes data = 1;
+}
+
+message LongColumnMessage {
+  required bytes data = 1;
+}
+
+message FloatColumnMessage {
+  required bytes data = 1;
+}
+
+message DoubleColumnMessage {
+  required bytes data = 1;
+}
+
+message StringColumnMessage {
+  required bytes data = 1;
+  required bytes start_indices = 2;
+  required bytes end_indices = 3;
+}
+
+message BooleanColumnMessage {
+  required bytes data = 1;
+}

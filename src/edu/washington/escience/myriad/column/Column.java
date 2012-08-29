@@ -1,11 +1,13 @@
 package edu.washington.escience.myriad.column;
 
+import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
+import com.google.protobuf.CodedOutputStream;
 
 /**
  * A column of a batch of tuples.
@@ -68,6 +70,14 @@ public interface Column {
    * @throws SQLiteException if there are SQLite errors.
    */
   void putFromSQLite(SQLiteStatement statement, int index) throws SQLiteException;
+
+  /**
+   * Serializes this column as a protobuf message into the specified output stream.
+   * 
+   * @param output the output stream.
+   * @throws IOException if there are ProtoBuf errors.
+   */
+  void serializeToProto(CodedOutputStream output) throws IOException;
 
   /**
    * Returns the number of elements in this column.

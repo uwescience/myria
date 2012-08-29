@@ -1,5 +1,7 @@
 package edu.washington.escience.myriad.column;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -7,8 +9,13 @@ import java.sql.SQLException;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
+import com.google.protobuf.ByteString;
+import com.google.protobuf.CodedOutputStream;
 
 import edu.washington.escience.myriad.TupleBatch;
+import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
+import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage.ColumnMessageType;
+import edu.washington.escience.myriad.proto.TransportProto.StringColumnMessage;
 
 /**
  * A column of String values.
@@ -22,11 +29,15 @@ public final class StringColumn implements Column {
    * and yet still have fast lookup.
    */
   private final int[] startIndices;
+  /** Internal structure for startIndices. */
+  private final ByteBuffer startIndicesBytes;
   /**
    * The positions of the ends of each String in this column. Used to pack variable-length Strings
    * and yet still have fast lookup.
    */
   private final int[] endIndices;
+  /** Internal structure for endIndices. */
+  private final ByteBuffer endIndicesBytes;
   /** Contains the packed character data. */
   private final StringBuilder data;
   /** Number of elements in this column. */
@@ -34,8 +45,10 @@ public final class StringColumn implements Column {
 
   /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
   public StringColumn() {
-    this.startIndices = new int[TupleBatch.BATCH_SIZE];
-    this.endIndices = new int[TupleBatch.BATCH_SIZE];
+    this.startIndicesBytes = ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Integer.SIZE / Byte.SIZE));
+    this.startIndices = startIndicesBytes.asIntBuffer().array();
+    this.endIndicesBytes = ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Integer.SIZE / Byte.SIZE));
+    this.endIndices = endIndicesBytes.asIntBuffer().array();
     this.data = new StringBuilder();
     this.numStrings = 0;
   }
@@ -49,8 +62,10 @@ public final class StringColumn implements Column {
    *          column.
    */
   public StringColumn(final int averageStringSize) {
-    this.startIndices = new int[TupleBatch.BATCH_SIZE];
-    this.endIndices = new int[TupleBatch.BATCH_SIZE];
+    this.startIndicesBytes = ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Integer.SIZE / Byte.SIZE));
+    this.startIndices = startIndicesBytes.asIntBuffer().array();
+    this.endIndicesBytes = ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Integer.SIZE / Byte.SIZE));
+    this.endIndices = endIndicesBytes.asIntBuffer().array();
     this.data = new StringBuilder(averageStringSize * TupleBatch.BATCH_SIZE);
     this.numStrings = 0;
   }
@@ -109,6 +124,17 @@ public final class StringColumn implements Column {
     data.append(value);
     endIndices[numStrings] = data.length();
     numStrings++;
+  }
+
+  @Override
+  public void serializeToProto(final CodedOutputStream output) throws IOException {
+    /* Note that we do *not* build the inner class. We pass its builder instead. */
+    StringColumnMessage.Builder inner =
+        StringColumnMessage.newBuilder().setData(ByteString.copyFromUtf8(data.toString()));
+    inner.setStartIndices(ByteString.copyFrom(startIndicesBytes));
+    inner.setEndIndices(ByteString.copyFrom(endIndicesBytes));
+    ColumnMessage.newBuilder().setType(ColumnMessageType.STRING).setNumTuples(size())
+    .setStringColumn(inner).build().writeTo(output);
   }
 
   @Override

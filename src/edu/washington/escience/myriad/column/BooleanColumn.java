@@ -1,5 +1,6 @@
 package edu.washington.escience.myriad.column;
 
+import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -8,8 +9,13 @@ import java.util.BitSet;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
+import com.google.protobuf.ByteString;
+import com.google.protobuf.CodedOutputStream;
 
 import edu.washington.escience.myriad.TupleBatch;
+import edu.washington.escience.myriad.proto.TransportProto.BooleanColumnMessage;
+import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
+import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage.ColumnMessageType;
 
 /**
  * A column of Boolean values. To save space, this implementation uses a BitSet as the internal
@@ -83,6 +89,15 @@ public final class BooleanColumn implements Column {
   public void putFromSQLite(final SQLiteStatement statement, final int index)
       throws SQLiteException {
     throw new UnsupportedOperationException("SQLite does not support Boolean columns.");
+  }
+
+  @Override
+  public void serializeToProto(final CodedOutputStream output) throws IOException {
+    /* Note that we do *not* build the inner class. We pass its builder instead. */
+    BooleanColumnMessage.Builder inner =
+        BooleanColumnMessage.newBuilder().setData(ByteString.copyFrom(data.toByteArray()));
+    ColumnMessage.newBuilder().setType(ColumnMessageType.BOOLEAN).setNumTuples(size())
+    .setBooleanColumn(inner).build().writeTo(output);
   }
 
   @Override

@@ -1,5 +1,7 @@
 package edu.washington.escience.myriad.column;
 
+import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.DoubleBuffer;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -8,8 +10,13 @@ import java.sql.SQLException;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
+import com.google.protobuf.ByteString;
+import com.google.protobuf.CodedOutputStream;
 
 import edu.washington.escience.myriad.TupleBatch;
+import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
+import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage.ColumnMessageType;
+import edu.washington.escience.myriad.proto.TransportProto.DoubleColumnMessage;
 
 /**
  * A column of Double values.
@@ -19,11 +26,14 @@ import edu.washington.escience.myriad.TupleBatch;
  */
 public final class DoubleColumn implements Column {
   /** Internal representation of the column data. */
+  private final ByteBuffer dataBytes;
+  /** View of the column data as doubles. */
   private final DoubleBuffer data;
 
   /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
   public DoubleColumn() {
-    this.data = DoubleBuffer.allocate(TupleBatch.BATCH_SIZE);
+    this.dataBytes = ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Double.SIZE / Byte.SIZE));
+    this.data = dataBytes.asDoubleBuffer();
   }
 
   @Override
@@ -78,6 +88,15 @@ public final class DoubleColumn implements Column {
   public void putFromSQLite(final SQLiteStatement statement, final int index)
       throws SQLiteException {
     putDouble(statement.columnDouble(index));
+  }
+
+  @Override
+  public void serializeToProto(final CodedOutputStream output) throws IOException {
+    /* Note that we do *not* build the inner class. We pass its builder instead. */
+    DoubleColumnMessage.Builder inner =
+        DoubleColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
+    ColumnMessage.newBuilder().setType(ColumnMessageType.DOUBLE).setNumTuples(size())
+    .setDoubleColumn(inner).build().writeTo(output);
   }
 
   @Override
