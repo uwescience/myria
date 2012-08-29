@@ -2,6 +2,8 @@ package edu.washington.escience.myriad.parallel;
 
 import java.util.ArrayList;
 import java.util.NoSuchElementException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import edu.washington.escience.myriad.Predicate;
 import edu.washington.escience.myriad.Schema;
@@ -24,7 +26,7 @@ public class Main {
 
     String connectionString =
         "jdbc:" + dbms + "://" + host + ":" + port + "/" + databaseName + "?user=" + user
-            + "&password=" + password;
+        + "&password=" + password;
     JdbcQueryScan scan = new JdbcQueryScan(jdbcDriverName, connectionString, query);
     Filter filter1 = new Filter(Predicate.Op.GREATER_THAN_OR_EQ, 0, new Integer(50), scan);
 
@@ -69,6 +71,8 @@ public class Main {
     final String filename = "sql/sqlite.myriad_test/myriad_sqlite_test.db";
     final String query = "SELECT * FROM testtable";
     final String insert = "INSERT INTO testtable2 VALUES(?)";
+
+    Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.OFF);
 
     /* Scan the testtable in database */
     SQLiteQueryScan scan = new SQLiteQueryScan(filename, query);
