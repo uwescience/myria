@@ -26,7 +26,7 @@ public class Main {
 
     String connectionString =
         "jdbc:" + dbms + "://" + host + ":" + port + "/" + databaseName + "?user=" + user
-        + "&password=" + password;
+            + "&password=" + password;
     JdbcQueryScan scan = new JdbcQueryScan(jdbcDriverName, connectionString, query);
     Filter filter1 = new Filter(Predicate.Op.GREATER_THAN_OR_EQ, 0, new Integer(50), scan);
 

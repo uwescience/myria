@@ -45,7 +45,8 @@ public final class StringColumn implements Column {
 
   /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
   public StringColumn() {
-    this.startIndicesBytes = ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Integer.SIZE / Byte.SIZE));
+    this.startIndicesBytes =
+        ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Integer.SIZE / Byte.SIZE));
     this.startIndices = startIndicesBytes.asIntBuffer().array();
     this.endIndicesBytes = ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Integer.SIZE / Byte.SIZE));
     this.endIndices = endIndicesBytes.asIntBuffer().array();
@@ -62,7 +63,8 @@ public final class StringColumn implements Column {
    *          column.
    */
   public StringColumn(final int averageStringSize) {
-    this.startIndicesBytes = ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Integer.SIZE / Byte.SIZE));
+    this.startIndicesBytes =
+        ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Integer.SIZE / Byte.SIZE));
     this.startIndices = startIndicesBytes.asIntBuffer().array();
     this.endIndicesBytes = ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Integer.SIZE / Byte.SIZE));
     this.endIndices = endIndicesBytes.asIntBuffer().array();
@@ -134,7 +136,7 @@ public final class StringColumn implements Column {
     inner.setStartIndices(ByteString.copyFrom(startIndicesBytes));
     inner.setEndIndices(ByteString.copyFrom(endIndicesBytes));
     ColumnMessage.newBuilder().setType(ColumnMessageType.STRING).setNumTuples(size())
-    .setStringColumn(inner).build().writeTo(output);
+        .setStringColumn(inner).build().writeTo(output);
   }
 
   @Override

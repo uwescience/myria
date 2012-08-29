@@ -96,7 +96,7 @@ public final class DoubleColumn implements Column {
     DoubleColumnMessage.Builder inner =
         DoubleColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
     ColumnMessage.newBuilder().setType(ColumnMessageType.DOUBLE).setNumTuples(size())
-    .setDoubleColumn(inner).build().writeTo(output);
+        .setDoubleColumn(inner).build().writeTo(output);
   }
 
   @Override

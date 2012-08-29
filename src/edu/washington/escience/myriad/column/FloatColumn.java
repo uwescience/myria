@@ -96,7 +96,7 @@ public final class FloatColumn implements Column {
     FloatColumnMessage.Builder inner =
         FloatColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
     ColumnMessage.newBuilder().setType(ColumnMessageType.FLOAT).setNumTuples(size())
-    .setFloatColumn(inner).build().writeTo(output);
+        .setFloatColumn(inner).build().writeTo(output);
   }
 
   @Override

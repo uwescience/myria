@@ -97,7 +97,7 @@ public final class BooleanColumn implements Column {
     BooleanColumnMessage.Builder inner =
         BooleanColumnMessage.newBuilder().setData(ByteString.copyFrom(data.toByteArray()));
     ColumnMessage.newBuilder().setType(ColumnMessageType.BOOLEAN).setNumTuples(size())
-    .setBooleanColumn(inner).build().writeTo(output);
+        .setBooleanColumn(inner).build().writeTo(output);
   }
 
   @Override
