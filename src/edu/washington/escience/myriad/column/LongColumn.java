@@ -10,7 +10,7 @@ import java.sql.SQLException;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.CodedOutputStream;
+import com.google.protobuf.Message;
 
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
@@ -88,12 +88,12 @@ public final class LongColumn implements Column {
   }
 
   @Override
-  public void serializeToProto(final CodedOutputStream output) throws IOException {
+  public Message serializeToProto() throws IOException {
     /* Note that we do *not* build the inner class. We pass its builder instead. */
     LongColumnMessage.Builder inner =
         LongColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
-    ColumnMessage.newBuilder().setType(ColumnMessageType.LONG).setNumTuples(size()).setLongColumn(
-        inner).build().writeTo(output);
+    return ColumnMessage.newBuilder().setType(ColumnMessageType.LONG).setNumTuples(size())
+        .setLongColumn(inner).build();
   }
 
   @Override

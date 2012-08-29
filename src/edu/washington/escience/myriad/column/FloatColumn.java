@@ -11,7 +11,7 @@ import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.CodedOutputStream;
+import com.google.protobuf.Message;
 
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
@@ -91,12 +91,12 @@ public final class FloatColumn implements Column {
   }
 
   @Override
-  public void serializeToProto(final CodedOutputStream output) throws IOException {
+  public Message serializeToProto() throws IOException {
     /* Note that we do *not* build the inner class. We pass its builder instead. */
     FloatColumnMessage.Builder inner =
         FloatColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
-    ColumnMessage.newBuilder().setType(ColumnMessageType.FLOAT).setNumTuples(size())
-        .setFloatColumn(inner).build().writeTo(output);
+    return ColumnMessage.newBuilder().setType(ColumnMessageType.FLOAT).setNumTuples(size())
+        .setFloatColumn(inner).build();
   }
 
   @Override

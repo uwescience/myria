@@ -7,7 +7,7 @@ import java.sql.SQLException;
 
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
-import com.google.protobuf.CodedOutputStream;
+import com.google.protobuf.Message;
 
 /**
  * A column of a batch of tuples.
@@ -77,7 +77,7 @@ public interface Column {
    * @param output the output stream.
    * @throws IOException if there are ProtoBuf errors.
    */
-  void serializeToProto(CodedOutputStream output) throws IOException;
+  Message serializeToProto() throws IOException;
 
   /**
    * Returns the number of elements in this column.
