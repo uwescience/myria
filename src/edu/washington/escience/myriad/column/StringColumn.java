@@ -2,6 +2,7 @@ package edu.washington.escience.myriad.column;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -28,14 +29,14 @@ public final class StringColumn implements Column {
    * The positions of the starts of each String in this column. Used to pack variable-length Strings
    * and yet still have fast lookup.
    */
-  private final int[] startIndices;
+  private final IntBuffer startIndices;
   /** Internal structure for startIndices. */
   private final ByteBuffer startIndicesBytes;
   /**
    * The positions of the ends of each String in this column. Used to pack variable-length Strings
    * and yet still have fast lookup.
    */
-  private final int[] endIndices;
+  private final IntBuffer endIndices;
   /** Internal structure for endIndices. */
   private final ByteBuffer endIndicesBytes;
   /** Contains the packed character data. */
@@ -47,9 +48,9 @@ public final class StringColumn implements Column {
   public StringColumn() {
     this.startIndicesBytes =
         ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Integer.SIZE / Byte.SIZE));
-    this.startIndices = startIndicesBytes.asIntBuffer().array();
+    this.startIndices = startIndicesBytes.asIntBuffer();
     this.endIndicesBytes = ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Integer.SIZE / Byte.SIZE));
-    this.endIndices = endIndicesBytes.asIntBuffer().array();
+    this.endIndices = endIndicesBytes.asIntBuffer();
     this.data = new StringBuilder();
     this.numStrings = 0;
   }
@@ -65,9 +66,9 @@ public final class StringColumn implements Column {
   public StringColumn(final int averageStringSize) {
     this.startIndicesBytes =
         ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Integer.SIZE / Byte.SIZE));
-    this.startIndices = startIndicesBytes.asIntBuffer().array();
+    this.startIndices = startIndicesBytes.asIntBuffer();
     this.endIndicesBytes = ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Integer.SIZE / Byte.SIZE));
-    this.endIndices = endIndicesBytes.asIntBuffer().array();
+    this.endIndices = endIndicesBytes.asIntBuffer();
     this.data = new StringBuilder(averageStringSize * TupleBatch.BATCH_SIZE);
     this.numStrings = 0;
   }
@@ -97,7 +98,7 @@ public final class StringColumn implements Column {
    */
   public String getString(final int row) {
     Preconditions.checkElementIndex(row, numStrings);
-    return data.substring(startIndices[row], endIndices[row]);
+    return data.substring(startIndices.get(row), endIndices.get(row));
   }
 
   @Override
@@ -122,9 +123,9 @@ public final class StringColumn implements Column {
    * @param value element to be inserted.
    */
   public void putString(final String value) {
-    startIndices[numStrings] = data.length();
+    startIndices.put(data.length());
     data.append(value);
-    endIndices[numStrings] = data.length();
+    endIndices.put(data.length());
     numStrings++;
   }
 
@@ -136,7 +137,7 @@ public final class StringColumn implements Column {
     inner.setStartIndices(ByteString.copyFrom(startIndicesBytes));
     inner.setEndIndices(ByteString.copyFrom(endIndicesBytes));
     ColumnMessage.newBuilder().setType(ColumnMessageType.STRING).setNumTuples(size())
-        .setStringColumn(inner).build().writeTo(output);
+    .setStringColumn(inner).build().writeTo(output);
   }
 
   @Override
