@@ -1,6 +1,5 @@
 package edu.washington.escience.myriad.column;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.DoubleBuffer;
 import java.sql.PreparedStatement;
@@ -11,7 +10,6 @@ import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.Message;
 
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
@@ -34,6 +32,24 @@ public final class DoubleColumn implements Column {
   public DoubleColumn() {
     this.dataBytes = ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Double.SIZE / Byte.SIZE));
     this.data = dataBytes.asDoubleBuffer();
+  }
+
+  /**
+   * Constructs a DoubleColumn by deserializing the given ColumnMessage.
+   * 
+   * @param message a ColumnMessage containing the contents of this column.
+   */
+  public DoubleColumn(final ColumnMessage message) {
+    if (message.getType().ordinal() != ColumnMessageType.DOUBLE_VALUE) {
+      throw new IllegalArgumentException(
+          "Trying to construct DoubleColumn from non-DOUBLE ColumnMessage");
+    }
+    if (!message.hasDoubleColumn()) {
+      throw new IllegalArgumentException("ColumnMessage has type DOUBLE but no DoubleColumn");
+    }
+    this.dataBytes = message.getDoubleColumn().getData().asReadOnlyByteBuffer();
+    this.data = dataBytes.asDoubleBuffer();
+    this.data.position(message.getNumTuples());
   }
 
   @Override
@@ -91,7 +107,7 @@ public final class DoubleColumn implements Column {
   }
 
   @Override
-  public Message serializeToProto() throws IOException {
+  public ColumnMessage serializeToProto() {
     /* Note that we do *not* build the inner class. We pass its builder instead. */
     DoubleColumnMessage.Builder inner =
         DoubleColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));

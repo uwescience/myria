@@ -1,6 +1,5 @@
 package edu.washington.escience.myriad.column;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.sql.PreparedStatement;
@@ -11,7 +10,6 @@ import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.Message;
 
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
@@ -34,6 +32,23 @@ public final class IntColumn implements Column {
   public IntColumn() {
     this.dataBytes = ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Integer.SIZE / Byte.SIZE));
     this.data = dataBytes.asIntBuffer();
+  }
+
+  /**
+   * Constructs an IntColumn by deserializing the given ColumnMessage.
+   * 
+   * @param message a ColumnMessage containing the contents of this column.
+   */
+  public IntColumn(final ColumnMessage message) {
+    if (message.getType().ordinal() != ColumnMessageType.INT_VALUE) {
+      throw new IllegalArgumentException("Trying to construct IntColumn from non-INT ColumnMessage");
+    }
+    if (!message.hasIntColumn()) {
+      throw new IllegalArgumentException("ColumnMessage has type INT but no IntColumn");
+    }
+    this.dataBytes = message.getIntColumn().getData().asReadOnlyByteBuffer();
+    this.data = dataBytes.asIntBuffer();
+    this.data.position(message.getNumTuples());
   }
 
   @Override
@@ -90,7 +105,7 @@ public final class IntColumn implements Column {
   }
 
   @Override
-  public Message serializeToProto() throws IOException {
+  public ColumnMessage serializeToProto() {
     /* Note that we do *not* build the inner class. We pass its builder instead. */
     IntColumnMessage.Builder inner =
         IntColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));

@@ -1,6 +1,5 @@
 package edu.washington.escience.myriad.column;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.sql.PreparedStatement;
@@ -11,7 +10,6 @@ import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.Message;
 
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
@@ -53,6 +51,28 @@ public final class StringColumn implements Column {
     this.endIndices = endIndicesBytes.asIntBuffer();
     this.data = new StringBuilder();
     this.numStrings = 0;
+  }
+
+  /**
+   * Constructs a StringColumn by deserializing the given ColumnMessage.
+   * 
+   * @param message a ColumnMessage containing the contents of this column.
+   */
+  public StringColumn(final ColumnMessage message) {
+    if (message.getType().ordinal() != ColumnMessageType.STRING_VALUE) {
+      throw new IllegalArgumentException(
+          "Trying to construct StringColumn from non-STRING ColumnMessage");
+    }
+    if (!message.hasStringColumn()) {
+      throw new IllegalArgumentException("ColumnMessage has type STRING but no StringColumn");
+    }
+    StringColumnMessage stringColumn = message.getStringColumn();
+    this.startIndicesBytes = stringColumn.getStartIndices().asReadOnlyByteBuffer();
+    this.startIndices = startIndicesBytes.asIntBuffer();
+    this.endIndicesBytes = stringColumn.getEndIndices().asReadOnlyByteBuffer();
+    this.endIndices = endIndicesBytes.asIntBuffer();
+    this.data = new StringBuilder(stringColumn.getData().toStringUtf8());
+    this.numStrings = message.getNumTuples();
   }
 
   /**
@@ -130,7 +150,7 @@ public final class StringColumn implements Column {
   }
 
   @Override
-  public Message serializeToProto() throws IOException {
+  public ColumnMessage serializeToProto() {
     /* Note that we do *not* build the inner class. We pass its builder instead. */
     StringColumnMessage.Builder inner =
         StringColumnMessage.newBuilder().setData(ByteString.copyFromUtf8(data.toString()));

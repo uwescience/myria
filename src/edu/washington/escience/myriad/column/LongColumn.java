@@ -1,6 +1,5 @@
 package edu.washington.escience.myriad.column;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
 import java.sql.PreparedStatement;
@@ -10,7 +9,6 @@ import java.sql.SQLException;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.Message;
 
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
@@ -33,6 +31,24 @@ public final class LongColumn implements Column {
   public LongColumn() {
     this.dataBytes = ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Long.SIZE / Byte.SIZE));
     this.data = dataBytes.asLongBuffer();
+  }
+
+  /**
+   * Constructs a LongColumn by deserializing the given ColumnMessage.
+   * 
+   * @param message a ColumnMessage containing the contents of this column.
+   */
+  public LongColumn(final ColumnMessage message) {
+    if (message.getType().ordinal() != ColumnMessageType.LONG_VALUE) {
+      throw new IllegalArgumentException(
+          "Trying to construct LongColumn from non-LONG ColumnMessage");
+    }
+    if (!message.hasLongColumn()) {
+      throw new IllegalArgumentException("ColumnMessage has type LONG but no LongColumn");
+    }
+    this.dataBytes = message.getLongColumn().getData().asReadOnlyByteBuffer();
+    this.data = dataBytes.asLongBuffer();
+    this.data.position(message.getNumTuples());
   }
 
   @Override
@@ -88,7 +104,7 @@ public final class LongColumn implements Column {
   }
 
   @Override
-  public Message serializeToProto() throws IOException {
+  public ColumnMessage serializeToProto() {
     /* Note that we do *not* build the inner class. We pass its builder instead. */
     LongColumnMessage.Builder inner =
         LongColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));

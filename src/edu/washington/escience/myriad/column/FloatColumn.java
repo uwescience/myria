@@ -1,6 +1,5 @@
 package edu.washington.escience.myriad.column;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import java.sql.PreparedStatement;
@@ -11,7 +10,6 @@ import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.Message;
 
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
@@ -34,6 +32,24 @@ public final class FloatColumn implements Column {
   public FloatColumn() {
     this.dataBytes = ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Float.SIZE / Byte.SIZE));
     this.data = dataBytes.asFloatBuffer();
+  }
+
+  /**
+   * Constructs a FloatColumn by deserializing the given ColumnMessage.
+   * 
+   * @param message a ColumnMessage containing the contents of this column.
+   */
+  public FloatColumn(final ColumnMessage message) {
+    if (message.getType().ordinal() != ColumnMessageType.FLOAT_VALUE) {
+      throw new IllegalArgumentException(
+          "Trying to construct FloatColumn from non-FLOAT ColumnMessage");
+    }
+    if (!message.hasFloatColumn()) {
+      throw new IllegalArgumentException("ColumnMessage has type FLOAT but no FloatColumn");
+    }
+    this.dataBytes = message.getFloatColumn().getData().asReadOnlyByteBuffer();
+    this.data = dataBytes.asFloatBuffer();
+    this.data.position(message.getNumTuples());
   }
 
   @Override
@@ -91,7 +107,7 @@ public final class FloatColumn implements Column {
   }
 
   @Override
-  public Message serializeToProto() throws IOException {
+  public ColumnMessage serializeToProto() {
     /* Note that we do *not* build the inner class. We pass its builder instead. */
     FloatColumnMessage.Builder inner =
         FloatColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));

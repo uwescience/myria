@@ -1,6 +1,5 @@
 package edu.washington.escience.myriad.column;
 
-import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -10,7 +9,6 @@ import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.Message;
 
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.proto.TransportProto.BooleanColumnMessage;
@@ -34,6 +32,23 @@ public final class BooleanColumn implements Column {
   public BooleanColumn() {
     this.data = new BitSet(TupleBatch.BATCH_SIZE);
     this.numBits = 0;
+  }
+
+  /**
+   * Constructs a BooleanColumn by deserializing the given ColumnMessage.
+   * 
+   * @param message a ColumnMessage containing the contents of this column.
+   */
+  public BooleanColumn(final ColumnMessage message) {
+    if (message.getType().ordinal() != ColumnMessageType.BOOLEAN_VALUE) {
+      throw new IllegalArgumentException(
+          "Trying to construct BooleanColumn from non-BOOLEAN ColumnMessage");
+    }
+    if (!message.hasBooleanColumn()) {
+      throw new IllegalArgumentException("ColumnMessage has type BOOLEAN but no BooleanColumn");
+    }
+    this.data = BitSet.valueOf(message.getBooleanColumn().getData().asReadOnlyByteBuffer());
+    this.numBits = message.getNumTuples();
   }
 
   @Override
@@ -92,7 +107,7 @@ public final class BooleanColumn implements Column {
   }
 
   @Override
-  public Message serializeToProto() throws IOException {
+  public ColumnMessage serializeToProto() {
     /* Note that we do *not* build the inner class. We pass its builder instead. */
     BooleanColumnMessage.Builder inner =
         BooleanColumnMessage.newBuilder().setData(ByteString.copyFrom(data.toByteArray()));
