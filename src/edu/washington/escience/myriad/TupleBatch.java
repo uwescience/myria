@@ -43,8 +43,7 @@ public class TupleBatch {
   private final BitSet validTuples;
 
   /**
-   * Standard immutable TupleBatch constructor. All fields must be populated before creation and
-   * cannot be changed.
+   * Standard immutable TupleBatch constructor. All fields must be populated before creation and cannot be changed.
    * 
    * @param schema schema of the tuples in this batch. Must match columns.
    * @param columns contains the column-stored data. Must match schema.
@@ -63,16 +62,15 @@ public class TupleBatch {
   }
 
   /**
-   * Broken-out copy constructor. Shallow copy of the schema, column list, and the number of tuples;
-   * deep copy of the valid tuples since that's what we mutate.
+   * Broken-out copy constructor. Shallow copy of the schema, column list, and the number of tuples; deep copy of the
+   * valid tuples since that's what we mutate.
    * 
    * @param schema schema of the tuples in this batch. Must match columns.
    * @param columns contains the column-stored data. Must match schema.
    * @param numTuples number of tuples in the batch.
    * @param validTuples BitSet determines which tuples are valid tuples in this batch.
    */
-  private TupleBatch(final Schema schema, final List<Column> columns, final int numTuples,
-      final BitSet validTuples) {
+  private TupleBatch(final Schema schema, final List<Column> columns, final int numTuples, final BitSet validTuples) {
     /* Check and then store the input arguments */
     this.schema = Objects.requireNonNull(schema);
     this.columns = Objects.requireNonNull(columns);
@@ -81,14 +79,13 @@ public class TupleBatch {
         "numTuples must be at least 1 and no more than TupleBatch.BATCH_SIZE");
     this.numTuples = numTuples;
 
-    Preconditions.checkArgument(validTuples.size() > numTuples,
-        "validTuples must support at least numTuples elements");
+    Preconditions.checkArgument(validTuples.size() > numTuples, "validTuples must support at least numTuples elements");
     this.validTuples = (BitSet) validTuples.clone();
   }
 
   /**
-   * Standard copy constructor. Shallow copy of the schema, column list, and the number of tuples;
-   * deep copy of the valid tuples since that's what we mutate.
+   * Standard copy constructor. Shallow copy of the schema, column list, and the number of tuples; deep copy of the
+   * valid tuples since that's what we mutate.
    * 
    * @param from TupleBatch to duplicate.
    */
@@ -115,14 +112,13 @@ public class TupleBatch {
   }
 
   /**
-   * Helper function that mutates this TupleBatch to remove all rows that do not match the specified
-   * predicate. WARNING: do not use! Use the non-mutating version.
+   * Helper function that mutates this TupleBatch to remove all rows that do not match the specified predicate. WARNING:
+   * do not use! Use the non-mutating version.
    * 
    * @param column column on which the predicate operates.
    * @param op predicate by which to test rows.
    * @param operand operand to the predicate.
-   * @return a new TupleBatch where all rows that do not match the specified predicate have been
-   *         removed.
+   * @return a new TupleBatch where all rows that do not match the specified predicate have been removed.
    */
   private TupleBatch applyFilter(final int column, final Predicate.Op op, final Object operand) {
     Objects.requireNonNull(op);
@@ -141,17 +137,15 @@ public class TupleBatch {
   }
 
   /**
-   * Returns a new TupleBatch where all rows that do not match the specified predicate have been
-   * removed. Makes a shallow copy of the data, possibly resulting in slowed access to the result,
-   * but no copies.
+   * Returns a new TupleBatch where all rows that do not match the specified predicate have been removed. Makes a
+   * shallow copy of the data, possibly resulting in slowed access to the result, but no copies.
    * 
    * Internal implementation of a SELECT statement.
    * 
    * @param column column on which the predicate operates.
    * @param op predicate by which to test rows.
    * @param operand operand to the predicate.
-   * @return a new TupleBatch where all rows that do not match the specified predicate have been
-   *         removed.
+   * @return a new TupleBatch where all rows that do not match the specified predicate have been removed.
    */
   public final TupleBatch filter(final int column, final Predicate.Op op, final Object operand) {
     Objects.requireNonNull(op);
@@ -255,11 +249,9 @@ public class TupleBatch {
   private int hashCode(final int row, final int[] hashColumns) {
     Objects.requireNonNull(hashColumns);
     /*
-     * From
-     * http://commons.apache.org/lang/api-2.4/org/apache/commons/lang/builder/HashCodeBuilder.html:
+     * From http://commons.apache.org/lang/api-2.4/org/apache/commons/lang/builder/HashCodeBuilder.html:
      * 
-     * You pick a hard-coded, randomly chosen, non-zero, odd number ideally different for each
-     * class.
+     * You pick a hard-coded, randomly chosen, non-zero, odd number ideally different for each class.
      */
     HashCodeBuilder hb = new HashCodeBuilder(MAGIC_HASHCODE1, MAGIC_HASHCODE2);
     for (int i : hashColumns) {
@@ -282,8 +274,8 @@ public class TupleBatch {
   }
 
   /**
-   * Hash the valid tuples in this batch and partition them into the supplied TupleBatchBuffers.
-   * This is a useful helper primitive for, e.g., the Scatter operator.
+   * Hash the valid tuples in this batch and partition them into the supplied TupleBatchBuffers. This is a useful helper
+   * primitive for, e.g., the Scatter operator.
    * 
    * @param destinations TupleBatchBuffers into which these tuples will be partitioned.
    * @param hashColumns determines the key columns for the hash.
@@ -292,7 +284,12 @@ public class TupleBatch {
     Objects.requireNonNull(destinations);
     Objects.requireNonNull(hashColumns);
     for (int i : validTupleIndices()) {
-      appendTupleInto(i, destinations[hashCode(i, hashColumns)]);
+      int dest = hashCode(i, hashColumns) % destinations.length;
+      /* hashCode can be negative, so wrap positive if necessary */
+      if (dest < destinations.length) {
+        dest += destinations.length;
+      }
+      appendTupleInto(i, destinations[dest]);
     }
   }
 
@@ -350,8 +347,8 @@ public class TupleBatch {
   }
 
   /**
-   * For the representation with a BitSet listing which rows are valid, generate and return an array
-   * containing the indices of all valid rows.
+   * For the representation with a BitSet listing which rows are valid, generate and return an array containing the
+   * indices of all valid rows.
    * 
    * @return an array containing the indices of all valid rows.
    */
