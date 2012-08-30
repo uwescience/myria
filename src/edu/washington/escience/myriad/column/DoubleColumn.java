@@ -81,29 +81,31 @@ public final class DoubleColumn implements Column {
   }
 
   @Override
-  public void put(final Object value) {
-    putDouble((Double) value);
+  public Column putObject(final Object value) {
+    return put((Double) value);
   }
 
   /**
    * Inserts the specified element at end of this column.
    * 
    * @param value element to be inserted.
+   * @return this column.
    */
-  public void putDouble(final double value) {
+  public DoubleColumn put(final double value) {
     Preconditions.checkElementIndex(data.position(), data.capacity());
     data.put(value);
+    return this;
   }
 
   @Override
-  public void putFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException {
-    putDouble(resultSet.getDouble(jdbcIndex));
+  public Column putFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException {
+    return put(resultSet.getDouble(jdbcIndex));
   }
 
   @Override
   public void putFromSQLite(final SQLiteStatement statement, final int index)
       throws SQLiteException {
-    putDouble(statement.columnDouble(index));
+    put(statement.columnDouble(index));
   }
 
   @Override
@@ -118,5 +120,19 @@ public final class DoubleColumn implements Column {
   @Override
   public int size() {
     return data.position();
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append(size()).append(" elements: [");
+    for (int i = 0; i < size(); ++i) {
+      if (i > 0) {
+        sb.append(", ");
+      }
+      sb.append(data.get(i));
+    }
+    sb.append("]");
+    return sb.toString();
   }
 }

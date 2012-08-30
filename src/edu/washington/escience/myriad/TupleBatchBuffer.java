@@ -74,7 +74,7 @@ class TupleBatchBuffer {
       throw new RuntimeException(
           "Need to fill up one row of TupleBatchBuffer before starting new one");
     }
-    currentColumns.get(column).put(value);
+    currentColumns.get(column).putObject(value);
     columnsReady.set(column, true);
     numColumnsReady++;
     if (numColumnsReady == numColumns) {

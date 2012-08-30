@@ -122,31 +122,33 @@ public final class StringColumn implements Column {
   }
 
   @Override
-  public void put(final Object value) {
-    putString((String) value);
+  public Column putObject(final Object value) {
+    return put((String) value);
   }
 
   @Override
-  public void putFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException {
-    putString(resultSet.getString(jdbcIndex));
+  public Column putFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException {
+    return put(resultSet.getString(jdbcIndex));
   }
 
   @Override
   public void putFromSQLite(final SQLiteStatement statement, final int index)
       throws SQLiteException {
-    putString(statement.columnString(index));
+    put(statement.columnString(index));
   }
 
   /**
    * Inserts the specified element at end of this column.
    * 
    * @param value element to be inserted.
+   * @return this column.
    */
-  public void putString(final String value) {
+  public StringColumn put(final String value) {
     startIndices.put(data.length());
     data.append(value);
     endIndices.put(data.length());
     numStrings++;
+    return this;
   }
 
   @Override
@@ -163,5 +165,19 @@ public final class StringColumn implements Column {
   @Override
   public int size() {
     return numStrings;
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append(size()).append(" elements: [");
+    for (int i = 0; i < size(); ++i) {
+      if (i > 0) {
+        sb.append(", ");
+      }
+      sb.append(getString(i));
+    }
+    sb.append("]");
+    return sb.toString();
   }
 }

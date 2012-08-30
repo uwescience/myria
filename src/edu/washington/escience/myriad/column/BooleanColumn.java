@@ -80,24 +80,26 @@ public final class BooleanColumn implements Column {
   }
 
   @Override
-  public void put(final Object value) {
-    putBoolean((Boolean) value);
+  public Column putObject(final Object value) {
+    return put((Boolean) value);
   }
 
   /**
    * Inserts the specified element at end of this column.
    * 
    * @param value element to be inserted.
+   * @return this column.
    */
-  public void putBoolean(final boolean value) {
+  public BooleanColumn put(final boolean value) {
     Preconditions.checkElementIndex(numBits, TupleBatch.BATCH_SIZE);
     data.set(numBits, value);
     numBits++;
+    return this;
   }
 
   @Override
-  public void putFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException {
-    putBoolean(resultSet.getBoolean(jdbcIndex));
+  public Column putFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException {
+    return put(resultSet.getBoolean(jdbcIndex));
   }
 
   @Override
@@ -118,5 +120,19 @@ public final class BooleanColumn implements Column {
   @Override
   public int size() {
     return numBits;
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append(size()).append(" elements: [");
+    for (int i = 0; i < size(); ++i) {
+      if (i > 0) {
+        sb.append(", ");
+      }
+      sb.append(data.get(i));
+    }
+    sb.append("]");
+    return sb.toString();
   }
 }

@@ -50,17 +50,19 @@ public interface Column {
    * Inserts the specified element at end of this column.
    * 
    * @param value element to be inserted.
+   * @return this column.
    */
-  void put(Object value);
+  Column putObject(Object value);
 
   /**
    * Extracts the appropriate value from a JDBC ResultSet object and appends it to this column.
    * 
    * @param resultSet contains the results
    * @param jdbcIndex the position of the element to extract. 1-indexed.
+   * @return this column.
    * @throws SQLException if there are JDBC errors.
    */
-  void putFromJdbc(ResultSet resultSet, int jdbcIndex) throws SQLException;
+  Column putFromJdbc(ResultSet resultSet, int jdbcIndex) throws SQLException;
 
   /**
    * Extracts the appropriate value from a SQLiteStatement object and appends it to this column.
