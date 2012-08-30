@@ -1,6 +1,6 @@
 package edu.washington.escience.myriad.parallel;
 
-/** Generic database exception class */
+/** Generic database exception class. */
 public class DbException extends Exception {
   private static final long serialVersionUID = 1L;
 

@@ -11,8 +11,7 @@ import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnFactory;
 
 /**
- * Used for creating TupleBatch objects on the fly. A helper class used in, e.g., the Scatter
- * operator.
+ * Used for creating TupleBatch objects on the fly. A helper class used in, e.g., the Scatter operator.
  * 
  * @author dhalperi
  * 
@@ -71,8 +70,7 @@ class TupleBatchBuffer {
   protected final void put(final int column, final Object value) {
     Preconditions.checkElementIndex(column, numColumns);
     if (columnsReady.get(column)) {
-      throw new RuntimeException(
-          "Need to fill up one row of TupleBatchBuffer before starting new one");
+      throw new RuntimeException("Need to fill up one row of TupleBatchBuffer before starting new one");
     }
     currentColumns.get(column).putObject(value);
     columnsReady.set(column, true);

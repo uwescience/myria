@@ -102,8 +102,7 @@ public final class Schema implements Serializable {
           columnTypes[i] = Type.STRING_TYPE;
           break;
         default:
-          throw new UnsupportedOperationException("JDBC type (java.SQL.Types) of " + type
-              + " is not supported");
+          throw new UnsupportedOperationException("JDBC type (java.SQL.Types) of " + type + " is not supported");
       }
       // Name
       columnNames[i] = rsmd.getColumnName(i + 1);
@@ -136,8 +135,8 @@ public final class Schema implements Serializable {
       switch (type) {
         case SQLiteConstants.SQLITE_INTEGER:
           /*
-           * TODO SQLite uses variable-width ints, so there's no way to tell. Default conservatively
-           * to long. http://www.sqlite.org/datatype3.html
+           * TODO SQLite uses variable-width ints, so there's no way to tell. Default conservatively to long.
+           * http://www.sqlite.org/datatype3.html
            */
           columnTypes[i] = Type.LONG_TYPE;
           break;
@@ -149,8 +148,7 @@ public final class Schema implements Serializable {
           columnTypes[i] = Type.DOUBLE_TYPE;
           break;
         default:
-          throw new UnsupportedOperationException("SQLite type (SQLiteConstants) " + type
-              + " is not supported");
+          throw new UnsupportedOperationException("SQLite type (SQLiteConstants) " + type + " is not supported");
       }
       // Name
       columnNames[i] = statement.getColumnName(i);
@@ -160,8 +158,8 @@ public final class Schema implements Serializable {
   }
 
   /**
-   * Merge two Schemas into one, with td1.numFields + td2.numFields fields, with the first
-   * td1.numFields coming from td1 and the remaining from td2.
+   * Merge two Schemas into one, with td1.numFields + td2.numFields fields, with the first td1.numFields coming from td1
+   * and the remaining from td2.
    * 
    * @param td1 The Schema with the first fields of the new Schema
    * @param td2 The Schema with the last fields of the Schema
@@ -186,11 +184,11 @@ public final class Schema implements Serializable {
   private final TDItem[] tdItems;
 
   /**
-   * Constructor. Create a new tuple desc with typeAr.length fields with fields of the specified
-   * types, with anonymous (unnamed) fields.
+   * Constructor. Create a new tuple desc with typeAr.length fields with fields of the specified types, with anonymous
+   * (unnamed) fields.
    * 
-   * @param typeAr array specifying the number of and types of fields in this Schema. It must
-   *          contain at least one entry.
+   * @param typeAr array specifying the number of and types of fields in this Schema. It must contain at least one
+   *          entry.
    */
   public Schema(final Type[] typeAr) {
     tdItems = new TDItem[typeAr.length];
@@ -200,11 +198,10 @@ public final class Schema implements Serializable {
   }
 
   /**
-   * Create a new Schema with typeAr.length fields with fields of the specified types, with
-   * associated named fields.
+   * Create a new Schema with typeAr.length fields with fields of the specified types, with associated named fields.
    * 
-   * @param typeAr array specifying the number of and types of fields in this Schema. It must
-   *          contain at least one entry.
+   * @param typeAr array specifying the number of and types of fields in this Schema. It must contain at least one
+   *          entry.
    * @param fieldAr array specifying the names of the fields. Note that names may be null.
    */
   public Schema(final Type[] typeAr, final String[] fieldAr) {
@@ -215,8 +212,8 @@ public final class Schema implements Serializable {
   }
 
   /**
-   * Compares the specified object with this Schema for equality. Two Schemas are considered equal
-   * if they are the same size and if the n-th type in this Schema is equal to the n-th type in td.
+   * Compares the specified object with this Schema for equality. Two Schemas are considered equal if they are the same
+   * size and if the n-th type in this Schema is equal to the n-th type in td.
    * 
    * @param o the Object to be compared for equality with this Schema.
    * @return true if the object is equal to this Schema.
@@ -316,8 +313,7 @@ public final class Schema implements Serializable {
 
   /**
    * Returns a String describing this descriptor. It should be of the form
-   * "fieldType[0](fieldName[0]), ..., fieldType[M](fieldName[M])", although the exact format does
-   * not matter.
+   * "fieldType[0](fieldName[0]), ..., fieldType[M](fieldName[M])", although the exact format does not matter.
    * 
    * @return String describing this descriptor.
    */

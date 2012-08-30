@@ -11,8 +11,8 @@ import edu.washington.escience.myriad.column.LongColumn;
 import edu.washington.escience.myriad.column.StringColumn;
 
 /**
- * Class representing a type in SimpleDB. Types are static objects defined by this class; hence, the
- * Type constructor is private.
+ * Class representing a type in SimpleDB. Types are static objects defined by this class; hence, the Type constructor is
+ * private.
  */
 public enum Type implements Serializable {
   INT_TYPE() {
@@ -43,8 +43,7 @@ public enum Type implements Serializable {
     }
 
     @Override
-    public boolean filter(final Predicate.Op op, final Column intColumn, final int tupleIndex,
-        final Object operand) {
+    public boolean filter(final Predicate.Op op, final Column intColumn, final int tupleIndex, final Object operand) {
       int v = ((IntColumn) intColumn).getInt(tupleIndex);
       return this.compare(op, v, (Integer) operand);
     }
@@ -83,8 +82,7 @@ public enum Type implements Serializable {
     }
 
     @Override
-    public boolean filter(final Predicate.Op op, final Column floatColumn, final int tupleIndex,
-        final Object operand) {
+    public boolean filter(final Predicate.Op op, final Column floatColumn, final int tupleIndex, final Object operand) {
       float v = ((FloatColumn) floatColumn).getFloat(tupleIndex);
       return this.compare(op, v, (Float) operand);
     }
@@ -123,8 +121,7 @@ public enum Type implements Serializable {
     }
 
     @Override
-    public boolean filter(final Predicate.Op op, final Column doubleColumn, final int tupleIndex,
-        final Object operand) {
+    public boolean filter(final Predicate.Op op, final Column doubleColumn, final int tupleIndex, final Object operand) {
       double v = ((DoubleColumn) doubleColumn).getDouble(tupleIndex);
       return this.compare(op, v, (Double) operand);
     }
@@ -156,8 +153,7 @@ public enum Type implements Serializable {
     }
 
     @Override
-    public boolean filter(final Predicate.Op op, final Column booleanColumn, final int tupleIndex,
-        final Object operand) {
+    public boolean filter(final Predicate.Op op, final Column booleanColumn, final int tupleIndex, final Object operand) {
       boolean v = ((BooleanColumn) booleanColumn).getBoolean(tupleIndex);
       return this.compare(op, v, (Boolean) operand);
     }
@@ -199,8 +195,7 @@ public enum Type implements Serializable {
     }
 
     @Override
-    public boolean filter(final Predicate.Op op, final Column stringColumn, final int tupleIndex,
-        final Object operand) {
+    public boolean filter(final Predicate.Op op, final Column stringColumn, final int tupleIndex, final Object operand) {
       String string = ((StringColumn) stringColumn).getString(tupleIndex);
       return this.compare(op, string, (String) operand);
     }
@@ -238,8 +233,7 @@ public enum Type implements Serializable {
     }
 
     @Override
-    public boolean filter(final Predicate.Op op, final Column longColumn, final int tupleIndex,
-        final Object operand) {
+    public boolean filter(final Predicate.Op op, final Column longColumn, final int tupleIndex, final Object operand) {
       long v = ((LongColumn) longColumn).getLong(tupleIndex);
       return this.compare(op, v, (Long) operand);
     }

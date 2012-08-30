@@ -55,7 +55,7 @@ public interface DbIterator {
    * Resets the iterator to the start.
    * 
    * @throws DbException when rewind is unsupported.
-   * @throws IllegalStateException If the iterator has not been opened
+   * @throws IllegalStateException if the iterator has not been opened
    */
   // public void rewind() throws DbException;
 
