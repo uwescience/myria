@@ -11,13 +11,6 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.accessmethod.JdbcAccessMethod;
 import edu.washington.escience.myriad.accessmethod.SQLiteAccessMethod;
-import edu.washington.escience.myriad.column.BooleanColumn;
-import edu.washington.escience.myriad.column.DoubleColumn;
-import edu.washington.escience.myriad.column.FloatColumn;
-import edu.washington.escience.myriad.column.IntColumn;
-import edu.washington.escience.myriad.column.LongColumn;
-import edu.washington.escience.myriad.column.StringColumn;
-import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
 
 /**
  * Runs some simple tests.
@@ -29,79 +22,7 @@ public class Main {
   public static void main(String[] args) throws NoSuchElementException, DbException {
     JdbcTest();
     SQLiteTest();
-    ProtoTest();
   };
-
-  public static void ProtoTest() {
-    ProtoTestBoolean();
-    ProtoTestDouble();
-    ProtoTestFloat();
-    ProtoTestInt();
-    ProtoTestLong();
-    ProtoTestString();
-  }
-
-  private static void ProtoTestBoolean() {
-    System.out.println("ProtoTestBoolean");
-    BooleanColumn original = new BooleanColumn();
-    original.put(true).put(false).put(true).put(false).put(false).put(false).put(false).put(false)
-    .put(true).put(false).put(false).put(false).put(false).put(false);
-    ColumnMessage serialized = original.serializeToProto();
-    BooleanColumn deserialized = new BooleanColumn(serialized);
-    System.out.println("original: " + original);
-    System.out.println("deserialized: " + deserialized);
-  }
-
-  private static void ProtoTestDouble() {
-    System.out.println("ProtoTestDouble");
-    DoubleColumn original = new DoubleColumn();
-    original.put(1).put(2).put(5).put(11);
-    ColumnMessage serialized = original.serializeToProto();
-    DoubleColumn deserialized = new DoubleColumn(serialized);
-    System.out.println("original: " + original);
-    System.out.println("deserialized: " + deserialized);
-  }
-
-  private static void ProtoTestFloat() {
-    System.out.println("ProtoTestFloat");
-    FloatColumn original = new FloatColumn();
-    original.put(1).put(2).put(5).put(11);
-    ColumnMessage serialized = original.serializeToProto();
-    FloatColumn deserialized = new FloatColumn(serialized);
-    System.out.println("original: " + original);
-    System.out.println("deserialized: " + deserialized);
-  }
-
-  private static void ProtoTestInt() {
-    System.out.println("ProtoTestInt");
-    IntColumn original = new IntColumn();
-    original.put(1).put(2).put(5).put(11);
-    ColumnMessage serialized = original.serializeToProto();
-    IntColumn deserialized = new IntColumn(serialized);
-    System.out.println("original: " + original);
-    System.out.println("deserialized: " + deserialized);
-  }
-
-  private static void ProtoTestLong() {
-    System.out.println("ProtoTestLong");
-    LongColumn original = new LongColumn();
-    original.put(1).put(2).put(5).put(11);
-    ColumnMessage serialized = original.serializeToProto();
-    LongColumn deserialized = new LongColumn(serialized);
-    System.out.println("original: " + original);
-    System.out.println("deserialized: " + deserialized);
-  }
-
-  private static void ProtoTestString() {
-    System.out.println("ProtoTestString");
-    StringColumn original = new StringColumn();
-    original.put("First").put("Second").put("Third").put("NextIsEmptyString").put("").put(
-        "VeryVeryVeryVeryVeryVeryVeryVeryLongLast");
-    ColumnMessage serialized = original.serializeToProto();
-    StringColumn deserialized = new StringColumn(serialized);
-    System.out.println("original: " + original);
-    System.out.println("deserialized: " + deserialized);
-  }
 
   public static void SQLiteTest() throws DbException {
     final String filename = "sql/sqlite.myriad_test/myriad_sqlite_test.db";
@@ -162,8 +83,7 @@ public class Main {
     final String insert = "INSERT INTO testtable2 VALUES(?)";
 
     String connectionString =
-        "jdbc:" + dbms + "://" + host + ":" + port + "/" + databaseName + "?user=" + user
-        + "&password=" + password;
+        "jdbc:" + dbms + "://" + host + ":" + port + "/" + databaseName + "?user=" + user + "&password=" + password;
     JdbcQueryScan scan = new JdbcQueryScan(jdbcDriverName, connectionString, query);
     Filter filter1 = new Filter(Predicate.Op.GREATER_THAN_OR_EQ, 0, new Integer(50), scan);
 
