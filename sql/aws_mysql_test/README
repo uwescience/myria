@@ -1,0 +1,20 @@
+Setting up a MySQL server on Ubuntu 12.04 LTS
+
+1) Install mysql
+   sudo apt-get install mysql-server
+   <when prompted, set a root password>
+
+2) Let mysql listen remotely
+   sudo vim /etc/mysql/my.conf, and change:
+   bind-address = 0.0.0.0 (all interfaces) instead of 127.0.0.1 (only loopback)
+
+3) Add the myriad user and the test database
+   mysql -u root -p mysql
+   <type in the root password>
+
+   CREATE -- USER 'myriad'@'%' IDENTIFIED BY '<password>'; -- remove all the --
+   CREATE database myriad_test;
+   GRANT ALL PRIVILEGES ON myriad_test.* TO 'myriad'@'%' WITH GRANT OPTION;
+   FLUSH PRIVILEGES;
+
+4) run the reset_db.sh script to set up the initial table state.

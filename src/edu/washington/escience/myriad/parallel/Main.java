@@ -72,7 +72,7 @@ public class Main {
   }
 
   public static void JdbcTest() throws DbException {
-    final String host = "dsp.cs.washington.edu";
+    final String host = "ec2-50-112-55-255.us-west-2.compute.amazonaws.com";
     final int port = 3306;
     final String user = "myriad";
     final String password = "nays26[shark";
