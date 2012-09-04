@@ -3,8 +3,10 @@ package edu.washington.escience.myriad.parallel;
 import java.util.ArrayList;
 import java.util.NoSuchElementException;
 
+import org.apache.commons.lang3.ArrayUtils;
+
 import edu.washington.escience.myriad.Schema;
-import edu.washington.escience.myriad.TupleBatch;
+import edu.washington.escience.myriad.table._TupleBatch;
 import edu.washington.escience.myriad.Type;
 
 /**
@@ -53,9 +55,9 @@ public class Project extends Operator {
    * @return The next tuple, or null if there are no more tuples
    */
   @Override
-  protected TupleBatch fetchNext() throws NoSuchElementException, DbException {
+  protected _TupleBatch fetchNext() throws NoSuchElementException, DbException {
     if (child.hasNext()) {
-      return child.next().project(this.outFieldIds);
+      return child.next().project(ArrayUtils.toPrimitive(this.outFieldIds));
     }
     return null;
   }

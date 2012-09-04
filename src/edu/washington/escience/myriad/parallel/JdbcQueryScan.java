@@ -3,26 +3,32 @@ package edu.washington.escience.myriad.parallel;
 import java.util.Iterator;
 
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.table._TupleBatch;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.accessmethod.JdbcAccessMethod;
 
 public class JdbcQueryScan extends Operator {
 
   private Iterator<TupleBatch> tuples;
-  private Schema schema;
-  private TupleBatch cache;
+  private final Schema schema;
+//  private TupleBatch cache;
+  private final String driverClass;
+  private final String connectionString;
+  private final String baseSQL;
 
-  public JdbcQueryScan(String driverClass, String connectionString, String baseSQL) {
-    tuples = JdbcAccessMethod.tupleBatchIteratorFromQuery(driverClass, connectionString, baseSQL);
-    if (tuples.hasNext()) {
-      cache = tuples.next();
-      schema = cache.getSchema();
-    } else {
-      schema = null;
-      cache = null;
-    }
+  public JdbcQueryScan(String driverClass, String connectionString, String baseSQL, Schema outputSchema) {
+    this.driverClass = driverClass;
+    this.connectionString = connectionString;
+    this.baseSQL = baseSQL;
+//    if (tuples.hasNext()) {
+//      cache = tuples.next();
+      schema = outputSchema;
+//    } else {
+//      schema = null;
+//      cache = null;
+//    }
   }
-
+  
   @Override
   public void close() {
     super.close();
@@ -30,17 +36,17 @@ public class JdbcQueryScan extends Operator {
   }
 
   @Override
-  protected TupleBatch fetchNext() throws DbException {
-    if (cache != null) {
-      TupleBatch tmp = cache;
-      cache = null;
-      return tmp;
-    } else {
+  protected _TupleBatch fetchNext() throws DbException {
+//    if (cache != null) {
+//      TupleBatch tmp = cache;
+//      cache = null;
+//      return tmp;
+//    } else {
       if (tuples.hasNext())
         return this.tuples.next();
       else
         return null;
-    }
+//    }
   }
 
   @Override
@@ -55,8 +61,8 @@ public class JdbcQueryScan extends Operator {
 
   @Override
   public void open() throws DbException {
-
     super.open();
+    tuples = JdbcAccessMethod.tupleBatchIteratorFromQuery(driverClass, connectionString, baseSQL);
   }
 
   // @Override

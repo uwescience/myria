@@ -1,5 +1,6 @@
 package edu.washington.escience.myriad.parallel;
 
+import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -15,7 +16,7 @@ public abstract class Exchange extends Operator {
    * operator is the owner of an arriving ExchangeMessage.
    * 
    * */
-  public static class ParallelOperatorID {
+  public static class ParallelOperatorID implements Serializable {
 
     /**
      * The id
