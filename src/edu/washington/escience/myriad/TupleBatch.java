@@ -18,6 +18,7 @@ import edu.washington.escience.myriad.column.FloatColumn;
 import edu.washington.escience.myriad.column.IntColumn;
 import edu.washington.escience.myriad.column.LongColumn;
 import edu.washington.escience.myriad.column.StringColumn;
+import edu.washington.escience.myriad.table.TupleBatchAdaptor;
 
 /**
  * Container class for a batch of tuples. The goal is to amortize memory management overhead.
@@ -25,7 +26,7 @@ import edu.washington.escience.myriad.column.StringColumn;
  * @author dhalperi
  * 
  */
-public class TupleBatch {
+public class TupleBatch extends TupleBatchAdaptor {
   /** The hard-coded number of tuples in a batch. */
   public static final int BATCH_SIZE = 100;
   /** Class-specific magic number used to generate the hash code. */
@@ -53,7 +54,7 @@ public class TupleBatch {
     /* Take the input arguments directly */
     this.schema = Objects.requireNonNull(schema);
     this.columns = Objects.requireNonNull(columns);
-    Preconditions.checkArgument(numTuples > 0 && numTuples <= BATCH_SIZE,
+    Preconditions.checkArgument(numTuples >=0  && numTuples <= BATCH_SIZE,
         "numTuples must be at least 1 and no more than TupleBatch.BATCH_SIZE");
     this.numTuples = numTuples;
     /* All tuples are valid */
