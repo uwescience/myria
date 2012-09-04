@@ -9,7 +9,7 @@ import com.google.common.base.Preconditions;
  */
 public class Predicate implements Serializable {
 
-  /** Constants used for return codes in Field.compare */
+  /** Constants used for return codes in Field.compare. */
   public enum Op implements Serializable {
     EQUALS, GREATER_THAN, LESS_THAN, LESS_THAN_OR_EQ, GREATER_THAN_OR_EQ, LIKE, NOT_EQUALS;
 
@@ -47,10 +47,13 @@ public class Predicate implements Serializable {
 
   }
 
+  /** A constant needed for serialization. */
   private static final long serialVersionUID = 1L;
+  /** Which operator this Predicate implements. */
   private final Op op;
+  /** Which column this Predicate tests. */
   private final int field;
-
+  /** The value this Predicate tests against. E.g., a constant Integer. */
   private final Object operand;
 
   /**
