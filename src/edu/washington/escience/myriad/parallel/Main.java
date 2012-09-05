@@ -55,6 +55,9 @@ public class Main {
     // Process worker2P = new ProcessBuilder("java",
     // "-Dfile.encoding=UTF-8 -classpath /home/slxu/workspace/JdbcAccessMethod/bin:/home/slxu/workspace/JdbcAccessMethod/lib/mysql-connector-java-5.1.21-bin.jar:/home/slxu/workspace/JdbcAccessMethod/lib/sqlite4java-282/sqlite4java.jar:/home/slxu/workspace/JdbcAccessMethod/lib/guava-12.0.1.jar:/home/slxu/workspace/JdbcAccessMethod/lib/mina-core-2.0.4.jar:/home/slxu/workspace/JdbcAccessMethod/lib/mina-filter-compression-2.0.4.jar:/home/slxu/workspace/JdbcAccessMethod/lib/slf4j-api-1.6.1.jar:/home/slxu/workspace/JdbcAccessMethod/lib/slf4j-log4j12-1.6.1.jar:/home/slxu/workspace/JdbcAccessMethod/lib/log4j-1.2.17.jar:/home/slxu/workspace/JdbcAccessMethod/lib/jline-0.9.94.jar:/home/slxu/workspace/JdbcAccessMethod/lib/commons-lang3-3.1.jar edu.washington.escience.parallel.Worker localhost:9002 localhost:8001").start();
 
+    String username = "root";
+    String password = "1234";
+    
     InetSocketAddress worker1 = new InetSocketAddress("localhost", 9001);
     InetSocketAddress worker2 = new InetSocketAddress("localhost", 9002);
     InetSocketAddress server = new InetSocketAddress("localhost", 8001);
@@ -72,20 +75,20 @@ public class Main {
 
     JdbcQueryScan scan1 =
         new JdbcQueryScan("com.mysql.jdbc.Driver", "jdbc:mysql://localhost:3306/test",
-            "select distinct * from testtable1", outputSchema);
+            "select distinct * from testtable1", outputSchema,username,password);
     CollectProducer cp1 = new CollectProducer(scan1, worker2ReceiveID, worker2);
 
     JdbcQueryScan scan2 =
         new JdbcQueryScan("com.mysql.jdbc.Driver", "jdbc:mysql://localhost:3306/test",
-            "select distinct * from testtable2", outputSchema);
+            "select distinct * from testtable2", outputSchema,username,password);
     CollectProducer cp2 = new CollectProducer(scan2, worker2ReceiveID, worker2);
     // CollectProducer child, ParallelOperatorID operatorID, SocketInfo[] workers
     JdbcTupleBatch bufferWorker2 =
-        new JdbcTupleBatch(outputSchema, "temptable1", "jdbc:mysql://localhost:3306/test", "com.mysql.jdbc.Driver");
+        new JdbcTupleBatch(outputSchema, "temptable1", "jdbc:mysql://localhost:3306/test", "com.mysql.jdbc.Driver",username,password);
     CollectConsumer cc2 = new CollectConsumer(cp2, worker2ReceiveID, workers, bufferWorker2);
     JdbcSQLProcessor scan22 =
         new JdbcSQLProcessor("com.mysql.jdbc.Driver", "jdbc:mysql://localhost:3306/test",
-            "select distinct * from temptable1", outputSchema, cc2);
+            "select distinct * from temptable1", outputSchema, cc2,username,password);
     CollectProducer cp22 = new CollectProducer(scan22, serverReceiveID, server);
     HashMap<SocketInfo, Operator> workerPlans = new HashMap<SocketInfo, Operator>();
     workerPlans.put(workers[0], cp1);
@@ -117,7 +120,7 @@ public class Main {
     Schema outputSchema = new Schema(new Type[]{Type.INT_TYPE,Type.STRING_TYPE}, new String[]{"id","name"});
     JdbcQueryScan scan =
         new JdbcQueryScan("com.mysql.jdbc.Driver", "jdbc:mysql://localhost:3306/test",
-            "select * from testtable1", outputSchema);
+            "select * from testtable1", outputSchema,"","");
 //    Select filter1 = new Select(Predicate.Op.GREATER_THAN_OR_EQ, 0, new Integer(50), scan);
 //
 //    Select filter2 = new Select(Predicate.Op.LESS_THAN_OR_EQ, 0, new Integer(60), filter1);
@@ -209,7 +212,7 @@ public class Main {
     Schema schema = new Schema(new Type[] { Type.INT_TYPE, Type.STRING_TYPE }, new String[] { "id", "name" });
     String connectionString =
         "jdbc:" + dbms + "://" + host + ":" + port + "/" + databaseName + "?user=" + user + "&password=" + password;
-    JdbcQueryScan scan = new JdbcQueryScan(jdbcDriverName, connectionString, query, schema);
+    JdbcQueryScan scan = new JdbcQueryScan(jdbcDriverName, connectionString, query, schema,"","");
     Filter filter1 = new Filter(Predicate.Op.GREATER_THAN_OR_EQ, 0, new Integer(50), scan);
 
     Filter filter2 = new Filter(Predicate.Op.LESS_THAN_OR_EQ, 0, new Integer(60), filter1);
@@ -239,7 +242,7 @@ public class Main {
     while (root.hasNext()) {
       _TupleBatch tb = root.next();
       System.out.println(tb);
-      JdbcAccessMethod.tupleBatchInsert(jdbcDriverName, connectionString, insert, (TupleBatch) tb);
+      JdbcAccessMethod.tupleBatchInsert(jdbcDriverName, connectionString, insert, (TupleBatch) tb,"","");
     }
 
     root.close();

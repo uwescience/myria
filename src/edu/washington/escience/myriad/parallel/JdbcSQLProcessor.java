@@ -9,8 +9,8 @@ public class JdbcSQLProcessor extends JdbcQueryScan {
   private Operator child;
 
   public JdbcSQLProcessor(String driverClass, String connectionString, String baseSQL,Schema schema,
-      Operator child) {
-    super(driverClass, connectionString, baseSQL,schema);
+      Operator child, String username, String password) {
+    super(driverClass, connectionString, baseSQL,schema,username,password);
     this.child = child;
   }
 

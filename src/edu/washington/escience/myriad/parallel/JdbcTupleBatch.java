@@ -41,9 +41,11 @@ public class JdbcTupleBatch implements _TupleBatch {
   private int numInputTuples;
   private final String driverClass;
   private final String tableName;
+  private final String username;
+  private final String password;
 
   public JdbcTupleBatch(Schema inputSchema, String tableName, String connectionString,
-      String driverClass) {
+      String driverClass, String username, String password) {
     /* Take the input arguments directly */
     this.inputSchema = Objects.requireNonNull(inputSchema);
     this.filters = new ArrayList<String>();
@@ -51,6 +53,8 @@ public class JdbcTupleBatch implements _TupleBatch {
     this.connectString = connectionString;
     this.driverClass = driverClass;
     this.tableName = tableName;
+    this.username = username;
+    this.password = password;
   }
 
   public synchronized JdbcTupleBatch filter(int fieldIdx, Predicate.Op op, Object operand) {
@@ -159,7 +163,7 @@ public class JdbcTupleBatch implements _TupleBatch {
     }
 
     JdbcAccessMethod.tupleBatchInsert(this.driverClass, connectString, "insert into "
-        + this.tableName + " ( " + StringUtils.join(fieldNames, ',') + " ) values ( "+StringUtils.join(placeHolders, ',')+" )", new TupleBatch(another.outputSchema(),another.outputRawData(),another.numOutputTuples()));
+        + this.tableName + " ( " + StringUtils.join(fieldNames, ',') + " ) values ( "+StringUtils.join(placeHolders, ',')+" )", new TupleBatch(another.outputSchema(),another.outputRawData(),another.numOutputTuples()),username,password);
     return this;
   }
 
