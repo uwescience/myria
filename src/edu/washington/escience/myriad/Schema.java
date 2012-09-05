@@ -20,7 +20,7 @@ public final class Schema implements Serializable {
   /**
    * A helper class to facilitate organizing the information of each field.
    */
-  private static class TDItem implements Serializable {
+  public static class TDItem implements Serializable {
 
     /** Required for Serializable. */
     private static final long serialVersionUID = 1L;
@@ -49,6 +49,16 @@ public final class Schema implements Serializable {
      */
     public Type getType() {
       return fieldType;
+    }
+
+    /**
+     * Returns the name of this field.
+     * 
+     * @return the name of this field.
+     */
+    public String getName()
+    {
+      return fieldName;
     }
 
     @Override

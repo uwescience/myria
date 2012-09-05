@@ -3,7 +3,7 @@ package edu.washington.escience.myriad.parallel;
 import java.util.NoSuchElementException;
 
 import edu.washington.escience.myriad.Schema;
-import edu.washington.escience.myriad.TupleBatch;
+import edu.washington.escience.myriad.table._TupleBatch;
 
 /**
  * Abstract class for implementing operators. It handles <code>close</code>, <code>next</code> and
@@ -12,7 +12,7 @@ import edu.washington.escience.myriad.TupleBatch;
  */
 public abstract class Operator implements DbIterator {
 
-  private TupleBatch next = null;
+  private _TupleBatch next = null;
 
   private boolean open = false;
 
@@ -35,7 +35,7 @@ public abstract class Operator implements DbIterator {
    * 
    * @return the next Tuple in the iterator, or null if the iteration is finished.
    */
-  protected abstract TupleBatch fetchNext() throws DbException;
+  protected abstract _TupleBatch fetchNext() throws DbException;
 
   /**
    * @return return the children DbIterators of this operator. If there is only one child, return an
@@ -68,14 +68,14 @@ public abstract class Operator implements DbIterator {
   }
 
   @Override
-  public TupleBatch next() throws DbException, NoSuchElementException {
+  public _TupleBatch next() throws DbException, NoSuchElementException {
     if (next == null) {
       next = fetchNext();
       if (next == null)
         throw new NoSuchElementException();
     }
 
-    TupleBatch result = next;
+    _TupleBatch result = next;
     next = null;
     return result;
   }

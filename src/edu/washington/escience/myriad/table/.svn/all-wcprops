@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/!svn/ver/17683/incubator/big-data-service/JdbcAccessMethod/src/edu/washington/escience/table
+END
+DbIterateReader.java
+K 25
+svn:wc:ra_dav:version-url
+V 114
+/!svn/ver/17669/incubator/big-data-service/JdbcAccessMethod/src/edu/washington/escience/table/DbIterateReader.java
+END
+DbAppendWriter.java
+K 25
+svn:wc:ra_dav:version-url
+V 113
+/!svn/ver/17669/incubator/big-data-service/JdbcAccessMethod/src/edu/washington/escience/table/DbAppendWriter.java
+END
+TupleBatch.java
+K 25
+svn:wc:ra_dav:version-url
+V 109
+/!svn/ver/17683/incubator/big-data-service/JdbcAccessMethod/src/edu/washington/escience/table/TupleBatch.java
+END
+DbTable.java
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/!svn/ver/17669/incubator/big-data-service/JdbcAccessMethod/src/edu/washington/escience/table/DbTable.java
+END

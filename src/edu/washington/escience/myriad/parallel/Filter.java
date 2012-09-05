@@ -5,6 +5,7 @@ import java.util.NoSuchElementException;
 import edu.washington.escience.myriad.Predicate;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
+import edu.washington.escience.myriad.table._TupleBatch;
 
 /**
  * Filter is an operator that implements a relational select.
@@ -44,7 +45,7 @@ public class Filter extends Operator {
    * @see Predicate#filter
    */
   @Override
-  protected TupleBatch fetchNext() throws NoSuchElementException, DbException {
+  protected _TupleBatch fetchNext() throws NoSuchElementException, DbException {
     if (child.hasNext()) {
       return child.next().filter(this.fieldIdx, this.op, this.operand);
     }
