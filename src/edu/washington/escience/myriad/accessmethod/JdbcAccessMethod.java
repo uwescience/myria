@@ -32,12 +32,12 @@ public final class JdbcAccessMethod {
    * @param tupleBatch the tupleBatch to be inserted
    */
   public static void tupleBatchInsert(final String driverClassName, final String connectionString,
-      final String insertString, final TupleBatch tupleBatch) {
+      final String insertString, final TupleBatch tupleBatch, final String username, final String password) {
     try {
       /* Make sure JDBC driver is loaded */
       Class.forName(driverClassName);
       /* Connect to the database */
-      Connection jdbcConnection = DriverManager.getConnection(connectionString);
+      Connection jdbcConnection = DriverManager.getConnection(connectionString, username, password);
 
       /* Set up and execute the query */
       PreparedStatement statement = jdbcConnection.prepareStatement(insertString);
@@ -69,12 +69,12 @@ public final class JdbcAccessMethod {
    * @return an Iterator<TupleBatch> containing the results.
    */
   public static Iterator<TupleBatch> tupleBatchIteratorFromQuery(final String driverClassName,
-      final String connectionString, final String queryString) {
+      final String connectionString, final String queryString, final String username, final String password) {
     try {
       /* Make sure JDBC driver is loaded */
       Class.forName(driverClassName);
       /* Connect to the database */
-      Connection jdbcConnection = DriverManager.getConnection(connectionString);
+      Connection jdbcConnection = DriverManager.getConnection(connectionString, username, password);
       /* Set read only on the connection */
       jdbcConnection.setReadOnly(true);
 
@@ -102,8 +102,7 @@ public final class JdbcAccessMethod {
 /**
  * Wraps a JDBC ResultSet in a Iterator<TupleBatch>.
  * 
- * Implementation based on org.apache.commons.dbutils.ResultSetIterator. Requires ResultSet.isLast()
- * to be implemented.
+ * Implementation based on org.apache.commons.dbutils.ResultSetIterator. Requires ResultSet.isLast() to be implemented.
  * 
  * @author dhalperi
  * 
@@ -142,8 +141,8 @@ class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
     List<Column> columns = ColumnFactory.allocateColumns(schema);
 
     /**
-     * Loop through resultSet, adding one row at a time. Stop when numTuples hits BATCH_SIZE or
-     * there are no more results.
+     * Loop through resultSet, adding one row at a time. Stop when numTuples hits BATCH_SIZE or there are no more
+     * results.
      */
     int numTuples;
     try {

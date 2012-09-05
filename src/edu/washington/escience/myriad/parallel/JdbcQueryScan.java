@@ -15,11 +15,15 @@ public class JdbcQueryScan extends Operator {
   private final String driverClass;
   private final String connectionString;
   private final String baseSQL;
+  private final String username;
+  private final String password;
 
-  public JdbcQueryScan(String driverClass, String connectionString, String baseSQL, Schema outputSchema) {
+  public JdbcQueryScan(String driverClass, String connectionString, String baseSQL, Schema outputSchema, String username, String password) {
     this.driverClass = driverClass;
     this.connectionString = connectionString;
     this.baseSQL = baseSQL;
+    this.username = username;
+    this.password = password;
 //    if (tuples.hasNext()) {
 //      cache = tuples.next();
       schema = outputSchema;
@@ -62,7 +66,7 @@ public class JdbcQueryScan extends Operator {
   @Override
   public void open() throws DbException {
     super.open();
-    tuples = JdbcAccessMethod.tupleBatchIteratorFromQuery(driverClass, connectionString, baseSQL);
+    tuples = JdbcAccessMethod.tupleBatchIteratorFromQuery(driverClass, connectionString, baseSQL,username,password);
   }
 
   // @Override
