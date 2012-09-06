@@ -58,9 +58,9 @@ public class Main {
     String username = "root";
     String password = "1234";
     
-    InetSocketAddress worker1 = new InetSocketAddress("localhost", 9001);
-    InetSocketAddress worker2 = new InetSocketAddress("localhost", 9002);
-    InetSocketAddress server = new InetSocketAddress("localhost", 8001);
+    InetSocketAddress worker1 = new InetSocketAddress("carlise.cs.washington.edu", 9001);
+    InetSocketAddress worker2 = new InetSocketAddress("slxu-csuw-desktop.cs.washington.edu", 9002);
+    InetSocketAddress server = new InetSocketAddress("carlise.cs.washington.edu", 8001);
     SocketInfo[] workers =
         new SocketInfo[] {
             new SocketInfo(worker1.getHostString(), worker1.getPort()),
