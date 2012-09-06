@@ -274,6 +274,15 @@ public class TupleBatch {
   }
 
   /**
+   * Returns the number of valid tuples in this TupleBatch.
+   * 
+   * @return the number of valid tuples in this TupleBatch.
+   */
+  public final int numValidTuples() {
+    return validTuples.cardinality();
+  }
+
+  /**
    * Hash the valid tuples in this batch and partition them into the supplied TupleBatchBuffers. This is a useful helper
    * primitive for, e.g., the Scatter operator.
    * 
