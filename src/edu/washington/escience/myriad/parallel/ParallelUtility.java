@@ -56,8 +56,7 @@ public class ParallelUtility {
 
     connector.getFilterChain().addLast("compressor", new CompressionFilter());
 
-    connector.getFilterChain().addLast("codec",
-        new ProtocolCodecFilter(new ObjectSerializationCodecFactory()));
+    connector.getFilterChain().addLast("codec", new ProtocolCodecFilter(new ObjectSerializationCodecFactory()));
 
     connector.setHandler(new IoHandlerAdapter() {
       public void exceptionCaught(IoSession session, Throwable cause) {
@@ -73,8 +72,7 @@ public class ParallelUtility {
   }
 
   /**
-   * Close a session. Every time a session is to be closed, do call this method. Do not directly
-   * call session.close;
+   * Close a session. Every time a session is to be closed, do call this method. Do not directly call session.close;
    * */
   public static CloseFuture closeSession(IoSession session) {
     if (session == null)
@@ -84,8 +82,7 @@ public class ParallelUtility {
 
     if (ic != null) {
       Map<Long, IoSession> activeSessions = ic.getManagedSessions();
-      if ((activeSessions.containsValue(session) && activeSessions.size() <= 1)
-          || activeSessions.size() <= 0)
+      if ((activeSessions.containsValue(session) && activeSessions.size() <= 1) || activeSessions.size() <= 0)
         ic.dispose(false);
     }
     return cf;
@@ -94,8 +91,8 @@ public class ParallelUtility {
   /**
    * Create a session for network communication.
    * 
-   * @return An IoSession is a logical connection between a server and a client in Apache Mina. A
-   *         set of sessions may share the same underlying TCP/UDP connection.
+   * @return An IoSession is a logical connection between a server and a client in Apache Mina. A set of sessions may
+   *         share the same underlying TCP/UDP connection.
    * 
    * @param remoteAddress The address of the remote server
    * 
@@ -145,8 +142,7 @@ public class ParallelUtility {
     acceptor.setCloseOnDeactivation(true);
 
     acceptor.getFilterChain().addLast("compressor", new CompressionFilter());
-    acceptor.getFilterChain().addLast("codec",
-        new ProtocolCodecFilter(new ObjectSerializationCodecFactory()));
+    acceptor.getFilterChain().addLast("codec", new ProtocolCodecFilter(new ObjectSerializationCodecFactory()));
     acceptor.setCloseOnDeactivation(true);
 
     acceptor.setHandler(new IoHandlerAdapter() {
@@ -179,8 +175,8 @@ public class ParallelUtility {
     }
   }
 
-  public static void broadcastMessageToWorkers(Object message, SocketInfo[] workers,
-      IoHandlerAdapter handler, long timeoutMS) {
+  public static void broadcastMessageToWorkers(Object message, SocketInfo[] workers, IoHandlerAdapter handler,
+      long timeoutMS) {
 
     for (SocketInfo worker : workers) {
       IoSession s = ParallelUtility.createSession(worker.getAddress(), handler, timeoutMS);
@@ -212,8 +208,7 @@ public class ParallelUtility {
   public static SocketInfo[] loadWorkers(String confDir) throws IOException {
     ArrayList<SocketInfo> workers = new ArrayList<SocketInfo>();
     BufferedReader br =
-        new BufferedReader(new InputStreamReader(new FileInputStream(new File(confDir
-            + "/workers.conf"))));
+        new BufferedReader(new InputStreamReader(new FileInputStream(new File(confDir + "/workers.conf"))));
     String line = null;
     while ((line = br.readLine()) != null) {
       String[] ts = line.replaceAll("[ \t]+", "").replaceAll("#.*$", "").split(":");

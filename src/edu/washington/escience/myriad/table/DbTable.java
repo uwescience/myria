@@ -15,8 +15,8 @@ public interface DbTable extends Serializable {
   public void open() throws DbException;
 
   /**
-   * Closes the iterator. When the iterator is closed, calling next(), hasNext(), or rewind() should
-   * fail by throwing IllegalStateException.
+   * Closes the iterator. When the iterator is closed, calling next(), hasNext(), or rewind() should fail by throwing
+   * IllegalStateException.
    */
   public void close() throws DbException;
 

@@ -16,7 +16,7 @@ import edu.washington.escience.myriad.Predicate.Op;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.table._TupleBatch;
-import edu.washington.escience.myriad.parallel.Exchange.ParallelOperatorID;
+import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
 
 public class ExchangeTupleBatch extends ExchangeMessage implements _TupleBatch {
@@ -26,8 +26,7 @@ public class ExchangeTupleBatch extends ExchangeMessage implements _TupleBatch {
   int numTuples;
   Schema inputSchema;
 
-  public ExchangeTupleBatch(ParallelOperatorID oID, String workerID, List<Column> columns, Schema inputSchema,
-      int numTuples) {
+  public ExchangeTupleBatch(ExchangePairID oID, String workerID, List<Column> columns, Schema inputSchema, int numTuples) {
     super(oID, workerID);
     Objects.requireNonNull(columns);
     this.data = new ColumnMessage[columns.size()];
@@ -45,7 +44,7 @@ public class ExchangeTupleBatch extends ExchangeMessage implements _TupleBatch {
   }
 
   // EOS
-  public ExchangeTupleBatch(ParallelOperatorID oID, String workerID) {
+  public ExchangeTupleBatch(ExchangePairID oID, String workerID) {
     super(oID, workerID);
     this.data = null;
   }

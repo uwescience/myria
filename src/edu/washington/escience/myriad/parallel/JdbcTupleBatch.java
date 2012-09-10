@@ -1,8 +1,8 @@
 package edu.washington.escience.myriad.parallel;
 
 import java.util.ArrayList;
-//import java.util.Arrays;
-//import java.util.BitSet;
+// import java.util.Arrays;
+// import java.util.BitSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -10,7 +10,7 @@ import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
 
 // import edu.washington.escience.Predicate.Op;
-//import edu.washington.escience.Schema.TDItem;
+// import edu.washington.escience.Schema.TDItem;
 import edu.washington.escience.myriad.Predicate;
 import edu.washington.escience.myriad.Predicate.Op;
 import edu.washington.escience.myriad.Schema;
@@ -44,8 +44,8 @@ public class JdbcTupleBatch implements _TupleBatch {
   private final String username;
   private final String password;
 
-  public JdbcTupleBatch(Schema inputSchema, String tableName, String connectionString,
-      String driverClass, String username, String password) {
+  public JdbcTupleBatch(Schema inputSchema, String tableName, String connectionString, String driverClass,
+      String username, String password) {
     /* Take the input arguments directly */
     this.inputSchema = Objects.requireNonNull(inputSchema);
     this.filters = new ArrayList<String>();
@@ -62,22 +62,22 @@ public class JdbcTupleBatch implements _TupleBatch {
   }
 
   public synchronized boolean getBoolean(int column, int row) {
-//    return ((BooleanColumn) inputColumns.get(column)).getBoolean(row);
+    // return ((BooleanColumn) inputColumns.get(column)).getBoolean(row);
     return false;
   }
 
   public synchronized double getDouble(int column, int row) {
-//    return ((DoubleColumn) inputColumns.get(column)).getDouble(row);
+    // return ((DoubleColumn) inputColumns.get(column)).getDouble(row);
     return 0d;
   }
 
   public synchronized float getFloat(int column, int row) {
-//    return ((FloatColumn) inputColumns.get(column)).getFloat(row);
+    // return ((FloatColumn) inputColumns.get(column)).getFloat(row);
     return 0f;
   }
 
   public synchronized int getInt(int column, int row) {
-//    return ((IntColumn) inputColumns.get(column)).getInt(row);
+    // return ((IntColumn) inputColumns.get(column)).getInt(row);
     return 0;
   }
 
@@ -86,7 +86,7 @@ public class JdbcTupleBatch implements _TupleBatch {
   }
 
   public synchronized String getString(int column, int row) {
-//    return ((StringColumn) inputColumns.get(column)).getString(row);
+    // return ((StringColumn) inputColumns.get(column)).getString(row);
     return null;
   }
 
@@ -162,8 +162,9 @@ public class JdbcTupleBatch implements _TupleBatch {
       fieldNames[i++] = item.getName();
     }
 
-    JdbcAccessMethod.tupleBatchInsert(this.driverClass, connectString, "insert into "
-        + this.tableName + " ( " + StringUtils.join(fieldNames, ',') + " ) values ( "+StringUtils.join(placeHolders, ',')+" )", new TupleBatch(another.outputSchema(),another.outputRawData(),another.numOutputTuples()),username,password);
+    JdbcAccessMethod.tupleBatchInsert(this.driverClass, connectString, "insert into " + this.tableName + " ( "
+        + StringUtils.join(fieldNames, ',') + " ) values ( " + StringUtils.join(placeHolders, ',') + " )",
+        new TupleBatch(another.outputSchema(), another.outputRawData(), another.numOutputTuples()), username, password);
     return this;
   }
 
