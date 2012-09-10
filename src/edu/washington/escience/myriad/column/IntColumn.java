@@ -68,8 +68,7 @@ public final class IntColumn implements Column {
   }
 
   @Override
-  public void getIntoJdbc(final int row, final PreparedStatement statement, final int jdbcIndex)
-      throws SQLException {
+  public void getIntoJdbc(final int row, final PreparedStatement statement, final int jdbcIndex) throws SQLException {
     statement.setInt(jdbcIndex, getInt(row));
   }
 
@@ -90,8 +89,7 @@ public final class IntColumn implements Column {
   }
 
   @Override
-  public void putFromSQLite(final SQLiteStatement statement, final int index)
-      throws SQLiteException {
+  public void putFromSQLite(final SQLiteStatement statement, final int index) throws SQLiteException {
     throw new UnsupportedOperationException("SQLite does not support Int columns.");
   }
 
@@ -109,10 +107,8 @@ public final class IntColumn implements Column {
   @Override
   public ColumnMessage serializeToProto() {
     /* Note that we do *not* build the inner class. We pass its builder instead. */
-    IntColumnMessage.Builder inner =
-        IntColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
-    return ColumnMessage.newBuilder().setType(ColumnMessageType.INT).setNumTuples(size())
-        .setIntColumn(inner).build();
+    IntColumnMessage.Builder inner = IntColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
+    return ColumnMessage.newBuilder().setType(ColumnMessageType.INT).setNumTuples(size()).setIntColumn(inner).build();
   }
 
   @Override

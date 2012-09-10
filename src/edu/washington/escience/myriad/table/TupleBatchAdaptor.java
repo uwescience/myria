@@ -21,9 +21,8 @@ public abstract class TupleBatchAdaptor implements _TupleBatch {
     if (this instanceof TupleBatch) {
       TupleBatch tupleBatch = (TupleBatch) this;
       return tupleBatch.getSchema();
-    }
-    else
-    throw new UnsupportedOperationException();
+    } else
+      throw new UnsupportedOperationException();
   }
 
   @Override
@@ -41,9 +40,8 @@ public abstract class TupleBatchAdaptor implements _TupleBatch {
     if (this instanceof TupleBatch) {
       TupleBatch tupleBatch = (TupleBatch) this;
       return tupleBatch.validTupleIndices().length;
-    }
-    else
-    throw new UnsupportedOperationException();
+    } else
+      throw new UnsupportedOperationException();
   }
 
   @Override

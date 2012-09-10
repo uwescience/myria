@@ -54,7 +54,7 @@ public class TupleBatch extends TupleBatchAdaptor {
     /* Take the input arguments directly */
     this.schema = Objects.requireNonNull(schema);
     this.columns = Objects.requireNonNull(columns);
-    Preconditions.checkArgument(numTuples >=0  && numTuples <= BATCH_SIZE,
+    Preconditions.checkArgument(numTuples >= 0 && numTuples <= BATCH_SIZE,
         "numTuples must be at least 1 and no more than TupleBatch.BATCH_SIZE");
     this.numTuples = numTuples;
     /* All tuples are valid */

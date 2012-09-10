@@ -37,9 +37,8 @@ public class Filter extends Operator {
   }
 
   /**
-   * AbstractDbIterator.readNext implementation. Iterates over tuples from the child operator,
-   * applying the predicate to them and returning those that pass the predicate (i.e. for which the
-   * Predicate.filter() returns true.)
+   * AbstractDbIterator.readNext implementation. Iterates over tuples from the child operator, applying the predicate to
+   * them and returning those that pass the predicate (i.e. for which the Predicate.filter() returns true.)
    * 
    * @return The next tuple that passes the filter, or null if there are no more tuples
    * @see Predicate#filter
@@ -54,7 +53,7 @@ public class Filter extends Operator {
 
   @Override
   public Operator[] getChildren() {
-    return new Operator[] {this.child};
+    return new Operator[] { this.child };
   }
 
   @Override

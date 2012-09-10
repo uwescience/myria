@@ -22,8 +22,8 @@ import edu.washington.escience.myriad.column.ColumnFactory;
 public final class SQLiteAccessMethod {
 
   /**
-   * Wrap boolean values as int values since SQLite does not support boolean natively. This function
-   * converts true to 1 and false to 0.
+   * Wrap boolean values as int values since SQLite does not support boolean natively. This function converts true to 1
+   * and false to 0.
    * 
    * @param b boolean to be converted to SQLite int
    * @return 1 if b is true; 0 if b is false
@@ -78,8 +78,7 @@ public final class SQLiteAccessMethod {
    * @param queryString string containing the SQLite query to be executed
    * @return an Iterator<TupleBatch> containing the results of the query
    */
-  public static Iterator<TupleBatch> tupleBatchIteratorFromQuery(final String pathToSQLiteDb,
-      final String queryString) {
+  public static Iterator<TupleBatch> tupleBatchIteratorFromQuery(final String pathToSQLiteDb, final String queryString) {
     try {
       /* Connect to the database */
       SQLiteConnection sqliteConnection = new SQLiteConnection(new File(pathToSQLiteDb));
@@ -120,9 +119,8 @@ class SQLiteTupleBatchIterator implements Iterator<TupleBatch> {
   /**
    * Wraps a SQLiteStatement result set in an Iterator<TupleBatch>.
    * 
-   * @param statement the SQLiteStatement containing the results. If it has not yet stepped, this
-   *          constructor will step it. Then the Schema of the generated TupleBatchs will be
-   *          extracted from the statement.
+   * @param statement the SQLiteStatement containing the results. If it has not yet stepped, this constructor will step
+   *          it. Then the Schema of the generated TupleBatchs will be extracted from the statement.
    */
   SQLiteTupleBatchIterator(final SQLiteStatement statement) {
     this.statement = statement;
@@ -159,8 +157,8 @@ class SQLiteTupleBatchIterator implements Iterator<TupleBatch> {
     List<Column> columns = ColumnFactory.allocateColumns(schema);
 
     /**
-     * Loop through resultSet, adding one row at a time. Stop when numTuples hits BATCH_SIZE or
-     * there are no more results.
+     * Loop through resultSet, adding one row at a time. Stop when numTuples hits BATCH_SIZE or there are no more
+     * results.
      */
     int numTuples;
     try {

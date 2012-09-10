@@ -16,8 +16,7 @@ import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage.ColumnMessageType;
 
 /**
- * A column of Boolean values. To save space, this implementation uses a BitSet as the internal
- * representation.
+ * A column of Boolean values. To save space, this implementation uses a BitSet as the internal representation.
  * 
  * @author dhalperi
  * 
@@ -41,8 +40,7 @@ public final class BooleanColumn implements Column {
    */
   public BooleanColumn(final ColumnMessage message) {
     if (message.getType().ordinal() != ColumnMessageType.BOOLEAN_VALUE) {
-      throw new IllegalArgumentException(
-          "Trying to construct BooleanColumn from non-BOOLEAN ColumnMessage");
+      throw new IllegalArgumentException("Trying to construct BooleanColumn from non-BOOLEAN ColumnMessage");
     }
     if (!message.hasBooleanColumn()) {
       throw new IllegalArgumentException("ColumnMessage has type BOOLEAN but no BooleanColumn");
@@ -68,8 +66,7 @@ public final class BooleanColumn implements Column {
   }
 
   @Override
-  public void getIntoJdbc(final int row, final PreparedStatement statement, final int jdbcIndex)
-      throws SQLException {
+  public void getIntoJdbc(final int row, final PreparedStatement statement, final int jdbcIndex) throws SQLException {
     statement.setBoolean(jdbcIndex, getBoolean(row));
   }
 
@@ -103,8 +100,7 @@ public final class BooleanColumn implements Column {
   }
 
   @Override
-  public void putFromSQLite(final SQLiteStatement statement, final int index)
-      throws SQLiteException {
+  public void putFromSQLite(final SQLiteStatement statement, final int index) throws SQLiteException {
     throw new UnsupportedOperationException("SQLite does not support Boolean columns.");
   }
 
@@ -113,8 +109,8 @@ public final class BooleanColumn implements Column {
     /* Note that we do *not* build the inner class. We pass its builder instead. */
     BooleanColumnMessage.Builder inner =
         BooleanColumnMessage.newBuilder().setData(ByteString.copyFrom(data.toByteArray()));
-    return ColumnMessage.newBuilder().setType(ColumnMessageType.BOOLEAN).setNumTuples(size())
-        .setBooleanColumn(inner).build();
+    return ColumnMessage.newBuilder().setType(ColumnMessageType.BOOLEAN).setNumTuples(size()).setBooleanColumn(inner)
+        .build();
   }
 
   @Override

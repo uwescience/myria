@@ -1,6 +1,6 @@
 package edu.washington.escience.myriad.parallel;
 
-//import edu.washington.escience.Schema;
+// import edu.washington.escience.Schema;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.table._TupleBatch;
 
@@ -8,9 +8,9 @@ public class JdbcSQLProcessor extends JdbcQueryScan {
 
   private Operator child;
 
-  public JdbcSQLProcessor(String driverClass, String connectionString, String baseSQL,Schema schema,
-      Operator child, String username, String password) {
-    super(driverClass, connectionString, baseSQL,schema,username,password);
+  public JdbcSQLProcessor(String driverClass, String connectionString, String baseSQL, Schema schema, Operator child,
+      String username, String password) {
+    super(driverClass, connectionString, baseSQL, schema, username, password);
     this.child = child;
   }
 
@@ -19,11 +19,11 @@ public class JdbcSQLProcessor extends JdbcQueryScan {
    */
   private static final long serialVersionUID = 1L;
 
-//  @Override
-//  public void rewind() throws DbException {
-//    super.rewind();
-//    child.rewind();
-//  }
+  // @Override
+  // public void rewind() throws DbException {
+  // super.rewind();
+  // child.rewind();
+  // }
 
   @Override
   public void close() {
@@ -47,7 +47,7 @@ public class JdbcSQLProcessor extends JdbcQueryScan {
 
   @Override
   public Operator[] getChildren() {
-    return new Operator[] {this.child};
+    return new Operator[] { this.child };
   }
 
   @Override
