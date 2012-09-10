@@ -11,12 +11,12 @@ public abstract class Exchange extends Operator {
 
   /**
    * 
-   * The identifier of exchange operators. In a query plan, there may be a set of exchange
-   * operators, this ID class is used for the server and the workers to find out which exchange
-   * operator is the owner of an arriving ExchangeMessage.
+   * The identifier of exchange operators. In a query plan, there may be a set of exchange operators, this ID class is
+   * used for the server and the workers to find out which exchange operator is the owner of an arriving
+   * ExchangeMessage.
    * 
    * */
-  public static class ParallelOperatorID implements Serializable {
+  public static class ExchangePairID implements Serializable {
 
     /**
      * The id
@@ -28,17 +28,17 @@ public abstract class Exchange extends Operator {
     /**
      * The only way to create a ParallelOperatorID.
      * */
-    public static ParallelOperatorID newID() {
-      return new ParallelOperatorID(idGenerator.getAndIncrement());
+    public static ExchangePairID newID() {
+      return new ExchangePairID(idGenerator.getAndIncrement());
     }
 
-    private ParallelOperatorID(int oId) {
+    private ExchangePairID(int oId) {
       this.oId = oId;
     }
 
     @Override
     public boolean equals(Object o) {
-      ParallelOperatorID oID = (ParallelOperatorID) o;
+      ExchangePairID oID = (ExchangePairID) o;
       if (oID == null)
         return false;
       return oId == oID.oId;
@@ -55,9 +55,9 @@ public abstract class Exchange extends Operator {
     }
   }
 
-  protected final ParallelOperatorID operatorID;
+  protected final ExchangePairID operatorID;
 
-  public Exchange(ParallelOperatorID oID) {
+  public Exchange(ExchangePairID oID) {
     this.operatorID = oID;
   }
 
@@ -66,7 +66,7 @@ public abstract class Exchange extends Operator {
    * */
   public abstract String getName();
 
-  public ParallelOperatorID getOperatorID() {
+  public ExchangePairID getOperatorID() {
     return this.operatorID;
   }
 }

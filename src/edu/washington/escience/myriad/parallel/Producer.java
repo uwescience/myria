@@ -10,7 +10,7 @@ public abstract class Producer extends Exchange {
    * */
   private transient Worker thisWorker;
 
-  public Producer(ParallelOperatorID oID) {
+  public Producer(ExchangePairID oID) {
     super(oID);
   }
 

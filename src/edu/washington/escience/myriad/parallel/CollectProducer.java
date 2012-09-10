@@ -41,7 +41,7 @@ public class CollectProducer extends Producer {
     return "collect_p";
   }
 
-  public CollectProducer(Operator child, ParallelOperatorID operatorID, InetSocketAddress collectServerAddr) {
+  public CollectProducer(Operator child, ExchangePairID operatorID, InetSocketAddress collectServerAddr) {
     super(operatorID);
     this.child = child;
     this.collectConsumerAddr = collectServerAddr;
@@ -71,28 +71,13 @@ public class CollectProducer extends Producer {
           // buffer.append(tup);
           // int cnt = buffer.numOutputTuples();
           // if (cnt >= MAX_SIZE) {
-          ExchangeTupleBatch toSend = new ExchangeTupleBatch(CollectProducer.this.operatorID,
-              CollectProducer.this.getThisWorker().workerID, tup.outputRawData(), CollectProducer.this.getSchema(), tup
-                  .numOutputTuples());
+          ExchangeTupleBatch toSend =
+              new ExchangeTupleBatch(CollectProducer.this.operatorID, CollectProducer.this.getThisWorker().workerID,
+                  tup.outputRawData(), CollectProducer.this.getSchema(), tup.numOutputTuples());
           session.write(toSend);
           // lastTime = System.currentTimeMillis();
         }
-        // if (cnt >= MIN_SIZE) {
-        // long thisTime = System.currentTimeMillis();
-        // if (thisTime - lastTime > MAX_MS) {
-        // session.write(new ExchangeTupleBatch(CollectProducer.this.operatorID,
-        // CollectProducer.this
-        // .getThisWorker().workerID, buffer.outputRawData(), CollectProducer.this
-        // .getSchema()));
-        // lastTime = thisTime;
-        // }
-        // }
-        // }
-        // if (buffer.numOutputTuples() > 0)
-        // session.write(new ExchangeTupleBatch(CollectProducer.this.operatorID,
-        // CollectProducer.this
-        // .getThisWorker().workerID, buffer.outputRawData(), CollectProducer.this
-        // .getSchema()));
+
         session.write(
             new ExchangeTupleBatch(CollectProducer.this.operatorID, CollectProducer.this.getThisWorker().workerID))
             .addListener(new IoFutureListener<WriteFuture>() {

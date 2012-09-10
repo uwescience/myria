@@ -13,8 +13,8 @@ import edu.washington.escience.myriad.table._TupleBatch;
 /**
  * The consumer part of the Collect Exchange operator.
  * 
- * A Collect operator collects tuples from all the workers. There is a collect producer on each
- * worker, and a collect consumer on the server and a master worker if a master worker is needed.
+ * A Collect operator collects tuples from all the workers. There is a collect producer on each worker, and a collect
+ * consumer on the server and a master worker if a master worker is needed.
  * 
  * The consumer passively collects Tuples from all the paired CollectProducers
  * 
@@ -26,8 +26,8 @@ public class CollectConsumer extends Consumer {
   // private transient Iterator<TupleBatch> tuples;
 
   /**
-   * innerBufferIndex and innerBuffer are used to buffer all the TupleBags this operator has
-   * received. We need this because we need to support rewind.
+   * innerBufferIndex and innerBuffer are used to buffer all the TupleBags this operator has received. We need this
+   * because we need to support rewind.
    * */
   private final _TupleBatch outputBuffer;
 
@@ -48,8 +48,7 @@ public class CollectConsumer extends Consumer {
   /**
    * If there's no child operator, a TupleDesc is needed
    * */
-  public CollectConsumer(Schema schema, ParallelOperatorID operatorID, SocketInfo[] workers,
-      _TupleBatch outputBuffer) {
+  public CollectConsumer(Schema schema, ExchangePairID operatorID, SocketInfo[] workers, _TupleBatch outputBuffer) {
     super(operatorID);
     this.schema = schema;
     this.sourceWorkers = workers;
@@ -65,8 +64,8 @@ public class CollectConsumer extends Consumer {
   /**
    * If a child is provided, the TupleDesc is the child's TD
    * */
-  public CollectConsumer(CollectProducer child, ParallelOperatorID operatorID,
-      SocketInfo[] workers, _TupleBatch outputBuffer) {
+  public CollectConsumer(CollectProducer child, ExchangePairID operatorID, SocketInfo[] workers,
+      _TupleBatch outputBuffer) {
     super(operatorID);
     this.child = child;
     this.schema = child.getSchema();
@@ -90,20 +89,20 @@ public class CollectConsumer extends Consumer {
     super.open();
   }
 
-//  @Override
-//  public void rewind() throws DbException {
-//    // this.tuples = null;
-//    // this.innerBufferIndex = 0;
-//    this.finish = false;
-//  }
+  // @Override
+  // public void rewind() throws DbException {
+  // // this.tuples = null;
+  // // this.innerBufferIndex = 0;
+  // this.finish = false;
+  // }
 
   public void close() {
     super.close();
     this.setBuffer(null);
     // this.tuples = null;
     // this.innerBufferIndex = -1;
-//    this.innerBuffer = null;
-//    this.innerBuffer.
+    // this.innerBuffer = null;
+    // this.innerBuffer.
     this.workerEOS.clear();
   }
 
@@ -145,7 +144,7 @@ public class CollectConsumer extends Consumer {
 
   @Override
   public Operator[] getChildren() {
-    return new Operator[] {this.child};
+    return new Operator[] { this.child };
   }
 
   @Override
