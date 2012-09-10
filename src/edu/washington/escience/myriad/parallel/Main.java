@@ -58,13 +58,13 @@ public class Main {
     String username = "root";
     String password = "1234";
 
-    InetSocketAddress worker1 = new InetSocketAddress("carlise.cs.washington.edu", 9001);
-    InetSocketAddress worker2 = new InetSocketAddress("slxu-csuw-desktop.cs.washington.edu", 9002);
-    InetSocketAddress server = new InetSocketAddress("carlise.cs.washington.edu", 8001);
-    SocketInfo[] workers =
-        new SocketInfo[] {
-            new SocketInfo(worker1.getHostString(), worker1.getPort()),
-            new SocketInfo(worker2.getHostString(), worker2.getPort()) };
+    Configuration conf = new Configuration();
+    
+//    InetSocketAddress worker1 = new InetSocketAddress("slxu-csuw-desktop.cs.washington.edu", 9001);
+//    InetSocketAddress worker2 = new InetSocketAddress("slxu-csuw-desktop.cs.washington.edu", 9002);
+//    InetSocketAddress server = new InetSocketAddress("slxu-csuw-desktop.cs.washington.edu", 8001);
+    SocketInfo[] workers = conf.getWorkers();
+    SocketInfo server = conf.getServer();
 
     ExchangePairID serverReceiveID = ExchangePairID.newID();
     ExchangePairID worker2ReceiveID = ExchangePairID.newID();
@@ -76,12 +76,12 @@ public class Main {
     JdbcQueryScan scan1 =
         new JdbcQueryScan("com.mysql.jdbc.Driver", "jdbc:mysql://localhost:3306/test",
             "select distinct * from testtable1", outputSchema, username, password);
-    CollectProducer cp1 = new CollectProducer(scan1, worker2ReceiveID, worker2);
+    CollectProducer cp1 = new CollectProducer(scan1, worker2ReceiveID, workers[1].getAddress());
 
     JdbcQueryScan scan2 =
         new JdbcQueryScan("com.mysql.jdbc.Driver", "jdbc:mysql://localhost:3306/test",
             "select distinct * from testtable2", outputSchema, username, password);
-    CollectProducer cp2 = new CollectProducer(scan2, worker2ReceiveID, worker2);
+    CollectProducer cp2 = new CollectProducer(scan2, worker2ReceiveID, workers[1].getAddress());
     // CollectProducer child, ParallelOperatorID operatorID, SocketInfo[] workers
     JdbcTupleBatch bufferWorker2 =
         new JdbcTupleBatch(outputSchema, "temptable1", "jdbc:mysql://localhost:3306/test", "com.mysql.jdbc.Driver",
@@ -90,12 +90,12 @@ public class Main {
     JdbcSQLProcessor scan22 =
         new JdbcSQLProcessor("com.mysql.jdbc.Driver", "jdbc:mysql://localhost:3306/test",
             "select distinct * from temptable1", outputSchema, cc2, username, password);
-    CollectProducer cp22 = new CollectProducer(scan22, serverReceiveID, server);
+    CollectProducer cp22 = new CollectProducer(scan22, serverReceiveID, server.getAddress());
     HashMap<SocketInfo, Operator> workerPlans = new HashMap<SocketInfo, Operator>();
     workerPlans.put(workers[0], cp1);
     workerPlans.put(workers[1], cp22);
 
-    ConcurrentInMemoryTupleBatch serverBuffer = new ConcurrentInMemoryTupleBatch(outputSchema);
+    OutputStreamSinkTupleBatch serverBuffer = new OutputStreamSinkTupleBatch(outputSchema, System.out);
 
     new Thread() {
       public void run() {
