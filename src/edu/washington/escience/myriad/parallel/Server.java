@@ -105,25 +105,13 @@ public class Server {
 
   public static final String DEFAULT_CONF_DIR = "conf";
 
-  public static SocketInfo loadServer(String confDir) throws IOException {
-    BufferedReader br =
-        new BufferedReader(new InputStreamReader(new FileInputStream(new File(confDir + "/server.conf"))));
-    String line = null;
-    while ((line = br.readLine()) != null) {
-      String[] ts = line.replaceAll("[ \t]+", "").replaceAll("#.*$", "").split(":");
-      if (ts.length == 2)
-        return new SocketInfo(ts[0], Integer.parseInt(ts[1]));
-    }
-    throw new IOException("Wrong server conf file.");
-  }
-
-  protected Server(String host, int port, SocketInfo[] workers) throws IOException {
+  protected Server(SocketInfo server, SocketInfo[] workers) throws IOException {
     this.workers = workers;
     workerIdToIndex = new HashMap<String, Integer>();
     for (int i = 0; i < workers.length; i++)
       workerIdToIndex.put(workers[i].getId(), i);
     acceptor = ParallelUtility.createAcceptor();
-    this.server = new SocketInfo(host, port);
+    this.server = server;
     this.inBuffer = new ConcurrentHashMap<ExchangePairID, LinkedBlockingQueue<_TupleBatch>>();
     this.minaHandler = new ServerHandler(Thread.currentThread());
   }
@@ -147,9 +135,11 @@ public class Server {
       args = ParallelUtility.removeArg(args, 1);
       args = ParallelUtility.removeArg(args, 1);
     }
+    
+    Configuration conf = new Configuration(confDir);
 
-    SocketInfo serverInfo = loadServer(confDir);
-    final Server server = new Server(serverInfo.getHost(), serverInfo.getPort(), ParallelUtility.loadWorkers(confDir));
+//    SocketInfo serverInfo = Configuration.loadServer(confDir);
+    final Server server = new Server(conf.getServer(), conf.getWorkers());
 
     runningInstance = server;
 
@@ -163,7 +153,7 @@ public class Server {
         server.cleanup();
       }
     });
-    System.out.println("Server: " + server.server.getHost() + " started. Listening on port " + serverInfo.getPort());
+    System.out.println("Server: " + server.server.getHost() + " started. Listening on port " + conf.getServer().getPort());
     server.start(args);
   }
 
@@ -385,13 +375,13 @@ public class Server {
     out.println("");
 
     serverPlan.open();
-    int cnt = 0;
+//    int cnt = 0;
     while (serverPlan.hasNext()) {
       _TupleBatch tup = serverPlan.next();
       out.println(tup);
-      cnt++;
+//      cnt++;
     }
-    out.println("\n " + cnt + " rows.");
+//    out.println("\n " + cnt + " rows.");
     // if (b != null)
     // System.out.print(b.toString());
 

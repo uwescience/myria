@@ -205,19 +205,6 @@ public class ParallelUtility {
     return newArgs;
   }
 
-  public static SocketInfo[] loadWorkers(String confDir) throws IOException {
-    ArrayList<SocketInfo> workers = new ArrayList<SocketInfo>();
-    BufferedReader br =
-        new BufferedReader(new InputStreamReader(new FileInputStream(new File(confDir + "/workers.conf"))));
-    String line = null;
-    while ((line = br.readLine()) != null) {
-      String[] ts = line.replaceAll("[ \t]+", "").replaceAll("#.*$", "").split(":");
-      if (ts.length >= 2)
-        workers.add(new SocketInfo(ts[0], Integer.parseInt(ts[1])));
-    }
-    return workers.toArray(new SocketInfo[] {});
-  }
-
   public static void deleteFileFolder(File f) throws IOException {
     if (!f.exists())
       return;
