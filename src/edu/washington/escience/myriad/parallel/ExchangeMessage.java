@@ -2,21 +2,20 @@ package edu.washington.escience.myriad.parallel;
 
 import java.io.Serializable;
 
-import edu.washington.escience.myriad.parallel.Exchange.ParallelOperatorID;
+import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 
 /**
- * All the messages that will change between Exchange Operators should be a sub class of
- * ExchangeMessage.
+ * All the messages that will change between Exchange Operators should be a sub class of ExchangeMessage.
  * 
  * */
 public abstract class ExchangeMessage implements Serializable {
 
   private static final long serialVersionUID = 1L;
 
-  private ParallelOperatorID operatorID;
+  private ExchangePairID operatorID;
   private String fromWorkerID;
 
-  public ExchangeMessage(ParallelOperatorID oID, String workerID) {
+  public ExchangeMessage(ExchangePairID oID, String workerID) {
     this.operatorID = oID;
     this.fromWorkerID = workerID;
   }
@@ -24,7 +23,7 @@ public abstract class ExchangeMessage implements Serializable {
   /**
    * Get the ParallelOperatorID, to which this message is targeted
    * */
-  public ParallelOperatorID getOperatorID() {
+  public ExchangePairID getOperatorID() {
     return this.operatorID;
   }
 
@@ -35,7 +34,7 @@ public abstract class ExchangeMessage implements Serializable {
     return this.fromWorkerID;
   }
 
-  public void setOperatorID(ParallelOperatorID poid) {
+  public void setOperatorID(ExchangePairID poid) {
     this.operatorID = poid;
   }
 

@@ -12,7 +12,7 @@ import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 
-import edu.washington.escience.myriad.parallel.Exchange.ParallelOperatorID;
+import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 // import edu.washington.escience.myriad.table.DbIterateReader;
 import edu.washington.escience.myriad.table._TupleBatch;
 
@@ -180,7 +180,7 @@ public class Worker {
   /**
    * The I/O buffer, all the ExchangeMessages sent to this worker are buffered here.
    * */
-  public final HashMap<ParallelOperatorID, LinkedBlockingQueue<_TupleBatch>> inBuffer;
+  public final HashMap<ExchangePairID, LinkedBlockingQueue<_TupleBatch>> inBuffer;
 
   public Worker(String workerID, String serverAddr) {
     this.workerID = workerID;
@@ -190,7 +190,7 @@ public class Worker {
     String[] server = serverAddr.split(":");
     this.server = new InetSocketAddress(server[0], Integer.parseInt(server[1]));
     acceptor = ParallelUtility.createAcceptor();
-    inBuffer = new HashMap<ParallelOperatorID, LinkedBlockingQueue<_TupleBatch>>();
+    inBuffer = new HashMap<ExchangePairID, LinkedBlockingQueue<_TupleBatch>>();
 
     workingThread = new WorkingThread();
     workingThread.setDaemon(false);
@@ -235,7 +235,7 @@ public class Worker {
    * Find out all the ParallelOperatorIDs of all consuming operators: ShuffleConsumer, CollectConsumer, and
    * BloomFilterConsumer running at this worker. The inBuffer needs the IDs to distribute the ExchangeMessages received.
    * */
-  public static void collectConsumerOperatorIDs(Operator root, ArrayList<ParallelOperatorID> oIds) {
+  public static void collectConsumerOperatorIDs(Operator root, ArrayList<ExchangePairID> oIds) {
     if (root instanceof Consumer)
       oIds.add(((Consumer) root).getOperatorID());
     if (root instanceof Operator) {
@@ -283,10 +283,10 @@ public class Worker {
     }
 
     // new QueryPlanVisualizer().printQueryPlanTree(query, System.out);
-    ArrayList<ParallelOperatorID> ids = new ArrayList<ParallelOperatorID>();
+    ArrayList<ExchangePairID> ids = new ArrayList<ExchangePairID>();
     collectConsumerOperatorIDs(query, ids);
     Worker.this.inBuffer.clear();
-    for (ParallelOperatorID id : ids) {
+    for (ExchangePairID id : ids) {
       Worker.this.inBuffer.put(id, new LinkedBlockingQueue<_TupleBatch>());
     }
     // }
