@@ -39,9 +39,9 @@ import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 public class Main {
   public static void main(String[] args) throws NoSuchElementException, DbException, IOException {
     // JdbcTest();
-     SQLiteTest();
+    // SQLiteTest();
     // parallelTestJDBC(args);
-//    parallelTestSQLite(args);
+    parallelTestSQLite(args);
     // jdbcTest_slxu(args);
   };
 
@@ -236,21 +236,21 @@ public class Main {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.OFF);
 
     Schema outputSchema = new Schema(new Type[] { Type.LONG_TYPE, Type.STRING_TYPE }, new String[] { "id", "name" });
-    
+
     /* Scan the testtable in database */
     SQLiteQueryScan scan = new SQLiteQueryScan(filename, query, outputSchema);
 
     /* Filter on first column INTEGER >= 50 */
-//    Filter filter1 = new Filter(Predicate.Op.GREATER_THAN_OR_EQ, 0, new Long(50), scan);
+    // Filter filter1 = new Filter(Predicate.Op.GREATER_THAN_OR_EQ, 0, new Long(50), scan);
     /* Filter on first column INTEGER <= 60 */
-//    Filter filter2 = new Filter(Predicate.Op.LESS_THAN_OR_EQ, 0, new Long(60), filter1);
+    // Filter filter2 = new Filter(Predicate.Op.LESS_THAN_OR_EQ, 0, new Long(60), filter1);
 
     /* Project onto second column STRING */
     ArrayList<Integer> fieldIdx = new ArrayList<Integer>();
     fieldIdx.add(1);
     ArrayList<Type> fieldType = new ArrayList<Type>();
     fieldType.add(Type.STRING_TYPE);
-//    Project project = new Project(fieldIdx, fieldType, filter2);
+    // Project project = new Project(fieldIdx, fieldType, filter2);
 
     /* Project is the output operator */
     Operator root = scan;
@@ -270,7 +270,7 @@ public class Main {
     while (root.hasNext()) {
       _TupleBatch tb = root.next();
       System.out.println(tb);
-//      SQLiteAccessMethod.tupleBatchInsert(filename, insert, (TupleBatch) tb);
+      // SQLiteAccessMethod.tupleBatchInsert(filename, insert, (TupleBatch) tb);
     }
 
     /* Cleanup */

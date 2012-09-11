@@ -166,9 +166,7 @@ class SQLiteTupleBatchIterator implements Iterator<TupleBatch> {
         for (int column = 0; column < numFields; ++column) {
           columns.get(column).putFromSQLite(statement, column);
         }
-        if (!statement.step()) {
-          break;
-        }
+        statement.step();
       }
     } catch (SQLiteException e) {
       System.err.println("Got SQLiteException:" + e + "in TupleBatchIterator.next()");

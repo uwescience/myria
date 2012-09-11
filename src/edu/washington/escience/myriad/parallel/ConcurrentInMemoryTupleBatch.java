@@ -131,10 +131,6 @@ public class ConcurrentInMemoryTupleBatch implements _TupleBatch {
     return numInputTuples;
   }
 
-  public synchronized ConcurrentInMemoryTupleBatch[] partition(PartitionFunction<?, ?> p) {
-    return null;
-  }
-
   public synchronized ConcurrentInMemoryTupleBatch project(int[] remainingColumns) {
     boolean[] columnsToRemain = new boolean[this.inputSchema.numFields()];
     Arrays.fill(columnsToRemain, false);
@@ -299,7 +295,7 @@ public class ConcurrentInMemoryTupleBatch implements _TupleBatch {
 
   @Override
   public _TupleBatch[] partition(PartitionFunction<?, ?> p, _TupleBatch[] buffers) {
-    // TODO Auto-generated method stub
+//    p.partition(t, td)
     return null;
   }
 
