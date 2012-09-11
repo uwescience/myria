@@ -2,9 +2,10 @@ package edu.washington.escience.myriad.parallel;
 
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.List;
 
 import edu.washington.escience.myriad.Schema;
-import edu.washington.escience.myriad.TupleBatch;
+import edu.washington.escience.myriad.column.Column;
 
 /**
  * The ShuffleProducer class uses an instance of the PartitionFunction class to decide which worker a tuple should be
@@ -49,7 +50,7 @@ public abstract class PartitionFunction<K, V> implements Serializable {
    * @return the worker to send the tuple to.
    * 
    * */
-  public abstract int partition(TupleBatch t, Schema td);
+  public abstract int partition(List<Column> columns, Schema td);
 
   /**
    * A concrete implementation of a partition function may need some information to help it decide the tuple partitions.
