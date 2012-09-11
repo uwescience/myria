@@ -2,6 +2,7 @@ package edu.washington.escience.myriad.parallel;
 
 import java.util.List;
 
+import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.column.Column;
 
@@ -34,16 +35,9 @@ public class SingleFieldHashPartitionFunction extends PartitionFunction<String, 
   }
 
   @Override
-  public int partition(List<Column> columnData, Type[] columnTypes) {
-
-    // requiredColumns[fieldIndex];
-    // int fieldIndex = td.fieldNameToIndex(this.fieldName);
-    Column partitionColumn = columnData.get(this.fieldIndex);
-    // Field f = t.getField(fieldIndex);
-    int remain = columnTypes[fieldIndex].hashCode() % numPartition();
-    if (remain < 0)
-      remain += numPartition();
-    return remain;
+  public int partition(List<Column> columns, Schema td) {
+    // TODO Auto-generated method stub
+    return 0;
   }
 
 }
