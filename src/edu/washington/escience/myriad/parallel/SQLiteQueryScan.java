@@ -3,27 +3,29 @@ package edu.washington.escience.myriad.parallel;
 import java.util.Iterator;
 
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.table._TupleBatch;
 import edu.washington.escience.myriad.TupleBatch;
+import edu.washington.escience.myriad.accessmethod.JdbcAccessMethod;
 import edu.washington.escience.myriad.accessmethod.SQLiteAccessMethod;
 
 public class SQLiteQueryScan extends Operator {
 
-  /**
-   * 
-   */
   private Iterator<TupleBatch> tuples;
-  private Schema schema;
-  private TupleBatch cache;
+  private final Schema schema;
+  // private TupleBatch cache;
+  private final String filePath;
+  private final String baseSQL;
 
-  public SQLiteQueryScan(String pathToFile, String baseSQL) {
-    tuples = SQLiteAccessMethod.tupleBatchIteratorFromQuery(pathToFile, baseSQL);
-    if (tuples.hasNext()) {
-      cache = tuples.next();
-      schema = cache.getSchema();
-    } else {
-      schema = null;
-      cache = null;
-    }
+  public SQLiteQueryScan(String filePath, String baseSQL, Schema outputSchema) {
+    this.baseSQL = baseSQL;
+    this.filePath = filePath;
+    // if (tuples.hasNext()) {
+    // cache = tuples.next();
+    schema = outputSchema;
+    // } else {
+    // schema = null;
+    // cache = null;
+    // }
   }
 
   @Override
@@ -33,17 +35,17 @@ public class SQLiteQueryScan extends Operator {
   }
 
   @Override
-  protected TupleBatch fetchNext() throws DbException {
-    if (cache != null) {
-      TupleBatch tmp = cache;
-      cache = null;
-      return tmp;
-    } else {
-      if (tuples.hasNext())
-        return this.tuples.next();
-      else
-        return null;
-    }
+  protected _TupleBatch fetchNext() throws DbException {
+    // if (cache != null) {
+    // TupleBatch tmp = cache;
+    // cache = null;
+    // return tmp;
+    // } else {
+    if (tuples.hasNext())
+      return this.tuples.next();
+    else
+      return null;
+    // }
   }
 
   @Override
@@ -58,13 +60,13 @@ public class SQLiteQueryScan extends Operator {
 
   @Override
   public void open() throws DbException {
-
     super.open();
+    tuples = SQLiteAccessMethod.tupleBatchIteratorFromQuery(filePath, baseSQL);
   }
 
   // @Override
   // public void rewind() throws DbException {
-  // tuples = SQLiteAccessMethod.tupleBatchIteratorFromQuery(driverClass, baseSQL);
+  // tuples = JdbcAccessMethod.tupleBatchIteratorFromQuery(driverClass, connectionString, baseSQL);
   // cache = null;
   // }
 

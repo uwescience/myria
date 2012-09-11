@@ -9,6 +9,7 @@ import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.DoubleColumn;
 import edu.washington.escience.myriad.column.FloatColumn;
 import edu.washington.escience.myriad.column.IntColumn;
+import edu.washington.escience.myriad.column.LongColumn;
 import edu.washington.escience.myriad.column.StringColumn;
 import edu.washington.escience.myriad.parallel.ImmutableInMemoryTupleBatch;
 import edu.washington.escience.myriad.Predicate;
@@ -208,6 +209,8 @@ public class ExchangeTupleBatch extends ExchangeMessage implements _TupleBatch {
           output.add(new DoubleColumn(cm));
         else if (types[i].equals(Type.FLOAT_TYPE))
           output.add(new FloatColumn(cm));
+        else if (types[i].equals(Type.LONG_TYPE))
+          output.add(new LongColumn(cm));
         else if (types[i].equals(Type.INT_TYPE))
           output.add(new IntColumn(cm));
         else if (types[i].equals(Type.STRING_TYPE))
