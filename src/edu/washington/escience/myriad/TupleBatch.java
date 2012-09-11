@@ -54,7 +54,7 @@ public class TupleBatch extends TupleBatchAdaptor {
     /* Take the input arguments directly */
     this.schema = Objects.requireNonNull(schema);
     this.columns = Objects.requireNonNull(columns);
-    Preconditions.checkArgument(numTuples >=0  && numTuples <= BATCH_SIZE,
+    Preconditions.checkArgument(numTuples >= 0 && numTuples <= BATCH_SIZE,
         "numTuples must be at least 1 and no more than TupleBatch.BATCH_SIZE");
     this.numTuples = numTuples;
     /* All tuples are valid */
@@ -76,11 +76,12 @@ public class TupleBatch extends TupleBatchAdaptor {
     this.schema = Objects.requireNonNull(schema);
     this.columns = Objects.requireNonNull(columns);
 
-    Preconditions.checkArgument(numTuples > 0 && numTuples <= BATCH_SIZE,
-        "numTuples must be at least 1 and no more than TupleBatch.BATCH_SIZE");
+    Preconditions.checkArgument(numTuples >= 0 && numTuples <= BATCH_SIZE,
+        "numTuples must be non-negative and no more than TupleBatch.BATCH_SIZE");
     this.numTuples = numTuples;
 
-    Preconditions.checkArgument(validTuples.size() > numTuples, "validTuples must support at least numTuples elements");
+    Preconditions
+        .checkArgument(validTuples.size() >= numTuples, "validTuples must support at least numTuples elements");
     this.validTuples = (BitSet) validTuples.clone();
   }
 
@@ -148,6 +149,7 @@ public class TupleBatch extends TupleBatchAdaptor {
    * @param operand operand to the predicate.
    * @return a new TupleBatch where all rows that do not match the specified predicate have been removed.
    */
+  @Override
   public final TupleBatch filter(final int column, final Predicate.Op op, final Object operand) {
     Objects.requireNonNull(op);
     Objects.requireNonNull(operand);
@@ -162,6 +164,7 @@ public class TupleBatch extends TupleBatchAdaptor {
    * @param row row in which the element is stored.
    * @return the element at the specified position in this TupleBatch.
    */
+  @Override
   public final boolean getBoolean(final int column, final int row) {
     return ((BooleanColumn) columns.get(column)).getBoolean(row);
   }
@@ -183,6 +186,7 @@ public class TupleBatch extends TupleBatchAdaptor {
    * @param row row in which the element is stored.
    * @return the element at the specified position in this TupleBatch.
    */
+  @Override
   public final double getDouble(final int column, final int row) {
     return ((DoubleColumn) columns.get(column)).getDouble(row);
   }
@@ -194,6 +198,7 @@ public class TupleBatch extends TupleBatchAdaptor {
    * @param row row in which the element is stored.
    * @return the element at the specified position in this TupleBatch.
    */
+  @Override
   public final float getFloat(final int column, final int row) {
     return ((FloatColumn) columns.get(column)).getFloat(row);
   }
@@ -205,6 +210,7 @@ public class TupleBatch extends TupleBatchAdaptor {
    * @param row row in which the element is stored.
    * @return the element at the specified position in this TupleBatch.
    */
+  @Override
   public final int getInt(final int column, final int row) {
     return ((IntColumn) columns.get(column)).getInt(row);
   }
@@ -236,6 +242,7 @@ public class TupleBatch extends TupleBatchAdaptor {
    * @param row row in which the element is stored.
    * @return the element at the specified position in this TupleBatch.
    */
+  @Override
   public final String getString(final int column, final int row) {
     return ((StringColumn) columns.get(column)).getString(row);
   }
@@ -302,6 +309,7 @@ public class TupleBatch extends TupleBatchAdaptor {
    * @param remainingColumns zero-indexed array of columns to retain.
    * @return a projected TupleBatch.
    */
+  @Override
   public final TupleBatch project(final int[] remainingColumns) {
     Objects.requireNonNull(remainingColumns);
     List<Column> newColumns = new ArrayList<Column>();
