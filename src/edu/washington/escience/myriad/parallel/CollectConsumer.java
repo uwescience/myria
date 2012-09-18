@@ -98,7 +98,7 @@ public class CollectConsumer extends Consumer {
 
   public void close() {
     super.close();
-    this.setBuffer(null);
+    this.setInputBuffer(null);
     // this.tuples = null;
     // this.innerBufferIndex = -1;
     // this.innerBuffer = null;
