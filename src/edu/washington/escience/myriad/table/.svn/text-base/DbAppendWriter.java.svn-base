@@ -1,7 +1,0 @@
-package edu.washington.escience.table;
-
-import edu.washington.escience.parallel.DbException;
-
-public interface DbAppendWriter extends DbTable {
-  public void append(TupleBatch tb) throws DbException;
-}
