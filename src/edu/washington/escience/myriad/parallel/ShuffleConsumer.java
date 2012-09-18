@@ -20,9 +20,8 @@ public class ShuffleConsumer extends Consumer {
 
   private static final long serialVersionUID = 1L;
 
-  private transient Iterator<_TupleBatch> tuples;
-  private transient int innerBufferIndex;
-  private final _TupleBatch outputBuffer;
+//  private transient Iterator<_TupleBatch> tuples;
+//  private transient int innerBufferIndex;
   private boolean finish;
 
   // Used to remember which of the source workers have sent an end of stream
@@ -54,9 +53,9 @@ public class ShuffleConsumer extends Consumer {
 
   @Override
   public void open() throws DbException {
-    this.tuples = null;
+//    this.tuples = null;
     // this.innerBuffer = new ArrayList<_TupleBatch>();
-    this.innerBufferIndex = 0;
+//    this.innerBufferIndex = 0;
     if (this.child != null)
       this.child.open();
     super.open();
@@ -73,7 +72,7 @@ public class ShuffleConsumer extends Consumer {
   @Override
   public void close() {
     super.close();
-    tuples = null;
+//    tuples = null;
     this.workerEOS.clear();
   }
 
