@@ -15,6 +15,7 @@ import edu.washington.escience.myriad.parallel.ImmutableInMemoryTupleBatch;
 import edu.washington.escience.myriad.Predicate;
 import edu.washington.escience.myriad.Predicate.Op;
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.table._TupleBatch;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
@@ -222,7 +223,7 @@ public class ExchangeTupleBatch extends ExchangeMessage implements _TupleBatch {
   }
 
   @Override
-  public _TupleBatch[] partition(PartitionFunction<?, ?> p, _TupleBatch[] buffers) {
+  public TupleBatchBuffer[] partition(PartitionFunction<?, ?> p, TupleBatchBuffer[] buffers) {
     // TODO Auto-generated method stub
     return null;
   }

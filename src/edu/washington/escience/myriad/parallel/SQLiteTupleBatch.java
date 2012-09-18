@@ -15,6 +15,7 @@ import edu.washington.escience.myriad.Predicate;
 import edu.washington.escience.myriad.Predicate.Op;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
+import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.accessmethod.JdbcAccessMethod;
 import edu.washington.escience.myriad.accessmethod.SQLiteAccessMethod;
@@ -36,9 +37,10 @@ public class SQLiteTupleBatch implements _TupleBatch {
   // private int numInputTuples;
   // private final BitSet invalidTuples;
   // private final BitSet invalidColumns;
-  private final ArrayList<String> filters;
-  private final ArrayList<String> projects;
-  private final String filepath;
+//  private final ArrayList<String> filters;
+//  private final ArrayList<String> projects;
+  private transient String dataDir; 
+  private final String filename;
   private int numInputTuples;
   // private final String driverClass;
   private final String tableName;
@@ -46,12 +48,12 @@ public class SQLiteTupleBatch implements _TupleBatch {
   // private final String username;
   // private final String password;
 
-  public SQLiteTupleBatch(Schema inputSchema, String filepath, String tableName) {
+  public SQLiteTupleBatch(Schema inputSchema, String filename, String tableName) {
     /* Take the input arguments directly */
     this.inputSchema = Objects.requireNonNull(inputSchema);
-    this.filters = new ArrayList<String>();
-    this.projects = new ArrayList<String>();
-    this.filepath = filepath;
+//    this.filters = new ArrayList<String>();
+//    this.projects = new ArrayList<String>();
+    this.filename = filename;
     this.tableName = tableName;
   }
 
@@ -160,7 +162,7 @@ public class SQLiteTupleBatch implements _TupleBatch {
       fieldNames[i++] = item.getName();
     }
 
-    SQLiteAccessMethod.tupleBatchInsert(this.filepath, "insert into " + this.tableName + " ( "
+    SQLiteAccessMethod.tupleBatchInsert(this.dataDir+"/"+this.filename, "insert into " + this.tableName + " ( "
         + StringUtils.join(fieldNames, ',') + " ) values ( " + StringUtils.join(placeHolders, ',') + " )",
         new TupleBatch(another.outputSchema(), another.outputRawData(), another.numOutputTuples()));
     return this;
@@ -215,9 +217,13 @@ public class SQLiteTupleBatch implements _TupleBatch {
   }
 
   @Override
-  public _TupleBatch[] partition(PartitionFunction<?, ?> p, _TupleBatch[] buffers) {
+  public TupleBatchBuffer[] partition(PartitionFunction<?, ?> p, TupleBatchBuffer[] buffers) {
     // TODO Auto-generated method stub
     return null;
   }
-
+  
+  public void reset(String dataDir)
+  {
+    this.dataDir = dataDir;
+  }
 }

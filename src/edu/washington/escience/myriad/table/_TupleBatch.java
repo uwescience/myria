@@ -8,6 +8,7 @@ import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.Predicate;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.parallel.PartitionFunction;
+import edu.washington.escience.myriad.TupleBatchBuffer;
 
 /**
  * Relational data processing units
@@ -85,7 +86,7 @@ public interface _TupleBatch extends Serializable {
    * -------------------- The parallel methods ------------------------
    * */
 
-  public _TupleBatch[] partition(PartitionFunction<?, ?> p, _TupleBatch[] buffers);
+  public TupleBatchBuffer[] partition(PartitionFunction<?, ?> p, TupleBatchBuffer[] buffers);
 
   /**
    * -------------------- The value retrieval methods ------------------

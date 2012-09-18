@@ -11,6 +11,7 @@ import java.util.Objects;
 import edu.washington.escience.myriad.Predicate;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.Schema.TDItem;
+import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.annotation.ThreadSafe;
 import edu.washington.escience.myriad.column.Column;
@@ -303,7 +304,7 @@ public class ImmutableInMemoryTupleBatch implements _TupleBatch {
   }
 
   @Override
-  public _TupleBatch[] partition(PartitionFunction<?, ?> p, _TupleBatch[] buffers) {
+  public TupleBatchBuffer[] partition(PartitionFunction<?, ?> p, TupleBatchBuffer[] buffers) {
     // TODO Auto-generated method stub
     return null;
   }
