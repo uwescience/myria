@@ -6,11 +6,11 @@ import edu.washington.escience.myriad.table._TupleBatch;
 
 public class SQLiteSQLProcessor extends SQLiteQueryScan {
 
-  private Operator child;
+  private Operator[] children;
 
-  public SQLiteSQLProcessor(String filepath, String baseSQL, Schema schema, Operator child) {
-    super(filepath, baseSQL, schema );
-    this.child = child;
+  public SQLiteSQLProcessor(String filename, String baseSQL, Schema schema, Operator[] children) {
+    super(filename, baseSQL, schema);
+    this.children = children;
   }
 
   /**
@@ -27,14 +27,20 @@ public class SQLiteSQLProcessor extends SQLiteQueryScan {
   @Override
   public void close() {
     super.close();
-    this.child.close();
+    for (Operator child : children)
+      child.close();
   }
 
   @Override
   public void open() throws DbException {
-    this.child.open();
-    while (child.hasNext()) {
-      child.next();
+    for (Operator child : children) {
+      child.open();
+    }
+    
+    for (Operator child : children) {
+      while (child.hasNext()) {
+        child.next();
+      }
     }
     super.open();
   }
@@ -46,12 +52,12 @@ public class SQLiteSQLProcessor extends SQLiteQueryScan {
 
   @Override
   public Operator[] getChildren() {
-    return new Operator[] { this.child };
+    return this.children;
   }
 
   @Override
   public void setChildren(Operator[] children) {
-    this.child = children[0];
+    this.children = children;
   }
 
 }
