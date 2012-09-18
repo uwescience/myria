@@ -103,8 +103,6 @@ public class Server {
   final ConcurrentHashMap<ExchangePairID, LinkedBlockingQueue<_TupleBatch>> inBuffer;
   final SocketInfo server;
 
-  public static final String DEFAULT_CONF_DIR = "conf";
-
   protected Server(SocketInfo server, SocketInfo[] workers) throws IOException {
     this.workers = workers;
     workerIdToIndex = new HashMap<String, Integer>();
@@ -129,9 +127,9 @@ public class Server {
     // System.exit(0);
     // }
 
-    String confDir = DEFAULT_CONF_DIR;
+    File confDir = null;
     if (args.length >= 3 && args[1].equals("--conf")) {
-      confDir = args[2];
+      confDir = new File(args[2]);
       args = ParallelUtility.removeArg(args, 1);
       args = ParallelUtility.removeArg(args, 1);
     }
@@ -354,7 +352,7 @@ public class Server {
 
   public void startServerQuery(CollectConsumer serverPlan) throws DbException {
     final LinkedBlockingQueue<_TupleBatch> buffer = new LinkedBlockingQueue<_TupleBatch>();
-    serverPlan.setBuffer(buffer);
+    serverPlan.setInputBuffer(buffer);
     Server.this.inBuffer.put(serverPlan.getOperatorID(), buffer);
 
     Schema td = serverPlan.getSchema();

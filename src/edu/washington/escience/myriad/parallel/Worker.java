@@ -1,5 +1,6 @@
 package edu.washington.escience.myriad.parallel;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -36,8 +37,11 @@ import edu.washington.escience.myriad.table._TupleBatch;
  * */
 public class Worker {
 
-  static final String usage = "Usage: worker worker_identifier(format: host:port) server_identifier [--data datadir]";
+  static final String usage = "Usage: worker [--conf <conf_dir>]";
   public final static String DEFAULT_DATA_DIR = "data";
+
+  public final File dataDir;
+  public final File tmpDir;
 
   /**
    * The working thread, which executes the query plan
@@ -77,22 +81,26 @@ public class Worker {
   }
 
   public static void main(String[] args) throws Throwable {
-    if (args.length < 2 || args.length > 4) {
+    if (args.length > 2) {
       System.out.println("Invalid number of arguments.\n" + usage);
       ParallelUtility.shutdownVM();
     }
-    // String dataDir = DEFAULT_DATA_DIR;
 
-    // Checking if a data argument was specified.
-    // This argument is used for testing
-    if (args.length >= 3 && args[2].equals("--data")) {
-      // dataDir = args[3];
-      args = ParallelUtility.removeArg(args, 2);
-      args = ParallelUtility.removeArg(args, 2);
-    }
+    File confDir = null;
+    if (args.length >= 2)
+      if (args[0].equals("--conf")) {
+        // dataDir = args[3];
+        confDir = new File(args[1]);
+        args = ParallelUtility.removeArg(args, 0);
+        args = ParallelUtility.removeArg(args, 0);
+      } else {
+        System.out.println("Invalid arguments.\n" + usage);
+        ParallelUtility.shutdownVM();
+      }
 
+    Configuration conf = new Configuration(confDir);
     // Instantiate a new worker
-    Worker w = new Worker(args[0], args[1]);
+    Worker w = new Worker(conf);
     int port = w.port;
 
     // The worker uses the same schema as the server
@@ -182,12 +190,17 @@ public class Worker {
    * */
   public final HashMap<ExchangePairID, LinkedBlockingQueue<_TupleBatch>> inBuffer;
 
-  public Worker(String workerID, String serverAddr) {
-    this.workerID = workerID;
+  protected final Configuration conf;
+
+  public Worker(Configuration conf) {
+    this.conf = conf;
+    this.workerID = conf.get("worker.identifier");
     String[] ts = workerID.split(":");
     port = Integer.parseInt(ts[1]);
     host = ts[0];
-    String[] server = serverAddr.split(":");
+    String[] server = conf.get("master.identifier").split(":");
+    this.dataDir = new File(conf.get("worker.data.sqlite.dir"));
+    this.tmpDir = new File(conf.get("worker.tmp.dir"));
     this.server = new InetSocketAddress(server[0], Integer.parseInt(server[1]));
     acceptor = ParallelUtility.createAcceptor();
     inBuffer = new HashMap<ExchangePairID, LinkedBlockingQueue<_TupleBatch>>();
@@ -206,19 +219,27 @@ public class Worker {
     if (queryPlan == null)
       return;
 
-    // if (queryPlan instanceof SeqScan) {
-    // SeqScan ss = ((SeqScan) queryPlan);
-    // ss.reset(Database.getCatalog().getTableId(ss.getTableName()), ss.getAlias());
-    // }
-    // else
-    if (queryPlan instanceof Producer) {
+    if (queryPlan instanceof SQLiteQueryScan) {
+      SQLiteQueryScan ss = ((SQLiteQueryScan) queryPlan);
+      ss.setDataDir(dataDir.getAbsolutePath());
+    } else if (queryPlan instanceof SQLiteSQLProcessor) {
+      SQLiteSQLProcessor ss = ((SQLiteSQLProcessor) queryPlan);
+      ss.setDataDir(dataDir.getAbsolutePath());
+    } else if (queryPlan instanceof Producer) {
       ((Producer) queryPlan).setThisWorker(Worker.this);
     } else if (queryPlan instanceof Consumer) {
+      Consumer c = (Consumer)queryPlan;
+      _TupleBatch outputBuffer = c.getOutputBuffer();
+      if (outputBuffer instanceof SQLiteTupleBatch)
+      {
+        ((SQLiteTupleBatch) outputBuffer).reset(dataDir.getAbsolutePath());
+      }
       LinkedBlockingQueue<_TupleBatch> buf = null;
       // synchronized (Worker.this) {
       buf = Worker.this.inBuffer.get(((Consumer) queryPlan).getOperatorID());
       // }
-      ((Consumer) queryPlan).setBuffer(buf);
+      c.setInputBuffer(buf);
+      
     }
 
     Operator[] children = null;
