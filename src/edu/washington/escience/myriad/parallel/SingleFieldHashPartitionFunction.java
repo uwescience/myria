@@ -35,9 +35,19 @@ public class SingleFieldHashPartitionFunction extends PartitionFunction<String, 
   }
 
   @Override
-  public int partition(List<Column> columns, Schema td) {
-    // TODO Auto-generated method stub
-    return 0;
+  public int[] partition(List<Column> columns, Schema td) {
+    Column partitionColumn = columns.get(this.fieldIndex);
+    int numTuples = partitionColumn.size();
+    int[] result = new int[numTuples];
+    
+    for (int i=0;i<numTuples;i++)
+    {
+      int p = partitionColumn.get(i).hashCode() % this.numPartition;
+      if (p<0)
+        p = p+this.numPartition;
+      result[i]=p;
+    }
+    return result;
   }
 
 }
