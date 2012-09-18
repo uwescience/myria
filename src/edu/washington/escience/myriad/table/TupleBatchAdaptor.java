@@ -5,6 +5,7 @@ import java.util.List;
 import edu.washington.escience.myriad.Predicate;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
+import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnFactory;
 import edu.washington.escience.myriad.parallel.PartitionFunction;
@@ -120,8 +121,21 @@ public abstract class TupleBatchAdaptor implements _TupleBatch {
   }
 
   @Override
-  public _TupleBatch[] partition(PartitionFunction<?, ?> p, _TupleBatch[] buffers) {
-    throw new UnsupportedOperationException();
+  public TupleBatchBuffer[] partition(PartitionFunction<?, ?> pf, TupleBatchBuffer[] buffers) {
+    // p.partition(t, td)
+    List<Column> outputData = this.outputRawData();
+    Schema s = this.outputSchema();
+    int numColumns = outputData.size();
+
+    int[] partitions = pf.partition(outputData, s);
+
+    for (int i = 0; i < partitions.length; i++) {
+      int p_of_tuple = partitions[i];
+      for (int j = 0; j < numColumns; j++) {
+        buffers[p_of_tuple].put(j, outputData.get(j).get(i));
+      }
+    }
+    return buffers;
   }
 
 }

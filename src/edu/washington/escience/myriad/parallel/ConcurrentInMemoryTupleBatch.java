@@ -13,6 +13,7 @@ import com.google.common.base.Preconditions;
 import edu.washington.escience.myriad.Predicate;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.Schema.TDItem;
+import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.annotation.ThreadSafe;
 import edu.washington.escience.myriad.column.Column;
@@ -294,9 +295,23 @@ public class ConcurrentInMemoryTupleBatch implements _TupleBatch {
   }
 
   @Override
-  public _TupleBatch[] partition(PartitionFunction<?, ?> p, _TupleBatch[] buffers) {
+  public TupleBatchBuffer[] partition(PartitionFunction<?, ?> pf, TupleBatchBuffer[] buffers) {
 //    p.partition(t, td)
-    return null;
+    List<Column> outputData = this.outputRawData();
+    Schema s = this.outputSchema();
+    int numColumns = outputData.size();
+    
+    int[] partitions = pf.partition(outputData, s);
+    
+    for (int i=0;i<partitions.length;i++)
+    {
+      int p_of_tuple = partitions[i];
+      for (int j=0;j<numColumns;j++)
+      {
+        buffers[p_of_tuple].put(j, outputData.get(j).get(i));
+      }
+    }
+    return buffers;
   }
 
 }
