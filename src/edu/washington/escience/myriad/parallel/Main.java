@@ -1,5 +1,6 @@
 package edu.washington.escience.myriad.parallel;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -7,6 +8,10 @@ import java.util.HashMap;
 import java.util.NoSuchElementException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import com.almworks.sqlite4java.SQLiteConnection;
+import com.almworks.sqlite4java.SQLiteException;
+import com.almworks.sqlite4java.SQLiteStatement;
 
 import edu.washington.escience.myriad.parallel.ConcurrentInMemoryTupleBatch;
 import edu.washington.escience.myriad.parallel.JdbcTupleBatch;
@@ -37,13 +42,150 @@ import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
  * 
  */
 public class Main {
-  public static void main(String[] args) throws NoSuchElementException, DbException, IOException {
+  public static void main(String[] args) throws NoSuchElementException, DbException, IOException, SQLiteException {
     // JdbcTest();
     // SQLiteTest();
+    // sqliteEmptyTest();
     // parallelTestJDBC(args);
-    parallelTestSQLite(args);
+    // parallelTestSQLite(args);
     // jdbcTest_slxu(args);
+    shuffleTestSQLite(args);
   };
+
+  public static void sqliteEmptyTest() throws SQLiteException {
+    SQLiteConnection sqliteConnection = new SQLiteConnection(new File("/tmp/test/emptytable.db"));
+    sqliteConnection.open(false);
+
+    /* Set up and execute the query */
+    SQLiteStatement statement = sqliteConnection.prepare("select * from empty");
+
+    /* Step the statement once so we can figure out the Schema */
+    statement.step();
+    try {
+      if (!statement.hasStepped()) {
+        statement.step();
+      }
+      System.out.println(Schema.fromSQLiteStatement(statement));
+    } catch (SQLiteException e) {
+      throw new RuntimeException(e.getMessage());
+    }
+  }
+
+  public static class DoNothingOperator extends Operator {
+
+    Operator[] children;
+    Schema outputSchema;
+
+    public DoNothingOperator(Schema outputSchema, Operator[] children) {
+      this.outputSchema = outputSchema;
+      this.children = children;
+    }
+
+    @Override
+    protected _TupleBatch fetchNext() throws DbException {
+      if (children != null) {
+        for (Operator child : children) {
+          while (child.hasNext())
+            child.next();
+        }
+      }
+      return null;
+    }
+
+    @Override
+    public Operator[] getChildren() {
+      return this.children;
+    }
+
+    @Override
+    public Schema getSchema() {
+      return this.outputSchema;
+    }
+
+    @Override
+    public void setChildren(Operator[] children) {
+      this.children = children;
+    }
+
+    public void open() throws DbException {
+      if (children != null) {
+        for (Operator child : children)
+          child.open();
+      }
+      super.open();
+    }
+
+  }
+
+  public static void shuffleTestSQLite(final String[] args) throws DbException, IOException {
+    Configuration conf = new Configuration();
+    SocketInfo[] workers = conf.getWorkers();
+    SocketInfo server = conf.getServer();
+
+    ExchangePairID serverReceiveID = ExchangePairID.newID();
+    ExchangePairID shuffle1ID = ExchangePairID.newID();
+    ExchangePairID shuffle2ID = ExchangePairID.newID();
+
+    Type[] table1Types = new Type[] { Type.LONG_TYPE, Type.STRING_TYPE };
+    String[] table1ColumnNames = new String[] { "id", "name" };
+    Type[] table2Types = new Type[] { Type.LONG_TYPE, Type.STRING_TYPE };
+    String[] table2ColumnNames = new String[] { "id", "name" };
+    Type[] outputTypes = new Type[] { Type.LONG_TYPE, Type.STRING_TYPE, Type.LONG_TYPE, Type.STRING_TYPE };
+    String[] outputColumnNames = new String[] { "id", "name", "id", "name" };
+    Schema tableSchema1 = new Schema(table1Types, table1ColumnNames);
+    Schema tableSchema2 = new Schema(table2Types, table2ColumnNames);
+    Schema outputSchema = new Schema(outputTypes, outputColumnNames);
+    int numPartition = 2;
+
+    PartitionFunction<String, Integer> pf = new SingleFieldHashPartitionFunction(numPartition);
+    pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1); // partition by name
+
+    SQLiteQueryScan scan1 = new SQLiteQueryScan("testtable.db", "select * from testtable1", tableSchema1);
+    ShuffleProducer sp1 = new ShuffleProducer(scan1, shuffle1ID, workers, pf);
+
+    SQLiteQueryScan scan2 = new SQLiteQueryScan("testtable.db", "select * from testtable2", tableSchema2);
+    ShuffleProducer sp2 = new ShuffleProducer(scan2, shuffle2ID, workers, pf);
+
+    SQLiteTupleBatch bufferWorker1 = new SQLiteTupleBatch(tableSchema1, "temptable.db", "temptable1");
+    ShuffleConsumer sc1 = new ShuffleConsumer(sp1, shuffle1ID, workers, bufferWorker1);
+
+    SQLiteTupleBatch bufferWorker2 = new SQLiteTupleBatch(tableSchema2, "temptable.db", "temptable2");
+    ShuffleConsumer sc2 = new ShuffleConsumer(sp2, shuffle2ID, workers, bufferWorker2);
+
+    SQLiteSQLProcessor ssp =
+        new SQLiteSQLProcessor("temptable.db",
+            "select * from temptable1 inner join temptable2 on temptable1.name=temptable2.name", outputSchema,
+            new Operator[] { sc1, sc2 });
+
+    DoNothingOperator dno = new DoNothingOperator(outputSchema, new Operator[] { sc1, sc2 });
+
+    CollectProducer cp = new CollectProducer(ssp, serverReceiveID, server.getAddress());
+
+    HashMap<SocketInfo, Operator> workerPlans = new HashMap<SocketInfo, Operator>();
+    workerPlans.put(workers[0], cp);
+    workerPlans.put(workers[1], cp);
+
+    OutputStreamSinkTupleBatch serverBuffer = new OutputStreamSinkTupleBatch(outputSchema, System.out);
+
+    new Thread() {
+      public void run() {
+        try {
+          Server.main(args);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      }
+    }.start();
+    while (Server.runningInstance == null)
+      try {
+        Thread.sleep(10);
+      } catch (InterruptedException e) {
+      }
+    Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
+    System.out.println("Query dispatched to the workers");
+    Server.runningInstance.startServerQuery(new CollectConsumer(outputSchema, serverReceiveID, workers, serverBuffer));
+
+  }
 
   public static void parallelTestSQLite(final String[] args) throws DbException, IOException {
     // create table testtable1 (id int, name varchar(20));
@@ -88,7 +230,8 @@ public class Main {
     SQLiteTupleBatch bufferWorker2 = new SQLiteTupleBatch(outputSchema, "/tmp/temptable1.db", "temptable1");
     CollectConsumer cc2 = new CollectConsumer(cp2, worker2ReceiveID, workers, bufferWorker2);
     SQLiteSQLProcessor scan22 =
-        new SQLiteSQLProcessor("/tmp/temptable1.db", "select distinct * from temptable1", outputSchema, cc2);
+        new SQLiteSQLProcessor("/tmp/temptable1.db", "select distinct * from temptable1", outputSchema,
+            new Operator[] { cc2 });
     CollectProducer cp22 = new CollectProducer(scan22, serverReceiveID, server.getAddress());
     HashMap<SocketInfo, Operator> workerPlans = new HashMap<SocketInfo, Operator>();
     workerPlans.put(workers[0], cp1);
