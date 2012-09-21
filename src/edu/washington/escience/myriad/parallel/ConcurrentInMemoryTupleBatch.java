@@ -296,22 +296,27 @@ public class ConcurrentInMemoryTupleBatch implements _TupleBatch {
 
   @Override
   public TupleBatchBuffer[] partition(PartitionFunction<?, ?> pf, TupleBatchBuffer[] buffers) {
-//    p.partition(t, td)
+    // p.partition(t, td)
     List<Column> outputData = this.outputRawData();
     Schema s = this.outputSchema();
     int numColumns = outputData.size();
-    
+
     int[] partitions = pf.partition(outputData, s);
-    
-    for (int i=0;i<partitions.length;i++)
-    {
+
+    for (int i = 0; i < partitions.length; i++) {
       int p_of_tuple = partitions[i];
-      for (int j=0;j<numColumns;j++)
-      {
+      for (int j = 0; j < numColumns; j++) {
         buffers[p_of_tuple].put(j, outputData.get(j).get(i));
       }
     }
     return buffers;
+  }
+
+  @Override
+  public ConcurrentInMemoryTupleBatch remove(int innerIdx) {
+    if (innerIdx<this.numInputTuples && innerIdx>=0)
+      invalidTuples.set(innerIdx);
+    return this;
   }
 
 }

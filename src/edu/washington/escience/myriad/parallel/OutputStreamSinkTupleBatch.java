@@ -159,4 +159,9 @@ public class OutputStreamSinkTupleBatch implements _TupleBatch {
   {
     return this.numInputTuples+" rows";
   }
+
+  @Override
+  public _TupleBatch remove(int innerIdx) {
+    throw new UnsupportedOperationException();
+  }
 }

@@ -309,4 +309,15 @@ public class ImmutableInMemoryTupleBatch implements _TupleBatch {
     return null;
   }
 
+  @Override
+  public ImmutableInMemoryTupleBatch remove(int innerIdx) {
+    if (innerIdx < this.numInputTuples && innerIdx >= 0) {
+      BitSet newInvalidTuples = BitSet.valueOf(this.invalidTuples.toByteArray());
+      newInvalidTuples.set(innerIdx);
+      return new ImmutableInMemoryTupleBatch(inputSchema, outputColumnNames, inputColumns, numInputTuples,
+          newInvalidTuples, invalidColumns);
+    }
+    return this;
+  }
+
 }
