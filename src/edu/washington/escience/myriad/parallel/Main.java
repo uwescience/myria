@@ -220,17 +220,17 @@ public class Main {
     Schema outputSchema = new Schema(types, columnNames);
 
     SQLiteQueryScan scan1 =
-        new SQLiteQueryScan("/tmp/testtable1.db", "select distinct * from testtable1", outputSchema);
+        new SQLiteQueryScan("testtable1.db", "select distinct * from testtable1", outputSchema);
     CollectProducer cp1 = new CollectProducer(scan1, worker2ReceiveID, workers[1].getAddress());
 
     SQLiteQueryScan scan2 =
-        new SQLiteQueryScan("/tmp/testtable2.db", "select distinct * from testtable2", outputSchema);
+        new SQLiteQueryScan("testtable2.db", "select distinct * from testtable2", outputSchema);
     CollectProducer cp2 = new CollectProducer(scan2, worker2ReceiveID, workers[1].getAddress());
     // CollectProducer child, ParallelOperatorID operatorID, SocketInfo[] workers
     SQLiteTupleBatch bufferWorker2 = new SQLiteTupleBatch(outputSchema, "/tmp/temptable1.db", "temptable1");
     CollectConsumer cc2 = new CollectConsumer(cp2, worker2ReceiveID, workers, bufferWorker2);
     SQLiteSQLProcessor scan22 =
-        new SQLiteSQLProcessor("/tmp/temptable1.db", "select distinct * from temptable1", outputSchema,
+        new SQLiteSQLProcessor("temptable1.db", "select distinct * from temptable1", outputSchema,
             new Operator[] { cc2 });
     CollectProducer cp22 = new CollectProducer(scan22, serverReceiveID, server.getAddress());
     HashMap<SocketInfo, Operator> workerPlans = new HashMap<SocketInfo, Operator>();

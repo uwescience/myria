@@ -13,19 +13,19 @@
 
 <property>
   <name>worker.identifier</name>
-  <value>localhost:9001</value>
+  <value>localhost:9002</value>
   <description>The address of the worker itself. Format: host:port</description>
 </property>
 
 <property>
   <name>worker.data.sqlite.dir</name>
-  <value>/tmp/worker1</value>
+  <value>/tmp/tests/worker2</value>
   <description>The data dir of sqlite. All the sqlite tables should be put here.</description>
 </property>
 
 <property>
   <name>worker.tmp.dir</name>
-  <value>/tmp/worker1</value>
+  <value>/tmp/tests/worker2</value>
   <description>the temp directory.</description>
 </property>
 
