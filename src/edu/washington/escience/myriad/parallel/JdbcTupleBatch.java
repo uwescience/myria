@@ -222,5 +222,10 @@ public class JdbcTupleBatch implements _TupleBatch {
     // TODO Auto-generated method stub
     return null;
   }
+  
+  @Override
+  public _TupleBatch remove(int innerIdx) {
+    throw new UnsupportedOperationException();
+  }
 
 }

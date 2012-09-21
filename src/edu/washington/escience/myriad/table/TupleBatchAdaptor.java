@@ -138,4 +138,10 @@ public abstract class TupleBatchAdaptor implements _TupleBatch {
     return buffers;
   }
 
+  @Override
+  public _TupleBatch remove(int innerIdx) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
 }

@@ -226,4 +226,9 @@ public class SQLiteTupleBatch implements _TupleBatch {
   {
     this.dataDir = dataDir;
   }
+
+  @Override
+  public _TupleBatch remove(int innerIdx) {
+    throw new UnsupportedOperationException();
+  }
 }

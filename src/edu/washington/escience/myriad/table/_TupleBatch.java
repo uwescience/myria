@@ -80,6 +80,8 @@ public interface _TupleBatch extends Serializable {
 
   public _TupleBatch orderby();
 
+  public _TupleBatch remove(int innerIdx);
+  
   public List<Column> outputRawData();
 
   /**

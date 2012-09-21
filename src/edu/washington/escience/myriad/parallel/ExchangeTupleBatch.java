@@ -228,4 +228,11 @@ public class ExchangeTupleBatch extends ExchangeMessage implements _TupleBatch {
     return null;
   }
 
+  @Override
+  public _TupleBatch remove(int innerIdx) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+  
+
 }
