@@ -2,6 +2,8 @@ package edu.washington.escience.myriad.table;
 
 import java.util.List;
 
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+
 import edu.washington.escience.myriad.Predicate;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -28,11 +30,19 @@ public abstract class TupleBatchAdaptor implements _TupleBatch {
 
   @Override
   public Schema inputSchema() {
+    if (this instanceof TupleBatch) {
+      TupleBatch tupleBatch = (TupleBatch) this;
+      return tupleBatch.getSchema();
+    } else
     throw new UnsupportedOperationException();
   }
 
   @Override
   public int numInputTuples() {
+    if (this instanceof TupleBatch) {
+      TupleBatch tupleBatch = (TupleBatch) this;
+      return tupleBatch.validTupleIndices().length; // need a public method here
+    } else
     throw new UnsupportedOperationException();
   }
 
@@ -142,6 +152,16 @@ public abstract class TupleBatchAdaptor implements _TupleBatch {
   public _TupleBatch remove(int innerIdx) {
     // TODO Auto-generated method stub
     return null;
+  }
+  
+  @Override
+  public int hashCode(int rowIndx)
+  {
+    if (this instanceof TupleBatch) {
+      TupleBatch tupleBatch = (TupleBatch) this;
+      return tupleBatch.hashCode(rowIndx);      
+    } else
+    throw new UnsupportedOperationException();
   }
 
 }

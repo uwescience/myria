@@ -7,6 +7,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+
 // import edu.washington.escience.Predicate.Op;
 import edu.washington.escience.myriad.Predicate;
 import edu.washington.escience.myriad.Schema;
@@ -21,6 +23,7 @@ import edu.washington.escience.myriad.column.IntColumn;
 import edu.washington.escience.myriad.column.StringColumn;
 import edu.washington.escience.myriad.column.BooleanColumn;
 import edu.washington.escience.myriad.column.FloatColumn;
+import edu.washington.escience.myriad.column.LongColumn;
 
 import edu.washington.escience.myriad.parallel.PartitionFunction;
 import edu.washington.escience.myriad.table._TupleBatch;
@@ -31,6 +34,10 @@ public class ImmutableInMemoryTupleBatch implements _TupleBatch {
   private static final long serialVersionUID = 1L;
 
   public static final int BATCH_SIZE = 100;
+  /** Class-specific magic number used to generate the hash code. */
+  private static final int MAGIC_HASHCODE1 = 243;
+  /** Class-specific magic number used to generate the hash code. */
+  private static final int MAGIC_HASHCODE2 = 67;  
 
   private final Schema inputSchema;
   private final String[] outputColumnNames;
@@ -46,6 +53,24 @@ public class ImmutableInMemoryTupleBatch implements _TupleBatch {
     this.numInputTuples = numTuples;
     /* All tuples are valid */
     this.invalidTuples = new BitSet(numTuples);
+    // validTuples.set(0, numTuples);
+    /* All columns are valid */
+    this.invalidColumns = new BitSet(inputSchema.numFields());
+    // validColumns.set(0, inputSchema.numFields());
+    this.outputColumnNames = new String[inputSchema.numFields()];
+    Iterator<TDItem> it = inputSchema.iterator();
+    int i = 0;
+    while (it.hasNext())
+      this.outputColumnNames[i++] = it.next().getName();
+  }
+  
+  public ImmutableInMemoryTupleBatch(Schema inputSchema, List<Column> columns, int numTuples, BitSet invalidTuples) {
+    /* Take the input arguments directly */
+    this.inputSchema = Objects.requireNonNull(inputSchema);
+    this.inputColumns = Objects.requireNonNull(columns);
+    this.numInputTuples = numTuples;
+    /* All tuples are valid */
+    this.invalidTuples = invalidTuples;
     // validTuples.set(0, numTuples);
     /* All columns are valid */
     this.invalidColumns = new BitSet(inputSchema.numFields());
@@ -106,6 +131,11 @@ public class ImmutableInMemoryTupleBatch implements _TupleBatch {
   @Override
   public int getInt(int column, int row) {
     return ((IntColumn) inputColumns.get(column)).getInt(row);
+  }
+  
+  @Override
+  public long getLong(int column, int row) {
+    return ((LongColumn) inputColumns.get(column)).getLong(row);
   }
 
   @Override
@@ -319,5 +349,15 @@ public class ImmutableInMemoryTupleBatch implements _TupleBatch {
     }
     return this;
   }
+  
+  @Override
+  public int hashCode(int rowIndx)
+  {    
+    //return 0;    
+    HashCodeBuilder hb = new HashCodeBuilder(MAGIC_HASHCODE1, MAGIC_HASHCODE2);
+    for (int i = 0; i < inputSchema.numFields(); ++i)     
+      hb.append(inputColumns.get(i).get(rowIndx));    
+    return hb.toHashCode();        
+  }    
 
 }
