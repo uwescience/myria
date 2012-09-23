@@ -8,6 +8,8 @@ import java.util.HashMap;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
@@ -193,6 +195,7 @@ public class Worker {
   protected final Configuration conf;
 
   public Worker(Configuration conf) {
+    Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.OFF);
     this.conf = conf;
     this.workerID = conf.get("worker.identifier");
     String[] ts = workerID.split(":");

@@ -81,6 +81,11 @@ public class JdbcTupleBatch implements _TupleBatch {
     // return ((IntColumn) inputColumns.get(column)).getInt(row);
     return 0;
   }
+  
+  public synchronized long getLong(int column, int row) {
+    // return ((IntColumn) inputColumns.get(column)).getInt(row);
+    return 0;
+  }  
 
   public Schema inputSchema() {
     return inputSchema;
@@ -227,5 +232,11 @@ public class JdbcTupleBatch implements _TupleBatch {
   public _TupleBatch remove(int innerIdx) {
     throw new UnsupportedOperationException();
   }
+  
+  @Override
+  public int hashCode(int rowIndx)
+  {     
+    throw new UnsupportedOperationException();    
+  }      
 
 }
