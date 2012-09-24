@@ -89,4 +89,9 @@ public class TupleBatchBuffer {
     return this.readyTuples.size()*TupleBatch.BATCH_SIZE+this.currentNumTuples;
   }
   
+  public final List<TupleBatch> getOutput()
+  {
+    return this.readyTuples;
+  }
+  
 }
