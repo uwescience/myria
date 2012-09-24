@@ -8,6 +8,7 @@ import org.apache.mina.core.service.IoConnector;
 import org.apache.mina.core.session.IoSession;
 
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.table._TupleBatch;
 
@@ -85,11 +86,13 @@ public class ShuffleProducer extends Producer {
           for (int p = 0; p < numWorker; p++) {
             TupleBatchBuffer etb = buffers[p];
             if (etb.numTuples() > 0) {
-              ExchangeTupleBatch toSend =
-                  new ExchangeTupleBatch(thisOID, thisWorkerID, tup.outputRawData(), ShuffleProducer.this.getSchema(),
-                      tup.numOutputTuples());
-              // ShuffleProducer.this.getSession
-              shuffleSessions[p].write(toSend);
+              for (TupleBatch tb : etb.getOutput()) {
+                ExchangeTupleBatch toSend =
+                    new ExchangeTupleBatch(thisOID, thisWorkerID, tb.outputRawData(), ShuffleProducer.this.getSchema(),
+                        tb.numOutputTuples());
+                // ShuffleProducer.this.getSession
+                shuffleSessions[p].write(toSend);
+              }
             }
           }
         }
