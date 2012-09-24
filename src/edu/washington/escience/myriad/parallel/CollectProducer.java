@@ -62,10 +62,6 @@ public class CollectProducer extends Producer {
               CollectProducer.this.getThisWorker().minaHandler, -1);
 
       try {
-        // ConcurrentInMemoryTupleBatch buffer = new
-        // ConcurrentInMemoryTupleBatch(CollectProducer.this.getSchema());
-        // long lastTime = System.currentTimeMillis();
-
         while (CollectProducer.this.child.hasNext()) {
           _TupleBatch tup = CollectProducer.this.child.next();
           // buffer.append(tup);
