@@ -1,11 +1,15 @@
 package edu.washington.escience.myriad.parallel;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.NoSuchElementException;
+import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -42,7 +46,7 @@ import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
  * 
  */
 public class Main {
-  public static void main(String[] args) throws NoSuchElementException, DbException, IOException, SQLiteException {
+  public static void main(String[] args) throws Exception{
     // JdbcTest();
     // SQLiteTest();
     // sqliteEmptyTest();
@@ -51,7 +55,57 @@ public class Main {
     // jdbcTest_slxu(args);
     //shuffleTestSQLite(args);
     dupElimTestSQLite(args);
+    // shuffleTestSQLite(args);
+//    sqliteInsertSpeedTest();
+    //filesystemWriteTest();
   };
+  
+  public static void filesystemWriteTest() throws Exception 
+  {
+    Date now = new Date();
+    Date begin = now;
+    Random r = new Random();
+    File f = new File("/tmp/tmpfile");
+    FileOutputStream fos = new FileOutputStream(f);
+    
+    for (int i = 0; i < 1000000; i++) {
+      fos.write((i+"|"+i + "th " + r.nextInt()).getBytes());
+    }
+    fos.close();
+    System.out.println((new Date().getTime() - begin.getTime()) * 1.0 / 1000 + " seconds in total");
+    //2.371 seconds
+  }
+
+  public static void sqliteInsertSpeedTest() throws SQLiteException {
+    SQLiteConnection sqliteConnection = new SQLiteConnection(new File("/tmp/test/test.db"));
+    sqliteConnection.open(false);
+
+    /* Set up and execute the query */
+    SQLiteStatement statement = sqliteConnection.prepare("insert into test (id,name) values (?,?)");
+
+    Date now = new Date();
+    Date begin = now;
+    Random r = new Random();
+    for (int i = 0; i < 1000000; i++) {
+      if (i % 100 ==0)
+        sqliteConnection.exec("begin transaction");
+      statement.bind(1, i);
+      statement.bind(2, i + "th " + r.nextInt());
+      statement.step();
+      statement.reset();
+      if (i % 1000 == 0) {
+        Date tmp = new Date();
+        System.out.println((tmp.getTime() - now.getTime()) * 1.0 / 1000 + " seconds per 1000");
+        now = tmp;
+      }
+      if (i % 100 ==99)
+        sqliteConnection.exec("commit transaction");
+    }
+    System.out.println((new Date().getTime() - begin.getTime()) * 1.0 / 1000 + " seconds in total");
+
+    // 4 seconds for 1000000 tuples insert in one transaction
+    // 93.884 seconds for 1000000 tuples insert in 1000-size tuplebatches.
+  }
 
   public static void sqliteEmptyTest() throws SQLiteException {
     SQLiteConnection sqliteConnection = new SQLiteConnection(new File("/tmp/test/emptytable.db"));
@@ -291,12 +345,10 @@ public class Main {
     String[] columnNames = new String[] { "id", "name" };
     Schema outputSchema = new Schema(types, columnNames);
 
-    SQLiteQueryScan scan1 =
-        new SQLiteQueryScan("testtable1.db", "select distinct * from testtable1", outputSchema);
+    SQLiteQueryScan scan1 = new SQLiteQueryScan("testtable1.db", "select distinct * from testtable1", outputSchema);
     CollectProducer cp1 = new CollectProducer(scan1, worker2ReceiveID, workers[1].getAddress());
 
-    SQLiteQueryScan scan2 =
-        new SQLiteQueryScan("testtable2.db", "select distinct * from testtable2", outputSchema);
+    SQLiteQueryScan scan2 = new SQLiteQueryScan("testtable2.db", "select distinct * from testtable2", outputSchema);
     CollectProducer cp2 = new CollectProducer(scan2, worker2ReceiveID, workers[1].getAddress());
     // CollectProducer child, ParallelOperatorID operatorID, SocketInfo[] workers
     SQLiteTupleBatch bufferWorker2 = new SQLiteTupleBatch(outputSchema, "/tmp/temptable1.db", "temptable1");
