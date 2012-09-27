@@ -58,6 +58,9 @@ public class Main {
 //    filesystemWriteTest();
     //shuffleTestSQLite(args);
     dupElimTestSQLite(args);
+    // shuffleTestSQLite(args);
+//    sqliteInsertSpeedTest();
+    //filesystemWriteTest();
   };
   
   public static void filesystemWriteTest() throws Exception 
