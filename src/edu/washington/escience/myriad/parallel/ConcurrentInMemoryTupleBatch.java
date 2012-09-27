@@ -7,6 +7,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+
 import com.google.common.base.Preconditions;
 
 // import edu.washington.escience.Predicate.Op;
@@ -19,6 +21,7 @@ import edu.washington.escience.myriad.annotation.ThreadSafe;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.DoubleColumn;
 import edu.washington.escience.myriad.column.IntColumn;
+import edu.washington.escience.myriad.column.LongColumn;
 import edu.washington.escience.myriad.column.StringColumn;
 import edu.washington.escience.myriad.column.BooleanColumn;
 import edu.washington.escience.myriad.column.FloatColumn;
@@ -32,6 +35,11 @@ public class ConcurrentInMemoryTupleBatch implements _TupleBatch {
   private static final long serialVersionUID = 1L;
 
   public static final int BATCH_SIZE = 100;
+  
+  /** Class-specific magic number used to generate the hash code. */
+  private static final int MAGIC_HASHCODE1 = 243;
+  /** Class-specific magic number used to generate the hash code. */
+  private static final int MAGIC_HASHCODE2 = 67;
 
   private final Schema inputSchema;
   private final String[] outputColumnNames;
@@ -118,13 +126,17 @@ public class ConcurrentInMemoryTupleBatch implements _TupleBatch {
   public synchronized int getInt(int column, int row) {
     return ((IntColumn) inputColumns.get(column)).getInt(row);
   }
-
-  public Schema inputSchema() {
-    return inputSchema;
-  }
+  
+  public synchronized long getLong(int column, int row) {
+    return ((LongColumn) inputColumns.get(column)).getLong(row);
+  }  
 
   public synchronized String getString(int column, int row) {
     return ((StringColumn) inputColumns.get(column)).getString(row);
+  }
+  
+  public Schema inputSchema() {
+    return inputSchema;
   }
 
   @Override
@@ -318,5 +330,15 @@ public class ConcurrentInMemoryTupleBatch implements _TupleBatch {
       invalidTuples.set(innerIdx);
     return this;
   }
+  
+  @Override
+  public int hashCode(int rowIndx)
+  {    
+    //return 0;    
+    HashCodeBuilder hb = new HashCodeBuilder(MAGIC_HASHCODE1, MAGIC_HASHCODE2);
+    for (int i = 0; i < inputSchema.numFields(); ++i)     
+      hb.append(inputColumns.get(i).get(rowIndx));    
+    return hb.toHashCode();    
+  }  
 
 }

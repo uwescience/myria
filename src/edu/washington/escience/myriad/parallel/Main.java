@@ -56,6 +56,8 @@ public class Main {
     // shuffleTestSQLite(args);
 //    sqliteInsertSpeedTest();
     filesystemWriteTest();
+    //shuffleTestSQLite(args);
+    dupElimTestSQLite(args);
   };
   
   public static void filesystemWriteTest() throws Exception 
@@ -169,6 +171,77 @@ public class Main {
     }
 
   }
+  
+  public static void dupElimTestSQLite(final String[] args) throws DbException, IOException {
+    Configuration conf = new Configuration();
+    SocketInfo[] workers = conf.getWorkers();
+    SocketInfo server = conf.getServer();
+
+    ExchangePairID serverReceiveID = ExchangePairID.newID();
+    ExchangePairID shuffle1ID = ExchangePairID.newID();
+    ExchangePairID shuffle2ID = ExchangePairID.newID();
+
+    Type[] table1Types = new Type[] { Type.LONG_TYPE, Type.STRING_TYPE };
+    String[] table1ColumnNames = new String[] { "id", "name" };
+    Type[] table2Types = new Type[] { Type.LONG_TYPE, Type.STRING_TYPE };
+    String[] table2ColumnNames = new String[] { "id", "name" };
+    Type[] outputTypes = new Type[] { Type.LONG_TYPE, Type.STRING_TYPE };
+    String[] outputColumnNames = new String[] { "id", "name" };
+    Schema tableSchema1 = new Schema(table1Types, table1ColumnNames);
+    Schema tableSchema2 = new Schema(table2Types, table2ColumnNames);
+    Schema outputSchema = new Schema(outputTypes, outputColumnNames);
+    int numPartition = 2;
+
+    PartitionFunction<String, Integer> pf = new SingleFieldHashPartitionFunction(numPartition);
+    pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1); // partition by name
+
+    SQLiteQueryScan scan1 = new SQLiteQueryScan("testtable.db", "select * from testtable1", tableSchema1);
+    //ShuffleProducer sp1 = new ShuffleProducer(scan1, shuffle1ID, workers, pf);
+
+    SQLiteQueryScan scan2 = new SQLiteQueryScan("testtable.db", "select * from testtable2", tableSchema2);
+    //ShuffleProducer sp2 = new ShuffleProducer(scan2, shuffle2ID, workers, pf);
+
+    //SQLiteTupleBatch bufferWorker1 = new SQLiteTupleBatch(tableSchema1, "temptable.db", "temptable1");
+    //ShuffleConsumer sc1 = new ShuffleConsumer(sp1, shuffle1ID, workers, bufferWorker1);
+
+    //SQLiteTupleBatch bufferWorker2 = new SQLiteTupleBatch(tableSchema2, "temptable.db", "temptable2");
+    //ShuffleConsumer sc2 = new ShuffleConsumer(sp2, shuffle2ID, workers, bufferWorker2);
+
+    //SQLiteSQLProcessor ssp =
+    //    new SQLiteSQLProcessor("testtable.db",
+    //        "select * from testtable1 union select * from testtable2", outputSchema,
+    //        new Operator[] { scan1, scan2 });
+
+    //DoNothingOperator dno = new DoNothingOperator(outputSchema, new Operator[] { sc1, sc2 });
+
+    //CollectProducer cp = new CollectProducer(ssp, serverReceiveID, server.getAddress());
+    DupElim dupElim1 = new DupElim(tableSchema1, scan1);
+    DupElim dupElim2 = new DupElim(tableSchema2, scan2);
+    HashMap<SocketInfo, Operator> workerPlans = new HashMap<SocketInfo, Operator>();    
+    workerPlans.put(workers[0], new CollectProducer(dupElim1, serverReceiveID, server.getAddress()));
+    workerPlans.put(workers[1], new CollectProducer(dupElim2, serverReceiveID, server.getAddress()));
+
+    OutputStreamSinkTupleBatch serverBuffer = new OutputStreamSinkTupleBatch(outputSchema, System.out);
+
+    new Thread() {
+      public void run() {
+        try {
+          Server.main(args);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      }
+    }.start();
+    while (Server.runningInstance == null)
+      try {
+        Thread.sleep(10);
+      } catch (InterruptedException e) {
+      }
+    Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
+    System.out.println("Query dispatched to the workers");
+    Server.runningInstance.startServerQuery(new CollectConsumer(outputSchema, serverReceiveID, workers, serverBuffer));
+
+  }
 
   public static void shuffleTestSQLite(final String[] args) throws DbException, IOException {
     Configuration conf = new Configuration();
@@ -239,7 +312,7 @@ public class Main {
     Server.runningInstance.startServerQuery(new CollectConsumer(outputSchema, serverReceiveID, workers, serverBuffer));
 
   }
-
+  
   public static void parallelTestSQLite(final String[] args) throws DbException, IOException {
     // create table testtable1 (id int, name varchar(20));
     // insert into testtable1 (id,name) values (1,'name1'), (2, 'name2');

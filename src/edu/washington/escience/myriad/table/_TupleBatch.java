@@ -100,10 +100,13 @@ public interface _TupleBatch extends Serializable {
   public float getFloat(int column, int row);
 
   public int getInt(int column, int row);
+  
+  public long getLong(int column, int row);
 
   public String getString(int column, int row);
 
   public interface TupleIterator extends Iterator {
-  }
-
+  } 
+  
+  public int hashCode(int rowIndx);
 }

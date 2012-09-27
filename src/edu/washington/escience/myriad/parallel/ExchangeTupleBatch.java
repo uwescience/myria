@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+
 import edu.washington.escience.myriad.column.BooleanColumn;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.DoubleColumn;
@@ -185,6 +187,12 @@ public class ExchangeTupleBatch extends ExchangeMessage implements _TupleBatch {
     // return this.dataHolder.getInt(column, row);
     throw new UnsupportedOperationException();
   }
+  
+  @Override
+  public long getLong(int column, int row) {
+    // return this.dataHolder.getInt(column, row);
+    throw new UnsupportedOperationException();
+  }
 
   @Override
   public String getString(int column, int row) {
@@ -233,6 +241,12 @@ public class ExchangeTupleBatch extends ExchangeMessage implements _TupleBatch {
     // TODO Auto-generated method stub
     return null;
   }
+  
+  @Override
+  public int hashCode(int rowIndx)
+  {     
+    throw new UnsupportedOperationException();    
+  }      
   
 
 }

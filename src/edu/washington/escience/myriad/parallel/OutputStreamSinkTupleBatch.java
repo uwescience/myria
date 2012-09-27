@@ -74,7 +74,7 @@ public class OutputStreamSinkTupleBatch implements _TupleBatch {
 
   @Override
   public _TupleBatch append(_TupleBatch another) {
-    try {
+    try {      
       this.backendStream.write(new ImmutableInMemoryTupleBatch(this.schema,another.outputRawData(), another.numOutputTuples()).toString().getBytes());
       this.backendStream.flush();
       this.numInputTuples += another.numOutputTuples();
@@ -149,6 +149,11 @@ public class OutputStreamSinkTupleBatch implements _TupleBatch {
   public int getInt(int column, int row) {
     throw new ArrayIndexOutOfBoundsException();
   }
+  
+  @Override
+  public long getLong(int column, int row) {
+    throw new ArrayIndexOutOfBoundsException();
+  }  
 
   @Override
   public String getString(int column, int row) {
@@ -164,4 +169,10 @@ public class OutputStreamSinkTupleBatch implements _TupleBatch {
   public _TupleBatch remove(int innerIdx) {
     throw new UnsupportedOperationException();
   }
+  
+  @Override
+  public int hashCode(int rowIndx)
+  {     
+    throw new UnsupportedOperationException();    
+  }      
 }
