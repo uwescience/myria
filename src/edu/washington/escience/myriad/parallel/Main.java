@@ -53,6 +53,9 @@ public class Main {
     // parallelTestJDBC(args);
     // parallelTestSQLite(args);
     // jdbcTest_slxu(args);
+//     shuffleTestSQLite(args);
+//    sqliteInsertSpeedTest();
+//    filesystemWriteTest();
     //shuffleTestSQLite(args);
     dupElimTestSQLite(args);
     // shuffleTestSQLite(args);
@@ -239,7 +242,7 @@ public class Main {
       }
     Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
     System.out.println("Query dispatched to the workers");
-    Server.runningInstance.startServerQuery(new CollectConsumer(outputSchema, serverReceiveID, workers, serverBuffer));
+    Server.runningInstance.startServerQuery(new CollectConsumer(outputSchema, serverReceiveID, workers));
 
   }
 
@@ -273,17 +276,19 @@ public class Main {
     ShuffleProducer sp2 = new ShuffleProducer(scan2, shuffle2ID, workers, pf);
 
     SQLiteTupleBatch bufferWorker1 = new SQLiteTupleBatch(tableSchema1, "temptable.db", "temptable1");
-    ShuffleConsumer sc1 = new ShuffleConsumer(sp1, shuffle1ID, workers, bufferWorker1);
+    ShuffleConsumer sc1 = new ShuffleConsumer(sp1, shuffle1ID, workers);
+    BlockingDataReceiver buffer1 = new BlockingDataReceiver(bufferWorker1,sc1);
 
     SQLiteTupleBatch bufferWorker2 = new SQLiteTupleBatch(tableSchema2, "temptable.db", "temptable2");
-    ShuffleConsumer sc2 = new ShuffleConsumer(sp2, shuffle2ID, workers, bufferWorker2);
+    ShuffleConsumer sc2 = new ShuffleConsumer(sp2, shuffle2ID, workers);
+    BlockingDataReceiver buffer2 = new BlockingDataReceiver(bufferWorker2,sc2);
 
     SQLiteSQLProcessor ssp =
         new SQLiteSQLProcessor("temptable.db",
             "select * from temptable1 inner join temptable2 on temptable1.name=temptable2.name", outputSchema,
-            new Operator[] { sc1, sc2 });
+            new Operator[] { buffer1, buffer2 });
 
-    DoNothingOperator dno = new DoNothingOperator(outputSchema, new Operator[] { sc1, sc2 });
+//    DoNothingOperator dno = new DoNothingOperator(outputSchema, new Operator[] { buffer1, buffer2 });
 
     CollectProducer cp = new CollectProducer(ssp, serverReceiveID, server.getAddress());
 
@@ -309,7 +314,7 @@ public class Main {
       }
     Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
     System.out.println("Query dispatched to the workers");
-    Server.runningInstance.startServerQuery(new CollectConsumer(outputSchema, serverReceiveID, workers, serverBuffer));
+    Server.runningInstance.startServerQuery(new CollectConsumer(outputSchema, serverReceiveID, workers));
 
   }
   
@@ -352,10 +357,11 @@ public class Main {
     CollectProducer cp2 = new CollectProducer(scan2, worker2ReceiveID, workers[1].getAddress());
     // CollectProducer child, ParallelOperatorID operatorID, SocketInfo[] workers
     SQLiteTupleBatch bufferWorker2 = new SQLiteTupleBatch(outputSchema, "/tmp/temptable1.db", "temptable1");
-    CollectConsumer cc2 = new CollectConsumer(cp2, worker2ReceiveID, workers, bufferWorker2);
+    CollectConsumer cc2 = new CollectConsumer(cp2, worker2ReceiveID, workers);
+    BlockingDataReceiver block2 = new BlockingDataReceiver(bufferWorker2,cc2);
     SQLiteSQLProcessor scan22 =
         new SQLiteSQLProcessor("temptable1.db", "select distinct * from temptable1", outputSchema,
-            new Operator[] { cc2 });
+            new Operator[] { block2 });
     CollectProducer cp22 = new CollectProducer(scan22, serverReceiveID, server.getAddress());
     HashMap<SocketInfo, Operator> workerPlans = new HashMap<SocketInfo, Operator>();
     workerPlans.put(workers[0], cp1);
@@ -380,7 +386,7 @@ public class Main {
     Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
     System.out.println("Query dispatched to the workers");
     Server.runningInstance.startServerQuery(new CollectConsumer(outputSchema, serverReceiveID,
-        new SocketInfo[] { workers[1] }, serverBuffer));
+        new SocketInfo[] { workers[1] }));
   }
 
   public static void parallelTestJDBC(final String[] args) throws DbException, IOException {
@@ -428,10 +434,11 @@ public class Main {
     JdbcTupleBatch bufferWorker2 =
         new JdbcTupleBatch(outputSchema, "temptable1", "jdbc:mysql://localhost:3306/test", "com.mysql.jdbc.Driver",
             username, password);
-    CollectConsumer cc2 = new CollectConsumer(cp2, worker2ReceiveID, workers, bufferWorker2);
+    CollectConsumer cc2 = new CollectConsumer(cp2, worker2ReceiveID, workers);
+    BlockingDataReceiver block2 = new BlockingDataReceiver(bufferWorker2,cc2);
     JdbcSQLProcessor scan22 =
         new JdbcSQLProcessor("com.mysql.jdbc.Driver", "jdbc:mysql://localhost:3306/test",
-            "select distinct * from temptable1", outputSchema, cc2, username, password);
+            "select distinct * from temptable1", outputSchema, block2, username, password);
     CollectProducer cp22 = new CollectProducer(scan22, serverReceiveID, server.getAddress());
     HashMap<SocketInfo, Operator> workerPlans = new HashMap<SocketInfo, Operator>();
     workerPlans.put(workers[0], cp1);
@@ -456,7 +463,7 @@ public class Main {
     Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
     System.out.println("Query dispatched to the workers");
     Server.runningInstance.startServerQuery(new CollectConsumer(outputSchema, serverReceiveID,
-        new SocketInfo[] { workers[1] }, serverBuffer));
+        new SocketInfo[] { workers[1] }));
   }
 
   public static void jdbcTest_slxu(String[] args) throws NoSuchElementException, DbException {
