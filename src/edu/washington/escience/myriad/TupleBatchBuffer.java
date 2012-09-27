@@ -88,10 +88,16 @@ public class TupleBatchBuffer {
   {
     return this.readyTuples.size()*TupleBatch.BATCH_SIZE+this.currentNumTuples;
   }
-  
-  public final List<TupleBatch> getOutput()
-  {
+
+  public final List<TupleBatch> getOutput() {
     return this.readyTuples;
   }
-  
+
+  public final TupleBatch pop() {
+    if (this.readyTuples.size() > 0) {
+      return this.readyTuples.remove(0);
+    }
+    return null;
+  }
+
 }

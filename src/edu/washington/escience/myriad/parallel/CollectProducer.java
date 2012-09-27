@@ -12,6 +12,8 @@ import org.apache.mina.core.session.IoSession;
 // import edu.washington.escience.ConcurrentInMemoryTupleBatch;
 // import edu.washington.escience.ImmutableInMemoryTupleBatch;
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatch;
+import edu.washington.escience.myriad.TupleBatchBuffer;
 // import edu.washington.escience.table.DbIterateReader;
 import edu.washington.escience.myriad.table._TupleBatch;
 
@@ -64,14 +66,10 @@ public class CollectProducer extends Producer {
       try {
         while (CollectProducer.this.child.hasNext()) {
           _TupleBatch tup = CollectProducer.this.child.next();
-          // buffer.append(tup);
-          // int cnt = buffer.numOutputTuples();
-          // if (cnt >= MAX_SIZE) {
           ExchangeTupleBatch toSend =
               new ExchangeTupleBatch(CollectProducer.this.operatorID, CollectProducer.this.getThisWorker().workerID,
                   tup.outputRawData(), CollectProducer.this.getSchema(), tup.numOutputTuples());
           session.write(toSend);
-          // lastTime = System.currentTimeMillis();
         }
 
         session.write(
