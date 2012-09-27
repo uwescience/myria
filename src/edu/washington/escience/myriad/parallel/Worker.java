@@ -231,18 +231,20 @@ public class Worker {
     } else if (queryPlan instanceof Producer) {
       ((Producer) queryPlan).setThisWorker(Worker.this);
     } else if (queryPlan instanceof Consumer) {
-      Consumer c = (Consumer)queryPlan;
-      _TupleBatch outputBuffer = c.getOutputBuffer();
-      if (outputBuffer instanceof SQLiteTupleBatch)
-      {
-        ((SQLiteTupleBatch) outputBuffer).reset(dataDir.getAbsolutePath());
-      }
+      Consumer c = (Consumer) queryPlan;
+
       LinkedBlockingQueue<_TupleBatch> buf = null;
       // synchronized (Worker.this) {
       buf = Worker.this.inBuffer.get(((Consumer) queryPlan).getOperatorID());
       // }
       c.setInputBuffer(buf);
-      
+
+    } else if (queryPlan instanceof BlockingDataReceiver) {
+      BlockingDataReceiver bdr = (BlockingDataReceiver) queryPlan;
+      _TupleBatch outputBuffer = bdr.getOutputBuffer();
+      if (outputBuffer instanceof SQLiteTupleBatch) {
+        ((SQLiteTupleBatch) outputBuffer).reset(dataDir.getAbsolutePath());
+      }
     }
 
     Operator[] children = null;
