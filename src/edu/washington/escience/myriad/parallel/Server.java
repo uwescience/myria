@@ -376,7 +376,7 @@ public class Server {
 //    int cnt = 0;
     while (serverPlan.hasNext()) {
       _TupleBatch tup = serverPlan.next();
-      out.println(tup);
+      out.println(new ImmutableInMemoryTupleBatch(serverPlan.getSchema(),tup.outputRawData(), tup.numOutputTuples()).toString());
 //      cnt++;
     }
 //    out.println("\n " + cnt + " rows.");
