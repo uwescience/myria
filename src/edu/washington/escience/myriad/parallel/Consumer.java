@@ -13,7 +13,7 @@ public abstract class Consumer extends Exchange {
    * Worker.inBuffer.get(this.getOperatorID())
    * */
   private transient volatile LinkedBlockingQueue<_TupleBatch> inputBuffer;
-  protected volatile _TupleBatch outputBuffer;
+//  protected volatile _TupleBatch outputBuffer;
   
   public Consumer(ExchangePairID oID) {
     super(oID);
@@ -36,14 +36,14 @@ public abstract class Consumer extends Exchange {
     this.inputBuffer = buffer;
   }
   
-  public void setOutputBuffer(_TupleBatch outputBuffer)
-  {
-    this.outputBuffer = outputBuffer;
-  }
-  
-  public _TupleBatch getOutputBuffer()
-  {
-    return this.outputBuffer;
-  }
+//  public void setOutputBuffer(_TupleBatch outputBuffer)
+//  {
+//    this.outputBuffer = outputBuffer;
+//  }
+//  
+//  public _TupleBatch getOutputBuffer()
+//  {
+//    return this.outputBuffer;
+//  }
 
 }

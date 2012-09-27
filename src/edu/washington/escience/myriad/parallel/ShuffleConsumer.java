@@ -37,8 +37,7 @@ public class ShuffleConsumer extends Consumer {
     return "shuffle_c";
   }
 
-  public ShuffleConsumer(ShuffleProducer child, ExchangePairID operatorID, SocketInfo[] workers,
-      _TupleBatch outputBuffer) {
+  public ShuffleConsumer(ShuffleProducer child, ExchangePairID operatorID, SocketInfo[] workers) {
     super(operatorID);
     this.child = child;
     this.sourceWorkers = workers;
@@ -47,32 +46,19 @@ public class ShuffleConsumer extends Consumer {
     for (SocketInfo w : this.sourceWorkers)
       this.workerIdToIndex.put(w.getId(), i++);
     this.workerEOS = new BitSet(workers.length);
-    this.outputBuffer = outputBuffer;
     this.finish = false;
   }
 
   @Override
   public void open() throws DbException {
-//    this.tuples = null;
-    // this.innerBuffer = new ArrayList<_TupleBatch>();
-//    this.innerBufferIndex = 0;
     if (this.child != null)
       this.child.open();
     super.open();
   }
 
-  // @Override
-  // public void rewind() throws DbException{
-  // // Note that we store the tuples we read in the first run in memory and
-  // // reuse them when fetchNext() is called after a rewind.
-  // this.tuples = null;
-  // this.innerBufferIndex = 0;
-  // }
-
   @Override
   public void close() {
     super.close();
-//    tuples = null;
     this.workerEOS.clear();
   }
 
@@ -91,15 +77,13 @@ public class ShuffleConsumer extends Consumer {
       if (tb.isEos()) {
         this.workerEOS.set(this.workerIdToIndex.get(tb.getWorkerID()));
       } else {
-        outputBuffer.append(tb);
-        // this.innerBufferIndex++;
-        // return tb.iterator();
+        return tb;
       }
     }
     // have received all the eos message from all the workers
     finish = true;
 
-    return outputBuffer;
+    return null;
   }
 
   @Override
@@ -111,10 +95,7 @@ public class ShuffleConsumer extends Consumer {
         e.printStackTrace();
         throw new DbException(e.getLocalizedMessage());
       }
-      // if (tuples == null) // finish
-      // return null;
     }
-    // return tuples.next();
     return null;
   }
 
