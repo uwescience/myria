@@ -88,7 +88,7 @@ public class ShuffleProducer extends Producer {
             if (etb.numTuples() > 0) {
               for (TupleBatch tb : etb.getOutput()) {
                 ExchangeTupleBatch toSend =
-                    new ExchangeTupleBatch(thisOID, thisWorkerID, tb.getOutput(), ShuffleProducer.this.getSchema(),
+                    new ExchangeTupleBatch(thisOID, thisWorkerID, tb.outputRawData(), ShuffleProducer.this.getSchema(),
                         tb.numOutputTuples());
                 // ShuffleProducer.this.getSession
                 shuffleSessions[p].write(toSend);
