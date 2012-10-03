@@ -90,8 +90,12 @@ public class TupleBatchBuffer {
   }
 
   public final List<TupleBatch> getOutput() {
-    return this.readyTuples;
+    List<TupleBatch> output = new LinkedList<TupleBatch>();
+    output.addAll(readyTuples);
+    output.add(new TupleBatch(schema, currentColumns, currentNumTuples));
+    return output;
   }
+  
 
   public final TupleBatch pop() {
     if (this.readyTuples.size() > 0) {
