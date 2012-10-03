@@ -7,7 +7,9 @@ import java.sql.SQLException;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 
-import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
+import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
+
+//import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
 
 /**
  * A column of a batch of tuples.
