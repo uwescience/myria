@@ -1,0 +1,20 @@
+option java_package = "edu.washington.escience.myriad.proto";
+option java_outer_classname = "ControlProto";
+
+message ControlMessage {
+  enum ControlMessageType {
+   	CONNECT = 0; // create a data connection between two workers
+  	START_QUERY = 1; // start the query
+  	QUERY_READY_TO_EXECUTE = 2; 
+  	SHUTDOWN = 3; // master -> workers
+  }
+
+  required ControlMessageType type = 1;		// See enum above
+  //optional ExchangePairID exchangePairID = 2;
+  optional int32 remoteID = 2;
+}
+
+//message ExchangePairID {
+//	required string workerID = 1;
+//	required int64 exchangePairID = 2;
+//}
