@@ -6,14 +6,8 @@
 <configuration>
 
 <property>
-  <name>master.identifier</name>
-  <value>localhost:8001</value>
-  <description>The address of the master. Format: host:port</description>
-</property>
-
-<property>
   <name>worker.identifier</name>
-  <value>localhost:9002</value>
+  <value>2</value>
   <description>The address of the worker itself. Format: host:port</description>
 </property>
 
