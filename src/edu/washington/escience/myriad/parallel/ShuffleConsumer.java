@@ -28,8 +28,8 @@ public class ShuffleConsumer extends Consumer {
   // message.
   private final BitSet workerEOS;
 
-  private final SocketInfo[] sourceWorkers;
-  private final HashMap<String, Integer> workerIdToIndex;
+  private final int[] sourceWorkers;
+  private final HashMap<Integer, Integer> workerIdToIndex;
   private ShuffleProducer child;
   private Schema schema;
 
@@ -37,15 +37,15 @@ public class ShuffleConsumer extends Consumer {
     return "shuffle_c";
   }
 
-  public ShuffleConsumer(ShuffleProducer child, ExchangePairID operatorID, SocketInfo[] workers) {
+  public ShuffleConsumer(ShuffleProducer child, ExchangePairID operatorID, int[] workerIDs) {
     super(operatorID);
     this.child = child;
-    this.sourceWorkers = workers;
-    this.workerIdToIndex = new HashMap<String, Integer>();
+    this.sourceWorkers = workerIDs;
+    this.workerIdToIndex = new HashMap<Integer, Integer>();
     int i = 0;
-    for (SocketInfo w : this.sourceWorkers)
-      this.workerIdToIndex.put(w.getId(), i++);
-    this.workerEOS = new BitSet(workers.length);
+    for (Integer w : this.sourceWorkers)
+      this.workerIdToIndex.put(w, i++);
+    this.workerEOS = new BitSet(workerIDs.length);
     this.finish = false;
   }
 

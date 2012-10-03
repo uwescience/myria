@@ -43,6 +43,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.WeakHashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -126,7 +127,7 @@ public class Configuration implements Iterable<Map.Entry<String, String>> {
    * default conf files are searched in java classpath
    * */
   private final SocketInfo server;
-  private final SocketInfo[] workers;
+  private final ConcurrentHashMap<Integer,SocketInfo> workers;
   public static final String DEFAULT_CONF_DIR = "conf";
 
   public Configuration(File confDir) throws IOException {
@@ -141,7 +142,7 @@ public class Configuration implements Iterable<Map.Entry<String, String>> {
     return this.server;
   }
 
-  public SocketInfo[] getWorkers() {
+  public Map<Integer,SocketInfo> getWorkers() {
     return this.workers;
   }
 
@@ -239,7 +240,10 @@ public class Configuration implements Iterable<Map.Entry<String, String>> {
       confDir = new File("conf");
     }
     this.server = loadServer(new File("conf"));
-    this.workers = loadWorkers(new File("conf"));
+    SocketInfo[] workerArray = loadWorkers(new File("conf"));
+    this.workers = new ConcurrentHashMap<Integer,SocketInfo>(workerArray.length);
+    for (int i=0;i<workerArray.length;i++)
+      this.workers.put(i+1, workerArray[i]);
 
     this.loadDefaults = loadDefaults;
     updatingResource = new HashMap<String, String>();

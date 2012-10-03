@@ -2,6 +2,9 @@ package edu.washington.escience.myriad.parallel;
 
 // import java.util.ArrayList;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.service.IoConnector;
@@ -10,6 +13,15 @@ import org.apache.mina.core.session.IoSession;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
+import edu.washington.escience.myriad.column.Column;
+import edu.washington.escience.myriad.proto.ControlProto;
+import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
+import edu.washington.escience.myriad.proto.ControlProto.ControlMessage.ControlMessageType;
+import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
+import edu.washington.escience.myriad.proto.DataProto.DataMessage;
+import edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageType;
+import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
+import edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType;
 import edu.washington.escience.myriad.table._TupleBatch;
 
 /**
@@ -25,7 +37,7 @@ public class ShuffleProducer extends Producer {
 
   transient private WorkingThread runningThread;
 
-  private final SocketInfo[] workers;
+  private final int[] workerIDs;
   private PartitionFunction<?, ?> partitionFunction;
 
   private Operator child;
@@ -34,19 +46,15 @@ public class ShuffleProducer extends Producer {
     return "shuffle_p";
   }
 
-  public ShuffleProducer(Operator child, ExchangePairID operatorID, SocketInfo[] workers, PartitionFunction<?, ?> pf) {
+  public ShuffleProducer(Operator child, ExchangePairID operatorID, int[] workerIDs, PartitionFunction<?, ?> pf) {
     super(operatorID);
     this.child = child;
-    this.workers = workers;
+    this.workerIDs = workerIDs;
     this.partitionFunction = pf;
   }
 
   public void setPartitionFunction(PartitionFunction<?, ?> pf) {
     this.partitionFunction = pf;
-  }
-
-  public SocketInfo[] getWorkers() {
-    return this.workers;
   }
 
   public PartitionFunction<?, ?> getPartitionFunction() {
@@ -62,36 +70,60 @@ public class ShuffleProducer extends Producer {
   class WorkingThread extends Thread {
     public void run() {
 
-      final int numWorker = ShuffleProducer.this.workers.length;
+      TransportMessage.Builder messageBuilder = TransportMessage.newBuilder();
+      final int numWorker = ShuffleProducer.this.workerIDs.length;
       IoSession[] shuffleSessions = new IoSession[numWorker];
       int index = 0;
-      for (SocketInfo worker : ShuffleProducer.this.workers) {
-        shuffleSessions[index] =
-            ParallelUtility.createSession(worker.getAddress(), ShuffleProducer.this.getThisWorker().minaHandler, -1);
+      for (int workerID : ShuffleProducer.this.workerIDs) {
+        shuffleSessions[index] = ShuffleProducer.this.getThisWorker().connectionPool.get(workerID, null, 3, null);
+        // ParallelUtility.createDataConnection(ParallelUtility.createSession(worker.getAddress(),
+        // ShuffleProducer.this.getThisWorker().minaHandler, -1), ShuffleProducer.this.operatorID,
+        // ShuffleProducer.this.getThisWorker().workerID);
+//        shuffleSessions[index].write(messageBuilder.setType(TransportMessageType.DATA).setData(
+//            DataMessage.newBuilder().setType(DataMessageType.EOS).setOperatorID(ShuffleProducer.this.operatorID.getLong()).build()));
         index++;
-
       }
-      Schema thisTD = ShuffleProducer.this.getSchema();
-      String thisWorkerID = ShuffleProducer.this.getThisWorker().workerID;
-
-      Exchange.ExchangePairID thisOID = ShuffleProducer.this.operatorID;
+      Schema thisSchema = ShuffleProducer.this.getSchema();
+      // String thisWorkerID = ShuffleProducer.this.getThisWorker().workerID;
+      //
+      // Exchange.ExchangePairID thisOID = ShuffleProducer.this.operatorID;
 
       try {
         while (ShuffleProducer.this.child.hasNext()) {
           _TupleBatch tup = ShuffleProducer.this.child.next();
           TupleBatchBuffer[] buffers = new TupleBatchBuffer[numWorker];
           for (int i = 0; i < numWorker; i++)
-            buffers[i] = new TupleBatchBuffer(thisTD);
+            buffers[i] = new TupleBatchBuffer(thisSchema);
           buffers = tup.partition(partitionFunction, buffers);
           for (int p = 0; p < numWorker; p++) {
             TupleBatchBuffer etb = buffers[p];
             if (etb.numTuples() > 0) {
               for (TupleBatch tb : etb.getOutput()) {
-                ExchangeTupleBatch toSend =
-                    new ExchangeTupleBatch(thisOID, thisWorkerID, tb.outputRawData(), ShuffleProducer.this.getSchema(),
-                        tb.numOutputTuples());
-                // ShuffleProducer.this.getSession
-                shuffleSessions[p].write(toSend);
+
+                List<Column> columns = tb.outputRawData();
+                // ExchangeTupleBatch toSend =
+                // new ExchangeTupleBatch(CollectProducer.this.operatorID,
+                // CollectProducer.this.getThisWorker().workerID,
+                // tup.outputRawData(), CollectProducer.this.getSchema(), tup.numOutputTuples());
+
+                ColumnMessage[] columnProtos = new ColumnMessage[columns.size()];
+                {
+                  int i = 0;
+                  for (Column c : columns) {
+                    columnProtos[i] = c.serializeToProto();
+                    i++;
+                  }
+                }
+
+                shuffleSessions[p].write(messageBuilder.setType(TransportMessageType.DATA).setData(
+                    DataMessage.newBuilder().setType(DataMessageType.NORMAL).addAllColumns(Arrays.asList(columnProtos))
+                        .setOperatorID(ShuffleProducer.this.operatorID.getLong()).build()).build());
+
+                // ExchangeTupleBatch toSend =
+                // new ExchangeTupleBatch(thisOID, thisWorkerID, tb.outputRawData(), ShuffleProducer.this.getSchema(),
+                // tb.numOutputTuples());
+                // // ShuffleProducer.this.getSession
+                // shuffleSessions[p].write(toSend);
               }
             }
           }
@@ -101,20 +133,25 @@ public class ShuffleProducer extends Producer {
         e.printStackTrace();
       }
 
+      DataMessage eos =
+          DataMessage.newBuilder().setType(DataMessageType.EOS)
+              .setOperatorID(ShuffleProducer.this.operatorID.getLong()).build();
       // try {
       for (int i = 0; i < numWorker; i++) {
         // if (buffers[i].numOutputTuples() > 0) {
         // new ExchangeTupleBatch(ShuffleProducer.this.operatorID, ShuffleProducer.this.getThisWorker().workerID,
         // buffers[i].outputRawData(), ShuffleProducer.this.getSchema(), buffers[i].numOutputTuples());
         // }
-        shuffleSessions[i].write(new ExchangeTupleBatch(thisOID, thisWorkerID)).addListener(
-            new IoFutureListener<WriteFuture>() {
 
-              @Override
-              public void operationComplete(WriteFuture future) {
-                ParallelUtility.closeSession(future.getSession());
-              }
-            });
+        shuffleSessions[i].write(messageBuilder.setType(TransportMessageType.DATA).setData(eos).build());
+        // .addListener(
+        // new IoFutureListener<WriteFuture>() {
+        //
+        // @Override
+        // public void operationComplete(WriteFuture future) {
+        // ParallelUtility.closeSession(future.getSession());
+        // }
+        // });
       }
       // } catch (DbException e) {
       // e.printStackTrace();

@@ -3,10 +3,12 @@ package edu.washington.escience.myriad.parallel;
 // import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
+import java.util.Map;
 // import java.util.Iterator;
 
 // import edu.washington.escience.ConcurrentInMemoryTupleBatch;
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatch;
 // import edu.washington.escience.table.DbIterateReader;
 import edu.washington.escience.myriad.table._TupleBatch;
 
@@ -33,9 +35,9 @@ public class CollectConsumer extends Consumer {
 
   private Schema schema;
   private final BitSet workerEOS;
-  private final SocketInfo[] sourceWorkers;
-  private final HashMap<String, Integer> workerIdToIndex;
+  private final int[] sourceWorkers;
   private boolean finish = false;
+  private final Map<Integer, Integer> workerIdToIndex;
 
   /**
    * The child of a CollectConsumer must be a paired CollectProducer.
@@ -49,32 +51,32 @@ public class CollectConsumer extends Consumer {
   /**
    * If there's no child operator, a TupleDesc is needed
    * */
-  public CollectConsumer(Schema schema, ExchangePairID operatorID, SocketInfo[] workers) {
+  public CollectConsumer(Schema schema, ExchangePairID operatorID, int[] workerIDs) {
     super(operatorID);
     this.schema = schema;
-    this.sourceWorkers = workers;
-    this.workerIdToIndex = new HashMap<String, Integer>();
+    this.sourceWorkers = workerIDs;
+    this.workerIdToIndex = new HashMap<Integer, Integer>();
     int idx = 0;
-    for (SocketInfo w : workers) {
-      this.workerIdToIndex.put(w.getId(), idx++);
+    for (int w : workerIDs) {
+      this.workerIdToIndex.put(w, idx++);
     }
-    this.workerEOS = new BitSet(workers.length);
+    this.workerEOS = new BitSet(workerIDs.length);
   }
 
   /**
    * If a child is provided, the TupleDesc is the child's TD
    * */
-  public CollectConsumer(CollectProducer child, ExchangePairID operatorID, SocketInfo[] workers) {
+  public CollectConsumer(CollectProducer child, ExchangePairID operatorID, int[] workerIDs) {
     super(operatorID);
     this.child = child;
     this.schema = child.getSchema();
-    this.sourceWorkers = workers;
-    this.workerIdToIndex = new HashMap<String, Integer>();
+    this.sourceWorkers = workerIDs;
+    this.workerIdToIndex = new HashMap<Integer, Integer>();
     int idx = 0;
-    for (SocketInfo w : workers) {
-      this.workerIdToIndex.put(w.getId(), idx++);
+    for (int w : workerIDs) {
+      this.workerIdToIndex.put(w, idx++);
     }
-    this.workerEOS = new BitSet(workers.length);
+    this.workerEOS = new BitSet(workerIDs.length);
   }
 
   @Override
@@ -94,11 +96,11 @@ public class CollectConsumer extends Consumer {
     ExchangeTupleBatch tb = null;
 
     while (this.workerEOS.nextClearBit(0) < this.sourceWorkers.length) {
-      tb = (ExchangeTupleBatch) this.take(-1);
+      tb = this.take(-1);
       if (tb.isEos()) {
         this.workerEOS.set(this.workerIdToIndex.get(tb.getWorkerID()));
       } else {
-        return tb;
+        return tb.getRealData();
       }
     }
     // have received all the eos message from all the workers

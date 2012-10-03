@@ -2,6 +2,7 @@ package edu.washington.escience.myriad.parallel;
 
 import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * The exchange operator, which will be used in implementing parallel simpledb.
@@ -21,9 +22,9 @@ public abstract class Exchange extends Operator {
     /**
      * The id
      * */
-    private final int oId;
+    private final long oId;
 
-    private static final AtomicInteger idGenerator = new AtomicInteger();
+    private static final AtomicLong idGenerator = new AtomicLong();
 
     /**
      * The only way to create a ParallelOperatorID.
@@ -31,8 +32,18 @@ public abstract class Exchange extends Operator {
     public static ExchangePairID newID() {
       return new ExchangePairID(idGenerator.getAndIncrement());
     }
+    
+    public static ExchangePairID fromExisting(long l)
+    {
+      return new ExchangePairID(l);
+    }
+    
+    public long getLong()
+    {
+      return this.oId;
+    }
 
-    private ExchangePairID(int oId) {
+    private ExchangePairID(long oId) {
       this.oId = oId;
     }
 
@@ -46,7 +57,7 @@ public abstract class Exchange extends Operator {
 
     @Override
     public int hashCode() {
-      return this.oId;
+      return (int)this.oId;
     }
 
     @Override

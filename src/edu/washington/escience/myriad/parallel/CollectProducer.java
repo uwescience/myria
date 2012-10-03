@@ -1,10 +1,14 @@
 package edu.washington.escience.myriad.parallel;
 
+// import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import java.util.Arrays;
+import java.util.List;
 // import java.util.ArrayList;
 //
 // import org.apache.mina.core.future.IoFutureListener;
 // import org.apache.mina.core.future.WriteFuture;
+// import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.session.IoSession;
@@ -12,9 +16,18 @@ import org.apache.mina.core.session.IoSession;
 // import edu.washington.escience.ConcurrentInMemoryTupleBatch;
 // import edu.washington.escience.ImmutableInMemoryTupleBatch;
 import edu.washington.escience.myriad.Schema;
-import edu.washington.escience.myriad.TupleBatch;
-import edu.washington.escience.myriad.TupleBatchBuffer;
+// import edu.washington.escience.myriad.TupleBatch;
+// import edu.washington.escience.myriad.TupleBatchBuffer;
 // import edu.washington.escience.table.DbIterateReader;
+import edu.washington.escience.myriad.column.Column;
+import edu.washington.escience.myriad.proto.ControlProto;
+import edu.washington.escience.myriad.proto.ControlProto.ControlMessage.ControlMessageType;
+import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
+import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
+import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
+import edu.washington.escience.myriad.proto.DataProto.DataMessage;
+import edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageType;
+import edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType;
 import edu.washington.escience.myriad.table._TupleBatch;
 
 /**
@@ -36,22 +49,22 @@ public class CollectProducer extends Producer {
   /**
    * The paired collect consumer address
    * */
-  private final InetSocketAddress collectConsumerAddr;
+  private final int collectConsumerWorkerID;
   private Operator child;
 
   public String getName() {
     return "collect_p";
   }
 
-  public CollectProducer(Operator child, ExchangePairID operatorID, InetSocketAddress collectServerAddr) {
+  public CollectProducer(Operator child, ExchangePairID operatorID, int collectConsumerWorkerID) {
     super(operatorID);
     this.child = child;
-    this.collectConsumerAddr = collectServerAddr;
+    this.collectConsumerWorkerID = collectConsumerWorkerID;
   }
 
-  public InetSocketAddress getCollectServerAddr() {
-    return this.collectConsumerAddr;
-  }
+  // public InetSocketAddress getCollectServerAddr() {
+  // return this.collectConsumerAddr;
+  // }
 
   /**
    * The working thread, which executes the child operator and send the tuples to the paired CollectConsumer operator
@@ -59,28 +72,56 @@ public class CollectProducer extends Producer {
   class WorkingThread extends Thread {
     public void run() {
 
+      // IoSession session =
+      // ParallelUtility.createDataConnection(ParallelUtility.createSession(CollectProducer.this.collectConsumerAddr,
+      // CollectProducer.this.getThisWorker().minaHandler, -1), CollectProducer.this.operatorID,
+      // CollectProducer.this.getThisWorker().workerID);
       IoSession session =
-          ParallelUtility.createSession(CollectProducer.this.collectConsumerAddr,
-              CollectProducer.this.getThisWorker().minaHandler, -1);
+          CollectProducer.this.getThisWorker().connectionPool.get(CollectProducer.this.collectConsumerWorkerID, null,
+              3, null);
+
+      TransportMessage.Builder messageBuilder = TransportMessage.newBuilder();
+
+//      session.write(messageBuilder.setType(TransportMessageType.CONTROL).setControl(
+//          ControlMessage.newBuilder().setType(ControlMessageType.CONNECT).build()).build());
 
       try {
+
         while (CollectProducer.this.child.hasNext()) {
           _TupleBatch tup = CollectProducer.this.child.next();
-          ExchangeTupleBatch toSend =
-              new ExchangeTupleBatch(CollectProducer.this.operatorID, CollectProducer.this.getThisWorker().workerID,
-                  tup.outputRawData(), CollectProducer.this.getSchema(), tup.numOutputTuples());
-          session.write(toSend);
+          List<Column> columns = tup.outputRawData();
+          // ExchangeTupleBatch toSend =
+          // new ExchangeTupleBatch(CollectProducer.this.operatorID, CollectProducer.this.getThisWorker().workerID,
+          // tup.outputRawData(), CollectProducer.this.getSchema(), tup.numOutputTuples());
+
+          ColumnMessage[] columnProtos = new ColumnMessage[columns.size()];
+          {
+            int i = 0;
+            for (Column c : columns) {
+              columnProtos[i] = c.serializeToProto();
+              i++;
+            }
+          }
+
+          session.write(messageBuilder.setType(TransportMessageType.DATA).setData(
+              DataMessage.newBuilder().setType(DataMessageType.NORMAL).addAllColumns(Arrays.asList(columnProtos)).setOperatorID(
+                  CollectProducer.this.operatorID.getLong()).build()).build());
         }
 
-        session.write(
-            new ExchangeTupleBatch(CollectProducer.this.operatorID, CollectProducer.this.getThisWorker().workerID))
-            .addListener(new IoFutureListener<WriteFuture>() {
+        DataMessage eos =
+            DataMessage.newBuilder().setType(DataMessageType.EOS).setOperatorID(
+                CollectProducer.this.operatorID.getLong()).build();
+        session.write(messageBuilder.setType(TransportMessageType.DATA).setData(eos).build());
+        //
+        // new ExchangeTupleBatch(CollectProducer.this.operatorID, CollectProducer.this.getThisWorker().workerID))
+        // .addListener(new IoFutureListener<WriteFuture>() {
+        //
+        // @Override
+        // public void operationComplete(WriteFuture future) {
+        // ParallelUtility.closeSession(future.getSession());
+        // }
+        // });// .awaitUninterruptibly(); //wait until all the data have successfully transfered
 
-              @Override
-              public void operationComplete(WriteFuture future) {
-                ParallelUtility.closeSession(future.getSession());
-              }
-            });// .awaitUninterruptibly(); //wait until all the data have successfully transfered
       } catch (DbException e) {
         e.printStackTrace();
       }
