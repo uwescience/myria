@@ -1,12 +1,8 @@
 package edu.washington.escience.myriad.parallel;
 
-// import java.util.ArrayList;
-
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.mina.core.future.IoFutureListener;
-import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.service.IoConnector;
 import org.apache.mina.core.session.IoSession;
 
@@ -14,9 +10,6 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.column.Column;
-import edu.washington.escience.myriad.proto.ControlProto;
-import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
-import edu.washington.escience.myriad.proto.ControlProto.ControlMessage.ControlMessageType;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageType;
@@ -42,6 +35,7 @@ public class ShuffleProducer extends Producer {
 
   private Operator child;
 
+  @Override
   public String getName() {
     return "shuffle_p";
   }
@@ -68,6 +62,7 @@ public class ShuffleProducer extends Producer {
   }
 
   class WorkingThread extends Thread {
+    @Override
     public void run() {
 
       TransportMessage.Builder messageBuilder = TransportMessage.newBuilder();
@@ -79,8 +74,8 @@ public class ShuffleProducer extends Producer {
         // ParallelUtility.createDataConnection(ParallelUtility.createSession(worker.getAddress(),
         // ShuffleProducer.this.getThisWorker().minaHandler, -1), ShuffleProducer.this.operatorID,
         // ShuffleProducer.this.getThisWorker().workerID);
-//        shuffleSessions[index].write(messageBuilder.setType(TransportMessageType.DATA).setData(
-//            DataMessage.newBuilder().setType(DataMessageType.EOS).setOperatorID(ShuffleProducer.this.operatorID.getLong()).build()));
+        // shuffleSessions[index].write(messageBuilder.setType(TransportMessageType.DATA).setData(
+        // DataMessage.newBuilder().setType(DataMessageType.EOS).setOperatorID(ShuffleProducer.this.operatorID.getLong()).build()));
         index++;
       }
       Schema thisSchema = ShuffleProducer.this.getSchema();
@@ -167,6 +162,7 @@ public class ShuffleProducer extends Producer {
     super.open();
   }
 
+  @Override
   public void close() {
     super.close();
     child.close();

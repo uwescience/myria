@@ -1,6 +1,5 @@
 package edu.washington.escience.myriad.parallel;
 
-import java.net.SocketAddress;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;

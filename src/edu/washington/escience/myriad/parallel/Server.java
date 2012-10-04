@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintStream;
-import java.net.SocketAddress;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -111,7 +110,6 @@ public class Server {
   static final String usage = "Usage: Server catalogFile [--conf confdir] [-explain] [-f queryFile]";
 
   final ConcurrentHashMap<Integer, SocketInfo> workers;
-  // final HashMap<String, Integer> workerIdToIndex;
   final NioSocketAcceptor acceptor;
   final ServerHandler minaHandler;
 
@@ -127,6 +125,7 @@ public class Server {
   protected final ConnectionPool connectionPool;
 
   protected class MessageProcessor extends Thread {
+    @Override
     public void run() {
 
       TERMINATE_MESSAGE_PROCESSING : while (true) {
@@ -180,17 +179,15 @@ public class Server {
    * This method should be called when a data item is received
    * */
   public void receiveData(ExchangeMessage data) {
-//    if (data instanceof _TupleBatch)
-//      System.out.println("TupleBag received from " + data.getWorkerID() + " to Operator: " + data.getOperatorID());
 
     LinkedBlockingQueue<ExchangeTupleBatch> q = null;
     q = Server.this.dataBuffer.get(data.getOperatorID());
     if (data instanceof ExchangeTupleBatch)
       q.offer((ExchangeTupleBatch) data);
-    System.out.println("after add: size of q: "+q.size());
+    System.out.println("after add: size of q: " + q.size());
   }
 
-  protected Server(SocketInfo server, Map<Integer,SocketInfo> workers) throws IOException {
+  protected Server(SocketInfo server, Map<Integer, SocketInfo> workers) throws IOException {
     this.workers = new ConcurrentHashMap<Integer, SocketInfo>();
     this.workers.putAll(workers);
 
@@ -202,39 +199,31 @@ public class Server {
 
     this.minaHandler = new ServerHandler(Thread.currentThread());
 
-    
-    Map<Integer, SocketInfo> computingUnits = new HashMap<Integer,SocketInfo>();
+    Map<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
     computingUnits.putAll(workers);
     computingUnits.put(0, server);
-    
+
     Map<Integer, IoHandler> handlers = new HashMap<Integer, IoHandler>(workers.size() + 1);
     for (Integer workerID : workers.keySet()) {
       handlers.put(workerID, minaHandler);
     }
-    
+
     handlers.put(0, minaHandler);
-    
-    this.connectionPool = new ConnectionPool(0,computingUnits, handlers);
+
+    this.connectionPool = new ConnectionPool(0, computingUnits, handlers);
     messageProcessor = new MessageProcessor();
 
   }
 
   protected void init() throws IOException {
-    // Bind
-
     acceptor.setHandler(this.minaHandler);
     acceptor.bind(this.server.getAddress());
     this.messageProcessor.start();
-    }
-  
+  }
+
   protected final MessageProcessor messageProcessor;
 
   public static void main(String[] args) throws IOException {
-    // if (args.length < 1 || args.length > 6) {
-    // System.err.println("Invalid number of arguments.\n" + usage);
-    // System.exit(0);
-    // }
-
     File confDir = null;
     if (args.length >= 3 && args[1].equals("--conf")) {
       confDir = new File(args[2]);
@@ -244,7 +233,6 @@ public class Server {
 
     Configuration conf = new Configuration(confDir);
 
-    // SocketInfo serverInfo = Configuration.loadServer(confDir);
     final Server server = new Server(conf.getServer(), conf.getWorkers());
 
     runningInstance = server;
@@ -255,6 +243,7 @@ public class Server {
 
     server.init();
     Runtime.getRuntime().addShutdownHook(new Thread() {
+      @Override
       public void run() {
         server.cleanup();
       }
@@ -274,9 +263,6 @@ public class Server {
   public static final String SYSTEM_NAME = "Myriad";
 
   protected void start(String[] argv) throws IOException {
-    // first add tables to database
-    // Database.getCatalog().loadSchema(argv[0]);
-    // TableStats.computeStatistics();
 
     String queryFile = null;
 
@@ -298,12 +284,10 @@ public class Server {
 
     if (!interactive) {
       try {
-        // curtrans = new Transaction();
-        // curtrans.start();
         long startTime = System.currentTimeMillis();
         processNextStatement(new FileInputStream(new File(queryFile)));
         long time = System.currentTimeMillis() - startTime;
-        System.out.printf("----------------\n%.2f seconds\n\n", ((double) time / 1000.0));
+        System.out.printf("----------------\n%.2f seconds\n\n", (time / 1000.0));
         System.out.println("Press Enter to exit");
         System.in.read();
         this.shutdown();
@@ -341,7 +325,7 @@ public class Server {
           long startTime = System.currentTimeMillis();
           processNextStatement(new ByteArrayInputStream(statementBytes));
           long time = System.currentTimeMillis() - startTime;
-          System.out.printf("----------------\n%.2f seconds\n\n", ((double) time / 1000.0));
+          System.out.printf("----------------\n%.2f seconds\n\n", (time / 1000.0));
 
           // Grab the remainder of the line
           line = line.substring(split + 1);
@@ -374,7 +358,6 @@ public class Server {
         System.out.println("Fail to connect the worker: " + worker + ". Continue cleaning");
         continue;
       }
-      // IoSession session = future.getSession();
       session.write(
           ControlProto.ControlMessage.newBuilder().setType(ControlMessage.ControlMessageType.SHUTDOWN).build())
           .addListener(new IoFutureListener<WriteFuture>() {
@@ -451,6 +434,7 @@ public class Server {
 
     }
 
+    @Override
     public void sessionIdle(IoSession session, IdleStatus status) {
       if (status.equals(IdleStatus.BOTH_IDLE)) {
         session.close(false);
@@ -461,7 +445,7 @@ public class Server {
   // TODO implement queryID
   protected void queryReceivedByWorker(int queryId, int workerId) {
     workersReceivedQuery.add(workerId);
-    System.out.println(workerId+" has received the query");
+    System.out.println(workerId + " has received the query");
     if (workersReceivedQuery.size() >= this.workers.size()) {
       for (Entry<Integer, SocketInfo> entry : this.workers.entrySet())
         Server.this.connectionPool.get(entry.getKey(), null, 3, null).write(

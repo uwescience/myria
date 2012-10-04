@@ -1,6 +1,5 @@
 package edu.washington.escience.myriad.parallel;
 
-// import edu.washington.escience.Schema;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.table._TupleBatch;
 
@@ -36,7 +35,7 @@ public class SQLiteSQLProcessor extends SQLiteQueryScan {
     for (Operator child : children) {
       child.open();
     }
-    
+
     for (Operator child : children) {
       while (child.hasNext()) {
         child.next();

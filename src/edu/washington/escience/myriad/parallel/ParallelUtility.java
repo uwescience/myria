@@ -12,8 +12,6 @@ import java.util.Map;
 
 import org.apache.mina.core.future.CloseFuture;
 import org.apache.mina.core.future.ConnectFuture;
-import org.apache.mina.core.future.IoFutureListener;
-import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.service.IoConnector;
 import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.service.IoHandlerAdapter;
@@ -21,15 +19,11 @@ import org.apache.mina.core.session.IdleStatus;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.filter.codec.ProtocolCodecFilter;
 import org.apache.mina.filter.codec.protobuf.ProtobufCodecFactory;
-// import org.apache.mina.filter.codec.serialization.ObjectSerializationCodecFactory;
 import org.apache.mina.filter.compression.CompressionFilter;
 import org.apache.mina.transport.socket.SocketSessionConfig;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
 
-import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
-import edu.washington.escience.myriad.proto.ControlProto;
-import edu.washington.escience.myriad.proto.ControlProto.ControlMessage.ControlMessageType;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 
 /**
@@ -60,16 +54,16 @@ public class ParallelUtility {
 
     connector.getFilterChain().addLast("compressor", new CompressionFilter());
 
-    // connector.getFilterChain().addLast("codec", new ProtocolCodecFilter(new ObjectSerializationCodecFactory()));
-
     connector.getFilterChain().addLast("codec",
         new ProtocolCodecFilter(ProtobufCodecFactory.newInstance(TransportMessage.getDefaultInstance())));
 
     connector.setHandler(new IoHandlerAdapter() {
+      @Override
       public void exceptionCaught(IoSession session, Throwable cause) {
         cause.printStackTrace();
       }
 
+      @Override
       public void messageReceived(IoSession session, Object message) throws Exception {
         System.out.println("Default IOHandler, Message received: " + message);
         super.messageReceived(session, message);
@@ -95,32 +89,7 @@ public class ParallelUtility {
     return cf;
   }
 
-//  /**
-//   * Create a session for network communication.
-//   * 
-//   * @return An IoSession is a logical connection between a server and a client in Apache Mina. A set of sessions may
-//   *         share the same underlying TCP/UDP connection.
-//   * 
-//   * @param remoteAddress The address of the remote server
-//   * 
-//   * @param ioHandler The handler which processes received messages from the returned session
-//   * 
-//   * @param connectionTimeoutMS The timeout of connecting the server in milliseconds.
-//   * */
-//
-//  public static IoSession createDataConnection(IoSession session, ExchangePairID operatorID, String workerID) {
-//    session.removeAttribute("senderID");
-//    session.removeAttribute("operatorID");
-//    session.write(ControlProto.ControlMessage.newBuilder().setType(ControlMessageType.CONNECT).setExchangePairID(
-//        ControlProto.ExchangePairID.newBuilder().setWorkerID(workerID).setExchangePairID(operatorID.getLong()).build())
-//        .build()).awaitUninterruptibly();
-//    session.setAttribute("senderID",workerID);
-//    session.setAttribute("operatorID",operatorID);
-//    return session;
-//  }
-
-  public static IoSession createSession(SocketAddress remoteAddress, IoHandler ioHandler,
-      long connectionTimeoutMS) {
+  public static IoSession createSession(SocketAddress remoteAddress, IoHandler ioHandler, long connectionTimeoutMS) {
 
     IoSession session = null;
 
@@ -147,7 +116,7 @@ public class ParallelUtility {
   public static NioSocketAcceptor createAcceptor() {
     NioSocketAcceptor acceptor = new NioSocketAcceptor(10);
 
-    SocketSessionConfig config = (SocketSessionConfig) acceptor.getSessionConfig();
+    SocketSessionConfig config = acceptor.getSessionConfig();
     config.setKeepAlive(false);
     config.setTcpNoDelay(true);
     /**
@@ -164,14 +133,15 @@ public class ParallelUtility {
 
     acceptor.getFilterChain().addLast("codec",
         new ProtocolCodecFilter(ProtobufCodecFactory.newInstance(TransportMessage.getDefaultInstance())));
-    // acceptor.getFilterChain().addLast("codec", new ProtocolCodecFilter(new ObjectSerializationCodecFactory()));
     acceptor.setCloseOnDeactivation(true);
 
     acceptor.setHandler(new IoHandlerAdapter() {
+      @Override
       public void exceptionCaught(IoSession session, Throwable cause) {
         cause.printStackTrace();
       }
 
+      @Override
       public void messageReceived(IoSession session, Object message) throws Exception {
         System.out.println("Default IOHandler, Message received: " + message);
         super.messageReceived(session, message);
@@ -196,24 +166,6 @@ public class ParallelUtility {
       acceptor.dispose(false);
     }
   }
-
-//  public static void broadcastMessageToWorkers(Object message, SocketInfo[] workers, IoHandlerAdapter handler,
-//      long timeoutMS) {
-//
-//    for (SocketInfo worker : workers) {
-//      IoSession s = ParallelUtility.createSession(worker.getAddress(), handler, timeoutMS);
-//      if (s != null) {
-//        s.write(message).addListener(new IoFutureListener<WriteFuture>() {
-//
-//          @Override
-//          public void operationComplete(WriteFuture future) {
-//            ParallelUtility.closeSession(future.getSession());
-//          }
-//        });
-//      }
-//    }
-//
-//  }
 
   public static String[] removeArg(String[] args, int toBeRemoved) {
     if (args == null)

@@ -1,9 +1,7 @@
 package edu.washington.escience.myriad.parallel;
 
-import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
-import java.util.Iterator;
 
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.table._TupleBatch;
@@ -20,8 +18,8 @@ public class ShuffleConsumer extends Consumer {
 
   private static final long serialVersionUID = 1L;
 
-//  private transient Iterator<_TupleBatch> tuples;
-//  private transient int innerBufferIndex;
+  // private transient Iterator<_TupleBatch> tuples;
+  // private transient int innerBufferIndex;
   private boolean finish;
 
   // Used to remember which of the source workers have sent an end of stream
@@ -33,6 +31,7 @@ public class ShuffleConsumer extends Consumer {
   private ShuffleProducer child;
   private Schema schema;
 
+  @Override
   public String getName() {
     return "shuffle_c";
   }
@@ -73,7 +72,7 @@ public class ShuffleConsumer extends Consumer {
     ExchangeTupleBatch tb = null;
 
     while (this.workerEOS.nextClearBit(0) < this.sourceWorkers.length) {
-      tb = (ExchangeTupleBatch) this.take(-1);
+      tb = this.take(-1);
       if (tb.isEos()) {
         this.workerEOS.set(this.workerIdToIndex.get(tb.getWorkerID()));
       } else {

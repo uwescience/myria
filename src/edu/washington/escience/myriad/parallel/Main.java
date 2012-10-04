@@ -1,10 +1,8 @@
 package edu.washington.escience.myriad.parallel;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -19,27 +17,13 @@ import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 
-import edu.washington.escience.myriad.parallel.ConcurrentInMemoryTupleBatch;
-import edu.washington.escience.myriad.parallel.JdbcTupleBatch;
-import edu.washington.escience.myriad.parallel.SQLiteTupleBatch;
 import edu.washington.escience.myriad.Predicate;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.accessmethod.JdbcAccessMethod;
-import edu.washington.escience.myriad.accessmethod.SQLiteAccessMethod;
-import edu.washington.escience.myriad.table._TupleBatch;
-import edu.washington.escience.myriad.parallel.CollectConsumer;
-import edu.washington.escience.myriad.parallel.CollectProducer;
-import edu.washington.escience.myriad.parallel.DbException;
-import edu.washington.escience.myriad.parallel.JdbcSQLProcessor;
-import edu.washington.escience.myriad.parallel.SQLiteSQLProcessor;
-import edu.washington.escience.myriad.parallel.JdbcQueryScan;
-import edu.washington.escience.myriad.parallel.SQLiteQueryScan;
-import edu.washington.escience.myriad.parallel.Operator;
-import edu.washington.escience.myriad.parallel.Server;
-import edu.washington.escience.myriad.parallel.SocketInfo;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
+import edu.washington.escience.myriad.table._TupleBatch;
 
 /**
  * Runs some simple tests.
@@ -62,7 +46,7 @@ public class Main {
     // shuffleTestSQLite(args);
     // sqliteInsertSpeedTest();
     // filesystemWriteTest();
-//     shuffleTestSQLite(args);
+    // shuffleTestSQLite(args);
     dupElimTestSQLite(args);
     // shuffleTestSQLite(args);
     // sqliteInsertSpeedTest();
@@ -170,6 +154,7 @@ public class Main {
       this.children = children;
     }
 
+    @Override
     public void open() throws DbException {
       if (children != null) {
         for (Operator child : children)
@@ -226,7 +211,7 @@ public class Main {
     DupElim dupElim2 = new DupElim(tableSchema2, scan2);
     HashMap<Integer, Operator> workerPlans = new HashMap<Integer, Operator>();
     CollectProducer cp1 = new CollectProducer(dupElim1, collectID, WORKER_1_ID);
-    CollectConsumer cc1 = new CollectConsumer(cp1, collectID, new int[] { WORKER_1_ID,WORKER_2_ID });
+    CollectConsumer cc1 = new CollectConsumer(cp1, collectID, new int[] { WORKER_1_ID, WORKER_2_ID });
     DupElim dumElim3 = new DupElim(tableSchema1, cc1);
     workerPlans.put(WORKER_1_ID, new CollectProducer(dumElim3, serverReceiveID, MASTER_ID));
     workerPlans.put(WORKER_2_ID, new CollectProducer(dupElim2, collectID, WORKER_1_ID));
@@ -234,6 +219,7 @@ public class Main {
     // OutputStreamSinkTupleBatch serverBuffer = new OutputStreamSinkTupleBatch(outputSchema, System.out);
 
     new Thread() {
+      @Override
       public void run() {
         try {
           Server.main(args);
@@ -247,20 +233,19 @@ public class Main {
         Thread.sleep(10);
       } catch (InterruptedException e) {
       }
-    
+
     Server.runningInstance.exchangeSchema.put(serverReceiveID, outputSchema);
     final LinkedBlockingQueue<ExchangeTupleBatch> buffer = new LinkedBlockingQueue<ExchangeTupleBatch>();
-    CollectConsumer serverPlan = new CollectConsumer(outputSchema, serverReceiveID, new int[] {
-        WORKER_1_ID });
+    CollectConsumer serverPlan = new CollectConsumer(outputSchema, serverReceiveID, new int[] { WORKER_1_ID });
     serverPlan.setInputBuffer(buffer);
     Server.runningInstance.dataBuffer.put(serverPlan.getOperatorID(), buffer);
     Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
     System.out.println("Query dispatched to the workers");
     Server.runningInstance.startServerQuery(serverPlan);
-    
-//    Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
-//    System.out.println("Query dispatched to the workers");
-//    Server.runningInstance.startServerQuery(new CollectConsumer(outputSchema, serverReceiveID, new int[] { 1, 2 }));
+
+    // Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
+    // System.out.println("Query dispatched to the workers");
+    // Server.runningInstance.startServerQuery(new CollectConsumer(outputSchema, serverReceiveID, new int[] { 1, 2 }));
 
   }
 
@@ -317,6 +302,7 @@ public class Main {
     OutputStreamSinkTupleBatch serverBuffer = new OutputStreamSinkTupleBatch(outputSchema, System.out);
 
     new Thread() {
+      @Override
       public void run() {
         try {
           Server.main(args);
@@ -332,8 +318,8 @@ public class Main {
       }
     Server.runningInstance.exchangeSchema.put(serverReceiveID, outputSchema);
     final LinkedBlockingQueue<ExchangeTupleBatch> buffer = new LinkedBlockingQueue<ExchangeTupleBatch>();
-    CollectConsumer serverPlan = new CollectConsumer(outputSchema, serverReceiveID, new int[] {
-        WORKER_1_ID, WORKER_2_ID });
+    CollectConsumer serverPlan =
+        new CollectConsumer(outputSchema, serverReceiveID, new int[] { WORKER_1_ID, WORKER_2_ID });
     serverPlan.setInputBuffer(buffer);
     Server.runningInstance.dataBuffer.put(serverPlan.getOperatorID(), buffer);
     Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
@@ -394,6 +380,7 @@ public class Main {
     OutputStreamSinkTupleBatch serverBuffer = new OutputStreamSinkTupleBatch(outputSchema, System.out);
 
     new Thread() {
+      @Override
       public void run() {
         try {
           Server.main(args);
@@ -470,6 +457,7 @@ public class Main {
     OutputStreamSinkTupleBatch serverBuffer = new OutputStreamSinkTupleBatch(outputSchema, System.out);
 
     new Thread() {
+      @Override
       public void run() {
         try {
           Server.main(args);

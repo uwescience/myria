@@ -3,10 +3,9 @@ package edu.washington.escience.myriad.parallel;
 import java.util.Iterator;
 
 import edu.washington.escience.myriad.Schema;
-import edu.washington.escience.myriad.table._TupleBatch;
 import edu.washington.escience.myriad.TupleBatch;
-import edu.washington.escience.myriad.accessmethod.JdbcAccessMethod;
 import edu.washington.escience.myriad.accessmethod.SQLiteAccessMethod;
+import edu.washington.escience.myriad.table._TupleBatch;
 
 public class SQLiteQueryScan extends Operator {
 

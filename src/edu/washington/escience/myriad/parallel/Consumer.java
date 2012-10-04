@@ -3,8 +3,6 @@ package edu.washington.escience.myriad.parallel;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import edu.washington.escience.myriad.table._TupleBatch;
-
 public abstract class Consumer extends Exchange {
 
   private static final long serialVersionUID = 1L;
@@ -13,8 +11,9 @@ public abstract class Consumer extends Exchange {
    * Worker.inBuffer.get(this.getOperatorID())
    * */
   private transient volatile LinkedBlockingQueue<ExchangeTupleBatch> inputBuffer;
-//  protected volatile _TupleBatch outputBuffer;
-  
+
+  // protected volatile _TupleBatch outputBuffer;
+
   public Consumer(ExchangePairID oID) {
     super(oID);
   }
@@ -35,15 +34,15 @@ public abstract class Consumer extends Exchange {
   public void setInputBuffer(LinkedBlockingQueue<ExchangeTupleBatch> buffer) {
     this.inputBuffer = buffer;
   }
-  
-//  public void setOutputBuffer(_TupleBatch outputBuffer)
-//  {
-//    this.outputBuffer = outputBuffer;
-//  }
-//  
-//  public _TupleBatch getOutputBuffer()
-//  {
-//    return this.outputBuffer;
-//  }
+
+  // public void setOutputBuffer(_TupleBatch outputBuffer)
+  // {
+  // this.outputBuffer = outputBuffer;
+  // }
+  //
+  // public _TupleBatch getOutputBuffer()
+  // {
+  // return this.outputBuffer;
+  // }
 
 }

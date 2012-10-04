@@ -1,15 +1,10 @@
 package edu.washington.escience.myriad.parallel;
 
-// import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Map;
-// import java.util.Iterator;
 
-// import edu.washington.escience.ConcurrentInMemoryTupleBatch;
 import edu.washington.escience.myriad.Schema;
-import edu.washington.escience.myriad.TupleBatch;
-// import edu.washington.escience.table.DbIterateReader;
 import edu.washington.escience.myriad.table._TupleBatch;
 
 /**
@@ -44,6 +39,7 @@ public class CollectConsumer extends Consumer {
    * */
   private CollectProducer child;
 
+  @Override
   public String getName() {
     return "collect_c";
   }
@@ -86,6 +82,7 @@ public class CollectConsumer extends Consumer {
     super.open();
   }
 
+  @Override
   public void close() {
     super.close();
     this.setInputBuffer(null);

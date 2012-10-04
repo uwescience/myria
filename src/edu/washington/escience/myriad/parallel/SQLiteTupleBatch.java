@@ -1,27 +1,18 @@
 package edu.washington.escience.myriad.parallel;
 
-import java.util.ArrayList;
-// import java.util.Arrays;
-// import java.util.BitSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
 import org.apache.commons.lang3.StringUtils;
 
-// import edu.washington.escience.Predicate.Op;
-// import edu.washington.escience.Schema.TDItem;
 import edu.washington.escience.myriad.Predicate;
-import edu.washington.escience.myriad.Predicate.Op;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.accessmethod.JdbcAccessMethod;
 import edu.washington.escience.myriad.accessmethod.SQLiteAccessMethod;
-import edu.washington.escience.myriad.annotation.ThreadSafe;
 import edu.washington.escience.myriad.column.Column;
-import edu.washington.escience.myriad.parallel.PartitionFunction;
 import edu.washington.escience.myriad.table._TupleBatch;
 
 // Not yet @ThreadSafe
@@ -32,66 +23,54 @@ public class SQLiteTupleBatch implements _TupleBatch {
   public static final int BATCH_SIZE = 100;
 
   private final Schema inputSchema;
-  // private final String[] outputColumnNames;
-  // private final List<Column> inputColumns;
-  // private int numInputTuples;
-  // private final BitSet invalidTuples;
-  // private final BitSet invalidColumns;
-//  private final ArrayList<String> filters;
-//  private final ArrayList<String> projects;
-  private transient String dataDir; 
+  private transient String dataDir;
   private final String filename;
   private int numInputTuples;
-  // private final String driverClass;
   private final String tableName;
 
-  // private final String username;
-  // private final String password;
-
   public SQLiteTupleBatch(Schema inputSchema, String filename, String tableName) {
-    /* Take the input arguments directly */
     this.inputSchema = Objects.requireNonNull(inputSchema);
-//    this.filters = new ArrayList<String>();
-//    this.projects = new ArrayList<String>();
     this.filename = filename;
     this.tableName = tableName;
   }
 
+  @Override
   public synchronized SQLiteTupleBatch filter(int fieldIdx, Predicate.Op op, Object operand) {
     return this;
   }
 
+  @Override
   public synchronized boolean getBoolean(int column, int row) {
-    // return ((BooleanColumn) inputColumns.get(column)).getBoolean(row);
     return false;
   }
 
+  @Override
   public synchronized double getDouble(int column, int row) {
-    // return ((DoubleColumn) inputColumns.get(column)).getDouble(row);
     return 0d;
   }
 
+  @Override
   public synchronized float getFloat(int column, int row) {
-    // return ((FloatColumn) inputColumns.get(column)).getFloat(row);
     return 0f;
   }
 
+  @Override
   public synchronized int getInt(int column, int row) {
-    // return ((IntColumn) inputColumns.get(column)).getInt(row);
     return 0;
   }
-  
-  public synchronized long getLong(int column, int row) {
-    // return ((IntColumn) inputColumns.get(column)).getInt(row);
-    return 0;
-  }  
 
+  @Override
+  public synchronized long getLong(int column, int row) {
+    return 0;
+  }
+
+  @Override
   public Schema inputSchema() {
     return inputSchema;
   }
 
+  @Override
   public synchronized String getString(int column, int row) {
-    // return ((StringColumn) inputColumns.get(column)).getString(row);
     return null;
   }
 
@@ -104,6 +83,7 @@ public class SQLiteTupleBatch implements _TupleBatch {
     return null;
   }
 
+  @Override
   public synchronized SQLiteTupleBatch project(int[] remainingColumns) {
     return this;
   }
@@ -119,6 +99,7 @@ public class SQLiteTupleBatch implements _TupleBatch {
     return validC;
   }
 
+  @Override
   public synchronized Schema outputSchema() {
 
     int[] columnIndices = this.outputColumnIndices();
@@ -167,7 +148,7 @@ public class SQLiteTupleBatch implements _TupleBatch {
       fieldNames[i++] = item.getName();
     }
 
-    SQLiteAccessMethod.tupleBatchInsert(this.dataDir+"/"+this.filename, "insert into " + this.tableName + " ( "
+    SQLiteAccessMethod.tupleBatchInsert(this.dataDir + "/" + this.filename, "insert into " + this.tableName + " ( "
         + StringUtils.join(fieldNames, ',') + " ) values ( " + StringUtils.join(placeHolders, ',') + " )",
         new TupleBatch(another.outputSchema(), another.outputRawData(), another.numOutputTuples()));
     return this;
@@ -175,60 +156,50 @@ public class SQLiteTupleBatch implements _TupleBatch {
 
   @Override
   public synchronized _TupleBatch union(_TupleBatch another) {
-    // TODO Auto-generated method stub
     return null;
   }
 
   @Override
   public synchronized _TupleBatch intersect(_TupleBatch another) {
-    // TODO Auto-generated method stub
     return null;
   }
 
   @Override
   public synchronized _TupleBatch except(_TupleBatch another) {
-    // TODO Auto-generated method stub
     return null;
   }
 
   @Override
   public synchronized _TupleBatch distinct() {
-    // TODO Auto-generated method stub
     return null;
   }
 
   @Override
   public synchronized _TupleBatch groupby() {
-    // TODO Auto-generated method stub
     return null;
   }
 
   @Override
   public synchronized _TupleBatch orderby() {
-    // TODO Auto-generated method stub
     return null;
   }
 
   @Override
   public synchronized _TupleBatch join(_TupleBatch other, Predicate p, _TupleBatch output) {
-    // TODO Auto-generated method stub
     return null;
   }
 
   @Override
   public List<Column> outputRawData() {
-    // TODO Auto-generated method stub
     return null;
   }
 
   @Override
   public TupleBatchBuffer[] partition(PartitionFunction<?, ?> p, TupleBatchBuffer[] buffers) {
-    // TODO Auto-generated method stub
     return null;
   }
-  
-  public void reset(String dataDir)
-  {
+
+  public void reset(String dataDir) {
     this.dataDir = dataDir;
   }
 
@@ -238,8 +209,7 @@ public class SQLiteTupleBatch implements _TupleBatch {
   }
 
   @Override
-  public int hashCode(int rowIndx)
-  {     
-    throw new UnsupportedOperationException();    
-  }    
+  public int hashCode(int rowIndx) {
+    throw new UnsupportedOperationException();
+  }
 }

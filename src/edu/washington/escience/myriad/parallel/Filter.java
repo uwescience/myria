@@ -4,7 +4,6 @@ import java.util.NoSuchElementException;
 
 import edu.washington.escience.myriad.Predicate;
 import edu.washington.escience.myriad.Schema;
-import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.table._TupleBatch;
 
 /**

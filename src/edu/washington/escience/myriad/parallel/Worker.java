@@ -4,8 +4,6 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -15,7 +13,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
-// import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -29,7 +26,6 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnFactory;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
-import edu.washington.escience.myriad.proto.ControlProto;
 import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myriad.proto.ControlProto.ControlMessage.ControlMessageType;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
@@ -37,7 +33,6 @@ import edu.washington.escience.myriad.proto.DataProto.DataMessage;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageType;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType;
-// import edu.washington.escience.myriad.table.DbIterateReader;
 import edu.washington.escience.myriad.table._TupleBatch;
 
 /**
@@ -70,6 +65,7 @@ public class Worker {
    * The working thread, which executes the query plan
    * */
   protected class QueryExecutor extends Thread {
+    @Override
     public void run() {
       while (true) {
         Operator query = null;
@@ -104,6 +100,7 @@ public class Worker {
   }
 
   protected class MessageProcessor extends Thread {
+    @Override
     public void run() {
 
       TERMINATE_MESSAGE_PROCESSING : while (true) {
@@ -182,6 +179,7 @@ public class Worker {
     private final Timer timer = new Timer();
     private volatile boolean inRun = false;
 
+    @Override
     public void run() {
       if (Worker.this.toShutdown) {
         Worker.this.shutdown();
@@ -321,7 +319,7 @@ public class Worker {
     Configuration conf = new Configuration(confDir);
     // Instantiate a new worker
     Worker w = new Worker(conf);
-//    int port = w.port;
+    // int port = w.port;
 
     // Prepare to receive messages over the network
     w.init();
@@ -361,13 +359,13 @@ public class Worker {
    * The ID of this worker
    * */
   final int myID;
-//
-//  final int port;
-//  final String host;
-//  /**
-//   * The server address
-//   * */
-//  final InetSocketAddress masterAddress;
+  //
+  // final int port;
+  // final String host;
+  // /**
+  // * The server address
+  // * */
+  // final InetSocketAddress masterAddress;
 
   /**
    * connectionPool[0] is always the master
@@ -422,14 +420,14 @@ public class Worker {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.OFF);
     this.conf = conf;
     this.myID = Integer.parseInt(conf.get("worker.identifier"));
-    
-//    port = workerArray[this.workerID - 1].getPort();
-//    host = workerArray[this.workerID - 1].getHost();
-//    String[] server = conf.get("master.identifier").split(":");
+
+    // port = workerArray[this.workerID - 1].getPort();
+    // host = workerArray[this.workerID - 1].getHost();
+    // String[] server = conf.get("master.identifier").split(":");
     this.dataDir = new File(conf.get("worker.data.sqlite.dir"));
     this.tmpDir = new File(conf.get("worker.tmp.dir"));
-//    this.masterAddress = new InetSocketAddress(server[0], Integer.parseInt(server[1]));
-//    this.masterAddress = conf.getServer();
+    // this.masterAddress = new InetSocketAddress(server[0], Integer.parseInt(server[1]));
+    // this.masterAddress = conf.getServer();
 
     acceptor = ParallelUtility.createAcceptor();
 
@@ -443,19 +441,19 @@ public class Worker {
     messageProcessor.setDaemon(false);
     minaHandler = new WorkerHandler();
 
-    Map<Integer,SocketInfo> workers = conf.getWorkers();
-    Map<Integer, SocketInfo> computingUnits = new HashMap<Integer,SocketInfo>();
+    Map<Integer, SocketInfo> workers = conf.getWorkers();
+    Map<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
     computingUnits.putAll(workers);
     computingUnits.put(0, conf.getServer());
-    
+
     Map<Integer, IoHandler> handlers = new HashMap<Integer, IoHandler>(workers.size() + 1);
     for (Integer workerID : workers.keySet()) {
       handlers.put(workerID, minaHandler);
     }
-    
+
     handlers.put(0, minaHandler);
 
-    this.connectionPool = new ConnectionPool(myID,computingUnits, handlers);
+    this.connectionPool = new ConnectionPool(myID, computingUnits, handlers);
   }
 
   /**
@@ -495,7 +493,7 @@ public class Worker {
 
     Operator[] children = null;
     if (queryPlan instanceof Operator)
-      children = ((Operator) queryPlan).getChildren();
+      children = queryPlan.getChildren();
 
     if (children != null)
       for (Operator child : children)
@@ -511,7 +509,7 @@ public class Worker {
     if (root instanceof Consumer)
       oIds.add(((Consumer) root).getOperatorID());
     if (root instanceof Operator) {
-      Operator[] ops = ((Operator) root).getChildren();
+      Operator[] ops = root.getChildren();
       if (ops != null)
         for (Operator c : ops) {
           if (c != null)

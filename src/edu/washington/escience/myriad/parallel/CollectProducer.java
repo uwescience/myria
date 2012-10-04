@@ -1,32 +1,16 @@
 package edu.washington.escience.myriad.parallel;
 
-// import java.io.OutputStream;
-import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.List;
-// import java.util.ArrayList;
-//
-// import org.apache.mina.core.future.IoFutureListener;
-// import org.apache.mina.core.future.WriteFuture;
-// import org.apache.mina.core.buffer.IoBuffer;
-import org.apache.mina.core.future.IoFutureListener;
-import org.apache.mina.core.future.WriteFuture;
+
 import org.apache.mina.core.session.IoSession;
 
-// import edu.washington.escience.ConcurrentInMemoryTupleBatch;
-// import edu.washington.escience.ImmutableInMemoryTupleBatch;
 import edu.washington.escience.myriad.Schema;
-// import edu.washington.escience.myriad.TupleBatch;
-// import edu.washington.escience.myriad.TupleBatchBuffer;
-// import edu.washington.escience.table.DbIterateReader;
 import edu.washington.escience.myriad.column.Column;
-import edu.washington.escience.myriad.proto.ControlProto;
-import edu.washington.escience.myriad.proto.ControlProto.ControlMessage.ControlMessageType;
-import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
-import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageType;
+import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType;
 import edu.washington.escience.myriad.table._TupleBatch;
 
@@ -52,6 +36,7 @@ public class CollectProducer extends Producer {
   private final int collectConsumerWorkerID;
   private Operator child;
 
+  @Override
   public String getName() {
     return "collect_p";
   }
@@ -70,6 +55,7 @@ public class CollectProducer extends Producer {
    * The working thread, which executes the child operator and send the tuples to the paired CollectConsumer operator
    * */
   class WorkingThread extends Thread {
+    @Override
     public void run() {
 
       // IoSession session =
@@ -82,8 +68,8 @@ public class CollectProducer extends Producer {
 
       TransportMessage.Builder messageBuilder = TransportMessage.newBuilder();
 
-//      session.write(messageBuilder.setType(TransportMessageType.CONTROL).setControl(
-//          ControlMessage.newBuilder().setType(ControlMessageType.CONNECT).build()).build());
+      // session.write(messageBuilder.setType(TransportMessageType.CONTROL).setControl(
+      // ControlMessage.newBuilder().setType(ControlMessageType.CONNECT).build()).build());
 
       try {
 
@@ -104,8 +90,8 @@ public class CollectProducer extends Producer {
           }
 
           session.write(messageBuilder.setType(TransportMessageType.DATA).setData(
-              DataMessage.newBuilder().setType(DataMessageType.NORMAL).addAllColumns(Arrays.asList(columnProtos)).setOperatorID(
-                  CollectProducer.this.operatorID.getLong()).build()).build());
+              DataMessage.newBuilder().setType(DataMessageType.NORMAL).addAllColumns(Arrays.asList(columnProtos))
+                  .setOperatorID(CollectProducer.this.operatorID.getLong()).build()).build());
         }
 
         DataMessage eos =
@@ -137,6 +123,7 @@ public class CollectProducer extends Producer {
     super.open();
   }
 
+  @Override
   public void close() {
     super.close();
     child.close();

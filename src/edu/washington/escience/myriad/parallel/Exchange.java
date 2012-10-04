@@ -1,7 +1,6 @@
 package edu.washington.escience.myriad.parallel;
 
 import java.io.Serializable;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -32,14 +31,12 @@ public abstract class Exchange extends Operator {
     public static ExchangePairID newID() {
       return new ExchangePairID(idGenerator.getAndIncrement());
     }
-    
-    public static ExchangePairID fromExisting(long l)
-    {
+
+    public static ExchangePairID fromExisting(long l) {
       return new ExchangePairID(l);
     }
-    
-    public long getLong()
-    {
+
+    public long getLong() {
       return this.oId;
     }
 
@@ -57,7 +54,7 @@ public abstract class Exchange extends Operator {
 
     @Override
     public int hashCode() {
-      return (int)this.oId;
+      return (int) this.oId;
     }
 
     @Override
