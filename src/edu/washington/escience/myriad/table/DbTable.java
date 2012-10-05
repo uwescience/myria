@@ -8,13 +8,6 @@ import edu.washington.escience.myriad.parallel.DbException;
 public interface DbTable extends Serializable {
 
   /**
-   * Opens the iterator. This must be called before any of the other methods.
-   * 
-   * @throws DbException when there are problems opening/accessing the database.
-   */
-  public void open() throws DbException;
-
-  /**
    * Closes the iterator. When the iterator is closed, calling next(), hasNext(), or rewind() should fail by throwing
    * IllegalStateException.
    */
@@ -26,5 +19,12 @@ public interface DbTable extends Serializable {
    * @return the Schema associated with this DbIterator.
    */
   public Schema getSchema();
+
+  /**
+   * Opens the iterator. This must be called before any of the other methods.
+   * 
+   * @throws DbException when there are problems opening/accessing the database.
+   */
+  public void open() throws DbException;
 
 }

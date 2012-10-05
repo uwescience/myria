@@ -43,21 +43,21 @@ public final class Schema implements Serializable {
     }
 
     /**
-     * Returns the type of this field.
-     * 
-     * @return the type of this field.
-     */
-    public Type getType() {
-      return fieldType;
-    }
-
-    /**
      * Returns the name of this field.
      * 
      * @return the name of this field.
      */
     public String getName() {
       return fieldName;
+    }
+
+    /**
+     * Returns the type of this field.
+     * 
+     * @return the type of this field.
+     */
+    public Type getType() {
+      return fieldType;
     }
 
     @Override
@@ -78,17 +78,17 @@ public final class Schema implements Serializable {
    */
   public static Schema fromResultSetMetaData(final ResultSetMetaData rsmd) throws SQLException {
     /* How many columns in this result set? */
-    int columnCount = rsmd.getColumnCount();
+    final int columnCount = rsmd.getColumnCount();
 
     /* Allocate space for the type and string arrays */
-    Type[] columnTypes = new Type[columnCount];
-    String[] columnNames = new String[columnCount];
+    final Type[] columnTypes = new Type[columnCount];
+    final String[] columnNames = new String[columnCount];
 
     /* Fill them out */
     for (int i = 0; i < columnCount; ++i) {
       /* JDBC numbers columns from 1. Yes, really. */
       // Type
-      int type = rsmd.getColumnType(i + 1);
+      final int type = rsmd.getColumnType(i + 1);
       switch (type) {
         case java.sql.Types.BOOLEAN:
           columnTypes[i] = Type.BOOLEAN_TYPE;
@@ -131,16 +131,16 @@ public final class Schema implements Serializable {
     assert (statement.hasStepped());
 
     /* How many columns in this result set? */
-    int columnCount = statement.columnCount();
+    final int columnCount = statement.columnCount();
 
     /* Allocate space for the type and string arrays */
-    Type[] columnTypes = new Type[columnCount];
-    String[] columnNames = new String[columnCount];
+    final Type[] columnTypes = new Type[columnCount];
+    final String[] columnNames = new String[columnCount];
 
     /* Fill them out */
     for (int i = 0; i < columnCount; ++i) {
       // Type
-      int type = statement.columnType(i);
+      final int type = statement.columnType(i);
       switch (type) {
         case SQLiteConstants.SQLITE_INTEGER:
           /*
@@ -175,8 +175,8 @@ public final class Schema implements Serializable {
    * @return the new Schema
    */
   public static Schema merge(final Schema td1, final Schema td2) {
-    Type[] types = new Type[td1.numFields() + td2.numFields()];
-    String[] names = new String[types.length];
+    final Type[] types = new Type[td1.numFields() + td2.numFields()];
+    final String[] names = new String[types.length];
 
     for (int i = 0; i < td1.numFields(); i++) {
       types[i] = td1.getFieldType(i);
@@ -232,7 +232,7 @@ public final class Schema implements Serializable {
     if (!(o instanceof Schema)) {
       return false;
     }
-    Schema td = (Schema) o;
+    final Schema td = (Schema) o;
 
     if (this.tdItems.length != td.tdItems.length) {
       return false;
@@ -291,7 +291,7 @@ public final class Schema implements Serializable {
    * @return an array containing the types of the columns in this Schema.
    */
   public Type[] getTypes() {
-    Type[] types = new Type[numFields()];
+    final Type[] types = new Type[numFields()];
     for (int fieldIndex = 0; fieldIndex < numFields(); ++fieldIndex) {
       types[fieldIndex] = tdItems[fieldIndex].getType();
     }
@@ -328,7 +328,7 @@ public final class Schema implements Serializable {
    */
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder();
+    final StringBuilder sb = new StringBuilder();
     for (int i = 0; i < tdItems.length; i++) {
       sb.append(tdItems[i]);
       sb.append(", ");

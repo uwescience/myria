@@ -6,8 +6,8 @@ import java.util.NoSuchElementException;
 import org.apache.commons.lang3.ArrayUtils;
 
 import edu.washington.escience.myriad.Schema;
-import edu.washington.escience.myriad.table._TupleBatch;
 import edu.washington.escience.myriad.Type;
+import edu.washington.escience.myriad.table._TupleBatch;
 
 /**
  * Project is an operator that implements a relational projection.
@@ -25,15 +25,15 @@ public class Project extends Operator {
    * @param typesList the types of the fields in the final projection
    * @param child The child operator
    */
-  public Project(ArrayList<Integer> fieldList, ArrayList<Type> typesList, Operator child) {
+  public Project(final ArrayList<Integer> fieldList, final ArrayList<Type> typesList, final Operator child) {
     this(fieldList, typesList.toArray(new Type[] {}), child);
   }
 
-  public Project(ArrayList<Integer> fieldList, Type[] types, Operator child) {
+  public Project(final ArrayList<Integer> fieldList, final Type[] types, final Operator child) {
     this.child = child;
     outFieldIds = fieldList.toArray(new Integer[] {});
-    String[] fieldAr = new String[fieldList.size()];
-    Schema childtd = child.getSchema();
+    final String[] fieldAr = new String[fieldList.size()];
+    final Schema childtd = child.getSchema();
 
     for (int i = 0; i < fieldAr.length; i++) {
       fieldAr[i] = childtd.getFieldName(fieldList.get(i));
@@ -83,7 +83,7 @@ public class Project extends Operator {
   // }
 
   @Override
-  public void setChildren(Operator[] children) {
+  public void setChildren(final Operator[] children) {
     if (this.child != children[0]) {
       this.child = children[0];
     }

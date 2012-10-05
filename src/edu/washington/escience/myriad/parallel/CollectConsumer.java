@@ -15,7 +15,7 @@ import edu.washington.escience.myriad.table._TupleBatch;
  * 
  * The consumer passively collects Tuples from all the paired CollectProducers
  * 
- * */
+ */
 public class CollectConsumer extends Consumer {
 
   private static final long serialVersionUID = 1L;
@@ -25,7 +25,7 @@ public class CollectConsumer extends Consumer {
   // /**
   // * innerBufferIndex and innerBuffer are used to buffer all the TupleBags this operator has received. We need this
   // * because we need to support rewind.
-  // * */
+  // */
   // private final _TupleBatch outputBuffer;
 
   private Schema schema;
@@ -36,50 +36,38 @@ public class CollectConsumer extends Consumer {
 
   /**
    * The child of a CollectConsumer must be a paired CollectProducer.
-   * */
+   */
   private CollectProducer child;
-
-  @Override
-  public String getName() {
-    return "collect_c";
-  }
-
-  /**
-   * If there's no child operator, a TupleDesc is needed
-   * */
-  public CollectConsumer(Schema schema, ExchangePairID operatorID, int[] workerIDs) {
-    super(operatorID);
-    this.schema = schema;
-    this.sourceWorkers = workerIDs;
-    this.workerIdToIndex = new HashMap<Integer, Integer>();
-    int idx = 0;
-    for (int w : workerIDs) {
-      this.workerIdToIndex.put(w, idx++);
-    }
-    this.workerEOS = new BitSet(workerIDs.length);
-  }
 
   /**
    * If a child is provided, the TupleDesc is the child's TD
-   * */
-  public CollectConsumer(CollectProducer child, ExchangePairID operatorID, int[] workerIDs) {
+   */
+  public CollectConsumer(final CollectProducer child, final ExchangePairID operatorID, final int[] workerIDs) {
     super(operatorID);
     this.child = child;
     this.schema = child.getSchema();
     this.sourceWorkers = workerIDs;
     this.workerIdToIndex = new HashMap<Integer, Integer>();
     int idx = 0;
-    for (int w : workerIDs) {
+    for (final int w : workerIDs) {
       this.workerIdToIndex.put(w, idx++);
     }
     this.workerEOS = new BitSet(workerIDs.length);
   }
 
-  @Override
-  public void open() throws DbException {
-    if (this.child != null)
-      this.child.open();
-    super.open();
+  /**
+   * If there's no child operator, a TupleDesc is needed
+   */
+  public CollectConsumer(final Schema schema, final ExchangePairID operatorID, final int[] workerIDs) {
+    super(operatorID);
+    this.schema = schema;
+    this.sourceWorkers = workerIDs;
+    this.workerIdToIndex = new HashMap<Integer, Integer>();
+    int idx = 0;
+    for (final int w : workerIDs) {
+      this.workerIdToIndex.put(w, idx++);
+    }
+    this.workerEOS = new BitSet(workerIDs.length);
   }
 
   @Override
@@ -87,6 +75,38 @@ public class CollectConsumer extends Consumer {
     super.close();
     this.setInputBuffer(null);
     this.workerEOS.clear();
+  }
+
+  @Override
+  protected _TupleBatch fetchNext() throws DbException {
+    if (!finish) {
+      try {
+        return getTuples();
+      } catch (final InterruptedException e) {
+        e.printStackTrace();
+        throw new DbException(e.getLocalizedMessage());
+      }
+    }
+    return null;
+  }
+
+  @Override
+  public Operator[] getChildren() {
+    return new Operator[] { this.child };
+  }
+
+  @Override
+  public String getName() {
+    return "collect_c";
+  }
+
+  @Override
+  public Schema getSchema() {
+    if (this.child != null) {
+      return this.child.getSchema();
+    } else {
+      return this.schema;
+    }
   }
 
   _TupleBatch getTuples() throws InterruptedException {
@@ -106,35 +126,18 @@ public class CollectConsumer extends Consumer {
   }
 
   @Override
-  protected _TupleBatch fetchNext() throws DbException {
-    if (!finish) {
-      try {
-        return getTuples();
-      } catch (InterruptedException e) {
-        e.printStackTrace();
-        throw new DbException(e.getLocalizedMessage());
-      }
+  public void open() throws DbException {
+    if (this.child != null) {
+      this.child.open();
     }
-    return null;
+    super.open();
   }
 
   @Override
-  public Operator[] getChildren() {
-    return new Operator[] { this.child };
-  }
-
-  @Override
-  public void setChildren(Operator[] children) {
+  public void setChildren(final Operator[] children) {
     this.child = (CollectProducer) children[0];
-    if (this.child != null)
+    if (this.child != null) {
       this.schema = this.child.getSchema();
-  }
-
-  @Override
-  public Schema getSchema() {
-    if (this.child != null)
-      return this.child.getSchema();
-    else
-      return this.schema;
+    }
   }
 }

@@ -10,11 +10,11 @@ public class BooleanColumnTest {
 
   @Test
   public void testProto() {
-    BooleanColumn original = new BooleanColumn();
+    final BooleanColumn original = new BooleanColumn();
     original.put(true).put(false).put(true).put(false).put(false).put(false).put(false).put(false).put(true).put(false)
         .put(false).put(false).put(false).put(false);
-    ColumnMessage serialized = original.serializeToProto();
-    BooleanColumn deserialized = new BooleanColumn(serialized);
+    final ColumnMessage serialized = original.serializeToProto();
+    final BooleanColumn deserialized = new BooleanColumn(serialized);
     assertTrue(original.toString().equals(deserialized.toString()));
   }
 

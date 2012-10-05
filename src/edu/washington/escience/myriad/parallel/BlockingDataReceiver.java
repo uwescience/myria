@@ -8,15 +8,9 @@ public class BlockingDataReceiver extends Operator {
   private final _TupleBatch outputBuffer;
   private final Operator child;
 
-  public BlockingDataReceiver(_TupleBatch outputBuffer, Operator child) {
+  public BlockingDataReceiver(final _TupleBatch outputBuffer, final Operator child) {
     this.outputBuffer = outputBuffer;
     this.child = child;
-  }
-
-  public void open() throws DbException {
-    if (child != null)
-      child.open();
-    super.open();
   }
 
   @Override
@@ -32,19 +26,27 @@ public class BlockingDataReceiver extends Operator {
     return new Operator[] { child };
   }
 
+  public _TupleBatch getOutputBuffer() {
+    return this.outputBuffer;
+  }
+
   @Override
   public Schema getSchema() {
     return child.getSchema();
   }
 
   @Override
-  public void setChildren(Operator[] children) {
-    // TODO using reflection
-    throw new UnsupportedOperationException();
+  public void open() throws DbException {
+    if (child != null) {
+      child.open();
+    }
+    super.open();
   }
 
-  public _TupleBatch getOutputBuffer() {
-    return this.outputBuffer;
+  @Override
+  public void setChildren(final Operator[] children) {
+    // TODO using reflection
+    throw new UnsupportedOperationException();
   }
 
 }

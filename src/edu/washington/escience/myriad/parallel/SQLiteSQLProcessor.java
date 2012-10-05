@@ -7,15 +7,15 @@ public class SQLiteSQLProcessor extends SQLiteQueryScan {
 
   private Operator[] children;
 
-  public SQLiteSQLProcessor(String filename, String baseSQL, Schema schema, Operator[] children) {
-    super(filename, baseSQL, schema);
-    this.children = children;
-  }
-
   /**
    * 
    */
   private static final long serialVersionUID = 1L;
+
+  public SQLiteSQLProcessor(final String filename, final String baseSQL, final Schema schema, final Operator[] children) {
+    super(filename, baseSQL, schema);
+    this.children = children;
+  }
 
   // @Override
   // public void rewind() throws DbException {
@@ -26,22 +26,9 @@ public class SQLiteSQLProcessor extends SQLiteQueryScan {
   @Override
   public void close() {
     super.close();
-    for (Operator child : children)
+    for (final Operator child : children) {
       child.close();
-  }
-
-  @Override
-  public void open() throws DbException {
-    for (Operator child : children) {
-      child.open();
     }
-
-    for (Operator child : children) {
-      while (child.hasNext()) {
-        child.next();
-      }
-    }
-    super.open();
   }
 
   @Override
@@ -55,7 +42,21 @@ public class SQLiteSQLProcessor extends SQLiteQueryScan {
   }
 
   @Override
-  public void setChildren(Operator[] children) {
+  public void open() throws DbException {
+    for (final Operator child : children) {
+      child.open();
+    }
+
+    for (final Operator child : children) {
+      while (child.hasNext()) {
+        child.next();
+      }
+    }
+    super.open();
+  }
+
+  @Override
+  public void setChildren(final Operator[] children) {
     this.children = children;
   }
 

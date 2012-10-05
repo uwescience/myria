@@ -7,10 +7,10 @@ public abstract class Producer extends Exchange {
   /**
    * The worker this operator is located at.
    * 
-   * */
+   */
   private transient Worker thisWorker;
 
-  public Producer(ExchangePairID oID) {
+  public Producer(final ExchangePairID oID) {
     super(oID);
   }
 
@@ -18,7 +18,7 @@ public abstract class Producer extends Exchange {
     return thisWorker;
   }
 
-  public void setThisWorker(Worker thisWorker) {
+  public void setThisWorker(final Worker thisWorker) {
     this.thisWorker = thisWorker;
   }
 

@@ -10,10 +10,10 @@ public class FloatColumnTest {
 
   @Test
   public void testProto() {
-    FloatColumn original = new FloatColumn();
+    final FloatColumn original = new FloatColumn();
     original.put(1).put(2).put(5).put(11);
-    ColumnMessage serialized = original.serializeToProto();
-    FloatColumn deserialized = new FloatColumn(serialized);
+    final ColumnMessage serialized = original.serializeToProto();
+    final FloatColumn deserialized = new FloatColumn(serialized);
     assertTrue(original.toString().equals(deserialized.toString()));
   }
 

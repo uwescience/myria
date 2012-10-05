@@ -10,11 +10,11 @@ public class LongColumnTest {
 
   @Test
   public void testProto() {
-    StringColumn original = new StringColumn();
+    final StringColumn original = new StringColumn();
     original.put("First").put("Second").put("Third").put("NextIsEmptyString").put("").put(
         "VeryVeryVeryVeryVeryVeryVeryVeryLongLast");
-    ColumnMessage serialized = original.serializeToProto();
-    StringColumn deserialized = new StringColumn(serialized);
+    final ColumnMessage serialized = original.serializeToProto();
+    final StringColumn deserialized = new StringColumn(serialized);
     assertTrue(original.toString().equals(deserialized.toString()));
   }
 

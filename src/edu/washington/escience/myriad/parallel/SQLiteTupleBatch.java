@@ -28,40 +28,84 @@ public class SQLiteTupleBatch implements _TupleBatch {
   private int numInputTuples;
   private final String tableName;
 
-  public SQLiteTupleBatch(Schema inputSchema, String filename, String tableName) {
+  public SQLiteTupleBatch(final Schema inputSchema, final String filename, final String tableName) {
     this.inputSchema = Objects.requireNonNull(inputSchema);
     this.filename = filename;
     this.tableName = tableName;
   }
 
   @Override
-  public synchronized SQLiteTupleBatch filter(int fieldIdx, Predicate.Op op, Object operand) {
+  public synchronized _TupleBatch append(final _TupleBatch another) {
+    final Iterator<Schema.TDItem> it = this.inputSchema.iterator();
+
+    final String[] fieldNames = new String[this.inputSchema.numFields()];
+    final String[] placeHolders = new String[this.inputSchema.numFields()];
+    int i = 0;
+    while (it.hasNext()) {
+      final Schema.TDItem item = it.next();
+      placeHolders[i] = "?";
+      fieldNames[i++] = item.getName();
+    }
+
+    SQLiteAccessMethod.tupleBatchInsert(this.dataDir + "/" + this.filename, "insert into " + this.tableName + " ( "
+        + StringUtils.join(fieldNames, ',') + " ) values ( " + StringUtils.join(placeHolders, ',') + " )",
+        new TupleBatch(another.outputSchema(), another.outputRawData(), another.numOutputTuples()));
     return this;
   }
 
   @Override
-  public synchronized boolean getBoolean(int column, int row) {
+  public synchronized _TupleBatch distinct() {
+    return null;
+  }
+
+  @Override
+  public synchronized _TupleBatch except(final _TupleBatch another) {
+    return null;
+  }
+
+  @Override
+  public synchronized SQLiteTupleBatch filter(final int fieldIdx, final Predicate.Op op, final Object operand) {
+    return this;
+  }
+
+  @Override
+  public synchronized boolean getBoolean(final int column, final int row) {
     return false;
   }
 
   @Override
-  public synchronized double getDouble(int column, int row) {
+  public synchronized double getDouble(final int column, final int row) {
     return 0d;
   }
 
   @Override
-  public synchronized float getFloat(int column, int row) {
+  public synchronized float getFloat(final int column, final int row) {
     return 0f;
   }
 
   @Override
-  public synchronized int getInt(int column, int row) {
+  public synchronized int getInt(final int column, final int row) {
     return 0;
   }
 
   @Override
-  public synchronized long getLong(int column, int row) {
+  public synchronized long getLong(final int column, final int row) {
     return 0;
+  }
+
+  @Override
+  public synchronized String getString(final int column, final int row) {
+    return null;
+  }
+
+  @Override
+  public synchronized _TupleBatch groupby() {
+    return null;
+  }
+
+  @Override
+  public int hashCode(final int rowIndx) {
+    throw new UnsupportedOperationException();
   }
 
   @Override
@@ -70,7 +114,12 @@ public class SQLiteTupleBatch implements _TupleBatch {
   }
 
   @Override
-  public synchronized String getString(int column, int row) {
+  public synchronized _TupleBatch intersect(final _TupleBatch another) {
+    return null;
+  }
+
+  @Override
+  public synchronized _TupleBatch join(final _TupleBatch other, final Predicate p, final _TupleBatch output) {
     return null;
   }
 
@@ -79,18 +128,19 @@ public class SQLiteTupleBatch implements _TupleBatch {
     return numInputTuples;
   }
 
-  public synchronized SQLiteTupleBatch[] partition(PartitionFunction<?, ?> p) {
-    return null;
+  @Override
+  public synchronized int numOutputTuples() {
+    return this.numInputTuples;
   }
 
   @Override
-  public synchronized SQLiteTupleBatch project(int[] remainingColumns) {
-    return this;
+  public synchronized _TupleBatch orderby() {
+    return null;
   }
 
   protected synchronized int[] outputColumnIndices() {
-    int numInputColumns = this.inputSchema.numFields();
-    int[] validC = new int[numInputColumns];
+    final int numInputColumns = this.inputSchema.numFields();
+    final int[] validC = new int[numInputColumns];
     int j = 0;
     for (int i = 0; i < numInputColumns; i++) {
       // operate on index i here
@@ -100,13 +150,18 @@ public class SQLiteTupleBatch implements _TupleBatch {
   }
 
   @Override
+  public List<Column> outputRawData() {
+    return null;
+  }
+
+  @Override
   public synchronized Schema outputSchema() {
 
-    int[] columnIndices = this.outputColumnIndices();
-    String[] columnNames = new String[columnIndices.length];
-    Type[] columnTypes = new Type[columnIndices.length];
+    final int[] columnIndices = this.outputColumnIndices();
+    final String[] columnNames = new String[columnIndices.length];
+    final Type[] columnTypes = new Type[columnIndices.length];
     int j = 0;
-    for (int columnIndx : columnIndices) {
+    for (final int columnIndx : columnIndices) {
       columnNames[j] = this.inputSchema.getFieldName(columnIndx);
       columnTypes[j] = this.inputSchema.getFieldType(columnIndx);
       j++;
@@ -115,13 +170,17 @@ public class SQLiteTupleBatch implements _TupleBatch {
     return new Schema(columnTypes, columnNames);
   }
 
-  @Override
-  public synchronized int numOutputTuples() {
-    return this.numInputTuples;
+  public synchronized SQLiteTupleBatch[] partition(final PartitionFunction<?, ?> p) {
+    return null;
   }
 
   @Override
-  public synchronized _TupleBatch renameColumn(int inputColumnIdx, String newName) {
+  public TupleBatchBuffer[] partition(final PartitionFunction<?, ?> p, final TupleBatchBuffer[] buffers) {
+    return null;
+  }
+
+  @Override
+  public synchronized SQLiteTupleBatch project(final int[] remainingColumns) {
     return this;
   }
 
@@ -136,80 +195,21 @@ public class SQLiteTupleBatch implements _TupleBatch {
   }
 
   @Override
-  public synchronized _TupleBatch append(_TupleBatch another) {
-    Iterator<Schema.TDItem> it = this.inputSchema.iterator();
+  public _TupleBatch remove(final int innerIdx) {
+    throw new UnsupportedOperationException();
+  }
 
-    String[] fieldNames = new String[this.inputSchema.numFields()];
-    String[] placeHolders = new String[this.inputSchema.numFields()];
-    int i = 0;
-    while (it.hasNext()) {
-      Schema.TDItem item = it.next();
-      placeHolders[i] = "?";
-      fieldNames[i++] = item.getName();
-    }
-
-    SQLiteAccessMethod.tupleBatchInsert(this.dataDir + "/" + this.filename, "insert into " + this.tableName + " ( "
-        + StringUtils.join(fieldNames, ',') + " ) values ( " + StringUtils.join(placeHolders, ',') + " )",
-        new TupleBatch(another.outputSchema(), another.outputRawData(), another.numOutputTuples()));
+  @Override
+  public synchronized _TupleBatch renameColumn(final int inputColumnIdx, final String newName) {
     return this;
   }
 
-  @Override
-  public synchronized _TupleBatch union(_TupleBatch another) {
-    return null;
-  }
-
-  @Override
-  public synchronized _TupleBatch intersect(_TupleBatch another) {
-    return null;
-  }
-
-  @Override
-  public synchronized _TupleBatch except(_TupleBatch another) {
-    return null;
-  }
-
-  @Override
-  public synchronized _TupleBatch distinct() {
-    return null;
-  }
-
-  @Override
-  public synchronized _TupleBatch groupby() {
-    return null;
-  }
-
-  @Override
-  public synchronized _TupleBatch orderby() {
-    return null;
-  }
-
-  @Override
-  public synchronized _TupleBatch join(_TupleBatch other, Predicate p, _TupleBatch output) {
-    return null;
-  }
-
-  @Override
-  public List<Column> outputRawData() {
-    return null;
-  }
-
-  @Override
-  public TupleBatchBuffer[] partition(PartitionFunction<?, ?> p, TupleBatchBuffer[] buffers) {
-    return null;
-  }
-
-  public void reset(String dataDir) {
+  public void reset(final String dataDir) {
     this.dataDir = dataDir;
   }
 
   @Override
-  public _TupleBatch remove(int innerIdx) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public int hashCode(int rowIndx) {
-    throw new UnsupportedOperationException();
+  public synchronized _TupleBatch union(final _TupleBatch another) {
+    return null;
   }
 }

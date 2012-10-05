@@ -11,12 +11,12 @@ import com.google.common.base.Preconditions;
 import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myriad.TupleBatch;
-//import edu.washington.escience.myriad.proto.TransportProto.BooleanColumnMessage;
-//import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
-//import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage.ColumnMessageType;
 import edu.washington.escience.myriad.proto.DataProto.BooleanColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType;
+// import edu.washington.escience.myriad.proto.TransportProto.BooleanColumnMessage;
+// import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
+// import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage.ColumnMessageType;
 
 /**
  * A column of Boolean values. To save space, this implementation uses a BitSet as the internal representation.
@@ -79,11 +79,6 @@ public final class BooleanColumn implements Column {
     throw new UnsupportedOperationException("SQLite does not support Boolean columns.");
   }
 
-  @Override
-  public Column putObject(final Object value) {
-    return put((Boolean) value);
-  }
-
   /**
    * Inserts the specified element at end of this column.
    * 
@@ -108,9 +103,14 @@ public final class BooleanColumn implements Column {
   }
 
   @Override
+  public Column putObject(final Object value) {
+    return put((Boolean) value);
+  }
+
+  @Override
   public ColumnMessage serializeToProto() {
     /* Note that we do *not* build the inner class. We pass its builder instead. */
-    BooleanColumnMessage.Builder inner =
+    final BooleanColumnMessage.Builder inner =
         BooleanColumnMessage.newBuilder().setData(ByteString.copyFrom(data.toByteArray()));
     return ColumnMessage.newBuilder().setType(ColumnMessageType.BOOLEAN).setNumTuples(size()).setBooleanColumn(inner)
         .build();
@@ -123,7 +123,7 @@ public final class BooleanColumn implements Column {
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder();
+    final StringBuilder sb = new StringBuilder();
     sb.append(size()).append(" elements: [");
     for (int i = 0; i < size(); ++i) {
       if (i > 0) {

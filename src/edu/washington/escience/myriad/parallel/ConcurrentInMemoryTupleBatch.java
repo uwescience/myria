@@ -44,7 +44,7 @@ public class ConcurrentInMemoryTupleBatch implements _TupleBatch {
   private final BitSet invalidTuples;
   private final BitSet invalidColumns;
 
-  public ConcurrentInMemoryTupleBatch(Schema inputSchema) {
+  public ConcurrentInMemoryTupleBatch(final Schema inputSchema) {
     /* Take the input arguments directly */
     this.inputSchema = Objects.requireNonNull(inputSchema);
     this.inputColumns = new ArrayList<Column>();
@@ -56,13 +56,14 @@ public class ConcurrentInMemoryTupleBatch implements _TupleBatch {
     this.invalidColumns = new BitSet(inputSchema.numFields());
     // validColumns.set(0, inputSchema.numFields());
     this.outputColumnNames = new String[inputSchema.numFields()];
-    Iterator<TDItem> it = inputSchema.iterator();
+    final Iterator<TDItem> it = inputSchema.iterator();
     int i = 0;
-    while (it.hasNext())
+    while (it.hasNext()) {
       this.outputColumnNames[i++] = it.next().getName();
+    }
   }
 
-  public ConcurrentInMemoryTupleBatch(Schema inputSchema, List<Column> columns, int numTuples) {
+  public ConcurrentInMemoryTupleBatch(final Schema inputSchema, final List<Column> columns, final int numTuples) {
     /* Take the input arguments directly */
     this.inputSchema = Objects.requireNonNull(inputSchema);
     this.inputColumns = Objects.requireNonNull(columns);
@@ -74,15 +75,16 @@ public class ConcurrentInMemoryTupleBatch implements _TupleBatch {
     this.invalidColumns = new BitSet(inputSchema.numFields());
     // validColumns.set(0, inputSchema.numFields());
     this.outputColumnNames = new String[inputSchema.numFields()];
-    Iterator<TDItem> it = inputSchema.iterator();
+    final Iterator<TDItem> it = inputSchema.iterator();
     int i = 0;
-    while (it.hasNext())
+    while (it.hasNext()) {
       this.outputColumnNames[i++] = it.next().getName();
+    }
   }
 
   // /**
   // * Only for copy
-  // * */
+  // */
   // protected ConcurrentInMemoryTupleBatch(Schema inputSchema, String[] outputColumnNames,
   // List<Column> inputColumns, int numInputTuples, BitSet invalidTuples, BitSet invalidColumns) {
   // this.inputSchema = inputSchema;
@@ -94,10 +96,46 @@ public class ConcurrentInMemoryTupleBatch implements _TupleBatch {
   // }
 
   @Override
-  public synchronized ConcurrentInMemoryTupleBatch filter(int fieldIdx, Predicate.Op op, Object operand) {
+  public synchronized _TupleBatch append(final _TupleBatch another) {
+    // TODO implement
+    Preconditions.checkArgument(this.inputSchema.equals(another.outputSchema()),
+        "Another tuplebatch should have the output schema the same as the inputschema of this tuplebatch");
+
+    final List<Column> anotherData = another.outputRawData();
+    final int anotherNumTuples = another.numOutputTuples();
+    this.numInputTuples += anotherNumTuples;
+    if (this.inputColumns.size() <= 0) {
+      this.inputColumns.addAll(anotherData);
+    } else {
+      for (int i = 0; i < anotherData.size(); i++) {
+        final Column anotherColumn = anotherData.get(i);
+        final Column thisColumn = this.inputColumns.get(i);
+        for (int j = 0; j < anotherNumTuples; j++) {
+          thisColumn.putObject(anotherColumn.get(j));
+        }
+      }
+    }
+
+    return this;
+  }
+
+  @Override
+  public synchronized _TupleBatch distinct() {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public synchronized _TupleBatch except(final _TupleBatch another) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public synchronized ConcurrentInMemoryTupleBatch filter(final int fieldIdx, final Predicate.Op op, final Object operand) {
     if (!this.invalidColumns.get(fieldIdx) && this.numInputTuples > 0) {
-      Column columnValues = this.inputColumns.get(fieldIdx);
-      Type columnType = this.inputSchema.getFieldType(fieldIdx);
+      final Column columnValues = this.inputColumns.get(fieldIdx);
+      final Type columnType = this.inputSchema.getFieldType(fieldIdx);
       for (int i = invalidTuples.nextClearBit(0); i >= 0 && i < this.numInputTuples; i =
           invalidTuples.nextClearBit(i + 1)) {
         if (!columnType.filter(op, columnValues, i, operand)) {
@@ -109,33 +147,49 @@ public class ConcurrentInMemoryTupleBatch implements _TupleBatch {
   }
 
   @Override
-  public synchronized boolean getBoolean(int column, int row) {
+  public synchronized boolean getBoolean(final int column, final int row) {
     return ((BooleanColumn) inputColumns.get(column)).getBoolean(row);
   }
 
   @Override
-  public synchronized double getDouble(int column, int row) {
+  public synchronized double getDouble(final int column, final int row) {
     return ((DoubleColumn) inputColumns.get(column)).getDouble(row);
   }
 
   @Override
-  public synchronized float getFloat(int column, int row) {
+  public synchronized float getFloat(final int column, final int row) {
     return ((FloatColumn) inputColumns.get(column)).getFloat(row);
   }
 
   @Override
-  public synchronized int getInt(int column, int row) {
+  public synchronized int getInt(final int column, final int row) {
     return ((IntColumn) inputColumns.get(column)).getInt(row);
   }
 
   @Override
-  public synchronized long getLong(int column, int row) {
+  public synchronized long getLong(final int column, final int row) {
     return ((LongColumn) inputColumns.get(column)).getLong(row);
   }
 
   @Override
-  public synchronized String getString(int column, int row) {
+  public synchronized String getString(final int column, final int row) {
     return ((StringColumn) inputColumns.get(column)).getString(row);
+  }
+
+  @Override
+  public synchronized _TupleBatch groupby() {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public int hashCode(final int rowIndx) {
+    // return 0;
+    final HashCodeBuilder hb = new HashCodeBuilder(MAGIC_HASHCODE1, MAGIC_HASHCODE2);
+    for (int i = 0; i < inputSchema.numFields(); ++i) {
+      hb.append(inputColumns.get(i).get(rowIndx));
+    }
+    return hb.toHashCode();
   }
 
   @Override
@@ -144,55 +198,36 @@ public class ConcurrentInMemoryTupleBatch implements _TupleBatch {
   }
 
   @Override
+  public synchronized _TupleBatch intersect(final _TupleBatch another) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public synchronized _TupleBatch join(final _TupleBatch other, final Predicate p, final _TupleBatch output) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
   public synchronized int numInputTuples() {
     return numInputTuples;
   }
 
   @Override
-  public synchronized ConcurrentInMemoryTupleBatch project(int[] remainingColumns) {
-    boolean[] columnsToRemain = new boolean[this.inputSchema.numFields()];
-    Arrays.fill(columnsToRemain, false);
-    for (int toRemainIdx : remainingColumns) {
-      columnsToRemain[toRemainIdx] = true;
-    }
-    int numColumns = this.inputSchema.numFields();
-    for (int i = invalidColumns.nextClearBit(0); i >= 0 && i < numColumns; i = invalidColumns.nextClearBit(i + 1)) {
-      if (!columnsToRemain[i])
-        this.invalidColumns.set(i);
-    }
-    return this;
+  public synchronized int numOutputTuples() {
+    return this.numInputTuples - this.invalidTuples.cardinality();
   }
 
   @Override
-  public String toString() {
-    // int nextSet = -1;
-    int[] columnIndices = this.outputColumnIndices();
-    String[] columnNames = new String[columnIndices.length];
-    Type[] columnTypes = new Type[columnIndices.length];
-    int j = 0;
-    for (int columnIndx : columnIndices) {
-      columnNames[j] = this.inputSchema.getFieldName(columnIndx);
-      columnTypes[j] = this.inputSchema.getFieldType(columnIndx);
-      j++;
-    }
-
-    StringBuilder sb = new StringBuilder();
-    for (int i = invalidTuples.nextClearBit(0); i >= 0 && i < this.numInputTuples; i =
-        invalidTuples.nextClearBit(i + 1)) {
-      sb.append("|\t");
-      for (j = 0; j < columnIndices.length; j++) {
-        sb.append(columnTypes[j].toString(this.inputColumns.get(columnIndices[j]), i));
-        sb.append("\t|\t");
-      }
-      sb.append("\n");
-    }
-    return sb.toString();
-
+  public synchronized _TupleBatch orderby() {
+    // TODO Auto-generated method stub
+    return null;
   }
 
   protected synchronized int[] outputColumnIndices() {
-    int numInputColumns = this.inputSchema.numFields();
-    int[] validC = new int[numInputColumns - invalidColumns.cardinality()];
+    final int numInputColumns = this.inputSchema.numFields();
+    final int[] validC = new int[numInputColumns - invalidColumns.cardinality()];
     int j = 0;
     for (int i = invalidColumns.nextClearBit(0); i >= 0 && i < numInputColumns; i = invalidColumns.nextClearBit(i + 1)) {
       // operate on index i here
@@ -202,13 +237,19 @@ public class ConcurrentInMemoryTupleBatch implements _TupleBatch {
   }
 
   @Override
+  public List<Column> outputRawData() {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
   public synchronized Schema outputSchema() {
 
-    int[] columnIndices = this.outputColumnIndices();
-    String[] columnNames = new String[columnIndices.length];
-    Type[] columnTypes = new Type[columnIndices.length];
+    final int[] columnIndices = this.outputColumnIndices();
+    final String[] columnNames = new String[columnIndices.length];
+    final Type[] columnTypes = new Type[columnIndices.length];
     int j = 0;
-    for (int columnIndx : columnIndices) {
+    for (final int columnIndx : columnIndices) {
       columnNames[j] = this.inputSchema.getFieldName(columnIndx);
       columnTypes[j] = this.inputSchema.getFieldType(columnIndx);
       j++;
@@ -219,13 +260,36 @@ public class ConcurrentInMemoryTupleBatch implements _TupleBatch {
   }
 
   @Override
-  public synchronized int numOutputTuples() {
-    return this.numInputTuples - this.invalidTuples.cardinality();
+  public TupleBatchBuffer[] partition(final PartitionFunction<?, ?> pf, final TupleBatchBuffer[] buffers) {
+    // p.partition(t, td)
+    final List<Column> outputData = this.outputRawData();
+    final Schema s = this.outputSchema();
+    final int numColumns = outputData.size();
+
+    final int[] partitions = pf.partition(outputData, s);
+
+    for (int i = 0; i < partitions.length; i++) {
+      final int p_of_tuple = partitions[i];
+      for (int j = 0; j < numColumns; j++) {
+        buffers[p_of_tuple].put(j, outputData.get(j).get(i));
+      }
+    }
+    return buffers;
   }
 
   @Override
-  public synchronized _TupleBatch renameColumn(int inputColumnIdx, String newName) {
-    this.outputColumnNames[inputColumnIdx] = newName;
+  public synchronized ConcurrentInMemoryTupleBatch project(final int[] remainingColumns) {
+    final boolean[] columnsToRemain = new boolean[this.inputSchema.numFields()];
+    Arrays.fill(columnsToRemain, false);
+    for (final int toRemainIdx : remainingColumns) {
+      columnsToRemain[toRemainIdx] = true;
+    }
+    final int numColumns = this.inputSchema.numFields();
+    for (int i = invalidColumns.nextClearBit(0); i >= 0 && i < numColumns; i = invalidColumns.nextClearBit(i + 1)) {
+      if (!columnsToRemain[i]) {
+        this.invalidColumns.set(i);
+      }
+    }
     return this;
   }
 
@@ -242,108 +306,50 @@ public class ConcurrentInMemoryTupleBatch implements _TupleBatch {
   }
 
   @Override
-  public synchronized _TupleBatch append(_TupleBatch another) {
-    // TODO implement
-    Preconditions.checkArgument(this.inputSchema.equals(another.outputSchema()),
-        "Another tuplebatch should have the output schema the same as the inputschema of this tuplebatch");
-
-    List<Column> anotherData = another.outputRawData();
-    int anotherNumTuples = another.numOutputTuples();
-    this.numInputTuples += anotherNumTuples;
-    if (this.inputColumns.size() <= 0) {
-      this.inputColumns.addAll(anotherData);
-    } else {
-      for (int i = 0; i < anotherData.size(); i++) {
-        Column anotherColumn = anotherData.get(i);
-        Column thisColumn = this.inputColumns.get(i);
-        for (int j = 0; j < anotherNumTuples; j++)
-          thisColumn.putObject(anotherColumn.get(j));
-      }
-    }
-
-    return this;
-  }
-
-  @Override
-  public synchronized _TupleBatch union(_TupleBatch another) {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
-  public synchronized _TupleBatch intersect(_TupleBatch another) {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
-  public synchronized _TupleBatch except(_TupleBatch another) {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
-  public synchronized _TupleBatch distinct() {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
-  public synchronized _TupleBatch groupby() {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
-  public synchronized _TupleBatch orderby() {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
-  public synchronized _TupleBatch join(_TupleBatch other, Predicate p, _TupleBatch output) {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
-  public List<Column> outputRawData() {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
-  public TupleBatchBuffer[] partition(PartitionFunction<?, ?> pf, TupleBatchBuffer[] buffers) {
-    // p.partition(t, td)
-    List<Column> outputData = this.outputRawData();
-    Schema s = this.outputSchema();
-    int numColumns = outputData.size();
-
-    int[] partitions = pf.partition(outputData, s);
-
-    for (int i = 0; i < partitions.length; i++) {
-      int p_of_tuple = partitions[i];
-      for (int j = 0; j < numColumns; j++) {
-        buffers[p_of_tuple].put(j, outputData.get(j).get(i));
-      }
-    }
-    return buffers;
-  }
-
-  @Override
-  public ConcurrentInMemoryTupleBatch remove(int innerIdx) {
-    if (innerIdx < this.numInputTuples && innerIdx >= 0)
+  public ConcurrentInMemoryTupleBatch remove(final int innerIdx) {
+    if (innerIdx < this.numInputTuples && innerIdx >= 0) {
       invalidTuples.set(innerIdx);
+    }
     return this;
   }
 
   @Override
-  public int hashCode(int rowIndx) {
-    // return 0;
-    HashCodeBuilder hb = new HashCodeBuilder(MAGIC_HASHCODE1, MAGIC_HASHCODE2);
-    for (int i = 0; i < inputSchema.numFields(); ++i)
-      hb.append(inputColumns.get(i).get(rowIndx));
-    return hb.toHashCode();
+  public synchronized _TupleBatch renameColumn(final int inputColumnIdx, final String newName) {
+    this.outputColumnNames[inputColumnIdx] = newName;
+    return this;
+  }
+
+  @Override
+  public String toString() {
+    // int nextSet = -1;
+    final int[] columnIndices = this.outputColumnIndices();
+    final String[] columnNames = new String[columnIndices.length];
+    final Type[] columnTypes = new Type[columnIndices.length];
+    int j = 0;
+    for (final int columnIndx : columnIndices) {
+      columnNames[j] = this.inputSchema.getFieldName(columnIndx);
+      columnTypes[j] = this.inputSchema.getFieldType(columnIndx);
+      j++;
+    }
+
+    final StringBuilder sb = new StringBuilder();
+    for (int i = invalidTuples.nextClearBit(0); i >= 0 && i < this.numInputTuples; i =
+        invalidTuples.nextClearBit(i + 1)) {
+      sb.append("|\t");
+      for (j = 0; j < columnIndices.length; j++) {
+        sb.append(columnTypes[j].toString(this.inputColumns.get(columnIndices[j]), i));
+        sb.append("\t|\t");
+      }
+      sb.append("\n");
+    }
+    return sb.toString();
+
+  }
+
+  @Override
+  public synchronized _TupleBatch union(final _TupleBatch another) {
+    // TODO Auto-generated method stub
+    return null;
   }
 
 }

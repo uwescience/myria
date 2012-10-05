@@ -12,12 +12,12 @@ import com.google.common.base.Preconditions;
 import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myriad.TupleBatch;
-//import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
-//import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage.ColumnMessageType;
-//import edu.washington.escience.myriad.proto.TransportProto.IntColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType;
 import edu.washington.escience.myriad.proto.DataProto.IntColumnMessage;
+// import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
+// import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage.ColumnMessageType;
+// import edu.washington.escience.myriad.proto.TransportProto.IntColumnMessage;
 
 /**
  * A column of Integer values.
@@ -81,21 +81,6 @@ public final class IntColumn implements Column {
     statement.bind(sqliteIndex, getInt(row));
   }
 
-  @Override
-  public Column putObject(final Object value) {
-    return put((Integer) value);
-  }
-
-  @Override
-  public Column putFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException {
-    return put(resultSet.getInt(jdbcIndex));
-  }
-
-  @Override
-  public void putFromSQLite(final SQLiteStatement statement, final int index) throws SQLiteException {
-    throw new UnsupportedOperationException("SQLite does not support Int columns.");
-  }
-
   /**
    * Inserts the specified element at end of this column.
    * 
@@ -108,9 +93,24 @@ public final class IntColumn implements Column {
   }
 
   @Override
+  public Column putFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException {
+    return put(resultSet.getInt(jdbcIndex));
+  }
+
+  @Override
+  public void putFromSQLite(final SQLiteStatement statement, final int index) throws SQLiteException {
+    throw new UnsupportedOperationException("SQLite does not support Int columns.");
+  }
+
+  @Override
+  public Column putObject(final Object value) {
+    return put((Integer) value);
+  }
+
+  @Override
   public ColumnMessage serializeToProto() {
     /* Note that we do *not* build the inner class. We pass its builder instead. */
-    IntColumnMessage.Builder inner = IntColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
+    final IntColumnMessage.Builder inner = IntColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
     return ColumnMessage.newBuilder().setType(ColumnMessageType.INT).setNumTuples(size()).setIntColumn(inner).build();
   }
 
@@ -121,7 +121,7 @@ public final class IntColumn implements Column {
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder();
+    final StringBuilder sb = new StringBuilder();
     sb.append(size()).append(" elements: [");
     for (int i = 0; i < size(); ++i) {
       if (i > 0) {
