@@ -37,12 +37,12 @@ public final class JdbcAccessMethod {
       /* Make sure JDBC driver is loaded */
       Class.forName(driverClassName);
       /* Connect to the database */
-      Connection jdbcConnection = DriverManager.getConnection(connectionString, username, password);
+      final Connection jdbcConnection = DriverManager.getConnection(connectionString, username, password);
 
       /* Set up and execute the query */
-      PreparedStatement statement = jdbcConnection.prepareStatement(insertString);
+      final PreparedStatement statement = jdbcConnection.prepareStatement(insertString);
 
-      for (int row : tupleBatch.validTupleIndices()) {
+      for (final int row : tupleBatch.validTupleIndices()) {
         for (int column = 0; column < tupleBatch.numColumns(); ++column) {
           tupleBatch.getColumn(column).getIntoJdbc(row, statement, column + 1);
         }
@@ -51,10 +51,10 @@ public final class JdbcAccessMethod {
       statement.executeBatch();
       statement.close();
       jdbcConnection.close();
-    } catch (ClassNotFoundException e) {
+    } catch (final ClassNotFoundException e) {
       System.err.println(e.getMessage());
       throw new RuntimeException(e.getMessage());
-    } catch (SQLException e) {
+    } catch (final SQLException e) {
       System.err.println(e.getMessage());
       throw new RuntimeException(e.getMessage());
     }
@@ -74,20 +74,20 @@ public final class JdbcAccessMethod {
       /* Make sure JDBC driver is loaded */
       Class.forName(driverClassName);
       /* Connect to the database */
-      Connection jdbcConnection = DriverManager.getConnection(connectionString, username, password);
+      final Connection jdbcConnection = DriverManager.getConnection(connectionString, username, password);
       /* Set read only on the connection */
       jdbcConnection.setReadOnly(true);
 
       /* Set up and execute the query */
-      Statement statement = jdbcConnection.createStatement();
-      ResultSet resultSet = statement.executeQuery(queryString);
-      ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+      final Statement statement = jdbcConnection.createStatement();
+      final ResultSet resultSet = statement.executeQuery(queryString);
+      final ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
 
       return new JdbcTupleBatchIterator(resultSet, Schema.fromResultSetMetaData(resultSetMetaData));
-    } catch (ClassNotFoundException e) {
+    } catch (final ClassNotFoundException e) {
       System.err.println(e.getMessage());
       throw new RuntimeException(e.getMessage());
-    } catch (SQLException e) {
+    } catch (final SQLException e) {
       System.err.println(e.getMessage());
       throw new RuntimeException(e.getMessage());
     }
@@ -128,7 +128,7 @@ class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
   public boolean hasNext() {
     try {
       return !(resultSet.isClosed() || resultSet.isLast());
-    } catch (SQLException e) {
+    } catch (final SQLException e) {
       System.err.println("Dropping SQLException:" + e);
       return false;
     }
@@ -137,8 +137,8 @@ class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
   @Override
   public TupleBatch next() {
     /* Allocate TupleBatch parameters */
-    int numFields = schema.numFields();
-    List<Column> columns = ColumnFactory.allocateColumns(schema);
+    final int numFields = schema.numFields();
+    final List<Column> columns = ColumnFactory.allocateColumns(schema);
 
     /**
      * Loop through resultSet, adding one row at a time. Stop when numTuples hits BATCH_SIZE or there are no more
@@ -148,7 +148,7 @@ class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
     try {
       for (numTuples = 0; numTuples < TupleBatch.BATCH_SIZE; ++numTuples) {
         if (!resultSet.next()) {
-          Connection connection = resultSet.getStatement().getConnection();
+          final Connection connection = resultSet.getStatement().getConnection();
           resultSet.getStatement().close();
           connection.close(); /* Also closes the resultSet */
           break;
@@ -158,7 +158,7 @@ class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
           columns.get(colIdx).putFromJdbc(resultSet, colIdx + 1);
         }
       }
-    } catch (SQLException e) {
+    } catch (final SQLException e) {
       System.err.println("Got SQLException:" + e + "in JdbcTupleBatchIterator.next()");
       throw new RuntimeException(e.getMessage());
     }

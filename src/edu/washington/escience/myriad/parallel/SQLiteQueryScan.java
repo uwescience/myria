@@ -15,7 +15,7 @@ public class SQLiteQueryScan extends Operator {
   private final String baseSQL;
   private transient String dataDir;
 
-  public SQLiteQueryScan(String filename, String baseSQL, Schema outputSchema) {
+  public SQLiteQueryScan(final String filename, final String baseSQL, final Schema outputSchema) {
     this.baseSQL = baseSQL;
     this.filename = filename;
     schema = outputSchema;
@@ -34,11 +34,13 @@ public class SQLiteQueryScan extends Operator {
     // cache = null;
     // return tmp;
     // } else {
-    if (tuples.hasNext())
+    if (tuples.hasNext()) {
       return this.tuples.next();
-    else
+    }
+    else {
       return null;
     // }
+    }
   }
 
   @Override
@@ -57,13 +59,13 @@ public class SQLiteQueryScan extends Operator {
     tuples = SQLiteAccessMethod.tupleBatchIteratorFromQuery(dataDir + "/" + filename, baseSQL, schema);
   }
 
-  public void setDataDir(String dataDir) {
-    this.dataDir = dataDir;
+  @Override
+  public void setChildren(final Operator[] children) {
+    throw new UnsupportedOperationException();
   }
 
-  @Override
-  public void setChildren(Operator[] children) {
-    throw new UnsupportedOperationException();
+  public void setDataDir(final String dataDir) {
+    this.dataDir = dataDir;
   }
 
 }

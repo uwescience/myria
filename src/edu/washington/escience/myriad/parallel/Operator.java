@@ -58,11 +58,13 @@ public abstract class Operator implements DbIterator {
 
   @Override
   public boolean hasNext() throws DbException {
-    if (!this.open)
+    if (!this.open) {
       throw new IllegalStateException("Operator not yet open");
+    }
 
-    if (next == null)
+    if (next == null) {
       next = fetchNext();
+    }
     return next != null;
   }
 
@@ -70,11 +72,12 @@ public abstract class Operator implements DbIterator {
   public _TupleBatch next() throws DbException, NoSuchElementException {
     if (next == null) {
       next = fetchNext();
-      if (next == null)
+      if (next == null) {
         throw new NoSuchElementException();
+      }
     }
 
-    _TupleBatch result = next;
+    final _TupleBatch result = next;
     next = null;
     return result;
   }
@@ -96,7 +99,7 @@ public abstract class Operator implements DbIterator {
   /**
    * @param card The estimated cardinality of this operator Will only be used in lab6
    * */
-  protected void setEstimatedCardinality(int card) {
+  protected void setEstimatedCardinality(final int card) {
     this.estimatedCardinality = card;
   }
 

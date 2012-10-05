@@ -12,12 +12,12 @@ import com.google.common.base.Preconditions;
 import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myriad.TupleBatch;
-//import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
-//import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage.ColumnMessageType;
-//import edu.washington.escience.myriad.proto.TransportProto.StringColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType;
 import edu.washington.escience.myriad.proto.DataProto.StringColumnMessage;
+// import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
+// import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage.ColumnMessageType;
+// import edu.washington.escience.myriad.proto.TransportProto.StringColumnMessage;
 
 /**
  * A column of String values.
@@ -67,7 +67,7 @@ public final class StringColumn implements Column {
     if (!message.hasStringColumn()) {
       throw new IllegalArgumentException("ColumnMessage has type STRING but no StringColumn");
     }
-    StringColumnMessage stringColumn = message.getStringColumn();
+    final StringColumnMessage stringColumn = message.getStringColumn();
     this.startIndicesBytes = stringColumn.getStartIndices().asReadOnlyByteBuffer();
     this.startIndices = startIndicesBytes.asIntBuffer();
     this.endIndicesBytes = stringColumn.getEndIndices().asReadOnlyByteBuffer();
@@ -118,21 +118,6 @@ public final class StringColumn implements Column {
     return data.substring(startIndices.get(row), endIndices.get(row));
   }
 
-  @Override
-  public Column putObject(final Object value) {
-    return put((String) value);
-  }
-
-  @Override
-  public Column putFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException {
-    return put(resultSet.getString(jdbcIndex));
-  }
-
-  @Override
-  public void putFromSQLite(final SQLiteStatement statement, final int index) throws SQLiteException {
-    put(statement.columnString(index));
-  }
-
   /**
    * Inserts the specified element at end of this column.
    * 
@@ -148,9 +133,24 @@ public final class StringColumn implements Column {
   }
 
   @Override
+  public Column putFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException {
+    return put(resultSet.getString(jdbcIndex));
+  }
+
+  @Override
+  public void putFromSQLite(final SQLiteStatement statement, final int index) throws SQLiteException {
+    put(statement.columnString(index));
+  }
+
+  @Override
+  public Column putObject(final Object value) {
+    return put((String) value);
+  }
+
+  @Override
   public ColumnMessage serializeToProto() {
     /* Note that we do *not* build the inner class. We pass its builder instead. */
-    StringColumnMessage.Builder inner =
+    final StringColumnMessage.Builder inner =
         StringColumnMessage.newBuilder().setData(ByteString.copyFromUtf8(data.toString()));
     inner.setStartIndices(ByteString.copyFrom(startIndicesBytes));
     inner.setEndIndices(ByteString.copyFrom(endIndicesBytes));
@@ -165,7 +165,7 @@ public final class StringColumn implements Column {
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder();
+    final StringBuilder sb = new StringBuilder();
     sb.append(size()).append(" elements: [");
     for (int i = 0; i < size(); ++i) {
       if (i > 0) {

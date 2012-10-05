@@ -30,8 +30,8 @@ public class JdbcTupleBatch implements _TupleBatch {
   private final String username;
   private final String password;
 
-  public JdbcTupleBatch(Schema inputSchema, String tableName, String connectionString, String driverClass,
-      String username, String password) {
+  public JdbcTupleBatch(final Schema inputSchema, final String tableName, final String connectionString, final String driverClass,
+      final String username, final String password) {
     this.inputSchema = Objects.requireNonNull(inputSchema);
     this.connectString = connectionString;
     this.driverClass = driverClass;
@@ -41,38 +41,86 @@ public class JdbcTupleBatch implements _TupleBatch {
   }
 
   @Override
-  public synchronized JdbcTupleBatch filter(int fieldIdx, Predicate.Op op, Object operand) {
+  public synchronized _TupleBatch append(final _TupleBatch another) {
+    final Iterator<Schema.TDItem> it = this.inputSchema.iterator();
+
+    final String[] fieldNames = new String[this.inputSchema.numFields()];
+    final String[] placeHolders = new String[this.inputSchema.numFields()];
+    int i = 0;
+    while (it.hasNext()) {
+      final Schema.TDItem item = it.next();
+      placeHolders[i] = "?";
+      fieldNames[i++] = item.getName();
+    }
+
+    JdbcAccessMethod.tupleBatchInsert(this.driverClass, connectString, "insert into " + this.tableName + " ( "
+        + StringUtils.join(fieldNames, ',') + " ) values ( " + StringUtils.join(placeHolders, ',') + " )",
+        new TupleBatch(another.outputSchema(), another.outputRawData(), another.numOutputTuples()), username, password);
     return this;
   }
 
   @Override
-  public synchronized boolean getBoolean(int column, int row) {
+  public synchronized _TupleBatch distinct() {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public synchronized _TupleBatch except(final _TupleBatch another) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public synchronized JdbcTupleBatch filter(final int fieldIdx, final Predicate.Op op, final Object operand) {
+    return this;
+  }
+
+  @Override
+  public synchronized boolean getBoolean(final int column, final int row) {
     // return ((BooleanColumn) inputColumns.get(column)).getBoolean(row);
     return false;
   }
 
   @Override
-  public synchronized double getDouble(int column, int row) {
+  public synchronized double getDouble(final int column, final int row) {
     // return ((DoubleColumn) inputColumns.get(column)).getDouble(row);
     return 0d;
   }
 
   @Override
-  public synchronized float getFloat(int column, int row) {
+  public synchronized float getFloat(final int column, final int row) {
     // return ((FloatColumn) inputColumns.get(column)).getFloat(row);
     return 0f;
   }
 
   @Override
-  public synchronized int getInt(int column, int row) {
+  public synchronized int getInt(final int column, final int row) {
     // return ((IntColumn) inputColumns.get(column)).getInt(row);
     return 0;
   }
 
   @Override
-  public synchronized long getLong(int column, int row) {
+  public synchronized long getLong(final int column, final int row) {
     // return ((IntColumn) inputColumns.get(column)).getInt(row);
     return 0;
+  }
+
+  @Override
+  public synchronized String getString(final int column, final int row) {
+    // return ((StringColumn) inputColumns.get(column)).getString(row);
+    return null;
+  }
+
+  @Override
+  public synchronized _TupleBatch groupby() {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public int hashCode(final int rowIndx) {
+    throw new UnsupportedOperationException();
   }
 
   @Override
@@ -81,8 +129,14 @@ public class JdbcTupleBatch implements _TupleBatch {
   }
 
   @Override
-  public synchronized String getString(int column, int row) {
-    // return ((StringColumn) inputColumns.get(column)).getString(row);
+  public synchronized _TupleBatch intersect(final _TupleBatch another) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public synchronized _TupleBatch join(final _TupleBatch other, final Predicate p, final _TupleBatch output) {
+    // TODO Auto-generated method stub
     return null;
   }
 
@@ -91,18 +145,20 @@ public class JdbcTupleBatch implements _TupleBatch {
     return numInputTuples;
   }
 
-  public synchronized JdbcTupleBatch[] partition(PartitionFunction<?, ?> p) {
-    return null;
+  @Override
+  public synchronized int numOutputTuples() {
+    return this.numInputTuples;
   }
 
   @Override
-  public synchronized JdbcTupleBatch project(int[] remainingColumns) {
-    return this;
+  public synchronized _TupleBatch orderby() {
+    // TODO Auto-generated method stub
+    return null;
   }
 
   protected synchronized int[] outputColumnIndices() {
-    int numInputColumns = this.inputSchema.numFields();
-    int[] validC = new int[numInputColumns];
+    final int numInputColumns = this.inputSchema.numFields();
+    final int[] validC = new int[numInputColumns];
     int j = 0;
     for (int i = 0; i < numInputColumns; i++) {
       // operate on index i here
@@ -112,13 +168,19 @@ public class JdbcTupleBatch implements _TupleBatch {
   }
 
   @Override
+  public List<Column> outputRawData() {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
   public synchronized Schema outputSchema() {
 
-    int[] columnIndices = this.outputColumnIndices();
-    String[] columnNames = new String[columnIndices.length];
-    Type[] columnTypes = new Type[columnIndices.length];
+    final int[] columnIndices = this.outputColumnIndices();
+    final String[] columnNames = new String[columnIndices.length];
+    final Type[] columnTypes = new Type[columnIndices.length];
     int j = 0;
-    for (int columnIndx : columnIndices) {
+    for (final int columnIndx : columnIndices) {
       columnNames[j] = this.inputSchema.getFieldName(columnIndx);
       columnTypes[j] = this.inputSchema.getFieldType(columnIndx);
       j++;
@@ -127,13 +189,18 @@ public class JdbcTupleBatch implements _TupleBatch {
     return new Schema(columnTypes, columnNames);
   }
 
-  @Override
-  public synchronized int numOutputTuples() {
-    return this.numInputTuples;
+  public synchronized JdbcTupleBatch[] partition(final PartitionFunction<?, ?> p) {
+    return null;
   }
 
   @Override
-  public synchronized _TupleBatch renameColumn(int inputColumnIdx, String newName) {
+  public TupleBatchBuffer[] partition(final PartitionFunction<?, ?> p, final TupleBatchBuffer[] buffers) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  @Override
+  public synchronized JdbcTupleBatch project(final int[] remainingColumns) {
     return this;
   }
 
@@ -148,86 +215,19 @@ public class JdbcTupleBatch implements _TupleBatch {
   }
 
   @Override
-  public synchronized _TupleBatch append(_TupleBatch another) {
-    Iterator<Schema.TDItem> it = this.inputSchema.iterator();
+  public _TupleBatch remove(final int innerIdx) {
+    throw new UnsupportedOperationException();
+  }
 
-    String[] fieldNames = new String[this.inputSchema.numFields()];
-    String[] placeHolders = new String[this.inputSchema.numFields()];
-    int i = 0;
-    while (it.hasNext()) {
-      Schema.TDItem item = it.next();
-      placeHolders[i] = "?";
-      fieldNames[i++] = item.getName();
-    }
-
-    JdbcAccessMethod.tupleBatchInsert(this.driverClass, connectString, "insert into " + this.tableName + " ( "
-        + StringUtils.join(fieldNames, ',') + " ) values ( " + StringUtils.join(placeHolders, ',') + " )",
-        new TupleBatch(another.outputSchema(), another.outputRawData(), another.numOutputTuples()), username, password);
+  @Override
+  public synchronized _TupleBatch renameColumn(final int inputColumnIdx, final String newName) {
     return this;
   }
 
   @Override
-  public synchronized _TupleBatch union(_TupleBatch another) {
+  public synchronized _TupleBatch union(final _TupleBatch another) {
     // TODO Auto-generated method stub
     return null;
-  }
-
-  @Override
-  public synchronized _TupleBatch intersect(_TupleBatch another) {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
-  public synchronized _TupleBatch except(_TupleBatch another) {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
-  public synchronized _TupleBatch distinct() {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
-  public synchronized _TupleBatch groupby() {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
-  public synchronized _TupleBatch orderby() {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
-  public synchronized _TupleBatch join(_TupleBatch other, Predicate p, _TupleBatch output) {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
-  public List<Column> outputRawData() {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
-  public TupleBatchBuffer[] partition(PartitionFunction<?, ?> p, TupleBatchBuffer[] buffers) {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
-  public _TupleBatch remove(int innerIdx) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public int hashCode(int rowIndx) {
-    throw new UnsupportedOperationException();
   }
 
 }

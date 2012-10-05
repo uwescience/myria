@@ -5,10 +5,10 @@ import java.util.List;
 
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.Type;
-//import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
-//import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage.ColumnMessageType;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType;
+// import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
+// import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage.ColumnMessageType;
 
 /**
  * A column of a batch of tuples.
@@ -25,8 +25,8 @@ public final class ColumnFactory {
    * @return the list of Columns
    */
   public static List<Column> allocateColumns(final Schema schema) {
-    int numColumns = schema.numFields();
-    Type[] columnTypes = new Type[numColumns];
+    final int numColumns = schema.numFields();
+    final Type[] columnTypes = new Type[numColumns];
     for (int columnIndex = 0; columnIndex < numColumns; ++columnIndex) {
       columnTypes[columnIndex] = schema.getFieldType(columnIndex);
     }
@@ -40,8 +40,8 @@ public final class ColumnFactory {
    * @return the allocated Columns
    */
   public static List<Column> allocateColumns(final Type[] columnTypes) {
-    int numColumns = columnTypes.length;
-    ArrayList<Column> columns = new ArrayList<Column>(numColumns);
+    final int numColumns = columnTypes.length;
+    final ArrayList<Column> columns = new ArrayList<Column>(numColumns);
 
     for (int columnIndex = 0; columnIndex < numColumns; ++columnIndex) {
       switch (columnTypes[columnIndex]) {
@@ -68,11 +68,6 @@ public final class ColumnFactory {
     return columns;
   }
 
-  /** Inaccessible. */
-  private ColumnFactory() {
-    throw new AssertionError();
-  }
-
   /**
    * Deserializes a ColumnMessage into the appropriate Column.
    * 
@@ -95,5 +90,10 @@ public final class ColumnFactory {
         return new StringColumn(message);
     }
     return null;
+  }
+
+  /** Inaccessible. */
+  private ColumnFactory() {
+    throw new AssertionError();
   }
 }

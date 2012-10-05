@@ -1,7 +1,8 @@
 package edu.washington.escience.myriad.parallel;
 
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.NoSuchElementException;
 
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.table._TupleBatch;
@@ -20,29 +21,49 @@ public class Query implements Serializable {
   transient private Operator op;
   transient private boolean started = false;
 
-  public void setPhysicalPlan(Operator pp) {
-    this.op = pp;
-  }
-
-  public Operator getPhysicalPlan() {
-    return this.op;
-  }
-
   public Query() {
   }
 
-  public Query(Operator root) {
+  public Query(final Operator root) {
     op = root;
   }
 
-  public void start() throws IOException, DbException {
-    op.open();
+  /** Close the iterator */
+  public void close() throws IOException {
+    op.close();
+    started = false;
+  }
 
-    started = true;
+  public void execute() throws IOException, DbException {
+    final Schema td = this.getOutputSchema();
+
+    String names = "";
+    for (int i = 0; i < td.numFields(); i++) {
+      names += td.getFieldName(i) + "\t";
+    }
+    System.out.println(names);
+    for (int i = 0; i < names.length() + td.numFields() * 4; i++) {
+      System.out.print("-");
+    }
+    System.out.println("");
+
+    this.start();
+    int cnt = 0;
+    while (this.hasNext()) {
+      final _TupleBatch tup = this.next();
+      System.out.println(tup);
+      cnt += tup.numOutputTuples();
+    }
+    System.out.println("\n " + cnt + " rows.");
+    this.close();
   }
 
   public Schema getOutputSchema() {
     return this.op.getSchema();
+  }
+
+  public Operator getPhysicalPlan() {
+    return this.op;
   }
 
   /** @return true if there are more tuples remaining. */
@@ -59,39 +80,20 @@ public class Query implements Serializable {
    * @throws TransactionAbortedException If the transaction is aborted (e.g., due to a deadlock)
    */
   public _TupleBatch next() throws DbException, NoSuchElementException {
-    if (!started)
+    if (!started) {
       throw new DbException("Database not started.");
+    }
 
     return op.next();
   }
 
-  /** Close the iterator */
-  public void close() throws IOException {
-    op.close();
-    started = false;
+  public void setPhysicalPlan(final Operator pp) {
+    this.op = pp;
   }
 
-  public void execute() throws IOException, DbException {
-    Schema td = this.getOutputSchema();
+  public void start() throws IOException, DbException {
+    op.open();
 
-    String names = "";
-    for (int i = 0; i < td.numFields(); i++) {
-      names += td.getFieldName(i) + "\t";
-    }
-    System.out.println(names);
-    for (int i = 0; i < names.length() + td.numFields() * 4; i++) {
-      System.out.print("-");
-    }
-    System.out.println("");
-
-    this.start();
-    int cnt = 0;
-    while (this.hasNext()) {
-      _TupleBatch tup = this.next();
-      System.out.println(tup);
-      cnt += tup.numOutputTuples();
-    }
-    System.out.println("\n " + cnt + " rows.");
-    this.close();
+    started = true;
   }
 }

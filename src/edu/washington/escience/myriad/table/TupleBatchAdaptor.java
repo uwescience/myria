@@ -2,8 +2,6 @@ package edu.washington.escience.myriad.table;
 
 import java.util.List;
 
-import org.apache.commons.lang3.builder.HashCodeBuilder;
-
 import edu.washington.escience.myriad.Predicate;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -20,83 +18,7 @@ public abstract class TupleBatchAdaptor implements _TupleBatch {
   private static final long serialVersionUID = 1L;
 
   @Override
-  public Schema outputSchema() {
-    if (this instanceof TupleBatch) {
-      TupleBatch tupleBatch = (TupleBatch) this;
-      return tupleBatch.getSchema();
-    } else
-      throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public Schema inputSchema() {
-    if (this instanceof TupleBatch) {
-      TupleBatch tupleBatch = (TupleBatch) this;
-      return tupleBatch.getSchema();
-    } else
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public int numInputTuples() {
-    if (this instanceof TupleBatch) {
-      TupleBatch tupleBatch = (TupleBatch) this;
-      return tupleBatch.validTupleIndices().length; // need a public method here
-    } else
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public int numOutputTuples() {
-    if (this instanceof TupleBatch) {
-      TupleBatch tupleBatch = (TupleBatch) this;
-      return tupleBatch.validTupleIndices().length;
-    } else
-      throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public _TupleBatch renameColumn(int inputColumnIdx, String newName) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public _TupleBatch purgeFilters() {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public _TupleBatch project(int[] remainingColumns) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public _TupleBatch purgeProjects() {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public _TupleBatch append(_TupleBatch another) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public _TupleBatch join(_TupleBatch other, Predicate p, _TupleBatch output) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public _TupleBatch union(_TupleBatch another) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public _TupleBatch intersect(_TupleBatch another) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public _TupleBatch except(_TupleBatch another) {
+  public _TupleBatch append(final _TupleBatch another) {
     throw new UnsupportedOperationException();
   }
 
@@ -106,8 +28,63 @@ public abstract class TupleBatchAdaptor implements _TupleBatch {
   }
 
   @Override
+  public _TupleBatch except(final _TupleBatch another) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
   public _TupleBatch groupby() {
     throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public int hashCode(final int rowIndx) {
+    if (this instanceof TupleBatch) {
+      final TupleBatch tupleBatch = (TupleBatch) this;
+      return tupleBatch.hashCode(rowIndx);
+    } else {
+      throw new UnsupportedOperationException();
+    }
+  }
+
+  @Override
+  public Schema inputSchema() {
+    if (this instanceof TupleBatch) {
+      final TupleBatch tupleBatch = (TupleBatch) this;
+      return tupleBatch.getSchema();
+    } else {
+      throw new UnsupportedOperationException();
+    }
+  }
+
+  @Override
+  public _TupleBatch intersect(final _TupleBatch another) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public _TupleBatch join(final _TupleBatch other, final Predicate p, final _TupleBatch output) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public int numInputTuples() {
+    if (this instanceof TupleBatch) {
+      final TupleBatch tupleBatch = (TupleBatch) this;
+      return tupleBatch.validTupleIndices().length; // need a public method here
+    } else {
+      throw new UnsupportedOperationException();
+    }
+  }
+
+  @Override
+  public int numOutputTuples() {
+    if (this instanceof TupleBatch) {
+      final TupleBatch tupleBatch = (TupleBatch) this;
+      return tupleBatch.validTupleIndices().length;
+    } else {
+      throw new UnsupportedOperationException();
+    }
   }
 
   @Override
@@ -118,29 +95,40 @@ public abstract class TupleBatchAdaptor implements _TupleBatch {
   @Override
   public List<Column> outputRawData() {
     if (this instanceof TupleBatch) {
-      List<Column> output = ColumnFactory.allocateColumns(this.outputSchema());
-      TupleBatch tupleBatch = (TupleBatch) this;
-      for (int row : tupleBatch.validTupleIndices()) {
+      final List<Column> output = ColumnFactory.allocateColumns(this.outputSchema());
+      final TupleBatch tupleBatch = (TupleBatch) this;
+      for (final int row : tupleBatch.validTupleIndices()) {
         for (int column = 0; column < tupleBatch.numColumns(); ++column) {
           output.get(column).putObject(tupleBatch.getColumn(column).get(row));;
         }
       }
       return output;
-    } else
+    } else {
       throw new UnsupportedOperationException();
+    }
   }
 
   @Override
-  public TupleBatchBuffer[] partition(PartitionFunction<?, ?> pf, TupleBatchBuffer[] buffers) {
-    // p.partition(t, td)
-    List<Column> outputData = this.outputRawData();
-    Schema s = this.outputSchema();
-    int numColumns = outputData.size();
+  public Schema outputSchema() {
+    if (this instanceof TupleBatch) {
+      final TupleBatch tupleBatch = (TupleBatch) this;
+      return tupleBatch.getSchema();
+    } else {
+      throw new UnsupportedOperationException();
+    }
+  }
 
-    int[] partitions = pf.partition(outputData, s);
+  @Override
+  public TupleBatchBuffer[] partition(final PartitionFunction<?, ?> pf, final TupleBatchBuffer[] buffers) {
+    // p.partition(t, td)
+    final List<Column> outputData = this.outputRawData();
+    final Schema s = this.outputSchema();
+    final int numColumns = outputData.size();
+
+    final int[] partitions = pf.partition(outputData, s);
 
     for (int i = 0; i < partitions.length; i++) {
-      int p_of_tuple = partitions[i];
+      final int p_of_tuple = partitions[i];
       for (int j = 0; j < numColumns; j++) {
         buffers[p_of_tuple].put(j, outputData.get(j).get(i));
       }
@@ -149,18 +137,33 @@ public abstract class TupleBatchAdaptor implements _TupleBatch {
   }
 
   @Override
-  public _TupleBatch remove(int innerIdx) {
+  public _TupleBatch project(final int[] remainingColumns) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public _TupleBatch purgeFilters() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public _TupleBatch purgeProjects() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public _TupleBatch remove(final int innerIdx) {
     // TODO Auto-generated method stub
     return null;
   }
-  
+
   @Override
-  public int hashCode(int rowIndx)
-  {
-    if (this instanceof TupleBatch) {
-      TupleBatch tupleBatch = (TupleBatch) this;
-      return tupleBatch.hashCode(rowIndx);      
-    } else
+  public _TupleBatch renameColumn(final int inputColumnIdx, final String newName) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public _TupleBatch union(final _TupleBatch another) {
     throw new UnsupportedOperationException();
   }
 

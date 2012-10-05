@@ -61,6 +61,24 @@ public class TupleBatchBuffer {
     currentNumTuples = 0;
   }
 
+  public final List<TupleBatch> getOutput() {
+    final List<TupleBatch> output = new LinkedList<TupleBatch>();
+    output.addAll(readyTuples);
+    output.add(new TupleBatch(schema, currentColumns, currentNumTuples));
+    return output;
+  }
+
+  public final int numTuples() {
+    return this.readyTuples.size() * TupleBatch.BATCH_SIZE + this.currentNumTuples;
+  }
+
+  public final TupleBatch pop() {
+    if (this.readyTuples.size() > 0) {
+      return this.readyTuples.remove(0);
+    }
+    return null;
+  }
+
   /**
    * Append the specified value to the specified column.
    * 
@@ -82,26 +100,6 @@ public class TupleBatchBuffer {
         finishBatch();
       }
     }
-  }
-  
-  public final int numTuples()
-  {
-    return this.readyTuples.size()*TupleBatch.BATCH_SIZE+this.currentNumTuples;
-  }
-
-  public final List<TupleBatch> getOutput() {
-    List<TupleBatch> output = new LinkedList<TupleBatch>();
-    output.addAll(readyTuples);
-    output.add(new TupleBatch(schema, currentColumns, currentNumTuples));
-    return output;
-  }
-  
-
-  public final TupleBatch pop() {
-    if (this.readyTuples.size() > 0) {
-      return this.readyTuples.remove(0);
-    }
-    return null;
   }
 
 }

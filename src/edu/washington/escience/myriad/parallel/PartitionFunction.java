@@ -22,11 +22,11 @@ public abstract class PartitionFunction<K, V> implements Serializable {
   /**
    * Each partition function implementation must has a Class(int) style constructor
    * */
-  public PartitionFunction(int numPartition) {
+  public PartitionFunction(final int numPartition) {
     this.numPartition = numPartition;
   }
 
-  public V getAttribute(K attribute) {
+  public V getAttribute(final K attribute) {
     return attributes.get(attribute);
   }
 
@@ -55,7 +55,7 @@ public abstract class PartitionFunction<K, V> implements Serializable {
   /**
    * A concrete implementation of a partition function may need some information to help it decide the tuple partitions.
    * */
-  public void setAttribute(K attribute, V value) {
+  public void setAttribute(final K attribute, final V value) {
     this.attributes.put(attribute, value);
   }
 

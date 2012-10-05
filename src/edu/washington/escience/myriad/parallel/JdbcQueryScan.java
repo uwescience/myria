@@ -3,9 +3,9 @@ package edu.washington.escience.myriad.parallel;
 import java.util.Iterator;
 
 import edu.washington.escience.myriad.Schema;
-import edu.washington.escience.myriad.table._TupleBatch;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.accessmethod.JdbcAccessMethod;
+import edu.washington.escience.myriad.table._TupleBatch;
 
 public class JdbcQueryScan extends Operator {
 
@@ -18,8 +18,8 @@ public class JdbcQueryScan extends Operator {
   private final String username;
   private final String password;
 
-  public JdbcQueryScan(String driverClass, String connectionString, String baseSQL, Schema outputSchema,
-      String username, String password) {
+  public JdbcQueryScan(final String driverClass, final String connectionString, final String baseSQL, final Schema outputSchema,
+      final String username, final String password) {
     this.driverClass = driverClass;
     this.connectionString = connectionString;
     this.baseSQL = baseSQL;
@@ -47,11 +47,13 @@ public class JdbcQueryScan extends Operator {
     // cache = null;
     // return tmp;
     // } else {
-    if (tuples.hasNext())
+    if (tuples.hasNext()) {
       return this.tuples.next();
-    else
+    }
+    else {
       return null;
     // }
+    }
   }
 
   @Override
@@ -77,7 +79,7 @@ public class JdbcQueryScan extends Operator {
   // }
 
   @Override
-  public void setChildren(Operator[] children) {
+  public void setChildren(final Operator[] children) {
     throw new UnsupportedOperationException();
   }
 

@@ -32,91 +32,73 @@ import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 public class ParallelUtility {
 
   /**
-   * Shutdown the java virtual machine
-   * */
-  public static void shutdownVM() {
-    System.exit(0);
-  }
-
-  /**
-   * create a client side connector to the server
-   * */
-  private static IoConnector createConnector() {
-    IoConnector connector = new NioSocketConnector();
-    SocketSessionConfig config = (SocketSessionConfig) connector.getSessionConfig();
-    config.setKeepAlive(true); // true?
-    // No delay
-    config.setTcpNoDelay(true);
-    config.setIdleTime(IdleStatus.BOTH_IDLE, 5);
-    config.setReceiveBufferSize(2048);
-    config.setSendBufferSize(2048);
-    config.setReadBufferSize(2048);
-
-    connector.getFilterChain().addLast("compressor", new CompressionFilter());
-
-    connector.getFilterChain().addLast("codec",
-        new ProtocolCodecFilter(ProtobufCodecFactory.newInstance(TransportMessage.getDefaultInstance())));
-
-    connector.setHandler(new IoHandlerAdapter() {
-      @Override
-      public void exceptionCaught(IoSession session, Throwable cause) {
-        cause.printStackTrace();
-      }
-
-      @Override
-      public void messageReceived(IoSession session, Object message) throws Exception {
-        System.out.println("Default IOHandler, Message received: " + message);
-        super.messageReceived(session, message);
-      }
-    });
-    return connector;
-  }
-
-  /**
    * Close a session. Every time a session is to be closed, do call this method. Do not directly call session.close;
    * */
-  public static CloseFuture closeSession(IoSession session) {
-    if (session == null)
+  public static CloseFuture closeSession(final IoSession session) {
+    if (session == null) {
       return null;
-    CloseFuture cf = session.close(false);
-    IoConnector ic = (IoConnector) session.getAttribute("connecter");
+    }
+    final CloseFuture cf = session.close(false);
+    final IoConnector ic = (IoConnector) session.getAttribute("connecter");
 
     if (ic != null) {
-      Map<Long, IoSession> activeSessions = ic.getManagedSessions();
-      if ((activeSessions.containsValue(session) && activeSessions.size() <= 1) || activeSessions.size() <= 0)
+      final Map<Long, IoSession> activeSessions = ic.getManagedSessions();
+      if ((activeSessions.containsValue(session) && activeSessions.size() <= 1) || activeSessions.size() <= 0) {
         ic.dispose(false);
+      }
     }
     return cf;
   }
 
-  public static IoSession createSession(SocketAddress remoteAddress, IoHandler ioHandler, long connectionTimeoutMS) {
-
-    IoSession session = null;
-
-    IoConnector ic = null;
-    ic = createConnector();
-    ic.setHandler(ioHandler);
-    ConnectFuture c = ic.connect(remoteAddress);
-    boolean connected = false;
-    if (connectionTimeoutMS > 0)
-      connected = c.awaitUninterruptibly(connectionTimeoutMS);
-    else
-      connected = c.awaitUninterruptibly().isConnected();
-    if (connected) {
-      session = c.getSession();
-      session.setAttribute("connecter", ic);
-      return session;
+  /**
+   * @param dest will be replaced if exists and override
+   * */
+  public static void copyFileFolder(final File source, final File dest, final boolean override) throws IOException {
+    if (dest.exists()) {
+      if (!override) {
+        return;
+      } else {
+        deleteFileFolder(dest);
+      }
     }
-    return session;
+
+    if (source.isDirectory()) {
+      dest.mkdirs();
+      final File[] children = source.listFiles();
+      for (final File child : children) {
+        copyFileFolder(child, new File(dest.getAbsolutePath() + "/" + child.getName()), override);
+      }
+    } else {
+      InputStream in = null;
+      OutputStream out = null;
+      try {
+        in = new FileInputStream(source);
+        out = new FileOutputStream(dest);
+
+        // Transfer bytes from in to out
+        final byte[] buf = new byte[1024];
+        int len;
+        while ((len = in.read(buf)) > 0) {
+          out.write(buf, 0, len);
+        }
+      } finally {
+        if (in != null) {
+          in.close();
+        }
+        if (out != null) {
+          out.close();
+        }
+      }
+    }
   }
 
   /**
    * create a server side acceptor
    * */
   public static NioSocketAcceptor createAcceptor() {
-    NioSocketAcceptor acceptor = new NioSocketAcceptor(10);
+    final NioSocketAcceptor acceptor = new NioSocketAcceptor(10);
 
-    SocketSessionConfig config = acceptor.getSessionConfig();
+    final SocketSessionConfig config = acceptor.getSessionConfig();
     config.setKeepAlive(false);
     config.setTcpNoDelay(true);
     /**
@@ -137,12 +119,12 @@ public class ParallelUtility {
 
     acceptor.setHandler(new IoHandlerAdapter() {
       @Override
-      public void exceptionCaught(IoSession session, Throwable cause) {
+      public void exceptionCaught(final IoSession session, final Throwable cause) {
         cause.printStackTrace();
       }
 
       @Override
-      public void messageReceived(IoSession session, Object message) throws Exception {
+      public void messageReceived(final IoSession session, final Object message) throws Exception {
         System.out.println("Default IOHandler, Message received: " + message);
         super.messageReceived(session, message);
       }
@@ -153,11 +135,102 @@ public class ParallelUtility {
   }
 
   /**
+   * create a client side connector to the server
+   * */
+  private static IoConnector createConnector() {
+    final IoConnector connector = new NioSocketConnector();
+    final SocketSessionConfig config = (SocketSessionConfig) connector.getSessionConfig();
+    config.setKeepAlive(true); // true?
+    // No delay
+    config.setTcpNoDelay(true);
+    config.setIdleTime(IdleStatus.BOTH_IDLE, 5);
+    config.setReceiveBufferSize(2048);
+    config.setSendBufferSize(2048);
+    config.setReadBufferSize(2048);
+
+    connector.getFilterChain().addLast("compressor", new CompressionFilter());
+
+    connector.getFilterChain().addLast("codec",
+        new ProtocolCodecFilter(ProtobufCodecFactory.newInstance(TransportMessage.getDefaultInstance())));
+
+    connector.setHandler(new IoHandlerAdapter() {
+      @Override
+      public void exceptionCaught(final IoSession session, final Throwable cause) {
+        cause.printStackTrace();
+      }
+
+      @Override
+      public void messageReceived(final IoSession session, final Object message) throws Exception {
+        System.out.println("Default IOHandler, Message received: " + message);
+        super.messageReceived(session, message);
+      }
+    });
+    return connector;
+  }
+
+  public static IoSession createSession(final SocketAddress remoteAddress, final IoHandler ioHandler, final long connectionTimeoutMS) {
+
+    IoSession session = null;
+
+    IoConnector ic = null;
+    ic = createConnector();
+    ic.setHandler(ioHandler);
+    final ConnectFuture c = ic.connect(remoteAddress);
+    boolean connected = false;
+    if (connectionTimeoutMS > 0) {
+      connected = c.awaitUninterruptibly(connectionTimeoutMS);
+    } else {
+      connected = c.awaitUninterruptibly().isConnected();
+    }
+    if (connected) {
+      session = c.getSession();
+      session.setAttribute("connecter", ic);
+      return session;
+    }
+    return session;
+  }
+
+  public static void deleteFileFolder(final File f) throws IOException {
+    if (!f.exists()) {
+      return;
+    }
+    if (f.isDirectory()) {
+      for (final File c : f.listFiles()) {
+        deleteFileFolder(c);
+      }
+    }
+    if (!f.delete()) {
+      throw new FileNotFoundException("Failed to delete file: " + f);
+    }
+  }
+
+  public static String[] removeArg(final String[] args, final int toBeRemoved) {
+    if (args == null) {
+      return null;
+    }
+
+    if (toBeRemoved < 0 || toBeRemoved >= args.length) {
+      return args;
+    }
+    final String[] newArgs = new String[args.length - 1];
+    System.arraycopy(args, 0, newArgs, 0, toBeRemoved);
+    System.arraycopy(args, toBeRemoved + 1, newArgs, toBeRemoved, args.length - toBeRemoved - 1);
+    return newArgs;
+  }
+
+  /**
+   * Shutdown the java virtual machine
+   * */
+  public static void shutdownVM() {
+    System.exit(0);
+  }
+
+  /**
    * unbind the acceptor from the binded port and close all the connections
    * */
-  public static void unbind(NioSocketAcceptor acceptor) {
+  public static void unbind(final NioSocketAcceptor acceptor) {
 
-    for (IoSession session : acceptor.getManagedSessions().values()) {
+    for (final IoSession session : acceptor.getManagedSessions().values()) {
       session.close(true);
     }
 
@@ -167,71 +240,9 @@ public class ParallelUtility {
     }
   }
 
-  public static String[] removeArg(String[] args, int toBeRemoved) {
-    if (args == null)
-      return null;
-
-    if (toBeRemoved < 0 || toBeRemoved >= args.length)
-      return args;
-    String[] newArgs = new String[args.length - 1];
-    System.arraycopy(args, 0, newArgs, 0, toBeRemoved);
-    System.arraycopy(args, toBeRemoved + 1, newArgs, toBeRemoved, args.length - toBeRemoved - 1);
-    return newArgs;
-  }
-
-  public static void deleteFileFolder(File f) throws IOException {
-    if (!f.exists())
-      return;
-    if (f.isDirectory()) {
-      for (File c : f.listFiles())
-        deleteFileFolder(c);
-    }
-    if (!f.delete())
-      throw new FileNotFoundException("Failed to delete file: " + f);
-  }
-
-  public static void writeFile(File f, String content) throws IOException {
-    FileOutputStream o = new FileOutputStream(f);
+  public static void writeFile(final File f, final String content) throws IOException {
+    final FileOutputStream o = new FileOutputStream(f);
     o.write(content.getBytes());
     o.close();
-  }
-
-  /**
-   * @param dest will be replaced if exists and override
-   * */
-  public static void copyFileFolder(File source, File dest, boolean override) throws IOException {
-    if (dest.exists())
-      if (!override)
-        return;
-      else
-        deleteFileFolder(dest);
-
-    if (source.isDirectory()) {
-      dest.mkdirs();
-      File[] children = source.listFiles();
-      for (File child : children)
-        copyFileFolder(child, new File(dest.getAbsolutePath() + "/" + child.getName()), override);
-    } else {
-      InputStream in = null;
-      OutputStream out = null;
-      try {
-        in = new FileInputStream(source);
-        out = new FileOutputStream(dest);
-
-        // Transfer bytes from in to out
-        byte[] buf = new byte[1024];
-        int len;
-        while ((len = in.read(buf)) > 0) {
-          out.write(buf, 0, len);
-        }
-      } finally {
-        if (in != null) {
-          in.close();
-        }
-        if (out != null) {
-          out.close();
-        }
-      }
-    }
   }
 }

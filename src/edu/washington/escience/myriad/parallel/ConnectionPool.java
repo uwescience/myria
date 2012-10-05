@@ -23,10 +23,11 @@ public class ConnectionPool {
 
   protected final int myID;
 
-  public ConnectionPool(int myID, Map<Integer, SocketInfo> remoteAddresses, Map<Integer, IoHandler> defaultIoHandlers) {
+  public ConnectionPool(final int myID, final Map<Integer, SocketInfo> remoteAddresses, final Map<Integer, IoHandler> defaultIoHandlers) {
     this.sessionPool = new ConcurrentHashMap<Integer, AtomicReference<IoSession>>();
-    for (Integer id : remoteAddresses.keySet())
+    for (final Integer id : remoteAddresses.keySet()) {
       this.sessionPool.put(id, new AtomicReference<IoSession>());
+    }
     this.remoteAddresses = new ConcurrentHashMap<Integer, SocketInfo>();
     this.remoteAddresses.putAll(remoteAddresses);
     this.defaultIoHandlers = new ConcurrentHashMap<Integer, IoHandler>();
@@ -34,23 +35,20 @@ public class ConnectionPool {
     this.myID = myID;
   }
 
-  public void start() {
-    // TODO
-  }
-
   /**
    * if ioHandler is null, the default ioHandler will be used
    * */
-  public IoSession get(int id, IoHandler ioHandler, int numRetry, Map<String, ?> sessionAttributes) {
+  public IoSession get(final int id, IoHandler ioHandler, final int numRetry, final Map<String, ?> sessionAttributes) {
 
-    AtomicReference<IoSession> ref = sessionPool.get(id);
+    final AtomicReference<IoSession> ref = sessionPool.get(id);
     IoSession s = null;
-    if (ioHandler == null)
+    if (ioHandler == null) {
       ioHandler = defaultIoHandlers.get(id);
+    }
 
-    int retry = 0;
+    final int retry = 0;
     while (retry < numRetry && ((s = ref.get()) == null || s.isClosing())) {
-      IoSession old = s;
+      final IoSession old = s;
       s = ParallelUtility.createSession(remoteAddresses.get(id).getAddress(), ioHandler, 3000);
       ref.compareAndSet(old, s);
     }
@@ -63,17 +61,22 @@ public class ConnectionPool {
     }
 
     if (sessionAttributes != null) {
-      for (Entry<String, ?> attribute : sessionAttributes.entrySet())
+      for (final Entry<String, ?> attribute : sessionAttributes.entrySet()) {
         s.setAttribute(attribute.getKey(), attribute.getValue());
+      }
     }
     return s;
   }
 
-  public void release(int i) {
+  public void release(final int i) {
     // TODO
   }
 
   public void shutdown() {
+    // TODO
+  }
+
+  public void start() {
     // TODO
   }
 }

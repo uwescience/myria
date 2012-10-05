@@ -55,11 +55,81 @@ import edu.washington.escience.myriad.table._TupleBatch;
  * */
 public class Worker {
 
-  static final String usage = "Usage: worker [--conf <conf_dir>]";
-  public final static String DEFAULT_DATA_DIR = "data";
+  protected class MessageProcessor extends Thread {
+    @Override
+    public void run() {
 
-  public final File dataDir;
-  public final File tmpDir;
+      TERMINATE_MESSAGE_PROCESSING : while (true) {
+        MessageWrapper mw = null;
+        try {
+          mw = Worker.this.messageBuffer.take();
+        } catch (final InterruptedException e) {
+          e.printStackTrace();
+          break TERMINATE_MESSAGE_PROCESSING;
+        }
+        final TransportMessage m = mw.message;
+        final Integer senderID = mw.senderID;
+
+        switch (m.getType().getNumber()) {
+          case TransportMessage.TransportMessageType.QUERY_VALUE:
+            try {
+              final ObjectInputStream osis =
+                  new ObjectInputStream(new ByteArrayInputStream(m.getQuery().getQuery().toByteArray()));
+              final Operator query = (Operator) (osis.readObject());
+              // System.out.println(query);
+              Worker.this.receiveQuery(query);
+              Worker.this.sendMessageToMaster(TransportMessage.newBuilder().setType(TransportMessageType.CONTROL)
+                  .setControl(ControlMessage.newBuilder().setType(ControlMessageType.QUERY_READY_TO_EXECUTE).build())
+                  .build(), null);
+            } catch (IOException | ClassNotFoundException e) {
+              e.printStackTrace();
+            }
+            break;
+          case TransportMessage.TransportMessageType.DATA_VALUE: {
+            final DataMessage data = m.getData();
+            final ExchangePairID exchangePairID = ExchangePairID.fromExisting(data.getOperatorID());
+            final Schema operatorSchema = Worker.this.exchangeSchema.get(exchangePairID);
+            switch (data.getType().getNumber()) {
+              case DataMessageType.EOS_VALUE:
+                Worker.this.receiveData(new ExchangeTupleBatch(exchangePairID, senderID, operatorSchema));
+                break;
+              case DataMessageType.NORMAL_VALUE:
+                final List<ColumnMessage> columnMessages = data.getColumnsList();
+                final Column[] columnArray = new Column[columnMessages.size()];
+                int idx = 0;
+                for (final ColumnMessage cm : columnMessages) {
+                  columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm);
+                }
+                final List<Column> columns = Arrays.asList(columnArray);
+                Worker.this.receiveData(new ExchangeTupleBatch(exchangePairID, senderID, columns, operatorSchema,
+                    columnMessages.get(0).getNumTuples()));
+
+                break;
+            }
+          }
+            break;
+          case TransportMessage.TransportMessageType.CONTROL_VALUE:
+            final ControlMessage controlM = m.getControl();
+            switch (controlM.getType().getNumber()) {
+              case ControlMessage.ControlMessageType.SHUTDOWN_VALUE:
+                Worker.this.toShutdown = true;
+                break;
+              case ControlMessage.ControlMessageType.START_QUERY_VALUE:
+                Worker.this.executeQuery();
+                break;
+            }
+            break;
+        }
+
+      }
+
+    }
+  }
+  public static class MessageWrapper {
+    protected int senderID;
+    // protected ExchangePairID operatorPairID;
+    protected TransportMessage message;
+  }
 
   /**
    * The working thread, which executes the query plan
@@ -74,14 +144,15 @@ public class Worker {
         // }
         if (query != null) {
           System.out.println("Worker start processing query");
-          CollectProducer root = (CollectProducer) query;
+          final CollectProducer root = (CollectProducer) query;
           try {
             root.open();
-            while (root.hasNext())
+            while (root.hasNext()) {
               root.next();
+            }
             root.close();
             // root.join(); // wait until the query to finish
-          } catch (DbException e1) {
+          } catch (final DbException e1) {
             e1.printStackTrace();
           }
           Worker.this.finishQuery();
@@ -91,80 +162,66 @@ public class Worker {
           try {
             // wait until a query plan is received
             Worker.this.queryExecutor.wait();
-          } catch (InterruptedException e) {
+          } catch (final InterruptedException e) {
             break;
           }
         }
       }
     }
   }
+  /**
+   * Mina acceptor handler. This is where all messages arriving from other workers and from the coordinator will be
+   * processed
+   * */
+  public class WorkerHandler extends IoHandlerAdapter {
 
-  protected class MessageProcessor extends Thread {
     @Override
-    public void run() {
+    public void exceptionCaught(final IoSession session, final Throwable cause) {
+      System.out.println("exception caught");
+      cause.printStackTrace();
+      ParallelUtility.closeSession(session);
+    }
 
-      TERMINATE_MESSAGE_PROCESSING : while (true) {
-        MessageWrapper mw = null;
-        try {
-          mw = Worker.this.messageBuffer.take();
-        } catch (InterruptedException e) {
-          e.printStackTrace();
-          break TERMINATE_MESSAGE_PROCESSING;
-        }
-        TransportMessage m = mw.message;
-        Integer senderID = mw.senderID;
+    /**
+     * Got called everytime a message is received.
+     * */
+    @Override
+    public void messageReceived(final IoSession session, final Object message) {
+      if (message instanceof TransportMessage) {
+        final TransportMessage tm = (TransportMessage) message;
+        if ((tm.getType() == TransportMessage.TransportMessageType.CONTROL)
+            && (ControlMessage.ControlMessageType.CONNECT == tm.getControl().getType())) {
+          // connect request sent from other workers
+          final ControlMessage cm = tm.getControl();
+          // ControlProto.ExchangePairID epID = cm.getExchangePairID();
 
-        switch (m.getType().getNumber()) {
-          case TransportMessage.TransportMessageType.QUERY_VALUE:
-            try {
-              ObjectInputStream osis =
-                  new ObjectInputStream(new ByteArrayInputStream(m.getQuery().getQuery().toByteArray()));
-              Operator query = (Operator) (osis.readObject());
-              // System.out.println(query);
-              Worker.this.receiveQuery(query);
-              Worker.this.sendMessageToMaster(TransportMessage.newBuilder().setType(TransportMessageType.CONTROL)
-                  .setControl(ControlMessage.newBuilder().setType(ControlMessageType.QUERY_READY_TO_EXECUTE).build())
-                  .build(), null);
-            } catch (IOException | ClassNotFoundException e) {
-              e.printStackTrace();
-            }
-            break;
-          case TransportMessage.TransportMessageType.DATA_VALUE: {
-            DataMessage data = m.getData();
-            ExchangePairID exchangePairID = ExchangePairID.fromExisting(data.getOperatorID());
-            Schema operatorSchema = Worker.this.exchangeSchema.get(exchangePairID);
-            switch (data.getType().getNumber()) {
-              case DataMessageType.EOS_VALUE:
-                Worker.this.receiveData(new ExchangeTupleBatch(exchangePairID, senderID, operatorSchema));
-                break;
-              case DataMessageType.NORMAL_VALUE:
-                List<ColumnMessage> columnMessages = data.getColumnsList();
-                Column[] columnArray = new Column[columnMessages.size()];
-                int idx = 0;
-                for (ColumnMessage cm : columnMessages) {
-                  columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm);
-                }
-                List<Column> columns = Arrays.asList(columnArray);
-                Worker.this.receiveData(new ExchangeTupleBatch(exchangePairID, senderID, columns, operatorSchema,
-                    columnMessages.get(0).getNumTuples()));
+          // ExchangePairID operatorID = ExchangePairID.fromExisting(epID.getExchangePairID());
+          // String senderID = epID.getWorkerID();
+          session.setAttribute("remoteID", cm.getRemoteID());
+          // session.setAttribute("operatorID", operatorID);
+        } else {
+          final Integer senderID = (Integer) session.getAttribute("remoteID");
+          if (senderID != null) {
+            final MessageWrapper mw = new MessageWrapper();
+            mw.senderID = senderID;
+            mw.message = (TransportMessage) message;
+            // ExchangePairID operatorID = (ExchangePairID) session.getAttribute("operatorID");
+            // mw.operatorPairID = operatorID;
+            Worker.this.messageBuffer.add(mw);
+          } else {// currently messages from the master do not have id
+            // messages from master
+            // System.err.println("Error: message received from an unknown unit: " + message);
 
-                break;
-            }
+            final MessageWrapper mw = new MessageWrapper();
+            mw.senderID = 0;
+            mw.message = (TransportMessage) message;
+            // ExchangePairID operatorID = (ExchangePairID) session.getAttribute("operatorID");
+            // mw.operatorPairID = null;
+            Worker.this.messageBuffer.add(mw);
           }
-            break;
-          case TransportMessage.TransportMessageType.CONTROL_VALUE:
-            ControlMessage controlM = m.getControl();
-            switch (controlM.getType().getNumber()) {
-              case ControlMessage.ControlMessageType.SHUTDOWN_VALUE:
-                Worker.this.toShutdown = true;
-                break;
-              case ControlMessage.ControlMessageType.START_QUERY_VALUE:
-                Worker.this.executeQuery();
-                break;
-            }
-            break;
         }
-
+      } else {
+        System.err.println("Error: Unknown message received: " + message);
       }
 
     }
@@ -185,8 +242,9 @@ public class Worker {
         Worker.this.shutdown();
         ParallelUtility.shutdownVM();
       }
-      if (inRun)
+      if (inRun) {
         return;
+      }
       inRun = true;
       IoSession serverSession = null;
       // int numTry = 0;
@@ -196,9 +254,9 @@ public class Worker {
         // 3000)) == null
         // && numTry < 3)
         // numTry++;
-      } catch (RuntimeException e) {
+      } catch (final RuntimeException e) {
         // e.printStackTrace();
-      } catch (Exception e) {
+      } catch (final Exception e) {
         e.printStackTrace();
       }
 
@@ -219,83 +277,35 @@ public class Worker {
                                                                     // delay
             (long) (Math.random() * 2000) + 10000); // subsequent
                                                     // rate
-      } catch (IllegalStateException e) {// already get canceled, ignore
+      } catch (final IllegalStateException e) {// already get canceled, ignore
       }
     }
   }
+
+  static final String usage = "Usage: worker [--conf <conf_dir>]";
+
+  public final static String DEFAULT_DATA_DIR = "data";
 
   /**
-   * Mina acceptor handler. This is where all messages arriving from other workers and from the coordinator will be
-   * processed
+   * Find out all the ParallelOperatorIDs of all consuming operators: ShuffleConsumer, CollectConsumer, and
+   * BloomFilterConsumer running at this worker. The inBuffer needs the IDs to distribute the ExchangeMessages received.
    * */
-  public class WorkerHandler extends IoHandlerAdapter {
-
-    @Override
-    public void exceptionCaught(IoSession session, Throwable cause) {
-      System.out.println("exception caught");
-      cause.printStackTrace();
-      ParallelUtility.closeSession(session);
+  public static void collectConsumerOperatorIDs(final Operator root, final ArrayList<ExchangePairID> oIds) {
+    if (root instanceof Consumer) {
+      oIds.add(((Consumer) root).getOperatorID());
     }
-
-    /**
-     * Got called everytime a message is received.
-     * */
-    @Override
-    public void messageReceived(IoSession session, Object message) {
-      if (message instanceof TransportMessage) {
-        TransportMessage tm = (TransportMessage) message;
-        if ((tm.getType() == TransportMessage.TransportMessageType.CONTROL)
-            && (ControlMessage.ControlMessageType.CONNECT == tm.getControl().getType())) {
-          // connect request sent from other workers
-          ControlMessage cm = tm.getControl();
-          // ControlProto.ExchangePairID epID = cm.getExchangePairID();
-
-          // ExchangePairID operatorID = ExchangePairID.fromExisting(epID.getExchangePairID());
-          // String senderID = epID.getWorkerID();
-          session.setAttribute("remoteID", cm.getRemoteID());
-          // session.setAttribute("operatorID", operatorID);
-        } else {
-          Integer senderID = (Integer) session.getAttribute("remoteID");
-          if (senderID != null) {
-            MessageWrapper mw = new MessageWrapper();
-            mw.senderID = senderID;
-            mw.message = (TransportMessage) message;
-            // ExchangePairID operatorID = (ExchangePairID) session.getAttribute("operatorID");
-            // mw.operatorPairID = operatorID;
-            Worker.this.messageBuffer.add(mw);
-          } else {// currently messages from the master do not have id
-            // messages from master
-            // System.err.println("Error: message received from an unknown unit: " + message);
-
-            MessageWrapper mw = new MessageWrapper();
-            mw.senderID = 0;
-            mw.message = (TransportMessage) message;
-            // ExchangePairID operatorID = (ExchangePairID) session.getAttribute("operatorID");
-            // mw.operatorPairID = null;
-            Worker.this.messageBuffer.add(mw);
+    if (root instanceof Operator) {
+      final Operator[] ops = root.getChildren();
+      if (ops != null) {
+        for (final Operator c : ops) {
+          if (c != null) {
+            collectConsumerOperatorIDs(c, oIds);
+          } else {
+            return;
           }
         }
-      } else {
-        System.err.println("Error: Unknown message received: " + message);
       }
-
     }
-  }
-
-  public static class MessageWrapper {
-    protected int senderID;
-    // protected ExchangePairID operatorPairID;
-    protected TransportMessage message;
-  }
-
-  protected void sendMessageToMaster(TransportMessage message, IoFutureListener<?> callback) {
-    System.out.println("send back query ready");
-    IoSession s = null;
-    s = Worker.this.connectionPool.get(0, null, 3, null);
-    if (callback != null)
-      s.write(message).addListener(callback);
-    else
-      s.write(message);
   }
 
   public static void main(String[] args) throws Throwable {
@@ -305,7 +315,7 @@ public class Worker {
     }
 
     File confDir = null;
-    if (args.length >= 2)
+    if (args.length >= 2) {
       if (args[0].equals("--conf")) {
         // dataDir = args[3];
         confDir = new File(args[1]);
@@ -315,10 +325,11 @@ public class Worker {
         System.out.println("Invalid arguments.\n" + usage);
         ParallelUtility.shutdownVM();
       }
+    }
 
-    Configuration conf = new Configuration(confDir);
+    final Configuration conf = new Configuration(confDir);
     // Instantiate a new worker
-    Worker w = new Worker(conf);
+    final Worker w = new Worker(conf);
     // int port = w.port;
 
     // Prepare to receive messages over the network
@@ -337,23 +348,9 @@ public class Worker {
 
   }
 
-  /**
-   * Initiallize
-   * */
-  public void init() throws IOException {
-    acceptor.setHandler(minaHandler);
-  }
+  public final File dataDir;
 
-  public void start() throws IOException {
-    acceptor.bind(conf.getWorkers().get(myID).getAddress());
-    queryExecutor.start();
-    messageProcessor.start();
-    // Periodically detect if the server (i.e., coordinator)
-    // is still running. IF the server goes down, the
-    // worker will stop itself
-    // new WorkerLivenessController().start();
-
-  }
+  public final File tmpDir;
 
   /**
    * The ID of this worker
@@ -391,14 +388,8 @@ public class Worker {
    * */
   private volatile boolean toShutdown = false;
 
-  /**
-   * Return true if the worker is now executing a query.
-   * */
-  public boolean isRunning() {
-    return this.queryPlan != null;
-  }
-
   public final QueryExecutor queryExecutor;
+
   public final MessageProcessor messageProcessor;
 
   /**
@@ -412,11 +403,11 @@ public class Worker {
    * */
   protected final HashMap<ExchangePairID, LinkedBlockingQueue<ExchangeTupleBatch>> dataBuffer;
   protected final ConcurrentHashMap<ExchangePairID, Schema> exchangeSchema;
+
   protected final LinkedBlockingQueue<MessageWrapper> messageBuffer;
 
   protected final Configuration conf;
-
-  public Worker(Configuration conf) {
+  public Worker(final Configuration conf) {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.OFF);
     this.conf = conf;
     this.myID = Integer.parseInt(conf.get("worker.identifier"));
@@ -441,13 +432,13 @@ public class Worker {
     messageProcessor.setDaemon(false);
     minaHandler = new WorkerHandler();
 
-    Map<Integer, SocketInfo> workers = conf.getWorkers();
-    Map<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
+    final Map<Integer, SocketInfo> workers = conf.getWorkers();
+    final Map<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
     computingUnits.putAll(workers);
     computingUnits.put(0, conf.getServer());
 
-    Map<Integer, IoHandler> handlers = new HashMap<Integer, IoHandler>(workers.size() + 1);
-    for (Integer workerID : workers.keySet()) {
+    final Map<Integer, IoHandler> handlers = new HashMap<Integer, IoHandler>(workers.size() + 1);
+    for (final Integer workerID : workers.keySet()) {
       handlers.put(workerID, minaHandler);
     }
 
@@ -455,71 +446,6 @@ public class Worker {
 
     this.connectionPool = new ConnectionPool(myID, computingUnits, handlers);
   }
-
-  /**
-   * localize the received query plan. Some information that are required to get the query plan executed need to be
-   * replaced by local versions. For example, the table in the SeqScan operator need to be replaced by the local table.
-   * Note that Producers and Consumers also needs local information.
-   * */
-  public void localizeQueryPlan(Operator queryPlan) {
-    if (queryPlan == null)
-      return;
-
-    if (queryPlan instanceof SQLiteQueryScan) {
-      SQLiteQueryScan ss = ((SQLiteQueryScan) queryPlan);
-      ss.setDataDir(dataDir.getAbsolutePath());
-    } else if (queryPlan instanceof SQLiteSQLProcessor) {
-      SQLiteSQLProcessor ss = ((SQLiteSQLProcessor) queryPlan);
-      ss.setDataDir(dataDir.getAbsolutePath());
-    } else if (queryPlan instanceof Producer) {
-      ((Producer) queryPlan).setThisWorker(Worker.this);
-    } else if (queryPlan instanceof Consumer) {
-      Consumer c = (Consumer) queryPlan;
-
-      LinkedBlockingQueue<ExchangeTupleBatch> buf = null;
-      // synchronized (Worker.this) {
-      buf = Worker.this.dataBuffer.get(((Consumer) queryPlan).getOperatorID());
-      // }
-      c.setInputBuffer(buf);
-      this.exchangeSchema.put(c.getOperatorID(), c.getSchema());
-
-    } else if (queryPlan instanceof BlockingDataReceiver) {
-      BlockingDataReceiver bdr = (BlockingDataReceiver) queryPlan;
-      _TupleBatch outputBuffer = bdr.getOutputBuffer();
-      if (outputBuffer instanceof SQLiteTupleBatch) {
-        ((SQLiteTupleBatch) outputBuffer).reset(dataDir.getAbsolutePath());
-      }
-    }
-
-    Operator[] children = null;
-    if (queryPlan instanceof Operator)
-      children = queryPlan.getChildren();
-
-    if (children != null)
-      for (Operator child : children)
-        if (child != null)
-          localizeQueryPlan(child);
-  }
-
-  /**
-   * Find out all the ParallelOperatorIDs of all consuming operators: ShuffleConsumer, CollectConsumer, and
-   * BloomFilterConsumer running at this worker. The inBuffer needs the IDs to distribute the ExchangeMessages received.
-   * */
-  public static void collectConsumerOperatorIDs(Operator root, ArrayList<ExchangePairID> oIds) {
-    if (root instanceof Consumer)
-      oIds.add(((Consumer) root).getOperatorID());
-    if (root instanceof Operator) {
-      Operator[] ops = root.getChildren();
-      if (ops != null)
-        for (Operator c : ops) {
-          if (c != null)
-            collectConsumerOperatorIDs(c, oIds);
-          else
-            return;
-        }
-    }
-  }
-
   /**
    * execute the current query, note that this method is invoked by the Mina IOHandler thread. Typically, IOHandlers
    * should focus on accepting/routing IO requests, rather than do heavily loaded work.
@@ -532,53 +458,6 @@ public class Worker {
   }
 
   /**
-   * This method should be called whenever the system is going to shutdown
-   * */
-  public void shutdown() {
-    System.out.println("Shutdown requested. Please wait when cleaning up...");
-    ParallelUtility.unbind(acceptor);
-    this.toShutdown = true;
-  }
-
-  /**
-   * this method should be called when a query is received from the server.
-   * 
-   * It does the initialization and preparation for the execution of the query.
-   * */
-  public void receiveQuery(Operator query) {
-    System.out.println("Query received");
-    if (Worker.this.queryPlan != null) {
-      System.err.println("Error: Worker is still processing. New query refused");
-      return;
-    }
-
-    ArrayList<ExchangePairID> ids = new ArrayList<ExchangePairID>();
-    collectConsumerOperatorIDs(query, ids);
-    Worker.this.dataBuffer.clear();
-    Worker.this.exchangeSchema.clear();
-    for (ExchangePairID id : ids) {
-      Worker.this.dataBuffer.put(id, new LinkedBlockingQueue<ExchangeTupleBatch>());
-    }
-    Worker.this.localizeQueryPlan(query);
-    Worker.this.queryPlan = query;
-  }
-
-  /**
-   * This method should be called when a data item is received
-   * */
-  public void receiveData(ExchangeMessage data) {
-    if (data instanceof _TupleBatch)
-      System.out.println("TupleBag received from " + data.getWorkerID() + " to Operator: " + data.getOperatorID());
-    // else if (data instanceof BloomFilterBitSet)
-    // System.out.println("BitSet received from " + data.getWorkerID() + " to Operator: "
-    // + data.getOperatorID());
-    LinkedBlockingQueue<ExchangeTupleBatch> q = null;
-    q = Worker.this.dataBuffer.get(data.getOperatorID());
-    if (data instanceof ExchangeTupleBatch)
-      q.offer((ExchangeTupleBatch) data);
-  }
-
-  /**
    * This method should be called when a query is finished
    * */
   public void finishQuery() {
@@ -587,6 +466,141 @@ public class Worker {
       this.queryPlan = null;
     }
     System.out.println("My part of the query finished");
+  }
+
+  /**
+   * Initiallize
+   * */
+  public void init() throws IOException {
+    acceptor.setHandler(minaHandler);
+  }
+
+  /**
+   * Return true if the worker is now executing a query.
+   * */
+  public boolean isRunning() {
+    return this.queryPlan != null;
+  }
+
+  /**
+   * localize the received query plan. Some information that are required to get the query plan executed need to be
+   * replaced by local versions. For example, the table in the SeqScan operator need to be replaced by the local table.
+   * Note that Producers and Consumers also needs local information.
+   * */
+  public void localizeQueryPlan(final Operator queryPlan) {
+    if (queryPlan == null) {
+      return;
+    }
+
+    if (queryPlan instanceof SQLiteQueryScan) {
+      final SQLiteQueryScan ss = ((SQLiteQueryScan) queryPlan);
+      ss.setDataDir(dataDir.getAbsolutePath());
+    } else if (queryPlan instanceof SQLiteSQLProcessor) {
+      final SQLiteSQLProcessor ss = ((SQLiteSQLProcessor) queryPlan);
+      ss.setDataDir(dataDir.getAbsolutePath());
+    } else if (queryPlan instanceof Producer) {
+      ((Producer) queryPlan).setThisWorker(Worker.this);
+    } else if (queryPlan instanceof Consumer) {
+      final Consumer c = (Consumer) queryPlan;
+
+      LinkedBlockingQueue<ExchangeTupleBatch> buf = null;
+      // synchronized (Worker.this) {
+      buf = Worker.this.dataBuffer.get(((Consumer) queryPlan).getOperatorID());
+      // }
+      c.setInputBuffer(buf);
+      this.exchangeSchema.put(c.getOperatorID(), c.getSchema());
+
+    } else if (queryPlan instanceof BlockingDataReceiver) {
+      final BlockingDataReceiver bdr = (BlockingDataReceiver) queryPlan;
+      final _TupleBatch outputBuffer = bdr.getOutputBuffer();
+      if (outputBuffer instanceof SQLiteTupleBatch) {
+        ((SQLiteTupleBatch) outputBuffer).reset(dataDir.getAbsolutePath());
+      }
+    }
+
+    Operator[] children = null;
+    if (queryPlan instanceof Operator) {
+      children = queryPlan.getChildren();
+    }
+
+    if (children != null) {
+      for (final Operator child : children) {
+        if (child != null) {
+          localizeQueryPlan(child);
+        }
+      }
+    }
+  }
+
+  /**
+   * This method should be called when a data item is received
+   * */
+  public void receiveData(final ExchangeMessage data) {
+    if (data instanceof _TupleBatch) {
+      System.out.println("TupleBag received from " + data.getWorkerID() + " to Operator: " + data.getOperatorID());
+    }
+    // else if (data instanceof BloomFilterBitSet)
+    // System.out.println("BitSet received from " + data.getWorkerID() + " to Operator: "
+    // + data.getOperatorID());
+    LinkedBlockingQueue<ExchangeTupleBatch> q = null;
+    q = Worker.this.dataBuffer.get(data.getOperatorID());
+    if (data instanceof ExchangeTupleBatch) {
+      q.offer((ExchangeTupleBatch) data);
+    }
+  }
+
+  /**
+   * this method should be called when a query is received from the server.
+   * 
+   * It does the initialization and preparation for the execution of the query.
+   * */
+  public void receiveQuery(final Operator query) {
+    System.out.println("Query received");
+    if (Worker.this.queryPlan != null) {
+      System.err.println("Error: Worker is still processing. New query refused");
+      return;
+    }
+
+    final ArrayList<ExchangePairID> ids = new ArrayList<ExchangePairID>();
+    collectConsumerOperatorIDs(query, ids);
+    Worker.this.dataBuffer.clear();
+    Worker.this.exchangeSchema.clear();
+    for (final ExchangePairID id : ids) {
+      Worker.this.dataBuffer.put(id, new LinkedBlockingQueue<ExchangeTupleBatch>());
+    }
+    Worker.this.localizeQueryPlan(query);
+    Worker.this.queryPlan = query;
+  }
+
+  protected void sendMessageToMaster(final TransportMessage message, final IoFutureListener<?> callback) {
+    System.out.println("send back query ready");
+    IoSession s = null;
+    s = Worker.this.connectionPool.get(0, null, 3, null);
+    if (callback != null) {
+      s.write(message).addListener(callback);
+    } else {
+      s.write(message);
+    }
+  }
+
+  /**
+   * This method should be called whenever the system is going to shutdown
+   * */
+  public void shutdown() {
+    System.out.println("Shutdown requested. Please wait when cleaning up...");
+    ParallelUtility.unbind(acceptor);
+    this.toShutdown = true;
+  }
+
+  public void start() throws IOException {
+    acceptor.bind(conf.getWorkers().get(myID).getAddress());
+    queryExecutor.start();
+    messageProcessor.start();
+    // Periodically detect if the server (i.e., coordinator)
+    // is still running. IF the server goes down, the
+    // worker will stop itself
+    // new WorkerLivenessController().start();
+
   }
 
 }

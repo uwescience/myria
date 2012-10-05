@@ -9,36 +9,39 @@ import java.net.InetSocketAddress;
 public class SocketInfo implements Serializable {
 
   private static final long serialVersionUID = 1L;
-  private String host;
-  private int port;
+  private final String host;
+  private final int port;
   private transient InetSocketAddress address;
   private transient String id;
 
-  public SocketInfo(String host, int port) {
+  public SocketInfo(final String host, final int port) {
     this.host = host;
     this.port = port;
+  }
+
+  public InetSocketAddress getAddress() {
+    if (address == null) {
+      address = new InetSocketAddress(host, port);
+    }
+    return address;
   }
 
   public String getHost() {
     return host;
   }
 
+  public String getId() {
+    if (id == null) {
+      id = host + ":" + port;
+    }
+    return id;
+  }
+
   public int getPort() {
     return port;
   }
 
-  public String getId() {
-    if (id == null)
-      id = host + ":" + port;
-    return id;
-  }
-
-  public InetSocketAddress getAddress() {
-    if (address == null)
-      address = new InetSocketAddress(host, port);
-    return address;
-  }
-
+  @Override
   public String toString() {
     return address.toString();
   }
