@@ -37,9 +37,8 @@ public class JdbcAccessMethodTest {
     final Schema schema = new Schema(types, columnNames);
 
     /* Build up the QueryScan parameters and open the scan */
-    final String connectionString =
-        "jdbc:" + dbms + "://" + host + ":" + port + "/" + databaseName + "?user=" + user + "&password=" + password;
-    final JdbcQueryScan scan = new JdbcQueryScan(jdbcDriverName, connectionString, query, schema, "", "");
+    final String connectionString = "jdbc:" + dbms + "://" + host + ":" + port + "/" + databaseName;
+    final JdbcQueryScan scan = new JdbcQueryScan(jdbcDriverName, connectionString, query, schema, user, password);
 
     scan.open();
 
