@@ -9,7 +9,7 @@ import com.almworks.sqlite4java.SQLiteStatement;
 
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 
-//import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
+// import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
 
 /**
  * A column of a batch of tuples.
@@ -48,14 +48,6 @@ public interface Column {
   void getIntoSQLite(int row, SQLiteStatement statement, int sqliteIndex) throws SQLiteException;
 
   /**
-   * Inserts the specified element at end of this column.
-   * 
-   * @param value element to be inserted.
-   * @return this column.
-   */
-  Column putObject(Object value);
-
-  /**
    * Extracts the appropriate value from a JDBC ResultSet object and appends it to this column.
    * 
    * @param resultSet contains the results
@@ -73,6 +65,14 @@ public interface Column {
    * @throws SQLiteException if there are SQLite errors.
    */
   void putFromSQLite(SQLiteStatement statement, int index) throws SQLiteException;
+
+  /**
+   * Inserts the specified element at end of this column.
+   * 
+   * @param value element to be inserted.
+   * @return this column.
+   */
+  Column putObject(Object value);
 
   /**
    * Serializes this column as a protobuf message into the specified output stream.

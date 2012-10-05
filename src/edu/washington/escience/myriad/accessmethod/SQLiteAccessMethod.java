@@ -57,7 +57,7 @@ public final class SQLiteAccessMethod {
       /* Set up and execute the query */
       statement = sqliteConnection.prepare(insertString);
 
-      for (int row : tupleBatch.validTupleIndices()) {
+      for (final int row : tupleBatch.validTupleIndices()) {
         for (int column = 0; column < tupleBatch.numColumns(); ++column) {
           tupleBatch.getColumn(column).getIntoSQLite(row, statement, column + 1);
         }
@@ -67,14 +67,16 @@ public final class SQLiteAccessMethod {
       /* COMMIT TRANSACTION */
       sqliteConnection.exec("COMMIT TRANSACTION");
 
-    } catch (SQLiteException e) {
+    } catch (final SQLiteException e) {
       System.err.println(e.getMessage());
       throw new RuntimeException(e.getMessage());
     } finally {
-      if (statement != null && !statement.isDisposed())
+      if (statement != null && !statement.isDisposed()) {
         statement.dispose();
-      if (sqliteConnection != null && !sqliteConnection.isDisposed())
+      }
+      if (sqliteConnection != null && !sqliteConnection.isDisposed()) {
         sqliteConnection.dispose();
+      }
     }
   }
 
@@ -86,20 +88,20 @@ public final class SQLiteAccessMethod {
    * @return an Iterator<TupleBatch> containing the results of the query
    */
   public static synchronized Iterator<TupleBatch> tupleBatchIteratorFromQuery(final String pathToSQLiteDb,
-      final String queryString, Schema outputSchema) {
+      final String queryString, final Schema outputSchema) {
     try {
       /* Connect to the database */
-      SQLiteConnection sqliteConnection = new SQLiteConnection(new File(pathToSQLiteDb));
+      final SQLiteConnection sqliteConnection = new SQLiteConnection(new File(pathToSQLiteDb));
       sqliteConnection.open(false);
 
       /* Set up and execute the query */
-      SQLiteStatement statement = sqliteConnection.prepare(queryString);
+      final SQLiteStatement statement = sqliteConnection.prepare(queryString);
 
       /* Step the statement once so we can figure out the Schema */
       statement.step();
 
       return new SQLiteTupleBatchIterator(statement, outputSchema, sqliteConnection);
-    } catch (SQLiteException e) {
+    } catch (final SQLiteException e) {
       System.err.println(e.getMessage());
       throw new RuntimeException(e.getMessage());
     }
@@ -128,6 +130,18 @@ class SQLiteTupleBatchIterator implements Iterator<TupleBatch> {
   /**
    * Wraps a SQLiteStatement result set in an Iterator<TupleBatch>.
    * 
+   * @param statement the SQLiteStatement containing the results.
+   * @param schema the Schema describing the format of the TupleBatch containing these results.
+   */
+  SQLiteTupleBatchIterator(final SQLiteStatement statement, final Schema schema, final SQLiteConnection connection) {
+    this.statement = statement;
+    this.connection = connection;
+    this.schema = schema;
+  }
+
+  /**
+   * Wraps a SQLiteStatement result set in an Iterator<TupleBatch>.
+   * 
    * @param statement the SQLiteStatement containing the results. If it has not yet stepped, this constructor will step
    *          it. Then the Schema of the generated TupleBatchs will be extracted from the statement.
    */
@@ -140,26 +154,14 @@ class SQLiteTupleBatchIterator implements Iterator<TupleBatch> {
       }
       // this.schema = Schema.fromSQLiteStatement(statement);
       this.schema = outputSchema;
-    } catch (SQLiteException e) {
+    } catch (final SQLiteException e) {
       throw new RuntimeException(e.getMessage());
     }
   }
 
-  /**
-   * Wraps a SQLiteStatement result set in an Iterator<TupleBatch>.
-   * 
-   * @param statement the SQLiteStatement containing the results.
-   * @param schema the Schema describing the format of the TupleBatch containing these results.
-   */
-  SQLiteTupleBatchIterator(final SQLiteStatement statement, final Schema schema, SQLiteConnection connection) {
-    this.statement = statement;
-    this.connection = connection;
-    this.schema = schema;
-  }
-
   @Override
   public boolean hasNext() {
-    boolean hasRow = statement.hasRow();
+    final boolean hasRow = statement.hasRow();
     if (!hasRow) {
       statement.dispose();
       connection.dispose();
@@ -170,8 +172,8 @@ class SQLiteTupleBatchIterator implements Iterator<TupleBatch> {
   @Override
   public TupleBatch next() {
     /* Allocate TupleBatch parameters */
-    int numFields = schema.numFields();
-    List<Column> columns = ColumnFactory.allocateColumns(schema);
+    final int numFields = schema.numFields();
+    final List<Column> columns = ColumnFactory.allocateColumns(schema);
 
     /**
      * Loop through resultSet, adding one row at a time. Stop when numTuples hits BATCH_SIZE or there are no more
@@ -185,7 +187,7 @@ class SQLiteTupleBatchIterator implements Iterator<TupleBatch> {
         }
         statement.step();
       }
-    } catch (SQLiteException e) {
+    } catch (final SQLiteException e) {
       System.err.println("Got SQLiteException:" + e + "in TupleBatchIterator.next()");
       throw new RuntimeException(e.getMessage());
     }

@@ -40,29 +40,31 @@ public abstract class Operator implements DbIterator {
    * @return return the children DbIterators of this operator. If there is only one child, return an array of only one
    *         element. For join operators, the order of the children is not important. But they should be consistent
    *         among multiple calls.
-   * */
+   */
   public abstract Operator[] getChildren();
 
   /**
    * @return The estimated cardinality of this operator. Will only be used in lab6
-   * */
+   */
   public int getEstimatedCardinality() {
     return this.estimatedCardinality;
   }
 
   /**
    * @return return the Schema of the output tuples of this operator
-   * */
+   */
   @Override
   public abstract Schema getSchema();
 
   @Override
   public boolean hasNext() throws DbException {
-    if (!this.open)
+    if (!this.open) {
       throw new IllegalStateException("Operator not yet open");
+    }
 
-    if (next == null)
+    if (next == null) {
       next = fetchNext();
+    }
     return next != null;
   }
 
@@ -70,11 +72,12 @@ public abstract class Operator implements DbIterator {
   public _TupleBatch next() throws DbException, NoSuchElementException {
     if (next == null) {
       next = fetchNext();
-      if (next == null)
+      if (next == null) {
         throw new NoSuchElementException();
+      }
     }
 
-    _TupleBatch result = next;
+    final _TupleBatch result = next;
     next = null;
     return result;
   }
@@ -90,13 +93,13 @@ public abstract class Operator implements DbIterator {
    * 
    * 
    * @param children the DbIterators which are to be set as the children(child) of this operator
-   * */
+   */
   public abstract void setChildren(Operator[] children);
 
   /**
    * @param card The estimated cardinality of this operator Will only be used in lab6
-   * */
-  protected void setEstimatedCardinality(int card) {
+   */
+  protected void setEstimatedCardinality(final int card) {
     this.estimatedCardinality = card;
   }
 

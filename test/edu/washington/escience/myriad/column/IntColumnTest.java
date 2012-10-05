@@ -10,10 +10,10 @@ public class IntColumnTest {
 
   @Test
   public void testProto() {
-    IntColumn original = new IntColumn();
+    final IntColumn original = new IntColumn();
     original.put(1).put(2).put(5).put(11);
-    ColumnMessage serialized = original.serializeToProto();
-    IntColumn deserialized = new IntColumn(serialized);
+    final ColumnMessage serialized = original.serializeToProto();
+    final IntColumn deserialized = new IntColumn(serialized);
     assertTrue(original.toString().equals(deserialized.toString()));
   }
 

@@ -4,11 +4,11 @@ package edu.washington.escience.myriad.parallel;
 public class DbException extends Exception {
   private static final long serialVersionUID = 1L;
 
-  public DbException(String s) {
+  public DbException(final String s) {
     super(s);
   }
 
-  public DbException(Throwable e) {
+  public DbException(final Throwable e) {
     super(e);
   }
 }

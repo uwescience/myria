@@ -44,7 +44,7 @@ public enum Type implements Serializable {
 
     @Override
     public boolean filter(final Predicate.Op op, final Column intColumn, final int tupleIndex, final Object operand) {
-      int v = ((IntColumn) intColumn).getInt(tupleIndex);
+      final int v = ((IntColumn) intColumn).getInt(tupleIndex);
       return this.compare(op, v, (Integer) operand);
     }
 
@@ -83,7 +83,7 @@ public enum Type implements Serializable {
 
     @Override
     public boolean filter(final Predicate.Op op, final Column floatColumn, final int tupleIndex, final Object operand) {
-      float v = ((FloatColumn) floatColumn).getFloat(tupleIndex);
+      final float v = ((FloatColumn) floatColumn).getFloat(tupleIndex);
       return this.compare(op, v, (Float) operand);
     }
 
@@ -122,7 +122,7 @@ public enum Type implements Serializable {
 
     @Override
     public boolean filter(final Predicate.Op op, final Column doubleColumn, final int tupleIndex, final Object operand) {
-      double v = ((DoubleColumn) doubleColumn).getDouble(tupleIndex);
+      final double v = ((DoubleColumn) doubleColumn).getDouble(tupleIndex);
       return this.compare(op, v, (Double) operand);
     }
 
@@ -154,7 +154,7 @@ public enum Type implements Serializable {
 
     @Override
     public boolean filter(final Predicate.Op op, final Column booleanColumn, final int tupleIndex, final Object operand) {
-      boolean v = ((BooleanColumn) booleanColumn).getBoolean(tupleIndex);
+      final boolean v = ((BooleanColumn) booleanColumn).getBoolean(tupleIndex);
       return this.compare(op, v, (Boolean) operand);
     }
 
@@ -166,7 +166,7 @@ public enum Type implements Serializable {
   STRING_TYPE() {
     public boolean compare(final Predicate.Op op, final String valInTuple, final String operand) {
 
-      int cmpVal = valInTuple.compareTo(operand);
+      final int cmpVal = valInTuple.compareTo(operand);
 
       switch (op) {
         case EQUALS:
@@ -196,7 +196,7 @@ public enum Type implements Serializable {
 
     @Override
     public boolean filter(final Predicate.Op op, final Column stringColumn, final int tupleIndex, final Object operand) {
-      String string = ((StringColumn) stringColumn).getString(tupleIndex);
+      final String string = ((StringColumn) stringColumn).getString(tupleIndex);
       return this.compare(op, string, (String) operand);
     }
 
@@ -234,7 +234,7 @@ public enum Type implements Serializable {
 
     @Override
     public boolean filter(final Predicate.Op op, final Column longColumn, final int tupleIndex, final Object operand) {
-      long v = ((LongColumn) longColumn).getLong(tupleIndex);
+      final long v = ((LongColumn) longColumn).getLong(tupleIndex);
       return this.compare(op, v, (Long) operand);
     }
 

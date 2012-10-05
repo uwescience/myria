@@ -126,8 +126,8 @@ public class TupleBatch extends TupleBatchAdaptor {
     Objects.requireNonNull(op);
     Objects.requireNonNull(operand);
     if (numTuples > 0) {
-      Column columnValues = columns.get(column);
-      Type columnType = schema.getFieldType(column);
+      final Column columnValues = columns.get(column);
+      final Type columnType = schema.getFieldType(column);
       int nextSet = -1;
       while ((nextSet = validTuples.nextSetBit(nextSet + 1)) >= 0) {
         if (!columnType.filter(op, columnValues, nextSet, operand)) {
@@ -153,7 +153,7 @@ public class TupleBatch extends TupleBatchAdaptor {
   public final TupleBatch filter(final int column, final Predicate.Op op, final Object operand) {
     Objects.requireNonNull(op);
     Objects.requireNonNull(operand);
-    TupleBatch ret = new TupleBatch(this);
+    final TupleBatch ret = new TupleBatch(this);
     return ret.applyFilter(column, op, operand);
   }
 
@@ -222,7 +222,8 @@ public class TupleBatch extends TupleBatchAdaptor {
    * @param row row in which the element is stored.
    * @return the element at the specified position in this TupleBatch.
    */
-  public final long getLong(final int column, final int row) {    
+  @Override
+  public final long getLong(final int column, final int row) {
     return ((LongColumn) columns.get(column)).getLong(row);
   }
 
@@ -243,8 +244,18 @@ public class TupleBatch extends TupleBatchAdaptor {
    * @return the element at the specified position in this TupleBatch.
    */
   @Override
-  public final String getString(final int column, final int row) {    
+  public final String getString(final int column, final int row) {
     return ((StringColumn) columns.get(column)).getString(row);
+  }
+
+  @Override
+  public int hashCode(final int row) {
+    // return 0;
+    final HashCodeBuilder hb = new HashCodeBuilder(MAGIC_HASHCODE1, MAGIC_HASHCODE2);
+    for (int i = 0; i < columns.size(); ++i) {
+      hb.append(columns.get(i).get(row));
+    }
+    return hb.toHashCode();
   }
 
   /**
@@ -261,20 +272,11 @@ public class TupleBatch extends TupleBatchAdaptor {
      * 
      * You pick a hard-coded, randomly chosen, non-zero, odd number ideally different for each class.
      */
-    HashCodeBuilder hb = new HashCodeBuilder(MAGIC_HASHCODE1, MAGIC_HASHCODE2);
-    for (int i : hashColumns) {
+    final HashCodeBuilder hb = new HashCodeBuilder(MAGIC_HASHCODE1, MAGIC_HASHCODE2);
+    for (final int i : hashColumns) {
       hb.append(columns.get(i).get(row));
     }
     return hb.toHashCode();
-  }
-  
-  @Override
-  public int hashCode(int row) {
-    //return 0;    
-    HashCodeBuilder hb = new HashCodeBuilder(MAGIC_HASHCODE1, MAGIC_HASHCODE2);
-    for (int i = 0; i < columns.size(); ++i)     
-      hb.append(columns.get(i).get(row));    
-    return hb.toHashCode();    
   }
 
   // public final TupleBatch[] partition(final PartitionFunction<?, ?> p) {
@@ -309,7 +311,7 @@ public class TupleBatch extends TupleBatchAdaptor {
   final void partitionInto(final TupleBatchBuffer[] destinations, final int[] hashColumns) {
     Objects.requireNonNull(destinations);
     Objects.requireNonNull(hashColumns);
-    for (int i : validTupleIndices()) {
+    for (final int i : validTupleIndices()) {
       int dest = hashCode(i, hashColumns) % destinations.length;
       /* hashCode can be negative, so wrap positive if necessary */
       if (dest < destinations.length) {
@@ -330,11 +332,11 @@ public class TupleBatch extends TupleBatchAdaptor {
   @Override
   public final TupleBatch project(final int[] remainingColumns) {
     Objects.requireNonNull(remainingColumns);
-    List<Column> newColumns = new ArrayList<Column>();
-    Type[] newTypes = new Type[remainingColumns.length];
-    String[] newNames = new String[remainingColumns.length];
+    final List<Column> newColumns = new ArrayList<Column>();
+    final Type[] newTypes = new Type[remainingColumns.length];
+    final String[] newNames = new String[remainingColumns.length];
     int count = 0;
-    for (int i : remainingColumns) {
+    for (final int i : remainingColumns) {
       newColumns.add(columns.get(i));
       newTypes[count] = schema.getFieldType(remainingColumns[count]);
       newNames[count] = schema.getFieldName(remainingColumns[count]);
@@ -358,9 +360,9 @@ public class TupleBatch extends TupleBatchAdaptor {
 
   @Override
   public final String toString() {
-    Type[] columnTypes = schema.getTypes();
+    final Type[] columnTypes = schema.getTypes();
 
-    StringBuilder sb = new StringBuilder();
+    final StringBuilder sb = new StringBuilder();
     for (int i = validTuples.nextSetBit(0); i >= 0; i = validTuples.nextSetBit(i + 1)) {
       sb.append("|\t");
       for (int j = 0; j < schema.numFields(); j++) {
@@ -380,7 +382,7 @@ public class TupleBatch extends TupleBatchAdaptor {
    * @return an array containing the indices of all valid rows.
    */
   public final int[] validTupleIndices() {
-    int[] validT = new int[validTuples.cardinality()];
+    final int[] validT = new int[validTuples.cardinality()];
     int j = 0;
     for (int i = validTuples.nextSetBit(0); i >= 0; i = validTuples.nextSetBit(i + 1)) {
       // operate on index i here

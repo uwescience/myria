@@ -22,7 +22,7 @@ public class Filter extends Operator {
    * @param p The predicate to filter tuples with
    * @param child The child operator
    */
-  public Filter(Predicate.Op op, int fieldIdx, Object operand, Operator child) {
+  public Filter(final Predicate.Op op, final int fieldIdx, final Object operand, final Operator child) {
     this.op = op;
     this.fieldIdx = fieldIdx;
     this.operand = operand;
@@ -72,7 +72,7 @@ public class Filter extends Operator {
   // }
 
   @Override
-  public void setChildren(Operator[] children) {
+  public void setChildren(final Operator[] children) {
     this.child = children[0];
   }
 

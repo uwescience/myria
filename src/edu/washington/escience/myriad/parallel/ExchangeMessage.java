@@ -7,7 +7,7 @@ import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 /**
  * All the messages that will change between Exchange Operators should be a sub class of ExchangeMessage.
  * 
- * */
+ */
 public interface ExchangeMessage extends Serializable {
 
   // private static final long serialVersionUID = 1L;
@@ -22,14 +22,14 @@ public interface ExchangeMessage extends Serializable {
 
   /**
    * Get the ParallelOperatorID, to which this message is targeted
-   * */
+   */
   public ExchangePairID getOperatorID();// {
   // return this.operatorID;
   // }
 
   /**
    * Get the worker id from which the message was sent
-   * */
+   */
   public int getWorkerID();// {
   // return this.fromWorkerID;
   // }

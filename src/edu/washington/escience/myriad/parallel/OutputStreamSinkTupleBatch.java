@@ -7,8 +7,8 @@ import java.util.List;
 import java.util.Objects;
 
 import edu.washington.escience.myriad.Predicate;
-import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.Predicate.Op;
+import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.table._TupleBatch;
@@ -19,7 +19,7 @@ public class OutputStreamSinkTupleBatch implements _TupleBatch {
   private final Schema schema;
   private int numInputTuples;
 
-  public OutputStreamSinkTupleBatch(Schema schema, OutputStream backend) {
+  public OutputStreamSinkTupleBatch(final Schema schema, final OutputStream backend) {
     Objects.requireNonNull(schema);
     Objects.requireNonNull(backend);
     this.backendStream = backend;
@@ -28,13 +28,86 @@ public class OutputStreamSinkTupleBatch implements _TupleBatch {
   }
 
   @Override
-  public Schema outputSchema() {
-    return this.schema;
+  public _TupleBatch append(final _TupleBatch another) {
+    try {
+      this.backendStream.write(new ImmutableInMemoryTupleBatch(this.schema, another.outputRawData(), another
+          .numOutputTuples()).toString().getBytes());
+      this.backendStream.flush();
+      this.numInputTuples += another.numOutputTuples();
+    } catch (final IOException e) {
+      e.printStackTrace();
+    }
+    return this;
+  }
+
+  @Override
+  public _TupleBatch distinct() {
+    return this;
+  }
+
+  @Override
+  public _TupleBatch except(final _TupleBatch another) {
+    return this;
+  }
+
+  @Override
+  public _TupleBatch filter(final int fieldIdx, final Op op, final Object operand) {
+    return this;
+  }
+
+  @Override
+  public boolean getBoolean(final int column, final int row) {
+    throw new ArrayIndexOutOfBoundsException();
+  }
+
+  @Override
+  public double getDouble(final int column, final int row) {
+    throw new ArrayIndexOutOfBoundsException();
+  }
+
+  @Override
+  public float getFloat(final int column, final int row) {
+    throw new ArrayIndexOutOfBoundsException();
+  }
+
+  @Override
+  public int getInt(final int column, final int row) {
+    throw new ArrayIndexOutOfBoundsException();
+  }
+
+  @Override
+  public long getLong(final int column, final int row) {
+    throw new ArrayIndexOutOfBoundsException();
+  }
+
+  @Override
+  public String getString(final int column, final int row) {
+    throw new ArrayIndexOutOfBoundsException();
+  }
+
+  @Override
+  public _TupleBatch groupby() {
+    return this;
+  }
+
+  @Override
+  public int hashCode(final int rowIndx) {
+    throw new UnsupportedOperationException();
   }
 
   @Override
   public Schema inputSchema() {
     return this.schema;
+  }
+
+  @Override
+  public _TupleBatch intersect(final _TupleBatch another) {
+    return this;
+  }
+
+  @Override
+  public _TupleBatch join(final _TupleBatch other, final Predicate p, final _TupleBatch output) {
+    return this;
   }
 
   @Override
@@ -48,74 +121,6 @@ public class OutputStreamSinkTupleBatch implements _TupleBatch {
   }
 
   @Override
-  public _TupleBatch renameColumn(int inputColumnIdx, String newName) {
-    return this;
-  }
-
-  @Override
-  public _TupleBatch filter(int fieldIdx, Op op, Object operand) {
-    return this;
-  }
-
-  @Override
-  public _TupleBatch purgeFilters() {
-    return this;
-  }
-
-  @Override
-  public _TupleBatch project(int[] remainingColumns) {
-    return this;
-  }
-
-  @Override
-  public _TupleBatch purgeProjects() {
-    return this;
-  }
-
-  @Override
-  public _TupleBatch append(_TupleBatch another) {
-    try {      
-      this.backendStream.write(new ImmutableInMemoryTupleBatch(this.schema,another.outputRawData(), another.numOutputTuples()).toString().getBytes());
-      this.backendStream.flush();
-      this.numInputTuples += another.numOutputTuples();
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-    return this;
-  }
-
-  @Override
-  public _TupleBatch join(_TupleBatch other, Predicate p, _TupleBatch output) {
-    return this;
-  }
-
-  @Override
-  public _TupleBatch union(_TupleBatch another) {
-    // TODO Auto-generated method stub
-    return this;
-  }
-
-  @Override
-  public _TupleBatch intersect(_TupleBatch another) {
-    return this;
-  }
-
-  @Override
-  public _TupleBatch except(_TupleBatch another) {
-    return this;
-  }
-
-  @Override
-  public _TupleBatch distinct() {
-    return this;
-  }
-
-  @Override
-  public _TupleBatch groupby() {
-    return this;
-  }
-
-  @Override
   public _TupleBatch orderby() {
     return this;
   }
@@ -126,53 +131,48 @@ public class OutputStreamSinkTupleBatch implements _TupleBatch {
   }
 
   @Override
-  public TupleBatchBuffer[] partition(PartitionFunction<?, ?> p, TupleBatchBuffer[] buffers) {
+  public Schema outputSchema() {
+    return this.schema;
+  }
+
+  @Override
+  public TupleBatchBuffer[] partition(final PartitionFunction<?, ?> p, final TupleBatchBuffer[] buffers) {
     return null;
   }
 
   @Override
-  public boolean getBoolean(int column, int row) {
-    throw new ArrayIndexOutOfBoundsException();
+  public _TupleBatch project(final int[] remainingColumns) {
+    return this;
   }
 
   @Override
-  public double getDouble(int column, int row) {
-    throw new ArrayIndexOutOfBoundsException();
+  public _TupleBatch purgeFilters() {
+    return this;
   }
 
   @Override
-  public float getFloat(int column, int row) {
-    throw new ArrayIndexOutOfBoundsException();
+  public _TupleBatch purgeProjects() {
+    return this;
   }
 
   @Override
-  public int getInt(int column, int row) {
-    throw new ArrayIndexOutOfBoundsException();
-  }
-  
-  @Override
-  public long getLong(int column, int row) {
-    throw new ArrayIndexOutOfBoundsException();
-  }  
-
-  @Override
-  public String getString(int column, int row) {
-    throw new ArrayIndexOutOfBoundsException();
-  }
-
-  public String toString()
-  {
-    return this.numInputTuples+" rows";
-  }
-
-  @Override
-  public _TupleBatch remove(int innerIdx) {
+  public _TupleBatch remove(final int innerIdx) {
     throw new UnsupportedOperationException();
   }
-  
+
   @Override
-  public int hashCode(int rowIndx)
-  {     
-    throw new UnsupportedOperationException();    
-  }      
+  public _TupleBatch renameColumn(final int inputColumnIdx, final String newName) {
+    return this;
+  }
+
+  @Override
+  public String toString() {
+    return this.numInputTuples + " rows";
+  }
+
+  @Override
+  public _TupleBatch union(final _TupleBatch another) {
+    // TODO Auto-generated method stub
+    return this;
+  }
 }

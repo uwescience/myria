@@ -12,12 +12,12 @@ import com.google.common.base.Preconditions;
 import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myriad.TupleBatch;
-//import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
-//import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage.ColumnMessageType;
-//import edu.washington.escience.myriad.proto.TransportProto.FloatColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType;
 import edu.washington.escience.myriad.proto.DataProto.FloatColumnMessage;
+// import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
+// import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage.ColumnMessageType;
+// import edu.washington.escience.myriad.proto.TransportProto.FloatColumnMessage;
 
 /**
  * A column of Float values.
@@ -81,11 +81,6 @@ public final class FloatColumn implements Column {
     statement.bind(sqliteIndex, getFloat(row));
   }
 
-  @Override
-  public Column putObject(final Object value) {
-    return put((Float) value);
-  }
-
   /**
    * Inserts the specified element at end of this column.
    * 
@@ -109,9 +104,14 @@ public final class FloatColumn implements Column {
   }
 
   @Override
+  public Column putObject(final Object value) {
+    return put((Float) value);
+  }
+
+  @Override
   public ColumnMessage serializeToProto() {
     /* Note that we do *not* build the inner class. We pass its builder instead. */
-    FloatColumnMessage.Builder inner = FloatColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
+    final FloatColumnMessage.Builder inner = FloatColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
     return ColumnMessage.newBuilder().setType(ColumnMessageType.FLOAT).setNumTuples(size()).setFloatColumn(inner)
         .build();
   }
@@ -123,7 +123,7 @@ public final class FloatColumn implements Column {
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder();
+    final StringBuilder sb = new StringBuilder();
     sb.append(size()).append(" elements: [");
     for (int i = 0; i < size(); ++i) {
       if (i > 0) {
