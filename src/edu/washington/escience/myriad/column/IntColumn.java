@@ -12,9 +12,12 @@ import com.google.common.base.Preconditions;
 import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myriad.TupleBatch;
-import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
-import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage.ColumnMessageType;
-import edu.washington.escience.myriad.proto.TransportProto.IntColumnMessage;
+//import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
+//import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage.ColumnMessageType;
+//import edu.washington.escience.myriad.proto.TransportProto.IntColumnMessage;
+import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
+import edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType;
+import edu.washington.escience.myriad.proto.DataProto.IntColumnMessage;
 
 /**
  * A column of Integer values.
@@ -68,8 +71,7 @@ public final class IntColumn implements Column {
   }
 
   @Override
-  public void getIntoJdbc(final int row, final PreparedStatement statement, final int jdbcIndex)
-      throws SQLException {
+  public void getIntoJdbc(final int row, final PreparedStatement statement, final int jdbcIndex) throws SQLException {
     statement.setInt(jdbcIndex, getInt(row));
   }
 
@@ -90,8 +92,7 @@ public final class IntColumn implements Column {
   }
 
   @Override
-  public void putFromSQLite(final SQLiteStatement statement, final int index)
-      throws SQLiteException {
+  public void putFromSQLite(final SQLiteStatement statement, final int index) throws SQLiteException {
     throw new UnsupportedOperationException("SQLite does not support Int columns.");
   }
 
@@ -109,10 +110,8 @@ public final class IntColumn implements Column {
   @Override
   public ColumnMessage serializeToProto() {
     /* Note that we do *not* build the inner class. We pass its builder instead. */
-    IntColumnMessage.Builder inner =
-        IntColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
-    return ColumnMessage.newBuilder().setType(ColumnMessageType.INT).setNumTuples(size())
-        .setIntColumn(inner).build();
+    IntColumnMessage.Builder inner = IntColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
+    return ColumnMessage.newBuilder().setType(ColumnMessageType.INT).setNumTuples(size()).setIntColumn(inner).build();
   }
 
   @Override

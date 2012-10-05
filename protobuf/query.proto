@@ -1,0 +1,9 @@
+option java_package = "edu.washington.escience.myriad.proto";
+option java_outer_classname = "QueryProto";
+
+message Query {
+ 
+ // for now, the query is a simple java serialized object.
+ required bytes query = 1;
+ 
+}

@@ -5,8 +5,10 @@ import java.util.List;
 
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
-import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage.ColumnMessageType;
+//import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
+//import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage.ColumnMessageType;
+import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
+import edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType;
 
 /**
  * A column of a batch of tuples.
@@ -77,7 +79,7 @@ public final class ColumnFactory {
    * @param message the ColumnMessage to be deserialized.
    * @return a Column of the appropriate type and contents.
    */
-  Column columnFromColumnMessage(final ColumnMessage message) {
+  public static Column columnFromColumnMessage(final ColumnMessage message) {
     switch (message.getType().ordinal()) {
       case ColumnMessageType.BOOLEAN_VALUE:
         return new BooleanColumn(message);

@@ -2,9 +2,12 @@ package edu.washington.escience.myriad.table;
 
 import java.util.List;
 
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+
 import edu.washington.escience.myriad.Predicate;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
+import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnFactory;
 import edu.washington.escience.myriad.parallel.PartitionFunction;
@@ -21,18 +24,25 @@ public abstract class TupleBatchAdaptor implements _TupleBatch {
     if (this instanceof TupleBatch) {
       TupleBatch tupleBatch = (TupleBatch) this;
       return tupleBatch.getSchema();
-    }
-    else
-    throw new UnsupportedOperationException();
+    } else
+      throw new UnsupportedOperationException();
   }
 
   @Override
   public Schema inputSchema() {
+    if (this instanceof TupleBatch) {
+      TupleBatch tupleBatch = (TupleBatch) this;
+      return tupleBatch.getSchema();
+    } else
     throw new UnsupportedOperationException();
   }
 
   @Override
   public int numInputTuples() {
+    if (this instanceof TupleBatch) {
+      TupleBatch tupleBatch = (TupleBatch) this;
+      return tupleBatch.validTupleIndices().length; // need a public method here
+    } else
     throw new UnsupportedOperationException();
   }
 
@@ -41,9 +51,8 @@ public abstract class TupleBatchAdaptor implements _TupleBatch {
     if (this instanceof TupleBatch) {
       TupleBatch tupleBatch = (TupleBatch) this;
       return tupleBatch.validTupleIndices().length;
-    }
-    else
-    throw new UnsupportedOperationException();
+    } else
+      throw new UnsupportedOperationException();
   }
 
   @Override
@@ -122,7 +131,36 @@ public abstract class TupleBatchAdaptor implements _TupleBatch {
   }
 
   @Override
-  public _TupleBatch[] partition(PartitionFunction<?, ?> p, _TupleBatch[] buffers) {
+  public TupleBatchBuffer[] partition(PartitionFunction<?, ?> pf, TupleBatchBuffer[] buffers) {
+    // p.partition(t, td)
+    List<Column> outputData = this.outputRawData();
+    Schema s = this.outputSchema();
+    int numColumns = outputData.size();
+
+    int[] partitions = pf.partition(outputData, s);
+
+    for (int i = 0; i < partitions.length; i++) {
+      int p_of_tuple = partitions[i];
+      for (int j = 0; j < numColumns; j++) {
+        buffers[p_of_tuple].put(j, outputData.get(j).get(i));
+      }
+    }
+    return buffers;
+  }
+
+  @Override
+  public _TupleBatch remove(int innerIdx) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+  
+  @Override
+  public int hashCode(int rowIndx)
+  {
+    if (this instanceof TupleBatch) {
+      TupleBatch tupleBatch = (TupleBatch) this;
+      return tupleBatch.hashCode(rowIndx);      
+    } else
     throw new UnsupportedOperationException();
   }
 

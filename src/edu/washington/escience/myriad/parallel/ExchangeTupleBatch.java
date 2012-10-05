@@ -1,57 +1,58 @@
 package edu.washington.escience.myriad.parallel;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
-import edu.washington.escience.myriad.column.BooleanColumn;
 import edu.washington.escience.myriad.column.Column;
-import edu.washington.escience.myriad.column.DoubleColumn;
-import edu.washington.escience.myriad.column.FloatColumn;
-import edu.washington.escience.myriad.column.IntColumn;
-import edu.washington.escience.myriad.column.StringColumn;
-import edu.washington.escience.myriad.parallel.ImmutableInMemoryTupleBatch;
 import edu.washington.escience.myriad.Predicate;
 import edu.washington.escience.myriad.Predicate.Op;
 import edu.washington.escience.myriad.Schema;
-import edu.washington.escience.myriad.Type;
+import edu.washington.escience.myriad.TupleBatch;
+import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.table._TupleBatch;
-import edu.washington.escience.myriad.parallel.Exchange.ParallelOperatorID;
-import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
+import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 
-public class ExchangeTupleBatch extends ExchangeMessage implements _TupleBatch {
+public class ExchangeTupleBatch implements ExchangeMessage, _TupleBatch {
 
-  // private final ImmutableInMemoryTupleBatch dataHolder;
-  ColumnMessage[] data;
-  int numTuples;
-  Schema inputSchema;
+  private final ExchangePairID operatorID;
+  private final int fromWorkerID;
+  private final TupleBatch dataHolder;
+  
+  
+  public TupleBatch getRealData()
+  {
+    return dataHolder;
+  }
 
-  public ExchangeTupleBatch(ParallelOperatorID oID, String workerID, List<Column> columns, Schema inputSchema,
-      int numTuples) {
-    super(oID, workerID);
+  public ExchangeTupleBatch(ExchangePairID oID, int workerID, List<Column> columns, Schema inputSchema, int numTuples) {
+    this.dataHolder = new TupleBatch(inputSchema, columns, numTuples);
+    this.operatorID = oID;
+    this.fromWorkerID = workerID;
     Objects.requireNonNull(columns);
-    this.data = new ColumnMessage[columns.size()];
-    {
-      int i = 0;
-      for (Column c : columns) {
-        this.data[i] = c.serializeToProto();
-        i++;
-      }
-    }
-
-    this.numTuples = numTuples;
-    this.inputSchema = inputSchema;
-    // dataHolder = new ImmutableInMemoryTupleBatch(inputSchema, columns, numTuples);
   }
 
   // EOS
-  public ExchangeTupleBatch(ParallelOperatorID oID, String workerID) {
-    super(oID, workerID);
-    this.data = null;
+  public ExchangeTupleBatch(ExchangePairID oID, int workerID, Schema inputSchema) {
+    this.dataHolder = null;
+    this.operatorID = oID;
+    this.fromWorkerID = workerID;
+  }
+
+  /**
+   * Get the ParallelOperatorID, to which this message is targeted
+   * */
+  public ExchangePairID getOperatorID() {
+    return this.operatorID;
+  }
+
+  /**
+   * Get the worker id from which the message was sent
+   * */
+  public int getWorkerID() {
+    return this.fromWorkerID;
   }
 
   public boolean isEos() {
-    return this.data == null;
+    return this.dataHolder == null;
   }
 
   /**
@@ -62,167 +63,140 @@ public class ExchangeTupleBatch extends ExchangeMessage implements _TupleBatch {
   @Override
   public Schema outputSchema() {
     // return this.dataHolder.outputSchema();
-    return this.inputSchema;
+    return this.dataHolder.outputSchema();
   }
 
   @Override
   public Schema inputSchema() {
     // return this.dataHolder.inputSchema();
-    return this.inputSchema;
+    return this.dataHolder.inputSchema();
   }
 
   @Override
   public int numInputTuples() {
     // return this.dataHolder.numInputTuples();
-    return this.numTuples;
+    return this.dataHolder.numInputTuples();
   }
 
   @Override
   public int numOutputTuples() {
     // return this.dataHolder.numOutputTuples();
-    return this.numTuples;
+    return this.dataHolder.numOutputTuples();
   }
 
   @Override
   public _TupleBatch renameColumn(int inputColumnIdx, String newName) {
-    // return this.dataHolder.renameColumn(inputColumnIdx, newName);
-    throw new UnsupportedOperationException();
+    return this.dataHolder.renameColumn(inputColumnIdx, newName);
   }
 
   @Override
   public _TupleBatch filter(int fieldIdx, Op op, Object operand) {
-    // return this.dataHolder.filter(fieldIdx, op, operand);
-    throw new UnsupportedOperationException();
+    return this.dataHolder.filter(fieldIdx, op, operand);
   }
 
   @Override
   public _TupleBatch purgeFilters() {
-    // return this.dataHolder.purgeFilters();
-    throw new UnsupportedOperationException();
+    return this.dataHolder.purgeFilters();
   }
 
   @Override
   public _TupleBatch project(int[] remainingColumns) {
-    // return this.dataHolder.project(remainingColumns);
-    throw new UnsupportedOperationException();
+    return this.dataHolder.project(remainingColumns);
   }
 
   @Override
   public _TupleBatch purgeProjects() {
-    // return this.dataHolder.purgeProjects();
-    throw new UnsupportedOperationException();
+    return this.dataHolder.purgeProjects();
   }
 
   @Override
   public _TupleBatch append(_TupleBatch another) {
-    // return this.dataHolder.append(another);
-    throw new UnsupportedOperationException();
+    return this.dataHolder.append(another);
   }
 
   @Override
   public _TupleBatch join(_TupleBatch other, Predicate p, _TupleBatch output) {
-    // return this.dataHolder.join(other, p, output);
-    throw new UnsupportedOperationException();
+    return this.dataHolder.join(other,p,output);
   }
 
   @Override
   public _TupleBatch union(_TupleBatch another) {
-    // return this.dataHolder.union(another);
-    throw new UnsupportedOperationException();
+    return this.dataHolder.union(another);
   }
 
   @Override
   public _TupleBatch intersect(_TupleBatch another) {
-    // return this.dataHolder.intersect(another);
-    throw new UnsupportedOperationException();
+    return this.dataHolder.intersect(another);
   }
 
   @Override
   public _TupleBatch except(_TupleBatch another) {
-    // return this.dataHolder.except(another);
-    throw new UnsupportedOperationException();
+    return this.dataHolder.except(another);
   }
 
   @Override
   public _TupleBatch distinct() {
-    // return this.dataHolder.distinct();
-    throw new UnsupportedOperationException();
+    return this.dataHolder.distinct();
   }
 
   @Override
   public _TupleBatch groupby() {
-    // return this.dataHolder.groupby();
-    throw new UnsupportedOperationException();
+    return this.dataHolder.groupby();
   }
 
   @Override
   public _TupleBatch orderby() {
-    // return this.dataHolder.orderby();
-    throw new UnsupportedOperationException();
+    return this.dataHolder.orderby();
   }
 
   @Override
   public boolean getBoolean(int column, int row) {
-    // return this.dataHolder.getBoolean(column, row);
-    throw new UnsupportedOperationException();
+    return this.dataHolder.getBoolean(column,row);
   }
 
   @Override
   public double getDouble(int column, int row) {
-    // return this.dataHolder.getDouble(column, row);
-    throw new UnsupportedOperationException();
+    return this.dataHolder.getDouble(column,row);
   }
 
   @Override
   public float getFloat(int column, int row) {
-    // return this.dataHolder.getFloat(column, row);
-    throw new UnsupportedOperationException();
+    return this.dataHolder.getFloat(column,row);
   }
 
   @Override
   public int getInt(int column, int row) {
-    // return this.dataHolder.getInt(column, row);
-    throw new UnsupportedOperationException();
+    return this.dataHolder.getInt(column,row);
+  }
+
+  @Override
+  public long getLong(int column, int row) {
+    return this.dataHolder.getLong(column,row);
   }
 
   @Override
   public String getString(int column, int row) {
-    // return this.dataHolder.getString(column, row);
-    throw new UnsupportedOperationException();
+    return this.dataHolder.getString(column,row);
   }
 
   @Override
   public List<Column> outputRawData() {
-    // return this.dataHolder.outputRawData();
-    // return this.data
-    if (this.data == null)
-      return null;
-
-    List<Column> output = new ArrayList<Column>(this.data.length);
-    Type[] types = this.inputSchema.getTypes();
-    {
-      int i = 0;
-      for (ColumnMessage cm : this.data) {
-        if (types[i].equals(Type.BOOLEAN_TYPE))
-          output.add(new BooleanColumn(cm));
-        else if (types[i].equals(Type.DOUBLE_TYPE))
-          output.add(new DoubleColumn(cm));
-        else if (types[i].equals(Type.FLOAT_TYPE))
-          output.add(new FloatColumn(cm));
-        else if (types[i].equals(Type.INT_TYPE))
-          output.add(new IntColumn(cm));
-        else if (types[i].equals(Type.STRING_TYPE))
-          output.add(new StringColumn(cm));
-        i++;
-      }
-    }
-    return output;
+    return this.dataHolder.outputRawData();
   }
 
   @Override
-  public _TupleBatch[] partition(PartitionFunction<?, ?> p, _TupleBatch[] buffers) {
-    // TODO Auto-generated method stub
-    return null;
+  public TupleBatchBuffer[] partition(PartitionFunction<?, ?> p, TupleBatchBuffer[] buffers) {
+    return this.dataHolder.partition(p,buffers);
+  }
+
+  @Override
+  public _TupleBatch remove(int innerIdx) {
+    return this.dataHolder.remove(innerIdx);
+  }
+
+  @Override
+  public int hashCode(int rowIndx) {
+    return this.dataHolder.hashCode(rowIndx);
   }
 
 }
