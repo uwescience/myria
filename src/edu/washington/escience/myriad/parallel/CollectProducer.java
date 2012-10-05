@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.apache.mina.core.session.IoSession;
 
+import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.operator.Operator;

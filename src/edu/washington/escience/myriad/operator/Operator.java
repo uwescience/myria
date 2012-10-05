@@ -2,8 +2,8 @@ package edu.washington.escience.myriad.operator;
 
 import java.util.NoSuchElementException;
 
+import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
-import edu.washington.escience.myriad.parallel.DbException;
 import edu.washington.escience.myriad.table._TupleBatch;
 
 /**

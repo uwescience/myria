@@ -6,6 +6,7 @@ import java.util.List;
 import org.apache.mina.core.service.IoConnector;
 import org.apache.mina.core.session.IoSession;
 
+import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;

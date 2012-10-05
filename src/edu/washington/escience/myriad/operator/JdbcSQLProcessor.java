@@ -1,8 +1,8 @@
 package edu.washington.escience.myriad.operator;
 
 // import edu.washington.escience.Schema;
+import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
-import edu.washington.escience.myriad.parallel.DbException;
 import edu.washington.escience.myriad.table._TupleBatch;
 
 public class JdbcSQLProcessor extends JdbcQueryScan {

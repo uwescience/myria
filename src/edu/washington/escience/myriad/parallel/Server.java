@@ -32,6 +32,8 @@ import org.apache.mina.util.ConcurrentHashSet;
 
 import com.google.protobuf.ByteString;
 
+import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.Query;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnFactory;
