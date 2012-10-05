@@ -2,7 +2,7 @@ package edu.washington.escience.myriad.table;
 
 import java.util.NoSuchElementException;
 
-import edu.washington.escience.myriad.parallel.DbException;
+import edu.washington.escience.myriad.DbException;
 
 /**
  * DbIterator is the iterator interface that all SimpleDB operators should implement. If the iterator is not open, none

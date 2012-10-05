@@ -1,9 +1,10 @@
-package edu.washington.escience.myriad.parallel;
+package edu.washington.escience.myriad.operator;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.table._TupleBatch;

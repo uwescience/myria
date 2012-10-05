@@ -3,7 +3,9 @@ package edu.washington.escience.myriad.parallel;
 import java.util.BitSet;
 import java.util.HashMap;
 
+import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.table._TupleBatch;
 
 /**

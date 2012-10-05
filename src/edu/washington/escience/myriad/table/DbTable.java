@@ -2,8 +2,8 @@ package edu.washington.escience.myriad.table;
 
 import java.io.Serializable;
 
+import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
-import edu.washington.escience.myriad.parallel.DbException;
 
 public interface DbTable extends Serializable {
 
