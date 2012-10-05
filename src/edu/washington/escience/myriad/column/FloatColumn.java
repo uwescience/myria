@@ -41,8 +41,7 @@ public final class FloatColumn implements Column {
    */
   public FloatColumn(final ColumnMessage message) {
     if (message.getType().ordinal() != ColumnMessageType.FLOAT_VALUE) {
-      throw new IllegalArgumentException(
-          "Trying to construct FloatColumn from non-FLOAT ColumnMessage");
+      throw new IllegalArgumentException("Trying to construct FloatColumn from non-FLOAT ColumnMessage");
     }
     if (!message.hasFloatColumn()) {
       throw new IllegalArgumentException("ColumnMessage has type FLOAT but no FloatColumn");
@@ -69,8 +68,7 @@ public final class FloatColumn implements Column {
   }
 
   @Override
-  public void getIntoJdbc(final int row, final PreparedStatement statement, final int jdbcIndex)
-      throws SQLException {
+  public void getIntoJdbc(final int row, final PreparedStatement statement, final int jdbcIndex) throws SQLException {
     statement.setFloat(jdbcIndex, getFloat(row));
   }
 
@@ -103,18 +101,16 @@ public final class FloatColumn implements Column {
   }
 
   @Override
-  public void putFromSQLite(final SQLiteStatement statement, final int index)
-      throws SQLiteException {
+  public void putFromSQLite(final SQLiteStatement statement, final int index) throws SQLiteException {
     throw new UnsupportedOperationException("SQLite does not support Float columns.");
   }
 
   @Override
   public ColumnMessage serializeToProto() {
     /* Note that we do *not* build the inner class. We pass its builder instead. */
-    FloatColumnMessage.Builder inner =
-        FloatColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
-    return ColumnMessage.newBuilder().setType(ColumnMessageType.FLOAT).setNumTuples(size())
-        .setFloatColumn(inner).build();
+    FloatColumnMessage.Builder inner = FloatColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
+    return ColumnMessage.newBuilder().setType(ColumnMessageType.FLOAT).setNumTuples(size()).setFloatColumn(inner)
+        .build();
   }
 
   @Override

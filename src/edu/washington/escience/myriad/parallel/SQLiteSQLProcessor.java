@@ -4,13 +4,12 @@ package edu.washington.escience.myriad.parallel;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.table._TupleBatch;
 
-public class JdbcSQLProcessor extends JdbcQueryScan {
+public class SQLiteSQLProcessor extends SQLiteQueryScan {
 
   private Operator child;
 
-  public JdbcSQLProcessor(String driverClass, String connectionString, String baseSQL, Schema schema, Operator child,
-      String username, String password) {
-    super(driverClass, connectionString, baseSQL, schema, username, password);
+  public SQLiteSQLProcessor(String filepath, String baseSQL, Schema schema, Operator child) {
+    super(filepath, baseSQL, schema );
     this.child = child;
   }
 

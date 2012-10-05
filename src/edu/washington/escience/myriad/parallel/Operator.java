@@ -6,9 +6,8 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.table._TupleBatch;
 
 /**
- * Abstract class for implementing operators. It handles <code>close</code>, <code>next</code> and
- * <code>hasNext</code>. Subclasses only need to implement <code>open</code> and
- * <code>readNext</code>.
+ * Abstract class for implementing operators. It handles <code>close</code>, <code>next</code> and <code>hasNext</code>.
+ * Subclasses only need to implement <code>open</code> and <code>readNext</code>.
  */
 public abstract class Operator implements DbIterator {
 
@@ -19,8 +18,8 @@ public abstract class Operator implements DbIterator {
   private int estimatedCardinality = 0;
 
   /**
-   * Closes this iterator. If overridden by a subclass, they should call super.close() in order for
-   * Operator's internal state to be consistent.
+   * Closes this iterator. If overridden by a subclass, they should call super.close() in order for Operator's internal
+   * state to be consistent.
    */
   @Override
   public void close() {
@@ -30,17 +29,17 @@ public abstract class Operator implements DbIterator {
   }
 
   /**
-   * Returns the next Tuple in the iterator, or null if the iteration is finished. Operator uses
-   * this method to implement both <code>next</code> and <code>hasNext</code>.
+   * Returns the next Tuple in the iterator, or null if the iteration is finished. Operator uses this method to
+   * implement both <code>next</code> and <code>hasNext</code>.
    * 
    * @return the next Tuple in the iterator, or null if the iteration is finished.
    */
   protected abstract _TupleBatch fetchNext() throws DbException;
 
   /**
-   * @return return the children DbIterators of this operator. If there is only one child, return an
-   *         array of only one element. For join operators, the order of the children is not
-   *         important. But they should be consistent among multiple calls.
+   * @return return the children DbIterators of this operator. If there is only one child, return an array of only one
+   *         element. For join operators, the order of the children is not important. But they should be consistent
+   *         among multiple calls.
    * */
   public abstract Operator[] getChildren();
 
@@ -86,8 +85,8 @@ public abstract class Operator implements DbIterator {
   }
 
   /**
-   * Set the children(child) of this operator. If the operator has only one child, children[0]
-   * should be used. If the operator is a join, children[0] and children[1] should be used.
+   * Set the children(child) of this operator. If the operator has only one child, children[0] should be used. If the
+   * operator is a join, children[0] and children[1] should be used.
    * 
    * 
    * @param children the DbIterators which are to be set as the children(child) of this operator

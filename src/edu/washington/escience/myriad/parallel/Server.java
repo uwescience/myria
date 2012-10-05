@@ -27,44 +27,40 @@ import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.mina.util.ConcurrentHashSet;
 
 import edu.washington.escience.myriad.Schema;
-import edu.washington.escience.myriad.parallel.Exchange.ParallelOperatorID;
+import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 import edu.washington.escience.myriad.table._TupleBatch;
 
 /**
  * The parallel system is consisted of one server and a bunch of workers.
  * 
- * The server accepts SQL from commandline, generate a query plan, optimize it, parallelize it. And
- * then the server send a query plan to each worker. Each worker may receive different query plans.
- * The server does not execute any part of a query. The server then receives query results from the
- * workers and display them in the commandline.
+ * The server accepts SQL from commandline, generate a query plan, optimize it, parallelize it. And then the server send
+ * a query plan to each worker. Each worker may receive different query plans. The server does not execute any part of a
+ * query. The server then receives query results from the workers and display them in the commandline.
  * 
- * The data of a database is averagely spread over all the workers. The execution of each query is
- * conducted simultaneously at each worker.
+ * The data of a database is averagely spread over all the workers. The execution of each query is conducted
+ * simultaneously at each worker.
  * 
  * Currently, we only support equi-join.
  * 
- * The server and the workers run in separate processes. They may or may not cross the boundary of
- * computers.
+ * The server and the workers run in separate processes. They may or may not cross the boundary of computers.
  * 
  * The server address is configurable at conf/server.conf, the default is
  * 
  * localhost:24444
  * 
- * The worker addresses are configurable at conf/workers.conf, one line for each worker. the default
- * are
+ * The worker addresses are configurable at conf/workers.conf, one line for each worker. the default are
  * 
  * localhost:24448 localhost:24449
  * 
  * You may add more workers by adding more host:port lines.
  * 
- * You may change the configurations to cross computers. But make that, the server is able to access
- * the workers and each worker is able to access both the server and all other workers.
+ * You may change the configurations to cross computers. But make that, the server is able to access the workers and
+ * each worker is able to access both the server and all other workers.
  * 
  * 
- * Given a query, there can be up to two different query plans. If the query contains order by or
- * aggregates without group by, a "master worker" is needed to collect the tuples to be ordered or
- * to be aggregated from all the workers. All the other workers are correspondingly called slave
- * workers.
+ * Given a query, there can be up to two different query plans. If the query contains order by or aggregates without
+ * group by, a "master worker" is needed to collect the tuples to be ordered or to be aggregated from all the workers.
+ * All the other workers are correspondingly called slave workers.
  * 
  * For example, for a query:
  * 
@@ -76,28 +72,25 @@ import edu.washington.escience.myriad.table._TupleBatch;
  * 
  * at the master worker, the query plan is:
  * 
- * scan actor -> send data to myself -> collect data from all the workers -> order by -> send output
- * to the server
+ * scan actor -> send data to myself -> collect data from all the workers -> order by -> send output to the server
  * 
  * 
- * at slave workers: | at the master worker: | at the server: | | worker_1 : scan actor | | worker_2
- * : scan actor | | ... | collect -> order by (id) ------| ---> output result worker_(n-1): scan
- * actor | | worker_n : scan actor | |
+ * at slave workers: | at the master worker: | at the server: | | worker_1 : scan actor | | worker_2 : scan actor | |
+ * ... | collect -> order by (id) ------| ---> output result worker_(n-1): scan actor | | worker_n : scan actor | |
  * 
- * If there is no order by and aggregate without group by, all the workers will have the same query
- * plan. The results of each worker are sent directly to the server.
+ * If there is no order by and aggregate without group by, all the workers will have the same query plan. The results of
+ * each worker are sent directly to the server.
  * 
  * 
- * We use Apache Mina for inter-process communication. Mina is a wrapper library of java nio. To
- * start using Mina, http://mina.apache.org/user-guide.html is a good place to seek information.
+ * We use Apache Mina for inter-process communication. Mina is a wrapper library of java nio. To start using Mina,
+ * http://mina.apache.org/user-guide.html is a good place to seek information.
  * 
  * 
  * 
  * */
 public class Server {
 
-  static final String usage =
-      "Usage: Server catalogFile [--conf confdir] [-explain] [-f queryFile]";
+  static final String usage = "Usage: Server catalogFile [--conf confdir] [-explain] [-f queryFile]";
 
   final SocketInfo[] workers;
   final HashMap<String, Integer> workerIdToIndex;
@@ -107,33 +100,19 @@ public class Server {
   /**
    * The I/O buffer, all the ExchangeMessages sent to the server are buffered here.
    * */
-  final ConcurrentHashMap<ParallelOperatorID, LinkedBlockingQueue<_TupleBatch>> inBuffer;
+  final ConcurrentHashMap<ExchangePairID, LinkedBlockingQueue<_TupleBatch>> inBuffer;
   final SocketInfo server;
 
   public static final String DEFAULT_CONF_DIR = "conf";
 
-  public static SocketInfo loadServer(String confDir) throws IOException {
-    BufferedReader br =
-        new BufferedReader(new InputStreamReader(new FileInputStream(new File(confDir
-            + "/server.conf"))));
-    String line = null;
-    while ((line = br.readLine()) != null) {
-      String[] ts = line.replaceAll("[ \t]+", "").replaceAll("#.*$", "").split(":");
-      if (ts.length == 2)
-        return new SocketInfo(ts[0], Integer.parseInt(ts[1]));
-    }
-    throw new IOException("Wrong server conf file.");
-  }
-
-  protected Server(String host, int port, SocketInfo[] workers) throws IOException {
+  protected Server(SocketInfo server, SocketInfo[] workers) throws IOException {
     this.workers = workers;
     workerIdToIndex = new HashMap<String, Integer>();
     for (int i = 0; i < workers.length; i++)
       workerIdToIndex.put(workers[i].getId(), i);
     acceptor = ParallelUtility.createAcceptor();
-    this.server = new SocketInfo(host, port);
-    this.inBuffer =
-        new ConcurrentHashMap<ParallelOperatorID, LinkedBlockingQueue<_TupleBatch>>();
+    this.server = server;
+    this.inBuffer = new ConcurrentHashMap<ExchangePairID, LinkedBlockingQueue<_TupleBatch>>();
     this.minaHandler = new ServerHandler(Thread.currentThread());
   }
 
@@ -145,10 +124,10 @@ public class Server {
   }
 
   public static void main(String[] args) throws IOException {
-//    if (args.length < 1 || args.length > 6) {
-//      System.err.println("Invalid number of arguments.\n" + usage);
-//      System.exit(0);
-//    }
+    // if (args.length < 1 || args.length > 6) {
+    // System.err.println("Invalid number of arguments.\n" + usage);
+    // System.exit(0);
+    // }
 
     String confDir = DEFAULT_CONF_DIR;
     if (args.length >= 3 && args[1].equals("--conf")) {
@@ -156,13 +135,14 @@ public class Server {
       args = ParallelUtility.removeArg(args, 1);
       args = ParallelUtility.removeArg(args, 1);
     }
-
-    SocketInfo serverInfo = loadServer(confDir);
-    final Server server =
-        new Server(serverInfo.getHost(), serverInfo.getPort(), ParallelUtility.loadWorkers(confDir));
-
-    runningInstance=server;
     
+    Configuration conf = new Configuration(confDir);
+
+//    SocketInfo serverInfo = Configuration.loadServer(confDir);
+    final Server server = new Server(conf.getServer(), conf.getWorkers());
+
+    runningInstance = server;
+
     System.out.println("Workers are: ");
     for (SocketInfo w : server.workers)
       System.out.println("  " + w.getHost() + ":" + w.getPort());
@@ -173,18 +153,17 @@ public class Server {
         server.cleanup();
       }
     });
-    System.out.println("Server: " + server.server.getHost() + " started. Listening on port "
-        + serverInfo.getPort());
+    System.out.println("Server: " + server.server.getHost() + " started. Listening on port " + conf.getServer().getPort());
     server.start(args);
   }
-  
-  public static volatile Server runningInstance =null;
 
-  protected boolean interactive=true;
+  public static volatile Server runningInstance = null;
+
+  protected boolean interactive = true;
   // Basic SQL completions
   public static final String[] SQL_COMMANDS = {
-      "select", "from", "where", "group by", "max(", "min(", "avg(", "count", "rollback", "commit",
-      "insert", "delete", "values", "into"};
+      "select", "from", "where", "group by", "max(", "min(", "avg(", "count", "rollback", "commit", "insert", "delete",
+      "values", "into" };
   public static final String SYSTEM_NAME = "Myriad";
 
   protected void start(String[] argv) throws IOException {
@@ -280,14 +259,12 @@ public class Server {
       System.out.println("Shuting down " + worker.getId());
 
       IoSession session = null;
-      try
-      {
-          session = ParallelUtility.createSession(worker.getAddress(), this.minaHandler, 3000);
-      }catch (Throwable e)
-      {
+      try {
+        session = ParallelUtility.createSession(worker.getAddress(), this.minaHandler, 3000);
+      } catch (Throwable e) {
       }
       if (session == null) {
-        System.out.println("Fail to connect the worker: "+worker+". Continue cleaning");
+        System.out.println("Fail to connect the worker: " + worker + ". Continue cleaning");
         continue;
       }
       // IoSession session = future.getSession();
@@ -322,7 +299,7 @@ public class Server {
     @Override
     public void messageReceived(IoSession session, Object message) {
       if (message instanceof ExchangeTupleBatch) {
-        System.out.println("message received by server: "+message);
+        System.out.println("message received by server: " + message);
         ExchangeTupleBatch tuples = (ExchangeTupleBatch) message;
         Server.this.inBuffer.get(tuples.getOperatorID()).offer(tuples);
       } else if (message instanceof String) {
@@ -375,8 +352,7 @@ public class Server {
     }
   }
 
-  public void startServerQuery(CollectConsumer serverPlan) throws DbException
-  {
+  public void startServerQuery(CollectConsumer serverPlan) throws DbException {
     final LinkedBlockingQueue<_TupleBatch> buffer = new LinkedBlockingQueue<_TupleBatch>();
     serverPlan.setBuffer(buffer);
     Server.this.inBuffer.put(serverPlan.getOperatorID(), buffer);
@@ -389,7 +365,7 @@ public class Server {
     }
 
     PrintStream out = null;
-//    ByteArrayOutputStream b = null;
+    // ByteArrayOutputStream b = null;
     out = System.out;
 
     out.println(names);
@@ -399,29 +375,28 @@ public class Server {
     out.println("");
 
     serverPlan.open();
-    int cnt = 0;
+//    int cnt = 0;
     while (serverPlan.hasNext()) {
       _TupleBatch tup = serverPlan.next();
       out.println(tup);
-      cnt++;
+//      cnt++;
     }
-    out.println("\n " + cnt + " rows.");
-//    if (b != null)
-//      System.out.print(b.toString());
+//    out.println("\n " + cnt + " rows.");
+    // if (b != null)
+    // System.out.print(b.toString());
 
     serverPlan.close();
     Server.this.inBuffer.remove(serverPlan.getOperatorID());
   }
-  
-  protected void startQuery(ParallelQueryPlan queryPlan, SocketInfo masterWorker)
-      throws DbException {
+
+  protected void startQuery(ParallelQueryPlan queryPlan, SocketInfo masterWorker) throws DbException {
     HashMap<SocketInfo, Operator> workerPlans = new HashMap<SocketInfo, Operator>();
-//    for (SocketInfo worker : this.workers) {
-//      if (worker == masterWorker) {
-//        workerPlans.put(worker, queryPlan.getMasterWorkerPlan());
-//      } else
-//        workerPlans.put(worker, queryPlan.getSlaveWorkerPlan());
-//    }
+    // for (SocketInfo worker : this.workers) {
+    // if (worker == masterWorker) {
+    // workerPlans.put(worker, queryPlan.getMasterWorkerPlan());
+    // } else
+    // workerPlans.put(worker, queryPlan.getSlaveWorkerPlan());
+    // }
 
     CollectConsumer serverPlan = queryPlan.getServerPlan();
     dispatchWorkerQueryPlans(workerPlans);
@@ -430,8 +405,8 @@ public class Server {
   }
 
   protected void processQuery(Query q) throws DbException {
-//    HashMap<String, Integer> aliasToId = q.getLogicalPlan().getTableAliasToIdMapping();
-//    Operator sequentialQueryPlan = q.getPhysicalPlan();
+    // HashMap<String, Integer> aliasToId = q.getLogicalPlan().getTableAliasToIdMapping();
+    // Operator sequentialQueryPlan = q.getPhysicalPlan();
 
     // if (sequentialQueryPlan != null) {
     // System.out.println("The sequential query plan is:");
@@ -444,8 +419,8 @@ public class Server {
     SocketInfo masterWorker = selectMasterWorker();
 
     ParallelQueryPlan p = null;
-//        ParallelQueryPlan.parallelizeQueryPlan(tid, sequentialQueryPlan, workers, masterWorker,
-//            server, SingleFieldHashPartitionFunction.class);
+    // ParallelQueryPlan.parallelizeQueryPlan(tid, sequentialQueryPlan, workers, masterWorker,
+    // server, SingleFieldHashPartitionFunction.class);
 
     // p = ParallelQueryPlan.optimize(tid, p, new ProjectOptimizer(
     // new FilterOptimizer(

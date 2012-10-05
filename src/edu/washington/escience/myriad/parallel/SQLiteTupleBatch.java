@@ -17,13 +17,14 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.accessmethod.JdbcAccessMethod;
+import edu.washington.escience.myriad.accessmethod.SQLiteAccessMethod;
 import edu.washington.escience.myriad.annotation.ThreadSafe;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.parallel.PartitionFunction;
 import edu.washington.escience.myriad.table._TupleBatch;
 
 // Not yet @ThreadSafe
-public class JdbcTupleBatch implements _TupleBatch {
+public class SQLiteTupleBatch implements _TupleBatch {
 
   private static final long serialVersionUID = 1L;
 
@@ -37,27 +38,24 @@ public class JdbcTupleBatch implements _TupleBatch {
   // private final BitSet invalidColumns;
   private final ArrayList<String> filters;
   private final ArrayList<String> projects;
-  private final String connectString;
+  private final String filepath;
   private int numInputTuples;
-  private final String driverClass;
+  // private final String driverClass;
   private final String tableName;
-  private final String username;
-  private final String password;
 
-  public JdbcTupleBatch(Schema inputSchema, String tableName, String connectionString, String driverClass,
-      String username, String password) {
+  // private final String username;
+  // private final String password;
+
+  public SQLiteTupleBatch(Schema inputSchema, String filepath, String tableName) {
     /* Take the input arguments directly */
     this.inputSchema = Objects.requireNonNull(inputSchema);
     this.filters = new ArrayList<String>();
     this.projects = new ArrayList<String>();
-    this.connectString = connectionString;
-    this.driverClass = driverClass;
+    this.filepath = filepath;
     this.tableName = tableName;
-    this.username = username;
-    this.password = password;
   }
 
-  public synchronized JdbcTupleBatch filter(int fieldIdx, Predicate.Op op, Object operand) {
+  public synchronized SQLiteTupleBatch filter(int fieldIdx, Predicate.Op op, Object operand) {
     return this;
   }
 
@@ -95,11 +93,11 @@ public class JdbcTupleBatch implements _TupleBatch {
     return numInputTuples;
   }
 
-  public synchronized JdbcTupleBatch[] partition(PartitionFunction<?, ?> p) {
+  public synchronized SQLiteTupleBatch[] partition(PartitionFunction<?, ?> p) {
     return null;
   }
 
-  public synchronized JdbcTupleBatch project(int[] remainingColumns) {
+  public synchronized SQLiteTupleBatch project(int[] remainingColumns) {
     return this;
   }
 
@@ -162,9 +160,9 @@ public class JdbcTupleBatch implements _TupleBatch {
       fieldNames[i++] = item.getName();
     }
 
-    JdbcAccessMethod.tupleBatchInsert(this.driverClass, connectString, "insert into " + this.tableName + " ( "
+    SQLiteAccessMethod.tupleBatchInsert(this.filepath, "insert into " + this.tableName + " ( "
         + StringUtils.join(fieldNames, ',') + " ) values ( " + StringUtils.join(placeHolders, ',') + " )",
-        new TupleBatch(another.outputSchema(), another.outputRawData(), another.numOutputTuples()), username, password);
+        new TupleBatch(another.outputSchema(), another.outputRawData(), another.numOutputTuples()));
     return this;
   }
 

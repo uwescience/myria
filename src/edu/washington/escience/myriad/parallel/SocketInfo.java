@@ -4,8 +4,7 @@ import java.io.Serializable;
 import java.net.InetSocketAddress;
 
 /**
- * A simple wrapper that wraps the socket information of both workers and
- * the server (coordinator).
+ * A simple wrapper that wraps the socket information of both workers and the server (coordinator).
  * */
 public class SocketInfo implements Serializable {
 
@@ -39,10 +38,9 @@ public class SocketInfo implements Serializable {
       address = new InetSocketAddress(host, port);
     return address;
   }
-  
-  public String toString()
-  {
-      return address.toString();
+
+  public String toString() {
+    return address.toString();
   }
 
 }

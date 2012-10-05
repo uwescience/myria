@@ -56,8 +56,7 @@ public final class Schema implements Serializable {
      * 
      * @return the name of this field.
      */
-    public String getName()
-    {
+    public String getName() {
       return fieldName;
     }
 

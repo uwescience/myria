@@ -24,15 +24,15 @@ import edu.washington.escience.myriad.proto.TransportProto.StringColumnMessage;
  */
 public final class StringColumn implements Column {
   /**
-   * The positions of the starts of each String in this column. Used to pack variable-length Strings
-   * and yet still have fast lookup.
+   * The positions of the starts of each String in this column. Used to pack variable-length Strings and yet still have
+   * fast lookup.
    */
   private final IntBuffer startIndices;
   /** Internal structure for startIndices. */
   private final ByteBuffer startIndicesBytes;
   /**
-   * The positions of the ends of each String in this column. Used to pack variable-length Strings
-   * and yet still have fast lookup.
+   * The positions of the ends of each String in this column. Used to pack variable-length Strings and yet still have
+   * fast lookup.
    */
   private final IntBuffer endIndices;
   /** Internal structure for endIndices. */
@@ -44,8 +44,7 @@ public final class StringColumn implements Column {
 
   /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
   public StringColumn() {
-    this.startIndicesBytes =
-        ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Integer.SIZE / Byte.SIZE));
+    this.startIndicesBytes = ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Integer.SIZE / Byte.SIZE));
     this.startIndices = startIndicesBytes.asIntBuffer();
     this.endIndicesBytes = ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Integer.SIZE / Byte.SIZE));
     this.endIndices = endIndicesBytes.asIntBuffer();
@@ -60,8 +59,7 @@ public final class StringColumn implements Column {
    */
   public StringColumn(final ColumnMessage message) {
     if (message.getType().ordinal() != ColumnMessageType.STRING_VALUE) {
-      throw new IllegalArgumentException(
-          "Trying to construct StringColumn from non-STRING ColumnMessage");
+      throw new IllegalArgumentException("Trying to construct StringColumn from non-STRING ColumnMessage");
     }
     if (!message.hasStringColumn()) {
       throw new IllegalArgumentException("ColumnMessage has type STRING but no StringColumn");
@@ -76,16 +74,13 @@ public final class StringColumn implements Column {
   }
 
   /**
-   * Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements, but uses the
-   * averageStringSize to seed the initial size of the internal buffer that stores the
-   * variable-length Strings.
+   * Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements, but uses the averageStringSize to
+   * seed the initial size of the internal buffer that stores the variable-length Strings.
    * 
-   * @param averageStringSize expected average size of the Strings that will be stored in this
-   *          column.
+   * @param averageStringSize expected average size of the Strings that will be stored in this column.
    */
   public StringColumn(final int averageStringSize) {
-    this.startIndicesBytes =
-        ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Integer.SIZE / Byte.SIZE));
+    this.startIndicesBytes = ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Integer.SIZE / Byte.SIZE));
     this.startIndices = startIndicesBytes.asIntBuffer();
     this.endIndicesBytes = ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Integer.SIZE / Byte.SIZE));
     this.endIndices = endIndicesBytes.asIntBuffer();
@@ -99,8 +94,7 @@ public final class StringColumn implements Column {
   }
 
   @Override
-  public void getIntoJdbc(final int row, final PreparedStatement statement, final int jdbcIndex)
-      throws SQLException {
+  public void getIntoJdbc(final int row, final PreparedStatement statement, final int jdbcIndex) throws SQLException {
     statement.setString(jdbcIndex, getString(row));
   }
 
@@ -132,8 +126,7 @@ public final class StringColumn implements Column {
   }
 
   @Override
-  public void putFromSQLite(final SQLiteStatement statement, final int index)
-      throws SQLiteException {
+  public void putFromSQLite(final SQLiteStatement statement, final int index) throws SQLiteException {
     put(statement.columnString(index));
   }
 
@@ -158,8 +151,8 @@ public final class StringColumn implements Column {
         StringColumnMessage.newBuilder().setData(ByteString.copyFromUtf8(data.toString()));
     inner.setStartIndices(ByteString.copyFrom(startIndicesBytes));
     inner.setEndIndices(ByteString.copyFrom(endIndicesBytes));
-    return ColumnMessage.newBuilder().setType(ColumnMessageType.STRING).setNumTuples(size())
-        .setStringColumn(inner).build();
+    return ColumnMessage.newBuilder().setType(ColumnMessageType.STRING).setNumTuples(size()).setStringColumn(inner)
+        .build();
   }
 
   @Override

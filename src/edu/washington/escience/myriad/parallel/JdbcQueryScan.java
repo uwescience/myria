@@ -11,24 +11,29 @@ public class JdbcQueryScan extends Operator {
 
   private Iterator<TupleBatch> tuples;
   private final Schema schema;
-//  private TupleBatch cache;
+  // private TupleBatch cache;
   private final String driverClass;
   private final String connectionString;
   private final String baseSQL;
+  private final String username;
+  private final String password;
 
-  public JdbcQueryScan(String driverClass, String connectionString, String baseSQL, Schema outputSchema) {
+  public JdbcQueryScan(String driverClass, String connectionString, String baseSQL, Schema outputSchema,
+      String username, String password) {
     this.driverClass = driverClass;
     this.connectionString = connectionString;
     this.baseSQL = baseSQL;
-//    if (tuples.hasNext()) {
-//      cache = tuples.next();
-      schema = outputSchema;
-//    } else {
-//      schema = null;
-//      cache = null;
-//    }
+    this.username = username;
+    this.password = password;
+    // if (tuples.hasNext()) {
+    // cache = tuples.next();
+    schema = outputSchema;
+    // } else {
+    // schema = null;
+    // cache = null;
+    // }
   }
-  
+
   @Override
   public void close() {
     super.close();
@@ -37,16 +42,16 @@ public class JdbcQueryScan extends Operator {
 
   @Override
   protected _TupleBatch fetchNext() throws DbException {
-//    if (cache != null) {
-//      TupleBatch tmp = cache;
-//      cache = null;
-//      return tmp;
-//    } else {
-      if (tuples.hasNext())
-        return this.tuples.next();
-      else
-        return null;
-//    }
+    // if (cache != null) {
+    // TupleBatch tmp = cache;
+    // cache = null;
+    // return tmp;
+    // } else {
+    if (tuples.hasNext())
+      return this.tuples.next();
+    else
+      return null;
+    // }
   }
 
   @Override
@@ -62,7 +67,7 @@ public class JdbcQueryScan extends Operator {
   @Override
   public void open() throws DbException {
     super.open();
-    tuples = JdbcAccessMethod.tupleBatchIteratorFromQuery(driverClass, connectionString, baseSQL);
+    tuples = JdbcAccessMethod.tupleBatchIteratorFromQuery(driverClass, connectionString, baseSQL, username, password);
   }
 
   // @Override
