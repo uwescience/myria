@@ -1,5 +1,15 @@
 option java_package = "edu.washington.escience.myriad.proto";
-option java_outer_classname = "TransportProto";
+option java_outer_classname = "DataProto";
+
+message DataMessage {
+	enum DataMessageType{
+		EOS = 0;
+		NORMAL = 1;
+	}
+	required DataMessageType type=1;
+	required int64 operatorID = 2;
+	repeated ColumnMessage columns = 3;
+}
 
 message ColumnMessage {
   enum ColumnMessageType {

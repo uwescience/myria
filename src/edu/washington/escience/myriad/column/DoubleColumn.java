@@ -12,9 +12,12 @@ import com.google.common.base.Preconditions;
 import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myriad.TupleBatch;
-import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
-import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage.ColumnMessageType;
-import edu.washington.escience.myriad.proto.TransportProto.DoubleColumnMessage;
+//import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
+//import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage.ColumnMessageType;
+//import edu.washington.escience.myriad.proto.TransportProto.DoubleColumnMessage;
+import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
+import edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType;
+import edu.washington.escience.myriad.proto.DataProto.DoubleColumnMessage;
 
 /**
  * A column of Double values.
@@ -41,8 +44,7 @@ public final class DoubleColumn implements Column {
    */
   public DoubleColumn(final ColumnMessage message) {
     if (message.getType().ordinal() != ColumnMessageType.DOUBLE_VALUE) {
-      throw new IllegalArgumentException(
-          "Trying to construct DoubleColumn from non-DOUBLE ColumnMessage");
+      throw new IllegalArgumentException("Trying to construct DoubleColumn from non-DOUBLE ColumnMessage");
     }
     if (!message.hasDoubleColumn()) {
       throw new IllegalArgumentException("ColumnMessage has type DOUBLE but no DoubleColumn");
@@ -69,8 +71,7 @@ public final class DoubleColumn implements Column {
   }
 
   @Override
-  public void getIntoJdbc(final int row, final PreparedStatement statement, final int jdbcIndex)
-      throws SQLException {
+  public void getIntoJdbc(final int row, final PreparedStatement statement, final int jdbcIndex) throws SQLException {
     statement.setDouble(jdbcIndex, getDouble(row));
   }
 
@@ -103,18 +104,16 @@ public final class DoubleColumn implements Column {
   }
 
   @Override
-  public void putFromSQLite(final SQLiteStatement statement, final int index)
-      throws SQLiteException {
+  public void putFromSQLite(final SQLiteStatement statement, final int index) throws SQLiteException {
     put(statement.columnDouble(index));
   }
 
   @Override
   public ColumnMessage serializeToProto() {
     /* Note that we do *not* build the inner class. We pass its builder instead. */
-    DoubleColumnMessage.Builder inner =
-        DoubleColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
-    return ColumnMessage.newBuilder().setType(ColumnMessageType.DOUBLE).setNumTuples(size())
-        .setDoubleColumn(inner).build();
+    DoubleColumnMessage.Builder inner = DoubleColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
+    return ColumnMessage.newBuilder().setType(ColumnMessageType.DOUBLE).setNumTuples(size()).setDoubleColumn(inner)
+        .build();
   }
 
   @Override

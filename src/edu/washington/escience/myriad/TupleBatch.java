@@ -222,7 +222,7 @@ public class TupleBatch extends TupleBatchAdaptor {
    * @param row row in which the element is stored.
    * @return the element at the specified position in this TupleBatch.
    */
-  public final long getLong(final int column, final int row) {
+  public final long getLong(final int column, final int row) {    
     return ((LongColumn) columns.get(column)).getLong(row);
   }
 
@@ -243,7 +243,7 @@ public class TupleBatch extends TupleBatchAdaptor {
    * @return the element at the specified position in this TupleBatch.
    */
   @Override
-  public final String getString(final int column, final int row) {
+  public final String getString(final int column, final int row) {    
     return ((StringColumn) columns.get(column)).getString(row);
   }
 
@@ -266,6 +266,15 @@ public class TupleBatch extends TupleBatchAdaptor {
       hb.append(columns.get(i).get(row));
     }
     return hb.toHashCode();
+  }
+  
+  @Override
+  public int hashCode(int row) {
+    //return 0;    
+    HashCodeBuilder hb = new HashCodeBuilder(MAGIC_HASHCODE1, MAGIC_HASHCODE2);
+    for (int i = 0; i < columns.size(); ++i)     
+      hb.append(columns.get(i).get(row));    
+    return hb.toHashCode();    
   }
 
   // public final TupleBatch[] partition(final PartitionFunction<?, ?> p) {

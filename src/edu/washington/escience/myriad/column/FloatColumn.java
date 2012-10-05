@@ -12,9 +12,12 @@ import com.google.common.base.Preconditions;
 import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myriad.TupleBatch;
-import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
-import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage.ColumnMessageType;
-import edu.washington.escience.myriad.proto.TransportProto.FloatColumnMessage;
+//import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
+//import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage.ColumnMessageType;
+//import edu.washington.escience.myriad.proto.TransportProto.FloatColumnMessage;
+import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
+import edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType;
+import edu.washington.escience.myriad.proto.DataProto.FloatColumnMessage;
 
 /**
  * A column of Float values.
@@ -41,8 +44,7 @@ public final class FloatColumn implements Column {
    */
   public FloatColumn(final ColumnMessage message) {
     if (message.getType().ordinal() != ColumnMessageType.FLOAT_VALUE) {
-      throw new IllegalArgumentException(
-          "Trying to construct FloatColumn from non-FLOAT ColumnMessage");
+      throw new IllegalArgumentException("Trying to construct FloatColumn from non-FLOAT ColumnMessage");
     }
     if (!message.hasFloatColumn()) {
       throw new IllegalArgumentException("ColumnMessage has type FLOAT but no FloatColumn");
@@ -69,8 +71,7 @@ public final class FloatColumn implements Column {
   }
 
   @Override
-  public void getIntoJdbc(final int row, final PreparedStatement statement, final int jdbcIndex)
-      throws SQLException {
+  public void getIntoJdbc(final int row, final PreparedStatement statement, final int jdbcIndex) throws SQLException {
     statement.setFloat(jdbcIndex, getFloat(row));
   }
 
@@ -103,18 +104,16 @@ public final class FloatColumn implements Column {
   }
 
   @Override
-  public void putFromSQLite(final SQLiteStatement statement, final int index)
-      throws SQLiteException {
+  public void putFromSQLite(final SQLiteStatement statement, final int index) throws SQLiteException {
     throw new UnsupportedOperationException("SQLite does not support Float columns.");
   }
 
   @Override
   public ColumnMessage serializeToProto() {
     /* Note that we do *not* build the inner class. We pass its builder instead. */
-    FloatColumnMessage.Builder inner =
-        FloatColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
-    return ColumnMessage.newBuilder().setType(ColumnMessageType.FLOAT).setNumTuples(size())
-        .setFloatColumn(inner).build();
+    FloatColumnMessage.Builder inner = FloatColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
+    return ColumnMessage.newBuilder().setType(ColumnMessageType.FLOAT).setNumTuples(size()).setFloatColumn(inner)
+        .build();
   }
 
   @Override

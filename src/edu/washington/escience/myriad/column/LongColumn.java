@@ -11,9 +11,12 @@ import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myriad.TupleBatch;
-import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
-import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage.ColumnMessageType;
-import edu.washington.escience.myriad.proto.TransportProto.LongColumnMessage;
+//import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
+//import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage.ColumnMessageType;
+//import edu.washington.escience.myriad.proto.TransportProto.LongColumnMessage;
+import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
+import edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType;
+import edu.washington.escience.myriad.proto.DataProto.LongColumnMessage;
 
 /**
  * A column of Long values.
@@ -40,8 +43,7 @@ public final class LongColumn implements Column {
    */
   public LongColumn(final ColumnMessage message) {
     if (message.getType().ordinal() != ColumnMessageType.LONG_VALUE) {
-      throw new IllegalArgumentException(
-          "Trying to construct LongColumn from non-LONG ColumnMessage");
+      throw new IllegalArgumentException("Trying to construct LongColumn from non-LONG ColumnMessage");
     }
     if (!message.hasLongColumn()) {
       throw new IllegalArgumentException("ColumnMessage has type LONG but no LongColumn");
@@ -57,8 +59,7 @@ public final class LongColumn implements Column {
   }
 
   @Override
-  public void getIntoJdbc(final int row, final PreparedStatement statement, final int jdbcIndex)
-      throws SQLException {
+  public void getIntoJdbc(final int row, final PreparedStatement statement, final int jdbcIndex) throws SQLException {
     statement.setLong(jdbcIndex, getLong(row));
   }
 
@@ -89,8 +90,7 @@ public final class LongColumn implements Column {
   }
 
   @Override
-  public void putFromSQLite(final SQLiteStatement statement, final int index)
-      throws SQLiteException {
+  public void putFromSQLite(final SQLiteStatement statement, final int index) throws SQLiteException {
     put(statement.columnLong(index));
   }
 
@@ -108,10 +108,8 @@ public final class LongColumn implements Column {
   @Override
   public ColumnMessage serializeToProto() {
     /* Note that we do *not* build the inner class. We pass its builder instead. */
-    LongColumnMessage.Builder inner =
-        LongColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
-    return ColumnMessage.newBuilder().setType(ColumnMessageType.LONG).setNumTuples(size())
-        .setLongColumn(inner).build();
+    LongColumnMessage.Builder inner = LongColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
+    return ColumnMessage.newBuilder().setType(ColumnMessageType.LONG).setNumTuples(size()).setLongColumn(inner).build();
   }
 
   @Override

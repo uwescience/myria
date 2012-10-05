@@ -5,25 +5,20 @@ import java.util.Iterator;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.accessmethod.SQLiteAccessMethod;
+import edu.washington.escience.myriad.table._TupleBatch;
 
 public class SQLiteQueryScan extends Operator {
 
-  /**
-   * 
-   */
   private Iterator<TupleBatch> tuples;
-  private Schema schema;
-  private TupleBatch cache;
+  private final Schema schema;
+  private final String filename;
+  private final String baseSQL;
+  private transient String dataDir;
 
-  public SQLiteQueryScan(String pathToFile, String baseSQL) {
-    tuples = SQLiteAccessMethod.tupleBatchIteratorFromQuery(pathToFile, baseSQL);
-    if (tuples.hasNext()) {
-      cache = tuples.next();
-      schema = cache.getSchema();
-    } else {
-      schema = null;
-      cache = null;
-    }
+  public SQLiteQueryScan(String filename, String baseSQL, Schema outputSchema) {
+    this.baseSQL = baseSQL;
+    this.filename = filename;
+    schema = outputSchema;
   }
 
   @Override
@@ -33,17 +28,17 @@ public class SQLiteQueryScan extends Operator {
   }
 
   @Override
-  protected TupleBatch fetchNext() throws DbException {
-    if (cache != null) {
-      TupleBatch tmp = cache;
-      cache = null;
-      return tmp;
-    } else {
-      if (tuples.hasNext())
-        return this.tuples.next();
-      else
-        return null;
-    }
+  protected _TupleBatch fetchNext() throws DbException {
+    // if (cache != null) {
+    // TupleBatch tmp = cache;
+    // cache = null;
+    // return tmp;
+    // } else {
+    if (tuples.hasNext())
+      return this.tuples.next();
+    else
+      return null;
+    // }
   }
 
   @Override
@@ -58,15 +53,13 @@ public class SQLiteQueryScan extends Operator {
 
   @Override
   public void open() throws DbException {
-
     super.open();
+    tuples = SQLiteAccessMethod.tupleBatchIteratorFromQuery(dataDir + "/" + filename, baseSQL, schema);
   }
 
-  // @Override
-  // public void rewind() throws DbException {
-  // tuples = SQLiteAccessMethod.tupleBatchIteratorFromQuery(driverClass, baseSQL);
-  // cache = null;
-  // }
+  public void setDataDir(String dataDir) {
+    this.dataDir = dataDir;
+  }
 
   @Override
   public void setChildren(Operator[] children) {

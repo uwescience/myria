@@ -1,7 +1,7 @@
 package edu.washington.escience.myriad.parallel;
 
 import java.io.Serializable;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * The exchange operator, which will be used in implementing parallel simpledb.
@@ -11,34 +11,42 @@ public abstract class Exchange extends Operator {
 
   /**
    * 
-   * The identifier of exchange operators. In a query plan, there may be a set of exchange
-   * operators, this ID class is used for the server and the workers to find out which exchange
-   * operator is the owner of an arriving ExchangeMessage.
+   * The identifier of exchange operators. In a query plan, there may be a set of exchange operators, this ID class is
+   * used for the server and the workers to find out which exchange operator is the owner of an arriving
+   * ExchangeMessage.
    * 
    * */
-  public static class ParallelOperatorID implements Serializable {
+  public static class ExchangePairID implements Serializable {
 
     /**
      * The id
      * */
-    private final int oId;
+    private final long oId;
 
-    private static final AtomicInteger idGenerator = new AtomicInteger();
+    private static final AtomicLong idGenerator = new AtomicLong();
 
     /**
      * The only way to create a ParallelOperatorID.
      * */
-    public static ParallelOperatorID newID() {
-      return new ParallelOperatorID(idGenerator.getAndIncrement());
+    public static ExchangePairID newID() {
+      return new ExchangePairID(idGenerator.getAndIncrement());
     }
 
-    private ParallelOperatorID(int oId) {
+    public static ExchangePairID fromExisting(long l) {
+      return new ExchangePairID(l);
+    }
+
+    public long getLong() {
+      return this.oId;
+    }
+
+    private ExchangePairID(long oId) {
       this.oId = oId;
     }
 
     @Override
     public boolean equals(Object o) {
-      ParallelOperatorID oID = (ParallelOperatorID) o;
+      ExchangePairID oID = (ExchangePairID) o;
       if (oID == null)
         return false;
       return oId == oID.oId;
@@ -46,7 +54,7 @@ public abstract class Exchange extends Operator {
 
     @Override
     public int hashCode() {
-      return this.oId;
+      return (int) this.oId;
     }
 
     @Override
@@ -55,9 +63,9 @@ public abstract class Exchange extends Operator {
     }
   }
 
-  protected final ParallelOperatorID operatorID;
+  protected final ExchangePairID operatorID;
 
-  public Exchange(ParallelOperatorID oID) {
+  public Exchange(ExchangePairID oID) {
     this.operatorID = oID;
   }
 
@@ -66,7 +74,7 @@ public abstract class Exchange extends Operator {
    * */
   public abstract String getName();
 
-  public ParallelOperatorID getOperatorID() {
+  public ExchangePairID getOperatorID() {
     return this.operatorID;
   }
 }

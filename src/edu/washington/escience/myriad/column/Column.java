@@ -7,7 +7,9 @@ import java.sql.SQLException;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 
-import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
+import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
+
+//import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
 
 /**
  * A column of a batch of tuples.
@@ -30,8 +32,7 @@ public interface Column {
    * 
    * @param row position in this column of the specified element.
    * @param statement destination JDBC PreparedStatement.
-   * @param jdbcIndex index in the JDBC PreparedStatement where the element should be placed.
-   *          1-indexed.
+   * @param jdbcIndex index in the JDBC PreparedStatement where the element should be placed. 1-indexed.
    * @throws SQLException if there are JDBC errors.
    */
   void getIntoJdbc(int row, PreparedStatement statement, int jdbcIndex) throws SQLException;

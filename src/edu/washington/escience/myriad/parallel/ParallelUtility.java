@@ -1,32 +1,30 @@
 package edu.washington.escience.myriad.parallel;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.SocketAddress;
-import java.util.ArrayList;
 import java.util.Map;
 
 import org.apache.mina.core.future.CloseFuture;
 import org.apache.mina.core.future.ConnectFuture;
-import org.apache.mina.core.future.IoFutureListener;
-import org.apache.mina.core.future.WriteFuture;
 import org.apache.mina.core.service.IoConnector;
+import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IdleStatus;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.filter.codec.ProtocolCodecFilter;
-import org.apache.mina.filter.codec.serialization.ObjectSerializationCodecFactory;
+import org.apache.mina.filter.codec.protobuf.ProtobufCodecFactory;
 import org.apache.mina.filter.compression.CompressionFilter;
 import org.apache.mina.transport.socket.SocketSessionConfig;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
+
+import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 
 /**
  * Utility methods
@@ -57,13 +55,15 @@ public class ParallelUtility {
     connector.getFilterChain().addLast("compressor", new CompressionFilter());
 
     connector.getFilterChain().addLast("codec",
-        new ProtocolCodecFilter(new ObjectSerializationCodecFactory()));
+        new ProtocolCodecFilter(ProtobufCodecFactory.newInstance(TransportMessage.getDefaultInstance())));
 
     connector.setHandler(new IoHandlerAdapter() {
+      @Override
       public void exceptionCaught(IoSession session, Throwable cause) {
         cause.printStackTrace();
       }
 
+      @Override
       public void messageReceived(IoSession session, Object message) throws Exception {
         System.out.println("Default IOHandler, Message received: " + message);
         super.messageReceived(session, message);
@@ -73,8 +73,7 @@ public class ParallelUtility {
   }
 
   /**
-   * Close a session. Every time a session is to be closed, do call this method. Do not directly
-   * call session.close;
+   * Close a session. Every time a session is to be closed, do call this method. Do not directly call session.close;
    * */
   public static CloseFuture closeSession(IoSession session) {
     if (session == null)
@@ -84,27 +83,13 @@ public class ParallelUtility {
 
     if (ic != null) {
       Map<Long, IoSession> activeSessions = ic.getManagedSessions();
-      if ((activeSessions.containsValue(session) && activeSessions.size() <= 1)
-          || activeSessions.size() <= 0)
+      if ((activeSessions.containsValue(session) && activeSessions.size() <= 1) || activeSessions.size() <= 0)
         ic.dispose(false);
     }
     return cf;
   }
 
-  /**
-   * Create a session for network communication.
-   * 
-   * @return An IoSession is a logical connection between a server and a client in Apache Mina. A
-   *         set of sessions may share the same underlying TCP/UDP connection.
-   * 
-   * @param remoteAddress The address of the remote server
-   * 
-   * @param ioHandler The handler which processes received messages from the returned session
-   * 
-   * @param connectionTimeoutMS The timeout of connecting the server in milliseconds.
-   * */
-  public static IoSession createSession(SocketAddress remoteAddress, IoHandlerAdapter ioHandler,
-      long connectionTimeoutMS) {
+  public static IoSession createSession(SocketAddress remoteAddress, IoHandler ioHandler, long connectionTimeoutMS) {
 
     IoSession session = null;
 
@@ -131,7 +116,7 @@ public class ParallelUtility {
   public static NioSocketAcceptor createAcceptor() {
     NioSocketAcceptor acceptor = new NioSocketAcceptor(10);
 
-    SocketSessionConfig config = (SocketSessionConfig) acceptor.getSessionConfig();
+    SocketSessionConfig config = acceptor.getSessionConfig();
     config.setKeepAlive(false);
     config.setTcpNoDelay(true);
     /**
@@ -145,15 +130,18 @@ public class ParallelUtility {
     acceptor.setCloseOnDeactivation(true);
 
     acceptor.getFilterChain().addLast("compressor", new CompressionFilter());
+
     acceptor.getFilterChain().addLast("codec",
-        new ProtocolCodecFilter(new ObjectSerializationCodecFactory()));
+        new ProtocolCodecFilter(ProtobufCodecFactory.newInstance(TransportMessage.getDefaultInstance())));
     acceptor.setCloseOnDeactivation(true);
 
     acceptor.setHandler(new IoHandlerAdapter() {
+      @Override
       public void exceptionCaught(IoSession session, Throwable cause) {
         cause.printStackTrace();
       }
 
+      @Override
       public void messageReceived(IoSession session, Object message) throws Exception {
         System.out.println("Default IOHandler, Message received: " + message);
         super.messageReceived(session, message);
@@ -179,24 +167,6 @@ public class ParallelUtility {
     }
   }
 
-  public static void broadcastMessageToWorkers(Object message, SocketInfo[] workers,
-      IoHandlerAdapter handler, long timeoutMS) {
-
-    for (SocketInfo worker : workers) {
-      IoSession s = ParallelUtility.createSession(worker.getAddress(), handler, timeoutMS);
-      if (s != null) {
-        s.write(message).addListener(new IoFutureListener<WriteFuture>() {
-
-          @Override
-          public void operationComplete(WriteFuture future) {
-            ParallelUtility.closeSession(future.getSession());
-          }
-        });
-      }
-    }
-
-  }
-
   public static String[] removeArg(String[] args, int toBeRemoved) {
     if (args == null)
       return null;
@@ -207,20 +177,6 @@ public class ParallelUtility {
     System.arraycopy(args, 0, newArgs, 0, toBeRemoved);
     System.arraycopy(args, toBeRemoved + 1, newArgs, toBeRemoved, args.length - toBeRemoved - 1);
     return newArgs;
-  }
-
-  public static SocketInfo[] loadWorkers(String confDir) throws IOException {
-    ArrayList<SocketInfo> workers = new ArrayList<SocketInfo>();
-    BufferedReader br =
-        new BufferedReader(new InputStreamReader(new FileInputStream(new File(confDir
-            + "/workers.conf"))));
-    String line = null;
-    while ((line = br.readLine()) != null) {
-      String[] ts = line.replaceAll("[ \t]+", "").replaceAll("#.*$", "").split(":");
-      if (ts.length >= 2)
-        workers.add(new SocketInfo(ts[0], Integer.parseInt(ts[1])));
-    }
-    return workers.toArray(new SocketInfo[] {});
   }
 
   public static void deleteFileFolder(File f) throws IOException {

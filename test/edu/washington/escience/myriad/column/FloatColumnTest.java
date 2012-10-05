@@ -4,7 +4,7 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
+import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 
 public class FloatColumnTest {
 

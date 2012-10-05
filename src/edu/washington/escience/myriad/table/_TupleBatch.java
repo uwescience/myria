@@ -8,6 +8,7 @@ import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.Predicate;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.parallel.PartitionFunction;
+import edu.washington.escience.myriad.TupleBatchBuffer;
 
 /**
  * Relational data processing units
@@ -17,8 +18,8 @@ public interface _TupleBatch extends Serializable {
   public static final int BATCH_SIZE = 100;
 
   /**
-   * The schema of the output tuples. The input schema may change by projects. This method return
-   * the final output schema.
+   * The schema of the output tuples. The input schema may change by projects. This method return the final output
+   * schema.
    * */
   public Schema outputSchema();
 
@@ -41,8 +42,7 @@ public interface _TupleBatch extends Serializable {
   /**
    * @param fieldIdx the index of input columns
    * 
-   *          select only those tuples which fulfill the predicate. The effects of multiple select
-   *          operations overlap.
+   *          select only those tuples which fulfill the predicate. The effects of multiple select operations overlap.
    * 
    * */
   public _TupleBatch filter(int fieldIdx, Predicate.Op op, Object operand);
@@ -65,28 +65,30 @@ public interface _TupleBatch extends Serializable {
   public _TupleBatch purgeProjects();
 
   public _TupleBatch append(_TupleBatch another);
-  
+
   public _TupleBatch join(_TupleBatch other, Predicate p, _TupleBatch output);
-  
+
   public _TupleBatch union(_TupleBatch another);
-  
+
   public _TupleBatch intersect(_TupleBatch another);
-  
+
   public _TupleBatch except(_TupleBatch another);
-  
+
   public _TupleBatch distinct();
-  
+
   public _TupleBatch groupby();
-  
+
   public _TupleBatch orderby();
+
+  public _TupleBatch remove(int innerIdx);
   
   public List<Column> outputRawData();
-  
+
   /**
    * -------------------- The parallel methods ------------------------
    * */
 
-  public _TupleBatch[] partition(PartitionFunction<?, ?> p, _TupleBatch[]  buffers);
+  public TupleBatchBuffer[] partition(PartitionFunction<?, ?> p, TupleBatchBuffer[] buffers);
 
   /**
    * -------------------- The value retrieval methods ------------------
@@ -98,11 +100,13 @@ public interface _TupleBatch extends Serializable {
   public float getFloat(int column, int row);
 
   public int getInt(int column, int row);
+  
+  public long getLong(int column, int row);
 
   public String getString(int column, int row);
+
+  public interface TupleIterator extends Iterator {
+  } 
   
-  public interface TupleIterator extends Iterator
-  {
-  }
-  
+  public int hashCode(int rowIndx);
 }

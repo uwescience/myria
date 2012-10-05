@@ -7,22 +7,22 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+
 import com.google.common.base.Preconditions;
 
-// import edu.washington.escience.Predicate.Op;
 import edu.washington.escience.myriad.Predicate;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.Schema.TDItem;
+import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.annotation.ThreadSafe;
+import edu.washington.escience.myriad.column.BooleanColumn;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.DoubleColumn;
-import edu.washington.escience.myriad.column.IntColumn;
-import edu.washington.escience.myriad.column.StringColumn;
-import edu.washington.escience.myriad.column.BooleanColumn;
 import edu.washington.escience.myriad.column.FloatColumn;
-
-import edu.washington.escience.myriad.parallel.PartitionFunction;
+import edu.washington.escience.myriad.column.IntColumn;
+import edu.washington.escience.myriad.column.LongColumn;
+import edu.washington.escience.myriad.column.StringColumn;
 import edu.washington.escience.myriad.table._TupleBatch;
 
 // Not yet @ThreadSafe
@@ -31,6 +31,11 @@ public class ConcurrentInMemoryTupleBatch implements _TupleBatch {
   private static final long serialVersionUID = 1L;
 
   public static final int BATCH_SIZE = 100;
+
+  /** Class-specific magic number used to generate the hash code. */
+  private static final int MAGIC_HASHCODE1 = 243;
+  /** Class-specific magic number used to generate the hash code. */
+  private static final int MAGIC_HASHCODE2 = 67;
 
   private final Schema inputSchema;
   private final String[] outputColumnNames;
@@ -88,6 +93,7 @@ public class ConcurrentInMemoryTupleBatch implements _TupleBatch {
   // this.invalidColumns = invalidColumns;
   // }
 
+  @Override
   public synchronized ConcurrentInMemoryTupleBatch filter(int fieldIdx, Predicate.Op op, Object operand) {
     if (!this.invalidColumns.get(fieldIdx) && this.numInputTuples > 0) {
       Column columnValues = this.inputColumns.get(fieldIdx);
@@ -102,28 +108,39 @@ public class ConcurrentInMemoryTupleBatch implements _TupleBatch {
     return this;
   }
 
+  @Override
   public synchronized boolean getBoolean(int column, int row) {
     return ((BooleanColumn) inputColumns.get(column)).getBoolean(row);
   }
 
+  @Override
   public synchronized double getDouble(int column, int row) {
     return ((DoubleColumn) inputColumns.get(column)).getDouble(row);
   }
 
+  @Override
   public synchronized float getFloat(int column, int row) {
     return ((FloatColumn) inputColumns.get(column)).getFloat(row);
   }
 
+  @Override
   public synchronized int getInt(int column, int row) {
     return ((IntColumn) inputColumns.get(column)).getInt(row);
   }
 
-  public Schema inputSchema() {
-    return inputSchema;
+  @Override
+  public synchronized long getLong(int column, int row) {
+    return ((LongColumn) inputColumns.get(column)).getLong(row);
   }
 
+  @Override
   public synchronized String getString(int column, int row) {
     return ((StringColumn) inputColumns.get(column)).getString(row);
+  }
+
+  @Override
+  public Schema inputSchema() {
+    return inputSchema;
   }
 
   @Override
@@ -131,10 +148,7 @@ public class ConcurrentInMemoryTupleBatch implements _TupleBatch {
     return numInputTuples;
   }
 
-  public synchronized ConcurrentInMemoryTupleBatch[] partition(PartitionFunction<?, ?> p) {
-    return null;
-  }
-
+  @Override
   public synchronized ConcurrentInMemoryTupleBatch project(int[] remainingColumns) {
     boolean[] columnsToRemain = new boolean[this.inputSchema.numFields()];
     Arrays.fill(columnsToRemain, false);
@@ -187,6 +201,7 @@ public class ConcurrentInMemoryTupleBatch implements _TupleBatch {
     return validC;
   }
 
+  @Override
   public synchronized Schema outputSchema() {
 
     int[] columnIndices = this.outputColumnIndices();
@@ -298,9 +313,37 @@ public class ConcurrentInMemoryTupleBatch implements _TupleBatch {
   }
 
   @Override
-  public _TupleBatch[] partition(PartitionFunction<?, ?> p, _TupleBatch[] buffers) {
-    // TODO Auto-generated method stub
-    return null;
+  public TupleBatchBuffer[] partition(PartitionFunction<?, ?> pf, TupleBatchBuffer[] buffers) {
+    // p.partition(t, td)
+    List<Column> outputData = this.outputRawData();
+    Schema s = this.outputSchema();
+    int numColumns = outputData.size();
+
+    int[] partitions = pf.partition(outputData, s);
+
+    for (int i = 0; i < partitions.length; i++) {
+      int p_of_tuple = partitions[i];
+      for (int j = 0; j < numColumns; j++) {
+        buffers[p_of_tuple].put(j, outputData.get(j).get(i));
+      }
+    }
+    return buffers;
+  }
+
+  @Override
+  public ConcurrentInMemoryTupleBatch remove(int innerIdx) {
+    if (innerIdx < this.numInputTuples && innerIdx >= 0)
+      invalidTuples.set(innerIdx);
+    return this;
+  }
+
+  @Override
+  public int hashCode(int rowIndx) {
+    // return 0;
+    HashCodeBuilder hb = new HashCodeBuilder(MAGIC_HASHCODE1, MAGIC_HASHCODE2);
+    for (int i = 0; i < inputSchema.numFields(); ++i)
+      hb.append(inputColumns.get(i).get(rowIndx));
+    return hb.toHashCode();
   }
 
 }

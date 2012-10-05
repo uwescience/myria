@@ -16,7 +16,7 @@ import edu.washington.escience.myriad.column.ColumnFactory;
  * @author dhalperi
  * 
  */
-class TupleBatchBuffer {
+public class TupleBatchBuffer {
   /** Format of the emitted tuples. */
   private final Schema schema;
   /** Convenience constant; must match schema.numColumns() and currentColumns.size(). */
@@ -37,7 +37,7 @@ class TupleBatchBuffer {
    * 
    * @param schema specified the columns of the emitted TupleBatch objects.
    */
-  protected TupleBatchBuffer(final Schema schema) {
+  public TupleBatchBuffer(final Schema schema) {
     this.schema = Objects.requireNonNull(schema);
     readyTuples = new LinkedList<TupleBatch>();
     currentColumns = ColumnFactory.allocateColumns(schema);
@@ -67,7 +67,7 @@ class TupleBatchBuffer {
    * @param column index of the column.
    * @param value value to be appended.
    */
-  protected final void put(final int column, final Object value) {
+  public final void put(final int column, final Object value) {
     Preconditions.checkElementIndex(column, numColumns);
     if (columnsReady.get(column)) {
       throw new RuntimeException("Need to fill up one row of TupleBatchBuffer before starting new one");
@@ -83,4 +83,25 @@ class TupleBatchBuffer {
       }
     }
   }
+  
+  public final int numTuples()
+  {
+    return this.readyTuples.size()*TupleBatch.BATCH_SIZE+this.currentNumTuples;
+  }
+
+  public final List<TupleBatch> getOutput() {
+    List<TupleBatch> output = new LinkedList<TupleBatch>();
+    output.addAll(readyTuples);
+    output.add(new TupleBatch(schema, currentColumns, currentNumTuples));
+    return output;
+  }
+  
+
+  public final TupleBatch pop() {
+    if (this.readyTuples.size() > 0) {
+      return this.readyTuples.remove(0);
+    }
+    return null;
+  }
+
 }
