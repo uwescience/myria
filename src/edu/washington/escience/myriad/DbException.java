@@ -1,4 +1,4 @@
-package edu.washington.escience.myriad.parallel;
+package edu.washington.escience.myriad;
 
 /** Generic database exception class. */
 public class DbException extends Exception {

@@ -17,11 +17,20 @@ import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 
+import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Predicate;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.accessmethod.JdbcAccessMethod;
+import edu.washington.escience.myriad.operator.DupElim;
+import edu.washington.escience.myriad.operator.Filter;
+import edu.washington.escience.myriad.operator.JdbcQueryScan;
+import edu.washington.escience.myriad.operator.JdbcSQLProcessor;
+import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.operator.Project;
+import edu.washington.escience.myriad.operator.SQLiteQueryScan;
+import edu.washington.escience.myriad.operator.SQLiteSQLProcessor;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 import edu.washington.escience.myriad.table._TupleBatch;
 
@@ -32,54 +41,6 @@ import edu.washington.escience.myriad.table._TupleBatch;
  * 
  */
 public class Main {
-  public static class DoNothingOperator extends Operator {
-
-    Operator[] children;
-    Schema outputSchema;
-
-    public DoNothingOperator(final Schema outputSchema, final Operator[] children) {
-      this.outputSchema = outputSchema;
-      this.children = children;
-    }
-
-    @Override
-    protected _TupleBatch fetchNext() throws DbException {
-      if (children != null) {
-        for (final Operator child : children) {
-          while (child.hasNext()) {
-            child.next();
-          }
-        }
-      }
-      return null;
-    }
-
-    @Override
-    public Operator[] getChildren() {
-      return this.children;
-    }
-
-    @Override
-    public Schema getSchema() {
-      return this.outputSchema;
-    }
-
-    @Override
-    public void open() throws DbException {
-      if (children != null) {
-        for (final Operator child : children) {
-          child.open();
-        }
-      }
-      super.open();
-    }
-
-    @Override
-    public void setChildren(final Operator[] children) {
-      this.children = children;
-    }
-
-  }
   public static final int MASTER_ID = 0;
   public static final int WORKER_1_ID = 1;
 
@@ -236,7 +197,8 @@ public class Main {
 
   public static void jdbcTest_slxu(final String[] args) throws NoSuchElementException, DbException {
 
-    final Schema outputSchema = new Schema(new Type[] { Type.INT_TYPE, Type.STRING_TYPE }, new String[] { "id", "name" });
+    final Schema outputSchema =
+        new Schema(new Type[] { Type.INT_TYPE, Type.STRING_TYPE }, new String[] { "id", "name" });
     final JdbcQueryScan scan =
         new JdbcQueryScan("com.mysql.jdbc.Driver", "jdbc:mysql://localhost:3306/test", "select * from testtable1",
             outputSchema, "", "");
@@ -398,10 +360,12 @@ public class Main {
     final String[] columnNames = new String[] { "id", "name" };
     final Schema outputSchema = new Schema(types, columnNames);
 
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan("testtable1.db", "select distinct * from testtable1", outputSchema);
+    final SQLiteQueryScan scan1 =
+        new SQLiteQueryScan("testtable1.db", "select distinct * from testtable1", outputSchema);
     final CollectProducer cp1 = new CollectProducer(scan1, worker2ReceiveID, WORKER_2_ID);
 
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan("testtable2.db", "select distinct * from testtable2", outputSchema);
+    final SQLiteQueryScan scan2 =
+        new SQLiteQueryScan("testtable2.db", "select distinct * from testtable2", outputSchema);
     final CollectProducer cp2 = new CollectProducer(scan2, worker2ReceiveID, WORKER_2_ID);
     // CollectProducer child, ParallelOperatorID operatorID, SocketInfo[] workers
     final SQLiteTupleBatch bufferWorker2 = new SQLiteTupleBatch(outputSchema, "/tmp/temptable1.db", "temptable1");
@@ -577,7 +541,8 @@ public class Main {
 
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.OFF);
 
-    final Schema outputSchema = new Schema(new Type[] { Type.LONG_TYPE, Type.STRING_TYPE }, new String[] { "id", "name" });
+    final Schema outputSchema =
+        new Schema(new Type[] { Type.LONG_TYPE, Type.STRING_TYPE }, new String[] { "id", "name" });
 
     /* Scan the testtable in database */
     final SQLiteQueryScan scan = new SQLiteQueryScan(filename, query, outputSchema);

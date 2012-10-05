@@ -3,6 +3,8 @@ package edu.washington.escience.myriad.parallel;
 import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicLong;
 
+import edu.washington.escience.myriad.operator.Operator;
+
 /**
  * The exchange operator, which will be used in implementing parallel simpledb.
  * 

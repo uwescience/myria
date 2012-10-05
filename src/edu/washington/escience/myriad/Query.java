@@ -1,10 +1,10 @@
-package edu.washington.escience.myriad.parallel;
+package edu.washington.escience.myriad;
 
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.NoSuchElementException;
 
-import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.table._TupleBatch;
 
 /**
