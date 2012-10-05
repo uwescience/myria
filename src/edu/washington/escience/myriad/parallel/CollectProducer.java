@@ -7,6 +7,7 @@ import org.apache.mina.core.session.IoSession;
 
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.column.Column;
+import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageType;

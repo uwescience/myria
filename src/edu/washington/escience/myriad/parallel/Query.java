@@ -5,6 +5,7 @@ import java.io.Serializable;
 import java.util.NoSuchElementException;
 
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.table._TupleBatch;
 
 /**

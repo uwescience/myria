@@ -10,8 +10,8 @@ import org.junit.Test;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
+import edu.washington.escience.myriad.operator.JdbcQueryScan;
 import edu.washington.escience.myriad.parallel.DbException;
-import edu.washington.escience.myriad.parallel.JdbcQueryScan;
 
 /**
  * @author dhalperi

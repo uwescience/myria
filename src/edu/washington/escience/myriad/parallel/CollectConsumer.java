@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.table._TupleBatch;
 
 /**

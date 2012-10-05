@@ -35,6 +35,7 @@ import com.google.protobuf.ByteString;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnFactory;
+import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 import edu.washington.escience.myriad.parallel.Worker.MessageWrapper;
 import edu.washington.escience.myriad.proto.ControlProto;
