@@ -11,7 +11,7 @@ import edu.washington.escience.myriad.column.Column;
  * The ShuffleProducer class uses an instance of the PartitionFunction class to decide which worker a tuple should be
  * routed to. Typically, the ShuffleProducer class invokes {@link partition(Tuple, Schema) partition} on every tuple it
  * generates.
- * */
+ */
 public abstract class PartitionFunction<K, V> implements Serializable {
 
   private static final long serialVersionUID = 1L;
@@ -21,7 +21,7 @@ public abstract class PartitionFunction<K, V> implements Serializable {
 
   /**
    * Each partition function implementation must has a Class(int) style constructor
-   * */
+   */
   public PartitionFunction(final int numPartition) {
     this.numPartition = numPartition;
   }
@@ -49,12 +49,12 @@ public abstract class PartitionFunction<K, V> implements Serializable {
    * 
    * @return the worker to send the tuple to.
    * 
-   * */
+   */
   public abstract int[] partition(List<Column> columns, Schema td);
 
   /**
    * A concrete implementation of a partition function may need some information to help it decide the tuple partitions.
-   * */
+   */
   public void setAttribute(final K attribute, final V value) {
     this.attributes.put(attribute, value);
   }

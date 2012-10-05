@@ -6,7 +6,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * The exchange operator, which will be used in implementing parallel simpledb.
  * 
- * */
+ */
 public abstract class Exchange extends Operator {
 
   /**
@@ -15,12 +15,12 @@ public abstract class Exchange extends Operator {
    * used for the server and the workers to find out which exchange operator is the owner of an arriving
    * ExchangeMessage.
    * 
-   * */
+   */
   public static class ExchangePairID implements Serializable {
 
     /**
      * The id
-     * */
+     */
     private final long oId;
 
     private static final AtomicLong idGenerator = new AtomicLong();
@@ -31,7 +31,7 @@ public abstract class Exchange extends Operator {
 
     /**
      * The only way to create a ParallelOperatorID.
-     * */
+     */
     public static ExchangePairID newID() {
       return new ExchangePairID(idGenerator.getAndIncrement());
     }
@@ -72,7 +72,7 @@ public abstract class Exchange extends Operator {
 
   /**
    * Return the name of the exchange, used only to display the operator in the operator tree
-   * */
+   */
   public abstract String getName();
 
   public ExchangePairID getOperatorID() {

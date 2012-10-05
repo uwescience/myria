@@ -28,12 +28,12 @@ import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 
 /**
  * Utility methods
- * */
+ */
 public class ParallelUtility {
 
   /**
    * Close a session. Every time a session is to be closed, do call this method. Do not directly call session.close;
-   * */
+   */
   public static CloseFuture closeSession(final IoSession session) {
     if (session == null) {
       return null;
@@ -52,7 +52,7 @@ public class ParallelUtility {
 
   /**
    * @param dest will be replaced if exists and override
-   * */
+   */
   public static void copyFileFolder(final File source, final File dest, final boolean override) throws IOException {
     if (dest.exists()) {
       if (!override) {
@@ -94,7 +94,7 @@ public class ParallelUtility {
 
   /**
    * create a server side acceptor
-   * */
+   */
   public static NioSocketAcceptor createAcceptor() {
     final NioSocketAcceptor acceptor = new NioSocketAcceptor(10);
 
@@ -103,7 +103,7 @@ public class ParallelUtility {
     config.setTcpNoDelay(true);
     /**
      * A session without any write/read actions in 5 seconds is assumed to be idle
-     * */
+     */
     config.setIdleTime(IdleStatus.BOTH_IDLE, 5);
     config.setReceiveBufferSize(2048);
     config.setSendBufferSize(2048);
@@ -136,7 +136,7 @@ public class ParallelUtility {
 
   /**
    * create a client side connector to the server
-   * */
+   */
   private static IoConnector createConnector() {
     final IoConnector connector = new NioSocketConnector();
     final SocketSessionConfig config = (SocketSessionConfig) connector.getSessionConfig();
@@ -220,14 +220,14 @@ public class ParallelUtility {
 
   /**
    * Shutdown the java virtual machine
-   * */
+   */
   public static void shutdownVM() {
     System.exit(0);
   }
 
   /**
    * unbind the acceptor from the binded port and close all the connections
-   * */
+   */
   public static void unbind(final NioSocketAcceptor acceptor) {
 
     for (final IoSession session : acceptor.getManagedSessions().values()) {

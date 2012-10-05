@@ -52,7 +52,7 @@ import edu.washington.escience.myriad.table._TupleBatch;
  * 4) After the query plan finishes, each worker removes the query plan and related data structures, and then waits for
  * next query plan
  * 
- * */
+ */
 public class Worker {
 
   protected class MessageProcessor extends Thread {
@@ -133,7 +133,7 @@ public class Worker {
 
   /**
    * The working thread, which executes the query plan
-   * */
+   */
   protected class QueryExecutor extends Thread {
     @Override
     public void run() {
@@ -172,7 +172,7 @@ public class Worker {
   /**
    * Mina acceptor handler. This is where all messages arriving from other workers and from the coordinator will be
    * processed
-   * */
+   */
   public class WorkerHandler extends IoHandlerAdapter {
 
     @Override
@@ -184,7 +184,7 @@ public class Worker {
 
     /**
      * Got called everytime a message is received.
-     * */
+     */
     @Override
     public void messageReceived(final IoSession session, final Object message) {
       if (message instanceof TransportMessage) {
@@ -231,7 +231,7 @@ public class Worker {
    * The controller class which decides whether this worker should shutdown or not. 1) it detects whether the server is
    * still alive. If the server got killed because of any reason, the workers will be terminated. 2) it detects whether
    * a shutdown message is received.
-   * */
+   */
   protected class WorkerLivenessController extends TimerTask {
     private final Timer timer = new Timer();
     private volatile boolean inRun = false;
@@ -289,7 +289,7 @@ public class Worker {
   /**
    * Find out all the ParallelOperatorIDs of all consuming operators: ShuffleConsumer, CollectConsumer, and
    * BloomFilterConsumer running at this worker. The inBuffer needs the IDs to distribute the ExchangeMessages received.
-   * */
+   */
   public static void collectConsumerOperatorIDs(final Operator root, final ArrayList<ExchangePairID> oIds) {
     if (root instanceof Consumer) {
       oIds.add(((Consumer) root).getOperatorID());
@@ -354,19 +354,19 @@ public class Worker {
 
   /**
    * The ID of this worker
-   * */
+   */
   final int myID;
   //
   // final int port;
   // final String host;
   // /**
   // * The server address
-  // * */
+  // */
   // final InetSocketAddress masterAddress;
 
   /**
    * connectionPool[0] is always the master
-   * */
+   */
   protected final ConnectionPool connectionPool;
 
   /**
@@ -375,17 +375,17 @@ public class Worker {
    * The Server sends messages, including query plans and control messages, to the worker through this acceptor.
    * 
    * Other workers send tuples during query execution to this worker also through this acceptor.
-   * */
+   */
   final NioSocketAcceptor acceptor;
 
   /**
    * The current query plan
-   * */
+   */
   private volatile Operator queryPlan = null;
 
   /**
    * A indicator of shutting down the worker
-   * */
+   */
   private volatile boolean toShutdown = false;
 
   public final QueryExecutor queryExecutor;
@@ -395,12 +395,12 @@ public class Worker {
   /**
    * The IoHandler for network communication. The methods of this handler are called when some communication events
    * happen. For example a message is received, a new connection is created, etc.
-   * */
+   */
   final WorkerHandler minaHandler;
 
   /**
    * The I/O buffer, all the ExchangeMessages sent to this worker are buffered here.
-   * */
+   */
   protected final HashMap<ExchangePairID, LinkedBlockingQueue<ExchangeTupleBatch>> dataBuffer;
   protected final ConcurrentHashMap<ExchangePairID, Schema> exchangeSchema;
 
@@ -449,7 +449,7 @@ public class Worker {
   /**
    * execute the current query, note that this method is invoked by the Mina IOHandler thread. Typically, IOHandlers
    * should focus on accepting/routing IO requests, rather than do heavily loaded work.
-   * */
+   */
   public void executeQuery() {
     System.out.println("Query started");
     synchronized (Worker.this.queryExecutor) {
@@ -459,7 +459,7 @@ public class Worker {
 
   /**
    * This method should be called when a query is finished
-   * */
+   */
   public void finishQuery() {
     if (this.queryPlan != null) {
       this.dataBuffer.clear();
@@ -470,14 +470,14 @@ public class Worker {
 
   /**
    * Initiallize
-   * */
+   */
   public void init() throws IOException {
     acceptor.setHandler(minaHandler);
   }
 
   /**
    * Return true if the worker is now executing a query.
-   * */
+   */
   public boolean isRunning() {
     return this.queryPlan != null;
   }
@@ -486,7 +486,7 @@ public class Worker {
    * localize the received query plan. Some information that are required to get the query plan executed need to be
    * replaced by local versions. For example, the table in the SeqScan operator need to be replaced by the local table.
    * Note that Producers and Consumers also needs local information.
-   * */
+   */
   public void localizeQueryPlan(final Operator queryPlan) {
     if (queryPlan == null) {
       return;
@@ -534,7 +534,7 @@ public class Worker {
 
   /**
    * This method should be called when a data item is received
-   * */
+   */
   public void receiveData(final ExchangeMessage data) {
     if (data instanceof _TupleBatch) {
       System.out.println("TupleBag received from " + data.getWorkerID() + " to Operator: " + data.getOperatorID());
@@ -553,7 +553,7 @@ public class Worker {
    * this method should be called when a query is received from the server.
    * 
    * It does the initialization and preparation for the execution of the query.
-   * */
+   */
   public void receiveQuery(final Operator query) {
     System.out.println("Query received");
     if (Worker.this.queryPlan != null) {
@@ -585,7 +585,7 @@ public class Worker {
 
   /**
    * This method should be called whenever the system is going to shutdown
-   * */
+   */
   public void shutdown() {
     System.out.println("Shutdown requested. Please wait when cleaning up...");
     ParallelUtility.unbind(acceptor);

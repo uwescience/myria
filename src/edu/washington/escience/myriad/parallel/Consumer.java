@@ -9,7 +9,7 @@ public abstract class Consumer extends Exchange {
   /**
    * The buffer for receiving ExchangeMessages. This buffer should be assigned by the Worker. Basically, buffer =
    * Worker.inBuffer.get(this.getOperatorID())
-   * */
+   */
   private transient volatile LinkedBlockingQueue<ExchangeTupleBatch> inputBuffer;
 
   // protected volatile _TupleBatch outputBuffer;
@@ -26,7 +26,7 @@ public abstract class Consumer extends Exchange {
    * Read a single ExchangeMessage from the queue that buffers incoming ExchangeMessages.
    * 
    * @param timeout Wait for at most timeout milliseconds. If the timeout is negative, wait until an element arrives.
-   * */
+   */
   public ExchangeTupleBatch take(final int timeout) throws InterruptedException {
 
     if (timeout >= 0) {

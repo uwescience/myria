@@ -84,7 +84,7 @@ public class ImmutableInMemoryTupleBatch implements _TupleBatch {
 
   /**
    * Only for copy
-   * */
+   */
   protected ImmutableInMemoryTupleBatch(final Schema inputSchema, final String[] outputColumnNames, final List<Column> inputColumns,
       final int numInputTuples, final BitSet invalidTuples, final BitSet invalidColumns) {
     this.inputSchema = inputSchema;

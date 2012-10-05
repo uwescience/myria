@@ -9,7 +9,7 @@ import edu.washington.escience.myriad.column.Column;
  * The default implementation of the partition function.
  * 
  * The partition of a tuple is decided by the hash code of a preset field of the tuple.
- * */
+ */
 public class SingleFieldHashPartitionFunction extends PartitionFunction<String, Integer> {
 
   private static final long serialVersionUID = 1L;
@@ -39,7 +39,7 @@ public class SingleFieldHashPartitionFunction extends PartitionFunction<String, 
 
   /**
    * This partition function only needs the index of the partition field in deciding the tuple partitions
-   * */
+   */
   @Override
   public void setAttribute(final String attribute, final Integer value) {
     super.setAttribute(attribute, value);

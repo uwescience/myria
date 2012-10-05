@@ -84,7 +84,7 @@ public class ExchangeTupleBatch implements ExchangeMessage, _TupleBatch {
 
   /**
    * Get the ParallelOperatorID, to which this message is targeted
-   * */
+   */
   @Override
   public ExchangePairID getOperatorID() {
     return this.operatorID;
@@ -101,7 +101,7 @@ public class ExchangeTupleBatch implements ExchangeMessage, _TupleBatch {
 
   /**
    * Get the worker id from which the message was sent
-   * */
+   */
   @Override
   public int getWorkerID() {
     return this.fromWorkerID;

@@ -104,7 +104,7 @@ import edu.washington.escience.myriad.table._TupleBatch;
  * 
  * 
  * 
- * */
+ */
 public class Server {
 
   protected class MessageProcessor extends Thread {
@@ -264,7 +264,7 @@ public class Server {
 
   /**
    * The I/O buffer, all the ExchangeMessages sent to the server are buffered here.
-   * */
+   */
   protected final ConcurrentHashMap<ExchangePairID, LinkedBlockingQueue<ExchangeTupleBatch>> dataBuffer;
 
   protected final LinkedBlockingQueue<MessageWrapper> messageBuffer;
@@ -460,7 +460,7 @@ public class Server {
 
   // /**
   // * Select the master worker for the coming query
-  // * */
+  // */
   // protected SocketInfo selectMasterWorker() {
   // int master = (int) (Math.random() * this.workers.length);
   // return this.workers[master];
@@ -472,7 +472,7 @@ public class Server {
 
   /**
    * This method should be called when a data item is received
-   * */
+   */
   public void receiveData(final ExchangeMessage data) {
 
     LinkedBlockingQueue<ExchangeTupleBatch> q = null;

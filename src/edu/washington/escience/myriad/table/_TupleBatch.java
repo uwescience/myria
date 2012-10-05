@@ -12,7 +12,7 @@ import edu.washington.escience.myriad.parallel.PartitionFunction;
 
 /**
  * Relational data processing units
- * */
+ */
 public interface _TupleBatch extends Serializable {
 
   public interface TupleIterator extends Iterator {
@@ -31,16 +31,16 @@ public interface _TupleBatch extends Serializable {
    * 
    *          select only those tuples which fulfill the predicate. The effects of multiple select operations overlap.
    * 
-   * */
+   */
   public _TupleBatch filter(int fieldIdx, Predicate.Op op, Object operand);
 
   /**
    * -------------------The data processing methods --------------------
-   * */
+   */
 
   /**
    * -------------------- The value retrieval methods ------------------
-   * */
+   */
   public boolean getBoolean(int column, int row);
 
   public double getDouble(int column, int row);
@@ -74,12 +74,12 @@ public interface _TupleBatch extends Serializable {
   /**
    * The schema of the output tuples. The input schema may change by projects. This method return the final output
    * schema.
-   * */
+   */
   public Schema outputSchema();
 
   /**
    * -------------------- The parallel methods ------------------------
-   * */
+   */
 
   public TupleBatchBuffer[] partition(PartitionFunction<?, ?> p, TupleBatchBuffer[] buffers);
 
@@ -87,17 +87,17 @@ public interface _TupleBatch extends Serializable {
    * @param remainingColumns the indices of the input columns
    * 
    *          multiple calls to this method
-   * */
+   */
   public _TupleBatch project(int[] remainingColumns);
 
   /**
    * Clear all the filters
-   * */
+   */
   public _TupleBatch purgeFilters();
 
   /**
    * Clear all the projects
-   * */
+   */
   public _TupleBatch purgeProjects();
 
   public _TupleBatch remove(int innerIdx);
@@ -105,7 +105,7 @@ public interface _TupleBatch extends Serializable {
   /**
    * @param inputColumnIdx the index of the column to be renamed in the input schema
    * @param newName the new column name
-   * */
+   */
   public _TupleBatch renameColumn(int inputColumnIdx, String newName);
 
   public _TupleBatch union(_TupleBatch another);

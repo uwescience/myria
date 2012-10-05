@@ -5,7 +5,7 @@ import java.net.InetSocketAddress;
 
 /**
  * A simple wrapper that wraps the socket information of both workers and the server (coordinator).
- * */
+ */
 public class SocketInfo implements Serializable {
 
   private static final long serialVersionUID = 1L;

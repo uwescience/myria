@@ -15,7 +15,7 @@ import edu.washington.escience.myriad.table._TupleBatch;
  * 
  * The consumer passively collects Tuples from all the paired CollectProducers
  * 
- * */
+ */
 public class CollectConsumer extends Consumer {
 
   private static final long serialVersionUID = 1L;
@@ -25,7 +25,7 @@ public class CollectConsumer extends Consumer {
   // /**
   // * innerBufferIndex and innerBuffer are used to buffer all the TupleBags this operator has received. We need this
   // * because we need to support rewind.
-  // * */
+  // */
   // private final _TupleBatch outputBuffer;
 
   private Schema schema;
@@ -36,12 +36,12 @@ public class CollectConsumer extends Consumer {
 
   /**
    * The child of a CollectConsumer must be a paired CollectProducer.
-   * */
+   */
   private CollectProducer child;
 
   /**
    * If a child is provided, the TupleDesc is the child's TD
-   * */
+   */
   public CollectConsumer(final CollectProducer child, final ExchangePairID operatorID, final int[] workerIDs) {
     super(operatorID);
     this.child = child;
@@ -57,7 +57,7 @@ public class CollectConsumer extends Consumer {
 
   /**
    * If there's no child operator, a TupleDesc is needed
-   * */
+   */
   public CollectConsumer(final Schema schema, final ExchangePairID operatorID, final int[] workerIDs) {
     super(operatorID);
     this.schema = schema;

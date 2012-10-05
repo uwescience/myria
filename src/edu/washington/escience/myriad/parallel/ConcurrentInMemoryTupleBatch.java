@@ -84,7 +84,7 @@ public class ConcurrentInMemoryTupleBatch implements _TupleBatch {
 
   // /**
   // * Only for copy
-  // * */
+  // */
   // protected ConcurrentInMemoryTupleBatch(Schema inputSchema, String[] outputColumnNames,
   // List<Column> inputColumns, int numInputTuples, BitSet invalidTuples, BitSet invalidColumns) {
   // this.inputSchema = inputSchema;

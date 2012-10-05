@@ -23,7 +23,7 @@ import edu.washington.escience.myriad.table._TupleBatch;
  * ShuffleProducer distributes tuples to the workers according to some partition function (provided as a
  * PartitionFunction object during the ShuffleProducer's instantiation).
  * 
- * */
+ */
 public class ShuffleProducer extends Producer {
 
   class WorkingThread extends Thread {

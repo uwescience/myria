@@ -7,7 +7,7 @@ public abstract class Producer extends Exchange {
   /**
    * The worker this operator is located at.
    * 
-   * */
+   */
   private transient Worker thisWorker;
 
   public Producer(final ExchangePairID oID) {

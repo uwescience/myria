@@ -13,7 +13,7 @@ import edu.washington.escience.myriad.table._TupleBatch;
  * ShuffleConsumer (this class) encapsulates the methods to collect the tuples received at the worker from multiple
  * source workers' ShuffleProducer.
  * 
- * */
+ */
 public class ShuffleConsumer extends Consumer {
 
   private static final long serialVersionUID = 1L;

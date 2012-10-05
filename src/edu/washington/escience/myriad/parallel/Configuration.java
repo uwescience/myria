@@ -13,7 +13,7 @@
 
 /**
  * Modified from Configuration.java of hadoop 0.21.0
- * */
+ */
 
 package edu.washington.escience.myriad.parallel;
 
@@ -240,7 +240,7 @@ public class Configuration implements Iterable<Map.Entry<String, String>> {
 
   /**
    * default conf files are searched in java classpath
-   * */
+   */
   private final SocketInfo server;
 
   private final ConcurrentHashMap<Integer, SocketInfo> workers;
