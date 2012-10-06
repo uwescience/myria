@@ -18,14 +18,14 @@ public interface DbIterator extends Serializable {
    * Closes the iterator. When the iterator is closed, calling next(), hasNext(), or rewind() should fail by throwing
    * IllegalStateException.
    */
-  public void close();
+  void close();
 
   /**
    * Returns the Schema associated with this DbIterator.
    * 
    * @return the Schema associated with this DbIterator.
    */
-  public Schema getSchema();
+  Schema getSchema();
 
   /**
    * Returns true if the iterator has more tuples.
@@ -33,7 +33,7 @@ public interface DbIterator extends Serializable {
    * @return true f the iterator has more tuples.
    * @throws IllegalStateException If the iterator has not been opened
    */
-  public boolean hasNext() throws DbException;
+  boolean hasNext() throws DbException;
 
   /**
    * Returns the next tuple from the operator (typically implementing by reading from a child operator or an access
@@ -43,14 +43,14 @@ public interface DbIterator extends Serializable {
    * @throws NoSuchElementException if there are no more tuples.
    * @throws IllegalStateException If the iterator has not been opened
    */
-  public _TupleBatch next() throws DbException, NoSuchElementException;
+  _TupleBatch next() throws DbException, NoSuchElementException;
 
   /**
    * Opens the iterator. This must be called before any of the other methods.
    * 
    * @throws DbException when there are problems opening/accessing the database.
    */
-  public void open() throws DbException;
+  void open() throws DbException;
 
   /**
    * Resets the iterator to the start.

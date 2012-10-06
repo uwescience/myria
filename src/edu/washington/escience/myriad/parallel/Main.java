@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Random;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -40,17 +39,13 @@ import edu.washington.escience.myriad.table._TupleBatch;
  * @author dhalperi, slxu
  * 
  */
-public class Main {
+public final class Main {
   public static final int MASTER_ID = 0;
   public static final int WORKER_1_ID = 1;
 
   public static final int WORKER_2_ID = 2;;
 
   public static void dupElimTestSQLite(final String[] args) throws DbException, IOException {
-    final Configuration conf = new Configuration();
-    final Map<Integer, SocketInfo> workers = conf.getWorkers();
-    final SocketInfo server = conf.getServer();
-
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final ExchangePairID collectID = ExchangePairID.newID();
 
@@ -266,14 +261,6 @@ public class Main {
     final String username = "root";
     final String password = "1234";
 
-    final Configuration conf = new Configuration();
-
-    // InetSocketAddress worker1 = new InetSocketAddress("slxu-csuw-desktop.cs.washington.edu", 9001);
-    // InetSocketAddress worker2 = new InetSocketAddress("slxu-csuw-desktop.cs.washington.edu", 9002);
-    // InetSocketAddress server = new InetSocketAddress("slxu-csuw-desktop.cs.washington.edu", 8001);
-    final Map<Integer, SocketInfo> workers = conf.getWorkers();
-    // SocketInfo server = conf.getServer();
-
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final ExchangePairID worker2ReceiveID = ExchangePairID.newID();
 
@@ -303,8 +290,6 @@ public class Main {
     final HashMap<Integer, Operator> workerPlans = new HashMap<Integer, Operator>();
     workerPlans.put(WORKER_1_ID, cp1);
     workerPlans.put(WORKER_2_ID, cp22);
-
-    final OutputStreamSinkTupleBatch serverBuffer = new OutputStreamSinkTupleBatch(outputSchema, System.out);
 
     new Thread() {
       @Override
@@ -345,14 +330,6 @@ public class Main {
     // String username = "root";
     // String password = "1234";
 
-    final Configuration conf = new Configuration();
-
-    // InetSocketAddress worker1 = new InetSocketAddress("slxu-csuw-desktop.cs.washington.edu", 9001);
-    // InetSocketAddress worker2 = new InetSocketAddress("slxu-csuw-desktop.cs.washington.edu", 9002);
-    // InetSocketAddress server = new InetSocketAddress("slxu-csuw-desktop.cs.washington.edu", 8001);
-    final Map<Integer, SocketInfo> workers = conf.getWorkers();
-    final SocketInfo server = conf.getServer();
-
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final ExchangePairID worker2ReceiveID = ExchangePairID.newID();
 
@@ -379,8 +356,6 @@ public class Main {
     workerPlans.put(WORKER_1_ID, cp1);
     workerPlans.put(WORKER_2_ID, cp22);
 
-    final OutputStreamSinkTupleBatch serverBuffer = new OutputStreamSinkTupleBatch(outputSchema, System.out);
-
     new Thread() {
       @Override
       public void run() {
@@ -403,10 +378,6 @@ public class Main {
   }
 
   public static void shuffleTestSQLite(final String[] args) throws DbException, IOException {
-    final Configuration conf = new Configuration();
-    final Map<Integer, SocketInfo> workers = conf.getWorkers();
-    final SocketInfo server = conf.getServer();
-
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final ExchangePairID shuffle1ID = ExchangePairID.newID();
     final ExchangePairID shuffle2ID = ExchangePairID.newID();
@@ -451,8 +422,6 @@ public class Main {
     final HashMap<Integer, Operator> workerPlans = new HashMap<Integer, Operator>();
     workerPlans.put(WORKER_1_ID, cp);
     workerPlans.put(WORKER_2_ID, cp);
-
-    final OutputStreamSinkTupleBatch serverBuffer = new OutputStreamSinkTupleBatch(outputSchema, System.out);
 
     new Thread() {
       @Override
@@ -537,7 +506,6 @@ public class Main {
   public static void SQLiteTest() throws DbException {
     final String filename = "sql/sqlite.myriad_test/myriad_sqlite_test.db";
     final String query = "SELECT * FROM testtable";
-    final String insert = "INSERT INTO testtable2 VALUES(?)";
 
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.OFF);
 

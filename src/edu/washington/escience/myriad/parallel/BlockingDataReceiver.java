@@ -5,8 +5,10 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.table._TupleBatch;
 
-public class BlockingDataReceiver extends Operator {
+public final class BlockingDataReceiver extends Operator {
 
+  /** Required for Java serialization. */
+  private static final long serialVersionUID = 1L;
   private final _TupleBatch outputBuffer;
   private final Operator child;
 

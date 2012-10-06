@@ -10,6 +10,8 @@ import edu.washington.escience.myriad.table._TupleBatch;
 
 public class SQLiteQueryScan extends Operator {
 
+  /** Required for Java serialization. */
+  private static final long serialVersionUID = 1L;
   private Iterator<TupleBatch> tuples;
   private final Schema schema;
   private final String filename;
@@ -37,10 +39,9 @@ public class SQLiteQueryScan extends Operator {
     // } else {
     if (tuples.hasNext()) {
       return this.tuples.next();
-    }
-    else {
+    } else {
       return null;
-    // }
+      // }
     }
   }
 

@@ -27,12 +27,12 @@ import org.apache.mina.transport.socket.nio.NioSocketConnector;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 
 /**
- * Utility methods
+ * Utility methods.
  */
 public class ParallelUtility {
 
   /**
-   * Close a session. Every time a session is to be closed, do call this method. Do not directly call session.close;
+   * Close a session. Every time a session is to be closed, do call this method. Do not directly call session.close;.
    */
   public static CloseFuture closeSession(final IoSession session) {
     if (session == null) {
@@ -93,7 +93,7 @@ public class ParallelUtility {
   }
 
   /**
-   * create a server side acceptor
+   * Create a server side acceptor.
    */
   public static NioSocketAcceptor createAcceptor() {
     final NioSocketAcceptor acceptor = new NioSocketAcceptor(10);
@@ -135,7 +135,7 @@ public class ParallelUtility {
   }
 
   /**
-   * create a client side connector to the server
+   * Create a client side connector to the server.
    */
   private static IoConnector createConnector() {
     final IoConnector connector = new NioSocketConnector();
@@ -168,7 +168,8 @@ public class ParallelUtility {
     return connector;
   }
 
-  public static IoSession createSession(final SocketAddress remoteAddress, final IoHandler ioHandler, final long connectionTimeoutMS) {
+  public static IoSession createSession(final SocketAddress remoteAddress, final IoHandler ioHandler,
+      final long connectionTimeoutMS) {
 
     IoSession session = null;
 
@@ -219,14 +220,14 @@ public class ParallelUtility {
   }
 
   /**
-   * Shutdown the java virtual machine
+   * Shutdown the java virtual machine.
    */
   public static void shutdownVM() {
     System.exit(0);
   }
 
   /**
-   * unbind the acceptor from the binded port and close all the connections
+   * Unbind the acceptor from the binded port and close all the connections.
    */
   public static void unbind(final NioSocketAcceptor acceptor) {
 

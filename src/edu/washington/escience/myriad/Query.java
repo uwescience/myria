@@ -18,8 +18,8 @@ public class Query implements Serializable {
 
   private static final long serialVersionUID = 1L;
 
-  transient private Operator op;
-  transient private boolean started = false;
+  private transient Operator op;
+  private transient boolean started = false;
 
   public Query() {
   }
@@ -29,12 +29,12 @@ public class Query implements Serializable {
   }
 
   /** Close the iterator */
-  public void close() throws IOException {
+  public final void close() throws IOException {
     op.close();
     started = false;
   }
 
-  public void execute() throws IOException, DbException {
+  public final void execute() throws IOException, DbException {
     final Schema td = this.getOutputSchema();
 
     String names = "";
@@ -58,16 +58,16 @@ public class Query implements Serializable {
     this.close();
   }
 
-  public Schema getOutputSchema() {
+  public final Schema getOutputSchema() {
     return this.op.getSchema();
   }
 
-  public Operator getPhysicalPlan() {
+  public final Operator getPhysicalPlan() {
     return this.op;
   }
 
   /** @return true if there are more tuples remaining. */
-  public boolean hasNext() throws DbException {
+  public final boolean hasNext() throws DbException {
     return op.hasNext();
   }
 
@@ -77,9 +77,8 @@ public class Query implements Serializable {
    * @return The next tuple in the iterator
    * @throws DbException If there is an error in the database system
    * @throws NoSuchElementException If the iterator has finished iterating
-   * @throws TransactionAbortedException If the transaction is aborted (e.g., due to a deadlock)
    */
-  public _TupleBatch next() throws DbException, NoSuchElementException {
+  public final _TupleBatch next() throws DbException, NoSuchElementException {
     if (!started) {
       throw new DbException("Database not started.");
     }
@@ -87,11 +86,11 @@ public class Query implements Serializable {
     return op.next();
   }
 
-  public void setPhysicalPlan(final Operator pp) {
+  public final void setPhysicalPlan(final Operator pp) {
     this.op = pp;
   }
 
-  public void start() throws IOException, DbException {
+  public final void start() throws IOException, DbException {
     op.open();
 
     started = true;

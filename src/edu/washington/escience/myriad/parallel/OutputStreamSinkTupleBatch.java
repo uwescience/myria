@@ -15,6 +15,8 @@ import edu.washington.escience.myriad.table._TupleBatch;
 
 public class OutputStreamSinkTupleBatch implements _TupleBatch {
 
+  /** Required for Java serialization. */
+  private static final long serialVersionUID = 1L;
   private final OutputStream backendStream;
   private final Schema schema;
   private int numInputTuples;

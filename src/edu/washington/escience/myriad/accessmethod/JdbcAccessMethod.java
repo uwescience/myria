@@ -29,7 +29,9 @@ public final class JdbcAccessMethod {
    * @param driverClassName the JDBC driver name
    * @param connectionString the string identifying the path to the database
    * @param insertString the insert statement. TODO No sanity checks at all right now.
-   * @param tupleBatch the tupleBatch to be inserted
+   * @param tupleBatch the tupleBatch to be inserted.
+   * @param username the user by which to connect to the SQL database.
+   * @param password the password for the SQL user identified by username.
    */
   public static void tupleBatchInsert(final String driverClassName, final String connectionString,
       final String insertString, final TupleBatch tupleBatch, final String username, final String password) {
@@ -66,6 +68,8 @@ public final class JdbcAccessMethod {
    * @param driverClassName the JDBC driver name
    * @param connectionString the string identifying the path to the database
    * @param queryString the query
+   * @param username the user by which to connect to the SQL database.
+   * @param password the password for the SQL user identified by username.
    * @return an Iterator<TupleBatch> containing the results.
    */
   public static Iterator<TupleBatch> tupleBatchIteratorFromQuery(final String driverClassName,

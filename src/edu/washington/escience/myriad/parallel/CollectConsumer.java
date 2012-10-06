@@ -18,7 +18,7 @@ import edu.washington.escience.myriad.table._TupleBatch;
  * The consumer passively collects Tuples from all the paired CollectProducers
  * 
  */
-public class CollectConsumer extends Consumer {
+public final class CollectConsumer extends Consumer {
 
   private static final long serialVersionUID = 1L;
 
