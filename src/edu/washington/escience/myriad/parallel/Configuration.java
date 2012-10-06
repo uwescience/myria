@@ -209,6 +209,7 @@ public class Configuration implements Iterable<Map.Entry<String, String>> {
   }
 
   protected static Logger LOG = LoggerFactory.getLogger(Configuration.class);
+
   /**
    * Add a default resource. Resources are loaded in the order of the resources added.
    * 
@@ -224,6 +225,7 @@ public class Configuration implements Iterable<Map.Entry<String, String>> {
       }
     }
   }
+
   protected static SocketInfo[] loadWorkers(final File confDir) throws IOException {
     final ArrayList<SocketInfo> workers = new ArrayList<SocketInfo>();
     final BufferedReader br =
@@ -235,6 +237,7 @@ public class Configuration implements Iterable<Map.Entry<String, String>> {
         workers.add(new SocketInfo(ts[0], Integer.parseInt(ts[1])));
       }
     }
+    br.close();
     return workers.toArray(new SocketInfo[] {});
   }
 
@@ -254,9 +257,11 @@ public class Configuration implements Iterable<Map.Entry<String, String>> {
     while ((line = br.readLine()) != null) {
       final String[] ts = line.replaceAll("[ \t]+", "").replaceAll("#.*$", "").split(":");
       if (ts.length == 2) {
+        br.close();
         return new SocketInfo(ts[0], Integer.parseInt(ts[1]));
       }
     }
+    br.close();
     throw new IOException("Wrong server conf file.");
   }
 
@@ -431,6 +436,7 @@ public class Configuration implements Iterable<Map.Entry<String, String>> {
   public void addResource(final URL url) {
     addResourceObject(url);
   }
+
   private synchronized void addResourceObject(final Object resource) {
     resources.add(resource); // add to resources
     reloadConfiguration();
@@ -995,7 +1001,8 @@ public class Configuration implements Iterable<Map.Entry<String, String>> {
     return result.entrySet().iterator();
   }
 
-  private void loadProperty(final Properties properties, final Object name, final String attr, final String value, final boolean finalParameter) {
+  private void loadProperty(final Properties properties, final Object name, final String attr, final String value,
+      final boolean finalParameter) {
     if (value != null) {
       if (!finalParameters.contains(attr)) {
         properties.setProperty(attr, value);

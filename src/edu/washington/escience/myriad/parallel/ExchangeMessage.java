@@ -23,16 +23,12 @@ public interface ExchangeMessage extends Serializable {
   /**
    * Get the ParallelOperatorID, to which this message is targeted
    */
-  public ExchangePairID getOperatorID();// {
-  // return this.operatorID;
-  // }
+  ExchangePairID getOperatorID();
 
   /**
    * Get the worker id from which the message was sent
    */
-  public int getWorkerID();// {
-  // return this.fromWorkerID;
-  // }
+  int getWorkerID();
 
   // public void setOperatorID(ExchangePairID poid) {
   // this.operatorID = poid;

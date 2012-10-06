@@ -99,7 +99,7 @@ public abstract class TupleBatchAdaptor implements _TupleBatch {
       final TupleBatch tupleBatch = (TupleBatch) this;
       for (final int row : tupleBatch.validTupleIndices()) {
         for (int column = 0; column < tupleBatch.numColumns(); ++column) {
-          output.get(column).putObject(tupleBatch.getColumn(column).get(row));;
+          output.get(column).putObject(tupleBatch.getColumn(column).get(row));
         }
       }
       return output;

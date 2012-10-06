@@ -11,20 +11,20 @@ import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.parallel.PartitionFunction;
 
 /**
- * Relational data processing units
+ * Relational data processing units.
  */
 public interface _TupleBatch extends Serializable {
 
-  public interface TupleIterator extends Iterator {
+  public interface TupleIterator extends Iterator<_TupleBatch> {
   }
 
-  public static final int BATCH_SIZE = 100;
+  int BATCH_SIZE = 100;
 
-  public _TupleBatch append(_TupleBatch another);
+  _TupleBatch append(_TupleBatch another);
 
-  public _TupleBatch distinct();
+  _TupleBatch distinct();
 
-  public _TupleBatch except(_TupleBatch another);
+  _TupleBatch except(_TupleBatch another);
 
   /**
    * @param fieldIdx the index of input columns
@@ -32,81 +32,75 @@ public interface _TupleBatch extends Serializable {
    *          select only those tuples which fulfill the predicate. The effects of multiple select operations overlap.
    * 
    */
-  public _TupleBatch filter(int fieldIdx, Predicate.Op op, Object operand);
+  _TupleBatch filter(int fieldIdx, Predicate.Op op, Object operand);
 
-  /**
-   * -------------------The data processing methods --------------------
-   */
+  /* -------------------The data processing methods -------------------- */
 
-  /**
-   * -------------------- The value retrieval methods ------------------
-   */
-  public boolean getBoolean(int column, int row);
+  /* -------------------- The value retrieval methods ------------------ */
+  boolean getBoolean(int column, int row);
 
-  public double getDouble(int column, int row);
+  double getDouble(int column, int row);
 
-  public float getFloat(int column, int row);
+  float getFloat(int column, int row);
 
-  public int getInt(int column, int row);
+  int getInt(int column, int row);
 
-  public long getLong(int column, int row);
+  long getLong(int column, int row);
 
-  public String getString(int column, int row);
+  String getString(int column, int row);
 
-  public _TupleBatch groupby();
+  _TupleBatch groupby();
 
-  public int hashCode(int rowIndx);
+  int hashCode(int rowIndx);
 
-  public Schema inputSchema();
+  Schema inputSchema();
 
-  public _TupleBatch intersect(_TupleBatch another);
+  _TupleBatch intersect(_TupleBatch another);
 
-  public _TupleBatch join(_TupleBatch other, Predicate p, _TupleBatch output);
+  _TupleBatch join(_TupleBatch other, Predicate p, _TupleBatch output);
 
-  public int numInputTuples();
+  int numInputTuples();
 
-  public int numOutputTuples();
+  int numOutputTuples();
 
-  public _TupleBatch orderby();
+  _TupleBatch orderby();
 
-  public List<Column> outputRawData();
+  List<Column> outputRawData();
 
   /**
    * The schema of the output tuples. The input schema may change by projects. This method return the final output
    * schema.
    */
-  public Schema outputSchema();
+  Schema outputSchema();
 
-  /**
-   * -------------------- The parallel methods ------------------------
-   */
+  /* -------------------- The parallel methods ------------------------ */
 
-  public TupleBatchBuffer[] partition(PartitionFunction<?, ?> p, TupleBatchBuffer[] buffers);
+  TupleBatchBuffer[] partition(PartitionFunction<?, ?> p, TupleBatchBuffer[] buffers);
 
   /**
    * @param remainingColumns the indices of the input columns
    * 
    *          multiple calls to this method
    */
-  public _TupleBatch project(int[] remainingColumns);
+  _TupleBatch project(int[] remainingColumns);
 
   /**
-   * Clear all the filters
+   * Clear all the filters.
    */
-  public _TupleBatch purgeFilters();
+  _TupleBatch purgeFilters();
 
   /**
-   * Clear all the projects
+   * Clear all the projects.
    */
-  public _TupleBatch purgeProjects();
+  _TupleBatch purgeProjects();
 
-  public _TupleBatch remove(int innerIdx);
+  _TupleBatch remove(int innerIdx);
 
   /**
    * @param inputColumnIdx the index of the column to be renamed in the input schema
    * @param newName the new column name
    */
-  public _TupleBatch renameColumn(int inputColumnIdx, String newName);
+  _TupleBatch renameColumn(int inputColumnIdx, String newName);
 
-  public _TupleBatch union(_TupleBatch another);
+  _TupleBatch union(_TupleBatch another);
 }

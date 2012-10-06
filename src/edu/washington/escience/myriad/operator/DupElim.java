@@ -11,7 +11,8 @@ import edu.washington.escience.myriad.table._TupleBatch;
 
 public class DupElim extends Operator {
 
-  // private static final long serialVersionUID = 1L;
+  /** Required for Java serialization. */
+  private static final long serialVersionUID = 1L;
 
   private class IndexedTuple {
     int index;

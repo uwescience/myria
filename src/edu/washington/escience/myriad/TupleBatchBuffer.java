@@ -61,17 +61,32 @@ public class TupleBatchBuffer {
     currentNumTuples = 0;
   }
 
+  /**
+   * Return all tuples that are ready.
+   * 
+   * @return a List<TupleBatch> containing all complete tuples that have been inserted into this buffer.
+   */
   public final List<TupleBatch> getOutput() {
     final List<TupleBatch> output = new LinkedList<TupleBatch>();
     output.addAll(readyTuples);
-    output.add(new TupleBatch(schema, currentColumns, currentNumTuples));
+    if (currentNumTuples > 0) {
+      output.add(new TupleBatch(schema, currentColumns, currentNumTuples));
+    }
     return output;
   }
 
+  /**
+   * @return the number of complete tuples stored in this TupleBatchBuffer.
+   */
   public final int numTuples() {
     return this.readyTuples.size() * TupleBatch.BATCH_SIZE + this.currentNumTuples;
   }
 
+  /**
+   * Extract and return the first complete TupleBatch in this Buffer.
+   * 
+   * @return the first complete TupleBatch in this buffer, or null if none is ready.
+   */
   public final TupleBatch pop() {
     if (this.readyTuples.size() > 0) {
       return this.readyTuples.remove(0);
