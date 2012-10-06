@@ -6,6 +6,9 @@ import edu.washington.escience.myriad.table._TupleBatch;
 
 public class DoNothingOperator extends Operator {
 
+  /** Required for Java serialization. */
+  private static final long serialVersionUID = 1L;
+
   Operator[] children;
   Schema outputSchema;
 

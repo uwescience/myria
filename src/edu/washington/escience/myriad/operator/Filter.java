@@ -10,8 +10,10 @@ import edu.washington.escience.myriad.table._TupleBatch;
 /**
  * Filter is an operator that implements a relational select.
  */
-public class Filter extends Operator {
+public final class Filter extends Operator {
 
+  /** Required for Java serialization. */
+  private static final long serialVersionUID = 1L;
   private final Predicate.Op op;
   private final Object operand;
   private final int fieldIdx;
@@ -20,7 +22,6 @@ public class Filter extends Operator {
   /**
    * Constructor accepts a predicate to apply and a child operator to read tuples to filter from.
    * 
-   * @param p The predicate to filter tuples with
    * @param child The child operator
    */
   public Filter(final Predicate.Op op, final int fieldIdx, final Object operand, final Operator child) {

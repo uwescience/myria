@@ -15,6 +15,8 @@ import edu.washington.escience.myriad.table._TupleBatch;
  */
 public class Project extends Operator {
 
+  /** Required for Java serialization. */
+  private static final long serialVersionUID = 1L;
   private Operator child;
   private final Schema td;
   private final Integer[] outFieldIds;

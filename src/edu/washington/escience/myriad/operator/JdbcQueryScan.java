@@ -19,8 +19,11 @@ public class JdbcQueryScan extends Operator {
   private final String username;
   private final String password;
 
-  public JdbcQueryScan(final String driverClass, final String connectionString, final String baseSQL, final Schema outputSchema,
-      final String username, final String password) {
+  /** Required for Java serialization. */
+  private static final long serialVersionUID = 1L;
+
+  public JdbcQueryScan(final String driverClass, final String connectionString, final String baseSQL,
+      final Schema outputSchema, final String username, final String password) {
     this.driverClass = driverClass;
     this.connectionString = connectionString;
     this.baseSQL = baseSQL;
@@ -50,10 +53,9 @@ public class JdbcQueryScan extends Operator {
     // } else {
     if (tuples.hasNext()) {
       return this.tuples.next();
-    }
-    else {
+    } else {
       return null;
-    // }
+      // }
     }
   }
 

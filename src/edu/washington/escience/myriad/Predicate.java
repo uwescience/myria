@@ -9,9 +9,22 @@ import com.google.common.base.Preconditions;
  */
 public class Predicate implements Serializable {
 
-  /** Constants used for return codes in Field.compare */
+  /** Constants used for return codes in Field.compare. */
   public enum Op implements Serializable {
-    EQUALS, GREATER_THAN, LESS_THAN, LESS_THAN_OR_EQ, GREATER_THAN_OR_EQ, LIKE, NOT_EQUALS;
+    /** = . */
+    EQUALS,
+    /** > . */
+    GREATER_THAN,
+    /** < . */
+    LESS_THAN,
+    /** <= . */
+    LESS_THAN_OR_EQ,
+    /** >= . */
+    GREATER_THAN_OR_EQ,
+    /** == . */
+    LIKE,
+    /** <> . */
+    NOT_EQUALS;
 
     /**
      * Interface to access operations by integer value for command-line convenience.
@@ -47,10 +60,13 @@ public class Predicate implements Serializable {
 
   }
 
+  /** Required for serialization. */
   private static final long serialVersionUID = 1L;
+  /** The logical boolean operator this predicate represents. */
   private final Op op;
-  private final int field;
-
+  /** Which column of the tuple this predicate tests. */
+  private final int columnIndex;
+  /** The (often constant) right operand of the operator. E.g., the predicate can be "Is greater than 5". */
   private final Object operand;
 
   /**
@@ -61,7 +77,7 @@ public class Predicate implements Serializable {
    * @param operand field value to compare passed in s to
    */
   public Predicate(final int field, final Op op, final Object operand) {
-    this.field = field;
+    this.columnIndex = field;
     this.op = op;
     this.operand = operand;
   }
@@ -70,7 +86,7 @@ public class Predicate implements Serializable {
    * @return the field number
    */
   public final int getField() {
-    return this.field;
+    return this.columnIndex;
   }
 
   /**
@@ -90,7 +106,7 @@ public class Predicate implements Serializable {
   @Override
   public final String toString() {
     String p = "";
-    p += "f = " + field + " op = " + op + " operand = " + operand;
+    p += "f = " + columnIndex + " op = " + op + " operand = " + operand;
     return p;
   }
 }

@@ -12,6 +12,8 @@ import edu.washington.escience.myriad.table._TupleBatch;
  */
 public abstract class Operator implements DbIterator {
 
+  /** Required for Java serialization. */
+  private static final long serialVersionUID = 1L;
   private _TupleBatch next = null;
 
   private boolean open = false;

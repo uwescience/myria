@@ -27,6 +27,8 @@ import edu.washington.escience.myriad.table.TupleBatchAdaptor;
  * 
  */
 public class TupleBatch extends TupleBatchAdaptor {
+  /** Required for Java serialization. */
+  private static final long serialVersionUID = 1L;
   /** The hard-coded number of tuples in a batch. */
   public static final int BATCH_SIZE = 100;
   /** Class-specific magic number used to generate the hash code. */
@@ -249,7 +251,7 @@ public class TupleBatch extends TupleBatchAdaptor {
   }
 
   @Override
-  public int hashCode(final int row) {
+  public final int hashCode(final int row) {
     // return 0;
     final HashCodeBuilder hb = new HashCodeBuilder(MAGIC_HASHCODE1, MAGIC_HASHCODE2);
     for (int i = 0; i < columns.size(); ++i) {

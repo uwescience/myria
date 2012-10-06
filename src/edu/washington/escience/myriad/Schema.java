@@ -47,7 +47,7 @@ public final class Schema implements Serializable {
      * 
      * @return the name of this field.
      */
-    public String getName() {
+    public final String getName() {
       return fieldName;
     }
 
@@ -56,12 +56,12 @@ public final class Schema implements Serializable {
      * 
      * @return the type of this field.
      */
-    public Type getType() {
+    public final Type getType() {
       return fieldType;
     }
 
     @Override
-    public String toString() {
+    public final String toString() {
       return fieldName + "(" + fieldType + ")";
     }
   }

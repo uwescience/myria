@@ -18,7 +18,7 @@ public interface DbIterateReader extends DbTable {
    * @return true f the iterator has more tuples.
    * @throws IllegalStateException If the iterator has not been opened
    */
-  public boolean hasNext() throws DbException;
+  boolean hasNext() throws DbException;
 
   /**
    * Returns the next tuple from the operator (typically implementing by reading from a child operator or an access
@@ -28,7 +28,7 @@ public interface DbIterateReader extends DbTable {
    * @throws NoSuchElementException if there are no more tuples.
    * @throws IllegalStateException If the iterator has not been opened
    */
-  public _TupleBatch next() throws DbException, NoSuchElementException;
+  _TupleBatch next() throws DbException, NoSuchElementException;
 
   /**
    * Resets the iterator to the start.
@@ -36,6 +36,6 @@ public interface DbIterateReader extends DbTable {
    * @throws DbException when rewind is unsupported.
    * @throws IllegalStateException If the iterator has not been opened
    */
-  public void rewind() throws DbException;
+  void rewind() throws DbException;
 
 }
