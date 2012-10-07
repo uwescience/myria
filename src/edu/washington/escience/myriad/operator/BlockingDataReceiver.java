@@ -1,15 +1,25 @@
-package edu.washington.escience.myriad.parallel;
+package edu.washington.escience.myriad.operator;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
-import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.table._TupleBatch;
 
+/**
+ * Blocking when receiving data from children.
+ * */
 public final class BlockingDataReceiver extends Operator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
+
+  /**
+   * output buffer.
+   * */
   private final _TupleBatch outputBuffer;
+
+  /**
+   * child operator.
+   * */
   private final Operator child;
 
   public BlockingDataReceiver(final _TupleBatch outputBuffer, final Operator child) {
