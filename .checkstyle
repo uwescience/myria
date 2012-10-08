@@ -1,12 +1,14 @@
-<?xml version="1.0" encoding="UTF-8"?>
-
-<fileset-config file-format-version="1.2.0" simple-config="true" sync-formatter="false">
-  <fileset name="all" enabled="true" check-config-name="GWT style version" local="false">
-    <file-match-pattern match-pattern="." include-pattern="true"/>
-  </fileset>
-  <filter name="FilesFromPackage" enabled="true">
-    <filter-data value="src/org"/>
-    <filter-data value="protobuf/java"/>
-    <filter-data value="test"/>
-  </filter>
+<?xml version="1.0" encoding="UTF-8"?><fileset-config file-format-version="1.2.0" simple-config="true">
+	<!--Note that the configuration file gwt-checkstyle.xml is a relative path to the current linux user home directory. Weird design.-->
+    <local-check-config name="GWT Checks" location="workspace/myriad/settings/code-style/gwt-checkstyle.xml" type="external" description="">
+        <additional-data name="protect-config-file" value="true"/>
+    </local-check-config>
+    <fileset name="all" enabled="true" check-config-name="GWT Checks" local="true">
+        <file-match-pattern match-pattern="." include-pattern="true"/>
+    </fileset>
+    <filter name="FilesFromPackage" enabled="true">
+        <filter-data value="third-party-src"/>
+        <filter-data value="protobuf/java"/>
+        <filter-data value="test"/>
+    </filter>
 </fileset-config>
