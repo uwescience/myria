@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+   <description url="http://eclipse-cs.sourceforge.net/update">
+      Eclipse Checkstyle Plug-in Update Site
+   </description>
+   <feature url="features/com.atlassw.tools.eclipse.checkstyle_4.4.3-feature.jar" id="com.atlassw.tools.eclipse.checkstyle" version="4.4.3">
+      <category name="Checkstyle"/>
+   </feature>
+
+   <category-def name="Checkstyle" label="Eclipse Checkstyle Plug-in">
+      <description>
+         Integrates Checkstyle with Eclipse
+      </description>
+   </category-def>
+</site>
