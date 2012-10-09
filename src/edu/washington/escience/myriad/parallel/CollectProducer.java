@@ -31,37 +31,24 @@ public final class CollectProducer extends Producer {
     @Override
     public void run() {
 
-      // IoSession session =
-      // ParallelUtility.createDataConnection(ParallelUtility.createSession(CollectProducer.this.collectConsumerAddr,
-      // CollectProducer.this.getThisWorker().minaHandler, -1), CollectProducer.this.operatorID,
-      // CollectProducer.this.getThisWorker().workerID);
       final IoSession session =
           CollectProducer.this.getThisWorker().connectionPool.get(CollectProducer.this.collectConsumerWorkerID, null,
               3, null);
 
       final TransportMessage.Builder messageBuilder = TransportMessage.newBuilder();
 
-      // session.write(messageBuilder.setType(TransportMessageType.CONTROL).setControl(
-      // ControlMessage.newBuilder().setType(ControlMessageType.CONNECT).build()).build());
-
       try {
 
         while (CollectProducer.this.child.hasNext()) {
           final _TupleBatch tup = CollectProducer.this.child.next();
           final List<Column> columns = tup.outputRawData();
-          // ExchangeTupleBatch toSend =
-          // new ExchangeTupleBatch(CollectProducer.this.operatorID, CollectProducer.this.getThisWorker().workerID,
-          // tup.outputRawData(), CollectProducer.this.getSchema(), tup.numOutputTuples());
 
           final ColumnMessage[] columnProtos = new ColumnMessage[columns.size()];
-          {
-            int i = 0;
-            for (final Column c : columns) {
-              columnProtos[i] = c.serializeToProto();
-              i++;
-            }
+          int i = 0;
+          for (final Column c : columns) {
+            columnProtos[i] = c.serializeToProto();
+            i++;
           }
-
           session.write(messageBuilder.setType(TransportMessageType.DATA).setData(
               DataMessage.newBuilder().setType(DataMessageType.NORMAL).addAllColumns(Arrays.asList(columnProtos))
                   .setOperatorID(CollectProducer.this.operatorID.getLong()).build()).build());
@@ -71,20 +58,10 @@ public final class CollectProducer extends Producer {
             DataMessage.newBuilder().setType(DataMessageType.EOS).setOperatorID(
                 CollectProducer.this.operatorID.getLong()).build();
         session.write(messageBuilder.setType(TransportMessageType.DATA).setData(eos).build());
-        //
-        // new ExchangeTupleBatch(CollectProducer.this.operatorID, CollectProducer.this.getThisWorker().workerID))
-        // .addListener(new IoFutureListener<WriteFuture>() {
-        //
-        // @Override
-        // public void operationComplete(WriteFuture future) {
-        // ParallelUtility.closeSession(future.getSession());
-        // }
-        // });// .awaitUninterruptibly(); //wait until all the data have successfully transfered
 
       } catch (final DbException e) {
         e.printStackTrace();
       }
-      // }
     }
   }
 
@@ -108,10 +85,6 @@ public final class CollectProducer extends Producer {
     this.collectConsumerWorkerID = collectConsumerWorkerID;
   }
 
-  // public InetSocketAddress getCollectServerAddr() {
-  // return this.collectConsumerAddr;
-  // }
-
   @Override
   public void close() {
     super.close();
@@ -133,11 +106,6 @@ public final class CollectProducer extends Producer {
   public Operator[] getChildren() {
     return new Operator[] { this.child };
   }
-
-  // @Override
-  // public void rewind() throws DbException {
-  // throw new UnsupportedOperationException();
-  // }
 
   @Override
   public String getName() {
