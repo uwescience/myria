@@ -22,14 +22,6 @@ public final class CollectConsumer extends Consumer {
 
   private static final long serialVersionUID = 1L;
 
-  // private transient Iterator<TupleBatch> tuples;
-
-  // /**
-  // * innerBufferIndex and innerBuffer are used to buffer all the TupleBags this operator has received. We need this
-  // * because we need to support rewind.
-  // */
-  // private final _TupleBatch outputBuffer;
-
   private Schema schema;
   private final BitSet workerEOS;
   private final int[] sourceWorkers;

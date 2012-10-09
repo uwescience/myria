@@ -33,7 +33,6 @@ import org.apache.mina.util.ConcurrentHashSet;
 import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myriad.DbException;
-import edu.washington.escience.myriad.Query;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnFactory;
@@ -208,18 +207,6 @@ public class Server {
       } else {
         System.err.println("Error: Unknown message received: " + message);
       }
-      // if (message instanceof ExchangeTupleBatch) {
-      // System.out.println("message received by server: " + message);
-      // ExchangeTupleBatch tuples = (ExchangeTupleBatch) message;
-      // Server.this.dataBuffer.get(tuples.getOperatorID()).offer(tuples);
-      // } else if (message instanceof String) {
-      // System.out.println("Query received by worker");
-      // Integer workerId = Server.this.workerIdToIndex.get(message);
-      // if (workerId != null) {
-      // Server.this.queryReceivedByWorker(workerId);
-      // }
-      // }
-
     }
 
     @Override
@@ -229,7 +216,9 @@ public class Server {
       }
     }
   }
+
   static final String usage = "Usage: Server catalogFile [--conf confdir] [-explain] [-f queryFile]";
+
   public static void main(String[] args) throws IOException {
     File confDir = null;
     if (args.length >= 3 && args[1].equals("--conf")) {
@@ -276,7 +265,7 @@ public class Server {
 
   final SocketInfo server;
 
-  protected final ConnectionPool connectionPool;
+  protected final IPCConnectionPool connectionPool;
 
   protected final MessageProcessor messageProcessor;
 
@@ -291,6 +280,7 @@ public class Server {
 
   public static final String SYSTEM_NAME = "Myriad";
   final ConcurrentHashSet<Integer> workersReceivedQuery = new ConcurrentHashSet<Integer>();
+
   protected Server(final SocketInfo server, final Map<Integer, SocketInfo> workers) throws IOException {
     this.workers = new ConcurrentHashMap<Integer, SocketInfo>();
     this.workers.putAll(workers);
@@ -314,7 +304,7 @@ public class Server {
 
     handlers.put(0, minaHandler);
 
-    this.connectionPool = new ConnectionPool(0, computingUnits, handlers);
+    this.connectionPool = new IPCConnectionPool(0, computingUnits, handlers);
     messageProcessor = new MessageProcessor();
 
   }
@@ -374,77 +364,6 @@ public class Server {
   }
 
   public void processNextStatement(final InputStream is) {
-    // try {
-    //
-    // try {
-    // ZqlParser p = new ZqlParser(is);
-    // ZStatement s = p.readStatement();
-    // Query q = null;
-    //
-    // if (s instanceof ZQuery)
-    // q = handleQueryStatement((ZQuery) s, t.getId());
-    // else {
-    // System.err
-    // .println("Currently only query statements (select) are supported");
-    // return;
-    // }
-    // processQuery(q);
-    //
-    // } catch (Throwable a) {
-    // // Whenever error happens, abort the current transaction
-    //
-    // if (t != null) {
-    // t.abort();
-    // System.out.println("Transaction " + t.getId().getId()
-    // + " aborted because of unhandled error");
-    // }
-    //
-    // if (a instanceof ParsingException
-    // || a instanceof Zql.ParseException)
-    // throw new ParsingException((Exception) a);
-    // if (a instanceof Zql.TokenMgrError)
-    // throw (Zql.TokenMgrError) a;
-    // throw new DbException(a.getMessage());
-    //
-    //
-    // } catch (DbException e) {
-    // e.printStackTrace();
-    // } catch (IOException e) {
-    // e.printStackTrace();
-    // } catch (simpledb.ParsingException e) {
-    // System.out
-    // .println("Invalid SQL expression: \n \t" + e.getMessage());
-    // } catch (Zql.TokenMgrError e) {
-    // System.out.println("Invalid SQL expression: \n \t " + e);
-    //
-    // }
-    // }
-  }
-
-  protected void processQuery(final Query q) throws DbException {
-    // HashMap<String, Integer> aliasToId = q.getLogicalPlan().getTableAliasToIdMapping();
-    // Operator sequentialQueryPlan = q.getPhysicalPlan();
-
-    // if (sequentialQueryPlan != null) {
-    // System.out.println("The sequential query plan is:");
-    // OperatorCardinality.updateOperatorCardinality(
-    // (Operator) sequentialQueryPlan, aliasToId, tableStats);
-    // new QueryPlanVisualizer().printQueryPlanTree(sequentialQueryPlan,
-    // System.out);
-    // }
-
-    // SocketInfo masterWorker = selectMasterWorker();
-
-    final ParallelQueryPlan p = null;
-    // ParallelQueryPlan.parallelizeQueryPlan(tid, sequentialQueryPlan, workers, masterWorker,
-    // server, SingleFieldHashPartitionFunction.class);
-
-    // p = ParallelQueryPlan.optimize(tid, p, new ProjectOptimizer(
-    // new FilterOptimizer(
-    // new AggregateOptimizer(new BloomFilterOptimizer(
-    // workers, aliasToId, tableStats)))));
-
-    startQuery(p, null);
   }
 
   // TODO implement queryID
@@ -461,27 +380,15 @@ public class Server {
     }
   }
 
-  // /**
-  // * Select the master worker for the coming query
-  // */
-  // protected SocketInfo selectMasterWorker() {
-  // int master = (int) (Math.random() * this.workers.length);
-  // return this.workers[master];
-  // }
-
-  // public SocketInfo[] getWorkers() {
-  // return this.workers;
-  // }
-
   /**
    * This method should be called when a data item is received
    */
-  public void receiveData(final ExchangeMessage data) {
+  public void receiveData(final ExchangeTupleBatch data) {
 
     LinkedBlockingQueue<ExchangeTupleBatch> q = null;
     q = Server.this.dataBuffer.get(data.getOperatorID());
     if (data instanceof ExchangeTupleBatch) {
-      q.offer((ExchangeTupleBatch) data);
+      q.offer(data);
     }
     System.out.println("after add: size of q: " + q.size());
   }
@@ -567,25 +474,6 @@ public class Server {
     }
   }
 
-  protected void startQuery(final ParallelQueryPlan queryPlan, final SocketInfo masterWorker) throws DbException {
-    final HashMap<Integer, Operator> workerPlans = new HashMap<Integer, Operator>();
-    // for (SocketInfo worker : this.workers) {
-    // if (worker == masterWorker) {
-    // workerPlans.put(worker, queryPlan.getMasterWorkerPlan());
-    // } else
-    // workerPlans.put(worker, queryPlan.getSlaveWorkerPlan());
-    // }
-
-    final CollectConsumer serverPlan = queryPlan.getServerPlan();
-    try {
-      dispatchWorkerQueryPlans(workerPlans);
-    } catch (final IOException e) {
-      throw new DbException(e);
-    }
-    startServerQuery(serverPlan);
-
-  }
-
   public void startServerQuery(final CollectConsumer serverPlan) throws DbException {
 
     final Schema td = serverPlan.getSchema();
@@ -596,7 +484,6 @@ public class Server {
     }
 
     PrintStream out = null;
-    // ByteArrayOutputStream b = null;
     out = System.out;
 
     out.println(names);
@@ -606,16 +493,11 @@ public class Server {
     out.println("");
 
     serverPlan.open();
-    // int cnt = 0;
     while (serverPlan.hasNext()) {
       final _TupleBatch tup = serverPlan.next();
       out.println(new ImmutableInMemoryTupleBatch(serverPlan.getSchema(), tup.outputRawData(), tup.numOutputTuples())
           .toString());
-      // cnt++;
     }
-    // out.println("\n " + cnt + " rows.");
-    // if (b != null)
-    // System.out.print(b.toString());
 
     serverPlan.close();
     Server.this.dataBuffer.remove(serverPlan.getOperatorID());

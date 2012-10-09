@@ -26,6 +26,7 @@ import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnFactory;
+import edu.washington.escience.myriad.operator.BlockingDataReceiver;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.operator.SQLiteSQLProcessor;
@@ -80,7 +81,6 @@ public class Worker {
               final ObjectInputStream osis =
                   new ObjectInputStream(new ByteArrayInputStream(m.getQuery().getQuery().toByteArray()));
               final Operator query = (Operator) (osis.readObject());
-              // System.out.println(query);
               Worker.this.receiveQuery(query);
               Worker.this.sendMessageToMaster(TransportMessage.newBuilder().setType(TransportMessageType.CONTROL)
                   .setControl(ControlMessage.newBuilder().setType(ControlMessageType.QUERY_READY_TO_EXECUTE).build())
@@ -130,7 +130,6 @@ public class Worker {
   }
   public static class MessageWrapper {
     protected int senderID;
-    // protected ExchangePairID operatorPairID;
     protected TransportMessage message;
   }
 
@@ -142,9 +141,7 @@ public class Worker {
     public final void run() {
       while (true) {
         Operator query = null;
-        // synchronized (Worker.this) {
         query = Worker.this.queryPlan;
-        // }
         if (query != null) {
           System.out.println("Worker start processing query");
           final CollectProducer root = (CollectProducer) query;
@@ -154,7 +151,6 @@ public class Worker {
               root.next();
             }
             root.close();
-            // root.join(); // wait until the query to finish
           } catch (final DbException e1) {
             e1.printStackTrace();
           }
@@ -198,29 +194,21 @@ public class Worker {
           final ControlMessage cm = tm.getControl();
           // ControlProto.ExchangePairID epID = cm.getExchangePairID();
 
-          // ExchangePairID operatorID = ExchangePairID.fromExisting(epID.getExchangePairID());
-          // String senderID = epID.getWorkerID();
           session.setAttribute("remoteID", cm.getRemoteID());
-          // session.setAttribute("operatorID", operatorID);
         } else {
           final Integer senderID = (Integer) session.getAttribute("remoteID");
           if (senderID != null) {
             final MessageWrapper mw = new MessageWrapper();
             mw.senderID = senderID;
             mw.message = (TransportMessage) message;
-            // ExchangePairID operatorID = (ExchangePairID) session.getAttribute("operatorID");
-            // mw.operatorPairID = operatorID;
             Worker.this.messageBuffer.add(mw);
           } else {
             // currently messages from the master do not have id
             // messages from master
-            // System.err.println("Error: message received from an unknown unit: " + message);
 
             final MessageWrapper mw = new MessageWrapper();
             mw.senderID = 0;
             mw.message = (TransportMessage) message;
-            // ExchangePairID operatorID = (ExchangePairID) session.getAttribute("operatorID");
-            // mw.operatorPairID = null;
             Worker.this.messageBuffer.add(mw);
           }
         }
@@ -251,13 +239,8 @@ public class Worker {
       }
       inRun = true;
       IoSession serverSession = null;
-      // int numTry = 0;
       try {
         serverSession = Worker.this.connectionPool.get(0, null, 3, null);
-        // while ((serverSession = ParallelUtility.createSession(thisWorker.masterAddress, thisWorker.minaHandler,
-        // 3000)) == null
-        // && numTry < 3)
-        // numTry++;
       } catch (final RuntimeException e) {
         e.printStackTrace();
       } catch (final Exception e) {
@@ -321,10 +304,9 @@ public class Worker {
     File confDir = null;
     if (args.length >= 2) {
       if (args[0].equals("--conf")) {
-        // dataDir = args[3];
         confDir = new File(args[1]);
         args = ParallelUtility.removeArg(args, 0);
-        args = ParallelUtility.removeArg(args, 0);
+        ParallelUtility.removeArg(args, 0);
       } else {
         System.out.println("Invalid arguments.\n" + usage);
         ParallelUtility.shutdownVM();
@@ -360,18 +342,11 @@ public class Worker {
    * The ID of this worker.
    */
   final int myID;
-  //
-  // final int port;
-  // final String host;
-  // /**
-  // * The server address
-  // */
-  // final InetSocketAddress masterAddress;
 
   /**
    * connectionPool[0] is always the master.
    */
-  protected final ConnectionPool connectionPool;
+  protected final IPCConnectionPool connectionPool;
 
   /**
    * The acceptor, which binds to a TCP socket and waits for connections
@@ -417,13 +392,8 @@ public class Worker {
     this.conf = conf;
     this.myID = Integer.parseInt(conf.get("worker.identifier"));
 
-    // port = workerArray[this.workerID - 1].getPort();
-    // host = workerArray[this.workerID - 1].getHost();
-    // String[] server = conf.get("master.identifier").split(":");
     this.dataDir = new File(conf.get("worker.data.sqlite.dir"));
     this.tmpDir = new File(conf.get("worker.tmp.dir"));
-    // this.masterAddress = new InetSocketAddress(server[0], Integer.parseInt(server[1]));
-    // this.masterAddress = conf.getServer();
 
     acceptor = ParallelUtility.createAcceptor();
 
@@ -449,7 +419,7 @@ public class Worker {
 
     handlers.put(0, minaHandler);
 
-    this.connectionPool = new ConnectionPool(myID, computingUnits, handlers);
+    this.connectionPool = new IPCConnectionPool(myID, computingUnits, handlers);
   }
 
   /**
@@ -510,9 +480,7 @@ public class Worker {
       final Consumer c = (Consumer) queryPlan;
 
       LinkedBlockingQueue<ExchangeTupleBatch> buf = null;
-      // synchronized (Worker.this) {
       buf = Worker.this.dataBuffer.get(((Consumer) queryPlan).getOperatorID());
-      // }
       c.setInputBuffer(buf);
       this.exchangeSchema.put(c.getOperatorID(), c.getSchema());
 
@@ -538,17 +506,14 @@ public class Worker {
   /**
    * This method should be called when a data item is received.
    */
-  public final void receiveData(final ExchangeMessage data) {
+  public final void receiveData(final ExchangeTupleBatch data) {
     if (data instanceof _TupleBatch) {
       System.out.println("TupleBag received from " + data.getWorkerID() + " to Operator: " + data.getOperatorID());
     }
-    // else if (data instanceof BloomFilterBitSet)
-    // System.out.println("BitSet received from " + data.getWorkerID() + " to Operator: "
-    // + data.getOperatorID());
     LinkedBlockingQueue<ExchangeTupleBatch> q = null;
     q = Worker.this.dataBuffer.get(data.getOperatorID());
     if (data instanceof ExchangeTupleBatch) {
-      q.offer((ExchangeTupleBatch) data);
+      q.offer(data);
     }
   }
 

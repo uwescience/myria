@@ -12,7 +12,7 @@ import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 import edu.washington.escience.myriad.table._TupleBatch;
 
-public class ExchangeTupleBatch implements ExchangeMessage, _TupleBatch {
+public class ExchangeTupleBatch implements _TupleBatch {
 
   private final ExchangePairID operatorID;
   private final int fromWorkerID;
@@ -23,7 +23,8 @@ public class ExchangeTupleBatch implements ExchangeMessage, _TupleBatch {
    */
   private static final long serialVersionUID = 1L;
 
-  public ExchangeTupleBatch(final ExchangePairID oID, final int workerID, final List<Column> columns, final Schema inputSchema, final int numTuples) {
+  public ExchangeTupleBatch(final ExchangePairID oID, final int workerID, final List<Column> columns,
+      final Schema inputSchema, final int numTuples) {
     this.dataHolder = new TupleBatch(inputSchema, columns, numTuples);
     this.operatorID = oID;
     this.fromWorkerID = workerID;
@@ -85,7 +86,6 @@ public class ExchangeTupleBatch implements ExchangeMessage, _TupleBatch {
   /**
    * Get the ParallelOperatorID, to which this message is targeted
    */
-  @Override
   public ExchangePairID getOperatorID() {
     return this.operatorID;
   }
@@ -102,7 +102,6 @@ public class ExchangeTupleBatch implements ExchangeMessage, _TupleBatch {
   /**
    * Get the worker id from which the message was sent
    */
-  @Override
   public int getWorkerID() {
     return this.fromWorkerID;
   }

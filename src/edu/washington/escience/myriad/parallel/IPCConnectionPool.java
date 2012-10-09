@@ -15,7 +15,7 @@ import edu.washington.escience.myriad.proto.TransportProto.TransportMessage.Tran
 /**
  * Keep a pool of n connections, indexed by 0~n-1
  */
-public class ConnectionPool {
+public class IPCConnectionPool {
 
   protected final ConcurrentHashMap<Integer, AtomicReference<IoSession>> sessionPool;
   protected final ConcurrentHashMap<Integer, SocketInfo> remoteAddresses;
@@ -23,7 +23,7 @@ public class ConnectionPool {
 
   protected final int myID;
 
-  public ConnectionPool(final int myID, final Map<Integer, SocketInfo> remoteAddresses, final Map<Integer, IoHandler> defaultIoHandlers) {
+  public IPCConnectionPool(final int myID, final Map<Integer, SocketInfo> remoteAddresses, final Map<Integer, IoHandler> defaultIoHandlers) {
     this.sessionPool = new ConcurrentHashMap<Integer, AtomicReference<IoSession>>();
     for (final Integer id : remoteAddresses.keySet()) {
       this.sessionPool.put(id, new AtomicReference<IoSession>());

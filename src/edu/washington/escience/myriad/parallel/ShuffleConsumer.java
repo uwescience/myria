@@ -20,8 +20,6 @@ public class ShuffleConsumer extends Consumer {
 
   private static final long serialVersionUID = 1L;
 
-  // private transient Iterator<_TupleBatch> tuples;
-  // private transient int innerBufferIndex;
   private boolean finish;
 
   // Used to remember which of the source workers have sent an end of stream

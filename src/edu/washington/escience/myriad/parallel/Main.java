@@ -22,6 +22,7 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.accessmethod.JdbcAccessMethod;
+import edu.washington.escience.myriad.operator.BlockingDataReceiver;
 import edu.washington.escience.myriad.operator.DupElim;
 import edu.washington.escience.myriad.operator.Filter;
 import edu.washington.escience.myriad.operator.JdbcQueryScan;
