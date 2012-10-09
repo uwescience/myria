@@ -1,0 +1,255 @@
+// Hello World Datalog grammar
+
+
+options
+{
+   JAVA_UNICODE_ESCAPE   = true ;
+   UNICODE_INPUT         = false ;
+
+  STATIC                = false ;
+//  DEBUG_PARSER          = true ;
+//  DEBUG_TOKEN_MANAGER   = true ;
+}
+
+PARSER_BEGIN(DatalogParser)
+
+package edu.uw.cs.datalog.lang ;
+import java.util.*;
+import edu.uw.cs.datalog.syntax.*;
+
+
+public class DatalogParser 
+{
+
+}
+
+PARSER_END(DatalogParser)
+
+DatalogProgram Program() : { DatalogProgram pgm; }
+{
+  { pgm = new DatalogProgram(); }
+  (Backend(pgm) )+
+  ProgramRules(pgm)
+  ProgramAnswer(pgm)
+  <EOF>
+  { return pgm; }
+}
+
+
+void Backend(DatalogProgram pgm) : { String model; List args; DatalogBackend backend; String fn, fn2; }
+{
+  <BACKEND>   
+  model = Predicate()
+  args = BackendTypeList()
+  { backend = new DatalogBackend(model, args); }
+  (fn = String() 
+  { fn2 = fn.substring(1,fn.length()-1); backend.setFilename(fn2); } )
+  (<DOT>)?
+  { pgm.addBackend(backend); }
+}
+
+void ProgramRules(DatalogProgram pgm) : { DatalogRuleSet rules; }
+{
+  rules = RuleSet()   { pgm.setRuleSet(rules); }
+}
+
+void ProgramAnswer(DatalogProgram pgm) : { DatalogAnswer ans; }
+{
+  ans = Answer() { pgm.setAnswer(ans); }
+}
+
+DatalogRuleSet RuleSet() : { DatalogRuleSet rules; DatalogIndividualRule r; }
+{
+  { rules=new DatalogRuleSet(); }
+  ( <NIL>
+  | r = IndividualRule() { rules.addIndividualRule(r);  }
+    ( r = IndividualRule() { rules.addIndividualRule(r); } ) *  
+  )
+ { return rules; }
+}
+
+DatalogIndividualRule IndividualRule() : { DatalogIndividualRule r; DatalogAtom hd; DatalogBody body; }
+{
+  hd = Atom()
+  <RULEDEF>
+  body = RuleBody()
+  { r = new DatalogIndividualRule(hd, body); }
+  { return r; }
+}
+
+DatalogBody RuleBody() : { DatalogBody body; DatalogAtom a; }
+{
+  { body = new DatalogBody(); }
+  ( <NIL>
+  | a = Atom() { body.addAtom(a); }
+    ( (<COMMA>)? a = Atom() { body.addAtom(a); } )*
+    <DOT>
+  )
+  { return body; }
+}
+
+DatalogAtom Atom() : { DatalogAtom a; String p; List args; }
+{
+   p = Predicate()
+   args = ArgList()
+  { a = new DatalogAtom(p, args); }
+  { return a; }
+}
+
+DatalogAnswer Answer() : { DatalogAnswer answer; DatalogAtom a; }
+{
+  <ANSWER>
+  a = Atom() { answer = new DatalogAnswer(a); }
+  { return answer; }
+}
+
+
+String Predicate() : { Token tkn; String str; }
+{
+  tkn = <PREDICATE> { str = tkn.image; }
+  { return str; }
+}
+
+String String() : { Token tkn; String str; }
+{
+  ( tkn = <SINGLE_STRING> { str = tkn.image; } 
+   | tkn = <DOUBLE_STRING> { str = tkn.image; }       
+  )
+  { return str; }
+}
+
+int Integer() : { Token tkn; int intNum; }
+{
+  tkn = <INTEGER> { intNum = Integer.parseInt(tkn.image);	
+                    return intNum; 
+		  }
+}
+
+long Long() : { Token tkn; long longNum; String substr; }
+{
+  tkn = <LONG> 
+  { 
+    substr = tkn.image.substring(0, tkn.image.length()-1);
+    longNum = Long.parseLong(substr);	
+    return longNum; 
+  }
+}
+
+
+
+DatalogParamValue AtomParam() : { String str, str2; List args; int intNum; long longNum; DatalogParamValue dpv;}
+{
+ ( str = Predicate() { dpv = new DatalogParamVariable(str); }
+ | str = String()  { 
+       str2 = str.substring(1,str.length()-1);
+       dpv = new DatalogParamStringConstant(str2); 
+       }
+ | longNum = Long() {
+       dpv = new DatalogParamLongConstant(longNum);
+   }
+ | intNum = Integer() {
+       dpv = new DatalogParamIntegerConstant(intNum);
+   }
+ | <COUNT>  args = ArgInList() { dpv = new DatalogOperation("count", args);}
+ | <MAX>    args = ArgInList() { dpv = new DatalogOperation("max", args);}
+ | <MIN>    args = ArgInList() { dpv = new DatalogOperation("min", args);}
+ | <FUN>    args = ArgInList() { dpv = new DatalogOperation("fun", args);}
+ )
+  { return dpv; }
+}
+
+
+List ArgInList() : {DatalogParamValue field; List args = new ArrayList(); }
+{ 
+ (  <LBRACE>
+    field = AtomParam() { args.add(field); }
+    ( <COMMA> field = AtomParam() { args.add(field); } ) *
+   <RBRACE>
+  )
+  { return args; }
+}	
+
+List ArgList() : { DatalogParamValue field; List args = new ArrayList(); }
+{
+  ( <NIL>
+  | <LPAREN>
+    field = AtomParam() { args.add(field); }
+    ( <COMMA> field = AtomParam() { args.add(field); } ) *
+    <RPAREN>
+  )
+  { return args; }
+}
+
+
+List BackendTypeList() : { DatalogType field; List args = new ArrayList(); }
+{
+  ( <NIL>
+  | <LBRACE>
+    /* field = Predicate() { args.add(field); }
+    ( <COMMA> field = Predicate() { args.add(field); } ) * */
+    field = BackendType() { args.add(field); }
+    ( <COMMA> field = BackendType() { args.add(field); } ) *
+    <RBRACE>
+  )
+  { return args; }
+}
+
+DatalogType BackendType() : { DatalogType dt; }
+{
+  ( <INTEGER_TYPE> { dt = new DatalogType_Integer(); }
+   | <LONG_TYPE> { dt = new DatalogType_Long(); }
+   | <STRING_TYPE> { dt = new DatalogType_String(); }
+   | <UNKNOWN_TYPE> { dt = new DatalogType_Unknown(); }
+  )
+  { return dt; } 
+}
+
+
+// -----------------------------------------------------
+// -----------------------------------------------------
+// -----------------------------------------------------
+
+SKIP : { " " | "\t" | "\n" }
+TOKEN: { <#WS: " " | "\t" | "\n" > }
+SPECIAL_TOKEN : { <COMMENT: "#" (~["\n"])* ("\n")? > }
+
+TOKEN [IGNORE_CASE] :
+{
+   <BACKEND: "backend" >
+|  <ANSWER: "ans" >
+|  <INTEGER_TYPE: "int" >
+|  <LONG_TYPE: "long" >
+|  <STRING_TYPE: "string" >
+|  <UNKNOWN_TYPE: "unknown" >
+|  <COUNT: "COUNT" >
+|  <MAX: "MAX">
+|  <MIN: "MIN">
+|  <FUN: "FUN">
+}
+
+
+TOKEN:
+{
+  <#A2Z: ["a"-"z","A"-"Z"]>
+| <#A2ZNUM: ["a"-"z","A"-"Z","0"-"9"]>
+| <#VARNAME: <A2Z> ( <A2ZNUM> | ["_","." ] )*  >
+| <#DIGITS: (["0"-"9"])+>
+| <LONG: <DIGITS>["L","l"]>
+| <INTEGER: <DIGITS>>
+| <PREDICATE: <VARNAME> >
+| <VAR: "?" <VARNAME> >
+| <SINGLE_STRING: "'" (~["'", "\\", "\n"])* "'" >
+| <DOUBLE_STRING: "\"" (~["\"", "\\", "\n"])* "\"" >
+| <RULEDEF: ":-" >
+| <LPAREN: "(" >
+| <RPAREN: ")" >
+| <LBRACE: "[" >
+| <RBRACE: "]" >
+| <NIL: <LPAREN> (<WS>|<COMMENT>)* <RPAREN> >
+| <COMMA: "," >
+| <DOT: "." >
+| <EQ: "=" >
+| <NE: "!=" >
+}
+
+

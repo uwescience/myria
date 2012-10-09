@@ -1,0 +1,61 @@
+#!/bin/bash
+
+GRAMMAR="${GRAMMAR:-datalog.jj}"
+
+function grammar
+{
+    FILE="$1"
+    PKG="$2"
+    CLASS="$3"
+
+#    DIR="../src/com/hp/hpl/jena/sparql/lang/$PKG"
+    DIR="../src/edu/uw/cs/datalog/lang"
+
+    (cd "$DIR" ; rm -f TokenMgrError.java ParseException.java Token.java JavaCharStream.java DatalogParser.java )
+
+    echo "---- Process grammar -- $1"
+    javacc -OUTPUT_DIRECTORY=$DIR  -JDK_VERSION=1.5 "${FILE}"
+    RC=$?
+
+    echo "RC"
+    echo ${RC}
+
+    [ "$RC" = 0 ] || return
+
+    echo "---- Create text form"
+    jjdoc -TEXT=true -OUTPUT_FILE=${FILE%%.jj}.txt "${FILE}"
+
+  # Fix unnecessary imports
+    echo "---- Fixing Java warnings in ${NAME}TokenManager ..."
+
+    F="$DIR/${CLASS}TokenManager.java"
+
+    sed -e 's/import .*//' -e 's/MatchLoop: do/do/' \
+        -e 's/int hiByte = (int)(curChar/int hiByte = (curChar/' \
+	< $F > F
+    mv F $F
+
+    echo "---- Fixing Java warnings in Token ..."
+    F="$DIR/Token.java"
+    sed -e 's/@Override //' \
+	-e 's/public String toString/@Override public String toString/' < $F > F
+    mv F $F
+
+
+    echo "---- Fixing Java warnings in TokenMgrError ..."
+    # Override:
+    #   public String getMessage()
+    F="$DIR/TokenMgrError.java"
+    sed -e 's/@Override //' \
+	-e 's/public String getMessage/@Override public String getMessage/' < $F > F
+    mv F $F
+
+    echo "---- Done"
+}
+
+
+# --------------------------------------------------------
+
+#dos2unix < "$GRAMMAR" | cpp -P -C -DARQ | unix2dos > arq.jj
+grammar datalog.jj datalog DatalogParser
+
