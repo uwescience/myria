@@ -1,0 +1,9 @@
+backend G[int, int] "test/input".
+
+L(x,x,0) :- G(x,y).
+L(x,x,0) :- G(y,x).
+D(x,y,1) :- G(x,y).
+
+L(x,y,fun[d,e]) :- L(x,z,d), D(z,y,e).
+SPath(x,y,min[l]) :- L(x,y,l).
+ans SPath(x,y,l)
