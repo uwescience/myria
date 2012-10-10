@@ -18,18 +18,17 @@ public class DatalogOperation extends DatalogParamValue {
     params.addAll(args);
   }
 
-  public List<DatalogParamValue> getParams() {
-    return params;
-  }
-
   public String getOperation() {
     return op;
   }
 
+  public List<DatalogParamValue> getParams() {
+    return params;
+  }
+
   @Override
-  public String toString() {
-    final String res = "Op(" + op + ")";
-    return res;
+  public boolean isConstant() {
+    return false;
   }
 
   @Override
@@ -38,7 +37,8 @@ public class DatalogOperation extends DatalogParamValue {
   }
 
   @Override
-  public boolean isConstant() {
-    return false;
+  public String toString() {
+    final String res = "Op(" + op + ")";
+    return res;
   }
 }

@@ -25,10 +25,12 @@ public final class DatalogPredicate {
   }
 
   /**
-   * @return the name of this predicate.
+   * Add a rule to the definition of this predicate.
+   * 
+   * @param rule the rule to be added.
    */
-  public String getPredicateName() {
-    return predicateName;
+  public void addRule(final DatalogRule rule) {
+    definingRules.add(rule);
   }
 
   /**
@@ -39,18 +41,16 @@ public final class DatalogPredicate {
   }
 
   /**
-   * Add a rule to the definition of this predicate.
-   * 
-   * @param rule the rule to be added.
+   * @return the name of this predicate.
    */
-  public void addRule(final DatalogRule rule) {
-    definingRules.add(rule);
+  public String getPredicateName() {
+    return predicateName;
   }
 
   @Override
   public String toString() {
     String res = "*** predicateName: " + predicateName + " ***\n";
-    for (DatalogRule rule : definingRules) {
+    for (final DatalogRule rule : definingRules) {
       res = res + rule.toString() + "\n";
     }
     return res;

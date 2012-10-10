@@ -13,18 +13,9 @@ public class DatalogParamVariable extends DatalogParamValue implements Comparabl
     variableName = s;
   }
 
-  public final String getVariableName() {
-    return variableName;
-  }
-
   @Override
-  public final boolean isVariable() {
-    return true;
-  }
-
-  @Override
-  public final boolean isConstant() {
-    return false;
+  public final int compareTo(final DatalogParamVariable other) {
+    return this.variableName.compareTo(other.variableName);
   }
 
   @Override
@@ -35,6 +26,10 @@ public class DatalogParamVariable extends DatalogParamValue implements Comparabl
     return (this.compareTo((DatalogParamVariable) obj) == 0);
   }
 
+  public final String getVariableName() {
+    return variableName;
+  }
+
   @Override
   public final int hashCode() {
     final HashCodeBuilder hb = new HashCodeBuilder(MAGIC_HASHCODE1, MAGIC_HASHCODE2);
@@ -43,8 +38,13 @@ public class DatalogParamVariable extends DatalogParamValue implements Comparabl
   }
 
   @Override
-  public final int compareTo(final DatalogParamVariable other) {
-    return this.variableName.compareTo(other.variableName);
+  public final boolean isConstant() {
+    return false;
+  }
+
+  @Override
+  public final boolean isVariable() {
+    return true;
   }
 
   @Override

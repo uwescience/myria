@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
+import edu.washington.escience.myriad.datalog.parser.ParseException;
+
 public final class DatalogProgram {
   private final List<DatalogBackend> backends = new ArrayList<DatalogBackend>();
   private DatalogRuleSet rules = null;
@@ -15,17 +17,13 @@ public final class DatalogProgram {
   public DatalogProgram() {
   }
 
-  public void processProgram() {
-
-    // check semantics first
-    if (!(this.areRulesSafe() && this.areRelationSizesRespected())) {
-      System.err.println("Program is not semantically correct!");
-      System.exit(-1);
-    }
-    // create the dependency graph
-    deps = new DependencyGraph(this);
-    // create the input map
-    this.createInputMap();
+  /**
+   * Add a new Backend data source (EDBs) to this Datalog program.
+   * 
+   * @param b the Backend object used as an EDB source for this program.
+   */
+  public void addBackend(final DatalogBackend b) {
+    backends.add(b);
   }
 
   private boolean areRelationSizesRespected() {
@@ -83,20 +81,6 @@ public final class DatalogProgram {
     return areRespected;
   }
 
-  private boolean doesAtomRespectsRelationSizes(final HashMap<String, Integer> relsToSize, final DatalogAtom a) {
-    boolean areRespected = true;
-    final String nm = a.getName();
-    final int numAtomParams = a.getParams().size();
-    if (relsToSize.containsKey(nm)) {
-      final int existingSize = relsToSize.get(nm);
-      if (existingSize != numAtomParams) {
-        System.err.println("Multiple sizes used for relation " + nm + ": " + existingSize + " & " + numAtomParams);
-        areRespected = false;
-      }
-    }
-    return areRespected;
-  }
-
   /**
    * Checks the safety of the rules. This means that all variables used in the head are defined in the body.
    * 
@@ -107,8 +91,8 @@ public final class DatalogProgram {
     boolean areSafe = true;
     final List<DatalogPredicate> indRules = rules.getPredicates();
 
-    for (DatalogPredicate r : indRules) {
-      for (DatalogRule indr : r.getDefiningRules()) {
+    for (final DatalogPredicate r : indRules) {
+      for (final DatalogRule indr : r.getDefiningRules()) {
         // Check that all variables in the head are defined in the body
         final DatalogAtom hd = indr.getHead();
         final List<DatalogParamValue> hdVars = hd.getDefinedVariables();
@@ -127,24 +111,33 @@ public final class DatalogProgram {
     return areSafe;
   }
 
-  /**
-   * @return a List<String> containing all the names of the Backend predicates.
-   */
-  public List<String> getProgramBackendNames() {
-    final List<String> res = new ArrayList<String>();
-    for (DatalogBackend bnd : backends) {
-      res.add(bnd.getModelName());
+  private void createInputMap() {
+
+    inputMap = new HashMap<String, String>();
+    for (final Iterator<DatalogBackend> it = backends.iterator(); it.hasNext();) {
+      final DatalogBackend bnd = it.next();
+      final String nm = bnd.getModelName();
+      final String fileName = bnd.getFilename();
+      inputMap.put(nm, fileName);
     }
-    return res;
   }
 
-  /**
-   * Add a new Backend data source (EDBs) to this Datalog program.
-   * 
-   * @param b the Backend object used as an EDB source for this program.
-   */
-  public void addBackend(final DatalogBackend b) {
-    backends.add(b);
+  private boolean doesAtomRespectsRelationSizes(final HashMap<String, Integer> relsToSize, final DatalogAtom a) {
+    boolean areRespected = true;
+    final String nm = a.getName();
+    final int numAtomParams = a.getParams().size();
+    if (relsToSize.containsKey(nm)) {
+      final int existingSize = relsToSize.get(nm);
+      if (existingSize != numAtomParams) {
+        System.err.println("Multiple sizes used for relation " + nm + ": " + existingSize + " & " + numAtomParams);
+        areRespected = false;
+      }
+    }
+    return areRespected;
+  }
+
+  public DatalogAtom getAnswer() {
+    return answer.getAnswer();
   }
 
   public DatalogBackend getBackend(final String nm) {
@@ -161,30 +154,39 @@ public final class DatalogProgram {
     return backends;
   }
 
-  private void createInputMap() {
-
-    inputMap = new HashMap<String, String>();
-    for (final Iterator<DatalogBackend> it = backends.iterator(); it.hasNext();) {
-      final DatalogBackend bnd = it.next();
-      final String nm = bnd.getModelName();
-      final String fileName = bnd.getFilename();
-      inputMap.put(nm, fileName);
-    }
+  public DependencyGraph getDependencyGraph() {
+    return deps;
   }
 
   public HashMap<String, String> getInputMap() {
     return inputMap;
   }
 
-  public void setRuleSet(final DatalogRuleSet rs) {
-    if (rules != null) {
-      System.err.println("Warning: Reseting ruleset from " + rules.toString() + " to " + rs.toString());
+  /**
+   * @return a List<String> containing all the names of the Backend predicates.
+   */
+  public List<String> getProgramBackendNames() {
+    final List<String> res = new ArrayList<String>();
+    for (final DatalogBackend bnd : backends) {
+      res.add(bnd.getModelName());
     }
-    rules = rs;
+    return res;
   }
 
   public DatalogRuleSet getRuleSet() {
     return rules;
+  }
+
+  public void processProgram() throws ParseException {
+
+    // check semantics first
+    if (!(this.areRulesSafe() && this.areRelationSizesRespected())) {
+      throw new ParseException("Program is not semantically correct!");
+    }
+    // create the dependency graph
+    deps = new DependencyGraph(this);
+    // create the input map
+    this.createInputMap();
   }
 
   public void setAnswer(final DatalogAnswer ans) {
@@ -194,12 +196,11 @@ public final class DatalogProgram {
     answer = ans;
   }
 
-  public DatalogAtom getAnswer() {
-    return answer.getAnswer();
-  }
-
-  public DependencyGraph getDependencyGraph() {
-    return deps;
+  public void setRuleSet(final DatalogRuleSet rs) {
+    if (rules != null) {
+      System.err.println("Warning: Reseting ruleset from " + rules.toString() + " to " + rs.toString());
+    }
+    rules = rs;
   }
 
   @Override

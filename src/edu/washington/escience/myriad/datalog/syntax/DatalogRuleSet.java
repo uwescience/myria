@@ -44,13 +44,6 @@ public final class DatalogRuleSet {
   }
 
   /**
-   * @return a list of Datalog predicates defined by this rule set. Each predicate contains one or more defining rules.
-   */
-  public List<DatalogPredicate> getPredicates() {
-    return predicates;
-  }
-
-  /**
    * Get the definition of a specific predicate of the given name.
    * 
    * @param name the name of the desired predicate.
@@ -61,6 +54,13 @@ public final class DatalogRuleSet {
       return ruleSetMap.get(name);
     }
     return null;
+  }
+
+  /**
+   * @return a list of Datalog predicates defined by this rule set. Each predicate contains one or more defining rules.
+   */
+  public List<DatalogPredicate> getPredicates() {
+    return predicates;
   }
 
   @Override

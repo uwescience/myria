@@ -69,12 +69,16 @@ public final class DependencyGraph {
   }
 
   /**
-   * @param idb the name of an IDB predicate.
-   * @return true if the specified predicate is used recursively.
+   * Computes the processing order of the nodes, as a list of connected components stored at componentProcessingOrder.
    */
-  public boolean isRecursive(final String idb) {
+  private void computeProcessingOrder() {
 
-    return recursiveIDBs.contains(idb);
+    componentProcessingOrder = new ArrayList<HashSet<String>>();
+    visitedComponents = new HashSet<HashSet<String>>();
+
+    for (final HashSet<String> component : connectedComponents) {
+      visitSCC(component);
+    }
   }
 
   /**
@@ -83,16 +87,47 @@ public final class DependencyGraph {
   private void createDependencyGraph() {
 
     /* Loop through each predicate's rules, finding all predicates that it depends on. */
-    for (DatalogPredicate currentRule : program.getRuleSet().getPredicates()) {
+    for (final DatalogPredicate currentRule : program.getRuleSet().getPredicates()) {
       /* Will contain a linked hash set of the predicates that this predicate depends on. */
       final LinkedHashSet<String> ruleDependencies = new LinkedHashSet<String>();
 
       /* Loop through each rule in the definition of this predicate. */
-      for (DatalogRule rule : currentRule.getDefiningRules()) {
+      for (final DatalogRule rule : currentRule.getDefiningRules()) {
         /* Add each of the body atoms to the dependencies. */
         ruleDependencies.addAll(rule.getBodyAtomNames());
       }
       depGraph.put(currentRule.getPredicateName(), ruleDependencies);
+    }
+  }
+
+  /**
+   * We now have a list of strongly connected components. Figure out which IDBs are accessed recursively.
+   * 
+   * Must be called after findSCCs.
+   */
+  private void findRecursiveIDBs() {
+    /* Loop through all components. */
+    for (final HashSet<String> component : connectedComponents) {
+      /* If the component has 2 or more nodes, all the IDBs in it are recursive. */
+      if (component.size() > 1) {
+        this.recursiveIDBs.addAll(component);
+        continue;
+      }
+
+      /* Component of size 1, see if it recurses on itself. */
+      for (final String node : component) {
+        if (depGraph.get(node).contains(node)) {
+          this.recursiveIDBs.add(node);
+        }
+      }
+    }
+
+    /* Create the nodeComponentMap data structure */
+    nodeComponentMap = new HashMap<String, HashSet<String>>();
+    for (final HashSet<String> component : connectedComponents) {
+      for (final String node : component) {
+        nodeComponentMap.put(node, component);
+      }
     }
   }
 
@@ -111,7 +146,7 @@ public final class DependencyGraph {
     recursiveIDBs = new HashSet<String>();
 
     /* This does the main work of the algorithm using the helper function scc */
-    for (String pred : depGraph.keySet()) {
+    for (final String pred : depGraph.keySet()) {
       if (!nodeIndex.containsKey(pred)) {
         index = scc(pred, index);
       }
@@ -119,34 +154,21 @@ public final class DependencyGraph {
   }
 
   /**
-   * We now have a list of strongly connected components. Figure out which IDBs are accessed recursively.
-   * 
-   * Must be called after findSCCs.
+   * @return An ordered list of strongly connected components that defines the order in which the components of the
+   *         graph should be processed. Each component is represented as a set of node names.
    */
-  private void findRecursiveIDBs() {
-    /* Loop through all components. */
-    for (HashSet<String> component : connectedComponents) {
-      /* If the component has 2 or more nodes, all the IDBs in it are recursive. */
-      if (component.size() > 1) {
-        this.recursiveIDBs.addAll(component);
-        continue;
-      }
+  public ArrayList<HashSet<String>> getProcessingOrder() {
 
-      /* Component of size 1, see if it recurses on itself. */
-      for (String node : component) {
-        if (depGraph.get(node).contains(node)) {
-          this.recursiveIDBs.add(node);
-        }
-      }
-    }
+    return this.componentProcessingOrder;
+  }
 
-    /* Create the nodeComponentMap data structure */
-    nodeComponentMap = new HashMap<String, HashSet<String>>();
-    for (HashSet<String> component : connectedComponents) {
-      for (String node : component) {
-        nodeComponentMap.put(node, component);
-      }
-    }
+  /**
+   * @param idb the name of an IDB predicate.
+   * @return true if the specified predicate is used recursively.
+   */
+  public boolean isRecursive(final String idb) {
+
+    return recursiveIDBs.contains(idb);
   }
 
   /**
@@ -165,7 +187,7 @@ public final class DependencyGraph {
     visitedNodes.push(currentNode);
 
     /* Consider successors of currentNode */
-    for (String successorNode : depGraph.get(currentNode)) {
+    for (final String successorNode : depGraph.get(currentNode)) {
       /* Skip EDBs. (TODO Why? They will always be sinks.) */
       if (edbs.contains(successorNode)) {
         continue;
@@ -196,17 +218,16 @@ public final class DependencyGraph {
     return newIndex;
   }
 
-  /**
-   * Computes the processing order of the nodes, as a list of connected components stored at componentProcessingOrder.
-   */
-  private void computeProcessingOrder() {
-
-    componentProcessingOrder = new ArrayList<HashSet<String>>();
-    visitedComponents = new HashSet<HashSet<String>>();
-
-    for (HashSet<String> component : connectedComponents) {
-      visitSCC(component);
+  @Override
+  public String toString() {
+    String res = "DepGraph:\n";
+    res = res + "RuleDeps:\n";
+    for (final Iterator<String> it = depGraph.keySet().iterator(); it.hasNext();) {
+      final String rName = it.next();
+      final Set<String> deps = depGraph.get(rName);
+      res = res + rName + ": " + deps.toString() + "\n";
     }
+    return res;
   }
 
   /**
@@ -221,33 +242,12 @@ public final class DependencyGraph {
     }
     visitedComponents.add(component);
 
-    for (String node : component) {
-      for (String dependency : depGraph.get(node)) {
+    for (final String node : component) {
+      for (final String dependency : depGraph.get(node)) {
         visitSCC(nodeComponentMap.get(dependency));
       }
     }
     componentProcessingOrder.add(component);
-  }
-
-  /**
-   * @return An ordered list of strongly connected components that defines the order in which the components of the
-   *         graph should be processed. Each component is represented as a set of node names.
-   */
-  public ArrayList<HashSet<String>> getProcessingOrder() {
-
-    return this.componentProcessingOrder;
-  }
-
-  @Override
-  public String toString() {
-    String res = "DepGraph:\n";
-    res = res + "RuleDeps:\n";
-    for (final Iterator<String> it = depGraph.keySet().iterator(); it.hasNext();) {
-      final String rName = it.next();
-      final Set<String> deps = depGraph.get(rName);
-      res = res + rName + ": " + deps.toString() + "\n";
-    }
-    return res;
   }
 
 }

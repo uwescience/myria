@@ -28,25 +28,25 @@ public final class DatalogRule {
     this.body = body;
   }
 
-  /** @return the head atom of this rule. */
-  public DatalogAtom getHead() {
-    return head;
-  }
-
   /** @return the body of this rule. */
   public DatalogBody getBody() {
     return body;
-  }
-
-  /** @return the name of the head predicate of this rule. */
-  public String getHeadName() {
-    return head.getName();
   }
 
   /** @return a set of the names of predicates in the body of this rule. */
   public Set<String> getBodyAtomNames() {
     final Set<String> blst = body.getBodyAtomNames();
     return blst;
+  }
+
+  /** @return the head atom of this rule. */
+  public DatalogAtom getHead() {
+    return head;
+  }
+
+  /** @return the name of the head predicate of this rule. */
+  public String getHeadName() {
+    return head.getName();
   }
 
   @Override

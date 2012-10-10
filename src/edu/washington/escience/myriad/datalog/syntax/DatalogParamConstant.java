@@ -3,13 +3,13 @@ package edu.washington.escience.myriad.datalog.syntax;
 public class DatalogParamConstant extends DatalogParamValue {
 
   @Override
-  public final boolean isVariable() {
-    return false;
+  public final boolean isConstant() {
+    return true;
   }
 
   @Override
-  public final boolean isConstant() {
-    return true;
+  public final boolean isVariable() {
+    return false;
   }
 
   @Override

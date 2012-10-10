@@ -15,6 +15,17 @@ public class DatalogAtom {
     params.addAll(args);
   }
 
+  public List<DatalogParamValue> getDefinedVariables() {
+    final Set<DatalogParamValue> vars = new LinkedHashSet<DatalogParamValue>();
+    for (final Iterator<DatalogParamValue> it = params.iterator(); it.hasNext();) {
+      final DatalogParamValue dpv = it.next();
+      if (dpv instanceof DatalogParamVariable) {
+        vars.add(dpv);
+      }
+    }
+    return new ArrayList<DatalogParamValue>(vars);
+  }
+
   public String getName() {
     return predicate;
   }
@@ -25,17 +36,6 @@ public class DatalogAtom {
 
   public void setName(final String s) {
     predicate = s;
-  }
-
-  public List<DatalogParamValue> getDefinedVariables() {
-    final Set<DatalogParamValue> vars = new LinkedHashSet<DatalogParamValue>();
-    for (final Iterator<DatalogParamValue> it = params.iterator(); it.hasNext();) {
-      final DatalogParamValue dpv = it.next();
-      if (dpv instanceof DatalogParamVariable) {
-        vars.add(dpv);
-      }
-    }
-    return new ArrayList<DatalogParamValue>(vars);
   }
 
   @Override

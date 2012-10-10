@@ -7,13 +7,13 @@ public final class DatalogTypeUnknown extends DatalogType {
   /** Using the Singleton template, creates the instance of this object. */
   private static final DatalogTypeUnknown INSTANCE = new DatalogTypeUnknown();
 
-  /** Inaccessible private constructor. */
-  private DatalogTypeUnknown() {
-  }
-
   /** @return the Datalog Unknown type. */
   public static DatalogTypeUnknown getInstance() {
     return INSTANCE;
+  }
+
+  /** Inaccessible private constructor. */
+  private DatalogTypeUnknown() {
   }
 
   @Override

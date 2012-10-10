@@ -19,20 +19,20 @@ public final class DatalogBackend {
     fileName = fn;
   }
 
-  public void setFilename(final String fn) {
-    fileName = fn;
-  }
-
   public String getFilename() {
     return fileName;
+  }
+
+  public List<DatalogType> getModelArgs() {
+    return modelArgs;
   }
 
   public String getModelName() {
     return modelName;
   }
 
-  public List<DatalogType> getModelArgs() {
-    return modelArgs;
+  public void setFilename(final String fn) {
+    fileName = fn;
   }
 
   @Override

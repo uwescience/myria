@@ -8,13 +8,13 @@ public final class DatalogTypeInteger extends DatalogType {
   /** Using the Singleton template, creates the instance of this object. */
   private static final DatalogTypeInteger INSTANCE = new DatalogTypeInteger();
 
-  /** Inaccessible private constructor. */
-  private DatalogTypeInteger() {
-  }
-
   /** @return the Datalog Integer type. */
   public static DatalogTypeInteger getInstance() {
     return INSTANCE;
+  }
+
+  /** Inaccessible private constructor. */
+  private DatalogTypeInteger() {
   }
 
   @Override

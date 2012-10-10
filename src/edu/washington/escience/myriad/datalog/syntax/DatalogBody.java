@@ -20,6 +20,16 @@ public class DatalogBody {
     ruleBody.add(a);
   }
 
+  public Set<String> getBodyAtomNames() {
+    final Set<String> names = new LinkedHashSet<String>();
+    for (int i = 0; i < ruleBody.size(); i = i + 1) {
+      final DatalogAtom a = ruleBody.get(i);
+      final String nm = a.getName();
+      names.add(nm);
+    }
+    return names;
+  }
+
   public List<DatalogParamValue> getDefinedVariables() {
     final Set<DatalogParamValue> res = new LinkedHashSet<DatalogParamValue>();
     for (final Iterator<DatalogAtom> it = ruleBody.iterator(); it.hasNext();) {
@@ -31,16 +41,6 @@ public class DatalogBody {
 
   public List<DatalogAtom> getRuleAtoms() {
     return ruleBody;
-  }
-
-  public Set<String> getBodyAtomNames() {
-    final Set<String> names = new LinkedHashSet<String>();
-    for (int i = 0; i < ruleBody.size(); i = i + 1) {
-      final DatalogAtom a = ruleBody.get(i);
-      final String nm = a.getName();
-      names.add(nm);
-    }
-    return names;
   }
 
   @Override
