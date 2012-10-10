@@ -1,0 +1,44 @@
+option java_package = "edu.washington.escience.myriad.proto";
+option java_outer_classname = "LogicalRaProto";
+
+message LogicalRaQueryMessage {
+	required string name = 1;
+	repeated LogicalRaOperator operator = 3;
+}
+
+message LogicalRaOperator {
+	enum LogicalRaOperatorType {
+		SCAN = 0;
+		PROJECT = 1;
+		JOIN = 2;
+	}
+	required LogicalRaOperatorType type=1;
+	required string name = 2;
+
+	optional LogicalScan scan = 3;
+	optional LogicalSelect select = 4;
+	optional LogicalProject project = 5;
+	optional LogicalJoin join = 6;
+}
+
+message LogicalScan {
+	required string relation = 1;
+}
+
+message LogicalSelect {
+	required string childName = 1;
+	required string condition = 2; // This must be improved!
+}
+
+message LogicalProject {
+	required string childName = 1;
+	repeated int32 column = 2;
+}
+
+message LogicalJoin {
+	required string leftChildName = 1;
+	repeated int32 leftColumn = 2;
+	required string rightChildName = 3;
+	repeated int32 rightColumn = 4;
+}
+
