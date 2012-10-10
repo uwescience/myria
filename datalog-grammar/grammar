@@ -8,13 +8,12 @@ function grammar
     PKG="$2"
     CLASS="$3"
 
-#    DIR="../src/com/hp/hpl/jena/sparql/lang/$PKG"
-    DIR="../src/edu/uw/cs/datalog/lang"
+    DIR="../src/edu/washington/escience/myriad/datalog/parser"
 
     (cd "$DIR" ; rm -f TokenMgrError.java ParseException.java Token.java JavaCharStream.java DatalogParser.java )
 
     echo "---- Process grammar -- $1"
-    javacc -OUTPUT_DIRECTORY=$DIR  -JDK_VERSION=1.5 "${FILE}"
+    javacc -OUTPUT_DIRECTORY=$DIR  -JDK_VERSION=1.7 "${FILE}"
     RC=$?
 
     echo "RC"

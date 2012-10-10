@@ -13,10 +13,12 @@ options
 
 PARSER_BEGIN(DatalogParser)
 
-package edu.uw.cs.datalog.lang ;
-import java.util.*;
-import edu.uw.cs.datalog.syntax.*;
+package edu.washington.escience.myriad.datalog.parser;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import edu.washington.escience.myriad.datalog.syntax.*;
 
 public class DatalogParser 
 {
@@ -36,7 +38,7 @@ DatalogProgram Program() : { DatalogProgram pgm; }
 }
 
 
-void Backend(DatalogProgram pgm) : { String model; List args; DatalogBackend backend; String fn, fn2; }
+void Backend(DatalogProgram pgm) : { String model; List<DatalogType> args; DatalogBackend backend; String fn, fn2; }
 {
   <BACKEND>   
   model = Predicate()
@@ -58,22 +60,22 @@ void ProgramAnswer(DatalogProgram pgm) : { DatalogAnswer ans; }
   ans = Answer() { pgm.setAnswer(ans); }
 }
 
-DatalogRuleSet RuleSet() : { DatalogRuleSet rules; DatalogIndividualRule r; }
+DatalogRuleSet RuleSet() : { DatalogRuleSet rules; DatalogRule r; }
 {
   { rules=new DatalogRuleSet(); }
   ( <NIL>
-  | r = IndividualRule() { rules.addIndividualRule(r);  }
-    ( r = IndividualRule() { rules.addIndividualRule(r); } ) *  
+  | r = IndividualRule() { rules.addRule(r);  }
+    ( r = IndividualRule() { rules.addRule(r); } ) *  
   )
  { return rules; }
 }
 
-DatalogIndividualRule IndividualRule() : { DatalogIndividualRule r; DatalogAtom hd; DatalogBody body; }
+DatalogRule IndividualRule() : { DatalogRule r; DatalogAtom hd; DatalogBody body; }
 {
   hd = Atom()
   <RULEDEF>
   body = RuleBody()
-  { r = new DatalogIndividualRule(hd, body); }
+  { r = new DatalogRule(hd, body); }
   { return r; }
 }
 
@@ -88,7 +90,7 @@ DatalogBody RuleBody() : { DatalogBody body; DatalogAtom a; }
   { return body; }
 }
 
-DatalogAtom Atom() : { DatalogAtom a; String p; List args; }
+DatalogAtom Atom() : { DatalogAtom a; String p; List<DatalogParamValue> args; }
 {
    p = Predicate()
    args = ArgList()
@@ -137,7 +139,7 @@ long Long() : { Token tkn; long longNum; String substr; }
 
 
 
-DatalogParamValue AtomParam() : { String str, str2; List args; int intNum; long longNum; DatalogParamValue dpv;}
+DatalogParamValue AtomParam() : { String str, str2; List<DatalogParamValue> args; int intNum; long longNum; DatalogParamValue dpv;}
 {
  ( str = Predicate() { dpv = new DatalogParamVariable(str); }
  | str = String()  { 
@@ -159,7 +161,7 @@ DatalogParamValue AtomParam() : { String str, str2; List args; int intNum; long 
 }
 
 
-List ArgInList() : {DatalogParamValue field; List args = new ArrayList(); }
+List<DatalogParamValue> ArgInList() : {DatalogParamValue field; List<DatalogParamValue> args = new ArrayList<DatalogParamValue>(); }
 { 
  (  <LBRACE>
     field = AtomParam() { args.add(field); }
@@ -169,7 +171,7 @@ List ArgInList() : {DatalogParamValue field; List args = new ArrayList(); }
   { return args; }
 }	
 
-List ArgList() : { DatalogParamValue field; List args = new ArrayList(); }
+List<DatalogParamValue> ArgList() : { DatalogParamValue field; List<DatalogParamValue> args = new ArrayList<DatalogParamValue>(); }
 {
   ( <NIL>
   | <LPAREN>
@@ -181,7 +183,7 @@ List ArgList() : { DatalogParamValue field; List args = new ArrayList(); }
 }
 
 
-List BackendTypeList() : { DatalogType field; List args = new ArrayList(); }
+List<DatalogType> BackendTypeList() : { DatalogType field; List<DatalogType> args = new ArrayList<DatalogType>(); }
 {
   ( <NIL>
   | <LBRACE>
@@ -196,10 +198,10 @@ List BackendTypeList() : { DatalogType field; List args = new ArrayList(); }
 
 DatalogType BackendType() : { DatalogType dt; }
 {
-  ( <INTEGER_TYPE> { dt = new DatalogType_Integer(); }
-   | <LONG_TYPE> { dt = new DatalogType_Long(); }
-   | <STRING_TYPE> { dt = new DatalogType_String(); }
-   | <UNKNOWN_TYPE> { dt = new DatalogType_Unknown(); }
+  ( <INTEGER_TYPE> { dt = DatalogTypeInteger.getInstance(); }
+   | <LONG_TYPE> { dt = DatalogTypeLong.getInstance(); }
+   | <STRING_TYPE> { dt = DatalogTypeString.getInstance(); }
+   | <UNKNOWN_TYPE> { dt = DatalogTypeUnknown.getInstance(); }
   )
   { return dt; } 
 }
