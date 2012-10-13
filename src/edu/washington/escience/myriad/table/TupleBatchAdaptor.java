@@ -152,12 +152,6 @@ public abstract class TupleBatchAdaptor implements _TupleBatch {
   }
 
   @Override
-  public _TupleBatch remove(final int innerIdx) {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
   public _TupleBatch renameColumn(final int inputColumnIdx, final String newName) {
     throw new UnsupportedOperationException();
   }
