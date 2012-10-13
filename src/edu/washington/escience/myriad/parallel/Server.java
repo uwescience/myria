@@ -340,20 +340,22 @@ public class Server {
   }
 
   protected void dispatchWorkerQueryPlans(final Map<Integer, Operator> plans) throws IOException {
-    final ByteArrayOutputStream inMemBuffer = new ByteArrayOutputStream();
-    final ObjectOutputStream oos = new ObjectOutputStream(inMemBuffer);
+    ByteArrayOutputStream inMemBuffer = null;
+    ObjectOutputStream oos = null;
     for (final Map.Entry<Integer, Operator> e : plans.entrySet()) {
       final Integer workerID = e.getKey();
       final Operator plan = e.getValue();
       final IoSession ssss0 = this.connectionPool.get(workerID, null, 3, null);
       // this session will be reused for the Workers to report the receive
       // of the queryplan, therefore, do not close it
+      inMemBuffer = new ByteArrayOutputStream();
+      oos = new ObjectOutputStream(inMemBuffer);
       oos.writeObject(plan);
       oos.flush();
       inMemBuffer.flush();
       ssss0.write(TransportMessage.newBuilder().setType(TransportMessageType.QUERY).setQuery(
           QueryProto.Query.newBuilder().setQuery(ByteString.copyFrom(inMemBuffer.toByteArray()))).build());
-      oos.reset();
+      // oos.reset();
     }
   }
 

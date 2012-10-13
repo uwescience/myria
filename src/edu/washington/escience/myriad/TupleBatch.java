@@ -19,6 +19,7 @@ import edu.washington.escience.myriad.column.IntColumn;
 import edu.washington.escience.myriad.column.LongColumn;
 import edu.washington.escience.myriad.column.StringColumn;
 import edu.washington.escience.myriad.table.TupleBatchAdaptor;
+import edu.washington.escience.myriad.table._TupleBatch;
 
 /**
  * Container class for a batch of tuples. The goal is to amortize memory management overhead.
@@ -391,5 +392,11 @@ public class TupleBatch extends TupleBatchAdaptor {
       validT[j++] = i;
     }
     return validT;
+  }
+
+  @Override
+  public _TupleBatch remove(final int innerIdx) {
+    this.validTuples.clear(innerIdx);
+    return this;
   }
 }
