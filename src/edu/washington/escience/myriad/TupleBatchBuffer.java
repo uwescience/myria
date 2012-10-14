@@ -30,7 +30,7 @@ public class TupleBatchBuffer {
   /** Internal state representing the number of columns that are ready in the current tuple. */
   private int numColumnsReady;
   /** Internal state representing the number of tuples in the in-progress TupleBatch. */
-  private int currentNumTuples;
+  public int currentNumTuples;
 
   /**
    * Constructs an empty TupleBatchBuffer to hold tuples matching the specified Schema.
@@ -44,6 +44,7 @@ public class TupleBatchBuffer {
     numColumns = schema.numFields();
     columnsReady = new BitSet(numColumns);
     numColumnsReady = 0;
+    currentNumTuples = 0;
   }
 
   /**
@@ -79,7 +80,7 @@ public class TupleBatchBuffer {
    * @return the number of complete tuples stored in this TupleBatchBuffer.
    */
   public final int numTuples() {
-    return this.readyTuples.size() * TupleBatch.BATCH_SIZE + this.currentNumTuples;
+    return readyTuples.size() * TupleBatch.BATCH_SIZE + currentNumTuples;
   }
 
   /**
@@ -88,8 +89,8 @@ public class TupleBatchBuffer {
    * @return the first complete TupleBatch in this buffer, or null if none is ready.
    */
   public final TupleBatch pop() {
-    if (this.readyTuples.size() > 0) {
-      return this.readyTuples.remove(0);
+    if (readyTuples.size() > 0) {
+      return readyTuples.remove(0);
     }
     return null;
   }
@@ -110,6 +111,7 @@ public class TupleBatchBuffer {
     numColumnsReady++;
     if (numColumnsReady == numColumns) {
       currentNumTuples++;
+      numColumnsReady = 0;
       columnsReady.clear();
       if (currentNumTuples == TupleBatch.BATCH_SIZE) {
         finishBatch();
