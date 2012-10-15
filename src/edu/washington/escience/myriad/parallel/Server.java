@@ -11,9 +11,11 @@ import java.io.ObjectOutputStream;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -28,7 +30,6 @@ import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IdleStatus;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
-import org.apache.mina.util.ConcurrentHashSet;
 
 import com.google.protobuf.ByteString;
 
@@ -116,7 +117,7 @@ public class Server {
       TERMINATE_MESSAGE_PROCESSING : while (true) {
         MessageWrapper mw = null;
         try {
-          mw = Server.this.messageBuffer.take();
+          mw = messageBuffer.take();
         } catch (final InterruptedException e) {
           e.printStackTrace();
           break TERMINATE_MESSAGE_PROCESSING;
@@ -129,9 +130,9 @@ public class Server {
 
             final DataMessage data = m.getData();
             final ExchangePairID exchangePairID = ExchangePairID.fromExisting(data.getOperatorID());
-            final Schema operatorSchema = Server.this.exchangeSchema.get(exchangePairID);
+            final Schema operatorSchema = exchangeSchema.get(exchangePairID);
             if (data.getType() == DataMessageType.EOS) {
-              Server.this.receiveData(new ExchangeTupleBatch(exchangePairID, senderID, operatorSchema));
+              receiveData(new ExchangeTupleBatch(exchangePairID, senderID, operatorSchema));
             } else {
               final List<ColumnMessage> columnMessages = data.getColumnsList();
               final Column[] columnArray = new Column[columnMessages.size()];
@@ -141,15 +142,15 @@ public class Server {
               }
               final List<Column> columns = Arrays.asList(columnArray);
 
-              Server.this.receiveData((new ExchangeTupleBatch(exchangePairID, senderID, columns, operatorSchema,
-                  columnMessages.get(0).getNumTuples())));
+              receiveData((new ExchangeTupleBatch(exchangePairID, senderID, columns, operatorSchema, columnMessages
+                  .get(0).getNumTuples())));
             }
             break;
           case TransportMessage.TransportMessageType.CONTROL_VALUE:
             final ControlMessage controlM = m.getControl();
             switch (controlM.getType().getNumber()) {
               case ControlMessage.ControlMessageType.QUERY_READY_TO_EXECUTE_VALUE:
-                Server.this.queryReceivedByWorker(0, senderID);
+                queryReceivedByWorker(0, senderID);
                 break;
             }
             break;
@@ -199,7 +200,7 @@ public class Server {
             mw.message = tm;
             // ExchangePairID operatorID = (ExchangePairID) session.getAttribute("operatorID");
 
-            Server.this.messageBuffer.add(mw);
+            messageBuffer.add(mw);
           } else {
             System.err.println("Error: message received from an unknown unit: " + message);
           }
@@ -253,6 +254,7 @@ public class Server {
   final ConcurrentHashMap<Integer, SocketInfo> workers;
   final NioSocketAcceptor acceptor;
   final ServerHandler minaHandler;
+  final ConcurrentHashMap<Integer, Set<Integer>> queryWorkers;
 
   /**
    * The I/O buffer, all the ExchangeMessages sent to the server are buffered here.
@@ -279,7 +281,8 @@ public class Server {
       "values", "into" };
 
   public static final String SYSTEM_NAME = "Myriad";
-  final ConcurrentHashSet<Integer> workersReceivedQuery = new ConcurrentHashSet<Integer>();
+
+  // final ConcurrentHashSet<Integer> workersReceivedQuery = new ConcurrentHashSet<Integer>();
 
   protected Server(final SocketInfo server, final Map<Integer, SocketInfo> workers) throws IOException {
     this.workers = new ConcurrentHashMap<Integer, SocketInfo>();
@@ -287,11 +290,11 @@ public class Server {
 
     acceptor = ParallelUtility.createAcceptor();
     this.server = server;
-    this.dataBuffer = new ConcurrentHashMap<ExchangePairID, LinkedBlockingQueue<ExchangeTupleBatch>>();
+    dataBuffer = new ConcurrentHashMap<ExchangePairID, LinkedBlockingQueue<ExchangeTupleBatch>>();
     messageBuffer = new LinkedBlockingQueue<MessageWrapper>();
     exchangeSchema = new ConcurrentHashMap<ExchangePairID, Schema>();
 
-    this.minaHandler = new ServerHandler(Thread.currentThread());
+    minaHandler = new ServerHandler(Thread.currentThread());
 
     final Map<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
     computingUnits.putAll(workers);
@@ -304,9 +307,9 @@ public class Server {
 
     handlers.put(0, minaHandler);
 
-    this.connectionPool = new IPCConnectionPool(0, computingUnits, handlers);
+    connectionPool = new IPCConnectionPool(0, computingUnits, handlers);
     messageProcessor = new MessageProcessor();
-
+    queryWorkers = new ConcurrentHashMap<Integer, Set<Integer>>();
   }
 
   public void cleanup() {
@@ -342,10 +345,14 @@ public class Server {
   protected void dispatchWorkerQueryPlans(final Map<Integer, Operator> plans) throws IOException {
     ByteArrayOutputStream inMemBuffer = null;
     ObjectOutputStream oos = null;
+    Set<Integer> setOfWorkers = new HashSet<Integer>(plans.size());
+    queryWorkers.put(0, setOfWorkers);
+
     for (final Map.Entry<Integer, Operator> e : plans.entrySet()) {
       final Integer workerID = e.getKey();
+      setOfWorkers.add(workerID);
       final Operator plan = e.getValue();
-      final IoSession ssss0 = this.connectionPool.get(workerID, null, 3, null);
+      final IoSession ssss0 = connectionPool.get(workerID, null, 3, null);
       // this session will be reused for the Workers to report the receive
       // of the queryplan, therefore, do not close it
       inMemBuffer = new ByteArrayOutputStream();
@@ -360,9 +367,9 @@ public class Server {
   }
 
   protected void init() throws IOException {
-    acceptor.setHandler(this.minaHandler);
-    acceptor.bind(this.server.getAddress());
-    this.messageProcessor.start();
+    acceptor.setHandler(minaHandler);
+    acceptor.bind(server.getAddress());
+    messageProcessor.start();
   }
 
   public void processNextStatement(final InputStream is) {
@@ -370,15 +377,21 @@ public class Server {
 
   // TODO implement queryID
   protected void queryReceivedByWorker(final int queryId, final int workerId) {
-    workersReceivedQuery.add(workerId);
     System.out.println(workerId + " has received the query");
-    if (workersReceivedQuery.size() >= this.workers.size()) {
-      for (final Entry<Integer, SocketInfo> entry : this.workers.entrySet()) {
+
+    Set<Integer> workersRemain = queryWorkers.get(queryId);
+    workersRemain.remove(workerId);
+    if (workersRemain.size() == 0)
+    // workersReceivedQuery.add(workerId);
+    // if (workersReceivedQuery.size() >= workers.size())
+    {
+      for (final Entry<Integer, SocketInfo> entry : workers.entrySet()) {
         Server.this.connectionPool.get(entry.getKey(), null, 3, null).write(
             TransportMessage.newBuilder().setType(TransportMessageType.CONTROL).setControl(
                 ControlMessage.newBuilder().setType(ControlMessage.ControlMessageType.START_QUERY).build()).build());
       }
-      this.workersReceivedQuery.clear();
+      // workersReceivedQuery.clear();
+      queryWorkers.remove(queryId);
     }
   }
 
@@ -427,7 +440,7 @@ public class Server {
         System.out.printf("----------------\n%.2f seconds\n\n", (time / 1000.0));
         System.out.println("Press Enter to exit");
         System.in.read();
-        this.shutdown();
+        shutdown();
       } catch (final FileNotFoundException e) {
         System.out.println("Unable to find query file" + queryFile);
         e.printStackTrace();
