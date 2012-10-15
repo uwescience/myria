@@ -568,7 +568,7 @@ public class Worker {
     // Periodically detect if the server (i.e., coordinator)
     // is still running. IF the server goes down, the
     // worker will stop itself
-    // new WorkerLivenessController().start();
+    new WorkerLivenessController().start();
 
   }
 

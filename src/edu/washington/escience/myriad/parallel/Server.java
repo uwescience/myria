@@ -10,12 +10,11 @@ import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintStream;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -46,6 +45,7 @@ import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageType;
 import edu.washington.escience.myriad.proto.QueryProto;
+import edu.washington.escience.myriad.proto.TransportProto;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType;
 import edu.washington.escience.myriad.table._TupleBatch;
@@ -254,7 +254,8 @@ public class Server {
   final ConcurrentHashMap<Integer, SocketInfo> workers;
   final NioSocketAcceptor acceptor;
   final ServerHandler minaHandler;
-  final ConcurrentHashMap<Integer, Set<Integer>> queryWorkers;
+  final ConcurrentHashMap<Integer, HashMap<Integer, Integer>> workersAssignedToQuery;
+  final ConcurrentHashMap<Integer, BitSet> workersReceivedQuery;
 
   /**
    * The I/O buffer, all the ExchangeMessages sent to the server are buffered here.
@@ -309,7 +310,8 @@ public class Server {
 
     connectionPool = new IPCConnectionPool(0, computingUnits, handlers);
     messageProcessor = new MessageProcessor();
-    queryWorkers = new ConcurrentHashMap<Integer, Set<Integer>>();
+    workersAssignedToQuery = new ConcurrentHashMap<Integer, HashMap<Integer, Integer>>();
+    workersReceivedQuery = new ConcurrentHashMap<Integer, BitSet>();
   }
 
   public void cleanup() {
@@ -328,14 +330,14 @@ public class Server {
         continue;
       }
       session.write(
-          ControlProto.ControlMessage.newBuilder().setType(ControlMessage.ControlMessageType.SHUTDOWN).build())
-          .addListener(new IoFutureListener<WriteFuture>() {
-
-            @Override
-            public void operationComplete(final WriteFuture future) {
-              ParallelUtility.closeSession(future.getSession());
-            }
-          });
+          TransportProto.TransportMessage.newBuilder().setType(TransportMessageType.CONTROL).setControl(
+              ControlProto.ControlMessage.newBuilder().setType(ControlMessage.ControlMessageType.SHUTDOWN).build())
+              .build()).addListener(new IoFutureListener<WriteFuture>() {
+        @Override
+        public void operationComplete(final WriteFuture future) {
+          ParallelUtility.closeSession(future.getSession());
+        }
+      });
       System.out.println("Done");
     }
     ParallelUtility.unbind(acceptor);
@@ -345,12 +347,14 @@ public class Server {
   protected void dispatchWorkerQueryPlans(final Map<Integer, Operator> plans) throws IOException {
     ByteArrayOutputStream inMemBuffer = null;
     ObjectOutputStream oos = null;
-    Set<Integer> setOfWorkers = new HashSet<Integer>(plans.size());
-    queryWorkers.put(0, setOfWorkers);
+    HashMap<Integer, Integer> setOfWorkers = new HashMap<Integer, Integer>(plans.size());
+    workersAssignedToQuery.put(0, setOfWorkers);
+    workersReceivedQuery.put(0, new BitSet(setOfWorkers.size()));
 
+    int workerIdx = 0;
     for (final Map.Entry<Integer, Operator> e : plans.entrySet()) {
       final Integer workerID = e.getKey();
-      setOfWorkers.add(workerID);
+      setOfWorkers.put(workerID, workerIdx++);
       final Operator plan = e.getValue();
       final IoSession ssss0 = connectionPool.get(workerID, null, 3, null);
       // this session will be reused for the Workers to report the receive
@@ -378,20 +382,22 @@ public class Server {
   // TODO implement queryID
   protected void queryReceivedByWorker(final int queryId, final int workerId) {
     System.out.println(workerId + " has received the query");
-
-    Set<Integer> workersRemain = queryWorkers.get(queryId);
-    workersRemain.remove(workerId);
-    if (workersRemain.size() == 0)
+    BitSet workersReceived = workersReceivedQuery.get(queryId);
+    HashMap<Integer, Integer> workersAssigned = workersAssignedToQuery.get(queryId);
+    int workerIdx = workersAssigned.get(workerId);
+    workersReceived.set(workerIdx);
+    // if (workersRemain.size() == 0)
     // workersReceivedQuery.add(workerId);
     // if (workersReceivedQuery.size() >= workers.size())
-    {
-      for (final Entry<Integer, SocketInfo> entry : workers.entrySet()) {
+    if (workersReceived.nextClearBit(0) >= workersAssigned.size()) {
+      for (final Entry<Integer, Integer> entry : workersAssigned.entrySet()) {
         Server.this.connectionPool.get(entry.getKey(), null, 3, null).write(
             TransportMessage.newBuilder().setType(TransportMessageType.CONTROL).setControl(
                 ControlMessage.newBuilder().setType(ControlMessage.ControlMessageType.START_QUERY).build()).build());
       }
       // workersReceivedQuery.clear();
-      queryWorkers.remove(queryId);
+      workersAssignedToQuery.remove(queryId);
+      workersReceivedQuery.remove(queryId);
     }
   }
 
