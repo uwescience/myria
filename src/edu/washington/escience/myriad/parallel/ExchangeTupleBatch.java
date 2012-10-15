@@ -25,69 +25,69 @@ public class ExchangeTupleBatch implements _TupleBatch {
 
   public ExchangeTupleBatch(final ExchangePairID oID, final int workerID, final List<Column> columns,
       final Schema inputSchema, final int numTuples) {
-    this.dataHolder = new TupleBatch(inputSchema, columns, numTuples);
-    this.operatorID = oID;
-    this.fromWorkerID = workerID;
+    dataHolder = new TupleBatch(inputSchema, columns, numTuples);
+    operatorID = oID;
+    fromWorkerID = workerID;
     Objects.requireNonNull(columns);
   }
 
   // EOS
   public ExchangeTupleBatch(final ExchangePairID oID, final int workerID, final Schema inputSchema) {
-    this.dataHolder = null;
-    this.operatorID = oID;
-    this.fromWorkerID = workerID;
+    dataHolder = null;
+    operatorID = oID;
+    fromWorkerID = workerID;
   }
 
   @Override
   public _TupleBatch append(final _TupleBatch another) {
-    return this.dataHolder.append(another);
+    return dataHolder.append(another);
   }
 
   @Override
   public _TupleBatch distinct() {
-    return this.dataHolder.distinct();
+    return dataHolder.distinct();
   }
 
   @Override
   public _TupleBatch except(final _TupleBatch another) {
-    return this.dataHolder.except(another);
+    return dataHolder.except(another);
   }
 
   @Override
   public _TupleBatch filter(final int fieldIdx, final Op op, final Object operand) {
-    return this.dataHolder.filter(fieldIdx, op, operand);
+    return dataHolder.filter(fieldIdx, op, operand);
   }
 
   @Override
   public boolean getBoolean(final int column, final int row) {
-    return this.dataHolder.getBoolean(column, row);
+    return dataHolder.getBoolean(column, row);
   }
 
   @Override
   public double getDouble(final int column, final int row) {
-    return this.dataHolder.getDouble(column, row);
+    return dataHolder.getDouble(column, row);
   }
 
   @Override
   public float getFloat(final int column, final int row) {
-    return this.dataHolder.getFloat(column, row);
+    return dataHolder.getFloat(column, row);
   }
 
   @Override
   public int getInt(final int column, final int row) {
-    return this.dataHolder.getInt(column, row);
+    return dataHolder.getInt(column, row);
   }
 
   @Override
   public long getLong(final int column, final int row) {
-    return this.dataHolder.getLong(column, row);
+    return dataHolder.getLong(column, row);
   }
 
   /**
    * Get the ParallelOperatorID, to which this message is targeted
    */
   public ExchangePairID getOperatorID() {
-    return this.operatorID;
+    return operatorID;
   }
 
   public TupleBatch getRealData() {
@@ -96,107 +96,112 @@ public class ExchangeTupleBatch implements _TupleBatch {
 
   @Override
   public String getString(final int column, final int row) {
-    return this.dataHolder.getString(column, row);
+    return dataHolder.getString(column, row);
   }
 
   /**
    * Get the worker id from which the message was sent
    */
   public int getWorkerID() {
-    return this.fromWorkerID;
+    return fromWorkerID;
   }
 
   @Override
   public _TupleBatch groupby() {
-    return this.dataHolder.groupby();
+    return dataHolder.groupby();
   }
 
   @Override
   public int hashCode(final int rowIndx) {
-    return this.dataHolder.hashCode(rowIndx);
+    return dataHolder.hashCode(rowIndx);
+  }
+
+  @Override
+  public int hashCode4Keys(final int rowIndx, final int[] colIndx) {
+    return dataHolder.hashCode4Keys(rowIndx, colIndx);
   }
 
   @Override
   public Schema inputSchema() {
     // return this.dataHolder.inputSchema();
-    return this.dataHolder.inputSchema();
+    return dataHolder.inputSchema();
   }
 
   @Override
   public _TupleBatch intersect(final _TupleBatch another) {
-    return this.dataHolder.intersect(another);
+    return dataHolder.intersect(another);
   }
 
   public boolean isEos() {
-    return this.dataHolder == null;
+    return dataHolder == null;
   }
 
   @Override
   public _TupleBatch join(final _TupleBatch other, final Predicate p, final _TupleBatch output) {
-    return this.dataHolder.join(other, p, output);
+    return dataHolder.join(other, p, output);
   }
 
   @Override
   public int numInputTuples() {
     // return this.dataHolder.numInputTuples();
-    return this.dataHolder.numInputTuples();
+    return dataHolder.numInputTuples();
   }
 
   @Override
   public int numOutputTuples() {
     // return this.dataHolder.numOutputTuples();
-    return this.dataHolder.numOutputTuples();
+    return dataHolder.numOutputTuples();
   }
 
   @Override
   public _TupleBatch orderby() {
-    return this.dataHolder.orderby();
+    return dataHolder.orderby();
   }
 
   @Override
   public List<Column> outputRawData() {
-    return this.dataHolder.outputRawData();
+    return dataHolder.outputRawData();
   }
 
   @Override
   public Schema outputSchema() {
     // return this.dataHolder.outputSchema();
-    return this.dataHolder.outputSchema();
+    return dataHolder.outputSchema();
   }
 
   @Override
   public TupleBatchBuffer[] partition(final PartitionFunction<?, ?> p, final TupleBatchBuffer[] buffers) {
-    return this.dataHolder.partition(p, buffers);
+    return dataHolder.partition(p, buffers);
   }
 
   @Override
   public _TupleBatch project(final int[] remainingColumns) {
-    return this.dataHolder.project(remainingColumns);
+    return dataHolder.project(remainingColumns);
   }
 
   @Override
   public _TupleBatch purgeFilters() {
-    return this.dataHolder.purgeFilters();
+    return dataHolder.purgeFilters();
   }
 
   @Override
   public _TupleBatch purgeProjects() {
-    return this.dataHolder.purgeProjects();
+    return dataHolder.purgeProjects();
   }
 
   @Override
   public _TupleBatch remove(final int innerIdx) {
-    return this.dataHolder.remove(innerIdx);
+    return dataHolder.remove(innerIdx);
   }
 
   @Override
   public _TupleBatch renameColumn(final int inputColumnIdx, final String newName) {
-    return this.dataHolder.renameColumn(inputColumnIdx, newName);
+    return dataHolder.renameColumn(inputColumnIdx, newName);
   }
 
   @Override
   public _TupleBatch union(final _TupleBatch another) {
-    return this.dataHolder.union(another);
+    return dataHolder.union(another);
   }
 
 }

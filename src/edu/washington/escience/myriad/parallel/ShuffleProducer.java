@@ -44,11 +44,11 @@ public class ShuffleProducer extends Producer {
 
       try {
         TupleBatchBuffer[] buffers = new TupleBatchBuffer[numWorker];
+        for (int i = 0; i < numWorker; i++) {
+          buffers[i] = new TupleBatchBuffer(thisSchema);
+        }
         while (child.hasNext()) {
           final _TupleBatch tup = child.next();
-          for (int i = 0; i < numWorker; i++) {
-            buffers[i] = new TupleBatchBuffer(thisSchema);
-          }
           buffers = tup.partition(partitionFunction, buffers);
           for (int p = 0; p < numWorker; p++) {
             final TupleBatchBuffer etb = buffers[p];

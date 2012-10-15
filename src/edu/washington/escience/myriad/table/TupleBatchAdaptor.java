@@ -48,6 +48,16 @@ public abstract class TupleBatchAdaptor implements _TupleBatch {
   }
 
   @Override
+  public int hashCode4Keys(final int rowIndx, final int[] colIndx) {
+    if (this instanceof TupleBatch) {
+      final TupleBatch tupleBatch = (TupleBatch) this;
+      return tupleBatch.hashCode4Keys(rowIndx, colIndx);
+    } else {
+      throw new UnsupportedOperationException();
+    }
+  }
+
+  @Override
   public Schema inputSchema() {
     if (this instanceof TupleBatch) {
       final TupleBatch tupleBatch = (TupleBatch) this;
@@ -95,7 +105,7 @@ public abstract class TupleBatchAdaptor implements _TupleBatch {
   @Override
   public List<Column> outputRawData() {
     if (this instanceof TupleBatch) {
-      final List<Column> output = ColumnFactory.allocateColumns(this.outputSchema());
+      final List<Column> output = ColumnFactory.allocateColumns(outputSchema());
       final TupleBatch tupleBatch = (TupleBatch) this;
       for (final int row : tupleBatch.validTupleIndices()) {
         for (int column = 0; column < tupleBatch.numColumns(); ++column) {
@@ -121,8 +131,8 @@ public abstract class TupleBatchAdaptor implements _TupleBatch {
   @Override
   public TupleBatchBuffer[] partition(final PartitionFunction<?, ?> pf, final TupleBatchBuffer[] buffers) {
     // p.partition(t, td)
-    final List<Column> outputData = this.outputRawData();
-    final Schema s = this.outputSchema();
+    final List<Column> outputData = outputRawData();
+    final Schema s = outputSchema();
     final int numColumns = outputData.size();
 
     final int[] partitions = pf.partition(outputData, s);
