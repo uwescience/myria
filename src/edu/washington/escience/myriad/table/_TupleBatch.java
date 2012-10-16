@@ -53,6 +53,8 @@ public interface _TupleBatch extends Serializable {
 
   int hashCode(int rowIndx);
 
+  int hashCode4Keys(int index, int[] colIndx);
+
   Schema inputSchema();
 
   _TupleBatch intersect(_TupleBatch another);
@@ -103,4 +105,5 @@ public interface _TupleBatch extends Serializable {
   _TupleBatch renameColumn(int inputColumnIdx, String newName);
 
   _TupleBatch union(_TupleBatch another);
+
 }

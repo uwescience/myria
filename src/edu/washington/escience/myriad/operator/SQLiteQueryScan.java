@@ -27,18 +27,17 @@ public class SQLiteQueryScan extends Operator {
   @Override
   public void close() {
     super.close();
-    this.tuples = null;
+    tuples = null;
   }
 
   @Override
   protected _TupleBatch fetchNext() throws DbException {
-    // if (cache != null) {
-    // TupleBatch tmp = cache;
-    // cache = null;
-    // return tmp;
-    // } else {
+
+    if (tuples == null) {
+      tuples = SQLiteAccessMethod.tupleBatchIteratorFromQuery(dataDir + "/" + filename, baseSQL, schema);
+    }
     if (tuples.hasNext()) {
-      return this.tuples.next();
+      return tuples.next();
     } else {
       return null;
       // }
@@ -58,7 +57,6 @@ public class SQLiteQueryScan extends Operator {
   @Override
   public void open() throws DbException {
     super.open();
-    tuples = SQLiteAccessMethod.tupleBatchIteratorFromQuery(dataDir + "/" + filename, baseSQL, schema);
   }
 
   @Override

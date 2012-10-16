@@ -1,5 +1,6 @@
 package edu.washington.escience.myriad.operator;
 
+import java.io.Serializable;
 import java.util.NoSuchElementException;
 
 import edu.washington.escience.myriad.DbException;
@@ -10,7 +11,7 @@ import edu.washington.escience.myriad.table._TupleBatch;
  * Abstract class for implementing operators. It handles <code>close</code>, <code>next</code> and <code>hasNext</code>.
  * Subclasses only need to implement <code>open</code> and <code>readNext</code>.
  */
-public abstract class Operator implements DbIterator {
+public abstract class Operator implements Serializable {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -24,7 +25,6 @@ public abstract class Operator implements DbIterator {
    * Closes this iterator. If overridden by a subclass, they should call super.close() in order for Operator's internal
    * state to be consistent.
    */
-  @Override
   public void close() {
     // Ensures that a future call to next() will fail
     next = null;
@@ -56,10 +56,8 @@ public abstract class Operator implements DbIterator {
   /**
    * @return return the Schema of the output tuples of this operator
    */
-  @Override
   public abstract Schema getSchema();
 
-  @Override
   public boolean hasNext() throws DbException {
     if (!this.open) {
       throw new IllegalStateException("Operator not yet open");
@@ -71,7 +69,6 @@ public abstract class Operator implements DbIterator {
     return next != null;
   }
 
-  @Override
   public _TupleBatch next() throws DbException, NoSuchElementException {
     if (next == null) {
       next = fetchNext();
@@ -85,7 +82,6 @@ public abstract class Operator implements DbIterator {
     return result;
   }
 
-  @Override
   public void open() throws DbException {
     this.open = true;
   }
