@@ -3,14 +3,15 @@ option java_outer_classname = "LogicalRaProto";
 
 message LogicalRaQueryMessage {
 	required string name = 1;
-	repeated LogicalRaOperator operator = 3;
+	repeated LogicalRaOperator operators = 3;
 }
 
 message LogicalRaOperator {
 	enum LogicalRaOperatorType {
 		SCAN = 0;
 		PROJECT = 1;
-		JOIN = 2;
+		EQUIJOIN = 2;
+		CROSS = 3;
 	}
 	required LogicalRaOperatorType type=1;
 	required string name = 2;
@@ -18,7 +19,8 @@ message LogicalRaOperator {
 	optional LogicalScan scan = 3;
 	optional LogicalSelect select = 4;
 	optional LogicalProject project = 5;
-	optional LogicalJoin join = 6;
+	optional LogicalEquiJoin equijoin = 6;
+	optional LogicalCross cross = 7;
 }
 
 message LogicalScan {
@@ -32,13 +34,17 @@ message LogicalSelect {
 
 message LogicalProject {
 	required string childName = 1;
-	repeated int32 column = 2;
+	repeated int32 columns = 2;
 }
 
-message LogicalJoin {
+message LogicalEquiJoin {
 	required string leftChildName = 1;
-	repeated int32 leftColumn = 2;
+	repeated int32 leftColumns = 2;
 	required string rightChildName = 3;
-	repeated int32 rightColumn = 4;
+	repeated int32 rightColumns = 4;
 }
 
+message LogicalCross {
+	required string leftChildName = 1;
+	required string rightChildName = 2;
+}

@@ -31,9 +31,12 @@ const ::google::protobuf::internal::GeneratedMessageReflection*
 const ::google::protobuf::Descriptor* LogicalProject_descriptor_ = NULL;
 const ::google::protobuf::internal::GeneratedMessageReflection*
   LogicalProject_reflection_ = NULL;
-const ::google::protobuf::Descriptor* LogicalJoin_descriptor_ = NULL;
+const ::google::protobuf::Descriptor* LogicalEquiJoin_descriptor_ = NULL;
 const ::google::protobuf::internal::GeneratedMessageReflection*
-  LogicalJoin_reflection_ = NULL;
+  LogicalEquiJoin_reflection_ = NULL;
+const ::google::protobuf::Descriptor* LogicalCross_descriptor_ = NULL;
+const ::google::protobuf::internal::GeneratedMessageReflection*
+  LogicalCross_reflection_ = NULL;
 
 }  // namespace
 
@@ -47,7 +50,7 @@ void protobuf_AssignDesc_logical_5fra_2eproto() {
   LogicalRaQueryMessage_descriptor_ = file->message_type(0);
   static const int LogicalRaQueryMessage_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(LogicalRaQueryMessage, name_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(LogicalRaQueryMessage, operator__),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(LogicalRaQueryMessage, operators_),
   };
   LogicalRaQueryMessage_reflection_ =
     new ::google::protobuf::internal::GeneratedMessageReflection(
@@ -61,13 +64,14 @@ void protobuf_AssignDesc_logical_5fra_2eproto() {
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(LogicalRaQueryMessage));
   LogicalRaOperator_descriptor_ = file->message_type(1);
-  static const int LogicalRaOperator_offsets_[6] = {
+  static const int LogicalRaOperator_offsets_[7] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(LogicalRaOperator, type_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(LogicalRaOperator, name_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(LogicalRaOperator, scan_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(LogicalRaOperator, select_),
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(LogicalRaOperator, project_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(LogicalRaOperator, join_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(LogicalRaOperator, equijoin_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(LogicalRaOperator, cross_),
   };
   LogicalRaOperator_reflection_ =
     new ::google::protobuf::internal::GeneratedMessageReflection(
@@ -115,7 +119,7 @@ void protobuf_AssignDesc_logical_5fra_2eproto() {
   LogicalProject_descriptor_ = file->message_type(4);
   static const int LogicalProject_offsets_[2] = {
     GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(LogicalProject, childname_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(LogicalProject, column_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(LogicalProject, columns_),
   };
   LogicalProject_reflection_ =
     new ::google::protobuf::internal::GeneratedMessageReflection(
@@ -128,24 +132,40 @@ void protobuf_AssignDesc_logical_5fra_2eproto() {
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
       sizeof(LogicalProject));
-  LogicalJoin_descriptor_ = file->message_type(5);
-  static const int LogicalJoin_offsets_[4] = {
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(LogicalJoin, leftchildname_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(LogicalJoin, leftcolumn_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(LogicalJoin, rightchildname_),
-    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(LogicalJoin, rightcolumn_),
+  LogicalEquiJoin_descriptor_ = file->message_type(5);
+  static const int LogicalEquiJoin_offsets_[4] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(LogicalEquiJoin, leftchildname_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(LogicalEquiJoin, leftcolumns_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(LogicalEquiJoin, rightchildname_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(LogicalEquiJoin, rightcolumns_),
   };
-  LogicalJoin_reflection_ =
+  LogicalEquiJoin_reflection_ =
     new ::google::protobuf::internal::GeneratedMessageReflection(
-      LogicalJoin_descriptor_,
-      LogicalJoin::default_instance_,
-      LogicalJoin_offsets_,
-      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(LogicalJoin, _has_bits_[0]),
-      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(LogicalJoin, _unknown_fields_),
+      LogicalEquiJoin_descriptor_,
+      LogicalEquiJoin::default_instance_,
+      LogicalEquiJoin_offsets_,
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(LogicalEquiJoin, _has_bits_[0]),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(LogicalEquiJoin, _unknown_fields_),
       -1,
       ::google::protobuf::DescriptorPool::generated_pool(),
       ::google::protobuf::MessageFactory::generated_factory(),
-      sizeof(LogicalJoin));
+      sizeof(LogicalEquiJoin));
+  LogicalCross_descriptor_ = file->message_type(6);
+  static const int LogicalCross_offsets_[2] = {
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(LogicalCross, leftchildname_),
+    GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(LogicalCross, rightchildname_),
+  };
+  LogicalCross_reflection_ =
+    new ::google::protobuf::internal::GeneratedMessageReflection(
+      LogicalCross_descriptor_,
+      LogicalCross::default_instance_,
+      LogicalCross_offsets_,
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(LogicalCross, _has_bits_[0]),
+      GOOGLE_PROTOBUF_GENERATED_MESSAGE_FIELD_OFFSET(LogicalCross, _unknown_fields_),
+      -1,
+      ::google::protobuf::DescriptorPool::generated_pool(),
+      ::google::protobuf::MessageFactory::generated_factory(),
+      sizeof(LogicalCross));
 }
 
 namespace {
@@ -169,7 +189,9 @@ void protobuf_RegisterTypes(const ::std::string&) {
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
     LogicalProject_descriptor_, &LogicalProject::default_instance());
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
-    LogicalJoin_descriptor_, &LogicalJoin::default_instance());
+    LogicalEquiJoin_descriptor_, &LogicalEquiJoin::default_instance());
+  ::google::protobuf::MessageFactory::InternalRegisterGeneratedMessage(
+    LogicalCross_descriptor_, &LogicalCross::default_instance());
 }
 
 }  // namespace
@@ -185,8 +207,10 @@ void protobuf_ShutdownFile_logical_5fra_2eproto() {
   delete LogicalSelect_reflection_;
   delete LogicalProject::default_instance_;
   delete LogicalProject_reflection_;
-  delete LogicalJoin::default_instance_;
-  delete LogicalJoin_reflection_;
+  delete LogicalEquiJoin::default_instance_;
+  delete LogicalEquiJoin_reflection_;
+  delete LogicalCross::default_instance_;
+  delete LogicalCross_reflection_;
 }
 
 void protobuf_AddDesc_logical_5fra_2eproto() {
@@ -196,23 +220,26 @@ void protobuf_AddDesc_logical_5fra_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-    "\n\020logical_ra.proto\"K\n\025LogicalRaQueryMess"
-    "age\022\014\n\004name\030\001 \002(\t\022$\n\010operator\030\003 \003(\0132\022.Lo"
-    "gicalRaOperator\"\215\002\n\021LogicalRaOperator\0226\n"
-    "\004type\030\001 \002(\0162(.LogicalRaOperator.LogicalR"
-    "aOperatorType\022\014\n\004name\030\002 \002(\t\022\032\n\004scan\030\003 \001("
-    "\0132\014.LogicalScan\022\036\n\006select\030\004 \001(\0132\016.Logica"
-    "lSelect\022 \n\007project\030\005 \001(\0132\017.LogicalProjec"
-    "t\022\032\n\004join\030\006 \001(\0132\014.LogicalJoin\"8\n\025Logical"
-    "RaOperatorType\022\010\n\004SCAN\020\000\022\013\n\007PROJECT\020\001\022\010\n"
-    "\004JOIN\020\002\"\037\n\013LogicalScan\022\020\n\010relation\030\001 \002(\t"
-    "\"5\n\rLogicalSelect\022\021\n\tchildName\030\001 \002(\t\022\021\n\t"
-    "condition\030\002 \002(\t\"3\n\016LogicalProject\022\021\n\tchi"
-    "ldName\030\001 \002(\t\022\016\n\006column\030\002 \003(\005\"e\n\013LogicalJ"
-    "oin\022\025\n\rleftChildName\030\001 \002(\t\022\022\n\nleftColumn"
-    "\030\002 \003(\005\022\026\n\016rightChildName\030\003 \002(\t\022\023\n\013rightC"
-    "olumn\030\004 \003(\005B6\n$edu.washington.escience.m"
-    "yriad.protoB\016LogicalRaProto", 667);
+    "\n\020logical_ra.proto\"L\n\025LogicalRaQueryMess"
+    "age\022\014\n\004name\030\001 \002(\t\022%\n\toperators\030\003 \003(\0132\022.L"
+    "ogicalRaOperator\"\302\002\n\021LogicalRaOperator\0226"
+    "\n\004type\030\001 \002(\0162(.LogicalRaOperator.Logical"
+    "RaOperatorType\022\014\n\004name\030\002 \002(\t\022\032\n\004scan\030\003 \001"
+    "(\0132\014.LogicalScan\022\036\n\006select\030\004 \001(\0132\016.Logic"
+    "alSelect\022 \n\007project\030\005 \001(\0132\017.LogicalProje"
+    "ct\022\"\n\010equijoin\030\006 \001(\0132\020.LogicalEquiJoin\022\034"
+    "\n\005cross\030\007 \001(\0132\r.LogicalCross\"G\n\025LogicalR"
+    "aOperatorType\022\010\n\004SCAN\020\000\022\013\n\007PROJECT\020\001\022\014\n\010"
+    "EQUIJOIN\020\002\022\t\n\005CROSS\020\003\"\037\n\013LogicalScan\022\020\n\010"
+    "relation\030\001 \002(\t\"5\n\rLogicalSelect\022\021\n\tchild"
+    "Name\030\001 \002(\t\022\021\n\tcondition\030\002 \002(\t\"4\n\016Logical"
+    "Project\022\021\n\tchildName\030\001 \002(\t\022\017\n\007columns\030\002 "
+    "\003(\005\"k\n\017LogicalEquiJoin\022\025\n\rleftChildName\030"
+    "\001 \002(\t\022\023\n\013leftColumns\030\002 \003(\005\022\026\n\016rightChild"
+    "Name\030\003 \002(\t\022\024\n\014rightColumns\030\004 \003(\005\"=\n\014Logi"
+    "calCross\022\025\n\rleftChildName\030\001 \002(\t\022\026\n\016right"
+    "ChildName\030\002 \002(\tB6\n$edu.washington.escien"
+    "ce.myriad.protoB\016LogicalRaProto", 791);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "logical_ra.proto", &protobuf_RegisterTypes);
   LogicalRaQueryMessage::default_instance_ = new LogicalRaQueryMessage();
@@ -220,13 +247,15 @@ void protobuf_AddDesc_logical_5fra_2eproto() {
   LogicalScan::default_instance_ = new LogicalScan();
   LogicalSelect::default_instance_ = new LogicalSelect();
   LogicalProject::default_instance_ = new LogicalProject();
-  LogicalJoin::default_instance_ = new LogicalJoin();
+  LogicalEquiJoin::default_instance_ = new LogicalEquiJoin();
+  LogicalCross::default_instance_ = new LogicalCross();
   LogicalRaQueryMessage::default_instance_->InitAsDefaultInstance();
   LogicalRaOperator::default_instance_->InitAsDefaultInstance();
   LogicalScan::default_instance_->InitAsDefaultInstance();
   LogicalSelect::default_instance_->InitAsDefaultInstance();
   LogicalProject::default_instance_->InitAsDefaultInstance();
-  LogicalJoin::default_instance_->InitAsDefaultInstance();
+  LogicalEquiJoin::default_instance_->InitAsDefaultInstance();
+  LogicalCross::default_instance_->InitAsDefaultInstance();
   ::google::protobuf::internal::OnShutdown(&protobuf_ShutdownFile_logical_5fra_2eproto);
 }
 
@@ -242,7 +271,7 @@ struct StaticDescriptorInitializer_logical_5fra_2eproto {
 
 #ifndef _MSC_VER
 const int LogicalRaQueryMessage::kNameFieldNumber;
-const int LogicalRaQueryMessage::kOperatorFieldNumber;
+const int LogicalRaQueryMessage::kOperatorsFieldNumber;
 #endif  // !_MSC_VER
 
 LogicalRaQueryMessage::LogicalRaQueryMessage()
@@ -305,7 +334,7 @@ void LogicalRaQueryMessage::Clear() {
       }
     }
   }
-  operator__.Clear();
+  operators_.Clear();
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
   mutable_unknown_fields()->Clear();
 }
@@ -328,21 +357,21 @@ bool LogicalRaQueryMessage::MergePartialFromCodedStream(
         } else {
           goto handle_uninterpreted;
         }
-        if (input->ExpectTag(26)) goto parse_operator;
+        if (input->ExpectTag(26)) goto parse_operators;
         break;
       }
       
-      // repeated .LogicalRaOperator operator = 3;
+      // repeated .LogicalRaOperator operators = 3;
       case 3: {
         if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
             ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
-         parse_operator:
+         parse_operators:
           DO_(::google::protobuf::internal::WireFormatLite::ReadMessageNoVirtual(
-                input, add_operator_()));
+                input, add_operators()));
         } else {
           goto handle_uninterpreted;
         }
-        if (input->ExpectTag(26)) goto parse_operator;
+        if (input->ExpectTag(26)) goto parse_operators;
         if (input->ExpectAtEnd()) return true;
         break;
       }
@@ -374,10 +403,10 @@ void LogicalRaQueryMessage::SerializeWithCachedSizes(
       1, this->name(), output);
   }
   
-  // repeated .LogicalRaOperator operator = 3;
-  for (int i = 0; i < this->operator__size(); i++) {
+  // repeated .LogicalRaOperator operators = 3;
+  for (int i = 0; i < this->operators_size(); i++) {
     ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
-      3, this->operator_(i), output);
+      3, this->operators(i), output);
   }
   
   if (!unknown_fields().empty()) {
@@ -398,11 +427,11 @@ void LogicalRaQueryMessage::SerializeWithCachedSizes(
         1, this->name(), target);
   }
   
-  // repeated .LogicalRaOperator operator = 3;
-  for (int i = 0; i < this->operator__size(); i++) {
+  // repeated .LogicalRaOperator operators = 3;
+  for (int i = 0; i < this->operators_size(); i++) {
     target = ::google::protobuf::internal::WireFormatLite::
       WriteMessageNoVirtualToArray(
-        3, this->operator_(i), target);
+        3, this->operators(i), target);
   }
   
   if (!unknown_fields().empty()) {
@@ -424,12 +453,12 @@ int LogicalRaQueryMessage::ByteSize() const {
     }
     
   }
-  // repeated .LogicalRaOperator operator = 3;
-  total_size += 1 * this->operator__size();
-  for (int i = 0; i < this->operator__size(); i++) {
+  // repeated .LogicalRaOperator operators = 3;
+  total_size += 1 * this->operators_size();
+  for (int i = 0; i < this->operators_size(); i++) {
     total_size +=
       ::google::protobuf::internal::WireFormatLite::MessageSizeNoVirtual(
-        this->operator_(i));
+        this->operators(i));
   }
   
   if (!unknown_fields().empty()) {
@@ -457,7 +486,7 @@ void LogicalRaQueryMessage::MergeFrom(const ::google::protobuf::Message& from) {
 
 void LogicalRaQueryMessage::MergeFrom(const LogicalRaQueryMessage& from) {
   GOOGLE_CHECK_NE(&from, this);
-  operator__.MergeFrom(from.operator__);
+  operators_.MergeFrom(from.operators_);
   if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
     if (from.has_name()) {
       set_name(from.name());
@@ -481,8 +510,8 @@ void LogicalRaQueryMessage::CopyFrom(const LogicalRaQueryMessage& from) {
 bool LogicalRaQueryMessage::IsInitialized() const {
   if ((_has_bits_[0] & 0x00000001) != 0x00000001) return false;
   
-  for (int i = 0; i < operator__size(); i++) {
-    if (!this->operator_(i).IsInitialized()) return false;
+  for (int i = 0; i < operators_size(); i++) {
+    if (!this->operators(i).IsInitialized()) return false;
   }
   return true;
 }
@@ -490,7 +519,7 @@ bool LogicalRaQueryMessage::IsInitialized() const {
 void LogicalRaQueryMessage::Swap(LogicalRaQueryMessage* other) {
   if (other != this) {
     std::swap(name_, other->name_);
-    operator__.Swap(&other->operator__);
+    operators_.Swap(&other->operators_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
     _unknown_fields_.Swap(&other->_unknown_fields_);
     std::swap(_cached_size_, other->_cached_size_);
@@ -517,6 +546,7 @@ bool LogicalRaOperator_LogicalRaOperatorType_IsValid(int value) {
     case 0:
     case 1:
     case 2:
+    case 3:
       return true;
     default:
       return false;
@@ -526,7 +556,8 @@ bool LogicalRaOperator_LogicalRaOperatorType_IsValid(int value) {
 #ifndef _MSC_VER
 const LogicalRaOperator_LogicalRaOperatorType LogicalRaOperator::SCAN;
 const LogicalRaOperator_LogicalRaOperatorType LogicalRaOperator::PROJECT;
-const LogicalRaOperator_LogicalRaOperatorType LogicalRaOperator::JOIN;
+const LogicalRaOperator_LogicalRaOperatorType LogicalRaOperator::EQUIJOIN;
+const LogicalRaOperator_LogicalRaOperatorType LogicalRaOperator::CROSS;
 const LogicalRaOperator_LogicalRaOperatorType LogicalRaOperator::LogicalRaOperatorType_MIN;
 const LogicalRaOperator_LogicalRaOperatorType LogicalRaOperator::LogicalRaOperatorType_MAX;
 const int LogicalRaOperator::LogicalRaOperatorType_ARRAYSIZE;
@@ -537,7 +568,8 @@ const int LogicalRaOperator::kNameFieldNumber;
 const int LogicalRaOperator::kScanFieldNumber;
 const int LogicalRaOperator::kSelectFieldNumber;
 const int LogicalRaOperator::kProjectFieldNumber;
-const int LogicalRaOperator::kJoinFieldNumber;
+const int LogicalRaOperator::kEquijoinFieldNumber;
+const int LogicalRaOperator::kCrossFieldNumber;
 #endif  // !_MSC_VER
 
 LogicalRaOperator::LogicalRaOperator()
@@ -549,7 +581,8 @@ void LogicalRaOperator::InitAsDefaultInstance() {
   scan_ = const_cast< ::LogicalScan*>(&::LogicalScan::default_instance());
   select_ = const_cast< ::LogicalSelect*>(&::LogicalSelect::default_instance());
   project_ = const_cast< ::LogicalProject*>(&::LogicalProject::default_instance());
-  join_ = const_cast< ::LogicalJoin*>(&::LogicalJoin::default_instance());
+  equijoin_ = const_cast< ::LogicalEquiJoin*>(&::LogicalEquiJoin::default_instance());
+  cross_ = const_cast< ::LogicalCross*>(&::LogicalCross::default_instance());
 }
 
 LogicalRaOperator::LogicalRaOperator(const LogicalRaOperator& from)
@@ -565,7 +598,8 @@ void LogicalRaOperator::SharedCtor() {
   scan_ = NULL;
   select_ = NULL;
   project_ = NULL;
-  join_ = NULL;
+  equijoin_ = NULL;
+  cross_ = NULL;
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
@@ -581,7 +615,8 @@ void LogicalRaOperator::SharedDtor() {
     delete scan_;
     delete select_;
     delete project_;
-    delete join_;
+    delete equijoin_;
+    delete cross_;
   }
 }
 
@@ -622,8 +657,11 @@ void LogicalRaOperator::Clear() {
     if (has_project()) {
       if (project_ != NULL) project_->::LogicalProject::Clear();
     }
-    if (has_join()) {
-      if (join_ != NULL) join_->::LogicalJoin::Clear();
+    if (has_equijoin()) {
+      if (equijoin_ != NULL) equijoin_->::LogicalEquiJoin::Clear();
+    }
+    if (has_cross()) {
+      if (cross_ != NULL) cross_->::LogicalCross::Clear();
     }
   }
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
@@ -711,17 +749,31 @@ bool LogicalRaOperator::MergePartialFromCodedStream(
         } else {
           goto handle_uninterpreted;
         }
-        if (input->ExpectTag(50)) goto parse_join;
+        if (input->ExpectTag(50)) goto parse_equijoin;
         break;
       }
       
-      // optional .LogicalJoin join = 6;
+      // optional .LogicalEquiJoin equijoin = 6;
       case 6: {
         if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
             ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
-         parse_join:
+         parse_equijoin:
           DO_(::google::protobuf::internal::WireFormatLite::ReadMessageNoVirtual(
-               input, mutable_join()));
+               input, mutable_equijoin()));
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(58)) goto parse_cross;
+        break;
+      }
+      
+      // optional .LogicalCross cross = 7;
+      case 7: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
+         parse_cross:
+          DO_(::google::protobuf::internal::WireFormatLite::ReadMessageNoVirtual(
+               input, mutable_cross()));
         } else {
           goto handle_uninterpreted;
         }
@@ -780,10 +832,16 @@ void LogicalRaOperator::SerializeWithCachedSizes(
       5, this->project(), output);
   }
   
-  // optional .LogicalJoin join = 6;
-  if (has_join()) {
+  // optional .LogicalEquiJoin equijoin = 6;
+  if (has_equijoin()) {
     ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
-      6, this->join(), output);
+      6, this->equijoin(), output);
+  }
+  
+  // optional .LogicalCross cross = 7;
+  if (has_cross()) {
+    ::google::protobuf::internal::WireFormatLite::WriteMessageMaybeToArray(
+      7, this->cross(), output);
   }
   
   if (!unknown_fields().empty()) {
@@ -831,11 +889,18 @@ void LogicalRaOperator::SerializeWithCachedSizes(
         5, this->project(), target);
   }
   
-  // optional .LogicalJoin join = 6;
-  if (has_join()) {
+  // optional .LogicalEquiJoin equijoin = 6;
+  if (has_equijoin()) {
     target = ::google::protobuf::internal::WireFormatLite::
       WriteMessageNoVirtualToArray(
-        6, this->join(), target);
+        6, this->equijoin(), target);
+  }
+  
+  // optional .LogicalCross cross = 7;
+  if (has_cross()) {
+    target = ::google::protobuf::internal::WireFormatLite::
+      WriteMessageNoVirtualToArray(
+        7, this->cross(), target);
   }
   
   if (!unknown_fields().empty()) {
@@ -883,11 +948,18 @@ int LogicalRaOperator::ByteSize() const {
           this->project());
     }
     
-    // optional .LogicalJoin join = 6;
-    if (has_join()) {
+    // optional .LogicalEquiJoin equijoin = 6;
+    if (has_equijoin()) {
       total_size += 1 +
         ::google::protobuf::internal::WireFormatLite::MessageSizeNoVirtual(
-          this->join());
+          this->equijoin());
+    }
+    
+    // optional .LogicalCross cross = 7;
+    if (has_cross()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::MessageSizeNoVirtual(
+          this->cross());
     }
     
   }
@@ -932,8 +1004,11 @@ void LogicalRaOperator::MergeFrom(const LogicalRaOperator& from) {
     if (from.has_project()) {
       mutable_project()->::LogicalProject::MergeFrom(from.project());
     }
-    if (from.has_join()) {
-      mutable_join()->::LogicalJoin::MergeFrom(from.join());
+    if (from.has_equijoin()) {
+      mutable_equijoin()->::LogicalEquiJoin::MergeFrom(from.equijoin());
+    }
+    if (from.has_cross()) {
+      mutable_cross()->::LogicalCross::MergeFrom(from.cross());
     }
   }
   mutable_unknown_fields()->MergeFrom(from.unknown_fields());
@@ -963,8 +1038,11 @@ bool LogicalRaOperator::IsInitialized() const {
   if (has_project()) {
     if (!this->project().IsInitialized()) return false;
   }
-  if (has_join()) {
-    if (!this->join().IsInitialized()) return false;
+  if (has_equijoin()) {
+    if (!this->equijoin().IsInitialized()) return false;
+  }
+  if (has_cross()) {
+    if (!this->cross().IsInitialized()) return false;
   }
   return true;
 }
@@ -976,7 +1054,8 @@ void LogicalRaOperator::Swap(LogicalRaOperator* other) {
     std::swap(scan_, other->scan_);
     std::swap(select_, other->select_);
     std::swap(project_, other->project_);
-    std::swap(join_, other->join_);
+    std::swap(equijoin_, other->equijoin_);
+    std::swap(cross_, other->cross_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
     _unknown_fields_.Swap(&other->_unknown_fields_);
     std::swap(_cached_size_, other->_cached_size_);
@@ -1503,7 +1582,7 @@ void LogicalSelect::Swap(LogicalSelect* other) {
 
 #ifndef _MSC_VER
 const int LogicalProject::kChildNameFieldNumber;
-const int LogicalProject::kColumnFieldNumber;
+const int LogicalProject::kColumnsFieldNumber;
 #endif  // !_MSC_VER
 
 LogicalProject::LogicalProject()
@@ -1566,7 +1645,7 @@ void LogicalProject::Clear() {
       }
     }
   }
-  column_.Clear();
+  columns_.Clear();
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
   mutable_unknown_fields()->Clear();
 }
@@ -1589,28 +1668,28 @@ bool LogicalProject::MergePartialFromCodedStream(
         } else {
           goto handle_uninterpreted;
         }
-        if (input->ExpectTag(16)) goto parse_column;
+        if (input->ExpectTag(16)) goto parse_columns;
         break;
       }
       
-      // repeated int32 column = 2;
+      // repeated int32 columns = 2;
       case 2: {
         if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
             ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
-         parse_column:
+         parse_columns:
           DO_((::google::protobuf::internal::WireFormatLite::ReadRepeatedPrimitive<
                    ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
-                 1, 16, input, this->mutable_column())));
+                 1, 16, input, this->mutable_columns())));
         } else if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag)
                    == ::google::protobuf::internal::WireFormatLite::
                       WIRETYPE_LENGTH_DELIMITED) {
           DO_((::google::protobuf::internal::WireFormatLite::ReadPackedPrimitiveNoInline<
                    ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
-                 input, this->mutable_column())));
+                 input, this->mutable_columns())));
         } else {
           goto handle_uninterpreted;
         }
-        if (input->ExpectTag(16)) goto parse_column;
+        if (input->ExpectTag(16)) goto parse_columns;
         if (input->ExpectAtEnd()) return true;
         break;
       }
@@ -1642,10 +1721,10 @@ void LogicalProject::SerializeWithCachedSizes(
       1, this->childname(), output);
   }
   
-  // repeated int32 column = 2;
-  for (int i = 0; i < this->column_size(); i++) {
+  // repeated int32 columns = 2;
+  for (int i = 0; i < this->columns_size(); i++) {
     ::google::protobuf::internal::WireFormatLite::WriteInt32(
-      2, this->column(i), output);
+      2, this->columns(i), output);
   }
   
   if (!unknown_fields().empty()) {
@@ -1666,10 +1745,10 @@ void LogicalProject::SerializeWithCachedSizes(
         1, this->childname(), target);
   }
   
-  // repeated int32 column = 2;
-  for (int i = 0; i < this->column_size(); i++) {
+  // repeated int32 columns = 2;
+  for (int i = 0; i < this->columns_size(); i++) {
     target = ::google::protobuf::internal::WireFormatLite::
-      WriteInt32ToArray(2, this->column(i), target);
+      WriteInt32ToArray(2, this->columns(i), target);
   }
   
   if (!unknown_fields().empty()) {
@@ -1691,14 +1770,14 @@ int LogicalProject::ByteSize() const {
     }
     
   }
-  // repeated int32 column = 2;
+  // repeated int32 columns = 2;
   {
     int data_size = 0;
-    for (int i = 0; i < this->column_size(); i++) {
+    for (int i = 0; i < this->columns_size(); i++) {
       data_size += ::google::protobuf::internal::WireFormatLite::
-        Int32Size(this->column(i));
+        Int32Size(this->columns(i));
     }
-    total_size += 1 * this->column_size() + data_size;
+    total_size += 1 * this->columns_size() + data_size;
   }
   
   if (!unknown_fields().empty()) {
@@ -1726,7 +1805,7 @@ void LogicalProject::MergeFrom(const ::google::protobuf::Message& from) {
 
 void LogicalProject::MergeFrom(const LogicalProject& from) {
   GOOGLE_CHECK_NE(&from, this);
-  column_.MergeFrom(from.column_);
+  columns_.MergeFrom(from.columns_);
   if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
     if (from.has_childname()) {
       set_childname(from.childname());
@@ -1756,7 +1835,7 @@ bool LogicalProject::IsInitialized() const {
 void LogicalProject::Swap(LogicalProject* other) {
   if (other != this) {
     std::swap(childname_, other->childname_);
-    column_.Swap(&other->column_);
+    columns_.Swap(&other->columns_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
     _unknown_fields_.Swap(&other->_unknown_fields_);
     std::swap(_cached_size_, other->_cached_size_);
@@ -1775,38 +1854,38 @@ void LogicalProject::Swap(LogicalProject* other) {
 // ===================================================================
 
 #ifndef _MSC_VER
-const int LogicalJoin::kLeftChildNameFieldNumber;
-const int LogicalJoin::kLeftColumnFieldNumber;
-const int LogicalJoin::kRightChildNameFieldNumber;
-const int LogicalJoin::kRightColumnFieldNumber;
+const int LogicalEquiJoin::kLeftChildNameFieldNumber;
+const int LogicalEquiJoin::kLeftColumnsFieldNumber;
+const int LogicalEquiJoin::kRightChildNameFieldNumber;
+const int LogicalEquiJoin::kRightColumnsFieldNumber;
 #endif  // !_MSC_VER
 
-LogicalJoin::LogicalJoin()
+LogicalEquiJoin::LogicalEquiJoin()
   : ::google::protobuf::Message() {
   SharedCtor();
 }
 
-void LogicalJoin::InitAsDefaultInstance() {
+void LogicalEquiJoin::InitAsDefaultInstance() {
 }
 
-LogicalJoin::LogicalJoin(const LogicalJoin& from)
+LogicalEquiJoin::LogicalEquiJoin(const LogicalEquiJoin& from)
   : ::google::protobuf::Message() {
   SharedCtor();
   MergeFrom(from);
 }
 
-void LogicalJoin::SharedCtor() {
+void LogicalEquiJoin::SharedCtor() {
   _cached_size_ = 0;
   leftchildname_ = const_cast< ::std::string*>(&::google::protobuf::internal::kEmptyString);
   rightchildname_ = const_cast< ::std::string*>(&::google::protobuf::internal::kEmptyString);
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
 }
 
-LogicalJoin::~LogicalJoin() {
+LogicalEquiJoin::~LogicalEquiJoin() {
   SharedDtor();
 }
 
-void LogicalJoin::SharedDtor() {
+void LogicalEquiJoin::SharedDtor() {
   if (leftchildname_ != &::google::protobuf::internal::kEmptyString) {
     delete leftchildname_;
   }
@@ -1817,27 +1896,27 @@ void LogicalJoin::SharedDtor() {
   }
 }
 
-void LogicalJoin::SetCachedSize(int size) const {
+void LogicalEquiJoin::SetCachedSize(int size) const {
   GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
   _cached_size_ = size;
   GOOGLE_SAFE_CONCURRENT_WRITES_END();
 }
-const ::google::protobuf::Descriptor* LogicalJoin::descriptor() {
+const ::google::protobuf::Descriptor* LogicalEquiJoin::descriptor() {
   protobuf_AssignDescriptorsOnce();
-  return LogicalJoin_descriptor_;
+  return LogicalEquiJoin_descriptor_;
 }
 
-const LogicalJoin& LogicalJoin::default_instance() {
+const LogicalEquiJoin& LogicalEquiJoin::default_instance() {
   if (default_instance_ == NULL) protobuf_AddDesc_logical_5fra_2eproto();  return *default_instance_;
 }
 
-LogicalJoin* LogicalJoin::default_instance_ = NULL;
+LogicalEquiJoin* LogicalEquiJoin::default_instance_ = NULL;
 
-LogicalJoin* LogicalJoin::New() const {
-  return new LogicalJoin;
+LogicalEquiJoin* LogicalEquiJoin::New() const {
+  return new LogicalEquiJoin;
 }
 
-void LogicalJoin::Clear() {
+void LogicalEquiJoin::Clear() {
   if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
     if (has_leftchildname()) {
       if (leftchildname_ != &::google::protobuf::internal::kEmptyString) {
@@ -1850,13 +1929,13 @@ void LogicalJoin::Clear() {
       }
     }
   }
-  leftcolumn_.Clear();
-  rightcolumn_.Clear();
+  leftcolumns_.Clear();
+  rightcolumns_.Clear();
   ::memset(_has_bits_, 0, sizeof(_has_bits_));
   mutable_unknown_fields()->Clear();
 }
 
-bool LogicalJoin::MergePartialFromCodedStream(
+bool LogicalEquiJoin::MergePartialFromCodedStream(
     ::google::protobuf::io::CodedInputStream* input) {
 #define DO_(EXPRESSION) if (!(EXPRESSION)) return false
   ::google::protobuf::uint32 tag;
@@ -1874,28 +1953,28 @@ bool LogicalJoin::MergePartialFromCodedStream(
         } else {
           goto handle_uninterpreted;
         }
-        if (input->ExpectTag(16)) goto parse_leftColumn;
+        if (input->ExpectTag(16)) goto parse_leftColumns;
         break;
       }
       
-      // repeated int32 leftColumn = 2;
+      // repeated int32 leftColumns = 2;
       case 2: {
         if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
             ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
-         parse_leftColumn:
+         parse_leftColumns:
           DO_((::google::protobuf::internal::WireFormatLite::ReadRepeatedPrimitive<
                    ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
-                 1, 16, input, this->mutable_leftcolumn())));
+                 1, 16, input, this->mutable_leftcolumns())));
         } else if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag)
                    == ::google::protobuf::internal::WireFormatLite::
                       WIRETYPE_LENGTH_DELIMITED) {
           DO_((::google::protobuf::internal::WireFormatLite::ReadPackedPrimitiveNoInline<
                    ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
-                 input, this->mutable_leftcolumn())));
+                 input, this->mutable_leftcolumns())));
         } else {
           goto handle_uninterpreted;
         }
-        if (input->ExpectTag(16)) goto parse_leftColumn;
+        if (input->ExpectTag(16)) goto parse_leftColumns;
         if (input->ExpectTag(26)) goto parse_rightChildName;
         break;
       }
@@ -1913,28 +1992,28 @@ bool LogicalJoin::MergePartialFromCodedStream(
         } else {
           goto handle_uninterpreted;
         }
-        if (input->ExpectTag(32)) goto parse_rightColumn;
+        if (input->ExpectTag(32)) goto parse_rightColumns;
         break;
       }
       
-      // repeated int32 rightColumn = 4;
+      // repeated int32 rightColumns = 4;
       case 4: {
         if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
             ::google::protobuf::internal::WireFormatLite::WIRETYPE_VARINT) {
-         parse_rightColumn:
+         parse_rightColumns:
           DO_((::google::protobuf::internal::WireFormatLite::ReadRepeatedPrimitive<
                    ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
-                 1, 32, input, this->mutable_rightcolumn())));
+                 1, 32, input, this->mutable_rightcolumns())));
         } else if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag)
                    == ::google::protobuf::internal::WireFormatLite::
                       WIRETYPE_LENGTH_DELIMITED) {
           DO_((::google::protobuf::internal::WireFormatLite::ReadPackedPrimitiveNoInline<
                    ::google::protobuf::int32, ::google::protobuf::internal::WireFormatLite::TYPE_INT32>(
-                 input, this->mutable_rightcolumn())));
+                 input, this->mutable_rightcolumns())));
         } else {
           goto handle_uninterpreted;
         }
-        if (input->ExpectTag(32)) goto parse_rightColumn;
+        if (input->ExpectTag(32)) goto parse_rightColumns;
         if (input->ExpectAtEnd()) return true;
         break;
       }
@@ -1955,7 +2034,7 @@ bool LogicalJoin::MergePartialFromCodedStream(
 #undef DO_
 }
 
-void LogicalJoin::SerializeWithCachedSizes(
+void LogicalEquiJoin::SerializeWithCachedSizes(
     ::google::protobuf::io::CodedOutputStream* output) const {
   // required string leftChildName = 1;
   if (has_leftchildname()) {
@@ -1966,10 +2045,10 @@ void LogicalJoin::SerializeWithCachedSizes(
       1, this->leftchildname(), output);
   }
   
-  // repeated int32 leftColumn = 2;
-  for (int i = 0; i < this->leftcolumn_size(); i++) {
+  // repeated int32 leftColumns = 2;
+  for (int i = 0; i < this->leftcolumns_size(); i++) {
     ::google::protobuf::internal::WireFormatLite::WriteInt32(
-      2, this->leftcolumn(i), output);
+      2, this->leftcolumns(i), output);
   }
   
   // required string rightChildName = 3;
@@ -1981,10 +2060,10 @@ void LogicalJoin::SerializeWithCachedSizes(
       3, this->rightchildname(), output);
   }
   
-  // repeated int32 rightColumn = 4;
-  for (int i = 0; i < this->rightcolumn_size(); i++) {
+  // repeated int32 rightColumns = 4;
+  for (int i = 0; i < this->rightcolumns_size(); i++) {
     ::google::protobuf::internal::WireFormatLite::WriteInt32(
-      4, this->rightcolumn(i), output);
+      4, this->rightcolumns(i), output);
   }
   
   if (!unknown_fields().empty()) {
@@ -1993,7 +2072,7 @@ void LogicalJoin::SerializeWithCachedSizes(
   }
 }
 
-::google::protobuf::uint8* LogicalJoin::SerializeWithCachedSizesToArray(
+::google::protobuf::uint8* LogicalEquiJoin::SerializeWithCachedSizesToArray(
     ::google::protobuf::uint8* target) const {
   // required string leftChildName = 1;
   if (has_leftchildname()) {
@@ -2005,10 +2084,10 @@ void LogicalJoin::SerializeWithCachedSizes(
         1, this->leftchildname(), target);
   }
   
-  // repeated int32 leftColumn = 2;
-  for (int i = 0; i < this->leftcolumn_size(); i++) {
+  // repeated int32 leftColumns = 2;
+  for (int i = 0; i < this->leftcolumns_size(); i++) {
     target = ::google::protobuf::internal::WireFormatLite::
-      WriteInt32ToArray(2, this->leftcolumn(i), target);
+      WriteInt32ToArray(2, this->leftcolumns(i), target);
   }
   
   // required string rightChildName = 3;
@@ -2021,10 +2100,10 @@ void LogicalJoin::SerializeWithCachedSizes(
         3, this->rightchildname(), target);
   }
   
-  // repeated int32 rightColumn = 4;
-  for (int i = 0; i < this->rightcolumn_size(); i++) {
+  // repeated int32 rightColumns = 4;
+  for (int i = 0; i < this->rightcolumns_size(); i++) {
     target = ::google::protobuf::internal::WireFormatLite::
-      WriteInt32ToArray(4, this->rightcolumn(i), target);
+      WriteInt32ToArray(4, this->rightcolumns(i), target);
   }
   
   if (!unknown_fields().empty()) {
@@ -2034,7 +2113,7 @@ void LogicalJoin::SerializeWithCachedSizes(
   return target;
 }
 
-int LogicalJoin::ByteSize() const {
+int LogicalEquiJoin::ByteSize() const {
   int total_size = 0;
   
   if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
@@ -2053,24 +2132,24 @@ int LogicalJoin::ByteSize() const {
     }
     
   }
-  // repeated int32 leftColumn = 2;
+  // repeated int32 leftColumns = 2;
   {
     int data_size = 0;
-    for (int i = 0; i < this->leftcolumn_size(); i++) {
+    for (int i = 0; i < this->leftcolumns_size(); i++) {
       data_size += ::google::protobuf::internal::WireFormatLite::
-        Int32Size(this->leftcolumn(i));
+        Int32Size(this->leftcolumns(i));
     }
-    total_size += 1 * this->leftcolumn_size() + data_size;
+    total_size += 1 * this->leftcolumns_size() + data_size;
   }
   
-  // repeated int32 rightColumn = 4;
+  // repeated int32 rightColumns = 4;
   {
     int data_size = 0;
-    for (int i = 0; i < this->rightcolumn_size(); i++) {
+    for (int i = 0; i < this->rightcolumns_size(); i++) {
       data_size += ::google::protobuf::internal::WireFormatLite::
-        Int32Size(this->rightcolumn(i));
+        Int32Size(this->rightcolumns(i));
     }
-    total_size += 1 * this->rightcolumn_size() + data_size;
+    total_size += 1 * this->rightcolumns_size() + data_size;
   }
   
   if (!unknown_fields().empty()) {
@@ -2084,10 +2163,10 @@ int LogicalJoin::ByteSize() const {
   return total_size;
 }
 
-void LogicalJoin::MergeFrom(const ::google::protobuf::Message& from) {
+void LogicalEquiJoin::MergeFrom(const ::google::protobuf::Message& from) {
   GOOGLE_CHECK_NE(&from, this);
-  const LogicalJoin* source =
-    ::google::protobuf::internal::dynamic_cast_if_available<const LogicalJoin*>(
+  const LogicalEquiJoin* source =
+    ::google::protobuf::internal::dynamic_cast_if_available<const LogicalEquiJoin*>(
       &from);
   if (source == NULL) {
     ::google::protobuf::internal::ReflectionOps::Merge(from, this);
@@ -2096,10 +2175,10 @@ void LogicalJoin::MergeFrom(const ::google::protobuf::Message& from) {
   }
 }
 
-void LogicalJoin::MergeFrom(const LogicalJoin& from) {
+void LogicalEquiJoin::MergeFrom(const LogicalEquiJoin& from) {
   GOOGLE_CHECK_NE(&from, this);
-  leftcolumn_.MergeFrom(from.leftcolumn_);
-  rightcolumn_.MergeFrom(from.rightcolumn_);
+  leftcolumns_.MergeFrom(from.leftcolumns_);
+  rightcolumns_.MergeFrom(from.rightcolumns_);
   if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
     if (from.has_leftchildname()) {
       set_leftchildname(from.leftchildname());
@@ -2111,41 +2190,323 @@ void LogicalJoin::MergeFrom(const LogicalJoin& from) {
   mutable_unknown_fields()->MergeFrom(from.unknown_fields());
 }
 
-void LogicalJoin::CopyFrom(const ::google::protobuf::Message& from) {
+void LogicalEquiJoin::CopyFrom(const ::google::protobuf::Message& from) {
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
-void LogicalJoin::CopyFrom(const LogicalJoin& from) {
+void LogicalEquiJoin::CopyFrom(const LogicalEquiJoin& from) {
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
-bool LogicalJoin::IsInitialized() const {
+bool LogicalEquiJoin::IsInitialized() const {
   if ((_has_bits_[0] & 0x00000005) != 0x00000005) return false;
   
   return true;
 }
 
-void LogicalJoin::Swap(LogicalJoin* other) {
+void LogicalEquiJoin::Swap(LogicalEquiJoin* other) {
   if (other != this) {
     std::swap(leftchildname_, other->leftchildname_);
-    leftcolumn_.Swap(&other->leftcolumn_);
+    leftcolumns_.Swap(&other->leftcolumns_);
     std::swap(rightchildname_, other->rightchildname_);
-    rightcolumn_.Swap(&other->rightcolumn_);
+    rightcolumns_.Swap(&other->rightcolumns_);
     std::swap(_has_bits_[0], other->_has_bits_[0]);
     _unknown_fields_.Swap(&other->_unknown_fields_);
     std::swap(_cached_size_, other->_cached_size_);
   }
 }
 
-::google::protobuf::Metadata LogicalJoin::GetMetadata() const {
+::google::protobuf::Metadata LogicalEquiJoin::GetMetadata() const {
   protobuf_AssignDescriptorsOnce();
   ::google::protobuf::Metadata metadata;
-  metadata.descriptor = LogicalJoin_descriptor_;
-  metadata.reflection = LogicalJoin_reflection_;
+  metadata.descriptor = LogicalEquiJoin_descriptor_;
+  metadata.reflection = LogicalEquiJoin_reflection_;
+  return metadata;
+}
+
+
+// ===================================================================
+
+#ifndef _MSC_VER
+const int LogicalCross::kLeftChildNameFieldNumber;
+const int LogicalCross::kRightChildNameFieldNumber;
+#endif  // !_MSC_VER
+
+LogicalCross::LogicalCross()
+  : ::google::protobuf::Message() {
+  SharedCtor();
+}
+
+void LogicalCross::InitAsDefaultInstance() {
+}
+
+LogicalCross::LogicalCross(const LogicalCross& from)
+  : ::google::protobuf::Message() {
+  SharedCtor();
+  MergeFrom(from);
+}
+
+void LogicalCross::SharedCtor() {
+  _cached_size_ = 0;
+  leftchildname_ = const_cast< ::std::string*>(&::google::protobuf::internal::kEmptyString);
+  rightchildname_ = const_cast< ::std::string*>(&::google::protobuf::internal::kEmptyString);
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+}
+
+LogicalCross::~LogicalCross() {
+  SharedDtor();
+}
+
+void LogicalCross::SharedDtor() {
+  if (leftchildname_ != &::google::protobuf::internal::kEmptyString) {
+    delete leftchildname_;
+  }
+  if (rightchildname_ != &::google::protobuf::internal::kEmptyString) {
+    delete rightchildname_;
+  }
+  if (this != default_instance_) {
+  }
+}
+
+void LogicalCross::SetCachedSize(int size) const {
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+}
+const ::google::protobuf::Descriptor* LogicalCross::descriptor() {
+  protobuf_AssignDescriptorsOnce();
+  return LogicalCross_descriptor_;
+}
+
+const LogicalCross& LogicalCross::default_instance() {
+  if (default_instance_ == NULL) protobuf_AddDesc_logical_5fra_2eproto();  return *default_instance_;
+}
+
+LogicalCross* LogicalCross::default_instance_ = NULL;
+
+LogicalCross* LogicalCross::New() const {
+  return new LogicalCross;
+}
+
+void LogicalCross::Clear() {
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (has_leftchildname()) {
+      if (leftchildname_ != &::google::protobuf::internal::kEmptyString) {
+        leftchildname_->clear();
+      }
+    }
+    if (has_rightchildname()) {
+      if (rightchildname_ != &::google::protobuf::internal::kEmptyString) {
+        rightchildname_->clear();
+      }
+    }
+  }
+  ::memset(_has_bits_, 0, sizeof(_has_bits_));
+  mutable_unknown_fields()->Clear();
+}
+
+bool LogicalCross::MergePartialFromCodedStream(
+    ::google::protobuf::io::CodedInputStream* input) {
+#define DO_(EXPRESSION) if (!(EXPRESSION)) return false
+  ::google::protobuf::uint32 tag;
+  while ((tag = input->ReadTag()) != 0) {
+    switch (::google::protobuf::internal::WireFormatLite::GetTagFieldNumber(tag)) {
+      // required string leftChildName = 1;
+      case 1: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_leftchildname()));
+          ::google::protobuf::internal::WireFormat::VerifyUTF8String(
+            this->leftchildname().data(), this->leftchildname().length(),
+            ::google::protobuf::internal::WireFormat::PARSE);
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectTag(18)) goto parse_rightChildName;
+        break;
+      }
+      
+      // required string rightChildName = 2;
+      case 2: {
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_LENGTH_DELIMITED) {
+         parse_rightChildName:
+          DO_(::google::protobuf::internal::WireFormatLite::ReadString(
+                input, this->mutable_rightchildname()));
+          ::google::protobuf::internal::WireFormat::VerifyUTF8String(
+            this->rightchildname().data(), this->rightchildname().length(),
+            ::google::protobuf::internal::WireFormat::PARSE);
+        } else {
+          goto handle_uninterpreted;
+        }
+        if (input->ExpectAtEnd()) return true;
+        break;
+      }
+      
+      default: {
+      handle_uninterpreted:
+        if (::google::protobuf::internal::WireFormatLite::GetTagWireType(tag) ==
+            ::google::protobuf::internal::WireFormatLite::WIRETYPE_END_GROUP) {
+          return true;
+        }
+        DO_(::google::protobuf::internal::WireFormat::SkipField(
+              input, tag, mutable_unknown_fields()));
+        break;
+      }
+    }
+  }
+  return true;
+#undef DO_
+}
+
+void LogicalCross::SerializeWithCachedSizes(
+    ::google::protobuf::io::CodedOutputStream* output) const {
+  // required string leftChildName = 1;
+  if (has_leftchildname()) {
+    ::google::protobuf::internal::WireFormat::VerifyUTF8String(
+      this->leftchildname().data(), this->leftchildname().length(),
+      ::google::protobuf::internal::WireFormat::SERIALIZE);
+    ::google::protobuf::internal::WireFormatLite::WriteString(
+      1, this->leftchildname(), output);
+  }
+  
+  // required string rightChildName = 2;
+  if (has_rightchildname()) {
+    ::google::protobuf::internal::WireFormat::VerifyUTF8String(
+      this->rightchildname().data(), this->rightchildname().length(),
+      ::google::protobuf::internal::WireFormat::SERIALIZE);
+    ::google::protobuf::internal::WireFormatLite::WriteString(
+      2, this->rightchildname(), output);
+  }
+  
+  if (!unknown_fields().empty()) {
+    ::google::protobuf::internal::WireFormat::SerializeUnknownFields(
+        unknown_fields(), output);
+  }
+}
+
+::google::protobuf::uint8* LogicalCross::SerializeWithCachedSizesToArray(
+    ::google::protobuf::uint8* target) const {
+  // required string leftChildName = 1;
+  if (has_leftchildname()) {
+    ::google::protobuf::internal::WireFormat::VerifyUTF8String(
+      this->leftchildname().data(), this->leftchildname().length(),
+      ::google::protobuf::internal::WireFormat::SERIALIZE);
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        1, this->leftchildname(), target);
+  }
+  
+  // required string rightChildName = 2;
+  if (has_rightchildname()) {
+    ::google::protobuf::internal::WireFormat::VerifyUTF8String(
+      this->rightchildname().data(), this->rightchildname().length(),
+      ::google::protobuf::internal::WireFormat::SERIALIZE);
+    target =
+      ::google::protobuf::internal::WireFormatLite::WriteStringToArray(
+        2, this->rightchildname(), target);
+  }
+  
+  if (!unknown_fields().empty()) {
+    target = ::google::protobuf::internal::WireFormat::SerializeUnknownFieldsToArray(
+        unknown_fields(), target);
+  }
+  return target;
+}
+
+int LogicalCross::ByteSize() const {
+  int total_size = 0;
+  
+  if (_has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    // required string leftChildName = 1;
+    if (has_leftchildname()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::StringSize(
+          this->leftchildname());
+    }
+    
+    // required string rightChildName = 2;
+    if (has_rightchildname()) {
+      total_size += 1 +
+        ::google::protobuf::internal::WireFormatLite::StringSize(
+          this->rightchildname());
+    }
+    
+  }
+  if (!unknown_fields().empty()) {
+    total_size +=
+      ::google::protobuf::internal::WireFormat::ComputeUnknownFieldsSize(
+        unknown_fields());
+  }
+  GOOGLE_SAFE_CONCURRENT_WRITES_BEGIN();
+  _cached_size_ = total_size;
+  GOOGLE_SAFE_CONCURRENT_WRITES_END();
+  return total_size;
+}
+
+void LogicalCross::MergeFrom(const ::google::protobuf::Message& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  const LogicalCross* source =
+    ::google::protobuf::internal::dynamic_cast_if_available<const LogicalCross*>(
+      &from);
+  if (source == NULL) {
+    ::google::protobuf::internal::ReflectionOps::Merge(from, this);
+  } else {
+    MergeFrom(*source);
+  }
+}
+
+void LogicalCross::MergeFrom(const LogicalCross& from) {
+  GOOGLE_CHECK_NE(&from, this);
+  if (from._has_bits_[0 / 32] & (0xffu << (0 % 32))) {
+    if (from.has_leftchildname()) {
+      set_leftchildname(from.leftchildname());
+    }
+    if (from.has_rightchildname()) {
+      set_rightchildname(from.rightchildname());
+    }
+  }
+  mutable_unknown_fields()->MergeFrom(from.unknown_fields());
+}
+
+void LogicalCross::CopyFrom(const ::google::protobuf::Message& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+void LogicalCross::CopyFrom(const LogicalCross& from) {
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool LogicalCross::IsInitialized() const {
+  if ((_has_bits_[0] & 0x00000003) != 0x00000003) return false;
+  
+  return true;
+}
+
+void LogicalCross::Swap(LogicalCross* other) {
+  if (other != this) {
+    std::swap(leftchildname_, other->leftchildname_);
+    std::swap(rightchildname_, other->rightchildname_);
+    std::swap(_has_bits_[0], other->_has_bits_[0]);
+    _unknown_fields_.Swap(&other->_unknown_fields_);
+    std::swap(_cached_size_, other->_cached_size_);
+  }
+}
+
+::google::protobuf::Metadata LogicalCross::GetMetadata() const {
+  protobuf_AssignDescriptorsOnce();
+  ::google::protobuf::Metadata metadata;
+  metadata.descriptor = LogicalCross_descriptor_;
+  metadata.reflection = LogicalCross_reflection_;
   return metadata;
 }
 

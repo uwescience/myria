@@ -11,7 +11,7 @@ from google.protobuf import descriptor_pb2
 DESCRIPTOR = descriptor.FileDescriptor(
   name='logical_ra.proto',
   package='',
-  serialized_pb='\n\x10logical_ra.proto\"K\n\x15LogicalRaQueryMessage\x12\x0c\n\x04name\x18\x01 \x02(\t\x12$\n\x08operator\x18\x03 \x03(\x0b\x32\x12.LogicalRaOperator\"\x8d\x02\n\x11LogicalRaOperator\x12\x36\n\x04type\x18\x01 \x02(\x0e\x32(.LogicalRaOperator.LogicalRaOperatorType\x12\x0c\n\x04name\x18\x02 \x02(\t\x12\x1a\n\x04scan\x18\x03 \x01(\x0b\x32\x0c.LogicalScan\x12\x1e\n\x06select\x18\x04 \x01(\x0b\x32\x0e.LogicalSelect\x12 \n\x07project\x18\x05 \x01(\x0b\x32\x0f.LogicalProject\x12\x1a\n\x04join\x18\x06 \x01(\x0b\x32\x0c.LogicalJoin\"8\n\x15LogicalRaOperatorType\x12\x08\n\x04SCAN\x10\x00\x12\x0b\n\x07PROJECT\x10\x01\x12\x08\n\x04JOIN\x10\x02\"\x1f\n\x0bLogicalScan\x12\x10\n\x08relation\x18\x01 \x02(\t\"5\n\rLogicalSelect\x12\x11\n\tchildName\x18\x01 \x02(\t\x12\x11\n\tcondition\x18\x02 \x02(\t\"3\n\x0eLogicalProject\x12\x11\n\tchildName\x18\x01 \x02(\t\x12\x0e\n\x06\x63olumn\x18\x02 \x03(\x05\"e\n\x0bLogicalJoin\x12\x15\n\rleftChildName\x18\x01 \x02(\t\x12\x12\n\nleftColumn\x18\x02 \x03(\x05\x12\x16\n\x0erightChildName\x18\x03 \x02(\t\x12\x13\n\x0brightColumn\x18\x04 \x03(\x05\x42\x36\n$edu.washington.escience.myriad.protoB\x0eLogicalRaProto')
+  serialized_pb='\n\x10logical_ra.proto\"L\n\x15LogicalRaQueryMessage\x12\x0c\n\x04name\x18\x01 \x02(\t\x12%\n\toperators\x18\x03 \x03(\x0b\x32\x12.LogicalRaOperator\"\xc2\x02\n\x11LogicalRaOperator\x12\x36\n\x04type\x18\x01 \x02(\x0e\x32(.LogicalRaOperator.LogicalRaOperatorType\x12\x0c\n\x04name\x18\x02 \x02(\t\x12\x1a\n\x04scan\x18\x03 \x01(\x0b\x32\x0c.LogicalScan\x12\x1e\n\x06select\x18\x04 \x01(\x0b\x32\x0e.LogicalSelect\x12 \n\x07project\x18\x05 \x01(\x0b\x32\x0f.LogicalProject\x12\"\n\x08\x65quijoin\x18\x06 \x01(\x0b\x32\x10.LogicalEquiJoin\x12\x1c\n\x05\x63ross\x18\x07 \x01(\x0b\x32\r.LogicalCross\"G\n\x15LogicalRaOperatorType\x12\x08\n\x04SCAN\x10\x00\x12\x0b\n\x07PROJECT\x10\x01\x12\x0c\n\x08\x45QUIJOIN\x10\x02\x12\t\n\x05\x43ROSS\x10\x03\"\x1f\n\x0bLogicalScan\x12\x10\n\x08relation\x18\x01 \x02(\t\"5\n\rLogicalSelect\x12\x11\n\tchildName\x18\x01 \x02(\t\x12\x11\n\tcondition\x18\x02 \x02(\t\"4\n\x0eLogicalProject\x12\x11\n\tchildName\x18\x01 \x02(\t\x12\x0f\n\x07\x63olumns\x18\x02 \x03(\x05\"k\n\x0fLogicalEquiJoin\x12\x15\n\rleftChildName\x18\x01 \x02(\t\x12\x13\n\x0bleftColumns\x18\x02 \x03(\x05\x12\x16\n\x0erightChildName\x18\x03 \x02(\t\x12\x14\n\x0crightColumns\x18\x04 \x03(\x05\"=\n\x0cLogicalCross\x12\x15\n\rleftChildName\x18\x01 \x02(\t\x12\x16\n\x0erightChildName\x18\x02 \x02(\tB6\n$edu.washington.escience.myriad.protoB\x0eLogicalRaProto')
 
 
 
@@ -30,14 +30,18 @@ _LOGICALRAOPERATOR_LOGICALRAOPERATORTYPE = descriptor.EnumDescriptor(
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='JOIN', index=2, number=2,
+      name='EQUIJOIN', index=2, number=2,
+      options=None,
+      type=None),
+    descriptor.EnumValueDescriptor(
+      name='CROSS', index=3, number=3,
       options=None,
       type=None),
   ],
   containing_type=None,
   options=None,
-  serialized_start=311,
-  serialized_end=367,
+  serialized_start=350,
+  serialized_end=421,
 )
 
 
@@ -56,7 +60,7 @@ _LOGICALRAQUERYMESSAGE = descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
-      name='operator', full_name='LogicalRaQueryMessage.operator', index=1,
+      name='operators', full_name='LogicalRaQueryMessage.operators', index=1,
       number=3, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -72,7 +76,7 @@ _LOGICALRAQUERYMESSAGE = descriptor.Descriptor(
   is_extendable=False,
   extension_ranges=[],
   serialized_start=20,
-  serialized_end=95,
+  serialized_end=96,
 )
 
 
@@ -119,8 +123,15 @@ _LOGICALRAOPERATOR = descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
-      name='join', full_name='LogicalRaOperator.join', index=5,
+      name='equijoin', full_name='LogicalRaOperator.equijoin', index=5,
       number=6, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    descriptor.FieldDescriptor(
+      name='cross', full_name='LogicalRaOperator.cross', index=6,
+      number=7, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -135,8 +146,8 @@ _LOGICALRAOPERATOR = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=98,
-  serialized_end=367,
+  serialized_start=99,
+  serialized_end=421,
 )
 
 
@@ -163,8 +174,8 @@ _LOGICALSCAN = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=369,
-  serialized_end=400,
+  serialized_start=423,
+  serialized_end=454,
 )
 
 
@@ -198,8 +209,8 @@ _LOGICALSELECT = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=402,
-  serialized_end=455,
+  serialized_start=456,
+  serialized_end=509,
 )
 
 
@@ -218,7 +229,7 @@ _LOGICALPROJECT = descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
-      name='column', full_name='LogicalProject.column', index=1,
+      name='columns', full_name='LogicalProject.columns', index=1,
       number=2, type=5, cpp_type=1, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -233,41 +244,41 @@ _LOGICALPROJECT = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=457,
-  serialized_end=508,
+  serialized_start=511,
+  serialized_end=563,
 )
 
 
-_LOGICALJOIN = descriptor.Descriptor(
-  name='LogicalJoin',
-  full_name='LogicalJoin',
+_LOGICALEQUIJOIN = descriptor.Descriptor(
+  name='LogicalEquiJoin',
+  full_name='LogicalEquiJoin',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     descriptor.FieldDescriptor(
-      name='leftChildName', full_name='LogicalJoin.leftChildName', index=0,
+      name='leftChildName', full_name='LogicalEquiJoin.leftChildName', index=0,
       number=1, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
-      name='leftColumn', full_name='LogicalJoin.leftColumn', index=1,
+      name='leftColumns', full_name='LogicalEquiJoin.leftColumns', index=1,
       number=2, type=5, cpp_type=1, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
-      name='rightChildName', full_name='LogicalJoin.rightChildName', index=2,
+      name='rightChildName', full_name='LogicalEquiJoin.rightChildName', index=2,
       number=3, type=9, cpp_type=9, label=2,
       has_default_value=False, default_value=unicode("", "utf-8"),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
-      name='rightColumn', full_name='LogicalJoin.rightColumn', index=3,
+      name='rightColumns', full_name='LogicalEquiJoin.rightColumns', index=3,
       number=4, type=5, cpp_type=1, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -282,23 +293,60 @@ _LOGICALJOIN = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=510,
-  serialized_end=611,
+  serialized_start=565,
+  serialized_end=672,
 )
 
-_LOGICALRAQUERYMESSAGE.fields_by_name['operator'].message_type = _LOGICALRAOPERATOR
+
+_LOGICALCROSS = descriptor.Descriptor(
+  name='LogicalCross',
+  full_name='LogicalCross',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    descriptor.FieldDescriptor(
+      name='leftChildName', full_name='LogicalCross.leftChildName', index=0,
+      number=1, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=unicode("", "utf-8"),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    descriptor.FieldDescriptor(
+      name='rightChildName', full_name='LogicalCross.rightChildName', index=1,
+      number=2, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=unicode("", "utf-8"),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=674,
+  serialized_end=735,
+)
+
+_LOGICALRAQUERYMESSAGE.fields_by_name['operators'].message_type = _LOGICALRAOPERATOR
 _LOGICALRAOPERATOR.fields_by_name['type'].enum_type = _LOGICALRAOPERATOR_LOGICALRAOPERATORTYPE
 _LOGICALRAOPERATOR.fields_by_name['scan'].message_type = _LOGICALSCAN
 _LOGICALRAOPERATOR.fields_by_name['select'].message_type = _LOGICALSELECT
 _LOGICALRAOPERATOR.fields_by_name['project'].message_type = _LOGICALPROJECT
-_LOGICALRAOPERATOR.fields_by_name['join'].message_type = _LOGICALJOIN
+_LOGICALRAOPERATOR.fields_by_name['equijoin'].message_type = _LOGICALEQUIJOIN
+_LOGICALRAOPERATOR.fields_by_name['cross'].message_type = _LOGICALCROSS
 _LOGICALRAOPERATOR_LOGICALRAOPERATORTYPE.containing_type = _LOGICALRAOPERATOR;
 DESCRIPTOR.message_types_by_name['LogicalRaQueryMessage'] = _LOGICALRAQUERYMESSAGE
 DESCRIPTOR.message_types_by_name['LogicalRaOperator'] = _LOGICALRAOPERATOR
 DESCRIPTOR.message_types_by_name['LogicalScan'] = _LOGICALSCAN
 DESCRIPTOR.message_types_by_name['LogicalSelect'] = _LOGICALSELECT
 DESCRIPTOR.message_types_by_name['LogicalProject'] = _LOGICALPROJECT
-DESCRIPTOR.message_types_by_name['LogicalJoin'] = _LOGICALJOIN
+DESCRIPTOR.message_types_by_name['LogicalEquiJoin'] = _LOGICALEQUIJOIN
+DESCRIPTOR.message_types_by_name['LogicalCross'] = _LOGICALCROSS
 
 class LogicalRaQueryMessage(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
@@ -330,10 +378,16 @@ class LogicalProject(message.Message):
   
   # @@protoc_insertion_point(class_scope:LogicalProject)
 
-class LogicalJoin(message.Message):
+class LogicalEquiJoin(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
-  DESCRIPTOR = _LOGICALJOIN
+  DESCRIPTOR = _LOGICALEQUIJOIN
   
-  # @@protoc_insertion_point(class_scope:LogicalJoin)
+  # @@protoc_insertion_point(class_scope:LogicalEquiJoin)
+
+class LogicalCross(message.Message):
+  __metaclass__ = reflection.GeneratedProtocolMessageType
+  DESCRIPTOR = _LOGICALCROSS
+  
+  # @@protoc_insertion_point(class_scope:LogicalCross)
 
 # @@protoc_insertion_point(module_scope)

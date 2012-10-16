@@ -15,14 +15,14 @@ public final class LogicalRaProto {
     boolean hasName();
     String getName();
     
-    // repeated .LogicalRaOperator operator = 3;
+    // repeated .LogicalRaOperator operators = 3;
     java.util.List<edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator> 
-        getOperatorList();
-    edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator getOperator(int index);
-    int getOperatorCount();
+        getOperatorsList();
+    edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator getOperators(int index);
+    int getOperatorsCount();
     java.util.List<? extends edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperatorOrBuilder> 
-        getOperatorOrBuilderList();
-    edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperatorOrBuilder getOperatorOrBuilder(
+        getOperatorsOrBuilderList();
+    edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperatorOrBuilder getOperatorsOrBuilder(
         int index);
   }
   public static final class LogicalRaQueryMessage extends
@@ -86,30 +86,30 @@ public final class LogicalRaProto {
       }
     }
     
-    // repeated .LogicalRaOperator operator = 3;
-    public static final int OPERATOR_FIELD_NUMBER = 3;
-    private java.util.List<edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator> operator_;
-    public java.util.List<edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator> getOperatorList() {
-      return operator_;
+    // repeated .LogicalRaOperator operators = 3;
+    public static final int OPERATORS_FIELD_NUMBER = 3;
+    private java.util.List<edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator> operators_;
+    public java.util.List<edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator> getOperatorsList() {
+      return operators_;
     }
     public java.util.List<? extends edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperatorOrBuilder> 
-        getOperatorOrBuilderList() {
-      return operator_;
+        getOperatorsOrBuilderList() {
+      return operators_;
     }
-    public int getOperatorCount() {
-      return operator_.size();
+    public int getOperatorsCount() {
+      return operators_.size();
     }
-    public edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator getOperator(int index) {
-      return operator_.get(index);
+    public edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator getOperators(int index) {
+      return operators_.get(index);
     }
-    public edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperatorOrBuilder getOperatorOrBuilder(
+    public edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperatorOrBuilder getOperatorsOrBuilder(
         int index) {
-      return operator_.get(index);
+      return operators_.get(index);
     }
     
     private void initFields() {
       name_ = "";
-      operator_ = java.util.Collections.emptyList();
+      operators_ = java.util.Collections.emptyList();
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -120,8 +120,8 @@ public final class LogicalRaProto {
         memoizedIsInitialized = 0;
         return false;
       }
-      for (int i = 0; i < getOperatorCount(); i++) {
-        if (!getOperator(i).isInitialized()) {
+      for (int i = 0; i < getOperatorsCount(); i++) {
+        if (!getOperators(i).isInitialized()) {
           memoizedIsInitialized = 0;
           return false;
         }
@@ -136,8 +136,8 @@ public final class LogicalRaProto {
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeBytes(1, getNameBytes());
       }
-      for (int i = 0; i < operator_.size(); i++) {
-        output.writeMessage(3, operator_.get(i));
+      for (int i = 0; i < operators_.size(); i++) {
+        output.writeMessage(3, operators_.get(i));
       }
       getUnknownFields().writeTo(output);
     }
@@ -152,9 +152,9 @@ public final class LogicalRaProto {
         size += com.google.protobuf.CodedOutputStream
           .computeBytesSize(1, getNameBytes());
       }
-      for (int i = 0; i < operator_.size(); i++) {
+      for (int i = 0; i < operators_.size(); i++) {
         size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(3, operator_.get(i));
+          .computeMessageSize(3, operators_.get(i));
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -272,7 +272,7 @@ public final class LogicalRaProto {
       }
       private void maybeForceBuilderInitialization() {
         if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
-          getOperatorFieldBuilder();
+          getOperatorsFieldBuilder();
         }
       }
       private static Builder create() {
@@ -283,11 +283,11 @@ public final class LogicalRaProto {
         super.clear();
         name_ = "";
         bitField0_ = (bitField0_ & ~0x00000001);
-        if (operatorBuilder_ == null) {
-          operator_ = java.util.Collections.emptyList();
+        if (operatorsBuilder_ == null) {
+          operators_ = java.util.Collections.emptyList();
           bitField0_ = (bitField0_ & ~0x00000002);
         } else {
-          operatorBuilder_.clear();
+          operatorsBuilder_.clear();
         }
         return this;
       }
@@ -331,14 +331,14 @@ public final class LogicalRaProto {
           to_bitField0_ |= 0x00000001;
         }
         result.name_ = name_;
-        if (operatorBuilder_ == null) {
+        if (operatorsBuilder_ == null) {
           if (((bitField0_ & 0x00000002) == 0x00000002)) {
-            operator_ = java.util.Collections.unmodifiableList(operator_);
+            operators_ = java.util.Collections.unmodifiableList(operators_);
             bitField0_ = (bitField0_ & ~0x00000002);
           }
-          result.operator_ = operator_;
+          result.operators_ = operators_;
         } else {
-          result.operator_ = operatorBuilder_.build();
+          result.operators_ = operatorsBuilder_.build();
         }
         result.bitField0_ = to_bitField0_;
         onBuilt();
@@ -359,29 +359,29 @@ public final class LogicalRaProto {
         if (other.hasName()) {
           setName(other.getName());
         }
-        if (operatorBuilder_ == null) {
-          if (!other.operator_.isEmpty()) {
-            if (operator_.isEmpty()) {
-              operator_ = other.operator_;
+        if (operatorsBuilder_ == null) {
+          if (!other.operators_.isEmpty()) {
+            if (operators_.isEmpty()) {
+              operators_ = other.operators_;
               bitField0_ = (bitField0_ & ~0x00000002);
             } else {
-              ensureOperatorIsMutable();
-              operator_.addAll(other.operator_);
+              ensureOperatorsIsMutable();
+              operators_.addAll(other.operators_);
             }
             onChanged();
           }
         } else {
-          if (!other.operator_.isEmpty()) {
-            if (operatorBuilder_.isEmpty()) {
-              operatorBuilder_.dispose();
-              operatorBuilder_ = null;
-              operator_ = other.operator_;
+          if (!other.operators_.isEmpty()) {
+            if (operatorsBuilder_.isEmpty()) {
+              operatorsBuilder_.dispose();
+              operatorsBuilder_ = null;
+              operators_ = other.operators_;
               bitField0_ = (bitField0_ & ~0x00000002);
-              operatorBuilder_ = 
+              operatorsBuilder_ = 
                 com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
-                   getOperatorFieldBuilder() : null;
+                   getOperatorsFieldBuilder() : null;
             } else {
-              operatorBuilder_.addAllMessages(other.operator_);
+              operatorsBuilder_.addAllMessages(other.operators_);
             }
           }
         }
@@ -394,8 +394,8 @@ public final class LogicalRaProto {
           
           return false;
         }
-        for (int i = 0; i < getOperatorCount(); i++) {
-          if (!getOperator(i).isInitialized()) {
+        for (int i = 0; i < getOperatorsCount(); i++) {
+          if (!getOperators(i).isInitialized()) {
             
             return false;
           }
@@ -434,7 +434,7 @@ public final class LogicalRaProto {
             case 26: {
               edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator.Builder subBuilder = edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator.newBuilder();
               input.readMessage(subBuilder, extensionRegistry);
-              addOperator(subBuilder.buildPartial());
+              addOperators(subBuilder.buildPartial());
               break;
             }
           }
@@ -479,190 +479,190 @@ public final class LogicalRaProto {
         onChanged();
       }
       
-      // repeated .LogicalRaOperator operator = 3;
-      private java.util.List<edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator> operator_ =
+      // repeated .LogicalRaOperator operators = 3;
+      private java.util.List<edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator> operators_ =
         java.util.Collections.emptyList();
-      private void ensureOperatorIsMutable() {
+      private void ensureOperatorsIsMutable() {
         if (!((bitField0_ & 0x00000002) == 0x00000002)) {
-          operator_ = new java.util.ArrayList<edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator>(operator_);
+          operators_ = new java.util.ArrayList<edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator>(operators_);
           bitField0_ |= 0x00000002;
          }
       }
       
       private com.google.protobuf.RepeatedFieldBuilder<
-          edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator, edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator.Builder, edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperatorOrBuilder> operatorBuilder_;
+          edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator, edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator.Builder, edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperatorOrBuilder> operatorsBuilder_;
       
-      public java.util.List<edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator> getOperatorList() {
-        if (operatorBuilder_ == null) {
-          return java.util.Collections.unmodifiableList(operator_);
+      public java.util.List<edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator> getOperatorsList() {
+        if (operatorsBuilder_ == null) {
+          return java.util.Collections.unmodifiableList(operators_);
         } else {
-          return operatorBuilder_.getMessageList();
+          return operatorsBuilder_.getMessageList();
         }
       }
-      public int getOperatorCount() {
-        if (operatorBuilder_ == null) {
-          return operator_.size();
+      public int getOperatorsCount() {
+        if (operatorsBuilder_ == null) {
+          return operators_.size();
         } else {
-          return operatorBuilder_.getCount();
+          return operatorsBuilder_.getCount();
         }
       }
-      public edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator getOperator(int index) {
-        if (operatorBuilder_ == null) {
-          return operator_.get(index);
+      public edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator getOperators(int index) {
+        if (operatorsBuilder_ == null) {
+          return operators_.get(index);
         } else {
-          return operatorBuilder_.getMessage(index);
+          return operatorsBuilder_.getMessage(index);
         }
       }
-      public Builder setOperator(
+      public Builder setOperators(
           int index, edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator value) {
-        if (operatorBuilder_ == null) {
+        if (operatorsBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
           }
-          ensureOperatorIsMutable();
-          operator_.set(index, value);
+          ensureOperatorsIsMutable();
+          operators_.set(index, value);
           onChanged();
         } else {
-          operatorBuilder_.setMessage(index, value);
+          operatorsBuilder_.setMessage(index, value);
         }
         return this;
       }
-      public Builder setOperator(
+      public Builder setOperators(
           int index, edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator.Builder builderForValue) {
-        if (operatorBuilder_ == null) {
-          ensureOperatorIsMutable();
-          operator_.set(index, builderForValue.build());
+        if (operatorsBuilder_ == null) {
+          ensureOperatorsIsMutable();
+          operators_.set(index, builderForValue.build());
           onChanged();
         } else {
-          operatorBuilder_.setMessage(index, builderForValue.build());
+          operatorsBuilder_.setMessage(index, builderForValue.build());
         }
         return this;
       }
-      public Builder addOperator(edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator value) {
-        if (operatorBuilder_ == null) {
+      public Builder addOperators(edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator value) {
+        if (operatorsBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
           }
-          ensureOperatorIsMutable();
-          operator_.add(value);
+          ensureOperatorsIsMutable();
+          operators_.add(value);
           onChanged();
         } else {
-          operatorBuilder_.addMessage(value);
+          operatorsBuilder_.addMessage(value);
         }
         return this;
       }
-      public Builder addOperator(
+      public Builder addOperators(
           int index, edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator value) {
-        if (operatorBuilder_ == null) {
+        if (operatorsBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
           }
-          ensureOperatorIsMutable();
-          operator_.add(index, value);
+          ensureOperatorsIsMutable();
+          operators_.add(index, value);
           onChanged();
         } else {
-          operatorBuilder_.addMessage(index, value);
+          operatorsBuilder_.addMessage(index, value);
         }
         return this;
       }
-      public Builder addOperator(
+      public Builder addOperators(
           edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator.Builder builderForValue) {
-        if (operatorBuilder_ == null) {
-          ensureOperatorIsMutable();
-          operator_.add(builderForValue.build());
+        if (operatorsBuilder_ == null) {
+          ensureOperatorsIsMutable();
+          operators_.add(builderForValue.build());
           onChanged();
         } else {
-          operatorBuilder_.addMessage(builderForValue.build());
+          operatorsBuilder_.addMessage(builderForValue.build());
         }
         return this;
       }
-      public Builder addOperator(
+      public Builder addOperators(
           int index, edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator.Builder builderForValue) {
-        if (operatorBuilder_ == null) {
-          ensureOperatorIsMutable();
-          operator_.add(index, builderForValue.build());
+        if (operatorsBuilder_ == null) {
+          ensureOperatorsIsMutable();
+          operators_.add(index, builderForValue.build());
           onChanged();
         } else {
-          operatorBuilder_.addMessage(index, builderForValue.build());
+          operatorsBuilder_.addMessage(index, builderForValue.build());
         }
         return this;
       }
-      public Builder addAllOperator(
+      public Builder addAllOperators(
           java.lang.Iterable<? extends edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator> values) {
-        if (operatorBuilder_ == null) {
-          ensureOperatorIsMutable();
-          super.addAll(values, operator_);
+        if (operatorsBuilder_ == null) {
+          ensureOperatorsIsMutable();
+          super.addAll(values, operators_);
           onChanged();
         } else {
-          operatorBuilder_.addAllMessages(values);
+          operatorsBuilder_.addAllMessages(values);
         }
         return this;
       }
-      public Builder clearOperator() {
-        if (operatorBuilder_ == null) {
-          operator_ = java.util.Collections.emptyList();
+      public Builder clearOperators() {
+        if (operatorsBuilder_ == null) {
+          operators_ = java.util.Collections.emptyList();
           bitField0_ = (bitField0_ & ~0x00000002);
           onChanged();
         } else {
-          operatorBuilder_.clear();
+          operatorsBuilder_.clear();
         }
         return this;
       }
-      public Builder removeOperator(int index) {
-        if (operatorBuilder_ == null) {
-          ensureOperatorIsMutable();
-          operator_.remove(index);
+      public Builder removeOperators(int index) {
+        if (operatorsBuilder_ == null) {
+          ensureOperatorsIsMutable();
+          operators_.remove(index);
           onChanged();
         } else {
-          operatorBuilder_.remove(index);
+          operatorsBuilder_.remove(index);
         }
         return this;
       }
-      public edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator.Builder getOperatorBuilder(
+      public edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator.Builder getOperatorsBuilder(
           int index) {
-        return getOperatorFieldBuilder().getBuilder(index);
+        return getOperatorsFieldBuilder().getBuilder(index);
       }
-      public edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperatorOrBuilder getOperatorOrBuilder(
+      public edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperatorOrBuilder getOperatorsOrBuilder(
           int index) {
-        if (operatorBuilder_ == null) {
-          return operator_.get(index);  } else {
-          return operatorBuilder_.getMessageOrBuilder(index);
+        if (operatorsBuilder_ == null) {
+          return operators_.get(index);  } else {
+          return operatorsBuilder_.getMessageOrBuilder(index);
         }
       }
       public java.util.List<? extends edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperatorOrBuilder> 
-           getOperatorOrBuilderList() {
-        if (operatorBuilder_ != null) {
-          return operatorBuilder_.getMessageOrBuilderList();
+           getOperatorsOrBuilderList() {
+        if (operatorsBuilder_ != null) {
+          return operatorsBuilder_.getMessageOrBuilderList();
         } else {
-          return java.util.Collections.unmodifiableList(operator_);
+          return java.util.Collections.unmodifiableList(operators_);
         }
       }
-      public edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator.Builder addOperatorBuilder() {
-        return getOperatorFieldBuilder().addBuilder(
+      public edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator.Builder addOperatorsBuilder() {
+        return getOperatorsFieldBuilder().addBuilder(
             edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator.getDefaultInstance());
       }
-      public edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator.Builder addOperatorBuilder(
+      public edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator.Builder addOperatorsBuilder(
           int index) {
-        return getOperatorFieldBuilder().addBuilder(
+        return getOperatorsFieldBuilder().addBuilder(
             index, edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator.getDefaultInstance());
       }
       public java.util.List<edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator.Builder> 
-           getOperatorBuilderList() {
-        return getOperatorFieldBuilder().getBuilderList();
+           getOperatorsBuilderList() {
+        return getOperatorsFieldBuilder().getBuilderList();
       }
       private com.google.protobuf.RepeatedFieldBuilder<
           edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator, edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator.Builder, edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperatorOrBuilder> 
-          getOperatorFieldBuilder() {
-        if (operatorBuilder_ == null) {
-          operatorBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
+          getOperatorsFieldBuilder() {
+        if (operatorsBuilder_ == null) {
+          operatorsBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
               edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator, edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator.Builder, edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperatorOrBuilder>(
-                  operator_,
+                  operators_,
                   ((bitField0_ & 0x00000002) == 0x00000002),
                   getParentForChildren(),
                   isClean());
-          operator_ = null;
+          operators_ = null;
         }
-        return operatorBuilder_;
+        return operatorsBuilder_;
       }
       
       // @@protoc_insertion_point(builder_scope:LogicalRaQueryMessage)
@@ -702,10 +702,15 @@ public final class LogicalRaProto {
     edu.washington.escience.myriad.proto.LogicalRaProto.LogicalProject getProject();
     edu.washington.escience.myriad.proto.LogicalRaProto.LogicalProjectOrBuilder getProjectOrBuilder();
     
-    // optional .LogicalJoin join = 6;
-    boolean hasJoin();
-    edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin getJoin();
-    edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoinOrBuilder getJoinOrBuilder();
+    // optional .LogicalEquiJoin equijoin = 6;
+    boolean hasEquijoin();
+    edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin getEquijoin();
+    edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoinOrBuilder getEquijoinOrBuilder();
+    
+    // optional .LogicalCross cross = 7;
+    boolean hasCross();
+    edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross getCross();
+    edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCrossOrBuilder getCrossOrBuilder();
   }
   public static final class LogicalRaOperator extends
       com.google.protobuf.GeneratedMessage
@@ -739,12 +744,14 @@ public final class LogicalRaProto {
         implements com.google.protobuf.ProtocolMessageEnum {
       SCAN(0, 0),
       PROJECT(1, 1),
-      JOIN(2, 2),
+      EQUIJOIN(2, 2),
+      CROSS(3, 3),
       ;
       
       public static final int SCAN_VALUE = 0;
       public static final int PROJECT_VALUE = 1;
-      public static final int JOIN_VALUE = 2;
+      public static final int EQUIJOIN_VALUE = 2;
+      public static final int CROSS_VALUE = 3;
       
       
       public final int getNumber() { return value; }
@@ -753,7 +760,8 @@ public final class LogicalRaProto {
         switch (value) {
           case 0: return SCAN;
           case 1: return PROJECT;
-          case 2: return JOIN;
+          case 2: return EQUIJOIN;
+          case 3: return CROSS;
           default: return null;
         }
       }
@@ -784,7 +792,7 @@ public final class LogicalRaProto {
       }
       
       private static final LogicalRaOperatorType[] VALUES = {
-        SCAN, PROJECT, JOIN, 
+        SCAN, PROJECT, EQUIJOIN, CROSS, 
       };
       
       public static LogicalRaOperatorType valueOf(
@@ -889,17 +897,30 @@ public final class LogicalRaProto {
       return project_;
     }
     
-    // optional .LogicalJoin join = 6;
-    public static final int JOIN_FIELD_NUMBER = 6;
-    private edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin join_;
-    public boolean hasJoin() {
+    // optional .LogicalEquiJoin equijoin = 6;
+    public static final int EQUIJOIN_FIELD_NUMBER = 6;
+    private edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin equijoin_;
+    public boolean hasEquijoin() {
       return ((bitField0_ & 0x00000020) == 0x00000020);
     }
-    public edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin getJoin() {
-      return join_;
+    public edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin getEquijoin() {
+      return equijoin_;
     }
-    public edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoinOrBuilder getJoinOrBuilder() {
-      return join_;
+    public edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoinOrBuilder getEquijoinOrBuilder() {
+      return equijoin_;
+    }
+    
+    // optional .LogicalCross cross = 7;
+    public static final int CROSS_FIELD_NUMBER = 7;
+    private edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross cross_;
+    public boolean hasCross() {
+      return ((bitField0_ & 0x00000040) == 0x00000040);
+    }
+    public edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross getCross() {
+      return cross_;
+    }
+    public edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCrossOrBuilder getCrossOrBuilder() {
+      return cross_;
     }
     
     private void initFields() {
@@ -908,7 +929,8 @@ public final class LogicalRaProto {
       scan_ = edu.washington.escience.myriad.proto.LogicalRaProto.LogicalScan.getDefaultInstance();
       select_ = edu.washington.escience.myriad.proto.LogicalRaProto.LogicalSelect.getDefaultInstance();
       project_ = edu.washington.escience.myriad.proto.LogicalRaProto.LogicalProject.getDefaultInstance();
-      join_ = edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin.getDefaultInstance();
+      equijoin_ = edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin.getDefaultInstance();
+      cross_ = edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross.getDefaultInstance();
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -941,8 +963,14 @@ public final class LogicalRaProto {
           return false;
         }
       }
-      if (hasJoin()) {
-        if (!getJoin().isInitialized()) {
+      if (hasEquijoin()) {
+        if (!getEquijoin().isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+      }
+      if (hasCross()) {
+        if (!getCross().isInitialized()) {
           memoizedIsInitialized = 0;
           return false;
         }
@@ -970,7 +998,10 @@ public final class LogicalRaProto {
         output.writeMessage(5, project_);
       }
       if (((bitField0_ & 0x00000020) == 0x00000020)) {
-        output.writeMessage(6, join_);
+        output.writeMessage(6, equijoin_);
+      }
+      if (((bitField0_ & 0x00000040) == 0x00000040)) {
+        output.writeMessage(7, cross_);
       }
       getUnknownFields().writeTo(output);
     }
@@ -1003,7 +1034,11 @@ public final class LogicalRaProto {
       }
       if (((bitField0_ & 0x00000020) == 0x00000020)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(6, join_);
+          .computeMessageSize(6, equijoin_);
+      }
+      if (((bitField0_ & 0x00000040) == 0x00000040)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(7, cross_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -1124,7 +1159,8 @@ public final class LogicalRaProto {
           getScanFieldBuilder();
           getSelectFieldBuilder();
           getProjectFieldBuilder();
-          getJoinFieldBuilder();
+          getEquijoinFieldBuilder();
+          getCrossFieldBuilder();
         }
       }
       private static Builder create() {
@@ -1155,12 +1191,18 @@ public final class LogicalRaProto {
           projectBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000010);
-        if (joinBuilder_ == null) {
-          join_ = edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin.getDefaultInstance();
+        if (equijoinBuilder_ == null) {
+          equijoin_ = edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin.getDefaultInstance();
         } else {
-          joinBuilder_.clear();
+          equijoinBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000020);
+        if (crossBuilder_ == null) {
+          cross_ = edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross.getDefaultInstance();
+        } else {
+          crossBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000040);
         return this;
       }
       
@@ -1234,10 +1276,18 @@ public final class LogicalRaProto {
         if (((from_bitField0_ & 0x00000020) == 0x00000020)) {
           to_bitField0_ |= 0x00000020;
         }
-        if (joinBuilder_ == null) {
-          result.join_ = join_;
+        if (equijoinBuilder_ == null) {
+          result.equijoin_ = equijoin_;
         } else {
-          result.join_ = joinBuilder_.build();
+          result.equijoin_ = equijoinBuilder_.build();
+        }
+        if (((from_bitField0_ & 0x00000040) == 0x00000040)) {
+          to_bitField0_ |= 0x00000040;
+        }
+        if (crossBuilder_ == null) {
+          result.cross_ = cross_;
+        } else {
+          result.cross_ = crossBuilder_.build();
         }
         result.bitField0_ = to_bitField0_;
         onBuilt();
@@ -1270,8 +1320,11 @@ public final class LogicalRaProto {
         if (other.hasProject()) {
           mergeProject(other.getProject());
         }
-        if (other.hasJoin()) {
-          mergeJoin(other.getJoin());
+        if (other.hasEquijoin()) {
+          mergeEquijoin(other.getEquijoin());
+        }
+        if (other.hasCross()) {
+          mergeCross(other.getCross());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -1304,8 +1357,14 @@ public final class LogicalRaProto {
             return false;
           }
         }
-        if (hasJoin()) {
-          if (!getJoin().isInitialized()) {
+        if (hasEquijoin()) {
+          if (!getEquijoin().isInitialized()) {
+            
+            return false;
+          }
+        }
+        if (hasCross()) {
+          if (!getCross().isInitialized()) {
             
             return false;
           }
@@ -1380,12 +1439,21 @@ public final class LogicalRaProto {
               break;
             }
             case 50: {
-              edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin.Builder subBuilder = edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin.newBuilder();
-              if (hasJoin()) {
-                subBuilder.mergeFrom(getJoin());
+              edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin.Builder subBuilder = edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin.newBuilder();
+              if (hasEquijoin()) {
+                subBuilder.mergeFrom(getEquijoin());
               }
               input.readMessage(subBuilder, extensionRegistry);
-              setJoin(subBuilder.buildPartial());
+              setEquijoin(subBuilder.buildPartial());
+              break;
+            }
+            case 58: {
+              edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross.Builder subBuilder = edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross.newBuilder();
+              if (hasCross()) {
+                subBuilder.mergeFrom(getCross());
+              }
+              input.readMessage(subBuilder, extensionRegistry);
+              setCross(subBuilder.buildPartial());
               break;
             }
           }
@@ -1724,94 +1792,184 @@ public final class LogicalRaProto {
         return projectBuilder_;
       }
       
-      // optional .LogicalJoin join = 6;
-      private edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin join_ = edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin.getDefaultInstance();
+      // optional .LogicalEquiJoin equijoin = 6;
+      private edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin equijoin_ = edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin.getDefaultInstance();
       private com.google.protobuf.SingleFieldBuilder<
-          edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin, edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin.Builder, edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoinOrBuilder> joinBuilder_;
-      public boolean hasJoin() {
+          edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin, edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin.Builder, edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoinOrBuilder> equijoinBuilder_;
+      public boolean hasEquijoin() {
         return ((bitField0_ & 0x00000020) == 0x00000020);
       }
-      public edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin getJoin() {
-        if (joinBuilder_ == null) {
-          return join_;
+      public edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin getEquijoin() {
+        if (equijoinBuilder_ == null) {
+          return equijoin_;
         } else {
-          return joinBuilder_.getMessage();
+          return equijoinBuilder_.getMessage();
         }
       }
-      public Builder setJoin(edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin value) {
-        if (joinBuilder_ == null) {
+      public Builder setEquijoin(edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin value) {
+        if (equijoinBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
           }
-          join_ = value;
+          equijoin_ = value;
           onChanged();
         } else {
-          joinBuilder_.setMessage(value);
+          equijoinBuilder_.setMessage(value);
         }
         bitField0_ |= 0x00000020;
         return this;
       }
-      public Builder setJoin(
-          edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin.Builder builderForValue) {
-        if (joinBuilder_ == null) {
-          join_ = builderForValue.build();
+      public Builder setEquijoin(
+          edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin.Builder builderForValue) {
+        if (equijoinBuilder_ == null) {
+          equijoin_ = builderForValue.build();
           onChanged();
         } else {
-          joinBuilder_.setMessage(builderForValue.build());
+          equijoinBuilder_.setMessage(builderForValue.build());
         }
         bitField0_ |= 0x00000020;
         return this;
       }
-      public Builder mergeJoin(edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin value) {
-        if (joinBuilder_ == null) {
+      public Builder mergeEquijoin(edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin value) {
+        if (equijoinBuilder_ == null) {
           if (((bitField0_ & 0x00000020) == 0x00000020) &&
-              join_ != edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin.getDefaultInstance()) {
-            join_ =
-              edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin.newBuilder(join_).mergeFrom(value).buildPartial();
+              equijoin_ != edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin.getDefaultInstance()) {
+            equijoin_ =
+              edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin.newBuilder(equijoin_).mergeFrom(value).buildPartial();
           } else {
-            join_ = value;
+            equijoin_ = value;
           }
           onChanged();
         } else {
-          joinBuilder_.mergeFrom(value);
+          equijoinBuilder_.mergeFrom(value);
         }
         bitField0_ |= 0x00000020;
         return this;
       }
-      public Builder clearJoin() {
-        if (joinBuilder_ == null) {
-          join_ = edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin.getDefaultInstance();
+      public Builder clearEquijoin() {
+        if (equijoinBuilder_ == null) {
+          equijoin_ = edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin.getDefaultInstance();
           onChanged();
         } else {
-          joinBuilder_.clear();
+          equijoinBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000020);
         return this;
       }
-      public edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin.Builder getJoinBuilder() {
+      public edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin.Builder getEquijoinBuilder() {
         bitField0_ |= 0x00000020;
         onChanged();
-        return getJoinFieldBuilder().getBuilder();
+        return getEquijoinFieldBuilder().getBuilder();
       }
-      public edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoinOrBuilder getJoinOrBuilder() {
-        if (joinBuilder_ != null) {
-          return joinBuilder_.getMessageOrBuilder();
+      public edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoinOrBuilder getEquijoinOrBuilder() {
+        if (equijoinBuilder_ != null) {
+          return equijoinBuilder_.getMessageOrBuilder();
         } else {
-          return join_;
+          return equijoin_;
         }
       }
       private com.google.protobuf.SingleFieldBuilder<
-          edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin, edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin.Builder, edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoinOrBuilder> 
-          getJoinFieldBuilder() {
-        if (joinBuilder_ == null) {
-          joinBuilder_ = new com.google.protobuf.SingleFieldBuilder<
-              edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin, edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin.Builder, edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoinOrBuilder>(
-                  join_,
+          edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin, edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin.Builder, edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoinOrBuilder> 
+          getEquijoinFieldBuilder() {
+        if (equijoinBuilder_ == null) {
+          equijoinBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin, edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin.Builder, edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoinOrBuilder>(
+                  equijoin_,
                   getParentForChildren(),
                   isClean());
-          join_ = null;
+          equijoin_ = null;
         }
-        return joinBuilder_;
+        return equijoinBuilder_;
+      }
+      
+      // optional .LogicalCross cross = 7;
+      private edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross cross_ = edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross.getDefaultInstance();
+      private com.google.protobuf.SingleFieldBuilder<
+          edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross, edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross.Builder, edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCrossOrBuilder> crossBuilder_;
+      public boolean hasCross() {
+        return ((bitField0_ & 0x00000040) == 0x00000040);
+      }
+      public edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross getCross() {
+        if (crossBuilder_ == null) {
+          return cross_;
+        } else {
+          return crossBuilder_.getMessage();
+        }
+      }
+      public Builder setCross(edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross value) {
+        if (crossBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          cross_ = value;
+          onChanged();
+        } else {
+          crossBuilder_.setMessage(value);
+        }
+        bitField0_ |= 0x00000040;
+        return this;
+      }
+      public Builder setCross(
+          edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross.Builder builderForValue) {
+        if (crossBuilder_ == null) {
+          cross_ = builderForValue.build();
+          onChanged();
+        } else {
+          crossBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00000040;
+        return this;
+      }
+      public Builder mergeCross(edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross value) {
+        if (crossBuilder_ == null) {
+          if (((bitField0_ & 0x00000040) == 0x00000040) &&
+              cross_ != edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross.getDefaultInstance()) {
+            cross_ =
+              edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross.newBuilder(cross_).mergeFrom(value).buildPartial();
+          } else {
+            cross_ = value;
+          }
+          onChanged();
+        } else {
+          crossBuilder_.mergeFrom(value);
+        }
+        bitField0_ |= 0x00000040;
+        return this;
+      }
+      public Builder clearCross() {
+        if (crossBuilder_ == null) {
+          cross_ = edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross.getDefaultInstance();
+          onChanged();
+        } else {
+          crossBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000040);
+        return this;
+      }
+      public edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross.Builder getCrossBuilder() {
+        bitField0_ |= 0x00000040;
+        onChanged();
+        return getCrossFieldBuilder().getBuilder();
+      }
+      public edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCrossOrBuilder getCrossOrBuilder() {
+        if (crossBuilder_ != null) {
+          return crossBuilder_.getMessageOrBuilder();
+        } else {
+          return cross_;
+        }
+      }
+      private com.google.protobuf.SingleFieldBuilder<
+          edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross, edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross.Builder, edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCrossOrBuilder> 
+          getCrossFieldBuilder() {
+        if (crossBuilder_ == null) {
+          crossBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross, edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross.Builder, edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCrossOrBuilder>(
+                  cross_,
+                  getParentForChildren(),
+                  isClean());
+          cross_ = null;
+        }
+        return crossBuilder_;
       }
       
       // @@protoc_insertion_point(builder_scope:LogicalRaOperator)
@@ -2700,10 +2858,10 @@ public final class LogicalRaProto {
     boolean hasChildName();
     String getChildName();
     
-    // repeated int32 column = 2;
-    java.util.List<java.lang.Integer> getColumnList();
-    int getColumnCount();
-    int getColumn(int index);
+    // repeated int32 columns = 2;
+    java.util.List<java.lang.Integer> getColumnsList();
+    int getColumnsCount();
+    int getColumns(int index);
   }
   public static final class LogicalProject extends
       com.google.protobuf.GeneratedMessage
@@ -2766,23 +2924,23 @@ public final class LogicalRaProto {
       }
     }
     
-    // repeated int32 column = 2;
-    public static final int COLUMN_FIELD_NUMBER = 2;
-    private java.util.List<java.lang.Integer> column_;
+    // repeated int32 columns = 2;
+    public static final int COLUMNS_FIELD_NUMBER = 2;
+    private java.util.List<java.lang.Integer> columns_;
     public java.util.List<java.lang.Integer>
-        getColumnList() {
-      return column_;
+        getColumnsList() {
+      return columns_;
     }
-    public int getColumnCount() {
-      return column_.size();
+    public int getColumnsCount() {
+      return columns_.size();
     }
-    public int getColumn(int index) {
-      return column_.get(index);
+    public int getColumns(int index) {
+      return columns_.get(index);
     }
     
     private void initFields() {
       childName_ = "";
-      column_ = java.util.Collections.emptyList();;
+      columns_ = java.util.Collections.emptyList();;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -2803,8 +2961,8 @@ public final class LogicalRaProto {
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeBytes(1, getChildNameBytes());
       }
-      for (int i = 0; i < column_.size(); i++) {
-        output.writeInt32(2, column_.get(i));
+      for (int i = 0; i < columns_.size(); i++) {
+        output.writeInt32(2, columns_.get(i));
       }
       getUnknownFields().writeTo(output);
     }
@@ -2821,12 +2979,12 @@ public final class LogicalRaProto {
       }
       {
         int dataSize = 0;
-        for (int i = 0; i < column_.size(); i++) {
+        for (int i = 0; i < columns_.size(); i++) {
           dataSize += com.google.protobuf.CodedOutputStream
-            .computeInt32SizeNoTag(column_.get(i));
+            .computeInt32SizeNoTag(columns_.get(i));
         }
         size += dataSize;
-        size += 1 * getColumnList().size();
+        size += 1 * getColumnsList().size();
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -2954,7 +3112,7 @@ public final class LogicalRaProto {
         super.clear();
         childName_ = "";
         bitField0_ = (bitField0_ & ~0x00000001);
-        column_ = java.util.Collections.emptyList();;
+        columns_ = java.util.Collections.emptyList();;
         bitField0_ = (bitField0_ & ~0x00000002);
         return this;
       }
@@ -2999,10 +3157,10 @@ public final class LogicalRaProto {
         }
         result.childName_ = childName_;
         if (((bitField0_ & 0x00000002) == 0x00000002)) {
-          column_ = java.util.Collections.unmodifiableList(column_);
+          columns_ = java.util.Collections.unmodifiableList(columns_);
           bitField0_ = (bitField0_ & ~0x00000002);
         }
-        result.column_ = column_;
+        result.columns_ = columns_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -3022,13 +3180,13 @@ public final class LogicalRaProto {
         if (other.hasChildName()) {
           setChildName(other.getChildName());
         }
-        if (!other.column_.isEmpty()) {
-          if (column_.isEmpty()) {
-            column_ = other.column_;
+        if (!other.columns_.isEmpty()) {
+          if (columns_.isEmpty()) {
+            columns_ = other.columns_;
             bitField0_ = (bitField0_ & ~0x00000002);
           } else {
-            ensureColumnIsMutable();
-            column_.addAll(other.column_);
+            ensureColumnsIsMutable();
+            columns_.addAll(other.columns_);
           }
           onChanged();
         }
@@ -3073,15 +3231,15 @@ public final class LogicalRaProto {
               break;
             }
             case 16: {
-              ensureColumnIsMutable();
-              column_.add(input.readInt32());
+              ensureColumnsIsMutable();
+              columns_.add(input.readInt32());
               break;
             }
             case 18: {
               int length = input.readRawVarint32();
               int limit = input.pushLimit(length);
               while (input.getBytesUntilLimit() > 0) {
-                addColumn(input.readInt32());
+                addColumns(input.readInt32());
               }
               input.popLimit(limit);
               break;
@@ -3128,46 +3286,46 @@ public final class LogicalRaProto {
         onChanged();
       }
       
-      // repeated int32 column = 2;
-      private java.util.List<java.lang.Integer> column_ = java.util.Collections.emptyList();;
-      private void ensureColumnIsMutable() {
+      // repeated int32 columns = 2;
+      private java.util.List<java.lang.Integer> columns_ = java.util.Collections.emptyList();;
+      private void ensureColumnsIsMutable() {
         if (!((bitField0_ & 0x00000002) == 0x00000002)) {
-          column_ = new java.util.ArrayList<java.lang.Integer>(column_);
+          columns_ = new java.util.ArrayList<java.lang.Integer>(columns_);
           bitField0_ |= 0x00000002;
          }
       }
       public java.util.List<java.lang.Integer>
-          getColumnList() {
-        return java.util.Collections.unmodifiableList(column_);
+          getColumnsList() {
+        return java.util.Collections.unmodifiableList(columns_);
       }
-      public int getColumnCount() {
-        return column_.size();
+      public int getColumnsCount() {
+        return columns_.size();
       }
-      public int getColumn(int index) {
-        return column_.get(index);
+      public int getColumns(int index) {
+        return columns_.get(index);
       }
-      public Builder setColumn(
+      public Builder setColumns(
           int index, int value) {
-        ensureColumnIsMutable();
-        column_.set(index, value);
+        ensureColumnsIsMutable();
+        columns_.set(index, value);
         onChanged();
         return this;
       }
-      public Builder addColumn(int value) {
-        ensureColumnIsMutable();
-        column_.add(value);
+      public Builder addColumns(int value) {
+        ensureColumnsIsMutable();
+        columns_.add(value);
         onChanged();
         return this;
       }
-      public Builder addAllColumn(
+      public Builder addAllColumns(
           java.lang.Iterable<? extends java.lang.Integer> values) {
-        ensureColumnIsMutable();
-        super.addAll(values, column_);
+        ensureColumnsIsMutable();
+        super.addAll(values, columns_);
         onChanged();
         return this;
       }
-      public Builder clearColumn() {
-        column_ = java.util.Collections.emptyList();;
+      public Builder clearColumns() {
+        columns_ = java.util.Collections.emptyList();;
         bitField0_ = (bitField0_ & ~0x00000002);
         onChanged();
         return this;
@@ -3184,53 +3342,53 @@ public final class LogicalRaProto {
     // @@protoc_insertion_point(class_scope:LogicalProject)
   }
   
-  public interface LogicalJoinOrBuilder
+  public interface LogicalEquiJoinOrBuilder
       extends com.google.protobuf.MessageOrBuilder {
     
     // required string leftChildName = 1;
     boolean hasLeftChildName();
     String getLeftChildName();
     
-    // repeated int32 leftColumn = 2;
-    java.util.List<java.lang.Integer> getLeftColumnList();
-    int getLeftColumnCount();
-    int getLeftColumn(int index);
+    // repeated int32 leftColumns = 2;
+    java.util.List<java.lang.Integer> getLeftColumnsList();
+    int getLeftColumnsCount();
+    int getLeftColumns(int index);
     
     // required string rightChildName = 3;
     boolean hasRightChildName();
     String getRightChildName();
     
-    // repeated int32 rightColumn = 4;
-    java.util.List<java.lang.Integer> getRightColumnList();
-    int getRightColumnCount();
-    int getRightColumn(int index);
+    // repeated int32 rightColumns = 4;
+    java.util.List<java.lang.Integer> getRightColumnsList();
+    int getRightColumnsCount();
+    int getRightColumns(int index);
   }
-  public static final class LogicalJoin extends
+  public static final class LogicalEquiJoin extends
       com.google.protobuf.GeneratedMessage
-      implements LogicalJoinOrBuilder {
-    // Use LogicalJoin.newBuilder() to construct.
-    private LogicalJoin(Builder builder) {
+      implements LogicalEquiJoinOrBuilder {
+    // Use LogicalEquiJoin.newBuilder() to construct.
+    private LogicalEquiJoin(Builder builder) {
       super(builder);
     }
-    private LogicalJoin(boolean noInit) {}
+    private LogicalEquiJoin(boolean noInit) {}
     
-    private static final LogicalJoin defaultInstance;
-    public static LogicalJoin getDefaultInstance() {
+    private static final LogicalEquiJoin defaultInstance;
+    public static LogicalEquiJoin getDefaultInstance() {
       return defaultInstance;
     }
     
-    public LogicalJoin getDefaultInstanceForType() {
+    public LogicalEquiJoin getDefaultInstanceForType() {
       return defaultInstance;
     }
     
     public static final com.google.protobuf.Descriptors.Descriptor
         getDescriptor() {
-      return edu.washington.escience.myriad.proto.LogicalRaProto.internal_static_LogicalJoin_descriptor;
+      return edu.washington.escience.myriad.proto.LogicalRaProto.internal_static_LogicalEquiJoin_descriptor;
     }
     
     protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
-      return edu.washington.escience.myriad.proto.LogicalRaProto.internal_static_LogicalJoin_fieldAccessorTable;
+      return edu.washington.escience.myriad.proto.LogicalRaProto.internal_static_LogicalEquiJoin_fieldAccessorTable;
     }
     
     private int bitField0_;
@@ -3266,18 +3424,18 @@ public final class LogicalRaProto {
       }
     }
     
-    // repeated int32 leftColumn = 2;
-    public static final int LEFTCOLUMN_FIELD_NUMBER = 2;
-    private java.util.List<java.lang.Integer> leftColumn_;
+    // repeated int32 leftColumns = 2;
+    public static final int LEFTCOLUMNS_FIELD_NUMBER = 2;
+    private java.util.List<java.lang.Integer> leftColumns_;
     public java.util.List<java.lang.Integer>
-        getLeftColumnList() {
-      return leftColumn_;
+        getLeftColumnsList() {
+      return leftColumns_;
     }
-    public int getLeftColumnCount() {
-      return leftColumn_.size();
+    public int getLeftColumnsCount() {
+      return leftColumns_.size();
     }
-    public int getLeftColumn(int index) {
-      return leftColumn_.get(index);
+    public int getLeftColumns(int index) {
+      return leftColumns_.get(index);
     }
     
     // required string rightChildName = 3;
@@ -3312,25 +3470,25 @@ public final class LogicalRaProto {
       }
     }
     
-    // repeated int32 rightColumn = 4;
-    public static final int RIGHTCOLUMN_FIELD_NUMBER = 4;
-    private java.util.List<java.lang.Integer> rightColumn_;
+    // repeated int32 rightColumns = 4;
+    public static final int RIGHTCOLUMNS_FIELD_NUMBER = 4;
+    private java.util.List<java.lang.Integer> rightColumns_;
     public java.util.List<java.lang.Integer>
-        getRightColumnList() {
-      return rightColumn_;
+        getRightColumnsList() {
+      return rightColumns_;
     }
-    public int getRightColumnCount() {
-      return rightColumn_.size();
+    public int getRightColumnsCount() {
+      return rightColumns_.size();
     }
-    public int getRightColumn(int index) {
-      return rightColumn_.get(index);
+    public int getRightColumns(int index) {
+      return rightColumns_.get(index);
     }
     
     private void initFields() {
       leftChildName_ = "";
-      leftColumn_ = java.util.Collections.emptyList();;
+      leftColumns_ = java.util.Collections.emptyList();;
       rightChildName_ = "";
-      rightColumn_ = java.util.Collections.emptyList();;
+      rightColumns_ = java.util.Collections.emptyList();;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -3355,14 +3513,14 @@ public final class LogicalRaProto {
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeBytes(1, getLeftChildNameBytes());
       }
-      for (int i = 0; i < leftColumn_.size(); i++) {
-        output.writeInt32(2, leftColumn_.get(i));
+      for (int i = 0; i < leftColumns_.size(); i++) {
+        output.writeInt32(2, leftColumns_.get(i));
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         output.writeBytes(3, getRightChildNameBytes());
       }
-      for (int i = 0; i < rightColumn_.size(); i++) {
-        output.writeInt32(4, rightColumn_.get(i));
+      for (int i = 0; i < rightColumns_.size(); i++) {
+        output.writeInt32(4, rightColumns_.get(i));
       }
       getUnknownFields().writeTo(output);
     }
@@ -3379,12 +3537,12 @@ public final class LogicalRaProto {
       }
       {
         int dataSize = 0;
-        for (int i = 0; i < leftColumn_.size(); i++) {
+        for (int i = 0; i < leftColumns_.size(); i++) {
           dataSize += com.google.protobuf.CodedOutputStream
-            .computeInt32SizeNoTag(leftColumn_.get(i));
+            .computeInt32SizeNoTag(leftColumns_.get(i));
         }
         size += dataSize;
-        size += 1 * getLeftColumnList().size();
+        size += 1 * getLeftColumnsList().size();
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
@@ -3392,12 +3550,12 @@ public final class LogicalRaProto {
       }
       {
         int dataSize = 0;
-        for (int i = 0; i < rightColumn_.size(); i++) {
+        for (int i = 0; i < rightColumns_.size(); i++) {
           dataSize += com.google.protobuf.CodedOutputStream
-            .computeInt32SizeNoTag(rightColumn_.get(i));
+            .computeInt32SizeNoTag(rightColumns_.get(i));
         }
         size += dataSize;
-        size += 1 * getRightColumnList().size();
+        size += 1 * getRightColumnsList().size();
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -3411,41 +3569,41 @@ public final class LogicalRaProto {
       return super.writeReplace();
     }
     
-    public static edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin parseFrom(
+    public static edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin parseFrom(
         com.google.protobuf.ByteString data)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return newBuilder().mergeFrom(data).buildParsed();
     }
-    public static edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin parseFrom(
+    public static edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin parseFrom(
         com.google.protobuf.ByteString data,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return newBuilder().mergeFrom(data, extensionRegistry)
                .buildParsed();
     }
-    public static edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin parseFrom(byte[] data)
+    public static edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin parseFrom(byte[] data)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return newBuilder().mergeFrom(data).buildParsed();
     }
-    public static edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin parseFrom(
+    public static edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin parseFrom(
         byte[] data,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws com.google.protobuf.InvalidProtocolBufferException {
       return newBuilder().mergeFrom(data, extensionRegistry)
                .buildParsed();
     }
-    public static edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin parseFrom(java.io.InputStream input)
+    public static edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin parseFrom(java.io.InputStream input)
         throws java.io.IOException {
       return newBuilder().mergeFrom(input).buildParsed();
     }
-    public static edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin parseFrom(
+    public static edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin parseFrom(
         java.io.InputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return newBuilder().mergeFrom(input, extensionRegistry)
                .buildParsed();
     }
-    public static edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin parseDelimitedFrom(java.io.InputStream input)
+    public static edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin parseDelimitedFrom(java.io.InputStream input)
         throws java.io.IOException {
       Builder builder = newBuilder();
       if (builder.mergeDelimitedFrom(input)) {
@@ -3454,7 +3612,7 @@ public final class LogicalRaProto {
         return null;
       }
     }
-    public static edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin parseDelimitedFrom(
+    public static edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin parseDelimitedFrom(
         java.io.InputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
@@ -3465,12 +3623,12 @@ public final class LogicalRaProto {
         return null;
       }
     }
-    public static edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin parseFrom(
+    public static edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin parseFrom(
         com.google.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return newBuilder().mergeFrom(input).buildParsed();
     }
-    public static edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin parseFrom(
+    public static edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin parseFrom(
         com.google.protobuf.CodedInputStream input,
         com.google.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
@@ -3480,7 +3638,7 @@ public final class LogicalRaProto {
     
     public static Builder newBuilder() { return Builder.create(); }
     public Builder newBuilderForType() { return newBuilder(); }
-    public static Builder newBuilder(edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin prototype) {
+    public static Builder newBuilder(edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin prototype) {
       return newBuilder().mergeFrom(prototype);
     }
     public Builder toBuilder() { return newBuilder(this); }
@@ -3493,18 +3651,18 @@ public final class LogicalRaProto {
     }
     public static final class Builder extends
         com.google.protobuf.GeneratedMessage.Builder<Builder>
-       implements edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoinOrBuilder {
+       implements edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoinOrBuilder {
       public static final com.google.protobuf.Descriptors.Descriptor
           getDescriptor() {
-        return edu.washington.escience.myriad.proto.LogicalRaProto.internal_static_LogicalJoin_descriptor;
+        return edu.washington.escience.myriad.proto.LogicalRaProto.internal_static_LogicalEquiJoin_descriptor;
       }
       
       protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
-        return edu.washington.escience.myriad.proto.LogicalRaProto.internal_static_LogicalJoin_fieldAccessorTable;
+        return edu.washington.escience.myriad.proto.LogicalRaProto.internal_static_LogicalEquiJoin_fieldAccessorTable;
       }
       
-      // Construct using edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin.newBuilder()
+      // Construct using edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin.newBuilder()
       private Builder() {
         maybeForceBuilderInitialization();
       }
@@ -3525,11 +3683,11 @@ public final class LogicalRaProto {
         super.clear();
         leftChildName_ = "";
         bitField0_ = (bitField0_ & ~0x00000001);
-        leftColumn_ = java.util.Collections.emptyList();;
+        leftColumns_ = java.util.Collections.emptyList();;
         bitField0_ = (bitField0_ & ~0x00000002);
         rightChildName_ = "";
         bitField0_ = (bitField0_ & ~0x00000004);
-        rightColumn_ = java.util.Collections.emptyList();;
+        rightColumns_ = java.util.Collections.emptyList();;
         bitField0_ = (bitField0_ & ~0x00000008);
         return this;
       }
@@ -3540,24 +3698,24 @@ public final class LogicalRaProto {
       
       public com.google.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
-        return edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin.getDescriptor();
+        return edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin.getDescriptor();
       }
       
-      public edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin getDefaultInstanceForType() {
-        return edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin.getDefaultInstance();
+      public edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin getDefaultInstanceForType() {
+        return edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin.getDefaultInstance();
       }
       
-      public edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin build() {
-        edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin result = buildPartial();
+      public edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin build() {
+        edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin result = buildPartial();
         if (!result.isInitialized()) {
           throw newUninitializedMessageException(result);
         }
         return result;
       }
       
-      private edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin buildParsed()
+      private edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin buildParsed()
           throws com.google.protobuf.InvalidProtocolBufferException {
-        edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin result = buildPartial();
+        edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin result = buildPartial();
         if (!result.isInitialized()) {
           throw newUninitializedMessageException(
             result).asInvalidProtocolBufferException();
@@ -3565,8 +3723,8 @@ public final class LogicalRaProto {
         return result;
       }
       
-      public edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin buildPartial() {
-        edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin result = new edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin(this);
+      public edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin buildPartial() {
+        edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin result = new edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin(this);
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
@@ -3574,58 +3732,58 @@ public final class LogicalRaProto {
         }
         result.leftChildName_ = leftChildName_;
         if (((bitField0_ & 0x00000002) == 0x00000002)) {
-          leftColumn_ = java.util.Collections.unmodifiableList(leftColumn_);
+          leftColumns_ = java.util.Collections.unmodifiableList(leftColumns_);
           bitField0_ = (bitField0_ & ~0x00000002);
         }
-        result.leftColumn_ = leftColumn_;
+        result.leftColumns_ = leftColumns_;
         if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
           to_bitField0_ |= 0x00000002;
         }
         result.rightChildName_ = rightChildName_;
         if (((bitField0_ & 0x00000008) == 0x00000008)) {
-          rightColumn_ = java.util.Collections.unmodifiableList(rightColumn_);
+          rightColumns_ = java.util.Collections.unmodifiableList(rightColumns_);
           bitField0_ = (bitField0_ & ~0x00000008);
         }
-        result.rightColumn_ = rightColumn_;
+        result.rightColumns_ = rightColumns_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
       }
       
       public Builder mergeFrom(com.google.protobuf.Message other) {
-        if (other instanceof edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin) {
-          return mergeFrom((edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin)other);
+        if (other instanceof edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin) {
+          return mergeFrom((edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin)other);
         } else {
           super.mergeFrom(other);
           return this;
         }
       }
       
-      public Builder mergeFrom(edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin other) {
-        if (other == edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin.getDefaultInstance()) return this;
+      public Builder mergeFrom(edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin other) {
+        if (other == edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin.getDefaultInstance()) return this;
         if (other.hasLeftChildName()) {
           setLeftChildName(other.getLeftChildName());
         }
-        if (!other.leftColumn_.isEmpty()) {
-          if (leftColumn_.isEmpty()) {
-            leftColumn_ = other.leftColumn_;
+        if (!other.leftColumns_.isEmpty()) {
+          if (leftColumns_.isEmpty()) {
+            leftColumns_ = other.leftColumns_;
             bitField0_ = (bitField0_ & ~0x00000002);
           } else {
-            ensureLeftColumnIsMutable();
-            leftColumn_.addAll(other.leftColumn_);
+            ensureLeftColumnsIsMutable();
+            leftColumns_.addAll(other.leftColumns_);
           }
           onChanged();
         }
         if (other.hasRightChildName()) {
           setRightChildName(other.getRightChildName());
         }
-        if (!other.rightColumn_.isEmpty()) {
-          if (rightColumn_.isEmpty()) {
-            rightColumn_ = other.rightColumn_;
+        if (!other.rightColumns_.isEmpty()) {
+          if (rightColumns_.isEmpty()) {
+            rightColumns_ = other.rightColumns_;
             bitField0_ = (bitField0_ & ~0x00000008);
           } else {
-            ensureRightColumnIsMutable();
-            rightColumn_.addAll(other.rightColumn_);
+            ensureRightColumnsIsMutable();
+            rightColumns_.addAll(other.rightColumns_);
           }
           onChanged();
         }
@@ -3674,15 +3832,15 @@ public final class LogicalRaProto {
               break;
             }
             case 16: {
-              ensureLeftColumnIsMutable();
-              leftColumn_.add(input.readInt32());
+              ensureLeftColumnsIsMutable();
+              leftColumns_.add(input.readInt32());
               break;
             }
             case 18: {
               int length = input.readRawVarint32();
               int limit = input.pushLimit(length);
               while (input.getBytesUntilLimit() > 0) {
-                addLeftColumn(input.readInt32());
+                addLeftColumns(input.readInt32());
               }
               input.popLimit(limit);
               break;
@@ -3693,15 +3851,15 @@ public final class LogicalRaProto {
               break;
             }
             case 32: {
-              ensureRightColumnIsMutable();
-              rightColumn_.add(input.readInt32());
+              ensureRightColumnsIsMutable();
+              rightColumns_.add(input.readInt32());
               break;
             }
             case 34: {
               int length = input.readRawVarint32();
               int limit = input.pushLimit(length);
               while (input.getBytesUntilLimit() > 0) {
-                addRightColumn(input.readInt32());
+                addRightColumns(input.readInt32());
               }
               input.popLimit(limit);
               break;
@@ -3748,46 +3906,46 @@ public final class LogicalRaProto {
         onChanged();
       }
       
-      // repeated int32 leftColumn = 2;
-      private java.util.List<java.lang.Integer> leftColumn_ = java.util.Collections.emptyList();;
-      private void ensureLeftColumnIsMutable() {
+      // repeated int32 leftColumns = 2;
+      private java.util.List<java.lang.Integer> leftColumns_ = java.util.Collections.emptyList();;
+      private void ensureLeftColumnsIsMutable() {
         if (!((bitField0_ & 0x00000002) == 0x00000002)) {
-          leftColumn_ = new java.util.ArrayList<java.lang.Integer>(leftColumn_);
+          leftColumns_ = new java.util.ArrayList<java.lang.Integer>(leftColumns_);
           bitField0_ |= 0x00000002;
          }
       }
       public java.util.List<java.lang.Integer>
-          getLeftColumnList() {
-        return java.util.Collections.unmodifiableList(leftColumn_);
+          getLeftColumnsList() {
+        return java.util.Collections.unmodifiableList(leftColumns_);
       }
-      public int getLeftColumnCount() {
-        return leftColumn_.size();
+      public int getLeftColumnsCount() {
+        return leftColumns_.size();
       }
-      public int getLeftColumn(int index) {
-        return leftColumn_.get(index);
+      public int getLeftColumns(int index) {
+        return leftColumns_.get(index);
       }
-      public Builder setLeftColumn(
+      public Builder setLeftColumns(
           int index, int value) {
-        ensureLeftColumnIsMutable();
-        leftColumn_.set(index, value);
+        ensureLeftColumnsIsMutable();
+        leftColumns_.set(index, value);
         onChanged();
         return this;
       }
-      public Builder addLeftColumn(int value) {
-        ensureLeftColumnIsMutable();
-        leftColumn_.add(value);
+      public Builder addLeftColumns(int value) {
+        ensureLeftColumnsIsMutable();
+        leftColumns_.add(value);
         onChanged();
         return this;
       }
-      public Builder addAllLeftColumn(
+      public Builder addAllLeftColumns(
           java.lang.Iterable<? extends java.lang.Integer> values) {
-        ensureLeftColumnIsMutable();
-        super.addAll(values, leftColumn_);
+        ensureLeftColumnsIsMutable();
+        super.addAll(values, leftColumns_);
         onChanged();
         return this;
       }
-      public Builder clearLeftColumn() {
-        leftColumn_ = java.util.Collections.emptyList();;
+      public Builder clearLeftColumns() {
+        leftColumns_ = java.util.Collections.emptyList();;
         bitField0_ = (bitField0_ & ~0x00000002);
         onChanged();
         return this;
@@ -3829,60 +3987,545 @@ public final class LogicalRaProto {
         onChanged();
       }
       
-      // repeated int32 rightColumn = 4;
-      private java.util.List<java.lang.Integer> rightColumn_ = java.util.Collections.emptyList();;
-      private void ensureRightColumnIsMutable() {
+      // repeated int32 rightColumns = 4;
+      private java.util.List<java.lang.Integer> rightColumns_ = java.util.Collections.emptyList();;
+      private void ensureRightColumnsIsMutable() {
         if (!((bitField0_ & 0x00000008) == 0x00000008)) {
-          rightColumn_ = new java.util.ArrayList<java.lang.Integer>(rightColumn_);
+          rightColumns_ = new java.util.ArrayList<java.lang.Integer>(rightColumns_);
           bitField0_ |= 0x00000008;
          }
       }
       public java.util.List<java.lang.Integer>
-          getRightColumnList() {
-        return java.util.Collections.unmodifiableList(rightColumn_);
+          getRightColumnsList() {
+        return java.util.Collections.unmodifiableList(rightColumns_);
       }
-      public int getRightColumnCount() {
-        return rightColumn_.size();
+      public int getRightColumnsCount() {
+        return rightColumns_.size();
       }
-      public int getRightColumn(int index) {
-        return rightColumn_.get(index);
+      public int getRightColumns(int index) {
+        return rightColumns_.get(index);
       }
-      public Builder setRightColumn(
+      public Builder setRightColumns(
           int index, int value) {
-        ensureRightColumnIsMutable();
-        rightColumn_.set(index, value);
+        ensureRightColumnsIsMutable();
+        rightColumns_.set(index, value);
         onChanged();
         return this;
       }
-      public Builder addRightColumn(int value) {
-        ensureRightColumnIsMutable();
-        rightColumn_.add(value);
+      public Builder addRightColumns(int value) {
+        ensureRightColumnsIsMutable();
+        rightColumns_.add(value);
         onChanged();
         return this;
       }
-      public Builder addAllRightColumn(
+      public Builder addAllRightColumns(
           java.lang.Iterable<? extends java.lang.Integer> values) {
-        ensureRightColumnIsMutable();
-        super.addAll(values, rightColumn_);
+        ensureRightColumnsIsMutable();
+        super.addAll(values, rightColumns_);
         onChanged();
         return this;
       }
-      public Builder clearRightColumn() {
-        rightColumn_ = java.util.Collections.emptyList();;
+      public Builder clearRightColumns() {
+        rightColumns_ = java.util.Collections.emptyList();;
         bitField0_ = (bitField0_ & ~0x00000008);
         onChanged();
         return this;
       }
       
-      // @@protoc_insertion_point(builder_scope:LogicalJoin)
+      // @@protoc_insertion_point(builder_scope:LogicalEquiJoin)
     }
     
     static {
-      defaultInstance = new LogicalJoin(true);
+      defaultInstance = new LogicalEquiJoin(true);
       defaultInstance.initFields();
     }
     
-    // @@protoc_insertion_point(class_scope:LogicalJoin)
+    // @@protoc_insertion_point(class_scope:LogicalEquiJoin)
+  }
+  
+  public interface LogicalCrossOrBuilder
+      extends com.google.protobuf.MessageOrBuilder {
+    
+    // required string leftChildName = 1;
+    boolean hasLeftChildName();
+    String getLeftChildName();
+    
+    // required string rightChildName = 2;
+    boolean hasRightChildName();
+    String getRightChildName();
+  }
+  public static final class LogicalCross extends
+      com.google.protobuf.GeneratedMessage
+      implements LogicalCrossOrBuilder {
+    // Use LogicalCross.newBuilder() to construct.
+    private LogicalCross(Builder builder) {
+      super(builder);
+    }
+    private LogicalCross(boolean noInit) {}
+    
+    private static final LogicalCross defaultInstance;
+    public static LogicalCross getDefaultInstance() {
+      return defaultInstance;
+    }
+    
+    public LogicalCross getDefaultInstanceForType() {
+      return defaultInstance;
+    }
+    
+    public static final com.google.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return edu.washington.escience.myriad.proto.LogicalRaProto.internal_static_LogicalCross_descriptor;
+    }
+    
+    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return edu.washington.escience.myriad.proto.LogicalRaProto.internal_static_LogicalCross_fieldAccessorTable;
+    }
+    
+    private int bitField0_;
+    // required string leftChildName = 1;
+    public static final int LEFTCHILDNAME_FIELD_NUMBER = 1;
+    private java.lang.Object leftChildName_;
+    public boolean hasLeftChildName() {
+      return ((bitField0_ & 0x00000001) == 0x00000001);
+    }
+    public String getLeftChildName() {
+      java.lang.Object ref = leftChildName_;
+      if (ref instanceof String) {
+        return (String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        String s = bs.toStringUtf8();
+        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+          leftChildName_ = s;
+        }
+        return s;
+      }
+    }
+    private com.google.protobuf.ByteString getLeftChildNameBytes() {
+      java.lang.Object ref = leftChildName_;
+      if (ref instanceof String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+        leftChildName_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+    
+    // required string rightChildName = 2;
+    public static final int RIGHTCHILDNAME_FIELD_NUMBER = 2;
+    private java.lang.Object rightChildName_;
+    public boolean hasRightChildName() {
+      return ((bitField0_ & 0x00000002) == 0x00000002);
+    }
+    public String getRightChildName() {
+      java.lang.Object ref = rightChildName_;
+      if (ref instanceof String) {
+        return (String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        String s = bs.toStringUtf8();
+        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+          rightChildName_ = s;
+        }
+        return s;
+      }
+    }
+    private com.google.protobuf.ByteString getRightChildNameBytes() {
+      java.lang.Object ref = rightChildName_;
+      if (ref instanceof String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+        rightChildName_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+    
+    private void initFields() {
+      leftChildName_ = "";
+      rightChildName_ = "";
+    }
+    private byte memoizedIsInitialized = -1;
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized != -1) return isInitialized == 1;
+      
+      if (!hasLeftChildName()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasRightChildName()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      memoizedIsInitialized = 1;
+      return true;
+    }
+    
+    public void writeTo(com.google.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      getSerializedSize();
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        output.writeBytes(1, getLeftChildNameBytes());
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        output.writeBytes(2, getRightChildNameBytes());
+      }
+      getUnknownFields().writeTo(output);
+    }
+    
+    private int memoizedSerializedSize = -1;
+    public int getSerializedSize() {
+      int size = memoizedSerializedSize;
+      if (size != -1) return size;
+    
+      size = 0;
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(1, getLeftChildNameBytes());
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(2, getRightChildNameBytes());
+      }
+      size += getUnknownFields().getSerializedSize();
+      memoizedSerializedSize = size;
+      return size;
+    }
+    
+    private static final long serialVersionUID = 0L;
+    @java.lang.Override
+    protected java.lang.Object writeReplace()
+        throws java.io.ObjectStreamException {
+      return super.writeReplace();
+    }
+    
+    public static edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data).buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data, extensionRegistry)
+               .buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data).buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data, extensionRegistry)
+               .buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input).buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input, extensionRegistry)
+               .buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      Builder builder = newBuilder();
+      if (builder.mergeDelimitedFrom(input)) {
+        return builder.buildParsed();
+      } else {
+        return null;
+      }
+    }
+    public static edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      Builder builder = newBuilder();
+      if (builder.mergeDelimitedFrom(input, extensionRegistry)) {
+        return builder.buildParsed();
+      } else {
+        return null;
+      }
+    }
+    public static edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input).buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input, extensionRegistry)
+               .buildParsed();
+    }
+    
+    public static Builder newBuilder() { return Builder.create(); }
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder(edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross prototype) {
+      return newBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() { return newBuilder(this); }
+    
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessage.Builder<Builder>
+       implements edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCrossOrBuilder {
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return edu.washington.escience.myriad.proto.LogicalRaProto.internal_static_LogicalCross_descriptor;
+      }
+      
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return edu.washington.escience.myriad.proto.LogicalRaProto.internal_static_LogicalCross_fieldAccessorTable;
+      }
+      
+      // Construct using edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+      
+      private Builder(BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        }
+      }
+      private static Builder create() {
+        return new Builder();
+      }
+      
+      public Builder clear() {
+        super.clear();
+        leftChildName_ = "";
+        bitField0_ = (bitField0_ & ~0x00000001);
+        rightChildName_ = "";
+        bitField0_ = (bitField0_ & ~0x00000002);
+        return this;
+      }
+      
+      public Builder clone() {
+        return create().mergeFrom(buildPartial());
+      }
+      
+      public com.google.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross.getDescriptor();
+      }
+      
+      public edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross getDefaultInstanceForType() {
+        return edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross.getDefaultInstance();
+      }
+      
+      public edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross build() {
+        edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+      
+      private edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross buildParsed()
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(
+            result).asInvalidProtocolBufferException();
+        }
+        return result;
+      }
+      
+      public edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross buildPartial() {
+        edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross result = new edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross(this);
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+          to_bitField0_ |= 0x00000001;
+        }
+        result.leftChildName_ = leftChildName_;
+        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+          to_bitField0_ |= 0x00000002;
+        }
+        result.rightChildName_ = rightChildName_;
+        result.bitField0_ = to_bitField0_;
+        onBuilt();
+        return result;
+      }
+      
+      public Builder mergeFrom(com.google.protobuf.Message other) {
+        if (other instanceof edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross) {
+          return mergeFrom((edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+      
+      public Builder mergeFrom(edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross other) {
+        if (other == edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross.getDefaultInstance()) return this;
+        if (other.hasLeftChildName()) {
+          setLeftChildName(other.getLeftChildName());
+        }
+        if (other.hasRightChildName()) {
+          setRightChildName(other.getRightChildName());
+        }
+        this.mergeUnknownFields(other.getUnknownFields());
+        return this;
+      }
+      
+      public final boolean isInitialized() {
+        if (!hasLeftChildName()) {
+          
+          return false;
+        }
+        if (!hasRightChildName()) {
+          
+          return false;
+        }
+        return true;
+      }
+      
+      public Builder mergeFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+          com.google.protobuf.UnknownFieldSet.newBuilder(
+            this.getUnknownFields());
+        while (true) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              this.setUnknownFields(unknownFields.build());
+              onChanged();
+              return this;
+            default: {
+              if (!parseUnknownField(input, unknownFields,
+                                     extensionRegistry, tag)) {
+                this.setUnknownFields(unknownFields.build());
+                onChanged();
+                return this;
+              }
+              break;
+            }
+            case 10: {
+              bitField0_ |= 0x00000001;
+              leftChildName_ = input.readBytes();
+              break;
+            }
+            case 18: {
+              bitField0_ |= 0x00000002;
+              rightChildName_ = input.readBytes();
+              break;
+            }
+          }
+        }
+      }
+      
+      private int bitField0_;
+      
+      // required string leftChildName = 1;
+      private java.lang.Object leftChildName_ = "";
+      public boolean hasLeftChildName() {
+        return ((bitField0_ & 0x00000001) == 0x00000001);
+      }
+      public String getLeftChildName() {
+        java.lang.Object ref = leftChildName_;
+        if (!(ref instanceof String)) {
+          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+          leftChildName_ = s;
+          return s;
+        } else {
+          return (String) ref;
+        }
+      }
+      public Builder setLeftChildName(String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000001;
+        leftChildName_ = value;
+        onChanged();
+        return this;
+      }
+      public Builder clearLeftChildName() {
+        bitField0_ = (bitField0_ & ~0x00000001);
+        leftChildName_ = getDefaultInstance().getLeftChildName();
+        onChanged();
+        return this;
+      }
+      void setLeftChildName(com.google.protobuf.ByteString value) {
+        bitField0_ |= 0x00000001;
+        leftChildName_ = value;
+        onChanged();
+      }
+      
+      // required string rightChildName = 2;
+      private java.lang.Object rightChildName_ = "";
+      public boolean hasRightChildName() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
+      }
+      public String getRightChildName() {
+        java.lang.Object ref = rightChildName_;
+        if (!(ref instanceof String)) {
+          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+          rightChildName_ = s;
+          return s;
+        } else {
+          return (String) ref;
+        }
+      }
+      public Builder setRightChildName(String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000002;
+        rightChildName_ = value;
+        onChanged();
+        return this;
+      }
+      public Builder clearRightChildName() {
+        bitField0_ = (bitField0_ & ~0x00000002);
+        rightChildName_ = getDefaultInstance().getRightChildName();
+        onChanged();
+        return this;
+      }
+      void setRightChildName(com.google.protobuf.ByteString value) {
+        bitField0_ |= 0x00000002;
+        rightChildName_ = value;
+        onChanged();
+      }
+      
+      // @@protoc_insertion_point(builder_scope:LogicalCross)
+    }
+    
+    static {
+      defaultInstance = new LogicalCross(true);
+      defaultInstance.initFields();
+    }
+    
+    // @@protoc_insertion_point(class_scope:LogicalCross)
   }
   
   private static com.google.protobuf.Descriptors.Descriptor
@@ -3911,10 +4554,15 @@ public final class LogicalRaProto {
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_LogicalProject_fieldAccessorTable;
   private static com.google.protobuf.Descriptors.Descriptor
-    internal_static_LogicalJoin_descriptor;
+    internal_static_LogicalEquiJoin_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
-      internal_static_LogicalJoin_fieldAccessorTable;
+      internal_static_LogicalEquiJoin_fieldAccessorTable;
+  private static com.google.protobuf.Descriptors.Descriptor
+    internal_static_LogicalCross_descriptor;
+  private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_LogicalCross_fieldAccessorTable;
   
   public static com.google.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
@@ -3924,23 +4572,26 @@ public final class LogicalRaProto {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\020logical_ra.proto\"K\n\025LogicalRaQueryMess" +
-      "age\022\014\n\004name\030\001 \002(\t\022$\n\010operator\030\003 \003(\0132\022.Lo" +
-      "gicalRaOperator\"\215\002\n\021LogicalRaOperator\0226\n" +
-      "\004type\030\001 \002(\0162(.LogicalRaOperator.LogicalR" +
-      "aOperatorType\022\014\n\004name\030\002 \002(\t\022\032\n\004scan\030\003 \001(" +
-      "\0132\014.LogicalScan\022\036\n\006select\030\004 \001(\0132\016.Logica" +
-      "lSelect\022 \n\007project\030\005 \001(\0132\017.LogicalProjec" +
-      "t\022\032\n\004join\030\006 \001(\0132\014.LogicalJoin\"8\n\025Logical" +
-      "RaOperatorType\022\010\n\004SCAN\020\000\022\013\n\007PROJECT\020\001\022\010\n" +
-      "\004JOIN\020\002\"\037\n\013LogicalScan\022\020\n\010relation\030\001 \002(\t",
-      "\"5\n\rLogicalSelect\022\021\n\tchildName\030\001 \002(\t\022\021\n\t" +
-      "condition\030\002 \002(\t\"3\n\016LogicalProject\022\021\n\tchi" +
-      "ldName\030\001 \002(\t\022\016\n\006column\030\002 \003(\005\"e\n\013LogicalJ" +
-      "oin\022\025\n\rleftChildName\030\001 \002(\t\022\022\n\nleftColumn" +
-      "\030\002 \003(\005\022\026\n\016rightChildName\030\003 \002(\t\022\023\n\013rightC" +
-      "olumn\030\004 \003(\005B6\n$edu.washington.escience.m" +
-      "yriad.protoB\016LogicalRaProto"
+      "\n\020logical_ra.proto\"L\n\025LogicalRaQueryMess" +
+      "age\022\014\n\004name\030\001 \002(\t\022%\n\toperators\030\003 \003(\0132\022.L" +
+      "ogicalRaOperator\"\302\002\n\021LogicalRaOperator\0226" +
+      "\n\004type\030\001 \002(\0162(.LogicalRaOperator.Logical" +
+      "RaOperatorType\022\014\n\004name\030\002 \002(\t\022\032\n\004scan\030\003 \001" +
+      "(\0132\014.LogicalScan\022\036\n\006select\030\004 \001(\0132\016.Logic" +
+      "alSelect\022 \n\007project\030\005 \001(\0132\017.LogicalProje" +
+      "ct\022\"\n\010equijoin\030\006 \001(\0132\020.LogicalEquiJoin\022\034" +
+      "\n\005cross\030\007 \001(\0132\r.LogicalCross\"G\n\025LogicalR" +
+      "aOperatorType\022\010\n\004SCAN\020\000\022\013\n\007PROJECT\020\001\022\014\n\010",
+      "EQUIJOIN\020\002\022\t\n\005CROSS\020\003\"\037\n\013LogicalScan\022\020\n\010" +
+      "relation\030\001 \002(\t\"5\n\rLogicalSelect\022\021\n\tchild" +
+      "Name\030\001 \002(\t\022\021\n\tcondition\030\002 \002(\t\"4\n\016Logical" +
+      "Project\022\021\n\tchildName\030\001 \002(\t\022\017\n\007columns\030\002 " +
+      "\003(\005\"k\n\017LogicalEquiJoin\022\025\n\rleftChildName\030" +
+      "\001 \002(\t\022\023\n\013leftColumns\030\002 \003(\005\022\026\n\016rightChild" +
+      "Name\030\003 \002(\t\022\024\n\014rightColumns\030\004 \003(\005\"=\n\014Logi" +
+      "calCross\022\025\n\rleftChildName\030\001 \002(\t\022\026\n\016right" +
+      "ChildName\030\002 \002(\tB6\n$edu.washington.escien" +
+      "ce.myriad.protoB\016LogicalRaProto"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -3952,7 +4603,7 @@ public final class LogicalRaProto {
           internal_static_LogicalRaQueryMessage_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_LogicalRaQueryMessage_descriptor,
-              new java.lang.String[] { "Name", "Operator", },
+              new java.lang.String[] { "Name", "Operators", },
               edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaQueryMessage.class,
               edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaQueryMessage.Builder.class);
           internal_static_LogicalRaOperator_descriptor =
@@ -3960,7 +4611,7 @@ public final class LogicalRaProto {
           internal_static_LogicalRaOperator_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_LogicalRaOperator_descriptor,
-              new java.lang.String[] { "Type", "Name", "Scan", "Select", "Project", "Join", },
+              new java.lang.String[] { "Type", "Name", "Scan", "Select", "Project", "Equijoin", "Cross", },
               edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator.class,
               edu.washington.escience.myriad.proto.LogicalRaProto.LogicalRaOperator.Builder.class);
           internal_static_LogicalScan_descriptor =
@@ -3984,17 +4635,25 @@ public final class LogicalRaProto {
           internal_static_LogicalProject_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_LogicalProject_descriptor,
-              new java.lang.String[] { "ChildName", "Column", },
+              new java.lang.String[] { "ChildName", "Columns", },
               edu.washington.escience.myriad.proto.LogicalRaProto.LogicalProject.class,
               edu.washington.escience.myriad.proto.LogicalRaProto.LogicalProject.Builder.class);
-          internal_static_LogicalJoin_descriptor =
+          internal_static_LogicalEquiJoin_descriptor =
             getDescriptor().getMessageTypes().get(5);
-          internal_static_LogicalJoin_fieldAccessorTable = new
+          internal_static_LogicalEquiJoin_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
-              internal_static_LogicalJoin_descriptor,
-              new java.lang.String[] { "LeftChildName", "LeftColumn", "RightChildName", "RightColumn", },
-              edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin.class,
-              edu.washington.escience.myriad.proto.LogicalRaProto.LogicalJoin.Builder.class);
+              internal_static_LogicalEquiJoin_descriptor,
+              new java.lang.String[] { "LeftChildName", "LeftColumns", "RightChildName", "RightColumns", },
+              edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin.class,
+              edu.washington.escience.myriad.proto.LogicalRaProto.LogicalEquiJoin.Builder.class);
+          internal_static_LogicalCross_descriptor =
+            getDescriptor().getMessageTypes().get(6);
+          internal_static_LogicalCross_fieldAccessorTable = new
+            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_LogicalCross_descriptor,
+              new java.lang.String[] { "LeftChildName", "RightChildName", },
+              edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross.class,
+              edu.washington.escience.myriad.proto.LogicalRaProto.LogicalCross.Builder.class);
           return null;
         }
       };
