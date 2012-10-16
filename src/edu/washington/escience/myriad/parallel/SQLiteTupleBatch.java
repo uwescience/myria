@@ -36,10 +36,10 @@ public class SQLiteTupleBatch implements _TupleBatch {
 
   @Override
   public synchronized _TupleBatch append(final _TupleBatch another) {
-    final Iterator<Schema.TDItem> it = this.inputSchema.iterator();
+    final Iterator<Schema.TDItem> it = inputSchema.iterator();
 
-    final String[] fieldNames = new String[this.inputSchema.numFields()];
-    final String[] placeHolders = new String[this.inputSchema.numFields()];
+    final String[] fieldNames = new String[inputSchema.numFields()];
+    final String[] placeHolders = new String[inputSchema.numFields()];
     int i = 0;
     while (it.hasNext()) {
       final Schema.TDItem item = it.next();
@@ -47,7 +47,7 @@ public class SQLiteTupleBatch implements _TupleBatch {
       fieldNames[i++] = item.getName();
     }
 
-    SQLiteAccessMethod.tupleBatchInsert(this.dataDir + "/" + this.filename, "insert into " + this.tableName + " ( "
+    SQLiteAccessMethod.tupleBatchInsert(dataDir + "/" + filename, "insert into " + tableName + " ( "
         + StringUtils.join(fieldNames, ',') + " ) values ( " + StringUtils.join(placeHolders, ',') + " )",
         new TupleBatch(another.outputSchema(), another.outputRawData(), another.numOutputTuples()));
     return this;
@@ -109,6 +109,11 @@ public class SQLiteTupleBatch implements _TupleBatch {
   }
 
   @Override
+  public int hashCode4Keys(final int rowIndx, final int[] colIndx) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
   public Schema inputSchema() {
     return inputSchema;
   }
@@ -130,7 +135,7 @@ public class SQLiteTupleBatch implements _TupleBatch {
 
   @Override
   public synchronized int numOutputTuples() {
-    return this.numInputTuples;
+    return numInputTuples;
   }
 
   @Override
@@ -139,7 +144,7 @@ public class SQLiteTupleBatch implements _TupleBatch {
   }
 
   protected synchronized int[] outputColumnIndices() {
-    final int numInputColumns = this.inputSchema.numFields();
+    final int numInputColumns = inputSchema.numFields();
     final int[] validC = new int[numInputColumns];
     int j = 0;
     for (int i = 0; i < numInputColumns; i++) {
@@ -157,13 +162,13 @@ public class SQLiteTupleBatch implements _TupleBatch {
   @Override
   public synchronized Schema outputSchema() {
 
-    final int[] columnIndices = this.outputColumnIndices();
+    final int[] columnIndices = outputColumnIndices();
     final String[] columnNames = new String[columnIndices.length];
     final Type[] columnTypes = new Type[columnIndices.length];
     int j = 0;
     for (final int columnIndx : columnIndices) {
-      columnNames[j] = this.inputSchema.getFieldName(columnIndx);
-      columnTypes[j] = this.inputSchema.getFieldType(columnIndx);
+      columnNames[j] = inputSchema.getFieldName(columnIndx);
+      columnTypes[j] = inputSchema.getFieldType(columnIndx);
       j++;
     }
 
