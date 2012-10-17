@@ -52,14 +52,14 @@ public final class CollectProducer extends Producer {
           int numTuples = tup.numOutputTuples();
           System.out.println("Num tuples:" + numTuples);
           int numColumns = fromColumns.size();
-          System.out.println("current tuples-1 : " + buffer.currentNumTuples);
+          System.out.println("current tuples-1 : " + buffer.getCurrentNumTuples());
           for (int i = 0; i < numTuples; i++) {
             for (int j = 0; j < numColumns; j++) {
               buffer.put(j, fromColumns.get(j).get(i));
             }
-            System.out.println("current tuples" + i + ": " + buffer.currentNumTuples);
+            System.out.println("current tuples" + i + ": " + buffer.getCurrentNumTuples());
           }
-          System.out.println("current tuples: " + buffer.currentNumTuples);
+          System.out.println("current tuples: " + buffer.getCurrentNumTuples());
           System.out.println("num Tuples in buffer: " + buffer.numTuples());
 
           while ((tup = buffer.pop()) != null) {

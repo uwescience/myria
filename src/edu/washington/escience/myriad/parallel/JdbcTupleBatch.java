@@ -124,7 +124,7 @@ public class JdbcTupleBatch implements _TupleBatch {
   }
 
   @Override
-  public int hashCode4Keys(final int rowIndx, final int[] colIndx) {
+  public int hashCode(final int rowIndx, final int[] colIndx) {
     throw new UnsupportedOperationException();
   }
 

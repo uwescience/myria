@@ -178,7 +178,7 @@ public class ImmutableInMemoryTupleBatch implements _TupleBatch {
   }
 
   @Override
-  public int hashCode4Keys(final int rowIndx, final int[] colIndx) {
+  public int hashCode(final int rowIndx, final int[] colIndx) {
     // return 0;
     final HashCodeBuilder hb = new HashCodeBuilder(MAGIC_HASHCODE1, MAGIC_HASHCODE2);
     for (int i = 0; i < colIndx.length; ++i) {

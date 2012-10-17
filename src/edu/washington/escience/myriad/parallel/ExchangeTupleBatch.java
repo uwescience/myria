@@ -117,8 +117,8 @@ public class ExchangeTupleBatch implements _TupleBatch {
   }
 
   @Override
-  public int hashCode4Keys(final int rowIndx, final int[] colIndx) {
-    return dataHolder.hashCode4Keys(rowIndx, colIndx);
+  public int hashCode(final int rowIndx, final int[] colIndx) {
+    return dataHolder.hashCode(rowIndx, colIndx);
   }
 
   @Override

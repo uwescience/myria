@@ -53,7 +53,7 @@ public interface _TupleBatch extends Serializable {
 
   int hashCode(int rowIndx);
 
-  int hashCode4Keys(int index, int[] colIndx);
+  int hashCode(int index, int[] colIndx);
 
   Schema inputSchema();
 
