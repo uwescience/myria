@@ -48,10 +48,10 @@ public abstract class TupleBatchAdaptor implements _TupleBatch {
   }
 
   @Override
-  public int hashCode4Keys(final int rowIndx, final int[] colIndx) {
+  public int hashCode(final int rowIndx, final int[] colIndx) {
     if (this instanceof TupleBatch) {
       final TupleBatch tupleBatch = (TupleBatch) this;
-      return tupleBatch.hashCode4Keys(rowIndx, colIndx);
+      return tupleBatch.hashCode(rowIndx, colIndx);
     } else {
       throw new UnsupportedOperationException();
     }
