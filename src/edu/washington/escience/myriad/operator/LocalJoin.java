@@ -95,7 +95,7 @@ public class LocalJoin extends Operator implements Externalizable {
     }
 
     public int hashCode4Keys(final int[] colIndx) {
-      return tb.hashCode4Keys(index, colIndx);
+      return tb.hashCode(index, colIndx);
     }
   }
 

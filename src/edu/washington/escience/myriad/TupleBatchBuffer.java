@@ -30,7 +30,14 @@ public class TupleBatchBuffer {
   /** Internal state representing the number of columns that are ready in the current tuple. */
   private int numColumnsReady;
   /** Internal state representing the number of tuples in the in-progress TupleBatch. */
-  public int currentNumTuples;
+  private int currentNumTuples;
+
+  /**
+   * @return the number of tuples currently in the batch.
+   */
+  public final int getCurrentNumTuples() {
+    return currentNumTuples;
+  }
 
   /**
    * Constructs an empty TupleBatchBuffer to hold tuples matching the specified Schema.
