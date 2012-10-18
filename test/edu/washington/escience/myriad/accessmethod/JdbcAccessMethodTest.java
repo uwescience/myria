@@ -20,7 +20,7 @@ import edu.washington.escience.myriad.operator.JdbcQueryScan;
 public class JdbcAccessMethodTest {
 
   @Test
-  public void test() throws DbException {
+  public void testNumberResultsAndMultipleBatches() throws DbException {
     /* Connection information */
     final String host = "54.245.108.198";
     final int port = 3306;
