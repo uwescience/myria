@@ -3,6 +3,7 @@
 	<classpathentry excluding="edu/washington/escience/myriad/parallel/OutputStreamSinkTupleBatch.java|edu/washington/escience/myriad/parallel/ConcurrentInMemoryTupleBatch.java|edu/washington/escience/myriad/parallel/ExchangeMessage.java" kind="src" path="src"/>
 	<classpathentry kind="src" path="protobuf/java"/>
 	<classpathentry kind="src" path="test"/>
+	<classpathentry kind="src" path="speedtest"/>
 	<classpathentry kind="src" path="third-party-src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="lib/mysql-connector-java-5.1.21-bin.jar"/>
