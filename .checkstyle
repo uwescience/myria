@@ -8,8 +8,9 @@
     <file-match-pattern match-pattern="." include-pattern="true"/>
   </fileset>
   <filter name="FilesFromPackage" enabled="true">
-    <filter-data value="third-party-src"/>
     <filter-data value="protobuf/java"/>
     <filter-data value="test"/>
+    <filter-data value="speedtest"/>
+    <filter-data value="third-party-src"/>
   </filter>
 </fileset-config>
