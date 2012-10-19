@@ -3,7 +3,11 @@ package edu.washington.escience.myriad.catalog;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +15,8 @@ import org.slf4j.LoggerFactory;
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
+
+import edu.washington.escience.myriad.parallel.SocketInfo;
 
 /**
  * This class is intended to store the configuration information for a Myriad installation.
@@ -57,7 +63,7 @@ public final class Catalog {
     if (!overwrite && catalogFile.exists()) {
       throw new IOException(filename + " already exists");
     }
-    return Catalog.createFromFile(catalogFile, description, overwrite);
+    return Catalog.createFromFile(catalogFile, description);
   }
 
   /**
@@ -65,20 +71,18 @@ public final class Catalog {
    * @param catalogFile a File object pointing to the SQLite database that will store the Catalog. If catalogFile is
    *          null, this creates an in-memory SQLite database.
    * @param description specifies a description for the configuration stored in this Catalog.
-   * @param overwrite specifies whether to overwrite an existing Catalog. Ignored if using an in-memory SQLite database.
    * @return a fresh Catalog fitting the specified description.
    * @throws CatalogException if there is an error opening the database.
    * 
    *           TODO add some sanity checks to the filename?
    */
-  private static Catalog createFromFile(final File catalogFile, final String description, final boolean overwrite)
-      throws CatalogException {
+  private static Catalog createFromFile(final File catalogFile, final String description) throws CatalogException {
     Objects.requireNonNull(description);
 
     /* Connect to the database. */
     final SQLiteConnection sqliteConnection = new SQLiteConnection(catalogFile);
     try {
-      sqliteConnection.open(overwrite);
+      sqliteConnection.open();
     } catch (SQLiteException e) {
       LOGGER.error(e.toString());
       throw new CatalogException("SQLiteException while creating the new Catalog", e);
@@ -86,7 +90,7 @@ public final class Catalog {
 
     /* Create all the tables in the Catalog. */
     try {
-      sqliteConnection.exec("CREATE TABLE configuration (key STRING NOT NULL, value STRING NOT NULL);");
+      sqliteConnection.exec("CREATE TABLE configuration (key STRING UNIQUE NOT NULL, value STRING NOT NULL);");
       sqliteConnection.exec("CREATE TABLE workers (worker_id INTEGER PRIMARY KEY ASC, host_port STRING);");
       sqliteConnection.exec("CREATE TABLE masters (master_id INTEGER PRIMARY KEY ASC, host_port STRING);");
     } catch (SQLiteException e) {
@@ -120,7 +124,7 @@ public final class Catalog {
   public static Catalog createInMemory(final String description) throws CatalogException {
     Objects.requireNonNull(description);
 
-    return Catalog.createFromFile(null, description, true /* Ignored */);
+    return Catalog.createFromFile(null, description);
   }
 
   /**
@@ -161,7 +165,10 @@ public final class Catalog {
   private String description = null;
 
   /** The connection to the SQLite database that stores the Catalog. */
-  private final SQLiteConnection sqliteConnection;
+  private SQLiteConnection sqliteConnection;
+
+  /** Is the Catalog closed? */
+  private boolean isClosed = true;
 
   /**
    * Not publicly accessible.
@@ -170,6 +177,7 @@ public final class Catalog {
    */
   private Catalog(final SQLiteConnection sqliteConnection) {
     this.sqliteConnection = sqliteConnection;
+    isClosed = false;
   }
 
   /**
@@ -181,6 +189,9 @@ public final class Catalog {
    * @throws CatalogException if there is an error in the backing database.
    */
   public String getConfigurationValue(final String key) throws CatalogException {
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
     try {
       /* Getting this out is a simple query, which does not need to be cached. */
       SQLiteStatement statement =
@@ -203,6 +214,9 @@ public final class Catalog {
    * @throws CatalogException if there is an error extracting the description from the database.
    */
   public String getDescription() throws CatalogException {
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
     /* If we have the answer cached, use it. */
     if (description != null) {
       return description;
@@ -211,4 +225,121 @@ public final class Catalog {
     description = getConfigurationValue("description");
     return description;
   }
+
+  /**
+   * Adds a server using the specified host and port to the Catalog.
+   * 
+   * @param hostPortString specifies the path to the server in the format "host:port"
+   * @return this Catalog
+   * @throws CatalogException if the hostPortString is invalid or there is a database exception.
+   */
+  public Catalog addServer(final String hostPortString) throws CatalogException {
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+    try {
+      @SuppressWarnings("unused")
+      /* Just used to verify that hostPortString is legal */
+      final SocketInfo sockInfo = SocketInfo.valueOf(hostPortString);
+      SQLiteStatement statement = sqliteConnection.prepare("INSERT INTO masters(host_port) VALUES(?);", false);
+      statement.bind(1, hostPortString);
+      statement.step();
+      statement.dispose();
+    } catch (SQLiteException e) {
+      LOGGER.error(e.toString());
+      throw new CatalogException(e);
+    }
+    return this;
+  }
+
+  /**
+   * Adds a worker using the specified host and port to the Catalog.
+   * 
+   * @param hostPortString specifies the path to the worker in the format "host:port"
+   * @return this Catalog
+   * @throws CatalogException if the hostPortString is invalid or there is a database exception.
+   */
+  public Catalog addWorker(final String hostPortString) throws CatalogException {
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+    try {
+      @SuppressWarnings("unused")
+      /* Just used to verify that hostPortString is legal */
+      final SocketInfo sockInfo = SocketInfo.valueOf(hostPortString);
+      SQLiteStatement statement = sqliteConnection.prepare("INSERT INTO workers(host_port) VALUES(?);", false);
+      statement.bind(1, hostPortString);
+      statement.step();
+      statement.dispose();
+    } catch (SQLiteException e) {
+      LOGGER.error(e.toString());
+      throw new CatalogException(e);
+    }
+    return this;
+  }
+
+  /**
+   * @return the set of servers stored in this Catalog.
+   * @throws CatalogException if there is an error in the database.
+   */
+  public List<SocketInfo> getServers() throws CatalogException {
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+
+    ArrayList<SocketInfo> servers = new ArrayList<SocketInfo>();
+    try {
+      SQLiteStatement statement = sqliteConnection.prepare("SELECT * FROM masters;", false);
+      while (statement.step()) {
+        servers.add(SocketInfo.valueOf(statement.columnString(1)));
+      }
+      statement.dispose();
+    } catch (SQLiteException e) {
+      LOGGER.error(e.toString());
+      throw new CatalogException(e);
+    }
+
+    return servers;
+  }
+
+  /**
+   * @return the set of workers stored in this Catalog.
+   * @throws CatalogException if there is an error in the database.
+   */
+  public Map<Integer, SocketInfo> getWorkers() throws CatalogException {
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+
+    ConcurrentHashMap<Integer, SocketInfo> workers = new ConcurrentHashMap<Integer, SocketInfo>();
+
+    try {
+      SQLiteStatement statement = sqliteConnection.prepare("SELECT * FROM workers;", false);
+      while (statement.step()) {
+        workers.put(statement.columnInt(0), SocketInfo.valueOf(statement.columnString(1)));
+      }
+      statement.dispose();
+    } catch (SQLiteException e) {
+      LOGGER.error(e.toString());
+      throw new CatalogException(e);
+    }
+
+    return workers;
+  }
+
+  /**
+   * Close the connection to the database that stores the Catalog. Idempotent. Calling any methods (other than close())
+   * called on this Catalog will throw a CatalogException.
+   */
+  public void close() {
+    if (sqliteConnection != null) {
+      sqliteConnection.dispose();
+      sqliteConnection = null;
+    }
+    if (description != null) {
+      description = null;
+    }
+    isClosed = true;
+  }
+
 }
