@@ -227,13 +227,13 @@ public final class Catalog {
   }
 
   /**
-   * Adds a server using the specified host and port to the Catalog.
+   * Adds a master using the specified host and port to the Catalog.
    * 
-   * @param hostPortString specifies the path to the server in the format "host:port"
+   * @param hostPortString specifies the path to the master in the format "host:port"
    * @return this Catalog
    * @throws CatalogException if the hostPortString is invalid or there is a database exception.
    */
-  public Catalog addServer(final String hostPortString) throws CatalogException {
+  public Catalog addMaster(final String hostPortString) throws CatalogException {
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
     }
@@ -279,19 +279,19 @@ public final class Catalog {
   }
 
   /**
-   * @return the set of servers stored in this Catalog.
+   * @return the set of masters stored in this Catalog.
    * @throws CatalogException if there is an error in the database.
    */
-  public List<SocketInfo> getServers() throws CatalogException {
+  public List<SocketInfo> getMasters() throws CatalogException {
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
     }
 
-    ArrayList<SocketInfo> servers = new ArrayList<SocketInfo>();
+    ArrayList<SocketInfo> masters = new ArrayList<SocketInfo>();
     try {
       SQLiteStatement statement = sqliteConnection.prepare("SELECT * FROM masters;", false);
       while (statement.step()) {
-        servers.add(SocketInfo.valueOf(statement.columnString(1)));
+        masters.add(SocketInfo.valueOf(statement.columnString(1)));
       }
       statement.dispose();
     } catch (SQLiteException e) {
@@ -299,7 +299,7 @@ public final class Catalog {
       throw new CatalogException(e);
     }
 
-    return servers;
+    return masters;
   }
 
   /**

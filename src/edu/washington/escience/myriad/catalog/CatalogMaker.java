@@ -42,7 +42,7 @@ public final class CatalogMaker {
     final String description = "twoNodeLocalParallel";
     try {
       Catalog c = newCatalog(description);
-      c.addServer("localhost:8001");
+      c.addMaster("localhost:8001");
       c.addWorker("localhost:9001");
       c.addWorker("localhost:9002");
       c.close();
