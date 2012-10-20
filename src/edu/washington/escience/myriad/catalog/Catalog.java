@@ -16,6 +16,7 @@ import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 
+import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.parallel.SocketInfo;
 
 /**
@@ -90,9 +91,42 @@ public final class Catalog {
 
     /* Create all the tables in the Catalog. */
     try {
-      sqliteConnection.exec("CREATE TABLE configuration (key STRING UNIQUE NOT NULL, value STRING NOT NULL);");
-      sqliteConnection.exec("CREATE TABLE workers (worker_id INTEGER PRIMARY KEY ASC, host_port STRING);");
-      sqliteConnection.exec("CREATE TABLE masters (master_id INTEGER PRIMARY KEY ASC, host_port STRING);");
+      /* @formatter:off */
+      sqliteConnection.exec(
+          "CREATE TABLE configuration (\n"
+        + "    key STRING UNIQUE NOT NULL,\n"
+        + "    value STRING NOT NULL);");
+      sqliteConnection.exec(
+          "CREATE TABLE workers (\n"
+        + "    worker_id INTEGER PRIMARY KEY ASC,\n"
+        + "    host_port STRING NOT NULL);");
+      sqliteConnection.exec(
+          "CREATE TABLE masters (\n"
+        + "    master_id INTEGER PRIMARY KEY ASC,\n"
+        + "    host_port STRING NOT NULL);");
+      sqliteConnection.exec(
+          "CREATE TABLE relations (\n"
+        + "    relation_id INTEGER PRIMARY KEY ASC,\n"
+        + "    relation_name STRING NOT NULL UNIQUE);");
+      sqliteConnection.exec(
+          "CREATE TABLE relation_schema (\n"
+        + "    relation_id INTEGER NOT NULL REFERENCES relations(relation_id),\n"
+        + "    col_index INTEGER NOT NULL,\n"
+        + "    col_name STRING,\n"
+        + "    col_type STRING NOT NULL);");
+      sqliteConnection.exec(
+          "CREATE TABLE stored_relations (\n"
+        + "    stored_relation_id INTEGER PRIMARY KEY ASC,\n"
+        + "    relation_id INTEGER NOT NULL REFERENCES relation_metadata(relation_id),\n"
+        + "    num_shards INTEGER NOT NULL,\n"
+        + "    partitioned STRING NOT NULL);");
+      sqliteConnection.exec(
+          "CREATE TABLE shards (\n"
+        + "    stored_relation_id INTEGER NOT NULL REFERENCES stored_relations(stored_relation_id),\n"
+        + "    shard_index INTEGER NOT NULL,\n"
+        + "    worker_id INTEGER NOT NULL REFERENCES workers(worker_id),\n"
+        + "    location STRING NOT NULL);");
+      /* @formatter:on*/
     } catch (SQLiteException e) {
       LOGGER.error(e.toString());
       throw new CatalogException("SQLiteException while creating new Catalog tables", e);
@@ -106,12 +140,12 @@ public final class Catalog {
       statement.bind(2, description);
       statement.step();
       statement.dispose();
+
+      return new Catalog(sqliteConnection);
     } catch (SQLiteException e) {
       LOGGER.error(e.toString());
       throw new CatalogException("SQLiteException while populating new Catalog tables", e);
     }
-
-    return new Catalog(sqliteConnection);
   }
 
   /**
@@ -150,12 +184,12 @@ public final class Catalog {
     SQLiteConnection sqliteConnection = new SQLiteConnection(catalogFile);
     try {
       sqliteConnection.open(false);
+
+      return new Catalog(sqliteConnection);
     } catch (SQLiteException e) {
       LOGGER.error(e.toString());
       throw new CatalogException(e);
     }
-
-    return new Catalog(sqliteConnection);
   }
 
   /**
@@ -164,20 +198,141 @@ public final class Catalog {
    */
   private String description = null;
 
-  /** The connection to the SQLite database that stores the Catalog. */
-  private SQLiteConnection sqliteConnection;
-
   /** Is the Catalog closed? */
   private boolean isClosed = true;
+
+  /** The connection to the SQLite database that stores the Catalog. */
+  private SQLiteConnection sqliteConnection;
 
   /**
    * Not publicly accessible.
    * 
    * @param sqliteConnection connection to the SQLite database that stores the Catalog.
+   * @throws SQLiteException if there is an error turning on foreign keys.
    */
-  private Catalog(final SQLiteConnection sqliteConnection) {
+  private Catalog(final SQLiteConnection sqliteConnection) throws SQLiteException {
     this.sqliteConnection = sqliteConnection;
     isClosed = false;
+    sqliteConnection.exec("PRAGMA foreign_keys = ON;");
+  }
+
+  /**
+   * Adds a master using the specified host and port to the Catalog.
+   * 
+   * @param hostPortString specifies the path to the master in the format "host:port"
+   * @return this Catalog
+   * @throws CatalogException if the hostPortString is invalid or there is a database exception.
+   */
+  public Catalog addMaster(final String hostPortString) throws CatalogException {
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+    try {
+      @SuppressWarnings("unused")
+      /* Just used to verify that hostPortString is legal */
+      final SocketInfo sockInfo = SocketInfo.valueOf(hostPortString);
+      SQLiteStatement statement = sqliteConnection.prepare("INSERT INTO masters(host_port) VALUES(?);", false);
+      statement.bind(1, hostPortString);
+      statement.step();
+      statement.dispose();
+    } catch (SQLiteException e) {
+      LOGGER.error(e.toString());
+      throw new CatalogException(e);
+    }
+    return this;
+  }
+
+  /**
+   * Adds the metadata for a relation into the Catalog.
+   * 
+   * @param name the name of the relation.
+   * @param schema the schema of the relation.
+   * @throws CatalogException if the relation is already in the catalog or there is an error in the database.
+   * 
+   *           TODO if we use SQLite in a multithreaded way this will need to be revisited.
+   * 
+   */
+  public void addRelationMetadata(final String name, final Schema schema) throws CatalogException {
+    try {
+      /* To begin: start a transaction. */
+      sqliteConnection.exec("BEGIN TRANSACTION;");
+
+      /* First, insert the relation name. */
+      SQLiteStatement statement = sqliteConnection.prepare("INSERT INTO relations (relation_name) VALUES (?);");
+      statement.bind(1, name);
+      statement.stepThrough();
+      statement.dispose();
+      statement = null;
+
+      /* Second, figure out what ID this relation was assigned. */
+      final long relationId = sqliteConnection.getLastInsertId();
+
+      /* Third, populate the Schema table. */
+      statement =
+          sqliteConnection.prepare("INSERT INTO relation_schema(relation_id, col_index, col_name, col_type) "
+              + "VALUES (?,?,?,?);");
+      statement.bind(1, relationId);
+      for (int i = 0; i < schema.numFields(); ++i) {
+        statement.bind(2, i);
+        statement.bind(3, schema.getFieldName(i));
+        statement.bind(4, schema.getFieldType(i).toString());
+        statement.step();
+        statement.reset(false);
+      }
+      statement.dispose();
+      statement = null;
+
+      /* To complete: commit the transaction. */
+      sqliteConnection.exec("COMMIT TRANSACTION;");
+    } catch (SQLiteException e) {
+      try {
+        sqliteConnection.exec("ABORT TRANSACTION;");
+      } catch (SQLiteException e2) {
+        assert true; /* Do nothing. */
+      }
+      throw new CatalogException(e);
+    }
+  }
+
+  /**
+   * Adds a worker using the specified host and port to the Catalog.
+   * 
+   * @param hostPortString specifies the path to the worker in the format "host:port"
+   * @return this Catalog
+   * @throws CatalogException if the hostPortString is invalid or there is a database exception.
+   */
+  public Catalog addWorker(final String hostPortString) throws CatalogException {
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+    try {
+      @SuppressWarnings("unused")
+      /* Just used to verify that hostPortString is legal */
+      final SocketInfo sockInfo = SocketInfo.valueOf(hostPortString);
+      SQLiteStatement statement = sqliteConnection.prepare("INSERT INTO workers(host_port) VALUES(?);", false);
+      statement.bind(1, hostPortString);
+      statement.step();
+      statement.dispose();
+    } catch (SQLiteException e) {
+      LOGGER.error(e.toString());
+      throw new CatalogException(e);
+    }
+    return this;
+  }
+
+  /**
+   * Close the connection to the database that stores the Catalog. Idempotent. Calling any methods (other than close())
+   * on this Catalog will throw a CatalogException.
+   */
+  public void close() {
+    if (sqliteConnection != null) {
+      sqliteConnection.dispose();
+      sqliteConnection = null;
+    }
+    if (description != null) {
+      description = null;
+    }
+    isClosed = true;
   }
 
   /**
@@ -224,58 +379,6 @@ public final class Catalog {
 
     description = getConfigurationValue("description");
     return description;
-  }
-
-  /**
-   * Adds a master using the specified host and port to the Catalog.
-   * 
-   * @param hostPortString specifies the path to the master in the format "host:port"
-   * @return this Catalog
-   * @throws CatalogException if the hostPortString is invalid or there is a database exception.
-   */
-  public Catalog addMaster(final String hostPortString) throws CatalogException {
-    if (isClosed) {
-      throw new CatalogException("Catalog is closed.");
-    }
-    try {
-      @SuppressWarnings("unused")
-      /* Just used to verify that hostPortString is legal */
-      final SocketInfo sockInfo = SocketInfo.valueOf(hostPortString);
-      SQLiteStatement statement = sqliteConnection.prepare("INSERT INTO masters(host_port) VALUES(?);", false);
-      statement.bind(1, hostPortString);
-      statement.step();
-      statement.dispose();
-    } catch (SQLiteException e) {
-      LOGGER.error(e.toString());
-      throw new CatalogException(e);
-    }
-    return this;
-  }
-
-  /**
-   * Adds a worker using the specified host and port to the Catalog.
-   * 
-   * @param hostPortString specifies the path to the worker in the format "host:port"
-   * @return this Catalog
-   * @throws CatalogException if the hostPortString is invalid or there is a database exception.
-   */
-  public Catalog addWorker(final String hostPortString) throws CatalogException {
-    if (isClosed) {
-      throw new CatalogException("Catalog is closed.");
-    }
-    try {
-      @SuppressWarnings("unused")
-      /* Just used to verify that hostPortString is legal */
-      final SocketInfo sockInfo = SocketInfo.valueOf(hostPortString);
-      SQLiteStatement statement = sqliteConnection.prepare("INSERT INTO workers(host_port) VALUES(?);", false);
-      statement.bind(1, hostPortString);
-      statement.step();
-      statement.dispose();
-    } catch (SQLiteException e) {
-      LOGGER.error(e.toString());
-      throw new CatalogException(e);
-    }
-    return this;
   }
 
   /**
@@ -326,20 +429,4 @@ public final class Catalog {
 
     return workers;
   }
-
-  /**
-   * Close the connection to the database that stores the Catalog. Idempotent. Calling any methods (other than close())
-   * called on this Catalog will throw a CatalogException.
-   */
-  public void close() {
-    if (sqliteConnection != null) {
-      sqliteConnection.dispose();
-      sqliteConnection = null;
-    }
-    if (description != null) {
-      description = null;
-    }
-    isClosed = true;
-  }
-
 }

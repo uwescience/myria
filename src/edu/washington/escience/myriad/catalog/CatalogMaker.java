@@ -30,7 +30,6 @@ public final class CatalogMaker {
    *           TODO check the description can be a file basename, e.g., it has no / or space etc.
    */
   private static Catalog newCatalog(final String description) throws CatalogException, IOException {
-
     final String fileName = FilenameUtils.concat("catalogs", description + ".catalog");
     return Catalog.create(fileName, description, false);
   }
@@ -41,15 +40,18 @@ public final class CatalogMaker {
   private static void makeTwoNodeLocalParallelCatalog() {
     final String description = "twoNodeLocalParallel";
     try {
-      Catalog c = newCatalog(description);
+      Catalog c;
+      try {
+        c = newCatalog(description);
+      } catch (IOException e) {
+        throw new RuntimeException("There is already a Catalog by that name", e);
+      }
       c.addMaster("localhost:8001");
       c.addWorker("localhost:9001");
       c.addWorker("localhost:9002");
       c.close();
     } catch (CatalogException e) {
       throw new RuntimeException(e);
-    } catch (IOException e) {
-      throw new RuntimeException("There is already a Catalog by that name", e);
     }
   }
 
