@@ -20,7 +20,7 @@ public class ShuffleConsumer extends Consumer {
 
   private static final long serialVersionUID = 1L;
 
-  private boolean finish;
+  // private boolean finish;
 
   // Used to remember which of the source workers have sent an end of stream
   // message.
@@ -34,27 +34,26 @@ public class ShuffleConsumer extends Consumer {
   public ShuffleConsumer(final ShuffleProducer child, final ExchangePairID operatorID, final int[] workerIDs) {
     super(operatorID);
     this.child = child;
-    this.sourceWorkers = workerIDs;
-    this.workerIdToIndex = new HashMap<Integer, Integer>();
+    sourceWorkers = workerIDs;
+    workerIdToIndex = new HashMap<Integer, Integer>();
     int i = 0;
-    for (final Integer w : this.sourceWorkers) {
-      this.workerIdToIndex.put(w, i++);
+    for (final Integer w : sourceWorkers) {
+      workerIdToIndex.put(w, i++);
     }
-    this.workerEOS = new BitSet(workerIDs.length);
-    this.finish = false;
+    workerEOS = new BitSet(workerIDs.length);
+    // finish = false;
   }
 
   @Override
-  public void close() {
-    super.close();
-    this.workerEOS.clear();
+  public void cleanup() {
+    workerEOS.clear();
   }
 
   @Override
   protected _TupleBatch fetchNext() throws DbException {
-    if (!finish) {
+    if (!eos()) {
       try {
-        return getTuples();
+        return getTuples(true);
       } catch (final InterruptedException e) {
         e.printStackTrace();
         throw new DbException(e.getLocalizedMessage());
@@ -65,7 +64,7 @@ public class ShuffleConsumer extends Consumer {
 
   @Override
   public Operator[] getChildren() {
-    return new Operator[] { this.child };
+    return new Operator[] { child };
   }
 
   @Override
@@ -74,11 +73,11 @@ public class ShuffleConsumer extends Consumer {
   }
 
   @Override
-  public Schema getSchema() {
-    if (this.child != null) {
-      return this.child.getSchema();
+  public Schema getSchema() throws DbException {
+    if (child != null) {
+      return child.getSchema();
     } else {
-      return this.schema;
+      return schema;
     }
   }
 
@@ -86,37 +85,64 @@ public class ShuffleConsumer extends Consumer {
    * 
    * Retrieve a batch of tuples from the buffer of ExchangeMessages. Wait if the buffer is empty.
    * 
+   * @param blocking if blocking then return only if there's actually a TupleBatch to return or null if EOS. If not
+   *          blocking then return null immediately if there's no data in the input buffer.
+   * 
    * @return Iterator over the new tuples received from the source workers. Return <code>null</code> if all source
    *         workers have sent an end of file message.
+   * 
+   * @throws InterruptedException a
    */
-  _TupleBatch getTuples() throws InterruptedException {
+  final _TupleBatch getTuples(final boolean blocking) throws InterruptedException {
+    int timeToWait = -1;
+    if (!blocking) {
+      timeToWait = 0;
+    }
+
     ExchangeTupleBatch tb = null;
 
-    while (this.workerEOS.nextClearBit(0) < this.sourceWorkers.length) {
-      tb = this.take(-1);
-      if (tb.isEos()) {
-        this.workerEOS.set(this.workerIdToIndex.get(tb.getWorkerID()));
+    while (workerEOS.nextClearBit(0) < sourceWorkers.length) {
+      tb = take(timeToWait);
+
+      if (tb != null) {
+        if (tb.isEos()) {
+          workerEOS.set(workerIdToIndex.get(tb.getWorkerID()));
+        } else {
+          return tb;
+        }
       } else {
-        return tb;
+        // if blocking=true, no null should be got from take
+        return null;
       }
     }
     // have received all the eos message from all the workers
-    finish = true;
+    setEOS();
 
     return null;
   }
 
   @Override
-  public void open() throws DbException {
-    if (this.child != null) {
-      this.child.open();
-    }
-    super.open();
+  public void init() throws DbException {
   }
 
   @Override
   public void setChildren(final Operator[] children) {
-    this.child = (ShuffleProducer) children[0];
+    child = (ShuffleProducer) children[0];
+  }
+
+  @Override
+  public _TupleBatch fetchNextReady() throws DbException {
+    if (!eos()) {
+      try {
+        return getTuples(false);
+      } catch (final InterruptedException e) {
+        e.printStackTrace();
+        // retain the interrupted bit
+        Thread.currentThread().interrupt();
+        throw new DbException(e.getLocalizedMessage());
+      }
+    }
+    return null;
   }
 
 }

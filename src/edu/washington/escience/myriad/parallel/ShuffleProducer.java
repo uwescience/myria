@@ -40,15 +40,22 @@ public class ShuffleProducer extends Producer {
         shuffleSessions[index] = getThisWorker().connectionPool.get(workerID, null, 3, null);
         index++;
       }
-      final Schema thisSchema = getSchema();
+      Schema thisSchema = null;
+      try {
+        thisSchema = getSchema();
+      } catch (DbException e1) {
+        // should not happen
+        e1.printStackTrace();
+        throw new RuntimeException(e1);
+      }
 
       try {
         TupleBatchBuffer[] buffers = new TupleBatchBuffer[numWorker];
         for (int i = 0; i < numWorker; i++) {
           buffers[i] = new TupleBatchBuffer(thisSchema);
         }
-        while (child.hasNext()) {
-          final _TupleBatch tup = child.next();
+        _TupleBatch tup = null;
+        while ((tup = child.next()) != null) {
           buffers = tup.partition(partitionFunction, buffers);
           for (int p = 0; p < numWorker; p++) {
             final TupleBatchBuffer etb = buffers[p];
@@ -120,9 +127,7 @@ public class ShuffleProducer extends Producer {
   }
 
   @Override
-  public final void close() {
-    super.close();
-    child.close();
+  public final void cleanup() {
   }
 
   @Override
@@ -150,7 +155,7 @@ public class ShuffleProducer extends Producer {
   }
 
   @Override
-  public final Schema getSchema() {
+  public final Schema getSchema() throws DbException {
     return child.getSchema();
   }
 
@@ -162,11 +167,9 @@ public class ShuffleProducer extends Producer {
   }
 
   @Override
-  public final void open() throws DbException {
-    child.open();
+  public final void init() throws DbException {
     runningThread = new WorkingThread();
     runningThread.start();
-    super.open();
   }
 
   @Override
@@ -176,6 +179,11 @@ public class ShuffleProducer extends Producer {
 
   public final void setPartitionFunction(final PartitionFunction<?, ?> pf) {
     partitionFunction = pf;
+  }
+
+  @Override
+  public _TupleBatch fetchNextReady() throws DbException {
+    return fetchNext();
   }
 
 }
