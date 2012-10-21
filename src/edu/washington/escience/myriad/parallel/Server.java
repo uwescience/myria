@@ -514,8 +514,8 @@ public class Server {
     out.println("");
 
     serverPlan.open();
-    while (serverPlan.hasNext()) {
-      final _TupleBatch tup = serverPlan.next();
+    _TupleBatch tup = null;
+    while ((tup = serverPlan.next()) != null) {
       out.println(new ImmutableInMemoryTupleBatch(serverPlan.getSchema(), tup.outputRawData(), tup.numOutputTuples())
           .toString());
     }
