@@ -250,9 +250,8 @@ public final class Main {
     // root.close();
     // return;
     // }
-
-    while (root.hasNext()) {
-      final _TupleBatch tb = root.next();
+    _TupleBatch tb = null;
+    while ((tb = root.next()) != null) {
       System.out.println(tb);
       JdbcAccessMethod.tupleBatchInsert(jdbcDriverName, connectionString, insert, (TupleBatch) tb, "", "");
     }
@@ -290,9 +289,8 @@ public final class Main {
     // } else
     // return;
 
-    while (root.hasNext()) {
-      final _TupleBatch tb = root.next();
-
+    _TupleBatch tb = null;
+    while ((tb = root.next()) != null) {
       System.out.println(tb.outputRawData());
     }
   }
@@ -613,8 +611,8 @@ public final class Main {
     }
 
     /* Print all the results */
-    while (root.hasNext()) {
-      final _TupleBatch tb = root.next();
+    _TupleBatch tb = null;
+    while ((tb = root.next()) != null) {
       System.out.println(tb);
       // SQLiteAccessMethod.tupleBatchInsert(filename, insert, (TupleBatch) tb);
     }
