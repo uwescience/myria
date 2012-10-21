@@ -127,7 +127,6 @@ public class LocalJoin extends Operator implements Externalizable {
   protected void addToAns(IndexedTuple tuple1, IndexedTuple tuple2) {
     int num1 = tuple1.tb.inputSchema().numFields();
     int num2 = tuple2.tb.inputSchema().numFields();
-    System.out.println(num1 + " " + num2);
     for (int i = 0; i < num1; ++i) {
       ans.put(i, tuple1.tb.outputRawData().get(i).get(tuple1.index));
     }
@@ -158,7 +157,6 @@ public class LocalJoin extends Operator implements Externalizable {
           if (hashTable2.get(cntHashCode) != null) {
             final List<IndexedTuple> tupleList = hashTable2.get(cntHashCode);
             for (int j = 0; j < tupleList.size(); ++j) {
-              System.out.println(j);
               final IndexedTuple tuple2 = tupleList.get(j);
               if (tuple1.joinEquals(tuple2, compareIndx1, compareIndx2)) {
                 System.out.println("addtoans");
@@ -171,13 +169,7 @@ public class LocalJoin extends Operator implements Externalizable {
             hashTable1.put(cntHashCode, new ArrayList<IndexedTuple>());
           }
           final List<IndexedTuple> tupleList = hashTable1.get(cntHashCode);
-          /*
-           * boolean unique = true; for (int j = 0; j < tupleList.size(); ++j) { final IndexedTuple oldTuple =
-           * tupleList.get(j); if (tuple1.equals(oldTuple)) { unique = false; break; } } System.out.println(unique); if
-           * (unique) {
-           */
           tupleList.add(tuple1);
-          // }
         }
       }
       // child2
@@ -193,7 +185,6 @@ public class LocalJoin extends Operator implements Externalizable {
           if (hashTable1.get(cntHashCode) != null) {
             final List<IndexedTuple> tupleList = hashTable1.get(cntHashCode);
             for (int j = 0; j < tupleList.size(); ++j) {
-              System.out.println(j);
               final IndexedTuple tuple1 = tupleList.get(j);
               if (tuple2.joinEquals(tuple1, compareIndx2, compareIndx1)) {
                 System.out.println("addtoans");
@@ -206,13 +197,7 @@ public class LocalJoin extends Operator implements Externalizable {
             hashTable2.put(cntHashCode, new ArrayList<IndexedTuple>());
           }
           final List<IndexedTuple> tupleList = hashTable2.get(cntHashCode);
-          /*
-           * boolean unique = true; for (int j = 0; j < tupleList.size(); ++j) { final IndexedTuple oldTuple =
-           * tupleList.get(j); if (tuple2.equals(oldTuple)) { unique = false; break; } } System.out.println(unique); if
-           * (unique) {
-           */
           tupleList.add(tuple2);
-          // }
         }
       }
       nexttb = ans.pop();
