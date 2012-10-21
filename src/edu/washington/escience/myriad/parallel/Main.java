@@ -27,6 +27,7 @@ import edu.washington.escience.myriad.operator.DupElim;
 import edu.washington.escience.myriad.operator.Filter;
 import edu.washington.escience.myriad.operator.JdbcQueryScan;
 import edu.washington.escience.myriad.operator.JdbcSQLProcessor;
+import edu.washington.escience.myriad.operator.LocalJoin;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.Project;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
@@ -45,6 +46,74 @@ public final class Main {
   public static final int WORKER_1_ID = 1;
 
   public static final int WORKER_2_ID = 2;;
+
+  public static void localJoinTestSQLite(final String[] args) throws DbException, IOException {
+    final ExchangePairID serverReceiveID = ExchangePairID.newID();
+    final ExchangePairID collectID = ExchangePairID.newID();
+
+    final Type[] table1Types = new Type[] { Type.LONG_TYPE, Type.STRING_TYPE };
+    final String[] table1ColumnNames = new String[] { "id", "name" };
+    final Type[] table2Types = new Type[] { Type.LONG_TYPE, Type.STRING_TYPE };
+    final String[] table2ColumnNames = new String[] { "id", "name" };
+    final Type[] outputTypes = new Type[] { Type.LONG_TYPE, Type.STRING_TYPE, Type.LONG_TYPE, Type.STRING_TYPE };
+    final String[] outputColumnNames = new String[] { "id", "name", "id", "name" };
+    final Schema tableSchema1 = new Schema(table1Types, table1ColumnNames);
+    final Schema tableSchema2 = new Schema(table2Types, table2ColumnNames);
+    final Schema outputSchema = new Schema(outputTypes, outputColumnNames);
+    final int numPartition = 2;
+
+    // final PartitionFunction<String, Integer> pf = new SingleFieldHashPartitionFunction(numPartition);
+    // pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1); // partition by name
+
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan("testtable1.db", "select * from testtable1", tableSchema1);
+    final SQLiteQueryScan scan2 = new SQLiteQueryScan("testtable2.db", "select * from testtable2", tableSchema2);
+
+    final LocalJoin localjoin = new LocalJoin(outputSchema, scan1, scan2, new int[] { 0 }, new int[] { 0 });
+    // final LocalJoin localjoin2 = new LocalJoin(outputSchema, scan1, scan2, new int[] { 0 }, new int[] { 0 });
+
+    final CollectProducer cp1 = new CollectProducer(localjoin, serverReceiveID, MASTER_ID);
+    final CollectProducer cp2 = new CollectProducer(localjoin, serverReceiveID, MASTER_ID);
+    // final CollectConsumer cc1 = new CollectConsumer(cp1, collectID, new int[] { WORKER_1_ID, WORKER_2_ID });
+    // final DupElim dumElim3 = new DupElim(tableSchema1, cc1);
+    final HashMap<Integer, Operator> workerPlans = new HashMap<Integer, Operator>();
+    workerPlans.put(WORKER_1_ID, cp1);// new CollectProducer(dumElim3, serverReceiveID, MASTER_ID));
+    // workerPlans.put(WORKER_2_ID, cp2);// new CollectProducer(dupElim2, collectID, WORKER_1_ID));
+
+    // OutputStreamSinkTupleBatch serverBuffer = new OutputStreamSinkTupleBatch(outputSchema, System.out);
+
+    new Thread() {
+      @Override
+      public void run() {
+        try {
+          Server.main(args);
+        } catch (final Exception e) {
+          e.printStackTrace();
+        }
+      }
+    }.start();
+    while (Server.runningInstance == null) {
+      try {
+        Thread.sleep(10);
+      } catch (final InterruptedException e) {
+      }
+    }
+
+    Server.runningInstance.exchangeSchema.put(serverReceiveID, outputSchema);
+    final LinkedBlockingQueue<ExchangeTupleBatch> buffer = new LinkedBlockingQueue<ExchangeTupleBatch>();
+    final CollectConsumer serverPlan = new CollectConsumer(outputSchema, serverReceiveID, new int[] { WORKER_1_ID });// ,
+                                                                                                                     // WORKER_2_ID
+                                                                                                                     // });
+    serverPlan.setInputBuffer(buffer);
+    Server.runningInstance.dataBuffer.put(serverPlan.getOperatorID(), buffer);
+    Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
+    System.out.println("Query dispatched to the workers");
+    Server.runningInstance.startServerQuery(serverPlan);
+
+    // Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
+    // System.out.println("Query dispatched to the workers");
+    // Server.runningInstance.startServerQuery(new CollectConsumer(outputSchema, serverReceiveID, new int[] { 1, 2 }));
+
+  }
 
   public static void dupElimTestSQLite(final String[] args) throws DbException, IOException {
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
@@ -239,7 +308,8 @@ public final class Main {
     // sqliteInsertSpeedTest();
     // filesystemWriteTest();
     // shuffleTestSQLite(args);
-    dupElimTestSQLite(args);
+    // dupElimTestSQLite(args);
+    localJoinTestSQLite(args);
     // shuffleTestSQLite(args);
     // sqliteInsertSpeedTest();
     // filesystemWriteTest();

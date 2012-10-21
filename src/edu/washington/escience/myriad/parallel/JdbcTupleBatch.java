@@ -30,10 +30,10 @@ public class JdbcTupleBatch implements _TupleBatch {
   private final String username;
   private final String password;
 
-  public JdbcTupleBatch(final Schema inputSchema, final String tableName, final String connectionString, final String driverClass,
-      final String username, final String password) {
+  public JdbcTupleBatch(final Schema inputSchema, final String tableName, final String connectionString,
+      final String driverClass, final String username, final String password) {
     this.inputSchema = Objects.requireNonNull(inputSchema);
-    this.connectString = connectionString;
+    connectString = connectionString;
     this.driverClass = driverClass;
     this.tableName = tableName;
     this.username = username;
@@ -42,10 +42,10 @@ public class JdbcTupleBatch implements _TupleBatch {
 
   @Override
   public synchronized _TupleBatch append(final _TupleBatch another) {
-    final Iterator<Schema.TDItem> it = this.inputSchema.iterator();
+    final Iterator<Schema.TDItem> it = inputSchema.iterator();
 
-    final String[] fieldNames = new String[this.inputSchema.numFields()];
-    final String[] placeHolders = new String[this.inputSchema.numFields()];
+    final String[] fieldNames = new String[inputSchema.numFields()];
+    final String[] placeHolders = new String[inputSchema.numFields()];
     int i = 0;
     while (it.hasNext()) {
       final Schema.TDItem item = it.next();
@@ -53,7 +53,7 @@ public class JdbcTupleBatch implements _TupleBatch {
       fieldNames[i++] = item.getName();
     }
 
-    JdbcAccessMethod.tupleBatchInsert(this.driverClass, connectString, "insert into " + this.tableName + " ( "
+    JdbcAccessMethod.tupleBatchInsert(driverClass, connectString, "insert into " + tableName + " ( "
         + StringUtils.join(fieldNames, ',') + " ) values ( " + StringUtils.join(placeHolders, ',') + " )",
         new TupleBatch(another.outputSchema(), another.outputRawData(), another.numOutputTuples()), username, password);
     return this;
@@ -124,6 +124,11 @@ public class JdbcTupleBatch implements _TupleBatch {
   }
 
   @Override
+  public int hashCode4Keys(final int rowIndx, final int[] colIndx) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
   public Schema inputSchema() {
     return inputSchema;
   }
@@ -147,7 +152,7 @@ public class JdbcTupleBatch implements _TupleBatch {
 
   @Override
   public synchronized int numOutputTuples() {
-    return this.numInputTuples;
+    return numInputTuples;
   }
 
   @Override
@@ -157,7 +162,7 @@ public class JdbcTupleBatch implements _TupleBatch {
   }
 
   protected synchronized int[] outputColumnIndices() {
-    final int numInputColumns = this.inputSchema.numFields();
+    final int numInputColumns = inputSchema.numFields();
     final int[] validC = new int[numInputColumns];
     int j = 0;
     for (int i = 0; i < numInputColumns; i++) {
@@ -176,13 +181,13 @@ public class JdbcTupleBatch implements _TupleBatch {
   @Override
   public synchronized Schema outputSchema() {
 
-    final int[] columnIndices = this.outputColumnIndices();
+    final int[] columnIndices = outputColumnIndices();
     final String[] columnNames = new String[columnIndices.length];
     final Type[] columnTypes = new Type[columnIndices.length];
     int j = 0;
     for (final int columnIndx : columnIndices) {
-      columnNames[j] = this.inputSchema.getFieldName(columnIndx);
-      columnTypes[j] = this.inputSchema.getFieldType(columnIndx);
+      columnNames[j] = inputSchema.getFieldName(columnIndx);
+      columnTypes[j] = inputSchema.getFieldType(columnIndx);
       j++;
     }
 

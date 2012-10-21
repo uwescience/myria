@@ -33,41 +33,57 @@ public class ShuffleProducer extends Producer {
     public void run() {
 
       final TransportMessage.Builder messageBuilder = TransportMessage.newBuilder();
-      final int numWorker = ShuffleProducer.this.workerIDs.length;
+      final int numWorker = workerIDs.length;
       final IoSession[] shuffleSessions = new IoSession[numWorker];
       int index = 0;
-      for (final int workerID : ShuffleProducer.this.workerIDs) {
-        shuffleSessions[index] = ShuffleProducer.this.getThisWorker().connectionPool.get(workerID, null, 3, null);
+      for (final int workerID : workerIDs) {
+        shuffleSessions[index] = getThisWorker().connectionPool.get(workerID, null, 3, null);
         index++;
       }
-      final Schema thisSchema = ShuffleProducer.this.getSchema();
+      final Schema thisSchema = getSchema();
 
       try {
-        while (ShuffleProducer.this.child.hasNext()) {
-          final _TupleBatch tup = ShuffleProducer.this.child.next();
-          TupleBatchBuffer[] buffers = new TupleBatchBuffer[numWorker];
-          for (int i = 0; i < numWorker; i++) {
-            buffers[i] = new TupleBatchBuffer(thisSchema);
-          }
+        TupleBatchBuffer[] buffers = new TupleBatchBuffer[numWorker];
+        for (int i = 0; i < numWorker; i++) {
+          buffers[i] = new TupleBatchBuffer(thisSchema);
+        }
+        while (child.hasNext()) {
+          final _TupleBatch tup = child.next();
           buffers = tup.partition(partitionFunction, buffers);
           for (int p = 0; p < numWorker; p++) {
             final TupleBatchBuffer etb = buffers[p];
-            if (etb.numTuples() > 0) {
-              for (final TupleBatch tb : etb.getOutput()) {
+            TupleBatch tb = null;
+            while ((tb = etb.pop()) != null) {
+              final List<Column> columns = tb.outputRawData();
 
-                final List<Column> columns = tb.outputRawData();
-
-                final ColumnMessage[] columnProtos = new ColumnMessage[columns.size()];
-                int i = 0;
-                for (final Column c : columns) {
-                  columnProtos[i] = c.serializeToProto();
-                  i++;
-                }
-                shuffleSessions[p].write(messageBuilder.setType(TransportMessageType.DATA).setData(
-                    DataMessage.newBuilder().setType(DataMessageType.NORMAL).addAllColumns(Arrays.asList(columnProtos))
-                        .setOperatorID(ShuffleProducer.this.operatorID.getLong()).build()).build());
-
+              final ColumnMessage[] columnProtos = new ColumnMessage[columns.size()];
+              int i = 0;
+              for (final Column c : columns) {
+                columnProtos[i] = c.serializeToProto();
+                i++;
               }
+              shuffleSessions[p].write(messageBuilder.setType(TransportMessageType.DATA).setData(
+                  DataMessage.newBuilder().setType(DataMessageType.NORMAL).addAllColumns(Arrays.asList(columnProtos))
+                      .setOperatorID(ShuffleProducer.this.operatorID.getLong()).build()).build());
+            }
+          }
+        }
+
+        for (int i = 0; i < numWorker; i++) {
+          TupleBatchBuffer tbb = buffers[i];
+          if (tbb.numTuples() > 0) {
+            List<TupleBatch> remain = tbb.getOutput();
+            for (TupleBatch tb : remain) {
+              final List<Column> columns = tb.outputRawData();
+              final ColumnMessage[] columnProtos = new ColumnMessage[columns.size()];
+              int j = 0;
+              for (final Column c : columns) {
+                columnProtos[j] = c.serializeToProto();
+                j++;
+              }
+              shuffleSessions[i].write(messageBuilder.setType(TransportMessageType.DATA).setData(
+                  DataMessage.newBuilder().setType(DataMessageType.NORMAL).addAllColumns(Arrays.asList(columnProtos))
+                      .setOperatorID(ShuffleProducer.this.operatorID.getLong()).build()).build());
             }
           }
         }
@@ -100,7 +116,7 @@ public class ShuffleProducer extends Producer {
     super(operatorID);
     this.child = child;
     this.workerIDs = workerIDs;
-    this.partitionFunction = pf;
+    partitionFunction = pf;
   }
 
   @Override
@@ -112,7 +128,7 @@ public class ShuffleProducer extends Producer {
   @Override
   protected final _TupleBatch fetchNext() throws DbException {
     try {
-      this.runningThread.join();
+      runningThread.join();
     } catch (final InterruptedException e) {
       e.printStackTrace();
     }
@@ -121,7 +137,7 @@ public class ShuffleProducer extends Producer {
 
   @Override
   public final Operator[] getChildren() {
-    return new Operator[] { this.child };
+    return new Operator[] { child };
   }
 
   @Override
@@ -130,12 +146,12 @@ public class ShuffleProducer extends Producer {
   }
 
   public final PartitionFunction<?, ?> getPartitionFunction() {
-    return this.partitionFunction;
+    return partitionFunction;
   }
 
   @Override
   public final Schema getSchema() {
-    return this.child.getSchema();
+    return child.getSchema();
   }
 
   final IoSession getSession(final IoSession[] oldS, final IoConnector[] oldC, final int current) {
@@ -147,19 +163,19 @@ public class ShuffleProducer extends Producer {
 
   @Override
   public final void open() throws DbException {
-    this.child.open();
-    this.runningThread = new WorkingThread();
-    this.runningThread.start();
+    child.open();
+    runningThread = new WorkingThread();
+    runningThread.start();
     super.open();
   }
 
   @Override
   public final void setChildren(final Operator[] children) {
-    this.child = children[0];
+    child = children[0];
   }
 
   public final void setPartitionFunction(final PartitionFunction<?, ?> pf) {
-    this.partitionFunction = pf;
+    partitionFunction = pf;
   }
 
 }

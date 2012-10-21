@@ -19,6 +19,7 @@ import edu.washington.escience.myriad.column.IntColumn;
 import edu.washington.escience.myriad.column.LongColumn;
 import edu.washington.escience.myriad.column.StringColumn;
 import edu.washington.escience.myriad.table.TupleBatchAdaptor;
+import edu.washington.escience.myriad.table._TupleBatch;
 
 /**
  * Container class for a batch of tuples. The goal is to amortize memory management overhead.
@@ -60,7 +61,7 @@ public class TupleBatch extends TupleBatchAdaptor {
         "numTuples must be at least 1 and no more than TupleBatch.BATCH_SIZE");
     this.numTuples = numTuples;
     /* All tuples are valid */
-    this.validTuples = new BitSet(BATCH_SIZE);
+    validTuples = new BitSet(BATCH_SIZE);
     validTuples.set(0, numTuples);
   }
 
@@ -96,10 +97,10 @@ public class TupleBatch extends TupleBatchAdaptor {
   TupleBatch(final TupleBatch from) {
     Objects.requireNonNull(from);
     /* Take the input arguments directly, copying validTuples */
-    this.schema = from.schema;
-    this.columns = from.columns;
-    this.numTuples = from.numTuples;
-    this.validTuples = (BitSet) from.validTuples.clone();
+    schema = from.schema;
+    columns = from.columns;
+    numTuples = from.numTuples;
+    validTuples = (BitSet) from.validTuples.clone();
   }
 
   /**
@@ -260,6 +261,16 @@ public class TupleBatch extends TupleBatchAdaptor {
     return hb.toHashCode();
   }
 
+  @Override
+  public final int hashCode4Keys(final int row, final int[] colIndx) {
+    // return 0;
+    final HashCodeBuilder hb = new HashCodeBuilder(MAGIC_HASHCODE1, MAGIC_HASHCODE2);
+    for (int i = 0; i < colIndx.length; ++i) {
+      hb.append(columns.get(colIndx[i]).get(row));
+    }
+    return hb.toHashCode();
+  }
+
   /**
    * Returns the hash code for the specified tuple using the specified key columns.
    * 
@@ -391,5 +402,11 @@ public class TupleBatch extends TupleBatchAdaptor {
       validT[j++] = i;
     }
     return validT;
+  }
+
+  @Override
+  public _TupleBatch remove(final int innerIdx) {
+    validTuples.clear(innerIdx);
+    return this;
   }
 }

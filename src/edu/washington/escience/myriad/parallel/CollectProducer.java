@@ -7,6 +7,8 @@ import org.apache.mina.core.session.IoSession;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatch;
+import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
@@ -31,27 +33,69 @@ public final class CollectProducer extends Producer {
     @Override
     public void run() {
 
-      final IoSession session =
-          CollectProducer.this.getThisWorker().connectionPool.get(CollectProducer.this.collectConsumerWorkerID, null,
-              3, null);
+      final IoSession session = getThisWorker().connectionPool.get(collectConsumerWorkerID, null, 3, null);
 
       final TransportMessage.Builder messageBuilder = TransportMessage.newBuilder();
 
       try {
 
-        while (CollectProducer.this.child.hasNext()) {
-          final _TupleBatch tup = CollectProducer.this.child.next();
-          final List<Column> columns = tup.outputRawData();
+        TupleBatchBuffer buffer = new TupleBatchBuffer(getSchema());
 
-          final ColumnMessage[] columnProtos = new ColumnMessage[columns.size()];
-          int i = 0;
-          for (final Column c : columns) {
-            columnProtos[i] = c.serializeToProto();
-            i++;
+        while (child.hasNext()) {
+          _TupleBatch tup = child.next();
+
+          final List<Column> fromColumns = tup.outputRawData();
+
+          System.out.println("get from child: "
+              + new ImmutableInMemoryTupleBatch(getSchema(), fromColumns, tup.numOutputTuples()));
+
+          int numTuples = tup.numOutputTuples();
+          System.out.println("Num tuples:" + numTuples);
+          int numColumns = fromColumns.size();
+          System.out.println("current tuples-1 : " + buffer.currentNumTuples);
+          for (int i = 0; i < numTuples; i++) {
+            for (int j = 0; j < numColumns; j++) {
+              buffer.put(j, fromColumns.get(j).get(i));
+            }
+            System.out.println("current tuples" + i + ": " + buffer.currentNumTuples);
           }
-          session.write(messageBuilder.setType(TransportMessageType.DATA).setData(
-              DataMessage.newBuilder().setType(DataMessageType.NORMAL).addAllColumns(Arrays.asList(columnProtos))
-                  .setOperatorID(CollectProducer.this.operatorID.getLong()).build()).build());
+          System.out.println("current tuples: " + buffer.currentNumTuples);
+          System.out.println("num Tuples in buffer: " + buffer.numTuples());
+
+          while ((tup = buffer.pop()) != null) {
+            final List<Column> columns = tup.outputRawData();
+            final ColumnMessage[] columnProtos = new ColumnMessage[columns.size()];
+            int i = 0;
+            for (final Column c : columns) {
+              columnProtos[i] = c.serializeToProto();
+              i++;
+            }
+            System.out.println("writing to session 1: "
+                + new ImmutableInMemoryTupleBatch(getSchema(), columns, tup.numOutputTuples()));
+            session.write(messageBuilder.setType(TransportMessageType.DATA).setData(
+                DataMessage.newBuilder().setType(DataMessageType.NORMAL).addAllColumns(Arrays.asList(columnProtos))
+                    .setOperatorID(CollectProducer.this.operatorID.getLong()).build()).build());
+          }
+        }
+
+        if (buffer.numTuples() > 0) {
+          List<TupleBatch> remain = buffer.getOutput();
+          for (TupleBatch tb : remain) {
+            final List<Column> columns = tb.outputRawData();
+            final ColumnMessage[] columnProtos = new ColumnMessage[columns.size()];
+            int j = 0;
+            for (final Column c : columns) {
+              columnProtos[j] = c.serializeToProto();
+              j++;
+            }
+
+            System.out.println("writing to session 2: "
+                + new ImmutableInMemoryTupleBatch(getSchema(), columns, tb.numOutputTuples()));
+
+            session.write(messageBuilder.setType(TransportMessageType.DATA).setData(
+                DataMessage.newBuilder().setType(DataMessageType.NORMAL).addAllColumns(Arrays.asList(columnProtos))
+                    .setOperatorID(CollectProducer.this.operatorID.getLong()).build()).build());
+          }
         }
 
         final DataMessage eos =
@@ -104,7 +148,7 @@ public final class CollectProducer extends Producer {
 
   @Override
   public Operator[] getChildren() {
-    return new Operator[] { this.child };
+    return new Operator[] { child };
   }
 
   @Override
@@ -114,20 +158,20 @@ public final class CollectProducer extends Producer {
 
   @Override
   public Schema getSchema() {
-    return this.child.getSchema();
+    return child.getSchema();
   }
 
   @Override
   public void open() throws DbException {
-    this.child.open();
-    this.runningThread = new WorkingThread();
-    this.runningThread.start();
+    child.open();
+    runningThread = new WorkingThread();
+    runningThread.start();
     super.open();
   }
 
   @Override
   public void setChildren(final Operator[] children) {
-    this.child = children[0];
+    child = children[0];
   }
 
 }

@@ -35,17 +35,20 @@ class LogicalRaOperator;
 class LogicalScan;
 class LogicalSelect;
 class LogicalProject;
-class LogicalJoin;
+class LogicalEquiJoin;
+class LogicalCross;
 
 enum LogicalRaOperator_LogicalRaOperatorType {
   LogicalRaOperator_LogicalRaOperatorType_SCAN = 0,
   LogicalRaOperator_LogicalRaOperatorType_PROJECT = 1,
   LogicalRaOperator_LogicalRaOperatorType_JOIN = 2,
-  LogicalRaOperator_LogicalRaOperatorType_SELECT = 3
+  LogicalRaOperator_LogicalRaOperatorType_SELECT = 3,
+  LogicalRaOperator_LogicalRaOperatorType_EQUIJOIN = 4,
+  LogicalRaOperator_LogicalRaOperatorType_CROSS = 5
 };
 bool LogicalRaOperator_LogicalRaOperatorType_IsValid(int value);
 const LogicalRaOperator_LogicalRaOperatorType LogicalRaOperator_LogicalRaOperatorType_LogicalRaOperatorType_MIN = LogicalRaOperator_LogicalRaOperatorType_SCAN;
-const LogicalRaOperator_LogicalRaOperatorType LogicalRaOperator_LogicalRaOperatorType_LogicalRaOperatorType_MAX = LogicalRaOperator_LogicalRaOperatorType_SELECT;
+const LogicalRaOperator_LogicalRaOperatorType LogicalRaOperator_LogicalRaOperatorType_LogicalRaOperatorType_MAX = LogicalRaOperator_LogicalRaOperatorType_CROSS;
 const int LogicalRaOperator_LogicalRaOperatorType_LogicalRaOperatorType_ARRAYSIZE = LogicalRaOperator_LogicalRaOperatorType_LogicalRaOperatorType_MAX + 1;
 
 const ::google::protobuf::EnumDescriptor* LogicalRaOperator_LogicalRaOperatorType_descriptor();
@@ -125,17 +128,17 @@ class LogicalRaQueryMessage : public ::google::protobuf::Message {
   inline ::std::string* mutable_name();
   inline ::std::string* release_name();
   
-  // repeated .LogicalRaOperator operator = 3;
-  inline int operator__size() const;
-  inline void clear_operator_();
-  static const int kOperatorFieldNumber = 3;
-  inline const ::LogicalRaOperator& operator_(int index) const;
-  inline ::LogicalRaOperator* mutable_operator_(int index);
-  inline ::LogicalRaOperator* add_operator_();
+  // repeated .LogicalRaOperator operators = 3;
+  inline int operators_size() const;
+  inline void clear_operators();
+  static const int kOperatorsFieldNumber = 3;
+  inline const ::LogicalRaOperator& operators(int index) const;
+  inline ::LogicalRaOperator* mutable_operators(int index);
+  inline ::LogicalRaOperator* add_operators();
   inline const ::google::protobuf::RepeatedPtrField< ::LogicalRaOperator >&
-      operator_() const;
+      operators() const;
   inline ::google::protobuf::RepeatedPtrField< ::LogicalRaOperator >*
-      mutable_operator_();
+      mutable_operators();
   
   // @@protoc_insertion_point(class_scope:LogicalRaQueryMessage)
  private:
@@ -145,7 +148,7 @@ class LogicalRaQueryMessage : public ::google::protobuf::Message {
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   
   ::std::string* name_;
-  ::google::protobuf::RepeatedPtrField< ::LogicalRaOperator > operator__;
+  ::google::protobuf::RepeatedPtrField< ::LogicalRaOperator > operators_;
   
   mutable int _cached_size_;
   ::google::protobuf::uint32 _has_bits_[(2 + 31) / 32];
@@ -216,6 +219,8 @@ class LogicalRaOperator : public ::google::protobuf::Message {
   static const LogicalRaOperatorType PROJECT = LogicalRaOperator_LogicalRaOperatorType_PROJECT;
   static const LogicalRaOperatorType JOIN = LogicalRaOperator_LogicalRaOperatorType_JOIN;
   static const LogicalRaOperatorType SELECT = LogicalRaOperator_LogicalRaOperatorType_SELECT;
+  static const LogicalRaOperatorType EQUIJOIN = LogicalRaOperator_LogicalRaOperatorType_EQUIJOIN;
+  static const LogicalRaOperatorType CROSS = LogicalRaOperator_LogicalRaOperatorType_CROSS;
   static inline bool LogicalRaOperatorType_IsValid(int value) {
     return LogicalRaOperator_LogicalRaOperatorType_IsValid(value);
   }
@@ -281,13 +286,21 @@ class LogicalRaOperator : public ::google::protobuf::Message {
   inline ::LogicalProject* mutable_project();
   inline ::LogicalProject* release_project();
   
-  // optional .LogicalJoin join = 6;
-  inline bool has_join() const;
-  inline void clear_join();
-  static const int kJoinFieldNumber = 6;
-  inline const ::LogicalJoin& join() const;
-  inline ::LogicalJoin* mutable_join();
-  inline ::LogicalJoin* release_join();
+  // optional .LogicalEquiJoin equijoin = 6;
+  inline bool has_equijoin() const;
+  inline void clear_equijoin();
+  static const int kEquijoinFieldNumber = 6;
+  inline const ::LogicalEquiJoin& equijoin() const;
+  inline ::LogicalEquiJoin* mutable_equijoin();
+  inline ::LogicalEquiJoin* release_equijoin();
+  
+  // optional .LogicalCross cross = 7;
+  inline bool has_cross() const;
+  inline void clear_cross();
+  static const int kCrossFieldNumber = 7;
+  inline const ::LogicalCross& cross() const;
+  inline ::LogicalCross* mutable_cross();
+  inline ::LogicalCross* release_cross();
   
   // @@protoc_insertion_point(class_scope:LogicalRaOperator)
  private:
@@ -301,8 +314,10 @@ class LogicalRaOperator : public ::google::protobuf::Message {
   inline void clear_has_select();
   inline void set_has_project();
   inline void clear_has_project();
-  inline void set_has_join();
-  inline void clear_has_join();
+  inline void set_has_equijoin();
+  inline void clear_has_equijoin();
+  inline void set_has_cross();
+  inline void clear_has_cross();
   
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   
@@ -310,11 +325,12 @@ class LogicalRaOperator : public ::google::protobuf::Message {
   ::LogicalScan* scan_;
   ::LogicalSelect* select_;
   ::LogicalProject* project_;
-  ::LogicalJoin* join_;
+  ::LogicalEquiJoin* equijoin_;
+  ::LogicalCross* cross_;
   int type_;
   
   mutable int _cached_size_;
-  ::google::protobuf::uint32 _has_bits_[(6 + 31) / 32];
+  ::google::protobuf::uint32 _has_bits_[(7 + 31) / 32];
   
   friend void  protobuf_AddDesc_logical_5fra_2eproto();
   friend void protobuf_AssignDesc_logical_5fra_2eproto();
@@ -576,17 +592,17 @@ class LogicalProject : public ::google::protobuf::Message {
   inline ::std::string* mutable_childname();
   inline ::std::string* release_childname();
   
-  // repeated int32 column = 2;
-  inline int column_size() const;
-  inline void clear_column();
-  static const int kColumnFieldNumber = 2;
-  inline ::google::protobuf::int32 column(int index) const;
-  inline void set_column(int index, ::google::protobuf::int32 value);
-  inline void add_column(::google::protobuf::int32 value);
+  // repeated int32 columns = 2;
+  inline int columns_size() const;
+  inline void clear_columns();
+  static const int kColumnsFieldNumber = 2;
+  inline ::google::protobuf::int32 columns(int index) const;
+  inline void set_columns(int index, ::google::protobuf::int32 value);
+  inline void add_columns(::google::protobuf::int32 value);
   inline const ::google::protobuf::RepeatedField< ::google::protobuf::int32 >&
-      column() const;
+      columns() const;
   inline ::google::protobuf::RepeatedField< ::google::protobuf::int32 >*
-      mutable_column();
+      mutable_columns();
   
   // @@protoc_insertion_point(class_scope:LogicalProject)
  private:
@@ -596,7 +612,7 @@ class LogicalProject : public ::google::protobuf::Message {
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   
   ::std::string* childname_;
-  ::google::protobuf::RepeatedField< ::google::protobuf::int32 > column_;
+  ::google::protobuf::RepeatedField< ::google::protobuf::int32 > columns_;
   
   mutable int _cached_size_;
   ::google::protobuf::uint32 _has_bits_[(2 + 31) / 32];
@@ -610,14 +626,14 @@ class LogicalProject : public ::google::protobuf::Message {
 };
 // -------------------------------------------------------------------
 
-class LogicalJoin : public ::google::protobuf::Message {
+class LogicalEquiJoin : public ::google::protobuf::Message {
  public:
-  LogicalJoin();
-  virtual ~LogicalJoin();
+  LogicalEquiJoin();
+  virtual ~LogicalEquiJoin();
   
-  LogicalJoin(const LogicalJoin& from);
+  LogicalEquiJoin(const LogicalEquiJoin& from);
   
-  inline LogicalJoin& operator=(const LogicalJoin& from) {
+  inline LogicalEquiJoin& operator=(const LogicalEquiJoin& from) {
     CopyFrom(from);
     return *this;
   }
@@ -631,17 +647,17 @@ class LogicalJoin : public ::google::protobuf::Message {
   }
   
   static const ::google::protobuf::Descriptor* descriptor();
-  static const LogicalJoin& default_instance();
+  static const LogicalEquiJoin& default_instance();
   
-  void Swap(LogicalJoin* other);
+  void Swap(LogicalEquiJoin* other);
   
   // implements Message ----------------------------------------------
   
-  LogicalJoin* New() const;
+  LogicalEquiJoin* New() const;
   void CopyFrom(const ::google::protobuf::Message& from);
   void MergeFrom(const ::google::protobuf::Message& from);
-  void CopyFrom(const LogicalJoin& from);
-  void MergeFrom(const LogicalJoin& from);
+  void CopyFrom(const LogicalEquiJoin& from);
+  void MergeFrom(const LogicalEquiJoin& from);
   void Clear();
   bool IsInitialized() const;
   
@@ -675,17 +691,17 @@ class LogicalJoin : public ::google::protobuf::Message {
   inline ::std::string* mutable_leftchildname();
   inline ::std::string* release_leftchildname();
   
-  // repeated int32 leftColumn = 2;
-  inline int leftcolumn_size() const;
-  inline void clear_leftcolumn();
-  static const int kLeftColumnFieldNumber = 2;
-  inline ::google::protobuf::int32 leftcolumn(int index) const;
-  inline void set_leftcolumn(int index, ::google::protobuf::int32 value);
-  inline void add_leftcolumn(::google::protobuf::int32 value);
+  // repeated int32 leftColumns = 2;
+  inline int leftcolumns_size() const;
+  inline void clear_leftcolumns();
+  static const int kLeftColumnsFieldNumber = 2;
+  inline ::google::protobuf::int32 leftcolumns(int index) const;
+  inline void set_leftcolumns(int index, ::google::protobuf::int32 value);
+  inline void add_leftcolumns(::google::protobuf::int32 value);
   inline const ::google::protobuf::RepeatedField< ::google::protobuf::int32 >&
-      leftcolumn() const;
+      leftcolumns() const;
   inline ::google::protobuf::RepeatedField< ::google::protobuf::int32 >*
-      mutable_leftcolumn();
+      mutable_leftcolumns();
   
   // required string rightChildName = 3;
   inline bool has_rightchildname() const;
@@ -698,19 +714,19 @@ class LogicalJoin : public ::google::protobuf::Message {
   inline ::std::string* mutable_rightchildname();
   inline ::std::string* release_rightchildname();
   
-  // repeated int32 rightColumn = 4;
-  inline int rightcolumn_size() const;
-  inline void clear_rightcolumn();
-  static const int kRightColumnFieldNumber = 4;
-  inline ::google::protobuf::int32 rightcolumn(int index) const;
-  inline void set_rightcolumn(int index, ::google::protobuf::int32 value);
-  inline void add_rightcolumn(::google::protobuf::int32 value);
+  // repeated int32 rightColumns = 4;
+  inline int rightcolumns_size() const;
+  inline void clear_rightcolumns();
+  static const int kRightColumnsFieldNumber = 4;
+  inline ::google::protobuf::int32 rightcolumns(int index) const;
+  inline void set_rightcolumns(int index, ::google::protobuf::int32 value);
+  inline void add_rightcolumns(::google::protobuf::int32 value);
   inline const ::google::protobuf::RepeatedField< ::google::protobuf::int32 >&
-      rightcolumn() const;
+      rightcolumns() const;
   inline ::google::protobuf::RepeatedField< ::google::protobuf::int32 >*
-      mutable_rightcolumn();
+      mutable_rightcolumns();
   
-  // @@protoc_insertion_point(class_scope:LogicalJoin)
+  // @@protoc_insertion_point(class_scope:LogicalEquiJoin)
  private:
   inline void set_has_leftchildname();
   inline void clear_has_leftchildname();
@@ -720,9 +736,9 @@ class LogicalJoin : public ::google::protobuf::Message {
   ::google::protobuf::UnknownFieldSet _unknown_fields_;
   
   ::std::string* leftchildname_;
-  ::google::protobuf::RepeatedField< ::google::protobuf::int32 > leftcolumn_;
+  ::google::protobuf::RepeatedField< ::google::protobuf::int32 > leftcolumns_;
   ::std::string* rightchildname_;
-  ::google::protobuf::RepeatedField< ::google::protobuf::int32 > rightcolumn_;
+  ::google::protobuf::RepeatedField< ::google::protobuf::int32 > rightcolumns_;
   
   mutable int _cached_size_;
   ::google::protobuf::uint32 _has_bits_[(4 + 31) / 32];
@@ -732,7 +748,107 @@ class LogicalJoin : public ::google::protobuf::Message {
   friend void protobuf_ShutdownFile_logical_5fra_2eproto();
   
   void InitAsDefaultInstance();
-  static LogicalJoin* default_instance_;
+  static LogicalEquiJoin* default_instance_;
+};
+// -------------------------------------------------------------------
+
+class LogicalCross : public ::google::protobuf::Message {
+ public:
+  LogicalCross();
+  virtual ~LogicalCross();
+  
+  LogicalCross(const LogicalCross& from);
+  
+  inline LogicalCross& operator=(const LogicalCross& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  
+  inline const ::google::protobuf::UnknownFieldSet& unknown_fields() const {
+    return _unknown_fields_;
+  }
+  
+  inline ::google::protobuf::UnknownFieldSet* mutable_unknown_fields() {
+    return &_unknown_fields_;
+  }
+  
+  static const ::google::protobuf::Descriptor* descriptor();
+  static const LogicalCross& default_instance();
+  
+  void Swap(LogicalCross* other);
+  
+  // implements Message ----------------------------------------------
+  
+  LogicalCross* New() const;
+  void CopyFrom(const ::google::protobuf::Message& from);
+  void MergeFrom(const ::google::protobuf::Message& from);
+  void CopyFrom(const LogicalCross& from);
+  void MergeFrom(const LogicalCross& from);
+  void Clear();
+  bool IsInitialized() const;
+  
+  int ByteSize() const;
+  bool MergePartialFromCodedStream(
+      ::google::protobuf::io::CodedInputStream* input);
+  void SerializeWithCachedSizes(
+      ::google::protobuf::io::CodedOutputStream* output) const;
+  ::google::protobuf::uint8* SerializeWithCachedSizesToArray(::google::protobuf::uint8* output) const;
+  int GetCachedSize() const { return _cached_size_; }
+  private:
+  void SharedCtor();
+  void SharedDtor();
+  void SetCachedSize(int size) const;
+  public:
+  
+  ::google::protobuf::Metadata GetMetadata() const;
+  
+  // nested types ----------------------------------------------------
+  
+  // accessors -------------------------------------------------------
+  
+  // required string leftChildName = 1;
+  inline bool has_leftchildname() const;
+  inline void clear_leftchildname();
+  static const int kLeftChildNameFieldNumber = 1;
+  inline const ::std::string& leftchildname() const;
+  inline void set_leftchildname(const ::std::string& value);
+  inline void set_leftchildname(const char* value);
+  inline void set_leftchildname(const char* value, size_t size);
+  inline ::std::string* mutable_leftchildname();
+  inline ::std::string* release_leftchildname();
+  
+  // required string rightChildName = 2;
+  inline bool has_rightchildname() const;
+  inline void clear_rightchildname();
+  static const int kRightChildNameFieldNumber = 2;
+  inline const ::std::string& rightchildname() const;
+  inline void set_rightchildname(const ::std::string& value);
+  inline void set_rightchildname(const char* value);
+  inline void set_rightchildname(const char* value, size_t size);
+  inline ::std::string* mutable_rightchildname();
+  inline ::std::string* release_rightchildname();
+  
+  // @@protoc_insertion_point(class_scope:LogicalCross)
+ private:
+  inline void set_has_leftchildname();
+  inline void clear_has_leftchildname();
+  inline void set_has_rightchildname();
+  inline void clear_has_rightchildname();
+  
+  ::google::protobuf::UnknownFieldSet _unknown_fields_;
+  
+  ::std::string* leftchildname_;
+  ::std::string* rightchildname_;
+  
+  mutable int _cached_size_;
+  ::google::protobuf::uint32 _has_bits_[(2 + 31) / 32];
+  
+  friend void  protobuf_AddDesc_logical_5fra_2eproto();
+  friend void protobuf_AssignDesc_logical_5fra_2eproto();
+  friend void protobuf_ShutdownFile_logical_5fra_2eproto();
+  
+  void InitAsDefaultInstance();
+  static LogicalCross* default_instance_;
 };
 // ===================================================================
 
@@ -799,29 +915,29 @@ inline ::std::string* LogicalRaQueryMessage::release_name() {
   }
 }
 
-// repeated .LogicalRaOperator operator = 3;
-inline int LogicalRaQueryMessage::operator__size() const {
-  return operator__.size();
+// repeated .LogicalRaOperator operators = 3;
+inline int LogicalRaQueryMessage::operators_size() const {
+  return operators_.size();
 }
-inline void LogicalRaQueryMessage::clear_operator_() {
-  operator__.Clear();
+inline void LogicalRaQueryMessage::clear_operators() {
+  operators_.Clear();
 }
-inline const ::LogicalRaOperator& LogicalRaQueryMessage::operator_(int index) const {
-  return operator__.Get(index);
+inline const ::LogicalRaOperator& LogicalRaQueryMessage::operators(int index) const {
+  return operators_.Get(index);
 }
-inline ::LogicalRaOperator* LogicalRaQueryMessage::mutable_operator_(int index) {
-  return operator__.Mutable(index);
+inline ::LogicalRaOperator* LogicalRaQueryMessage::mutable_operators(int index) {
+  return operators_.Mutable(index);
 }
-inline ::LogicalRaOperator* LogicalRaQueryMessage::add_operator_() {
-  return operator__.Add();
+inline ::LogicalRaOperator* LogicalRaQueryMessage::add_operators() {
+  return operators_.Add();
 }
 inline const ::google::protobuf::RepeatedPtrField< ::LogicalRaOperator >&
-LogicalRaQueryMessage::operator_() const {
-  return operator__;
+LogicalRaQueryMessage::operators() const {
+  return operators_;
 }
 inline ::google::protobuf::RepeatedPtrField< ::LogicalRaOperator >*
-LogicalRaQueryMessage::mutable_operator_() {
-  return &operator__;
+LogicalRaQueryMessage::mutable_operators() {
+  return &operators_;
 }
 
 // -------------------------------------------------------------------
@@ -996,32 +1112,61 @@ inline ::LogicalProject* LogicalRaOperator::release_project() {
   return temp;
 }
 
-// optional .LogicalJoin join = 6;
-inline bool LogicalRaOperator::has_join() const {
+// optional .LogicalEquiJoin equijoin = 6;
+inline bool LogicalRaOperator::has_equijoin() const {
   return (_has_bits_[0] & 0x00000020u) != 0;
 }
-inline void LogicalRaOperator::set_has_join() {
+inline void LogicalRaOperator::set_has_equijoin() {
   _has_bits_[0] |= 0x00000020u;
 }
-inline void LogicalRaOperator::clear_has_join() {
+inline void LogicalRaOperator::clear_has_equijoin() {
   _has_bits_[0] &= ~0x00000020u;
 }
-inline void LogicalRaOperator::clear_join() {
-  if (join_ != NULL) join_->::LogicalJoin::Clear();
-  clear_has_join();
+inline void LogicalRaOperator::clear_equijoin() {
+  if (equijoin_ != NULL) equijoin_->::LogicalEquiJoin::Clear();
+  clear_has_equijoin();
 }
-inline const ::LogicalJoin& LogicalRaOperator::join() const {
-  return join_ != NULL ? *join_ : *default_instance_->join_;
+inline const ::LogicalEquiJoin& LogicalRaOperator::equijoin() const {
+  return equijoin_ != NULL ? *equijoin_ : *default_instance_->equijoin_;
 }
-inline ::LogicalJoin* LogicalRaOperator::mutable_join() {
-  set_has_join();
-  if (join_ == NULL) join_ = new ::LogicalJoin;
-  return join_;
+inline ::LogicalEquiJoin* LogicalRaOperator::mutable_equijoin() {
+  set_has_equijoin();
+  if (equijoin_ == NULL) equijoin_ = new ::LogicalEquiJoin;
+  return equijoin_;
 }
-inline ::LogicalJoin* LogicalRaOperator::release_join() {
-  clear_has_join();
-  ::LogicalJoin* temp = join_;
-  join_ = NULL;
+inline ::LogicalEquiJoin* LogicalRaOperator::release_equijoin() {
+  clear_has_equijoin();
+  ::LogicalEquiJoin* temp = equijoin_;
+  equijoin_ = NULL;
+  return temp;
+}
+
+// optional .LogicalCross cross = 7;
+inline bool LogicalRaOperator::has_cross() const {
+  return (_has_bits_[0] & 0x00000040u) != 0;
+}
+inline void LogicalRaOperator::set_has_cross() {
+  _has_bits_[0] |= 0x00000040u;
+}
+inline void LogicalRaOperator::clear_has_cross() {
+  _has_bits_[0] &= ~0x00000040u;
+}
+inline void LogicalRaOperator::clear_cross() {
+  if (cross_ != NULL) cross_->::LogicalCross::Clear();
+  clear_has_cross();
+}
+inline const ::LogicalCross& LogicalRaOperator::cross() const {
+  return cross_ != NULL ? *cross_ : *default_instance_->cross_;
+}
+inline ::LogicalCross* LogicalRaOperator::mutable_cross() {
+  set_has_cross();
+  if (cross_ == NULL) cross_ = new ::LogicalCross;
+  return cross_;
+}
+inline ::LogicalCross* LogicalRaOperator::release_cross() {
+  clear_has_cross();
+  ::LogicalCross* temp = cross_;
+  cross_ = NULL;
   return temp;
 }
 
@@ -1269,83 +1414,83 @@ inline ::std::string* LogicalProject::release_childname() {
   }
 }
 
-// repeated int32 column = 2;
-inline int LogicalProject::column_size() const {
-  return column_.size();
+// repeated int32 columns = 2;
+inline int LogicalProject::columns_size() const {
+  return columns_.size();
 }
-inline void LogicalProject::clear_column() {
-  column_.Clear();
+inline void LogicalProject::clear_columns() {
+  columns_.Clear();
 }
-inline ::google::protobuf::int32 LogicalProject::column(int index) const {
-  return column_.Get(index);
+inline ::google::protobuf::int32 LogicalProject::columns(int index) const {
+  return columns_.Get(index);
 }
-inline void LogicalProject::set_column(int index, ::google::protobuf::int32 value) {
-  column_.Set(index, value);
+inline void LogicalProject::set_columns(int index, ::google::protobuf::int32 value) {
+  columns_.Set(index, value);
 }
-inline void LogicalProject::add_column(::google::protobuf::int32 value) {
-  column_.Add(value);
+inline void LogicalProject::add_columns(::google::protobuf::int32 value) {
+  columns_.Add(value);
 }
 inline const ::google::protobuf::RepeatedField< ::google::protobuf::int32 >&
-LogicalProject::column() const {
-  return column_;
+LogicalProject::columns() const {
+  return columns_;
 }
 inline ::google::protobuf::RepeatedField< ::google::protobuf::int32 >*
-LogicalProject::mutable_column() {
-  return &column_;
+LogicalProject::mutable_columns() {
+  return &columns_;
 }
 
 // -------------------------------------------------------------------
 
-// LogicalJoin
+// LogicalEquiJoin
 
 // required string leftChildName = 1;
-inline bool LogicalJoin::has_leftchildname() const {
+inline bool LogicalEquiJoin::has_leftchildname() const {
   return (_has_bits_[0] & 0x00000001u) != 0;
 }
-inline void LogicalJoin::set_has_leftchildname() {
+inline void LogicalEquiJoin::set_has_leftchildname() {
   _has_bits_[0] |= 0x00000001u;
 }
-inline void LogicalJoin::clear_has_leftchildname() {
+inline void LogicalEquiJoin::clear_has_leftchildname() {
   _has_bits_[0] &= ~0x00000001u;
 }
-inline void LogicalJoin::clear_leftchildname() {
+inline void LogicalEquiJoin::clear_leftchildname() {
   if (leftchildname_ != &::google::protobuf::internal::kEmptyString) {
     leftchildname_->clear();
   }
   clear_has_leftchildname();
 }
-inline const ::std::string& LogicalJoin::leftchildname() const {
+inline const ::std::string& LogicalEquiJoin::leftchildname() const {
   return *leftchildname_;
 }
-inline void LogicalJoin::set_leftchildname(const ::std::string& value) {
+inline void LogicalEquiJoin::set_leftchildname(const ::std::string& value) {
   set_has_leftchildname();
   if (leftchildname_ == &::google::protobuf::internal::kEmptyString) {
     leftchildname_ = new ::std::string;
   }
   leftchildname_->assign(value);
 }
-inline void LogicalJoin::set_leftchildname(const char* value) {
+inline void LogicalEquiJoin::set_leftchildname(const char* value) {
   set_has_leftchildname();
   if (leftchildname_ == &::google::protobuf::internal::kEmptyString) {
     leftchildname_ = new ::std::string;
   }
   leftchildname_->assign(value);
 }
-inline void LogicalJoin::set_leftchildname(const char* value, size_t size) {
+inline void LogicalEquiJoin::set_leftchildname(const char* value, size_t size) {
   set_has_leftchildname();
   if (leftchildname_ == &::google::protobuf::internal::kEmptyString) {
     leftchildname_ = new ::std::string;
   }
   leftchildname_->assign(reinterpret_cast<const char*>(value), size);
 }
-inline ::std::string* LogicalJoin::mutable_leftchildname() {
+inline ::std::string* LogicalEquiJoin::mutable_leftchildname() {
   set_has_leftchildname();
   if (leftchildname_ == &::google::protobuf::internal::kEmptyString) {
     leftchildname_ = new ::std::string;
   }
   return leftchildname_;
 }
-inline ::std::string* LogicalJoin::release_leftchildname() {
+inline ::std::string* LogicalEquiJoin::release_leftchildname() {
   clear_has_leftchildname();
   if (leftchildname_ == &::google::protobuf::internal::kEmptyString) {
     return NULL;
@@ -1356,79 +1501,79 @@ inline ::std::string* LogicalJoin::release_leftchildname() {
   }
 }
 
-// repeated int32 leftColumn = 2;
-inline int LogicalJoin::leftcolumn_size() const {
-  return leftcolumn_.size();
+// repeated int32 leftColumns = 2;
+inline int LogicalEquiJoin::leftcolumns_size() const {
+  return leftcolumns_.size();
 }
-inline void LogicalJoin::clear_leftcolumn() {
-  leftcolumn_.Clear();
+inline void LogicalEquiJoin::clear_leftcolumns() {
+  leftcolumns_.Clear();
 }
-inline ::google::protobuf::int32 LogicalJoin::leftcolumn(int index) const {
-  return leftcolumn_.Get(index);
+inline ::google::protobuf::int32 LogicalEquiJoin::leftcolumns(int index) const {
+  return leftcolumns_.Get(index);
 }
-inline void LogicalJoin::set_leftcolumn(int index, ::google::protobuf::int32 value) {
-  leftcolumn_.Set(index, value);
+inline void LogicalEquiJoin::set_leftcolumns(int index, ::google::protobuf::int32 value) {
+  leftcolumns_.Set(index, value);
 }
-inline void LogicalJoin::add_leftcolumn(::google::protobuf::int32 value) {
-  leftcolumn_.Add(value);
+inline void LogicalEquiJoin::add_leftcolumns(::google::protobuf::int32 value) {
+  leftcolumns_.Add(value);
 }
 inline const ::google::protobuf::RepeatedField< ::google::protobuf::int32 >&
-LogicalJoin::leftcolumn() const {
-  return leftcolumn_;
+LogicalEquiJoin::leftcolumns() const {
+  return leftcolumns_;
 }
 inline ::google::protobuf::RepeatedField< ::google::protobuf::int32 >*
-LogicalJoin::mutable_leftcolumn() {
-  return &leftcolumn_;
+LogicalEquiJoin::mutable_leftcolumns() {
+  return &leftcolumns_;
 }
 
 // required string rightChildName = 3;
-inline bool LogicalJoin::has_rightchildname() const {
+inline bool LogicalEquiJoin::has_rightchildname() const {
   return (_has_bits_[0] & 0x00000004u) != 0;
 }
-inline void LogicalJoin::set_has_rightchildname() {
+inline void LogicalEquiJoin::set_has_rightchildname() {
   _has_bits_[0] |= 0x00000004u;
 }
-inline void LogicalJoin::clear_has_rightchildname() {
+inline void LogicalEquiJoin::clear_has_rightchildname() {
   _has_bits_[0] &= ~0x00000004u;
 }
-inline void LogicalJoin::clear_rightchildname() {
+inline void LogicalEquiJoin::clear_rightchildname() {
   if (rightchildname_ != &::google::protobuf::internal::kEmptyString) {
     rightchildname_->clear();
   }
   clear_has_rightchildname();
 }
-inline const ::std::string& LogicalJoin::rightchildname() const {
+inline const ::std::string& LogicalEquiJoin::rightchildname() const {
   return *rightchildname_;
 }
-inline void LogicalJoin::set_rightchildname(const ::std::string& value) {
+inline void LogicalEquiJoin::set_rightchildname(const ::std::string& value) {
   set_has_rightchildname();
   if (rightchildname_ == &::google::protobuf::internal::kEmptyString) {
     rightchildname_ = new ::std::string;
   }
   rightchildname_->assign(value);
 }
-inline void LogicalJoin::set_rightchildname(const char* value) {
+inline void LogicalEquiJoin::set_rightchildname(const char* value) {
   set_has_rightchildname();
   if (rightchildname_ == &::google::protobuf::internal::kEmptyString) {
     rightchildname_ = new ::std::string;
   }
   rightchildname_->assign(value);
 }
-inline void LogicalJoin::set_rightchildname(const char* value, size_t size) {
+inline void LogicalEquiJoin::set_rightchildname(const char* value, size_t size) {
   set_has_rightchildname();
   if (rightchildname_ == &::google::protobuf::internal::kEmptyString) {
     rightchildname_ = new ::std::string;
   }
   rightchildname_->assign(reinterpret_cast<const char*>(value), size);
 }
-inline ::std::string* LogicalJoin::mutable_rightchildname() {
+inline ::std::string* LogicalEquiJoin::mutable_rightchildname() {
   set_has_rightchildname();
   if (rightchildname_ == &::google::protobuf::internal::kEmptyString) {
     rightchildname_ = new ::std::string;
   }
   return rightchildname_;
 }
-inline ::std::string* LogicalJoin::release_rightchildname() {
+inline ::std::string* LogicalEquiJoin::release_rightchildname() {
   clear_has_rightchildname();
   if (rightchildname_ == &::google::protobuf::internal::kEmptyString) {
     return NULL;
@@ -1439,29 +1584,149 @@ inline ::std::string* LogicalJoin::release_rightchildname() {
   }
 }
 
-// repeated int32 rightColumn = 4;
-inline int LogicalJoin::rightcolumn_size() const {
-  return rightcolumn_.size();
+// repeated int32 rightColumns = 4;
+inline int LogicalEquiJoin::rightcolumns_size() const {
+  return rightcolumns_.size();
 }
-inline void LogicalJoin::clear_rightcolumn() {
-  rightcolumn_.Clear();
+inline void LogicalEquiJoin::clear_rightcolumns() {
+  rightcolumns_.Clear();
 }
-inline ::google::protobuf::int32 LogicalJoin::rightcolumn(int index) const {
-  return rightcolumn_.Get(index);
+inline ::google::protobuf::int32 LogicalEquiJoin::rightcolumns(int index) const {
+  return rightcolumns_.Get(index);
 }
-inline void LogicalJoin::set_rightcolumn(int index, ::google::protobuf::int32 value) {
-  rightcolumn_.Set(index, value);
+inline void LogicalEquiJoin::set_rightcolumns(int index, ::google::protobuf::int32 value) {
+  rightcolumns_.Set(index, value);
 }
-inline void LogicalJoin::add_rightcolumn(::google::protobuf::int32 value) {
-  rightcolumn_.Add(value);
+inline void LogicalEquiJoin::add_rightcolumns(::google::protobuf::int32 value) {
+  rightcolumns_.Add(value);
 }
 inline const ::google::protobuf::RepeatedField< ::google::protobuf::int32 >&
-LogicalJoin::rightcolumn() const {
-  return rightcolumn_;
+LogicalEquiJoin::rightcolumns() const {
+  return rightcolumns_;
 }
 inline ::google::protobuf::RepeatedField< ::google::protobuf::int32 >*
-LogicalJoin::mutable_rightcolumn() {
-  return &rightcolumn_;
+LogicalEquiJoin::mutable_rightcolumns() {
+  return &rightcolumns_;
+}
+
+// -------------------------------------------------------------------
+
+// LogicalCross
+
+// required string leftChildName = 1;
+inline bool LogicalCross::has_leftchildname() const {
+  return (_has_bits_[0] & 0x00000001u) != 0;
+}
+inline void LogicalCross::set_has_leftchildname() {
+  _has_bits_[0] |= 0x00000001u;
+}
+inline void LogicalCross::clear_has_leftchildname() {
+  _has_bits_[0] &= ~0x00000001u;
+}
+inline void LogicalCross::clear_leftchildname() {
+  if (leftchildname_ != &::google::protobuf::internal::kEmptyString) {
+    leftchildname_->clear();
+  }
+  clear_has_leftchildname();
+}
+inline const ::std::string& LogicalCross::leftchildname() const {
+  return *leftchildname_;
+}
+inline void LogicalCross::set_leftchildname(const ::std::string& value) {
+  set_has_leftchildname();
+  if (leftchildname_ == &::google::protobuf::internal::kEmptyString) {
+    leftchildname_ = new ::std::string;
+  }
+  leftchildname_->assign(value);
+}
+inline void LogicalCross::set_leftchildname(const char* value) {
+  set_has_leftchildname();
+  if (leftchildname_ == &::google::protobuf::internal::kEmptyString) {
+    leftchildname_ = new ::std::string;
+  }
+  leftchildname_->assign(value);
+}
+inline void LogicalCross::set_leftchildname(const char* value, size_t size) {
+  set_has_leftchildname();
+  if (leftchildname_ == &::google::protobuf::internal::kEmptyString) {
+    leftchildname_ = new ::std::string;
+  }
+  leftchildname_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* LogicalCross::mutable_leftchildname() {
+  set_has_leftchildname();
+  if (leftchildname_ == &::google::protobuf::internal::kEmptyString) {
+    leftchildname_ = new ::std::string;
+  }
+  return leftchildname_;
+}
+inline ::std::string* LogicalCross::release_leftchildname() {
+  clear_has_leftchildname();
+  if (leftchildname_ == &::google::protobuf::internal::kEmptyString) {
+    return NULL;
+  } else {
+    ::std::string* temp = leftchildname_;
+    leftchildname_ = const_cast< ::std::string*>(&::google::protobuf::internal::kEmptyString);
+    return temp;
+  }
+}
+
+// required string rightChildName = 2;
+inline bool LogicalCross::has_rightchildname() const {
+  return (_has_bits_[0] & 0x00000002u) != 0;
+}
+inline void LogicalCross::set_has_rightchildname() {
+  _has_bits_[0] |= 0x00000002u;
+}
+inline void LogicalCross::clear_has_rightchildname() {
+  _has_bits_[0] &= ~0x00000002u;
+}
+inline void LogicalCross::clear_rightchildname() {
+  if (rightchildname_ != &::google::protobuf::internal::kEmptyString) {
+    rightchildname_->clear();
+  }
+  clear_has_rightchildname();
+}
+inline const ::std::string& LogicalCross::rightchildname() const {
+  return *rightchildname_;
+}
+inline void LogicalCross::set_rightchildname(const ::std::string& value) {
+  set_has_rightchildname();
+  if (rightchildname_ == &::google::protobuf::internal::kEmptyString) {
+    rightchildname_ = new ::std::string;
+  }
+  rightchildname_->assign(value);
+}
+inline void LogicalCross::set_rightchildname(const char* value) {
+  set_has_rightchildname();
+  if (rightchildname_ == &::google::protobuf::internal::kEmptyString) {
+    rightchildname_ = new ::std::string;
+  }
+  rightchildname_->assign(value);
+}
+inline void LogicalCross::set_rightchildname(const char* value, size_t size) {
+  set_has_rightchildname();
+  if (rightchildname_ == &::google::protobuf::internal::kEmptyString) {
+    rightchildname_ = new ::std::string;
+  }
+  rightchildname_->assign(reinterpret_cast<const char*>(value), size);
+}
+inline ::std::string* LogicalCross::mutable_rightchildname() {
+  set_has_rightchildname();
+  if (rightchildname_ == &::google::protobuf::internal::kEmptyString) {
+    rightchildname_ = new ::std::string;
+  }
+  return rightchildname_;
+}
+inline ::std::string* LogicalCross::release_rightchildname() {
+  clear_has_rightchildname();
+  if (rightchildname_ == &::google::protobuf::internal::kEmptyString) {
+    return NULL;
+  } else {
+    ::std::string* temp = rightchildname_;
+    rightchildname_ = const_cast< ::std::string*>(&::google::protobuf::internal::kEmptyString);
+    return temp;
+  }
 }
 
 

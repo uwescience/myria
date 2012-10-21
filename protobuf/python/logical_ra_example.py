@@ -27,27 +27,27 @@ for i in range(1,4):
 
 # Construct the first Join
 join1 = LogicalRaOperator()
-join1.type = LogicalRaOperator.JOIN
+join1.type = LogicalRaOperator.EQUIJOIN
 join1.name="Join1"
-join1.join.leftChildName = "Scan1"
-join1.join.leftColumn.extend([2])
-join1.join.rightChildName = "Scan2"
-join1.join.rightColumn.extend([0])
+join1.equijoin.leftChildName = "Scan1"
+join1.equijoin.leftColumns.extend([2])
+join1.equijoin.rightChildName = "Scan2"
+join1.equijoin.rightColumns.extend([0])
 operators.append(join1)
 
 # Construct the second Join
 join2 = LogicalRaOperator()
-join2.type = LogicalRaOperator.JOIN
+join2.type = LogicalRaOperator.EQUIJOIN
 join2.name="Join2"
-join2.join.leftChildName = "Join1"
-join2.join.leftColumn.extend([6])
-join2.join.rightChildName = "Scan3"
-join2.join.rightColumn.extend([0])
+join2.equijoin.leftChildName = "Join1"
+join2.equijoin.leftColumns.extend([6])
+join2.equijoin.rightChildName = "Scan3"
+join2.equijoin.rightColumns.extend([0])
 operators.append(join2)
 
 query = LogicalRaQueryMessage()
 query.name = "SampleQuery"
-query.operator.extend(operators)
+query.operators.extend(operators)
 
 try:
     serialized = query.SerializeToString()
