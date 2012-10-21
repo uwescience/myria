@@ -1,0 +1,81 @@
+
+-- REQUIREMENT: comments using SQL syntax? ("--")
+
+-- CREATE TABLE grps_of_interest (grp INT);
+-- CREATE TABLE #potential_pgtrs (grp INT, pgtr INT, num_iords INT);
+-- CREATE TABLE progenitors (pgtr_time INT, grp INT, pgtr INT, tot_mass FLOAT);
+-- CREATE TABLE #nonprogenitors (grp INT, npgtr INT, tot_mass FLOAT);
+-- CREATE TABLE nonprogenitors (grp INT, npgtr_time INT, npgtr INT, tot_mass FLOAT);
+
+-- CREATE TABLE dbo.cosmo50_00512 (iOrder INT, grp INT, type CHAR(4), PRIMARY KEY CLUSTERED (iOrder));
+-- CREATE TABLE dbo.cosmo50_00504 (iOrder INT, grp INT, type CHAR(4), PRIMARY KEY CLUSTERED (iOrder));
+-- and so on...
+
+dbo.cosmo50_00512_mass(grp, 1.84793e16 * SUM(mass)) :-
+  dbo.cosmo50_00512
+, grp <> 0 
+-- and so on...
+
+-- REQUIREMENT: arithmetic
+-- REQUIREMENT: aggregates
+
+-- Probably want syntactic sugar for aliases
+base_snapshot = dbo.cosmo50_00512
+pgtr_snapshot = dbo.cosmo50_00504
+
+-- REQUIREMENT: aliases
+
+potential_pgtrs(grp, pgtr, count(iorder)) :-  
+  grps_of_interest(grp)
+, base_snapshot(iorder, grp, type)
+, pgtr_snapshot(iorder, pgtr, _)
+, pgtr <> 0
+, type = 'star'
+
+-- Probably want syntactic sugar for unused variables: '_' == 'gensym()'
+-- REQUIREMENT: sugar for unused variables
+
+grps_with_max_vals(grp, max(num_iords)) :- 
+  potential_pgtrs(grp, pgtr, num_iords)
+
+selected_pgtrs(grp, min(pgtr)) :-
+  grps_with_max_vals(grp, max_aggr_value)
+, potential_pgtrs(grp, pgtr, max_aggr_value)
+
+progenitors(0, grp, pgtr, tot_mass) :-
+  dbo.cosmo50_00512_mass(pgtr, tot_mass)
+, selected_pgtrs(grp, pgtr)
+
+-- REQUIREMENT: literal in head (special case of arithmetic)
+
+base_snapshot = dbo.cosmo50_00512
+npgtr_snapshot = dbo.cosmo50_00504
+npgtr_grp_mass = dbo.cosmo50_00504_mass
+
+allowed_npgtrs(grp) :-
+  dbo.cosmo50_00504(_, grp, _) 
+, -progenitors(pgtr_time, _, grp, _), pgtr_time = 0 + 1
+
+-- REQUIREMENT: Negation
+-- REQUIREMENT: arithmetic in body
+
+temp_nonprogenitors(grp, npgtr, tot_mass) :-
+  base_snapshot(iorder, pgtr, _)
+, npgtr_snapshot(iorder, npgtr, _) 
+, progenitors(pgtr_time, grp, pgtr, _)
+, allowed_npgtrs(npgtr)
+, npgtr_grp_mass(npgtr, tot_mass)
+, pgtr_time = 0
+, grp <> 0
+
+grps_with_max_vals(grp, max(tot_mass)) :-
+  temp_nonprogenitors(grp, npgtr, tot_mass)
+
+-- alias
+potential_npgtrs = temp_nonprogenitors 
+
+nonprogenitors(grp, 0 + 1, MIN(npgtr), tot_mass) :-
+  grps_with_max_vals(grp, tot_mass)
+, potential_npgtrs(grp, npgtr, tot_mass)
+, progenitors(pgtr_time, _, grp, _);
+, pgtr_time = 0
