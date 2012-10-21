@@ -740,11 +740,13 @@ public final class LogicalRaProto {
       SCAN(0, 0),
       PROJECT(1, 1),
       JOIN(2, 2),
+      SELECT(3, 3),
       ;
       
       public static final int SCAN_VALUE = 0;
       public static final int PROJECT_VALUE = 1;
       public static final int JOIN_VALUE = 2;
+      public static final int SELECT_VALUE = 3;
       
       
       public final int getNumber() { return value; }
@@ -754,6 +756,7 @@ public final class LogicalRaProto {
           case 0: return SCAN;
           case 1: return PROJECT;
           case 2: return JOIN;
+          case 3: return SELECT;
           default: return null;
         }
       }
@@ -784,7 +787,7 @@ public final class LogicalRaProto {
       }
       
       private static final LogicalRaOperatorType[] VALUES = {
-        SCAN, PROJECT, JOIN, 
+        SCAN, PROJECT, JOIN, SELECT, 
       };
       
       public static LogicalRaOperatorType valueOf(
@@ -3926,21 +3929,21 @@ public final class LogicalRaProto {
     java.lang.String[] descriptorData = {
       "\n\020logical_ra.proto\"K\n\025LogicalRaQueryMess" +
       "age\022\014\n\004name\030\001 \002(\t\022$\n\010operator\030\003 \003(\0132\022.Lo" +
-      "gicalRaOperator\"\215\002\n\021LogicalRaOperator\0226\n" +
+      "gicalRaOperator\"\231\002\n\021LogicalRaOperator\0226\n" +
       "\004type\030\001 \002(\0162(.LogicalRaOperator.LogicalR" +
       "aOperatorType\022\014\n\004name\030\002 \002(\t\022\032\n\004scan\030\003 \001(" +
       "\0132\014.LogicalScan\022\036\n\006select\030\004 \001(\0132\016.Logica" +
       "lSelect\022 \n\007project\030\005 \001(\0132\017.LogicalProjec" +
-      "t\022\032\n\004join\030\006 \001(\0132\014.LogicalJoin\"8\n\025Logical" +
+      "t\022\032\n\004join\030\006 \001(\0132\014.LogicalJoin\"D\n\025Logical" +
       "RaOperatorType\022\010\n\004SCAN\020\000\022\013\n\007PROJECT\020\001\022\010\n" +
-      "\004JOIN\020\002\"\037\n\013LogicalScan\022\020\n\010relation\030\001 \002(\t",
-      "\"5\n\rLogicalSelect\022\021\n\tchildName\030\001 \002(\t\022\021\n\t" +
-      "condition\030\002 \002(\t\"3\n\016LogicalProject\022\021\n\tchi" +
-      "ldName\030\001 \002(\t\022\016\n\006column\030\002 \003(\005\"e\n\013LogicalJ" +
-      "oin\022\025\n\rleftChildName\030\001 \002(\t\022\022\n\nleftColumn" +
-      "\030\002 \003(\005\022\026\n\016rightChildName\030\003 \002(\t\022\023\n\013rightC" +
-      "olumn\030\004 \003(\005B6\n$edu.washington.escience.m" +
-      "yriad.protoB\016LogicalRaProto"
+      "\004JOIN\020\002\022\n\n\006SELECT\020\003\"\037\n\013LogicalScan\022\020\n\010re",
+      "lation\030\001 \002(\t\"5\n\rLogicalSelect\022\021\n\tchildNa" +
+      "me\030\001 \002(\t\022\021\n\tcondition\030\002 \002(\t\"3\n\016LogicalPr" +
+      "oject\022\021\n\tchildName\030\001 \002(\t\022\016\n\006column\030\002 \003(\005" +
+      "\"e\n\013LogicalJoin\022\025\n\rleftChildName\030\001 \002(\t\022\022" +
+      "\n\nleftColumn\030\002 \003(\005\022\026\n\016rightChildName\030\003 \002" +
+      "(\t\022\023\n\013rightColumn\030\004 \003(\005B6\n$edu.washingto" +
+      "n.escience.myriad.protoB\016LogicalRaProto"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {

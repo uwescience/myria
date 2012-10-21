@@ -198,21 +198,21 @@ void protobuf_AddDesc_logical_5fra_2eproto() {
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
     "\n\020logical_ra.proto\"K\n\025LogicalRaQueryMess"
     "age\022\014\n\004name\030\001 \002(\t\022$\n\010operator\030\003 \003(\0132\022.Lo"
-    "gicalRaOperator\"\215\002\n\021LogicalRaOperator\0226\n"
+    "gicalRaOperator\"\231\002\n\021LogicalRaOperator\0226\n"
     "\004type\030\001 \002(\0162(.LogicalRaOperator.LogicalR"
     "aOperatorType\022\014\n\004name\030\002 \002(\t\022\032\n\004scan\030\003 \001("
     "\0132\014.LogicalScan\022\036\n\006select\030\004 \001(\0132\016.Logica"
     "lSelect\022 \n\007project\030\005 \001(\0132\017.LogicalProjec"
-    "t\022\032\n\004join\030\006 \001(\0132\014.LogicalJoin\"8\n\025Logical"
+    "t\022\032\n\004join\030\006 \001(\0132\014.LogicalJoin\"D\n\025Logical"
     "RaOperatorType\022\010\n\004SCAN\020\000\022\013\n\007PROJECT\020\001\022\010\n"
-    "\004JOIN\020\002\"\037\n\013LogicalScan\022\020\n\010relation\030\001 \002(\t"
-    "\"5\n\rLogicalSelect\022\021\n\tchildName\030\001 \002(\t\022\021\n\t"
-    "condition\030\002 \002(\t\"3\n\016LogicalProject\022\021\n\tchi"
-    "ldName\030\001 \002(\t\022\016\n\006column\030\002 \003(\005\"e\n\013LogicalJ"
-    "oin\022\025\n\rleftChildName\030\001 \002(\t\022\022\n\nleftColumn"
-    "\030\002 \003(\005\022\026\n\016rightChildName\030\003 \002(\t\022\023\n\013rightC"
-    "olumn\030\004 \003(\005B6\n$edu.washington.escience.m"
-    "yriad.protoB\016LogicalRaProto", 667);
+    "\004JOIN\020\002\022\n\n\006SELECT\020\003\"\037\n\013LogicalScan\022\020\n\010re"
+    "lation\030\001 \002(\t\"5\n\rLogicalSelect\022\021\n\tchildNa"
+    "me\030\001 \002(\t\022\021\n\tcondition\030\002 \002(\t\"3\n\016LogicalPr"
+    "oject\022\021\n\tchildName\030\001 \002(\t\022\016\n\006column\030\002 \003(\005"
+    "\"e\n\013LogicalJoin\022\025\n\rleftChildName\030\001 \002(\t\022\022"
+    "\n\nleftColumn\030\002 \003(\005\022\026\n\016rightChildName\030\003 \002"
+    "(\t\022\023\n\013rightColumn\030\004 \003(\005B6\n$edu.washingto"
+    "n.escience.myriad.protoB\016LogicalRaProto", 679);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "logical_ra.proto", &protobuf_RegisterTypes);
   LogicalRaQueryMessage::default_instance_ = new LogicalRaQueryMessage();
@@ -517,6 +517,7 @@ bool LogicalRaOperator_LogicalRaOperatorType_IsValid(int value) {
     case 0:
     case 1:
     case 2:
+    case 3:
       return true;
     default:
       return false;
@@ -527,6 +528,7 @@ bool LogicalRaOperator_LogicalRaOperatorType_IsValid(int value) {
 const LogicalRaOperator_LogicalRaOperatorType LogicalRaOperator::SCAN;
 const LogicalRaOperator_LogicalRaOperatorType LogicalRaOperator::PROJECT;
 const LogicalRaOperator_LogicalRaOperatorType LogicalRaOperator::JOIN;
+const LogicalRaOperator_LogicalRaOperatorType LogicalRaOperator::SELECT;
 const LogicalRaOperator_LogicalRaOperatorType LogicalRaOperator::LogicalRaOperatorType_MIN;
 const LogicalRaOperator_LogicalRaOperatorType LogicalRaOperator::LogicalRaOperatorType_MAX;
 const int LogicalRaOperator::LogicalRaOperatorType_ARRAYSIZE;

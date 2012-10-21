@@ -40,11 +40,12 @@ class LogicalJoin;
 enum LogicalRaOperator_LogicalRaOperatorType {
   LogicalRaOperator_LogicalRaOperatorType_SCAN = 0,
   LogicalRaOperator_LogicalRaOperatorType_PROJECT = 1,
-  LogicalRaOperator_LogicalRaOperatorType_JOIN = 2
+  LogicalRaOperator_LogicalRaOperatorType_JOIN = 2,
+  LogicalRaOperator_LogicalRaOperatorType_SELECT = 3
 };
 bool LogicalRaOperator_LogicalRaOperatorType_IsValid(int value);
 const LogicalRaOperator_LogicalRaOperatorType LogicalRaOperator_LogicalRaOperatorType_LogicalRaOperatorType_MIN = LogicalRaOperator_LogicalRaOperatorType_SCAN;
-const LogicalRaOperator_LogicalRaOperatorType LogicalRaOperator_LogicalRaOperatorType_LogicalRaOperatorType_MAX = LogicalRaOperator_LogicalRaOperatorType_JOIN;
+const LogicalRaOperator_LogicalRaOperatorType LogicalRaOperator_LogicalRaOperatorType_LogicalRaOperatorType_MAX = LogicalRaOperator_LogicalRaOperatorType_SELECT;
 const int LogicalRaOperator_LogicalRaOperatorType_LogicalRaOperatorType_ARRAYSIZE = LogicalRaOperator_LogicalRaOperatorType_LogicalRaOperatorType_MAX + 1;
 
 const ::google::protobuf::EnumDescriptor* LogicalRaOperator_LogicalRaOperatorType_descriptor();
@@ -214,6 +215,7 @@ class LogicalRaOperator : public ::google::protobuf::Message {
   static const LogicalRaOperatorType SCAN = LogicalRaOperator_LogicalRaOperatorType_SCAN;
   static const LogicalRaOperatorType PROJECT = LogicalRaOperator_LogicalRaOperatorType_PROJECT;
   static const LogicalRaOperatorType JOIN = LogicalRaOperator_LogicalRaOperatorType_JOIN;
+  static const LogicalRaOperatorType SELECT = LogicalRaOperator_LogicalRaOperatorType_SELECT;
   static inline bool LogicalRaOperatorType_IsValid(int value) {
     return LogicalRaOperator_LogicalRaOperatorType_IsValid(value);
   }
