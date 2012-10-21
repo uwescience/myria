@@ -20,9 +20,11 @@ public class DoNothingOperator extends Operator {
   @Override
   protected final _TupleBatch fetchNext() throws DbException {
     if (children != null) {
-      for (final Operator child : children) {
-        while (child.hasNext()) {
-          child.next();
+      while (!eos()) {
+        for (final Operator child : children) {
+          while (!child.eos() && child.nextReady()) {
+            child.next();
+          }
         }
       }
     }
@@ -31,27 +33,37 @@ public class DoNothingOperator extends Operator {
 
   @Override
   public final Operator[] getChildren() {
-    return this.children;
+    return children;
   }
 
   @Override
   public final Schema getSchema() {
-    return this.outputSchema;
+    return outputSchema;
   }
 
   @Override
-  public final void open() throws DbException {
-    if (children != null) {
-      for (final Operator child : children) {
-        child.open();
-      }
-    }
-    super.open();
+  public final void init() throws DbException {
+    // if (children != null) {
+    // for (final Operator child : children) {
+    // child.open();
+    // }
+    // }
+    // super.open();
   }
 
   @Override
   public final void setChildren(final Operator[] children) {
     this.children = children;
+  }
+
+  @Override
+  protected void cleanup() throws DbException {
+  }
+
+  @Override
+  public _TupleBatch fetchNextReady() throws DbException {
+    // TODO Auto-generated method stub
+    return null;
   }
 
 }

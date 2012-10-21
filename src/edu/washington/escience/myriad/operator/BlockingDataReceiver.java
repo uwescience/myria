@@ -9,7 +9,7 @@ public final class BlockingDataReceiver extends Operator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   private final _TupleBatch outputBuffer;
-  private final Operator child;
+  private Operator child;
 
   public BlockingDataReceiver(final _TupleBatch outputBuffer, final Operator child) {
     this.outputBuffer = outputBuffer;
@@ -18,8 +18,9 @@ public final class BlockingDataReceiver extends Operator {
 
   @Override
   protected _TupleBatch fetchNext() throws DbException {
-    while (this.child.hasNext()) {
-      this.outputBuffer.append(this.child.next());
+    _TupleBatch tb = null;
+    while ((tb = child.next()) != null) {
+      outputBuffer.append(tb);
     }
     return null;
   }
@@ -30,26 +31,30 @@ public final class BlockingDataReceiver extends Operator {
   }
 
   public _TupleBatch getOutputBuffer() {
-    return this.outputBuffer;
+    return outputBuffer;
   }
 
   @Override
-  public Schema getSchema() {
+  public Schema getSchema() throws DbException {
     return child.getSchema();
   }
 
   @Override
-  public void open() throws DbException {
-    if (child != null) {
-      child.open();
-    }
-    super.open();
+  public void init() throws DbException {
   }
 
   @Override
   public void setChildren(final Operator[] children) {
-    // TODO using reflection
-    throw new UnsupportedOperationException();
+    child = children[0];
+  }
+
+  @Override
+  protected void cleanup() throws DbException {
+  }
+
+  @Override
+  public _TupleBatch fetchNextReady() throws DbException {
+    return fetchNext();
   }
 
 }

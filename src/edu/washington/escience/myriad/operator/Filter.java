@@ -31,12 +31,6 @@ public final class Filter extends Operator {
     this.child = child;
   }
 
-  @Override
-  public void close() {
-    super.close();
-    child.close();
-  }
-
   /**
    * AbstractDbIterator.readNext implementation. Iterates over tuples from the child operator, applying the predicate to
    * them and returning those that pass the predicate (i.e. for which the Predicate.filter() returns true.)
@@ -46,26 +40,32 @@ public final class Filter extends Operator {
    */
   @Override
   protected _TupleBatch fetchNext() throws NoSuchElementException, DbException {
-    if (child.hasNext()) {
-      return child.next().filter(this.fieldIdx, this.op, this.operand);
+    _TupleBatch tmp = null;
+
+    while ((tmp = child.next()) != null) {
+      if (tmp.numOutputTuples() > 0) {
+        tmp = tmp.filter(fieldIdx, op, operand);
+        if (tmp.numOutputTuples() > 0) {
+          return tmp;
+        }
+      }
     }
     return null;
   }
 
   @Override
   public Operator[] getChildren() {
-    return new Operator[] { this.child };
+    return new Operator[] { child };
   }
 
   @Override
-  public Schema getSchema() {
+  public Schema getSchema() throws DbException {
     return child.getSchema();
   }
 
   @Override
-  public void open() throws DbException, NoSuchElementException {
-    child.open();
-    super.open();
+  public void init() throws DbException, NoSuchElementException {
+    // need no init
   }
 
   // @Override
@@ -75,7 +75,25 @@ public final class Filter extends Operator {
 
   @Override
   public void setChildren(final Operator[] children) {
-    this.child = children[0];
+    child = children[0];
+  }
+
+  @Override
+  protected void cleanup() throws DbException {
+    // nothing to clean
+  }
+
+  @Override
+  public _TupleBatch fetchNextReady() throws DbException {
+    _TupleBatch tmp = null;
+    if (child.nextReady()) {
+      tmp = child.next();
+      tmp = tmp.filter(fieldIdx, op, operand);
+      if (tmp.numOutputTuples() > 0) {
+        return tmp;
+      }
+    }
+    return null;
   }
 
 }
