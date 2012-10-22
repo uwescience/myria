@@ -1,0 +1,3 @@
+[submodule "datalog_web_application/datalogcompiler"]
+	path = datalog_web_application/datalogcompiler
+	url = https://github.com/uwescience/datalogcompiler
