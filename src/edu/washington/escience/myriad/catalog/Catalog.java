@@ -211,6 +211,7 @@ public final class Catalog {
    * @throws SQLiteException if there is an error turning on foreign keys.
    */
   private Catalog(final SQLiteConnection sqliteConnection) throws SQLiteException {
+    Objects.requireNonNull(sqliteConnection);
     this.sqliteConnection = sqliteConnection;
     isClosed = false;
     sqliteConnection.exec("PRAGMA foreign_keys = ON;");
@@ -224,6 +225,7 @@ public final class Catalog {
    * @throws CatalogException if the hostPortString is invalid or there is a database exception.
    */
   public Catalog addMaster(final String hostPortString) throws CatalogException {
+    Objects.requireNonNull(hostPortString);
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
     }
@@ -253,6 +255,8 @@ public final class Catalog {
    * 
    */
   public void addRelationMetadata(final String name, final Schema schema) throws CatalogException {
+    Objects.requireNonNull(name);
+    Objects.requireNonNull(schema);
     try {
       /* To begin: start a transaction. */
       sqliteConnection.exec("BEGIN TRANSACTION;");
@@ -302,6 +306,7 @@ public final class Catalog {
    * @throws CatalogException if the hostPortString is invalid or there is a database exception.
    */
   public Catalog addWorker(final String hostPortString) throws CatalogException {
+    Objects.requireNonNull(hostPortString);
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
     }
@@ -344,6 +349,7 @@ public final class Catalog {
    * @throws CatalogException if there is an error in the backing database.
    */
   public String getConfigurationValue(final String key) throws CatalogException {
+    Objects.requireNonNull(key);
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
     }

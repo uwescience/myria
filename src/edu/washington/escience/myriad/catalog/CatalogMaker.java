@@ -1,6 +1,7 @@
 package edu.washington.escience.myriad.catalog;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -30,6 +31,7 @@ public final class CatalogMaker {
    *           TODO check the description can be a file basename, e.g., it has no / or space etc.
    */
   private static Catalog newCatalog(final String description) throws CatalogException, IOException {
+    Objects.requireNonNull(description);
     final String fileName = FilenameUtils.concat("catalogs", description + ".catalog");
     return Catalog.create(fileName, description, false);
   }
