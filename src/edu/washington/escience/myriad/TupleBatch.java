@@ -360,7 +360,6 @@ public class TupleBatch extends TupleBatchAdaptor {
   @Override
   public final String toString() {
     final Type[] columnTypes = schema.getTypes();
-
     final StringBuilder sb = new StringBuilder();
     for (int i = validTuples.nextSetBit(0); i >= 0; i = validTuples.nextSetBit(i + 1)) {
       sb.append("|\t");

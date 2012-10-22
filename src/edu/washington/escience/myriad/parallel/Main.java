@@ -68,13 +68,14 @@ public final class Main {
     final PartitionFunction<String, Integer> pf = new SingleFieldHashPartitionFunction(numPartition); // 2 workers
     pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0); // partition by id
 
-    final int numIter = 3;
+    final int numIter = 5;
     final ShuffleProducer sp1[] = new ShuffleProducer[numIter];
     final ShuffleProducer sp2[] = new ShuffleProducer[numIter];
     final ShuffleConsumer sc1[] = new ShuffleConsumer[numIter];
     final ShuffleConsumer sc2[] = new ShuffleConsumer[numIter];
     final LocalJoin localjoin[] = new LocalJoin[numIter];
     final Project proj[] = new Project[numIter];
+    final DupElim dupelim[] = new DupElim[numIter];
     final SQLiteQueryScan scan[] = new SQLiteQueryScan[numIter];
     ExchangePairID arrayID1, arrayID2;
     arrayID1 = ExchangePairID.newID();
@@ -87,13 +88,14 @@ public final class Main {
       sc2[i] = new ShuffleConsumer(sp2[i - 1], arrayID2, new int[] { WORKER_1_ID, WORKER_2_ID });
       localjoin[i] = new LocalJoin(joinSchema, sc1[i], sc2[i], new int[] { 0 }, new int[] { 0 });
       proj[i] = new Project(new Integer[] { 0, 3 }, localjoin[i]);
+      dupelim[i] = new DupElim(proj[i]);
       arrayID1 = ExchangePairID.newID();
       arrayID2 = ExchangePairID.newID();
       scan[i] = new SQLiteQueryScan("testtable" + (i + 1) + ".db", "select * from testtable1", tableSchema1);
       sp1[i] = new ShuffleProducer(scan[i], arrayID1, new int[] { WORKER_1_ID, WORKER_2_ID }, pf);
-      sp2[i] = new ShuffleProducer(proj[i], arrayID2, new int[] { WORKER_1_ID, WORKER_2_ID }, pf);
+      sp2[i] = new ShuffleProducer(dupelim[i], arrayID2, new int[] { WORKER_1_ID, WORKER_2_ID }, pf);
     }
-    final CollectProducer cp = new CollectProducer(proj[numIter - 1], serverReceiveID, MASTER_ID);
+    final CollectProducer cp = new CollectProducer(dupelim[numIter - 1], serverReceiveID, MASTER_ID);
 
     final HashMap<Integer, Operator> workerPlans = new HashMap<Integer, Operator>();
     workerPlans.put(WORKER_1_ID, cp);
@@ -208,41 +210,16 @@ public final class Main {
     final Schema tableSchema1 = new Schema(table1Types, table1ColumnNames);
     final Schema tableSchema2 = new Schema(table2Types, table2ColumnNames);
     final Schema outputSchema = new Schema(outputTypes, outputColumnNames);
-    final int numPartition = 2;
 
-    final PartitionFunction<String, Integer> pf = new SingleFieldHashPartitionFunction(numPartition);
-    pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1); // partition by name
-
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan("testtable.db", "select * from testtable1", tableSchema1);
-    // ShuffleProducer sp1 = new ShuffleProducer(scan1, shuffle1ID, workers, pf);
-
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan("testtable.db", "select * from testtable2", tableSchema2);
-    // ShuffleProducer sp2 = new ShuffleProducer(scan2, shuffle2ID, workers, pf);
-
-    // SQLiteTupleBatch bufferWorker1 = new SQLiteTupleBatch(tableSchema1, "temptable.db", "temptable1");
-    // ShuffleConsumer sc1 = new ShuffleConsumer(sp1, shuffle1ID, workers, bufferWorker1);
-
-    // SQLiteTupleBatch bufferWorker2 = new SQLiteTupleBatch(tableSchema2, "temptable.db", "temptable2");
-    // ShuffleConsumer sc2 = new ShuffleConsumer(sp2, shuffle2ID, workers, bufferWorker2);
-
-    // SQLiteSQLProcessor ssp =
-    // new SQLiteSQLProcessor("testtable.db",
-    // "select * from testtable1 union select * from testtable2", outputSchema,
-    // new Operator[] { scan1, scan2 });
-
-    // DoNothingOperator dno = new DoNothingOperator(outputSchema, new Operator[] { sc1, sc2 });
-
-    // CollectProducer cp = new CollectProducer(ssp, serverReceiveID, server.getAddress());
-    final DupElim dupElim1 = new DupElim(tableSchema1, scan1);
-    final DupElim dupElim2 = new DupElim(tableSchema2, scan2);
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan("testdupelim.db", "select * from testtable1", tableSchema1);
+    final SQLiteQueryScan scan2 = new SQLiteQueryScan("testdupelim.db", "select * from testtable1", tableSchema2);
+    final DupElim dupElim1 = new DupElim(scan1);
+    final DupElim dupElim2 = new DupElim(scan2);
+    final CollectProducer cp1 = new CollectProducer(dupElim1, serverReceiveID, MASTER_ID);
+    final CollectProducer cp2 = new CollectProducer(dupElim2, serverReceiveID, MASTER_ID);
     final HashMap<Integer, Operator> workerPlans = new HashMap<Integer, Operator>();
-    final CollectProducer cp1 = new CollectProducer(dupElim1, collectID, WORKER_1_ID);
-    final CollectConsumer cc1 = new CollectConsumer(cp1, collectID, new int[] { WORKER_1_ID, WORKER_2_ID });
-    final DupElim dumElim3 = new DupElim(tableSchema1, cc1);
-    workerPlans.put(WORKER_1_ID, new CollectProducer(dumElim3, serverReceiveID, MASTER_ID));
-    workerPlans.put(WORKER_2_ID, new CollectProducer(dupElim2, collectID, WORKER_1_ID));
-
-    // OutputStreamSinkTupleBatch serverBuffer = new OutputStreamSinkTupleBatch(outputSchema, System.out);
+    workerPlans.put(WORKER_1_ID, cp1);
+    workerPlans.put(WORKER_2_ID, cp2);
 
     new Thread() {
       @Override
@@ -263,17 +240,13 @@ public final class Main {
 
     Server.runningInstance.exchangeSchema.put(serverReceiveID, outputSchema);
     final LinkedBlockingQueue<ExchangeTupleBatch> buffer = new LinkedBlockingQueue<ExchangeTupleBatch>();
-    final CollectConsumer serverPlan = new CollectConsumer(outputSchema, serverReceiveID, new int[] { WORKER_1_ID });
+    final CollectConsumer serverPlan =
+        new CollectConsumer(outputSchema, serverReceiveID, new int[] { WORKER_1_ID, WORKER_2_ID });
     serverPlan.setInputBuffer(buffer);
     Server.runningInstance.dataBuffer.put(serverPlan.getOperatorID(), buffer);
     Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
     System.out.println("Query dispatched to the workers");
     Server.runningInstance.startServerQuery(serverPlan);
-
-    // Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
-    // System.out.println("Query dispatched to the workers");
-    // Server.runningInstance.startServerQuery(new CollectConsumer(outputSchema, serverReceiveID, new int[] { 1, 2 }));
-
   }
 
   public static void filesystemWriteTest() throws Exception {
