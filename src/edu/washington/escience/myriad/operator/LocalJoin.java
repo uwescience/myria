@@ -137,7 +137,6 @@ public class LocalJoin extends Operator implements Externalizable {
 
   @Override
   protected _TupleBatch fetchNext() throws DbException {
-    System.out.println("localjoin fetchnext");
     if (endOfFlow) {
       return null;
     }

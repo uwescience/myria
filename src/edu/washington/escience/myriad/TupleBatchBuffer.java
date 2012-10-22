@@ -109,7 +109,6 @@ public class TupleBatchBuffer {
    * @param value value to be appended.
    */
   public final void put(final int column, final Object value) {
-    System.out.println(column + " " + value);
     Preconditions.checkElementIndex(column, numColumns);
     if (columnsReady.get(column)) {
       throw new RuntimeException("Need to fill up one row of TupleBatchBuffer before starting new one");
