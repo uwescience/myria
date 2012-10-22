@@ -1,0 +1,5 @@
+put google_appengine in this directory
+
+then run
+
+python google_appengine/dev_appserver.py datalog_app
