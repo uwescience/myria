@@ -54,6 +54,7 @@ public class ShuffleProducer extends Producer {
             final TupleBatchBuffer etb = buffers[p];
             TupleBatch tb = null;
             while ((tb = etb.pop()) != null) {
+              System.out.println("going to send tb to node " + p);
               final List<Column> columns = tb.outputRawData();
 
               final ColumnMessage[] columnProtos = new ColumnMessage[columns.size()];
@@ -65,6 +66,7 @@ public class ShuffleProducer extends Producer {
               shuffleSessions[p].write(messageBuilder.setType(TransportMessageType.DATA).setData(
                   DataMessage.newBuilder().setType(DataMessageType.NORMAL).addAllColumns(Arrays.asList(columnProtos))
                       .setOperatorID(ShuffleProducer.this.operatorID.getLong()).build()).build());
+              System.out.println("done sending tb to node " + p);
             }
           }
         }
@@ -72,6 +74,7 @@ public class ShuffleProducer extends Producer {
         for (int i = 0; i < numWorker; i++) {
           TupleBatchBuffer tbb = buffers[i];
           if (tbb.numTuples() > 0) {
+            System.out.println("going to send tb to node " + i);
             List<TupleBatch> remain = tbb.getOutput();
             for (TupleBatch tb : remain) {
               final List<Column> columns = tb.outputRawData();
@@ -84,6 +87,7 @@ public class ShuffleProducer extends Producer {
               shuffleSessions[i].write(messageBuilder.setType(TransportMessageType.DATA).setData(
                   DataMessage.newBuilder().setType(DataMessageType.NORMAL).addAllColumns(Arrays.asList(columnProtos))
                       .setOperatorID(ShuffleProducer.this.operatorID.getLong()).build()).build());
+              System.out.println("done sending tb to node " + i);
             }
           }
         }

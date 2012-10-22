@@ -49,8 +49,6 @@ public final class Main {
 
   public static void joinTestSQLite(final String[] args) throws DbException, IOException {
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
-    final ExchangePairID arrayID1 = ExchangePairID.newID();
-    final ExchangePairID arrayID2 = ExchangePairID.newID();
 
     final Type[] table1Types = new Type[] { Type.LONG_TYPE, Type.STRING_TYPE };
     final String[] table1ColumnNames = new String[] { "id", "name" };
@@ -60,28 +58,46 @@ public final class Main {
     final String[] outputColumnNames = new String[] { "id", "name", "id", "name" };
     final Schema tableSchema1 = new Schema(table1Types, table1ColumnNames);
     final Schema tableSchema2 = new Schema(table2Types, table2ColumnNames);
-    final Schema outputSchema = new Schema(outputTypes, outputColumnNames);
+    final Schema outputSchema = tableSchema1;
+    final Schema joinSchema = new Schema(outputTypes, outputColumnNames);
     final int numPartition = 2;
 
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan("testtable1.db", "select * from testtable1", tableSchema1);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan("testtable2.db", "select * from testtable2", tableSchema2);
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan("testtable0.db", "select * from testtable1", tableSchema1);
+    final SQLiteQueryScan scan2 = new SQLiteQueryScan("testtable1.db", "select * from testtable1", tableSchema2);
 
-    final PartitionFunction<String, Integer> pf = new SingleFieldHashPartitionFunction(numPartition); // 2 worker2
+    final PartitionFunction<String, Integer> pf = new SingleFieldHashPartitionFunction(numPartition); // 2 workers
     pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0); // partition by id
-    final ShuffleProducer sp1 = new ShuffleProducer(scan1, arrayID1, new int[] { WORKER_1_ID, WORKER_2_ID }, pf);
-    final ShuffleProducer sp2 = new ShuffleProducer(scan2, arrayID2, new int[] { WORKER_1_ID, WORKER_2_ID }, pf);
-    final ShuffleConsumer sc1 = new ShuffleConsumer(sp1, arrayID1, new int[] { WORKER_1_ID, WORKER_2_ID });
-    final ShuffleConsumer sc2 = new ShuffleConsumer(sp2, arrayID2, new int[] { WORKER_1_ID, WORKER_2_ID });
 
-    final LocalJoin localjoin1 = new LocalJoin(outputSchema, sc1, sc2, new int[] { 0 }, new int[] { 0 });
-    final LocalJoin localjoin2 = new LocalJoin(outputSchema, sc1, sc2, new int[] { 0 }, new int[] { 0 });
+    final int numIter = 3;
+    final ShuffleProducer sp1[] = new ShuffleProducer[numIter];
+    final ShuffleProducer sp2[] = new ShuffleProducer[numIter];
+    final ShuffleConsumer sc1[] = new ShuffleConsumer[numIter];
+    final ShuffleConsumer sc2[] = new ShuffleConsumer[numIter];
+    final LocalJoin localjoin[] = new LocalJoin[numIter];
+    final Project proj[] = new Project[numIter];
+    final SQLiteQueryScan scan[] = new SQLiteQueryScan[numIter];
+    ExchangePairID arrayID1, arrayID2;
+    arrayID1 = ExchangePairID.newID();
+    arrayID2 = ExchangePairID.newID();
+    sp1[0] = new ShuffleProducer(scan1, arrayID1, new int[] { WORKER_1_ID, WORKER_2_ID }, pf);
+    sp2[0] = new ShuffleProducer(scan2, arrayID2, new int[] { WORKER_1_ID, WORKER_2_ID }, pf);
 
-    final CollectProducer cp1 = new CollectProducer(localjoin1, serverReceiveID, MASTER_ID);
-    final CollectProducer cp2 = new CollectProducer(localjoin2, serverReceiveID, MASTER_ID);
+    for (int i = 1; i < numIter; ++i) {
+      sc1[i] = new ShuffleConsumer(sp1[i - 1], arrayID1, new int[] { WORKER_1_ID, WORKER_2_ID });
+      sc2[i] = new ShuffleConsumer(sp2[i - 1], arrayID2, new int[] { WORKER_1_ID, WORKER_2_ID });
+      localjoin[i] = new LocalJoin(joinSchema, sc1[i], sc2[i], new int[] { 0 }, new int[] { 0 });
+      proj[i] = new Project(new Integer[] { 0, 3 }, localjoin[i]);
+      arrayID1 = ExchangePairID.newID();
+      arrayID2 = ExchangePairID.newID();
+      scan[i] = new SQLiteQueryScan("testtable" + (i + 1) + ".db", "select * from testtable1", tableSchema1);
+      sp1[i] = new ShuffleProducer(scan[i], arrayID1, new int[] { WORKER_1_ID, WORKER_2_ID }, pf);
+      sp2[i] = new ShuffleProducer(proj[i], arrayID2, new int[] { WORKER_1_ID, WORKER_2_ID }, pf);
+    }
+    final CollectProducer cp = new CollectProducer(proj[numIter - 1], serverReceiveID, MASTER_ID);
 
     final HashMap<Integer, Operator> workerPlans = new HashMap<Integer, Operator>();
-    workerPlans.put(WORKER_1_ID, cp1);
-    workerPlans.put(WORKER_2_ID, cp2);
+    workerPlans.put(WORKER_1_ID, cp);
+    workerPlans.put(WORKER_2_ID, cp);
 
     new Thread() {
       @Override

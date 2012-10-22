@@ -301,7 +301,7 @@ public class Worker {
     }
 
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.OFF);
-    Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.OFF);
+    // Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.OFF);
 
     File confDir = null;
     if (args.length >= 2) {
