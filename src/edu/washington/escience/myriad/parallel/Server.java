@@ -411,7 +411,7 @@ public class Server {
     if (data instanceof ExchangeTupleBatch) {
       q.offer(data);
     }
-    System.out.println("after add: size of q: " + q.size());
+    // System.out.println("after add: size of q: " + q.size());
   }
 
   public void shutdown() {
@@ -516,7 +516,7 @@ public class Server {
     serverPlan.open();
     while (serverPlan.hasNext()) {
       final _TupleBatch tup = serverPlan.next();
-      out.println(new ImmutableInMemoryTupleBatch(serverPlan.getSchema(), tup.outputRawData(), tup.numOutputTuples())
+      out.print(new ImmutableInMemoryTupleBatch(serverPlan.getSchema(), tup.outputRawData(), tup.numOutputTuples())
           .toString());
     }
 

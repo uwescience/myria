@@ -48,52 +48,66 @@ public final class Main {
   public static final int WORKER_2_ID = 2;;
 
   public static void joinTestSQLite(final String[] args) throws DbException, IOException {
+    /*
+     * tested on twitter data, format: followee \t follower, in twitter_vr_slice_0_62.net. numIter controls the num of
+     * iterations. currently the final output is all the reachable pairs in numIter hops. (not the union of less or
+     * equal than numIter hops, so not transitive closure). there is another cpp program to help check the correctness
+     * of small scale data. need to change to unit test when that branch is done.
+     */
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
 
-    final Type[] table1Types = new Type[] { Type.LONG_TYPE, Type.STRING_TYPE };
-    final String[] table1ColumnNames = new String[] { "id", "name" };
-    final Type[] table2Types = new Type[] { Type.LONG_TYPE, Type.STRING_TYPE };
-    final String[] table2ColumnNames = new String[] { "id", "name" };
-    final Type[] outputTypes = new Type[] { Type.LONG_TYPE, Type.STRING_TYPE, Type.LONG_TYPE, Type.STRING_TYPE };
-    final String[] outputColumnNames = new String[] { "id", "name", "id", "name" };
+    final Type[] table1Types = new Type[] { Type.LONG_TYPE, Type.LONG_TYPE };
+    final String[] table1ColumnNames = new String[] { "follower", "followee" };
+    final Type[] joinTypes = new Type[] { Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE };
+    final String[] joinColumnNames = new String[] { "follower", "followee", "follower", "followee" };
+
     final Schema tableSchema1 = new Schema(table1Types, table1ColumnNames);
-    final Schema tableSchema2 = new Schema(table2Types, table2ColumnNames);
+    final Schema tableSchema2 = tableSchema1;
     final Schema outputSchema = tableSchema1;
-    final Schema joinSchema = new Schema(outputTypes, outputColumnNames);
+    final Schema joinSchema = new Schema(joinTypes, joinColumnNames);
     final int numPartition = 2;
 
     final SQLiteQueryScan scan1 = new SQLiteQueryScan("testtable0.db", "select * from testtable1", tableSchema1);
     final SQLiteQueryScan scan2 = new SQLiteQueryScan("testtable1.db", "select * from testtable1", tableSchema2);
+    // currently need to replicate the db file because of multi-thread sqlite thing. going to check if there is a
+    // smarter way later.
 
-    final PartitionFunction<String, Integer> pf = new SingleFieldHashPartitionFunction(numPartition); // 2 workers
-    pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0); // partition by id
+    final PartitionFunction<String, Integer> pf0 = new SingleFieldHashPartitionFunction(numPartition); // 2 workers
+    pf0.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0); // partition by 1st column
+    final PartitionFunction<String, Integer> pf1 = new SingleFieldHashPartitionFunction(numPartition); // 2 workers
+    pf1.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1); // partition by 2nd column
 
-    final int numIter = 5;
+    final int numIter = 4;
+    final ShuffleProducer sp0[] = new ShuffleProducer[numIter];
     final ShuffleProducer sp1[] = new ShuffleProducer[numIter];
     final ShuffleProducer sp2[] = new ShuffleProducer[numIter];
+    final ShuffleConsumer sc0[] = new ShuffleConsumer[numIter];
     final ShuffleConsumer sc1[] = new ShuffleConsumer[numIter];
     final ShuffleConsumer sc2[] = new ShuffleConsumer[numIter];
     final LocalJoin localjoin[] = new LocalJoin[numIter];
     final Project proj[] = new Project[numIter];
     final DupElim dupelim[] = new DupElim[numIter];
     final SQLiteQueryScan scan[] = new SQLiteQueryScan[numIter];
-    ExchangePairID arrayID1, arrayID2;
+    ExchangePairID arrayID1, arrayID2, arrayID0;
     arrayID1 = ExchangePairID.newID();
     arrayID2 = ExchangePairID.newID();
-    sp1[0] = new ShuffleProducer(scan1, arrayID1, new int[] { WORKER_1_ID, WORKER_2_ID }, pf);
-    sp2[0] = new ShuffleProducer(scan2, arrayID2, new int[] { WORKER_1_ID, WORKER_2_ID }, pf);
+    sp1[0] = new ShuffleProducer(scan1, arrayID1, new int[] { WORKER_1_ID, WORKER_2_ID }, pf1);
+    sp2[0] = new ShuffleProducer(scan2, arrayID2, new int[] { WORKER_1_ID, WORKER_2_ID }, pf0);
 
     for (int i = 1; i < numIter; ++i) {
       sc1[i] = new ShuffleConsumer(sp1[i - 1], arrayID1, new int[] { WORKER_1_ID, WORKER_2_ID });
       sc2[i] = new ShuffleConsumer(sp2[i - 1], arrayID2, new int[] { WORKER_1_ID, WORKER_2_ID });
-      localjoin[i] = new LocalJoin(joinSchema, sc1[i], sc2[i], new int[] { 0 }, new int[] { 0 });
+      localjoin[i] = new LocalJoin(joinSchema, sc1[i], sc2[i], new int[] { 1 }, new int[] { 0 });
       proj[i] = new Project(new Integer[] { 0, 3 }, localjoin[i]);
-      dupelim[i] = new DupElim(proj[i]);
+      arrayID0 = ExchangePairID.newID();
+      sp0[i] = new ShuffleProducer(proj[i], arrayID0, new int[] { WORKER_1_ID, WORKER_2_ID }, pf0);
+      sc0[i] = new ShuffleConsumer(sp0[i], arrayID0, new int[] { WORKER_1_ID, WORKER_2_ID });
+      dupelim[i] = new DupElim(sc0[i]);
+      scan[i] = new SQLiteQueryScan("testtable" + (i + 1) + ".db", "select * from testtable1", tableSchema1);
       arrayID1 = ExchangePairID.newID();
       arrayID2 = ExchangePairID.newID();
-      scan[i] = new SQLiteQueryScan("testtable" + (i + 1) + ".db", "select * from testtable1", tableSchema1);
-      sp1[i] = new ShuffleProducer(scan[i], arrayID1, new int[] { WORKER_1_ID, WORKER_2_ID }, pf);
-      sp2[i] = new ShuffleProducer(dupelim[i], arrayID2, new int[] { WORKER_1_ID, WORKER_2_ID }, pf);
+      sp1[i] = new ShuffleProducer(scan[i], arrayID1, new int[] { WORKER_1_ID, WORKER_2_ID }, pf1);
+      sp2[i] = new ShuffleProducer(dupelim[i], arrayID2, new int[] { WORKER_1_ID, WORKER_2_ID }, pf0);
     }
     final CollectProducer cp = new CollectProducer(dupelim[numIter - 1], serverReceiveID, MASTER_ID);
 

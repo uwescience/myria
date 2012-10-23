@@ -34,7 +34,7 @@ public class LocalJoin extends Operator implements Externalizable {
       // type check in query plan?
       final int rowIndx1 = index;
       final int rowIndx2 = another.index;
-      // System.out.println(rowIndx1 + " " + rowIndx2 + " " + colIndx + " " + type);
+      // System.out.println(rowIndx1 + " " + rowIndx2 + " " + colIndx1 + " " + colIndx2);
       if (type1.equals(Type.INT_TYPE)) {
         return tb.getInt(colIndx1, rowIndx1) == another.tb.getInt(colIndx2, rowIndx2);
       }
@@ -129,10 +129,13 @@ public class LocalJoin extends Operator implements Externalizable {
     int num2 = tuple2.tb.inputSchema().numFields();
     for (int i = 0; i < num1; ++i) {
       ans.put(i, tuple1.tb.outputRawData().get(i).get(tuple1.index));
+      // System.out.print(tuple1.tb.outputRawData().get(i).get(tuple1.index) + "\t");
     }
     for (int i = 0; i < num2; ++i) {
       ans.put(i + num1, tuple2.tb.outputRawData().get(i).get(tuple2.index));
+      // System.out.print(tuple2.tb.outputRawData().get(i).get(tuple2.index) + "\t");
     }
+    // System.out.println("");
   }
 
   @Override
@@ -205,7 +208,9 @@ public class LocalJoin extends Operator implements Externalizable {
       }
     }
     if (nexttb == null) {
-      nexttb = ans.getOutput().get(0);
+      if (ans.getOutput().size() != 0) {
+        nexttb = ans.getOutput().get(0);
+      }
     }
     return nexttb;
   }

@@ -103,7 +103,7 @@ public class DupElim extends Operator {
             break;
           }
         }
-        System.out.println(i + " " + unique);
+        // System.out.println(i + " " + unique);
         if (unique) {
           tupleList.add(cntTuple);
         } else {
