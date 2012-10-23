@@ -77,7 +77,7 @@ public final class Main {
     final PartitionFunction<String, Integer> pf1 = new SingleFieldHashPartitionFunction(numPartition); // 2 workers
     pf1.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1); // partition by 2nd column
 
-    final int numIter = 4;
+    final int numIter = 3;
     final ShuffleProducer sp0[] = new ShuffleProducer[numIter];
     final ShuffleProducer sp1[] = new ShuffleProducer[numIter];
     final ShuffleProducer sp2[] = new ShuffleProducer[numIter];
@@ -215,18 +215,28 @@ public final class Main {
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final ExchangePairID collectID = ExchangePairID.newID();
 
-    final Type[] table1Types = new Type[] { Type.LONG_TYPE, Type.STRING_TYPE };
-    final String[] table1ColumnNames = new String[] { "id", "name" };
-    final Type[] table2Types = new Type[] { Type.LONG_TYPE, Type.STRING_TYPE };
-    final String[] table2ColumnNames = new String[] { "id", "name" };
-    final Type[] outputTypes = new Type[] { Type.LONG_TYPE, Type.STRING_TYPE };
-    final String[] outputColumnNames = new String[] { "id", "name" };
-    final Schema tableSchema1 = new Schema(table1Types, table1ColumnNames);
-    final Schema tableSchema2 = new Schema(table2Types, table2ColumnNames);
-    final Schema outputSchema = new Schema(outputTypes, outputColumnNames);
+    final Type[] table1Types = new Type[] { Type.LONG_TYPE, Type.LONG_TYPE };
+    final String[] table1ColumnNames = new String[] { "follower", "followee" };
+    final Type[] joinTypes = new Type[] { Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE };
+    final String[] joinColumnNames = new String[] { "follower", "followee", "follower", "followee" };
 
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan("testdupelim.db", "select * from testtable1", tableSchema1);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan("testdupelim.db", "select * from testtable1", tableSchema2);
+    final Schema tableSchema1 = new Schema(table1Types, table1ColumnNames);
+    final Schema tableSchema2 = tableSchema1;
+    final Schema outputSchema = tableSchema1;
+    final Schema joinSchema = new Schema(joinTypes, joinColumnNames);
+    final int numPartition = 2;
+
+    /*
+     * final Type[] table1Types = new Type[] { Type.LONG_TYPE, Type.STRING_TYPE }; final String[] table1ColumnNames =
+     * new String[] { "id", "name" }; final Type[] table2Types = new Type[] { Type.LONG_TYPE, Type.STRING_TYPE }; final
+     * String[] table2ColumnNames = new String[] { "id", "name" }; final Type[] outputTypes = new Type[] {
+     * Type.LONG_TYPE, Type.STRING_TYPE }; final String[] outputColumnNames = new String[] { "id", "name" }; final
+     * Schema tableSchema1 = new Schema(table1Types, table1ColumnNames); final Schema tableSchema2 = new
+     * Schema(table2Types, table2ColumnNames); final Schema outputSchema = new Schema(outputTypes, outputColumnNames);
+     */
+
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan("testtable0.db", "select * from testtable1", tableSchema1);
+    final SQLiteQueryScan scan2 = new SQLiteQueryScan("testtable0.db", "select * from testtable1", tableSchema2);
     final DupElim dupElim1 = new DupElim(scan1);
     final DupElim dupElim2 = new DupElim(scan2);
     final CollectProducer cp1 = new CollectProducer(dupElim1, serverReceiveID, MASTER_ID);
