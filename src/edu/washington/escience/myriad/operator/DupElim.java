@@ -73,12 +73,10 @@ public class DupElim extends Operator {
   }
 
   Operator child;
-  Schema outputSchema;
   HashMap<Integer, List<IndexedTuple>> uniqueTuples;
 
   public DupElim(final Operator child) {
     this.child = child;
-    outputSchema = child.getSchema();
     uniqueTuples = new HashMap<Integer, List<IndexedTuple>>();
   }
 
@@ -122,7 +120,7 @@ public class DupElim extends Operator {
 
   @Override
   public Schema getSchema() {
-    return outputSchema;
+    return child.getSchema();
   }
 
   @Override

@@ -143,13 +143,13 @@ public class LocalJoin extends Operator implements Externalizable {
     if (endOfFlow) {
       return null;
     }
-    TupleBatch nexttb = ans.pop();
+    TupleBatch nexttb = ans.popFilled();
     while (nexttb == null) {
       boolean hasNewTuple = false; // might change to EOS instead of hasNext()
       if (child1.hasNext()) {
         hasNewTuple = true;
         final _TupleBatch tb = child1.next();
-        for (int i = 0; i < tb.numInputTuples(); ++i) { // outputTuples?
+        for (int i = 0; i < tb.numOutputTuples(); ++i) { // outputTuples?
           final IndexedTuple tuple1 = new IndexedTuple(tb, i);
           final int cntHashCode = tuple1.hashCode4Keys(compareIndx1);
 
@@ -177,7 +177,7 @@ public class LocalJoin extends Operator implements Externalizable {
       if (child2.hasNext()) {
         hasNewTuple = true;
         final _TupleBatch tb = child2.next();
-        for (int i = 0; i < tb.numInputTuples(); ++i) { // outputTuples?
+        for (int i = 0; i < tb.numOutputTuples(); ++i) { // outputTuples?
           final IndexedTuple tuple2 = new IndexedTuple(tb, i);
           final int cntHashCode = tuple2.hashCode4Keys(compareIndx2);
 
@@ -201,15 +201,15 @@ public class LocalJoin extends Operator implements Externalizable {
           tupleList.add(tuple2);
         }
       }
-      nexttb = ans.pop();
+      nexttb = ans.popFilled();
       if (!hasNewTuple) {
         endOfFlow = true;
         break;
       }
     }
     if (nexttb == null) {
-      if (ans.getOutput().size() != 0) {
-        nexttb = ans.getOutput().get(0);
+      if (ans.numTuples() > 0) {
+        nexttb = ans.popAny();
       }
     }
     return nexttb;

@@ -103,8 +103,8 @@ public final class SQLiteAccessMethod {
 
       return new SQLiteTupleBatchIterator(statement, schema, sqliteConnection);
     } catch (final SQLiteException e) {
-      System.err.println(e.getMessage());
-      throw new RuntimeException(e.getMessage());
+      e.printStackTrace();
+      throw new RuntimeException(e);
     }
   }
 
