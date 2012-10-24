@@ -11,7 +11,7 @@ import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.table._TupleBatch;
 
-public class SQLLiteTest {
+public class SQLiteTest {
 
   @Test
   public void sqliteTest() throws DbException {
