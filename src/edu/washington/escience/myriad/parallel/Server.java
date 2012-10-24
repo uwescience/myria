@@ -7,6 +7,7 @@ import java.io.ObjectOutputStream;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +27,7 @@ import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnFactory;
 import edu.washington.escience.myriad.operator.Operator;
@@ -403,7 +405,7 @@ public class Server {
   /**
    * @return if the query is successfully executed.
    * */
-  public boolean startServerQuery(int queryId, final CollectConsumer serverPlan) throws DbException {
+  public TupleBatchBuffer startServerQuery(int queryId, final CollectConsumer serverPlan) throws DbException {
     BitSet workersReceived = workersReceivedQuery.get(queryId);
     HashMap<Integer, Integer> workersAssigned = workersAssignedToQuery.get(queryId);
     if (workersReceived.nextClearBit(0) >= workersAssigned.size()) {
@@ -429,21 +431,37 @@ public class Server {
       }
       out.println("");
 
+      Date start = new Date();
       serverPlan.open();
 
       startWorkerQuery(queryId);
 
+      TupleBatchBuffer outBufferForTesting = new TupleBatchBuffer(serverPlan.getSchema());
+      int cnt = 0;
       while (serverPlan.hasNext()) {
         final _TupleBatch tup = serverPlan.next();
+        outBufferForTesting.putAll(tup);
         out.println(new ImmutableInMemoryTupleBatch(serverPlan.getSchema(), tup.outputRawData(), tup.numOutputTuples())
             .toString());
+        cnt++;
       }
 
       serverPlan.close();
       Server.this.dataBuffer.remove(serverPlan.getOperatorID());
-      return true;
+      Date end = new Date();
+      System.out.println("Number of results: " + cnt);
+      int elapse = (int) (end.getTime() - start.getTime());
+      int hour = elapse / 3600000;
+      elapse -= hour * 3600000;
+      int minute = elapse / 60000;
+      elapse -= minute * 60000;
+      int second = elapse / 1000;
+      elapse -= second * 1000;
+
+      System.out.println(String.format("Time elapsed: %1$dh%2$dm%3$ds.%4$03d", hour, minute, second, elapse));
+      return outBufferForTesting;
     } else {
-      return false;
+      return null;
     }
   }
 }
