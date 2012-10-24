@@ -69,8 +69,7 @@ public final class FileScan extends Operator {
   }
 
   @Override
-  public void open() throws DbException {
-    super.open();
+  public void init() throws DbException {
     try {
       tokenizer = new StreamTokenizer(new BufferedReader(new FileReader(file)));
     } catch (FileNotFoundException e) {
@@ -181,7 +180,7 @@ public final class FileScan extends Operator {
 
   @Override
   public Operator[] getChildren() {
-    return null;
+    return new Operator[] {};
   }
 
   @Override
@@ -195,11 +194,15 @@ public final class FileScan extends Operator {
   }
 
   @Override
-  public void close() {
-    super.close();
+  public void cleanup() {
     tokenizer = null;
     while (buffer.getCurrentNumTuples() > 0) {
       buffer.pop();
     }
+  }
+
+  @Override
+  public _TupleBatch fetchNextReady() throws DbException {
+    return fetchNext();
   }
 }
