@@ -5,6 +5,7 @@ import java.util.HashMap;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.operator.BlockingDataReceiver;
 import edu.washington.escience.myriad.operator.JdbcQueryScan;
@@ -18,20 +19,8 @@ import edu.washington.escience.myriad.parallel.Server;
 
 public class ParallelJDBCTest extends SystemTestBase {
 
-  public static void parallelTestJDBC(final String[] args) throws DbException, IOException {
-    // create table testtable1 (id int, name varchar(20));
-    // insert into testtable1 (id,name) values (1,'name1'), (2, 'name2');
-    //
-    // create table testtable2 (id int, name varchar(20));
-    // insert into testtable2 (id,name) values (1,'name1'), (2, 'name2');
-    //
-    // create table temptable1 (id int, name varchar(20));
-
-    // Process worker1P = new
-    // ProcessBuilder("/usr/bin/java","-Dfile.encoding=UTF-8 -classpath /home/slxu/workspace/JdbcAccessMethod/bin:/home/slxu/workspace/JdbcAccessMethod/lib/mysql-connector-java-5.1.21-bin.jar:/home/slxu/workspace/JdbcAccessMethod/lib/sqlite4java-282/sqlite4java.jar:/home/slxu/workspace/JdbcAccessMethod/lib/guava-12.0.1.jar:/home/slxu/workspace/JdbcAccessMethod/lib/mina-core-2.0.4.jar:/home/slxu/workspace/JdbcAccessMethod/lib/mina-filter-compression-2.0.4.jar:/home/slxu/workspace/JdbcAccessMethod/lib/slf4j-api-1.6.1.jar:/home/slxu/workspace/JdbcAccessMethod/lib/slf4j-log4j12-1.6.1.jar:/home/slxu/workspace/JdbcAccessMethod/lib/log4j-1.2.17.jar:/home/slxu/workspace/JdbcAccessMethod/lib/jline-0.9.94.jar:/home/slxu/workspace/JdbcAccessMethod/lib/commons-lang3-3.1.jar edu.washington.escience.parallel.Worker localhost:9001 localhost:8001").start();
-    // Process worker2P = new ProcessBuilder("java",
-    // "-Dfile.encoding=UTF-8 -classpath /home/slxu/workspace/JdbcAccessMethod/bin:/home/slxu/workspace/JdbcAccessMethod/lib/mysql-connector-java-5.1.21-bin.jar:/home/slxu/workspace/JdbcAccessMethod/lib/sqlite4java-282/sqlite4java.jar:/home/slxu/workspace/JdbcAccessMethod/lib/guava-12.0.1.jar:/home/slxu/workspace/JdbcAccessMethod/lib/mina-core-2.0.4.jar:/home/slxu/workspace/JdbcAccessMethod/lib/mina-filter-compression-2.0.4.jar:/home/slxu/workspace/JdbcAccessMethod/lib/slf4j-api-1.6.1.jar:/home/slxu/workspace/JdbcAccessMethod/lib/slf4j-log4j12-1.6.1.jar:/home/slxu/workspace/JdbcAccessMethod/lib/log4j-1.2.17.jar:/home/slxu/workspace/JdbcAccessMethod/lib/jline-0.9.94.jar:/home/slxu/workspace/JdbcAccessMethod/lib/commons-lang3-3.1.jar edu.washington.escience.parallel.Worker localhost:9002 localhost:8001").start();
-
+  // @Test
+  public void parallelTestJDBC() throws DbException, IOException {
     final String username = "root";
     final String password = "1234";
 
@@ -73,7 +62,15 @@ public class ParallelJDBCTest extends SystemTestBase {
     }
     Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
     System.out.println("Query dispatched to the workers");
-    Server.runningInstance.startServerQuery(0, new CollectConsumer(outputSchema, serverReceiveID,
-        new int[] { WORKER_ID[1] }));
+    TupleBatchBuffer result = null;
+    CollectConsumer serverPlan = new CollectConsumer(outputSchema, serverReceiveID, new int[] { WORKER_ID[1] });
+    while ((result = Server.runningInstance.startServerQuery(0, serverPlan)) == null) {
+      try {
+        Thread.sleep(100);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+        Thread.currentThread().interrupt();
+      }
+    }
   }
 }
