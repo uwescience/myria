@@ -259,10 +259,10 @@ public class Worker {
 
     public final void start() {
       try {
-        timer.schedule(this, (long) (Math.random() * 3000) + 50000, // initial
-                                                                    // delay
-            (long) (Math.random() * 2000) + 10000); // subsequent
-                                                    // rate
+        timer.schedule(this, (long) (Math.random() * 3000) + 5000, // initial
+                                                                   // delay
+            (long) (Math.random() * 2000) + 1000); // subsequent
+                                                   // rate
       } catch (final IllegalStateException e) {
         /* already get canceled, ignore */
         /* Do nothing */;
@@ -315,6 +315,7 @@ public class Worker {
       }
     }
 
+    System.out.println("confdir: " + confDir.getAbsolutePath());
     final Configuration conf = new Configuration(confDir);
     // Instantiate a new worker
     final Worker w = new Worker(conf);

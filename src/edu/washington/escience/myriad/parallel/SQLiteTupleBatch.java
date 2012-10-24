@@ -36,6 +36,13 @@ public class SQLiteTupleBatch implements _TupleBatch {
 
   @Override
   public synchronized _TupleBatch append(final _TupleBatch another) {
+    insertIntoSQLite(inputSchema, tableName, dataDir + "/" + filename, another);
+    return this;
+  }
+
+  public static void insertIntoSQLite(final Schema inputSchema, String tableName, String dbFilePath,
+      final _TupleBatch data) {
+
     final Iterator<Schema.TDItem> it = inputSchema.iterator();
 
     final String[] fieldNames = new String[inputSchema.numFields()];
@@ -47,10 +54,9 @@ public class SQLiteTupleBatch implements _TupleBatch {
       fieldNames[i++] = item.getName();
     }
 
-    SQLiteAccessMethod.tupleBatchInsert(dataDir + "/" + filename, "insert into " + tableName + " ( "
+    SQLiteAccessMethod.tupleBatchInsert(dbFilePath, "insert into " + tableName + " ( "
         + StringUtils.join(fieldNames, ',') + " ) values ( " + StringUtils.join(placeHolders, ',') + " )",
-        new TupleBatch(another.outputSchema(), another.outputRawData(), another.numOutputTuples()));
-    return this;
+        new TupleBatch(data.outputSchema(), data.outputRawData(), data.numOutputTuples()));
   }
 
   @Override
