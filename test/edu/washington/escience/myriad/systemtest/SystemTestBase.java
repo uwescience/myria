@@ -490,7 +490,7 @@ public class SystemTestBase {
 
   }
 
-  public static String readEclipseClasspath(File eclipseClasspathXMLFile) throws SAXException, IOException,
+  public static String[] readEclipseClasspath(File eclipseClasspathXMLFile) throws SAXException, IOException,
       ParserConfigurationException {
 
     DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
@@ -517,7 +517,25 @@ public class SystemTestBase {
         }
       }
     }
-    return classpathSB.toString();
+    NodeList attributeList = doc.getElementsByTagName("attribute");
+    StringBuilder libPathSB = new StringBuilder();
+    for (int i = 0; i < attributeList.getLength(); i++) {
+      Node node = attributeList.item(i);
+      String value = null;
+      if (node.getNodeType() == Node.ELEMENT_NODE
+          && ("org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY".equals(((Element) node)
+              .getAttribute("name"))) && ((value = ((Element) node).getAttribute("value")) != null)) {
+        File f = new File(value);
+        while (value != null && value.length() > 0 && !f.exists()) {
+          value = value.substring(value.indexOf(File.separator) + 1);
+          f = new File(value);
+        }
+        if (f.exists()) {
+          libPathSB.append(f.getAbsolutePath() + separator);
+        }
+      }
+    }
+    return new String[] { classpathSB.toString(), libPathSB.toString() };
   }
 
   static Server startMaster() throws IOException {
@@ -564,11 +582,11 @@ public class SystemTestBase {
         }
         fos.close();
 
-        String workerClasspath = readEclipseClasspath(new File(".classpath"));
+        String[] workerClasspath = readEclipseClasspath(new File(".classpath"));
         System.out.println(workerClasspath);
         ProcessBuilder pb =
-            new ProcessBuilder("java", "-classpath", workerClasspath, Worker.class.getCanonicalName(), "--conf",
-                workingDIR);
+            new ProcessBuilder("java", "-Djava.library.path=" + workerClasspath[1], "-classpath", workerClasspath[0],
+                Worker.class.getCanonicalName(), "--conf", workingDIR);
 
         pb.directory(new File(workingDIR));
         pb.redirectErrorStream(true);

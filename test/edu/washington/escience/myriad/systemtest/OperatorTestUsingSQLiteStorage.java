@@ -60,7 +60,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final int numPartition = 2;
 
     final PartitionFunction<String, Integer> pf = new SingleFieldHashPartitionFunction(numPartition);
-    pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1); // partition by name
+    pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1); // partition by id
 
     final SQLiteQueryScan scanTable =
         new SQLiteQueryScan(testtableName + ".db", "select * from " + testtableName, schema);
