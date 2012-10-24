@@ -181,7 +181,7 @@ public class Worker {
     public final void exceptionCaught(final IoSession session, final Throwable cause) {
       System.out.println("exception caught");
       cause.printStackTrace();
-      ParallelUtility.closeSession(session);
+      // ParallelUtility.closeSession(session);
     }
 
     /**

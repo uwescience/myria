@@ -175,7 +175,7 @@ public class Server {
     @Override
     public void exceptionCaught(final IoSession session, final Throwable cause) {
       cause.printStackTrace();
-      ParallelUtility.closeSession(session);
+      // ParallelUtility.closeSession(session);
     }
 
     @Override
