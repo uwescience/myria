@@ -51,17 +51,20 @@ public class TupleBatchBuffer {
 
   /**
    * Makes a batch of any tuples in the buffer and appends it to the internal list.
+   * 
+   * @return true if any tuples were added.
    */
-  private void finishBatch() {
+  private boolean finishBatch() {
     if (numColumnsReady != 0) {
       throw new AssertionError("Can't finish a batch with partially-completed tuples!");
     }
     if (currentInProgressTuples == 0) {
-      return;
+      return false;
     }
     readyTuples.add(new TupleBatch(schema, currentColumns, currentInProgressTuples));
     currentColumns = ColumnFactory.allocateColumns(schema);
     currentInProgressTuples = 0;
+    return true;
   }
 
   /**
