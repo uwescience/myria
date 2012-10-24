@@ -50,11 +50,9 @@ public class SQLiteTest {
       return;
     }
 
-    /* Print all the results */
-    while (root.hasNext()) {
-      final _TupleBatch tb = root.next();
+    _TupleBatch tb = null;
+    while ((tb = root.next()) != null) {
       System.out.println(tb);
-      // SQLiteAccessMethod.tupleBatchInsert(filename, insert, (TupleBatch) tb);
     }
 
     /* Cleanup */

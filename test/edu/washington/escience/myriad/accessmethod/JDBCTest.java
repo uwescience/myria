@@ -47,19 +47,8 @@ public class JDBCTest {
 
     root.open();
 
-    // Schema schema = root.getSchema();
-
-    // if (schema != null)
-    // {
-    // System.out.println("Schema of result is: " + schema);
-    // } else {
-    // System.err.println("Result has no Schema, exiting");
-    // root.close();
-    // return;
-    // }
-
-    while (root.hasNext()) {
-      final _TupleBatch tb = root.next();
+    _TupleBatch tb = null;
+    while ((tb = root.next()) != null) {
       System.out.println(tb);
       JdbcAccessMethod.tupleBatchInsert(jdbcDriverName, connectionString, insert, (TupleBatch) tb, "", "");
     }
