@@ -43,7 +43,7 @@ public class SocketInfo implements Serializable {
 
   @Override
   public String toString() {
-    return address.toString();
+    return getAddress().toString();
   }
 
 }

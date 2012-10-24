@@ -53,7 +53,7 @@ public class ShuffleProducer extends Producer {
           for (int p = 0; p < numWorker; p++) {
             final TupleBatchBuffer etb = buffers[p];
             TupleBatch tb = null;
-            while ((tb = etb.pop()) != null) {
+            while ((tb = etb.popFilled()) != null) {
               final List<Column> columns = tb.outputRawData();
 
               final ColumnMessage[] columnProtos = new ColumnMessage[columns.size()];
@@ -72,7 +72,7 @@ public class ShuffleProducer extends Producer {
         for (int i = 0; i < numWorker; i++) {
           TupleBatchBuffer tbb = buffers[i];
           if (tbb.numTuples() > 0) {
-            List<TupleBatch> remain = tbb.getOutput();
+            List<TupleBatch> remain = tbb.getAll();
             for (TupleBatch tb : remain) {
               final List<Column> columns = tb.outputRawData();
               final ColumnMessage[] columnProtos = new ColumnMessage[columns.size()];
