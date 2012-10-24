@@ -128,7 +128,7 @@ public class LocalJoin extends Operator implements Externalizable {
   protected void addToAns(IndexedTuple tuple1, IndexedTuple tuple2) {
     int num1 = tuple1.tb.inputSchema().numFields();
     int num2 = tuple2.tb.inputSchema().numFields();
-    System.out.println(num1 + " " + num2);
+    // System.out.println(num1 + " " + num2);
     for (int i = 0; i < num1; ++i) {
       ans.put(i, tuple1.tb.outputRawData().get(i).get(tuple1.index));
     }
@@ -205,12 +205,11 @@ public class LocalJoin extends Operator implements Externalizable {
 
   @Override
   protected _TupleBatch fetchNext() throws DbException {
-    System.out.println("infetchnext");
     if (eos()) {
       return null;
     }
-    TupleBatch nexttb = ans.pop();
-    System.out.println(nexttb == null);
+    TupleBatch nexttb = ans.popFilled();
+    // System.out.println(nexttb == null);
     while (nexttb == null) {
       boolean hasNewTuple = false; // might change to EOS instead of hasNext()
       _TupleBatch tb = null;
@@ -223,14 +222,16 @@ public class LocalJoin extends Operator implements Externalizable {
         hasNewTuple = true;
         processChild2TB(tb);
       }
-      nexttb = ans.pop();
+      nexttb = ans.popFilled();
       if (!hasNewTuple) {
         setEOS();
         break;
       }
     }
     if (nexttb == null) {
-      nexttb = ans.getOutput().get(0);
+      if (ans.numTuples() > 0) {
+        nexttb = ans.popAny();
+      }
     }
     return nexttb;
   }

@@ -24,6 +24,7 @@ public class SQLiteQueryScan extends Operator {
     this.baseSQL = baseSQL;
     this.filename = filename;
     schema = outputSchema;
+    dataDir = ".";
   }
 
   @Override

@@ -54,7 +54,7 @@ public final class CollectProducer extends Producer {
             }
           }
 
-          while ((tup = buffer.pop()) != null) {
+          while ((tup = buffer.popFilled()) != null) {
             final List<Column> columns = tup.outputRawData();
             final ColumnMessage[] columnProtos = new ColumnMessage[columns.size()];
             int i = 0;
@@ -69,7 +69,7 @@ public final class CollectProducer extends Producer {
         }
 
         if (buffer.numTuples() > 0) {
-          List<TupleBatch> remain = buffer.getOutput();
+          List<TupleBatch> remain = buffer.getAll();
           for (TupleBatch tb : remain) {
             final List<Column> columns = tb.outputRawData();
             final ColumnMessage[] columnProtos = new ColumnMessage[columns.size()];
