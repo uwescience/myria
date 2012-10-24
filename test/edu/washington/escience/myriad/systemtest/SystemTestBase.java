@@ -51,6 +51,7 @@ public class SystemTestBase {
 
   public static final String workerTestBaseFolder = "/tmp/" + Server.SYSTEM_NAME + "_systemtests";
 
+  @SuppressWarnings({ "rawtypes", "unchecked" })
   static class Tuple implements Comparable<Tuple> {
     Comparable[] values;
 
@@ -235,7 +236,7 @@ public class SystemTestBase {
       for (int row = 0; row < numRow; row++) {
         Tuple t = new Tuple(numColumn);
         for (int column = 0; column < numColumn; column++) {
-          t.set(column, (Comparable) columns.get(column).get(row));
+          t.set(column, (Comparable<?>) columns.get(column).get(row));
         }
         result.add(t);
       }
@@ -255,7 +256,7 @@ public class SystemTestBase {
       for (int row = 0; row < numRow; row++) {
         Tuple t = new Tuple(numColumn);
         for (int column = 0; column < numColumn; column++) {
-          t.set(column, (Comparable) columns.get(column).get(row));
+          t.set(column, (Comparable<?>) columns.get(column).get(row));
         }
         Integer numOccur = result.get(t);
         if (numOccur == null) {
@@ -299,8 +300,12 @@ public class SystemTestBase {
       e.printStackTrace();
       throw new IOException(e);
     } finally {
-      statement.dispose();
-      sqliteConnection.dispose();
+      if (statement != null) {
+        statement.dispose();
+      }
+      if (sqliteConnection != null) {
+        sqliteConnection.dispose();
+      }
     }
   }
 
@@ -321,7 +326,7 @@ public class SystemTestBase {
       for (int i = 0; i < numRow; i++) {
         Tuple t = new Tuple(numColumn);
         for (int j = 0; j < numColumn; j++) {
-          t.set(j, (Comparable) columns.get(j).get(i));
+          t.set(j, (Comparable<?>) columns.get(j).get(i));
         }
         expectedResults.add(t);
       }
@@ -330,6 +335,7 @@ public class SystemTestBase {
 
   }
 
+  @SuppressWarnings("rawtypes")
   public static HashMap<Tuple, Integer> naturalJoin(TupleBatchBuffer child1, TupleBatchBuffer child2,
       int child1JoinColumn, int child2JoinColumn) {
 
@@ -350,14 +356,14 @@ public class SystemTestBase {
       for (int i = 0; i < numRow; i++) {
         Tuple t = new Tuple(numColumn);
         for (int j = 0; j < numColumn; j++) {
-          t.set(j, (Comparable) output.get(j).get(i));
+          t.set(j, (Comparable<?>) output.get(j).get(i));
         }
         Object v = t.get(child1JoinColumn);
         HashMap<Tuple, Integer> tuples = child1Hash.get(v);
         if (tuples == null) {
           tuples = new HashMap<Tuple, Integer>();
           tuples.put(t, 1);
-          child1Hash.put((Comparable) v, tuples);
+          child1Hash.put((Comparable<?>) v, tuples);
         } else {
           Integer occur = tuples.get(t);
           // if (occur == null) {
@@ -382,7 +388,7 @@ public class SystemTestBase {
           Tuple child2Tuple = new Tuple(numChild2Column);
 
           for (int j = 0; j < numChild2Column; j++) {
-            child2Tuple.set(j, (Comparable) child2Columns.get(j).get(i));
+            child2Tuple.set(j, (Comparable<?>) child2Columns.get(j).get(i));
           }
 
           for (Entry<Tuple, Integer> entry : matchedTuples.entrySet()) {
@@ -583,7 +589,6 @@ public class SystemTestBase {
         fos.close();
 
         String[] workerClasspath = readEclipseClasspath(new File(".classpath"));
-        System.out.println(workerClasspath);
         ProcessBuilder pb =
             new ProcessBuilder("java", "-Djava.library.path=" + workerClasspath[1], "-classpath", workerClasspath[0],
                 Worker.class.getCanonicalName(), "--conf", workingDIR);
@@ -592,6 +597,7 @@ public class SystemTestBase {
         pb.redirectErrorStream(true);
         pb.redirectOutput(Redirect.INHERIT);
 
+        @SuppressWarnings("unused")
         Process p = pb.start();
 
         try {
