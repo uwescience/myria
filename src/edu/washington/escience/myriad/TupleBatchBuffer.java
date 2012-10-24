@@ -1,6 +1,7 @@
 package edu.washington.escience.myriad;
 
 import java.util.BitSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -9,6 +10,7 @@ import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnFactory;
+import edu.washington.escience.myriad.table._TupleBatch;
 
 /**
  * Used for creating TupleBatch objects on the fly. A helper class used in, e.g., the Scatter operator.
@@ -30,14 +32,7 @@ public class TupleBatchBuffer {
   /** Internal state representing the number of columns that are ready in the current tuple. */
   private int numColumnsReady;
   /** Internal state representing the number of tuples in the in-progress TupleBatch. */
-  private int currentNumTuples;
-
-  /**
-   * @return the number of tuples currently in the batch.
-   */
-  public final int getCurrentNumTuples() {
-    return currentNumTuples;
-  }
+  private int currentInProgressTuples;
 
   /**
    * Constructs an empty TupleBatchBuffer to hold tuples matching the specified Schema.
@@ -51,7 +46,7 @@ public class TupleBatchBuffer {
     numColumns = schema.numFields();
     columnsReady = new BitSet(numColumns);
     numColumnsReady = 0;
-    currentNumTuples = 0;
+    currentInProgressTuples = 0;
   }
 
   /**
@@ -63,34 +58,42 @@ public class TupleBatchBuffer {
     if (numColumnsReady != 0) {
       throw new AssertionError("Can't finish a batch with partially-completed tuples!");
     }
-    if (currentNumTuples == 0) {
+    if (currentInProgressTuples == 0) {
       return false;
     }
-    readyTuples.add(new TupleBatch(schema, currentColumns, currentNumTuples));
+    readyTuples.add(new TupleBatch(schema, currentColumns, currentInProgressTuples));
     currentColumns = ColumnFactory.allocateColumns(schema);
-    currentNumTuples = 0;
+    currentInProgressTuples = 0;
     return true;
   }
 
   /**
-   * Return all tuples that are ready.
+   * Return all tuples in this buffer. The data do not get removed.
    * 
    * @return a List<TupleBatch> containing all complete tuples that have been inserted into this buffer.
    */
-  public final List<TupleBatch> getOutput() {
+  public final List<TupleBatch> getAll() {
     final List<TupleBatch> output = new LinkedList<TupleBatch>();
     output.addAll(readyTuples);
-    if (currentNumTuples > 0) {
-      output.add(new TupleBatch(schema, currentColumns, currentNumTuples));
+    if (currentInProgressTuples > 0) {
+      output.add(new TupleBatch(schema, currentColumns, currentInProgressTuples));
     }
     return output;
+  }
+
+  public final void clear() {
+    columnsReady.clear();
+    currentColumns.clear();
+    currentInProgressTuples = 0;
+    numColumnsReady = 0;
+    readyTuples.clear();
   }
 
   /**
    * @return the number of complete tuples stored in this TupleBatchBuffer.
    */
   public final int numTuples() {
-    return readyTuples.size() * TupleBatch.BATCH_SIZE + currentNumTuples;
+    return readyTuples.size() * TupleBatch.BATCH_SIZE + currentInProgressTuples;
   }
 
   /**
@@ -98,11 +101,28 @@ public class TupleBatchBuffer {
    * 
    * @return the first complete TupleBatch in this buffer, or null if none is ready.
    */
-  public final TupleBatch pop() {
-    if (readyTuples.size() > 0 || finishBatch()) {
+  public final TupleBatch popFilled() {
+    if (readyTuples.size() > 0) {
       return readyTuples.remove(0);
     }
     return null;
+  }
+
+  /**
+   * @return pop filled and non-filled TupleBatch
+   * */
+  public final TupleBatch popAny() {
+    TupleBatch tb = popFilled();
+    if (tb != null) {
+      return tb;
+    } else {
+      if (currentInProgressTuples > 0) {
+        finishBatch();
+        return popFilled();
+      } else {
+        return null;
+      }
+    }
   }
 
   /**
@@ -120,12 +140,43 @@ public class TupleBatchBuffer {
     columnsReady.set(column, true);
     numColumnsReady++;
     if (numColumnsReady == numColumns) {
-      currentNumTuples++;
+      currentInProgressTuples++;
       numColumnsReady = 0;
       columnsReady.clear();
-      if (currentNumTuples == TupleBatch.BATCH_SIZE) {
+      if (currentInProgressTuples == TupleBatch.BATCH_SIZE) {
         finishBatch();
       }
+    }
+  }
+
+  public final void putAll(_TupleBatch data) {
+    List<Column> output = data.outputRawData();
+    Preconditions.checkState(output.size() == numColumns);
+    if (columnsReady.get(0)) {
+      throw new RuntimeException("Need to fill up one row of TupleBatchBuffer before starting new one");
+    }
+    int numRow = output.get(0).size();
+    for (int row = 0; row < numRow; row++) {
+      for (int column = 0; column < numColumns; column++) {
+        currentColumns.get(column).putObject(output.get(column).get(row));
+        columnsReady.set(column, true);
+        numColumnsReady++;
+        if (numColumnsReady == numColumns) {
+          currentInProgressTuples++;
+          numColumnsReady = 0;
+          columnsReady.clear();
+          if (currentInProgressTuples == TupleBatch.BATCH_SIZE) {
+            finishBatch();
+          }
+        }
+      }
+    }
+  }
+
+  public final void merge(TupleBatchBuffer another) {
+    Iterator<TupleBatch> it = another.getAll().iterator();
+    while (it.hasNext()) {
+      putAll(it.next());
     }
   }
 

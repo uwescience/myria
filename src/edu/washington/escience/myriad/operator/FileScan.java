@@ -176,7 +176,7 @@ public final class FileScan extends Operator {
       }
       ++count;
     }
-    return buffer.pop();
+    return buffer.popAny();
   }
 
   @Override
@@ -198,8 +198,8 @@ public final class FileScan extends Operator {
   public void close() {
     super.close();
     tokenizer = null;
-    while (buffer.getCurrentNumTuples() > 0) {
-      buffer.pop();
+    while (buffer.numTuples() > 0) {
+      buffer.popAny();
     }
   }
 }

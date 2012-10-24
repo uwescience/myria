@@ -348,11 +348,11 @@ public class Configuration implements Iterable<Map.Entry<String, String>> {
     if (confDir == null) {
       confDir = new File("conf");
     }
-    this.server = loadServer(new File("conf"));
-    final SocketInfo[] workerArray = loadWorkers(new File("conf"));
-    this.workers = new ConcurrentHashMap<Integer, SocketInfo>(workerArray.length);
+    server = loadServer(confDir);
+    final SocketInfo[] workerArray = loadWorkers(confDir);
+    workers = new ConcurrentHashMap<Integer, SocketInfo>(workerArray.length);
     for (int i = 0; i < workerArray.length; i++) {
-      this.workers.put(i + 1, workerArray[i]);
+      workers.put(i + 1, workerArray[i]);
     }
 
     this.loadDefaults = loadDefaults;
@@ -374,25 +374,25 @@ public class Configuration implements Iterable<Map.Entry<String, String>> {
   @SuppressWarnings("unchecked")
   public Configuration(final Configuration other) throws IOException {
     this();
-    this.resources = (ArrayList<Object>) other.resources.clone();
+    resources = (ArrayList<Object>) other.resources.clone();
     synchronized (other) {
       if (other.properties != null) {
-        this.properties = (Properties) other.properties.clone();
+        properties = (Properties) other.properties.clone();
       }
 
       if (other.overlay != null) {
-        this.overlay = (Properties) other.overlay.clone();
+        overlay = (Properties) other.overlay.clone();
       }
 
-      this.updatingResource = new HashMap<String, String>(other.updatingResource);
+      updatingResource = new HashMap<String, String>(other.updatingResource);
     }
 
-    this.finalParameters = new HashSet<String>(other.finalParameters);
+    finalParameters = new HashSet<String>(other.finalParameters);
     synchronized (Configuration.class) {
       REGISTRY.put(this, null);
     }
-    this.classLoader = other.classLoader;
-    this.loadDefaults = other.loadDefaults;
+    classLoader = other.classLoader;
+    loadDefaults = other.loadDefaults;
     setQuietMode(other.getQuietMode());
   }
 
@@ -834,7 +834,7 @@ public class Configuration implements Iterable<Map.Entry<String, String>> {
   }
 
   synchronized boolean getQuietMode() {
-    return this.quietmode;
+    return quietmode;
   }
 
   /**
@@ -872,7 +872,7 @@ public class Configuration implements Iterable<Map.Entry<String, String>> {
   }
 
   public SocketInfo getServer() {
-    return this.server;
+    return server;
   }
 
   /**
@@ -906,7 +906,7 @@ public class Configuration implements Iterable<Map.Entry<String, String>> {
    * @return property value as an array of <code>String</code>s, or <code>null</code>.
    */
   public String[] getStrings(final String name) {
-    final Collection<String> values = this.getStringCollection(name);
+    final Collection<String> values = getStringCollection(name);
 
     return values.toArray(new String[values.size()]);
   }
@@ -978,7 +978,7 @@ public class Configuration implements Iterable<Map.Entry<String, String>> {
   }
 
   public Map<Integer, SocketInfo> getWorkers() {
-    return this.workers;
+    return workers;
   }
 
   /**
