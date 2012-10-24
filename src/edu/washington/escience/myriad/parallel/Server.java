@@ -1,7 +1,6 @@
 package edu.washington.escience.myriad.parallel;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.PrintStream;
@@ -28,6 +27,8 @@ import com.google.protobuf.ByteString;
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatchBuffer;
+import edu.washington.escience.myriad.catalog.Catalog;
+import edu.washington.escience.myriad.catalog.CatalogException;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnFactory;
 import edu.washington.escience.myriad.operator.Operator;
@@ -212,19 +213,39 @@ public class Server {
     }
   }
 
-  static final String usage = "Usage: Server catalogFile [--conf confdir] [-explain] [-f queryFile]";
+  /* TODO @Dan: get support for whatever's in args[0] into args[2]. */
+  static final String usage = "Usage: Server catalogFile [--catalog sqliteCatalogFile] [-explain] [-f queryFile]";
 
   public static void main(String[] args) throws IOException {
-    File confDir = new File("conf");
-    if (args.length >= 3 && args[1].equals("--conf")) {
-      confDir = new File(args[2]);
+    // File confDir = new File("conf");
+    // if (args.length >= 3 && args[1].equals("--conf")) {
+    // confDir = new File(args[2]);
+
+    String catalogName = "catalogs/twoNodeLocalParallel.catalog";
+
+    if (args.length >= 3 && args[1].equals("--catalog")) {
+      catalogName = args[2];
       args = ParallelUtility.removeArg(args, 1);
       args = ParallelUtility.removeArg(args, 1);
     }
 
-    final Configuration conf = new Configuration(confDir);
+    Catalog catalog;
+    List<SocketInfo> masters;
+    Map<Integer, SocketInfo> workers;
+    try {
+      catalog = Catalog.open(catalogName);
+      masters = catalog.getMasters();
+      workers = catalog.getWorkers();
+    } catch (CatalogException e) {
+      throw new RuntimeException("Reading information from the catalog failed", e);
+    }
 
-    final Server server = new Server(conf.getServer(), conf.getWorkers());
+    if (masters.size() != 1) {
+      throw new RuntimeException("Unexpected number of masters: expected 1, got " + masters.size());
+    }
+
+    final SocketInfo masterSocketInfo = masters.get(0);
+    final Server server = new Server(masterSocketInfo, workers);
 
     runningInstance = server;
 
@@ -240,8 +261,8 @@ public class Server {
         server.cleanup();
       }
     });
-    System.out.println("Server: " + server.server.getHost() + " started. Listening on port "
-        + conf.getServer().getPort());
+    System.out.println("Server: " + masterSocketInfo.getHost() + " started. Listening on port "
+        + masterSocketInfo.getPort());
     server.start(args);
   }
 
