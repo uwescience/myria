@@ -16,7 +16,6 @@ import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.operator.DupElim;
 import edu.washington.escience.myriad.operator.LocalJoin;
 import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.operator.Project;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
@@ -29,103 +28,6 @@ import edu.washington.escience.myriad.parallel.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myriad.table._TupleBatch;
 
 public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
-
-  @Test
-  public static void joinTestSQLite(final String[] args) throws DbException, IOException {
-    /*
-     * tested on twitter data, format: followee \t follower, in twitter_vr_slice_0_62.net. numIter controls the num of
-     * iterations. currently the final output is all the reachable pairs in numIter hops. (not the union of less or
-     * equal than numIter hops, so not transitive closure). there is another cpp program to help check the correctness
-     * of small scale data. need to change to unit test when that branch is done.
-     */
-    final ExchangePairID serverReceiveID = ExchangePairID.newID();
-
-    final Type[] table1Types = new Type[] { Type.LONG_TYPE, Type.LONG_TYPE };
-    final String[] table1ColumnNames = new String[] { "follower", "followee" };
-    final Type[] joinTypes = new Type[] { Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE };
-    final String[] joinColumnNames = new String[] { "follower", "followee", "follower", "followee" };
-
-    final Schema tableSchema1 = new Schema(table1Types, table1ColumnNames);
-    final Schema tableSchema2 = tableSchema1;
-    final Schema outputSchema = tableSchema1;
-    final Schema joinSchema = new Schema(joinTypes, joinColumnNames);
-    final int numPartition = 2;
-
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan("testtable0.db", "select * from testtable1", tableSchema1);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan("testtable1.db", "select * from testtable1", tableSchema2);
-    // currently need to replicate the db file because of multi-thread sqlite thing. going to check if there is a
-    // smarter way later.
-
-    final PartitionFunction<String, Integer> pf0 = new SingleFieldHashPartitionFunction(numPartition); // 2 workers
-    pf0.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0); // partition by 1st column
-    final PartitionFunction<String, Integer> pf1 = new SingleFieldHashPartitionFunction(numPartition); // 2 workers
-    pf1.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1); // partition by 2nd column
-
-    final int numIter = 3;
-    final ShuffleProducer sp0[] = new ShuffleProducer[numIter];
-    final ShuffleProducer sp1[] = new ShuffleProducer[numIter];
-    final ShuffleProducer sp2[] = new ShuffleProducer[numIter];
-    final ShuffleConsumer sc0[] = new ShuffleConsumer[numIter];
-    final ShuffleConsumer sc1[] = new ShuffleConsumer[numIter];
-    final ShuffleConsumer sc2[] = new ShuffleConsumer[numIter];
-    final LocalJoin localjoin[] = new LocalJoin[numIter];
-    final Project proj[] = new Project[numIter];
-    final DupElim dupelim[] = new DupElim[numIter];
-    final SQLiteQueryScan scan[] = new SQLiteQueryScan[numIter];
-    ExchangePairID arrayID1, arrayID2, arrayID0;
-    arrayID1 = ExchangePairID.newID();
-    arrayID2 = ExchangePairID.newID();
-    sp1[0] = new ShuffleProducer(scan1, arrayID1, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf1);
-    sp2[0] = new ShuffleProducer(scan2, arrayID2, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf0);
-
-    for (int i = 1; i < numIter; ++i) {
-      sc1[i] = new ShuffleConsumer(sp1[i - 1], arrayID1, new int[] { WORKER_ID[0], WORKER_ID[1] });
-      sc2[i] = new ShuffleConsumer(sp2[i - 1], arrayID2, new int[] { WORKER_ID[0], WORKER_ID[1] });
-      localjoin[i] = new LocalJoin(joinSchema, sc1[i], sc2[i], new int[] { 1 }, new int[] { 0 });
-      proj[i] = new Project(new Integer[] { 0, 3 }, localjoin[i]);
-      arrayID0 = ExchangePairID.newID();
-      sp0[i] = new ShuffleProducer(proj[i], arrayID0, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf0);
-      sc0[i] = new ShuffleConsumer(sp0[i], arrayID0, new int[] { WORKER_ID[0], WORKER_ID[1] });
-      dupelim[i] = new DupElim(sc0[i]);
-      scan[i] = new SQLiteQueryScan("testtable" + (i + 1) + ".db", "select * from testtable1", tableSchema1);
-      arrayID1 = ExchangePairID.newID();
-      arrayID2 = ExchangePairID.newID();
-      sp1[i] = new ShuffleProducer(scan[i], arrayID1, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf1);
-      sp2[i] = new ShuffleProducer(dupelim[i], arrayID2, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf0);
-    }
-    final CollectProducer cp = new CollectProducer(dupelim[numIter - 1], serverReceiveID, MASTER_ID);
-
-    final HashMap<Integer, Operator> workerPlans = new HashMap<Integer, Operator>();
-    workerPlans.put(WORKER_ID[0], cp);
-    workerPlans.put(WORKER_ID[1], cp);
-
-    new Thread() {
-      @Override
-      public void run() {
-        try {
-          Server.main(args);
-        } catch (final Exception e) {
-          e.printStackTrace();
-        }
-      }
-    }.start();
-    while (Server.runningInstance == null) {
-      try {
-        Thread.sleep(10);
-      } catch (final InterruptedException e) {
-      }
-    }
-
-    // Server.runningInstance.exchangeSchema.put(serverReceiveID, outputSchema);
-    // final LinkedBlockingQueue<ExchangeTupleBatch> buffer = new LinkedBlockingQueue<ExchangeTupleBatch>();
-    final CollectConsumer serverPlan =
-        new CollectConsumer(outputSchema, serverReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
-    // serverPlan.setInputBuffer(buffer);
-    // Server.runningInstance.dataBuffer.put(serverPlan.getOperatorID(), buffer);
-    Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
-    System.out.println("Query dispatched to the workers");
-    Server.runningInstance.startServerQuery(0, serverPlan);
-  }
 
   @Test
   public void dupElimTest() throws DbException, IOException {
