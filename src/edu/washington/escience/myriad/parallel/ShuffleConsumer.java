@@ -57,6 +57,7 @@ public class ShuffleConsumer extends Consumer {
 
   @Override
   protected _TupleBatch fetchNext() throws DbException {
+    // System.out.println("shuffle con fetchnext");
     if (!finish) {
       try {
         return getTuples();
