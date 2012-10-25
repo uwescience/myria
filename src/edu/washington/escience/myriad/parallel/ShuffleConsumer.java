@@ -2,6 +2,7 @@ package edu.washington.escience.myriad.parallel;
 
 import java.util.BitSet;
 import java.util.HashMap;
+import java.util.Objects;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
@@ -29,25 +30,29 @@ public class ShuffleConsumer extends Consumer {
   private final int[] sourceWorkers;
   private final HashMap<Integer, Integer> workerIdToIndex;
   private ShuffleProducer child;
-  private Schema schema;
 
   public ShuffleConsumer(final ShuffleProducer child, final ExchangePairID operatorID, final int[] workerIDs) {
     super(operatorID);
+
+    Objects.requireNonNull(child);
+    Objects.requireNonNull(operatorID);
+    Objects.requireNonNull(workerIDs);
+
     this.child = child;
-    this.sourceWorkers = workerIDs;
-    this.workerIdToIndex = new HashMap<Integer, Integer>();
+    sourceWorkers = workerIDs;
+    workerIdToIndex = new HashMap<Integer, Integer>();
     int i = 0;
-    for (final Integer w : this.sourceWorkers) {
-      this.workerIdToIndex.put(w, i++);
+    for (final Integer w : sourceWorkers) {
+      workerIdToIndex.put(w, i++);
     }
-    this.workerEOS = new BitSet(workerIDs.length);
-    this.finish = false;
+    workerEOS = new BitSet(workerIDs.length);
+    finish = false;
   }
 
   @Override
   public void close() {
     super.close();
-    this.workerEOS.clear();
+    workerEOS.clear();
   }
 
   @Override
@@ -65,7 +70,7 @@ public class ShuffleConsumer extends Consumer {
 
   @Override
   public Operator[] getChildren() {
-    return new Operator[] { this.child };
+    return new Operator[] { child };
   }
 
   @Override
@@ -75,11 +80,7 @@ public class ShuffleConsumer extends Consumer {
 
   @Override
   public Schema getSchema() {
-    if (this.child != null) {
-      return this.child.getSchema();
-    } else {
-      return this.schema;
-    }
+    return child.getSchema();
   }
 
   /**
@@ -92,10 +93,10 @@ public class ShuffleConsumer extends Consumer {
   _TupleBatch getTuples() throws InterruptedException {
     ExchangeTupleBatch tb = null;
 
-    while (this.workerEOS.nextClearBit(0) < this.sourceWorkers.length) {
-      tb = this.take(-1);
+    while (workerEOS.nextClearBit(0) < sourceWorkers.length) {
+      tb = take(-1);
       if (tb.isEos()) {
-        this.workerEOS.set(this.workerIdToIndex.get(tb.getWorkerID()));
+        workerEOS.set(workerIdToIndex.get(tb.getWorkerID()));
       } else {
         return tb;
       }
@@ -108,15 +109,15 @@ public class ShuffleConsumer extends Consumer {
 
   @Override
   public void open() throws DbException {
-    if (this.child != null) {
-      this.child.open();
+    if (child != null) {
+      child.open();
     }
     super.open();
   }
 
   @Override
   public void setChildren(final Operator[] children) {
-    this.child = (ShuffleProducer) children[0];
+    child = (ShuffleProducer) children[0];
   }
 
 }
