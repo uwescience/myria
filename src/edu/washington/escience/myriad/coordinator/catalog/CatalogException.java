@@ -1,7 +1,7 @@
 /**
  * 
  */
-package edu.washington.escience.myriad.catalog;
+package edu.washington.escience.myriad.coordinator.catalog;
 
 /**
  * @author dhalperi

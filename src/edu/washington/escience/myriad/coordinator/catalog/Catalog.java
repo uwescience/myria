@@ -1,4 +1,4 @@
-package edu.washington.escience.myriad.catalog;
+package edu.washington.escience.myriad.coordinator.catalog;
 
 import java.io.File;
 import java.io.FileNotFoundException;
