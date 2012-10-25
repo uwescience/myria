@@ -2,6 +2,7 @@ package edu.washington.escience.myriad.parallel;
 
 import java.util.BitSet;
 import java.util.HashMap;
+import java.util.Objects;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
@@ -29,10 +30,14 @@ public class ShuffleConsumer extends Consumer {
   private final int[] sourceWorkers;
   private final HashMap<Integer, Integer> workerIdToIndex;
   private ShuffleProducer child;
-  private Schema schema;
 
   public ShuffleConsumer(final ShuffleProducer child, final ExchangePairID operatorID, final int[] workerIDs) {
     super(operatorID);
+
+    Objects.requireNonNull(child);
+    Objects.requireNonNull(operatorID);
+    Objects.requireNonNull(workerIDs);
+
     this.child = child;
     sourceWorkers = workerIDs;
     workerIdToIndex = new HashMap<Integer, Integer>();
@@ -76,11 +81,7 @@ public class ShuffleConsumer extends Consumer {
 
   @Override
   public Schema getSchema() {
-    if (child != null) {
-      return child.getSchema();
-    } else {
-      return schema;
-    }
+    return child.getSchema();
   }
 
   /**
