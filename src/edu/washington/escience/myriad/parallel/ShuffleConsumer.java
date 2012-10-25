@@ -51,15 +51,13 @@ public class ShuffleConsumer extends Consumer {
 
   @Override
   protected _TupleBatch fetchNext() throws DbException {
-    if (!eos()) {
-      try {
-        return getTuples(true);
-      } catch (final InterruptedException e) {
-        e.printStackTrace();
-        throw new DbException(e.getLocalizedMessage());
-      }
+    try {
+      return getTuples(true);
+    } catch (final InterruptedException e) {
+      e.printStackTrace();
+      Thread.currentThread().interrupt();
+      throw new DbException(e.getLocalizedMessage());
     }
-    return null;
   }
 
   @Override

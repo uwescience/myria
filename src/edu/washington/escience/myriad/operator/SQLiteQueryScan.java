@@ -34,14 +34,12 @@ public class SQLiteQueryScan extends Operator {
 
   @Override
   protected _TupleBatch fetchNext() throws DbException {
-
     if (tuples == null) {
       tuples = SQLiteAccessMethod.tupleBatchIteratorFromQuery(dataDir + "/" + filename, baseSQL, schema);
     }
     if (tuples.hasNext()) {
       return tuples.next();
     } else {
-      setEOS();
       return null;
       // }
     }
@@ -70,6 +68,10 @@ public class SQLiteQueryScan extends Operator {
     this.dataDir = dataDir;
   }
 
+  /**
+   * For query scan, we assume that fetchNext is non-blocking, i.e. the cost of fetching a TupleBatch is very low.
+   * Therefore, directly fetch.
+   * */
   @Override
   public _TupleBatch fetchNextReady() throws DbException {
     return fetchNext();

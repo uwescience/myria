@@ -17,12 +17,6 @@ public class SQLiteSQLProcessor extends SQLiteQueryScan {
     this.children = children;
   }
 
-  // @Override
-  // public void rewind() throws DbException {
-  // super.rewind();
-  // child.rewind();
-  // }
-
   @Override
   public void cleanup() {
   }

@@ -128,6 +128,7 @@ public final class CollectProducer extends Producer {
     } catch (final InterruptedException e) {
       e.printStackTrace();
     }
+
     return null;
   }
 

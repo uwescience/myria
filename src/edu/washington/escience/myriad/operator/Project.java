@@ -79,11 +79,6 @@ public class Project extends Operator {
   public void init() throws DbException {
   }
 
-  // @Override
-  // public void rewind() throws DbException {
-  // child.rewind();
-  // }
-
   @Override
   public void setChildren(final Operator[] children) {
     if (child != children[0]) {
@@ -93,7 +88,9 @@ public class Project extends Operator {
 
   @Override
   public _TupleBatch fetchNextReady() throws DbException {
-    // TODO Auto-generated method stub
+    if (child.nextReady()) {
+      return child.next().project(ArrayUtils.toPrimitive(outFieldIds));
+    }
     return null;
   }
 

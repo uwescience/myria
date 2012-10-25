@@ -43,12 +43,6 @@ public class DoNothingOperator extends Operator {
 
   @Override
   public final void init() throws DbException {
-    // if (children != null) {
-    // for (final Operator child : children) {
-    // child.open();
-    // }
-    // }
-    // super.open();
   }
 
   @Override

@@ -132,6 +132,7 @@ public class Worker {
 
     }
   }
+
   public static class MessageWrapper {
     protected int senderID;
     protected TransportMessage message;
@@ -152,6 +153,7 @@ public class Worker {
           try {
             root.open();
             while (root.next() != null) {
+              ;
             }
             root.close();
           } catch (final DbException e1) {
@@ -171,6 +173,7 @@ public class Worker {
       }
     }
   }
+
   /**
    * Mina acceptor handler. This is where all messages arriving from other workers and from the coordinator will be
    * processed

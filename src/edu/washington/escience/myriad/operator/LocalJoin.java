@@ -205,9 +205,6 @@ public class LocalJoin extends Operator implements Externalizable {
 
   @Override
   protected _TupleBatch fetchNext() throws DbException {
-    if (eos()) {
-      return null;
-    }
     TupleBatch nexttb = ans.popFilled();
     // System.out.println(nexttb == null);
     while (nexttb == null) {
@@ -224,7 +221,6 @@ public class LocalJoin extends Operator implements Externalizable {
       }
       nexttb = ans.popFilled();
       if (!hasNewTuple) {
-        setEOS();
         break;
       }
     }
