@@ -240,6 +240,10 @@ public class SystemTestBase {
         .insertIntoSQLite(schema, tableName, getAbsoluteDBFile(workerID, tableName).getAbsolutePath(), data);
   }
 
+  public static void insertWithBothNames(int workerID, String tableName, String dbName, Schema schema, _TupleBatch data) {
+    SQLiteTupleBatch.insertIntoSQLite(schema, tableName, getAbsoluteDBFile(workerID, dbName).getAbsolutePath(), data);
+  }
+
   public static String intToString(final long v, final int length) {
     final StringBuilder sb = new StringBuilder("" + v);
     while (sb.length() < length) {

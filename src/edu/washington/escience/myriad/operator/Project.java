@@ -19,7 +19,7 @@ public class Project extends Operator {
   private static final long serialVersionUID = 1L;
   private Operator child;
   private final Schema td;
-  private final Integer[] outFieldIds;
+  private final Integer[] outFieldIds; // why not using int[]?
 
   /**
    * Constructor accepts a child operator to read tuples to apply projection to and a list of fields in output tuple
@@ -44,6 +44,20 @@ public class Project extends Operator {
     td = new Schema(types, fieldAr);
   }
 
+  public Project(final Integer[] fieldList, final Operator child) {
+    this.child = child;
+    outFieldIds = fieldList;
+    final String[] fieldName = new String[fieldList.length];
+    final Type[] fieldType = new Type[fieldList.length];
+    final Schema childtd = child.getSchema();
+
+    for (int i = 0; i < fieldName.length; i++) {
+      fieldName[i] = childtd.getFieldName(fieldList[i]);
+      fieldType[i] = childtd.getFieldType(fieldList[i]);
+    }
+    td = new Schema(fieldType, fieldName);
+  }
+
   @Override
   public void close() {
     super.close();
@@ -59,14 +73,14 @@ public class Project extends Operator {
   @Override
   protected _TupleBatch fetchNext() throws NoSuchElementException, DbException {
     if (child.hasNext()) {
-      return child.next().project(ArrayUtils.toPrimitive(this.outFieldIds));
+      return child.next().project(ArrayUtils.toPrimitive(outFieldIds));
     }
     return null;
   }
 
   @Override
   public Operator[] getChildren() {
-    return new Operator[] { this.child };
+    return new Operator[] { child };
   }
 
   @Override
@@ -87,8 +101,8 @@ public class Project extends Operator {
 
   @Override
   public void setChildren(final Operator[] children) {
-    if (this.child != children[0]) {
-      this.child = children[0];
+    if (child != children[0]) {
+      child = children[0];
     }
   }
 

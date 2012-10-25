@@ -84,8 +84,8 @@ public class DupElim extends Operator {
   protected _TupleBatch fetchNext() throws DbException {
     if (child.hasNext()) {
       final _TupleBatch tb = child.next();
-
-      for (int i = 0; i < tb.numInputTuples(); ++i) {
+      int numTuples = tb.numInputTuples();
+      for (int i = 0; i < numTuples; ++i) {
         final IndexedTuple cntTuple = new IndexedTuple(tb, i);
         final int cntHashCode = cntTuple.hashCode();
         // might need to check invalid | change to use outputTuples later
@@ -101,7 +101,7 @@ public class DupElim extends Operator {
             break;
           }
         }
-        System.out.println(i + " " + unique);
+        // System.out.println(i + " " + unique);
         if (unique) {
           tupleList.add(cntTuple);
         } else {
