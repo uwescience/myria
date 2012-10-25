@@ -32,8 +32,7 @@ public abstract class Operator implements Serializable {
   private boolean eos = false;
 
   /**
-   * Closes this iterator. If overridden by a subclass, they should call super.close() in order for Operator's internal
-   * state to be consistent.
+   * Closes this iterator.
    * 
    * @throws DbException
    */
@@ -43,8 +42,13 @@ public abstract class Operator implements Serializable {
     open = false;
     eos = false;
     cleanup();
-    for (Operator child : getChildren()) {
-      child.close();
+    Operator[] children = getChildren();
+    if (children != null) {
+      for (Operator child : children) {
+        if (child != null) {
+          child.close();
+        }
+      }
     }
   }
 
@@ -68,6 +72,9 @@ public abstract class Operator implements Serializable {
 
     if (outputBuffer == null) {
       outputBuffer = fetchNextReady();
+      if (outputBuffer != null && outputBuffer.numInputTuples() <= 0) {
+        outputBuffer = null;
+      }
     }
 
     return outputBuffer == null;
@@ -80,20 +87,20 @@ public abstract class Operator implements Serializable {
    * 
    * */
   public final boolean eos() {
-    if (eos) {
-      return true;
-    }
-
-    Operator[] children = getChildren();
-    if (children.length > 0) {
-      for (Operator child : children) {
-        // if the operator has children, EOS if and only if the children are all EOS
-        if (!child.eos()) {
-          return false;
-        }
-      }
-      eos = true;
-    }
+    // if (eos) {
+    // return true;
+    // }
+    //
+    // Operator[] children = getChildren();
+    // if (children != null && children.length > 0) {
+    // for (Operator child : children) {
+    // // if the operator has children, EOS if and only if the children are all EOS
+    // if (child != null && !child.eos()) {
+    // return false;
+    // }
+    // }
+    // eos = true;
+    // }
     return eos;
   }
 
@@ -115,10 +122,13 @@ public abstract class Operator implements Serializable {
     }
 
     _TupleBatch result = outputBuffer;
-    if (result == null) {
+    outputBuffer = null;
+    while (result != null && result.numOutputTuples() <= 0) {
       result = fetchNext();
-    } else {
-      outputBuffer = null;
+    }
+
+    if (result == null) {
+      setEOS();
     }
 
     return result;
@@ -129,8 +139,13 @@ public abstract class Operator implements Serializable {
    * */
   public final void open() throws DbException {
     // open the children first
-    for (Operator child : getChildren()) {
-      child.open();
+    Operator[] children = getChildren();
+    if (children != null) {
+      for (Operator child : children) {
+        if (child != null) {
+          child.open();
+        }
+      }
     }
     // do my initialization
     init();
