@@ -145,11 +145,6 @@ public class ShuffleProducer extends Producer {
     return new Operator[] { child };
   }
 
-  @Override
-  public final String getName() {
-    return "shuffle_p";
-  }
-
   public final PartitionFunction<?, ?> getPartitionFunction() {
     return partitionFunction;
   }

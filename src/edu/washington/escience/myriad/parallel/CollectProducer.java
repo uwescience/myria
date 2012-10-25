@@ -138,11 +138,6 @@ public final class CollectProducer extends Producer {
   }
 
   @Override
-  public String getName() {
-    return "collect_p";
-  }
-
-  @Override
   public Schema getSchema() throws DbException {
     return child.getSchema();
   }

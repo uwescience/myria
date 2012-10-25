@@ -89,11 +89,6 @@ public final class CollectConsumer extends Consumer {
   }
 
   @Override
-  public String getName() {
-    return "collect_c";
-  }
-
-  @Override
   public Schema getSchema() throws DbException {
     if (child != null) {
       return child.getSchema();

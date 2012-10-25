@@ -68,11 +68,6 @@ public class ShuffleConsumer extends Consumer {
   }
 
   @Override
-  public String getName() {
-    return "shuffle_c";
-  }
-
-  @Override
   public Schema getSchema() throws DbException {
     return child.getSchema();
   }
