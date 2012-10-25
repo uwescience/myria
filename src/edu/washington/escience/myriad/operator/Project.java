@@ -19,7 +19,7 @@ public class Project extends Operator {
   private static final long serialVersionUID = 1L;
   private Operator child;
   private final Schema td;
-  private final Integer[] outFieldIds;
+  private final Integer[] outFieldIds; // why not using int[]?
 
   /**
    * Constructor accepts a child operator to read tuples to apply projection to and a list of fields in output tuple
@@ -44,6 +44,20 @@ public class Project extends Operator {
       fieldAr[i] = childtd.getFieldName(fieldList.get(i));
     }
     td = new Schema(types, fieldAr);
+  }
+
+  public Project(final Integer[] fieldList, final Operator child) throws DbException {
+    this.child = child;
+    outFieldIds = fieldList;
+    final String[] fieldName = new String[fieldList.length];
+    final Type[] fieldType = new Type[fieldList.length];
+    final Schema childtd = child.getSchema();
+
+    for (int i = 0; i < fieldName.length; i++) {
+      fieldName[i] = childtd.getFieldName(fieldList[i]);
+      fieldType[i] = childtd.getFieldType(fieldList[i]);
+    }
+    td = new Schema(fieldType, fieldName);
   }
 
   @Override
