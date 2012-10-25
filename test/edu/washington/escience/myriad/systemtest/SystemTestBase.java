@@ -309,6 +309,10 @@ public class SystemTestBase {
         .insertIntoSQLite(schema, tableName, getAbsoluteDBFile(workerID, tableName).getAbsolutePath(), data);
   }
 
+  public static void insertWithBothNames(int workerID, String tableName, String dbName, Schema schema, _TupleBatch data) {
+    SQLiteTupleBatch.insertIntoSQLite(schema, tableName, getAbsoluteDBFile(workerID, dbName).getAbsolutePath(), data);
+  }
+
   public static HashSet<Tuple> distinct(TupleBatchBuffer content) {
     Iterator<TupleBatch> it = content.getAll().iterator();
     HashSet<Tuple> expectedResults = new HashSet<Tuple>();
