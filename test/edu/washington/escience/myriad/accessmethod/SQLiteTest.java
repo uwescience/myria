@@ -15,7 +15,7 @@ public class SQLiteTest {
 
   @Test
   public void sqliteTest() throws DbException {
-    final String filename = "sql/sqlite.myriad_test/myriad_sqlite_test.db";
+    final String filename = "testdata/sql/sqlite.myriad_test/myriad_sqlite_test.db";
     final String query = "SELECT * FROM testtable";
 
     final Schema outputSchema =
