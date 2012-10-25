@@ -10,6 +10,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -96,6 +98,7 @@ public class SystemTestBase {
       System.arraycopy(other.values, 0, values, start, other.values.length);
     }
   }
+
   public static final Schema JOIN_INPUT_SCHEMA = new Schema(new Type[] { Type.LONG_TYPE, Type.STRING_TYPE },
       new String[] { "id", "name" });
   public static final String JOIN_TEST_TABLE_1 = "testtable1";
@@ -108,7 +111,10 @@ public class SystemTestBase {
   public static final int[] WORKER_ID = { 1, 2 };
 
   public static final int[] WORKER_PORT = { 9001, 9002 };
+  public static Process SERVER_PROCESS;
+  public static final Process[] WORKER_PROCESSES = new Process[WORKER_ID.length];
   public static final String workerTestBaseFolder = "/tmp/" + Server.SYSTEM_NAME + "_systemtests";
+
   public static void createTable(final int workerID, final String dbFilename, final String tableName,
       final String sqlSchemaString) throws IOException {
     SQLiteConnection sqliteConnection = null;
@@ -171,15 +177,13 @@ public class SystemTestBase {
   }
 
   @AfterClass
-  public static void globalCleanup() {
+  public static void globalCleanup() throws IOException {
     final File testBaseFolderF = new File(workerTestBaseFolder);
-    try {
-      ParallelUtility.deleteFileFolder(testBaseFolderF);
-    } catch (final IOException e) {
-      e.printStackTrace();
-    }
+    ParallelUtility.deleteFileFolder(testBaseFolderF);
 
-    Server.runningInstance.cleanup();
+    if (Server.runningInstance != null) {
+      Server.runningInstance.cleanup();
+    }
     boolean finishClean = false;
     while (!finishClean) {
       finishClean = !testBaseFolderF.exists() && AvailablePortFinder.available(MASTER_PORT);
@@ -194,21 +198,36 @@ public class SystemTestBase {
           Thread.currentThread().interrupt();
         }
       }
-
     }
 
+    for (Process p : WORKER_PROCESSES) {
+      p.destroy();
+    }
   }
 
   @BeforeClass
   public static void globalInit() throws IOException {
-    /*************** create test folder ******************/
+    Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
+    Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
+
+    /* Create the test folder, e.g., in /tmp/Myriad_systemtests. */
     final File testBaseFolderF = new File(workerTestBaseFolder);
     testBaseFolderF.mkdirs();
 
+    /* Create one folder for each Worker. */
     for (final int workerID : WORKER_ID) {
       final File f = new File(workerTestBaseFolder + "/worker_" + workerID);
       while (!f.exists()) {
         f.mkdirs();
+      }
+    }
+
+    if (!AvailablePortFinder.available(MASTER_PORT)) {
+      throw new RuntimeException("Unable to start master, port " + MASTER_PORT + " is taken");
+    }
+    for (int port : WORKER_PORT) {
+      if (!AvailablePortFinder.available(port)) {
+        throw new RuntimeException("Unable to start worker, port " + port + " is taken");
       }
     }
 
@@ -460,14 +479,14 @@ public class SystemTestBase {
 
   }
 
-  static Server startMaster() throws IOException {
+  static Server startMaster() {
     new Thread() {
       @Override
       public void run() {
         try {
           Server.main(new String[] {});
-        } catch (final Exception e) {
-          e.printStackTrace();
+        } catch (IOException e) {
+          throw new RuntimeException(e);
         }
       }
     }.start();
@@ -479,6 +498,7 @@ public class SystemTestBase {
    * */
   static void startWorkers() throws IOException {
     try {
+      int workerCount = 0;
       for (final int workerID : WORKER_ID) {
 
         final String workingDIR = workerTestBaseFolder + "/worker_" + workerID;
@@ -513,15 +533,14 @@ public class SystemTestBase {
         pb.redirectErrorStream(true);
         pb.redirectOutput(Redirect.INHERIT);
 
-        @SuppressWarnings("unused")
-        final Process p = pb.start();
+        WORKER_PROCESSES[workerCount] = pb.start();
+        ++workerCount;
 
         try {
           // sleep 100 milliseconds.
           // yield the CPU so that the worker processes can be
           Thread.sleep(1000);
         } catch (final InterruptedException e) {
-          // TODO Auto-generated catch block
           e.printStackTrace();
           Thread.currentThread().interrupt();
         }
@@ -535,7 +554,7 @@ public class SystemTestBase {
     } catch (final SAXException e) {
       throw new IOException(e);
     } catch (final ParserConfigurationException e) {
-      e.printStackTrace();
+      throw new IOException(e);
     }
   }
 
@@ -604,9 +623,7 @@ public class SystemTestBase {
           Thread.currentThread().interrupt();
         }
       }
-
     }
-
   }
 
   @Before
@@ -620,6 +637,5 @@ public class SystemTestBase {
         f.mkdirs();
       }
     }
-
   }
 }
