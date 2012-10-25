@@ -307,8 +307,8 @@ public class Worker {
       ParallelUtility.shutdownVM();
     }
 
-    Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.OFF);
-    Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.OFF);
+    Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
+    Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
 
     File confDir = null;
     if (args.length >= 2) {

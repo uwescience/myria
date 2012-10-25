@@ -39,7 +39,7 @@ public class ParallelUtility {
       return null;
     }
     final CloseFuture cf = session.close(false);
-    final IoConnector ic = (IoConnector) session.getAttribute("connecter");
+    final IoConnector ic = (IoConnector) session.getAttribute("connector");
 
     if (ic != null) {
       final Map<Long, IoSession> activeSessions = ic.getManagedSessions();
@@ -185,7 +185,7 @@ public class ParallelUtility {
     }
     if (connected) {
       session = c.getSession();
-      session.setAttribute("connecter", ic);
+      session.setAttribute("connector", ic);
       return session;
     }
     return session;

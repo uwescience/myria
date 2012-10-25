@@ -29,9 +29,8 @@ public class JDBCTest {
     final String query = "select * from testtable";
     final String insert = "INSERT INTO testtable2 VALUES(?)";
     final Schema schema = new Schema(new Type[] { Type.INT_TYPE, Type.STRING_TYPE }, new String[] { "id", "name" });
-    final String connectionString =
-        "jdbc:" + dbms + "://" + host + ":" + port + "/" + databaseName + "?user=" + user + "&password=" + password;
-    final JdbcQueryScan scan = new JdbcQueryScan(jdbcDriverName, connectionString, query, schema, "", "");
+    final String connectionString = "jdbc:" + dbms + "://" + host + ":" + port + "/" + databaseName;
+    final JdbcQueryScan scan = new JdbcQueryScan(jdbcDriverName, connectionString, query, schema, user, password);
     final Filter filter1 = new Filter(Predicate.Op.GREATER_THAN_OR_EQ, 0, new Integer(50), scan);
 
     final Filter filter2 = new Filter(Predicate.Op.LESS_THAN_OR_EQ, 0, new Integer(60), filter1);
@@ -50,7 +49,7 @@ public class JDBCTest {
     _TupleBatch tb = null;
     while ((tb = root.next()) != null) {
       System.out.println(tb);
-      JdbcAccessMethod.tupleBatchInsert(jdbcDriverName, connectionString, insert, (TupleBatch) tb, "", "");
+      JdbcAccessMethod.tupleBatchInsert(jdbcDriverName, connectionString, insert, (TupleBatch) tb, user, password);
     }
 
     root.close();
