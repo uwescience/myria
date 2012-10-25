@@ -13,6 +13,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.future.WriteFuture;
@@ -217,9 +219,8 @@ public class Server {
   static final String usage = "Usage: Server catalogFile [--catalog sqliteCatalogFile] [-explain] [-f queryFile]";
 
   public static void main(String[] args) throws IOException {
-    // File confDir = new File("conf");
-    // if (args.length >= 3 && args[1].equals("--conf")) {
-    // confDir = new File(args[2]);
+    Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
+    Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
 
     String catalogName = "catalogs/twoNodeLocalParallel.catalog";
 
@@ -261,9 +262,9 @@ public class Server {
         server.cleanup();
       }
     });
+    server.start(args);
     System.out.println("Server: " + masterSocketInfo.getHost() + " started. Listening on port "
         + masterSocketInfo.getPort());
-    server.start(args);
   }
 
   final ConcurrentHashMap<Integer, SocketInfo> workers;
