@@ -1,6 +1,8 @@
 package edu.washington.escience.myriad.accessmethod;
 
 import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.junit.Test;
 
@@ -15,6 +17,9 @@ public class SQLiteTest {
 
   @Test
   public void sqliteTest() throws DbException {
+    Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
+    Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
+
     final String filename = "testdata/sql/sqlite.myriad_test/myriad_sqlite_test.db";
     final String query = "SELECT * FROM testtable";
 
