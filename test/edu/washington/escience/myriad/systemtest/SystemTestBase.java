@@ -472,7 +472,7 @@ public class SystemTestBase {
       public void run() {
         try {
           String catalogFileName = FilenameUtils.concat(workerTestBaseFolder, "master.catalog");
-          Server.main(new String[] { "--catalog", catalogFileName });
+          Server.main(new String[] { catalogFileName });
         } catch (IOException e) {
           throw new RuntimeException(e);
         }
