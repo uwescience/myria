@@ -1,7 +1,5 @@
 package edu.washington.escience.myriad.systemtest;
 
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -123,7 +121,9 @@ public class IterativeSelfJoinTest extends SystemTestBase {
     table1.merge(tbl1Worker2);
 
     // generate correct answer in memory
-    TupleBatchBuffer expectedResult = getResultInMemory(table1, tableSchema, numIteration);
+    TupleBatchBuffer expectedTBB = getResultInMemory(table1, tableSchema, numIteration);
+
+    HashMap<Tuple, Integer> expectedResult = SystemTestBase.tupleBatchToTupleBag(expectedTBB);
 
     // database generation
     for (int i = 0; i < numIteration; ++i) {
@@ -214,10 +214,7 @@ public class IterativeSelfJoinTest extends SystemTestBase {
       }
     }
 
-    System.out.println(result.numTuples());
-    assertTrue(result.numTuples() == expectedResult.numTuples());
-    // for (Entry<Tuple, Integer> e : resultBag.entrySet()) {
-    // assertTrue(expectedResult.get(e.getKey()).equals(e.getValue()));
-    // }
+    HashMap<Tuple, Integer> actual = SystemTestBase.tupleBatchToTupleBag(result);
+    SystemTestBase.assertTupleBagEqual(expectedResult, actual);
   }
 }
