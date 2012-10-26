@@ -1,11 +1,15 @@
 package edu.washington.escience.myriad.systemtest;
 
+import static org.junit.Assert.assertTrue;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.lang.ProcessBuilder.Redirect;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
@@ -20,6 +24,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.apache.mina.util.AvailablePortFinder;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.w3c.dom.Document;
@@ -47,7 +52,7 @@ import edu.washington.escience.myriad.table._TupleBatch;
 public class SystemTestBase {
 
   @SuppressWarnings({ "rawtypes", "unchecked" })
-  static class Tuple implements Comparable<Tuple> {
+  public static class Tuple implements Comparable<Tuple> {
     Comparable[] values;
 
     public Tuple(final int numFields) {
@@ -112,16 +117,31 @@ public class SystemTestBase {
 
   public static final int[] WORKER_PORT = { 9001, 9002 };
   public static Process SERVER_PROCESS;
-  public static final Process[] WORKER_PROCESSES = new Process[WORKER_ID.length];
-  public static final String workerTestBaseFolder = "/tmp/" + Server.SYSTEM_NAME + "_systemtests";
+  public static final Process[] workerProcess = new Process[WORKER_ID.length];
+  public static final Thread[] workerStdoutReader = new Thread[WORKER_ID.length];
+  public static final String workerTestBaseFolder = System.getProperty("java.io.tmpdir") + File.separator
+      + Server.SYSTEM_NAME + "_systemtests";
 
-  public static void createTable(final int workerID, final String dbFilename, final String tableName,
-      final String sqlSchemaString) throws IOException {
+  public static void assertTupleBagEqual(HashMap<Tuple, Integer> expectedResult, HashMap<Tuple, Integer> actualResult) {
+    Assert.assertEquals(expectedResult.size(), actualResult.size());
+    for (Entry<Tuple, Integer> e : actualResult.entrySet()) {
+      assertTrue(expectedResult.get(e.getKey()).equals(e.getValue()));
+    }
+  }
+
+  public static void createTable(final String dbFileAbsolutePath, final String tableName, final String sqlSchemaString)
+      throws IOException {
     SQLiteConnection sqliteConnection = null;
     SQLiteStatement statement = null;
     try {
+      File f = new File(dbFileAbsolutePath);
+
+      if (!f.getParentFile().exists()) {
+        f.getParentFile().mkdirs();
+      }
+
       /* Connect to the database */
-      sqliteConnection = new SQLiteConnection(getAbsoluteDBFile(workerID, dbFilename));
+      sqliteConnection = new SQLiteConnection(f);
       sqliteConnection.open(true);
 
       /* Create the table if not exist */
@@ -148,9 +168,14 @@ public class SystemTestBase {
     }
   }
 
-  public static HashSet<Tuple> distinct(final TupleBatchBuffer content) {
+  public static void createTable(final int workerID, final String dbFilename, final String tableName,
+      final String sqlSchemaString) throws IOException {
+    createTable(getAbsoluteDBFile(workerID, dbFilename).getAbsolutePath(), tableName, sqlSchemaString);
+  }
+
+  public static HashMap<Tuple, Integer> distinct(final TupleBatchBuffer content) {
     final Iterator<TupleBatch> it = content.getAll().iterator();
-    final HashSet<Tuple> expectedResults = new HashSet<Tuple>();
+    final HashMap<Tuple, Integer> expectedResults = new HashMap<Tuple, Integer>();
     while (it.hasNext()) {
       final TupleBatch tb = it.next();
       final List<Column> columns = tb.outputRawData();
@@ -162,7 +187,7 @@ public class SystemTestBase {
         for (int j = 0; j < numColumn; j++) {
           t.set(j, (Comparable<?>) columns.get(j).get(i));
         }
-        expectedResults.add(t);
+        expectedResults.put(t, 1);
       }
     }
     return expectedResults;
@@ -173,7 +198,7 @@ public class SystemTestBase {
     if (!dbFilename.endsWith(".db")) {
       dbFilename = dbFilename + ".db";
     }
-    return new File(workerTestBaseFolder + "/worker_" + workerID + "/" + dbFilename);
+    return new File(workerTestBaseFolder + File.separator + "worker_" + workerID + File.separator + dbFilename);
   }
 
   @AfterClass
@@ -184,6 +209,21 @@ public class SystemTestBase {
     if (Server.runningInstance != null) {
       Server.runningInstance.cleanup();
     }
+
+    for (Process p : workerProcess) {
+      p.destroy();
+    }
+
+    for (Thread t : workerStdoutReader) {
+      try {
+        if (t != null) {
+          t.join();
+        }
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
+    }
+
     boolean finishClean = false;
     while (!finishClean) {
       finishClean = !testBaseFolderF.exists() && AvailablePortFinder.available(MASTER_PORT);
@@ -199,10 +239,6 @@ public class SystemTestBase {
         }
       }
     }
-
-    for (Process p : WORKER_PROCESSES) {
-      p.destroy();
-    }
   }
 
   @BeforeClass
@@ -210,13 +246,13 @@ public class SystemTestBase {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
     Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
 
-    /* Create the test folder, e.g., in /tmp/Myriad_systemtests. */
+    /* Create the test folder, e.g., in $tmp/Myriad_systemtests. */
     final File testBaseFolderF = new File(workerTestBaseFolder);
     testBaseFolderF.mkdirs();
 
     /* Create one folder for each Worker. */
     for (final int workerID : WORKER_ID) {
-      final File f = new File(workerTestBaseFolder + "/worker_" + workerID);
+      final File f = new File(workerTestBaseFolder + File.separator + "worker_" + workerID);
       while (!f.exists()) {
         f.mkdirs();
       }
@@ -283,11 +319,7 @@ public class SystemTestBase {
           child1Hash.put((Comparable<?>) v, tuples);
         } else {
           final Integer occur = tuples.get(t);
-          // if (occur == null) {
-          // tuples.put(t, 1);
-          // } else {
           tuples.put(t, occur + 1);
-          // }
         }
       }
     }
@@ -505,10 +537,10 @@ public class SystemTestBase {
       int workerCount = 0;
       for (final int workerID : WORKER_ID) {
 
-        final String workingDIR = workerTestBaseFolder + "/worker_" + workerID;
-        final File siteXMLF = new File(workingDIR + "/site.xml");
-        final File serverCONF = new File(workingDIR + "/server.conf");
-        final File workerCONF = new File(workingDIR + "/workers.conf");
+        final String workingDIR = workerTestBaseFolder + File.separator + "worker_" + workerID;
+        final File siteXMLF = new File(workingDIR + File.separator + "site.xml");
+        final File serverCONF = new File(workingDIR + File.separator + "server.conf");
+        final File workerCONF = new File(workingDIR + File.separator + "workers.conf");
 
         final Configuration conf = new Configuration();
         conf.set("worker.identifier", "" + workerID);
@@ -535,9 +567,42 @@ public class SystemTestBase {
 
         pb.directory(new File(workingDIR));
         pb.redirectErrorStream(true);
-        pb.redirectOutput(Redirect.INHERIT);
+        pb.redirectOutput(Redirect.PIPE);
 
-        WORKER_PROCESSES[workerCount] = pb.start();
+        final int wc = workerCount;
+
+        workerStdoutReader[wc] = new Thread() {
+
+          int myWorkerIdx;
+
+          @Override
+          public void run() {
+            myWorkerIdx = wc;
+            try {
+              workerProcess[wc] = pb.start();
+              writeProcessOutput(workerProcess[wc]);
+            } catch (Exception e) {
+              e.printStackTrace();
+              throw new RuntimeException(e);
+            }
+          }
+
+          void writeProcessOutput(Process process) throws Exception {
+
+            InputStreamReader tempReader = new InputStreamReader(new BufferedInputStream(process.getInputStream()));
+            BufferedReader reader = new BufferedReader(tempReader);
+            while (true) {
+              String line = reader.readLine();
+              if (line == null) {
+                break;
+              }
+              System.out.println("localhost:" + WORKER_PORT[myWorkerIdx] + "$ " + line);
+            }
+          }
+        };
+
+        workerStdoutReader[wc].start();
+
         ++workerCount;
 
         try {
@@ -548,12 +613,6 @@ public class SystemTestBase {
           e.printStackTrace();
           Thread.currentThread().interrupt();
         }
-        // InputStream is = p.getInputStream();
-        // BufferedReader br = new BufferedReader(new InputStreamReader(is));
-        // String line = null;
-        // while ((line = br.readLine()) != null) {
-        // System.out.println(line);
-        // }
       }
     } catch (final SAXException e) {
       throw new IOException(e);
@@ -587,9 +646,9 @@ public class SystemTestBase {
     return result;
   }
 
-  public static HashSet<Tuple> tupleBatchToTupleSet(final TupleBatchBuffer tbb) {
+  public static HashMap<Tuple, Integer> tupleBatchToTupleSet(final TupleBatchBuffer tbb) {
     _TupleBatch tb = null;
-    final HashSet<Tuple> result = new HashSet<Tuple>();
+    final HashMap<Tuple, Integer> result = new HashMap<Tuple, Integer>();
     final Iterator<TupleBatch> it = tbb.getAll().iterator();
     while (it.hasNext()) {
       tb = it.next();
@@ -601,7 +660,7 @@ public class SystemTestBase {
         for (int column = 0; column < numColumn; column++) {
           t.set(column, (Comparable<?>) columns.get(column).get(row));
         }
-        result.add(t);
+        result.put(t, 1);
       }
     }
     return result;
