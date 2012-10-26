@@ -79,7 +79,8 @@ public final class CollectConsumer extends Consumer {
       return getTuples(true);
     } catch (final InterruptedException e) {
       e.printStackTrace();
-      throw new DbException(e.getLocalizedMessage());
+      Thread.currentThread().interrupt();
+      throw new DbException(e);
     }
   }
 
@@ -105,23 +106,25 @@ public final class CollectConsumer extends Consumer {
     }
 
     ExchangeTupleBatch tb = null;
-
+    _TupleBatch result = null;
     while (workerEOS.nextClearBit(0) < sourceWorkers.length) {
       tb = take(timeToWait);
       if (tb != null) {
         if (tb.isEos()) {
           workerEOS.set(workerIdToIndex.get(tb.getWorkerID()));
+          System.out.println("EOS received in CollectConsumer. From WorkerID:" + tb.getWorkerID());
         } else {
-          return tb.getRealData();
+          result = tb.getRealData();
+          break;
         }
-      } else {
-        return null;
       }
     }
     // have received all the eos message from all the workers
     // finish = true;
-    setEOS();
-    return null;
+    if (result == null) {
+      setEOS();
+    }
+    return result;
   }
 
   @Override

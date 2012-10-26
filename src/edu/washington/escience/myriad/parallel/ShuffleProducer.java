@@ -32,7 +32,7 @@ public class ShuffleProducer extends Producer {
     @Override
     public void run() {
 
-      final TransportMessage.Builder messageBuilder = TransportMessage.newBuilder();
+      // final TransportMessage.Builder messageBuilder = TransportMessage.newBuilder();
       final int numWorker = workerIDs.length;
       final IoSession[] shuffleSessions = new IoSession[numWorker];
       int index = 0;
@@ -69,7 +69,7 @@ public class ShuffleProducer extends Producer {
                 columnProtos[i] = c.serializeToProto();
                 i++;
               }
-              shuffleSessions[p].write(messageBuilder.setType(TransportMessageType.DATA).setData(
+              shuffleSessions[p].write(TransportMessage.newBuilder().setType(TransportMessageType.DATA).setData(
                   DataMessage.newBuilder().setType(DataMessageType.NORMAL).addAllColumns(Arrays.asList(columnProtos))
                       .setOperatorID(ShuffleProducer.this.operatorID.getLong()).build()).build());
             }
@@ -88,7 +88,7 @@ public class ShuffleProducer extends Producer {
                 columnProtos[j] = c.serializeToProto();
                 j++;
               }
-              shuffleSessions[i].write(messageBuilder.setType(TransportMessageType.DATA).setData(
+              shuffleSessions[i].write(TransportMessage.newBuilder().setType(TransportMessageType.DATA).setData(
                   DataMessage.newBuilder().setType(DataMessageType.NORMAL).addAllColumns(Arrays.asList(columnProtos))
                       .setOperatorID(ShuffleProducer.this.operatorID.getLong()).build()).build());
             }
@@ -104,7 +104,7 @@ public class ShuffleProducer extends Producer {
               .setOperatorID(ShuffleProducer.this.operatorID.getLong()).build();
       for (int i = 0; i < numWorker; i++) {
 
-        shuffleSessions[i].write(messageBuilder.setType(TransportMessageType.DATA).setData(eos).build());
+        shuffleSessions[i].write(TransportMessage.newBuilder().setType(TransportMessageType.DATA).setData(eos).build());
       }
     }
   }

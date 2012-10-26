@@ -468,10 +468,6 @@ public class Server {
         cnt++;
       }
 
-      /*
-       * serverPlan.open(); while (serverPlan.hasNext()) { final _TupleBatch tup = serverPlan.next(); out.print(new
-       * ImmutableInMemoryTupleBatch(serverPlan.getSchema(), tup.outputRawData(), tup.numOutputTuples()) .toString());
-       */
       serverPlan.close();
       Server.this.dataBuffer.remove(serverPlan.getOperatorID());
       Date end = new Date();

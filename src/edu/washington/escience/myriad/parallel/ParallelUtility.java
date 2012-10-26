@@ -102,9 +102,9 @@ public class ParallelUtility {
     config.setKeepAlive(false);
     config.setTcpNoDelay(true);
     /**
-     * A session without any write/read actions in 5 seconds is assumed to be idle
+     * A session without any write/read actions in  1 hour is assumed to be idle
      */
-    config.setIdleTime(IdleStatus.BOTH_IDLE, 5);
+    config.setIdleTime(IdleStatus.BOTH_IDLE, 3600);
     config.setReceiveBufferSize(2048);
     config.setSendBufferSize(2048);
     config.setReadBufferSize(2048);
