@@ -2,6 +2,7 @@ package edu.washington.escience.myriad.parallel;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.ArrayList;
@@ -16,6 +17,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.service.IoHandlerAdapter;
@@ -26,6 +28,8 @@ import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnFactory;
+import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
+import edu.washington.escience.myriad.coordinator.catalog.WorkerCatalog;
 import edu.washington.escience.myriad.operator.BlockingDataReceiver;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
@@ -247,7 +251,7 @@ public class Worker {
       }
 
       if (serverSession == null) {
-        System.out.println("Cannot connect the server: " + conf.getServer()
+        System.out.println("Cannot connect the server: " + masterSocketInfo
             + " Maybe the server is down. I'll shutdown now.");
         System.out.println("Bye!");
         timer.cancel();
@@ -303,10 +307,10 @@ public class Worker {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
     Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
 
-    File confDir = null;
+    String workingDir = null;
     if (args.length >= 2) {
-      if (args[0].equals("--conf")) {
-        confDir = new File(args[1]);
+      if (args[0].equals("--workingDir")) {
+        workingDir = args[1];
         args = ParallelUtility.removeArg(args, 0);
         ParallelUtility.removeArg(args, 0);
       } else {
@@ -315,10 +319,9 @@ public class Worker {
       }
     }
 
-    System.out.println("confdir: " + confDir.getAbsolutePath());
-    final Configuration conf = new Configuration(confDir);
+    System.out.println("workingDir: " + workingDir);
     // Instantiate a new worker
-    final Worker w = new Worker(conf);
+    final Worker w = new Worker(workingDir);
     // int port = w.port;
 
     // Prepare to receive messages over the network
@@ -328,7 +331,7 @@ public class Worker {
     // Now the worker can accept messages
     w.start();
 
-    System.out.println("Worker started at:" + w.conf.getWorkers().get(w.myID));
+    System.out.println("Worker started at:" + w.catalog.getWorkers().get(w.myID));
 
     // From now on, the worker will listen for
     // messages to arrive on the network. These messages
@@ -388,14 +391,16 @@ public class Worker {
 
   protected final LinkedBlockingQueue<MessageWrapper> messageBuffer;
 
-  protected final Configuration conf;
+  protected final WorkerCatalog catalog;
+  protected final SocketInfo masterSocketInfo;
+  protected final SocketInfo mySocketInfo;
 
-  public Worker(final Configuration conf) {
-    this.conf = conf;
-    myID = Integer.parseInt(conf.get("worker.identifier"));
-
-    dataDir = new File(conf.get("worker.data.sqlite.dir"));
-    tmpDir = new File(conf.get("worker.tmp.dir"));
+  public Worker(final String workingDirectory) throws CatalogException, FileNotFoundException {
+    catalog = WorkerCatalog.open(FilenameUtils.concat(workingDirectory, "worker.catalog"));
+    myID = Integer.parseInt(catalog.getConfigurationValue("worker.identifier"));
+    dataDir = new File(catalog.getConfigurationValue("worker.data.sqlite.dir"));
+    tmpDir = new File(catalog.getConfigurationValue("worker.tmp.dir"));
+    mySocketInfo = catalog.getWorkers().get(myID);
 
     acceptor = ParallelUtility.createAcceptor();
 
@@ -408,11 +413,12 @@ public class Worker {
     messageProcessor = new MessageProcessor();
     messageProcessor.setDaemon(false);
     minaHandler = new WorkerHandler();
+    masterSocketInfo = catalog.getMasters().get(0);
 
-    final Map<Integer, SocketInfo> workers = conf.getWorkers();
+    final Map<Integer, SocketInfo> workers = catalog.getWorkers();
     final Map<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
     computingUnits.putAll(workers);
-    computingUnits.put(0, conf.getServer());
+    computingUnits.put(0, masterSocketInfo);
 
     final Map<Integer, IoHandler> handlers = new HashMap<Integer, IoHandler>(workers.size() + 1);
     for (final Integer workerID : workers.keySet()) {
@@ -563,7 +569,7 @@ public class Worker {
   }
 
   public final void start() throws IOException {
-    acceptor.bind(conf.getWorkers().get(myID).getAddress());
+    acceptor.bind(mySocketInfo.getAddress());
     queryExecutor.start();
     messageProcessor.start();
     // Periodically detect if the server (i.e., coordinator)

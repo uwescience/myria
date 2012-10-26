@@ -1,4 +1,4 @@
-package edu.washington.escience.myriad.catalog;
+package edu.washington.escience.myriad.coordinator.catalog;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -11,6 +11,8 @@ import java.util.logging.Logger;
 
 import org.junit.Test;
 
+import edu.washington.escience.myriad.coordinator.catalog.Catalog;
+import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.parallel.SocketInfo;
 
 public class CatalogTest {

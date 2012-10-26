@@ -15,6 +15,7 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.column.Column;
+import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.DupElim;
 import edu.washington.escience.myriad.operator.LocalJoin;
 import edu.washington.escience.myriad.operator.Operator;
@@ -94,7 +95,7 @@ public class IterativeSelfJoinTest extends SystemTestBase {
   }
 
   @Test
-  public void iterativeSelfJoinTest() throws DbException, IOException {
+  public void iterativeSelfJoinTest() throws DbException, CatalogException, IOException {
 
     // data generation
     final Type[] table1Types = new Type[] { Type.LONG_TYPE, Type.LONG_TYPE };
