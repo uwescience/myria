@@ -85,6 +85,19 @@ public class ProtobufDecoder extends CumulativeProtocolDecoder {
   @Override
   protected boolean doDecode(IoSession session, IoBuffer in, ProtocolDecoderOutput out) throws Exception {
     // 5: the maxlength of a varint32
+    IoBuffer copy = in.slice();
+    byte startByte = copy.get();
+    if (startByte != (byte) 170) {
+      System.err.println("error coding.");
+      System.err.println("error coding.");
+      System.err.println("error coding.");
+      System.err.println("error coding.");
+      System.err.println("error coding.");
+      return false;
+    } else {
+      in.get();
+    }
+
     int sizeCodedMaxLength = 5;
     if (in.remaining() < 5) {
       sizeCodedMaxLength = in.remaining();
@@ -113,5 +126,4 @@ public class ProtobufDecoder extends CumulativeProtocolDecoder {
     }
     return false;
   }
-
 }

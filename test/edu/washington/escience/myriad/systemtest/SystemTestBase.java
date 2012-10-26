@@ -102,6 +102,17 @@ public class SystemTestBase {
     public void setAll(final int start, final Tuple other) {
       System.arraycopy(other.values, 0, values, start, other.values.length);
     }
+
+    @Override
+    public String toString() {
+      StringBuilder sb = new StringBuilder("(");
+      for (int i = 0; i < values.length - 1; i++) {
+        Comparable<?> v = values[i];
+        sb.append(v + ", ");
+      }
+      sb.append(values[values.length - 1] + ")");
+      return sb.toString();
+    }
   }
 
   public static final Schema JOIN_INPUT_SCHEMA = new Schema(new Type[] { Type.LONG_TYPE, Type.STRING_TYPE },
