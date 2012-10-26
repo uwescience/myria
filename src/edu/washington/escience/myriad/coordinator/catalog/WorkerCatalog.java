@@ -1,8 +1,6 @@
 package edu.washington.escience.myriad.coordinator.catalog;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -32,12 +30,11 @@ public final class WorkerCatalog {
   /**
    * @param filename the path to the SQLite database storing the worker catalog.
    * @return a fresh WorkerCatalog fitting the specified description.
-   * @throws IOException if the specified file already exists.
-   * @throws CatalogException if there is an error opening the database.
+   * @throws CatalogException if there is an error creating the database or the file already exists.
    * 
    *           TODO add some sanity checks to the filename?
    */
-  public static WorkerCatalog create(final String filename) throws IOException, CatalogException {
+  public static WorkerCatalog create(final String filename) throws CatalogException {
     Objects.requireNonNull(filename);
     return WorkerCatalog.create(filename, false);
   }
@@ -46,19 +43,17 @@ public final class WorkerCatalog {
    * @param filename the path to the SQLite database storing the catalog.
    * @param overwrite specifies whether to overwrite an existing WorkerCatalog.
    * @return a fresh WorkerCatalog fitting the specified description.
-   * @throws IOException if overwrite is true and the specified file already exists.
-   * @throws CatalogException if there is an error opening the database.
+   * @throws CatalogException if the database already exists, or there is an error creating it.
    * 
    *           TODO add some sanity checks to the filename?
    */
-  public static WorkerCatalog create(final String filename, final boolean overwrite) throws IOException,
-      CatalogException {
+  public static WorkerCatalog create(final String filename, final boolean overwrite) throws CatalogException {
     Objects.requireNonNull(filename);
 
     /* if overwrite is false, error if the file exists. */
     File catalogFile = new File(filename);
     if (!overwrite && catalogFile.exists()) {
-      throw new IOException(filename + " already exists");
+      throw new CatalogException(filename + " already exists");
     }
     return WorkerCatalog.createFromFile(catalogFile);
   }
@@ -141,18 +136,18 @@ public final class WorkerCatalog {
    * 
    * @param filename the path to the SQLite database storing the catalog.
    * @return an initialized WorkerCatalog object ready to be used for experiments.
-   * @throws FileNotFoundException if the given file does not exist.
+   * @throws CatalogNotFoundException if the given file does not exist.
    * @throws CatalogException if there is an error connecting to the database.
    * 
    *           TODO add some sanity checks to the filename?
    */
-  public static WorkerCatalog open(final String filename) throws FileNotFoundException, CatalogException {
+  public static WorkerCatalog open(final String filename) throws CatalogNotFoundException, CatalogException {
     Objects.requireNonNull(filename);
 
     /* See if the file exists, and create it if not. */
     File catalogFile = new File(filename);
     if (!catalogFile.exists()) {
-      throw new FileNotFoundException(filename);
+      throw new CatalogNotFoundException(filename);
     }
 
     /* Connect to the database */

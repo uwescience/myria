@@ -7,7 +7,7 @@ package edu.washington.escience.myriad.coordinator.catalog;
  * @author dhalperi
  * 
  */
-public final class CatalogException extends Exception {
+public class CatalogException extends Exception {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;

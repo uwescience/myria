@@ -1,9 +1,10 @@
 package edu.washington.escience.myriad.systemtest;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.ProcessBuilder.Redirect;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -17,10 +18,9 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.mina.util.AvailablePortFinder;
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -37,7 +37,9 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.column.Column;
-import edu.washington.escience.myriad.parallel.Configuration;
+import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
+import edu.washington.escience.myriad.coordinator.catalog.CatalogMaker;
+import edu.washington.escience.myriad.coordinator.catalog.WorkerCatalog;
 import edu.washington.escience.myriad.parallel.ParallelUtility;
 import edu.washington.escience.myriad.parallel.SQLiteTupleBatch;
 import edu.washington.escience.myriad.parallel.Server;
@@ -113,10 +115,10 @@ public class SystemTestBase {
   public static final int[] WORKER_PORT = { 9001, 9002 };
   public static Process SERVER_PROCESS;
   public static final Process[] WORKER_PROCESSES = new Process[WORKER_ID.length];
-  public static final String workerTestBaseFolder = "/tmp/" + Server.SYSTEM_NAME + "_systemtests";
+  public static String workerTestBaseFolder;
 
   public static void createTable(final int workerID, final String dbFilename, final String tableName,
-      final String sqlSchemaString) throws IOException {
+      final String sqlSchemaString) throws CatalogException {
     SQLiteConnection sqliteConnection = null;
     SQLiteStatement statement = null;
     try {
@@ -135,9 +137,8 @@ public class SystemTestBase {
       statement.step();
       statement.reset();
 
-    } catch (final SQLiteException e) {
-      e.printStackTrace();
-      throw new IOException(e);
+    } catch (SQLiteException e) {
+      throw new CatalogException(e);
     } finally {
       if (statement != null) {
         statement.dispose();
@@ -169,36 +170,24 @@ public class SystemTestBase {
 
   }
 
-  public static File getAbsoluteDBFile(final int workerID, String dbFilename) {
+  public static File getAbsoluteDBFile(final int workerID, String dbFilename) throws CatalogException {
     if (!dbFilename.endsWith(".db")) {
       dbFilename = dbFilename + ".db";
     }
-    return new File(workerTestBaseFolder + "/worker_" + workerID + "/" + dbFilename);
+    String workerDir = FilenameUtils.concat(workerTestBaseFolder, "worker_" + workerID);
+    WorkerCatalog wc = WorkerCatalog.open(FilenameUtils.concat(workerDir, "worker.catalog"));
+    File ret = new File(FilenameUtils.concat(wc.getConfigurationValue("worker.data.sqlite.dir"), dbFilename));
+    wc.close();
+    return ret;
   }
 
   @AfterClass
   public static void globalCleanup() throws IOException {
-    final File testBaseFolderF = new File(workerTestBaseFolder);
-    ParallelUtility.deleteFileFolder(testBaseFolderF);
-
     if (Server.runningInstance != null) {
       Server.runningInstance.cleanup();
     }
-    boolean finishClean = false;
-    while (!finishClean) {
-      finishClean = !testBaseFolderF.exists() && AvailablePortFinder.available(MASTER_PORT);
-      for (final int workerPort : WORKER_PORT) {
-        finishClean = finishClean && AvailablePortFinder.available(workerPort);
-      }
-      if (!finishClean) {
-        try {
-          Thread.sleep(100);
-        } catch (final InterruptedException e) {
-          e.printStackTrace();
-          Thread.currentThread().interrupt();
-        }
-      }
-    }
+
+    fullyDeleteDirectory(workerTestBaseFolder);
 
     for (Process p : WORKER_PROCESSES) {
       p.destroy();
@@ -210,17 +199,9 @@ public class SystemTestBase {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
     Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
 
-    /* Create the test folder, e.g., in /tmp/Myriad_systemtests. */
-    final File testBaseFolderF = new File(workerTestBaseFolder);
-    testBaseFolderF.mkdirs();
-
-    /* Create one folder for each Worker. */
-    for (final int workerID : WORKER_ID) {
-      final File f = new File(workerTestBaseFolder + "/worker_" + workerID);
-      while (!f.exists()) {
-        f.mkdirs();
-      }
-    }
+    Path tempFilePath = Files.createTempDirectory(Server.SYSTEM_NAME + "_systemtests");
+    workerTestBaseFolder = tempFilePath.toFile().getAbsolutePath();
+    CatalogMaker.makeTwoNodeLocalParallelCatalog(workerTestBaseFolder);
 
     if (!AvailablePortFinder.available(MASTER_PORT)) {
       throw new RuntimeException("Unable to start master, port " + MASTER_PORT + " is taken");
@@ -235,12 +216,14 @@ public class SystemTestBase {
     startMaster();
   }
 
-  public static void insert(final int workerID, final String tableName, final Schema schema, final _TupleBatch data) {
+  public static void insert(final int workerID, final String tableName, final Schema schema, final _TupleBatch data)
+      throws CatalogException {
     SQLiteTupleBatch
         .insertIntoSQLite(schema, tableName, getAbsoluteDBFile(workerID, tableName).getAbsolutePath(), data);
   }
 
-  public static void insertWithBothNames(int workerID, String tableName, String dbName, Schema schema, _TupleBatch data) {
+  public static void insertWithBothNames(int workerID, String tableName, String dbName, Schema schema, _TupleBatch data)
+      throws CatalogException {
     SQLiteTupleBatch.insertIntoSQLite(schema, tableName, getAbsoluteDBFile(workerID, dbName).getAbsolutePath(), data);
   }
 
@@ -399,7 +382,7 @@ public class SystemTestBase {
     return new String[] { classpathSB.toString(), libPathSB.toString() };
   }
 
-  public static HashMap<Tuple, Integer> simpleRandomJoinTestBase() throws IOException {
+  public static HashMap<Tuple, Integer> simpleRandomJoinTestBase() throws CatalogException {
     createTable(WORKER_ID[0], JOIN_TEST_TABLE_1, JOIN_TEST_TABLE_1, "id long, name varchar(20)"); // worker 1 partition
                                                                                                   // of
     // table1
@@ -488,7 +471,8 @@ public class SystemTestBase {
       @Override
       public void run() {
         try {
-          Server.main(new String[] {});
+          String catalogFileName = FilenameUtils.concat(workerTestBaseFolder, "master.catalog");
+          Server.main(new String[] { "--catalog", catalogFileName });
         } catch (IOException e) {
           throw new RuntimeException(e);
         }
@@ -505,35 +489,14 @@ public class SystemTestBase {
       int workerCount = 0;
       for (final int workerID : WORKER_ID) {
 
-        final String workingDIR = workerTestBaseFolder + "/worker_" + workerID;
-        final File siteXMLF = new File(workingDIR + "/site.xml");
-        final File serverCONF = new File(workingDIR + "/server.conf");
-        final File workerCONF = new File(workingDIR + "/workers.conf");
-
-        final Configuration conf = new Configuration();
-        conf.set("worker.identifier", "" + workerID);
-        conf.set("worker.data.sqlite.dir", workingDIR);
-        conf.set("worker.tmp.dir", workingDIR);
-
-        siteXMLF.createNewFile();
-        conf.writeXml(new FileOutputStream(siteXMLF));
-
-        FileOutputStream fos = new FileOutputStream(serverCONF);
-        fos.write(("localhost:" + MASTER_PORT).getBytes());
-        fos.close();
-
-        fos = new FileOutputStream(workerCONF);
-        for (final int workerPort : WORKER_PORT) {
-          fos.write(("localhost:" + workerPort + "\n").getBytes());
-        }
-        fos.close();
+        String workingDir = FilenameUtils.concat(workerTestBaseFolder, "worker_" + workerID);
 
         final String[] workerClasspath = readEclipseClasspath(new File(".classpath"));
         final ProcessBuilder pb =
             new ProcessBuilder("java", "-Djava.library.path=" + workerClasspath[1], "-classpath", workerClasspath[0],
-                Worker.class.getCanonicalName(), "--conf", workingDIR);
+                Worker.class.getCanonicalName(), "--workingDir", workingDir);
 
-        pb.directory(new File(workingDIR));
+        pb.directory(new File(workingDir));
         pb.redirectErrorStream(true);
         pb.redirectOutput(Redirect.INHERIT);
 
@@ -607,10 +570,8 @@ public class SystemTestBase {
     return result;
   }
 
-  @After
-  public void cleanup() {
-    /*************** cleanup everything under the test folder **********/
-    final File testBaseFolderF = new File(workerTestBaseFolder);
+  public static void fullyDeleteDirectory(String pathToDirectory) {
+    final File testBaseFolderF = new File(pathToDirectory);
     try {
       ParallelUtility.deleteFileFolder(testBaseFolderF);
     } catch (final IOException e) {
@@ -628,18 +589,16 @@ public class SystemTestBase {
         }
       }
     }
-  }
 
-  @Before
-  public void init() throws IOException {
-    final File testBaseFolderF = new File(workerTestBaseFolder);
-    testBaseFolderF.mkdirs();
-
-    for (final int workerID : WORKER_ID) {
-      final File f = new File(workerTestBaseFolder + "/worker_" + workerID);
-      while (!f.exists()) {
-        f.mkdirs();
-      }
-    }
   }
+  //
+  // @After
+  // public void cleanup() {
+  // fullyDeleteDirectory(workerTestBaseFolder);
+  // }
+  //
+  // @Before
+  // public void init() {
+  // CatalogMaker.makeTwoNodeLocalParallelCatalog(workerTestBaseFolder);
+  // }
 }

@@ -60,17 +60,26 @@ public final class CatalogMaker {
 
   /**
    * Creates a Catalog for a 2-node parallel system on the local machine and the corresponding WorkerCatalogs.
+   * 
+   * @param directoryName the directory where all the files should be stored.
    */
-  private static void makeTwoNodeLocalParallelCatalog() {
-    /* The server configuration. */
+  public static void makeTwoNodeLocalParallelCatalog(final String directoryName) {
     final String description = "twoNodeLocalParallel";
+    String baseDirectoryName;
+    if (directoryName == null) {
+      baseDirectoryName = description;
+    } else {
+      baseDirectoryName = directoryName;
+    }
     List<SocketInfo> masters;
     Map<Integer, SocketInfo> workers;
+
+    /* The server configuration. */
     try {
       Catalog c;
       try {
-        String catalogFileName = FilenameUtils.concat(description, "master.catalog");
-        File catalogDir = new File(description);
+        String catalogFileName = FilenameUtils.concat(baseDirectoryName, "master.catalog");
+        File catalogDir = new File(baseDirectoryName);
         while (!catalogDir.exists()) {
           catalogDir.mkdirs();
         }
@@ -91,7 +100,7 @@ public final class CatalogMaker {
     /* Worker1's configuration. */
     for (int workerId : workers.keySet()) {
       /* Start by making the directories for the worker */
-      String dirName = FilenameUtils.concat(description, "worker_" + workerId);
+      String dirName = FilenameUtils.concat(baseDirectoryName, "worker_" + workerId);
       String sqliteDirName = FilenameUtils.concat(dirName, "sqlite_dbs");
       String tmpDirName = FilenameUtils.concat(dirName, "tmp");
       /* .. the sqlite directory, and also on the way the worker directory. */
@@ -145,7 +154,7 @@ public final class CatalogMaker {
    */
   public static void main(final String[] args) {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
-    makeTwoNodeLocalParallelCatalog();
+    makeTwoNodeLocalParallelCatalog(null);
   }
 
 }

@@ -215,20 +215,19 @@ public class Server {
     }
   }
 
-  /* TODO @Dan: get support for whatever's in args[0] into args[2]. */
-  static final String usage = "Usage: Server catalogFile [--catalog sqliteCatalogFile] [-explain] [-f queryFile]";
+  static final String usage = "Usage: Server catalogFile [-explain] [-f queryFile]";
 
   public static void main(String[] args) throws IOException {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
     Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
 
-    String catalogName = "catalogs/twoNodeLocalParallel.catalog";
-
-    if (args.length >= 3 && args[1].equals("--catalog")) {
-      catalogName = args[2];
-      args = ParallelUtility.removeArg(args, 1);
-      args = ParallelUtility.removeArg(args, 1);
+    if (args.length < 1) {
+      System.err.println(usage);
+      System.exit(-1);
     }
+
+    String catalogName = args[0];
+    args = ParallelUtility.removeArg(args, 0);
 
     Catalog catalog;
     List<SocketInfo> masters;
