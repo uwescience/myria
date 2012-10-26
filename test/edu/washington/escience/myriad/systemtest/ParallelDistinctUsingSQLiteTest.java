@@ -12,6 +12,7 @@ import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
+import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.BlockingDataReceiver;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
@@ -26,7 +27,7 @@ import edu.washington.escience.myriad.table._TupleBatch;
 public class ParallelDistinctUsingSQLiteTest extends SystemTestBase {
 
   @Test
-  public void parallelTestSQLite() throws DbException, IOException {
+  public void parallelTestSQLite() throws DbException, IOException, CatalogException {
     final Type[] types = new Type[] { Type.LONG_TYPE, Type.STRING_TYPE };
     final String[] columnNames = new String[] { "id", "name" };
     final Schema schema = new Schema(types, columnNames);

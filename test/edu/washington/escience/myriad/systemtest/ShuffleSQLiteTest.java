@@ -12,6 +12,7 @@ import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
+import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.BlockingDataReceiver;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
@@ -29,7 +30,7 @@ import edu.washington.escience.myriad.parallel.SingleFieldHashPartitionFunction;
 public class ShuffleSQLiteTest extends SystemTestBase {
 
   @Test
-  public void shuffleTestSQLite() throws DbException, IOException {
+  public void shuffleTestSQLite() throws DbException, IOException, CatalogException {
 
     final Type[] types = new Type[] { Type.LONG_TYPE, Type.STRING_TYPE };
     final String[] columnNames = new String[] { "id", "name" };
