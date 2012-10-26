@@ -9,6 +9,12 @@ import edu.washington.escience.myriad.table._TupleBatch;
 /**
  * Abstract class for implementing operators.
  * 
+ * @author slxu
+ * 
+ *         Currently, the operator api design requires that each single operator instance should be executed within a
+ *         single thread.
+ * 
+ *         No multi-thread synchronization is considered.
  * 
  */
 public abstract class Operator implements Serializable {
@@ -27,9 +33,9 @@ public abstract class Operator implements Serializable {
   private boolean open = false;
 
   /**
-   * EOS.
+   * EOS. Initially set it as true;
    * */
-  private boolean eos = false;
+  private boolean eos = true;
 
   /**
    * Closes this iterator.
@@ -40,7 +46,7 @@ public abstract class Operator implements Serializable {
     // Ensures that a future call to next() will fail
     outputBuffer = null;
     open = false;
-    eos = false;
+    eos = true;
     cleanup();
     Operator[] children = getChildren();
     if (children != null) {
@@ -64,16 +70,17 @@ public abstract class Operator implements Serializable {
    * */
   public final boolean nextReady() throws DbException {
     if (!open) {
-      throw new IllegalStateException("Operator not yet open");
+      throw new DbException("Operator not yet open");
     }
     if (eos()) {
-      throw new IllegalStateException("Operator already eos");
+      throw new DbException("Operator already eos");
     }
 
     if (outputBuffer == null) {
       outputBuffer = fetchNextReady();
-      if (outputBuffer != null && outputBuffer.numInputTuples() <= 0) {
-        outputBuffer = null;
+      while (outputBuffer != null && outputBuffer.numInputTuples() <= 0) {
+        // XXX while or not while? For a single thread operator, while sounds more efficient generally
+        outputBuffer = fetchNextReady();
       }
     }
 
@@ -121,12 +128,17 @@ public abstract class Operator implements Serializable {
       return null;
     }
 
-    _TupleBatch result = outputBuffer;
+    _TupleBatch result = null;
+    if (outputBuffer != null) {
+      result = outputBuffer;
+    } else {
+      result = fetchNext();
+    }
     outputBuffer = null;
+
     while (result != null && result.numOutputTuples() <= 0) {
       result = fetchNext();
     }
-
     if (result == null) {
       setEOS();
     }
@@ -139,6 +151,9 @@ public abstract class Operator implements Serializable {
    * */
   public final void open() throws DbException {
     // open the children first
+    if (open) {
+      throw new DbException("Operator already open.");
+    }
     Operator[] children = getChildren();
     if (children != null) {
       for (Operator child : children) {
@@ -147,6 +162,7 @@ public abstract class Operator implements Serializable {
         }
       }
     }
+    eos = false;
     // do my initialization
     init();
     open = true;
