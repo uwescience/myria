@@ -9,6 +9,7 @@ import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
+import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.DupElim;
 import edu.washington.escience.myriad.operator.LocalJoin;
 import edu.washington.escience.myriad.operator.Operator;
@@ -26,7 +27,7 @@ import edu.washington.escience.myriad.table._TupleBatch;
 public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
 
   @Test
-  public void dupElimTestSingleWorker() throws DbException, IOException {
+  public void dupElimTestSingleWorker() throws DbException, IOException, CatalogException {
     String testtableName = "testtable";
     createTable(WORKER_ID[0], testtableName, testtableName, "id long, name varchar(20)");
 
@@ -90,7 +91,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
   }
 
   @Test
-  public void dupElimTest() throws DbException, IOException {
+  public void dupElimTest() throws DbException, IOException, CatalogException {
     String testtableName = "testtable";
     createTable(WORKER_ID[0], testtableName, testtableName, "id long, name varchar(20)");
     createTable(WORKER_ID[1], testtableName, testtableName, "id long, name varchar(20)");
@@ -160,7 +161,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
   }
 
   @Test
-  public void joinTest() throws DbException, IOException {
+  public void joinTest() throws DbException, IOException, CatalogException {
 
     HashMap<Tuple, Integer> expectedResult = simpleRandomJoinTestBase();
 

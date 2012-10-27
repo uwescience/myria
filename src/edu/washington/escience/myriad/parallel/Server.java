@@ -29,10 +29,10 @@ import com.google.protobuf.ByteString;
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatchBuffer;
-import edu.washington.escience.myriad.catalog.Catalog;
-import edu.washington.escience.myriad.catalog.CatalogException;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnFactory;
+import edu.washington.escience.myriad.coordinator.catalog.Catalog;
+import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 import edu.washington.escience.myriad.parallel.Worker.MessageWrapper;
@@ -215,20 +215,19 @@ public class Server {
     }
   }
 
-  /* TODO @Dan: get support for whatever's in args[0] into args[2]. */
-  static final String usage = "Usage: Server catalogFile [--catalog sqliteCatalogFile] [-explain] [-f queryFile]";
+  static final String usage = "Usage: Server catalogFile [-explain] [-f queryFile]";
 
   public static void main(String[] args) throws IOException {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
     Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
 
-    String catalogName = "catalogs/twoNodeLocalParallel.catalog";
-
-    if (args.length >= 3 && args[1].equals("--catalog")) {
-      catalogName = args[2];
-      args = ParallelUtility.removeArg(args, 1);
-      args = ParallelUtility.removeArg(args, 1);
+    if (args.length < 1) {
+      System.err.println(usage);
+      System.exit(-1);
     }
+
+    String catalogName = args[0];
+    args = ParallelUtility.removeArg(args, 0);
 
     Catalog catalog;
     List<SocketInfo> masters;
