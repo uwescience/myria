@@ -9,6 +9,7 @@ import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
+import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
@@ -20,7 +21,7 @@ import edu.washington.escience.myriad.table._TupleBatch;
 public class CollectTest extends SystemTestBase {
 
   @Test
-  public void collectTest() throws DbException, IOException {
+  public void collectTest() throws DbException, IOException, CatalogException {
     String testtableName = "testtable";
     createTable(WORKER_ID[0], testtableName, testtableName, "id long, name varchar(20)");
     createTable(WORKER_ID[1], testtableName, testtableName, "id long, name varchar(20)");

@@ -13,6 +13,7 @@ import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
+import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.parallel.SQLiteTupleBatch;
@@ -23,7 +24,7 @@ import edu.washington.escience.myriad.table._TupleBatch;
 public class SQLiteTest {
 
   @Test
-  public void sqliteTest() throws DbException, IOException {
+  public void sqliteTest() throws DbException, IOException, CatalogException {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
     Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
 
