@@ -55,9 +55,9 @@ public class ProtobufEncoder extends ProtocolEncoderAdapter {
   public void encode(IoSession session, Object message, ProtocolEncoderOutput out) throws Exception {
     Message msg = (Message) message;
     int size = msg.getSerializedSize();
-    IoBuffer buffer = IoBuffer.allocate(SizeContext.computeTotal(size) + 1);
+    IoBuffer buffer = IoBuffer.allocate(size + CodedOutputStream.computeRawVarint32Size(size));
     CodedOutputStream cos = CodedOutputStream.newInstance(buffer.asOutputStream());
-    cos.writeRawByte((byte) 170);
+    // cos.writeRawByte((byte) 170);
     cos.writeRawVarint32(size);
     msg.writeTo(cos);
     cos.flush();

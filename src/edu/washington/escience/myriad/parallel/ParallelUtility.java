@@ -19,7 +19,6 @@ import org.apache.mina.core.session.IdleStatus;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.filter.codec.ProtocolCodecFilter;
 import org.apache.mina.filter.codec.protobuf.ProtobufCodecFactory;
-import org.apache.mina.filter.compression.CompressionFilter;
 import org.apache.mina.transport.socket.SocketSessionConfig;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
@@ -102,7 +101,7 @@ public class ParallelUtility {
     config.setKeepAlive(false);
     config.setTcpNoDelay(true);
     /**
-     * A session without any write/read actions in  1 hour is assumed to be idle
+     * A session without any write/read actions in 1 hour is assumed to be idle
      */
     config.setIdleTime(IdleStatus.BOTH_IDLE, 3600);
     config.setReceiveBufferSize(2048);
@@ -111,7 +110,7 @@ public class ParallelUtility {
 
     acceptor.setCloseOnDeactivation(true);
 
-    acceptor.getFilterChain().addLast("compressor", new CompressionFilter());
+    // acceptor.getFilterChain().addLast("compressor", new CompressionFilter());
 
     acceptor.getFilterChain().addLast("codec",
         new ProtocolCodecFilter(ProtobufCodecFactory.newInstance(TransportMessage.getDefaultInstance())));
@@ -148,7 +147,7 @@ public class ParallelUtility {
     config.setSendBufferSize(2048);
     config.setReadBufferSize(2048);
 
-    connector.getFilterChain().addLast("compressor", new CompressionFilter());
+    // connector.getFilterChain().addLast("compressor", new CompressionFilter());
 
     connector.getFilterChain().addLast("codec",
         new ProtocolCodecFilter(ProtobufCodecFactory.newInstance(TransportMessage.getDefaultInstance())));
