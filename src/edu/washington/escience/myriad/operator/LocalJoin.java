@@ -140,7 +140,7 @@ public class LocalJoin extends Operator implements Externalizable {
   }
 
   protected void processChild1TB(_TupleBatch tbFromChild1) {
-    for (int i = 0; i < tbFromChild1.numInputTuples(); ++i) { // outputTuples?
+    for (int i = 0; i < tbFromChild1.numOutputTuples(); ++i) { // outputTuples?
       final IndexedTuple tuple1 = new IndexedTuple(tbFromChild1, i);
       final int cntHashCode = tuple1.hashCode4Keys(compareIndx1);
 
@@ -173,7 +173,7 @@ public class LocalJoin extends Operator implements Externalizable {
   }
 
   protected void processChild2TB(_TupleBatch tbFromChild2) {
-    for (int i = 0; i < tbFromChild2.numInputTuples(); ++i) { // outputTuples?
+    for (int i = 0; i < tbFromChild2.numOutputTuples(); ++i) { // outputTuples?
       final IndexedTuple tuple2 = new IndexedTuple(tbFromChild2, i);
       final int cntHashCode = tuple2.hashCode4Keys(compareIndx2);
 

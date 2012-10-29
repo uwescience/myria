@@ -32,7 +32,7 @@ import edu.washington.escience.myriad.table._TupleBatch;
 
 public class ProtobufTest {
 
-  public class TestHandler extends IoHandlerAdapter {
+  public static class TestHandler extends IoHandlerAdapter {
 
     @Override
     public final void exceptionCaught(final IoSession session, final Throwable cause) {
@@ -111,6 +111,19 @@ public class ProtobufTest {
 
   }
 
+  public static void main(String[] args) throws IOException, InterruptedException {
+    final InetSocketAddress serverAddress = new InetSocketAddress("localhost", 9901);
+    final TestHandler handler = new TestHandler();
+
+    NioSocketAcceptor acceptor = ParallelUtility.createAcceptor();
+    acceptor.setHandler(handler);
+    acceptor.bind(serverAddress);
+
+    Thread.sleep(100000);
+
+    acceptor.dispose(true);
+  }
+
   @Test
   public void protobufMultiThreadTest() throws IOException, InterruptedException {
 
@@ -130,16 +143,17 @@ public class ProtobufTest {
     final InetSocketAddress serverAddress = new InetSocketAddress("localhost", 9901);
     final TestHandler handler = new TestHandler();
 
-    NioSocketAcceptor acceptor = ParallelUtility.createAcceptor();
-    acceptor.setHandler(handler);
-    acceptor.bind(serverAddress);
+    // NioSocketAcceptor acceptor = ParallelUtility.createAcceptor();
+    // acceptor.setHandler(handler);
+    // acceptor.bind(serverAddress);
     HashMap<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
     computingUnits.put(0, new SocketInfo("localhost", 9901));
     // HashMap<Integer, IoHandler> handlers = new HashMap<Integer, IoHandler>();
     // handlers.put(0, handler);
     // final IPCConnectionPool connectionPool = new IPCConnectionPool(0, computingUnits, handlers);
     // final ArrayList lock = new ArrayList();
-    // final IoSession initialSession = connectionPool.get(0, null, 3, null);
+    final IoSession initialSession = ParallelUtility.createSession(serverAddress, handler, 1000); // connectionPool.get(0,
+                                                                                                  // null, 3, null);
     Thread[] threads = new Thread[numThreads];
     for (int i = 0; i < numThreads; i++) {
       final int t = i;
@@ -148,7 +162,7 @@ public class ProtobufTest {
         public void run() {
           // final IoSession initialSession = connectionPool.get(0, null, 3, null);
           int sent = 0;
-          IoSession initialSession = ParallelUtility.createSession(serverAddress, handler, 1000);
+          // IoSession initialSession = ParallelUtility.createSession(serverAddress, handler, 1000);
           _TupleBatch tb = null;
           Iterator<TupleBatch> tbs = tbb.getAll().iterator();
           while (tbs.hasNext()) {
@@ -176,7 +190,7 @@ public class ProtobufTest {
             // }
             // System.out.println("Thread#" + t + " sent a TM");
           }
-          initialSession.close(false).awaitUninterruptibly();
+          // initialSession.close(false).awaitUninterruptibly();
           System.out.println("sent " + sent);
         }
       };
@@ -187,7 +201,7 @@ public class ProtobufTest {
     for (Thread t : threads) {
       t.join();
     }
-    acceptor.dispose(true);
+    initialSession.close(false).awaitUninterruptibly();
 
   }
 }

@@ -78,7 +78,7 @@ public abstract class Operator implements Serializable {
 
     if (outputBuffer == null) {
       outputBuffer = fetchNextReady();
-      while (outputBuffer != null && outputBuffer.numInputTuples() <= 0) {
+      while (outputBuffer != null && outputBuffer.numOutputTuples() <= 0) {
         // XXX while or not while? For a single thread operator, while sounds more efficient generally
         outputBuffer = fetchNextReady();
       }

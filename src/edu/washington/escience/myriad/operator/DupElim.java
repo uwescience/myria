@@ -116,7 +116,7 @@ public class DupElim extends Operator {
   }
 
   protected _TupleBatch doDupElim(_TupleBatch tb) {
-    for (int i = 0; i < tb.numInputTuples(); ++i) {
+    for (int i = 0; i < tb.numOutputTuples(); ++i) {
       final IndexedTuple cntTuple = new IndexedTuple(tb, i);
       final int cntHashCode = cntTuple.hashCode();
       // might need to check invalid | change to use outputTuples later
