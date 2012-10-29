@@ -23,10 +23,11 @@ public class IPCConnectionPool {
 
   protected final int myID;
 
-  public IPCConnectionPool(final int myID, final Map<Integer, SocketInfo> remoteAddresses, final Map<Integer, IoHandler> defaultIoHandlers) {
-    this.sessionPool = new ConcurrentHashMap<Integer, AtomicReference<IoSession>>();
+  public IPCConnectionPool(final int myID, final Map<Integer, SocketInfo> remoteAddresses,
+      final Map<Integer, IoHandler> defaultIoHandlers) {
+    sessionPool = new ConcurrentHashMap<Integer, AtomicReference<IoSession>>();
     for (final Integer id : remoteAddresses.keySet()) {
-      this.sessionPool.put(id, new AtomicReference<IoSession>());
+      sessionPool.put(id, new AtomicReference<IoSession>());
     }
     this.remoteAddresses = new ConcurrentHashMap<Integer, SocketInfo>();
     this.remoteAddresses.putAll(remoteAddresses);
@@ -41,6 +42,7 @@ public class IPCConnectionPool {
   public IoSession get(final int id, IoHandler ioHandler, final int numRetry, final Map<String, ?> sessionAttributes) {
 
     final AtomicReference<IoSession> ref = sessionPool.get(id);
+    ref.set(null);
     IoSession s = null;
     if (ioHandler == null) {
       ioHandler = defaultIoHandlers.get(id);
