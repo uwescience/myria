@@ -39,7 +39,7 @@ public class IPCConnectionPool {
   /**
    * if ioHandler is null, the default ioHandler will be used
    */
-  public IoSession get(final int id, IoHandler ioHandler, final int numRetry, final Map<String, ?> sessionAttributes) {
+  public synchronized IoSession get(final int id, IoHandler ioHandler, final int numRetry, final Map<String, ?> sessionAttributes) {
 
     final AtomicReference<IoSession> ref = sessionPool.get(id);
     ref.set(null);
