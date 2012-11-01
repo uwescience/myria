@@ -20,7 +20,7 @@ import edu.washington.escience.myriad.table._TupleBatch;
  * @author dhalperi
  * 
  */
-public final class FileScan extends Operator {
+public final class FileScan extends LeafOperator {
   /** The file this scan is reading from. */
   private final File file;
   /** The Schema of the relation stored in this file. */
@@ -180,18 +180,8 @@ public final class FileScan extends Operator {
   }
 
   @Override
-  public Operator[] getChildren() {
-    return null;
-  }
-
-  @Override
   public Schema getSchema() {
     return schema;
-  }
-
-  @Override
-  public void setChildren(final Operator[] children) {
-    throw new UnsupportedOperationException();
   }
 
   @Override
