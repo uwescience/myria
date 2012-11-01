@@ -1,6 +1,5 @@
 package edu.washington.escience.myriad.parallel;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
@@ -43,15 +42,10 @@ public class SQLiteTupleBatch implements _TupleBatch {
   public static void insertIntoSQLite(final Schema inputSchema, String tableName, String dbFilePath,
       final _TupleBatch data) {
 
-    final Iterator<Schema.TDItem> it = inputSchema.iterator();
-
-    final String[] fieldNames = new String[inputSchema.numFields()];
+    final String[] fieldNames = inputSchema.getFieldNames();
     final String[] placeHolders = new String[inputSchema.numFields()];
-    int i = 0;
-    while (it.hasNext()) {
-      final Schema.TDItem item = it.next();
+    for (int i = 0; i < inputSchema.numFields(); ++i) {
       placeHolders[i] = "?";
-      fieldNames[i++] = item.getName();
     }
 
     SQLiteAccessMethod.tupleBatchInsert(dbFilePath, "insert into " + tableName + " ( "

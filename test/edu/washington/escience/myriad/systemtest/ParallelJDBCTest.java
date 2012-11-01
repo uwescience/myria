@@ -5,7 +5,6 @@ import java.util.HashMap;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
-import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.operator.BlockingDataReceiver;
 import edu.washington.escience.myriad.operator.JdbcQueryScan;
@@ -62,9 +61,8 @@ public class ParallelJDBCTest extends SystemTestBase {
     }
     Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
     System.out.println("Query dispatched to the workers");
-    TupleBatchBuffer result = null;
     CollectConsumer serverPlan = new CollectConsumer(outputSchema, serverReceiveID, new int[] { WORKER_ID[1] });
-    while ((result = Server.runningInstance.startServerQuery(0, serverPlan)) == null) {
+    while (Server.runningInstance.startServerQuery(0, serverPlan) == null) {
       try {
         Thread.sleep(100);
       } catch (InterruptedException e) {

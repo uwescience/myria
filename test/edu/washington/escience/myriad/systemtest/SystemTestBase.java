@@ -14,19 +14,10 @@ import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-
 import org.apache.commons.io.FilenameUtils;
 import org.apache.mina.util.AvailablePortFinder;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
 
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
@@ -334,54 +325,6 @@ public class SystemTestBase {
     return result;
   }
 
-  public static String[] readEclipseClasspath(final File eclipseClasspathXMLFile) throws SAXException, IOException,
-      ParserConfigurationException {
-
-    final DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-    final DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-
-    final Document doc = dBuilder.parse(eclipseClasspathXMLFile);
-    doc.getDocumentElement().normalize();
-
-    final NodeList nList = doc.getElementsByTagName("classpathentry");
-
-    final String separator = System.getProperty("path.separator");
-    final StringBuilder classpathSB = new StringBuilder();
-    for (int i = 0; i < nList.getLength(); i++) {
-      final Node node = nList.item(i);
-      if (node.getNodeType() == Node.ELEMENT_NODE) {
-        final Element e = (Element) node;
-
-        final String kind = e.getAttribute("kind");
-        if (kind.equals("output")) {
-          classpathSB.append(new File(e.getAttribute("path")).getAbsolutePath() + separator);
-        }
-        if (kind.equals("lib")) {
-          classpathSB.append(new File(e.getAttribute("path")).getAbsolutePath() + separator);
-        }
-      }
-    }
-    final NodeList attributeList = doc.getElementsByTagName("attribute");
-    final StringBuilder libPathSB = new StringBuilder();
-    for (int i = 0; i < attributeList.getLength(); i++) {
-      final Node node = attributeList.item(i);
-      String value = null;
-      if (node.getNodeType() == Node.ELEMENT_NODE
-          && ("org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY".equals(((Element) node)
-              .getAttribute("name"))) && ((value = ((Element) node).getAttribute("value")) != null)) {
-        File f = new File(value);
-        while (value != null && value.length() > 0 && !f.exists()) {
-          value = value.substring(value.indexOf(File.separator) + 1);
-          f = new File(value);
-        }
-        if (f.exists()) {
-          libPathSB.append(f.getAbsolutePath() + separator);
-        }
-      }
-    }
-    return new String[] { classpathSB.toString(), libPathSB.toString() };
-  }
-
   public static HashMap<Tuple, Integer> simpleRandomJoinTestBase() throws CatalogException {
     createTable(WORKER_ID[0], JOIN_TEST_TABLE_1, JOIN_TEST_TABLE_1, "id long, name varchar(20)"); // worker 1 partition
                                                                                                   // of
@@ -485,43 +428,37 @@ public class SystemTestBase {
    * Start workers in separate processes.
    * */
   static void startWorkers() throws IOException {
-    try {
-      int workerCount = 0;
-      for (final int workerID : WORKER_ID) {
+    int workerCount = 0;
+    for (final int workerID : WORKER_ID) {
 
-        String workingDir = FilenameUtils.concat(workerTestBaseFolder, "worker_" + workerID);
+      String workingDir = FilenameUtils.concat(workerTestBaseFolder, "worker_" + workerID);
 
-        final String[] workerClasspath = readEclipseClasspath(new File(".classpath"));
-        final ProcessBuilder pb =
-            new ProcessBuilder("java", "-Djava.library.path=" + workerClasspath[1], "-classpath", workerClasspath[0],
-                Worker.class.getCanonicalName(), "--workingDir", workingDir);
+      final String[] workerClasspath = ParallelUtility.readEclipseClasspath(new File(".classpath"));
+      final ProcessBuilder pb =
+          new ProcessBuilder("java", "-Djava.library.path=" + workerClasspath[1], "-classpath", workerClasspath[0],
+              Worker.class.getCanonicalName(), "--workingDir", workingDir);
 
-        pb.directory(new File(workingDir));
-        pb.redirectErrorStream(true);
-        pb.redirectOutput(Redirect.INHERIT);
+      pb.directory(new File(workingDir));
+      pb.redirectErrorStream(true);
+      pb.redirectOutput(Redirect.INHERIT);
 
-        WORKER_PROCESSES[workerCount] = pb.start();
-        ++workerCount;
+      WORKER_PROCESSES[workerCount] = pb.start();
+      ++workerCount;
 
-        try {
-          // sleep 100 milliseconds.
-          // yield the CPU so that the worker processes can be
-          Thread.sleep(1000);
-        } catch (final InterruptedException e) {
-          e.printStackTrace();
-          Thread.currentThread().interrupt();
-        }
-        // InputStream is = p.getInputStream();
-        // BufferedReader br = new BufferedReader(new InputStreamReader(is));
-        // String line = null;
-        // while ((line = br.readLine()) != null) {
-        // System.out.println(line);
-        // }
+      try {
+        // sleep 100 milliseconds.
+        // yield the CPU so that the worker processes can be
+        Thread.sleep(1000);
+      } catch (final InterruptedException e) {
+        e.printStackTrace();
+        Thread.currentThread().interrupt();
       }
-    } catch (final SAXException e) {
-      throw new IOException(e);
-    } catch (final ParserConfigurationException e) {
-      throw new IOException(e);
+      // InputStream is = p.getInputStream();
+      // BufferedReader br = new BufferedReader(new InputStreamReader(is));
+      // String line = null;
+      // while ((line = br.readLine()) != null) {
+      // System.out.println(line);
+      // }
     }
   }
 
