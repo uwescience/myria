@@ -41,13 +41,7 @@ public class ShuffleProducer extends Producer {
         index++;
       }
       Schema thisSchema = null;
-      try {
-        thisSchema = getSchema();
-      } catch (DbException e1) {
-        // should not happen
-        e1.printStackTrace();
-        throw new RuntimeException(e1);
-      }
+      thisSchema = getSchema();
 
       try {
         TupleBatchBuffer[] buffers = new TupleBatchBuffer[numWorker];
@@ -150,7 +144,7 @@ public class ShuffleProducer extends Producer {
   }
 
   @Override
-  public final Schema getSchema() throws DbException {
+  public final Schema getSchema() {
     return child.getSchema();
   }
 

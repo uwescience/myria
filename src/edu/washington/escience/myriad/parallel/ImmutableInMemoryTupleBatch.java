@@ -3,7 +3,6 @@ package edu.washington.escience.myriad.parallel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
@@ -11,7 +10,6 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import edu.washington.escience.myriad.Predicate;
 import edu.washington.escience.myriad.Schema;
-import edu.washington.escience.myriad.Schema.TDItem;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.annotation.ThreadSafe;
@@ -54,12 +52,7 @@ public class ImmutableInMemoryTupleBatch implements _TupleBatch {
     /* All columns are valid */
     invalidColumns = new BitSet(inputSchema.numFields());
     // validColumns.set(0, inputSchema.numFields());
-    outputColumnNames = new String[inputSchema.numFields()];
-    final Iterator<TDItem> it = inputSchema.iterator();
-    int i = 0;
-    while (it.hasNext()) {
-      outputColumnNames[i++] = it.next().getName();
-    }
+    outputColumnNames = inputSchema.getFieldNames();
   }
 
   public ImmutableInMemoryTupleBatch(final Schema inputSchema, final List<Column> columns, final int numTuples,
@@ -74,12 +67,7 @@ public class ImmutableInMemoryTupleBatch implements _TupleBatch {
     /* All columns are valid */
     invalidColumns = new BitSet(inputSchema.numFields());
     // validColumns.set(0, inputSchema.numFields());
-    outputColumnNames = new String[inputSchema.numFields()];
-    final Iterator<TDItem> it = inputSchema.iterator();
-    int i = 0;
-    while (it.hasNext()) {
-      outputColumnNames[i++] = it.next().getName();
-    }
+    outputColumnNames = inputSchema.getFieldNames();
   }
 
   /**
@@ -181,8 +169,8 @@ public class ImmutableInMemoryTupleBatch implements _TupleBatch {
   public int hashCode(final int rowIndx, final int[] colIndx) {
     // return 0;
     final HashCodeBuilder hb = new HashCodeBuilder(MAGIC_HASHCODE1, MAGIC_HASHCODE2);
-    for (int i = 0; i < colIndx.length; ++i) {
-      hb.append(inputColumns.get(colIndx[i]).get(rowIndx));
+    for (int element : colIndx) {
+      hb.append(inputColumns.get(element).get(rowIndx));
     }
     return hb.toHashCode();
   }

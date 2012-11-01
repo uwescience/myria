@@ -2,6 +2,8 @@ package edu.washington.escience.myriad.systemtest;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.junit.Test;
 
@@ -162,6 +164,8 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
 
   @Test
   public void joinTest() throws DbException, IOException, CatalogException {
+    Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
+    Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
 
     HashMap<Tuple, Integer> expectedResult = simpleRandomJoinTestBase();
 

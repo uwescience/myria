@@ -90,7 +90,7 @@ public final class CollectConsumer extends Consumer {
   }
 
   @Override
-  public Schema getSchema() throws DbException {
+  public Schema getSchema() {
     if (child != null) {
       return child.getSchema();
     } else {

@@ -94,20 +94,6 @@ public abstract class Operator implements Serializable {
    * 
    * */
   public final boolean eos() {
-    // if (eos) {
-    // return true;
-    // }
-    //
-    // Operator[] children = getChildren();
-    // if (children != null && children.length > 0) {
-    // for (Operator child : children) {
-    // // if the operator has children, EOS if and only if the children are all EOS
-    // if (child != null && !child.eos()) {
-    // return false;
-    // }
-    // }
-    // eos = true;
-    // }
     return eos;
   }
 
@@ -202,7 +188,7 @@ public abstract class Operator implements Serializable {
    * 
    * @throws DbException if any error occurs
    */
-  public abstract Schema getSchema() throws DbException;
+  public abstract Schema getSchema();
 
   /**
    * Returns the next output TupleBatch, or null if EOS is meet.

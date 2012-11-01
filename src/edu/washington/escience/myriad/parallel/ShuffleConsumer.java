@@ -68,7 +68,7 @@ public class ShuffleConsumer extends Consumer {
   }
 
   @Override
-  public Schema getSchema() throws DbException {
+  public Schema getSchema() {
     return child.getSchema();
   }
 

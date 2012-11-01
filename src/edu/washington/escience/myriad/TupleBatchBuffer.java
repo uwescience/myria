@@ -180,4 +180,11 @@ public class TupleBatchBuffer {
     }
   }
 
+  /**
+   * @return the Schema of the tuples in this buffer.
+   */
+  public final Schema getSchema() {
+    return schema;
+  }
+
 }

@@ -138,7 +138,7 @@ public final class CollectProducer extends Producer {
   }
 
   @Override
-  public Schema getSchema() throws DbException {
+  public Schema getSchema() {
     return child.getSchema();
   }
 

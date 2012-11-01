@@ -59,7 +59,7 @@ public final class Filter extends Operator {
   }
 
   @Override
-  public Schema getSchema() throws DbException {
+  public Schema getSchema() {
     return child.getSchema();
   }
 
