@@ -1,5 +1,8 @@
 package edu.washington.escience.myriad.jdbc;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,7 +27,10 @@ public class JdbcAccessMethodTiming {
     // uncomment out the assertion section if desired
 
     /* The number of trials */
-    final int NTRIALS = 5;
+    final int NTRIALS = 10;
+    /* The number of tuples to write per trial */
+    final int NUM_TUPLES = 5000;
+
     /* Factor to multiply for conversion of nanoseconds to seconds */
     final double CONVERSION = 1000000000;
 
@@ -39,31 +45,45 @@ public class JdbcAccessMethodTiming {
 
     /* Query information */
     final String query = "INSERT INTO speedtesttable VALUES(?, ?)";
-    final String connectionString = "jdbc:" + dbms + "://" + host + ":" + port + "/" + databaseName;
+    final String connectionString =
+        "jdbc:" + dbms + "://" + host + ":" + port + "/" + databaseName + "?rewriteBatchedStatements=true";
 
-    /* Create the schema of the tuples to write */
+    /* Create the tuple schema */
     Type[] types = new Type[] { Type.INT_TYPE, Type.STRING_TYPE };
     String[] columnNames = new String[] { "key", "value" };
     Schema schema = new Schema(types, columnNames);
 
-    /* Loop through 0, 1, ..., Nth trial */
+    /* Create tuples and putch them into a batch buffer */
+    TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
+    for (int i = 0; i < NUM_TUPLES; i++) {
+      tbb.put(0, i);
+      tbb.put(1, (i + ""));
+    }
+
     ArrayList<Long> durations = new ArrayList<Long>(NTRIALS);
-    for (int trial = 0; trial < NTRIALS; trial++) {
-      /* Create test tuples */
-      TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
-      for (int i = 0; i < TupleBatch.BATCH_SIZE; i++) {
-        tbb.put(0, i);
-        tbb.put(1, (i + NTRIALS * trial) + "");
+    /* Connect to the database */
+    try {
+      final Connection jdbcConnection = DriverManager.getConnection(connectionString, user, password);
+
+      /* Loop through N trials and insert the tuples */
+      for (int i = 0; i < NTRIALS; i++) {
+
+        /* Get the list of batches from the buffer */
+        List<TupleBatch> batches = tbb.getAll();
+        /* Time the writing of all batches to the database */
+        long startTime = System.nanoTime();
+        for (TupleBatch batch : batches) {
+          JdbcAccessMethod.tupleBatchInsert(jdbcDriverName, jdbcConnection, query, batch);
+        }
+        long endTime = System.nanoTime();
+        durations.add(endTime - startTime);
       }
-      /* Get the list of tuple batches from the buffer */
-      List<TupleBatch> batches = tbb.getAll();
-      /* Time the writing of all batches to the database */
-      long startTime = System.nanoTime();
-      for (TupleBatch batch : batches) {
-        JdbcAccessMethod.tupleBatchInsert(jdbcDriverName, connectionString, query, batch, user, password);
-      }
-      long endTime = System.nanoTime();
-      durations.add(endTime - startTime);
+
+      /* Close the database connection */
+      jdbcConnection.close();
+
+    } catch (SQLException e) {
+      System.err.println(e.getMessage());
     }
 
     // TODO : Note that if this section is uncommented, the sql script
@@ -87,32 +107,23 @@ public class JdbcAccessMethodTiming {
     /* Calculate and print out the timing data */
     /* TODO : change this so that it prints a log file with the timing data */
     double sum = 0;
-    int counter = 0;
-    double min = Double.MAX_VALUE;
-    double max = -1;
+
     for (Long l : durations) {
       sum += l;
-      counter++;
-      if (l < min) {
-        min = l;
-      }
-      if (l > max) {
-        max = l;
-      }
     }
 
-    double averageBatch = (sum / CONVERSION) / counter;
-    double average = averageBatch / TupleBatch.BATCH_SIZE;
+    double seconds = sum / CONVERSION;
 
     /* Print out the time results */
     String message;
-    if (counter > 0) {
+    if (sum > 0) {
       message = "Number of trials = " + NTRIALS;
-      message += "\nTuples per batch = " + TupleBatch.BATCH_SIZE;
-      message += "\nAverage time per tuple = " + average;
-      message += "\nAverage batch write time = " + averageBatch;
-      message += "\nMin batch write time = " + (min / CONVERSION);
-      message += "\nMax batch write time = " + (max / CONVERSION);
+      message += "\nTuple Batch Size = " + TupleBatch.BATCH_SIZE;
+      message += "\nNumber of Tuples per trial = " + NUM_TUPLES;
+      message += "\n";
+      message += "\nTotal Number of Tuples = " + NUM_TUPLES * NTRIALS;
+      message += "\nTotal time = " + seconds + " seconds";
+      message += "\nTuples per second = " + (NUM_TUPLES * NTRIALS / seconds);
     } else {
       message = "No timing data received";
     }
