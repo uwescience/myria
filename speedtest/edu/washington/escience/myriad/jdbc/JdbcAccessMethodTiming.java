@@ -1,4 +1,4 @@
-package edu.washington.escience.myriad.accessmethod;
+package edu.washington.escience.myriad.jdbc;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,6 +10,7 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
+import edu.washington.escience.myriad.accessmethod.JdbcAccessMethod;
 
 /**
  * NOTE : to run on different batch sizes, alter the constant TupleBatch.BATCH_SIZE.
