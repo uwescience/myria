@@ -178,9 +178,6 @@ public class SQLiteInsert extends RootOperator {
 
     /* Set up the insert statement. */
     insertString = insertStatementFromSchema(getSchema(), relationName);
-
-    /* Get things started above. */
-    super.open();
   }
 
   @Override

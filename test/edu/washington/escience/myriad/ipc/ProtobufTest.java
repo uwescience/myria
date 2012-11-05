@@ -63,7 +63,6 @@ public class ProtobufTest {
     ArrayList lock = new ArrayList(0);
   }
 
-  @Test
   public void protobufTest() throws IOException {
 
     String[] names = SystemTestBase.randomFixedLengthNumericString(1000, 1005, 200000, 20);
@@ -143,13 +142,13 @@ public class ProtobufTest {
     final InetSocketAddress serverAddress = new InetSocketAddress("localhost", 9901);
     final TestHandler handler = new TestHandler();
 
-    // NioSocketAcceptor acceptor = ParallelUtility.createAcceptor();
-    // acceptor.setHandler(handler);
-    // acceptor.bind(serverAddress);
+    NioSocketAcceptor acceptor = ParallelUtility.createAcceptor();
+    acceptor.setHandler(handler);
+    acceptor.bind(serverAddress);
     HashMap<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
     computingUnits.put(0, new SocketInfo("localhost", 9901));
-    // HashMap<Integer, IoHandler> handlers = new HashMap<Integer, IoHandler>();
-    // handlers.put(0, handler);
+    HashMap<Integer, IoHandler> handlers = new HashMap<Integer, IoHandler>();
+    handlers.put(0, handler);
     // final IPCConnectionPool connectionPool = new IPCConnectionPool(0, computingUnits, handlers);
     // final ArrayList lock = new ArrayList();
     final IoSession initialSession = ParallelUtility.createSession(serverAddress, handler, 1000); // connectionPool.get(0,
