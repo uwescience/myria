@@ -60,6 +60,8 @@ public class SQLiteInsertTest {
       TupleSource source = new TupleSource(data);
       SQLiteInsert insert = new SQLiteInsert(source, "my_tuples", tempFile.getAbsolutePath(), myExecutor, true);
       insert.open();
+      while (insert.next() != null) {
+      }
       insert.close();
 
       SQLiteConnection sqliteConnection = new SQLiteConnection(tempFile);

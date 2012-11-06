@@ -64,23 +64,8 @@ public abstract class RootOperator extends Operator {
     }
   }
 
-  @Override
-  protected _TupleBatch fetchNext() {
-    return null;
-  }
-
-  @Override
-  public _TupleBatch fetchNextReady() throws DbException {
-    return null;
-  }
-
-  @Override
-  public void init() throws DbException {
+  private void startAndWaitChild() {
     task = executor.submit(new CollectTuplesTask());
-  }
-
-  @Override
-  public void cleanup() {
     try {
       task.get();
     } catch (ExecutionException e) {
@@ -88,6 +73,19 @@ public abstract class RootOperator extends Operator {
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
     }
+  }
+
+  @Override
+  protected _TupleBatch fetchNext() {
+    startAndWaitChild();
+    return null;
+  }
+
+  @Override
+  public _TupleBatch fetchNextReady() throws DbException {
+    startAndWaitChild();
+    setEOS();
+    return null;
   }
 
   @Override
