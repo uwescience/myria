@@ -25,5 +25,6 @@
 	<classpathentry kind="lib" path="lib/slf4j-api-1.7.2.jar"/>
 	<classpathentry kind="lib" path="lib/slf4j-log4j12-1.7.2.jar"/>
 	<classpathentry kind="lib" path="lib/commons-io-2.4/commons-io-2.4.jar"/>
+	<classpathentry kind="lib" path="lib/netty-3.5.9.Final/jar/netty-3.5.9.Final.jar" sourcepath="lib/netty-3.5.9.Final/jar/netty-3.5.9.Final-sources.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
