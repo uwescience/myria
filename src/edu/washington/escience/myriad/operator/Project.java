@@ -27,12 +27,14 @@ public class Project extends Operator {
    * @param fieldList The ids of the fields child's tupleDesc to project out
    * @param typesList the types of the fields in the final projection
    * @param child The child operator
+   * @throws DbException
    */
-  public Project(final ArrayList<Integer> fieldList, final ArrayList<Type> typesList, final Operator child) {
+  public Project(final ArrayList<Integer> fieldList, final ArrayList<Type> typesList, final Operator child)
+      throws DbException {
     this(fieldList, typesList.toArray(new Type[] {}), child);
   }
 
-  public Project(final ArrayList<Integer> fieldList, final Type[] types, final Operator child) {
+  public Project(final ArrayList<Integer> fieldList, final Type[] types, final Operator child) throws DbException {
     this.child = child;
     outFieldIds = fieldList.toArray(new Integer[] {});
     final String[] fieldAr = new String[fieldList.size()];
@@ -44,7 +46,7 @@ public class Project extends Operator {
     td = new Schema(types, fieldAr);
   }
 
-  public Project(final Integer[] fieldList, final Operator child) {
+  public Project(final Integer[] fieldList, final Operator child) throws DbException {
     this.child = child;
     outFieldIds = fieldList;
     final String[] fieldName = new String[fieldList.length];
@@ -59,9 +61,7 @@ public class Project extends Operator {
   }
 
   @Override
-  public void close() {
-    super.close();
-    child.close();
+  public void cleanup() {
   }
 
   /**
@@ -72,8 +72,9 @@ public class Project extends Operator {
    */
   @Override
   protected _TupleBatch fetchNext() throws NoSuchElementException, DbException {
-    if (child.hasNext()) {
-      return child.next().project(ArrayUtils.toPrimitive(outFieldIds));
+    _TupleBatch tmp = child.next();
+    if (tmp != null) {
+      return tmp.project(ArrayUtils.toPrimitive(outFieldIds));
     }
     return null;
   }
@@ -89,21 +90,22 @@ public class Project extends Operator {
   }
 
   @Override
-  public void open() throws DbException, NoSuchElementException {
-    child.open();
-    super.open();
+  public void init() throws DbException {
   }
-
-  // @Override
-  // public void rewind() throws DbException {
-  // child.rewind();
-  // }
 
   @Override
   public void setChildren(final Operator[] children) {
     if (child != children[0]) {
       child = children[0];
     }
+  }
+
+  @Override
+  public _TupleBatch fetchNextReady() throws DbException {
+    if (child.nextReady()) {
+      return child.next().project(ArrayUtils.toPrimitive(outFieldIds));
+    }
+    return null;
   }
 
 }

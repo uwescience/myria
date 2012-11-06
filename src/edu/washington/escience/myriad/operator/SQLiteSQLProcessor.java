@@ -2,7 +2,6 @@ package edu.washington.escience.myriad.operator;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
-import edu.washington.escience.myriad.table._TupleBatch;
 
 public class SQLiteSQLProcessor extends SQLiteQueryScan {
 
@@ -18,42 +17,21 @@ public class SQLiteSQLProcessor extends SQLiteQueryScan {
     this.children = children;
   }
 
-  // @Override
-  // public void rewind() throws DbException {
-  // super.rewind();
-  // child.rewind();
-  // }
-
   @Override
-  public void close() {
-    super.close();
-    for (final Operator child : children) {
-      child.close();
-    }
-  }
-
-  @Override
-  protected _TupleBatch fetchNext() throws DbException {
-    return super.fetchNext();
+  public void cleanup() {
   }
 
   @Override
   public Operator[] getChildren() {
-    return this.children;
+    return children;
   }
 
   @Override
-  public void open() throws DbException {
+  public void init() throws DbException {
     for (final Operator child : children) {
-      child.open();
-    }
-
-    for (final Operator child : children) {
-      while (child.hasNext()) {
-        child.next();
+      while (child.next() != null) {
       }
     }
-    super.open();
   }
 
   @Override

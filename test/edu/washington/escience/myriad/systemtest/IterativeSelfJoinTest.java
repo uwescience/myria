@@ -1,7 +1,5 @@
 package edu.washington.escience.myriad.systemtest;
 
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -34,10 +32,10 @@ import edu.washington.escience.myriad.table._TupleBatch;
 public class IterativeSelfJoinTest extends SystemTestBase {
 
   // change configuration here
-  private final int MaxID = 30;
-  private final int numIteration = 3;
-  private final int numTbl1Worker1 = 20;
-  private final int numTbl1Worker2 = 20;
+  private final int MaxID = 100;
+  private final int numIteration = 4;
+  private final int numTbl1Worker1 = 60;
+  private final int numTbl1Worker2 = 60;
 
   public TupleBatchBuffer getResultInMemory(TupleBatchBuffer table1, Schema schema, int numIteration) {
     // a brute force check
@@ -124,7 +122,9 @@ public class IterativeSelfJoinTest extends SystemTestBase {
     table1.merge(tbl1Worker2);
 
     // generate correct answer in memory
-    TupleBatchBuffer expectedResult = getResultInMemory(table1, tableSchema, numIteration);
+    TupleBatchBuffer expectedTBB = getResultInMemory(table1, tableSchema, numIteration);
+
+    HashMap<Tuple, Integer> expectedResult = SystemTestBase.tupleBatchToTupleBag(expectedTBB);
 
     // database generation
     for (int i = 0; i < numIteration; ++i) {
@@ -215,10 +215,7 @@ public class IterativeSelfJoinTest extends SystemTestBase {
       }
     }
 
-    System.out.println(result.numTuples());
-    assertTrue(result.numTuples() == expectedResult.numTuples());
-    // for (Entry<Tuple, Integer> e : resultBag.entrySet()) {
-    // assertTrue(expectedResult.get(e.getKey()).equals(e.getValue()));
-    // }
+    HashMap<Tuple, Integer> actual = SystemTestBase.tupleBatchToTupleBag(result);
+    SystemTestBase.assertTupleBagEqual(expectedResult, actual);
   }
 }

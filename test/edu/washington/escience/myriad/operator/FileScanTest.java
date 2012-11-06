@@ -41,8 +41,8 @@ public class FileScanTest {
 
     fileScan.open();
     int count = 0;
-    while (fileScan.hasNext()) {
-      final _TupleBatch tb = fileScan.next();
+    _TupleBatch tb = null;
+    while ((tb = fileScan.next()) != null) {
       count += tb.numOutputTuples();
     }
 

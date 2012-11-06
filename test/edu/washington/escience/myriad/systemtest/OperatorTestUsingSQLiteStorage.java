@@ -1,11 +1,7 @@
 package edu.washington.escience.myriad.systemtest;
 
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -33,6 +29,70 @@ import edu.washington.escience.myriad.table._TupleBatch;
 public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
 
   @Test
+  public void dupElimTestSingleWorker() throws DbException, IOException, CatalogException {
+    String testtableName = "testtable";
+    createTable(WORKER_ID[0], testtableName, testtableName, "id long, name varchar(20)");
+
+    String[] names = randomFixedLengthNumericString(1000, 1005, 200, 20);
+    long[] ids = randomLong(1000, 1005, names.length);
+
+    final Schema schema = new Schema(new Type[] { Type.LONG_TYPE, Type.STRING_TYPE }, new String[] { "id", "name" });
+
+    TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
+    for (int i = 0; i < names.length; i++) {
+      tbb.put(0, ids[i]);
+      tbb.put(1, names[i]);
+    }
+
+    HashMap<Tuple, Integer> expectedResults = distinct(tbb);
+
+    _TupleBatch tb = null;
+    while ((tb = tbb.popAny()) != null) {
+      insert(WORKER_ID[0], testtableName, schema, tb);
+    }
+
+    final ExchangePairID serverReceiveID = ExchangePairID.newID();
+
+    final int numPartition = 2;
+
+    final PartitionFunction<String, Integer> pf = new SingleFieldHashPartitionFunction(numPartition);
+    pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1); // partition by id
+
+    final SQLiteQueryScan scanTable =
+        new SQLiteQueryScan(testtableName + ".db", "select * from " + testtableName, schema);
+
+    final DupElim dupElimOnScan = new DupElim(scanTable);
+    final HashMap<Integer, Operator> workerPlans = new HashMap<Integer, Operator>();
+    final CollectProducer cp1 = new CollectProducer(dupElimOnScan, serverReceiveID, MASTER_ID);
+    workerPlans.put(WORKER_ID[0], cp1);
+
+    while (Server.runningInstance == null) {
+      try {
+        Thread.sleep(10);
+      } catch (final InterruptedException e) {
+      }
+    }
+
+    final CollectConsumer serverPlan = new CollectConsumer(schema, serverReceiveID, new int[] { WORKER_ID[0] });
+    Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
+    System.out.println("Query dispatched to the workers");
+    TupleBatchBuffer result = null;
+    while ((result = Server.runningInstance.startServerQuery(0, serverPlan)) == null) {
+      try {
+        Thread.sleep(100);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+        Thread.currentThread().interrupt();
+      }
+    }
+
+    HashMap<Tuple, Integer> resultSet = tupleBatchToTupleSet(result);
+
+    SystemTestBase.assertTupleBagEqual(expectedResults, resultSet);
+
+  }
+
+  @Test
   public void dupElimTest() throws DbException, IOException, CatalogException {
     String testtableName = "testtable";
     createTable(WORKER_ID[0], testtableName, testtableName, "id long, name varchar(20)");
@@ -49,7 +109,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
       tbb.put(1, names[i]);
     }
 
-    HashSet<Tuple> expectedResults = distinct(tbb);
+    HashMap<Tuple, Integer> expectedResults = distinct(tbb);
 
     _TupleBatch tb = null;
     while ((tb = tbb.popAny()) != null) {
@@ -96,12 +156,10 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
       }
     }
 
-    HashSet<Tuple> resultSet = tupleBatchToTupleSet(result);
+    HashMap<Tuple, Integer> resultSet = tupleBatchToTupleSet(result);
 
-    assertTrue(resultSet.size() == expectedResults.size());
-    for (Tuple t : resultSet) {
-      assertTrue(expectedResults.contains(t));
-    }
+    SystemTestBase.assertTupleBagEqual(expectedResults, resultSet);
+
   }
 
   @Test
@@ -164,10 +222,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
 
     HashMap<Tuple, Integer> resultBag = tupleBatchToTupleBag(result);
 
-    assertTrue(resultBag.size() == expectedResult.size());
-    for (Entry<Tuple, Integer> e : resultBag.entrySet()) {
-      assertTrue(expectedResult.get(e.getKey()).equals(e.getValue()));
-    }
+    SystemTestBase.assertTupleBagEqual(expectedResult, resultBag);
 
   }
 

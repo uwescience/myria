@@ -41,8 +41,8 @@ public final class CollectProducer extends Producer {
 
         TupleBatchBuffer buffer = new TupleBatchBuffer(getSchema());
 
-        while (child.hasNext()) {
-          _TupleBatch tup = child.next();
+        _TupleBatch tup = null;
+        while ((tup = child.next()) != null) {
 
           final List<Column> fromColumns = tup.outputRawData();
 
@@ -117,9 +117,7 @@ public final class CollectProducer extends Producer {
   }
 
   @Override
-  public void close() {
-    super.close();
-    child.close();
+  public void cleanup() {
   }
 
   @Override
@@ -130,6 +128,7 @@ public final class CollectProducer extends Producer {
     } catch (final InterruptedException e) {
       e.printStackTrace();
     }
+
     return null;
   }
 
@@ -139,26 +138,24 @@ public final class CollectProducer extends Producer {
   }
 
   @Override
-  public String getName() {
-    return "collect_p";
-  }
-
-  @Override
   public Schema getSchema() {
     return child.getSchema();
   }
 
   @Override
-  public void open() throws DbException {
-    child.open();
+  public void init() throws DbException {
     runningThread = new WorkingThread();
     runningThread.start();
-    super.open();
   }
 
   @Override
   public void setChildren(final Operator[] children) {
     child = children[0];
+  }
+
+  @Override
+  public _TupleBatch fetchNextReady() throws DbException {
+    return fetchNext();
   }
 
 }

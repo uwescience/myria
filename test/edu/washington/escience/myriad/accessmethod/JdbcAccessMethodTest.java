@@ -44,8 +44,8 @@ public class JdbcAccessMethodTest {
 
     /* Count up the results and assert they match expectations */
     int count = 0;
-    while (scan.hasNext()) {
-      final TupleBatch tb = (TupleBatch) scan.next();
+    TupleBatch tb = null;
+    while ((tb = (TupleBatch) scan.next()) != null) {
       count += tb.numValidTuples();
     }
     assertTrue(count == expectedNumResults);

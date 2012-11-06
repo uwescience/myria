@@ -39,23 +39,16 @@ public class JdbcQueryScan extends Operator {
   }
 
   @Override
-  public void close() {
-    super.close();
-    this.tuples = null;
+  public void cleanup() {
+    tuples = null;
   }
 
   @Override
   protected _TupleBatch fetchNext() throws DbException {
-    // if (cache != null) {
-    // TupleBatch tmp = cache;
-    // cache = null;
-    // return tmp;
-    // } else {
     if (tuples.hasNext()) {
-      return this.tuples.next();
+      return tuples.next();
     } else {
       return null;
-      // }
     }
   }
 
@@ -70,8 +63,7 @@ public class JdbcQueryScan extends Operator {
   }
 
   @Override
-  public void open() throws DbException {
-    super.open();
+  public void init() throws DbException {
     tuples = JdbcAccessMethod.tupleBatchIteratorFromQuery(driverClass, connectionString, baseSQL, username, password);
   }
 
@@ -84,6 +76,11 @@ public class JdbcQueryScan extends Operator {
   @Override
   public void setChildren(final Operator[] children) {
     throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public _TupleBatch fetchNextReady() throws DbException {
+    return fetchNext();
   }
 
 }

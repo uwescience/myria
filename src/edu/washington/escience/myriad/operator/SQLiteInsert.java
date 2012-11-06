@@ -151,7 +151,7 @@ public class SQLiteInsert extends RootOperator {
   }
 
   @Override
-  public final void open() throws DbException {
+  public final void init() throws DbException {
     File dbFile = new File(pathToSQLiteDb);
 
     /* Try and create a new file. */
@@ -178,9 +178,6 @@ public class SQLiteInsert extends RootOperator {
 
     /* Set up the insert statement. */
     insertString = insertStatementFromSchema(getSchema(), relationName);
-
-    /* Get things started above. */
-    super.open();
   }
 
   @Override
@@ -226,12 +223,12 @@ public class SQLiteInsert extends RootOperator {
   }
 
   @Override
-  public final void close() {
-    super.close();
+  public final void cleanup() {
     try {
       queue.stop(true).join();
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
     }
   }
+
 }
