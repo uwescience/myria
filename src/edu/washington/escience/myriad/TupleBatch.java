@@ -389,6 +389,10 @@ public class TupleBatch extends TupleBatchAdaptor {
     return validT;
   }
 
+  public final int getNumTuples() {
+    return numTuples;
+  }
+
   @Override
   public final _TupleBatch remove(final int innerIdx) {
     validTuples.clear(innerIdx);

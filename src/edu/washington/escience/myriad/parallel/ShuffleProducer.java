@@ -32,7 +32,7 @@ public class ShuffleProducer extends Producer {
     @Override
     public void run() {
 
-      final TransportMessage.Builder messageBuilder = TransportMessage.newBuilder();
+      // final TransportMessage.Builder messageBuilder = TransportMessage.newBuilder();
       final int numWorker = workerIDs.length;
       final IoSession[] shuffleSessions = new IoSession[numWorker];
       int index = 0;
@@ -40,15 +40,16 @@ public class ShuffleProducer extends Producer {
         shuffleSessions[index] = getThisWorker().connectionPool.get(workerID, null, 3, null);
         index++;
       }
-      final Schema thisSchema = getSchema();
+      Schema thisSchema = null;
+      thisSchema = getSchema();
 
       try {
         TupleBatchBuffer[] buffers = new TupleBatchBuffer[numWorker];
         for (int i = 0; i < numWorker; i++) {
           buffers[i] = new TupleBatchBuffer(thisSchema);
         }
-        while (child.hasNext()) {
-          final _TupleBatch tup = child.next();
+        _TupleBatch tup = null;
+        while ((tup = child.next()) != null) {
           buffers = tup.partition(partitionFunction, buffers);
           for (int p = 0; p < numWorker; p++) {
             final TupleBatchBuffer etb = buffers[p];
@@ -62,7 +63,7 @@ public class ShuffleProducer extends Producer {
                 columnProtos[i] = c.serializeToProto();
                 i++;
               }
-              shuffleSessions[p].write(messageBuilder.setType(TransportMessageType.DATA).setData(
+              shuffleSessions[p].write(TransportMessage.newBuilder().setType(TransportMessageType.DATA).setData(
                   DataMessage.newBuilder().setType(DataMessageType.NORMAL).addAllColumns(Arrays.asList(columnProtos))
                       .setOperatorID(ShuffleProducer.this.operatorID.getLong()).build()).build());
             }
@@ -81,7 +82,7 @@ public class ShuffleProducer extends Producer {
                 columnProtos[j] = c.serializeToProto();
                 j++;
               }
-              shuffleSessions[i].write(messageBuilder.setType(TransportMessageType.DATA).setData(
+              shuffleSessions[i].write(TransportMessage.newBuilder().setType(TransportMessageType.DATA).setData(
                   DataMessage.newBuilder().setType(DataMessageType.NORMAL).addAllColumns(Arrays.asList(columnProtos))
                       .setOperatorID(ShuffleProducer.this.operatorID.getLong()).build()).build());
             }
@@ -97,7 +98,7 @@ public class ShuffleProducer extends Producer {
               .setOperatorID(ShuffleProducer.this.operatorID.getLong()).build();
       for (int i = 0; i < numWorker; i++) {
 
-        shuffleSessions[i].write(messageBuilder.setType(TransportMessageType.DATA).setData(eos).build());
+        shuffleSessions[i].write(TransportMessage.newBuilder().setType(TransportMessageType.DATA).setData(eos).build());
       }
     }
   }
@@ -120,9 +121,7 @@ public class ShuffleProducer extends Producer {
   }
 
   @Override
-  public final void close() {
-    super.close();
-    child.close();
+  public final void cleanup() {
   }
 
   @Override
@@ -138,11 +137,6 @@ public class ShuffleProducer extends Producer {
   @Override
   public final Operator[] getChildren() {
     return new Operator[] { child };
-  }
-
-  @Override
-  public final String getName() {
-    return "shuffle_p";
   }
 
   public final PartitionFunction<?, ?> getPartitionFunction() {
@@ -162,11 +156,9 @@ public class ShuffleProducer extends Producer {
   }
 
   @Override
-  public final void open() throws DbException {
-    child.open();
+  public final void init() throws DbException {
     runningThread = new WorkingThread();
     runningThread.start();
-    super.open();
   }
 
   @Override
@@ -176,6 +168,11 @@ public class ShuffleProducer extends Producer {
 
   public final void setPartitionFunction(final PartitionFunction<?, ?> pf) {
     partitionFunction = pf;
+  }
+
+  @Override
+  public _TupleBatch fetchNextReady() throws DbException {
+    return fetchNext();
   }
 
 }

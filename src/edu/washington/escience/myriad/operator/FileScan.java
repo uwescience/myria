@@ -69,8 +69,7 @@ public final class FileScan extends LeafOperator {
   }
 
   @Override
-  public void open() throws DbException {
-    super.open();
+  public void init() throws DbException {
     try {
       tokenizer = new StreamTokenizer(new BufferedReader(new FileReader(file)));
     } catch (FileNotFoundException e) {
@@ -185,11 +184,15 @@ public final class FileScan extends LeafOperator {
   }
 
   @Override
-  public void close() {
-    super.close();
+  public void cleanup() {
     tokenizer = null;
     while (buffer.numTuples() > 0) {
       buffer.popAny();
     }
+  }
+
+  @Override
+  public _TupleBatch fetchNextReady() throws DbException {
+    return fetchNext();
   }
 }

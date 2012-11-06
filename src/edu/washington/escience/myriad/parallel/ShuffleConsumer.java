@@ -21,8 +21,6 @@ public class ShuffleConsumer extends Consumer {
 
   private static final long serialVersionUID = 1L;
 
-  private boolean finish;
-
   // Used to remember which of the source workers have sent an end of stream
   // message.
   private final BitSet workerEOS;
@@ -46,37 +44,27 @@ public class ShuffleConsumer extends Consumer {
       workerIdToIndex.put(w, i++);
     }
     workerEOS = new BitSet(workerIDs.length);
-    finish = false;
   }
 
   @Override
-  public void close() {
-    super.close();
+  public void cleanup() {
     workerEOS.clear();
   }
 
   @Override
   protected _TupleBatch fetchNext() throws DbException {
-    // System.out.println("shuffle con fetchnext");
-    if (!finish) {
-      try {
-        return getTuples();
-      } catch (final InterruptedException e) {
-        e.printStackTrace();
-        throw new DbException(e.getLocalizedMessage());
-      }
+    try {
+      return getTuples(true);
+    } catch (final InterruptedException e) {
+      e.printStackTrace();
+      Thread.currentThread().interrupt();
+      throw new DbException(e.getLocalizedMessage());
     }
-    return null;
   }
 
   @Override
   public Operator[] getChildren() {
     return new Operator[] { child };
-  }
-
-  @Override
-  public String getName() {
-    return "shuffle_c";
   }
 
   @Override
@@ -88,37 +76,64 @@ public class ShuffleConsumer extends Consumer {
    * 
    * Retrieve a batch of tuples from the buffer of ExchangeMessages. Wait if the buffer is empty.
    * 
+   * @param blocking if blocking then return only if there's actually a TupleBatch to return or null if EOS. If not
+   *          blocking then return null immediately if there's no data in the input buffer.
+   * 
    * @return Iterator over the new tuples received from the source workers. Return <code>null</code> if all source
    *         workers have sent an end of file message.
+   * 
+   * @throws InterruptedException a
    */
-  _TupleBatch getTuples() throws InterruptedException {
+  final _TupleBatch getTuples(final boolean blocking) throws InterruptedException {
+    int timeToWait = -1;
+    if (!blocking) {
+      timeToWait = 0;
+    }
+
     ExchangeTupleBatch tb = null;
 
     while (workerEOS.nextClearBit(0) < sourceWorkers.length) {
-      tb = take(-1);
-      if (tb.isEos()) {
-        workerEOS.set(workerIdToIndex.get(tb.getWorkerID()));
+      tb = take(timeToWait);
+
+      if (tb != null) {
+        if (tb.isEos()) {
+          workerEOS.set(workerIdToIndex.get(tb.getWorkerID()));
+        } else {
+          return tb;
+        }
       } else {
-        return tb;
+        // if blocking=true, no null should be got from take
+        return null;
       }
     }
     // have received all the eos message from all the workers
-    finish = true;
+    setEOS();
 
     return null;
   }
 
   @Override
-  public void open() throws DbException {
-    if (child != null) {
-      child.open();
-    }
-    super.open();
+  public void init() throws DbException {
   }
 
   @Override
   public void setChildren(final Operator[] children) {
     child = (ShuffleProducer) children[0];
+  }
+
+  @Override
+  public _TupleBatch fetchNextReady() throws DbException {
+    if (!eos()) {
+      try {
+        return getTuples(false);
+      } catch (final InterruptedException e) {
+        e.printStackTrace();
+        // retain the interrupted bit
+        Thread.currentThread().interrupt();
+        throw new DbException(e.getLocalizedMessage());
+      }
+    }
+    return null;
   }
 
 }

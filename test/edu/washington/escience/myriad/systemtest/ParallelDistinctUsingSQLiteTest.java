@@ -1,10 +1,7 @@
 package edu.washington.escience.myriad.systemtest;
 
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.HashSet;
 
 import org.junit.Test;
 
@@ -45,7 +42,7 @@ public class ParallelDistinctUsingSQLiteTest extends SystemTestBase {
       tbb.put(0, ids[i]);
       tbb.put(1, names[i]);
     }
-    HashSet<Tuple> expectedResult = SystemTestBase.distinct(tbb);
+    HashMap<Tuple, Integer> expectedResult = SystemTestBase.distinct(tbb);
 
     _TupleBatch tb = null;
     while ((tb = tbb.popAny()) != null) {
@@ -89,12 +86,9 @@ public class ParallelDistinctUsingSQLiteTest extends SystemTestBase {
       }
     }
 
-    HashSet<Tuple> resultSet = tupleBatchToTupleSet(result);
+    HashMap<Tuple, Integer> resultSet = tupleBatchToTupleBag(result);
 
-    assertTrue(resultSet.size() == expectedResult.size());
-    for (Tuple t : resultSet) {
-      assertTrue(expectedResult.contains(t));
-    }
+    SystemTestBase.assertTupleBagEqual(expectedResult, resultSet);
 
   }
 }

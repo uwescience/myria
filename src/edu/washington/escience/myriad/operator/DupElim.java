@@ -82,33 +82,12 @@ public class DupElim extends Operator {
 
   @Override
   protected _TupleBatch fetchNext() throws DbException {
-    if (child.hasNext()) {
-      final _TupleBatch tb = child.next();
-      int numTuples = tb.numInputTuples();
-      for (int i = 0; i < numTuples; ++i) {
-        final IndexedTuple cntTuple = new IndexedTuple(tb, i);
-        final int cntHashCode = cntTuple.hashCode();
-        // might need to check invalid | change to use outputTuples later
-        if (uniqueTuples.get(cntHashCode) == null) {
-          uniqueTuples.put(cntHashCode, new ArrayList<IndexedTuple>());
-        }
-        final List<IndexedTuple> tupleList = uniqueTuples.get(cntHashCode);
-        boolean unique = true;
-        for (int j = 0; j < tupleList.size(); ++j) {
-          final IndexedTuple oldTuple = tupleList.get(j);
-          if (cntTuple.equals(oldTuple)) {
-            unique = false;
-            break;
-          }
-        }
-        // System.out.println(i + " " + unique);
-        if (unique) {
-          tupleList.add(cntTuple);
-        } else {
-          tb.remove(i);
-        }
+    _TupleBatch tb = null;
+    while ((tb = child.next()) != null) {
+      tb = doDupElim(tb);
+      if (tb.numOutputTuples() > 0) {
+        return tb;
       }
-      return tb;
     }
     return null;
   }
@@ -124,12 +103,7 @@ public class DupElim extends Operator {
   }
 
   @Override
-  public void open() throws DbException {
-    if (child != null) {
-      // for (Operator child : children)
-      child.open();
-    }
-    super.open();
+  public void init() throws DbException {
   }
 
   @Override
@@ -137,4 +111,49 @@ public class DupElim extends Operator {
     child = children[0];
   }
 
+  @Override
+  protected void cleanup() throws DbException {
+  }
+
+  protected _TupleBatch doDupElim(_TupleBatch tb) {
+    for (int i = 0; i < tb.numInputTuples(); ++i) {
+      final IndexedTuple cntTuple = new IndexedTuple(tb, i);
+      final int cntHashCode = cntTuple.hashCode();
+      // might need to check invalid | change to use outputTuples later
+      if (uniqueTuples.get(cntHashCode) == null) {
+        uniqueTuples.put(cntHashCode, new ArrayList<IndexedTuple>());
+      }
+      final List<IndexedTuple> tupleList = uniqueTuples.get(cntHashCode);
+      boolean unique = true;
+      for (int j = 0; j < tupleList.size(); ++j) {
+        final IndexedTuple oldTuple = tupleList.get(j);
+        if (cntTuple.equals(oldTuple)) {
+          unique = false;
+          break;
+        }
+      }
+      System.out.println(i + " " + unique);
+      if (unique) {
+        tupleList.add(cntTuple);
+      } else {
+        tb.remove(i);
+      }
+    }
+    return tb;
+  }
+
+  @Override
+  public _TupleBatch fetchNextReady() throws DbException {
+    _TupleBatch tb = null;
+    while (!eos() && child.nextReady()) {
+      tb = child.next();
+      tb = doDupElim(tb);
+      if (tb.numOutputTuples() > 0) {
+        return tb;
+      } else {
+        return null;
+      }
+    }
+    return null;
+  }
 }

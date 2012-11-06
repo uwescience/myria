@@ -170,7 +170,7 @@ public class Server {
     @Override
     public void exceptionCaught(final IoSession session, final Throwable cause) {
       cause.printStackTrace();
-      ParallelUtility.closeSession(session);
+      // ParallelUtility.closeSession(session);
     }
 
     @Override
@@ -459,18 +459,14 @@ public class Server {
 
       TupleBatchBuffer outBufferForTesting = new TupleBatchBuffer(serverPlan.getSchema());
       int cnt = 0;
-      while (serverPlan.hasNext()) {
-        final _TupleBatch tup = serverPlan.next();
+      _TupleBatch tup = null;
+      while ((tup = serverPlan.next()) != null) {
         outBufferForTesting.putAll(tup);
         out.println(new ImmutableInMemoryTupleBatch(serverPlan.getSchema(), tup.outputRawData(), tup.numOutputTuples())
             .toString());
         cnt++;
       }
 
-      /*
-       * serverPlan.open(); while (serverPlan.hasNext()) { final _TupleBatch tup = serverPlan.next(); out.print(new
-       * ImmutableInMemoryTupleBatch(serverPlan.getSchema(), tup.outputRawData(), tup.numOutputTuples()) .toString());
-       */
       serverPlan.close();
       Server.this.dataBuffer.remove(serverPlan.getOperatorID());
       Date end = new Date();

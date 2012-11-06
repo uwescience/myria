@@ -81,7 +81,8 @@ public abstract class TupleBatchAdaptor implements _TupleBatch {
   public int numInputTuples() {
     if (this instanceof TupleBatch) {
       final TupleBatch tupleBatch = (TupleBatch) this;
-      return tupleBatch.validTupleIndices().length; // need a public method here
+      return tupleBatch.getNumTuples();
+      // return tupleBatch.validTupleIndices().length; // need a public method here
     } else {
       throw new UnsupportedOperationException();
     }

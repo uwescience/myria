@@ -53,19 +53,27 @@ public class SQLiteInsertTest {
 
   @Test
   public void test() throws Exception {
-    ExecutorService myExecutor = Executors.newSingleThreadExecutor();
-    Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
+    try {
+      ExecutorService myExecutor = Executors.newSingleThreadExecutor();
+      Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
 
-    TupleSource source = new TupleSource(data);
-    SQLiteInsert insert = new SQLiteInsert(source, "my_tuples", tempFile.getAbsolutePath(), myExecutor, true);
-    insert.open();
-    insert.close();
+      TupleSource source = new TupleSource(data);
+      SQLiteInsert insert = new SQLiteInsert(source, "my_tuples", tempFile.getAbsolutePath(), myExecutor, true);
+      insert.open();
+      while (insert.next() != null) {
+      }
+      insert.close();
 
-    SQLiteConnection sqliteConnection = new SQLiteConnection(tempFile);
-    sqliteConnection.open(false);
-    SQLiteStatement statement = sqliteConnection.prepare("SELECT COUNT(*) FROM my_tuples;");
-    assertTrue(statement.step());
-    int inserted = statement.columnInt(0);
-    assertTrue(inserted == NUM_TUPLES);
+      SQLiteConnection sqliteConnection = new SQLiteConnection(tempFile);
+      sqliteConnection.open(false);
+      SQLiteStatement statement = sqliteConnection.prepare("SELECT COUNT(*) FROM my_tuples;");
+      assertTrue(statement.step());
+      int inserted = statement.columnInt(0);
+      assertTrue(inserted == NUM_TUPLES);
+    } finally {
+      if (tempFile != null && tempFile.exists()) {
+        tempFile.deleteOnExit();
+      }
+    }
   }
 }

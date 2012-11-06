@@ -85,7 +85,12 @@ public class Worker {
               final ObjectInputStream osis =
                   new ObjectInputStream(new ByteArrayInputStream(m.getQuery().getQuery().toByteArray()));
               final Operator query = (Operator) (osis.readObject());
-              receiveQuery(query);
+              try {
+                receiveQuery(query);
+              } catch (DbException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+              }
               sendMessageToMaster(TransportMessage.newBuilder().setType(TransportMessageType.CONTROL).setControl(
                   ControlMessage.newBuilder().setType(ControlMessageType.QUERY_READY_TO_EXECUTE).build()).build(), null);
             } catch (IOException | ClassNotFoundException e) {
@@ -131,6 +136,7 @@ public class Worker {
 
     }
   }
+
   public static class MessageWrapper {
     protected int senderID;
     protected TransportMessage message;
@@ -150,8 +156,8 @@ public class Worker {
           final CollectProducer root = (CollectProducer) query;
           try {
             root.open();
-            while (root.hasNext()) {
-              root.next();
+            while (root.next() != null) {
+              ;
             }
             root.close();
           } catch (final DbException e1) {
@@ -171,6 +177,7 @@ public class Worker {
       }
     }
   }
+
   /**
    * Mina acceptor handler. This is where all messages arriving from other workers and from the coordinator will be
    * processed
@@ -181,7 +188,7 @@ public class Worker {
     public final void exceptionCaught(final IoSession session, final Throwable cause) {
       System.out.println("exception caught");
       cause.printStackTrace();
-      ParallelUtility.closeSession(session);
+      // ParallelUtility.closeSession(session);
     }
 
     /**
@@ -470,8 +477,10 @@ public class Worker {
    * localize the received query plan. Some information that are required to get the query plan executed need to be
    * replaced by local versions. For example, the table in the SeqScan operator need to be replaced by the local table.
    * Note that Producers and Consumers also needs local information.
+   * 
+   * @throws DbException
    */
-  public final void localizeQueryPlan(final Operator queryPlan) {
+  public final void localizeQueryPlan(final Operator queryPlan) throws DbException {
     if (queryPlan == null) {
       return;
     }
@@ -529,8 +538,10 @@ public class Worker {
    * this method should be called when a query is received from the server.
    * 
    * It does the initialization and preparation for the execution of the query.
+   * 
+   * @throws DbException
    */
-  public final void receiveQuery(final Operator query) {
+  public final void receiveQuery(final Operator query) throws DbException {
     System.out.println("Query received");
     if (Worker.this.queryPlan != null) {
       System.err.println("Error: Worker is still processing. New query refused");
