@@ -3,8 +3,7 @@ package edu.washington.escience.myriad.parallel;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.mina.core.service.IoConnector;
-import org.apache.mina.core.session.IoSession;
+import org.jboss.netty.channel.Channel;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
@@ -32,12 +31,11 @@ public class ShuffleProducer extends Producer {
     @Override
     public void run() {
 
-      // final TransportMessage.Builder messageBuilder = TransportMessage.newBuilder();
       final int numWorker = workerIDs.length;
-      final IoSession[] shuffleSessions = new IoSession[numWorker];
+      final Channel[] shuffleChannels = new Channel[numWorker];
       int index = 0;
       for (final int workerID : workerIDs) {
-        shuffleSessions[index] = getThisWorker().connectionPool.get(workerID, null, 3, null);
+        shuffleChannels[index] = getThisWorker().connectionPool.get(workerID, 3, null, getThisWorker().messageBuffer);
         index++;
       }
       Schema thisSchema = null;
@@ -63,7 +61,7 @@ public class ShuffleProducer extends Producer {
                 columnProtos[i] = c.serializeToProto();
                 i++;
               }
-              shuffleSessions[p].write(TransportMessage.newBuilder().setType(TransportMessageType.DATA).setData(
+              shuffleChannels[p].write(TransportMessage.newBuilder().setType(TransportMessageType.DATA).setData(
                   DataMessage.newBuilder().setType(DataMessageType.NORMAL).addAllColumns(Arrays.asList(columnProtos))
                       .setOperatorID(ShuffleProducer.this.operatorID.getLong()).build()).build());
             }
@@ -82,7 +80,7 @@ public class ShuffleProducer extends Producer {
                 columnProtos[j] = c.serializeToProto();
                 j++;
               }
-              shuffleSessions[i].write(TransportMessage.newBuilder().setType(TransportMessageType.DATA).setData(
+              shuffleChannels[i].write(TransportMessage.newBuilder().setType(TransportMessageType.DATA).setData(
                   DataMessage.newBuilder().setType(DataMessageType.NORMAL).addAllColumns(Arrays.asList(columnProtos))
                       .setOperatorID(ShuffleProducer.this.operatorID.getLong()).build()).build());
             }
@@ -98,7 +96,7 @@ public class ShuffleProducer extends Producer {
               .setOperatorID(ShuffleProducer.this.operatorID.getLong()).build();
       for (int i = 0; i < numWorker; i++) {
 
-        shuffleSessions[i].write(TransportMessage.newBuilder().setType(TransportMessageType.DATA).setData(eos).build());
+        shuffleChannels[i].write(TransportMessage.newBuilder().setType(TransportMessageType.DATA).setData(eos).build());
       }
     }
   }
@@ -146,13 +144,6 @@ public class ShuffleProducer extends Producer {
   @Override
   public final Schema getSchema() {
     return child.getSchema();
-  }
-
-  final IoSession getSession(final IoSession[] oldS, final IoConnector[] oldC, final int current) {
-    if (oldS[current] == null || !oldS[current].isConnected()) {
-      return oldS[current] = oldC[current].connect().awaitUninterruptibly().getSession();
-    }
-    return oldS[current];
   }
 
   @Override

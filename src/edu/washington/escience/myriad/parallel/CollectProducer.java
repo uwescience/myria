@@ -3,7 +3,7 @@ package edu.washington.escience.myriad.parallel;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.mina.core.session.IoSession;
+import org.jboss.netty.channel.Channel;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
@@ -33,7 +33,8 @@ public final class CollectProducer extends Producer {
     @Override
     public void run() {
 
-      final IoSession session = getThisWorker().connectionPool.get(collectConsumerWorkerID, null, 3, null);
+      final Channel channel =
+          getThisWorker().connectionPool.get(collectConsumerWorkerID, 3, null, getThisWorker().messageBuffer);
 
       final TransportMessage.Builder messageBuilder = TransportMessage.newBuilder();
 
@@ -62,7 +63,7 @@ public final class CollectProducer extends Producer {
               columnProtos[i] = c.serializeToProto();
               i++;
             }
-            session.write(messageBuilder.setType(TransportMessageType.DATA).setData(
+            channel.write(messageBuilder.setType(TransportMessageType.DATA).setData(
                 DataMessage.newBuilder().setType(DataMessageType.NORMAL).addAllColumns(Arrays.asList(columnProtos))
                     .setOperatorID(CollectProducer.this.operatorID.getLong()).build()).build());
           }
@@ -79,7 +80,7 @@ public final class CollectProducer extends Producer {
               j++;
             }
 
-            session.write(messageBuilder.setType(TransportMessageType.DATA).setData(
+            channel.write(messageBuilder.setType(TransportMessageType.DATA).setData(
                 DataMessage.newBuilder().setType(DataMessageType.NORMAL).addAllColumns(Arrays.asList(columnProtos))
                     .setOperatorID(CollectProducer.this.operatorID.getLong()).build()).build());
           }
@@ -88,7 +89,7 @@ public final class CollectProducer extends Producer {
         final DataMessage eos =
             DataMessage.newBuilder().setType(DataMessageType.EOS).setOperatorID(
                 CollectProducer.this.operatorID.getLong()).build();
-        session.write(messageBuilder.setType(TransportMessageType.DATA).setData(eos).build());
+        channel.write(messageBuilder.setType(TransportMessageType.DATA).setData(eos).build());
 
       } catch (final DbException e) {
         e.printStackTrace();

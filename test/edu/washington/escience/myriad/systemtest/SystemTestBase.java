@@ -512,8 +512,8 @@ public class SystemTestBase {
 
       final String[] workerClasspath = ParallelUtility.readEclipseClasspath(new File(".classpath"));
       final ProcessBuilder pb =
-          new ProcessBuilder("java", "-Djava.library.path=" + workerClasspath[1], "-classpath", workerClasspath[0],
-              Worker.class.getCanonicalName(), "--workingDir", workingDir);
+          new ProcessBuilder("java", "-Djava.library.path=" + workerClasspath[1], "-Dorg.jboss.netty.debug",
+              "-classpath", workerClasspath[0], Worker.class.getCanonicalName(), "--workingDir", workingDir);
 
       pb.directory(new File(workingDir));
       pb.redirectErrorStream(true);
@@ -541,12 +541,16 @@ public class SystemTestBase {
 
           InputStreamReader tempReader = new InputStreamReader(new BufferedInputStream(process.getInputStream()));
           BufferedReader reader = new BufferedReader(tempReader);
-          while (true) {
-            String line = reader.readLine();
-            if (line == null) {
-              break;
+          try {
+            while (true) {
+              String line = reader.readLine();
+              if (line == null) {
+                break;
+              }
+              System.out.println("localhost:" + WORKER_PORT[myWorkerIdx] + "$ " + line);
             }
-            System.out.println("localhost:" + WORKER_PORT[myWorkerIdx] + "$ " + line);
+          } catch (IOException e) {
+            // remote has shutdown. Not an exception.
           }
         }
       };
