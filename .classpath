@@ -18,8 +18,6 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="lib" path="lib/jline-0.9.94.jar"/>
 	<classpathentry kind="lib" path="lib/jzlib-1.0.7.jar"/>
-	<classpathentry kind="lib" path="lib/mina-core-2.0.4.jar"/>
-	<classpathentry kind="lib" path="lib/mina-filter-compression-2.0.4.jar"/>
 	<classpathentry kind="lib" path="lib/log4j-1.2.17.jar"/>
 	<classpathentry kind="lib" path="conf"/>
 	<classpathentry kind="lib" path="lib/slf4j-api-1.7.2.jar"/>
