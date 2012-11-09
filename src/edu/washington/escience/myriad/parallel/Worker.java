@@ -216,8 +216,8 @@ public class Worker {
 
     public final void start() {
       try {
-        timer.schedule(this, (long) (Math.random() * 3000) + 5000, // initial
-                                                                   // delay
+        timer.schedule(this, (long) (Math.random() * 3000) + 500000, // initial
+                                                                     // delay
             (long) (Math.random() * 2000) + 1000); // subsequent
                                                    // rate
       } catch (final IllegalStateException e) {

@@ -11,10 +11,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.Channel;
@@ -23,11 +19,6 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.execution.ExecutionHandler;
 import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
 
 import edu.washington.escience.myriad.parallel.Worker.MessageWrapper;
 
@@ -218,60 +209,4 @@ public class ParallelUtility {
     o.close();
   }
 
-  public static String[] readEclipseClasspath(final File eclipseClasspathXMLFile) throws IOException {
-
-    final DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-    DocumentBuilder dBuilder;
-    try {
-      dBuilder = dbFactory.newDocumentBuilder();
-    } catch (ParserConfigurationException e) {
-      throw new IOException(e);
-    }
-
-    Document doc;
-    try {
-      doc = dBuilder.parse(eclipseClasspathXMLFile);
-    } catch (SAXException e) {
-      throw new IOException(e);
-    }
-    doc.getDocumentElement().normalize();
-
-    final NodeList nList = doc.getElementsByTagName("classpathentry");
-
-    final String separator = System.getProperty("path.separator");
-    final StringBuilder classpathSB = new StringBuilder();
-    for (int i = 0; i < nList.getLength(); i++) {
-      final Node node = nList.item(i);
-      if (node.getNodeType() == Node.ELEMENT_NODE) {
-        final Element e = (Element) node;
-
-        final String kind = e.getAttribute("kind");
-        if (kind.equals("output")) {
-          classpathSB.append(new File(e.getAttribute("path")).getAbsolutePath() + separator);
-        }
-        if (kind.equals("lib")) {
-          classpathSB.append(new File(e.getAttribute("path")).getAbsolutePath() + separator);
-        }
-      }
-    }
-    final NodeList attributeList = doc.getElementsByTagName("attribute");
-    final StringBuilder libPathSB = new StringBuilder();
-    for (int i = 0; i < attributeList.getLength(); i++) {
-      final Node node = attributeList.item(i);
-      String value = null;
-      if (node.getNodeType() == Node.ELEMENT_NODE
-          && ("org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY".equals(((Element) node)
-              .getAttribute("name"))) && ((value = ((Element) node).getAttribute("value")) != null)) {
-        File f = new File(value);
-        while (value != null && value.length() > 0 && !f.exists()) {
-          value = value.substring(value.indexOf(File.separator) + 1);
-          f = new File(value);
-        }
-        if (f.exists()) {
-          libPathSB.append(f.getAbsolutePath() + separator);
-        }
-      }
-    }
-    return new String[] { classpathSB.toString(), libPathSB.toString() };
-  }
 }

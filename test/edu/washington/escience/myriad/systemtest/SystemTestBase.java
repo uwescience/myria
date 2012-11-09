@@ -41,6 +41,7 @@ import edu.washington.escience.myriad.parallel.SQLiteTupleBatch;
 import edu.washington.escience.myriad.parallel.Server;
 import edu.washington.escience.myriad.parallel.Worker;
 import edu.washington.escience.myriad.table._TupleBatch;
+import edu.washington.escience.myriad.tool.EclipseClasspathReader;
 
 public class SystemTestBase {
 
@@ -510,7 +511,7 @@ public class SystemTestBase {
 
       String workingDir = FilenameUtils.concat(workerTestBaseFolder, "worker_" + workerID);
 
-      final String[] workerClasspath = ParallelUtility.readEclipseClasspath(new File(".classpath"));
+      final String[] workerClasspath = EclipseClasspathReader.readEclipseClasspath(new File(".classpath"));
       final ProcessBuilder pb =
           new ProcessBuilder("java", "-Djava.library.path=" + workerClasspath[1], "-Dorg.jboss.netty.debug",
               "-classpath", workerClasspath[0], Worker.class.getCanonicalName(), "--workingDir", workingDir);
