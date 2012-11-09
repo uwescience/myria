@@ -81,7 +81,38 @@ public class ParallelUtility {
   /**
    * Create a server side acceptor.
    */
-  public static ServerBootstrap createAcceptor(final LinkedBlockingQueue<MessageWrapper> messageBuffer) {
+  public static ServerBootstrap createMasterIPCServer(final LinkedBlockingQueue<MessageWrapper> messageBuffer) {
+
+    // Start server with Nb of active threads = 2*NB CPU + 1 as maximum.
+    ChannelFactory factory =
+        new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool(), Runtime
+            .getRuntime().availableProcessors() * 2 + 1);
+
+    ServerBootstrap bootstrap = new ServerBootstrap(factory);
+    OrderedMemoryAwareThreadPoolExecutor pipelineExecutor =
+        new OrderedMemoryAwareThreadPoolExecutor(200, 1048576, 1073741824, 100, TimeUnit.MILLISECONDS, Executors
+            .defaultThreadFactory());
+
+    bootstrap.setPipelineFactory(new IPCPipelineFactories.MasterClientPipelineFactory(messageBuffer));
+
+    ExecutionHandler eh;
+
+    bootstrap.setOption("child.tcpNoDelay", true);
+    bootstrap.setOption("child.keepAlive", false);
+    bootstrap.setOption("child.reuseAddress", true);
+    bootstrap.setOption("child.connectTimeoutMillis", 3000);
+    bootstrap.setOption("child.sendBufferSize", 512 * 1024 * 1024);
+    bootstrap.setOption("child.receiveBufferSize", 512 * 1024 * 1024);
+
+    bootstrap.setOption("readWriteFair", true);
+
+    return bootstrap;
+  }
+
+  /**
+   * Create a server side acceptor.
+   */
+  public static ServerBootstrap createWorkerIPCServer(final LinkedBlockingQueue<MessageWrapper> messageBuffer) {
 
     // Start server with Nb of active threads = 2*NB CPU + 1 as maximum.
     ChannelFactory factory =
@@ -116,7 +147,7 @@ public class ParallelUtility {
   /**
    * Create a client side connector to the server.
    */
-  static ClientBootstrap createConnector(final LinkedBlockingQueue<MessageWrapper> messageBuffer) {
+  static ClientBootstrap createIPCClient(final LinkedBlockingQueue<MessageWrapper> messageBuffer) {
 
     // Start client with Nb of active threads = 3 as maximum.
     ChannelFactory factory =

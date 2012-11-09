@@ -238,7 +238,7 @@ public class Server {
     this.server = server;
     dataBuffer = new ConcurrentHashMap<ExchangePairID, LinkedBlockingQueue<ExchangeTupleBatch>>();
     messageBuffer = new LinkedBlockingQueue<MessageWrapper>();
-    ipcServer = ParallelUtility.createAcceptor(messageBuffer);
+    ipcServer = ParallelUtility.createMasterIPCServer(messageBuffer);
     exchangeSchema = new ConcurrentHashMap<ExchangePairID, Schema>();
 
     final Map<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();

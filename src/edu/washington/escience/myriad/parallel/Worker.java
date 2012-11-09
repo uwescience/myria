@@ -136,8 +136,8 @@ public class Worker {
   }
 
   public static class MessageWrapper {
-    protected int senderID;
-    protected TransportMessage message;
+    public int senderID;
+    public TransportMessage message;
   }
 
   /**
@@ -352,7 +352,7 @@ public class Worker {
 
     dataBuffer = new HashMap<ExchangePairID, LinkedBlockingQueue<ExchangeTupleBatch>>();
     messageBuffer = new LinkedBlockingQueue<MessageWrapper>();
-    ipcServer = ParallelUtility.createAcceptor(messageBuffer);
+    ipcServer = ParallelUtility.createWorkerIPCServer(messageBuffer);
     exchangeSchema = new ConcurrentHashMap<ExchangePairID, Schema>();
 
     queryExecutor = new QueryExecutor();

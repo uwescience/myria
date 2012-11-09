@@ -26,10 +26,9 @@ public class IPCConnectionPool {
 
   protected final ConcurrentHashMap<Integer, AtomicReference<Channel>> connectionPool;
   protected final ConcurrentHashMap<Integer, SocketInfo> remoteAddresses;
-  // protected final ConcurrentHashMap<Integer, ChannelPipelineFactory> defaultIoHandlers;
 
   protected final int myID;
-  protected final ChannelGroup allChannels;
+  protected final ChannelGroup allConnections;
 
   public IPCConnectionPool(final int myID, final Map<Integer, SocketInfo> remoteAddresses) {
     // final Map<Integer, ChannelPipelineFactory> defaultIoHandlers) {
@@ -42,7 +41,7 @@ public class IPCConnectionPool {
     // this.defaultIoHandlers = new ConcurrentHashMap<Integer, ChannelPipelineFactory>();
     // this.defaultIoHandlers.putAll(defaultIoHandlers);
     this.myID = myID;
-    allChannels = new DefaultChannelGroup("allChannels");
+    allConnections = new DefaultChannelGroup("allChannels");
   }
 
   /**
@@ -56,12 +55,12 @@ public class IPCConnectionPool {
 
     Channel s = null;
     HashMap<String, Object> attributes = null;
+    int retry = 0;
+    Channel oldChannel = ref.get();
 
     // Not a bug
     synchronized (ref) {
 
-      int retry = 0;
-      Channel oldChannel = ref.get();
       while (retry < numRetry && ((s = ref.get()) == null || !s.isConnected())) {
         final Channel old = s;
         s = createChannel(remoteAddresses.get(id).getAddress(), 3000, messageBuffer);
@@ -75,20 +74,18 @@ public class IPCConnectionPool {
       }
 
       if (oldChannel != s) {
-        synchronized (allChannels) {
-          allChannels.add(s);
+        // this is a new connection
+        synchronized (allConnections) {
+          allConnections.add(s);
         }
 
         attributes = new HashMap<String, Object>();
         s.setAttachment(attributes);
-
-        if (attributes.get("remoteId") == null) {
-          attributes.put("remoteId", id);
-          s.write(
-              TransportMessage.newBuilder().setType(TransportMessageType.CONTROL).setControl(
-                  ControlMessage.newBuilder().setType(ControlMessage.ControlMessageType.CONNECT).setRemoteID(myID)
-                      .build()).build()).awaitUninterruptibly();
-        }
+        attributes.put("remoteId", id);
+        s.write(
+            TransportMessage.newBuilder().setType(TransportMessageType.CONTROL).setControl(
+                ControlMessage.newBuilder().setType(ControlMessage.ControlMessageType.CONNECT).setRemoteID(myID)
+                    .build()).build()).awaitUninterruptibly();
       } else {
         attributes = (HashMap<String, Object>) s.getAttachment();
       }
@@ -111,9 +108,9 @@ public class IPCConnectionPool {
   }
 
   public void shutdown() {
-    synchronized (allChannels) {
-      allChannels.disconnect().awaitUninterruptibly();
-      allChannels.close().awaitUninterruptibly();
+    synchronized (allConnections) {
+      allConnections.disconnect().awaitUninterruptibly();
+      allConnections.close().awaitUninterruptibly();
     }
   }
 
@@ -127,8 +124,7 @@ public class IPCConnectionPool {
     Channel channel = null;
 
     ClientBootstrap ic = null;
-    ic = ParallelUtility.createConnector(messageBuffer);
-    // ic.setHandler(ioHandler);
+    ic = ParallelUtility.createIPCClient(messageBuffer);
 
     boolean connected = true;
     ChannelFuture c = null;

@@ -2,16 +2,16 @@ package edu.washington.escience.myriad.ipc;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.mina.core.service.IoHandler;
-import org.apache.mina.core.service.IoHandlerAdapter;
-import org.apache.mina.core.session.IoSession;
-import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
+import org.jboss.netty.bootstrap.ServerBootstrap;
+import org.jboss.netty.channel.Channel;
 import org.junit.Test;
 
 import edu.washington.escience.myriad.Schema;
@@ -22,6 +22,7 @@ import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.parallel.IPCConnectionPool;
 import edu.washington.escience.myriad.parallel.ParallelUtility;
 import edu.washington.escience.myriad.parallel.SocketInfo;
+import edu.washington.escience.myriad.parallel.Worker.MessageWrapper;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageType;
@@ -32,106 +33,21 @@ import edu.washington.escience.myriad.table._TupleBatch;
 
 public class ProtobufTest {
 
-  public static class TestHandler extends IoHandlerAdapter {
-
-    @Override
-    public final void exceptionCaught(final IoSession session, final Throwable cause) {
-      // System.out.println("exception caught");
-      // cause.printStackTrace();
-      System.out.print(cause.getMessage());
-    }
-
-    /**
-     * Got called every time a message is received.
-     */
-    @Override
-    public final void messageReceived(final IoSession session, final Object message) {
-      // System.out.println("Message received: " + message);
-      // printed++;
-      // if (printed % 100 == 0) {
-      // System.out.println();
-      // }
-      // System.out.print(".");
-      //
-      synchronized (lock) {
-        printed++;
-        System.out.println("Current received: " + printed);
-      }
-    }
-
-    int printed = 0;
-    ArrayList lock = new ArrayList(0);
-  }
-
-  public void protobufTest() throws IOException {
-
-    String[] names = SystemTestBase.randomFixedLengthNumericString(1000, 1005, 200000, 20);
-    long[] ids = SystemTestBase.randomLong(1000, 1005, names.length);
-
-    final Schema schema = new Schema(new Type[] { Type.LONG_TYPE, Type.STRING_TYPE }, new String[] { "id", "name" });
-
-    TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
-    for (int i = 0; i < names.length; i++) {
-      tbb.put(0, ids[i]);
-      tbb.put(1, names[i]);
-    }
-
-    _TupleBatch tb = null;
-    InetSocketAddress serverAddress = new InetSocketAddress("localhost", 9901);
-    TestHandler handler = new TestHandler();
-
-    NioSocketAcceptor acceptor = ParallelUtility.createAcceptor();
-    acceptor.setHandler(handler);
-    acceptor.bind(serverAddress);
-    // IoSession s = ParallelUtility.createSession(serverAddress, handler, 1000);
-
-    HashMap<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
-    computingUnits.put(0, new SocketInfo("localhost", 9901));
-    HashMap<Integer, IoHandler> handlers = new HashMap<Integer, IoHandler>();
-    handlers.put(0, handler);
-    IPCConnectionPool connectionPool = new IPCConnectionPool(0, computingUnits, handlers);
-
-    while ((tb = tbb.popAny()) != null) {
-      List<Column> columns = tb.outputRawData();
-      final ColumnMessage[] columnProtos = new ColumnMessage[columns.size()];
-      int j = 0;
-      for (final Column c : columns) {
-        columnProtos[j] = c.serializeToProto();
-        j++;
-      }
-
-      TransportMessage tm =
-          TransportMessage.newBuilder().setType(TransportMessageType.DATA).setData(
-              DataMessage.newBuilder().setType(DataMessageType.NORMAL).addAllColumns(Arrays.asList(columnProtos))
-                  .setOperatorID(0l).build()).build();
-      IoSession s = connectionPool.get(0, null, 3, null);
-      s.write(tm);
-    }
-
-  }
-
-  public static void main(String[] args) throws IOException, InterruptedException {
-    final InetSocketAddress serverAddress = new InetSocketAddress("localhost", 9901);
-    final TestHandler handler = new TestHandler();
-
-    NioSocketAcceptor acceptor = ParallelUtility.createAcceptor();
-    acceptor.setHandler(handler);
-    acceptor.bind(serverAddress);
-
-    Thread.sleep(100000);
-
-    acceptor.dispose(true);
-  }
-
   @Test
   public void protobufMultiThreadTest() throws IOException, InterruptedException {
 
-    String[] names = SystemTestBase.randomFixedLengthNumericString(1000, 1005, 20000, 20);
+    Random r = new Random();
+
+    int totalRestrict = 1000000;
+    int numThreads = r.nextInt(50) + 1;
+    System.out.println("Num threads: " + numThreads);
+
+    int numTuplesEach = totalRestrict / numThreads;
+
+    String[] names = SystemTestBase.randomFixedLengthNumericString(1000, 1005, numTuplesEach, 20);
     long[] ids = SystemTestBase.randomLong(1000, 1005, names.length);
 
     final Schema schema = new Schema(new Type[] { Type.LONG_TYPE, Type.STRING_TYPE }, new String[] { "id", "name" });
-
-    int numThreads = 20;
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
@@ -140,28 +56,22 @@ public class ProtobufTest {
     }
 
     final InetSocketAddress serverAddress = new InetSocketAddress("localhost", 9901);
-    final TestHandler handler = new TestHandler();
 
-    NioSocketAcceptor acceptor = ParallelUtility.createAcceptor();
-    acceptor.setHandler(handler);
-    acceptor.bind(serverAddress);
+    final LinkedBlockingQueue<MessageWrapper> messageBuffer = new LinkedBlockingQueue<MessageWrapper>();
+    ServerBootstrap acceptor = ParallelUtility.createMasterIPCServer(messageBuffer);
+    Channel server = acceptor.bind(serverAddress);
+
     HashMap<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
     computingUnits.put(0, new SocketInfo("localhost", 9901));
-    HashMap<Integer, IoHandler> handlers = new HashMap<Integer, IoHandler>();
-    handlers.put(0, handler);
-    // final IPCConnectionPool connectionPool = new IPCConnectionPool(0, computingUnits, handlers);
-    // final ArrayList lock = new ArrayList();
-    final IoSession initialSession = ParallelUtility.createSession(serverAddress, handler, 1000); // connectionPool.get(0,
-                                                                                                  // null, 3, null);
+
+    final IPCConnectionPool connectionPool = new IPCConnectionPool(0, computingUnits);
+
     Thread[] threads = new Thread[numThreads];
+    final AtomicInteger numSent = new AtomicInteger();
     for (int i = 0; i < numThreads; i++) {
-      final int t = i;
       Thread tt = new Thread() {
         @Override
         public void run() {
-          // final IoSession initialSession = connectionPool.get(0, null, 3, null);
-          int sent = 0;
-          // IoSession initialSession = ParallelUtility.createSession(serverAddress, handler, 1000);
           _TupleBatch tb = null;
           Iterator<TupleBatch> tbs = tbb.getAll().iterator();
           while (tbs.hasNext()) {
@@ -178,19 +88,9 @@ public class ProtobufTest {
                 TransportMessage.newBuilder().setType(TransportMessageType.DATA).setData(
                     DataMessage.newBuilder().setType(DataMessageType.NORMAL).addAllColumns(Arrays.asList(columnProtos))
                         .setOperatorID(0l).build()).build();
-            // synchronized (lock) {
-            // IoSession nowSession = connectionPool.get(0, null, 3, null);
-            // if (nowSession != initialSession) {
-            // System.err.println("Not the same session!");
-            // }
-            // System.out.print("-");
-            initialSession.write(tm);
-            sent++;
-            // }
-            // System.out.println("Thread#" + t + " sent a TM");
+            connectionPool.get(0, 3, null, null).write(tm);
+            numSent.incrementAndGet();
           }
-          // initialSession.close(false).awaitUninterruptibly();
-          System.out.println("sent " + sent);
         }
       };
       threads[i] = tt;
@@ -200,7 +100,22 @@ public class ProtobufTest {
     for (Thread t : threads) {
       t.join();
     }
-    initialSession.close(false).awaitUninterruptibly();
 
+    System.out.println("Total sent: " + numSent.get() + " TupleBatches");
+    connectionPool.shutdown();
+    server.close();
+    server.disconnect();
+    server.unbind().awaitUninterruptibly();
+    Iterator<MessageWrapper> it = messageBuffer.iterator();
+    int numReceived = 0;
+    while (it.hasNext()) {
+      MessageWrapper m = it.next();
+      TransportMessage tm = m.message;
+      if (tm.getType() == TransportMessage.TransportMessageType.DATA) {
+        numReceived++;
+      }
+    }
+    System.out.println("Received: " + numReceived + " TupleBatches");
+    org.junit.Assert.assertEquals(numSent.get(), numReceived);
   }
 }
