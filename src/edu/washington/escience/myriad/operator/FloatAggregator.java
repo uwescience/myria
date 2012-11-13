@@ -3,40 +3,45 @@ package edu.washington.escience.myriad.operator;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.column.IntColumn;
+import edu.washington.escience.myriad.column.FloatColumn;
 import edu.washington.escience.myriad.parallel.ParallelUtility;
 import edu.washington.escience.myriad.table._TupleBatch;
 
 /**
  * Knows how to compute some aggregate over a set of IntFields.
  */
-public class IntegerAggregator implements Aggregator {
+public class FloatAggregator implements Aggregator {
 
   private static final long serialVersionUID = 1L;
 
   private final int afield;
   private final int aggOps;
 
-  private int min, max, sum, count;
-
+  private float min, max, sum;
+  private int count;
   private final Schema resultSchema;
 
-  public static int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT | Aggregator.AGG_OP_SUM | Aggregator.AGG_OP_MAX
+  public static final int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT | Aggregator.AGG_OP_SUM | Aggregator.AGG_OP_MAX
       | Aggregator.AGG_OP_MIN | Aggregator.AGG_OP_AVG;
 
-  public IntegerAggregator(int afield, String aFieldName, int aggOps) {
+  @Override
+  public int available() {
+    return AVAILABLE_AGG;
+  }
+
+  public FloatAggregator(int afield, String aFieldName, int aggOps) {
     if (aggOps <= 0) {
       throw new IllegalArgumentException("No aggregation operations are selected");
     }
 
     if ((aggOps | AVAILABLE_AGG) != AVAILABLE_AGG) {
-      throw new IllegalArgumentException("Unsupported aggregation on int column.");
+      throw new IllegalArgumentException("Unsupported aggregation on float column.");
     }
     this.afield = afield;
     this.aggOps = aggOps;
-    min = Integer.MAX_VALUE;
-    max = Integer.MIN_VALUE;
-    sum = 0;
+    min = Float.MAX_VALUE;
+    max = Float.MIN_VALUE;
+    sum = 0.0f;
     count = 0;
     int numAggOps = ParallelUtility.numBinaryOnesInInteger(aggOps);
     Type[] types = new Type[numAggOps];
@@ -70,11 +75,6 @@ public class IntegerAggregator implements Aggregator {
     resultSchema = new Schema(types, names);
   }
 
-  @Override
-  public int available() {
-    return AVAILABLE_AGG;
-  }
-
   /**
    * Merge a new tuple into the aggregate, grouping as indicated in the constructor
    * 
@@ -84,15 +84,15 @@ public class IntegerAggregator implements Aggregator {
   public void add(_TupleBatch tup) {
 
     count += tup.numOutputTuples();
-    IntColumn rawData = (IntColumn) tup.outputRawData().get(afield);
+    FloatColumn rawData = (FloatColumn) tup.outputRawData().get(afield);
     int numTuples = rawData.size();
     for (int i = 0; i < numTuples; i++) {
-      int x = rawData.getInt(i);
+      float x = rawData.getFloat(i);
       sum += x;
-      if (min > x) {
+      if (Float.compare(x, min) < 0) {
         min = x;
       }
-      if (max < x) {
+      if (Float.compare(x, max) > 0) {
         max = x;
       }
     }
@@ -104,7 +104,7 @@ public class IntegerAggregator implements Aggregator {
    * 
    * */
   @Override
-  public final void getResult(final TupleBatchBuffer buffer, final int fromIndex) {
+  public void getResult(TupleBatchBuffer buffer, final int fromIndex) {
     int idx = fromIndex;
     if ((aggOps & AGG_OP_COUNT) != 0) {
       buffer.put(idx, count);
@@ -126,10 +126,15 @@ public class IntegerAggregator implements Aggregator {
       buffer.put(idx, sum * 1.0 / count);
       idx++;
     }
+    buffer.put(0, count);
+    buffer.put(1, sum);
+    buffer.put(2, sum / count);
+    buffer.put(3, min);
+    buffer.put(4, min);
   }
 
   @Override
-  public final Schema getResultSchema() {
+  public Schema getResultSchema() {
     return resultSchema;
   }
 

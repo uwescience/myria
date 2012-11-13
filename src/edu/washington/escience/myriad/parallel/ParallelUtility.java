@@ -40,6 +40,15 @@ import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
  */
 public class ParallelUtility {
 
+  public static int numBinaryOnesInInteger(int v) {
+    int result = 0;
+    while (v != 0) {
+      result += (v & 0x01);
+      v = v >>> 1;
+    }
+    return result;
+  }
+
   /**
    * Close a session. Every time a session is to be closed, do call this method. Do not directly call session.close;.
    */
