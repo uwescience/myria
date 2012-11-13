@@ -22,12 +22,12 @@ import edu.washington.escience.myriad.util.SQLiteUtils;
  * @author dhalperi
  * 
  */
-public class SQLiteInsert extends RootOperator {
+public final class SQLiteInsert extends RootOperator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** The SQLite Database that they will be inserted into. */
-  private final String pathToSQLiteDb;
+  private String pathToSQLiteDb;
   /** The name of the table the tuples should be inserted into. */
   private final String relationName;
   /** Whether to create the table or not. */
@@ -36,6 +36,15 @@ public class SQLiteInsert extends RootOperator {
   private SQLiteQueue queue;
   /** The statement used to insert tuples into the database. */
   private String insertString;
+
+  /**
+   * Needed for Worker.localizeQueryPlan.
+   * 
+   * @param pathToSQLiteDb the path to the database.
+   */
+  public void setPathToSQLiteDb(final String pathToSQLiteDb) {
+    this.pathToSQLiteDb = pathToSQLiteDb;
+  }
 
   /**
    * Constructs an insertion operator to store the tuples from the specified child in a SQLite database in the specified
@@ -51,7 +60,6 @@ public class SQLiteInsert extends RootOperator {
     super(child, executor);
     Objects.requireNonNull(child);
     Objects.requireNonNull(relationName);
-    Objects.requireNonNull(executor);
     this.pathToSQLiteDb = pathToSQLiteDb;
     this.relationName = relationName;
     createTable = false;
@@ -72,14 +80,13 @@ public class SQLiteInsert extends RootOperator {
     super(child, executor);
     Objects.requireNonNull(child);
     Objects.requireNonNull(relationName);
-    Objects.requireNonNull(executor);
     this.pathToSQLiteDb = pathToSQLiteDb;
     this.relationName = relationName;
     this.createTable = createTable;
   }
 
   @Override
-  public final void init() throws DbException {
+  public void init() throws DbException {
     File dbFile = new File(pathToSQLiteDb);
 
     /* Try and create a new file. */
@@ -143,7 +150,7 @@ public class SQLiteInsert extends RootOperator {
   }
 
   @Override
-  public final void cleanup() {
+  public void cleanup() {
     try {
       queue.stop(true).join();
     } catch (InterruptedException e) {
