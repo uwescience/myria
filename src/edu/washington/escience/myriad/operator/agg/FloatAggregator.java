@@ -1,4 +1,4 @@
-package edu.washington.escience.myriad.operator;
+package edu.washington.escience.myriad.operator.agg;
 
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatchBuffer;
