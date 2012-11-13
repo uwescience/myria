@@ -4,8 +4,8 @@ import java.io.Serializable;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 
 import com.almworks.sqlite4java.SQLiteConstants;
 import com.almworks.sqlite4java.SQLiteException;
@@ -17,57 +17,12 @@ import com.google.common.base.Preconditions;
  */
 public final class Schema implements Serializable {
 
-  /**
-   * A helper class to facilitate organizing the information of each field.
-   */
-  public static class TDItem implements Serializable {
-
-    /** Required for Serializable. */
-    private static final long serialVersionUID = 1L;
-
-    /** The type of the field. */
-    private final Type fieldType;
-
-    /** The name of the field. */
-    private final String fieldName;
-
-    /**
-     * Creates a new field with the specified type and name.
-     * 
-     * @param t type of the created field.
-     * @param n name of the created field.
-     */
-    public TDItem(final Type t, final String n) {
-      this.fieldName = n;
-      this.fieldType = t;
-    }
-
-    /**
-     * Returns the name of this field.
-     * 
-     * @return the name of this field.
-     */
-    public final String getName() {
-      return fieldName;
-    }
-
-    /**
-     * Returns the type of this field.
-     * 
-     * @return the type of this field.
-     */
-    public final Type getType() {
-      return fieldType;
-    }
-
-    @Override
-    public final String toString() {
-      return fieldName + "(" + fieldType + ")";
-    }
-  }
-
-  /** Required for Serializable. */
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
+  /** The types of the fields in this relation. */
+  private final Type[] fieldTypes;
+  /** The names of the fields in this relation. */
+  private final String[] fieldNames;
 
   /**
    * Converts a JDBC ResultSetMetaData object into a SimpleDB Schema.
@@ -170,27 +125,24 @@ public final class Schema implements Serializable {
    * Merge two Schemas into one, with td1.numFields + td2.numFields fields, with the first td1.numFields coming from td1
    * and the remaining from td2.
    * 
-   * @param td1 The Schema with the first fields of the new Schema
-   * @param td2 The Schema with the last fields of the Schema
+   * @param first The Schema with the first fields of the new Schema
+   * @param second The Schema with the last fields of the Schema
    * @return the new Schema
    */
-  public static Schema merge(final Schema td1, final Schema td2) {
-    final Type[] types = new Type[td1.numFields() + td2.numFields()];
+  public static Schema merge(final Schema first, final Schema second) {
+    final Type[] types = new Type[first.numFields() + second.numFields()];
     final String[] names = new String[types.length];
 
-    for (int i = 0; i < td1.numFields(); i++) {
-      types[i] = td1.getFieldType(i);
-      names[i] = td1.getFieldName(i);
+    for (int i = 0; i < first.numFields(); i++) {
+      types[i] = first.getFieldType(i);
+      names[i] = first.getFieldName(i);
     }
-    for (int i = 0; i < td2.numFields(); i++) {
-      types[td1.numFields() + i] = td2.getFieldType(i);
-      names[i + td1.numFields()] = td2.getFieldName(i);
+    for (int i = 0; i < second.numFields(); i++) {
+      types[first.numFields() + i] = second.getFieldType(i);
+      names[i + first.numFields()] = second.getFieldName(i);
     }
     return new Schema(types, names);
   }
-
-  /** The column type/name pairs that define this Schema. */
-  private final TDItem[] tdItems;
 
   /**
    * Constructor. Create a new tuple desc with typeAr.length fields with fields of the specified types, with anonymous
@@ -200,9 +152,11 @@ public final class Schema implements Serializable {
    *          entry.
    */
   public Schema(final Type[] typeAr) {
-    tdItems = new TDItem[typeAr.length];
+    Objects.requireNonNull(typeAr);
+    fieldTypes = Arrays.copyOf(typeAr, typeAr.length);
+    fieldNames = new String[typeAr.length];
     for (int i = 0; i < typeAr.length; i++) {
-      tdItems[i] = new TDItem(typeAr[i], "");
+      fieldNames[i] = "col" + i;
     }
   }
 
@@ -214,10 +168,13 @@ public final class Schema implements Serializable {
    * @param fieldAr array specifying the names of the fields. Note that names may be null.
    */
   public Schema(final Type[] typeAr, final String[] fieldAr) {
-    tdItems = new TDItem[typeAr.length];
-    for (int i = 0; i < typeAr.length; i++) {
-      tdItems[i] = new TDItem(typeAr[i], fieldAr[i]);
+    Objects.requireNonNull(typeAr);
+    Objects.requireNonNull(fieldAr);
+    if (typeAr.length != fieldAr.length) {
+      throw new IllegalArgumentException("Invalid Schema: must have the same number of field types and field");
     }
+    fieldTypes = Arrays.copyOf(typeAr, typeAr.length);
+    fieldNames = Arrays.copyOf(fieldAr, fieldAr.length);
   }
 
   /**
@@ -232,13 +189,13 @@ public final class Schema implements Serializable {
     if (!(o instanceof Schema)) {
       return false;
     }
-    final Schema td = (Schema) o;
+    final Schema other = (Schema) o;
 
-    if (this.tdItems.length != td.tdItems.length) {
+    if (fieldTypes.length != other.fieldTypes.length) {
       return false;
     }
-    for (int i = 0; i < tdItems.length; i++) {
-      if (!tdItems[i].fieldType.equals(td.tdItems[i].fieldType)) {
+    for (int i = 0; i < fieldTypes.length; i++) {
+      if (!fieldTypes[i].equals(other.fieldTypes[i])) {
         return false;
       }
     }
@@ -254,7 +211,7 @@ public final class Schema implements Serializable {
    */
   public int fieldNameToIndex(final String name) {
     for (int i = 0; i < numFields(); i++) {
-      if (tdItems[i].fieldName != null && tdItems[i].fieldName.equals(name)) {
+      if (fieldNames[i] != null && fieldNames[i].equals(name)) {
         return i;
       }
     }
@@ -269,8 +226,8 @@ public final class Schema implements Serializable {
    * @throws IndexOutOfBoundsException if index is negative or not less than numFields.
    */
   public String getFieldName(final int index) {
-    Preconditions.checkElementIndex(index, tdItems.length);
-    return tdItems[index].fieldName;
+    Preconditions.checkElementIndex(index, fieldNames.length);
+    return fieldNames[index];
   }
 
   /**
@@ -281,8 +238,8 @@ public final class Schema implements Serializable {
    * @throws IndexOutOfBoundsException if index is negative or not less than numFields.
    */
   public Type getFieldType(final int index) {
-    Preconditions.checkElementIndex(index, tdItems.length);
-    return tdItems[index].fieldType;
+    Preconditions.checkElementIndex(index, fieldTypes.length);
+    return fieldTypes[index];
   }
 
   /**
@@ -291,11 +248,16 @@ public final class Schema implements Serializable {
    * @return an array containing the types of the columns in this Schema.
    */
   public Type[] getTypes() {
-    final Type[] types = new Type[numFields()];
-    for (int fieldIndex = 0; fieldIndex < numFields(); ++fieldIndex) {
-      types[fieldIndex] = tdItems[fieldIndex].getType();
-    }
-    return types;
+    return Arrays.copyOf(fieldTypes, fieldTypes.length);
+  }
+
+  /**
+   * Returns an array containing the names of the columns in this Schema.
+   * 
+   * @return an array containing the names of the columns in this Schema.
+   */
+  public String[] getFieldNames() {
+    return Arrays.copyOf(fieldNames, fieldNames.length);
   }
 
   @Override
@@ -306,18 +268,10 @@ public final class Schema implements Serializable {
   }
 
   /**
-   * 
-   * @return An iterator which iterates over all the field TDItems that are included in this Schema
-   */
-  public Iterator<TDItem> iterator() {
-    return Arrays.asList(this.tdItems).iterator();
-  }
-
-  /**
    * @return the number of fields in this Schema
    */
   public int numFields() {
-    return tdItems.length;
+    return fieldTypes.length;
   }
 
   /**
@@ -329,9 +283,11 @@ public final class Schema implements Serializable {
   @Override
   public String toString() {
     final StringBuilder sb = new StringBuilder();
-    for (int i = 0; i < tdItems.length; i++) {
-      sb.append(tdItems[i]);
-      sb.append(", ");
+    for (int i = 0; i < fieldTypes.length; ++i) {
+      if (i > 0) {
+        sb.append(", ");
+      }
+      sb.append(fieldNames[i]).append(" (").append(fieldTypes[i]).append(")");
     }
     return sb.toString();
   }

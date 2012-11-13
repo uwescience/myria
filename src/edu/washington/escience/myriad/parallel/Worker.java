@@ -2,6 +2,7 @@ package edu.washington.escience.myriad.parallel;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.ArrayList;
@@ -16,6 +17,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.service.IoHandlerAdapter;
@@ -26,6 +28,8 @@ import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnFactory;
+import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
+import edu.washington.escience.myriad.coordinator.catalog.WorkerCatalog;
 import edu.washington.escience.myriad.operator.BlockingDataReceiver;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
@@ -67,7 +71,7 @@ public class Worker {
       TERMINATE_MESSAGE_PROCESSING : while (true) {
         MessageWrapper mw = null;
         try {
-          mw = Worker.this.messageBuffer.take();
+          mw = messageBuffer.take();
         } catch (final InterruptedException e) {
           e.printStackTrace();
           break TERMINATE_MESSAGE_PROCESSING;
@@ -81,11 +85,14 @@ public class Worker {
               final ObjectInputStream osis =
                   new ObjectInputStream(new ByteArrayInputStream(m.getQuery().getQuery().toByteArray()));
               final Operator query = (Operator) (osis.readObject());
-              // System.out.println(query);
-              Worker.this.receiveQuery(query);
-              Worker.this.sendMessageToMaster(TransportMessage.newBuilder().setType(TransportMessageType.CONTROL)
-                  .setControl(ControlMessage.newBuilder().setType(ControlMessageType.QUERY_READY_TO_EXECUTE).build())
-                  .build(), null);
+              try {
+                receiveQuery(query);
+              } catch (DbException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+              }
+              sendMessageToMaster(TransportMessage.newBuilder().setType(TransportMessageType.CONTROL).setControl(
+                  ControlMessage.newBuilder().setType(ControlMessageType.QUERY_READY_TO_EXECUTE).build()).build(), null);
             } catch (IOException | ClassNotFoundException e) {
               e.printStackTrace();
             }
@@ -93,10 +100,10 @@ public class Worker {
           case TransportMessage.TransportMessageType.DATA_VALUE:
             final DataMessage data = m.getData();
             final ExchangePairID exchangePairID = ExchangePairID.fromExisting(data.getOperatorID());
-            final Schema operatorSchema = Worker.this.exchangeSchema.get(exchangePairID);
+            final Schema operatorSchema = exchangeSchema.get(exchangePairID);
             switch (data.getType().getNumber()) {
               case DataMessageType.EOS_VALUE:
-                Worker.this.receiveData(new ExchangeTupleBatch(exchangePairID, senderID, operatorSchema));
+                receiveData(new ExchangeTupleBatch(exchangePairID, senderID, operatorSchema));
                 break;
               case DataMessageType.NORMAL_VALUE:
                 final List<ColumnMessage> columnMessages = data.getColumnsList();
@@ -106,8 +113,8 @@ public class Worker {
                   columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm);
                 }
                 final List<Column> columns = Arrays.asList(columnArray);
-                Worker.this.receiveData(new ExchangeTupleBatch(exchangePairID, senderID, columns, operatorSchema,
-                    columnMessages.get(0).getNumTuples()));
+                receiveData(new ExchangeTupleBatch(exchangePairID, senderID, columns, operatorSchema, columnMessages
+                    .get(0).getNumTuples()));
 
                 break;
             }
@@ -116,10 +123,10 @@ public class Worker {
             final ControlMessage controlM = m.getControl();
             switch (controlM.getType().getNumber()) {
               case ControlMessage.ControlMessageType.SHUTDOWN_VALUE:
-                Worker.this.toShutdown = true;
+                toShutdown = true;
                 break;
               case ControlMessage.ControlMessageType.START_QUERY_VALUE:
-                Worker.this.executeQuery();
+                executeQuery();
                 break;
             }
             break;
@@ -129,9 +136,9 @@ public class Worker {
 
     }
   }
+
   public static class MessageWrapper {
     protected int senderID;
-    // protected ExchangePairID operatorPairID;
     protected TransportMessage message;
   }
 
@@ -143,29 +150,26 @@ public class Worker {
     public final void run() {
       while (true) {
         Operator query = null;
-        // synchronized (Worker.this) {
-        query = Worker.this.queryPlan;
-        // }
+        query = queryPlan;
         if (query != null) {
           System.out.println("Worker start processing query");
           final CollectProducer root = (CollectProducer) query;
           try {
             root.open();
-            while (root.hasNext()) {
-              root.next();
+            while (root.next() != null) {
+              ;
             }
             root.close();
-            // root.join(); // wait until the query to finish
           } catch (final DbException e1) {
             e1.printStackTrace();
           }
-          Worker.this.finishQuery();
+          finishQuery();
         }
 
-        synchronized (Worker.this.queryExecutor) {
+        synchronized (queryExecutor) {
           try {
             // wait until a query plan is received
-            Worker.this.queryExecutor.wait();
+            queryExecutor.wait();
           } catch (final InterruptedException e) {
             break;
           }
@@ -173,6 +177,7 @@ public class Worker {
       }
     }
   }
+
   /**
    * Mina acceptor handler. This is where all messages arriving from other workers and from the coordinator will be
    * processed
@@ -183,7 +188,7 @@ public class Worker {
     public final void exceptionCaught(final IoSession session, final Throwable cause) {
       System.out.println("exception caught");
       cause.printStackTrace();
-      ParallelUtility.closeSession(session);
+      // ParallelUtility.closeSession(session);
     }
 
     /**
@@ -199,30 +204,22 @@ public class Worker {
           final ControlMessage cm = tm.getControl();
           // ControlProto.ExchangePairID epID = cm.getExchangePairID();
 
-          // ExchangePairID operatorID = ExchangePairID.fromExisting(epID.getExchangePairID());
-          // String senderID = epID.getWorkerID();
           session.setAttribute("remoteID", cm.getRemoteID());
-          // session.setAttribute("operatorID", operatorID);
         } else {
           final Integer senderID = (Integer) session.getAttribute("remoteID");
           if (senderID != null) {
             final MessageWrapper mw = new MessageWrapper();
             mw.senderID = senderID;
             mw.message = (TransportMessage) message;
-            // ExchangePairID operatorID = (ExchangePairID) session.getAttribute("operatorID");
-            // mw.operatorPairID = operatorID;
-            Worker.this.messageBuffer.add(mw);
+            messageBuffer.add(mw);
           } else {
             // currently messages from the master do not have id
             // messages from master
-            // System.err.println("Error: message received from an unknown unit: " + message);
 
             final MessageWrapper mw = new MessageWrapper();
             mw.senderID = 0;
             mw.message = (TransportMessage) message;
-            // ExchangePairID operatorID = (ExchangePairID) session.getAttribute("operatorID");
-            // mw.operatorPairID = null;
-            Worker.this.messageBuffer.add(mw);
+            messageBuffer.add(mw);
           }
         }
       } else {
@@ -243,8 +240,8 @@ public class Worker {
 
     @Override
     public final void run() {
-      if (Worker.this.toShutdown) {
-        Worker.this.shutdown();
+      if (toShutdown) {
+        shutdown();
         ParallelUtility.shutdownVM();
       }
       if (inRun) {
@@ -252,13 +249,8 @@ public class Worker {
       }
       inRun = true;
       IoSession serverSession = null;
-      // int numTry = 0;
       try {
-        serverSession = Worker.this.connectionPool.get(0, null, 3, null);
-        // while ((serverSession = ParallelUtility.createSession(thisWorker.masterAddress, thisWorker.minaHandler,
-        // 3000)) == null
-        // && numTry < 3)
-        // numTry++;
+        serverSession = connectionPool.get(0, null, 3, null);
       } catch (final RuntimeException e) {
         e.printStackTrace();
       } catch (final Exception e) {
@@ -266,10 +258,10 @@ public class Worker {
       }
 
       if (serverSession == null) {
-        System.out.println("Cannot connect the server: " + Worker.this.conf.getServer()
+        System.out.println("Cannot connect the server: " + masterSocketInfo
             + " Maybe the server is down. I'll shutdown now.");
         System.out.println("Bye!");
-        this.timer.cancel();
+        timer.cancel();
         ParallelUtility.shutdownVM();
       }
       ParallelUtility.closeSession(serverSession);
@@ -278,10 +270,10 @@ public class Worker {
 
     public final void start() {
       try {
-        timer.schedule(this, (long) (Math.random() * 3000) + 50000, // initial
-                                                                    // delay
-            (long) (Math.random() * 2000) + 10000); // subsequent
-                                                    // rate
+        timer.schedule(this, (long) (Math.random() * 3000) + 5000, // initial
+                                                                   // delay
+            (long) (Math.random() * 2000) + 1000); // subsequent
+                                                   // rate
       } catch (final IllegalStateException e) {
         /* already get canceled, ignore */
         /* Do nothing */;
@@ -319,22 +311,24 @@ public class Worker {
       ParallelUtility.shutdownVM();
     }
 
-    File confDir = null;
+    Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
+    Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
+
+    String workingDir = null;
     if (args.length >= 2) {
-      if (args[0].equals("--conf")) {
-        // dataDir = args[3];
-        confDir = new File(args[1]);
+      if (args[0].equals("--workingDir")) {
+        workingDir = args[1];
         args = ParallelUtility.removeArg(args, 0);
-        args = ParallelUtility.removeArg(args, 0);
+        ParallelUtility.removeArg(args, 0);
       } else {
         System.out.println("Invalid arguments.\n" + usage);
         ParallelUtility.shutdownVM();
       }
     }
 
-    final Configuration conf = new Configuration(confDir);
+    System.out.println("workingDir: " + workingDir);
     // Instantiate a new worker
-    final Worker w = new Worker(conf);
+    final Worker w = new Worker(workingDir);
     // int port = w.port;
 
     // Prepare to receive messages over the network
@@ -344,7 +338,7 @@ public class Worker {
     // Now the worker can accept messages
     w.start();
 
-    System.out.println("Worker started at:" + w.conf.getWorkers().get(w.myID));
+    System.out.println("Worker started at:" + w.catalog.getWorkers().get(w.myID));
 
     // From now on, the worker will listen for
     // messages to arrive on the network. These messages
@@ -361,18 +355,11 @@ public class Worker {
    * The ID of this worker.
    */
   final int myID;
-  //
-  // final int port;
-  // final String host;
-  // /**
-  // * The server address
-  // */
-  // final InetSocketAddress masterAddress;
 
   /**
    * connectionPool[0] is always the master.
    */
-  protected final ConnectionPool connectionPool;
+  protected final IPCConnectionPool connectionPool;
 
   /**
    * The acceptor, which binds to a TCP socket and waits for connections
@@ -411,20 +398,16 @@ public class Worker {
 
   protected final LinkedBlockingQueue<MessageWrapper> messageBuffer;
 
-  protected final Configuration conf;
+  protected final WorkerCatalog catalog;
+  protected final SocketInfo masterSocketInfo;
+  protected final SocketInfo mySocketInfo;
 
-  public Worker(final Configuration conf) {
-    Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.OFF);
-    this.conf = conf;
-    this.myID = Integer.parseInt(conf.get("worker.identifier"));
-
-    // port = workerArray[this.workerID - 1].getPort();
-    // host = workerArray[this.workerID - 1].getHost();
-    // String[] server = conf.get("master.identifier").split(":");
-    this.dataDir = new File(conf.get("worker.data.sqlite.dir"));
-    this.tmpDir = new File(conf.get("worker.tmp.dir"));
-    // this.masterAddress = new InetSocketAddress(server[0], Integer.parseInt(server[1]));
-    // this.masterAddress = conf.getServer();
+  public Worker(final String workingDirectory) throws CatalogException, FileNotFoundException {
+    catalog = WorkerCatalog.open(FilenameUtils.concat(workingDirectory, "worker.catalog"));
+    myID = Integer.parseInt(catalog.getConfigurationValue("worker.identifier"));
+    dataDir = new File(catalog.getConfigurationValue("worker.data.sqlite.dir"));
+    tmpDir = new File(catalog.getConfigurationValue("worker.tmp.dir"));
+    mySocketInfo = catalog.getWorkers().get(myID);
 
     acceptor = ParallelUtility.createAcceptor();
 
@@ -437,11 +420,12 @@ public class Worker {
     messageProcessor = new MessageProcessor();
     messageProcessor.setDaemon(false);
     minaHandler = new WorkerHandler();
+    masterSocketInfo = catalog.getMasters().get(0);
 
-    final Map<Integer, SocketInfo> workers = conf.getWorkers();
+    final Map<Integer, SocketInfo> workers = catalog.getWorkers();
     final Map<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
     computingUnits.putAll(workers);
-    computingUnits.put(0, conf.getServer());
+    computingUnits.put(0, masterSocketInfo);
 
     final Map<Integer, IoHandler> handlers = new HashMap<Integer, IoHandler>(workers.size() + 1);
     for (final Integer workerID : workers.keySet()) {
@@ -450,7 +434,7 @@ public class Worker {
 
     handlers.put(0, minaHandler);
 
-    this.connectionPool = new ConnectionPool(myID, computingUnits, handlers);
+    connectionPool = new IPCConnectionPool(myID, computingUnits, handlers);
   }
 
   /**
@@ -468,9 +452,9 @@ public class Worker {
    * This method should be called when a query is finished.
    */
   public final void finishQuery() {
-    if (this.queryPlan != null) {
-      this.dataBuffer.clear();
-      this.queryPlan = null;
+    if (queryPlan != null) {
+      dataBuffer.clear();
+      queryPlan = null;
     }
     System.out.println("My part of the query finished");
   }
@@ -486,15 +470,17 @@ public class Worker {
    * Return true if the worker is now executing a query.
    */
   public final boolean isRunning() {
-    return this.queryPlan != null;
+    return queryPlan != null;
   }
 
   /**
    * localize the received query plan. Some information that are required to get the query plan executed need to be
    * replaced by local versions. For example, the table in the SeqScan operator need to be replaced by the local table.
    * Note that Producers and Consumers also needs local information.
+   * 
+   * @throws DbException
    */
-  public final void localizeQueryPlan(final Operator queryPlan) {
+  public final void localizeQueryPlan(final Operator queryPlan) throws DbException {
     if (queryPlan == null) {
       return;
     }
@@ -511,11 +497,9 @@ public class Worker {
       final Consumer c = (Consumer) queryPlan;
 
       LinkedBlockingQueue<ExchangeTupleBatch> buf = null;
-      // synchronized (Worker.this) {
       buf = Worker.this.dataBuffer.get(((Consumer) queryPlan).getOperatorID());
-      // }
       c.setInputBuffer(buf);
-      this.exchangeSchema.put(c.getOperatorID(), c.getSchema());
+      exchangeSchema.put(c.getOperatorID(), c.getSchema());
 
     } else if (queryPlan instanceof BlockingDataReceiver) {
       final BlockingDataReceiver bdr = (BlockingDataReceiver) queryPlan;
@@ -539,17 +523,14 @@ public class Worker {
   /**
    * This method should be called when a data item is received.
    */
-  public final void receiveData(final ExchangeMessage data) {
+  public final void receiveData(final ExchangeTupleBatch data) {
     if (data instanceof _TupleBatch) {
       System.out.println("TupleBag received from " + data.getWorkerID() + " to Operator: " + data.getOperatorID());
     }
-    // else if (data instanceof BloomFilterBitSet)
-    // System.out.println("BitSet received from " + data.getWorkerID() + " to Operator: "
-    // + data.getOperatorID());
     LinkedBlockingQueue<ExchangeTupleBatch> q = null;
     q = Worker.this.dataBuffer.get(data.getOperatorID());
     if (data instanceof ExchangeTupleBatch) {
-      q.offer((ExchangeTupleBatch) data);
+      q.offer(data);
     }
   }
 
@@ -557,8 +538,10 @@ public class Worker {
    * this method should be called when a query is received from the server.
    * 
    * It does the initialization and preparation for the execution of the query.
+   * 
+   * @throws DbException
    */
-  public final void receiveQuery(final Operator query) {
+  public final void receiveQuery(final Operator query) throws DbException {
     System.out.println("Query received");
     if (Worker.this.queryPlan != null) {
       System.err.println("Error: Worker is still processing. New query refused");
@@ -593,17 +576,17 @@ public class Worker {
   public final void shutdown() {
     System.out.println("Shutdown requested. Please wait when cleaning up...");
     ParallelUtility.unbind(acceptor);
-    this.toShutdown = true;
+    toShutdown = true;
   }
 
   public final void start() throws IOException {
-    acceptor.bind(conf.getWorkers().get(myID).getAddress());
+    acceptor.bind(mySocketInfo.getAddress());
     queryExecutor.start();
     messageProcessor.start();
     // Periodically detect if the server (i.e., coordinator)
     // is still running. IF the server goes down, the
     // worker will stop itself
-    // new WorkerLivenessController().start();
+    new WorkerLivenessController().start();
 
   }
 

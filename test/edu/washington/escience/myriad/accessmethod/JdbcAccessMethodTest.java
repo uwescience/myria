@@ -20,7 +20,7 @@ import edu.washington.escience.myriad.operator.JdbcQueryScan;
 public class JdbcAccessMethodTest {
 
   @Test
-  public void test() throws DbException {
+  public void testNumberResultsAndMultipleBatches() throws DbException {
     /* Connection information */
     final String host = "54.245.108.198";
     final int port = 3306;
@@ -44,8 +44,8 @@ public class JdbcAccessMethodTest {
 
     /* Count up the results and assert they match expectations */
     int count = 0;
-    while (scan.hasNext()) {
-      final TupleBatch tb = (TupleBatch) scan.next();
+    TupleBatch tb = null;
+    while ((tb = (TupleBatch) scan.next()) != null) {
       count += tb.numValidTuples();
     }
     assertTrue(count == expectedNumResults);

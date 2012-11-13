@@ -10,6 +10,10 @@ import java.io.OutputStream;
 import java.net.SocketAddress;
 import java.util.Map;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
 import org.apache.mina.core.future.CloseFuture;
 import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.service.IoConnector;
@@ -23,6 +27,11 @@ import org.apache.mina.filter.compression.CompressionFilter;
 import org.apache.mina.transport.socket.SocketSessionConfig;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 
@@ -39,7 +48,7 @@ public class ParallelUtility {
       return null;
     }
     final CloseFuture cf = session.close(false);
-    final IoConnector ic = (IoConnector) session.getAttribute("connecter");
+    final IoConnector ic = (IoConnector) session.getAttribute("connector");
 
     if (ic != null) {
       final Map<Long, IoSession> activeSessions = ic.getManagedSessions();
@@ -102,9 +111,9 @@ public class ParallelUtility {
     config.setKeepAlive(false);
     config.setTcpNoDelay(true);
     /**
-     * A session without any write/read actions in 5 seconds is assumed to be idle
+     * A session without any write/read actions in 1 hour is assumed to be idle
      */
-    config.setIdleTime(IdleStatus.BOTH_IDLE, 5);
+    config.setIdleTime(IdleStatus.BOTH_IDLE, 3600);
     config.setReceiveBufferSize(2048);
     config.setSendBufferSize(2048);
     config.setReadBufferSize(2048);
@@ -185,7 +194,7 @@ public class ParallelUtility {
     }
     if (connected) {
       session = c.getSession();
-      session.setAttribute("connecter", ic);
+      session.setAttribute("connector", ic);
       return session;
     }
     return session;
@@ -245,5 +254,62 @@ public class ParallelUtility {
     final FileOutputStream o = new FileOutputStream(f);
     o.write(content.getBytes());
     o.close();
+  }
+
+  public static String[] readEclipseClasspath(final File eclipseClasspathXMLFile) throws IOException {
+
+    final DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+    DocumentBuilder dBuilder;
+    try {
+      dBuilder = dbFactory.newDocumentBuilder();
+    } catch (ParserConfigurationException e) {
+      throw new IOException(e);
+    }
+
+    Document doc;
+    try {
+      doc = dBuilder.parse(eclipseClasspathXMLFile);
+    } catch (SAXException e) {
+      throw new IOException(e);
+    }
+    doc.getDocumentElement().normalize();
+
+    final NodeList nList = doc.getElementsByTagName("classpathentry");
+
+    final String separator = System.getProperty("path.separator");
+    final StringBuilder classpathSB = new StringBuilder();
+    for (int i = 0; i < nList.getLength(); i++) {
+      final Node node = nList.item(i);
+      if (node.getNodeType() == Node.ELEMENT_NODE) {
+        final Element e = (Element) node;
+
+        final String kind = e.getAttribute("kind");
+        if (kind.equals("output")) {
+          classpathSB.append(new File(e.getAttribute("path")).getAbsolutePath() + separator);
+        }
+        if (kind.equals("lib")) {
+          classpathSB.append(new File(e.getAttribute("path")).getAbsolutePath() + separator);
+        }
+      }
+    }
+    final NodeList attributeList = doc.getElementsByTagName("attribute");
+    final StringBuilder libPathSB = new StringBuilder();
+    for (int i = 0; i < attributeList.getLength(); i++) {
+      final Node node = attributeList.item(i);
+      String value = null;
+      if (node.getNodeType() == Node.ELEMENT_NODE
+          && ("org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY".equals(((Element) node)
+              .getAttribute("name"))) && ((value = ((Element) node).getAttribute("value")) != null)) {
+        File f = new File(value);
+        while (value != null && value.length() > 0 && !f.exists()) {
+          value = value.substring(value.indexOf(File.separator) + 1);
+          f = new File(value);
+        }
+        if (f.exists()) {
+          libPathSB.append(f.getAbsolutePath() + separator);
+        }
+      }
+    }
+    return new String[] { classpathSB.toString(), libPathSB.toString() };
   }
 }

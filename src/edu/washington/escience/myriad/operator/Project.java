@@ -19,7 +19,7 @@ public class Project extends Operator {
   private static final long serialVersionUID = 1L;
   private Operator child;
   private final Schema td;
-  private final Integer[] outFieldIds;
+  private final Integer[] outFieldIds; // why not using int[]?
 
   /**
    * Constructor accepts a child operator to read tuples to apply projection to and a list of fields in output tuple
@@ -27,12 +27,14 @@ public class Project extends Operator {
    * @param fieldList The ids of the fields child's tupleDesc to project out
    * @param typesList the types of the fields in the final projection
    * @param child The child operator
+   * @throws DbException
    */
-  public Project(final ArrayList<Integer> fieldList, final ArrayList<Type> typesList, final Operator child) {
+  public Project(final ArrayList<Integer> fieldList, final ArrayList<Type> typesList, final Operator child)
+      throws DbException {
     this(fieldList, typesList.toArray(new Type[] {}), child);
   }
 
-  public Project(final ArrayList<Integer> fieldList, final Type[] types, final Operator child) {
+  public Project(final ArrayList<Integer> fieldList, final Type[] types, final Operator child) throws DbException {
     this.child = child;
     outFieldIds = fieldList.toArray(new Integer[] {});
     final String[] fieldAr = new String[fieldList.size()];
@@ -44,10 +46,22 @@ public class Project extends Operator {
     td = new Schema(types, fieldAr);
   }
 
+  public Project(final Integer[] fieldList, final Operator child) throws DbException {
+    this.child = child;
+    outFieldIds = fieldList;
+    final String[] fieldName = new String[fieldList.length];
+    final Type[] fieldType = new Type[fieldList.length];
+    final Schema childtd = child.getSchema();
+
+    for (int i = 0; i < fieldName.length; i++) {
+      fieldName[i] = childtd.getFieldName(fieldList[i]);
+      fieldType[i] = childtd.getFieldType(fieldList[i]);
+    }
+    td = new Schema(fieldType, fieldName);
+  }
+
   @Override
-  public void close() {
-    super.close();
-    child.close();
+  public void cleanup() {
   }
 
   /**
@@ -58,15 +72,16 @@ public class Project extends Operator {
    */
   @Override
   protected _TupleBatch fetchNext() throws NoSuchElementException, DbException {
-    if (child.hasNext()) {
-      return child.next().project(ArrayUtils.toPrimitive(this.outFieldIds));
+    _TupleBatch tmp = child.next();
+    if (tmp != null) {
+      return tmp.project(ArrayUtils.toPrimitive(outFieldIds));
     }
     return null;
   }
 
   @Override
   public Operator[] getChildren() {
-    return new Operator[] { this.child };
+    return new Operator[] { child };
   }
 
   @Override
@@ -75,21 +90,22 @@ public class Project extends Operator {
   }
 
   @Override
-  public void open() throws DbException, NoSuchElementException {
-    child.open();
-    super.open();
+  public void init() throws DbException {
   }
-
-  // @Override
-  // public void rewind() throws DbException {
-  // child.rewind();
-  // }
 
   @Override
   public void setChildren(final Operator[] children) {
-    if (this.child != children[0]) {
-      this.child = children[0];
+    if (child != children[0]) {
+      child = children[0];
     }
+  }
+
+  @Override
+  public _TupleBatch fetchNextReady() throws DbException {
+    if (child.nextReady()) {
+      return child.next().project(ArrayUtils.toPrimitive(outFieldIds));
+    }
+    return null;
   }
 
 }

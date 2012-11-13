@@ -1,25 +1,20 @@
 package edu.washington.escience.myriad.parallel;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintStream;
 import java.util.Arrays;
+import java.util.BitSet;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
-
-import jline.ArgumentCompletor;
-import jline.ConsoleReader;
-import jline.SimpleCompletor;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.future.WriteFuture;
@@ -28,15 +23,16 @@ import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IdleStatus;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
-import org.apache.mina.util.ConcurrentHashSet;
 
 import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myriad.DbException;
-import edu.washington.escience.myriad.Query;
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnFactory;
+import edu.washington.escience.myriad.coordinator.catalog.Catalog;
+import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 import edu.washington.escience.myriad.parallel.Worker.MessageWrapper;
@@ -46,6 +42,7 @@ import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageType;
 import edu.washington.escience.myriad.proto.QueryProto;
+import edu.washington.escience.myriad.proto.TransportProto;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType;
 import edu.washington.escience.myriad.table._TupleBatch;
@@ -117,7 +114,7 @@ public class Server {
       TERMINATE_MESSAGE_PROCESSING : while (true) {
         MessageWrapper mw = null;
         try {
-          mw = Server.this.messageBuffer.take();
+          mw = messageBuffer.take();
         } catch (final InterruptedException e) {
           e.printStackTrace();
           break TERMINATE_MESSAGE_PROCESSING;
@@ -130,9 +127,9 @@ public class Server {
 
             final DataMessage data = m.getData();
             final ExchangePairID exchangePairID = ExchangePairID.fromExisting(data.getOperatorID());
-            final Schema operatorSchema = Server.this.exchangeSchema.get(exchangePairID);
+            final Schema operatorSchema = exchangeSchema.get(exchangePairID);
             if (data.getType() == DataMessageType.EOS) {
-              Server.this.receiveData(new ExchangeTupleBatch(exchangePairID, senderID, operatorSchema));
+              receiveData(new ExchangeTupleBatch(exchangePairID, senderID, operatorSchema));
             } else {
               final List<ColumnMessage> columnMessages = data.getColumnsList();
               final Column[] columnArray = new Column[columnMessages.size()];
@@ -142,15 +139,15 @@ public class Server {
               }
               final List<Column> columns = Arrays.asList(columnArray);
 
-              Server.this.receiveData((new ExchangeTupleBatch(exchangePairID, senderID, columns, operatorSchema,
-                  columnMessages.get(0).getNumTuples())));
+              receiveData((new ExchangeTupleBatch(exchangePairID, senderID, columns, operatorSchema, columnMessages
+                  .get(0).getNumTuples())));
             }
             break;
           case TransportMessage.TransportMessageType.CONTROL_VALUE:
             final ControlMessage controlM = m.getControl();
             switch (controlM.getType().getNumber()) {
               case ControlMessage.ControlMessageType.QUERY_READY_TO_EXECUTE_VALUE:
-                Server.this.queryReceivedByWorker(0, senderID);
+                queryReceivedByWorker(0, senderID);
                 break;
             }
             break;
@@ -173,7 +170,7 @@ public class Server {
     @Override
     public void exceptionCaught(final IoSession session, final Throwable cause) {
       cause.printStackTrace();
-      ParallelUtility.closeSession(session);
+      // ParallelUtility.closeSession(session);
     }
 
     @Override
@@ -200,7 +197,7 @@ public class Server {
             mw.message = tm;
             // ExchangePairID operatorID = (ExchangePairID) session.getAttribute("operatorID");
 
-            Server.this.messageBuffer.add(mw);
+            messageBuffer.add(mw);
           } else {
             System.err.println("Error: message received from an unknown unit: " + message);
           }
@@ -208,18 +205,6 @@ public class Server {
       } else {
         System.err.println("Error: Unknown message received: " + message);
       }
-      // if (message instanceof ExchangeTupleBatch) {
-      // System.out.println("message received by server: " + message);
-      // ExchangeTupleBatch tuples = (ExchangeTupleBatch) message;
-      // Server.this.dataBuffer.get(tuples.getOperatorID()).offer(tuples);
-      // } else if (message instanceof String) {
-      // System.out.println("Query received by worker");
-      // Integer workerId = Server.this.workerIdToIndex.get(message);
-      // if (workerId != null) {
-      // Server.this.queryReceivedByWorker(workerId);
-      // }
-      // }
-
     }
 
     @Override
@@ -229,18 +214,38 @@ public class Server {
       }
     }
   }
-  static final String usage = "Usage: Server catalogFile [--conf confdir] [-explain] [-f queryFile]";
+
+  static final String usage = "Usage: Server catalogFile [-explain] [-f queryFile]";
+
   public static void main(String[] args) throws IOException {
-    File confDir = null;
-    if (args.length >= 3 && args[1].equals("--conf")) {
-      confDir = new File(args[2]);
-      args = ParallelUtility.removeArg(args, 1);
-      args = ParallelUtility.removeArg(args, 1);
+    Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
+    Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
+
+    if (args.length < 1) {
+      System.err.println(usage);
+      System.exit(-1);
     }
 
-    final Configuration conf = new Configuration(confDir);
+    String catalogName = args[0];
+    args = ParallelUtility.removeArg(args, 0);
 
-    final Server server = new Server(conf.getServer(), conf.getWorkers());
+    Catalog catalog;
+    List<SocketInfo> masters;
+    Map<Integer, SocketInfo> workers;
+    try {
+      catalog = Catalog.open(catalogName);
+      masters = catalog.getMasters();
+      workers = catalog.getWorkers();
+    } catch (CatalogException e) {
+      throw new RuntimeException("Reading information from the catalog failed", e);
+    }
+
+    if (masters.size() != 1) {
+      throw new RuntimeException("Unexpected number of masters: expected 1, got " + masters.size());
+    }
+
+    final SocketInfo masterSocketInfo = masters.get(0);
+    final Server server = new Server(masterSocketInfo, workers);
 
     runningInstance = server;
 
@@ -256,14 +261,16 @@ public class Server {
         server.cleanup();
       }
     });
-    System.out.println("Server: " + server.server.getHost() + " started. Listening on port "
-        + conf.getServer().getPort());
     server.start(args);
+    System.out.println("Server: " + masterSocketInfo.getHost() + " started. Listening on port "
+        + masterSocketInfo.getPort());
   }
 
   final ConcurrentHashMap<Integer, SocketInfo> workers;
   final NioSocketAcceptor acceptor;
   final ServerHandler minaHandler;
+  final ConcurrentHashMap<Integer, HashMap<Integer, Integer>> workersAssignedToQuery;
+  final ConcurrentHashMap<Integer, BitSet> workersReceivedQuery;
 
   /**
    * The I/O buffer, all the ExchangeMessages sent to the server are buffered here.
@@ -276,7 +283,7 @@ public class Server {
 
   final SocketInfo server;
 
-  protected final ConnectionPool connectionPool;
+  protected final IPCConnectionPool connectionPool;
 
   protected final MessageProcessor messageProcessor;
 
@@ -284,24 +291,19 @@ public class Server {
 
   protected boolean interactive = true;
 
-  // Basic SQL completions
-  public static final String[] SQL_COMMANDS = {
-      "select", "from", "where", "group by", "max(", "min(", "avg(", "count", "rollback", "commit", "insert", "delete",
-      "values", "into" };
-
   public static final String SYSTEM_NAME = "Myriad";
-  final ConcurrentHashSet<Integer> workersReceivedQuery = new ConcurrentHashSet<Integer>();
+
   protected Server(final SocketInfo server, final Map<Integer, SocketInfo> workers) throws IOException {
     this.workers = new ConcurrentHashMap<Integer, SocketInfo>();
     this.workers.putAll(workers);
 
     acceptor = ParallelUtility.createAcceptor();
     this.server = server;
-    this.dataBuffer = new ConcurrentHashMap<ExchangePairID, LinkedBlockingQueue<ExchangeTupleBatch>>();
+    dataBuffer = new ConcurrentHashMap<ExchangePairID, LinkedBlockingQueue<ExchangeTupleBatch>>();
     messageBuffer = new LinkedBlockingQueue<MessageWrapper>();
     exchangeSchema = new ConcurrentHashMap<ExchangePairID, Schema>();
 
-    this.minaHandler = new ServerHandler(Thread.currentThread());
+    minaHandler = new ServerHandler(Thread.currentThread());
 
     final Map<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
     computingUnits.putAll(workers);
@@ -314,9 +316,10 @@ public class Server {
 
     handlers.put(0, minaHandler);
 
-    this.connectionPool = new ConnectionPool(0, computingUnits, handlers);
+    connectionPool = new IPCConnectionPool(0, computingUnits, handlers);
     messageProcessor = new MessageProcessor();
-
+    workersAssignedToQuery = new ConcurrentHashMap<Integer, HashMap<Integer, Integer>>();
+    workersReceivedQuery = new ConcurrentHashMap<Integer, BitSet>();
   }
 
   public void cleanup() {
@@ -335,155 +338,80 @@ public class Server {
         continue;
       }
       session.write(
-          ControlProto.ControlMessage.newBuilder().setType(ControlMessage.ControlMessageType.SHUTDOWN).build())
-          .addListener(new IoFutureListener<WriteFuture>() {
-
-            @Override
-            public void operationComplete(final WriteFuture future) {
-              ParallelUtility.closeSession(future.getSession());
-            }
-          });
+          TransportProto.TransportMessage.newBuilder().setType(TransportMessageType.CONTROL).setControl(
+              ControlProto.ControlMessage.newBuilder().setType(ControlMessage.ControlMessageType.SHUTDOWN).build())
+              .build()).addListener(new IoFutureListener<WriteFuture>() {
+        @Override
+        public void operationComplete(final WriteFuture future) {
+          ParallelUtility.closeSession(future.getSession());
+        }
+      });
       System.out.println("Done");
     }
     ParallelUtility.unbind(acceptor);
     System.out.println("Bye");
   }
 
-  protected void dispatchWorkerQueryPlans(final Map<Integer, Operator> plans) throws IOException {
-    final ByteArrayOutputStream inMemBuffer = new ByteArrayOutputStream();
-    final ObjectOutputStream oos = new ObjectOutputStream(inMemBuffer);
+  public void dispatchWorkerQueryPlans(final Map<Integer, Operator> plans) throws IOException {
+    ByteArrayOutputStream inMemBuffer = null;
+    ObjectOutputStream oos = null;
+    HashMap<Integer, Integer> setOfWorkers = new HashMap<Integer, Integer>(plans.size());
+    workersAssignedToQuery.put(0, setOfWorkers);
+    workersReceivedQuery.put(0, new BitSet(setOfWorkers.size()));
+
+    int workerIdx = 0;
     for (final Map.Entry<Integer, Operator> e : plans.entrySet()) {
       final Integer workerID = e.getKey();
+      setOfWorkers.put(workerID, workerIdx++);
       final Operator plan = e.getValue();
-      final IoSession ssss0 = this.connectionPool.get(workerID, null, 3, null);
+      final IoSession ssss0 = connectionPool.get(workerID, null, 3, null);
       // this session will be reused for the Workers to report the receive
       // of the queryplan, therefore, do not close it
+      inMemBuffer = new ByteArrayOutputStream();
+      oos = new ObjectOutputStream(inMemBuffer);
       oos.writeObject(plan);
       oos.flush();
       inMemBuffer.flush();
       ssss0.write(TransportMessage.newBuilder().setType(TransportMessageType.QUERY).setQuery(
           QueryProto.Query.newBuilder().setQuery(ByteString.copyFrom(inMemBuffer.toByteArray()))).build());
-      oos.reset();
+      // oos.reset();
     }
   }
 
   protected void init() throws IOException {
-    acceptor.setHandler(this.minaHandler);
-    acceptor.bind(this.server.getAddress());
-    this.messageProcessor.start();
-  }
-
-  public void processNextStatement(final InputStream is) {
-    // try {
-    //
-    // try {
-    // ZqlParser p = new ZqlParser(is);
-    // ZStatement s = p.readStatement();
-    // Query q = null;
-    //
-    // if (s instanceof ZQuery)
-    // q = handleQueryStatement((ZQuery) s, t.getId());
-    // else {
-    // System.err
-    // .println("Currently only query statements (select) are supported");
-    // return;
-    // }
-    // processQuery(q);
-    //
-    // } catch (Throwable a) {
-    // // Whenever error happens, abort the current transaction
-    //
-    // if (t != null) {
-    // t.abort();
-    // System.out.println("Transaction " + t.getId().getId()
-    // + " aborted because of unhandled error");
-    // }
-    //
-    // if (a instanceof ParsingException
-    // || a instanceof Zql.ParseException)
-    // throw new ParsingException((Exception) a);
-    // if (a instanceof Zql.TokenMgrError)
-    // throw (Zql.TokenMgrError) a;
-    // throw new DbException(a.getMessage());
-    //
-    //
-    // } catch (DbException e) {
-    // e.printStackTrace();
-    // } catch (IOException e) {
-    // e.printStackTrace();
-    // } catch (simpledb.ParsingException e) {
-    // System.out
-    // .println("Invalid SQL expression: \n \t" + e.getMessage());
-    // } catch (Zql.TokenMgrError e) {
-    // System.out.println("Invalid SQL expression: \n \t " + e);
-    //
-    // }
-    // }
-  }
-
-  protected void processQuery(final Query q) throws DbException {
-    // HashMap<String, Integer> aliasToId = q.getLogicalPlan().getTableAliasToIdMapping();
-    // Operator sequentialQueryPlan = q.getPhysicalPlan();
-
-    // if (sequentialQueryPlan != null) {
-    // System.out.println("The sequential query plan is:");
-    // OperatorCardinality.updateOperatorCardinality(
-    // (Operator) sequentialQueryPlan, aliasToId, tableStats);
-    // new QueryPlanVisualizer().printQueryPlanTree(sequentialQueryPlan,
-    // System.out);
-    // }
-
-    // SocketInfo masterWorker = selectMasterWorker();
-
-    final ParallelQueryPlan p = null;
-    // ParallelQueryPlan.parallelizeQueryPlan(tid, sequentialQueryPlan, workers, masterWorker,
-    // server, SingleFieldHashPartitionFunction.class);
-
-    // p = ParallelQueryPlan.optimize(tid, p, new ProjectOptimizer(
-    // new FilterOptimizer(
-    // new AggregateOptimizer(new BloomFilterOptimizer(
-    // workers, aliasToId, tableStats)))));
-
-    startQuery(p, null);
+    acceptor.setHandler(minaHandler);
   }
 
   // TODO implement queryID
   protected void queryReceivedByWorker(final int queryId, final int workerId) {
-    workersReceivedQuery.add(workerId);
-    System.out.println(workerId + " has received the query");
-    if (workersReceivedQuery.size() >= this.workers.size()) {
-      for (final Entry<Integer, SocketInfo> entry : this.workers.entrySet()) {
-        Server.this.connectionPool.get(entry.getKey(), null, 3, null).write(
-            TransportMessage.newBuilder().setType(TransportMessageType.CONTROL).setControl(
-                ControlMessage.newBuilder().setType(ControlMessage.ControlMessageType.START_QUERY).build()).build());
-      }
-      this.workersReceivedQuery.clear();
-    }
+    BitSet workersReceived = workersReceivedQuery.get(queryId);
+    HashMap<Integer, Integer> workersAssigned = workersAssignedToQuery.get(queryId);
+    int workerIdx = workersAssigned.get(workerId);
+    workersReceived.set(workerIdx);
   }
 
-  // /**
-  // * Select the master worker for the coming query
-  // */
-  // protected SocketInfo selectMasterWorker() {
-  // int master = (int) (Math.random() * this.workers.length);
-  // return this.workers[master];
-  // }
-
-  // public SocketInfo[] getWorkers() {
-  // return this.workers;
-  // }
+  protected void startWorkerQuery(final int queryId) {
+    HashMap<Integer, Integer> workersAssigned = workersAssignedToQuery.get(queryId);
+    for (final Entry<Integer, Integer> entry : workersAssigned.entrySet()) {
+      Server.this.connectionPool.get(entry.getKey(), null, 3, null).write(
+          TransportMessage.newBuilder().setType(TransportMessageType.CONTROL).setControl(
+              ControlMessage.newBuilder().setType(ControlMessage.ControlMessageType.START_QUERY).build()).build());
+    }
+    workersAssignedToQuery.remove(queryId);
+    workersReceivedQuery.remove(queryId);
+  }
 
   /**
    * This method should be called when a data item is received
    */
-  public void receiveData(final ExchangeMessage data) {
+  public void receiveData(final ExchangeTupleBatch data) {
 
     LinkedBlockingQueue<ExchangeTupleBatch> q = null;
     q = Server.this.dataBuffer.get(data.getOperatorID());
     if (data instanceof ExchangeTupleBatch) {
-      q.offer((ExchangeTupleBatch) data);
+      q.offer(data);
     }
-    System.out.println("after add: size of q: " + q.size());
+    // System.out.println("after add: size of q: " + q.size());
   }
 
   public void shutdown() {
@@ -491,133 +419,70 @@ public class Server {
   }
 
   protected void start(final String[] argv) throws IOException {
-
-    String queryFile = null;
-
-    if (argv.length > 1) {
-      for (int i = 1; i < argv.length; i++) {
-        if (argv[i].equals("-f")) {
-          interactive = false;
-          if (i++ == argv.length) {
-            System.out.println("Expected file name after -f\n" + usage);
-            System.exit(0);
-          }
-          queryFile = argv[i];
-
-        } else {
-          System.out.println("Unknown argument " + argv[i] + "\n " + usage);
-        }
-      }
-    }
-
-    if (!interactive) {
-      try {
-        final long startTime = System.currentTimeMillis();
-        processNextStatement(new FileInputStream(new File(queryFile)));
-        final long time = System.currentTimeMillis() - startTime;
-        System.out.printf("----------------\n%.2f seconds\n\n", (time / 1000.0));
-        System.out.println("Press Enter to exit");
-        System.in.read();
-        this.shutdown();
-      } catch (final FileNotFoundException e) {
-        System.out.println("Unable to find query file" + queryFile);
-        e.printStackTrace();
-      }
-    } else { // no query file, run interactive prompt
-      final ConsoleReader reader = new ConsoleReader();
-
-      // Add really stupid tab completion for simple SQL
-      final ArgumentCompletor completor = new ArgumentCompletor(new SimpleCompletor(SQL_COMMANDS));
-      completor.setStrict(false); // match at any position
-      reader.addCompletor(completor);
-
-      StringBuilder buffer = new StringBuilder();
-      String line;
-      boolean quit = false;
-      while (!quit && (line = reader.readLine(SYSTEM_NAME + "> ")) != null) {
-        // Split statements at ';': handles multiple statements on one
-        // line, or one
-        // statement spread across many lines
-        while (line.indexOf(';') >= 0) {
-          final int split = line.indexOf(';');
-          buffer.append(line.substring(0, split + 1));
-          String cmd = buffer.toString().trim();
-          cmd = cmd.substring(0, cmd.length() - 1).trim() + ";";
-          final byte[] statementBytes = cmd.getBytes("UTF-8");
-          if (cmd.equalsIgnoreCase("quit;") || cmd.equalsIgnoreCase("exit;")) {
-            shutdown();
-            quit = true;
-            break;
-          }
-
-          final long startTime = System.currentTimeMillis();
-          processNextStatement(new ByteArrayInputStream(statementBytes));
-          final long time = System.currentTimeMillis() - startTime;
-          System.out.printf("----------------\n%.2f seconds\n\n", (time / 1000.0));
-
-          // Grab the remainder of the line
-          line = line.substring(split + 1);
-          buffer = new StringBuilder();
-        }
-        if (line.length() > 0) {
-          buffer.append(line);
-          buffer.append("\n");
-        }
-      }
-    }
+    acceptor.bind(server.getAddress());
+    messageProcessor.start();
   }
 
-  protected void startQuery(final ParallelQueryPlan queryPlan, final SocketInfo masterWorker) throws DbException {
-    final HashMap<Integer, Operator> workerPlans = new HashMap<Integer, Operator>();
-    // for (SocketInfo worker : this.workers) {
-    // if (worker == masterWorker) {
-    // workerPlans.put(worker, queryPlan.getMasterWorkerPlan());
-    // } else
-    // workerPlans.put(worker, queryPlan.getSlaveWorkerPlan());
-    // }
+  /**
+   * @return if the query is successfully executed.
+   * */
+  public TupleBatchBuffer startServerQuery(int queryId, final CollectConsumer serverPlan) throws DbException {
+    BitSet workersReceived = workersReceivedQuery.get(queryId);
+    HashMap<Integer, Integer> workersAssigned = workersAssignedToQuery.get(queryId);
+    if (workersReceived.nextClearBit(0) >= workersAssigned.size()) {
 
-    final CollectConsumer serverPlan = queryPlan.getServerPlan();
-    try {
-      dispatchWorkerQueryPlans(workerPlans);
-    } catch (final IOException e) {
-      throw new DbException(e);
+      final LinkedBlockingQueue<ExchangeTupleBatch> buffer = new LinkedBlockingQueue<ExchangeTupleBatch>();
+      exchangeSchema.put(serverPlan.getOperatorID(), serverPlan.getSchema());
+      dataBuffer.put(serverPlan.getOperatorID(), buffer);
+      serverPlan.setInputBuffer(buffer);
+
+      final Schema td = serverPlan.getSchema();
+
+      String names = "";
+      for (int i = 0; i < td.numFields(); i++) {
+        names += td.getFieldName(i) + "\t";
+      }
+
+      PrintStream out = null;
+      out = System.out;
+
+      out.println(names);
+      for (int i = 0; i < names.length() + td.numFields() * 4; i++) {
+        out.print("-");
+      }
+      out.println("");
+
+      Date start = new Date();
+      serverPlan.open();
+
+      startWorkerQuery(queryId);
+
+      TupleBatchBuffer outBufferForTesting = new TupleBatchBuffer(serverPlan.getSchema());
+      int cnt = 0;
+      _TupleBatch tup = null;
+      while ((tup = serverPlan.next()) != null) {
+        outBufferForTesting.putAll(tup);
+        out.println(new ImmutableInMemoryTupleBatch(serverPlan.getSchema(), tup.outputRawData(), tup.numOutputTuples())
+            .toString());
+        cnt++;
+      }
+
+      serverPlan.close();
+      Server.this.dataBuffer.remove(serverPlan.getOperatorID());
+      Date end = new Date();
+      System.out.println("Number of results: " + cnt);
+      int elapse = (int) (end.getTime() - start.getTime());
+      int hour = elapse / 3600000;
+      elapse -= hour * 3600000;
+      int minute = elapse / 60000;
+      elapse -= minute * 60000;
+      int second = elapse / 1000;
+      elapse -= second * 1000;
+
+      System.out.println(String.format("Time elapsed: %1$dh%2$dm%3$ds.%4$03d", hour, minute, second, elapse));
+      return outBufferForTesting;
+    } else {
+      return null;
     }
-    startServerQuery(serverPlan);
-
-  }
-
-  public void startServerQuery(final CollectConsumer serverPlan) throws DbException {
-
-    final Schema td = serverPlan.getSchema();
-
-    String names = "";
-    for (int i = 0; i < td.numFields(); i++) {
-      names += td.getFieldName(i) + "\t";
-    }
-
-    PrintStream out = null;
-    // ByteArrayOutputStream b = null;
-    out = System.out;
-
-    out.println(names);
-    for (int i = 0; i < names.length() + td.numFields() * 4; i++) {
-      out.print("-");
-    }
-    out.println("");
-
-    serverPlan.open();
-    // int cnt = 0;
-    while (serverPlan.hasNext()) {
-      final _TupleBatch tup = serverPlan.next();
-      out.println(new ImmutableInMemoryTupleBatch(serverPlan.getSchema(), tup.outputRawData(), tup.numOutputTuples())
-          .toString());
-      // cnt++;
-    }
-    // out.println("\n " + cnt + " rows.");
-    // if (b != null)
-    // System.out.print(b.toString());
-
-    serverPlan.close();
-    Server.this.dataBuffer.remove(serverPlan.getOperatorID());
   }
 }

@@ -12,8 +12,6 @@ public abstract class Consumer extends Exchange {
    */
   private transient volatile LinkedBlockingQueue<ExchangeTupleBatch> inputBuffer;
 
-  // protected volatile _TupleBatch outputBuffer;
-
   public Consumer(final ExchangePairID oID) {
     super(oID);
   }
@@ -35,15 +33,5 @@ public abstract class Consumer extends Exchange {
       return inputBuffer.take();
     }
   }
-
-  // public void setOutputBuffer(_TupleBatch outputBuffer)
-  // {
-  // this.outputBuffer = outputBuffer;
-  // }
-  //
-  // public _TupleBatch getOutputBuffer()
-  // {
-  // return this.outputBuffer;
-  // }
 
 }
