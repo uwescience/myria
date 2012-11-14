@@ -154,11 +154,9 @@ public class Worker {
     @Override
     public final void run() {
       while (true) {
-        Operator query = null;
-        query = queryPlan;
-        if (query != null) {
+        final Operator root = queryPlan;
+        if (root != null) {
           LOGGER.debug("Worker start processing query");
-          final CollectProducer root = (CollectProducer) query;
           try {
             root.open();
             while (root.next() != null) {
