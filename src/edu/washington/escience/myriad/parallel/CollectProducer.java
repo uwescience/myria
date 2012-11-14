@@ -33,7 +33,7 @@ public final class CollectProducer extends Producer {
     @Override
     public void run() {
 
-      final IoSession session = getThisWorker().connectionPool.get(collectConsumerWorkerID, null, 3, null);
+      final IoSession session = getConnectionPool().get(collectConsumerWorkerID, null, 3, null);
 
       final TransportMessage.Builder messageBuilder = TransportMessage.newBuilder();
 

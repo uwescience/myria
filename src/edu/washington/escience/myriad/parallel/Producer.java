@@ -9,18 +9,18 @@ public abstract class Producer extends Exchange {
    * The worker this operator is located at.
    * 
    */
-  private transient Worker thisWorker;
+  private transient IPCConnectionPool connectionPool;
 
   public Producer(final ExchangePairID oID) {
     super(oID);
   }
 
-  public Worker getThisWorker() {
-    return thisWorker;
+  public IPCConnectionPool getConnectionPool() {
+    return connectionPool;
   }
 
-  public void setThisWorker(final Worker thisWorker) {
-    this.thisWorker = thisWorker;
+  public void setConnectionPool(final IPCConnectionPool connectionPool) {
+    this.connectionPool = connectionPool;
   }
 
 }

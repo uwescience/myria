@@ -37,7 +37,7 @@ public class ShuffleProducer extends Producer {
       final IoSession[] shuffleSessions = new IoSession[numWorker];
       int index = 0;
       for (final int workerID : workerIDs) {
-        shuffleSessions[index] = getThisWorker().connectionPool.get(workerID, null, 3, null);
+        shuffleSessions[index] = getConnectionPool().get(workerID, null, 3, null);
         index++;
       }
       Schema thisSchema = null;
@@ -109,7 +109,7 @@ public class ShuffleProducer extends Producer {
   private transient WorkingThread runningThread;
   private final int[] workerIDs;
 
-  private PartitionFunction<?, ?> partitionFunction;
+  private final PartitionFunction<?, ?> partitionFunction;
 
   private Operator child;
 
@@ -165,10 +165,6 @@ public class ShuffleProducer extends Producer {
   @Override
   public final void setChildren(final Operator[] children) {
     child = children[0];
-  }
-
-  public final void setPartitionFunction(final PartitionFunction<?, ?> pf) {
-    partitionFunction = pf;
   }
 
   @Override
