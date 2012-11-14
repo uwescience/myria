@@ -27,7 +27,7 @@ public final class LocalMultiwayProducer extends Producer {
     @Override
     public void run() {
 
-      final Channel channel = getThisWorker().connectionPool.reserveLongTermConnection(remoteWorkerID);
+      final Channel channel = getConnectionPool().reserveLongTermConnection(remoteWorkerID);
 
       try {
 
@@ -58,7 +58,7 @@ public final class LocalMultiwayProducer extends Producer {
       } catch (final DbException e) {
         e.printStackTrace();
       } finally {
-        getThisWorker().connectionPool.releaseLongTermConnection(channel);
+        getConnectionPool().releaseLongTermConnection(channel);
       }
     }
   }

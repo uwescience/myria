@@ -213,7 +213,7 @@ public final class Server {
 
   private final SocketInfo server;
 
-  protected final IPCConnectionPool connectionPool;
+  private final IPCConnectionPool connectionPool;
 
   protected final MessageProcessor messageProcessor;
 
@@ -255,7 +255,7 @@ public final class Server {
     for (final Entry<Integer, SocketInfo> worker : workers.entrySet()) {
       LOGGER.debug("Shuting down #" + worker.getKey() + " : " + worker.getValue());
 
-      ChannelFuture cf = Server.this.connectionPool.sendShortMessage(worker.getKey(), IPCUtils.CONTROL_SHUTDOWN);
+      ChannelFuture cf = getConnectionPool().sendShortMessage(worker.getKey(), IPCUtils.CONTROL_SHUTDOWN);
       if (cf == null) {
         LOGGER.error("Fail to connect the worker: " + worker + ". Continue cleaning");
       } else {
@@ -277,7 +277,7 @@ public final class Server {
     for (final Map.Entry<Integer, Operator[]> e : plans.entrySet()) {
       final Integer workerID = e.getKey();
       setOfWorkers.put(workerID, workerIdx++);
-      connectionPool.sendShortMessage(workerID, IPCUtils.queryMessage(e.getValue()));
+      getConnectionPool().sendShortMessage(workerID, IPCUtils.queryMessage(e.getValue()));
     }
   }
 
@@ -295,7 +295,7 @@ public final class Server {
   protected void startWorkerQuery(final int queryId) {
     HashMap<Integer, Integer> workersAssigned = workersAssignedToQuery.get(queryId);
     for (final Entry<Integer, Integer> entry : workersAssigned.entrySet()) {
-      Server.this.connectionPool.sendShortMessage(entry.getKey(), IPCUtils.CONTROL_START_QUERY);
+      getConnectionPool().sendShortMessage(entry.getKey(), IPCUtils.CONTROL_START_QUERY);
     }
     workersAssignedToQuery.remove(queryId);
     workersReceivedQuery.remove(queryId);
@@ -307,7 +307,7 @@ public final class Server {
   public void receiveData(final ExchangeData data) {
 
     LinkedBlockingQueue<ExchangeData> q = null;
-    q = Server.this.dataBuffer.get(data.getOperatorID());
+    q = dataBuffer.get(data.getOperatorID());
     if (data instanceof ExchangeData) {
       q.offer(data);
     }
@@ -370,7 +370,7 @@ public final class Server {
       }
 
       serverPlan.close();
-      Server.this.dataBuffer.remove(serverPlan.getOperatorID());
+      dataBuffer.remove(serverPlan.getOperatorID());
       Date end = new Date();
       LOGGER.debug("Number of results: " + cnt);
       System.out.println("Number of results: " + cnt);
@@ -388,5 +388,12 @@ public final class Server {
     } else {
       return null;
     }
+  }
+
+  /**
+   * @return the network Connection Pool used by the Server.
+   */
+  public final IPCConnectionPool getConnectionPool() {
+    return connectionPool;
   }
 }
