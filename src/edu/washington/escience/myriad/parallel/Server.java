@@ -326,7 +326,7 @@ public final class Server {
   /**
    * @return if the query is successfully executed.
    * */
-  public TupleBatchBuffer startServerQuery(int queryId, final CollectConsumer serverPlan) throws DbException {
+  public TupleBatchBuffer startServerQuery(final int queryId, final CollectConsumer serverPlan) throws DbException {
     BitSet workersReceived = workersReceivedQuery.get(queryId);
     HashMap<Integer, Integer> workersAssigned = workersAssignedToQuery.get(queryId);
     if (workersReceived.nextClearBit(0) >= workersAssigned.size()) {
@@ -391,9 +391,50 @@ public final class Server {
   }
 
   /**
+   * This starts a query from the server using the query plan rooted by the given Producer.
+   * 
+   * @param queryId the id of this query. TODO currently always 0.
+   * @param serverPlan the query plan to be executed.
+   * @return true if the query is successfully executed.
+   * @throws DbException if there are errors executing the serverPlan operators.
+   */
+  public boolean startServerQuery(final int queryId, final Producer serverPlan) throws DbException {
+    BitSet workersReceived = workersReceivedQuery.get(queryId);
+    HashMap<Integer, Integer> workersAssigned = workersAssignedToQuery.get(queryId);
+    if (workersReceived.nextClearBit(0) >= workersAssigned.size()) {
+
+      Date start = new Date();
+
+      serverPlan.open();
+
+      startWorkerQuery(queryId);
+
+      while (serverPlan.next() != null) {
+        /* Do nothing. */
+      }
+
+      serverPlan.close();
+
+      Date end = new Date();
+      int elapse = (int) (end.getTime() - start.getTime());
+      int hour = elapse / 3600000;
+      elapse -= hour * 3600000;
+      int minute = elapse / 60000;
+      elapse -= minute * 60000;
+      int second = elapse / 1000;
+      elapse -= second * 1000;
+
+      System.out.println(String.format("Time elapsed: %1$dh%2$dm%3$ds.%4$03d", hour, minute, second, elapse));
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  /**
    * @return the network Connection Pool used by the Server.
    */
-  public final IPCConnectionPool getConnectionPool() {
+  public IPCConnectionPool getConnectionPool() {
     return connectionPool;
   }
 }
