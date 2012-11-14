@@ -60,14 +60,14 @@ public class ShuffleSQLiteTest extends SystemTestBase {
 
     final SQLiteQueryScan scan1 = new SQLiteQueryScan("testtable1.db", "select * from testtable1", schema);
     final SQLiteQueryScan scan2 = new SQLiteQueryScan("testtable2.db", "select * from testtable2", schema);
-    final ShuffleProducer sp1 = new ShuffleProducer(scan1, shuffle1ID, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf);
+    final ShuffleProducer sp1 = new ShuffleProducer(scan1, shuffle1ID, WORKER_ID, pf);
 
-    final ShuffleProducer sp2 = new ShuffleProducer(scan2, shuffle2ID, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf);
+    final ShuffleProducer sp2 = new ShuffleProducer(scan2, shuffle2ID, WORKER_ID, pf);
 
-    final ShuffleConsumer sc1 = new ShuffleConsumer(sp1, shuffle1ID, new int[] { WORKER_ID[0], WORKER_ID[1] });
+    final ShuffleConsumer sc1 = new ShuffleConsumer(sp1, shuffle1ID, WORKER_ID);
     final BlockingSQLiteDataReceiver buffer1 = new BlockingSQLiteDataReceiver("temptable.db", "temptable1", sc1);
 
-    final ShuffleConsumer sc2 = new ShuffleConsumer(sp2, shuffle2ID, new int[] { WORKER_ID[0], WORKER_ID[1] });
+    final ShuffleConsumer sc2 = new ShuffleConsumer(sp2, shuffle2ID, WORKER_ID);
     final BlockingSQLiteDataReceiver buffer2 = new BlockingSQLiteDataReceiver("temptable.db", "temptable2", sc2);
 
     final SQLiteSQLProcessor ssp =
