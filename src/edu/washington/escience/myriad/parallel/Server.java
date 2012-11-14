@@ -3,7 +3,6 @@ package edu.washington.escience.myriad.parallel;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Date;
@@ -23,6 +22,7 @@ import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IdleStatus;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
+import org.slf4j.LoggerFactory;
 
 import com.google.protobuf.ByteString;
 
@@ -199,11 +199,11 @@ public final class Server {
 
             messageBuffer.add(mw);
           } else {
-            System.err.println("Error: message received from an unknown unit: " + message);
+            LOGGER.error("Error: message received from an unknown unit: " + message);
           }
         }
       } else {
-        System.err.println("Error: Unknown message received: " + message);
+        LOGGER.error("Error: Unknown message received: " + message);
       }
     }
 
@@ -216,13 +216,15 @@ public final class Server {
   }
 
   static final String usage = "Usage: Server catalogFile [-explain] [-f queryFile]";
+  /** The logger for this class. Defaults to myriad level, but could be set to a finer granularity if needed. */
+  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger("edu.washington.escience.myriad");
 
   public static void main(String[] args) throws IOException {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
     Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
 
     if (args.length < 1) {
-      System.err.println(usage);
+      LOGGER.error(usage);
       System.exit(-1);
     }
 
@@ -249,9 +251,9 @@ public final class Server {
 
     runningInstance = server;
 
-    System.out.println("Workers are: ");
+    LOGGER.debug("Workers are: ");
     for (final Entry<Integer, SocketInfo> w : server.workers.entrySet()) {
-      System.out.println(w.getKey() + ":  " + w.getValue().getHost() + ":" + w.getValue().getPort());
+      LOGGER.debug(w.getKey() + ":  " + w.getValue().getHost() + ":" + w.getValue().getPort());
     }
 
     server.init();
@@ -262,8 +264,7 @@ public final class Server {
       }
     });
     server.start(args);
-    System.out.println("Server: " + masterSocketInfo.getHost() + " started. Listening on port "
-        + masterSocketInfo.getPort());
+    LOGGER.debug("Server: " + masterSocketInfo.getHost() + " started. Listening on port " + masterSocketInfo.getPort());
   }
 
   private final ConcurrentHashMap<Integer, SocketInfo> workers;
@@ -323,10 +324,10 @@ public final class Server {
   }
 
   public void cleanup() {
-    System.out.println(SYSTEM_NAME + " is going to shutdown");
-    System.out.println("Send shutdown requests to the workers, please wait");
+    LOGGER.debug(SYSTEM_NAME + " is going to shutdown");
+    LOGGER.debug("Send shutdown requests to the workers, please wait");
     for (final Entry<Integer, SocketInfo> worker : workers.entrySet()) {
-      System.out.println("Shuting down #" + worker.getKey() + " : " + worker.getValue());
+      LOGGER.debug("Shuting down #" + worker.getKey() + " : " + worker.getValue());
 
       IoSession session = null;
       try {
@@ -334,7 +335,7 @@ public final class Server {
       } catch (final Throwable e) {
       }
       if (session == null) {
-        System.out.println("Fail to connect the worker: " + worker + ". Continue cleaning");
+        LOGGER.error("Fail to connect the worker: " + worker + ". Continue cleaning");
         continue;
       }
       session.write(
@@ -346,10 +347,10 @@ public final class Server {
           ParallelUtility.closeSession(future.getSession());
         }
       });
-      System.out.println("Done");
+      LOGGER.debug("Done");
     }
     ParallelUtility.unbind(acceptor);
-    System.out.println("Bye");
+    LOGGER.debug("Bye");
   }
 
   public void dispatchWorkerQueryPlans(final Map<Integer, Operator> plans) throws IOException {
@@ -411,7 +412,6 @@ public final class Server {
     if (data instanceof ExchangeTupleBatch) {
       q.offer(data);
     }
-    // System.out.println("after add: size of q: " + q.size());
   }
 
   public void shutdown() {
@@ -443,14 +443,15 @@ public final class Server {
         names += schema.getFieldName(i) + "\t";
       }
 
-      PrintStream out = null;
-      out = System.out;
-
-      out.println(names);
-      for (int i = 0; i < names.length() + schema.numFields() * 4; i++) {
-        out.print("-");
+      if (LOGGER.isDebugEnabled()) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(names).append('\n');
+        for (int i = 0; i < names.length() + schema.numFields() * 4; i++) {
+          sb.append("-");
+        }
+        sb.append("");
+        LOGGER.debug(sb.toString());
       }
-      out.println("");
 
       Date start = new Date();
       serverPlan.open();
@@ -462,15 +463,17 @@ public final class Server {
       _TupleBatch tup = null;
       while ((tup = serverPlan.next()) != null) {
         outBufferForTesting.putAll(tup);
-        out.println(new ImmutableInMemoryTupleBatch(serverPlan.getSchema(), tup.outputRawData(), tup.numOutputTuples())
-            .toString());
+        if (LOGGER.isDebugEnabled()) {
+          LOGGER.debug(new ImmutableInMemoryTupleBatch(serverPlan.getSchema(), tup.outputRawData(), tup
+              .numOutputTuples()).toString());
+        }
         cnt += tup.numOutputTuples();
       }
 
       serverPlan.close();
       Server.this.dataBuffer.remove(serverPlan.getOperatorID());
       Date end = new Date();
-      System.out.println("Number of results: " + cnt);
+      LOGGER.debug("Number of results: " + cnt);
       int elapse = (int) (end.getTime() - start.getTime());
       int hour = elapse / 3600000;
       elapse -= hour * 3600000;
@@ -479,7 +482,7 @@ public final class Server {
       int second = elapse / 1000;
       elapse -= second * 1000;
 
-      System.out.println(String.format("Time elapsed: %1$dh%2$dm%3$ds.%4$03d", hour, minute, second, elapse));
+      LOGGER.debug(String.format("Time elapsed: %1$dh%2$dm%3$ds.%4$03d", hour, minute, second, elapse));
       return outBufferForTesting;
     } else {
       return null;

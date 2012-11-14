@@ -69,7 +69,7 @@ public class CollectTest extends SystemTestBase {
     final CollectConsumer serverPlan =
         new CollectConsumer(schema, serverReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
     Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
-    System.out.println("Query dispatched to the workers");
+    LOGGER.debug("Query dispatched to the workers");
     TupleBatchBuffer result = null;
     while ((result = Server.runningInstance.startServerQuery(0, serverPlan)) == null) {
       try {
