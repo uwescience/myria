@@ -29,6 +29,25 @@ public final class ShuffleConsumer extends Consumer {
   private final int[] sourceWorkers;
   private final HashMap<Integer, Integer> workerIdToIndex;
   private ShuffleProducer child;
+  private Schema schema;
+
+  public ShuffleConsumer(final Schema schema, final ExchangePairID operatorID, final int[] workerIDs) {
+    super(operatorID);
+
+    Objects.requireNonNull(schema);
+    Objects.requireNonNull(operatorID);
+    Objects.requireNonNull(workerIDs);
+
+    child = null;
+    this.schema = schema;
+    sourceWorkers = workerIDs;
+    workerIdToIndex = new HashMap<Integer, Integer>();
+    int i = 0;
+    for (final Integer w : sourceWorkers) {
+      workerIdToIndex.put(w, i++);
+    }
+    workerEOS = new BitSet(workerIDs.length);
+  }
 
   public ShuffleConsumer(final ShuffleProducer child, final ExchangePairID operatorID, final int[] workerIDs) {
     super(operatorID);
@@ -38,6 +57,7 @@ public final class ShuffleConsumer extends Consumer {
     Objects.requireNonNull(workerIDs);
 
     this.child = child;
+    schema = child.getSchema();
     sourceWorkers = workerIDs;
     workerIdToIndex = new HashMap<Integer, Integer>();
     int i = 0;
@@ -48,12 +68,12 @@ public final class ShuffleConsumer extends Consumer {
   }
 
   @Override
-  public void cleanup() {
+  public final void cleanup() {
     workerEOS.clear();
   }
 
   @Override
-  protected _TupleBatch fetchNext() throws DbException {
+  protected final _TupleBatch fetchNext() throws DbException {
     try {
       return getTuples(true);
     } catch (final InterruptedException e) {
@@ -64,13 +84,16 @@ public final class ShuffleConsumer extends Consumer {
   }
 
   @Override
-  public Operator[] getChildren() {
-    return new Operator[] { child };
+  public final Operator[] getChildren() {
+    if (child != null) {
+      return new Operator[] { child };
+    }
+    return null;
   }
 
   @Override
-  public Schema getSchema() {
-    return child.getSchema();
+  public final Schema getSchema() {
+    return schema;
   }
 
   /**
@@ -118,12 +141,13 @@ public final class ShuffleConsumer extends Consumer {
   }
 
   @Override
-  public void setChildren(final Operator[] children) {
+  public final void setChildren(final Operator[] children) {
     child = (ShuffleProducer) children[0];
+    schema = child.getSchema();
   }
 
   @Override
-  public _TupleBatch fetchNextReady() throws DbException {
+  public final _TupleBatch fetchNextReady() throws DbException {
     if (!eos()) {
       try {
         return getTuples(false);
