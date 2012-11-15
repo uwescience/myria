@@ -32,12 +32,12 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
+import edu.washington.escience.myriad.accessmethod.SQLiteAccessMethod;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogMaker;
 import edu.washington.escience.myriad.coordinator.catalog.WorkerCatalog;
 import edu.washington.escience.myriad.parallel.ParallelUtility;
-import edu.washington.escience.myriad.parallel.SQLiteTupleBatch;
 import edu.washington.escience.myriad.parallel.Server;
 import edu.washington.escience.myriad.parallel.Worker;
 import edu.washington.escience.myriad.table._TupleBatch;
@@ -290,13 +290,13 @@ public class SystemTestBase {
 
   public static void insert(final int workerID, final String tableName, final Schema schema, final _TupleBatch data)
       throws CatalogException {
-    SQLiteTupleBatch
-        .insertIntoSQLite(schema, tableName, getAbsoluteDBFile(workerID, tableName).getAbsolutePath(), data);
+    SQLiteAccessMethod.insertIntoSQLite(schema, tableName, getAbsoluteDBFile(workerID, tableName).getAbsolutePath(),
+        data);
   }
 
   public static void insertWithBothNames(int workerID, String tableName, String dbName, Schema schema, _TupleBatch data)
       throws CatalogException {
-    SQLiteTupleBatch.insertIntoSQLite(schema, tableName, getAbsoluteDBFile(workerID, dbName).getAbsolutePath(), data);
+    SQLiteAccessMethod.insertIntoSQLite(schema, tableName, getAbsoluteDBFile(workerID, dbName).getAbsolutePath(), data);
   }
 
   public static String intToString(final long v, final int length) {
