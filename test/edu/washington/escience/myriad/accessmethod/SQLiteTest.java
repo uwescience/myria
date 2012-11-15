@@ -11,10 +11,12 @@ import org.junit.Test;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.operator.SQLiteInsert;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.systemtest.SystemTestBase;
 import edu.washington.escience.myriad.systemtest.SystemTestBase.Tuple;
@@ -43,7 +45,8 @@ public class SQLiteTest {
     }
 
     for (_TupleBatch tb : tbb.getAll()) {
-      SQLiteAccessMethod.insertIntoSQLite(outputSchema, "testtable", dbAbsolutePath, tb);
+      String insertTemplate = SQLiteInsert.insertStatementFromSchema(outputSchema, "testtable");
+      SQLiteAccessMethod.tupleBatchInsert(dbAbsolutePath, insertTemplate, (TupleBatch) tb);
     }
 
     HashMap<Tuple, Integer> expectedResult = SystemTestBase.tupleBatchToTupleBag(tbb);

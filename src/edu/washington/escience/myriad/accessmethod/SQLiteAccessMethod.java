@@ -4,8 +4,6 @@ import java.io.File;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.commons.lang3.StringUtils;
-
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
@@ -14,7 +12,6 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnFactory;
-import edu.washington.escience.myriad.table._TupleBatch;
 
 /**
  * Access method for a SQLite database. Exposes data as TupleBatches.
@@ -81,20 +78,6 @@ public final class SQLiteAccessMethod {
         sqliteConnection.dispose();
       }
     }
-  }
-
-  public static void insertIntoSQLite(final Schema inputSchema, String tableName, String dbFilePath,
-      final _TupleBatch data) {
-
-    final String[] fieldNames = inputSchema.getFieldNames();
-    final String[] placeHolders = new String[inputSchema.numFields()];
-    for (int i = 0; i < inputSchema.numFields(); ++i) {
-      placeHolders[i] = "?";
-    }
-
-    SQLiteAccessMethod.tupleBatchInsert(dbFilePath, "insert into " + tableName + " ( "
-        + StringUtils.join(fieldNames, ',') + " ) values ( " + StringUtils.join(placeHolders, ',') + " )",
-        new TupleBatch(data.outputSchema(), data.outputRawData(), data.numOutputTuples()));
   }
 
   /**
