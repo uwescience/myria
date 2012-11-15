@@ -1,9 +1,12 @@
 package edu.washington.escience.myriad.parallel;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 
 import edu.washington.escience.myriad.Predicate;
 import edu.washington.escience.myriad.Schema;
@@ -99,8 +102,9 @@ public class SQLiteTupleBatch implements _TupleBatch {
   }
 
   @Override
-  public synchronized _TupleBatch groupby() {
-    return null;
+  public Set<Pair<Object, TupleBatchBuffer>> groupby(int groupByColumn,
+      Map<Object, Pair<Object, TupleBatchBuffer>> buffers) {
+    throw new UnsupportedOperationException();
   }
 
   @Override
@@ -119,16 +123,6 @@ public class SQLiteTupleBatch implements _TupleBatch {
   }
 
   @Override
-  public synchronized _TupleBatch intersect(final _TupleBatch another) {
-    return null;
-  }
-
-  @Override
-  public synchronized _TupleBatch join(final _TupleBatch other, final Predicate p, final _TupleBatch output) {
-    return null;
-  }
-
-  @Override
   public synchronized int numInputTuples() {
     return numInputTuples;
   }
@@ -136,11 +130,6 @@ public class SQLiteTupleBatch implements _TupleBatch {
   @Override
   public synchronized int numOutputTuples() {
     return numInputTuples;
-  }
-
-  @Override
-  public synchronized _TupleBatch orderby() {
-    return null;
   }
 
   protected synchronized int[] outputColumnIndices() {
