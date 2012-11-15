@@ -109,6 +109,13 @@ public class TupleBatchBuffer {
   }
 
   /**
+   * @return if there is filled TupleBatches ready for pop.
+   * */
+  public final boolean hasFilledTB() {
+    return readyTuples.size() > 0;
+  }
+
+  /**
    * @return pop filled and non-filled TupleBatch
    * */
   public final TupleBatch popAny() {
