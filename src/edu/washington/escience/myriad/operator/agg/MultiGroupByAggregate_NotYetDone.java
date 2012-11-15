@@ -14,7 +14,7 @@ import edu.washington.escience.myriad.table._TupleBatch;
  * The Aggregation operator that computes an aggregate (e.g., sum, avg, max, min). Note that we only support aggregates
  * over a single column, grouped by a single column.
  */
-public class MultiGroupByAggregate extends Operator {
+public class MultiGroupByAggregate_NotYetDone extends Operator {
 
   private static final long serialVersionUID = 1L;
 
@@ -62,7 +62,7 @@ public class MultiGroupByAggregate extends Operator {
    * @param gfields The columns over which we are grouping the result, or -1 if there is no grouping
    * @param aggOps The aggregation operator to use
    */
-  public MultiGroupByAggregate(Operator child, int[] afields, int[] gfields, int[] aggOps) {
+  public MultiGroupByAggregate_NotYetDone(Operator child, int[] afields, int[] gfields, int[] aggOps) {
     Objects.requireNonNull(afields);
     if (afields.length == 0) {
       throw new IllegalArgumentException("aggregation fields must not be empty");
@@ -106,6 +106,10 @@ public class MultiGroupByAggregate extends Operator {
           break;
         case INT_TYPE:
           agg[idx] = new IntegerAggregator(afield, childSchema.getFieldName(afield), aggOps[idx]);
+          outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
+          break;
+        case LONG_TYPE:
+          agg[idx] = new LongAggregator(afield, childSchema.getFieldName(afield), aggOps[idx]);
           outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
           break;
         case FLOAT_TYPE:
