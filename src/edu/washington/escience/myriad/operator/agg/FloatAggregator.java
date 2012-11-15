@@ -33,7 +33,9 @@ public class FloatAggregator implements Aggregator {
     this.resultSchema = resultSchema;
     this.afield = afield;
     this.aggOps = aggOps;
-    min = max = sum = count = 0;
+    sum = count = 0;
+    min = Float.MAX_VALUE;
+    max = Float.MIN_VALUE;
   }
 
   public FloatAggregator(int afield, String aFieldName, int aggOps) {

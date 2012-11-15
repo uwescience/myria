@@ -34,7 +34,10 @@ public class DoubleAggregator implements Aggregator {
     this.resultSchema = resultSchema;
     this.afield = afield;
     this.aggOps = aggOps;
-    min = max = sum = count = 0;
+    count = 0;
+    max = Double.MIN_VALUE;
+    min = Double.MAX_VALUE;
+    sum = 0;
   }
 
   public DoubleAggregator(int afield, String aFieldName, int aggOps) {

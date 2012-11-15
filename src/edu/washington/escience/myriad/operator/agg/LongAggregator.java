@@ -33,7 +33,9 @@ public class LongAggregator implements Aggregator {
     this.resultSchema = resultSchema;
     this.afield = afield;
     this.aggOps = aggOps;
-    min = max = sum = count = 0;
+    sum = count = 0;
+    min = Long.MAX_VALUE;
+    max = Long.MIN_VALUE;
   }
 
   public LongAggregator(int afield, String aFieldName, int aggOps) {

@@ -81,6 +81,10 @@ public class SingleGroupByAggregate extends Operator {
           agg[idx] = new IntegerAggregator(afield, childSchema.getFieldName(afield), aggOps[idx]);
           outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
           break;
+        case LONG_TYPE:
+          agg[idx] = new LongAggregator(afield, childSchema.getFieldName(afield), aggOps[idx]);
+          outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
+          break;
         case FLOAT_TYPE:
           agg[idx] = new FloatAggregator(afield, childSchema.getFieldName(afield), aggOps[idx]);
           outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());

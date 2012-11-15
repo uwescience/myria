@@ -39,6 +39,9 @@ public class StringAggregator implements Aggregator {
     this.computeMax = computeMax;
     this.computeMin = computeMin;
     this.resultSchema = resultSchema;
+    min = null;
+    max = null;
+    count = 0;
   }
 
   public StringAggregator(int afield, String aFieldName, int aggOps) {
@@ -91,12 +94,16 @@ public class StringAggregator implements Aggregator {
       for (int i = 0; i < numTuples; i++) {
         String r = c.getString(i);
         if (computeMin) {
-          if (r.compareTo(min) < 0) {
+          if (min == null) {
+            min = r;
+          } else if (r.compareTo(min) < 0) {
             min = r;
           }
         }
         if (computeMax) {
-          if (r.compareTo(max) > 0) {
+          if (max == null) {
+            max = r;
+          } else if (r.compareTo(max) > 0) {
             max = r;
           }
         }

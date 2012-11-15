@@ -28,7 +28,9 @@ public class IntegerAggregator implements Aggregator {
     this.resultSchema = resultSchema;
     this.afield = afield;
     this.aggOps = aggOps;
-    min = max = sum = count = 0;
+    sum = count = 0;
+    min = Integer.MAX_VALUE;
+    max = Integer.MIN_VALUE;
   }
 
   public IntegerAggregator(int afield, String aFieldName, int aggOps) {
