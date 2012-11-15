@@ -1,9 +1,12 @@
 package edu.washington.escience.myriad.parallel;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
-import edu.washington.escience.myriad.Predicate;
+import org.apache.commons.lang3.tuple.Pair;
+
 import edu.washington.escience.myriad.Predicate.Op;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -107,8 +110,9 @@ public class ExchangeTupleBatch implements _TupleBatch {
   }
 
   @Override
-  public _TupleBatch groupby() {
-    return dataHolder.groupby();
+  public Set<Pair<Object, TupleBatchBuffer>> groupby(int groupByColumn,
+      Map<Object, Pair<Object, TupleBatchBuffer>> buffers) {
+    return dataHolder.groupby(groupByColumn, buffers);
   }
 
   @Override
@@ -127,18 +131,8 @@ public class ExchangeTupleBatch implements _TupleBatch {
     return dataHolder.inputSchema();
   }
 
-  @Override
-  public _TupleBatch intersect(final _TupleBatch another) {
-    return dataHolder.intersect(another);
-  }
-
   public boolean isEos() {
     return dataHolder == null;
-  }
-
-  @Override
-  public _TupleBatch join(final _TupleBatch other, final Predicate p, final _TupleBatch output) {
-    return dataHolder.join(other, p, output);
   }
 
   @Override
@@ -151,11 +145,6 @@ public class ExchangeTupleBatch implements _TupleBatch {
   public int numOutputTuples() {
     // return this.dataHolder.numOutputTuples();
     return dataHolder.numOutputTuples();
-  }
-
-  @Override
-  public _TupleBatch orderby() {
-    return dataHolder.orderby();
   }
 
   @Override

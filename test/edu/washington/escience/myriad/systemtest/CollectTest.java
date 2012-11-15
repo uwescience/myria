@@ -61,6 +61,7 @@ public class CollectTest extends SystemTestBase {
     while (Server.runningInstance == null) {
       try {
         Thread.sleep(10);
+        System.out.println("waiting");
       } catch (final InterruptedException e) {
       }
     }
