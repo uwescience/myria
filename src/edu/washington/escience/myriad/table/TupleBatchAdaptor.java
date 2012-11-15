@@ -1,8 +1,12 @@
 package edu.washington.escience.myriad.table;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-import edu.washington.escience.myriad.Predicate;
+import org.apache.commons.lang3.tuple.Pair;
+
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
@@ -33,8 +37,40 @@ public abstract class TupleBatchAdaptor implements _TupleBatch {
   }
 
   @Override
-  public _TupleBatch groupby() {
-    throw new UnsupportedOperationException();
+  public Set<Pair<Object, TupleBatchBuffer>> groupby(int groupByColumn,
+      Map<Object, Pair<Object, TupleBatchBuffer>> buffers) {
+    Set<Pair<Object, TupleBatchBuffer>> ready = null;
+    if (this instanceof TupleBatch) {
+      final TupleBatch tupleBatch = (TupleBatch) this;
+      List<Column> columns = tupleBatch.outputRawData();
+      Column gC = columns.get(groupByColumn);
+
+      int numR = gC.size();
+      for (int i = 0; i < numR; i++) {
+        Object v = gC.get(i);
+        Pair<Object, TupleBatchBuffer> kvPair = buffers.get(v);
+        TupleBatchBuffer tbb = null;
+        if (kvPair == null) {
+          tbb = new TupleBatchBuffer(inputSchema());
+          kvPair = Pair.of(v, tbb);
+          buffers.put(v, kvPair);
+        } else {
+          tbb = kvPair.getRight();
+        }
+        int j = 0;
+        for (Column c : columns) {
+          tbb.put(j, c.get(i));
+          j++;
+        }
+        if (tbb.hasFilledTB()) {
+          if (ready == null) {
+            ready = new HashSet<Pair<Object, TupleBatchBuffer>>();
+          }
+          ready.add(kvPair);
+        }
+      }
+    }
+    return ready;
   }
 
   @Override
@@ -68,16 +104,6 @@ public abstract class TupleBatchAdaptor implements _TupleBatch {
   }
 
   @Override
-  public _TupleBatch intersect(final _TupleBatch another) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public _TupleBatch join(final _TupleBatch other, final Predicate p, final _TupleBatch output) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
   public int numInputTuples() {
     if (this instanceof TupleBatch) {
       final TupleBatch tupleBatch = (TupleBatch) this;
@@ -96,11 +122,6 @@ public abstract class TupleBatchAdaptor implements _TupleBatch {
     } else {
       throw new UnsupportedOperationException();
     }
-  }
-
-  @Override
-  public _TupleBatch orderby() {
-    throw new UnsupportedOperationException();
   }
 
   @Override

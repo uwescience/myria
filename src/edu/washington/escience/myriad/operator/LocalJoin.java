@@ -35,23 +35,19 @@ public class LocalJoin extends Operator implements Externalizable {
       final int rowIndx1 = index;
       final int rowIndx2 = another.index;
       // System.out.println(rowIndx1 + " " + rowIndx2 + " " + colIndx1 + " " + colIndx2);
-      if (type1.equals(Type.INT_TYPE)) {
-        return tb.getInt(colIndx1, rowIndx1) == another.tb.getInt(colIndx2, rowIndx2);
-      }
-      if (type1.equals(Type.DOUBLE_TYPE)) {
-        return tb.getDouble(colIndx1, rowIndx1) == another.tb.getDouble(colIndx2, rowIndx2);
-      }
-      if (type1.equals(Type.STRING_TYPE)) {
-        return tb.getString(colIndx1, rowIndx1).equals(another.tb.getString(colIndx2, rowIndx2));
-      }
-      if (type1.equals(Type.FLOAT_TYPE)) {
-        return tb.getFloat(colIndx1, rowIndx1) == another.tb.getFloat(colIndx2, rowIndx2);
-      }
-      if (type1.equals(Type.BOOLEAN_TYPE)) {
-        return tb.getBoolean(colIndx1, rowIndx1) == another.tb.getBoolean(colIndx2, rowIndx2);
-      }
-      if (type1.equals(Type.LONG_TYPE)) {
-        return tb.getLong(colIndx1, rowIndx1) == another.tb.getLong(colIndx2, rowIndx2);
+      switch (type1) {
+        case INT_TYPE:
+          return tb.getInt(colIndx1, rowIndx1) == another.tb.getInt(colIndx2, rowIndx2);
+        case DOUBLE_TYPE:
+          return tb.getDouble(colIndx1, rowIndx1) == another.tb.getDouble(colIndx2, rowIndx2);
+        case STRING_TYPE:
+          return tb.getString(colIndx1, rowIndx1).equals(another.tb.getString(colIndx2, rowIndx2));
+        case FLOAT_TYPE:
+          return tb.getFloat(colIndx1, rowIndx1) == another.tb.getFloat(colIndx2, rowIndx2);
+        case BOOLEAN_TYPE:
+          return tb.getBoolean(colIndx1, rowIndx1) == another.tb.getBoolean(colIndx2, rowIndx2);
+        case LONG_TYPE:
+          return tb.getLong(colIndx1, rowIndx1) == another.tb.getLong(colIndx2, rowIndx2);
       }
       return false;
     }
