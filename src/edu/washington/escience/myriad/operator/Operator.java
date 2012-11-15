@@ -40,7 +40,7 @@ public abstract class Operator implements Serializable {
   /**
    * Closes this iterator.
    * 
-   * @throws DbException
+   * @throws DbException if any errors occur
    */
   public final void close() throws DbException {
     // Ensures that a future call to next() will fail
@@ -92,6 +92,8 @@ public abstract class Operator implements Serializable {
    * 
    * This method is non-blocking.
    * 
+   * @return if the Operator is EOS
+   * 
    * */
   public final boolean eos() {
     return eos;
@@ -105,6 +107,8 @@ public abstract class Operator implements Serializable {
    * @throws DbException if there's any problem in fetching the next TupleBatch.
    * 
    * @throws IllegalStateException if the operator is not open yet
+   * 
+   * @return next TupleBatch
    * */
   public final _TupleBatch next() throws DbException {
     if (!open) {
@@ -133,7 +137,9 @@ public abstract class Operator implements Serializable {
   }
 
   /**
-   * open the operator and do initializations
+   * open the operator and do initializations.
+   * 
+   * @throws DbException if any error occurs
    * */
   public final void open() throws DbException {
     // open the children first
@@ -167,11 +173,16 @@ public abstract class Operator implements Serializable {
 
   /**
    * Do the initialization of this operator.
-   * */
+   * 
+   * @throws DbException if any error occurs
+   * 
+   */
   protected abstract void init() throws DbException;
 
   /**
-   * Do the clean up, release resources
+   * Do the clean up, release resources.
+   * 
+   * @throws DbException if any error occurs
    * */
   protected abstract void cleanup() throws DbException;
 
@@ -181,13 +192,14 @@ public abstract class Operator implements Serializable {
    * Do not block the execution thread in this method, including sleep, wait on locks, etc.
    * 
    * @throws DbException if any error occurs
+   * 
+   * @return next ready output TupleBatch. null if either EOS or no output TupleBatch can be generated currently.
    * */
-  public abstract _TupleBatch fetchNextReady() throws DbException;
+  protected abstract _TupleBatch fetchNextReady() throws DbException;
 
   /**
-   * @return return the Schema of the output tuples of this operator
+   * @return return the Schema of the output tuples of this operator.
    * 
-   * @throws DbException if any error occurs
    */
   public abstract Schema getSchema();
 

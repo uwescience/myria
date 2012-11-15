@@ -27,6 +27,15 @@ import edu.washington.escience.myriad.parallel.Worker.MessageWrapper;
  */
 public class ParallelUtility {
 
+  public static int numBinaryOnesInInteger(int v) {
+    int result = 0;
+    while (v != 0) {
+      result += (v & 0x01);
+      v = v >>> 1;
+    }
+    return result;
+  }
+
   /**
    * @param dest will be replaced if exists and override
    */
