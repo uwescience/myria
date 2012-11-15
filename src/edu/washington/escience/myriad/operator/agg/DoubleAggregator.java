@@ -26,8 +26,15 @@ public class DoubleAggregator implements Aggregator {
       | Aggregator.AGG_OP_MIN | Aggregator.AGG_OP_AVG;
 
   @Override
-  public int available() {
+  public int availableAgg() {
     return AVAILABLE_AGG;
+  }
+
+  private DoubleAggregator(int afield, int aggOps, Schema resultSchema) {
+    this.resultSchema = resultSchema;
+    this.afield = afield;
+    this.aggOps = aggOps;
+    min = max = sum = count = 0;
   }
 
   public DoubleAggregator(int afield, String aFieldName, int aggOps) {
@@ -133,5 +140,10 @@ public class DoubleAggregator implements Aggregator {
   @Override
   public Schema getResultSchema() {
     return resultSchema;
+  }
+
+  @Override
+  public DoubleAggregator freshCopyYourself() {
+    return new DoubleAggregator(afield, aggOps, resultSchema);
   }
 }

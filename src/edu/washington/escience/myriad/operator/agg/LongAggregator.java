@@ -25,8 +25,15 @@ public class LongAggregator implements Aggregator {
       | Aggregator.AGG_OP_MIN | Aggregator.AGG_OP_AVG;
 
   @Override
-  public int available() {
+  public int availableAgg() {
     return AVAILABLE_AGG;
+  }
+
+  private LongAggregator(int afield, int aggOps, Schema resultSchema) {
+    this.resultSchema = resultSchema;
+    this.afield = afield;
+    this.aggOps = aggOps;
+    min = max = sum = count = 0;
   }
 
   public LongAggregator(int afield, String aFieldName, int aggOps) {
@@ -131,5 +138,10 @@ public class LongAggregator implements Aggregator {
   @Override
   public Schema getResultSchema() {
     return resultSchema;
+  }
+
+  @Override
+  public LongAggregator freshCopyYourself() {
+    return new LongAggregator(afield, aggOps, resultSchema);
   }
 }

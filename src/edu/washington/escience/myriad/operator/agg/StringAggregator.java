@@ -29,8 +29,16 @@ public class StringAggregator implements Aggregator {
   public static int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT | Aggregator.AGG_OP_MAX | Aggregator.AGG_OP_MIN;
 
   @Override
-  public int available() {
+  public int availableAgg() {
     return AVAILABLE_AGG;
+  }
+
+  private StringAggregator(int afield, int aggOps, boolean computeMin, boolean computeMax, Schema resultSchema) {
+    this.afield = afield;
+    this.aggOps = aggOps;
+    this.computeMax = computeMax;
+    this.computeMin = computeMin;
+    this.resultSchema = resultSchema;
   }
 
   public StringAggregator(int afield, String aFieldName, int aggOps) {
@@ -118,4 +126,8 @@ public class StringAggregator implements Aggregator {
     return resultSchema;
   }
 
+  @Override
+  public StringAggregator freshCopyYourself() {
+    return new StringAggregator(afield, aggOps, computeMin, computeMax, resultSchema);
+  }
 }

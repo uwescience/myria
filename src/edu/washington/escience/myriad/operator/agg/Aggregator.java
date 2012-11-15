@@ -7,32 +7,62 @@ import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.table._TupleBatch;
 
 /**
- * Single field aggregator.
+ * Single column aggregator.
  */
 public interface Aggregator extends Serializable {
 
-  public static int AGG_OP_COUNT = 0x01;
-  public static int AGG_OP_MIN = 0x02;
-  public static int AGG_OP_MAX = 0x04;
-  public static int AGG_OP_SUM = 0x08;
   /**
-   * All avg aggregates are of double type.
+   * count.
    * */
-  public static int AGG_OP_AVG = 0x10;
+  int AGG_OP_COUNT = 0x01;
+  /**
+   * min.
+   * */
+  int AGG_OP_MIN = 0x02;
+  /**
+   * max.
+   * */
+  int AGG_OP_MAX = 0x04;
+  /**
+   * sum.
+   * */
+  int AGG_OP_SUM = 0x08;
+  /**
+   * avg. All avg aggregates are of double type.
+   * */
+  int AGG_OP_AVG = 0x10;
 
   /**
    * Add a new TupleBatch into the aggregate.
+   * 
+   * @param t TupleBatch
    */
   void add(_TupleBatch t);
 
   /**
+   * Output the aggregate result. Store the output to buffer.
+   * 
    * @param buffer the buffer to store the aggregate result.
    * @param fromIndex from the fromIndex to put the result columns
    * */
-  public void getResult(TupleBatchBuffer buffer, int fromIndex);
+  void getResult(TupleBatchBuffer buffer, int fromIndex);
 
-  public int available();
+  /**
+   * @return available aggregates this Aggregator supports.
+   * */
+  int availableAgg();
 
-  public Schema getResultSchema();
+  /**
+   * @return Result schema of this Aggregator.
+   * 
+   * */
+  Schema getResultSchema();
+
+  /**
+   * Copy an Aggregator without states.
+   * 
+   * @return an new Aggregator instance with the same configuration parameters as this instance but without states.
+   * */
+  Aggregator freshCopyYourself();
 
 }

@@ -25,8 +25,15 @@ public class FloatAggregator implements Aggregator {
       | Aggregator.AGG_OP_MIN | Aggregator.AGG_OP_AVG;
 
   @Override
-  public int available() {
+  public int availableAgg() {
     return AVAILABLE_AGG;
+  }
+
+  private FloatAggregator(int afield, int aggOps, Schema resultSchema) {
+    this.resultSchema = resultSchema;
+    this.afield = afield;
+    this.aggOps = aggOps;
+    min = max = sum = count = 0;
   }
 
   public FloatAggregator(int afield, String aFieldName, int aggOps) {
@@ -138,4 +145,8 @@ public class FloatAggregator implements Aggregator {
     return resultSchema;
   }
 
+  @Override
+  public FloatAggregator freshCopyYourself() {
+    return new FloatAggregator(afield, aggOps, resultSchema);
+  }
 }

@@ -23,8 +23,14 @@ public class BooleanAggregator implements Aggregator {
   public static int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT;
 
   @Override
-  public int available() {
+  public int availableAgg() {
     return AVAILABLE_AGG;
+  }
+
+  private BooleanAggregator(int aggOps, Schema resultSchema) {
+    this.resultSchema = resultSchema;
+    this.aggOps = aggOps;
+    count = 0;
   }
 
   public BooleanAggregator(int afield, String aFieldName, int aggOps) {
@@ -69,4 +75,8 @@ public class BooleanAggregator implements Aggregator {
     return resultSchema;
   }
 
+  @Override
+  public BooleanAggregator freshCopyYourself() {
+    return new BooleanAggregator(aggOps, resultSchema);
+  }
 }

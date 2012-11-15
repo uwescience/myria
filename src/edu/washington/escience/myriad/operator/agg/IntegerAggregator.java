@@ -24,6 +24,13 @@ public class IntegerAggregator implements Aggregator {
   public static int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT | Aggregator.AGG_OP_SUM | Aggregator.AGG_OP_MAX
       | Aggregator.AGG_OP_MIN | Aggregator.AGG_OP_AVG;
 
+  private IntegerAggregator(int afield, int aggOps, Schema resultSchema) {
+    this.resultSchema = resultSchema;
+    this.afield = afield;
+    this.aggOps = aggOps;
+    min = max = sum = count = 0;
+  }
+
   public IntegerAggregator(int afield, String aFieldName, int aggOps) {
     if (aggOps <= 0) {
       throw new IllegalArgumentException("No aggregation operations are selected");
@@ -71,7 +78,7 @@ public class IntegerAggregator implements Aggregator {
   }
 
   @Override
-  public int available() {
+  public int availableAgg() {
     return AVAILABLE_AGG;
   }
 
@@ -133,4 +140,8 @@ public class IntegerAggregator implements Aggregator {
     return resultSchema;
   }
 
+  @Override
+  public Aggregator freshCopyYourself() {
+    return new IntegerAggregator(afield, aggOps, resultSchema);
+  }
 }
