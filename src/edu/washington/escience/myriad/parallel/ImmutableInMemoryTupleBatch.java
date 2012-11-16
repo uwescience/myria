@@ -149,6 +149,11 @@ public class ImmutableInMemoryTupleBatch implements _TupleBatch {
   }
 
   @Override
+  public final Object getObject(final int column, final int row) {
+    return inputColumns.get(column).get(row);
+  }
+
+  @Override
   public String getString(final int column, final int row) {
     return ((StringColumn) inputColumns.get(column)).getString(row);
   }

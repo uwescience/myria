@@ -41,16 +41,67 @@ public interface _TupleBatch extends Serializable {
   /* -------------------The data processing methods -------------------- */
 
   /* -------------------- The value retrieval methods ------------------ */
+  /**
+   * Returns the element at the specified column and row position.
+   * 
+   * @param column column in which the element is stored.
+   * @param row row in which the element is stored.
+   * @return the element at the specified position in this TupleBatch.
+   */
   boolean getBoolean(int column, int row);
 
+  /**
+   * Returns the element at the specified column and row position.
+   * 
+   * @param column column in which the element is stored.
+   * @param row row in which the element is stored.
+   * @return the element at the specified position in this TupleBatch.
+   */
   double getDouble(int column, int row);
 
+  /**
+   * Returns the element at the specified column and row position.
+   * 
+   * @param column column in which the element is stored.
+   * @param row row in which the element is stored.
+   * @return the element at the specified position in this TupleBatch.
+   */
   float getFloat(int column, int row);
 
+  /**
+   * Returns the element at the specified column and row position.
+   * 
+   * @param column column in which the element is stored.
+   * @param row row in which the element is stored.
+   * @return the element at the specified position in this TupleBatch.
+   */
   int getInt(int column, int row);
 
+  /**
+   * Returns the element at the specified column and row position.
+   * 
+   * @param column column in which the element is stored.
+   * @param row row in which the element is stored.
+   * @return the element at the specified position in this TupleBatch.
+   */
   long getLong(int column, int row);
 
+  /**
+   * Returns the element at the specified column and row position.
+   * 
+   * @param column column in which the element is stored.
+   * @param row row in which the element is stored.
+   * @return the element at the specified position in this TupleBatch.
+   */
+  Object getObject(int column, int row);
+
+  /**
+   * Returns the element at the specified column and row position.
+   * 
+   * @param column column in which the element is stored.
+   * @param row row in which the element is stored.
+   * @return the element at the specified position in this TupleBatch.
+   */
   String getString(int column, int row);
 
   int hashCode(int rowIndx);
