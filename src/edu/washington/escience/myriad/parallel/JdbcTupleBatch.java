@@ -74,38 +74,7 @@ public class JdbcTupleBatch implements _TupleBatch {
   }
 
   @Override
-  public synchronized boolean getBoolean(final int column, final int row) {
-    // return ((BooleanColumn) inputColumns.get(column)).getBoolean(row);
-    return false;
-  }
-
-  @Override
-  public synchronized double getDouble(final int column, final int row) {
-    // return ((DoubleColumn) inputColumns.get(column)).getDouble(row);
-    return 0d;
-  }
-
-  @Override
-  public synchronized float getFloat(final int column, final int row) {
-    // return ((FloatColumn) inputColumns.get(column)).getFloat(row);
-    return 0f;
-  }
-
-  @Override
-  public synchronized int getInt(final int column, final int row) {
-    // return ((IntColumn) inputColumns.get(column)).getInt(row);
-    return 0;
-  }
-
-  @Override
-  public synchronized long getLong(final int column, final int row) {
-    // return ((IntColumn) inputColumns.get(column)).getInt(row);
-    return 0;
-  }
-
-  @Override
-  public synchronized String getString(final int column, final int row) {
-    // return ((StringColumn) inputColumns.get(column)).getString(row);
+  public final Object getObject(final int column, final int row) {
     return null;
   }
 

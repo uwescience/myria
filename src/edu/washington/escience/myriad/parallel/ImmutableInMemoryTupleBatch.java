@@ -17,14 +17,8 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.annotation.ThreadSafe;
-import edu.washington.escience.myriad.column.BooleanColumn;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnFactory;
-import edu.washington.escience.myriad.column.DoubleColumn;
-import edu.washington.escience.myriad.column.FloatColumn;
-import edu.washington.escience.myriad.column.IntColumn;
-import edu.washington.escience.myriad.column.LongColumn;
-import edu.washington.escience.myriad.column.StringColumn;
 import edu.washington.escience.myriad.table._TupleBatch;
 
 @ThreadSafe
@@ -124,33 +118,8 @@ public class ImmutableInMemoryTupleBatch implements _TupleBatch {
   }
 
   @Override
-  public boolean getBoolean(final int column, final int row) {
-    return ((BooleanColumn) inputColumns.get(column)).getBoolean(row);
-  }
-
-  @Override
-  public double getDouble(final int column, final int row) {
-    return ((DoubleColumn) inputColumns.get(column)).getDouble(row);
-  }
-
-  @Override
-  public float getFloat(final int column, final int row) {
-    return ((FloatColumn) inputColumns.get(column)).getFloat(row);
-  }
-
-  @Override
-  public int getInt(final int column, final int row) {
-    return ((IntColumn) inputColumns.get(column)).getInt(row);
-  }
-
-  @Override
-  public long getLong(final int column, final int row) {
-    return ((LongColumn) inputColumns.get(column)).getLong(row);
-  }
-
-  @Override
-  public String getString(final int column, final int row) {
-    return ((StringColumn) inputColumns.get(column)).getString(row);
+  public final Object getObject(final int column, final int row) {
+    return inputColumns.get(column).get(row);
   }
 
   @Override

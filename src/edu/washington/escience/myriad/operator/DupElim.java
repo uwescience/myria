@@ -6,7 +6,6 @@ import java.util.List;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
-import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.table._TupleBatch;
 
 public class DupElim extends Operator {
@@ -24,29 +23,9 @@ public class DupElim extends Operator {
     }
 
     public boolean compareField(final IndexedTuple another, final int colIndx) {
-      final Type type = tb.inputSchema().getFieldType(colIndx);
       final int rowIndx1 = index;
       final int rowIndx2 = another.index;
-      // System.out.println(rowIndx1 + " " + rowIndx2 + " " + colIndx + " " + type);
-      if (type.equals(Type.INT_TYPE)) {
-        return tb.getInt(colIndx, rowIndx1) == another.tb.getInt(colIndx, rowIndx2);
-      }
-      if (type.equals(Type.DOUBLE_TYPE)) {
-        return tb.getDouble(colIndx, rowIndx1) == another.tb.getDouble(colIndx, rowIndx2);
-      }
-      if (type.equals(Type.STRING_TYPE)) {
-        return tb.getString(colIndx, rowIndx1).equals(another.tb.getString(colIndx, rowIndx2));
-      }
-      if (type.equals(Type.FLOAT_TYPE)) {
-        return tb.getFloat(colIndx, rowIndx1) == another.tb.getFloat(colIndx, rowIndx2);
-      }
-      if (type.equals(Type.BOOLEAN_TYPE)) {
-        return tb.getBoolean(colIndx, rowIndx1) == another.tb.getBoolean(colIndx, rowIndx2);
-      }
-      if (type.equals(Type.LONG_TYPE)) {
-        return tb.getLong(colIndx, rowIndx1) == another.tb.getLong(colIndx, rowIndx2);
-      }
-      return false;
+      return tb.getObject(colIndx, rowIndx1).equals(another.tb.getObject(colIndx, rowIndx2));
     }
 
     @Override

@@ -11,13 +11,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import com.google.common.base.Preconditions;
 import com.google.common.primitives.Ints;
 
-import edu.washington.escience.myriad.column.BooleanColumn;
 import edu.washington.escience.myriad.column.Column;
-import edu.washington.escience.myriad.column.DoubleColumn;
-import edu.washington.escience.myriad.column.FloatColumn;
-import edu.washington.escience.myriad.column.IntColumn;
-import edu.washington.escience.myriad.column.LongColumn;
-import edu.washington.escience.myriad.column.StringColumn;
 import edu.washington.escience.myriad.table.TupleBatchAdaptor;
 import edu.washington.escience.myriad.table._TupleBatch;
 
@@ -161,18 +155,6 @@ public class TupleBatch extends TupleBatchAdaptor {
   }
 
   /**
-   * Returns the element at the specified column and row position.
-   * 
-   * @param column column in which the element is stored.
-   * @param row row in which the element is stored.
-   * @return the element at the specified position in this TupleBatch.
-   */
-  @Override
-  public final boolean getBoolean(final int column, final int row) {
-    return ((BooleanColumn) columns.get(column)).getBoolean(row);
-  }
-
-  /**
    * Returns the column at the specified index.
    * 
    * @param index index of the desired column.
@@ -182,52 +164,9 @@ public class TupleBatch extends TupleBatchAdaptor {
     return columns.get(index);
   }
 
-  /**
-   * Returns the element at the specified column and row position.
-   * 
-   * @param column column in which the element is stored.
-   * @param row row in which the element is stored.
-   * @return the element at the specified position in this TupleBatch.
-   */
   @Override
-  public final double getDouble(final int column, final int row) {
-    return ((DoubleColumn) columns.get(column)).getDouble(row);
-  }
-
-  /**
-   * Returns the element at the specified column and row position.
-   * 
-   * @param column column in which the element is stored.
-   * @param row row in which the element is stored.
-   * @return the element at the specified position in this TupleBatch.
-   */
-  @Override
-  public final float getFloat(final int column, final int row) {
-    return ((FloatColumn) columns.get(column)).getFloat(row);
-  }
-
-  /**
-   * Returns the element at the specified column and row position.
-   * 
-   * @param column column in which the element is stored.
-   * @param row row in which the element is stored.
-   * @return the element at the specified position in this TupleBatch.
-   */
-  @Override
-  public final int getInt(final int column, final int row) {
-    return ((IntColumn) columns.get(column)).getInt(row);
-  }
-
-  /**
-   * Returns the element at the specified column and row position.
-   * 
-   * @param column column in which the element is stored.
-   * @param row row in which the element is stored.
-   * @return the element at the specified position in this TupleBatch.
-   */
-  @Override
-  public final long getLong(final int column, final int row) {
-    return ((LongColumn) columns.get(column)).getLong(row);
+  public final Object getObject(final int column, final int row) {
+    return columns.get(column).get(row);
   }
 
   /**
@@ -237,18 +176,6 @@ public class TupleBatch extends TupleBatchAdaptor {
    */
   public final Schema getSchema() {
     return schema;
-  }
-
-  /**
-   * Returns the element at the specified column and row position.
-   * 
-   * @param column column in which the element is stored.
-   * @param row row in which the element is stored.
-   * @return the element at the specified position in this TupleBatch.
-   */
-  @Override
-  public final String getString(final int column, final int row) {
-    return ((StringColumn) columns.get(column)).getString(row);
   }
 
   @Override

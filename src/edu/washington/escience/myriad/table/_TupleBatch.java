@@ -41,17 +41,7 @@ public interface _TupleBatch extends Serializable {
   /* -------------------The data processing methods -------------------- */
 
   /* -------------------- The value retrieval methods ------------------ */
-  boolean getBoolean(int column, int row);
-
-  double getDouble(int column, int row);
-
-  float getFloat(int column, int row);
-
-  int getInt(int column, int row);
-
-  long getLong(int column, int row);
-
-  String getString(int column, int row);
+  Object getObject(int column, int row);
 
   int hashCode(int rowIndx);
 

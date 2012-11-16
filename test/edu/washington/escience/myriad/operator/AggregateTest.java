@@ -6,7 +6,6 @@ import static org.junit.Assert.assertTrue;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
 import org.junit.Test;
 
@@ -40,18 +39,15 @@ public class AggregateTest {
 
   @Test
   public void testNoGroupCount() throws DbException {
-    int randInt = new Random().nextInt();
-    if (randInt < 0) {
-      randInt = -randInt;
-    }
-    int numTuples = randInt % 200000;
+    final int maxValue = 200000;
+    int numTuples = (int) (Math.random() * maxValue);
 
     TupleBatchBuffer testBase = generateRandomTuples(numTuples);
     Aggregate agg = new Aggregate(new TupleSource(testBase), new int[] { 1 }, new int[] { Aggregator.AGG_OP_COUNT });
     agg.open();
     _TupleBatch tb = null;
     while ((tb = agg.next()) != null) {
-      assertEquals(numTuples, tb.getInt(0, 0));
+      assertEquals(numTuples, ((Integer) tb.getObject(0, 0)).intValue());
     }
   }
 
@@ -105,11 +101,8 @@ public class AggregateTest {
 
   @Test
   public void testNoGroupMin() throws DbException {
-    int randInt = new Random().nextInt();
-    if (randInt < 0) {
-      randInt = -randInt;
-    }
-    int numTuples = randInt % 200000;
+    final int maxValue = 200000;
+    int numTuples = (int) (Math.random() * maxValue);
 
     TupleBatchBuffer testBase = generateRandomTuples(numTuples);
     Long minID = (Long) min(testBase, 0);
@@ -133,11 +126,8 @@ public class AggregateTest {
 
   @Test
   public void testNoGroupMax() throws DbException {
-    int randInt = new Random().nextInt();
-    if (randInt < 0) {
-      randInt = -randInt;
-    }
-    int numTuples = randInt % 200000;
+    final int maxValue = 200000;
+    int numTuples = (int) (Math.random() * maxValue);
 
     TupleBatchBuffer testBase = generateRandomTuples(numTuples);
     Long maxID = (Long) max(testBase, 0);
@@ -160,11 +150,8 @@ public class AggregateTest {
 
   @Test
   public void testNoGroupSum() throws DbException {
-    int randInt = new Random().nextInt();
-    if (randInt < 0) {
-      randInt = -randInt;
-    }
-    int numTuples = randInt % 200000;
+    final int maxValue = 200000;
+    int numTuples = (int) (Math.random() * maxValue);
 
     TupleBatchBuffer testBase = generateRandomTuples(numTuples);
     Long sumID = sumLong(testBase, 0);
@@ -179,11 +166,8 @@ public class AggregateTest {
 
   @Test
   public void testNoGroupAvg() throws DbException {
-    int randInt = new Random().nextInt();
-    if (randInt < 0) {
-      randInt = -randInt;
-    }
-    int numTuples = randInt % 200000;
+    final int maxValue = 200000;
+    int numTuples = (int) (Math.random() * maxValue);
 
     TupleBatchBuffer testBase = generateRandomTuples(numTuples);
     Long sumID = sumLong(testBase, 0);
@@ -352,14 +336,10 @@ public class AggregateTest {
 
   @Test
   public void testSingleGroupAvg() throws DbException {
-    int randInt = new Random().nextInt();
-    if (randInt < 0) {
-      randInt = -randInt;
-    }
-    int numTuples = randInt % 200000;
+    final int maxValue = 200000;
+    int numTuples = (int) (Math.random() * maxValue);
 
     TupleBatchBuffer testBase = generateRandomTuples(numTuples);
-    Long sumID = sumLong(testBase, 0);
     // group by name, aggregate on id
     SingleGroupByAggregate agg =
         new SingleGroupByAggregate(new TupleSource(testBase), new int[] { 0 }, 1, new int[] { Aggregator.AGG_OP_AVG });
@@ -376,11 +356,8 @@ public class AggregateTest {
 
   @Test
   public void testSingleGroupSum() throws DbException {
-    int randInt = new Random().nextInt();
-    if (randInt < 0) {
-      randInt = -randInt;
-    }
-    int numTuples = randInt % 200000;
+    final int maxValue = 200000;
+    int numTuples = (int) (Math.random() * maxValue);
 
     TupleBatchBuffer testBase = generateRandomTuples(numTuples);
     // group by name, aggregate on id
@@ -399,11 +376,8 @@ public class AggregateTest {
 
   @Test
   public void testSingleGroupMin() throws DbException {
-    int randInt = new Random().nextInt();
-    if (randInt < 0) {
-      randInt = -randInt;
-    }
-    int numTuples = randInt % 200000;
+    final int maxValue = 200000;
+    int numTuples = (int) (Math.random() * maxValue);
 
     TupleBatchBuffer testBase = generateRandomTuples(numTuples);
     // group by name, aggregate on id
@@ -434,11 +408,8 @@ public class AggregateTest {
 
   @Test
   public void testSingleGroupMax() throws DbException {
-    int randInt = new Random().nextInt();
-    if (randInt < 0) {
-      randInt = -randInt;
-    }
-    int numTuples = randInt % 200000;
+    final int maxValue = 200000;
+    int numTuples = (int) (Math.random() * maxValue);
 
     TupleBatchBuffer testBase = generateRandomTuples(numTuples);
     // group by name, aggregate on id
