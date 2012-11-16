@@ -27,7 +27,7 @@ public final class Main {
   public static final int MASTER_ID = 0;
   public static int[] WORKER_ID;
   private static final int numIteration = 2;
-  private static final int numPartition = 2;
+  private static final int numPartition = 1;
 
   private static Type[] table1Types = new Type[] { Type.LONG_TYPE, Type.LONG_TYPE };
   private static String[] table1ColumnNames = new String[] { "follower", "followee" };
