@@ -62,28 +62,8 @@ public class ExchangeTupleBatch implements _TupleBatch {
   }
 
   @Override
-  public boolean getBoolean(final int column, final int row) {
-    return dataHolder.getBoolean(column, row);
-  }
-
-  @Override
-  public double getDouble(final int column, final int row) {
-    return dataHolder.getDouble(column, row);
-  }
-
-  @Override
-  public float getFloat(final int column, final int row) {
-    return dataHolder.getFloat(column, row);
-  }
-
-  @Override
-  public int getInt(final int column, final int row) {
-    return dataHolder.getInt(column, row);
-  }
-
-  @Override
-  public long getLong(final int column, final int row) {
-    return dataHolder.getLong(column, row);
+  public final Object getObject(final int column, final int row) {
+    return dataHolder.getObject(column, row);
   }
 
   /**
@@ -95,11 +75,6 @@ public class ExchangeTupleBatch implements _TupleBatch {
 
   public TupleBatch getRealData() {
     return dataHolder;
-  }
-
-  @Override
-  public String getString(final int column, final int row) {
-    return dataHolder.getString(column, row);
   }
 
   /**

@@ -51,7 +51,7 @@ public class AggregateTest {
     agg.open();
     _TupleBatch tb = null;
     while ((tb = agg.next()) != null) {
-      assertEquals(numTuples, tb.getInt(0, 0));
+      assertEquals(numTuples, ((Integer) tb.getObject(0, 0)).intValue());
     }
   }
 

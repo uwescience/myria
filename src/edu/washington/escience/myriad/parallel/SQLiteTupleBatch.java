@@ -72,32 +72,7 @@ public class SQLiteTupleBatch implements _TupleBatch {
   }
 
   @Override
-  public synchronized boolean getBoolean(final int column, final int row) {
-    return false;
-  }
-
-  @Override
-  public synchronized double getDouble(final int column, final int row) {
-    return 0d;
-  }
-
-  @Override
-  public synchronized float getFloat(final int column, final int row) {
-    return 0f;
-  }
-
-  @Override
-  public synchronized int getInt(final int column, final int row) {
-    return 0;
-  }
-
-  @Override
-  public synchronized long getLong(final int column, final int row) {
-    return 0;
-  }
-
-  @Override
-  public synchronized String getString(final int column, final int row) {
+  public final Object getObject(final int column, final int row) {
     return null;
   }
 
