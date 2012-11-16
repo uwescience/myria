@@ -62,9 +62,55 @@ public final class CatalogMaker {
    * Creates a Catalog for a 2-node parallel system on the local machine and the corresponding WorkerCatalogs.
    * 
    * @param directoryName the directory where all the files should be stored.
+   * @throws IOException if the catalog file already exists.
    */
-  public static void makeTwoNodeLocalParallelCatalog(final String directoryName) {
-    final String description = "twoNodeLocalParallel";
+  public static void makeTwoNodeLocalParallelCatalog(final String directoryName) throws IOException {
+    makeNNodeLocalParallelCatalog(directoryName, 2);
+  }
+
+  /**
+   * Converts a small number to its English spelling, and all other numbers to Strings followed by an underscore.
+   * 
+   * @param n the number.
+   * @return its English spelling if 1 <= n <= 10. All other numbers are returned as Strings followed by an underscore.
+   */
+  private static String numberToEnglish(final int n) {
+    switch (n) {
+      case 1:
+        return "one";
+      case 2:
+        return "two";
+      case 3:
+        return "three";
+      case 4:
+        return "four";
+      case 5:
+        return "five";
+      case 6:
+        return "six";
+      case 7:
+        return "seven";
+      case 8:
+        return "eight";
+      case 9:
+        return "nine";
+      case 10:
+        return "ten";
+      default:
+        return n + "_";
+    }
+  }
+
+  /**
+   * Creates a Catalog for an N-node parallel system on the local machine and the corresponding WorkerCatalogs.
+   * 
+   * @param directoryName the directory where all the files should be stored.
+   * @param n the number of nodes.
+   * @throws IOException if the catalog file already exists.
+   */
+  public static void makeNNodeLocalParallelCatalog(final String directoryName, final int n) throws IOException {
+    final String description = numberToEnglish(n) + "NodeLocalParallel";
+    final int baseWorkerPort = 9001;
     String baseDirectoryName;
     if (directoryName == null) {
       baseDirectoryName = description;
@@ -77,19 +123,16 @@ public final class CatalogMaker {
     /* The server configuration. */
     try {
       Catalog c;
-      try {
-        String catalogFileName = FilenameUtils.concat(baseDirectoryName, "master.catalog");
-        File catalogDir = new File(baseDirectoryName);
-        while (!catalogDir.exists()) {
-          catalogDir.mkdirs();
-        }
-        c = newCatalog(catalogFileName, description);
-      } catch (IOException e) {
-        throw new RuntimeException("There is already a Catalog by that name", e);
+      String catalogFileName = FilenameUtils.concat(baseDirectoryName, "master.catalog");
+      File catalogDir = new File(baseDirectoryName);
+      while (!catalogDir.exists()) {
+        catalogDir.mkdirs();
       }
+      c = newCatalog(catalogFileName, description);
       c.addMaster("localhost:8001");
-      c.addWorker("localhost:9001");
-      c.addWorker("localhost:9002");
+      for (int i = 0; i < n; ++i) {
+        c.addWorker("localhost:" + (baseWorkerPort + i));
+      }
       masters = c.getMasters();
       workers = c.getWorkers();
       c.close();
@@ -97,7 +140,7 @@ public final class CatalogMaker {
       throw new RuntimeException(e);
     }
 
-    /* Worker1's configuration. */
+    /* Each worker's configuration. */
     for (int workerId : workers.keySet()) {
       /* Start by making the directories for the worker */
       String dirName = FilenameUtils.concat(baseDirectoryName, "worker_" + workerId);
@@ -154,7 +197,16 @@ public final class CatalogMaker {
    */
   public static void main(final String[] args) {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
-    makeTwoNodeLocalParallelCatalog(null);
+    try {
+      makeTwoNodeLocalParallelCatalog(null);
+    } catch (IOException e) {
+      System.err.println("Error creating twoNodeLocalParallelCatalog: " + e.getMessage());
+    }
+    try {
+      makeNNodeLocalParallelCatalog(null, 5);
+    } catch (IOException e) {
+      System.err.println("Error creating fiveNodeLocalParallelCatalog: " + e.getMessage());
+    }
   }
 
 }

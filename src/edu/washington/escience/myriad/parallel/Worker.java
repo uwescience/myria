@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -32,6 +33,7 @@ import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.coordinator.catalog.WorkerCatalog;
 import edu.washington.escience.myriad.operator.BlockingDataReceiver;
 import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.operator.SQLiteInsert;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.operator.SQLiteSQLProcessor;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
@@ -149,11 +151,9 @@ public class Worker {
     @Override
     public final void run() {
       while (true) {
-        Operator query = null;
-        query = queryPlan;
-        if (query != null) {
+        final Operator root = queryPlan;
+        if (root != null) {
           System.out.println("Worker start processing query");
-          final CollectProducer root = (CollectProducer) query;
           try {
             root.open();
             while (root.next() != null) {
@@ -491,8 +491,12 @@ public class Worker {
     } else if (queryPlan instanceof SQLiteSQLProcessor) {
       final SQLiteSQLProcessor ss = ((SQLiteSQLProcessor) queryPlan);
       ss.setDataDir(dataDir.getAbsolutePath());
+    } else if (queryPlan instanceof SQLiteInsert) {
+      final SQLiteInsert insert = ((SQLiteInsert) queryPlan);
+      insert.setPathToSQLiteDb(FilenameUtils.concat(dataDir.getAbsolutePath(), "data.db"));
+      insert.setExecutorService(Executors.newSingleThreadExecutor());
     } else if (queryPlan instanceof Producer) {
-      ((Producer) queryPlan).setThisWorker(Worker.this);
+      ((Producer) queryPlan).setConnectionPool(connectionPool);
     } else if (queryPlan instanceof Consumer) {
       final Consumer c = (Consumer) queryPlan;
 

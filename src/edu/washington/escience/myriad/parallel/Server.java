@@ -105,7 +105,7 @@ import edu.washington.escience.myriad.table._TupleBatch;
  * 
  * 
  */
-public class Server {
+public final class Server {
 
   protected class MessageProcessor extends Thread {
     @Override
@@ -283,7 +283,7 @@ public class Server {
 
   final SocketInfo server;
 
-  protected final IPCConnectionPool connectionPool;
+  private final IPCConnectionPool connectionPool;
 
   protected final MessageProcessor messageProcessor;
 
@@ -330,7 +330,7 @@ public class Server {
 
       IoSession session = null;
       try {
-        session = Server.this.connectionPool.get(worker.getKey(), null, 3, null);
+        session = getConnectionPool().get(worker.getKey(), null, 3, null);
       } catch (final Throwable e) {
       }
       if (session == null) {
@@ -364,7 +364,7 @@ public class Server {
       final Integer workerID = e.getKey();
       setOfWorkers.put(workerID, workerIdx++);
       final Operator plan = e.getValue();
-      final IoSession ssss0 = connectionPool.get(workerID, null, 3, null);
+      final IoSession ssss0 = getConnectionPool().get(workerID, null, 3, null);
       // this session will be reused for the Workers to report the receive
       // of the queryplan, therefore, do not close it
       inMemBuffer = new ByteArrayOutputStream();
@@ -393,7 +393,7 @@ public class Server {
   protected void startWorkerQuery(final int queryId) {
     HashMap<Integer, Integer> workersAssigned = workersAssignedToQuery.get(queryId);
     for (final Entry<Integer, Integer> entry : workersAssigned.entrySet()) {
-      Server.this.connectionPool.get(entry.getKey(), null, 3, null).write(
+      getConnectionPool().get(entry.getKey(), null, 3, null).write(
           TransportMessage.newBuilder().setType(TransportMessageType.CONTROL).setControl(
               ControlMessage.newBuilder().setType(ControlMessage.ControlMessageType.START_QUERY).build()).build());
     }
@@ -407,7 +407,7 @@ public class Server {
   public void receiveData(final ExchangeTupleBatch data) {
 
     LinkedBlockingQueue<ExchangeTupleBatch> q = null;
-    q = Server.this.dataBuffer.get(data.getOperatorID());
+    q = dataBuffer.get(data.getOperatorID());
     if (data instanceof ExchangeTupleBatch) {
       q.offer(data);
     }
@@ -426,7 +426,7 @@ public class Server {
   /**
    * @return if the query is successfully executed.
    * */
-  public TupleBatchBuffer startServerQuery(int queryId, final CollectConsumer serverPlan) throws DbException {
+  public TupleBatchBuffer startServerQuery(final int queryId, final CollectConsumer serverPlan) throws DbException {
     BitSet workersReceived = workersReceivedQuery.get(queryId);
     HashMap<Integer, Integer> workersAssigned = workersAssignedToQuery.get(queryId);
     if (workersReceived.nextClearBit(0) >= workersAssigned.size()) {
@@ -468,7 +468,7 @@ public class Server {
       }
 
       serverPlan.close();
-      Server.this.dataBuffer.remove(serverPlan.getOperatorID());
+      dataBuffer.remove(serverPlan.getOperatorID());
       Date end = new Date();
       System.out.println("Number of results: " + cnt);
       int elapse = (int) (end.getTime() - start.getTime());
@@ -484,5 +484,53 @@ public class Server {
     } else {
       return null;
     }
+  }
+
+  /**
+   * This starts a query from the server using the query plan rooted by the given Producer.
+   * 
+   * @param queryId the id of this query. TODO currently always 0.
+   * @param serverPlan the query plan to be executed.
+   * @return true if the query is successfully executed.
+   * @throws DbException if there are errors executing the serverPlan operators.
+   */
+  public boolean startServerQuery(final int queryId, final Producer serverPlan) throws DbException {
+    BitSet workersReceived = workersReceivedQuery.get(queryId);
+    HashMap<Integer, Integer> workersAssigned = workersAssignedToQuery.get(queryId);
+    if (workersReceived.nextClearBit(0) >= workersAssigned.size()) {
+
+      Date start = new Date();
+
+      serverPlan.open();
+
+      startWorkerQuery(queryId);
+
+      while (serverPlan.next() != null) {
+        /* Do nothing. */
+      }
+
+      serverPlan.close();
+
+      Date end = new Date();
+      int elapse = (int) (end.getTime() - start.getTime());
+      int hour = elapse / 3600000;
+      elapse -= hour * 3600000;
+      int minute = elapse / 60000;
+      elapse -= minute * 60000;
+      int second = elapse / 1000;
+      elapse -= second * 1000;
+
+      System.out.println(String.format("Time elapsed: %1$dh%2$dm%3$ds.%4$03d", hour, minute, second, elapse));
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  /**
+   * @return the network Connection Pool used by the Server.
+   */
+  public IPCConnectionPool getConnectionPool() {
+    return connectionPool;
   }
 }
