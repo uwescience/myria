@@ -27,7 +27,6 @@ public class DupElim extends Operator {
       final Type type = tb.inputSchema().getFieldType(colIndx);
       final int rowIndx1 = index;
       final int rowIndx2 = another.index;
-      // System.out.println(rowIndx1 + " " + rowIndx2 + " " + colIndx + " " + type);
       if (type.equals(Type.INT_TYPE)) {
         return tb.getInt(colIndx, rowIndx1) == another.tb.getInt(colIndx, rowIndx2);
       }
@@ -132,7 +131,7 @@ public class DupElim extends Operator {
           break;
         }
       }
-      System.out.println(i + " " + unique);
+      // System.out.println(i + " " + unique);
       if (unique) {
         tupleList.add(cntTuple);
       } else {

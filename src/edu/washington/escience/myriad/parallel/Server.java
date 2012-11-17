@@ -464,7 +464,7 @@ public class Server {
         outBufferForTesting.putAll(tup);
         out.println(new ImmutableInMemoryTupleBatch(serverPlan.getSchema(), tup.outputRawData(), tup.numOutputTuples())
             .toString());
-        cnt++;
+        cnt += tup.numOutputTuples();
       }
 
       serverPlan.close();
