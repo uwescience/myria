@@ -124,10 +124,10 @@ public class LocalJoin extends Operator implements Externalizable {
     int num1 = tuple1.tb.inputSchema().numFields();
     int num2 = tuple2.tb.inputSchema().numFields();
     for (int i = 0; i < num1; ++i) {
-      ans.put(i, tuple1.tb.getLong(i, tuple1.index));
+      ans.put(i, tuple1.tb.getObject(i, tuple1.index));
     }
     for (int i = 0; i < num2; ++i) {
-      ans.put(i + num1, tuple2.tb.getLong(i, tuple2.index));
+      ans.put(i + num1, tuple2.tb.getObject(i, tuple2.index));
     }
   }
 
