@@ -160,13 +160,6 @@ public class TupleBatch extends TupleBatchAdaptor {
     return ret.applyFilter(column, op, operand);
   }
 
-  /**
-   * Returns the element at the specified column and row position.
-   * 
-   * @param column column in which the element is stored.
-   * @param row row in which the element is stored.
-   * @return the element at the specified position in this TupleBatch.
-   */
   @Override
   public final boolean getBoolean(final int column, final int row) {
     return ((BooleanColumn) columns.get(column)).getBoolean(row);
@@ -182,52 +175,29 @@ public class TupleBatch extends TupleBatchAdaptor {
     return columns.get(index);
   }
 
-  /**
-   * Returns the element at the specified column and row position.
-   * 
-   * @param column column in which the element is stored.
-   * @param row row in which the element is stored.
-   * @return the element at the specified position in this TupleBatch.
-   */
   @Override
   public final double getDouble(final int column, final int row) {
     return ((DoubleColumn) columns.get(column)).getDouble(row);
   }
 
-  /**
-   * Returns the element at the specified column and row position.
-   * 
-   * @param column column in which the element is stored.
-   * @param row row in which the element is stored.
-   * @return the element at the specified position in this TupleBatch.
-   */
   @Override
   public final float getFloat(final int column, final int row) {
     return ((FloatColumn) columns.get(column)).getFloat(row);
   }
 
-  /**
-   * Returns the element at the specified column and row position.
-   * 
-   * @param column column in which the element is stored.
-   * @param row row in which the element is stored.
-   * @return the element at the specified position in this TupleBatch.
-   */
   @Override
   public final int getInt(final int column, final int row) {
     return ((IntColumn) columns.get(column)).getInt(row);
   }
 
-  /**
-   * Returns the element at the specified column and row position.
-   * 
-   * @param column column in which the element is stored.
-   * @param row row in which the element is stored.
-   * @return the element at the specified position in this TupleBatch.
-   */
   @Override
   public final long getLong(final int column, final int row) {
     return ((LongColumn) columns.get(column)).getLong(row);
+  }
+
+  @Override
+  public final Object getObject(final int column, final int row) {
+    return columns.get(column).get(row);
   }
 
   /**

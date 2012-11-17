@@ -104,6 +104,11 @@ public class JdbcTupleBatch implements _TupleBatch {
   }
 
   @Override
+  public final Object getObject(final int column, final int row) {
+    return null;
+  }
+
+  @Override
   public synchronized String getString(final int column, final int row) {
     // return ((StringColumn) inputColumns.get(column)).getString(row);
     return null;

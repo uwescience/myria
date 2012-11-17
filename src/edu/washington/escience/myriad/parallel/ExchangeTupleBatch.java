@@ -86,6 +86,11 @@ public class ExchangeTupleBatch implements _TupleBatch {
     return dataHolder.getLong(column, row);
   }
 
+  @Override
+  public final Object getObject(final int column, final int row) {
+    return dataHolder.getObject(column, row);
+  }
+
   /**
    * Get the ParallelOperatorID, to which this message is targeted
    */
