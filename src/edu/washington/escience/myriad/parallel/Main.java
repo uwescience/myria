@@ -24,8 +24,8 @@ import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
  */
 public final class Main {
 
-  public static final int MASTER_ID = 0;
-  public static int[] WORKER_ID;
+  private static final int MASTER_ID = 0;
+  private static int[] WORKER_ID;
   private static final int numIteration = 2;
   private static final int numPartition = 1;
 

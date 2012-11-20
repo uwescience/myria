@@ -12,6 +12,7 @@ import edu.washington.escience.myriad.table._TupleBatch;
  */
 public class IntegerAggregator implements Aggregator {
 
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   private final int afield;
@@ -21,14 +22,15 @@ public class IntegerAggregator implements Aggregator {
 
   private final Schema resultSchema;
 
-  public static int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT | Aggregator.AGG_OP_SUM | Aggregator.AGG_OP_MAX
+  public static final int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT | Aggregator.AGG_OP_SUM | Aggregator.AGG_OP_MAX
       | Aggregator.AGG_OP_MIN | Aggregator.AGG_OP_AVG;
 
   private IntegerAggregator(final int afield, final int aggOps, final Schema resultSchema) {
     this.resultSchema = resultSchema;
     this.afield = afield;
     this.aggOps = aggOps;
-    sum = count = 0;
+    sum = 0;
+    count = 0;
     min = Integer.MAX_VALUE;
     max = Integer.MIN_VALUE;
   }
@@ -84,11 +86,6 @@ public class IntegerAggregator implements Aggregator {
     return AVAILABLE_AGG;
   }
 
-  /**
-   * Merge a new tuple into the aggregate, grouping as indicated in the constructor
-   * 
-   * @param tup the Tuple containing an aggregate field and a group-by field
-   */
   @Override
   public final void add(final _TupleBatch tup) {
 
@@ -108,10 +105,6 @@ public class IntegerAggregator implements Aggregator {
 
   }
 
-  /**
-   * Output count, sum, avg, min, max
-   * 
-   * */
   @Override
   public final void getResult(final TupleBatchBuffer buffer, final int fromIndex) {
     int idx = fromIndex;

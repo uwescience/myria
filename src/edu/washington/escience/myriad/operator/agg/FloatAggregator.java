@@ -12,6 +12,7 @@ import edu.washington.escience.myriad.table._TupleBatch;
  */
 public final class FloatAggregator implements Aggregator {
 
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   private final int afield;
@@ -33,7 +34,8 @@ public final class FloatAggregator implements Aggregator {
     this.resultSchema = resultSchema;
     this.afield = afield;
     this.aggOps = aggOps;
-    sum = count = 0;
+    sum = 0;
+    count = 0;
     min = Float.MAX_VALUE;
     max = Float.MIN_VALUE;
   }
@@ -84,11 +86,6 @@ public final class FloatAggregator implements Aggregator {
     resultSchema = new Schema(types, names);
   }
 
-  /**
-   * Merge a new tuple into the aggregate, grouping as indicated in the constructor
-   * 
-   * @param tup the Tuple containing an aggregate field and a group-by field
-   */
   @Override
   public void add(final _TupleBatch tup) {
 
@@ -108,10 +105,6 @@ public final class FloatAggregator implements Aggregator {
 
   }
 
-  /**
-   * Output count, sum, avg, min, max
-   * 
-   * */
   @Override
   public void getResult(final TupleBatchBuffer buffer, final int fromIndex) {
     int idx = fromIndex;

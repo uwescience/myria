@@ -10,8 +10,9 @@ import edu.washington.escience.myriad.column.Column;
  * 
  * The partition of a tuple is decided by the hash code of a preset field of the tuple.
  */
-public class SingleFieldHashPartitionFunction extends PartitionFunction<String, Integer> {
+public final class SingleFieldHashPartitionFunction extends PartitionFunction<String, Integer> {
 
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   public static final String FIELD_INDEX = "field_index";
@@ -38,9 +39,6 @@ public class SingleFieldHashPartitionFunction extends PartitionFunction<String, 
     return result;
   }
 
-  /**
-   * This partition function only needs the index of the partition field in deciding the tuple partitions
-   */
   @Override
   public void setAttribute(final String attribute, final Integer value) {
     super.setAttribute(attribute, value);

@@ -7,9 +7,7 @@ public class SQLiteSQLProcessor extends SQLiteQueryScan {
 
   private Operator[] children;
 
-  /**
-   * 
-   */
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   public SQLiteSQLProcessor(final String filename, final String baseSQL, final Schema schema, final Operator[] children) {

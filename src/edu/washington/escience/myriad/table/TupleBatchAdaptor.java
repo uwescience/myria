@@ -16,9 +16,7 @@ import edu.washington.escience.myriad.parallel.PartitionFunction;
 
 public abstract class TupleBatchAdaptor implements _TupleBatch {
 
-  /**
-   * 
-   */
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   @Override
@@ -37,8 +35,8 @@ public abstract class TupleBatchAdaptor implements _TupleBatch {
   }
 
   @Override
-  public Set<Pair<Object, TupleBatchBuffer>> groupby(int groupByColumn,
-      Map<Object, Pair<Object, TupleBatchBuffer>> buffers) {
+  public Set<Pair<Object, TupleBatchBuffer>> groupby(final int groupByColumn,
+      final Map<Object, Pair<Object, TupleBatchBuffer>> buffers) {
     Set<Pair<Object, TupleBatchBuffer>> ready = null;
     if (this instanceof TupleBatch) {
       final TupleBatch tupleBatch = (TupleBatch) this;
@@ -159,9 +157,9 @@ public abstract class TupleBatchAdaptor implements _TupleBatch {
     final int[] partitions = pf.partition(outputData, s);
 
     for (int i = 0; i < partitions.length; i++) {
-      final int p_of_tuple = partitions[i];
+      final int pOfTuple = partitions[i];
       for (int j = 0; j < numColumns; j++) {
-        buffers[p_of_tuple].put(j, outputData.get(j).get(i));
+        buffers[pOfTuple].put(j, outputData.get(j).get(i));
       }
     }
     return buffers;

@@ -9,7 +9,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 /**
  * A simple wrapper that wraps the socket information of both workers and the server (coordinator).
  */
-public class SocketInfo implements Serializable {
+public final class SocketInfo implements Serializable {
   /** Class-specific magic number used to generate the hash code. */
   private static final int MAGIC_HASHCODE1 = 365;
   /** Class-specific magic number used to generate the hash code. */
@@ -17,6 +17,7 @@ public class SocketInfo implements Serializable {
   /** The hash code of this immutable SocketInfo. */
   private Integer myHashCode = null;
 
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   private final String host;
   private final int port;
@@ -71,7 +72,7 @@ public class SocketInfo implements Serializable {
   }
 
   @Override
-  public final boolean equals(final Object other) {
+  public boolean equals(final Object other) {
     if (!(other instanceof SocketInfo)) {
       return false;
     }
@@ -80,7 +81,7 @@ public class SocketInfo implements Serializable {
   }
 
   @Override
-  public final int hashCode() {
+  public int hashCode() {
     /* If cached, use the cached version. */
     if (myHashCode != null) {
       return myHashCode;

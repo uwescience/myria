@@ -12,9 +12,7 @@ import edu.washington.escience.myriad.table._TupleBatch;
  */
 public final class StringAggregator implements Aggregator {
 
-  /**
-   * java Serialization id.
-   * */
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   private final int afield;
@@ -26,7 +24,7 @@ public final class StringAggregator implements Aggregator {
   private final boolean computeMax;
   private final Schema resultSchema;
 
-  public static int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT | Aggregator.AGG_OP_MAX | Aggregator.AGG_OP_MIN;
+  public static final int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT | Aggregator.AGG_OP_MAX | Aggregator.AGG_OP_MIN;
 
   @Override
   public int availableAgg() {

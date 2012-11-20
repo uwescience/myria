@@ -11,16 +11,14 @@ import edu.washington.escience.myriad.table._TupleBatch;
  */
 public final class BooleanAggregator implements Aggregator {
 
-  /**
-   * java Serialization id.
-   * */
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   private int count;
   private final Schema resultSchema;
   private final int aggOps;
 
-  public static int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT;
+  public static final int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT;
 
   @Override
   public int availableAgg() {

@@ -14,6 +14,7 @@ import edu.washington.escience.myriad.column.Column;
  */
 public abstract class PartitionFunction<K, V> implements Serializable {
 
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   HashMap<K, V> attributes = new HashMap<K, V>();

@@ -15,14 +15,14 @@ import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.table._TupleBatch;
 
-public class LocalJoin extends Operator implements Externalizable {
+public final class LocalJoin extends Operator implements Externalizable {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   private class IndexedTuple {
-    int index;
-    _TupleBatch tb;
+    private final int index;
+    private final _TupleBatch tb;
 
     public IndexedTuple(final _TupleBatch tb, final int index) {
       this.tb = tb;
@@ -68,7 +68,7 @@ public class LocalJoin extends Operator implements Externalizable {
       return true;
     }
 
-    public boolean joinEquals(final Object o, int[] compareIndx1, int[] compareIndx2) {
+    public boolean joinEquals(final Object o, final int[] compareIndx1, final int[] compareIndx2) {
       if (!(o instanceof IndexedTuple)) {
         return false;
       }
@@ -103,8 +103,8 @@ public class LocalJoin extends Operator implements Externalizable {
   private TupleBatchBuffer ans;
 
   /**
-   * For java serialization
-   * */
+   * For Java serialization.
+   */
   public LocalJoin() {
   }
 
@@ -120,7 +120,7 @@ public class LocalJoin extends Operator implements Externalizable {
     ans = new TupleBatchBuffer(outputSchema);
   }
 
-  protected void addToAns(IndexedTuple tuple1, IndexedTuple tuple2) {
+  protected void addToAns(final IndexedTuple tuple1, final IndexedTuple tuple2) {
     int num1 = tuple1.tb.inputSchema().numFields();
     int num2 = tuple2.tb.inputSchema().numFields();
     for (int i = 0; i < num1; ++i) {
@@ -131,7 +131,7 @@ public class LocalJoin extends Operator implements Externalizable {
     }
   }
 
-  protected void processChild1TB(_TupleBatch tbFromChild1) {
+  protected void processChild1TB(final _TupleBatch tbFromChild1) {
     for (int i = 0; i < tbFromChild1.numOutputTuples(); ++i) { // outputTuples?
       final IndexedTuple tuple1 = new IndexedTuple(tbFromChild1, i);
       final int cntHashCode = tuple1.hashCode4Keys(compareIndx1);
@@ -154,7 +154,7 @@ public class LocalJoin extends Operator implements Externalizable {
     }
   }
 
-  protected void processChild2TB(_TupleBatch tbFromChild2) {
+  protected void processChild2TB(final _TupleBatch tbFromChild2) {
     for (int i = 0; i < tbFromChild2.numOutputTuples(); ++i) { // outputTuples?
       final IndexedTuple tuple2 = new IndexedTuple(tbFromChild2, i);
       final int cntHashCode = tuple2.hashCode4Keys(compareIndx2);
@@ -226,7 +226,7 @@ public class LocalJoin extends Operator implements Externalizable {
   }
 
   @Override
-  public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+  public void readExternal(final ObjectInput in) throws IOException, ClassNotFoundException {
     child1 = (Operator) in.readObject();
     child2 = (Operator) in.readObject();
     compareIndx1 = (int[]) in.readObject();
@@ -238,7 +238,7 @@ public class LocalJoin extends Operator implements Externalizable {
   }
 
   @Override
-  public void writeExternal(ObjectOutput out) throws IOException {
+  public void writeExternal(final ObjectOutput out) throws IOException {
     out.writeObject(child1);
     out.writeObject(child2);
     out.writeObject(compareIndx1);

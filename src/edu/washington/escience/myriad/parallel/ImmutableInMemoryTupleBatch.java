@@ -30,9 +30,9 @@ import edu.washington.escience.myriad.table._TupleBatch;
 @ThreadSafe
 public final class ImmutableInMemoryTupleBatch implements _TupleBatch {
 
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
-  public static final int BATCH_SIZE = 100;
   /** Class-specific magic number used to generate the hash code. */
   private static final int MAGIC_HASHCODE1 = 243;
   /** Class-specific magic number used to generate the hash code. */
@@ -149,7 +149,7 @@ public final class ImmutableInMemoryTupleBatch implements _TupleBatch {
   }
 
   @Override
-  public final Object getObject(final int column, final int row) {
+  public Object getObject(final int column, final int row) {
     return inputColumns.get(column).get(row);
   }
 
@@ -159,8 +159,8 @@ public final class ImmutableInMemoryTupleBatch implements _TupleBatch {
   }
 
   @Override
-  public Set<Pair<Object, TupleBatchBuffer>> groupby(int groupByColumn,
-      Map<Object, Pair<Object, TupleBatchBuffer>> buffers) {
+  public Set<Pair<Object, TupleBatchBuffer>> groupby(final int groupByColumn,
+      final Map<Object, Pair<Object, TupleBatchBuffer>> buffers) {
     Set<Pair<Object, TupleBatchBuffer>> ready = null;
     List<Column> columns = outputRawData();
     Column gC = columns.get(groupByColumn);

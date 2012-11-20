@@ -105,9 +105,9 @@ import edu.washington.escience.myriad.table._TupleBatch;
  * 
  * 
  */
-public class Server {
+public final class Server {
 
-  protected class MessageProcessor extends Thread {
+  protected final class MessageProcessor extends Thread {
     @Override
     public void run() {
 
@@ -158,7 +158,7 @@ public class Server {
     }
   }
 
-  protected class ServerHandler extends IoHandlerAdapter {
+  protected final class ServerHandler extends IoHandlerAdapter {
 
     // required in ParallelTest for instrument
     final Thread mainThread;
@@ -266,11 +266,11 @@ public class Server {
         + masterSocketInfo.getPort());
   }
 
-  final ConcurrentHashMap<Integer, SocketInfo> workers;
-  final NioSocketAcceptor acceptor;
-  final ServerHandler minaHandler;
-  final ConcurrentHashMap<Integer, HashMap<Integer, Integer>> workersAssignedToQuery;
-  final ConcurrentHashMap<Integer, BitSet> workersReceivedQuery;
+  private final ConcurrentHashMap<Integer, SocketInfo> workers;
+  private final NioSocketAcceptor acceptor;
+  private final ServerHandler minaHandler;
+  private final ConcurrentHashMap<Integer, HashMap<Integer, Integer>> workersAssignedToQuery;
+  private final ConcurrentHashMap<Integer, BitSet> workersReceivedQuery;
 
   /**
    * The I/O buffer, all the ExchangeMessages sent to the server are buffered here.
@@ -281,7 +281,7 @@ public class Server {
 
   protected final ConcurrentHashMap<ExchangePairID, Schema> exchangeSchema;
 
-  final SocketInfo server;
+  private final SocketInfo server;
 
   protected final IPCConnectionPool connectionPool;
 

@@ -15,15 +15,13 @@ import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 import edu.washington.escience.myriad.table._TupleBatch;
 
-public class ExchangeTupleBatch implements _TupleBatch {
+public final class ExchangeTupleBatch implements _TupleBatch {
 
   private final ExchangePairID operatorID;
   private final int fromWorkerID;
   private final TupleBatch dataHolder;
 
-  /**
-   * 
-   */
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   public ExchangeTupleBatch(final ExchangePairID oID, final int workerID, final List<Column> columns,
@@ -87,7 +85,7 @@ public class ExchangeTupleBatch implements _TupleBatch {
   }
 
   @Override
-  public final Object getObject(final int column, final int row) {
+  public Object getObject(final int column, final int row) {
     return dataHolder.getObject(column, row);
   }
 
@@ -115,8 +113,8 @@ public class ExchangeTupleBatch implements _TupleBatch {
   }
 
   @Override
-  public Set<Pair<Object, TupleBatchBuffer>> groupby(int groupByColumn,
-      Map<Object, Pair<Object, TupleBatchBuffer>> buffers) {
+  public Set<Pair<Object, TupleBatchBuffer>> groupby(final int groupByColumn,
+      final Map<Object, Pair<Object, TupleBatchBuffer>> buffers) {
     return dataHolder.groupby(groupByColumn, buffers);
   }
 

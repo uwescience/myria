@@ -20,6 +20,7 @@ import edu.washington.escience.myriad.table._TupleBatch;
  */
 public final class CollectConsumer extends Consumer {
 
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   private final Schema schema;
@@ -98,7 +99,7 @@ public final class CollectConsumer extends Consumer {
     }
   }
 
-  private final _TupleBatch getTuples(boolean blocking) throws InterruptedException {
+  private _TupleBatch getTuples(final boolean blocking) throws InterruptedException {
 
     int timeToWait = -1;
     if (!blocking) {
