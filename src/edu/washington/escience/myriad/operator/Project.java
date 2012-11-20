@@ -18,14 +18,14 @@ public class Project extends Operator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   private Operator child;
-  private final Schema td;
+  private final Schema schema;
   private final Integer[] outFieldIds; // why not using int[]?
 
   /**
-   * Constructor accepts a child operator to read tuples to apply projection to and a list of fields in output tuple
+   * Constructor accepts a child operator to read tuples to apply projection to and a list of fields in output tuple.
    * 
-   * @param fieldList The ids of the fields child's tupleDesc to project out
-   * @param typesList the types of the fields in the final projection
+   * @param fieldList The indexes of the fields to project out.
+   * @param typesList the types of the fields in the final projection.
    * @param child The child operator
    * @throws DbException
    */
@@ -38,12 +38,12 @@ public class Project extends Operator {
     this.child = child;
     outFieldIds = fieldList.toArray(new Integer[] {});
     final String[] fieldAr = new String[fieldList.size()];
-    final Schema childtd = child.getSchema();
+    final Schema childSchema = child.getSchema();
 
     for (int i = 0; i < fieldAr.length; i++) {
-      fieldAr[i] = childtd.getFieldName(fieldList.get(i));
+      fieldAr[i] = childSchema.getFieldName(fieldList.get(i));
     }
-    td = new Schema(types, fieldAr);
+    schema = new Schema(types, fieldAr);
   }
 
   public Project(final Integer[] fieldList, final Operator child) throws DbException {
@@ -51,13 +51,13 @@ public class Project extends Operator {
     outFieldIds = fieldList;
     final String[] fieldName = new String[fieldList.length];
     final Type[] fieldType = new Type[fieldList.length];
-    final Schema childtd = child.getSchema();
+    final Schema childSchema = child.getSchema();
 
     for (int i = 0; i < fieldName.length; i++) {
-      fieldName[i] = childtd.getFieldName(fieldList[i]);
-      fieldType[i] = childtd.getFieldType(fieldList[i]);
+      fieldName[i] = childSchema.getFieldName(fieldList[i]);
+      fieldType[i] = childSchema.getFieldType(fieldList[i]);
     }
-    td = new Schema(fieldType, fieldName);
+    schema = new Schema(fieldType, fieldName);
   }
 
   @Override
@@ -86,7 +86,7 @@ public class Project extends Operator {
 
   @Override
   public Schema getSchema() {
-    return td;
+    return schema;
   }
 
   @Override

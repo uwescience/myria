@@ -5,6 +5,7 @@ import java.util.concurrent.TimeUnit;
 
 public abstract class Consumer extends Exchange {
 
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /**
    * The buffer for receiving ExchangeMessages. This buffer should be assigned by the Worker. Basically, buffer =
@@ -17,7 +18,7 @@ public abstract class Consumer extends Exchange {
   }
 
   public void setInputBuffer(final LinkedBlockingQueue<ExchangeTupleBatch> buffer) {
-    this.inputBuffer = buffer;
+    inputBuffer = buffer;
   }
 
   /**

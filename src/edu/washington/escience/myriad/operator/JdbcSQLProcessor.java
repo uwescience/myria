@@ -8,9 +8,7 @@ public class JdbcSQLProcessor extends JdbcQueryScan {
 
   private Operator child;
 
-  /**
-   * 
-   */
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   public JdbcSQLProcessor(final String driverClass, final String connectionString, final String baseSQL,

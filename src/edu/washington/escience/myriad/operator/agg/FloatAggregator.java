@@ -8,10 +8,11 @@ import edu.washington.escience.myriad.parallel.ParallelUtility;
 import edu.washington.escience.myriad.table._TupleBatch;
 
 /**
- * Knows how to compute some aggregate over a set of IntFields.
+ * Knows how to compute some aggregates over a FloatColumn.
  */
-public class FloatAggregator implements Aggregator {
+public final class FloatAggregator implements Aggregator {
 
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   private final int afield;
@@ -29,16 +30,17 @@ public class FloatAggregator implements Aggregator {
     return AVAILABLE_AGG;
   }
 
-  private FloatAggregator(int afield, int aggOps, Schema resultSchema) {
+  private FloatAggregator(final int afield, final int aggOps, final Schema resultSchema) {
     this.resultSchema = resultSchema;
     this.afield = afield;
     this.aggOps = aggOps;
-    sum = count = 0;
+    sum = 0;
+    count = 0;
     min = Float.MAX_VALUE;
     max = Float.MIN_VALUE;
   }
 
-  public FloatAggregator(int afield, String aFieldName, int aggOps) {
+  public FloatAggregator(final int afield, final String aFieldName, final int aggOps) {
     if (aggOps <= 0) {
       throw new IllegalArgumentException("No aggregation operations are selected");
     }
@@ -84,13 +86,8 @@ public class FloatAggregator implements Aggregator {
     resultSchema = new Schema(types, names);
   }
 
-  /**
-   * Merge a new tuple into the aggregate, grouping as indicated in the constructor
-   * 
-   * @param tup the Tuple containing an aggregate field and a group-by field
-   */
   @Override
-  public void add(_TupleBatch tup) {
+  public void add(final _TupleBatch tup) {
 
     count += tup.numOutputTuples();
     FloatColumn rawData = (FloatColumn) tup.outputRawData().get(afield);
@@ -108,12 +105,8 @@ public class FloatAggregator implements Aggregator {
 
   }
 
-  /**
-   * Output count, sum, avg, min, max
-   * 
-   * */
   @Override
-  public void getResult(TupleBatchBuffer buffer, final int fromIndex) {
+  public void getResult(final TupleBatchBuffer buffer, final int fromIndex) {
     int idx = fromIndex;
     if ((aggOps & AGG_OP_COUNT) != 0) {
       buffer.put(idx, count);

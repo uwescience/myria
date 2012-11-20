@@ -2,6 +2,7 @@ package edu.washington.escience.myriad.parallel;
 
 public abstract class Producer extends Exchange {
 
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   /**

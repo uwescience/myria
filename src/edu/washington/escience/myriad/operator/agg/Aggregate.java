@@ -14,7 +14,7 @@ import edu.washington.escience.myriad.table._TupleBatch;
  * 
  * This class does not do group by.
  */
-public class Aggregate extends Operator {
+public final class Aggregate extends Operator {
 
   private static final long serialVersionUID = 1L;
 
@@ -34,7 +34,7 @@ public class Aggregate extends Operator {
    * @param afields The columns over which we are computing an aggregate.
    * @param aggOps The aggregation operator to use
    */
-  public Aggregate(Operator child, int[] afields, int[] aggOps) {
+  public Aggregate(final Operator child, final int[] afields, final int[] aggOps) {
     Objects.requireNonNull(afields);
     if (afields.length == 0) {
       throw new IllegalArgumentException("aggregation fields must not be empty");
@@ -127,7 +127,7 @@ public class Aggregate extends Operator {
   }
 
   @Override
-  public void setChildren(Operator[] children) {
+  public void setChildren(final Operator[] children) {
     child = children[0];
   }
 

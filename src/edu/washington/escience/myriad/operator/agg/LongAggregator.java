@@ -8,10 +8,11 @@ import edu.washington.escience.myriad.parallel.ParallelUtility;
 import edu.washington.escience.myriad.table._TupleBatch;
 
 /**
- * Knows how to compute some aggregate over a set of IntFields.
+ * Knows how to compute some aggregates over a LongColumn.
  */
-public class LongAggregator implements Aggregator {
+public final class LongAggregator implements Aggregator {
 
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   private final int afield;
@@ -21,7 +22,7 @@ public class LongAggregator implements Aggregator {
   private int count;
   private final Schema resultSchema;
 
-  public static int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT | Aggregator.AGG_OP_SUM | Aggregator.AGG_OP_MAX
+  public static final int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT | Aggregator.AGG_OP_SUM | Aggregator.AGG_OP_MAX
       | Aggregator.AGG_OP_MIN | Aggregator.AGG_OP_AVG;
 
   @Override
@@ -29,16 +30,17 @@ public class LongAggregator implements Aggregator {
     return AVAILABLE_AGG;
   }
 
-  private LongAggregator(int afield, int aggOps, Schema resultSchema) {
+  private LongAggregator(final int afield, final int aggOps, final Schema resultSchema) {
     this.resultSchema = resultSchema;
     this.afield = afield;
     this.aggOps = aggOps;
-    sum = count = 0;
+    sum = 0;
+    count = 0;
     min = Long.MAX_VALUE;
     max = Long.MIN_VALUE;
   }
 
-  public LongAggregator(int afield, String aFieldName, int aggOps) {
+  public LongAggregator(final int afield, final String aFieldName, final int aggOps) {
     if (aggOps <= 0) {
       throw new IllegalArgumentException("No aggregation operations are selected");
     }
@@ -50,7 +52,7 @@ public class LongAggregator implements Aggregator {
     this.aggOps = aggOps;
     min = Long.MAX_VALUE;
     max = Long.MIN_VALUE;
-    sum = 0l;
+    sum = 0L;
     count = 0;
     int numAggOps = ParallelUtility.numBinaryOnesInInteger(aggOps);
     Type[] types = new Type[numAggOps];
@@ -84,13 +86,8 @@ public class LongAggregator implements Aggregator {
     resultSchema = new Schema(types, names);
   }
 
-  /**
-   * Merge a new tuple into the aggregate, grouping as indicated in the constructor
-   * 
-   * @param tup the Tuple containing an aggregate field and a group-by field
-   */
   @Override
-  public void add(_TupleBatch tup) {
+  public void add(final _TupleBatch tup) {
 
     count += tup.numOutputTuples();
     LongColumn rawData = (LongColumn) tup.outputRawData().get(afield);
@@ -108,12 +105,8 @@ public class LongAggregator implements Aggregator {
 
   }
 
-  /**
-   * Output count, sum, avg, min, max
-   * 
-   * */
   @Override
-  public void getResult(TupleBatchBuffer buffer, final int fromIndex) {
+  public void getResult(final TupleBatchBuffer buffer, final int fromIndex) {
     int idx = fromIndex;
     if ((aggOps & AGG_OP_COUNT) != 0) {
       buffer.put(idx, count);

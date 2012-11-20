@@ -17,8 +17,9 @@ import edu.washington.escience.myriad.table._TupleBatch;
  * source workers' ShuffleProducer.
  * 
  */
-public class ShuffleConsumer extends Consumer {
+public final class ShuffleConsumer extends Consumer {
 
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   // Used to remember which of the source workers have sent an end of stream
@@ -84,7 +85,7 @@ public class ShuffleConsumer extends Consumer {
    * 
    * @throws InterruptedException a
    */
-  final _TupleBatch getTuples(final boolean blocking) throws InterruptedException {
+  _TupleBatch getTuples(final boolean blocking) throws InterruptedException {
     int timeToWait = -1;
     if (!blocking) {
       timeToWait = 0;

@@ -64,9 +64,9 @@ import edu.washington.escience.myriad.table._TupleBatch;
  */
 public class Worker {
 
-  protected class MessageProcessor extends Thread {
+  protected final class MessageProcessor extends Thread {
     @Override
-    public final void run() {
+    public void run() {
 
       TERMINATE_MESSAGE_PROCESSING : while (true) {
         MessageWrapper mw = null;
@@ -157,7 +157,6 @@ public class Worker {
           try {
             root.open();
             while (root.next() != null) {
-              ;
             }
             root.close();
           } catch (final DbException e1) {
@@ -275,8 +274,7 @@ public class Worker {
             (long) (Math.random() * 2000) + 1000); // subsequent
                                                    // rate
       } catch (final IllegalStateException e) {
-        /* already get canceled, ignore */
-        /* Do nothing */;
+        /* already got canceled, ignore. */
       }
     }
   }
@@ -347,9 +345,9 @@ public class Worker {
 
   }
 
-  public final File dataDir;
+  private final File dataDir;
 
-  public final File tmpDir;
+  private final File tmpDir;
 
   /**
    * The ID of this worker.

@@ -40,6 +40,10 @@ import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
  */
 public class ParallelUtility {
 
+  /** Prevent construction of utility class. */
+  private ParallelUtility() {
+  }
+
   public static int numBinaryOnesInInteger(int v) {
     int result = 0;
     while (v != 0) {
