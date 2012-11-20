@@ -33,7 +33,8 @@ public final class StringAggregator implements Aggregator {
     return AVAILABLE_AGG;
   }
 
-  private StringAggregator(int afield, int aggOps, boolean computeMin, boolean computeMax, Schema resultSchema) {
+  private StringAggregator(final int afield, final int aggOps, final boolean computeMin, final boolean computeMax,
+      final Schema resultSchema) {
     this.afield = afield;
     this.aggOps = aggOps;
     this.computeMax = computeMax;
@@ -44,7 +45,7 @@ public final class StringAggregator implements Aggregator {
     count = 0;
   }
 
-  public StringAggregator(int afield, String aFieldName, int aggOps) {
+  public StringAggregator(final int afield, final String aFieldName, final int aggOps) {
     if (aggOps <= 0) {
       throw new IllegalArgumentException("No aggregation operations are selected");
     }
@@ -85,7 +86,7 @@ public final class StringAggregator implements Aggregator {
   }
 
   @Override
-  public void add(_TupleBatch tup) {
+  public void add(final _TupleBatch tup) {
 
     count += tup.numOutputTuples();
     if (computeMin || computeMax) {
@@ -113,7 +114,7 @@ public final class StringAggregator implements Aggregator {
   }
 
   @Override
-  public void getResult(TupleBatchBuffer buffer, final int fromIndex) {
+  public void getResult(final TupleBatchBuffer buffer, final int fromIndex) {
     int idx = fromIndex;
     if ((aggOps & AGG_OP_COUNT) != 0) {
       buffer.put(idx, count);

@@ -30,7 +30,7 @@ public final class DoubleAggregator implements Aggregator {
     return AVAILABLE_AGG;
   }
 
-  private DoubleAggregator(int afield, int aggOps, Schema resultSchema) {
+  private DoubleAggregator(final int afield, final int aggOps, final Schema resultSchema) {
     this.resultSchema = resultSchema;
     this.afield = afield;
     this.aggOps = aggOps;
@@ -40,7 +40,7 @@ public final class DoubleAggregator implements Aggregator {
     sum = 0;
   }
 
-  public DoubleAggregator(int afield, String aFieldName, int aggOps) {
+  public DoubleAggregator(final int afield, final String aFieldName, final int aggOps) {
     if (aggOps <= 0) {
       throw new IllegalArgumentException("No aggregation operations are selected");
     }
@@ -93,7 +93,7 @@ public final class DoubleAggregator implements Aggregator {
    * @param tup the Tuple containing an aggregate field and a group-by field
    */
   @Override
-  public void add(_TupleBatch tup) {
+  public void add(final _TupleBatch tup) {
 
     count += tup.numOutputTuples();
     DoubleColumn rawData = (DoubleColumn) tup.outputRawData().get(afield);
@@ -116,7 +116,7 @@ public final class DoubleAggregator implements Aggregator {
    * 
    * */
   @Override
-  public void getResult(TupleBatchBuffer buffer, final int fromIndex) {
+  public void getResult(final TupleBatchBuffer buffer, final int fromIndex) {
     int idx = fromIndex;
     if ((aggOps & AGG_OP_COUNT) != 0) {
       buffer.put(idx, count);

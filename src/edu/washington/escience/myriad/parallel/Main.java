@@ -46,16 +46,16 @@ public final class Main {
     final PartitionFunction<String, Integer> pf1 = new SingleFieldHashPartitionFunction(numPartition);
     pf1.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1); // partition by 2nd column
 
-    final ShuffleProducer sp0[] = new ShuffleProducer[numIteration];
-    final ShuffleProducer sp1[] = new ShuffleProducer[numIteration];
-    final ShuffleProducer sp2[] = new ShuffleProducer[numIteration];
-    final ShuffleConsumer sc0[] = new ShuffleConsumer[numIteration];
-    final ShuffleConsumer sc1[] = new ShuffleConsumer[numIteration];
-    final ShuffleConsumer sc2[] = new ShuffleConsumer[numIteration];
-    final LocalJoin localjoin[] = new LocalJoin[numIteration];
-    final Project proj[] = new Project[numIteration];
-    final DupElim dupelim[] = new DupElim[numIteration];
-    final SQLiteQueryScan scan[] = new SQLiteQueryScan[numIteration];
+    final ShuffleProducer[] sp0 = new ShuffleProducer[numIteration];
+    final ShuffleProducer[] sp1 = new ShuffleProducer[numIteration];
+    final ShuffleProducer[] sp2 = new ShuffleProducer[numIteration];
+    final ShuffleConsumer[] sc0 = new ShuffleConsumer[numIteration];
+    final ShuffleConsumer[] sc1 = new ShuffleConsumer[numIteration];
+    final ShuffleConsumer[] sc2 = new ShuffleConsumer[numIteration];
+    final LocalJoin[] localjoin = new LocalJoin[numIteration];
+    final Project[] proj = new Project[numIteration];
+    final DupElim[] dupelim = new DupElim[numIteration];
+    final SQLiteQueryScan[] scan = new SQLiteQueryScan[numIteration];
     ExchangePairID arrayID1, arrayID2, arrayID0;
     arrayID1 = ExchangePairID.newID();
     arrayID2 = ExchangePairID.newID();

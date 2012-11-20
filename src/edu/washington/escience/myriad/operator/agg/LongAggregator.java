@@ -29,7 +29,7 @@ public final class LongAggregator implements Aggregator {
     return AVAILABLE_AGG;
   }
 
-  private LongAggregator(int afield, int aggOps, Schema resultSchema) {
+  private LongAggregator(final int afield, final int aggOps, final Schema resultSchema) {
     this.resultSchema = resultSchema;
     this.afield = afield;
     this.aggOps = aggOps;
@@ -38,7 +38,7 @@ public final class LongAggregator implements Aggregator {
     max = Long.MIN_VALUE;
   }
 
-  public LongAggregator(int afield, String aFieldName, int aggOps) {
+  public LongAggregator(final int afield, final String aFieldName, final int aggOps) {
     if (aggOps <= 0) {
       throw new IllegalArgumentException("No aggregation operations are selected");
     }
@@ -50,7 +50,7 @@ public final class LongAggregator implements Aggregator {
     this.aggOps = aggOps;
     min = Long.MAX_VALUE;
     max = Long.MIN_VALUE;
-    sum = 0l;
+    sum = 0L;
     count = 0;
     int numAggOps = ParallelUtility.numBinaryOnesInInteger(aggOps);
     Type[] types = new Type[numAggOps];
@@ -90,7 +90,7 @@ public final class LongAggregator implements Aggregator {
    * @param tup the Tuple containing an aggregate field and a group-by field
    */
   @Override
-  public void add(_TupleBatch tup) {
+  public void add(final _TupleBatch tup) {
 
     count += tup.numOutputTuples();
     LongColumn rawData = (LongColumn) tup.outputRawData().get(afield);
@@ -113,7 +113,7 @@ public final class LongAggregator implements Aggregator {
    * 
    * */
   @Override
-  public void getResult(TupleBatchBuffer buffer, final int fromIndex) {
+  public void getResult(final TupleBatchBuffer buffer, final int fromIndex) {
     int idx = fromIndex;
     if ((aggOps & AGG_OP_COUNT) != 0) {
       buffer.put(idx, count);

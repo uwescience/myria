@@ -24,7 +24,7 @@ public class IntegerAggregator implements Aggregator {
   public static int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT | Aggregator.AGG_OP_SUM | Aggregator.AGG_OP_MAX
       | Aggregator.AGG_OP_MIN | Aggregator.AGG_OP_AVG;
 
-  private IntegerAggregator(int afield, int aggOps, Schema resultSchema) {
+  private IntegerAggregator(final int afield, final int aggOps, final Schema resultSchema) {
     this.resultSchema = resultSchema;
     this.afield = afield;
     this.aggOps = aggOps;
@@ -33,7 +33,7 @@ public class IntegerAggregator implements Aggregator {
     max = Integer.MIN_VALUE;
   }
 
-  public IntegerAggregator(int afield, String aFieldName, int aggOps) {
+  public IntegerAggregator(final int afield, final String aFieldName, final int aggOps) {
     if (aggOps <= 0) {
       throw new IllegalArgumentException("No aggregation operations are selected");
     }
@@ -80,7 +80,7 @@ public class IntegerAggregator implements Aggregator {
   }
 
   @Override
-  public int availableAgg() {
+  public final int availableAgg() {
     return AVAILABLE_AGG;
   }
 
@@ -90,7 +90,7 @@ public class IntegerAggregator implements Aggregator {
    * @param tup the Tuple containing an aggregate field and a group-by field
    */
   @Override
-  public void add(_TupleBatch tup) {
+  public final void add(final _TupleBatch tup) {
 
     count += tup.numOutputTuples();
     IntColumn rawData = (IntColumn) tup.outputRawData().get(afield);
@@ -143,7 +143,7 @@ public class IntegerAggregator implements Aggregator {
   }
 
   @Override
-  public Aggregator freshCopyYourself() {
+  public final Aggregator freshCopyYourself() {
     return new IntegerAggregator(afield, aggOps, resultSchema);
   }
 }

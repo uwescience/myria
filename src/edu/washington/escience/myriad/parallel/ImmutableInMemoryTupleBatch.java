@@ -194,7 +194,6 @@ public final class ImmutableInMemoryTupleBatch implements _TupleBatch {
 
   @Override
   public int hashCode(final int rowIndx) {
-    // return 0;
     final HashCodeBuilder hb = new HashCodeBuilder(MAGIC_HASHCODE1, MAGIC_HASHCODE2);
     for (int i = 0; i < inputSchema.numFields(); ++i) {
       hb.append(inputColumns.get(i).get(rowIndx));
