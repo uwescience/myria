@@ -200,8 +200,7 @@ class Compile(webapp2.RequestHandler):
     targetalgebra = globals()[target] # assume the argument is in local scope
     def opt(plan):
       optimized = optimize(expr, target=targetalgebra, source=LogicalAlgebra)
-      optimized = common_subexpression_elimination(optimized)
-      compiled = compile(optimized)
+      #optimized = common_subexpression_elimination(optimized)
       return optimized
 
     optimized = [opt(expr) for expr in expressions]
