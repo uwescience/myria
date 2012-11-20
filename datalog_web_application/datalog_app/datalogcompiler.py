@@ -3,41 +3,9 @@ from raco.scheme import Scheme
 from raco.catalog import ASCIIFile
 from raco.language import PythonAlgebra, PseudoCodeAlgebra, CCAlgebra, ProtobufAlgebra
 from raco.algebra import LogicalAlgebra
-from raco.compile import compile, optimize
+from raco.compile import compile, optimize, common_subexpression_elimination
 
 import webapp2
-
-drawing = """
-<script type="text/javascript">
-var sigRoot = document.getElementById('sig');
-var sigInst = sigma.init(sigRoot);
-sigInst.addNode('hello',{
-  label: 'Hello',
-  color: '#ff0000'
-}).addNode('world',{
-  label: 'World !',
-  color: '#00ff00'
-}).addEdge('hello_world','hello','world').draw();
-</script>
-"""
-
-"""
-var request = $.get('/path/to/resource.ext');
-
-request.success(function(result) {
-  console.log(result);
-});
-
-request.error(function(jqXHR, textStatus, errorThrown) {
-  if (textStatus == 'timeout')
-    console.log('The server is not responding');
-
-  if (textStatus == 'error')
-    console.log(errorThrown');
-
-  // Etc
-});
-"""
 
 page = """
 <html>
@@ -108,8 +76,8 @@ getplan();
   $(".error").css("font-color", "red");
   $(".label").css("font-size", "small");
   $(".label").css("font-style", "italic");
-  $(".display").css("width", 600);
-  $(".display").css("height", 100);
+  $(".display").css("width", 800);
+  $(".display").css("height", 200);
 });
 </script>
 
@@ -138,10 +106,16 @@ getplan();
 <div class="example">A(x,z) :- R(x,y),R(y,z)</div>
 <div class="label">Triangle</div>
 <div class="example">A(x,z) :- R(x,y),S(y,z),T(z,x)</div>
+<div class="label">Tournament</div>
+<div class="example">A(A,B,C) :- R(A,x,B),R(A,y,C),R(C,z,B)</div>
 <div class="label">Cross Product</div>
 <div class="example">A(x,z) :- R(x,y),S(y),T(z)</div>
 <div class="label">Two cycles</div>
 <div class="example">A(x,z) :- R(x,y),S(y,a,z),T(z,b,x),W(a,b)</div>
+<div class="label">Two Rules</div>
+<div class="example">A(x,z) :- R(x,y,z);
+B(w) :- A(3,w)</div>
+
 </div>
           </div>
         </div>
@@ -173,18 +147,24 @@ getplan();
 
 defaultquery = """A(x,z) :- R(x,y),S(y,z),T(z,x)"""
 
-def ruleplan(query):
+def programplan(query):
   # parse it
   parsedprogram = parse(query)
-
+ 
   # generate an RA expression
-  onlyrule = parsedprogram.rules[0]
-  return onlyrule.toRA(parsedprogram)
+  exprs = parsedprogram.toRA()
+
+  return exprs
+
+def format(expressions):
+  return "\n".join(["%s" % e for e in expressions])
 
 class MainPage(webapp2.RequestHandler):
   def get(self,query=defaultquery):
   
-    expression = ruleplan(query)
+    expressions = programplan(query)
+
+    expression = format(expressions)
 
     self.response.headers['Content-Type'] = 'text/html'
     self.response.write(page % locals())
@@ -192,8 +172,9 @@ class MainPage(webapp2.RequestHandler):
 class Plan(webapp2.RequestHandler):
   def get(self):
     query = self.request.get("query")
-    plan = ruleplan(query)
-      
+    expressions = programplan(query)
+
+    plan = format(expressions)
     self.response.headers['Content-Type'] = 'text/plain'
     self.response.write(plan)
 
@@ -201,9 +182,12 @@ class Optimize(webapp2.RequestHandler):
   def get(self):
     query = self.request.get("query")
     target = self.request.get("target")
-    plan = ruleplan(query)
+    expressions = programplan(query)
     targetalgebra = globals()[target] # assume the argument is in local scope
-    optimized = optimize(plan, target=targetalgebra, source=LogicalAlgebra)
+    def opt(plan):
+      return optimize(expr, target=targetalgebra, source=LogicalAlgebra)
+
+    optimized = format([opt(expr) for expr in expressions])
 
     self.response.headers['Content-Type'] = 'text/plain'
     self.response.write(optimized)
@@ -212,10 +196,18 @@ class Compile(webapp2.RequestHandler):
   def get(self):
     query = self.request.get("query")
     target = self.request.get("target")
-    plan = ruleplan(query)
+    expressions = programplan(query)
     targetalgebra = globals()[target] # assume the argument is in local scope
-    optimized = optimize(plan, target=targetalgebra, source=LogicalAlgebra)
-    compiled = compile(optimized)
+    def opt(plan):
+      optimized = optimize(expr, target=targetalgebra, source=LogicalAlgebra)
+      optimized = common_subexpression_elimination(optimized)
+      compiled = compile(optimized)
+      return optimized
+
+    optimized = [opt(expr) for expr in expressions]
+
+    # We can't compile a set of rules yet. Just grab the first one.
+    compiled = compile(optimized[0])
 
     self.response.headers['Content-Type'] = 'text/plain'
     self.response.write(compiled)
