@@ -8,9 +8,9 @@ import edu.washington.escience.myriad.parallel.ParallelUtility;
 import edu.washington.escience.myriad.table._TupleBatch;
 
 /**
- * Knows how to compute some aggregate over a set of IntFields.
+ * Knows how to compute some aggregates over a LongColumn.
  */
-public class LongAggregator implements Aggregator {
+public final class LongAggregator implements Aggregator {
 
   private static final long serialVersionUID = 1L;
 

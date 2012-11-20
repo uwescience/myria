@@ -14,7 +14,7 @@ import edu.washington.escience.myriad.table._TupleBatch;
  * 
  * This class does not do group by.
  */
-public class Aggregate extends Operator {
+public final class Aggregate extends Operator {
 
   private static final long serialVersionUID = 1L;
 

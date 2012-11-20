@@ -28,7 +28,7 @@ import edu.washington.escience.myriad.column.StringColumn;
 import edu.washington.escience.myriad.table._TupleBatch;
 
 @ThreadSafe
-public class ImmutableInMemoryTupleBatch implements _TupleBatch {
+public final class ImmutableInMemoryTupleBatch implements _TupleBatch {
 
   private static final long serialVersionUID = 1L;
 

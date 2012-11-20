@@ -8,9 +8,9 @@ import edu.washington.escience.myriad.parallel.ParallelUtility;
 import edu.washington.escience.myriad.table._TupleBatch;
 
 /**
- * Knows how to compute some aggregate over a set of StringFields.
+ * Knows how to compute some aggregate over a StringColumn.
  */
-public class StringAggregator implements Aggregator {
+public final class StringAggregator implements Aggregator {
 
   /**
    * java Serialization id.
