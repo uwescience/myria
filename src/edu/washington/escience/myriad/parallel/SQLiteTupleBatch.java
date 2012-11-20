@@ -148,7 +148,7 @@ public final class SQLiteTupleBatch implements _TupleBatch {
   }
 
   @Override
-  public List<Column> outputRawData() {
+  public List<Column<?>> outputRawData() {
     return null;
   }
 

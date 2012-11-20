@@ -43,13 +43,13 @@ public enum Type implements Serializable {
     }
 
     @Override
-    public boolean filter(final Predicate.Op op, final Column intColumn, final int tupleIndex, final Object operand) {
+    public boolean filter(final Predicate.Op op, final Column<?> intColumn, final int tupleIndex, final Object operand) {
       final int v = ((IntColumn) intColumn).getInt(tupleIndex);
       return compare(op, v, (Integer) operand);
     }
 
     @Override
-    public String toString(final Column column, final int tupleIndex) {
+    public String toString(final Column<?> column, final int tupleIndex) {
       return "" + ((IntColumn) column).getInt(tupleIndex);
     }
 
@@ -82,13 +82,13 @@ public enum Type implements Serializable {
     }
 
     @Override
-    public boolean filter(final Predicate.Op op, final Column floatColumn, final int tupleIndex, final Object operand) {
+    public boolean filter(final Predicate.Op op, final Column<?> floatColumn, final int tupleIndex, final Object operand) {
       final float v = ((FloatColumn) floatColumn).getFloat(tupleIndex);
       return compare(op, v, (Float) operand);
     }
 
     @Override
-    public String toString(final Column column, final int tupleIndex) {
+    public String toString(final Column<?> column, final int tupleIndex) {
       return "" + ((FloatColumn) column).getFloat(tupleIndex);
     }
 
@@ -121,13 +121,14 @@ public enum Type implements Serializable {
     }
 
     @Override
-    public boolean filter(final Predicate.Op op, final Column doubleColumn, final int tupleIndex, final Object operand) {
+    public boolean filter(final Predicate.Op op, final Column<?> doubleColumn, final int tupleIndex,
+        final Object operand) {
       final double v = ((DoubleColumn) doubleColumn).getDouble(tupleIndex);
       return compare(op, v, (Double) operand);
     }
 
     @Override
-    public String toString(final Column column, final int tupleIndex) {
+    public String toString(final Column<?> column, final int tupleIndex) {
       return "" + ((DoubleColumn) column).getDouble(tupleIndex);
     }
 
@@ -153,13 +154,14 @@ public enum Type implements Serializable {
     }
 
     @Override
-    public boolean filter(final Predicate.Op op, final Column booleanColumn, final int tupleIndex, final Object operand) {
+    public boolean filter(final Predicate.Op op, final Column<?> booleanColumn, final int tupleIndex,
+        final Object operand) {
       final boolean v = ((BooleanColumn) booleanColumn).getBoolean(tupleIndex);
       return compare(op, v, (Boolean) operand);
     }
 
     @Override
-    public String toString(final Column column, final int tupleIndex) {
+    public String toString(final Column<?> column, final int tupleIndex) {
       return ((BooleanColumn) column).getBoolean(tupleIndex) + "";
     }
   },
@@ -195,13 +197,14 @@ public enum Type implements Serializable {
     }
 
     @Override
-    public boolean filter(final Predicate.Op op, final Column stringColumn, final int tupleIndex, final Object operand) {
+    public boolean filter(final Predicate.Op op, final Column<?> stringColumn, final int tupleIndex,
+        final Object operand) {
       final String string = ((StringColumn) stringColumn).getString(tupleIndex);
       return compare(op, string, (String) operand);
     }
 
     @Override
-    public String toString(final Column column, final int tupleIndex) {
+    public String toString(final Column<?> column, final int tupleIndex) {
       return ((StringColumn) column).getString(tupleIndex);
     }
   },
@@ -233,19 +236,19 @@ public enum Type implements Serializable {
     }
 
     @Override
-    public boolean filter(final Predicate.Op op, final Column longColumn, final int tupleIndex, final Object operand) {
+    public boolean filter(final Predicate.Op op, final Column<?> longColumn, final int tupleIndex, final Object operand) {
       final long v = ((LongColumn) longColumn).getLong(tupleIndex);
       return compare(op, v, (Long) operand);
     }
 
     @Override
-    public String toString(final Column column, final int tupleIndex) {
+    public String toString(final Column<?> column, final int tupleIndex) {
       return "" + ((LongColumn) column).getLong(tupleIndex);
     }
 
   };
 
-  public abstract boolean filter(Predicate.Op op, Column column, int tupleIndex, Object operand);
+  public abstract boolean filter(Predicate.Op op, Column<?> column, int tupleIndex, Object operand);
 
-  public abstract String toString(Column column, int tupleIndex);
+  public abstract String toString(Column<?> column, int tupleIndex);
 }

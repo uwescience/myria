@@ -40,7 +40,7 @@ public class TupleBatch extends TupleBatchAdaptor {
   /** Schema of tuples in this batch. */
   private final Schema schema;
   /** Tuple data stored as columns in this batch. */
-  private final List<Column> columns;
+  private final List<Column<?>> columns;
   /** Number of tuples in this batch. */
   private final int numTuples;
   /** Which tuples are valid in this batch. */
@@ -53,7 +53,7 @@ public class TupleBatch extends TupleBatchAdaptor {
    * @param columns contains the column-stored data. Must match schema.
    * @param numTuples number of tuples in the batch.
    */
-  public TupleBatch(final Schema schema, final List<Column> columns, final int numTuples) {
+  public TupleBatch(final Schema schema, final List<Column<?>> columns, final int numTuples) {
     /* Take the input arguments directly */
     this.schema = Objects.requireNonNull(schema);
     this.columns = Objects.requireNonNull(columns);
@@ -74,7 +74,7 @@ public class TupleBatch extends TupleBatchAdaptor {
    * @param numTuples number of tuples in the batch.
    * @param validTuples BitSet determines which tuples are valid tuples in this batch.
    */
-  private TupleBatch(final Schema schema, final List<Column> columns, final int numTuples, final BitSet validTuples) {
+  private TupleBatch(final Schema schema, final List<Column<?>> columns, final int numTuples, final BitSet validTuples) {
     /* Check and then store the input arguments */
     this.schema = Objects.requireNonNull(schema);
     this.columns = Objects.requireNonNull(columns);
@@ -129,7 +129,7 @@ public class TupleBatch extends TupleBatchAdaptor {
     Objects.requireNonNull(op);
     Objects.requireNonNull(operand);
     if (numTuples > 0) {
-      final Column columnValues = columns.get(column);
+      final Column<?> columnValues = columns.get(column);
       final Type columnType = schema.getFieldType(column);
       int nextSet = -1;
       while ((nextSet = validTuples.nextSetBit(nextSet + 1)) >= 0) {
@@ -171,7 +171,7 @@ public class TupleBatch extends TupleBatchAdaptor {
    * @param index index of the desired column.
    * @return the column at the specified index.
    */
-  public final Column getColumn(final int index) {
+  public final Column<?> getColumn(final int index) {
     return columns.get(index);
   }
 
@@ -224,7 +224,7 @@ public class TupleBatch extends TupleBatchAdaptor {
   @Override
   public final int hashCode(final int row) {
     final HashCodeBuilder hb = new HashCodeBuilder(MAGIC_HASHCODE1, MAGIC_HASHCODE2);
-    for (Column c : columns) {
+    for (Column<?> c : columns) {
       hb.append(c.get(row));
     }
     return hb.toHashCode();
@@ -301,7 +301,7 @@ public class TupleBatch extends TupleBatchAdaptor {
   @Override
   public final TupleBatch project(final int[] remainingColumns) {
     Objects.requireNonNull(remainingColumns);
-    final List<Column> newColumns = new ArrayList<Column>();
+    final List<Column<?>> newColumns = new ArrayList<Column<?>>();
     final Type[] newTypes = new Type[remainingColumns.length];
     final String[] newNames = new String[remainingColumns.length];
     int count = 0;

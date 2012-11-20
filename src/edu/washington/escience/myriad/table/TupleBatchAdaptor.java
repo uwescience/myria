@@ -40,8 +40,8 @@ public abstract class TupleBatchAdaptor implements _TupleBatch {
     Set<Pair<Object, TupleBatchBuffer>> ready = null;
     if (this instanceof TupleBatch) {
       final TupleBatch tupleBatch = (TupleBatch) this;
-      List<Column> columns = tupleBatch.outputRawData();
-      Column gC = columns.get(groupByColumn);
+      List<Column<?>> columns = tupleBatch.outputRawData();
+      Column<?> gC = columns.get(groupByColumn);
 
       int numR = gC.size();
       for (int i = 0; i < numR; i++) {
@@ -56,7 +56,7 @@ public abstract class TupleBatchAdaptor implements _TupleBatch {
           tbb = kvPair.getRight();
         }
         int j = 0;
-        for (Column c : columns) {
+        for (Column<?> c : columns) {
           tbb.put(j, c.get(i));
           j++;
         }
@@ -123,9 +123,9 @@ public abstract class TupleBatchAdaptor implements _TupleBatch {
   }
 
   @Override
-  public List<Column> outputRawData() {
+  public List<Column<?>> outputRawData() {
     if (this instanceof TupleBatch) {
-      final List<Column> output = ColumnFactory.allocateColumns(outputSchema());
+      final List<Column<?>> output = ColumnFactory.allocateColumns(outputSchema());
       final TupleBatch tupleBatch = (TupleBatch) this;
       for (final int row : tupleBatch.validTupleIndices()) {
         for (int column = 0; column < tupleBatch.numColumns(); ++column) {
@@ -150,7 +150,7 @@ public abstract class TupleBatchAdaptor implements _TupleBatch {
 
   @Override
   public TupleBatchBuffer[] partition(final PartitionFunction<?, ?> pf, final TupleBatchBuffer[] buffers) {
-    final List<Column> outputData = outputRawData();
+    final List<Column<?>> outputData = outputRawData();
     final Schema s = outputSchema();
     final int numColumns = outputData.size();
 

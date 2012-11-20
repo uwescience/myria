@@ -93,10 +93,10 @@ public class ProtobufTest {
     IPCConnectionPool connectionPool = new IPCConnectionPool(0, computingUnits, handlers);
 
     while ((tb = tbb.popAny()) != null) {
-      List<Column> columns = tb.outputRawData();
+      List<Column<?>> columns = tb.outputRawData();
       final ColumnMessage[] columnProtos = new ColumnMessage[columns.size()];
       int j = 0;
-      for (final Column c : columns) {
+      for (final Column<?> c : columns) {
         columnProtos[j] = c.serializeToProto();
         j++;
       }
@@ -166,10 +166,10 @@ public class ProtobufTest {
           Iterator<TupleBatch> tbs = tbb.getAll().iterator();
           while (tbs.hasNext()) {
             tb = tbs.next();
-            List<Column> columns = tb.outputRawData();
+            List<Column<?>> columns = tb.outputRawData();
             final ColumnMessage[] columnProtos = new ColumnMessage[columns.size()];
             int j = 0;
-            for (final Column c : columns) {
+            for (final Column<?> c : columns) {
               columnProtos[j] = c.serializeToProto();
               j++;
             }

@@ -17,7 +17,7 @@ import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
  * @author dhalperi
  * 
  */
-public interface Column {
+public interface Column<T extends Comparable<T>> {
 
   /**
    * Returns the element at the specified row in this column.
@@ -25,7 +25,7 @@ public interface Column {
    * @param row row of element to return.
    * @return the element at the specified row in this column.
    */
-  Object get(int row);
+  T get(int row);
 
   /**
    * Inserts the value in the specified row into the JDBC PreparedStatement at the specified index.
@@ -55,7 +55,7 @@ public interface Column {
    * @return this column.
    * @throws SQLException if there are JDBC errors.
    */
-  Column putFromJdbc(ResultSet resultSet, int jdbcIndex) throws SQLException;
+  Column<T> putFromJdbc(ResultSet resultSet, int jdbcIndex) throws SQLException;
 
   /**
    * Extracts the appropriate value from a SQLiteStatement object and appends it to this column.
@@ -72,7 +72,7 @@ public interface Column {
    * @param value element to be inserted.
    * @return this column.
    */
-  Column putObject(Object value);
+  Column<T> putObject(Object value);
 
   /**
    * Serializes this column as a protobuf message into the specified output stream.

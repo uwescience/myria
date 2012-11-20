@@ -44,7 +44,7 @@ public class IterativeSelfJoinTest extends SystemTestBase {
     boolean cntgraph[][] = new boolean[MaxID][MaxID];
     while (tbs.hasNext()) {
       _TupleBatch tb = tbs.next();
-      List<Column> output = tb.outputRawData();
+      List<Column<?>> output = tb.outputRawData();
       int numRow = output.get(0).size();
       for (int i = 0; i < numRow; i++) {
         int fr = Integer.parseInt(output.get(0).get(i).toString());

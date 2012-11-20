@@ -110,12 +110,12 @@ public class Worker {
                 break;
               case DataMessageType.NORMAL_VALUE:
                 final List<ColumnMessage> columnMessages = data.getColumnsList();
-                final Column[] columnArray = new Column[columnMessages.size()];
+                final Column<?>[] columnArray = new Column[columnMessages.size()];
                 int idx = 0;
                 for (final ColumnMessage cm : columnMessages) {
                   columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm);
                 }
-                final List<Column> columns = Arrays.asList(columnArray);
+                final List<Column<?>> columns = Arrays.asList(columnArray);
                 receiveData(new ExchangeTupleBatch(exchangePairID, senderID, columns, operatorSchema, columnMessages
                     .get(0).getNumTuples()));
 
@@ -349,8 +349,6 @@ public class Worker {
 
   private final File dataDir;
 
-  private final File tmpDir;
-
   /**
    * The ID of this worker.
    */
@@ -406,7 +404,6 @@ public class Worker {
     catalog = WorkerCatalog.open(FilenameUtils.concat(workingDirectory, "worker.catalog"));
     myID = Integer.parseInt(catalog.getConfigurationValue("worker.identifier"));
     dataDir = new File(catalog.getConfigurationValue("worker.data.sqlite.dir"));
-    tmpDir = new File(catalog.getConfigurationValue("worker.tmp.dir"));
     mySocketInfo = catalog.getWorkers().get(myID);
 
     acceptor = ParallelUtility.createAcceptor();

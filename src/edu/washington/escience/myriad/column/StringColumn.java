@@ -25,7 +25,7 @@ import edu.washington.escience.myriad.proto.DataProto.StringColumnMessage;
  * @author dhalperi
  * 
  */
-public final class StringColumn implements Column {
+public final class StringColumn implements Column<String> {
   /**
    * The positions of the starts of each String in this column. Used to pack variable-length Strings and yet still have
    * fast lookup.
@@ -47,12 +47,12 @@ public final class StringColumn implements Column {
 
   /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
   public StringColumn() {
-    this.startIndicesBytes = ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Integer.SIZE / Byte.SIZE));
-    this.startIndices = startIndicesBytes.asIntBuffer();
-    this.endIndicesBytes = ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Integer.SIZE / Byte.SIZE));
-    this.endIndices = endIndicesBytes.asIntBuffer();
-    this.data = new StringBuilder();
-    this.numStrings = 0;
+    startIndicesBytes = ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Integer.SIZE / Byte.SIZE));
+    startIndices = startIndicesBytes.asIntBuffer();
+    endIndicesBytes = ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Integer.SIZE / Byte.SIZE));
+    endIndices = endIndicesBytes.asIntBuffer();
+    data = new StringBuilder();
+    numStrings = 0;
   }
 
   /**
@@ -68,12 +68,12 @@ public final class StringColumn implements Column {
       throw new IllegalArgumentException("ColumnMessage has type STRING but no StringColumn");
     }
     final StringColumnMessage stringColumn = message.getStringColumn();
-    this.startIndicesBytes = stringColumn.getStartIndices().asReadOnlyByteBuffer();
-    this.startIndices = startIndicesBytes.asIntBuffer();
-    this.endIndicesBytes = stringColumn.getEndIndices().asReadOnlyByteBuffer();
-    this.endIndices = endIndicesBytes.asIntBuffer();
-    this.data = new StringBuilder(stringColumn.getData().toStringUtf8());
-    this.numStrings = message.getNumTuples();
+    startIndicesBytes = stringColumn.getStartIndices().asReadOnlyByteBuffer();
+    startIndices = startIndicesBytes.asIntBuffer();
+    endIndicesBytes = stringColumn.getEndIndices().asReadOnlyByteBuffer();
+    endIndices = endIndicesBytes.asIntBuffer();
+    data = new StringBuilder(stringColumn.getData().toStringUtf8());
+    numStrings = message.getNumTuples();
   }
 
   /**
@@ -83,16 +83,16 @@ public final class StringColumn implements Column {
    * @param averageStringSize expected average size of the Strings that will be stored in this column.
    */
   public StringColumn(final int averageStringSize) {
-    this.startIndicesBytes = ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Integer.SIZE / Byte.SIZE));
-    this.startIndices = startIndicesBytes.asIntBuffer();
-    this.endIndicesBytes = ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Integer.SIZE / Byte.SIZE));
-    this.endIndices = endIndicesBytes.asIntBuffer();
-    this.data = new StringBuilder(averageStringSize * TupleBatch.BATCH_SIZE);
-    this.numStrings = 0;
+    startIndicesBytes = ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Integer.SIZE / Byte.SIZE));
+    startIndices = startIndicesBytes.asIntBuffer();
+    endIndicesBytes = ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Integer.SIZE / Byte.SIZE));
+    endIndices = endIndicesBytes.asIntBuffer();
+    data = new StringBuilder(averageStringSize * TupleBatch.BATCH_SIZE);
+    numStrings = 0;
   }
 
   @Override
-  public Object get(final int row) {
+  public String get(final int row) {
     return getString(row);
   }
 
@@ -133,7 +133,7 @@ public final class StringColumn implements Column {
   }
 
   @Override
-  public Column putFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException {
+  public Column<String> putFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException {
     return put(resultSet.getString(jdbcIndex));
   }
 
@@ -143,7 +143,7 @@ public final class StringColumn implements Column {
   }
 
   @Override
-  public Column putObject(final Object value) {
+  public Column<String> putObject(final Object value) {
     return put((String) value);
   }
 

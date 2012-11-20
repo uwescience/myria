@@ -132,12 +132,12 @@ public final class Server {
               receiveData(new ExchangeTupleBatch(exchangePairID, senderID, operatorSchema));
             } else {
               final List<ColumnMessage> columnMessages = data.getColumnsList();
-              final Column[] columnArray = new Column[columnMessages.size()];
+              final Column<?>[] columnArray = new Column[columnMessages.size()];
               int idx = 0;
               for (final ColumnMessage cm : columnMessages) {
                 columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm);
               }
-              final List<Column> columns = Arrays.asList(columnArray);
+              final List<Column<?>> columns = Arrays.asList(columnArray);
 
               receiveData((new ExchangeTupleBatch(exchangePairID, senderID, columns, operatorSchema, columnMessages
                   .get(0).getNumTuples())));

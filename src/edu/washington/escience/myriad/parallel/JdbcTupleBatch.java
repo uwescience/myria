@@ -156,7 +156,7 @@ public final class JdbcTupleBatch implements _TupleBatch {
   }
 
   @Override
-  public List<Column> outputRawData() {
+  public List<Column<?>> outputRawData() {
     // TODO Auto-generated method stub
     return null;
   }
