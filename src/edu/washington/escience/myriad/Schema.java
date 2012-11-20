@@ -25,7 +25,7 @@ public final class Schema implements Serializable {
   private final String[] fieldNames;
 
   /**
-   * Converts a JDBC ResultSetMetaData object into a SimpleDB Schema.
+   * Converts a JDBC ResultSetMetaData object into a Schema.
    * 
    * @param rsmd the input ResultSetMetaData.
    * @return the output Schema.
@@ -76,7 +76,7 @@ public final class Schema implements Serializable {
   }
 
   /**
-   * Converts a SQLiteStatement object into a SimpleDB Schema.
+   * Converts a SQLiteStatement object into a Schema.
    * 
    * @param statement the input SQLiteStatement (must have been stepped).
    * @return the output Schema.
@@ -122,12 +122,11 @@ public final class Schema implements Serializable {
   }
 
   /**
-   * Merge two Schemas into one, with td1.numFields + td2.numFields fields, with the first td1.numFields coming from td1
-   * and the remaining from td2.
+   * Merge two Schemas into one. The result has the fields of the first concatenated with the fields of the second.
    * 
-   * @param first The Schema with the first fields of the new Schema
-   * @param second The Schema with the last fields of the Schema
-   * @return the new Schema
+   * @param first The Schema with the first fields of the new Schema.
+   * @param second The Schema with the last fields of the Schema.
+   * @return the new Schema.
    */
   public static Schema merge(final Schema first, final Schema second) {
     final Type[] types = new Type[first.numFields() + second.numFields()];
@@ -179,7 +178,7 @@ public final class Schema implements Serializable {
 
   /**
    * Compares the specified object with this Schema for equality. Two Schemas are considered equal if they are the same
-   * size and if the n-th type in this Schema is equal to the n-th type in td.
+   * size and if the n-th type in this Schema is equal to the n-th type in the other.
    * 
    * @param o the Object to be compared for equality with this Schema.
    * @return true if the object is equal to this Schema.

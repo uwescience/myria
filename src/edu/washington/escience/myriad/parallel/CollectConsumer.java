@@ -34,7 +34,7 @@ public final class CollectConsumer extends Consumer {
   private CollectProducer child;
 
   /**
-   * If a child is provided, the TupleDesc is the child's TD
+   * When a child is provided, the Schema is the child's Schema.
    * 
    * @throws DbException
    */
@@ -53,7 +53,7 @@ public final class CollectConsumer extends Consumer {
   }
 
   /**
-   * If there's no child operator, a TupleDesc is needed
+   * If there's no child operator, a Schema is needed.
    */
   public CollectConsumer(final Schema schema, final ExchangePairID operatorID, final int[] workerIDs) {
     super(operatorID);

@@ -17,20 +17,21 @@ public class SingleFieldHashPartitionFunction extends PartitionFunction<String, 
   public static final String FIELD_INDEX = "field_index";
 
   private Integer fieldIndex;
+
   public SingleFieldHashPartitionFunction(final int numPartition) {
     super(numPartition);
   }
 
   @Override
-  public int[] partition(final List<Column> columns, final Schema td) {
-    final Column partitionColumn = columns.get(this.fieldIndex);
+  public int[] partition(final List<Column> columns, final Schema schema) {
+    final Column partitionColumn = columns.get(fieldIndex);
     final int numTuples = partitionColumn.size();
     final int[] result = new int[numTuples];
 
     for (int i = 0; i < numTuples; i++) {
-      int p = partitionColumn.get(i).hashCode() % this.numPartition;
+      int p = partitionColumn.get(i).hashCode() % numPartition;
       if (p < 0) {
-        p = p + this.numPartition;
+        p = p + numPartition;
       }
       result[i] = p;
     }
@@ -44,7 +45,7 @@ public class SingleFieldHashPartitionFunction extends PartitionFunction<String, 
   public void setAttribute(final String attribute, final Integer value) {
     super.setAttribute(attribute, value);
     if (attribute.equals(FIELD_INDEX)) {
-      this.fieldIndex = value;
+      fieldIndex = value;
     }
   }
 

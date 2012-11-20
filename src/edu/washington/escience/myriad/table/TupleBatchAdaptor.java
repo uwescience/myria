@@ -152,7 +152,6 @@ public abstract class TupleBatchAdaptor implements _TupleBatch {
 
   @Override
   public TupleBatchBuffer[] partition(final PartitionFunction<?, ?> pf, final TupleBatchBuffer[] buffers) {
-    // p.partition(t, td)
     final List<Column> outputData = outputRawData();
     final Schema s = outputSchema();
     final int numColumns = outputData.size();

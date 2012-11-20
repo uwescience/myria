@@ -436,18 +436,18 @@ public class Server {
       dataBuffer.put(serverPlan.getOperatorID(), buffer);
       serverPlan.setInputBuffer(buffer);
 
-      final Schema td = serverPlan.getSchema();
+      final Schema schema = serverPlan.getSchema();
 
       String names = "";
-      for (int i = 0; i < td.numFields(); i++) {
-        names += td.getFieldName(i) + "\t";
+      for (int i = 0; i < schema.numFields(); i++) {
+        names += schema.getFieldName(i) + "\t";
       }
 
       PrintStream out = null;
       out = System.out;
 
       out.println(names);
-      for (int i = 0; i < names.length() + td.numFields() * 4; i++) {
+      for (int i = 0; i < names.length() + schema.numFields() * 4; i++) {
         out.print("-");
       }
       out.println("");
