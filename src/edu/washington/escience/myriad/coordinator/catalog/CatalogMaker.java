@@ -145,14 +145,8 @@ public final class CatalogMaker {
       /* Start by making the directories for the worker */
       String dirName = FilenameUtils.concat(baseDirectoryName, "worker_" + workerId);
       String sqliteDirName = FilenameUtils.concat(dirName, "sqlite_dbs");
-      String tmpDirName = FilenameUtils.concat(dirName, "tmp");
       /* .. the sqlite directory, and also on the way the worker directory. */
       File dir = new File(sqliteDirName);
-      while (!dir.exists()) {
-        dir.mkdirs();
-      }
-      /* .. the tmp directory. */
-      dir = new File(tmpDirName);
       while (!dir.exists()) {
         dir.mkdirs();
       }
@@ -180,7 +174,6 @@ public final class CatalogMaker {
         /* Set up the other three configuration variables it uses. */
         wc.setConfigurationValue("worker.identifier", "" + workerId);
         wc.setConfigurationValue("worker.data.sqlite.dir", sqliteDirName);
-        wc.setConfigurationValue("worker.tmp.dir", tmpDirName);
 
       } catch (CatalogException e) {
         throw new RuntimeException(e);
