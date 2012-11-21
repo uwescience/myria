@@ -34,7 +34,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
   @Test
   public void dupElimTestSingleWorker() throws DbException, IOException, CatalogException {
     String testtableName = "testtable";
-    createTable(WORKER_ID[0], testtableName, testtableName, "id long, name varchar(20)");
+    createTable(WORKER_ID[0], testtableName, "id long, name varchar(20)");
 
     String[] names = randomFixedLengthNumericString(1000, 1005, 200, 20);
     long[] ids = randomLong(1000, 1005, names.length);
@@ -98,8 +98,8 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
   @Test
   public void dupElimTest() throws DbException, IOException, CatalogException {
     String testtableName = "testtable";
-    createTable(WORKER_ID[0], testtableName, testtableName, "id long, name varchar(20)");
-    createTable(WORKER_ID[1], testtableName, testtableName, "id long, name varchar(20)");
+    createTable(WORKER_ID[0], testtableName, "id long, name varchar(20)");
+    createTable(WORKER_ID[1], testtableName, "id long, name varchar(20)");
 
     String[] names = randomFixedLengthNumericString(1000, 1005, 200, 20);
     long[] ids = randomLong(1000, 1005, names.length);

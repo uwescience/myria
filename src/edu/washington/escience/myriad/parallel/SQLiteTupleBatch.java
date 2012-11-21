@@ -24,20 +24,19 @@ public final class SQLiteTupleBatch implements _TupleBatch {
   private static final long serialVersionUID = 1L;
 
   private final Schema inputSchema;
-  private transient String dataDir;
-  private final String filename;
+  private String databaseFilename;
   private int numInputTuples;
   private final String tableName;
 
-  public SQLiteTupleBatch(final Schema inputSchema, final String filename, final String tableName) {
+  public SQLiteTupleBatch(final Schema inputSchema, final String databaseFilename, final String tableName) {
     this.inputSchema = Objects.requireNonNull(inputSchema);
-    this.filename = filename;
+    this.databaseFilename = databaseFilename;
     this.tableName = tableName;
   }
 
   @Override
   public synchronized _TupleBatch append(final _TupleBatch another) {
-    insertIntoSQLite(inputSchema, tableName, dataDir + "/" + filename, another);
+    insertIntoSQLite(inputSchema, tableName, databaseFilename, another);
     return this;
   }
 
@@ -202,8 +201,8 @@ public final class SQLiteTupleBatch implements _TupleBatch {
     return this;
   }
 
-  public void reset(final String dataDir) {
-    this.dataDir = dataDir;
+  public void reset(final String databaseFilename) {
+    this.databaseFilename = databaseFilename;
   }
 
   @Override

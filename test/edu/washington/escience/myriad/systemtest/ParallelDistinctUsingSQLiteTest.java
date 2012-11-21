@@ -29,10 +29,10 @@ public class ParallelDistinctUsingSQLiteTest extends SystemTestBase {
     final String[] columnNames = new String[] { "id", "name" };
     final Schema schema = new Schema(types, columnNames);
 
-    createTable(WORKER_ID[0], "testtable", "testtable", "id int, name varchar(20)");
-    createTable(WORKER_ID[1], "testtable", "testtable", "id int, name varchar(20)");
-    createTable(WORKER_ID[0], "temptable", "temptable", "id int, name varchar(20)");
-    createTable(WORKER_ID[1], "temptable", "temptable", "id int, name varchar(20)");
+    createTable(WORKER_ID[0], "testtable", "id int, name varchar(20)");
+    createTable(WORKER_ID[1], "testtable", "id int, name varchar(20)");
+    createTable(WORKER_ID[0], "temptable", "id int, name varchar(20)");
+    createTable(WORKER_ID[1], "temptable", "id int, name varchar(20)");
 
     String[] names = randomFixedLengthNumericString(1000, 1005, 20, 20);
     long[] ids = randomLong(1000, 1005, names.length);
