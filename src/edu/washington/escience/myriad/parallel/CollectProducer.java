@@ -41,28 +41,20 @@ public final class CollectProducer extends Producer {
 
         TupleBatchBuffer buffer = new TupleBatchBuffer(getSchema());
 
-        while (child.hasNext()) {
-          _TupleBatch tup = child.next();
+        _TupleBatch tup = null;
+        while ((tup = child.next()) != null) {
 
           final List<Column> fromColumns = tup.outputRawData();
 
-          System.out.println("get from child: "
-              + new ImmutableInMemoryTupleBatch(getSchema(), fromColumns, tup.numOutputTuples()));
-
           int numTuples = tup.numOutputTuples();
-          System.out.println("Num tuples:" + numTuples);
           int numColumns = fromColumns.size();
-          System.out.println("current tuples-1 : " + buffer.currentNumTuples);
           for (int i = 0; i < numTuples; i++) {
             for (int j = 0; j < numColumns; j++) {
               buffer.put(j, fromColumns.get(j).get(i));
             }
-            System.out.println("current tuples" + i + ": " + buffer.currentNumTuples);
           }
-          System.out.println("current tuples: " + buffer.currentNumTuples);
-          System.out.println("num Tuples in buffer: " + buffer.numTuples());
 
-          while ((tup = buffer.pop()) != null) {
+          while ((tup = buffer.popFilled()) != null) {
             final List<Column> columns = tup.outputRawData();
             final ColumnMessage[] columnProtos = new ColumnMessage[columns.size()];
             int i = 0;
@@ -70,8 +62,6 @@ public final class CollectProducer extends Producer {
               columnProtos[i] = c.serializeToProto();
               i++;
             }
-            System.out.println("writing to session 1: "
-                + new ImmutableInMemoryTupleBatch(getSchema(), columns, tup.numOutputTuples()));
             session.write(messageBuilder.setType(TransportMessageType.DATA).setData(
                 DataMessage.newBuilder().setType(DataMessageType.NORMAL).addAllColumns(Arrays.asList(columnProtos))
                     .setOperatorID(CollectProducer.this.operatorID.getLong()).build()).build());
@@ -79,7 +69,7 @@ public final class CollectProducer extends Producer {
         }
 
         if (buffer.numTuples() > 0) {
-          List<TupleBatch> remain = buffer.getOutput();
+          List<TupleBatch> remain = buffer.getAll();
           for (TupleBatch tb : remain) {
             final List<Column> columns = tb.outputRawData();
             final ColumnMessage[] columnProtos = new ColumnMessage[columns.size()];
@@ -88,9 +78,6 @@ public final class CollectProducer extends Producer {
               columnProtos[j] = c.serializeToProto();
               j++;
             }
-
-            System.out.println("writing to session 2: "
-                + new ImmutableInMemoryTupleBatch(getSchema(), columns, tb.numOutputTuples()));
 
             session.write(messageBuilder.setType(TransportMessageType.DATA).setData(
                 DataMessage.newBuilder().setType(DataMessageType.NORMAL).addAllColumns(Arrays.asList(columnProtos))
@@ -130,9 +117,7 @@ public final class CollectProducer extends Producer {
   }
 
   @Override
-  public void close() {
-    super.close();
-    child.close();
+  public void cleanup() {
   }
 
   @Override
@@ -143,6 +128,7 @@ public final class CollectProducer extends Producer {
     } catch (final InterruptedException e) {
       e.printStackTrace();
     }
+
     return null;
   }
 
@@ -152,26 +138,24 @@ public final class CollectProducer extends Producer {
   }
 
   @Override
-  public String getName() {
-    return "collect_p";
-  }
-
-  @Override
   public Schema getSchema() {
     return child.getSchema();
   }
 
   @Override
-  public void open() throws DbException {
-    child.open();
+  public void init() throws DbException {
     runningThread = new WorkingThread();
     runningThread.start();
-    super.open();
   }
 
   @Override
   public void setChildren(final Operator[] children) {
     child = children[0];
+  }
+
+  @Override
+  public _TupleBatch fetchNextReady() throws DbException {
+    return fetchNext();
   }
 
 }

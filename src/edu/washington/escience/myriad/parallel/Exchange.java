@@ -58,12 +58,12 @@ public abstract class Exchange extends Operator {
     }
 
     public long getLong() {
-      return this.oId;
+      return oId;
     }
 
     @Override
     public int hashCode() {
-      return (int) this.oId;
+      return (int) oId;
     }
 
     @Override
@@ -75,15 +75,10 @@ public abstract class Exchange extends Operator {
   protected final ExchangePairID operatorID;
 
   public Exchange(final ExchangePairID oID) {
-    this.operatorID = oID;
+    operatorID = oID;
   }
 
-  /**
-   * Return the name of the exchange, used only to display the operator in the operator tree
-   */
-  public abstract String getName();
-
   public ExchangePairID getOperatorID() {
-    return this.operatorID;
+    return operatorID;
   }
 }

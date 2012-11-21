@@ -34,24 +34,19 @@ public class LocalJoin extends Operator implements Externalizable {
       // type check in query plan?
       final int rowIndx1 = index;
       final int rowIndx2 = another.index;
-      // System.out.println(rowIndx1 + " " + rowIndx2 + " " + colIndx + " " + type);
-      if (type1.equals(Type.INT_TYPE)) {
-        return tb.getInt(colIndx1, rowIndx1) == another.tb.getInt(colIndx2, rowIndx2);
-      }
-      if (type1.equals(Type.DOUBLE_TYPE)) {
-        return tb.getDouble(colIndx1, rowIndx1) == another.tb.getDouble(colIndx2, rowIndx2);
-      }
-      if (type1.equals(Type.STRING_TYPE)) {
-        return tb.getString(colIndx1, rowIndx1).equals(another.tb.getString(colIndx2, rowIndx2));
-      }
-      if (type1.equals(Type.FLOAT_TYPE)) {
-        return tb.getFloat(colIndx1, rowIndx1) == another.tb.getFloat(colIndx2, rowIndx2);
-      }
-      if (type1.equals(Type.BOOLEAN_TYPE)) {
-        return tb.getBoolean(colIndx1, rowIndx1) == another.tb.getBoolean(colIndx2, rowIndx2);
-      }
-      if (type1.equals(Type.LONG_TYPE)) {
-        return tb.getLong(colIndx1, rowIndx1) == another.tb.getLong(colIndx2, rowIndx2);
+      switch (type1) {
+        case INT_TYPE:
+          return tb.getInt(colIndx1, rowIndx1) == another.tb.getInt(colIndx2, rowIndx2);
+        case DOUBLE_TYPE:
+          return tb.getDouble(colIndx1, rowIndx1) == another.tb.getDouble(colIndx2, rowIndx2);
+        case STRING_TYPE:
+          return tb.getString(colIndx1, rowIndx1).equals(another.tb.getString(colIndx2, rowIndx2));
+        case FLOAT_TYPE:
+          return tb.getFloat(colIndx1, rowIndx1) == another.tb.getFloat(colIndx2, rowIndx2);
+        case BOOLEAN_TYPE:
+          return tb.getBoolean(colIndx1, rowIndx1) == another.tb.getBoolean(colIndx2, rowIndx2);
+        case LONG_TYPE:
+          return tb.getLong(colIndx1, rowIndx1) == another.tb.getLong(colIndx2, rowIndx2);
       }
       return false;
     }
@@ -95,19 +90,21 @@ public class LocalJoin extends Operator implements Externalizable {
     }
 
     public int hashCode4Keys(final int[] colIndx) {
-      return tb.hashCode4Keys(index, colIndx);
+      return tb.hashCode(index, colIndx);
     }
   }
 
-  Operator child1, child2;
-  Schema outputSchema;
-  int[] compareIndx1;
-  int[] compareIndx2;
-  HashMap<Integer, List<IndexedTuple>> hashTable1;
-  HashMap<Integer, List<IndexedTuple>> hashTable2;
-  TupleBatchBuffer ans;
-  boolean endOfFlow;
+  private Operator child1, child2;
+  private Schema outputSchema;
+  private int[] compareIndx1;
+  private int[] compareIndx2;
+  private HashMap<Integer, List<IndexedTuple>> hashTable1;
+  private HashMap<Integer, List<IndexedTuple>> hashTable2;
+  private TupleBatchBuffer ans;
 
+  /**
+   * For java serialization
+   * */
   public LocalJoin() {
   }
 
@@ -121,108 +118,89 @@ public class LocalJoin extends Operator implements Externalizable {
     hashTable1 = new HashMap<Integer, List<IndexedTuple>>();
     hashTable2 = new HashMap<Integer, List<IndexedTuple>>();
     ans = new TupleBatchBuffer(outputSchema);
-    endOfFlow = false;
   }
 
   protected void addToAns(IndexedTuple tuple1, IndexedTuple tuple2) {
     int num1 = tuple1.tb.inputSchema().numFields();
     int num2 = tuple2.tb.inputSchema().numFields();
-    System.out.println(num1 + " " + num2);
     for (int i = 0; i < num1; ++i) {
-      ans.put(i, tuple1.tb.outputRawData().get(i).get(tuple1.index));
+      ans.put(i, tuple1.tb.getObject(i, tuple1.index));
     }
     for (int i = 0; i < num2; ++i) {
-      ans.put(i + num1, tuple2.tb.outputRawData().get(i).get(tuple2.index));
+      ans.put(i + num1, tuple2.tb.getObject(i, tuple2.index));
+    }
+  }
+
+  protected void processChild1TB(_TupleBatch tbFromChild1) {
+    for (int i = 0; i < tbFromChild1.numOutputTuples(); ++i) { // outputTuples?
+      final IndexedTuple tuple1 = new IndexedTuple(tbFromChild1, i);
+      final int cntHashCode = tuple1.hashCode4Keys(compareIndx1);
+
+      if (hashTable2.get(cntHashCode) != null) {
+        final List<IndexedTuple> tupleList = hashTable2.get(cntHashCode);
+        for (int j = 0; j < tupleList.size(); ++j) {
+          final IndexedTuple tuple2 = tupleList.get(j);
+          if (tuple1.joinEquals(tuple2, compareIndx1, compareIndx2)) {
+            addToAns(tuple1, tuple2);
+          }
+        }
+      }
+
+      if (hashTable1.get(cntHashCode) == null) {
+        hashTable1.put(cntHashCode, new ArrayList<IndexedTuple>());
+      }
+      final List<IndexedTuple> tupleList = hashTable1.get(cntHashCode);
+      tupleList.add(tuple1);
+    }
+  }
+
+  protected void processChild2TB(_TupleBatch tbFromChild2) {
+    for (int i = 0; i < tbFromChild2.numOutputTuples(); ++i) { // outputTuples?
+      final IndexedTuple tuple2 = new IndexedTuple(tbFromChild2, i);
+      final int cntHashCode = tuple2.hashCode4Keys(compareIndx2);
+
+      if (hashTable1.get(cntHashCode) != null) {
+        final List<IndexedTuple> tupleList = hashTable1.get(cntHashCode);
+        for (int j = 0; j < tupleList.size(); ++j) {
+          final IndexedTuple tuple1 = tupleList.get(j);
+          if (tuple2.joinEquals(tuple1, compareIndx2, compareIndx1)) {
+            addToAns(tuple1, tuple2);
+          }
+        }
+      }
+
+      if (hashTable2.get(cntHashCode) == null) {
+        hashTable2.put(cntHashCode, new ArrayList<IndexedTuple>());
+      }
+      final List<IndexedTuple> tupleList = hashTable2.get(cntHashCode);
+      tupleList.add(tuple2);
     }
   }
 
   @Override
   protected _TupleBatch fetchNext() throws DbException {
-    System.out.println("infetchnext");
-    if (endOfFlow) {
-      return null;
-    }
-    TupleBatch nexttb = ans.pop();
-    System.out.println(nexttb == null);
+    TupleBatch nexttb = ans.popFilled();
     while (nexttb == null) {
       boolean hasNewTuple = false; // might change to EOS instead of hasNext()
-      if (child1.hasNext()) {
+      _TupleBatch tb = null;
+      if ((tb = child1.next()) != null) {
         hasNewTuple = true;
-        final _TupleBatch tb = child1.next();
-        for (int i = 0; i < tb.numInputTuples(); ++i) { // outputTuples?
-          final IndexedTuple tuple1 = new IndexedTuple(tb, i);
-          final int cntHashCode = tuple1.hashCode4Keys(compareIndx1);
-
-          System.out.println("child1 " + i + " " + cntHashCode);
-
-          if (hashTable2.get(cntHashCode) != null) {
-            final List<IndexedTuple> tupleList = hashTable2.get(cntHashCode);
-            for (int j = 0; j < tupleList.size(); ++j) {
-              System.out.println(j);
-              final IndexedTuple tuple2 = tupleList.get(j);
-              if (tuple1.joinEquals(tuple2, compareIndx1, compareIndx2)) {
-                System.out.println("addtoans");
-                addToAns(tuple1, tuple2);
-              }
-            }
-          }
-
-          if (hashTable1.get(cntHashCode) == null) {
-            hashTable1.put(cntHashCode, new ArrayList<IndexedTuple>());
-          }
-          final List<IndexedTuple> tupleList = hashTable1.get(cntHashCode);
-          /*
-           * boolean unique = true; for (int j = 0; j < tupleList.size(); ++j) { final IndexedTuple oldTuple =
-           * tupleList.get(j); if (tuple1.equals(oldTuple)) { unique = false; break; } } System.out.println(unique); if
-           * (unique) {
-           */
-          tupleList.add(tuple1);
-          // }
-        }
+        processChild1TB(tb);
       }
       // child2
-      if (child2.hasNext()) {
+      if ((tb = child2.next()) != null) {
         hasNewTuple = true;
-        final _TupleBatch tb = child2.next();
-        for (int i = 0; i < tb.numInputTuples(); ++i) { // outputTuples?
-          final IndexedTuple tuple2 = new IndexedTuple(tb, i);
-          final int cntHashCode = tuple2.hashCode4Keys(compareIndx2);
-
-          System.out.println("child2 " + i + " " + cntHashCode);
-
-          if (hashTable1.get(cntHashCode) != null) {
-            final List<IndexedTuple> tupleList = hashTable1.get(cntHashCode);
-            for (int j = 0; j < tupleList.size(); ++j) {
-              System.out.println(j);
-              final IndexedTuple tuple1 = tupleList.get(j);
-              if (tuple2.joinEquals(tuple1, compareIndx2, compareIndx1)) {
-                System.out.println("addtoans");
-                addToAns(tuple1, tuple2);
-              }
-            }
-          }
-
-          if (hashTable2.get(cntHashCode) == null) {
-            hashTable2.put(cntHashCode, new ArrayList<IndexedTuple>());
-          }
-          final List<IndexedTuple> tupleList = hashTable2.get(cntHashCode);
-          /*
-           * boolean unique = true; for (int j = 0; j < tupleList.size(); ++j) { final IndexedTuple oldTuple =
-           * tupleList.get(j); if (tuple2.equals(oldTuple)) { unique = false; break; } } System.out.println(unique); if
-           * (unique) {
-           */
-          tupleList.add(tuple2);
-          // }
-        }
+        processChild2TB(tb);
       }
-      nexttb = ans.pop();
+      nexttb = ans.popFilled();
       if (!hasNewTuple) {
-        endOfFlow = true;
         break;
       }
     }
     if (nexttb == null) {
-      nexttb = ans.getOutput().get(0);
+      if (ans.numTuples() > 0) {
+        nexttb = ans.popAny();
+      }
     }
     return nexttb;
   }
@@ -238,14 +216,7 @@ public class LocalJoin extends Operator implements Externalizable {
   }
 
   @Override
-  public void open() throws DbException {
-    if (child1 != null) {
-      child1.open();
-    }
-    if (child2 != null) {
-      child2.open();
-    }
-    super.open();
+  public void init() throws DbException {
   }
 
   @Override
@@ -273,6 +244,15 @@ public class LocalJoin extends Operator implements Externalizable {
     out.writeObject(compareIndx1);
     out.writeObject(compareIndx2);
     out.writeObject(outputSchema);
+  }
+
+  @Override
+  protected void cleanup() throws DbException {
+  }
+
+  @Override
+  public _TupleBatch fetchNextReady() throws DbException {
+    return null;
   }
 
 }

@@ -3,6 +3,10 @@ package edu.washington.escience.myriad.table;
 import java.io.Serializable;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.apache.commons.lang3.tuple.Pair;
 
 import edu.washington.escience.myriad.Predicate;
 import edu.washington.escience.myriad.Schema;
@@ -37,35 +41,78 @@ public interface _TupleBatch extends Serializable {
   /* -------------------The data processing methods -------------------- */
 
   /* -------------------- The value retrieval methods ------------------ */
+  /**
+   * Returns the element at the specified column and row position.
+   * 
+   * @param column column in which the element is stored.
+   * @param row row in which the element is stored.
+   * @return the element at the specified position in this TupleBatch.
+   */
   boolean getBoolean(int column, int row);
 
+  /**
+   * Returns the element at the specified column and row position.
+   * 
+   * @param column column in which the element is stored.
+   * @param row row in which the element is stored.
+   * @return the element at the specified position in this TupleBatch.
+   */
   double getDouble(int column, int row);
 
+  /**
+   * Returns the element at the specified column and row position.
+   * 
+   * @param column column in which the element is stored.
+   * @param row row in which the element is stored.
+   * @return the element at the specified position in this TupleBatch.
+   */
   float getFloat(int column, int row);
 
+  /**
+   * Returns the element at the specified column and row position.
+   * 
+   * @param column column in which the element is stored.
+   * @param row row in which the element is stored.
+   * @return the element at the specified position in this TupleBatch.
+   */
   int getInt(int column, int row);
 
+  /**
+   * Returns the element at the specified column and row position.
+   * 
+   * @param column column in which the element is stored.
+   * @param row row in which the element is stored.
+   * @return the element at the specified position in this TupleBatch.
+   */
   long getLong(int column, int row);
 
-  String getString(int column, int row);
+  /**
+   * Returns the element at the specified column and row position.
+   * 
+   * @param column column in which the element is stored.
+   * @param row row in which the element is stored.
+   * @return the element at the specified position in this TupleBatch.
+   */
+  Object getObject(int column, int row);
 
-  _TupleBatch groupby();
+  /**
+   * Returns the element at the specified column and row position.
+   * 
+   * @param column column in which the element is stored.
+   * @param row row in which the element is stored.
+   * @return the element at the specified position in this TupleBatch.
+   */
+  String getString(int column, int row);
 
   int hashCode(int rowIndx);
 
-  int hashCode4Keys(int index, int[] colIndx);
+  int hashCode(int index, int[] colIndx);
 
   Schema inputSchema();
-
-  _TupleBatch intersect(_TupleBatch another);
-
-  _TupleBatch join(_TupleBatch other, Predicate p, _TupleBatch output);
 
   int numInputTuples();
 
   int numOutputTuples();
-
-  _TupleBatch orderby();
 
   List<Column> outputRawData();
 
@@ -74,6 +121,8 @@ public interface _TupleBatch extends Serializable {
    * schema.
    */
   Schema outputSchema();
+
+  Set<Pair<Object, TupleBatchBuffer>> groupby(int groupByColumn, Map<Object, Pair<Object, TupleBatchBuffer>> buffers);
 
   /* -------------------- The parallel methods ------------------------ */
 

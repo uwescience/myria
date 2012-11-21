@@ -10,6 +10,8 @@ import edu.washington.escience.myriad.table._TupleBatch;
 
 public class SQLiteQueryScan extends Operator {
 
+  private static Operator[] children = new Operator[] {};
+
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   private Iterator<TupleBatch> tuples;
@@ -22,17 +24,16 @@ public class SQLiteQueryScan extends Operator {
     this.baseSQL = baseSQL;
     this.filename = filename;
     schema = outputSchema;
+    dataDir = ".";
   }
 
   @Override
-  public void close() {
-    super.close();
+  public void cleanup() {
     tuples = null;
   }
 
   @Override
   protected _TupleBatch fetchNext() throws DbException {
-
     if (tuples == null) {
       tuples = SQLiteAccessMethod.tupleBatchIteratorFromQuery(dataDir + "/" + filename, baseSQL, schema);
     }
@@ -46,7 +47,7 @@ public class SQLiteQueryScan extends Operator {
 
   @Override
   public Operator[] getChildren() {
-    return null;
+    return children;
   }
 
   @Override
@@ -55,8 +56,7 @@ public class SQLiteQueryScan extends Operator {
   }
 
   @Override
-  public void open() throws DbException {
-    super.open();
+  public void init() throws DbException {
   }
 
   @Override
@@ -66,6 +66,15 @@ public class SQLiteQueryScan extends Operator {
 
   public void setDataDir(final String dataDir) {
     this.dataDir = dataDir;
+  }
+
+  /**
+   * For query scan, we assume that fetchNext is non-blocking, i.e. the cost of fetching a TupleBatch is very low.
+   * Therefore, directly fetch.
+   * */
+  @Override
+  public _TupleBatch fetchNextReady() throws DbException {
+    return fetchNext();
   }
 
 }

@@ -22,10 +22,10 @@ public final class CollectConsumer extends Consumer {
 
   private static final long serialVersionUID = 1L;
 
-  private Schema schema;
+  private final Schema schema;
   private final BitSet workerEOS;
   private final int[] sourceWorkers;
-  private boolean finish = false;
+  // private final boolean finish = false;
   private final Map<Integer, Integer> workerIdToIndex;
 
   /**
@@ -35,18 +35,21 @@ public final class CollectConsumer extends Consumer {
 
   /**
    * If a child is provided, the TupleDesc is the child's TD
+   * 
+   * @throws DbException
    */
-  public CollectConsumer(final CollectProducer child, final ExchangePairID operatorID, final int[] workerIDs) {
+  public CollectConsumer(final CollectProducer child, final ExchangePairID operatorID, final int[] workerIDs)
+      throws DbException {
     super(operatorID);
     this.child = child;
-    this.schema = child.getSchema();
-    this.sourceWorkers = workerIDs;
-    this.workerIdToIndex = new HashMap<Integer, Integer>();
+    schema = child.getSchema();
+    sourceWorkers = workerIDs;
+    workerIdToIndex = new HashMap<Integer, Integer>();
     int idx = 0;
     for (final int w : workerIDs) {
-      this.workerIdToIndex.put(w, idx++);
+      workerIdToIndex.put(w, idx++);
     }
-    this.workerEOS = new BitSet(workerIDs.length);
+    workerEOS = new BitSet(workerIDs.length);
   }
 
   /**
@@ -55,83 +58,96 @@ public final class CollectConsumer extends Consumer {
   public CollectConsumer(final Schema schema, final ExchangePairID operatorID, final int[] workerIDs) {
     super(operatorID);
     this.schema = schema;
-    this.sourceWorkers = workerIDs;
-    this.workerIdToIndex = new HashMap<Integer, Integer>();
+    sourceWorkers = workerIDs;
+    workerIdToIndex = new HashMap<Integer, Integer>();
     int idx = 0;
     for (final int w : workerIDs) {
-      this.workerIdToIndex.put(w, idx++);
+      workerIdToIndex.put(w, idx++);
     }
-    this.workerEOS = new BitSet(workerIDs.length);
+    workerEOS = new BitSet(workerIDs.length);
   }
 
   @Override
-  public void close() {
-    super.close();
-    this.setInputBuffer(null);
-    this.workerEOS.clear();
+  public void cleanup() {
+    setInputBuffer(null);
+    workerEOS.clear();
   }
 
   @Override
   protected _TupleBatch fetchNext() throws DbException {
-    if (!finish) {
-      try {
-        return getTuples();
-      } catch (final InterruptedException e) {
-        e.printStackTrace();
-        throw new DbException(e.getLocalizedMessage());
-      }
+    try {
+      return getTuples(true);
+    } catch (final InterruptedException e) {
+      e.printStackTrace();
+      Thread.currentThread().interrupt();
+      throw new DbException(e);
     }
-    return null;
   }
 
   @Override
   public Operator[] getChildren() {
-    return new Operator[] { this.child };
-  }
-
-  @Override
-  public String getName() {
-    return "collect_c";
+    return new Operator[] { child };
   }
 
   @Override
   public Schema getSchema() {
-    if (this.child != null) {
-      return this.child.getSchema();
+    if (child != null) {
+      return child.getSchema();
     } else {
-      return this.schema;
+      return schema;
     }
   }
 
-  _TupleBatch getTuples() throws InterruptedException {
-    ExchangeTupleBatch tb = null;
+  private final _TupleBatch getTuples(boolean blocking) throws InterruptedException {
 
-    while (this.workerEOS.nextClearBit(0) < this.sourceWorkers.length) {
-      tb = this.take(-1);
-      if (tb.isEos()) {
-        this.workerEOS.set(this.workerIdToIndex.get(tb.getWorkerID()));
-      } else {
-        return tb.getRealData();
+    int timeToWait = -1;
+    if (!blocking) {
+      timeToWait = 0;
+    }
+
+    ExchangeTupleBatch tb = null;
+    _TupleBatch result = null;
+    while (workerEOS.nextClearBit(0) < sourceWorkers.length) {
+      tb = take(timeToWait);
+      if (tb != null) {
+        if (tb.isEos()) {
+          workerEOS.set(workerIdToIndex.get(tb.getWorkerID()));
+          System.out.println("EOS received in CollectConsumer. From WorkerID:" + tb.getWorkerID());
+        } else {
+          result = tb.getRealData();
+          break;
+        }
       }
     }
     // have received all the eos message from all the workers
-    this.finish = true;
-    return null;
+    // finish = true;
+    if (result == null) {
+      setEOS();
+    }
+    return result;
   }
 
   @Override
-  public void open() throws DbException {
-    if (this.child != null) {
-      this.child.open();
-    }
-    super.open();
+  public void init() throws DbException {
   }
 
   @Override
   public void setChildren(final Operator[] children) {
-    this.child = (CollectProducer) children[0];
-    if (this.child != null) {
-      this.schema = this.child.getSchema();
+    child = (CollectProducer) children[0];
+  }
+
+  @Override
+  public _TupleBatch fetchNextReady() throws DbException {
+    if (!eos()) {
+      try {
+        return getTuples(false);
+      } catch (final InterruptedException e) {
+        e.printStackTrace();
+        Thread.currentThread().interrupt();
+        throw new DbException(e.getLocalizedMessage());
+      }
     }
+    return null;
+
   }
 }

@@ -1,10 +1,12 @@
 package edu.washington.escience.myriad.parallel;
 
-import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 
 import edu.washington.escience.myriad.Predicate;
 import edu.washington.escience.myriad.Schema;
@@ -42,15 +44,10 @@ public class JdbcTupleBatch implements _TupleBatch {
 
   @Override
   public synchronized _TupleBatch append(final _TupleBatch another) {
-    final Iterator<Schema.TDItem> it = inputSchema.iterator();
-
-    final String[] fieldNames = new String[inputSchema.numFields()];
+    final String[] fieldNames = inputSchema.getFieldNames();
     final String[] placeHolders = new String[inputSchema.numFields()];
-    int i = 0;
-    while (it.hasNext()) {
-      final Schema.TDItem item = it.next();
+    for (int i = 0; i < inputSchema.numFields(); ++i) {
       placeHolders[i] = "?";
-      fieldNames[i++] = item.getName();
     }
 
     JdbcAccessMethod.tupleBatchInsert(driverClass, connectString, "insert into " + tableName + " ( "
@@ -107,15 +104,20 @@ public class JdbcTupleBatch implements _TupleBatch {
   }
 
   @Override
+  public final Object getObject(final int column, final int row) {
+    return null;
+  }
+
+  @Override
   public synchronized String getString(final int column, final int row) {
     // return ((StringColumn) inputColumns.get(column)).getString(row);
     return null;
   }
 
   @Override
-  public synchronized _TupleBatch groupby() {
-    // TODO Auto-generated method stub
-    return null;
+  public Set<Pair<Object, TupleBatchBuffer>> groupby(int groupByColumn,
+      Map<Object, Pair<Object, TupleBatchBuffer>> buffers) {
+    throw new UnsupportedOperationException();
   }
 
   @Override
@@ -124,25 +126,13 @@ public class JdbcTupleBatch implements _TupleBatch {
   }
 
   @Override
-  public int hashCode4Keys(final int rowIndx, final int[] colIndx) {
+  public int hashCode(final int rowIndx, final int[] colIndx) {
     throw new UnsupportedOperationException();
   }
 
   @Override
   public Schema inputSchema() {
     return inputSchema;
-  }
-
-  @Override
-  public synchronized _TupleBatch intersect(final _TupleBatch another) {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
-  public synchronized _TupleBatch join(final _TupleBatch other, final Predicate p, final _TupleBatch output) {
-    // TODO Auto-generated method stub
-    return null;
   }
 
   @Override
@@ -153,12 +143,6 @@ public class JdbcTupleBatch implements _TupleBatch {
   @Override
   public synchronized int numOutputTuples() {
     return numInputTuples;
-  }
-
-  @Override
-  public synchronized _TupleBatch orderby() {
-    // TODO Auto-generated method stub
-    return null;
   }
 
   protected synchronized int[] outputColumnIndices() {

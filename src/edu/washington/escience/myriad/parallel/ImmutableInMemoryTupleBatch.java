@@ -3,15 +3,17 @@ package edu.washington.escience.myriad.parallel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
-import java.util.Iterator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.tuple.Pair;
 
 import edu.washington.escience.myriad.Predicate;
 import edu.washington.escience.myriad.Schema;
-import edu.washington.escience.myriad.Schema.TDItem;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.annotation.ThreadSafe;
@@ -54,12 +56,7 @@ public class ImmutableInMemoryTupleBatch implements _TupleBatch {
     /* All columns are valid */
     invalidColumns = new BitSet(inputSchema.numFields());
     // validColumns.set(0, inputSchema.numFields());
-    outputColumnNames = new String[inputSchema.numFields()];
-    final Iterator<TDItem> it = inputSchema.iterator();
-    int i = 0;
-    while (it.hasNext()) {
-      outputColumnNames[i++] = it.next().getName();
-    }
+    outputColumnNames = inputSchema.getFieldNames();
   }
 
   public ImmutableInMemoryTupleBatch(final Schema inputSchema, final List<Column> columns, final int numTuples,
@@ -74,12 +71,7 @@ public class ImmutableInMemoryTupleBatch implements _TupleBatch {
     /* All columns are valid */
     invalidColumns = new BitSet(inputSchema.numFields());
     // validColumns.set(0, inputSchema.numFields());
-    outputColumnNames = new String[inputSchema.numFields()];
-    final Iterator<TDItem> it = inputSchema.iterator();
-    int i = 0;
-    while (it.hasNext()) {
-      outputColumnNames[i++] = it.next().getName();
-    }
+    outputColumnNames = inputSchema.getFieldNames();
   }
 
   /**
@@ -157,14 +149,47 @@ public class ImmutableInMemoryTupleBatch implements _TupleBatch {
   }
 
   @Override
+  public final Object getObject(final int column, final int row) {
+    return inputColumns.get(column).get(row);
+  }
+
+  @Override
   public String getString(final int column, final int row) {
     return ((StringColumn) inputColumns.get(column)).getString(row);
   }
 
   @Override
-  public _TupleBatch groupby() {
-    // TODO Auto-generated method stub
-    return null;
+  public Set<Pair<Object, TupleBatchBuffer>> groupby(int groupByColumn,
+      Map<Object, Pair<Object, TupleBatchBuffer>> buffers) {
+    Set<Pair<Object, TupleBatchBuffer>> ready = null;
+    List<Column> columns = outputRawData();
+    Column gC = columns.get(groupByColumn);
+
+    int numR = gC.size();
+    for (int i = 0; i < numR; i++) {
+      Object v = gC.get(i);
+      Pair<Object, TupleBatchBuffer> kvPair = buffers.get(v);
+      TupleBatchBuffer tbb = null;
+      if (kvPair == null) {
+        tbb = new TupleBatchBuffer(inputSchema());
+        kvPair = Pair.of(v, tbb);
+        buffers.put(v, kvPair);
+      } else {
+        tbb = kvPair.getRight();
+      }
+      int j = 0;
+      for (Column c : columns) {
+        tbb.put(j, c.get(i));
+        j++;
+      }
+      if (tbb.hasFilledTB()) {
+        if (ready == null) {
+          ready = new HashSet<Pair<Object, TupleBatchBuffer>>();
+        }
+        ready.add(kvPair);
+      }
+    }
+    return ready;
   }
 
   @Override
@@ -178,11 +203,11 @@ public class ImmutableInMemoryTupleBatch implements _TupleBatch {
   }
 
   @Override
-  public int hashCode4Keys(final int rowIndx, final int[] colIndx) {
+  public int hashCode(final int rowIndx, final int[] colIndx) {
     // return 0;
     final HashCodeBuilder hb = new HashCodeBuilder(MAGIC_HASHCODE1, MAGIC_HASHCODE2);
-    for (int i = 0; i < colIndx.length; ++i) {
-      hb.append(inputColumns.get(colIndx[i]).get(rowIndx));
+    for (int element : colIndx) {
+      hb.append(inputColumns.get(element).get(rowIndx));
     }
     return hb.toHashCode();
   }
@@ -193,18 +218,6 @@ public class ImmutableInMemoryTupleBatch implements _TupleBatch {
   }
 
   @Override
-  public _TupleBatch intersect(final _TupleBatch another) {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
-  public _TupleBatch join(final _TupleBatch other, final Predicate p, final _TupleBatch output) {
-    // TODO Auto-generated method stub
-    return null;
-  }
-
-  @Override
   public int numInputTuples() {
     return numInputTuples;
   }
@@ -212,12 +225,6 @@ public class ImmutableInMemoryTupleBatch implements _TupleBatch {
   @Override
   public int numOutputTuples() {
     return numInputTuples - invalidTuples.cardinality();
-  }
-
-  @Override
-  public _TupleBatch orderby() {
-    // TODO Auto-generated method stub
-    return null;
   }
 
   protected int[] outputColumnIndices() {
