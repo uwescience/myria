@@ -51,18 +51,18 @@ public class MergeTest extends SystemTestBase {
       tbl2.put(1, tbl2ID2[i]);
     }
 
-    createTable(WORKER_ID[0], "testtable0", "testtable", "follower long, followee long");
-    createTable(WORKER_ID[0], "testtable1", "testtable", "follower long, followee long");
+    createTable(WORKER_ID[0], "testtable0", "follower long, followee long");
+    createTable(WORKER_ID[0], "testtable1", "follower long, followee long");
     TupleBatch tb = null;
     while ((tb = tbl1.popAny()) != null) {
-      insertWithBothNames(WORKER_ID[0], "testtable", "testtable0", tableSchema, tb);
+      insert(WORKER_ID[0], "testtable0", tableSchema, tb);
     }
     while ((tb = tbl2.popAny()) != null) {
-      insertWithBothNames(WORKER_ID[0], "testtable", "testtable1", tableSchema, tb);
+      insert(WORKER_ID[0], "testtable1", tableSchema, tb);
     }
 
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan("testtable0.db", "select * from testtable", tableSchema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan("testtable1.db", "select * from testtable", tableSchema);
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan(null, "select * from testtable0", tableSchema);
+    final SQLiteQueryScan scan2 = new SQLiteQueryScan(null, "select * from testtable1", tableSchema);
     final Merge merge = new Merge(tableSchema, scan1, scan2);
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final CollectProducer cp = new CollectProducer(merge, serverReceiveID, MASTER_ID);

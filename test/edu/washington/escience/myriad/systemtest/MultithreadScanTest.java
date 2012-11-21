@@ -112,17 +112,17 @@ public class MultithreadScanTest extends SystemTestBase {
     TupleBatchBuffer expectedTBBCopy = new TupleBatchBuffer(tableSchema);
     expectedTBBCopy.merge(expectedTBB);
 
-    createTable(WORKER_ID[0], "testtable0", "testtable", "follower long, followee long");
-    createTable(WORKER_ID[1], "testtable0", "testtable", "follower long, followee long");
+    createTable(WORKER_ID[0], "testtable", "follower long, followee long");
+    createTable(WORKER_ID[1], "testtable", "follower long, followee long");
     // }
     TupleBatch tb = null;
     while ((tb = tbl1Worker1.popAny()) != null) {
-      insertWithBothNames(WORKER_ID[0], "testtable", "testtable0", tableSchema, tb);
-      insertWithBothNames(WORKER_ID[1], "testtable", "testtable0", tableSchema, tb);
+      insert(WORKER_ID[0], "testtable", tableSchema, tb);
+      insert(WORKER_ID[1], "testtable", tableSchema, tb);
     }
 
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan("testtable0.db", "select * from testtable", tableSchema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan("testtable0.db", "select * from testtable", tableSchema);
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan(null, "select * from testtable", tableSchema);
+    final SQLiteQueryScan scan2 = new SQLiteQueryScan(null, "select * from testtable", tableSchema);
     final LocalJoin localjoin = new LocalJoin(joinSchema, scan1, scan2, new int[] { 1 }, new int[] { 0 });
     final Project proj = new Project(new Integer[] { 0, 3 }, localjoin);
     final DupElim de = new DupElim(proj);
@@ -185,21 +185,21 @@ public class MultithreadScanTest extends SystemTestBase {
     TupleBatchBuffer expectedTBB = getResultInMemory(table1, tableSchema, 2);
     TupleBatchBuffer expectedTBBCopy = getResultInMemory(table1, tableSchema, 2);
 
-    createTable(WORKER_ID[0], "testtable0", "testtable", "follower long, followee long");
-    createTable(WORKER_ID[1], "testtable0", "testtable", "follower long, followee long");
+    createTable(WORKER_ID[0], "testtable", "follower long, followee long");
+    createTable(WORKER_ID[1], "testtable", "follower long, followee long");
     TupleBatch tb = null;
     while ((tb = tbl1Worker1.popAny()) != null) {
-      insertWithBothNames(WORKER_ID[0], "testtable", "testtable0", tableSchema, tb);
-      insertWithBothNames(WORKER_ID[1], "testtable", "testtable0", tableSchema, tb);
+      insert(WORKER_ID[0], "testtable", tableSchema, tb);
+      insert(WORKER_ID[1], "testtable", tableSchema, tb);
     }
 
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan("testtable0.db", "select * from testtable", tableSchema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan("testtable0.db", "select * from testtable", tableSchema);
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan(null, "select * from testtable", tableSchema);
+    final SQLiteQueryScan scan2 = new SQLiteQueryScan(null, "select * from testtable", tableSchema);
     final LocalJoin localjoin1 = new LocalJoin(joinSchema, scan1, scan2, new int[] { 1 }, new int[] { 0 });
     final Project proj1 = new Project(new Integer[] { 0, 3 }, localjoin1);
     final DupElim de1 = new DupElim(proj1);
-    final SQLiteQueryScan scan3 = new SQLiteQueryScan("testtable0.db", "select * from testtable", tableSchema);
-    final SQLiteQueryScan scan4 = new SQLiteQueryScan("testtable0.db", "select * from testtable", tableSchema);
+    final SQLiteQueryScan scan3 = new SQLiteQueryScan(null, "select * from testtable", tableSchema);
+    final SQLiteQueryScan scan4 = new SQLiteQueryScan(null, "select * from testtable", tableSchema);
     final LocalJoin localjoin2 = new LocalJoin(joinSchema, scan3, scan4, new int[] { 1 }, new int[] { 0 });
     final Project proj2 = new Project(new Integer[] { 0, 3 }, localjoin2);
     final DupElim de2 = new DupElim(proj2);

@@ -24,8 +24,8 @@ public class CollectTest extends SystemTestBase {
   @Test
   public void collectTest() throws DbException, IOException, CatalogException {
     String testtableName = "testtable";
-    createTable(WORKER_ID[0], testtableName, testtableName, "id long, name varchar(20)");
-    createTable(WORKER_ID[1], testtableName, testtableName, "id long, name varchar(20)");
+    createTable(WORKER_ID[0], testtableName, "id long, name varchar(20)");
+    createTable(WORKER_ID[1], testtableName, "id long, name varchar(20)");
 
     String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, 200, 20);
     long[] ids = TestUtils.randomLong(1000, 1005, names.length);
@@ -51,8 +51,7 @@ public class CollectTest extends SystemTestBase {
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
 
-    final SQLiteQueryScan scanTable =
-        new SQLiteQueryScan(testtableName + ".db", "select * from " + testtableName, schema);
+    final SQLiteQueryScan scanTable = new SQLiteQueryScan(null, "select * from " + testtableName, schema);
 
     final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
     final CollectProducer cp1 = new CollectProducer(scanTable, serverReceiveID, MASTER_ID);
@@ -67,8 +66,7 @@ public class CollectTest extends SystemTestBase {
       }
     }
 
-    final CollectConsumer serverPlan =
-        new CollectConsumer(schema, serverReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
+    final CollectConsumer serverPlan = new CollectConsumer(schema, serverReceiveID, WORKER_ID);
     Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
     LOGGER.debug("Query dispatched to the workers");
     TupleBatchBuffer result = null;

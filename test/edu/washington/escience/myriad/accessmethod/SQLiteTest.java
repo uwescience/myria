@@ -64,7 +64,7 @@ public class SQLiteTest {
     /* Scan the testtable in database */
     final SQLiteQueryScan scan = new SQLiteQueryScan(new File(dbAbsolutePath).getName(), query, outputSchema);
 
-    scan.setDataDir(new File(dbAbsolutePath).getParent());
+    scan.setPathToSQLiteDb(dbAbsolutePath);
 
     /* Filter on first column INTEGER >= 50 */
     // Filter filter1 = new Filter(Predicate.Op.GREATER_THAN_OR_EQ, 0, new Long(50), scan);

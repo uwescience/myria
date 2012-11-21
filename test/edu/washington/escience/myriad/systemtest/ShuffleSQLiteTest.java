@@ -40,10 +40,10 @@ public class ShuffleSQLiteTest extends SystemTestBase {
     String temptable1Name = "temptable1";
     String temptable2Name = "temptable2";
 
-    createTable(WORKER_ID[0], "temptable", temptable1Name, "id int, name varchar(20)");
-    createTable(WORKER_ID[0], "temptable", temptable2Name, "id int, name varchar(20)");
-    createTable(WORKER_ID[1], "temptable", temptable1Name, "id int, name varchar(20)");
-    createTable(WORKER_ID[1], "temptable", temptable2Name, "id int, name varchar(20)");
+    createTable(WORKER_ID[0], temptable1Name, "id int, name varchar(20)");
+    createTable(WORKER_ID[0], temptable2Name, "id int, name varchar(20)");
+    createTable(WORKER_ID[1], temptable1Name, "id int, name varchar(20)");
+    createTable(WORKER_ID[1], temptable2Name, "id int, name varchar(20)");
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final ExchangePairID shuffle1ID = ExchangePairID.newID();

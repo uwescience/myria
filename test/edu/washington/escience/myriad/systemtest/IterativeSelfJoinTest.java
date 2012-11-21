@@ -126,24 +126,24 @@ public class IterativeSelfJoinTest extends SystemTestBase {
 
     // database generation
     for (int i = 0; i < numIteration; ++i) {
-      createTable(WORKER_ID[0], "testtable" + i, "testtable", "follower long, followee long");
-      createTable(WORKER_ID[1], "testtable" + i, "testtable", "follower long, followee long");
+      createTable(WORKER_ID[0], "testtable" + i, "follower long, followee long");
+      createTable(WORKER_ID[1], "testtable" + i, "follower long, followee long");
     }
     TupleBatch tb = null;
     while ((tb = tbl1Worker1.popAny()) != null) {
       for (int i = 0; i < numIteration; ++i) {
-        insertWithBothNames(WORKER_ID[0], "testtable", "testtable" + i, tableSchema, tb);
+        insert(WORKER_ID[0], "testtable" + i, tableSchema, tb);
       }
     }
     while ((tb = tbl1Worker2.popAny()) != null) {
       for (int i = 0; i < numIteration; ++i) {
-        insertWithBothNames(WORKER_ID[1], "testtable", "testtable" + i, tableSchema, tb);
+        insert(WORKER_ID[1], "testtable" + i, tableSchema, tb);
       }
     }
 
     // parallel query generation, duplicate db files
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan("testtable0.db", "select * from testtable", tableSchema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan("testtable1.db", "select * from testtable", tableSchema);
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan(null, "select * from testtable0", tableSchema);
+    final SQLiteQueryScan scan2 = new SQLiteQueryScan(null, "select * from testtable0", tableSchema);
 
     final int numPartition = 2;
     final PartitionFunction<String, Integer> pf0 = new SingleFieldHashPartitionFunction(numPartition); // 2 workers
@@ -179,7 +179,7 @@ public class IterativeSelfJoinTest extends SystemTestBase {
       if (i == numIteration - 1) {
         break;
       }
-      scan[i] = new SQLiteQueryScan("testtable" + (i + 1) + ".db", "select * from testtable", tableSchema);
+      scan[i] = new SQLiteQueryScan(null, "select * from testtable" + i, tableSchema);
       arrayID1 = ExchangePairID.newID();
       arrayID2 = ExchangePairID.newID();
       sp1[i] = new ShuffleProducer(scan[i], arrayID1, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf1);

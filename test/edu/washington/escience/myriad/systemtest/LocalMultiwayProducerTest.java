@@ -62,17 +62,17 @@ public class LocalMultiwayProducerTest extends SystemTestBase {
       }
     }
 
-    createTable(WORKER_ID[0], "testtable0", "testtable", "follower long, followee long");
-    createTable(WORKER_ID[1], "testtable0", "testtable", "follower long, followee long");
+    createTable(WORKER_ID[0], "testtable", "follower long, followee long");
+    createTable(WORKER_ID[1], "testtable", "follower long, followee long");
     TupleBatch tb = null;
     while ((tb = tbl1.popAny()) != null) {
-      insertWithBothNames(WORKER_ID[0], "testtable", "testtable0", tableSchema, tb);
+      insert(WORKER_ID[0], "testtable", tableSchema, tb);
     }
     while ((tb = tbl2.popAny()) != null) {
-      insertWithBothNames(WORKER_ID[1], "testtable", "testtable0", tableSchema, tb);
+      insert(WORKER_ID[1], "testtable", tableSchema, tb);
     }
 
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan("testtable0.db", "select * from testtable", tableSchema);
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan(null, "select * from testtable", tableSchema);
     final ExchangePairID consumerID1 = ExchangePairID.newID();
     final ExchangePairID consumerID2 = ExchangePairID.newID();
     final LocalMultiwayProducer multiProducer1 =

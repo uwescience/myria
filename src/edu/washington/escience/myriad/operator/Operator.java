@@ -166,13 +166,9 @@ public abstract class Operator implements Serializable {
    * 
    * Only call this method if the operator is a leaf operator.
    * 
-   * */
+   */
   protected final void setEOS() {
     eos = true;
-  }
-
-  public boolean isOpen() {
-    return open;
   }
 
   /**

@@ -1,7 +1,6 @@
 package edu.washington.escience.myriad.parallel;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -10,6 +9,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
@@ -334,7 +334,7 @@ public class Worker {
 
   }
 
-  private final File dataDir;
+  private final Properties databaseHandle;
 
   /**
    * The ID of this worker.
@@ -385,7 +385,18 @@ public class Worker {
   public Worker(final String workingDirectory) throws CatalogException, FileNotFoundException {
     catalog = WorkerCatalog.open(FilenameUtils.concat(workingDirectory, "worker.catalog"));
     myID = Integer.parseInt(catalog.getConfigurationValue("worker.identifier"));
-    dataDir = new File(catalog.getConfigurationValue("worker.data.sqlite.dir"));
+    databaseHandle = new Properties();
+    String databaseType = catalog.getConfigurationValue("worker.data.type");
+    switch (databaseType) {
+      case "sqlite":
+        databaseHandle.setProperty("sqliteFile", catalog.getConfigurationValue("worker.data.sqlite.db"));
+        break;
+      case "mysql":
+        /* TODO fill this in. */
+        break;
+      default:
+        throw new CatalogException("Unknown worker type: " + databaseType);
+    }
     mySocketInfo = catalog.getWorkers().get(myID);
 
     dataBuffer = new HashMap<ExchangePairID, LinkedBlockingQueue<ExchangeData>>();
@@ -463,14 +474,26 @@ public class Worker {
       return;
     }
     if (queryPlan instanceof SQLiteQueryScan) {
+      final String sqliteDatabaseFilename = databaseHandle.getProperty("sqliteFile");
+      if (sqliteDatabaseFilename == null) {
+        throw new DbException("Unable to instantiate SQLiteQueryScan on non-sqlite worker");
+      }
       final SQLiteQueryScan ss = ((SQLiteQueryScan) queryPlan);
-      ss.setDataDir(dataDir.getAbsolutePath());
+      ss.setPathToSQLiteDb(sqliteDatabaseFilename);
     } else if (queryPlan instanceof SQLiteSQLProcessor) {
+      final String sqliteDatabaseFilename = databaseHandle.getProperty("sqliteFile");
+      if (sqliteDatabaseFilename == null) {
+        throw new DbException("Unable to instantiate SQLiteSQLProcessor on non-sqlite worker");
+      }
       final SQLiteSQLProcessor ss = ((SQLiteSQLProcessor) queryPlan);
-      ss.setDataDir(dataDir.getAbsolutePath());
+      ss.setPathToSQLiteDb(sqliteDatabaseFilename);
     } else if (queryPlan instanceof SQLiteInsert) {
+      final String sqliteDatabaseFilename = databaseHandle.getProperty("sqliteFile");
+      if (sqliteDatabaseFilename == null) {
+        throw new DbException("Unable to instantiate SQLiteInsert on non-sqlite worker");
+      }
       final SQLiteInsert insert = ((SQLiteInsert) queryPlan);
-      insert.setPathToSQLiteDb(FilenameUtils.concat(dataDir.getAbsolutePath(), "data.db"));
+      insert.setPathToSQLiteDb(sqliteDatabaseFilename);
       insert.setExecutorService(Executors.newSingleThreadExecutor());
     } else if (queryPlan instanceof Producer) {
       ((Producer) queryPlan).setConnectionPool(connectionPool);
@@ -483,8 +506,12 @@ public class Worker {
       exchangeSchema.put(c.getOperatorID(), c.getSchema());
 
     } else if (queryPlan instanceof BlockingSQLiteDataReceiver) {
+      final String sqliteDatabaseFilename = databaseHandle.getProperty("sqliteFile");
+      if (sqliteDatabaseFilename == null) {
+        throw new DbException("Unable to instantiate BlockingSQLiteDataReceiver on non-sqlite worker");
+      }
       final BlockingSQLiteDataReceiver bdr = (BlockingSQLiteDataReceiver) queryPlan;
-      bdr.resetDataDir(dataDir.getAbsolutePath());
+      bdr.setPathToSQLiteDb(sqliteDatabaseFilename);
     }
 
     Operator[] children = queryPlan.getChildren();
