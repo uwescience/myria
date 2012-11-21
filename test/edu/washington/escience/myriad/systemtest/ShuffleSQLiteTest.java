@@ -58,20 +58,20 @@ public class ShuffleSQLiteTest extends SystemTestBase {
     final PartitionFunction<String, Integer> pf = new SingleFieldHashPartitionFunction(numPartition);
     pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1); // partition by name
 
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan("testtable1.db", "select * from testtable1", schema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan("testtable2.db", "select * from testtable2", schema);
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan(null, "select * from testtable1", schema);
+    final SQLiteQueryScan scan2 = new SQLiteQueryScan(null, "select * from testtable2", schema);
     final ShuffleProducer sp1 = new ShuffleProducer(scan1, shuffle1ID, WORKER_ID, pf);
 
     final ShuffleProducer sp2 = new ShuffleProducer(scan2, shuffle2ID, WORKER_ID, pf);
 
     final ShuffleConsumer sc1 = new ShuffleConsumer(sp1, shuffle1ID, WORKER_ID);
-    final BlockingSQLiteDataReceiver buffer1 = new BlockingSQLiteDataReceiver("temptable.db", "temptable1", sc1);
+    final BlockingSQLiteDataReceiver buffer1 = new BlockingSQLiteDataReceiver(null, "temptable1", sc1);
 
     final ShuffleConsumer sc2 = new ShuffleConsumer(sp2, shuffle2ID, WORKER_ID);
-    final BlockingSQLiteDataReceiver buffer2 = new BlockingSQLiteDataReceiver("temptable.db", "temptable2", sc2);
+    final BlockingSQLiteDataReceiver buffer2 = new BlockingSQLiteDataReceiver(null, "temptable2", sc2);
 
     final SQLiteSQLProcessor ssp =
-        new SQLiteSQLProcessor("temptable.db",
+        new SQLiteSQLProcessor(null,
             "select * from temptable1 inner join temptable2 on temptable1.name=temptable2.name", outputSchema,
             new Operator[] { buffer1, buffer2 });
 
