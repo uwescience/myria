@@ -348,7 +348,10 @@ public class SystemTestBase {
           tuples.put(t, 1);
           child1Hash.put((Comparable<?>) v, tuples);
         } else {
-          final Integer occur = tuples.get(t);
+          Integer occur = tuples.get(t);
+          if (occur == null) {
+            occur = 1;
+          }
           tuples.put(t, occur + 1);
         }
       }
