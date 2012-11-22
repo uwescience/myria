@@ -49,7 +49,7 @@ import edu.washington.escience.myriad.util.JVMUtils;
  * 
  * To execute a query on a worker, 4 steps are proceeded:
  * 
- * 1) A worker receive a DbIterator instance as its execution plan. The worker then stores the plan and does some
+ * 1) A worker receive an Operator instance as its execution plan. The worker then stores the plan and does some
  * pre-processing, e.g. initializes the data structures which are needed during the execution of the plan.
  * 
  * 2) Each worker sends back to the server a message (it's id) to notify the server that the query plan has been
