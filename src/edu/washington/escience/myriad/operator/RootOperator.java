@@ -118,7 +118,7 @@ public abstract class RootOperator extends Operator {
           consumeTuples(tup);
         }
       } catch (DbException e) {
-        e.printStackTrace();
+        throw new RuntimeException(e);
       }
     }
   }
