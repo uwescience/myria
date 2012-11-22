@@ -490,6 +490,44 @@ public final class Server {
   }
 
   /**
+   * @return if the query is successfully executed.
+   * */
+  public boolean startServerQuery(final int queryId, final EosConsumer serverPlan) throws DbException {
+    BitSet workersReceived = workersReceivedQuery.get(queryId);
+    HashMap<Integer, Integer> workersAssigned = workersAssignedToQuery.get(queryId);
+    if (workersReceived.nextClearBit(0) >= workersAssigned.size()) {
+
+      final LinkedBlockingQueue<ExchangeTupleBatch> buffer = new LinkedBlockingQueue<ExchangeTupleBatch>();
+      dataBuffer.put(serverPlan.getOperatorID(), buffer);
+      serverPlan.setInputBuffer(buffer);
+
+      Date start = new Date();
+      serverPlan.open();
+      startWorkerQuery(queryId);
+
+      while (!serverPlan.eos()) {
+        serverPlan.next();
+      }
+
+      serverPlan.close();
+      dataBuffer.remove(serverPlan.getOperatorID());
+      Date end = new Date();
+      int elapse = (int) (end.getTime() - start.getTime());
+      int hour = elapse / 3600000;
+      elapse -= hour * 3600000;
+      int minute = elapse / 60000;
+      elapse -= minute * 60000;
+      int second = elapse / 1000;
+      elapse -= second * 1000;
+
+      LOGGER.debug(String.format("Time elapsed: %1$dh%2$dm%3$ds.%4$03d", hour, minute, second, elapse));
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  /**
    * This starts a query from the server using the query plan rooted by the given Producer.
    * 
    * @param queryId the id of this query. TODO currently always 0.
@@ -510,6 +548,7 @@ public final class Server {
 
       while (serverPlan.next() != null) {
         /* Do nothing. */
+        ;
       }
 
       serverPlan.close();
@@ -523,7 +562,7 @@ public final class Server {
       int second = elapse / 1000;
       elapse -= second * 1000;
 
-      System.out.println(String.format("Time elapsed: %1$dh%2$dm%3$ds.%4$03d", hour, minute, second, elapse));
+      LOGGER.debug(String.format("Time elapsed: %1$dh%2$dm%3$ds.%4$03d", hour, minute, second, elapse));
       return true;
     } else {
       return false;
