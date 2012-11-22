@@ -37,7 +37,7 @@ public class SingleGroupByAggregate extends Operator {
    * {@link StringAggregator} to help you with your implementation of readNext().
    * 
    * 
-   * @param child The DbIterator that is feeding us tuples.
+   * @param child The Operator that is feeding us tuples.
    * @param afields The columns over which we are computing an aggregate.
    * @param gfield The column over which we are grouping the result
    * @param aggOps The aggregation operator to use
