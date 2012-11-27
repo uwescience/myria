@@ -24,7 +24,7 @@ import edu.washington.escience.myriad.proto.DataProto.LongColumnMessage;
  * @author dhalperi
  * 
  */
-public final class LongColumn implements Column {
+public final class LongColumn implements Column<Long> {
   /** Internal representation of the column data. */
   private final ByteBuffer dataBytes;
   /** View of the column data as longs. */
@@ -32,8 +32,8 @@ public final class LongColumn implements Column {
 
   /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
   public LongColumn() {
-    this.dataBytes = ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Long.SIZE / Byte.SIZE));
-    this.data = dataBytes.asLongBuffer();
+    dataBytes = ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Long.SIZE / Byte.SIZE));
+    data = dataBytes.asLongBuffer();
   }
 
   /**
@@ -48,13 +48,13 @@ public final class LongColumn implements Column {
     if (!message.hasLongColumn()) {
       throw new IllegalArgumentException("ColumnMessage has type LONG but no LongColumn");
     }
-    this.dataBytes = message.getLongColumn().getData().asReadOnlyByteBuffer();
-    this.data = dataBytes.asLongBuffer();
-    this.data.position(message.getNumTuples());
+    dataBytes = message.getLongColumn().getData().asReadOnlyByteBuffer();
+    data = dataBytes.asLongBuffer();
+    data.position(message.getNumTuples());
   }
 
   @Override
-  public Object get(final int row) {
+  public Long get(final int row) {
     return Long.valueOf(getLong(row));
   }
 
@@ -91,7 +91,7 @@ public final class LongColumn implements Column {
   }
 
   @Override
-  public Column putFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException {
+  public Column<Long> putFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException {
     return put(resultSet.getLong(jdbcIndex));
   }
 
@@ -101,7 +101,7 @@ public final class LongColumn implements Column {
   }
 
   @Override
-  public Column putObject(final Object value) {
+  public Column<Long> putObject(final Object value) {
     return put((Long) value);
   }
 

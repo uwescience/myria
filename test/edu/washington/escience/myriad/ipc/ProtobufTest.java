@@ -13,6 +13,7 @@ import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
 import org.junit.Test;
+import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -31,14 +32,14 @@ import edu.washington.escience.myriad.systemtest.SystemTestBase;
 import edu.washington.escience.myriad.table._TupleBatch;
 
 public class ProtobufTest {
+  /** The logger for this class. Defaults to myriad.ipc level. */
+  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger("edu.washington.escience.myriad.ipc");
 
   public static class TestHandler extends IoHandlerAdapter {
 
     @Override
     public final void exceptionCaught(final IoSession session, final Throwable cause) {
-      // System.out.println("exception caught");
-      // cause.printStackTrace();
-      System.out.print(cause.getMessage());
+      LOGGER.error(cause.getMessage());
     }
 
     /**
@@ -55,7 +56,7 @@ public class ProtobufTest {
       //
       synchronized (lock) {
         printed++;
-        System.out.println("Current received: " + printed);
+        LOGGER.debug("Current received: " + printed);
       }
     }
 
@@ -92,10 +93,10 @@ public class ProtobufTest {
     IPCConnectionPool connectionPool = new IPCConnectionPool(0, computingUnits, handlers);
 
     while ((tb = tbb.popAny()) != null) {
-      List<Column> columns = tb.outputRawData();
+      List<Column<?>> columns = tb.outputRawData();
       final ColumnMessage[] columnProtos = new ColumnMessage[columns.size()];
       int j = 0;
-      for (final Column c : columns) {
+      for (final Column<?> c : columns) {
         columnProtos[j] = c.serializeToProto();
         j++;
       }
@@ -155,7 +156,6 @@ public class ProtobufTest {
                                                                                                   // null, 3, null);
     Thread[] threads = new Thread[numThreads];
     for (int i = 0; i < numThreads; i++) {
-      final int t = i;
       Thread tt = new Thread() {
         @Override
         public void run() {
@@ -166,10 +166,10 @@ public class ProtobufTest {
           Iterator<TupleBatch> tbs = tbb.getAll().iterator();
           while (tbs.hasNext()) {
             tb = tbs.next();
-            List<Column> columns = tb.outputRawData();
+            List<Column<?>> columns = tb.outputRawData();
             final ColumnMessage[] columnProtos = new ColumnMessage[columns.size()];
             int j = 0;
-            for (final Column c : columns) {
+            for (final Column<?> c : columns) {
               columnProtos[j] = c.serializeToProto();
               j++;
             }
@@ -190,7 +190,7 @@ public class ProtobufTest {
             // System.out.println("Thread#" + t + " sent a TM");
           }
           // initialSession.close(false).awaitUninterruptibly();
-          System.out.println("sent " + sent);
+          LOGGER.debug("sent " + sent);
         }
       };
       threads[i] = tt;

@@ -24,8 +24,8 @@ public final class SingleFieldHashPartitionFunction extends PartitionFunction<St
   }
 
   @Override
-  public int[] partition(final List<Column> columns, final Schema schema) {
-    final Column partitionColumn = columns.get(fieldIndex);
+  public int[] partition(final List<Column<?>> columns, final Schema schema) {
+    final Column<?> partitionColumn = columns.get(fieldIndex);
     final int numTuples = partitionColumn.size();
     final int[] result = new int[numTuples];
 

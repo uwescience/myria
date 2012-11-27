@@ -190,7 +190,7 @@ public class SQLiteInsert extends RootOperator {
 
         SQLiteStatement insertStatement = sqliteConnection.prepare(insertString);
 
-        List<Column> columns = tupleBatch.outputRawData();
+        List<Column<?>> columns = tupleBatch.outputRawData();
 
         /* Set up and execute the query */
         for (int row = 0; row < tupleBatch.numOutputTuples(); ++row) {

@@ -178,7 +178,7 @@ class SQLiteTupleBatchIterator implements Iterator<TupleBatch> {
   public TupleBatch next() {
     /* Allocate TupleBatch parameters */
     final int numFields = schema.numFields();
-    final List<Column> columns = ColumnFactory.allocateColumns(schema);
+    final List<Column<?>> columns = ColumnFactory.allocateColumns(schema);
 
     /**
      * Loop through resultSet, adding one row at a time. Stop when numTuples hits BATCH_SIZE or there are no more

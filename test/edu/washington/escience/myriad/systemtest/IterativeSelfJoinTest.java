@@ -30,7 +30,6 @@ import edu.washington.escience.myriad.parallel.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myriad.table._TupleBatch;
 
 public class IterativeSelfJoinTest extends SystemTestBase {
-
   // change configuration here
   private final int MaxID = 100;
   private final int numIteration = 4;
@@ -45,7 +44,7 @@ public class IterativeSelfJoinTest extends SystemTestBase {
     boolean cntgraph[][] = new boolean[MaxID][MaxID];
     while (tbs.hasNext()) {
       _TupleBatch tb = tbs.next();
-      List<Column> output = tb.outputRawData();
+      List<Column<?>> output = tb.outputRawData();
       int numRow = output.get(0).size();
       for (int i = 0; i < numRow; i++) {
         int fr = Integer.parseInt(output.get(0).get(i).toString());
@@ -84,11 +83,11 @@ public class IterativeSelfJoinTest extends SystemTestBase {
         if (cntgraph[i][j]) {
           result.put(0, (long) i);
           result.put(1, (long) j);
-          System.out.println(i + "\t" + j);
+          LOGGER.debug(i + "\t" + j);
         }
       }
     }
-    System.out.println(result.numTuples());
+    LOGGER.debug("" + result.numTuples());
     return result;
   }
 
@@ -204,7 +203,7 @@ public class IterativeSelfJoinTest extends SystemTestBase {
     final CollectConsumer serverPlan =
         new CollectConsumer(tableSchema, serverReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
     Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
-    System.out.println("Query dispatched to the workers");
+    LOGGER.debug("Query dispatched to the workers");
     TupleBatchBuffer result = null;
     while ((result = Server.runningInstance.startServerQuery(0, serverPlan)) == null) {
       try {

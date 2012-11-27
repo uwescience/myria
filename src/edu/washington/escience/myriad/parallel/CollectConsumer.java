@@ -4,6 +4,9 @@ import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.operator.Operator;
@@ -19,6 +22,9 @@ import edu.washington.escience.myriad.table._TupleBatch;
  * 
  */
 public final class CollectConsumer extends Consumer {
+
+  /** The logger for this class. Defaults to myriad level, but could be set to a finer granularity if needed. */
+  private static final Logger LOGGER = LoggerFactory.getLogger("edu.washington.escience.myriad");
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -113,7 +119,7 @@ public final class CollectConsumer extends Consumer {
       if (tb != null) {
         if (tb.isEos()) {
           workerEOS.set(workerIdToIndex.get(tb.getWorkerID()));
-          System.out.println("EOS received in CollectConsumer. From WorkerID:" + tb.getWorkerID());
+          LOGGER.debug("EOS received in CollectConsumer. From WorkerID:" + tb.getWorkerID());
         } else {
           result = tb.getRealData();
           break;

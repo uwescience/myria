@@ -25,7 +25,7 @@ import edu.washington.escience.myriad.proto.DataProto.DoubleColumnMessage;
  * @author dhalperi
  * 
  */
-public final class DoubleColumn implements Column {
+public final class DoubleColumn implements Column<Double> {
   /** Internal representation of the column data. */
   private final ByteBuffer dataBytes;
   /** View of the column data as doubles. */
@@ -33,8 +33,8 @@ public final class DoubleColumn implements Column {
 
   /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
   public DoubleColumn() {
-    this.dataBytes = ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Double.SIZE / Byte.SIZE));
-    this.data = dataBytes.asDoubleBuffer();
+    dataBytes = ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Double.SIZE / Byte.SIZE));
+    data = dataBytes.asDoubleBuffer();
   }
 
   /**
@@ -49,13 +49,13 @@ public final class DoubleColumn implements Column {
     if (!message.hasDoubleColumn()) {
       throw new IllegalArgumentException("ColumnMessage has type DOUBLE but no DoubleColumn");
     }
-    this.dataBytes = message.getDoubleColumn().getData().asReadOnlyByteBuffer();
-    this.data = dataBytes.asDoubleBuffer();
-    this.data.position(message.getNumTuples());
+    dataBytes = message.getDoubleColumn().getData().asReadOnlyByteBuffer();
+    data = dataBytes.asDoubleBuffer();
+    data.position(message.getNumTuples());
   }
 
   @Override
-  public Object get(final int row) {
+  public Double get(final int row) {
     return Double.valueOf(getDouble(row));
   }
 
@@ -94,7 +94,7 @@ public final class DoubleColumn implements Column {
   }
 
   @Override
-  public Column putFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException {
+  public Column<Double> putFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException {
     return put(resultSet.getDouble(jdbcIndex));
   }
 
@@ -104,7 +104,7 @@ public final class DoubleColumn implements Column {
   }
 
   @Override
-  public Column putObject(final Object value) {
+  public Column<Double> putObject(final Object value) {
     return put((Double) value);
   }
 
