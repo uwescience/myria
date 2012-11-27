@@ -23,6 +23,7 @@ import org.apache.mina.util.AvailablePortFinder;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.slf4j.LoggerFactory;
 
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
@@ -44,6 +45,8 @@ import edu.washington.escience.myriad.parallel.Worker;
 import edu.washington.escience.myriad.table._TupleBatch;
 
 public class SystemTestBase {
+  /** The logger for this class. Defaults to myriad level, but could be set to a finer granularity if needed. */
+  protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger("edu.washington.escience.myriad");
 
   @SuppressWarnings({ "rawtypes", "unchecked" })
   public static class Tuple implements Comparable<Tuple> {
@@ -554,7 +557,7 @@ public class SystemTestBase {
             if (line == null) {
               break;
             }
-            System.out.println("localhost:" + WORKER_PORT[myWorkerIdx] + "$ " + line);
+            LOGGER.debug("localhost:" + WORKER_PORT[myWorkerIdx] + "$ " + line);
           }
         }
       };

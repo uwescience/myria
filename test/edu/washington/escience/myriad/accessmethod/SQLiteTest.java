@@ -8,6 +8,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.junit.Test;
+import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
@@ -23,6 +24,8 @@ import edu.washington.escience.myriad.systemtest.SystemTestBase.Tuple;
 import edu.washington.escience.myriad.table._TupleBatch;
 
 public class SQLiteTest {
+  /** The logger for this class. Defaults to myriad level, but could be set to a finer granularity if needed. */
+  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger("edu.washington.escience.myriad");
 
   @Test
   public void sqliteTest() throws DbException, IOException, CatalogException {
@@ -77,9 +80,9 @@ public class SQLiteTest {
     /* For debugging purposes, print Schema */
     final Schema schema = root.getSchema();
     if (schema != null) {
-      System.out.println("Schema of result is: " + schema);
+      LOGGER.debug("Schema of result is: " + schema);
     } else {
-      System.err.println("Result has no Schema, exiting");
+      LOGGER.error("Result has no Schema, exiting");
       root.close();
       return;
     }

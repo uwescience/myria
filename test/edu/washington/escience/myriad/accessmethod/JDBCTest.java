@@ -3,6 +3,7 @@ package edu.washington.escience.myriad.accessmethod;
 import java.util.ArrayList;
 
 import org.junit.Test;
+import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Predicate;
@@ -16,6 +17,8 @@ import edu.washington.escience.myriad.operator.Project;
 import edu.washington.escience.myriad.table._TupleBatch;
 
 public class JDBCTest {
+  /** The logger for this class. Defaults to myriad level, but could be set to a finer granularity if needed. */
+  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger("edu.washington.escience.myriad");
 
   @Test
   public void JdbcTest() throws DbException {
@@ -48,7 +51,7 @@ public class JDBCTest {
 
     _TupleBatch tb = null;
     while ((tb = root.next()) != null) {
-      System.out.println(tb);
+      LOGGER.debug(tb.toString());
       JdbcAccessMethod.tupleBatchInsert(jdbcDriverName, connectionString, insert, (TupleBatch) tb, user, password);
     }
 

@@ -12,7 +12,6 @@ public class JdbcQueryScan extends Operator {
 
   private Iterator<TupleBatch> tuples;
   private final Schema schema;
-  // private TupleBatch cache;
   private final String driverClass;
   private final String connectionString;
   private final String baseSQL;
@@ -29,13 +28,7 @@ public class JdbcQueryScan extends Operator {
     this.baseSQL = baseSQL;
     this.username = username;
     this.password = password;
-    // if (tuples.hasNext()) {
-    // cache = tuples.next();
     schema = outputSchema;
-    // } else {
-    // schema = null;
-    // cache = null;
-    // }
   }
 
   @Override
@@ -66,12 +59,6 @@ public class JdbcQueryScan extends Operator {
   public void init() throws DbException {
     tuples = JdbcAccessMethod.tupleBatchIteratorFromQuery(driverClass, connectionString, baseSQL, username, password);
   }
-
-  // @Override
-  // public void rewind() throws DbException {
-  // tuples = JdbcAccessMethod.tupleBatchIteratorFromQuery(driverClass, connectionString, baseSQL);
-  // cache = null;
-  // }
 
   @Override
   public void setChildren(final Operator[] children) {
