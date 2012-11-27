@@ -48,7 +48,7 @@ public abstract class PartitionFunction<K, V> implements Serializable {
    * @return the worker to send the tuple to.
    * 
    */
-  public abstract int[] partition(List<Column> columns, Schema schema);
+  public abstract int[] partition(List<Column<?>> columns, Schema schema);
 
   /**
    * A concrete implementation of a partition function may need some information to help it decide the tuple partitions.

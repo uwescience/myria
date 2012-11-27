@@ -38,7 +38,7 @@ import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 /**
  * Utility methods.
  */
-public class ParallelUtility {
+public final class ParallelUtility {
 
   /** Prevent construction of utility class. */
   private ParallelUtility() {

@@ -145,7 +145,7 @@ public interface _TupleBatch extends Serializable {
 
   int numOutputTuples();
 
-  List<Column> outputRawData();
+  List<Column<?>> outputRawData();
 
   /**
    * @return the schema of the output tuples. The schema may change by projects. This method return the final output

@@ -24,7 +24,7 @@ public final class ExchangeTupleBatch implements _TupleBatch {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
-  public ExchangeTupleBatch(final ExchangePairID oID, final int workerID, final List<Column> columns,
+  public ExchangeTupleBatch(final ExchangePairID oID, final int workerID, final List<Column<?>> columns,
       final Schema inputSchema, final int numTuples) {
     dataHolder = new TupleBatch(inputSchema, columns, numTuples);
     operatorID = oID;
@@ -151,7 +151,7 @@ public final class ExchangeTupleBatch implements _TupleBatch {
   }
 
   @Override
-  public List<Column> outputRawData() {
+  public List<Column<?>> outputRawData() {
     return dataHolder.outputRawData();
   }
 

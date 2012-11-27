@@ -25,7 +25,7 @@ import edu.washington.escience.myriad.proto.DataProto.FloatColumnMessage;
  * @author dhalperi
  * 
  */
-public final class FloatColumn implements Column {
+public final class FloatColumn implements Column<Float> {
   /** Internal representation of the column data. */
   private final ByteBuffer dataBytes;
   /** View of the column data as floats. */
@@ -33,8 +33,8 @@ public final class FloatColumn implements Column {
 
   /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
   public FloatColumn() {
-    this.dataBytes = ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Float.SIZE / Byte.SIZE));
-    this.data = dataBytes.asFloatBuffer();
+    dataBytes = ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Float.SIZE / Byte.SIZE));
+    data = dataBytes.asFloatBuffer();
   }
 
   /**
@@ -49,13 +49,13 @@ public final class FloatColumn implements Column {
     if (!message.hasFloatColumn()) {
       throw new IllegalArgumentException("ColumnMessage has type FLOAT but no FloatColumn");
     }
-    this.dataBytes = message.getFloatColumn().getData().asReadOnlyByteBuffer();
-    this.data = dataBytes.asFloatBuffer();
-    this.data.position(message.getNumTuples());
+    dataBytes = message.getFloatColumn().getData().asReadOnlyByteBuffer();
+    data = dataBytes.asFloatBuffer();
+    data.position(message.getNumTuples());
   }
 
   @Override
-  public Object get(final int row) {
+  public Float get(final int row) {
     return Float.valueOf(getFloat(row));
   }
 
@@ -94,7 +94,7 @@ public final class FloatColumn implements Column {
   }
 
   @Override
-  public Column putFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException {
+  public Column<Float> putFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException {
     return put(resultSet.getFloat(jdbcIndex));
   }
 
@@ -104,7 +104,7 @@ public final class FloatColumn implements Column {
   }
 
   @Override
-  public Column putObject(final Object value) {
+  public Column<Float> putObject(final Object value) {
     return put((Float) value);
   }
 

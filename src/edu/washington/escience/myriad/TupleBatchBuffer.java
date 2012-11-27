@@ -26,7 +26,7 @@ public class TupleBatchBuffer {
   /** List of completed TupleBatch objects. */
   private final List<TupleBatch> readyTuples;
   /** Internal state used to build up a TupleBatch. */
-  private List<Column> currentColumns;
+  private List<Column<?>> currentColumns;
   /** Internal state representing which columns are ready in the current tuple. */
   private final BitSet columnsReady;
   /** Internal state representing the number of columns that are ready in the current tuple. */
@@ -138,6 +138,7 @@ public class TupleBatchBuffer {
    * @param column index of the column.
    * @param value value to be appended.
    */
+
   public final void put(final int column, final Object value) {
     Preconditions.checkElementIndex(column, numColumns);
     if (columnsReady.get(column)) {
@@ -157,7 +158,7 @@ public class TupleBatchBuffer {
   }
 
   public final void putAll(_TupleBatch data) {
-    List<Column> output = data.outputRawData();
+    List<Column<?>> output = data.outputRawData();
     Preconditions.checkState(output.size() == numColumns);
     if (columnsReady.get(0)) {
       throw new RuntimeException("Need to fill up one row of TupleBatchBuffer before starting new one");
