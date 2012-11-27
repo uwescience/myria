@@ -61,7 +61,6 @@ Slightly modified version of Sun Checks that better matches the default code for
       <property name="severity" value="ignore"/>
       <metadata name="net.sf.eclipsecs.core.lastEnabledSeverity" value="inherit"/>
     </module>
-    <module name="EmptyStatement"/>
     <module name="EqualsHashCode"/>
     <module name="HiddenField">
       <property name="tokens" value="VARIABLE_DEF"/>

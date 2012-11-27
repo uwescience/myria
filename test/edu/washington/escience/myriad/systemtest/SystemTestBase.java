@@ -178,9 +178,9 @@ public class SystemTestBase {
     }
   }
 
-  public static void createTable(final int workerID, final String dbFilename, final String tableName,
-      final String sqlSchemaString) throws IOException, CatalogException {
-    createTable(getAbsoluteDBFile(workerID, dbFilename).getAbsolutePath(), tableName, sqlSchemaString);
+  public static void createTable(final int workerID, final String tableName, final String sqlSchemaString)
+      throws IOException, CatalogException {
+    createTable(getAbsoluteDBFile(workerID).getAbsolutePath(), tableName, sqlSchemaString);
   }
 
   public static HashMap<Tuple, Integer> distinct(final TupleBatchBuffer content) {
@@ -204,14 +204,10 @@ public class SystemTestBase {
 
   }
 
-  public static File getAbsoluteDBFile(final int workerID, String dbFilename) throws CatalogException {
-    if (!dbFilename.endsWith(".db")) {
-      dbFilename = dbFilename + ".db";
-    }
-    // return new File(workerTestBaseFolder + File.separator + "worker_" + workerID + File.separator + dbFilename);
+  public static File getAbsoluteDBFile(final int workerID) throws CatalogException {
     String workerDir = FilenameUtils.concat(workerTestBaseFolder, "worker_" + workerID);
     WorkerCatalog wc = WorkerCatalog.open(FilenameUtils.concat(workerDir, "worker.catalog"));
-    File ret = new File(FilenameUtils.concat(wc.getConfigurationValue("worker.data.sqlite.dir"), dbFilename));
+    File ret = new File(wc.getConfigurationValue("worker.data.sqlite.db"));
     wc.close();
     return ret;
   }
@@ -295,16 +291,14 @@ public class SystemTestBase {
   public static void insert(final int workerID, final String tableName, final Schema schema, final _TupleBatch data)
       throws CatalogException {
     String insertTemplate = SQLiteInsert.insertStatementFromSchema(schema, tableName);
-    SQLiteAccessMethod.tupleBatchInsert(getAbsoluteDBFile(workerID, tableName).getAbsolutePath(), insertTemplate,
+    SQLiteAccessMethod.tupleBatchInsert(getAbsoluteDBFile(workerID).getAbsolutePath(), insertTemplate,
         (TupleBatch) data);
-    // SQLiteAccessMethod.insertIntoSQLite(schema, tableName, getAbsoluteDBFile(workerID, tableName).getAbsolutePath(),
-    // data);
   }
 
-  public static void insertWithBothNames(int workerID, String tableName, String dbName, Schema schema, _TupleBatch data)
+  public static void insertWithBothNames(int workerID, String tableName, Schema schema, _TupleBatch data)
       throws CatalogException {
     String insertTemplate = SQLiteInsert.insertStatementFromSchema(schema, tableName);
-    SQLiteAccessMethod.tupleBatchInsert(getAbsoluteDBFile(workerID, dbName).getAbsolutePath(), insertTemplate,
+    SQLiteAccessMethod.tupleBatchInsert(getAbsoluteDBFile(workerID).getAbsolutePath(), insertTemplate,
         (TupleBatch) data);
     // SQLiteAccessMethod.insertIntoSQLite(schema, tableName, getAbsoluteDBFile(workerID, dbName).getAbsolutePath(),
     // data);
@@ -348,7 +342,10 @@ public class SystemTestBase {
           tuples.put(t, 1);
           child1Hash.put((Comparable<?>) v, tuples);
         } else {
-          final Integer occur = tuples.get(t);
+          Integer occur = tuples.get(t);
+          if (occur == null) {
+            occur = 1;
+          }
           tuples.put(t, occur + 1);
         }
       }
@@ -414,17 +411,17 @@ public class SystemTestBase {
   }
 
   public static HashMap<Tuple, Integer> simpleRandomJoinTestBase() throws CatalogException, IOException {
-    createTable(WORKER_ID[0], JOIN_TEST_TABLE_1, JOIN_TEST_TABLE_1, "id long, name varchar(20)"); // worker 1 partition
-                                                                                                  // of
+    createTable(WORKER_ID[0], JOIN_TEST_TABLE_1, "id long, name varchar(20)"); // worker 1 partition
+                                                                               // of
     // table1
-    createTable(WORKER_ID[0], JOIN_TEST_TABLE_2, JOIN_TEST_TABLE_2, "id long, name varchar(20)"); // worker 1 partition
-                                                                                                  // of
+    createTable(WORKER_ID[0], JOIN_TEST_TABLE_2, "id long, name varchar(20)"); // worker 1 partition
+                                                                               // of
     // table2
-    createTable(WORKER_ID[1], JOIN_TEST_TABLE_1, JOIN_TEST_TABLE_1, "id long, name varchar(20)");// worker 2 partition
-                                                                                                 // of
+    createTable(WORKER_ID[1], JOIN_TEST_TABLE_1, "id long, name varchar(20)");// worker 2 partition
+                                                                              // of
     // table1
-    createTable(WORKER_ID[1], JOIN_TEST_TABLE_2, JOIN_TEST_TABLE_2, "id long, name varchar(20)");// worker 2 partition
-                                                                                                 // of
+    createTable(WORKER_ID[1], JOIN_TEST_TABLE_2, "id long, name varchar(20)");// worker 2 partition
+                                                                              // of
     // table2
 
     final String[] tbl1NamesWorker1 = randomFixedLengthNumericString(1000, 2000, 2, 20);

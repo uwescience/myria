@@ -100,6 +100,13 @@ public abstract class Operator implements Serializable {
   }
 
   /**
+   * @return true if this operator is open.
+   */
+  protected final boolean isOpen() {
+    return open;
+  }
+
+  /**
    * Get next TupleBatch. If EOS has not meet, it will wait until a TupleBatch is ready
    * 
    * This method is blocking.

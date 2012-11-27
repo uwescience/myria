@@ -1,6 +1,7 @@
 package edu.washington.escience.myriad.operator;
 
 import java.util.Iterator;
+import java.util.Objects;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
@@ -16,15 +17,22 @@ public class SQLiteQueryScan extends Operator {
   private static final long serialVersionUID = 1L;
   private Iterator<TupleBatch> tuples;
   private final Schema schema;
-  private final String filename;
   private final String baseSQL;
-  private transient String dataDir;
+  private String databaseFilename;
 
-  public SQLiteQueryScan(final String filename, final String baseSQL, final Schema outputSchema) {
+  /**
+   * Construct a new SQLiteQueryScan object.
+   * 
+   * @param databaseFilename the full path to the SQLite database storing the data.
+   * @param baseSQL the selection query.
+   * @param outputSchema the Schema of the returned tuples.
+   */
+  public SQLiteQueryScan(final String databaseFilename, final String baseSQL, final Schema outputSchema) {
+    Objects.requireNonNull(baseSQL);
+    Objects.requireNonNull(outputSchema);
     this.baseSQL = baseSQL;
-    this.filename = filename;
     schema = outputSchema;
-    dataDir = ".";
+    this.databaseFilename = databaseFilename;
   }
 
   @Override
@@ -35,13 +43,12 @@ public class SQLiteQueryScan extends Operator {
   @Override
   protected _TupleBatch fetchNext() throws DbException {
     if (tuples == null) {
-      tuples = SQLiteAccessMethod.tupleBatchIteratorFromQuery(dataDir + "/" + filename, baseSQL, schema);
+      tuples = SQLiteAccessMethod.tupleBatchIteratorFromQuery(databaseFilename, baseSQL, schema);
     }
     if (tuples.hasNext()) {
       return tuples.next();
     } else {
       return null;
-      // }
     }
   }
 
@@ -64,8 +71,11 @@ public class SQLiteQueryScan extends Operator {
     throw new UnsupportedOperationException();
   }
 
-  public void setDataDir(final String dataDir) {
-    this.dataDir = dataDir;
+  public void setPathToSQLiteDb(final String databaseFilename) throws DbException {
+    if (isOpen()) {
+      throw new DbException("Can't change the state of an opened operator.");
+    }
+    this.databaseFilename = databaseFilename;
   }
 
   @Override

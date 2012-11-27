@@ -1,7 +1,6 @@
 package edu.washington.escience.myriad.parallel;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -10,9 +9,11 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -33,6 +34,7 @@ import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.coordinator.catalog.WorkerCatalog;
 import edu.washington.escience.myriad.operator.BlockingDataReceiver;
 import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.operator.SQLiteInsert;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.operator.SQLiteSQLProcessor;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
@@ -51,7 +53,7 @@ import edu.washington.escience.myriad.table._TupleBatch;
  * 
  * To execute a query on a worker, 4 steps are proceeded:
  * 
- * 1) A worker receive a DbIterator instance as its execution plan. The worker then stores the plan and does some
+ * 1) A worker receive an Operator instance as its execution plan. The worker then stores the plan and does some
  * pre-processing, e.g. initializes the data structures which are needed during the execution of the plan.
  * 
  * 2) Each worker sends back to the server a message (it's id) to notify the server that the query plan has been
@@ -152,11 +154,9 @@ public class Worker {
     @Override
     public final void run() {
       while (true) {
-        Operator query = null;
-        query = queryPlan;
-        if (query != null) {
+        final Operator root = queryPlan;
+        if (root != null) {
           LOGGER.debug("Worker start processing query");
-          final CollectProducer root = (CollectProducer) query;
           try {
             root.open();
             while (root.next() != null) {
@@ -347,7 +347,7 @@ public class Worker {
 
   }
 
-  private final File dataDir;
+  private final Properties databaseHandle;
 
   /**
    * The ID of this worker.
@@ -403,7 +403,18 @@ public class Worker {
   public Worker(final String workingDirectory) throws CatalogException, FileNotFoundException {
     catalog = WorkerCatalog.open(FilenameUtils.concat(workingDirectory, "worker.catalog"));
     myID = Integer.parseInt(catalog.getConfigurationValue("worker.identifier"));
-    dataDir = new File(catalog.getConfigurationValue("worker.data.sqlite.dir"));
+    databaseHandle = new Properties();
+    String databaseType = catalog.getConfigurationValue("worker.data.type");
+    switch (databaseType) {
+      case "sqlite":
+        databaseHandle.setProperty("sqliteFile", catalog.getConfigurationValue("worker.data.sqlite.db"));
+        break;
+      case "mysql":
+        /* TODO fill this in. */
+        break;
+      default:
+        throw new CatalogException("Unknown worker type: " + databaseType);
+    }
     mySocketInfo = catalog.getWorkers().get(myID);
 
     acceptor = ParallelUtility.createAcceptor();
@@ -483,13 +494,29 @@ public class Worker {
     }
 
     if (queryPlan instanceof SQLiteQueryScan) {
+      final String sqliteDatabaseFilename = databaseHandle.getProperty("sqliteFile");
+      if (sqliteDatabaseFilename == null) {
+        throw new DbException("Unable to instantiate SQLiteQueryScan on non-sqlite worker");
+      }
       final SQLiteQueryScan ss = ((SQLiteQueryScan) queryPlan);
-      ss.setDataDir(dataDir.getAbsolutePath());
+      ss.setPathToSQLiteDb(sqliteDatabaseFilename);
     } else if (queryPlan instanceof SQLiteSQLProcessor) {
+      final String sqliteDatabaseFilename = databaseHandle.getProperty("sqliteFile");
+      if (sqliteDatabaseFilename == null) {
+        throw new DbException("Unable to instantiate SQLiteSQLProcessor on non-sqlite worker");
+      }
       final SQLiteSQLProcessor ss = ((SQLiteSQLProcessor) queryPlan);
-      ss.setDataDir(dataDir.getAbsolutePath());
+      ss.setPathToSQLiteDb(sqliteDatabaseFilename);
+    } else if (queryPlan instanceof SQLiteInsert) {
+      final String sqliteDatabaseFilename = databaseHandle.getProperty("sqliteFile");
+      if (sqliteDatabaseFilename == null) {
+        throw new DbException("Unable to instantiate SQLiteInsert on non-sqlite worker");
+      }
+      final SQLiteInsert insert = ((SQLiteInsert) queryPlan);
+      insert.setPathToSQLiteDb(sqliteDatabaseFilename);
+      insert.setExecutorService(Executors.newSingleThreadExecutor());
     } else if (queryPlan instanceof Producer) {
-      ((Producer) queryPlan).setThisWorker(Worker.this);
+      ((Producer) queryPlan).setConnectionPool(connectionPool);
     } else if (queryPlan instanceof Consumer) {
       final Consumer c = (Consumer) queryPlan;
 
@@ -502,7 +529,11 @@ public class Worker {
       final BlockingDataReceiver bdr = (BlockingDataReceiver) queryPlan;
       final _TupleBatch outputBuffer = bdr.getOutputBuffer();
       if (outputBuffer instanceof SQLiteTupleBatch) {
-        ((SQLiteTupleBatch) outputBuffer).reset(dataDir.getAbsolutePath());
+        final String sqliteDatabaseFilename = databaseHandle.getProperty("sqliteFile");
+        if (sqliteDatabaseFilename == null) {
+          throw new DbException("Unable to instantiate SQLiteInsert on non-sqlite worker");
+        }
+        ((SQLiteTupleBatch) outputBuffer).reset(sqliteDatabaseFilename);
       }
     }
 

@@ -21,6 +21,9 @@ import edu.washington.escience.myriad.column.ColumnFactory;
  */
 public final class SQLiteAccessMethod {
 
+  /** Default busy timeout is one second. */
+  private static final long DEFAULT_BUSY_TIMEOUT = 1000;
+
   /**
    * Wrap boolean values as int values since SQLite does not support boolean natively. This function converts true to 1
    * and false to 0.
@@ -50,6 +53,7 @@ public final class SQLiteAccessMethod {
       /* Connect to the database */
       sqliteConnection = new SQLiteConnection(new File(pathToSQLiteDb));
       sqliteConnection.open(false);
+      sqliteConnection.setBusyTimeout(SQLiteAccessMethod.DEFAULT_BUSY_TIMEOUT);
 
       /* BEGIN TRANSACTION */
       sqliteConnection.exec("BEGIN TRANSACTION");

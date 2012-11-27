@@ -21,7 +21,7 @@ public abstract class RootOperator extends Operator {
   /** Source of the tuples to be consumed. */
   private final Operator child;
   /** The ExecutorService for this process. */
-  private final ExecutorService executor;
+  private ExecutorService executor;
   /** The task that gets run. */
   private Future<?> task;
 
@@ -62,6 +62,15 @@ public abstract class RootOperator extends Operator {
     if (children.length != 1) {
       throw new IllegalArgumentException("a root operator must have exactly one child");
     }
+  }
+
+  /**
+   * Required for serialization---be able to set the executor at the worker.
+   * 
+   * @param executor the executor service that controls threads for this process.
+   */
+  public final void setExecutorService(final ExecutorService executor) {
+    this.executor = executor;
   }
 
   private void startAndWaitChild() {
@@ -109,7 +118,7 @@ public abstract class RootOperator extends Operator {
           consumeTuples(tup);
         }
       } catch (DbException e) {
-        e.printStackTrace();
+        throw new RuntimeException(e);
       }
     }
   }

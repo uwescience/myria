@@ -34,7 +34,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
   @Test
   public void dupElimTestSingleWorker() throws DbException, IOException, CatalogException {
     String testtableName = "testtable";
-    createTable(WORKER_ID[0], testtableName, testtableName, "id long, name varchar(20)");
+    createTable(WORKER_ID[0], testtableName, "id long, name varchar(20)");
 
     String[] names = randomFixedLengthNumericString(1000, 1005, 200, 20);
     long[] ids = randomLong(1000, 1005, names.length);
@@ -61,8 +61,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final PartitionFunction<String, Integer> pf = new SingleFieldHashPartitionFunction(numPartition);
     pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1); // partition by id
 
-    final SQLiteQueryScan scanTable =
-        new SQLiteQueryScan(testtableName + ".db", "select * from " + testtableName, schema);
+    final SQLiteQueryScan scanTable = new SQLiteQueryScan(null, "select * from " + testtableName, schema);
 
     final DupElim dupElimOnScan = new DupElim(scanTable);
     final HashMap<Integer, Operator> workerPlans = new HashMap<Integer, Operator>();
@@ -98,8 +97,8 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
   @Test
   public void dupElimTest() throws DbException, IOException, CatalogException {
     String testtableName = "testtable";
-    createTable(WORKER_ID[0], testtableName, testtableName, "id long, name varchar(20)");
-    createTable(WORKER_ID[1], testtableName, testtableName, "id long, name varchar(20)");
+    createTable(WORKER_ID[0], testtableName, "id long, name varchar(20)");
+    createTable(WORKER_ID[1], testtableName, "id long, name varchar(20)");
 
     String[] names = randomFixedLengthNumericString(1000, 1005, 200, 20);
     long[] ids = randomLong(1000, 1005, names.length);
@@ -128,8 +127,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final PartitionFunction<String, Integer> pf = new SingleFieldHashPartitionFunction(numPartition);
     pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1); // partition by id
 
-    final SQLiteQueryScan scanTable =
-        new SQLiteQueryScan(testtableName + ".db", "select * from " + testtableName, schema);
+    final SQLiteQueryScan scanTable = new SQLiteQueryScan(null, "select * from " + testtableName, schema);
 
     final DupElim dupElimOnScan = new DupElim(scanTable);
     final HashMap<Integer, Operator> workerPlans = new HashMap<Integer, Operator>();
@@ -182,10 +180,8 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final String[] outputColumnNames = new String[] { "id", "name", "id", "name" };
     final Schema outputSchema = new Schema(outputTypes, outputColumnNames);
 
-    final SQLiteQueryScan scan1 =
-        new SQLiteQueryScan(JOIN_TEST_TABLE_1 + ".db", "select * from " + JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA);
-    final SQLiteQueryScan scan2 =
-        new SQLiteQueryScan(JOIN_TEST_TABLE_2 + ".db", "select * from " + JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA);
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan(null, "select * from " + JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA);
+    final SQLiteQueryScan scan2 = new SQLiteQueryScan(null, "select * from " + JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA);
 
     final ShuffleProducer sp1 =
         new ShuffleProducer(scan1, table1ShuffleID, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf);

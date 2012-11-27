@@ -29,10 +29,10 @@ public class ParallelDistinctUsingSQLiteTest extends SystemTestBase {
     final String[] columnNames = new String[] { "id", "name" };
     final Schema schema = new Schema(types, columnNames);
 
-    createTable(WORKER_ID[0], "testtable", "testtable", "id int, name varchar(20)");
-    createTable(WORKER_ID[1], "testtable", "testtable", "id int, name varchar(20)");
-    createTable(WORKER_ID[0], "temptable", "temptable", "id int, name varchar(20)");
-    createTable(WORKER_ID[1], "temptable", "temptable", "id int, name varchar(20)");
+    createTable(WORKER_ID[0], "testtable", "id int, name varchar(20)");
+    createTable(WORKER_ID[1], "testtable", "id int, name varchar(20)");
+    createTable(WORKER_ID[0], "temptable", "id int, name varchar(20)");
+    createTable(WORKER_ID[1], "temptable", "id int, name varchar(20)");
 
     String[] names = randomFixedLengthNumericString(1000, 1005, 20, 20);
     long[] ids = randomLong(1000, 1005, names.length);
@@ -53,15 +53,15 @@ public class ParallelDistinctUsingSQLiteTest extends SystemTestBase {
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final ExchangePairID worker2ReceiveID = ExchangePairID.newID();
 
-    final SQLiteQueryScan scan = new SQLiteQueryScan("testtable.db", "select distinct * from testtable", schema);
+    final SQLiteQueryScan scan = new SQLiteQueryScan(null, "select distinct * from testtable", schema);
     final CollectProducer cp = new CollectProducer(scan, worker2ReceiveID, WORKER_ID[1]);
 
     // CollectProducer child, ParallelOperatorID operatorID, SocketInfo[] workers
-    final SQLiteTupleBatch bufferWorker2 = new SQLiteTupleBatch(schema, "temptable.db", "temptable");
+    final SQLiteTupleBatch bufferWorker2 = new SQLiteTupleBatch(schema, null, "temptable");
     final CollectConsumer cc = new CollectConsumer(cp, worker2ReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
     final BlockingDataReceiver block2 = new BlockingDataReceiver(bufferWorker2, cc);
     final SQLiteSQLProcessor scan22 =
-        new SQLiteSQLProcessor("temptable.db", "select distinct * from temptable", schema, new Operator[] { block2 });
+        new SQLiteSQLProcessor(null, "select distinct * from temptable", schema, new Operator[] { block2 });
     final CollectProducer cp22 = new CollectProducer(scan22, serverReceiveID, MASTER_ID);
     final HashMap<Integer, Operator> workerPlans = new HashMap<Integer, Operator>();
     workerPlans.put(WORKER_ID[0], cp);
