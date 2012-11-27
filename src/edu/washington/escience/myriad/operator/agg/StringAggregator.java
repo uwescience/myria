@@ -8,13 +8,11 @@ import edu.washington.escience.myriad.parallel.ParallelUtility;
 import edu.washington.escience.myriad.table._TupleBatch;
 
 /**
- * Knows how to compute some aggregate over a set of StringFields.
+ * Knows how to compute some aggregate over a StringColumn.
  */
-public class StringAggregator implements Aggregator {
+public final class StringAggregator implements Aggregator {
 
-  /**
-   * java Serialization id.
-   * */
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   private final int afield;
@@ -26,14 +24,15 @@ public class StringAggregator implements Aggregator {
   private final boolean computeMax;
   private final Schema resultSchema;
 
-  public static int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT | Aggregator.AGG_OP_MAX | Aggregator.AGG_OP_MIN;
+  public static final int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT | Aggregator.AGG_OP_MAX | Aggregator.AGG_OP_MIN;
 
   @Override
   public int availableAgg() {
     return AVAILABLE_AGG;
   }
 
-  private StringAggregator(int afield, int aggOps, boolean computeMin, boolean computeMax, Schema resultSchema) {
+  private StringAggregator(final int afield, final int aggOps, final boolean computeMin, final boolean computeMax,
+      final Schema resultSchema) {
     this.afield = afield;
     this.aggOps = aggOps;
     this.computeMax = computeMax;
@@ -44,7 +43,7 @@ public class StringAggregator implements Aggregator {
     count = 0;
   }
 
-  public StringAggregator(int afield, String aFieldName, int aggOps) {
+  public StringAggregator(final int afield, final String aFieldName, final int aggOps) {
     if (aggOps <= 0) {
       throw new IllegalArgumentException("No aggregation operations are selected");
     }
@@ -85,7 +84,7 @@ public class StringAggregator implements Aggregator {
   }
 
   @Override
-  public void add(_TupleBatch tup) {
+  public void add(final _TupleBatch tup) {
 
     count += tup.numOutputTuples();
     if (computeMin || computeMax) {
@@ -113,7 +112,7 @@ public class StringAggregator implements Aggregator {
   }
 
   @Override
-  public void getResult(TupleBatchBuffer buffer, final int fromIndex) {
+  public void getResult(final TupleBatchBuffer buffer, final int fromIndex) {
     int idx = fromIndex;
     if ((aggOps & AGG_OP_COUNT) != 0) {
       buffer.put(idx, count);

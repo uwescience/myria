@@ -96,6 +96,7 @@ public final class CollectProducer extends Producer {
     }
   }
 
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   private transient WorkingThread runningThread;
@@ -104,7 +105,7 @@ public final class CollectProducer extends Producer {
 
   public static final int MAX_MS = 1000;
   /**
-   * The paired collect consumer address
+   * The paired collect consumer address.
    */
   private final int collectConsumerWorkerID;
 

@@ -9,11 +9,11 @@ public class DoNothingOperator extends Operator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
-  Operator[] children;
-  Schema outputSchema;
+  private Operator[] children;
+  private final Schema schema;
 
-  public DoNothingOperator(final Schema outputSchema, final Operator[] children) {
-    this.outputSchema = outputSchema;
+  public DoNothingOperator(final Schema schema, final Operator[] children) {
+    this.schema = schema;
     this.children = children;
   }
 
@@ -38,7 +38,7 @@ public class DoNothingOperator extends Operator {
 
   @Override
   public final Schema getSchema() {
-    return outputSchema;
+    return schema;
   }
 
   @Override

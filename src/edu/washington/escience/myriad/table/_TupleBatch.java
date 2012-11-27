@@ -22,12 +22,27 @@ public interface _TupleBatch extends Serializable {
   public interface TupleIterator extends Iterator<_TupleBatch> {
   }
 
-  int BATCH_SIZE = 100;
-
+  /**
+   * Appends the contents of another _TupleBatch to this object. Mutates this object.
+   * 
+   * @param another the source of tuples.
+   * @return this _TupleBatch, for use in method chaining.
+   */
   _TupleBatch append(_TupleBatch another);
 
+  /**
+   * Unimplemented helper method. TODO
+   * 
+   * @return this _TupleBatch, for use in method chaining.
+   */
   _TupleBatch distinct();
 
+  /**
+   * Unimplemented difference operator. TODO
+   * 
+   * @param another the source of tuples.
+   * @return this _TupleBatch, for use in method chaining.
+   */
   _TupleBatch except(_TupleBatch another);
 
   /**
@@ -104,10 +119,26 @@ public interface _TupleBatch extends Serializable {
    */
   String getString(int column, int row);
 
-  int hashCode(int rowIndx);
+  /**
+   * Returns the hash of the Objects in the specified row.
+   * 
+   * @param rowIndx the row to hash.
+   * @return the hash value of the Objects in the specified row.
+   */
+  int hashCode(final int rowIndx);
 
-  int hashCode(int index, int[] colIndx);
+  /**
+   * Returns the hash of the Objects in the specified row and columns.
+   * 
+   * @param index the row to hash.
+   * @param colIndx the columns to include.
+   * @return the hash value of the Objects in the specified row and columns.
+   */
+  int hashCode(final int index, final int[] colIndx);
 
+  /**
+   * @return the Schema of the tuples input to this _TupleBatch.
+   */
   Schema inputSchema();
 
   int numInputTuples();
@@ -117,8 +148,8 @@ public interface _TupleBatch extends Serializable {
   List<Column> outputRawData();
 
   /**
-   * The schema of the output tuples. The input schema may change by projects. This method return the final output
-   * schema.
+   * @return the schema of the output tuples. The schema may change by projects. This method return the final output
+   *         schema.
    */
   Schema outputSchema();
 
@@ -148,8 +179,8 @@ public interface _TupleBatch extends Serializable {
   _TupleBatch remove(int innerIdx);
 
   /**
-   * @param inputColumnIdx the index of the column to be renamed in the input schema
-   * @param newName the new column name
+   * @param inputColumnIdx the index of the column to be renamed in the input schema.
+   * @param newName the new column name.
    */
   _TupleBatch renameColumn(int inputColumnIdx, String newName);
 

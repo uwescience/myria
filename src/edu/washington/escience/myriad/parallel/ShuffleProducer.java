@@ -28,7 +28,7 @@ import edu.washington.escience.myriad.table._TupleBatch;
  */
 public class ShuffleProducer extends Producer {
 
-  class WorkingThread extends Thread {
+  final class WorkingThread extends Thread {
     @Override
     public void run() {
 
@@ -103,6 +103,7 @@ public class ShuffleProducer extends Producer {
     }
   }
 
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   private transient WorkingThread runningThread;

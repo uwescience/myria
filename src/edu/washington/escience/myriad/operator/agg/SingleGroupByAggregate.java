@@ -42,7 +42,7 @@ public class SingleGroupByAggregate extends Operator {
    * @param gfield The column over which we are grouping the result
    * @param aggOps The aggregation operator to use
    */
-  public SingleGroupByAggregate(Operator child, int[] afields, int gfield, int[] aggOps) {
+  public SingleGroupByAggregate(final Operator child, final int[] afields, final int gfield, final int[] aggOps) {
     Objects.requireNonNull(afields);
     if (afields.length == 0) {
       throw new IllegalArgumentException("aggregation fields must not be empty");
@@ -103,14 +103,14 @@ public class SingleGroupByAggregate extends Operator {
     schema = outputSchema;
   }
 
-  public int groupByField() {
+  public final int groupByField() {
     return gfield;
   }
 
   /**
    * @return the aggregate field
    * */
-  public int[] aggregateFields() {
+  public final int[] aggregateFields() {
     return afields;
   }
 
@@ -120,7 +120,7 @@ public class SingleGroupByAggregate extends Operator {
    * should contain one field representing the result of the aggregate. Should return null if there are no more tuples.
    */
   @Override
-  protected _TupleBatch fetchNext() throws DbException {
+  protected final _TupleBatch fetchNext() throws DbException {
 
     if (resultBuffer == null) {
       _TupleBatch tb = null;
@@ -182,17 +182,17 @@ public class SingleGroupByAggregate extends Operator {
    * The schema of the aggregate output. Grouping fields first and then aggregate fields. The aggregate
    */
   @Override
-  public Schema getSchema() {
+  public final Schema getSchema() {
     return schema;
   }
 
   @Override
-  public Operator[] getChildren() {
+  public final Operator[] getChildren() {
     return new Operator[] { child };
   }
 
   @Override
-  public void setChildren(Operator[] children) {
+  public final void setChildren(final Operator[] children) {
     child = children[0];
   }
 
@@ -201,12 +201,12 @@ public class SingleGroupByAggregate extends Operator {
   }
 
   @Override
-  protected void cleanup() throws DbException {
+  protected final void cleanup() throws DbException {
     groupAggs.clear();
   }
 
   @Override
-  protected _TupleBatch fetchNextReady() throws DbException {
+  protected final _TupleBatch fetchNextReady() throws DbException {
     // TODO non-blocking
     return fetchNext();
   }

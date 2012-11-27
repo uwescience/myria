@@ -9,14 +9,14 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.table._TupleBatch;
 
-public class DupElim extends Operator {
+public final class DupElim extends Operator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   private class IndexedTuple {
-    int index;
-    _TupleBatch tb;
+    private final int index;
+    private final _TupleBatch tb;
 
     public IndexedTuple(final _TupleBatch tb, final int index) {
       this.tb = tb;
@@ -71,8 +71,8 @@ public class DupElim extends Operator {
     }
   }
 
-  Operator child;
-  HashMap<Integer, List<IndexedTuple>> uniqueTuples;
+  private Operator child;
+  private final HashMap<Integer, List<IndexedTuple>> uniqueTuples;
 
   public DupElim(final Operator child) {
     this.child = child;
