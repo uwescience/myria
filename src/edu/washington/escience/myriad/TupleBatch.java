@@ -31,7 +31,7 @@ public class TupleBatch extends TupleBatchAdaptor {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** The hard-coded number of tuples in a batch. */
-  public static final int BATCH_SIZE = 100;
+  public static final int BATCH_SIZE = 10 * 1000;
   /** Class-specific magic number used to generate the hash code. */
   private static final int MAGIC_HASHCODE1 = 243;
   /** Class-specific magic number used to generate the hash code. */
