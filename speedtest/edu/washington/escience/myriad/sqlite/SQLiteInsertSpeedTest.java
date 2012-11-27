@@ -69,7 +69,8 @@ public class SQLiteInsertSpeedTest {
     /* Nothing for tempFile; it is set to delete on exit. */
   }
 
-  private void doOneRun(final SQLiteConnection sqliteConnection, final int batchSize, final int numTuples) throws SQLiteException {
+  private void doOneRun(final SQLiteConnection sqliteConnection, final int batchSize, final int numTuples)
+      throws SQLiteException {
     /* Drop any existing tuples */
     sqliteConnection.exec("DELETE FROM insertTestTable;");
 
@@ -128,7 +129,7 @@ public class SQLiteInsertSpeedTest {
 
   @Test
   public void insertToMemory() {
-    assertTrue(fileConnection != null);
+    assertTrue(memoryConnection != null);
     try {
       doSpeedTest("InsertToSQLiteInMemory", memoryConnection);
     } catch (final Exception e) {

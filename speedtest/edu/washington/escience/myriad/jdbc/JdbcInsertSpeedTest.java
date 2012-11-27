@@ -1,4 +1,4 @@
-package edu.washington.escience.myriad.inserts.jdbc;
+package edu.washington.escience.myriad.jdbc;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -20,13 +20,13 @@ import edu.washington.escience.myriad.operator.JdbcQueryScan;
 /**
  * Test the insertion speed of specified databases.
  * 
- * TODO : Currently to test different batch sizes, the constant TupleBatch.BATH_SIZE must be altered manually. It would
+ * TODO : Currently to test different batch sizes, the constant TupleBatch.BATCH_SIZE must be altered manually. It would
  * be nice to alter that so that this test (or another one) could go through different batch sizes to find the optimal
  * size for each database.
  * 
  * @author aarond79
  */
-public class TupleInsertSpeedTest {
+public class JdbcInsertSpeedTest {
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   // Test Constants - vary these to alter the test
@@ -36,7 +36,7 @@ public class TupleInsertSpeedTest {
   private final static int NTRIALS = 5;
 
   // The total number of tuples to write for each trial
-  private final static int NUM_TUPLES = 1000;
+  private final static int NUM_TUPLES = 10000;
 
   /**
    * Sets up the test structures and data.
