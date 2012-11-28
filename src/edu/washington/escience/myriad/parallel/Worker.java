@@ -181,45 +181,57 @@ public class Worker {
    * still alive. If the server got killed because of any reason, the workers will be terminated. 2) it detects whether
    * a shutdown message is received.
    */
-  protected class WorkerLivenessController extends TimerTask {
+  protected class WorkerLivenessController {
     private final Timer timer = new Timer();
-    private volatile boolean inRun = false;
 
-    @Override
-    public final void run() {
-      if (toShutdown) {
-        shutdown();
-        ParallelUtility.shutdownVM();
-      }
-      if (inRun) {
-        return;
-      }
-      inRun = true;
-      Channel serverChannel = null;
-      try {
-        serverChannel = connectionPool.get(0, 3, null, messageBuffer);
-      } catch (final RuntimeException e) {
-        e.printStackTrace();
-      } catch (final Exception e) {
-        e.printStackTrace();
+    protected class ShutdownChecker extends TimerTask {
+      @Override
+      public final void run() {
+        if (toShutdown) {
+          shutdown();
+          ParallelUtility.shutdownVM();
+        }
+
       }
 
-      if (serverChannel == null) {
-        System.out.println("Cannot connect the server: " + masterSocketInfo
-            + " Maybe the server is down. I'll shutdown now.");
-        System.out.println("Bye!");
-        timer.cancel();
-        ParallelUtility.shutdownVM();
+    }
+
+    protected class Reporter extends TimerTask {
+      private volatile boolean inRun = false;
+
+      @Override
+      public final void run() {
+        if (inRun) {
+          return;
+        }
+        inRun = true;
+        Channel serverChannel = null;
+        try {
+          serverChannel = connectionPool.get(0, 3, null, messageBuffer);
+        } catch (final RuntimeException e) {
+          e.printStackTrace();
+        } catch (final Exception e) {
+          e.printStackTrace();
+        }
+
+        if (serverChannel == null) {
+          System.out.println("Cannot connect the server: " + masterSocketInfo
+              + " Maybe the server is down. I'll shutdown now.");
+          System.out.println("Bye!");
+          timer.cancel();
+          ParallelUtility.shutdownVM();
+        }
+        inRun = false;
       }
-      inRun = false;
     }
 
     public final void start() {
       try {
-        timer.schedule(this, (long) (Math.random() * 3000) + 500000, // initial
-                                                                     // delay
+        timer.schedule(new ShutdownChecker(), 100, 100);
+        timer.schedule(new Reporter(), (long) (Math.random() * 3000) + 5000, // initial
+            // delay
             (long) (Math.random() * 2000) + 1000); // subsequent
-                                                   // rate
+        // rate
       } catch (final IllegalStateException e) {
         /* already get canceled, ignore */
         /* Do nothing */;
