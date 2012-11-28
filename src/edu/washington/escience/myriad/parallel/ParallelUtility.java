@@ -93,7 +93,7 @@ public class ParallelUtility {
         new OrderedMemoryAwareThreadPoolExecutor(200, 1048576, 1073741824, 100, TimeUnit.MILLISECONDS, Executors
             .defaultThreadFactory());
 
-    bootstrap.setPipelineFactory(new IPCPipelineFactories.MasterClientPipelineFactory(messageBuffer));
+    bootstrap.setPipelineFactory(IPCPipelineFactories.MasterClientPipelineFactory.getInstance(messageBuffer));
 
     ExecutionHandler eh;
 
@@ -128,7 +128,7 @@ public class ParallelUtility {
         new OrderedMemoryAwareThreadPoolExecutor(200, 1048576, 1073741824, 100, TimeUnit.MILLISECONDS, Executors
             .defaultThreadFactory());
 
-    bootstrap.setPipelineFactory(new IPCPipelineFactories.MasterClientPipelineFactory(messageBuffer));
+    bootstrap.setPipelineFactory(IPCPipelineFactories.MasterClientPipelineFactory.getInstance(messageBuffer));
 
     ExecutionHandler eh;
 
@@ -154,7 +154,7 @@ public class ParallelUtility {
         new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool(), 3);
     // Create the bootstrap
     ClientBootstrap bootstrap = new ClientBootstrap(factory);
-    bootstrap.setPipelineFactory(new IPCPipelineFactories.WorkerClientPipelineFactory(messageBuffer));
+    bootstrap.setPipelineFactory(IPCPipelineFactories.WorkerClientPipelineFactory.getInstance(messageBuffer));
     bootstrap.setOption("tcpNoDelay", true);
     bootstrap.setOption("keepAlive", false);
     bootstrap.setOption("reuseAddress", true);

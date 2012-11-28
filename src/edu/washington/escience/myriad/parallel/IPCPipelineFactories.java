@@ -16,49 +16,81 @@ import edu.washington.escience.myriad.parallel.Worker.MessageWrapper;
 import edu.washington.escience.myriad.proto.TransportProto;
 
 public class IPCPipelineFactories {
+
+  final protected static ProtobufEncoder protobufEncoder = new ProtobufEncoder();
+  final protected static ProtobufVarint32LengthFieldPrepender frameEncoder = new ProtobufVarint32LengthFieldPrepender();
+  final protected static ProtobufDecoder protobufDecoder = new ProtobufDecoder(TransportProto.TransportMessage
+      .getDefaultInstance());
+  final protected static IPCInputGuard inputVerifier = new IPCInputGuard();
+  final protected static MasterControlHandler masterControlHandler = new MasterControlHandler();
+
   public static class WorkerServerPipelineFactory implements ChannelPipelineFactory {
 
     /**
      * constructor.
      * */
-    WorkerServerPipelineFactory(final LinkedBlockingQueue<MessageWrapper> messageBuffer) {
-      this.messageBuffer = messageBuffer;
+    private WorkerServerPipelineFactory(final LinkedBlockingQueue<MessageWrapper> messageBuffer) {
+      workerDataHandler = new WorkerDataHandler(messageBuffer);
     }
 
-    LinkedBlockingQueue<MessageWrapper> messageBuffer;
+    private static WorkerServerPipelineFactory instance;
+    private final WorkerDataHandler workerDataHandler;
 
     @Override
     public ChannelPipeline getPipeline() throws Exception {
       ChannelPipeline p = Channels.pipeline();
       p.addLast("compressionDecoder", new ZlibDecoder()); // upstream 1
       p.addLast("frameDecoder", new ProtobufVarint32FrameDecoder()); // upstream 2
-      p.addLast("protobufDecoder", new ProtobufDecoder(TransportProto.TransportMessage.getDefaultInstance())); // upstream
-                                                                                                               // 3
+      p.addLast("protobufDecoder", protobufDecoder); // upstream
+                                                     // 3
 
       p.addLast("compressionEncoder", new ZlibEncoder()); // downstream 1
-      p.addLast("frameEncoder", new ProtobufVarint32LengthFieldPrepender()); // downstream 2
-      p.addLast("protobufEncoder", new ProtobufEncoder()); // downstream 3
+      p.addLast("frameEncoder", frameEncoder); // downstream 2
+      p.addLast("protobufEncoder", protobufEncoder); // downstream 3
 
-      p.addLast("inputVerifier", new IPCInputGuard());
-      p.addLast("controlHandler", new WorkerControlHandler());
-      p.addLast("dataHandler", new WorkerDataHandler(messageBuffer));
+      p.addLast("inputVerifier", inputVerifier);
+      p.addLast("controlHandler", workerControlHandler);
+      p.addLast("dataHandler", workerDataHandler);
       return p;
     }
+
+    static synchronized WorkerServerPipelineFactory getInstance(LinkedBlockingQueue<MessageWrapper> messageBuffer) {
+      if (instance == null) {
+        instance = new WorkerServerPipelineFactory(messageBuffer);
+      } else if (messageBuffer != instance.workerDataHandler.messageBuffer) {
+        // A new server instance
+        instance = new WorkerServerPipelineFactory(messageBuffer);
+      }
+      return instance;
+    }
+
+    protected static WorkerControlHandler workerControlHandler = new WorkerControlHandler();
   }
 
   public static class WorkerClientPipelineFactory implements ChannelPipelineFactory {
     /**
      * constructor.
      * */
-    WorkerClientPipelineFactory(final LinkedBlockingQueue<MessageWrapper> messageBuffer) {
+    private WorkerClientPipelineFactory(final LinkedBlockingQueue<MessageWrapper> messageBuffer) {
       this.messageBuffer = messageBuffer;
     }
 
-    LinkedBlockingQueue<MessageWrapper> messageBuffer;
+    final LinkedBlockingQueue<MessageWrapper> messageBuffer;
+    static WorkerClientPipelineFactory instance = null;
 
     @Override
     public ChannelPipeline getPipeline() throws Exception {
       return new WorkerServerPipelineFactory(messageBuffer).getPipeline();
+    }
+
+    static synchronized WorkerClientPipelineFactory getInstance(LinkedBlockingQueue<MessageWrapper> messageBuffer) {
+      if (instance == null) {
+        instance = new WorkerClientPipelineFactory(messageBuffer);
+      } else if (messageBuffer != instance.messageBuffer) {
+        // A new server instance
+        instance = new WorkerClientPipelineFactory(messageBuffer);
+      }
+      return instance;
     }
   }
 
@@ -67,29 +99,41 @@ public class IPCPipelineFactories {
     /**
      * constructor.
      * */
-    MasterServerPipelineFactory(final LinkedBlockingQueue<MessageWrapper> messageBuffer) {
-      this.messageBuffer = messageBuffer;
+    private MasterServerPipelineFactory(final LinkedBlockingQueue<MessageWrapper> messageBuffer) {
+      masterDataHandler = new MasterDataHandler(messageBuffer);
     }
 
-    LinkedBlockingQueue<MessageWrapper> messageBuffer;
+    final protected MasterDataHandler masterDataHandler;
+    private static MasterServerPipelineFactory instance;
 
     @Override
     public ChannelPipeline getPipeline() throws Exception {
       ChannelPipeline p = Channels.pipeline();
       p.addLast("compressionDecoder", new ZlibDecoder()); // upstream 1
       p.addLast("frameDecoder", new ProtobufVarint32FrameDecoder()); // upstream 2
-      p.addLast("protobufDecoder", new ProtobufDecoder(TransportProto.TransportMessage.getDefaultInstance())); // upstream
-                                                                                                               // 3
+      p.addLast("protobufDecoder", protobufDecoder); // upstream
+                                                     // 3
 
       p.addLast("compressionEncoder", new ZlibEncoder()); // downstream 1
-      p.addLast("frameEncoder", new ProtobufVarint32LengthFieldPrepender()); // downstream 2
-      p.addLast("protobufEncoder", new ProtobufEncoder()); // downstream 3
+      p.addLast("frameEncoder", frameEncoder); // downstream 2
+      p.addLast("protobufEncoder", protobufEncoder); // downstream 3
 
-      p.addLast("inputVerifier", new IPCInputGuard());
-      p.addLast("controlHandler", new MasterControlHandler());
-      p.addLast("dataHandler", new MasterDataHandler(messageBuffer));
+      p.addLast("inputVerifier", inputVerifier);
+      p.addLast("controlHandler", masterControlHandler);
+      p.addLast("dataHandler", masterDataHandler);
       return p;
     }
+
+    static synchronized MasterServerPipelineFactory getInstance(LinkedBlockingQueue<MessageWrapper> messageBuffer) {
+      if (instance == null) {
+        instance = new MasterServerPipelineFactory(messageBuffer);
+      } else if (messageBuffer != instance.masterDataHandler.messageBuffer) {
+        // A new server instance
+        instance = new MasterServerPipelineFactory(messageBuffer);
+      }
+      return instance;
+    }
+
   }
 
   public static class MasterClientPipelineFactory implements ChannelPipelineFactory {
@@ -97,11 +141,22 @@ public class IPCPipelineFactories {
     /**
      * constructor.
      * */
-    MasterClientPipelineFactory(final LinkedBlockingQueue<MessageWrapper> messageBuffer) {
+    private MasterClientPipelineFactory(final LinkedBlockingQueue<MessageWrapper> messageBuffer) {
       this.messageBuffer = messageBuffer;
     }
 
-    LinkedBlockingQueue<MessageWrapper> messageBuffer;
+    static synchronized MasterClientPipelineFactory getInstance(LinkedBlockingQueue<MessageWrapper> messageBuffer) {
+      if (instance == null) {
+        instance = new MasterClientPipelineFactory(messageBuffer);
+      } else if (messageBuffer != instance.messageBuffer) {
+        // A new server instance
+        instance = new MasterClientPipelineFactory(messageBuffer);
+      }
+      return instance;
+    }
+
+    private final LinkedBlockingQueue<MessageWrapper> messageBuffer;
+    private static MasterClientPipelineFactory instance;
 
     @Override
     public ChannelPipeline getPipeline() throws Exception {
