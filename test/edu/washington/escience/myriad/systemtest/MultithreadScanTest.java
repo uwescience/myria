@@ -1,5 +1,7 @@
 package edu.washington.escience.myriad.systemtest;
 
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -16,6 +18,7 @@ import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.LocalJoin;
 import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.operator.Project;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
@@ -26,9 +29,7 @@ import edu.washington.escience.myriad.table._TupleBatch;
 public class MultithreadScanTest extends SystemTestBase {
   // change configuration here
   private final int MaxID = 100;
-  private final int numIteration = 4;
-  private final int numTbl1Worker1 = 60;
-  private final int numTbl1Worker2 = 60;
+  private final int numTbl1Worker1 = 50;
 
   public TupleBatchBuffer getResultInMemory(TupleBatchBuffer table1, Schema schema, int numIteration) {
     // a brute force check
@@ -86,7 +87,7 @@ public class MultithreadScanTest extends SystemTestBase {
   }
 
   @Test
-  public void iterativeSelfJoinTest() throws DbException, CatalogException, IOException {
+  public void OneThreadTwoConnectionsTest() throws DbException, CatalogException, IOException {
 
     // data generation
     final Type[] table1Types = new Type[] { Type.LONG_TYPE, Type.LONG_TYPE };
@@ -106,31 +107,29 @@ public class MultithreadScanTest extends SystemTestBase {
     TupleBatchBuffer table1 = new TupleBatchBuffer(tableSchema);
     table1.merge(tbl1Worker1);
 
-    // generate correct answer in memory
     TupleBatchBuffer expectedTBB = getResultInMemory(table1, tableSchema, 2);
-    HashMap<Tuple, Integer> expectedResult = SystemTestBase.tupleBatchToTupleBag(expectedTBB);
+    // HashMap<Tuple, Integer> expectedResult = SystemTestBase.tupleBatchToTupleBag(expectedTBB);
 
-    // database generation
-    // for (int i = 0; i < numIteration; ++i) {
     createTable(WORKER_ID[0], "testtable0", "testtable", "follower long, followee long");
+    createTable(WORKER_ID[1], "testtable0", "testtable", "follower long, followee long");
     // }
     _TupleBatch tb = null;
     while ((tb = tbl1Worker1.popAny()) != null) {
-      // for (int i = 0; i < numIteration; ++i) {
       insertWithBothNames(WORKER_ID[0], "testtable", "testtable0", tableSchema, tb);
-      // }
+      insertWithBothNames(WORKER_ID[1], "testtable", "testtable0", tableSchema, tb);
     }
 
-    // parallel query generation, duplicate db files
     final SQLiteQueryScan scan1 = new SQLiteQueryScan("testtable0.db", "select * from testtable", tableSchema);
     final SQLiteQueryScan scan2 = new SQLiteQueryScan("testtable0.db", "select * from testtable", tableSchema);
     final LocalJoin localjoin = new LocalJoin(joinSchema, scan1, scan2, new int[] { 1 }, new int[] { 0 });
+    final Project proj = new Project(new Integer[] { 0, 3 }, localjoin);
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
-    final CollectProducer cp = new CollectProducer(localjoin, serverReceiveID, MASTER_ID);
+    final CollectProducer cp = new CollectProducer(proj, serverReceiveID, MASTER_ID);
 
     final HashMap<Integer, Operator> workerPlans = new HashMap<Integer, Operator>();
     workerPlans.put(WORKER_ID[0], cp);
+    workerPlans.put(WORKER_ID[1], cp);
 
     while (Server.runningInstance == null) {
       try {
@@ -139,7 +138,9 @@ public class MultithreadScanTest extends SystemTestBase {
       }
     }
 
-    final CollectConsumer serverPlan = new CollectConsumer(tableSchema, serverReceiveID, new int[] { WORKER_ID[0] });
+    final CollectConsumer serverPlan =
+        new CollectConsumer(tableSchema, serverReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
+
     Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
     LOGGER.debug("Query dispatched to the workers");
     System.out.println("Query dispatched to the workers");
@@ -153,7 +154,9 @@ public class MultithreadScanTest extends SystemTestBase {
       }
     }
 
-    HashMap<Tuple, Integer> actual = SystemTestBase.tupleBatchToTupleBag(result);
-    SystemTestBase.assertTupleBagEqual(expectedResult, actual);
+    assertTrue(result.numTuples() == expectedTBB.numTuples() * 2);
+    // HashMap<Tuple, Integer> actual = SystemTestBase.tupleBatchToTupleBag(result);
+    // SystemTestBase.assertTupleBagEqual(expectedResult, actual);
   }
+
 }
