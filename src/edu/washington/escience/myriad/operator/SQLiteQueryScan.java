@@ -68,10 +68,6 @@ public class SQLiteQueryScan extends Operator {
     this.dataDir = dataDir;
   }
 
-  /**
-   * For query scan, we assume that fetchNext is non-blocking, i.e. the cost of fetching a TupleBatch is very low.
-   * Therefore, directly fetch.
-   * */
   @Override
   public _TupleBatch fetchNextReady() throws DbException {
     return fetchNext();

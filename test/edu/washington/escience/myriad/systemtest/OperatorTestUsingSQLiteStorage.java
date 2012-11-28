@@ -6,6 +6,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.junit.Test;
+import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
@@ -27,6 +28,8 @@ import edu.washington.escience.myriad.parallel.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myriad.table._TupleBatch;
 
 public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
+  /** The logger for this class. Defaults to myriad level, but could be set to a finer granularity if needed. */
+  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger("edu.washington.escience.myriad");
 
   @Test
   public void dupElimTestSingleWorker() throws DbException, IOException, CatalogException {
@@ -75,7 +78,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
 
     final CollectConsumer serverPlan = new CollectConsumer(schema, serverReceiveID, new int[] { WORKER_ID[0] });
     Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
-    System.out.println("Query dispatched to the workers");
+    LOGGER.debug("Query dispatched to the workers");
     TupleBatchBuffer result = null;
     while ((result = Server.runningInstance.startServerQuery(0, serverPlan)) == null) {
       try {
@@ -145,7 +148,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
 
     final CollectConsumer serverPlan = new CollectConsumer(schema, serverReceiveID, new int[] { WORKER_ID[0] });
     Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
-    System.out.println("Query dispatched to the workers");
+    LOGGER.debug("Query dispatched to the workers");
     TupleBatchBuffer result = null;
     while ((result = Server.runningInstance.startServerQuery(0, serverPlan)) == null) {
       try {
@@ -209,7 +212,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final CollectConsumer serverPlan =
         new CollectConsumer(outputSchema, serverReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
     Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
-    System.out.println("Query dispatched to the workers");
+    LOGGER.debug("Query dispatched to the workers");
     TupleBatchBuffer result = null;
     while ((result = Server.runningInstance.startServerQuery(0, serverPlan)) == null) {
       try {

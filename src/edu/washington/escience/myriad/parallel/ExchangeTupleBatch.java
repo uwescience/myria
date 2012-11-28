@@ -15,18 +15,16 @@ import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 import edu.washington.escience.myriad.table._TupleBatch;
 
-public class ExchangeTupleBatch implements _TupleBatch {
+public final class ExchangeTupleBatch implements _TupleBatch {
 
   private final ExchangePairID operatorID;
   private final int fromWorkerID;
   private final TupleBatch dataHolder;
 
-  /**
-   * 
-   */
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
-  public ExchangeTupleBatch(final ExchangePairID oID, final int workerID, final List<Column> columns,
+  public ExchangeTupleBatch(final ExchangePairID oID, final int workerID, final List<Column<?>> columns,
       final Schema inputSchema, final int numTuples) {
     dataHolder = new TupleBatch(inputSchema, columns, numTuples);
     operatorID = oID;
@@ -86,6 +84,11 @@ public class ExchangeTupleBatch implements _TupleBatch {
     return dataHolder.getLong(column, row);
   }
 
+  @Override
+  public Object getObject(final int column, final int row) {
+    return dataHolder.getObject(column, row);
+  }
+
   /**
    * Get the ParallelOperatorID, to which this message is targeted
    */
@@ -110,8 +113,8 @@ public class ExchangeTupleBatch implements _TupleBatch {
   }
 
   @Override
-  public Set<Pair<Object, TupleBatchBuffer>> groupby(int groupByColumn,
-      Map<Object, Pair<Object, TupleBatchBuffer>> buffers) {
+  public Set<Pair<Object, TupleBatchBuffer>> groupby(final int groupByColumn,
+      final Map<Object, Pair<Object, TupleBatchBuffer>> buffers) {
     return dataHolder.groupby(groupByColumn, buffers);
   }
 
@@ -148,7 +151,7 @@ public class ExchangeTupleBatch implements _TupleBatch {
   }
 
   @Override
-  public List<Column> outputRawData() {
+  public List<Column<?>> outputRawData() {
     return dataHolder.outputRawData();
   }
 

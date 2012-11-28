@@ -3,7 +3,6 @@ package edu.washington.escience.myriad.parallel;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Date;
@@ -18,6 +17,7 @@ import java.util.logging.Logger;
 
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.Channel;
+import org.slf4j.LoggerFactory;
 
 import com.google.protobuf.ByteString;
 
@@ -100,9 +100,9 @@ import edu.washington.escience.myriad.table._TupleBatch;
  * 
  * 
  */
-public class Server {
+public final class Server {
 
-  protected class MessageProcessor extends Thread {
+  protected final class MessageProcessor extends Thread {
     @Override
     public void run() {
 
@@ -127,12 +127,12 @@ public class Server {
               receiveData(new ExchangeTupleBatch(exchangePairID, senderID, operatorSchema));
             } else {
               final List<ColumnMessage> columnMessages = data.getColumnsList();
-              final Column[] columnArray = new Column[columnMessages.size()];
+              final Column<?>[] columnArray = new Column[columnMessages.size()];
               int idx = 0;
               for (final ColumnMessage cm : columnMessages) {
                 columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm);
               }
-              final List<Column> columns = Arrays.asList(columnArray);
+              final List<Column<?>> columns = Arrays.asList(columnArray);
 
               receiveData((new ExchangeTupleBatch(exchangePairID, senderID, columns, operatorSchema, columnMessages
                   .get(0).getNumTuples())));
@@ -154,13 +154,15 @@ public class Server {
   }
 
   static final String usage = "Usage: Server catalogFile [-explain] [-f queryFile]";
+  /** The logger for this class. Defaults to myriad level, but could be set to a finer granularity if needed. */
+  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger("edu.washington.escience.myriad");
 
   public static void main(String[] args) throws IOException {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
     Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
 
     if (args.length < 1) {
-      System.err.println(usage);
+      LOGGER.error(usage);
       System.exit(-1);
     }
 
@@ -187,9 +189,9 @@ public class Server {
 
     runningInstance = server;
 
-    System.out.println("Workers are: ");
+    LOGGER.debug("Workers are: ");
     for (final Entry<Integer, SocketInfo> w : server.workers.entrySet()) {
-      System.out.println(w.getKey() + ":  " + w.getValue().getHost() + ":" + w.getValue().getPort());
+      LOGGER.debug(w.getKey() + ":  " + w.getValue().getHost() + ":" + w.getValue().getPort());
     }
 
     server.init();
@@ -200,8 +202,7 @@ public class Server {
       }
     });
     server.start(args);
-    System.out.println("Server: " + masterSocketInfo.getHost() + " started. Listening on port "
-        + masterSocketInfo.getPort());
+    LOGGER.debug("Server: " + masterSocketInfo.getHost() + " started. Listening on port " + masterSocketInfo.getPort());
   }
 
   final ConcurrentHashMap<Integer, SocketInfo> workers;
@@ -219,7 +220,7 @@ public class Server {
 
   protected final ConcurrentHashMap<ExchangePairID, Schema> exchangeSchema;
 
-  final SocketInfo server;
+  private final SocketInfo server;
 
   protected final IPCConnectionPool connectionPool;
 
@@ -252,10 +253,10 @@ public class Server {
   }
 
   public void cleanup() {
-    System.out.println(SYSTEM_NAME + " is going to shutdown");
-    System.out.println("Send shutdown requests to the workers, please wait");
+    LOGGER.debug(SYSTEM_NAME + " is going to shutdown");
+    LOGGER.debug("Send shutdown requests to the workers, please wait");
     for (final Entry<Integer, SocketInfo> worker : workers.entrySet()) {
-      System.out.println("Shuting down #" + worker.getKey() + " : " + worker.getValue());
+      LOGGER.debug("Shuting down #" + worker.getKey() + " : " + worker.getValue());
 
       Channel ch = null;
       try {
@@ -263,17 +264,17 @@ public class Server {
       } catch (final Throwable e) {
       }
       if (ch == null || !ch.isConnected()) {
-        System.out.println("Fail to connect the worker: " + worker + ". Continue cleaning");
+        LOGGER.error("Fail to connect the worker: " + worker + ". Continue cleaning");
         continue;
       }
       ch.write(
           TransportProto.TransportMessage.newBuilder().setType(TransportMessageType.CONTROL).setControl(
               ControlProto.ControlMessage.newBuilder().setType(ControlMessage.ControlMessageType.SHUTDOWN).build())
               .build()).awaitUninterruptibly();
-      System.out.println("Done");
+      LOGGER.debug("Done");
     }
     ParallelUtility.shutdownIPC(ipcServerChannel, connectionPool);
-    System.out.println("Bye");
+    LOGGER.debug("Bye");
   }
 
   public void dispatchWorkerQueryPlans(final Map<Integer, Operator> plans) throws IOException {
@@ -334,7 +335,6 @@ public class Server {
     if (data instanceof ExchangeTupleBatch) {
       q.offer(data);
     }
-    // System.out.println("after add: size of q: " + q.size());
   }
 
   public void shutdown() {
@@ -359,21 +359,22 @@ public class Server {
       dataBuffer.put(serverPlan.getOperatorID(), buffer);
       serverPlan.setInputBuffer(buffer);
 
-      final Schema td = serverPlan.getSchema();
+      final Schema schema = serverPlan.getSchema();
 
       String names = "";
-      for (int i = 0; i < td.numFields(); i++) {
-        names += td.getFieldName(i) + "\t";
+      for (int i = 0; i < schema.numFields(); i++) {
+        names += schema.getFieldName(i) + "\t";
       }
 
-      PrintStream out = null;
-      out = System.out;
-
-      out.println(names);
-      for (int i = 0; i < names.length() + td.numFields() * 4; i++) {
-        out.print("-");
+      if (LOGGER.isDebugEnabled()) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(names).append('\n');
+        for (int i = 0; i < names.length() + schema.numFields() * 4; i++) {
+          sb.append("-");
+        }
+        sb.append("");
+        LOGGER.debug(sb.toString());
       }
-      out.println("");
 
       Date start = new Date();
       serverPlan.open();
@@ -385,15 +386,17 @@ public class Server {
       _TupleBatch tup = null;
       while ((tup = serverPlan.next()) != null) {
         outBufferForTesting.putAll(tup);
-        out.println(new ImmutableInMemoryTupleBatch(serverPlan.getSchema(), tup.outputRawData(), tup.numOutputTuples())
-            .toString());
-        cnt++;
+        if (LOGGER.isDebugEnabled()) {
+          LOGGER.debug(new ImmutableInMemoryTupleBatch(serverPlan.getSchema(), tup.outputRawData(), tup
+              .numOutputTuples()).toString());
+        }
+        cnt += tup.numOutputTuples();
       }
 
       serverPlan.close();
       Server.this.dataBuffer.remove(serverPlan.getOperatorID());
       Date end = new Date();
-      System.out.println("Number of results: " + cnt);
+      LOGGER.debug("Number of results: " + cnt);
       int elapse = (int) (end.getTime() - start.getTime());
       int hour = elapse / 3600000;
       elapse -= hour * 3600000;
@@ -402,7 +405,7 @@ public class Server {
       int second = elapse / 1000;
       elapse -= second * 1000;
 
-      System.out.println(String.format("Time elapsed: %1$dh%2$dm%3$ds.%4$03d", hour, minute, second, elapse));
+      LOGGER.debug(String.format("Time elapsed: %1$dh%2$dm%3$ds.%4$03d", hour, minute, second, elapse));
       return outBufferForTesting;
     } else {
       return null;

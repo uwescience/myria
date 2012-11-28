@@ -6,7 +6,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import edu.washington.escience.myriad.operator.Operator;
 
 /**
- * The exchange operator, which will be used in implementing parallel simpledb.
+ * The exchange operator is an abstract operator used as the foundation for classes that send data over the network.
  * 
  */
 public abstract class Exchange extends Operator {

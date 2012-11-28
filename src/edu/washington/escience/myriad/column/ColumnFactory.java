@@ -24,7 +24,7 @@ public final class ColumnFactory {
    * @param schema the Schema
    * @return the list of Columns
    */
-  public static List<Column> allocateColumns(final Schema schema) {
+  public static List<Column<?>> allocateColumns(final Schema schema) {
     final int numColumns = schema.numFields();
     final Type[] columnTypes = new Type[numColumns];
     for (int columnIndex = 0; columnIndex < numColumns; ++columnIndex) {
@@ -39,9 +39,9 @@ public final class ColumnFactory {
    * @param columnTypes the Types of the columns
    * @return the allocated Columns
    */
-  public static List<Column> allocateColumns(final Type[] columnTypes) {
+  public static List<Column<?>> allocateColumns(final Type[] columnTypes) {
     final int numColumns = columnTypes.length;
-    final ArrayList<Column> columns = new ArrayList<Column>(numColumns);
+    final ArrayList<Column<?>> columns = new ArrayList<Column<?>>(numColumns);
 
     for (int columnIndex = 0; columnIndex < numColumns; ++columnIndex) {
       switch (columnTypes[columnIndex]) {
@@ -74,7 +74,7 @@ public final class ColumnFactory {
    * @param message the ColumnMessage to be deserialized.
    * @return a Column of the appropriate type and contents.
    */
-  public static Column columnFromColumnMessage(final ColumnMessage message) {
+  public static Column<?> columnFromColumnMessage(final ColumnMessage message) {
     switch (message.getType().ordinal()) {
       case ColumnMessageType.BOOLEAN_VALUE:
         return new BooleanColumn(message);

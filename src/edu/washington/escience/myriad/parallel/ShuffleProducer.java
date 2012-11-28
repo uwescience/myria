@@ -27,7 +27,7 @@ import edu.washington.escience.myriad.table._TupleBatch;
  */
 public class ShuffleProducer extends Producer {
 
-  class WorkingThread extends Thread {
+  final class WorkingThread extends Thread {
     @Override
     public void run() {
 
@@ -53,11 +53,11 @@ public class ShuffleProducer extends Producer {
             final TupleBatchBuffer etb = buffers[p];
             TupleBatch tb = null;
             while ((tb = etb.popFilled()) != null) {
-              final List<Column> columns = tb.outputRawData();
+              final List<Column<?>> columns = tb.outputRawData();
 
               final ColumnMessage[] columnProtos = new ColumnMessage[columns.size()];
               int i = 0;
-              for (final Column c : columns) {
+              for (final Column<?> c : columns) {
                 columnProtos[i] = c.serializeToProto();
                 i++;
               }
@@ -73,10 +73,10 @@ public class ShuffleProducer extends Producer {
           if (tbb.numTuples() > 0) {
             List<TupleBatch> remain = tbb.getAll();
             for (TupleBatch tb : remain) {
-              final List<Column> columns = tb.outputRawData();
+              final List<Column<?>> columns = tb.outputRawData();
               final ColumnMessage[] columnProtos = new ColumnMessage[columns.size()];
               int j = 0;
-              for (final Column c : columns) {
+              for (final Column<?> c : columns) {
                 columnProtos[j] = c.serializeToProto();
                 j++;
               }
@@ -101,6 +101,7 @@ public class ShuffleProducer extends Producer {
     }
   }
 
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   private transient WorkingThread runningThread;

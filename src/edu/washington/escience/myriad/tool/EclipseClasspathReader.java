@@ -13,7 +13,10 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-public class EclipseClasspathReader {
+public final class EclipseClasspathReader {
+  /** Prevent construction of this class. */
+  private EclipseClasspathReader() {
+  }
 
   public static final String usage = "java EclipseClasspathReader [eclipse CP file path]";
 

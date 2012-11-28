@@ -14,6 +14,7 @@ import edu.washington.escience.myriad.column.Column;
  */
 public abstract class PartitionFunction<K, V> implements Serializable {
 
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   HashMap<K, V> attributes = new HashMap<K, V>();
@@ -37,17 +38,17 @@ public abstract class PartitionFunction<K, V> implements Serializable {
   /**
    * Given an input tuple t, determine which partition to route it to.
    * 
-   * Note: Schema td is explicitly required even though the Tuple t includes a Schema (obtained by calling
+   * Note: Schema schema is explicitly required even though the Tuple t includes a Schema (obtained by calling
    * t.getSchema()) since field names might be absent from t.getSchema(), and the PartitionFunction might require field
    * names.
    * 
-   * @param td the tuple descriptor of the input tuple. Must have non-null names for those attributes that are used to
-   *          compute the worker to route to.
+   * @param schema the tuple descriptor of the input tuple. Must have non-null names for those attributes that are used
+   *          to compute the worker to route to.
    * 
    * @return the worker to send the tuple to.
    * 
    */
-  public abstract int[] partition(List<Column> columns, Schema td);
+  public abstract int[] partition(List<Column<?>> columns, Schema schema);
 
   /**
    * A concrete implementation of a partition function may need some information to help it decide the tuple partitions.

@@ -28,11 +28,11 @@ import edu.washington.escience.myriad.column.StringColumn;
 import edu.washington.escience.myriad.table._TupleBatch;
 
 @ThreadSafe
-public class ImmutableInMemoryTupleBatch implements _TupleBatch {
+public final class ImmutableInMemoryTupleBatch implements _TupleBatch {
 
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
-  public static final int BATCH_SIZE = 100;
   /** Class-specific magic number used to generate the hash code. */
   private static final int MAGIC_HASHCODE1 = 243;
   /** Class-specific magic number used to generate the hash code. */
@@ -40,12 +40,12 @@ public class ImmutableInMemoryTupleBatch implements _TupleBatch {
 
   private final Schema inputSchema;
   private final String[] outputColumnNames;
-  private final List<Column> inputColumns;
+  private final List<Column<?>> inputColumns;
   private final int numInputTuples;
   private final BitSet invalidTuples;
   private final BitSet invalidColumns;
 
-  public ImmutableInMemoryTupleBatch(final Schema inputSchema, final List<Column> columns, final int numTuples) {
+  public ImmutableInMemoryTupleBatch(final Schema inputSchema, final List<Column<?>> columns, final int numTuples) {
     /* Take the input arguments directly */
     this.inputSchema = Objects.requireNonNull(inputSchema);
     inputColumns = Objects.requireNonNull(columns);
@@ -59,7 +59,7 @@ public class ImmutableInMemoryTupleBatch implements _TupleBatch {
     outputColumnNames = inputSchema.getFieldNames();
   }
 
-  public ImmutableInMemoryTupleBatch(final Schema inputSchema, final List<Column> columns, final int numTuples,
+  public ImmutableInMemoryTupleBatch(final Schema inputSchema, final List<Column<?>> columns, final int numTuples,
       final BitSet invalidTuples) {
     /* Take the input arguments directly */
     this.inputSchema = Objects.requireNonNull(inputSchema);
@@ -78,7 +78,8 @@ public class ImmutableInMemoryTupleBatch implements _TupleBatch {
    * Only for copy
    */
   protected ImmutableInMemoryTupleBatch(final Schema inputSchema, final String[] outputColumnNames,
-      final List<Column> inputColumns, final int numInputTuples, final BitSet invalidTuples, final BitSet invalidColumns) {
+      final List<Column<?>> inputColumns, final int numInputTuples, final BitSet invalidTuples,
+      final BitSet invalidColumns) {
     this.inputSchema = inputSchema;
     this.outputColumnNames = outputColumnNames;
     this.inputColumns = inputColumns;
@@ -109,7 +110,7 @@ public class ImmutableInMemoryTupleBatch implements _TupleBatch {
   public ImmutableInMemoryTupleBatch filter(final int fieldIdx, final Predicate.Op op, final Object operand) {
     BitSet newInvalidTuples = null;
     if (!invalidColumns.get(fieldIdx) && numInputTuples > 0) {
-      final Column columnValues = inputColumns.get(fieldIdx);
+      final Column<?> columnValues = inputColumns.get(fieldIdx);
       final Type columnType = inputSchema.getFieldType(fieldIdx);
       newInvalidTuples = BitSet.valueOf(invalidTuples.toByteArray());
       for (int i = newInvalidTuples.nextClearBit(0); i >= 0 && i < numInputTuples; i =
@@ -149,16 +150,21 @@ public class ImmutableInMemoryTupleBatch implements _TupleBatch {
   }
 
   @Override
+  public Object getObject(final int column, final int row) {
+    return inputColumns.get(column).get(row);
+  }
+
+  @Override
   public String getString(final int column, final int row) {
     return ((StringColumn) inputColumns.get(column)).getString(row);
   }
 
   @Override
-  public Set<Pair<Object, TupleBatchBuffer>> groupby(int groupByColumn,
-      Map<Object, Pair<Object, TupleBatchBuffer>> buffers) {
+  public Set<Pair<Object, TupleBatchBuffer>> groupby(final int groupByColumn,
+      final Map<Object, Pair<Object, TupleBatchBuffer>> buffers) {
     Set<Pair<Object, TupleBatchBuffer>> ready = null;
-    List<Column> columns = outputRawData();
-    Column gC = columns.get(groupByColumn);
+    List<Column<?>> columns = outputRawData();
+    Column<?> gC = columns.get(groupByColumn);
 
     int numR = gC.size();
     for (int i = 0; i < numR; i++) {
@@ -173,7 +179,7 @@ public class ImmutableInMemoryTupleBatch implements _TupleBatch {
         tbb = kvPair.getRight();
       }
       int j = 0;
-      for (Column c : columns) {
+      for (Column<?> c : columns) {
         tbb.put(j, c.get(i));
         j++;
       }
@@ -189,7 +195,6 @@ public class ImmutableInMemoryTupleBatch implements _TupleBatch {
 
   @Override
   public int hashCode(final int rowIndx) {
-    // return 0;
     final HashCodeBuilder hb = new HashCodeBuilder(MAGIC_HASHCODE1, MAGIC_HASHCODE2);
     for (int i = 0; i < inputSchema.numFields(); ++i) {
       hb.append(inputColumns.get(i).get(rowIndx));
@@ -234,9 +239,9 @@ public class ImmutableInMemoryTupleBatch implements _TupleBatch {
   }
 
   @Override
-  public List<Column> outputRawData() {
+  public List<Column<?>> outputRawData() {
     if (numInputTuples <= 0 || numOutputTuples() <= 0) {
-      return new ArrayList<Column>(0);
+      return new ArrayList<Column<?>>(0);
     }
 
     final int[] columnIndices = outputColumnIndices();
@@ -251,7 +256,7 @@ public class ImmutableInMemoryTupleBatch implements _TupleBatch {
       }
     }
 
-    final List<Column> output = ColumnFactory.allocateColumns(outputSchema());
+    final List<Column<?>> output = ColumnFactory.allocateColumns(outputSchema());
     // StringBuilder sb = new StringBuilder();
     for (int i = invalidTuples.nextClearBit(0); i >= 0 && i < numInputTuples; i = invalidTuples.nextClearBit(i + 1)) {
       // sb.append("|\t");

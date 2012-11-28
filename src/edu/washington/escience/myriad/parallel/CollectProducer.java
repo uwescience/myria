@@ -45,7 +45,7 @@ public final class CollectProducer extends Producer {
         _TupleBatch tup = null;
         while ((tup = child.next()) != null) {
 
-          final List<Column> fromColumns = tup.outputRawData();
+          final List<Column<?>> fromColumns = tup.outputRawData();
 
           int numTuples = tup.numOutputTuples();
           int numColumns = fromColumns.size();
@@ -56,10 +56,10 @@ public final class CollectProducer extends Producer {
           }
 
           while ((tup = buffer.popFilled()) != null) {
-            final List<Column> columns = tup.outputRawData();
+            final List<Column<?>> columns = tup.outputRawData();
             final ColumnMessage[] columnProtos = new ColumnMessage[columns.size()];
             int i = 0;
-            for (final Column c : columns) {
+            for (final Column<?> c : columns) {
               columnProtos[i] = c.serializeToProto();
               i++;
             }
@@ -72,10 +72,10 @@ public final class CollectProducer extends Producer {
         if (buffer.numTuples() > 0) {
           List<TupleBatch> remain = buffer.getAll();
           for (TupleBatch tb : remain) {
-            final List<Column> columns = tb.outputRawData();
+            final List<Column<?>> columns = tb.outputRawData();
             final ColumnMessage[] columnProtos = new ColumnMessage[columns.size()];
             int j = 0;
-            for (final Column c : columns) {
+            for (final Column<?> c : columns) {
               columnProtos[j] = c.serializeToProto();
               j++;
             }
@@ -97,6 +97,7 @@ public final class CollectProducer extends Producer {
     }
   }
 
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   private transient WorkingThread runningThread;
@@ -105,7 +106,7 @@ public final class CollectProducer extends Producer {
 
   public static final int MAX_MS = 1000;
   /**
-   * The paired collect consumer address
+   * The paired collect consumer address.
    */
   private final int collectConsumerWorkerID;
 

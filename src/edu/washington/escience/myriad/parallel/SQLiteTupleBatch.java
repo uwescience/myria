@@ -18,11 +18,10 @@ import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.table._TupleBatch;
 
 // Not yet @ThreadSafe
-public class SQLiteTupleBatch implements _TupleBatch {
+public final class SQLiteTupleBatch implements _TupleBatch {
 
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
-
-  public static final int BATCH_SIZE = 100;
 
   private final Schema inputSchema;
   private transient String dataDir;
@@ -97,13 +96,18 @@ public class SQLiteTupleBatch implements _TupleBatch {
   }
 
   @Override
+  public Object getObject(final int column, final int row) {
+    return null;
+  }
+
+  @Override
   public synchronized String getString(final int column, final int row) {
     return null;
   }
 
   @Override
-  public Set<Pair<Object, TupleBatchBuffer>> groupby(int groupByColumn,
-      Map<Object, Pair<Object, TupleBatchBuffer>> buffers) {
+  public Set<Pair<Object, TupleBatchBuffer>> groupby(final int groupByColumn,
+      final Map<Object, Pair<Object, TupleBatchBuffer>> buffers) {
     throw new UnsupportedOperationException();
   }
 
@@ -144,7 +148,7 @@ public class SQLiteTupleBatch implements _TupleBatch {
   }
 
   @Override
-  public List<Column> outputRawData() {
+  public List<Column<?>> outputRawData() {
     return null;
   }
 

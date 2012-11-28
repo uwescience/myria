@@ -25,7 +25,11 @@ import edu.washington.escience.myriad.parallel.Worker.MessageWrapper;
 /**
  * Utility methods.
  */
-public class ParallelUtility {
+public final class ParallelUtility {
+
+  /** Prevent construction of utility class. */
+  private ParallelUtility() {
+  }
 
   public static int numBinaryOnesInInteger(int v) {
     int result = 0;

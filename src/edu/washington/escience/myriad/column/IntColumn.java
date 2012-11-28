@@ -25,7 +25,7 @@ import edu.washington.escience.myriad.proto.DataProto.IntColumnMessage;
  * @author dhalperi
  * 
  */
-public final class IntColumn implements Column {
+public final class IntColumn implements Column<Integer> {
   /** Internal representation of the column data. */
   private final ByteBuffer dataBytes;
   /** View of the column data as ints. */
@@ -33,8 +33,8 @@ public final class IntColumn implements Column {
 
   /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
   public IntColumn() {
-    this.dataBytes = ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Integer.SIZE / Byte.SIZE));
-    this.data = dataBytes.asIntBuffer();
+    dataBytes = ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Integer.SIZE / Byte.SIZE));
+    data = dataBytes.asIntBuffer();
   }
 
   /**
@@ -49,13 +49,13 @@ public final class IntColumn implements Column {
     if (!message.hasIntColumn()) {
       throw new IllegalArgumentException("ColumnMessage has type INT but no IntColumn");
     }
-    this.dataBytes = message.getIntColumn().getData().asReadOnlyByteBuffer();
-    this.data = dataBytes.asIntBuffer();
-    this.data.position(message.getNumTuples());
+    dataBytes = message.getIntColumn().getData().asReadOnlyByteBuffer();
+    data = dataBytes.asIntBuffer();
+    data.position(message.getNumTuples());
   }
 
   @Override
-  public Object get(final int row) {
+  public Integer get(final int row) {
     Preconditions.checkElementIndex(row, data.position());
     return Integer.valueOf(data.get(row));
   }
@@ -93,7 +93,7 @@ public final class IntColumn implements Column {
   }
 
   @Override
-  public Column putFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException {
+  public Column<Integer> putFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException {
     return put(resultSet.getInt(jdbcIndex));
   }
 
@@ -103,7 +103,7 @@ public final class IntColumn implements Column {
   }
 
   @Override
-  public Column putObject(final Object value) {
+  public Column<Integer> putObject(final Object value) {
     return put((Integer) value);
   }
 

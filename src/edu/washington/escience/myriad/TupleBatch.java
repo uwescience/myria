@@ -31,7 +31,7 @@ public class TupleBatch extends TupleBatchAdaptor {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** The hard-coded number of tuples in a batch. */
-  public static final int BATCH_SIZE = 100;
+  public static final int BATCH_SIZE = 10 * 1000;
   /** Class-specific magic number used to generate the hash code. */
   private static final int MAGIC_HASHCODE1 = 243;
   /** Class-specific magic number used to generate the hash code. */
@@ -40,7 +40,7 @@ public class TupleBatch extends TupleBatchAdaptor {
   /** Schema of tuples in this batch. */
   private final Schema schema;
   /** Tuple data stored as columns in this batch. */
-  private final List<Column> columns;
+  private final List<Column<?>> columns;
   /** Number of tuples in this batch. */
   private final int numTuples;
   /** Which tuples are valid in this batch. */
@@ -53,7 +53,7 @@ public class TupleBatch extends TupleBatchAdaptor {
    * @param columns contains the column-stored data. Must match schema.
    * @param numTuples number of tuples in the batch.
    */
-  public TupleBatch(final Schema schema, final List<Column> columns, final int numTuples) {
+  public TupleBatch(final Schema schema, final List<Column<?>> columns, final int numTuples) {
     /* Take the input arguments directly */
     this.schema = Objects.requireNonNull(schema);
     this.columns = Objects.requireNonNull(columns);
@@ -74,7 +74,7 @@ public class TupleBatch extends TupleBatchAdaptor {
    * @param numTuples number of tuples in the batch.
    * @param validTuples BitSet determines which tuples are valid tuples in this batch.
    */
-  private TupleBatch(final Schema schema, final List<Column> columns, final int numTuples, final BitSet validTuples) {
+  private TupleBatch(final Schema schema, final List<Column<?>> columns, final int numTuples, final BitSet validTuples) {
     /* Check and then store the input arguments */
     this.schema = Objects.requireNonNull(schema);
     this.columns = Objects.requireNonNull(columns);
@@ -129,7 +129,7 @@ public class TupleBatch extends TupleBatchAdaptor {
     Objects.requireNonNull(op);
     Objects.requireNonNull(operand);
     if (numTuples > 0) {
-      final Column columnValues = columns.get(column);
+      final Column<?> columnValues = columns.get(column);
       final Type columnType = schema.getFieldType(column);
       int nextSet = -1;
       while ((nextSet = validTuples.nextSetBit(nextSet + 1)) >= 0) {
@@ -160,13 +160,6 @@ public class TupleBatch extends TupleBatchAdaptor {
     return ret.applyFilter(column, op, operand);
   }
 
-  /**
-   * Returns the element at the specified column and row position.
-   * 
-   * @param column column in which the element is stored.
-   * @param row row in which the element is stored.
-   * @return the element at the specified position in this TupleBatch.
-   */
   @Override
   public final boolean getBoolean(final int column, final int row) {
     return ((BooleanColumn) columns.get(column)).getBoolean(row);
@@ -178,56 +171,33 @@ public class TupleBatch extends TupleBatchAdaptor {
    * @param index index of the desired column.
    * @return the column at the specified index.
    */
-  public final Column getColumn(final int index) {
+  public final Column<?> getColumn(final int index) {
     return columns.get(index);
   }
 
-  /**
-   * Returns the element at the specified column and row position.
-   * 
-   * @param column column in which the element is stored.
-   * @param row row in which the element is stored.
-   * @return the element at the specified position in this TupleBatch.
-   */
   @Override
   public final double getDouble(final int column, final int row) {
     return ((DoubleColumn) columns.get(column)).getDouble(row);
   }
 
-  /**
-   * Returns the element at the specified column and row position.
-   * 
-   * @param column column in which the element is stored.
-   * @param row row in which the element is stored.
-   * @return the element at the specified position in this TupleBatch.
-   */
   @Override
   public final float getFloat(final int column, final int row) {
     return ((FloatColumn) columns.get(column)).getFloat(row);
   }
 
-  /**
-   * Returns the element at the specified column and row position.
-   * 
-   * @param column column in which the element is stored.
-   * @param row row in which the element is stored.
-   * @return the element at the specified position in this TupleBatch.
-   */
   @Override
   public final int getInt(final int column, final int row) {
     return ((IntColumn) columns.get(column)).getInt(row);
   }
 
-  /**
-   * Returns the element at the specified column and row position.
-   * 
-   * @param column column in which the element is stored.
-   * @param row row in which the element is stored.
-   * @return the element at the specified position in this TupleBatch.
-   */
   @Override
   public final long getLong(final int column, final int row) {
     return ((LongColumn) columns.get(column)).getLong(row);
+  }
+
+  @Override
+  public final Object getObject(final int column, final int row) {
+    return columns.get(column).get(row);
   }
 
   /**
@@ -254,7 +224,7 @@ public class TupleBatch extends TupleBatchAdaptor {
   @Override
   public final int hashCode(final int row) {
     final HashCodeBuilder hb = new HashCodeBuilder(MAGIC_HASHCODE1, MAGIC_HASHCODE2);
-    for (Column c : columns) {
+    for (Column<?> c : columns) {
       hb.append(c.get(row));
     }
     return hb.toHashCode();
@@ -331,7 +301,7 @@ public class TupleBatch extends TupleBatchAdaptor {
   @Override
   public final TupleBatch project(final int[] remainingColumns) {
     Objects.requireNonNull(remainingColumns);
-    final List<Column> newColumns = new ArrayList<Column>();
+    final List<Column<?>> newColumns = new ArrayList<Column<?>>();
     final Type[] newTypes = new Type[remainingColumns.length];
     final String[] newNames = new String[remainingColumns.length];
     int count = 0;

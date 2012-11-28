@@ -21,6 +21,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFutureListener;
+import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
@@ -61,10 +62,12 @@ import edu.washington.escience.myriad.table._TupleBatch;
  * 
  */
 public class Worker {
+  /** The logger for this class. Defaults to myriad level, but could be set to a finer granularity if needed. */
+  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger("edu.washington.escience.myriad");
 
-  protected class MessageProcessor extends Thread {
+  protected final class MessageProcessor extends Thread {
     @Override
-    public final void run() {
+    public void run() {
 
       TERMINATE_MESSAGE_PROCESSING : while (true) {
         MessageWrapper mw = null;
@@ -105,12 +108,12 @@ public class Worker {
                 break;
               case DataMessageType.NORMAL_VALUE:
                 final List<ColumnMessage> columnMessages = data.getColumnsList();
-                final Column[] columnArray = new Column[columnMessages.size()];
+                final Column<?>[] columnArray = new Column[columnMessages.size()];
                 int idx = 0;
                 for (final ColumnMessage cm : columnMessages) {
                   columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm);
                 }
-                final List<Column> columns = Arrays.asList(columnArray);
+                final List<Column<?>> columns = Arrays.asList(columnArray);
                 receiveData(new ExchangeTupleBatch(exchangePairID, senderID, columns, operatorSchema, columnMessages
                     .get(0).getNumTuples()));
 
@@ -150,12 +153,11 @@ public class Worker {
         Operator query = null;
         query = queryPlan;
         if (query != null) {
-          System.out.println("Worker start processing query");
+          LOGGER.debug("Worker start processing query");
           final CollectProducer root = (CollectProducer) query;
           try {
             root.open();
             while (root.next() != null) {
-              ;
             }
             root.close();
           } catch (final DbException e1) {
@@ -233,8 +235,7 @@ public class Worker {
             (long) (Math.random() * 2000) + 1000); // subsequent
         // rate
       } catch (final IllegalStateException e) {
-        /* already get canceled, ignore */
-        /* Do nothing */;
+        /* already got canceled, ignore. */
       }
     }
   }
@@ -265,7 +266,7 @@ public class Worker {
 
   public static void main(String[] args) throws Throwable {
     if (args.length > 2) {
-      System.out.println("Invalid number of arguments.\n" + usage);
+      LOGGER.error("Invalid number of arguments.\n" + usage);
       ParallelUtility.shutdownVM();
     }
 
@@ -279,12 +280,12 @@ public class Worker {
         args = ParallelUtility.removeArg(args, 0);
         ParallelUtility.removeArg(args, 0);
       } else {
-        System.out.println("Invalid arguments.\n" + usage);
+        LOGGER.error("Invalid arguments.\n" + usage);
         ParallelUtility.shutdownVM();
       }
     }
 
-    System.out.println("workingDir: " + workingDir);
+    LOGGER.debug("workingDir: " + workingDir);
     // Instantiate a new worker
     final Worker w = new Worker(workingDir);
     // int port = w.port;
@@ -296,7 +297,7 @@ public class Worker {
     // Now the worker can accept messages
     w.start();
 
-    System.out.println("Worker started at:" + w.catalog.getWorkers().get(w.myID));
+    LOGGER.debug("Worker started at:" + w.catalog.getWorkers().get(w.myID));
 
     // From now on, the worker will listen for
     // messages to arrive on the network. These messages
@@ -305,9 +306,7 @@ public class Worker {
 
   }
 
-  public final File dataDir;
-
-  public final File tmpDir;
+  private final File dataDir;
 
   /**
    * The ID of this worker.
@@ -359,7 +358,6 @@ public class Worker {
     catalog = WorkerCatalog.open(FilenameUtils.concat(workingDirectory, "worker.catalog"));
     myID = Integer.parseInt(catalog.getConfigurationValue("worker.identifier"));
     dataDir = new File(catalog.getConfigurationValue("worker.data.sqlite.dir"));
-    tmpDir = new File(catalog.getConfigurationValue("worker.tmp.dir"));
     mySocketInfo = catalog.getWorkers().get(myID);
 
     dataBuffer = new HashMap<ExchangePairID, LinkedBlockingQueue<ExchangeTupleBatch>>();
@@ -386,7 +384,7 @@ public class Worker {
    * should focus on accepting/routing IO requests, rather than do heavily loaded work.
    */
   public final void executeQuery() {
-    System.out.println("Query started");
+    LOGGER.debug("Query started");
     synchronized (Worker.this.queryExecutor) {
       Worker.this.queryExecutor.notifyAll();
     }
@@ -400,7 +398,7 @@ public class Worker {
       dataBuffer.clear();
       queryPlan = null;
     }
-    System.out.println("My part of the query finished");
+    LOGGER.debug("My part of the query finished");
   }
 
   /**
@@ -468,7 +466,7 @@ public class Worker {
    */
   public final void receiveData(final ExchangeTupleBatch data) {
     if (data instanceof _TupleBatch) {
-      System.out.println("TupleBag received from " + data.getWorkerID() + " to Operator: " + data.getOperatorID());
+      LOGGER.debug("TupleBag received from " + data.getWorkerID() + " to Operator: " + data.getOperatorID());
     }
     LinkedBlockingQueue<ExchangeTupleBatch> q = null;
     q = Worker.this.dataBuffer.get(data.getOperatorID());
@@ -485,9 +483,9 @@ public class Worker {
    * @throws DbException
    */
   public final void receiveQuery(final Operator query) throws DbException {
-    System.out.println("Query received");
+    LOGGER.debug("Query received");
     if (Worker.this.queryPlan != null) {
-      System.err.println("Error: Worker is still processing. New query refused");
+      LOGGER.error("Error: Worker is still processing. New query refused");
       return;
     }
 
@@ -503,7 +501,7 @@ public class Worker {
   }
 
   protected final void sendMessageToMaster(final TransportMessage message, final ChannelFutureListener callback) {
-    System.out.println("send back query ready");
+    LOGGER.debug("send back query ready");
     Channel s = null;
     s = Worker.this.connectionPool.get(0, 3, null, messageBuffer);
     if (callback != null) {
@@ -517,9 +515,9 @@ public class Worker {
    * This method should be called whenever the system is going to shutdown.
    */
   public final void shutdown() {
-    System.out.println("Shutdown requested. Please wait when cleaning up...");
+    LOGGER.debug("Shutdown requested. Please wait when cleaning up...");
     ParallelUtility.shutdownIPC(ipcServerChannel, connectionPool);
-    System.out.println("shutdown IPC completed");
+    LOGGER.debug("shutdown IPC completed");
     toShutdown = true;
   }
 

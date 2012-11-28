@@ -74,7 +74,7 @@ public class ParallelDistinctUsingSQLiteTest extends SystemTestBase {
       }
     }
     Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
-    System.out.println("Query dispatched to the workers");
+    LOGGER.debug("Query dispatched to the workers");
     TupleBatchBuffer result = null;
     CollectConsumer serverPlan = new CollectConsumer(schema, serverReceiveID, new int[] { WORKER_ID[1] });
     while ((result = Server.runningInstance.startServerQuery(0, serverPlan)) == null) {

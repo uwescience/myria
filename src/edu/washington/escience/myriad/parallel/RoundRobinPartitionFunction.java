@@ -26,7 +26,7 @@ public class RoundRobinPartitionFunction extends PartitionFunction<String, Integ
   }
 
   @Override
-  public final int[] partition(final List<Column> columns, final Schema td) {
+  public final int[] partition(final List<Column<?>> columns, final Schema schema) {
     final int numTuples = columns.get(0).size();
     final int[] result = new int[numTuples];
 

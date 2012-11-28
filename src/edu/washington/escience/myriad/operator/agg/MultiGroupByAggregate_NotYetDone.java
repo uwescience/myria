@@ -32,7 +32,7 @@ public class MultiGroupByAggregate_NotYetDone extends Operator {
   protected static class SimpleArrayWrapper {
     public final Object[] groupFields;
 
-    public SimpleArrayWrapper(Object[] groupFields) {
+    public SimpleArrayWrapper(final Object[] groupFields) {
       this.groupFields = groupFields;
     }
 
@@ -42,7 +42,7 @@ public class MultiGroupByAggregate_NotYetDone extends Operator {
     }
 
     @Override
-    public boolean equals(Object another) {
+    public boolean equals(final Object another) {
       if (another == null || !(another instanceof SimpleArrayWrapper)) {
         return false;
       }

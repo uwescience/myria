@@ -4,6 +4,9 @@ import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.operator.Operator;
@@ -20,6 +23,10 @@ import edu.washington.escience.myriad.table._TupleBatch;
  */
 public final class CollectConsumer extends Consumer {
 
+  /** The logger for this class. Defaults to myriad level, but could be set to a finer granularity if needed. */
+  private static final Logger LOGGER = LoggerFactory.getLogger("edu.washington.escience.myriad");
+
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   private final Schema schema;
@@ -34,7 +41,7 @@ public final class CollectConsumer extends Consumer {
   private CollectProducer child;
 
   /**
-   * If a child is provided, the TupleDesc is the child's TD
+   * When a child is provided, the Schema is the child's Schema.
    * 
    * @throws DbException
    */
@@ -53,7 +60,7 @@ public final class CollectConsumer extends Consumer {
   }
 
   /**
-   * If there's no child operator, a TupleDesc is needed
+   * If there's no child operator, a Schema is needed.
    */
   public CollectConsumer(final Schema schema, final ExchangePairID operatorID, final int[] workerIDs) {
     super(operatorID);
@@ -98,7 +105,7 @@ public final class CollectConsumer extends Consumer {
     }
   }
 
-  private final _TupleBatch getTuples(boolean blocking) throws InterruptedException {
+  private _TupleBatch getTuples(final boolean blocking) throws InterruptedException {
 
     int timeToWait = -1;
     if (!blocking) {
@@ -112,7 +119,7 @@ public final class CollectConsumer extends Consumer {
       if (tb != null) {
         if (tb.isEos()) {
           workerEOS.set(workerIdToIndex.get(tb.getWorkerID()));
-          System.out.println("EOS received in CollectConsumer. From WorkerID:" + tb.getWorkerID());
+          LOGGER.debug("EOS received in CollectConsumer. From WorkerID:" + tb.getWorkerID());
         } else {
           result = tb.getRealData();
           break;

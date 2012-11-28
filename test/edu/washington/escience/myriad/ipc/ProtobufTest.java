@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.Channel;
 import org.junit.Test;
+import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -32,6 +33,8 @@ import edu.washington.escience.myriad.systemtest.SystemTestBase;
 import edu.washington.escience.myriad.table._TupleBatch;
 
 public class ProtobufTest {
+  /** The logger for this class. Defaults to myriad.ipc level. */
+  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger("edu.washington.escience.myriad.ipc");
 
   @Test
   public void protobufMultiThreadTest() throws IOException, InterruptedException {
@@ -40,7 +43,7 @@ public class ProtobufTest {
 
     int totalRestrict = 1000000;
     int numThreads = r.nextInt(50) + 1;
-    System.out.println("Num threads: " + numThreads);
+    LOGGER.debug("Num threads: " + numThreads);
 
     int numTuplesEach = totalRestrict / numThreads;
 
@@ -76,10 +79,10 @@ public class ProtobufTest {
           Iterator<TupleBatch> tbs = tbb.getAll().iterator();
           while (tbs.hasNext()) {
             tb = tbs.next();
-            List<Column> columns = tb.outputRawData();
+            List<Column<?>> columns = tb.outputRawData();
             final ColumnMessage[] columnProtos = new ColumnMessage[columns.size()];
             int j = 0;
-            for (final Column c : columns) {
+            for (final Column<?> c : columns) {
               columnProtos[j] = c.serializeToProto();
               j++;
             }
@@ -101,7 +104,7 @@ public class ProtobufTest {
       t.join();
     }
 
-    System.out.println("Total sent: " + numSent.get() + " TupleBatches");
+    LOGGER.debug("Total sent: " + numSent.get() + " TupleBatches");
     connectionPool.shutdown();
     server.close();
     server.disconnect();
@@ -115,7 +118,7 @@ public class ProtobufTest {
         numReceived++;
       }
     }
-    System.out.println("Received: " + numReceived + " TupleBatches");
+    LOGGER.debug("Received: " + numReceived + " TupleBatches");
     org.junit.Assert.assertEquals(numSent.get(), numReceived);
   }
 }

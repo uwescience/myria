@@ -15,14 +15,14 @@ import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.table._TupleBatch;
 
-public class LocalJoin extends Operator implements Externalizable {
+public final class LocalJoin extends Operator implements Externalizable {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   private class IndexedTuple {
-    int index;
-    _TupleBatch tb;
+    private final int index;
+    private final _TupleBatch tb;
 
     public IndexedTuple(final _TupleBatch tb, final int index) {
       this.tb = tb;
@@ -34,7 +34,6 @@ public class LocalJoin extends Operator implements Externalizable {
       // type check in query plan?
       final int rowIndx1 = index;
       final int rowIndx2 = another.index;
-      // System.out.println(rowIndx1 + " " + rowIndx2 + " " + colIndx1 + " " + colIndx2);
       switch (type1) {
         case INT_TYPE:
           return tb.getInt(colIndx1, rowIndx1) == another.tb.getInt(colIndx2, rowIndx2);
@@ -69,7 +68,7 @@ public class LocalJoin extends Operator implements Externalizable {
       return true;
     }
 
-    public boolean joinEquals(final Object o, int[] compareIndx1, int[] compareIndx2) {
+    public boolean joinEquals(final Object o, final int[] compareIndx1, final int[] compareIndx2) {
       if (!(o instanceof IndexedTuple)) {
         return false;
       }
@@ -104,8 +103,8 @@ public class LocalJoin extends Operator implements Externalizable {
   private TupleBatchBuffer ans;
 
   /**
-   * For java serialization
-   * */
+   * For Java serialization.
+   */
   public LocalJoin() {
   }
 
@@ -121,34 +120,27 @@ public class LocalJoin extends Operator implements Externalizable {
     ans = new TupleBatchBuffer(outputSchema);
   }
 
-  protected void addToAns(IndexedTuple tuple1, IndexedTuple tuple2) {
+  protected void addToAns(final IndexedTuple tuple1, final IndexedTuple tuple2) {
     int num1 = tuple1.tb.inputSchema().numFields();
     int num2 = tuple2.tb.inputSchema().numFields();
     for (int i = 0; i < num1; ++i) {
-      ans.put(i, tuple1.tb.outputRawData().get(i).get(tuple1.index));
-      // System.out.print(tuple1.tb.outputRawData().get(i).get(tuple1.index) + "\t");
+      ans.put(i, tuple1.tb.getObject(i, tuple1.index));
     }
     for (int i = 0; i < num2; ++i) {
-      ans.put(i + num1, tuple2.tb.outputRawData().get(i).get(tuple2.index));
-      // System.out.print(tuple2.tb.outputRawData().get(i).get(tuple2.index) + "\t");
+      ans.put(i + num1, tuple2.tb.getObject(i, tuple2.index));
     }
-    // System.out.println("");
   }
 
-  protected void processChild1TB(_TupleBatch tbFromChild1) {
+  protected void processChild1TB(final _TupleBatch tbFromChild1) {
     for (int i = 0; i < tbFromChild1.numOutputTuples(); ++i) { // outputTuples?
       final IndexedTuple tuple1 = new IndexedTuple(tbFromChild1, i);
       final int cntHashCode = tuple1.hashCode4Keys(compareIndx1);
 
-      // System.out.println("child1 " + i + " " + cntHashCode);
-
       if (hashTable2.get(cntHashCode) != null) {
         final List<IndexedTuple> tupleList = hashTable2.get(cntHashCode);
         for (int j = 0; j < tupleList.size(); ++j) {
-          System.out.println(j);
           final IndexedTuple tuple2 = tupleList.get(j);
           if (tuple1.joinEquals(tuple2, compareIndx1, compareIndx2)) {
-            // System.out.println("addtoans");
             addToAns(tuple1, tuple2);
           }
         }
@@ -158,30 +150,20 @@ public class LocalJoin extends Operator implements Externalizable {
         hashTable1.put(cntHashCode, new ArrayList<IndexedTuple>());
       }
       final List<IndexedTuple> tupleList = hashTable1.get(cntHashCode);
-      /*
-       * boolean unique = true; for (int j = 0; j < tupleList.size(); ++j) { final IndexedTuple oldTuple =
-       * tupleList.get(j); if (tuple1.equals(oldTuple)) { unique = false; break; } } System.out.println(unique); if
-       * (unique) {
-       */
       tupleList.add(tuple1);
-      // }
     }
   }
 
-  protected void processChild2TB(_TupleBatch tbFromChild2) {
+  protected void processChild2TB(final _TupleBatch tbFromChild2) {
     for (int i = 0; i < tbFromChild2.numOutputTuples(); ++i) { // outputTuples?
       final IndexedTuple tuple2 = new IndexedTuple(tbFromChild2, i);
       final int cntHashCode = tuple2.hashCode4Keys(compareIndx2);
 
-      // System.out.println("child2 " + i + " " + cntHashCode);
-
       if (hashTable1.get(cntHashCode) != null) {
         final List<IndexedTuple> tupleList = hashTable1.get(cntHashCode);
         for (int j = 0; j < tupleList.size(); ++j) {
-          System.out.println(j);
           final IndexedTuple tuple1 = tupleList.get(j);
           if (tuple2.joinEquals(tuple1, compareIndx2, compareIndx1)) {
-            // System.out.println("addtoans");
             addToAns(tuple1, tuple2);
           }
         }
@@ -191,13 +173,7 @@ public class LocalJoin extends Operator implements Externalizable {
         hashTable2.put(cntHashCode, new ArrayList<IndexedTuple>());
       }
       final List<IndexedTuple> tupleList = hashTable2.get(cntHashCode);
-      /*
-       * boolean unique = true; for (int j = 0; j < tupleList.size(); ++j) { final IndexedTuple oldTuple =
-       * tupleList.get(j); if (tuple2.equals(oldTuple)) { unique = false; break; } } System.out.println(unique); if
-       * (unique) {
-       */
       tupleList.add(tuple2);
-      // }
     }
   }
 
@@ -250,7 +226,7 @@ public class LocalJoin extends Operator implements Externalizable {
   }
 
   @Override
-  public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+  public void readExternal(final ObjectInput in) throws IOException, ClassNotFoundException {
     child1 = (Operator) in.readObject();
     child2 = (Operator) in.readObject();
     compareIndx1 = (int[]) in.readObject();
@@ -262,7 +238,7 @@ public class LocalJoin extends Operator implements Externalizable {
   }
 
   @Override
-  public void writeExternal(ObjectOutput out) throws IOException {
+  public void writeExternal(final ObjectOutput out) throws IOException {
     out.writeObject(child1);
     out.writeObject(child2);
     out.writeObject(compareIndx1);

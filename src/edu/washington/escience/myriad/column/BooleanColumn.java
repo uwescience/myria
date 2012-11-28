@@ -24,7 +24,7 @@ import edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessag
  * @author dhalperi
  * 
  */
-public final class BooleanColumn implements Column {
+public final class BooleanColumn implements Column<Boolean> {
   /** Internal representation of the column data. */
   private final BitSet data;
   /** Number of valid elements. */
@@ -32,8 +32,8 @@ public final class BooleanColumn implements Column {
 
   /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
   public BooleanColumn() {
-    this.data = new BitSet(TupleBatch.BATCH_SIZE);
-    this.numBits = 0;
+    data = new BitSet(TupleBatch.BATCH_SIZE);
+    numBits = 0;
   }
 
   /**
@@ -48,12 +48,12 @@ public final class BooleanColumn implements Column {
     if (!message.hasBooleanColumn()) {
       throw new IllegalArgumentException("ColumnMessage has type BOOLEAN but no BooleanColumn");
     }
-    this.data = BitSet.valueOf(message.getBooleanColumn().getData().asReadOnlyByteBuffer());
-    this.numBits = message.getNumTuples();
+    data = BitSet.valueOf(message.getBooleanColumn().getData().asReadOnlyByteBuffer());
+    numBits = message.getNumTuples();
   }
 
   @Override
-  public Object get(final int row) {
+  public Boolean get(final int row) {
     return Boolean.valueOf(getBoolean(row));
   }
 
@@ -93,7 +93,7 @@ public final class BooleanColumn implements Column {
   }
 
   @Override
-  public Column putFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException {
+  public Column<Boolean> putFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException {
     return put(resultSet.getBoolean(jdbcIndex));
   }
 
@@ -103,7 +103,7 @@ public final class BooleanColumn implements Column {
   }
 
   @Override
-  public Column putObject(final Object value) {
+  public Column<Boolean> putObject(final Object value) {
     return put((Boolean) value);
   }
 

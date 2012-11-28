@@ -23,6 +23,7 @@ import org.apache.mina.util.AvailablePortFinder;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.slf4j.LoggerFactory;
 
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
@@ -45,6 +46,8 @@ import edu.washington.escience.myriad.table._TupleBatch;
 import edu.washington.escience.myriad.tool.EclipseClasspathReader;
 
 public class SystemTestBase {
+  /** The logger for this class. Defaults to myriad level, but could be set to a finer granularity if needed. */
+  protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger("edu.washington.escience.myriad");
 
   @SuppressWarnings({ "rawtypes", "unchecked" })
   public static class Tuple implements Comparable<Tuple> {
@@ -186,14 +189,14 @@ public class SystemTestBase {
     final HashMap<Tuple, Integer> expectedResults = new HashMap<Tuple, Integer>();
     while (it.hasNext()) {
       final TupleBatch tb = it.next();
-      final List<Column> columns = tb.outputRawData();
+      final List<Column<?>> columns = tb.outputRawData();
       final int numRow = columns.get(0).size();
       final int numColumn = columns.size();
 
       for (int i = 0; i < numRow; i++) {
         final Tuple t = new Tuple(numColumn);
         for (int j = 0; j < numColumn; j++) {
-          t.set(j, (Comparable<?>) columns.get(j).get(i));
+          t.set(j, columns.get(j).get(i));
         }
         expectedResults.put(t, 1);
       }
@@ -332,7 +335,7 @@ public class SystemTestBase {
     Iterator<TupleBatch> child1TBIt = child1.getAll().iterator();
     while (child1TBIt.hasNext()) {
       child1TB = child1TBIt.next();
-      final List<Column> child1RawData = child1TB.outputRawData();
+      final List<Column<?>> child1RawData = child1TB.outputRawData();
       final int numRow = child1RawData.get(0).size();
       final int numColumn = child1RawData.size();
       numChild1Column = numColumn;
@@ -340,7 +343,7 @@ public class SystemTestBase {
       for (int i = 0; i < numRow; i++) {
         final Tuple t = new Tuple(numColumn);
         for (int j = 0; j < numColumn; j++) {
-          t.set(j, (Comparable<?>) child1RawData.get(j).get(i));
+          t.set(j, child1RawData.get(j).get(i));
         }
         final Object joinKey = t.get(child1JoinColumn);
         HashMap<Tuple, Integer> tupleOccur = child1Hash.get(joinKey);
@@ -362,7 +365,7 @@ public class SystemTestBase {
     _TupleBatch child2TB = null;
     while (child2TBIt.hasNext()) {
       child2TB = child2TBIt.next();
-      final List<Column> child2Columns = child2TB.outputRawData();
+      final List<Column<?>> child2Columns = child2TB.outputRawData();
       final int numRow = child2Columns.get(0).size();
       final int numChild2Column = child2Columns.size();
       for (int i = 0; i < numRow; i++) {
@@ -372,7 +375,7 @@ public class SystemTestBase {
           final Tuple child2Tuple = new Tuple(numChild2Column);
 
           for (int j = 0; j < numChild2Column; j++) {
-            child2Tuple.set(j, (Comparable<?>) child2Columns.get(j).get(i));
+            child2Tuple.set(j, child2Columns.get(j).get(i));
           }
 
           for (final Entry<Tuple, Integer> entry : matchedTuples.entrySet()) {
@@ -563,7 +566,7 @@ public class SystemTestBase {
               if (line == null) {
                 break;
               }
-              System.out.println("localhost:" + WORKER_PORT[myWorkerIdx] + "$ " + line);
+              LOGGER.debug("localhost:" + WORKER_PORT[myWorkerIdx] + "$ " + line);
             }
           } catch (IOException e) {
             // remote has shutdown. Not an exception.
@@ -593,12 +596,12 @@ public class SystemTestBase {
     while (it.hasNext()) {
       tb = it.next();
       final int numRow = tb.numOutputTuples();
-      final List<Column> columns = tb.outputRawData();
+      final List<Column<?>> columns = tb.outputRawData();
       final int numColumn = columns.size();
       for (int row = 0; row < numRow; row++) {
         final Tuple t = new Tuple(numColumn);
         for (int column = 0; column < numColumn; column++) {
-          t.set(column, (Comparable<?>) columns.get(column).get(row));
+          t.set(column, columns.get(column).get(row));
         }
         final Integer numOccur = result.get(t);
         if (numOccur == null) {
@@ -618,12 +621,12 @@ public class SystemTestBase {
     while (it.hasNext()) {
       tb = it.next();
       final int numRow = tb.numOutputTuples();
-      final List<Column> columns = tb.outputRawData();
+      final List<Column<?>> columns = tb.outputRawData();
       final int numColumn = columns.size();
       for (int row = 0; row < numRow; row++) {
         final Tuple t = new Tuple(numColumn);
         for (int column = 0; column < numColumn; column++) {
-          t.set(column, (Comparable<?>) columns.get(column).get(row));
+          t.set(column, columns.get(column).get(row));
         }
         result.put(t, 1);
       }

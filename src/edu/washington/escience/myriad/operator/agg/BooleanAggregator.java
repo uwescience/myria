@@ -7,33 +7,31 @@ import edu.washington.escience.myriad.parallel.ParallelUtility;
 import edu.washington.escience.myriad.table._TupleBatch;
 
 /**
- * Knows how to compute some aggregate over a set of StringFields.
+ * Knows how to compute some aggregates over a BooleanColumn.
  */
-public class BooleanAggregator implements Aggregator {
+public final class BooleanAggregator implements Aggregator {
 
-  /**
-   * java Serialization id.
-   * */
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   private int count;
   private final Schema resultSchema;
   private final int aggOps;
 
-  public static int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT;
+  public static final int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT;
 
   @Override
   public int availableAgg() {
     return AVAILABLE_AGG;
   }
 
-  private BooleanAggregator(int aggOps, Schema resultSchema) {
+  private BooleanAggregator(final int aggOps, final Schema resultSchema) {
     this.resultSchema = resultSchema;
     this.aggOps = aggOps;
     count = 0;
   }
 
-  public BooleanAggregator(int afield, String aFieldName, int aggOps) {
+  public BooleanAggregator(final int afield, final String aFieldName, final int aggOps) {
     if (aggOps <= 0) {
       throw new IllegalArgumentException("No aggregation operations are selected");
     }
@@ -57,12 +55,12 @@ public class BooleanAggregator implements Aggregator {
   }
 
   @Override
-  public void add(_TupleBatch tup) {
+  public void add(final _TupleBatch tup) {
     count += tup.numOutputTuples();
   }
 
   @Override
-  public void getResult(TupleBatchBuffer outputBuffer, final int fromIndex) {
+  public void getResult(final TupleBatchBuffer outputBuffer, final int fromIndex) {
     int idx = fromIndex;
     if ((aggOps & AGG_OP_COUNT) != 0) {
       outputBuffer.put(idx, count);

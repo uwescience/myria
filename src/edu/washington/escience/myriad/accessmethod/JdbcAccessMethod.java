@@ -63,6 +63,39 @@ public final class JdbcAccessMethod {
   }
 
   /**
+   * Insert the Tuples in this TupleBatch into the database. Unlike the other tupleBatchInsert method, this does not
+   * open a connection to the database but uses the one it is passed.
+   * 
+   * @param jdbcConnection the connection to the database
+   * @param insertString the insert statement. TODO no sanity checks at all right now
+   * @param tupleBatch the tupleBatch to be inserted
+   */
+  public static void tupleBatchInsert(final Connection jdbcConnection, final String insertString,
+      final TupleBatch tupleBatch) {
+
+    if (jdbcConnection == null) {
+      throw new IllegalArgumentException();
+    }
+
+    try {
+      /* Set up and execute the query */
+      final PreparedStatement statement = jdbcConnection.prepareStatement(insertString);
+
+      for (final int row : tupleBatch.validTupleIndices()) {
+        for (int column = 0; column < tupleBatch.numColumns(); ++column) {
+          tupleBatch.getColumn(column).getIntoJdbc(row, statement, column + 1);
+        }
+        statement.addBatch();
+      }
+      statement.executeBatch();
+      statement.close();
+    } catch (final SQLException e) {
+      System.err.println(e.getMessage());
+      throw new RuntimeException(e.getMessage());
+    }
+  }
+
+  /**
    * Create a JDBC Connection and then expose the results as an Iterator<TupleBatch>.
    * 
    * @param driverClassName the JDBC driver name
@@ -142,7 +175,7 @@ class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
   public TupleBatch next() {
     /* Allocate TupleBatch parameters */
     final int numFields = schema.numFields();
-    final List<Column> columns = ColumnFactory.allocateColumns(schema);
+    final List<Column<?>> columns = ColumnFactory.allocateColumns(schema);
 
     /**
      * Loop through resultSet, adding one row at a time. Stop when numTuples hits BATCH_SIZE or there are no more
