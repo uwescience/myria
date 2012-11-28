@@ -88,8 +88,6 @@ public final class SQLiteAccessMethod {
    * @param schema the Schema describing the format of the TupleBatch containing these results.
    * @return an Iterator<TupleBatch> containing the results of the query
    */
-  // public static synchronized Iterator<TupleBatch> tupleBatchIteratorFromQuery(final String pathToSQLiteDb,
-  // final String queryString, final Schema schema) {
   public static Iterator<TupleBatch> tupleBatchIteratorFromQuery(final String pathToSQLiteDb, final String queryString,
       final Schema schema) {
     try {

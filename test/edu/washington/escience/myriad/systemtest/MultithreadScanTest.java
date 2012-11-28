@@ -17,13 +17,18 @@ import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.LocalJoin;
+import edu.washington.escience.myriad.operator.Merge;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.Project;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
+import edu.washington.escience.myriad.parallel.PartitionFunction;
 import edu.washington.escience.myriad.parallel.Server;
+import edu.washington.escience.myriad.parallel.ShuffleConsumer;
+import edu.washington.escience.myriad.parallel.ShuffleProducer;
+import edu.washington.escience.myriad.parallel.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myriad.table._TupleBatch;
 
 public class MultithreadScanTest extends SystemTestBase {
@@ -159,4 +164,86 @@ public class MultithreadScanTest extends SystemTestBase {
     // SystemTestBase.assertTupleBagEqual(expectedResult, actual);
   }
 
+  @Test
+  public void TwoThreadsTwoConnectionsSameDBFileTest() throws DbException, CatalogException, IOException {
+
+    // data generation
+    final Type[] table1Types = new Type[] { Type.LONG_TYPE, Type.LONG_TYPE };
+    final String[] table1ColumnNames = new String[] { "follower", "followee" };
+    final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
+    final Type[] joinTypes = new Type[] { Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE };
+    final String[] joinColumnNames = new String[] { "follower", "followee", "follower", "followee" };
+    final Schema joinSchema = new Schema(joinTypes, joinColumnNames);
+
+    long[] tbl1ID1Worker1 = randomLong(1, MaxID - 1, numTbl1Worker1);
+    long[] tbl1ID2Worker1 = randomLong(1, MaxID - 1, numTbl1Worker1);
+    TupleBatchBuffer tbl1Worker1 = new TupleBatchBuffer(tableSchema);
+    for (int i = 0; i < numTbl1Worker1; i++) {
+      tbl1Worker1.put(0, tbl1ID1Worker1[i]);
+      tbl1Worker1.put(1, tbl1ID2Worker1[i]);
+    }
+    TupleBatchBuffer table1 = new TupleBatchBuffer(tableSchema);
+    table1.merge(tbl1Worker1);
+
+    TupleBatchBuffer expectedTBB = getResultInMemory(table1, tableSchema, 2);
+
+    createTable(WORKER_ID[0], "testtable0", "testtable", "follower long, followee long");
+    createTable(WORKER_ID[1], "testtable0", "testtable", "follower long, followee long");
+    _TupleBatch tb = null;
+    while ((tb = tbl1Worker1.popAny()) != null) {
+      insertWithBothNames(WORKER_ID[0], "testtable", "testtable0", tableSchema, tb);
+      insertWithBothNames(WORKER_ID[1], "testtable", "testtable0", tableSchema, tb);
+    }
+
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan("testtable0.db", "select * from testtable", tableSchema);
+    final SQLiteQueryScan scan2 = new SQLiteQueryScan("testtable0.db", "select * from testtable", tableSchema);
+    final LocalJoin localjoin1 = new LocalJoin(joinSchema, scan1, scan2, new int[] { 1 }, new int[] { 0 });
+    final Project proj1 = new Project(new Integer[] { 0, 3 }, localjoin1);
+    final SQLiteQueryScan scan3 = new SQLiteQueryScan("testtable0.db", "select * from testtable", tableSchema);
+    final SQLiteQueryScan scan4 = new SQLiteQueryScan("testtable0.db", "select * from testtable", tableSchema);
+    final LocalJoin localjoin2 = new LocalJoin(joinSchema, scan3, scan4, new int[] { 1 }, new int[] { 0 });
+    final Project proj2 = new Project(new Integer[] { 0, 3 }, localjoin2);
+
+    final int numPartition = 2;
+    final PartitionFunction<String, Integer> pf0 = new SingleFieldHashPartitionFunction(numPartition); // 2 workers
+    pf0.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0); // partition by 1st column
+
+    ExchangePairID arrayID1, arrayID2;
+    arrayID1 = ExchangePairID.newID();
+    arrayID2 = ExchangePairID.newID();
+    ShuffleProducer sp1 = new ShuffleProducer(proj1, arrayID1, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf0);
+    ShuffleProducer sp2 = new ShuffleProducer(proj2, arrayID2, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf0);
+    ShuffleConsumer sc1 = new ShuffleConsumer(sp1, arrayID1, new int[] { WORKER_ID[0], WORKER_ID[1] });
+    ShuffleConsumer sc2 = new ShuffleConsumer(sp2, arrayID2, new int[] { WORKER_ID[0], WORKER_ID[1] });
+    Merge merge = new Merge(tableSchema, sc1, sc2);
+
+    final ExchangePairID serverReceiveID = ExchangePairID.newID();
+    final CollectProducer cp = new CollectProducer(merge, serverReceiveID, MASTER_ID);
+    final HashMap<Integer, Operator> workerPlans = new HashMap<Integer, Operator>();
+    workerPlans.put(WORKER_ID[0], cp);
+    workerPlans.put(WORKER_ID[1], cp);
+
+    while (Server.runningInstance == null) {
+      try {
+        Thread.sleep(10);
+      } catch (final InterruptedException e) {
+      }
+    }
+
+    final CollectConsumer serverPlan =
+        new CollectConsumer(tableSchema, serverReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
+    Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
+    LOGGER.debug("Query dispatched to the workers");
+    System.out.println("Query dispatched to the workers");
+    TupleBatchBuffer result = null;
+    while ((result = Server.runningInstance.startServerQuery(0, serverPlan)) == null) {
+      try {
+        Thread.sleep(100);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+        Thread.currentThread().interrupt();
+      }
+    }
+    assertTrue(result.numTuples() == expectedTBB.numTuples() * 4);
+  }
 }
