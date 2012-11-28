@@ -46,9 +46,11 @@ public class IPCConnectionPool {
 
   /**
    * if ioHandler is null, the default ioHandler will be used
+   * 
+   * @param id, identity of remote unit
    */
   @SuppressWarnings("unchecked")
-  public Channel get(final int id, final int numRetry, final Map<String, ?> connectionAttributes,
+  public final Channel get(final int id, final int numRetry, final Map<String, ?> connectionAttributes,
       final LinkedBlockingQueue<MessageWrapper> messageBuffer) {
 
     final AtomicReference<Channel> ref = connectionPool.get(id);
