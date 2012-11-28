@@ -286,8 +286,8 @@ public class SystemTestBase {
       }
     }
 
-    startWorkers();
     startMaster();
+    startWorkers();
   }
 
   public static void insert(final int workerID, final String tableName, final Schema schema, final _TupleBatch data)
@@ -320,47 +320,54 @@ public class SystemTestBase {
   public static HashMap<Tuple, Integer> naturalJoin(final TupleBatchBuffer child1, final TupleBatchBuffer child2,
       final int child1JoinColumn, final int child2JoinColumn) {
 
-    _TupleBatch tb = null;
+    _TupleBatch child1TB = null;
 
+    /**
+     * join key -> {tuple->num occur}
+     * */
     final HashMap<Comparable, HashMap<Tuple, Integer>> child1Hash = new HashMap<Comparable, HashMap<Tuple, Integer>>();
 
     int numChild1Column = 0;
     final HashMap<Tuple, Integer> result = new HashMap<Tuple, Integer>();
-    Iterator<TupleBatch> it = child1.getAll().iterator();
-    while (it.hasNext()) {
-      tb = it.next();
-      final List<Column> output = tb.outputRawData();
-      final int numRow = output.get(0).size();
-      final int numColumn = output.size();
+    Iterator<TupleBatch> child1TBIt = child1.getAll().iterator();
+    while (child1TBIt.hasNext()) {
+      child1TB = child1TBIt.next();
+      final List<Column> child1RawData = child1TB.outputRawData();
+      final int numRow = child1RawData.get(0).size();
+      final int numColumn = child1RawData.size();
       numChild1Column = numColumn;
 
       for (int i = 0; i < numRow; i++) {
         final Tuple t = new Tuple(numColumn);
         for (int j = 0; j < numColumn; j++) {
-          t.set(j, (Comparable<?>) output.get(j).get(i));
+          t.set(j, (Comparable<?>) child1RawData.get(j).get(i));
         }
-        final Object v = t.get(child1JoinColumn);
-        HashMap<Tuple, Integer> tuples = child1Hash.get(v);
-        if (tuples == null) {
-          tuples = new HashMap<Tuple, Integer>();
-          tuples.put(t, 1);
-          child1Hash.put((Comparable<?>) v, tuples);
+        final Object joinKey = t.get(child1JoinColumn);
+        HashMap<Tuple, Integer> tupleOccur = child1Hash.get(joinKey);
+        if (tupleOccur == null) {
+          tupleOccur = new HashMap<Tuple, Integer>();
+          tupleOccur.put(t, 1);
+          child1Hash.put((Comparable<?>) joinKey, tupleOccur);
         } else {
-          final Integer occur = tuples.get(t);
-          tuples.put(t, occur + 1);
+          Integer occur = tupleOccur.get(t);
+          if (occur == null) {
+            occur = 0;
+          }
+          tupleOccur.put(t, occur + 1);
         }
       }
     }
 
-    it = child2.getAll().iterator();
-    while (it.hasNext()) {
-      tb = it.next();
-      final List<Column> child2Columns = tb.outputRawData();
+    Iterator<TupleBatch> child2TBIt = child2.getAll().iterator();
+    _TupleBatch child2TB = null;
+    while (child2TBIt.hasNext()) {
+      child2TB = child2TBIt.next();
+      final List<Column> child2Columns = child2TB.outputRawData();
       final int numRow = child2Columns.get(0).size();
       final int numChild2Column = child2Columns.size();
       for (int i = 0; i < numRow; i++) {
-        final Object v = child2Columns.get(child2JoinColumn).get(i);
-        final HashMap<Tuple, Integer> matchedTuples = child1Hash.get(v);
+        final Object joinKey = child2Columns.get(child2JoinColumn).get(i);
+        final HashMap<Tuple, Integer> matchedTuples = child1Hash.get(joinKey);
         if (matchedTuples != null) {
           final Tuple child2Tuple = new Tuple(numChild2Column);
 
