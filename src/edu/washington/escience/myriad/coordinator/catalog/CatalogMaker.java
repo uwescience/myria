@@ -90,12 +90,6 @@ public final class CatalogMaker {
       c.addMaster("localhost:8001");
       c.addWorker("localhost:9001");
       c.addWorker("localhost:9002");
-      /*
-       * c.addMaster("rio.cs.washington.edu:8001"); c.addWorker("paris.cs.washington.edu:9001");
-       * c.addWorker("seoul.cs.washington.edu:9001"); c.addWorker("sandiego.cs.washington.edu:9001");
-       * c.addWorker("beijing.cs.washington.edu:9001"); c.addWorker("berlin.cs.washington.edu:9001");
-       * c.addWorker("kyoto.cs.washington.edu:9001");
-       */
       masters = c.getMasters();
       workers = c.getWorkers();
       c.close();
@@ -161,6 +155,7 @@ public final class CatalogMaker {
   public static void main(final String[] args) {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
     if (args.length > 0) {
+      // just for making my life easier because I need to pass the arg in my script
       makeTwoNodeLocalParallelCatalog(args[0]);
     } else {
       makeTwoNodeLocalParallelCatalog(null);
