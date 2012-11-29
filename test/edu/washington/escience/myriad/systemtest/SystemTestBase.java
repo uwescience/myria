@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.logging.Level;
@@ -587,6 +588,24 @@ public class SystemTestBase {
         Thread.currentThread().interrupt();
       }
     }
+  }
+
+  public static HashMap<Tuple, Integer> mergeBags(List<HashMap<Tuple, Integer>> bags) {
+    HashMap<Tuple, Integer> result = new HashMap<Tuple, Integer>();
+    result.putAll(bags.get(0));
+    for (int i = 1; i < bags.size(); i++) {
+      for (Map.Entry<Tuple, Integer> e : bags.get(i).entrySet()) {
+        Tuple t = e.getKey();
+        Integer occ = e.getValue();
+        Integer existingOcc = result.get(t);
+        if (existingOcc == null) {
+          result.put(t, occ);
+        } else {
+          result.put(t, occ + existingOcc);
+        }
+      }
+    }
+    return result;
   }
 
   public static HashMap<Tuple, Integer> tupleBatchToTupleBag(final TupleBatchBuffer tbb) {
