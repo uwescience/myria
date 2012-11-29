@@ -2,11 +2,13 @@ package edu.washington.escience.myriad.accessmethod;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.commons.io.FilenameUtils;
 import org.junit.Test;
 import org.slf4j.LoggerFactory;
 
@@ -19,6 +21,7 @@ import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.SQLiteInsert;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
+import edu.washington.escience.myriad.parallel.Server;
 import edu.washington.escience.myriad.systemtest.SystemTestBase;
 import edu.washington.escience.myriad.systemtest.SystemTestBase.Tuple;
 import edu.washington.escience.myriad.table._TupleBatch;
@@ -35,7 +38,8 @@ public class SQLiteTest {
     final Schema outputSchema =
         new Schema(new Type[] { Type.LONG_TYPE, Type.STRING_TYPE }, new String[] { "id", "name" });
 
-    String dbAbsolutePath = SystemTestBase.workerTestBaseFolder + File.separator + "sqlite_testtable.db";
+    String tempDirPath = Files.createTempDirectory(Server.SYSTEM_NAME + "_SQLiteTest").toFile().getAbsolutePath();
+    String dbAbsolutePath = FilenameUtils.concat(tempDirPath, "sqlite_testtable.db");
     SystemTestBase.createTable(dbAbsolutePath, "testtable", "id long,name varchar(20)");
 
     String[] names = SystemTestBase.randomFixedLengthNumericString(1000, 1005, 200, 20);
@@ -99,6 +103,8 @@ public class SQLiteTest {
     HashMap<SystemTestBase.Tuple, Integer> resultBag = SystemTestBase.tupleBatchToTupleBag(result);
 
     SystemTestBase.assertTupleBagEqual(expectedResult, resultBag);
+
+    SystemTestBase.fullyDeleteDirectory(tempDirPath);
 
   }
 }
