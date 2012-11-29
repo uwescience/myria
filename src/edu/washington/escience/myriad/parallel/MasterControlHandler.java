@@ -6,6 +6,7 @@ import java.util.logging.Logger;
 
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelEvent;
+import org.jboss.netty.channel.ChannelHandler.Sharable;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
@@ -14,15 +15,13 @@ import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
 import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 
+@Sharable
 public class MasterControlHandler extends SimpleChannelUpstreamHandler {
 
   private static final Logger logger = Logger.getLogger(MasterControlHandler.class.getName());
 
   @Override
   public void handleUpstream(ChannelHandlerContext ctx, ChannelEvent e) throws Exception {
-    // if (e instanceof ChannelStateEvent) {
-    // logger.info(e.toString());
-    // }
     super.handleUpstream(ctx, e);
   }
 
