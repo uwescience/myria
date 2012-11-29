@@ -152,11 +152,18 @@ public class SingleGroupByAggregate extends Operator {
       for (Pair<Object, TupleBatchBuffer> p : groupedTupleBatches.values()) {
         Object groupColumnValue = p.getKey();
         Aggregator[] groupAgg = groupAggs.get(groupColumnValue);
+        if (groupAgg == null) {
+          groupAgg = new Aggregator[agg.length];
+          for (int j = 0; j < agg.length; j++) {
+            groupAgg[j] = agg[j].freshCopyYourself();
+          }
+          groupAggs.put(groupColumnValue, groupAgg);
+        }
         TupleBatchBuffer tbb = p.getRight();
-        _TupleBatch filledTB = null;
-        while ((filledTB = tbb.popAny()) != null) {
+        _TupleBatch anyTBB = null;
+        while ((anyTBB = tbb.popAny()) != null) {
           for (Aggregator ag : groupAgg) {
-            ag.add(filledTB);
+            ag.add(anyTBB);
           }
         }
       }
