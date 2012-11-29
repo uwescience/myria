@@ -153,6 +153,14 @@ public interface _TupleBatch extends Serializable {
    */
   Schema outputSchema();
 
+  /**
+   * Grouping the tuples in this TupleBatch by the groupByColumn. NO aggregation is conducted.
+   * 
+   * @param groupByColumn the column index, by which, the tuples in this TupleBatch are going to get grouped.
+   * @param buffers the result of the groupby operation is stored in buffers. The data in buffers are of type : groupby
+   *          key -> Pair(groupby key, grouped TupleBatches)
+   * @return the set of TupleBatchBuffers having filled TupleBatches ready. May return null if no such TBBs.
+   * */
   Set<Pair<Object, TupleBatchBuffer>> groupby(int groupByColumn, Map<Object, Pair<Object, TupleBatchBuffer>> buffers);
 
   /* -------------------- The parallel methods ------------------------ */
