@@ -29,11 +29,10 @@ public class IPCPipelineFactories {
     /**
      * constructor.
      * */
-    private WorkerServerPipelineFactory(final LinkedBlockingQueue<MessageWrapper> messageBuffer) {
+    WorkerServerPipelineFactory(final LinkedBlockingQueue<MessageWrapper> messageBuffer) {
       workerDataHandler = new WorkerDataHandler(messageBuffer);
     }
 
-    private static WorkerServerPipelineFactory instance;
     private final WorkerDataHandler workerDataHandler;
 
     @Override
@@ -54,16 +53,6 @@ public class IPCPipelineFactories {
       return p;
     }
 
-    static synchronized WorkerServerPipelineFactory getInstance(LinkedBlockingQueue<MessageWrapper> messageBuffer) {
-      if (instance == null) {
-        instance = new WorkerServerPipelineFactory(messageBuffer);
-      } else if (messageBuffer != instance.workerDataHandler.messageBuffer) {
-        // A new server instance
-        instance = new WorkerServerPipelineFactory(messageBuffer);
-      }
-      return instance;
-    }
-
     protected static WorkerControlHandler workerControlHandler = new WorkerControlHandler();
   }
 
@@ -71,27 +60,17 @@ public class IPCPipelineFactories {
     /**
      * constructor.
      * */
-    private WorkerClientPipelineFactory(final LinkedBlockingQueue<MessageWrapper> messageBuffer) {
+    WorkerClientPipelineFactory(final LinkedBlockingQueue<MessageWrapper> messageBuffer) {
       this.messageBuffer = messageBuffer;
     }
 
     final LinkedBlockingQueue<MessageWrapper> messageBuffer;
-    static WorkerClientPipelineFactory instance = null;
 
     @Override
     public ChannelPipeline getPipeline() throws Exception {
       return new WorkerServerPipelineFactory(messageBuffer).getPipeline();
     }
 
-    static synchronized WorkerClientPipelineFactory getInstance(LinkedBlockingQueue<MessageWrapper> messageBuffer) {
-      if (instance == null) {
-        instance = new WorkerClientPipelineFactory(messageBuffer);
-      } else if (messageBuffer != instance.messageBuffer) {
-        // A new server instance
-        instance = new WorkerClientPipelineFactory(messageBuffer);
-      }
-      return instance;
-    }
   }
 
   public static class MasterServerPipelineFactory implements ChannelPipelineFactory {
@@ -99,12 +78,11 @@ public class IPCPipelineFactories {
     /**
      * constructor.
      * */
-    private MasterServerPipelineFactory(final LinkedBlockingQueue<MessageWrapper> messageBuffer) {
+    MasterServerPipelineFactory(final LinkedBlockingQueue<MessageWrapper> messageBuffer) {
       masterDataHandler = new MasterDataHandler(messageBuffer);
     }
 
     final protected MasterDataHandler masterDataHandler;
-    private static MasterServerPipelineFactory instance;
 
     @Override
     public ChannelPipeline getPipeline() throws Exception {
@@ -124,16 +102,6 @@ public class IPCPipelineFactories {
       return p;
     }
 
-    static synchronized MasterServerPipelineFactory getInstance(LinkedBlockingQueue<MessageWrapper> messageBuffer) {
-      if (instance == null) {
-        instance = new MasterServerPipelineFactory(messageBuffer);
-      } else if (messageBuffer != instance.masterDataHandler.messageBuffer) {
-        // A new server instance
-        instance = new MasterServerPipelineFactory(messageBuffer);
-      }
-      return instance;
-    }
-
   }
 
   public static class MasterClientPipelineFactory implements ChannelPipelineFactory {
@@ -141,22 +109,11 @@ public class IPCPipelineFactories {
     /**
      * constructor.
      * */
-    private MasterClientPipelineFactory(final LinkedBlockingQueue<MessageWrapper> messageBuffer) {
+    MasterClientPipelineFactory(final LinkedBlockingQueue<MessageWrapper> messageBuffer) {
       this.messageBuffer = messageBuffer;
     }
 
-    static synchronized MasterClientPipelineFactory getInstance(LinkedBlockingQueue<MessageWrapper> messageBuffer) {
-      if (instance == null) {
-        instance = new MasterClientPipelineFactory(messageBuffer);
-      } else if (messageBuffer != instance.messageBuffer) {
-        // A new server instance
-        instance = new MasterClientPipelineFactory(messageBuffer);
-      }
-      return instance;
-    }
-
     private final LinkedBlockingQueue<MessageWrapper> messageBuffer;
-    private static MasterClientPipelineFactory instance;
 
     @Override
     public ChannelPipeline getPipeline() throws Exception {

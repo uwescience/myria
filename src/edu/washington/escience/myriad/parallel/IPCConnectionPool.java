@@ -5,14 +5,18 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelFuture;
+import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
+import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 
 import edu.washington.escience.myriad.parallel.Worker.MessageWrapper;
 import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
@@ -27,21 +31,31 @@ public class IPCConnectionPool {
   protected final ConcurrentHashMap<Integer, AtomicReference<Channel>> connectionPool;
   protected final ConcurrentHashMap<Integer, SocketInfo> remoteAddresses;
 
+  /**
+   * NIO client side factory.
+   * */
+  protected final ChannelFactory clientFactory;
+  protected final ChannelPipelineFactory channelPipelineFactory;
+
   protected final int myID;
   protected final ChannelGroup allConnections;
 
-  public IPCConnectionPool(final int myID, final Map<Integer, SocketInfo> remoteAddresses) {
-    // final Map<Integer, ChannelPipelineFactory> defaultIoHandlers) {
+  // protected final LinkedBlockingQueue<MessageWrapper> messageBuffer;
+
+  public IPCConnectionPool(final int myID, final Map<Integer, SocketInfo> remoteAddresses,
+      final LinkedBlockingQueue<MessageWrapper> messageBuffer) {
+
     connectionPool = new ConcurrentHashMap<Integer, AtomicReference<Channel>>();
     for (final Integer id : remoteAddresses.keySet()) {
       connectionPool.put(id, new AtomicReference<Channel>());
     }
     this.remoteAddresses = new ConcurrentHashMap<Integer, SocketInfo>();
     this.remoteAddresses.putAll(remoteAddresses);
-    // this.defaultIoHandlers = new ConcurrentHashMap<Integer, ChannelPipelineFactory>();
-    // this.defaultIoHandlers.putAll(defaultIoHandlers);
+
     this.myID = myID;
     allConnections = new DefaultChannelGroup("allChannels");
+    clientFactory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
+    channelPipelineFactory = new IPCPipelineFactories.WorkerClientPipelineFactory(messageBuffer);
   }
 
   /**
@@ -50,8 +64,7 @@ public class IPCConnectionPool {
    * @param id, identity of remote unit
    */
   @SuppressWarnings("unchecked")
-  public final Channel get(final int id, final int numRetry, final Map<String, ?> connectionAttributes,
-      final LinkedBlockingQueue<MessageWrapper> messageBuffer) {
+  public final Channel get(final int id, final int numRetry, final Map<String, ?> connectionAttributes) {
 
     final AtomicReference<Channel> ref = connectionPool.get(id);
 
@@ -65,7 +78,7 @@ public class IPCConnectionPool {
 
       while (retry < numRetry && ((s = ref.get()) == null || !s.isConnected())) {
         final Channel old = s;
-        s = createChannel(remoteAddresses.get(id).getAddress(), 3000, messageBuffer);
+        s = createChannel(remoteAddresses.get(id).getAddress(), 3000);
         ref.compareAndSet(old, s);
         retry++;
       }
@@ -120,13 +133,17 @@ public class IPCConnectionPool {
     // TODO
   }
 
-  private static Channel createChannel(final SocketAddress remoteAddress, final long connectionTimeoutMS,
-      final LinkedBlockingQueue<MessageWrapper> messageBuffer) {
+  /**
+   * Connect to remoteAddress with timeout connectionTimeoutMS.
+   * 
+   * @return the nio channel if successful, null otherwise.
+   * */
+  private Channel createChannel(final SocketAddress remoteAddress, final long connectionTimeoutMS) {
 
     Channel channel = null;
 
     ClientBootstrap ic = null;
-    ic = ParallelUtility.createIPCClient(messageBuffer);
+    ic = ParallelUtility.createIPCClient(clientFactory, channelPipelineFactory);
 
     boolean connected = true;
     ChannelFuture c = null;

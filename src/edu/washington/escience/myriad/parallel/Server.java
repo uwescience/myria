@@ -246,7 +246,7 @@ public final class Server {
     computingUnits.putAll(workers);
     computingUnits.put(0, server);
 
-    connectionPool = new IPCConnectionPool(0, computingUnits);
+    connectionPool = new IPCConnectionPool(0, computingUnits, messageBuffer);
     messageProcessor = new MessageProcessor();
     workersAssignedToQuery = new ConcurrentHashMap<Integer, HashMap<Integer, Integer>>();
     workersReceivedQuery = new ConcurrentHashMap<Integer, BitSet>();
@@ -260,7 +260,7 @@ public final class Server {
 
       Channel ch = null;
       try {
-        ch = Server.this.connectionPool.get(worker.getKey(), 3, null, messageBuffer);
+        ch = Server.this.connectionPool.get(worker.getKey(), 3, null);
       } catch (final Throwable e) {
       }
       if (ch == null || !ch.isConnected()) {
@@ -289,7 +289,7 @@ public final class Server {
       final Integer workerID = e.getKey();
       setOfWorkers.put(workerID, workerIdx++);
       final Operator plan = e.getValue();
-      final Channel ssss0 = connectionPool.get(workerID, 3, null, messageBuffer);
+      final Channel ssss0 = connectionPool.get(workerID, 3, null);
       // this session will be reused for the Workers to report the receive
       // of the queryplan, therefore, do not close it
       inMemBuffer = new ByteArrayOutputStream();
@@ -317,7 +317,7 @@ public final class Server {
   protected void startWorkerQuery(final int queryId) {
     HashMap<Integer, Integer> workersAssigned = workersAssignedToQuery.get(queryId);
     for (final Entry<Integer, Integer> entry : workersAssigned.entrySet()) {
-      Server.this.connectionPool.get(entry.getKey(), 3, null, messageBuffer).write(
+      Server.this.connectionPool.get(entry.getKey(), 3, null).write(
           TransportMessage.newBuilder().setType(TransportMessageType.CONTROL).setControl(
               ControlMessage.newBuilder().setType(ControlMessage.ControlMessageType.START_QUERY).build()).build());
     }

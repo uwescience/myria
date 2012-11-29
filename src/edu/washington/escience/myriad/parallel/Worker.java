@@ -209,7 +209,7 @@ public class Worker {
         inRun = true;
         Channel serverChannel = null;
         try {
-          serverChannel = connectionPool.get(0, 3, null, messageBuffer);
+          serverChannel = connectionPool.get(0, 3, null);
         } catch (final RuntimeException e) {
           e.printStackTrace();
         } catch (final Exception e) {
@@ -376,7 +376,7 @@ public class Worker {
     computingUnits.putAll(workers);
     computingUnits.put(0, masterSocketInfo);
 
-    connectionPool = new IPCConnectionPool(myID, computingUnits);
+    connectionPool = new IPCConnectionPool(myID, computingUnits, messageBuffer);
   }
 
   /**
@@ -503,7 +503,7 @@ public class Worker {
   protected final void sendMessageToMaster(final TransportMessage message, final ChannelFutureListener callback) {
     LOGGER.debug("send back query ready");
     Channel s = null;
-    s = Worker.this.connectionPool.get(0, 3, null, messageBuffer);
+    s = Worker.this.connectionPool.get(0, 3, null);
     if (callback != null) {
       s.write(message).addListener(callback);
     } else {

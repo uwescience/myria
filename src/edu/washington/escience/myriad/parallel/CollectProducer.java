@@ -33,8 +33,7 @@ public final class CollectProducer extends Producer {
     @Override
     public void run() {
 
-      final Channel channel =
-          getThisWorker().connectionPool.get(collectConsumerWorkerID, 3, null, getThisWorker().messageBuffer);
+      final Channel channel = getThisWorker().connectionPool.get(collectConsumerWorkerID, 3, null);
 
       final TransportMessage.Builder messageBuilder = TransportMessage.newBuilder();
 

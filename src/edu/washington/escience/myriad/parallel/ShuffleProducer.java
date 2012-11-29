@@ -35,7 +35,7 @@ public class ShuffleProducer extends Producer {
       final Channel[] shuffleChannels = new Channel[numWorker];
       int index = 0;
       for (final int workerID : workerIDs) {
-        shuffleChannels[index] = getThisWorker().connectionPool.get(workerID, 3, null, getThisWorker().messageBuffer);
+        shuffleChannels[index] = getThisWorker().connectionPool.get(workerID, 3, null);
         index++;
       }
       Schema thisSchema = null;
