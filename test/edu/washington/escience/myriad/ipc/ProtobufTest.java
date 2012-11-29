@@ -73,14 +73,14 @@ public class ProtobufTest {
 
     final InetSocketAddress serverAddress = new InetSocketAddress("localhost", 19901);
 
-    final LinkedBlockingQueue<MessageWrapper> messageBuffer = new LinkedBlockingQueue<MessageWrapper>();
-    ServerBootstrap acceptor = ParallelUtility.createMasterIPCServer(messageBuffer);
+    final LinkedBlockingQueue<MessageWrapper> messageQueue = new LinkedBlockingQueue<MessageWrapper>();
+    ServerBootstrap acceptor = ParallelUtility.createMasterIPCServer(messageQueue);
     Channel server = acceptor.bind(serverAddress);
 
     HashMap<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
     computingUnits.put(0, new SocketInfo("localhost", 19901));
 
-    final IPCConnectionPool connectionPool = new IPCConnectionPool(0, computingUnits, messageBuffer);
+    final IPCConnectionPool connectionPool = new IPCConnectionPool(0, computingUnits, messageQueue);
 
     Thread[] threads = new Thread[numThreads];
     final AtomicInteger numSent = new AtomicInteger();
@@ -128,7 +128,7 @@ public class ProtobufTest {
     server.close();
     server.disconnect();
     server.unbind().awaitUninterruptibly();
-    Iterator<MessageWrapper> it = messageBuffer.iterator();
+    Iterator<MessageWrapper> it = messageQueue.iterator();
     int numReceived = 0;
     TupleBatchBuffer actualTBB = new TupleBatchBuffer(tbb.getSchema());
     int numEOS = 0;

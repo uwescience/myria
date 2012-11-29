@@ -82,7 +82,7 @@ public final class ParallelUtility {
   /**
    * Create a server side acceptor.
    */
-  public static ServerBootstrap createMasterIPCServer(final LinkedBlockingQueue<MessageWrapper> messageBuffer) {
+  public static ServerBootstrap createMasterIPCServer(final LinkedBlockingQueue<MessageWrapper> messageQueue) {
 
     // Start server with Nb of active threads = 2*NB CPU + 1 as maximum.
     ChannelFactory factory =
@@ -94,7 +94,7 @@ public final class ParallelUtility {
     // new OrderedMemoryAwareThreadPoolExecutor(200, 1048576, 1073741824, 100, TimeUnit.MILLISECONDS, Executors
     // .defaultThreadFactory());
 
-    bootstrap.setPipelineFactory(new IPCPipelineFactories.MasterClientPipelineFactory(messageBuffer));
+    bootstrap.setPipelineFactory(new IPCPipelineFactories.MasterClientPipelineFactory(messageQueue));
 
     // ExecutionHandler eh;
 
@@ -115,7 +115,7 @@ public final class ParallelUtility {
   /**
    * Create a server side acceptor.
    */
-  public static ServerBootstrap createWorkerIPCServer(final LinkedBlockingQueue<MessageWrapper> messageBuffer) {
+  public static ServerBootstrap createWorkerIPCServer(final LinkedBlockingQueue<MessageWrapper> messageQueue) {
 
     // Start server with Nb of active threads = 2*NB CPU + 1 as maximum.
     ChannelFactory factory =
@@ -131,7 +131,7 @@ public final class ParallelUtility {
     // new OrderedMemoryAwareThreadPoolExecutor(200, 1048576, 1073741824, 100, TimeUnit.MILLISECONDS, Executors
     // .defaultThreadFactory());
 
-    bootstrap.setPipelineFactory(new IPCPipelineFactories.MasterClientPipelineFactory(messageBuffer));
+    bootstrap.setPipelineFactory(new IPCPipelineFactories.MasterClientPipelineFactory(messageQueue));
 
     // ExecutionHandler eh;
 

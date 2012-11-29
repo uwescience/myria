@@ -40,10 +40,8 @@ public class IPCConnectionPool {
   protected final int myID;
   protected final ChannelGroup allConnections;
 
-  // protected final LinkedBlockingQueue<MessageWrapper> messageBuffer;
-
   public IPCConnectionPool(final int myID, final Map<Integer, SocketInfo> remoteAddresses,
-      final LinkedBlockingQueue<MessageWrapper> messageBuffer) {
+      final LinkedBlockingQueue<MessageWrapper> messageQueue) {
 
     connectionPool = new ConcurrentHashMap<Integer, AtomicReference<Channel>>();
     for (final Integer id : remoteAddresses.keySet()) {
@@ -55,7 +53,7 @@ public class IPCConnectionPool {
     this.myID = myID;
     allConnections = new DefaultChannelGroup("allChannels");
     clientFactory = new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
-    channelPipelineFactory = new IPCPipelineFactories.WorkerClientPipelineFactory(messageBuffer);
+    channelPipelineFactory = new IPCPipelineFactories.WorkerClientPipelineFactory(messageQueue);
   }
 
   /**

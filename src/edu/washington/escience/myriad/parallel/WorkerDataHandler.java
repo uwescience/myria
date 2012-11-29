@@ -25,10 +25,10 @@ public class WorkerDataHandler extends SimpleChannelUpstreamHandler {
 
   private static final Logger logger = Logger.getLogger(WorkerDataHandler.class.getName());
 
-  LinkedBlockingQueue<MessageWrapper> messageBuffer;
+  LinkedBlockingQueue<MessageWrapper> messageQueue;
 
-  WorkerDataHandler(LinkedBlockingQueue<MessageWrapper> messageBuffer) {
-    this.messageBuffer = messageBuffer;
+  WorkerDataHandler(LinkedBlockingQueue<MessageWrapper> messageQueue) {
+    this.messageQueue = messageQueue;
   }
 
   @Override
@@ -54,7 +54,7 @@ public class WorkerDataHandler extends SimpleChannelUpstreamHandler {
     final MessageWrapper mw = new MessageWrapper();
     mw.senderID = senderID;
     mw.message = tm;
-    messageBuffer.add(mw);
+    messageQueue.add(mw);
 
     ctx.sendUpstream(e);
   }

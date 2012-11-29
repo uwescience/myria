@@ -29,8 +29,8 @@ public class IPCPipelineFactories {
     /**
      * constructor.
      * */
-    WorkerServerPipelineFactory(final LinkedBlockingQueue<MessageWrapper> messageBuffer) {
-      workerDataHandler = new WorkerDataHandler(messageBuffer);
+    WorkerServerPipelineFactory(final LinkedBlockingQueue<MessageWrapper> messageQueue) {
+      workerDataHandler = new WorkerDataHandler(messageQueue);
     }
 
     private final WorkerDataHandler workerDataHandler;
@@ -60,15 +60,15 @@ public class IPCPipelineFactories {
     /**
      * constructor.
      * */
-    WorkerClientPipelineFactory(final LinkedBlockingQueue<MessageWrapper> messageBuffer) {
-      this.messageBuffer = messageBuffer;
+    WorkerClientPipelineFactory(final LinkedBlockingQueue<MessageWrapper> messageQueue) {
+      this.messageQueue = messageQueue;
     }
 
-    final LinkedBlockingQueue<MessageWrapper> messageBuffer;
+    final LinkedBlockingQueue<MessageWrapper> messageQueue;
 
     @Override
     public ChannelPipeline getPipeline() throws Exception {
-      return new WorkerServerPipelineFactory(messageBuffer).getPipeline();
+      return new WorkerServerPipelineFactory(messageQueue).getPipeline();
     }
 
   }
@@ -78,8 +78,8 @@ public class IPCPipelineFactories {
     /**
      * constructor.
      * */
-    MasterServerPipelineFactory(final LinkedBlockingQueue<MessageWrapper> messageBuffer) {
-      masterDataHandler = new MasterDataHandler(messageBuffer);
+    MasterServerPipelineFactory(final LinkedBlockingQueue<MessageWrapper> messageQueue) {
+      masterDataHandler = new MasterDataHandler(messageQueue);
     }
 
     final protected MasterDataHandler masterDataHandler;
@@ -109,15 +109,15 @@ public class IPCPipelineFactories {
     /**
      * constructor.
      * */
-    MasterClientPipelineFactory(final LinkedBlockingQueue<MessageWrapper> messageBuffer) {
-      this.messageBuffer = messageBuffer;
+    MasterClientPipelineFactory(final LinkedBlockingQueue<MessageWrapper> messageQueue) {
+      this.messageQueue = messageQueue;
     }
 
-    private final LinkedBlockingQueue<MessageWrapper> messageBuffer;
+    private final LinkedBlockingQueue<MessageWrapper> messageQueue;
 
     @Override
     public ChannelPipeline getPipeline() throws Exception {
-      return new MasterServerPipelineFactory(messageBuffer).getPipeline();
+      return new MasterServerPipelineFactory(messageQueue).getPipeline();
     }
   }
 }

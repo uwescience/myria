@@ -109,7 +109,7 @@ public final class Server {
       TERMINATE_MESSAGE_PROCESSING : while (true) {
         MessageWrapper mw = null;
         try {
-          mw = messageBuffer.take();
+          mw = messageQueue.take();
         } catch (final InterruptedException e) {
           e.printStackTrace();
           break TERMINATE_MESSAGE_PROCESSING;
@@ -216,7 +216,7 @@ public final class Server {
    */
   protected final ConcurrentHashMap<ExchangePairID, LinkedBlockingQueue<ExchangeTupleBatch>> dataBuffer;
 
-  protected final LinkedBlockingQueue<MessageWrapper> messageBuffer;
+  protected final LinkedBlockingQueue<MessageWrapper> messageQueue;
 
   protected final ConcurrentHashMap<ExchangePairID, Schema> exchangeSchema;
 
@@ -238,15 +238,15 @@ public final class Server {
 
     this.server = server;
     dataBuffer = new ConcurrentHashMap<ExchangePairID, LinkedBlockingQueue<ExchangeTupleBatch>>();
-    messageBuffer = new LinkedBlockingQueue<MessageWrapper>();
-    ipcServer = ParallelUtility.createMasterIPCServer(messageBuffer);
+    messageQueue = new LinkedBlockingQueue<MessageWrapper>();
+    ipcServer = ParallelUtility.createMasterIPCServer(messageQueue);
     exchangeSchema = new ConcurrentHashMap<ExchangePairID, Schema>();
 
     final Map<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
     computingUnits.putAll(workers);
     computingUnits.put(0, server);
 
-    connectionPool = new IPCConnectionPool(0, computingUnits, messageBuffer);
+    connectionPool = new IPCConnectionPool(0, computingUnits, messageQueue);
     messageProcessor = new MessageProcessor();
     workersAssignedToQuery = new ConcurrentHashMap<Integer, HashMap<Integer, Integer>>();
     workersReceivedQuery = new ConcurrentHashMap<Integer, BitSet>();

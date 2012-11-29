@@ -72,7 +72,7 @@ public class Worker {
       TERMINATE_MESSAGE_PROCESSING : while (true) {
         MessageWrapper mw = null;
         try {
-          mw = messageBuffer.take();
+          mw = messageQueue.take();
         } catch (final InterruptedException e) {
           e.printStackTrace();
           break TERMINATE_MESSAGE_PROCESSING;
@@ -348,7 +348,7 @@ public class Worker {
   protected final HashMap<ExchangePairID, LinkedBlockingQueue<ExchangeTupleBatch>> dataBuffer;
   protected final ConcurrentHashMap<ExchangePairID, Schema> exchangeSchema;
 
-  protected final LinkedBlockingQueue<MessageWrapper> messageBuffer;
+  protected final LinkedBlockingQueue<MessageWrapper> messageQueue;
 
   protected final WorkerCatalog catalog;
   protected final SocketInfo masterSocketInfo;
@@ -361,8 +361,8 @@ public class Worker {
     mySocketInfo = catalog.getWorkers().get(myID);
 
     dataBuffer = new HashMap<ExchangePairID, LinkedBlockingQueue<ExchangeTupleBatch>>();
-    messageBuffer = new LinkedBlockingQueue<MessageWrapper>();
-    ipcServer = ParallelUtility.createWorkerIPCServer(messageBuffer);
+    messageQueue = new LinkedBlockingQueue<MessageWrapper>();
+    ipcServer = ParallelUtility.createWorkerIPCServer(messageQueue);
     exchangeSchema = new ConcurrentHashMap<ExchangePairID, Schema>();
 
     queryExecutor = new QueryExecutor();
@@ -376,7 +376,7 @@ public class Worker {
     computingUnits.putAll(workers);
     computingUnits.put(0, masterSocketInfo);
 
-    connectionPool = new IPCConnectionPool(myID, computingUnits, messageBuffer);
+    connectionPool = new IPCConnectionPool(myID, computingUnits, messageQueue);
   }
 
   /**

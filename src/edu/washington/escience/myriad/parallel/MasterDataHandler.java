@@ -22,15 +22,15 @@ public class MasterDataHandler extends SimpleChannelUpstreamHandler {
   private static final Logger logger = Logger.getLogger(MasterDataHandler.class.getName());
 
   /**
-   * messageBuffer.
+   * messageQueue.
    * */
-  LinkedBlockingQueue<MessageWrapper> messageBuffer;
+  LinkedBlockingQueue<MessageWrapper> messageQueue;
 
   /**
    * constructor.
    * */
-  MasterDataHandler(final LinkedBlockingQueue<MessageWrapper> messageBuffer) {
-    this.messageBuffer = messageBuffer;
+  MasterDataHandler(final LinkedBlockingQueue<MessageWrapper> messageQueue) {
+    this.messageQueue = messageQueue;
   }
 
   @Override
@@ -52,7 +52,7 @@ public class MasterDataHandler extends SimpleChannelUpstreamHandler {
     final MessageWrapper mw = new MessageWrapper();
     mw.senderID = senderID;
     mw.message = tm;
-    messageBuffer.add(mw);
+    messageQueue.add(mw);
     ctx.sendUpstream(e);
   }
 
