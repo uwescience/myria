@@ -1,7 +1,10 @@
 package edu.washington.escience.myriad.ipc;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -20,6 +23,7 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.column.Column;
+import edu.washington.escience.myriad.column.ColumnFactory;
 import edu.washington.escience.myriad.parallel.IPCConnectionPool;
 import edu.washington.escience.myriad.parallel.ParallelUtility;
 import edu.washington.escience.myriad.parallel.SocketInfo;
@@ -30,6 +34,7 @@ import edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageTyp
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType;
 import edu.washington.escience.myriad.systemtest.SystemTestBase;
+import edu.washington.escience.myriad.systemtest.SystemTestBase.Tuple;
 import edu.washington.escience.myriad.table._TupleBatch;
 
 public class ProtobufTest {
@@ -58,16 +63,24 @@ public class ProtobufTest {
       tbb.put(1, names[i]);
     }
 
-    final InetSocketAddress serverAddress = new InetSocketAddress("localhost", 9901);
+    HashMap<Tuple, Integer> expectedOne = SystemTestBase.tupleBatchToTupleBag(tbb);
+    List<HashMap<Tuple, Integer>> toMerge = new ArrayList<HashMap<Tuple, Integer>>(numThreads);
+    for (int i = 0; i < numThreads; i++) {
+      toMerge.add(expectedOne);
+    }
+
+    HashMap<Tuple, Integer> expected = SystemTestBase.mergeBags(toMerge);
+
+    final InetSocketAddress serverAddress = new InetSocketAddress("localhost", 19901);
 
     final LinkedBlockingQueue<MessageWrapper> messageBuffer = new LinkedBlockingQueue<MessageWrapper>();
     ServerBootstrap acceptor = ParallelUtility.createMasterIPCServer(messageBuffer);
     Channel server = acceptor.bind(serverAddress);
 
     HashMap<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
-    computingUnits.put(0, new SocketInfo("localhost", 9901));
+    computingUnits.put(0, new SocketInfo("localhost", 19901));
 
-    final IPCConnectionPool connectionPool = new IPCConnectionPool(0, computingUnits);
+    final IPCConnectionPool connectionPool = new IPCConnectionPool(0, computingUnits, messageBuffer);
 
     Thread[] threads = new Thread[numThreads];
     final AtomicInteger numSent = new AtomicInteger();
@@ -77,6 +90,7 @@ public class ProtobufTest {
         public void run() {
           _TupleBatch tb = null;
           Iterator<TupleBatch> tbs = tbb.getAll().iterator();
+          Channel ch = connectionPool.get(0, 3, null);
           while (tbs.hasNext()) {
             tb = tbs.next();
             List<Column<?>> columns = tb.outputRawData();
@@ -91,9 +105,14 @@ public class ProtobufTest {
                 TransportMessage.newBuilder().setType(TransportMessageType.DATA).setData(
                     DataMessage.newBuilder().setType(DataMessageType.NORMAL).addAllColumns(Arrays.asList(columnProtos))
                         .setOperatorID(0l).build()).build();
-            connectionPool.get(0, 3, null, null).write(tm);
+            ch.write(tm);
             numSent.incrementAndGet();
           }
+          ch.write(
+              TransportMessage.newBuilder().setType(TransportMessageType.DATA).setData(
+                  DataMessage.newBuilder().setType(DataMessageType.EOS).setOperatorID(0l).build()).build())
+              .awaitUninterruptibly();
+          numSent.incrementAndGet();
         }
       };
       threads[i] = tt;
@@ -111,14 +130,37 @@ public class ProtobufTest {
     server.unbind().awaitUninterruptibly();
     Iterator<MessageWrapper> it = messageBuffer.iterator();
     int numReceived = 0;
+    TupleBatchBuffer actualTBB = new TupleBatchBuffer(tbb.getSchema());
+    int numEOS = 0;
     while (it.hasNext()) {
       MessageWrapper m = it.next();
       TransportMessage tm = m.message;
       if (tm.getType() == TransportMessage.TransportMessageType.DATA) {
         numReceived++;
+        final DataMessage data = tm.getData();
+        switch (data.getType().getNumber()) {
+          case DataMessageType.EOS_VALUE:
+            numEOS += 1;
+            break;
+          case DataMessageType.NORMAL_VALUE:
+            final List<ColumnMessage> columnMessages = data.getColumnsList();
+            final Column<?>[] columnArray = new Column[columnMessages.size()];
+            int idx = 0;
+            for (final ColumnMessage cm : columnMessages) {
+              columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm);
+            }
+            final List<Column<?>> columns = Arrays.asList(columnArray);
+
+            actualTBB.putAll(columns);
+            break;
+        }
       }
     }
-    LOGGER.debug("Received: " + numReceived + " TupleBatches");
+    assertEquals(numThreads, numEOS);
     org.junit.Assert.assertEquals(numSent.get(), numReceived);
+    HashMap<Tuple, Integer> actual = SystemTestBase.tupleBatchToTupleBag(actualTBB);
+    SystemTestBase.assertTupleBagEqual(expected, actual);
+    LOGGER.debug("Received: " + numReceived + " TupleBatches");
+
   }
 }
