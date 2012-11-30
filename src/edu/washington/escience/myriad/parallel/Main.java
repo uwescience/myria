@@ -27,7 +27,7 @@ public final class Main {
   private static final int MASTER_ID = 0;
   private static int[] WORKER_ID;
   private static final int numIteration = 2;
-  private static final int numPartition = 1;
+  private static final int numPartition = 6;
 
   private static Type[] table1Types = new Type[] { Type.LONG_TYPE, Type.LONG_TYPE };
   private static String[] table1ColumnNames = new String[] { "follower", "followee" };
@@ -39,7 +39,7 @@ public final class Main {
   public static Operator getQueryPlan_full() throws DbException, IOException {
 
     final SQLiteQueryScan scan1 = new SQLiteQueryScan("testtable0.db", "select * from testtable", tableSchema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan("testtable1.db", "select * from testtable", tableSchema);
+    final SQLiteQueryScan scan2 = new SQLiteQueryScan("testtable0.db", "select * from testtable", tableSchema);
 
     final PartitionFunction<String, Integer> pf0 = new SingleFieldHashPartitionFunction(numPartition);
     pf0.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0); // partition by 1st column

@@ -272,7 +272,7 @@ public class Worker {
     public final void start() {
       try {
         timer.schedule(this, (long) (Math.random() * 3000) + 5000, // initial
-                                                                   // delay
+            // delay
             (long) (Math.random() * 2000) + 1000); // subsequent
                                                    // rate
       } catch (final IllegalStateException e) {
@@ -338,6 +338,7 @@ public class Worker {
     // Now the worker can accept messages
     w.start();
 
+    System.out.println("Worker started at:" + w.catalog.getWorkers().get(w.myID));
     LOGGER.debug("Worker started at:" + w.catalog.getWorkers().get(w.myID));
 
     // From now on, the worker will listen for

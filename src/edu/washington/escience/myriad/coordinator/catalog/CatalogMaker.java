@@ -154,7 +154,12 @@ public final class CatalogMaker {
    */
   public static void main(final String[] args) {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
-    makeTwoNodeLocalParallelCatalog(null);
+    if (args.length > 0) {
+      // just for making my life easier because I need to pass the arg in my script
+      makeTwoNodeLocalParallelCatalog(args[0]);
+    } else {
+      makeTwoNodeLocalParallelCatalog(null);
+    }
   }
 
 }
