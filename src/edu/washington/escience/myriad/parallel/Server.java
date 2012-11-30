@@ -397,6 +397,7 @@ public final class Server {
       Server.this.dataBuffer.remove(serverPlan.getOperatorID());
       Date end = new Date();
       LOGGER.debug("Number of results: " + cnt);
+      System.out.println("Number of results: " + cnt);
       int elapse = (int) (end.getTime() - start.getTime());
       int hour = elapse / 3600000;
       elapse -= hour * 3600000;
@@ -406,6 +407,7 @@ public final class Server {
       elapse -= second * 1000;
 
       LOGGER.debug(String.format("Time elapsed: %1$dh%2$dm%3$ds.%4$03d", hour, minute, second, elapse));
+      System.out.println(String.format("Time elapsed: %1$dh%2$dm%3$ds.%4$03d", hour, minute, second, elapse));
       return outBufferForTesting;
     } else {
       return null;

@@ -297,6 +297,7 @@ public class Worker {
     // Now the worker can accept messages
     w.start();
 
+    System.out.println("Worker started at:" + w.catalog.getWorkers().get(w.myID));
     LOGGER.debug("Worker started at:" + w.catalog.getWorkers().get(w.myID));
 
     // From now on, the worker will listen for
