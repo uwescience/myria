@@ -30,6 +30,8 @@ sourceSets {
 
 /* Compile, but don't run the speed tests when building the project. */
 check.dependsOn speedtestClasses
+/* Testing will fail if Eclipse .classpath hasn't been created. */
+testClasses.dependsOn eclipseClasspath
 
 /*
  * List the compile and runtime dependencies of all the tests.
