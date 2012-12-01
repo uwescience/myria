@@ -15,13 +15,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.apache.mina.core.future.IoFutureListener;
-import org.apache.mina.core.future.WriteFuture;
-import org.apache.mina.core.service.IoHandler;
-import org.apache.mina.core.service.IoHandlerAdapter;
-import org.apache.mina.core.session.IdleStatus;
-import org.apache.mina.core.session.IoSession;
-import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
+import org.jboss.netty.bootstrap.ServerBootstrap;
+import org.jboss.netty.channel.Channel;
 import org.slf4j.LoggerFactory;
 
 import com.google.protobuf.ByteString;
@@ -114,7 +109,7 @@ public final class Server {
       TERMINATE_MESSAGE_PROCESSING : while (true) {
         MessageWrapper mw = null;
         try {
-          mw = messageBuffer.take();
+          mw = messageQueue.take();
         } catch (final InterruptedException e) {
           e.printStackTrace();
           break TERMINATE_MESSAGE_PROCESSING;
@@ -155,63 +150,6 @@ public final class Server {
 
       }
 
-    }
-  }
-
-  protected final class ServerHandler extends IoHandlerAdapter {
-
-    // required in ParallelTest for instrument
-    final Thread mainThread;
-
-    public ServerHandler(final Thread mainThread) {
-      this.mainThread = mainThread;
-    }
-
-    @Override
-    public void exceptionCaught(final IoSession session, final Throwable cause) {
-      cause.printStackTrace();
-      // ParallelUtility.closeSession(session);
-    }
-
-    @Override
-    public void messageReceived(final IoSession session, final Object message) {
-
-      if (message instanceof TransportMessage) {
-
-        final TransportMessage tm = (TransportMessage) message;
-        if ((tm.getType() == TransportMessage.TransportMessageType.CONTROL)
-            && (ControlMessage.ControlMessageType.CONNECT == tm.getControl().getType())) {
-          // connect request sent from other workers
-          final ControlMessage cm = tm.getControl();
-          // ControlProto.ExchangePairID epID = cm.getExchangePairID();
-
-          // ExchangePairID operatorID = ExchangePairID.fromExisting(epID.getExchangePairID());
-          // String senderID = epID.getWorkerID();
-          session.setAttribute("remoteID", cm.getRemoteID());
-          // session.setAttribute("operatorID", operatorID);
-        } else {
-          final Integer senderID = (Integer) session.getAttribute("remoteID");
-          if (senderID != null) {
-            final MessageWrapper mw = new MessageWrapper();
-            mw.senderID = senderID;
-            mw.message = tm;
-            // ExchangePairID operatorID = (ExchangePairID) session.getAttribute("operatorID");
-
-            messageBuffer.add(mw);
-          } else {
-            LOGGER.error("Error: message received from an unknown unit: " + message);
-          }
-        }
-      } else {
-        LOGGER.error("Error: Unknown message received: " + message);
-      }
-    }
-
-    @Override
-    public void sessionIdle(final IoSession session, final IdleStatus status) {
-      if (status.equals(IdleStatus.BOTH_IDLE)) {
-        session.close(false);
-      }
     }
   }
 
@@ -267,18 +205,18 @@ public final class Server {
     LOGGER.debug("Server: " + masterSocketInfo.getHost() + " started. Listening on port " + masterSocketInfo.getPort());
   }
 
-  private final ConcurrentHashMap<Integer, SocketInfo> workers;
-  private final NioSocketAcceptor acceptor;
-  private final ServerHandler minaHandler;
-  private final ConcurrentHashMap<Integer, HashMap<Integer, Integer>> workersAssignedToQuery;
-  private final ConcurrentHashMap<Integer, BitSet> workersReceivedQuery;
+  final ConcurrentHashMap<Integer, SocketInfo> workers;
+  final ServerBootstrap ipcServer;
+  private Channel ipcServerChannel;
+  final ConcurrentHashMap<Integer, HashMap<Integer, Integer>> workersAssignedToQuery;
+  final ConcurrentHashMap<Integer, BitSet> workersReceivedQuery;
 
   /**
    * The I/O buffer, all the ExchangeMessages sent to the server are buffered here.
    */
   protected final ConcurrentHashMap<ExchangePairID, LinkedBlockingQueue<ExchangeTupleBatch>> dataBuffer;
 
-  protected final LinkedBlockingQueue<MessageWrapper> messageBuffer;
+  protected final LinkedBlockingQueue<MessageWrapper> messageQueue;
 
   protected final ConcurrentHashMap<ExchangePairID, Schema> exchangeSchema;
 
@@ -298,26 +236,17 @@ public final class Server {
     this.workers = new ConcurrentHashMap<Integer, SocketInfo>();
     this.workers.putAll(workers);
 
-    acceptor = ParallelUtility.createAcceptor();
     this.server = server;
     dataBuffer = new ConcurrentHashMap<ExchangePairID, LinkedBlockingQueue<ExchangeTupleBatch>>();
-    messageBuffer = new LinkedBlockingQueue<MessageWrapper>();
+    messageQueue = new LinkedBlockingQueue<MessageWrapper>();
+    ipcServer = ParallelUtility.createMasterIPCServer(messageQueue);
     exchangeSchema = new ConcurrentHashMap<ExchangePairID, Schema>();
-
-    minaHandler = new ServerHandler(Thread.currentThread());
 
     final Map<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
     computingUnits.putAll(workers);
     computingUnits.put(0, server);
 
-    final Map<Integer, IoHandler> handlers = new HashMap<Integer, IoHandler>(workers.size() + 1);
-    for (final Integer workerID : workers.keySet()) {
-      handlers.put(workerID, minaHandler);
-    }
-
-    handlers.put(0, minaHandler);
-
-    connectionPool = new IPCConnectionPool(0, computingUnits, handlers);
+    connectionPool = new IPCConnectionPool(0, computingUnits, messageQueue);
     messageProcessor = new MessageProcessor();
     workersAssignedToQuery = new ConcurrentHashMap<Integer, HashMap<Integer, Integer>>();
     workersReceivedQuery = new ConcurrentHashMap<Integer, BitSet>();
@@ -329,27 +258,22 @@ public final class Server {
     for (final Entry<Integer, SocketInfo> worker : workers.entrySet()) {
       LOGGER.debug("Shuting down #" + worker.getKey() + " : " + worker.getValue());
 
-      IoSession session = null;
+      Channel ch = null;
       try {
-        session = Server.this.connectionPool.get(worker.getKey(), null, 3, null);
+        ch = Server.this.connectionPool.get(worker.getKey(), 3, null);
       } catch (final Throwable e) {
       }
-      if (session == null) {
+      if (ch == null || !ch.isConnected()) {
         LOGGER.error("Fail to connect the worker: " + worker + ". Continue cleaning");
         continue;
       }
-      session.write(
+      ch.write(
           TransportProto.TransportMessage.newBuilder().setType(TransportMessageType.CONTROL).setControl(
               ControlProto.ControlMessage.newBuilder().setType(ControlMessage.ControlMessageType.SHUTDOWN).build())
-              .build()).addListener(new IoFutureListener<WriteFuture>() {
-        @Override
-        public void operationComplete(final WriteFuture future) {
-          ParallelUtility.closeSession(future.getSession());
-        }
-      });
+              .build()).awaitUninterruptibly();
       LOGGER.debug("Done");
     }
-    ParallelUtility.unbind(acceptor);
+    ParallelUtility.shutdownIPC(ipcServerChannel, connectionPool);
     LOGGER.debug("Bye");
   }
 
@@ -365,7 +289,7 @@ public final class Server {
       final Integer workerID = e.getKey();
       setOfWorkers.put(workerID, workerIdx++);
       final Operator plan = e.getValue();
-      final IoSession ssss0 = connectionPool.get(workerID, null, 3, null);
+      final Channel ssss0 = connectionPool.get(workerID, 3, null);
       // this session will be reused for the Workers to report the receive
       // of the queryplan, therefore, do not close it
       inMemBuffer = new ByteArrayOutputStream();
@@ -380,7 +304,6 @@ public final class Server {
   }
 
   protected void init() throws IOException {
-    acceptor.setHandler(minaHandler);
   }
 
   // TODO implement queryID
@@ -394,7 +317,7 @@ public final class Server {
   protected void startWorkerQuery(final int queryId) {
     HashMap<Integer, Integer> workersAssigned = workersAssignedToQuery.get(queryId);
     for (final Entry<Integer, Integer> entry : workersAssigned.entrySet()) {
-      Server.this.connectionPool.get(entry.getKey(), null, 3, null).write(
+      Server.this.connectionPool.get(entry.getKey(), 3, null).write(
           TransportMessage.newBuilder().setType(TransportMessageType.CONTROL).setControl(
               ControlMessage.newBuilder().setType(ControlMessage.ControlMessageType.START_QUERY).build()).build());
     }
@@ -419,7 +342,7 @@ public final class Server {
   }
 
   protected void start(final String[] argv) throws IOException {
-    acceptor.bind(server.getAddress());
+    ipcServerChannel = ipcServer.bind(server.getAddress());
     messageProcessor.start();
   }
 

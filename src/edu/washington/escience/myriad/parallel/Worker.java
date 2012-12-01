@@ -18,11 +18,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.commons.io.FilenameUtils;
-import org.apache.mina.core.future.IoFutureListener;
-import org.apache.mina.core.service.IoHandler;
-import org.apache.mina.core.service.IoHandlerAdapter;
-import org.apache.mina.core.session.IoSession;
-import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
+import org.jboss.netty.bootstrap.ServerBootstrap;
+import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelFutureListener;
 import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myriad.DbException;
@@ -74,7 +72,7 @@ public class Worker {
       TERMINATE_MESSAGE_PROCESSING : while (true) {
         MessageWrapper mw = null;
         try {
-          mw = messageBuffer.take();
+          mw = messageQueue.take();
         } catch (final InterruptedException e) {
           e.printStackTrace();
           break TERMINATE_MESSAGE_PROCESSING;
@@ -141,8 +139,8 @@ public class Worker {
   }
 
   public static class MessageWrapper {
-    protected int senderID;
-    protected TransportMessage message;
+    public int senderID;
+    public TransportMessage message;
   }
 
   /**
@@ -181,100 +179,61 @@ public class Worker {
   }
 
   /**
-   * Mina acceptor handler. This is where all messages arriving from other workers and from the coordinator will be
-   * processed
-   */
-  public class WorkerHandler extends IoHandlerAdapter {
-
-    @Override
-    public final void exceptionCaught(final IoSession session, final Throwable cause) {
-      LOGGER.error("exception caught");
-      cause.printStackTrace();
-      // ParallelUtility.closeSession(session);
-    }
-
-    /**
-     * Got called everytime a message is received.
-     */
-    @Override
-    public final void messageReceived(final IoSession session, final Object message) {
-      if (message instanceof TransportMessage) {
-        final TransportMessage tm = (TransportMessage) message;
-        if ((tm.getType() == TransportMessage.TransportMessageType.CONTROL)
-            && (ControlMessage.ControlMessageType.CONNECT == tm.getControl().getType())) {
-          // connect request sent from other workers
-          final ControlMessage cm = tm.getControl();
-          // ControlProto.ExchangePairID epID = cm.getExchangePairID();
-
-          session.setAttribute("remoteID", cm.getRemoteID());
-        } else {
-          final Integer senderID = (Integer) session.getAttribute("remoteID");
-          if (senderID != null) {
-            final MessageWrapper mw = new MessageWrapper();
-            mw.senderID = senderID;
-            mw.message = (TransportMessage) message;
-            messageBuffer.add(mw);
-          } else {
-            // currently messages from the master do not have id
-            // messages from master
-
-            final MessageWrapper mw = new MessageWrapper();
-            mw.senderID = 0;
-            mw.message = (TransportMessage) message;
-            messageBuffer.add(mw);
-          }
-        }
-      } else {
-        LOGGER.error("Error: Unknown message received: " + message);
-      }
-
-    }
-  }
-
-  /**
    * The controller class which decides whether this worker should shutdown or not. 1) it detects whether the server is
    * still alive. If the server got killed because of any reason, the workers will be terminated. 2) it detects whether
    * a shutdown message is received.
    */
-  protected class WorkerLivenessController extends TimerTask {
+  protected class WorkerLivenessController {
     private final Timer timer = new Timer();
-    private volatile boolean inRun = false;
 
-    @Override
-    public final void run() {
-      if (toShutdown) {
-        shutdown();
-        ParallelUtility.shutdownVM();
-      }
-      if (inRun) {
-        return;
-      }
-      inRun = true;
-      IoSession serverSession = null;
-      try {
-        serverSession = connectionPool.get(0, null, 3, null);
-      } catch (final RuntimeException e) {
-        e.printStackTrace();
-      } catch (final Exception e) {
-        e.printStackTrace();
+    protected class ShutdownChecker extends TimerTask {
+      @Override
+      public final void run() {
+        if (toShutdown) {
+          shutdown();
+          ParallelUtility.shutdownVM();
+        }
+
       }
 
-      if (serverSession == null) {
-        LOGGER
-            .error("Cannot connect the server: " + masterSocketInfo + " Maybe the server is down. I'll shutdown now.");
-        timer.cancel();
-        ParallelUtility.shutdownVM();
+    }
+
+    protected class Reporter extends TimerTask {
+      private volatile boolean inRun = false;
+
+      @Override
+      public final void run() {
+        if (inRun) {
+          return;
+        }
+        inRun = true;
+        Channel serverChannel = null;
+        try {
+          serverChannel = connectionPool.get(0, 3, null);
+        } catch (final RuntimeException e) {
+          e.printStackTrace();
+        } catch (final Exception e) {
+          e.printStackTrace();
+        }
+
+        if (serverChannel == null) {
+          System.out.println("Cannot connect the server: " + masterSocketInfo
+              + " Maybe the server is down. I'll shutdown now.");
+          System.out.println("Bye!");
+          timer.cancel();
+          ParallelUtility.shutdownVM();
+        }
+        inRun = false;
       }
-      ParallelUtility.closeSession(serverSession);
-      inRun = false;
     }
 
     public final void start() {
       try {
-        timer.schedule(this, (long) (Math.random() * 3000) + 5000, // initial
+        timer.schedule(new ShutdownChecker(), 100, 100);
+        timer.schedule(new Reporter(), (long) (Math.random() * 3000) + 5000, // initial
             // delay
             (long) (Math.random() * 2000) + 1000); // subsequent
-                                                   // rate
+        // rate
       } catch (final IllegalStateException e) {
         /* already got canceled, ignore. */
       }
@@ -367,7 +326,8 @@ public class Worker {
    * 
    * Other workers send tuples during query execution to this worker also through this acceptor.
    */
-  final NioSocketAcceptor acceptor;
+  final ServerBootstrap ipcServer;
+  private Channel ipcServerChannel;
 
   /**
    * The current query plan.
@@ -384,18 +344,12 @@ public class Worker {
   public final MessageProcessor messageProcessor;
 
   /**
-   * The IoHandler for network communication. The methods of this handler are called when some communication events
-   * happen. For example a message is received, a new connection is created, etc.
-   */
-  final WorkerHandler minaHandler;
-
-  /**
    * The I/O buffer, all the ExchangeMessages sent to this worker are buffered here.
    */
   protected final HashMap<ExchangePairID, LinkedBlockingQueue<ExchangeTupleBatch>> dataBuffer;
   protected final ConcurrentHashMap<ExchangePairID, Schema> exchangeSchema;
 
-  protected final LinkedBlockingQueue<MessageWrapper> messageBuffer;
+  protected final LinkedBlockingQueue<MessageWrapper> messageQueue;
 
   protected final WorkerCatalog catalog;
   protected final SocketInfo masterSocketInfo;
@@ -407,17 +361,15 @@ public class Worker {
     dataDir = new File(catalog.getConfigurationValue("worker.data.sqlite.dir"));
     mySocketInfo = catalog.getWorkers().get(myID);
 
-    acceptor = ParallelUtility.createAcceptor();
-
     dataBuffer = new HashMap<ExchangePairID, LinkedBlockingQueue<ExchangeTupleBatch>>();
-    messageBuffer = new LinkedBlockingQueue<MessageWrapper>();
+    messageQueue = new LinkedBlockingQueue<MessageWrapper>();
+    ipcServer = ParallelUtility.createWorkerIPCServer(messageQueue);
     exchangeSchema = new ConcurrentHashMap<ExchangePairID, Schema>();
 
     queryExecutor = new QueryExecutor();
     queryExecutor.setDaemon(true);
     messageProcessor = new MessageProcessor();
     messageProcessor.setDaemon(false);
-    minaHandler = new WorkerHandler();
     masterSocketInfo = catalog.getMasters().get(0);
 
     final Map<Integer, SocketInfo> workers = catalog.getWorkers();
@@ -425,14 +377,7 @@ public class Worker {
     computingUnits.putAll(workers);
     computingUnits.put(0, masterSocketInfo);
 
-    final Map<Integer, IoHandler> handlers = new HashMap<Integer, IoHandler>(workers.size() + 1);
-    for (final Integer workerID : workers.keySet()) {
-      handlers.put(workerID, minaHandler);
-    }
-
-    handlers.put(0, minaHandler);
-
-    connectionPool = new IPCConnectionPool(myID, computingUnits, handlers);
+    connectionPool = new IPCConnectionPool(myID, computingUnits, messageQueue);
   }
 
   /**
@@ -461,7 +406,6 @@ public class Worker {
    * Initialize.
    */
   public final void init() throws IOException {
-    acceptor.setHandler(minaHandler);
   }
 
   /**
@@ -557,10 +501,10 @@ public class Worker {
     Worker.this.queryPlan = query;
   }
 
-  protected final void sendMessageToMaster(final TransportMessage message, final IoFutureListener<?> callback) {
+  protected final void sendMessageToMaster(final TransportMessage message, final ChannelFutureListener callback) {
     LOGGER.debug("send back query ready");
-    IoSession s = null;
-    s = Worker.this.connectionPool.get(0, null, 3, null);
+    Channel s = null;
+    s = Worker.this.connectionPool.get(0, 3, null);
     if (callback != null) {
       s.write(message).addListener(callback);
     } else {
@@ -573,12 +517,13 @@ public class Worker {
    */
   public final void shutdown() {
     LOGGER.debug("Shutdown requested. Please wait when cleaning up...");
-    ParallelUtility.unbind(acceptor);
+    ParallelUtility.shutdownIPC(ipcServerChannel, connectionPool);
+    LOGGER.debug("shutdown IPC completed");
     toShutdown = true;
   }
 
   public final void start() throws IOException {
-    acceptor.bind(mySocketInfo.getAddress());
+    ipcServerChannel = ipcServer.bind(mySocketInfo.getAddress());
     queryExecutor.start();
     messageProcessor.start();
     // Periodically detect if the server (i.e., coordinator)

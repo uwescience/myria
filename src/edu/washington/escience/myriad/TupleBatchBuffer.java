@@ -138,7 +138,6 @@ public class TupleBatchBuffer {
    * @param column index of the column.
    * @param value value to be appended.
    */
-
   public final void put(final int column, final Object value) {
     Preconditions.checkElementIndex(column, numColumns);
     if (columnsReady.get(column)) {
@@ -157,16 +156,15 @@ public class TupleBatchBuffer {
     }
   }
 
-  public final void putAll(_TupleBatch data) {
-    List<Column<?>> output = data.outputRawData();
-    Preconditions.checkState(output.size() == numColumns);
+  public final void putAll(List<Column<?>> columns) {
+    Preconditions.checkState(columns.size() == numColumns);
     if (columnsReady.get(0)) {
       throw new RuntimeException("Need to fill up one row of TupleBatchBuffer before starting new one");
     }
-    int numRow = output.get(0).size();
+    int numRow = columns.get(0).size();
     for (int row = 0; row < numRow; row++) {
       for (int column = 0; column < numColumns; column++) {
-        currentColumns.get(column).putObject(output.get(column).get(row));
+        currentColumns.get(column).putObject(columns.get(column).get(row));
         columnsReady.set(column, true);
         numColumnsReady++;
         if (numColumnsReady == numColumns) {
@@ -179,6 +177,10 @@ public class TupleBatchBuffer {
         }
       }
     }
+  }
+
+  public final void putAll(_TupleBatch data) {
+    putAll(data.outputRawData());
   }
 
   public final void merge(TupleBatchBuffer another) {
