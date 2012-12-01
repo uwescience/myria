@@ -2,3 +2,6 @@
 bin
 .*.swp
 *.pyc
+.gradle
+build
+.classpath
