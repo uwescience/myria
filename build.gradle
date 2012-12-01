@@ -1,0 +1,99 @@
+/* This project uses Java and Eclipse. */
+apply plugin: "java"
+apply plugin: "eclipse"
+
+/* Set up group and version info for myriad */
+group = "edu.washington.escience.myriad"
+version = "0.1"
+
+/* We use Java 1.7 */
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
+
+/* Tell gradle where the source code is located. */
+sourceSets {
+  /* Code for main */
+  main {
+    java.srcDir 'src'
+    java.srcDir 'protobuf/java'
+    java.srcDir 'third-party-src'
+  }
+  /* Code for tests */
+  test {
+    java.srcDir 'test'
+  }
+  /* Code for speedtests */
+  speedtest {
+    java.srcDir 'speedtest'
+  }
+}
+
+/* Compile, but don't run the speed tests when building the project. */
+check.dependsOn speedtestClasses
+
+/*
+ * List the compile and runtime dependencies of all the tests.
+ * Note that "group:name:version" dependencies will be downloaded from Maven.
+ */
+
+/* Where we will fetch external JAR files from. */
+repositories {
+  mavenCentral() /* The standard Java Maven repository. */
+}
+
+/* List constants that we use in multiple places. */
+ext.slf4jVersion = "1.6.6"
+
+dependencies {
+  compile "com.almworks.sqlite4java:sqlite4java:0.282"
+
+  compile "com.google.guava:guava:13.0"
+  compile "com.google.protobuf:protobuf-java:2.4.1"
+
+  compile "io.netty:netty:3.5.7.Final"
+
+  compile "commons-io:commons-io:2.4"
+  compile "org.apache.commons:commons-lang3:3.1"
+
+  runtime "org.slf4j:slf4j-api:${slf4jVersion}"
+  runtime "org.slf4j:slf4j-simple:${slf4jVersion}"
+  runtime "mysql:mysql-connector-java:5.1.21"
+
+  testCompile "junit:junit:4.10"
+
+  speedtestCompile sourceSets.main.output
+  speedtestCompile configurations.testCompile
+  speedtestCompile sourceSets.test.output
+  speedtestRuntime configurations.testRuntime
+}
+
+/* Tell all tasks to add sqlite library to their classpath when running. */
+tasks.withType(Test) {
+  systemProperty "java.library.path", file("lib/sqlite4java-282")
+}
+
+/* Tell gradle where speedtest should look for its classes. */
+task speedtest(type: Test) {
+  testClassesDir = sourceSets.speedtest.output.classesDir
+  classpath = sourceSets.speedtest.runtimeClasspath
+}
+
+/* The eclipseClasspath task will build a local Eclipse .classpath file. */
+eclipse.classpath {
+  /* Ensure Eclipse compiled output appears in build directory. */
+  defaultOutputDir = file('build/eclipse')
+
+  /* We don't need to download source code. */
+  downloadSources = false
+  downloadJavadoc = true
+
+  /* Ugly hack to stick the JNI pointer for sqlite into the .classpath file. */
+  file.withXml {
+    provider -> 
+    provider.asNode().findAll { it.@path.contains("sqlite") }.each { 
+      it.children().each {
+        it.appendNode('attribute', [name: 'org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY', value:'myriad/lib/sqlite4java-282'])
+      }
+    }
+  }
+}
