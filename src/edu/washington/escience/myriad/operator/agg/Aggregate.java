@@ -16,12 +16,17 @@ import edu.washington.escience.myriad.operator.Operator;
  */
 public final class Aggregate extends Operator {
 
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
+  /** The schema of the tuples returned by this operator. */
   private final Schema schema;
+  /** The source of tuples to be aggregated. */
   private Operator child;
+  /** Does the actual aggregation work. */
   private final Aggregator[] agg;
-  private final int[] afields; // Compute aggregate on each of the afields
+  /** Which fields the aggregate is computed over. */
+  private final int[] afields;
 
   /**
    * Constructor.
@@ -113,9 +118,6 @@ public final class Aggregate extends Operator {
     return result;
   }
 
-  /**
-   * The schema of the aggregate output. Grouping fields first and then aggregate fields. The aggregate
-   */
   @Override
   public Schema getSchema() {
     return schema;

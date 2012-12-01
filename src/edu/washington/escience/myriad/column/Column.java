@@ -14,6 +14,8 @@ import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 /**
  * A column of a batch of tuples.
  * 
+ * @param <T> type of the objects in this column.
+ * 
  * @author dhalperi
  * 
  */
