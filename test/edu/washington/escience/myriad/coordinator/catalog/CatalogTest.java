@@ -11,8 +11,6 @@ import java.util.logging.Logger;
 
 import org.junit.Test;
 
-import edu.washington.escience.myriad.coordinator.catalog.Catalog;
-import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.parallel.SocketInfo;
 
 public class CatalogTest {
