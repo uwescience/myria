@@ -1,5 +1,4 @@
 .DS_Store
-bin
 .*.swp
 *.pyc
 .gradle
