@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -33,7 +34,6 @@ import edu.washington.escience.myriad.proto.DataProto.DataMessage;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageType;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.util.IPCUtils;
-import edu.washington.escience.myriad.util.JVMUtils;
 
 /**
  * The parallel system is consisted of one server and a bunch of workers.
@@ -96,13 +96,22 @@ import edu.washington.escience.myriad.util.JVMUtils;
 public final class Server {
 
   protected final class MessageProcessor extends Thread {
+    private volatile boolean stopped = false;
+
+    public void setStopped() {
+      stopped = true;
+    }
+
     @Override
     public void run() {
 
-      TERMINATE_MESSAGE_PROCESSING : while (true) {
+      TERMINATE_MESSAGE_PROCESSING : while (!stopped) {
         MessageWrapper mw = null;
         try {
-          mw = messageQueue.take();
+          mw = messageQueue.poll(100, TimeUnit.MILLISECONDS);
+          if (mw == null) {
+            continue;
+          }
         } catch (final InterruptedException e) {
           e.printStackTrace();
           break TERMINATE_MESSAGE_PROCESSING;
@@ -160,7 +169,6 @@ public final class Server {
     }
 
     String catalogName = args[0];
-    args = ParallelUtility.removeArg(args, 0);
 
     Catalog catalog;
     List<SocketInfo> masters;
@@ -187,7 +195,6 @@ public final class Server {
       LOGGER.debug(w.getKey() + ":  " + w.getValue().getHost() + ":" + w.getValue().getPort());
     }
 
-    server.init();
     Runtime.getRuntime().addShutdownHook(new Thread() {
       @Override
       public void run() {
@@ -223,18 +230,24 @@ public final class Server {
 
   public static final String SYSTEM_NAME = "Myriad";
 
-  protected Server(final SocketInfo server, final Map<Integer, SocketInfo> workers) throws IOException {
+  /**
+   * Instantiates a new Myriad server.
+   * 
+   * @param hostPort the hostname and port that this server will listen on.
+   * @param workers a Map describing each worker's ID and its hostname:port address.
+   */
+  public Server(final SocketInfo hostPort, final Map<Integer, SocketInfo> workers) {
     this.workers = new ConcurrentHashMap<Integer, SocketInfo>();
     this.workers.putAll(workers);
 
-    this.server = server;
+    server = hostPort;
     dataBuffer = new ConcurrentHashMap<ExchangePairID, LinkedBlockingQueue<ExchangeData>>();
     messageQueue = new LinkedBlockingQueue<MessageWrapper>();
     exchangeSchema = new ConcurrentHashMap<ExchangePairID, Schema>();
 
     final Map<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
     computingUnits.putAll(workers);
-    computingUnits.put(0, server);
+    computingUnits.put(0, hostPort);
 
     connectionPool = new IPCConnectionPool(0, computingUnits, messageQueue);
     // ipcServer = ParallelUtility.createMasterIPCServer(messageQueue, connectionPool);
@@ -253,7 +266,7 @@ public final class Server {
     LOGGER.debug(SYSTEM_NAME + " is going to shutdown");
     LOGGER.debug("Send shutdown requests to the workers, please wait");
     for (final Entry<Integer, SocketInfo> worker : workers.entrySet()) {
-      LOGGER.debug("Shuting down #" + worker.getKey() + " : " + worker.getValue());
+      LOGGER.debug("Shutting down #" + worker.getKey() + " : " + worker.getValue());
 
       ChannelFuture cf = getConnectionPool().sendShortMessage(worker.getKey(), IPCUtils.CONTROL_SHUTDOWN);
       if (cf == null) {
@@ -279,9 +292,6 @@ public final class Server {
       setOfWorkers.put(workerID, workerIdx++);
       getConnectionPool().sendShortMessage(workerID, IPCUtils.queryMessage(e.getValue()));
     }
-  }
-
-  protected void init() throws IOException {
   }
 
   // TODO implement queryID
@@ -314,7 +324,9 @@ public final class Server {
   }
 
   public void shutdown() {
-    JVMUtils.shutdownVM();
+    messageProcessor.setStopped();
+    cleanup();
+    // JVMUtils.shutdownVM();
   }
 
   protected void start(final String[] argv) throws IOException {

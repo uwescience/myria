@@ -478,13 +478,15 @@ public class IPCConnectionPool {
     serverChannel = serverBootstrap.bind(myIPCServerAddress);
 
     allPossibleChannels.add(serverChannel);
-    scheduledTaskExecutor.scheduleAtFixedRate(recycler, (int) ((0.5 + Math.random()) * CONNECTION_RECYCLE_INTERVAL_IN_MS),
-        CONNECTION_RECYCLE_INTERVAL_IN_MS / 2, TimeUnit.MILLISECONDS);
+    scheduledTaskExecutor.scheduleAtFixedRate(recycler,
+        (int) ((0.5 + Math.random()) * CONNECTION_RECYCLE_INTERVAL_IN_MS), CONNECTION_RECYCLE_INTERVAL_IN_MS / 2,
+        TimeUnit.MILLISECONDS);
     scheduledTaskExecutor.scheduleAtFixedRate(disconnecter,
         (int) ((0.5 + Math.random()) * CONNECTION_DISCONNECT_INTERVAL_IN_MS), CONNECTION_DISCONNECT_INTERVAL_IN_MS / 2,
         TimeUnit.MILLISECONDS);
-    scheduledTaskExecutor.scheduleAtFixedRate(idChecker, (int) ((0.5 + Math.random()) * CONNECTION_ID_CHECK_TIMEOUT_IN_MS),
-        CONNECTION_ID_CHECK_TIMEOUT_IN_MS / 2, TimeUnit.MILLISECONDS);
+    scheduledTaskExecutor.scheduleAtFixedRate(idChecker,
+        (int) ((0.5 + Math.random()) * CONNECTION_ID_CHECK_TIMEOUT_IN_MS), CONNECTION_ID_CHECK_TIMEOUT_IN_MS / 2,
+        TimeUnit.MILLISECONDS);
   }
 
   /**
