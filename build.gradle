@@ -59,7 +59,7 @@ dependencies {
   compile "com.google.guava:guava:13.0"
   compile "com.google.protobuf:protobuf-java:2.4.1"
 
-  compile "io.netty:netty:3.5.7.Final"
+  compile "io.netty:netty:3.5.11.Final"
 
   compile "commons-io:commons-io:2.4"
   compile "org.apache.commons:commons-lang3:3.1"
