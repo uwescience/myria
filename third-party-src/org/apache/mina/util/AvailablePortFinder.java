@@ -51,7 +51,7 @@ public class AvailablePortFinder {
    * 
    * WARNING: this can take a very long time.
    */
-  public static Set getAvailablePorts() {
+  public static Set<Integer> getAvailablePorts() {
     return getAvailablePorts(MIN_PORT_NUMBER, MAX_PORT_NUMBER);
   }
 
@@ -126,12 +126,12 @@ public class AvailablePortFinder {
    * @throws IllegalArgumentException if port range is not between {@link #MIN_PORT_NUMBER} and {@link #MAX_PORT_NUMBER}
    *           or <code>fromPort</code> if greater than <code>toPort</code>.
    */
-  public static Set getAvailablePorts(int fromPort, int toPort) {
+  public static Set<Integer> getAvailablePorts(int fromPort, int toPort) {
     if ((fromPort < MIN_PORT_NUMBER) || (toPort > MAX_PORT_NUMBER) || (fromPort > toPort)) {
       throw new IllegalArgumentException("Invalid port range: " + fromPort + " ~ " + toPort);
     }
 
-    Set result = new TreeSet();
+    Set<Integer> result = new TreeSet<Integer>();
 
     for (int i = fromPort; i <= toPort; i++) {
       ServerSocket s = null;

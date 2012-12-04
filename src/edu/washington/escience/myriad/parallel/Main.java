@@ -7,7 +7,6 @@ import org.apache.commons.io.FilenameUtils;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
-import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.operator.DupElim;
 import edu.washington.escience.myriad.operator.LocalJoin;
@@ -108,8 +107,7 @@ public final class Main {
     final CollectConsumer serverPlan = new CollectConsumer(tableSchema, serverReceiveID, WORKER_ID);
     Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
     System.out.println("Query dispatched to the workers");
-    TupleBatchBuffer result = null;
-    while ((result = Server.runningInstance.startServerQuery(0, serverPlan)) == null) {
+    while (Server.runningInstance.startServerQuery(0, serverPlan) == null) {
       try {
         Thread.sleep(100);
       } catch (InterruptedException e) {
