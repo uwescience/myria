@@ -30,8 +30,9 @@ sourceSets {
 
 /* Compile, but don't run the speed tests when building the project. */
 check.dependsOn speedtestClasses
-/* Testing will fail if Eclipse .classpath hasn't been created. */
-testClasses.dependsOn eclipseClasspath
+/* Build the Eclipse .classpath file first, because if Gradle's build fails
+ * we'll want to use Eclipse to debug it. */
+compileJava.dependsOn eclipseClasspath
 
 /*
  * List the compile and runtime dependencies of all the tests.
@@ -44,7 +45,6 @@ repositories {
 }
 
 /* List constants that we use in multiple places. */
-ext.minaVersion = "2.0.6"
 ext.slf4jVersion = "1.6.6"
 
 dependencies {
@@ -53,13 +53,12 @@ dependencies {
   compile "com.google.guava:guava:13.0"
   compile "com.google.protobuf:protobuf-java:2.4.1"
 
-  compile "org.apache.mina:mina-core:${minaVersion}"
-  compile "org.apache.mina:mina-filter-compression:${minaVersion}"
+  compile "io.netty:netty:3.5.7.Final"
 
   compile "commons-io:commons-io:2.4"
   compile "org.apache.commons:commons-lang3:3.1"
 
-  runtime "org.slf4j:slf4j-api:${slf4jVersion}"
+  compile "org.slf4j:slf4j-api:${slf4jVersion}"
   runtime "org.slf4j:slf4j-simple:${slf4jVersion}"
   runtime "mysql:mysql-connector-java:5.1.21"
 

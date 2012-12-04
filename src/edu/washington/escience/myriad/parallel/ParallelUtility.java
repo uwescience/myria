@@ -7,33 +7,17 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.SocketAddress;
-import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
+import org.jboss.netty.bootstrap.ClientBootstrap;
+import org.jboss.netty.bootstrap.ServerBootstrap;
+import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelFactory;
+import org.jboss.netty.channel.ChannelPipelineFactory;
+import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 
-import org.apache.mina.core.future.CloseFuture;
-import org.apache.mina.core.future.ConnectFuture;
-import org.apache.mina.core.service.IoConnector;
-import org.apache.mina.core.service.IoHandler;
-import org.apache.mina.core.service.IoHandlerAdapter;
-import org.apache.mina.core.session.IdleStatus;
-import org.apache.mina.core.session.IoSession;
-import org.apache.mina.filter.codec.ProtocolCodecFilter;
-import org.apache.mina.filter.codec.protobuf.ProtobufCodecFactory;
-import org.apache.mina.filter.compression.CompressionFilter;
-import org.apache.mina.transport.socket.SocketSessionConfig;
-import org.apache.mina.transport.socket.nio.NioSocketAcceptor;
-import org.apache.mina.transport.socket.nio.NioSocketConnector;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
-
-import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
+import edu.washington.escience.myriad.parallel.Worker.MessageWrapper;
 
 /**
  * Utility methods.
@@ -51,25 +35,6 @@ public final class ParallelUtility {
       v = v >>> 1;
     }
     return result;
-  }
-
-  /**
-   * Close a session. Every time a session is to be closed, do call this method. Do not directly call session.close;.
-   */
-  public static CloseFuture closeSession(final IoSession session) {
-    if (session == null) {
-      return null;
-    }
-    final CloseFuture cf = session.close(false);
-    final IoConnector ic = (IoConnector) session.getAttribute("connector");
-
-    if (ic != null) {
-      final Map<Long, IoSession> activeSessions = ic.getManagedSessions();
-      if ((activeSessions.containsValue(session) && activeSessions.size() <= 1) || activeSessions.size() <= 0) {
-        ic.dispose(false);
-      }
-    }
-    return cf;
   }
 
   /**
@@ -117,100 +82,94 @@ public final class ParallelUtility {
   /**
    * Create a server side acceptor.
    */
-  public static NioSocketAcceptor createAcceptor() {
-    final NioSocketAcceptor acceptor = new NioSocketAcceptor(10);
+  public static ServerBootstrap createMasterIPCServer(final LinkedBlockingQueue<MessageWrapper> messageQueue) {
 
-    final SocketSessionConfig config = acceptor.getSessionConfig();
-    config.setKeepAlive(false);
-    config.setTcpNoDelay(true);
-    /**
-     * A session without any write/read actions in 1 hour is assumed to be idle
-     */
-    config.setIdleTime(IdleStatus.BOTH_IDLE, 3600);
-    config.setReceiveBufferSize(2048);
-    config.setSendBufferSize(2048);
-    config.setReadBufferSize(2048);
+    // Start server with Nb of active threads = 2*NB CPU + 1 as maximum.
+    ChannelFactory factory =
+        new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool(), Runtime
+            .getRuntime().availableProcessors() * 2 + 1);
 
-    acceptor.setCloseOnDeactivation(true);
+    ServerBootstrap bootstrap = new ServerBootstrap(factory);
+    // OrderedMemoryAwareThreadPoolExecutor pipelineExecutor =
+    // new OrderedMemoryAwareThreadPoolExecutor(200, 1048576, 1073741824, 100, TimeUnit.MILLISECONDS, Executors
+    // .defaultThreadFactory());
 
-    acceptor.getFilterChain().addLast("compressor", new CompressionFilter());
+    bootstrap.setPipelineFactory(new IPCPipelineFactories.MasterClientPipelineFactory(messageQueue));
 
-    acceptor.getFilterChain().addLast("codec",
-        new ProtocolCodecFilter(ProtobufCodecFactory.newInstance(TransportMessage.getDefaultInstance())));
-    acceptor.setCloseOnDeactivation(true);
+    // ExecutionHandler eh;
 
-    acceptor.setHandler(new IoHandlerAdapter() {
-      @Override
-      public void exceptionCaught(final IoSession session, final Throwable cause) {
-        cause.printStackTrace();
-      }
+    bootstrap.setOption("child.tcpNoDelay", true);
+    bootstrap.setOption("child.keepAlive", false);
+    bootstrap.setOption("child.reuseAddress", true);
+    bootstrap.setOption("child.connectTimeoutMillis", 3000);
+    bootstrap.setOption("child.sendBufferSize", 512 * 1024);
+    bootstrap.setOption("child.receiveBufferSize", 512 * 1024);
+    bootstrap.setOption("child.writeBufferLowWaterMark", 16 * 1024);
+    bootstrap.setOption("child.writeBufferHighWaterMark", 256 * 1024);
 
-      @Override
-      public void messageReceived(final IoSession session, final Object message) throws Exception {
-        System.out.println("Default IOHandler, Message received: " + message);
-        super.messageReceived(session, message);
-      }
-    });
-    acceptor.setReuseAddress(true);
+    bootstrap.setOption("readWriteFair", true);
 
-    return acceptor;
+    return bootstrap;
+  }
+
+  /**
+   * Create a server side acceptor.
+   */
+  public static ServerBootstrap createWorkerIPCServer(final LinkedBlockingQueue<MessageWrapper> messageQueue) {
+
+    // Start server with Nb of active threads = 2*NB CPU + 1 as maximum.
+    ChannelFactory factory =
+        new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool(), Runtime
+            .getRuntime().availableProcessors() * 2 + 1);
+
+    ServerBootstrap bootstrap = new ServerBootstrap(factory);
+    // Create the global ChannelGroup
+    // ChannelGroup channelGroup = new DefaultChannelGroup(PongSerializeServer.class.getName());
+    // Create the blockingQueue to wait for a limited number of client
+    // 200 threads max, Memory limitation: 1MB by channel, 1GB global, 100 ms of timeout
+    // OrderedMemoryAwareThreadPoolExecutor pipelineExecutor =
+    // new OrderedMemoryAwareThreadPoolExecutor(200, 1048576, 1073741824, 100, TimeUnit.MILLISECONDS, Executors
+    // .defaultThreadFactory());
+
+    bootstrap.setPipelineFactory(new IPCPipelineFactories.MasterClientPipelineFactory(messageQueue));
+
+    // ExecutionHandler eh;
+
+    bootstrap.setOption("child.tcpNoDelay", true);
+    bootstrap.setOption("child.keepAlive", false);
+    bootstrap.setOption("child.reuseAddress", true);
+    bootstrap.setOption("child.connectTimeoutMillis", 3000);
+    bootstrap.setOption("child.sendBufferSize", 512 * 1024);
+    bootstrap.setOption("child.receiveBufferSize", 512 * 1024);
+    bootstrap.setOption("child.writeBufferLowWaterMark", 16 * 1024);
+    bootstrap.setOption("child.writeBufferHighWaterMark", 256 * 1024);
+
+    bootstrap.setOption("readWriteFair", true);
+
+    return bootstrap;
   }
 
   /**
    * Create a client side connector to the server.
+   * 
+   * @param clientFactory All the client connections share the same generation factory, basically, they share the same
+   *          thread pool
    */
-  private static IoConnector createConnector() {
-    final IoConnector connector = new NioSocketConnector();
-    final SocketSessionConfig config = (SocketSessionConfig) connector.getSessionConfig();
-    config.setKeepAlive(true); // true?
-    // No delay
-    config.setTcpNoDelay(true);
-    config.setIdleTime(IdleStatus.BOTH_IDLE, 5);
-    config.setReceiveBufferSize(2048);
-    config.setSendBufferSize(2048);
-    config.setReadBufferSize(2048);
+  static ClientBootstrap createIPCClient(final ChannelFactory clientFactory, final ChannelPipelineFactory cpf) {
 
-    connector.getFilterChain().addLast("compressor", new CompressionFilter());
+    // Create the bootstrap
+    ClientBootstrap bootstrap = new ClientBootstrap(clientFactory);
+    bootstrap.setPipelineFactory(cpf);
+    bootstrap.setOption("tcpNoDelay", true);
+    bootstrap.setOption("keepAlive", false);
+    bootstrap.setOption("reuseAddress", true);
+    bootstrap.setOption("connectTimeoutMillis", 3000);
+    bootstrap.setOption("sendBufferSize", 512 * 1024);
+    bootstrap.setOption("receiveBufferSize", 512 * 1024);
+    bootstrap.setOption("writeBufferLowWaterMark", 16 * 1024);
+    bootstrap.setOption("writeBufferHighWaterMark", 256 * 1024);
 
-    connector.getFilterChain().addLast("codec",
-        new ProtocolCodecFilter(ProtobufCodecFactory.newInstance(TransportMessage.getDefaultInstance())));
-
-    connector.setHandler(new IoHandlerAdapter() {
-      @Override
-      public void exceptionCaught(final IoSession session, final Throwable cause) {
-        cause.printStackTrace();
-      }
-
-      @Override
-      public void messageReceived(final IoSession session, final Object message) throws Exception {
-        System.out.println("Default IOHandler, Message received: " + message);
-        super.messageReceived(session, message);
-      }
-    });
-    return connector;
-  }
-
-  public static IoSession createSession(final SocketAddress remoteAddress, final IoHandler ioHandler,
-      final long connectionTimeoutMS) {
-
-    IoSession session = null;
-
-    IoConnector ic = null;
-    ic = createConnector();
-    ic.setHandler(ioHandler);
-    final ConnectFuture c = ic.connect(remoteAddress);
-    boolean connected = false;
-    if (connectionTimeoutMS > 0) {
-      connected = c.awaitUninterruptibly(connectionTimeoutMS);
-    } else {
-      connected = c.awaitUninterruptibly().isConnected();
-    }
-    if (connected) {
-      session = c.getSession();
-      session.setAttribute("connector", ic);
-      return session;
-    }
-    return session;
+    return bootstrap;
   }
 
   public static void deleteFileFolder(final File f) throws IOException {
@@ -251,16 +210,13 @@ public final class ParallelUtility {
   /**
    * Unbind the acceptor from the binded port and close all the connections.
    */
-  public static void unbind(final NioSocketAcceptor acceptor) {
+  public static void shutdownIPC(final Channel ipcServerChannel, final IPCConnectionPool connectionPool) {
+    connectionPool.shutdown();
+    ipcServerChannel.disconnect();
+    ipcServerChannel.close();
+    ipcServerChannel.unbind();
 
-    for (final IoSession session : acceptor.getManagedSessions().values()) {
-      session.close(true);
-    }
-
-    while (acceptor.isActive() || !acceptor.isDisposed()) {
-      acceptor.unbind();
-      acceptor.dispose(false);
-    }
+    ipcServerChannel.getFactory().releaseExternalResources();
   }
 
   public static void writeFile(final File f, final String content) throws IOException {
@@ -269,60 +225,4 @@ public final class ParallelUtility {
     o.close();
   }
 
-  public static String[] readEclipseClasspath(final File eclipseClasspathXMLFile) throws IOException {
-
-    final DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-    DocumentBuilder dBuilder;
-    try {
-      dBuilder = dbFactory.newDocumentBuilder();
-    } catch (ParserConfigurationException e) {
-      throw new IOException(e);
-    }
-
-    Document doc;
-    try {
-      doc = dBuilder.parse(eclipseClasspathXMLFile);
-    } catch (SAXException e) {
-      throw new IOException(e);
-    }
-    doc.getDocumentElement().normalize();
-
-    final NodeList nList = doc.getElementsByTagName("classpathentry");
-
-    final String separator = System.getProperty("path.separator");
-    final StringBuilder classpathSB = new StringBuilder();
-    for (int i = 0; i < nList.getLength(); i++) {
-      final Node node = nList.item(i);
-      if (node.getNodeType() == Node.ELEMENT_NODE) {
-        final Element e = (Element) node;
-
-        final String kind = e.getAttribute("kind");
-        if (kind.equals("output")) {
-          classpathSB.append(new File(e.getAttribute("path")).getAbsolutePath() + separator);
-        }
-        if (kind.equals("lib")) {
-          classpathSB.append(new File(e.getAttribute("path")).getAbsolutePath() + separator);
-        }
-      }
-    }
-    final NodeList attributeList = doc.getElementsByTagName("attribute");
-    final StringBuilder libPathSB = new StringBuilder();
-    for (int i = 0; i < attributeList.getLength(); i++) {
-      final Node node = attributeList.item(i);
-      String value = null;
-      if (node.getNodeType() == Node.ELEMENT_NODE
-          && ("org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY".equals(((Element) node)
-              .getAttribute("name"))) && ((value = ((Element) node).getAttribute("value")) != null)) {
-        File f = new File(value);
-        while (value != null && value.length() > 0 && !f.exists()) {
-          value = value.substring(value.indexOf(File.separator) + 1);
-          f = new File(value);
-        }
-        if (f.exists()) {
-          libPathSB.append(f.getAbsolutePath() + separator);
-        }
-      }
-    }
-    return new String[] { classpathSB.toString(), libPathSB.toString() };
-  }
 }

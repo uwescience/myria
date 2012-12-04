@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.logging.Level;
@@ -43,6 +44,7 @@ import edu.washington.escience.myriad.parallel.ParallelUtility;
 import edu.washington.escience.myriad.parallel.Server;
 import edu.washington.escience.myriad.parallel.Worker;
 import edu.washington.escience.myriad.table._TupleBatch;
+import edu.washington.escience.myriad.tool.EclipseClasspathReader;
 
 public class SystemTestBase {
   /** The logger for this class. Defaults to myriad level, but could be set to a finer granularity if needed. */
@@ -288,8 +290,8 @@ public class SystemTestBase {
       }
     }
 
-    startWorkers();
     startMaster();
+    startWorkers();
   }
 
   public static void insert(final int workerID, final String tableName, final Schema schema, final _TupleBatch data)
@@ -322,47 +324,54 @@ public class SystemTestBase {
   public static HashMap<Tuple, Integer> naturalJoin(final TupleBatchBuffer child1, final TupleBatchBuffer child2,
       final int child1JoinColumn, final int child2JoinColumn) {
 
-    _TupleBatch tb = null;
+    _TupleBatch child1TB = null;
 
+    /**
+     * join key -> {tuple->num occur}
+     * */
     final HashMap<Comparable, HashMap<Tuple, Integer>> child1Hash = new HashMap<Comparable, HashMap<Tuple, Integer>>();
 
     int numChild1Column = 0;
     final HashMap<Tuple, Integer> result = new HashMap<Tuple, Integer>();
-    Iterator<TupleBatch> it = child1.getAll().iterator();
-    while (it.hasNext()) {
-      tb = it.next();
-      final List<Column<?>> output = tb.outputRawData();
-      final int numRow = output.get(0).size();
-      final int numColumn = output.size();
+    Iterator<TupleBatch> child1TBIt = child1.getAll().iterator();
+    while (child1TBIt.hasNext()) {
+      child1TB = child1TBIt.next();
+      final List<Column<?>> child1RawData = child1TB.outputRawData();
+      final int numRow = child1RawData.get(0).size();
+      final int numColumn = child1RawData.size();
       numChild1Column = numColumn;
 
       for (int i = 0; i < numRow; i++) {
         final Tuple t = new Tuple(numColumn);
         for (int j = 0; j < numColumn; j++) {
-          t.set(j, output.get(j).get(i));
+          t.set(j, child1RawData.get(j).get(i));
         }
-        final Object v = t.get(child1JoinColumn);
-        HashMap<Tuple, Integer> tuples = child1Hash.get(v);
-        if (tuples == null) {
-          tuples = new HashMap<Tuple, Integer>();
-          tuples.put(t, 1);
-          child1Hash.put((Comparable<?>) v, tuples);
+        final Object joinKey = t.get(child1JoinColumn);
+        HashMap<Tuple, Integer> tupleOccur = child1Hash.get(joinKey);
+        if (tupleOccur == null) {
+          tupleOccur = new HashMap<Tuple, Integer>();
+          tupleOccur.put(t, 1);
+          child1Hash.put((Comparable<?>) joinKey, tupleOccur);
         } else {
-          final Integer occur = tuples.get(t);
-          tuples.put(t, occur + 1);
+          Integer occur = tupleOccur.get(t);
+          if (occur == null) {
+            occur = 0;
+          }
+          tupleOccur.put(t, occur + 1);
         }
       }
     }
 
-    it = child2.getAll().iterator();
-    while (it.hasNext()) {
-      tb = it.next();
-      final List<Column<?>> child2Columns = tb.outputRawData();
+    Iterator<TupleBatch> child2TBIt = child2.getAll().iterator();
+    _TupleBatch child2TB = null;
+    while (child2TBIt.hasNext()) {
+      child2TB = child2TBIt.next();
+      final List<Column<?>> child2Columns = child2TB.outputRawData();
       final int numRow = child2Columns.get(0).size();
       final int numChild2Column = child2Columns.size();
       for (int i = 0; i < numRow; i++) {
-        final Object v = child2Columns.get(child2JoinColumn).get(i);
-        final HashMap<Tuple, Integer> matchedTuples = child1Hash.get(v);
+        final Object joinKey = child2Columns.get(child2JoinColumn).get(i);
+        final HashMap<Tuple, Integer> matchedTuples = child1Hash.get(joinKey);
         if (matchedTuples != null) {
           final Tuple child2Tuple = new Tuple(numChild2Column);
 
@@ -521,10 +530,10 @@ public class SystemTestBase {
 
       String workingDir = FilenameUtils.concat(workerTestBaseFolder, "worker_" + workerID);
 
-      final String[] workerClasspath = ParallelUtility.readEclipseClasspath(new File(".classpath"));
+      final String[] workerClasspath = EclipseClasspathReader.readEclipseClasspath(new File(".classpath"));
       final ProcessBuilder pb =
-          new ProcessBuilder("java", "-Djava.library.path=" + workerClasspath[1], "-classpath", workerClasspath[0],
-              Worker.class.getCanonicalName(), "--workingDir", workingDir);
+          new ProcessBuilder("java", "-Djava.library.path=" + workerClasspath[1], "-Dorg.jboss.netty.debug",
+              "-classpath", workerClasspath[0], Worker.class.getCanonicalName(), "--workingDir", workingDir);
 
       pb.directory(new File(workingDir));
       pb.redirectErrorStream(true);
@@ -552,12 +561,16 @@ public class SystemTestBase {
 
           InputStreamReader tempReader = new InputStreamReader(new BufferedInputStream(process.getInputStream()));
           BufferedReader reader = new BufferedReader(tempReader);
-          while (true) {
-            String line = reader.readLine();
-            if (line == null) {
-              break;
+          try {
+            while (true) {
+              String line = reader.readLine();
+              if (line == null) {
+                break;
+              }
+              LOGGER.debug("localhost:" + WORKER_PORT[myWorkerIdx] + "$ " + line);
             }
-            LOGGER.debug("localhost:" + WORKER_PORT[myWorkerIdx] + "$ " + line);
+          } catch (IOException e) {
+            // remote has shutdown. Not an exception.
           }
         }
       };
@@ -575,6 +588,24 @@ public class SystemTestBase {
         Thread.currentThread().interrupt();
       }
     }
+  }
+
+  public static HashMap<Tuple, Integer> mergeBags(List<HashMap<Tuple, Integer>> bags) {
+    HashMap<Tuple, Integer> result = new HashMap<Tuple, Integer>();
+    result.putAll(bags.get(0));
+    for (int i = 1; i < bags.size(); i++) {
+      for (Map.Entry<Tuple, Integer> e : bags.get(i).entrySet()) {
+        Tuple t = e.getKey();
+        Integer occ = e.getValue();
+        Integer existingOcc = result.get(t);
+        if (existingOcc == null) {
+          result.put(t, occ);
+        } else {
+          result.put(t, occ + existingOcc);
+        }
+      }
+    }
+    return result;
   }
 
   public static HashMap<Tuple, Integer> tupleBatchToTupleBag(final TupleBatchBuffer tbb) {
