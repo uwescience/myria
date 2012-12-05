@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
+import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -105,8 +106,8 @@ public class SystemTestBase {
     }
   }
 
-  public static final Schema JOIN_INPUT_SCHEMA = new Schema(new Type[] { Type.LONG_TYPE, Type.STRING_TYPE },
-      new String[] { "id", "name" });
+  public static final Schema JOIN_INPUT_SCHEMA = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE),
+      ImmutableList.of("id", "name"));
   public static final String JOIN_TEST_TABLE_1 = "testtable1";
   public static final String JOIN_TEST_TABLE_2 = "testtable2";
 

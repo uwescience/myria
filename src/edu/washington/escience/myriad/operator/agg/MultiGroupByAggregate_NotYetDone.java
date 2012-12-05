@@ -4,6 +4,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Objects;
 
+import com.google.common.collect.ImmutableList;
+
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -81,13 +83,13 @@ public class MultiGroupByAggregate_NotYetDone extends Operator {
       groupAggs = new HashMap<SimpleArrayWrapper, Aggregator[]>();
     }
 
-    Type[] gTypes = new Type[gfields.length];
-    String[] gNames = new String[gfields.length];
+    ImmutableList.Builder<Type> gTypes = ImmutableList.builder();
+    ImmutableList.Builder<String> gNames = ImmutableList.builder();
 
     Schema childSchema = child.getSchema();
-    for (int i = 0; i < gfields.length; i++) {
-      gTypes[i] = childSchema.getFieldType(gfields[i]);
-      gNames[i] = childSchema.getFieldName(gfields[i]);
+    for (int i : gfields) {
+      gTypes.add(childSchema.getFieldType(i));
+      gNames.add(childSchema.getFieldName(i));
     }
 
     outputSchema = new Schema(gTypes, gNames);

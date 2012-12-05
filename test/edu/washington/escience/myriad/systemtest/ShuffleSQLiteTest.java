@@ -8,6 +8,8 @@ import java.util.Map.Entry;
 
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
+
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatchBuffer;
@@ -32,8 +34,8 @@ public class ShuffleSQLiteTest extends SystemTestBase {
   @Test
   public void shuffleTestSQLite() throws DbException, IOException, CatalogException {
 
-    final Type[] types = new Type[] { Type.LONG_TYPE, Type.STRING_TYPE };
-    final String[] columnNames = new String[] { "id", "name" };
+    final ImmutableList<Type> types = ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE);
+    final ImmutableList<String> columnNames = ImmutableList.of("id", "name");
     final Schema schema = new Schema(types, columnNames);
 
     HashMap<Tuple, Integer> expectedResult = simpleRandomJoinTestBase();
@@ -49,8 +51,9 @@ public class ShuffleSQLiteTest extends SystemTestBase {
     final ExchangePairID shuffle1ID = ExchangePairID.newID();
     final ExchangePairID shuffle2ID = ExchangePairID.newID();
 
-    final Type[] outputTypes = new Type[] { Type.LONG_TYPE, Type.STRING_TYPE, Type.LONG_TYPE, Type.STRING_TYPE };
-    final String[] outputColumnNames = new String[] { "id", "name", "id", "name" };
+    final ImmutableList<Type> outputTypes =
+        ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE, Type.LONG_TYPE, Type.STRING_TYPE);
+    final ImmutableList<String> outputColumnNames = ImmutableList.of("id", "name", "id", "name");
     final Schema outputSchema = new Schema(outputTypes, outputColumnNames);
 
     final int numPartition = 2;

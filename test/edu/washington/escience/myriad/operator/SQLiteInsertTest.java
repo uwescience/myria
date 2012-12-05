@@ -14,6 +14,7 @@ import org.junit.Test;
 
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteStatement;
+import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatchBuffer;
@@ -41,7 +42,7 @@ public class SQLiteInsertTest {
     tempFile.deleteOnExit();
 
     /* Create the data needed for the tests in this file. */
-    schema = new Schema(new Type[] { Type.INT_TYPE, Type.STRING_TYPE });
+    schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.STRING_TYPE));
     data = new TupleBatchBuffer(schema);
     /* Populate the TupleBatchBuffer. */
     final Random r = new Random();

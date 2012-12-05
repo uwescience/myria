@@ -1,10 +1,11 @@
 package edu.washington.escience.myriad.operator.agg;
 
+import com.google.common.collect.ImmutableList;
+
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.util.MathUtils;
 
 /**
  * Knows how to compute some aggregates over a DoubleColumn.
@@ -55,34 +56,27 @@ public final class DoubleAggregator implements Aggregator {
     max = Double.MIN_VALUE;
     sum = 0.0;
     count = 0;
-    int numAggOps = MathUtils.numBinaryOnesInInteger(aggOps);
-    Type[] types = new Type[numAggOps];
-    String[] names = new String[numAggOps];
-    int idx = 0;
+    ImmutableList.Builder<Type> types = ImmutableList.builder();
+    ImmutableList.Builder<String> names = ImmutableList.builder();
     if ((aggOps & Aggregator.AGG_OP_COUNT) != 0) {
-      types[idx] = Type.LONG_TYPE;
-      names[idx] = "count(" + aFieldName + ")";
-      idx += 1;
+      types.add(Type.LONG_TYPE);
+      names.add("count(" + aFieldName + ")");
     }
     if ((aggOps & Aggregator.AGG_OP_MIN) != 0) {
-      types[idx] = Type.DOUBLE_TYPE;
-      names[idx] = "min(" + aFieldName + ")";
-      idx += 1;
+      types.add(Type.DOUBLE_TYPE);
+      names.add("min(" + aFieldName + ")");
     }
     if ((aggOps & Aggregator.AGG_OP_MAX) != 0) {
-      types[idx] = Type.DOUBLE_TYPE;
-      names[idx] = "max(" + aFieldName + ")";
-      idx += 1;
+      types.add(Type.DOUBLE_TYPE);
+      names.add("max(" + aFieldName + ")");
     }
     if ((aggOps & Aggregator.AGG_OP_SUM) != 0) {
-      types[idx] = Type.DOUBLE_TYPE;
-      names[idx] = "sum(" + aFieldName + ")";
-      idx += 1;
+      types.add(Type.DOUBLE_TYPE);
+      names.add("sum(" + aFieldName + ")");
     }
     if ((aggOps & Aggregator.AGG_OP_AVG) != 0) {
-      types[idx] = Type.DOUBLE_TYPE;
-      names[idx] = "avg(" + aFieldName + ")";
-      idx += 1;
+      types.add(Type.DOUBLE_TYPE);
+      names.add("avg(" + aFieldName + ")");
     }
     resultSchema = new Schema(types, names);
   }

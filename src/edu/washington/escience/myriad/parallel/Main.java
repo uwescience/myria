@@ -5,6 +5,8 @@ import java.util.HashMap;
 
 import org.apache.commons.io.FilenameUtils;
 
+import com.google.common.collect.ImmutableList;
+
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.Type;
@@ -28,11 +30,13 @@ public final class Main {
   private static final int numIteration = 2;
   private static final int numPartition = 2;
 
-  private static Type[] table1Types = new Type[] { Type.LONG_TYPE, Type.LONG_TYPE };
-  private static String[] table1ColumnNames = new String[] { "follower", "followee" };
+  private static ImmutableList<Type> table1Types = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
+  private static ImmutableList<String> table1ColumnNames = ImmutableList.of("follower", "followee");
   private static Schema tableSchema = new Schema(table1Types, table1ColumnNames);
-  private static Type[] joinTypes = new Type[] { Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE };
-  private static String[] joinColumnNames = new String[] { "follower", "followee", "follower", "followee" };
+  private static ImmutableList<Type> joinTypes = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE,
+      Type.LONG_TYPE);
+  private static ImmutableList<String> joinColumnNames = ImmutableList.of("follower", "followee", "follower",
+      "followee");
   private static Schema joinSchema = new Schema(joinTypes, joinColumnNames);
 
   public static Operator getQueryPlan_full() throws DbException, IOException {

@@ -9,6 +9,8 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
+
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -47,8 +49,8 @@ public class JdbcInsertSpeedTest {
   @Before
   public void setup() {
     // Create the test tuple schema
-    Type[] types = new Type[] { Type.INT_TYPE, Type.STRING_TYPE };
-    String[] columnNames = new String[] { "key", "value" };
+    ImmutableList<Type> types = ImmutableList.of(Type.INT_TYPE, Type.STRING_TYPE);
+    ImmutableList<String> columnNames = ImmutableList.of("key", "value");
     Schema schema = new Schema(types, columnNames);
 
     // Create tuples and put them into the batch buffer
@@ -230,8 +232,8 @@ public class JdbcInsertSpeedTest {
      * @return
      */
     private long countNumberOfTuples(String countQuery) {
-      Type[] countTypes = new Type[] { Type.INT_TYPE };
-      String[] countColumnNames = new String[] { "value" };
+      ImmutableList<Type> countTypes = ImmutableList.of(Type.INT_TYPE);
+      ImmutableList<String> countColumnNames = ImmutableList.of("value");
       Schema countSchema = new Schema(countTypes, countColumnNames);
       JdbcQueryScan validateScan =
           new JdbcQueryScan(jdbcDriverName, connectionString, countQuery, countSchema, user, password);

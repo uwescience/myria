@@ -8,6 +8,8 @@ import java.util.logging.Logger;
 import org.junit.Test;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ImmutableList;
+
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -40,7 +42,8 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, 200, 20);
     long[] ids = TestUtils.randomLong(1000, 1005, names.length);
 
-    final Schema schema = new Schema(new Type[] { Type.LONG_TYPE, Type.STRING_TYPE }, new String[] { "id", "name" });
+    final Schema schema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
 
     TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
@@ -104,7 +107,8 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, 200, 20);
     long[] ids = TestUtils.randomLong(1000, 1005, names.length);
 
-    final Schema schema = new Schema(new Type[] { Type.LONG_TYPE, Type.STRING_TYPE }, new String[] { "id", "name" });
+    final Schema schema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
 
     TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
@@ -177,8 +181,9 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(2);
     pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
 
-    final Type[] outputTypes = new Type[] { Type.LONG_TYPE, Type.STRING_TYPE, Type.LONG_TYPE, Type.STRING_TYPE };
-    final String[] outputColumnNames = new String[] { "id", "name", "id", "name" };
+    final ImmutableList<Type> outputTypes =
+        ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE, Type.LONG_TYPE, Type.STRING_TYPE);
+    final ImmutableList<String> outputColumnNames = ImmutableList.of("id", "name", "id", "name");
     final Schema outputSchema = new Schema(outputTypes, outputColumnNames);
 
     final SQLiteQueryScan scan1 = new SQLiteQueryScan(null, "select * from " + JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA);

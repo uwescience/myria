@@ -17,6 +17,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Ints;
 
 import edu.washington.escience.myriad.column.BooleanColumn;
@@ -485,15 +486,13 @@ public class TupleBatch {
    */
   public final TupleBatch project(final int[] remainingColumns) {
     Objects.requireNonNull(remainingColumns);
+    ImmutableList.Builder<Type> newTypes = new ImmutableList.Builder<Type>();
+    ImmutableList.Builder<String> newNames = new ImmutableList.Builder<String>();
     final List<Column<?>> newColumns = new ArrayList<Column<?>>();
-    final Type[] newTypes = new Type[remainingColumns.length];
-    final String[] newNames = new String[remainingColumns.length];
-    int count = 0;
     for (final int i : remainingColumns) {
       newColumns.add(columns.get(i));
-      newTypes[count] = schema.getFieldType(i);
-      newNames[count] = schema.getFieldName(i);
-      count++;
+      newTypes.add(schema.getFieldType(i));
+      newNames.add(schema.getFieldName(i));
     }
     return new TupleBatch(new Schema(newTypes, newNames), newColumns, validTuples, validIndices);
   }
@@ -513,12 +512,12 @@ public class TupleBatch {
 
   @Override
   public final String toString() {
-    final Type[] columnTypes = schema.getTypes();
+    final ImmutableList<Type> columnTypes = schema.getTypes();
     final StringBuilder sb = new StringBuilder();
     for (int i : validTupleIndices()) {
       sb.append("|\t");
       for (int j = 0; j < schema.numFields(); j++) {
-        sb.append(columnTypes[j].toString(columns.get(j), i));
+        sb.append(columnTypes.get(j).toString(columns.get(j), i));
         sb.append("\t|\t");
       }
       sb.append("\n");

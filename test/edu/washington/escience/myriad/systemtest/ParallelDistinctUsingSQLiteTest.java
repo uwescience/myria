@@ -5,6 +5,8 @@ import java.util.HashMap;
 
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
+
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -25,8 +27,8 @@ public class ParallelDistinctUsingSQLiteTest extends SystemTestBase {
 
   @Test
   public void parallelTestSQLite() throws DbException, IOException, CatalogException {
-    final Type[] types = new Type[] { Type.LONG_TYPE, Type.STRING_TYPE };
-    final String[] columnNames = new String[] { "id", "name" };
+    final ImmutableList<Type> types = ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE);
+    final ImmutableList<String> columnNames = ImmutableList.of("id", "name");
     final Schema schema = new Schema(types, columnNames);
 
     createTable(WORKER_ID[0], "testtable", "id int, name varchar(20)");

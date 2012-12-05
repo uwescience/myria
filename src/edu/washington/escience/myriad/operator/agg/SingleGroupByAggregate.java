@@ -7,11 +7,12 @@ import java.util.Set;
 
 import org.apache.commons.lang3.tuple.Pair;
 
+import com.google.common.collect.ImmutableList;
+
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
-import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.operator.Operator;
 
 /**
@@ -55,13 +56,9 @@ public class SingleGroupByAggregate extends Operator {
 
     Schema outputSchema = null;
 
-    Type[] gTypes = new Type[1];
-    String[] gNames = new String[1];
-
-    gTypes[0] = childSchema.getFieldType(gfield);
-    gNames[0] = childSchema.getFieldName(gfield);
-
-    outputSchema = new Schema(gTypes, gNames);
+    outputSchema =
+        new Schema(ImmutableList.of(childSchema.getFieldType(gfield)), ImmutableList.of(childSchema
+            .getFieldName(gfield)));
 
     this.child = child;
     this.afields = afields;

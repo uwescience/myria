@@ -3,6 +3,8 @@ package edu.washington.escience.myriad.systemtest;
 import java.io.IOException;
 import java.util.HashMap;
 
+import com.google.common.collect.ImmutableList;
+
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatchBuffer;
@@ -22,7 +24,8 @@ public class SplitDataTest extends SystemTestBase {
   // @Test
   public void splitDataTest() throws DbException, IOException, CatalogException {
     /* Create a source of tuples containing the numbers 1 to 10001. */
-    final Schema schema = new Schema(new Type[] { Type.LONG_TYPE, Type.STRING_TYPE }, new String[] { "id", "name" });
+    final Schema schema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
     final TupleBatchBuffer tuples = new TupleBatchBuffer(schema);
     for (long i = 0; i < 10001; ++i) {
       tuples.put(0, i);

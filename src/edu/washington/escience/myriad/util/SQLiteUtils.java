@@ -2,6 +2,8 @@ package edu.washington.escience.myriad.util;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.google.common.collect.ImmutableList;
+
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
@@ -87,7 +89,7 @@ public final class SQLiteUtils {
   public static void insertIntoSQLite(final Schema inputSchema, String tableName, String dbFilePath,
       final TupleBatch data) {
 
-    final String[] fieldNames = inputSchema.getFieldNames();
+    final ImmutableList<String> fieldNames = inputSchema.getFieldNames();
     final String[] placeHolders = new String[inputSchema.numFields()];
     for (int i = 0; i < inputSchema.numFields(); ++i) {
       placeHolders[i] = "?";

@@ -5,6 +5,8 @@ import java.util.HashMap;
 
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
+
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -30,7 +32,8 @@ public class CollectTest extends SystemTestBase {
     String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, 200, 20);
     long[] ids = TestUtils.randomLong(1000, 1005, names.length);
 
-    final Schema schema = new Schema(new Type[] { Type.LONG_TYPE, Type.STRING_TYPE }, new String[] { "id", "name" });
+    final Schema schema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
 
     TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {

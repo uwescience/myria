@@ -2,6 +2,8 @@ package edu.washington.escience.myriad.operator;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.google.common.collect.ImmutableList;
+
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -21,7 +23,7 @@ public final class BlockingJDBCDataReceiver extends Operator {
   final String username;
   final String password;
   final String tableName;
-  final String[] fieldNames;
+  final ImmutableList<String> fieldNames;
   final String[] placeHolders;
 
   public BlockingJDBCDataReceiver(final String tableName, final String connectionString, final String driverClass,

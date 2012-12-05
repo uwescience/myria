@@ -2,6 +2,8 @@ package edu.washington.escience.myriad.operator.agg;
 
 import java.util.Objects;
 
+import com.google.common.collect.ImmutableList;
+
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -45,14 +47,10 @@ public final class Aggregate extends Operator {
       throw new IllegalArgumentException("aggregation fields must not be empty");
     }
 
-    Schema outputSchema = null;
-
-    Type[] gTypes = new Type[0];
-    String[] gNames = new String[0];
+    ImmutableList.Builder<Type> gTypes = ImmutableList.builder();
+    ImmutableList.Builder<String> gNames = ImmutableList.builder();
 
     Schema childSchema = child.getSchema();
-
-    outputSchema = new Schema(gTypes, gNames);
 
     this.child = child;
     this.afields = afields;
@@ -63,32 +61,28 @@ public final class Aggregate extends Operator {
       switch (childSchema.getFieldType(afield)) {
         case BOOLEAN_TYPE:
           agg[idx] = new BooleanAggregator(afield, childSchema.getFieldName(afield), aggOps[idx]);
-          outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
           break;
         case INT_TYPE:
           agg[idx] = new IntegerAggregator(afield, childSchema.getFieldName(afield), aggOps[idx]);
-          outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
           break;
         case LONG_TYPE:
           agg[idx] = new LongAggregator(afield, childSchema.getFieldName(afield), aggOps[idx]);
-          outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
           break;
         case FLOAT_TYPE:
           agg[idx] = new FloatAggregator(afield, childSchema.getFieldName(afield), aggOps[idx]);
-          outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
           break;
         case DOUBLE_TYPE:
           agg[idx] = new DoubleAggregator(afield, childSchema.getFieldName(afield), aggOps[idx]);
-          outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
           break;
         case STRING_TYPE:
           agg[idx] = new StringAggregator(afield, childSchema.getFieldName(afield), aggOps[idx]);
-          outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
           break;
       }
+      gTypes.addAll(agg[idx].getResultSchema().getTypes());
+      gNames.addAll(agg[idx].getResultSchema().getFieldNames());
       idx++;
     }
-    schema = outputSchema;
+    schema = new Schema(gTypes, gNames);
   }
 
   /**

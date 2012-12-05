@@ -1,9 +1,12 @@
 package edu.washington.escience.myriad.operator;
 
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 import org.apache.commons.lang3.ArrayUtils;
+
+import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
@@ -21,43 +24,22 @@ public class Project extends Operator {
   private final Schema schema;
   private final Integer[] outFieldIds; // why not using int[]?
 
-  /**
-   * Constructor accepts a child operator to read tuples to apply projection to and a list of fields in output tuple.
-   * 
-   * @param fieldList The indexes of the fields to project out.
-   * @param typesList the types of the fields in the final projection.
-   * @param child The child operator
-   * @throws DbException
-   */
-  public Project(final ArrayList<Integer> fieldList, final ArrayList<Type> typesList, final Operator child)
-      throws DbException {
-    this(fieldList, typesList.toArray(new Type[] {}), child);
-  }
-
-  public Project(final ArrayList<Integer> fieldList, final Type[] types, final Operator child) throws DbException {
+  public Project(final List<Integer> fieldList, final Operator child) throws DbException {
     this.child = child;
     outFieldIds = fieldList.toArray(new Integer[] {});
-    final String[] fieldAr = new String[fieldList.size()];
     final Schema childSchema = child.getSchema();
 
-    for (int i = 0; i < fieldAr.length; i++) {
-      fieldAr[i] = childSchema.getFieldName(fieldList.get(i));
+    ImmutableList.Builder<Type> types = ImmutableList.builder();
+    ImmutableList.Builder<String> names = ImmutableList.builder();
+    for (int i : fieldList) {
+      types.add(childSchema.getFieldType(i));
+      names.add(childSchema.getFieldName(i));
     }
-    schema = new Schema(types, fieldAr);
+    schema = new Schema(types, names);
   }
 
   public Project(final Integer[] fieldList, final Operator child) throws DbException {
-    this.child = child;
-    outFieldIds = fieldList;
-    final String[] fieldName = new String[fieldList.length];
-    final Type[] fieldType = new Type[fieldList.length];
-    final Schema childSchema = child.getSchema();
-
-    for (int i = 0; i < fieldName.length; i++) {
-      fieldName[i] = childSchema.getFieldName(fieldList[i]);
-      fieldType[i] = childSchema.getFieldType(fieldList[i]);
-    }
-    schema = new Schema(fieldType, fieldName);
+    this(Arrays.asList(fieldList), child);
   }
 
   @Override

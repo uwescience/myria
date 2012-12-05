@@ -1,10 +1,11 @@
 package edu.washington.escience.myriad.operator.agg;
 
+import com.google.common.collect.ImmutableList;
+
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.util.MathUtils;
 
 /**
  * Knows how to compute some aggregates over a BooleanColumn.
@@ -42,16 +43,13 @@ public final class BooleanAggregator implements Aggregator {
 
     this.aggOps = aggOps;
 
-    int numAggOps = MathUtils.numBinaryOnesInInteger(aggOps);
-    Type[] types = new Type[numAggOps];
-    String[] names = new String[numAggOps];
-    int idx = 0;
+    ImmutableList.Builder<Type> types = ImmutableList.builder();
+    ImmutableList.Builder<String> names = ImmutableList.builder();
     if ((aggOps & Aggregator.AGG_OP_COUNT) != 0) {
-      types[idx] = Type.LONG_TYPE;
-      names[idx] = "count(" + aFieldName + ")";
-      idx += 1;
+      types.add(Type.LONG_TYPE);
+      names.add("count(" + aFieldName + ")");
     }
-    resultSchema = new Schema(types, names);
+    resultSchema = new Schema(types.build(), names.build());
   }
 
   @Override
