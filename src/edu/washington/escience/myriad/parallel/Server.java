@@ -95,6 +95,13 @@ import edu.washington.escience.myriad.util.IPCUtils;
  */
 public final class Server {
 
+  /** Time constant. */
+  private static final int ONE_SEC_IN_MILLIS = 1000;
+  /** Time constant. */
+  private static final int ONE_MIN_IN_MILLIS = 60 * ONE_SEC_IN_MILLIS;
+  /** Time constant. */
+  private static final int ONE_HR_IN_MILLIS = 60 * ONE_MIN_IN_MILLIS;
+
   protected final class MessageProcessor extends Thread {
     private volatile boolean stopped = false;
 
@@ -108,7 +115,8 @@ public final class Server {
       TERMINATE_MESSAGE_PROCESSING : while (!stopped) {
         MessageWrapper mw = null;
         try {
-          mw = messageQueue.poll(100, TimeUnit.MILLISECONDS);
+          final int pollDelay = 100;
+          mw = messageQueue.poll(pollDelay, TimeUnit.MILLISECONDS);
           if (mw == null) {
             continue;
           }
@@ -387,12 +395,12 @@ public final class Server {
       LOGGER.debug("Number of results: " + cnt);
       System.out.println("Number of results: " + cnt);
       int elapse = (int) (end.getTime() - start.getTime());
-      int hour = elapse / 3600000;
-      elapse -= hour * 3600000;
-      int minute = elapse / 60000;
-      elapse -= minute * 60000;
-      int second = elapse / 1000;
-      elapse -= second * 1000;
+      int hour = elapse / ONE_HR_IN_MILLIS;
+      elapse -= hour * ONE_HR_IN_MILLIS;
+      int minute = elapse / ONE_MIN_IN_MILLIS;
+      elapse -= minute * ONE_MIN_IN_MILLIS;
+      int second = elapse / ONE_SEC_IN_MILLIS;
+      elapse -= second * ONE_SEC_IN_MILLIS;
 
       LOGGER.debug(String.format("Time elapsed: %1$dh%2$dm%3$ds.%4$03d", hour, minute, second, elapse));
       System.out.println(String.format("Time elapsed: %1$dh%2$dm%3$ds.%4$03d", hour, minute, second, elapse));
@@ -429,13 +437,14 @@ public final class Server {
 
       Date end = new Date();
       int elapse = (int) (end.getTime() - start.getTime());
-      int hour = elapse / 3600000;
-      elapse -= hour * 3600000;
-      int minute = elapse / 60000;
-      elapse -= minute * 60000;
-      int second = elapse / 1000;
-      elapse -= second * 1000;
+      int hour = elapse / ONE_HR_IN_MILLIS;
+      elapse -= hour * ONE_HR_IN_MILLIS;
+      int minute = elapse / ONE_MIN_IN_MILLIS;
+      elapse -= minute * ONE_MIN_IN_MILLIS;
+      int second = elapse / ONE_SEC_IN_MILLIS;
+      elapse -= second * ONE_SEC_IN_MILLIS;
 
+      LOGGER.debug(String.format("Time elapsed: %1$dh%2$dm%3$ds.%4$03d", hour, minute, second, elapse));
       System.out.println(String.format("Time elapsed: %1$dh%2$dm%3$ds.%4$03d", hour, minute, second, elapse));
       return true;
     } else {
