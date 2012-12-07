@@ -140,7 +140,7 @@ public class SystemTestBase {
     }
   }
 
-  private static String workerTestBaseFolder;
+  protected static String workerTestBaseFolder;
 
   public static void createTable(final String dbFileAbsolutePath, final String tableName, final String sqlSchemaString)
       throws IOException, CatalogException {

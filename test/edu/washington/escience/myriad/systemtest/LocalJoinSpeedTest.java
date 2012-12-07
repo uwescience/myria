@@ -3,8 +3,12 @@ package edu.washington.escience.myriad.systemtest;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import edu.washington.escience.myriad.DbException;
@@ -28,14 +32,18 @@ import edu.washington.escience.myriad.parallel.SingleFieldHashPartitionFunction;
 
 public class LocalJoinSpeedTest extends SystemTestBase {
 
+  private final static String[] srcPath = {
+      "/media/jwang/myriad/test_worker1.db", "/media/jwang/myriad/test_worker2.db" };
+  private final static String[] dstName = { "testtable0.db", "testtable0.db" };
+
   @Test
   public void localJoinSpeedTest() throws DbException, CatalogException, IOException {
 
     final Type[] table1Types = new Type[] { Type.LONG_TYPE, Type.LONG_TYPE };
-    final String[] table1ColumnNames = new String[] { "id1", "id2" };
+    final String[] table1ColumnNames = new String[] { "follower", "followee" };
     final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
     final Type[] joinTypes = new Type[] { Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE };
-    final String[] joinColumnNames = new String[] { "id1", "id2", "id1", "id2" };
+    final String[] joinColumnNames = new String[] { "follower", "followee", "follower", "followee" };
     final Schema joinSchema = new Schema(joinTypes, joinColumnNames);
 
     final SQLiteQueryScan scan1 = new SQLiteQueryScan("testtable0.db", "select * from testtable", tableSchema);
@@ -87,5 +95,16 @@ public class LocalJoinSpeedTest extends SystemTestBase {
       }
     }
     assertTrue(result.numTuples() == 3361461);
+  }
+
+  @BeforeClass
+  public static void loadSpecificTestData() throws IOException {
+    for (int i = 0; i < srcPath.length; ++i) {
+      Path src = FileSystems.getDefault().getPath(srcPath[i]);
+      Path dst =
+          FileSystems.getDefault().getPath(workerTestBaseFolder + "/worker_" + (i + 1) + "/sqlite_dbs/" + dstName[i]);
+      Files.copy(src, dst);
+    }
+    System.out.println("done copying");
   }
 }
