@@ -162,12 +162,12 @@ public final class CatalogMaker {
 
         /* Add any and all masters. */
         for (SocketInfo s : masters) {
-          wc.addMaster(s.getId());
+          wc.addMaster(s.toString());
         }
 
         /* Add any and all masters. */
         for (Entry<Integer, SocketInfo> w : workers.entrySet()) {
-          wc.addWorker(w.getKey(), w.getValue().getId());
+          wc.addWorker(w.getKey(), w.getValue().toString());
         }
 
         /* Set up the other three configuration variables it uses. */
@@ -199,9 +199,9 @@ public final class CatalogMaker {
       }
     } else {
       try {
-        makeNNodeLocalParallelCatalog(null, 5);
+        makeNNodeLocalParallelCatalog(null, 2);
       } catch (IOException e) {
-        System.err.println("Error creating fiveNodeLocalParallelCatalog: " + e.getMessage());
+        System.err.println("Error creating nNodeLocalParallelCatalog: " + e.getMessage());
       }
     }
   }

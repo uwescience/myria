@@ -44,7 +44,7 @@ public class CatalogTest {
       catalog.addMaster(SERVER);
       List<SocketInfo> servers = catalog.getMasters();
       assertTrue(servers.size() == 1);
-      assertTrue(servers.get(0).getId().equals(SERVER));
+      assertTrue(servers.get(0).toString().equals(SERVER));
     } catch (CatalogException e) {
       e.printStackTrace();
       fail(e.toString());
