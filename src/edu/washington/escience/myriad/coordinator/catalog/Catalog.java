@@ -4,10 +4,12 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 import org.slf4j.Logger;
@@ -96,6 +98,8 @@ public final class Catalog {
                 + "    value STRING NOT NULL);");
             sqliteConnection.exec("CREATE TABLE workers (\n" + "    worker_id INTEGER PRIMARY KEY ASC,\n"
                 + "    host_port STRING NOT NULL);");
+            sqliteConnection.exec("CREATE TABLE alive_workers (\n"
+                + "    worker_id INTEGER PRIMARY KEY ASC REFERENCES workers(worker_id));");
             sqliteConnection.exec("CREATE TABLE masters (\n" + "    master_id INTEGER PRIMARY KEY ASC,\n"
                 + "    host_port STRING NOT NULL);");
             sqliteConnection.exec("CREATE TABLE relations (\n" + "    relation_id INTEGER PRIMARY KEY ASC,\n"
@@ -472,12 +476,47 @@ public final class Catalog {
       return (Map<Integer, SocketInfo>) queue.execute(new SQLiteJob<Object>() {
         @Override
         protected Object job(final SQLiteConnection sqliteConnection) throws SQLiteException, CatalogException {
-          final ConcurrentHashMap<Integer, SocketInfo> workers = new ConcurrentHashMap<Integer, SocketInfo>();
+          final Map<Integer, SocketInfo> workers = new HashMap<Integer, SocketInfo>();
 
           try {
             final SQLiteStatement statement = sqliteConnection.prepare("SELECT * FROM workers;", false);
             while (statement.step()) {
               workers.put(statement.columnInt(0), SocketInfo.valueOf(statement.columnString(1)));
+            }
+            statement.dispose();
+          } catch (final SQLiteException e) {
+            LOGGER.error(e.toString());
+            throw new CatalogException(e);
+          }
+
+          return workers;
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  /**
+   * @return the set of workers that are alive.
+   * @throws CatalogException if there is an error in the database.
+   */
+  @SuppressWarnings("unchecked")
+  public Set<Integer> getAliveWorkers() throws CatalogException {
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+
+    try {
+      return (Set<Integer>) queue.execute(new SQLiteJob<Object>() {
+        @Override
+        protected Object job(final SQLiteConnection sqliteConnection) throws SQLiteException, CatalogException {
+          final Set<Integer> workers = new HashSet<Integer>();
+
+          try {
+            final SQLiteStatement statement = sqliteConnection.prepare("SELECT worker_id FROM alive_workers;", false);
+            while (statement.step()) {
+              workers.add(statement.columnInt(0));
             }
             statement.dispose();
           } catch (final SQLiteException e) {
