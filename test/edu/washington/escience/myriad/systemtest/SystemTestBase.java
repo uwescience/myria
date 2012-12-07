@@ -263,23 +263,9 @@ public class SystemTestBase {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
     Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
 
-    // <<<<<<< HEAD
-    // /* Create the test folder, e.g., in $tmp/Myriad_systemtests. */
-    // final File testBaseFolderF = new File(workerTestBaseFolder);
-    // testBaseFolderF.mkdirs();
-    //
-    // /* Create one folder for each Worker. */
-    // for (final int workerID : WORKER_ID) {
-    // final File f = new File(workerTestBaseFolder + File.separator + "worker_" + workerID);
-    // while (!f.exists()) {
-    // f.mkdirs();
-    // }
-    // }
-    // =======
     Path tempFilePath = Files.createTempDirectory(Server.SYSTEM_NAME + "_systemtests");
     workerTestBaseFolder = tempFilePath.toFile().getAbsolutePath();
     CatalogMaker.makeTwoNodeLocalParallelCatalog(workerTestBaseFolder);
-    // >>>>>>> master
 
     if (!AvailablePortFinder.available(MASTER_PORT)) {
       throw new RuntimeException("Unable to start master, port " + MASTER_PORT + " is taken");
