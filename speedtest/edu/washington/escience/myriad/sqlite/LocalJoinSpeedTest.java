@@ -1,4 +1,4 @@
-package edu.washington.escience.myriad.systemtest;
+package edu.washington.escience.myriad.sqlite;
 
 import static org.junit.Assert.assertTrue;
 
@@ -29,9 +29,13 @@ import edu.washington.escience.myriad.parallel.Server;
 import edu.washington.escience.myriad.parallel.ShuffleConsumer;
 import edu.washington.escience.myriad.parallel.ShuffleProducer;
 import edu.washington.escience.myriad.parallel.SingleFieldHashPartitionFunction;
+import edu.washington.escience.myriad.systemtest.SystemTestBase;
 
+// 15s on my desktop
 public class LocalJoinSpeedTest extends SystemTestBase {
 
+  // the paths to the dataset on your local machine, copy them from /projects/db7/dataset/twitter/speedtest then change
+  // the paths here
   private final static String[] srcPath = {
       "/media/jwang/myriad/test_worker1.db", "/media/jwang/myriad/test_worker2.db" };
   private final static String[] dstName = { "testtable0.db", "testtable0.db" };
@@ -98,13 +102,21 @@ public class LocalJoinSpeedTest extends SystemTestBase {
   }
 
   @BeforeClass
-  public static void loadSpecificTestData() throws IOException {
+  public static void loadSpecificTestData() {
     for (int i = 0; i < srcPath.length; ++i) {
       Path src = FileSystems.getDefault().getPath(srcPath[i]);
       Path dst =
           FileSystems.getDefault().getPath(workerTestBaseFolder + "/worker_" + (i + 1) + "/sqlite_dbs/" + dstName[i]);
-      Files.copy(src, dst);
+      try {
+        Files.copy(src, dst);
+      } catch (Exception e) {
+        throw new RuntimeException(
+            "unable to copy file from "
+                + srcPath[i]
+                + " to "
+                + dstName[i]
+                + ". you can find the dataset at /projects/db7/dataset/twitter/speedtest, copy them to your local machine then point the srcPath to them");
+      }
     }
-    System.out.println("done copying");
   }
 }
