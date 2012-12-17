@@ -30,8 +30,9 @@ sourceSets {
 
 /* Compile, but don't run the speed tests when building the project. */
 check.dependsOn speedtestClasses
-/* Testing will fail if Eclipse .classpath hasn't been created. */
-testClasses.dependsOn eclipseClasspath
+/* Build the Eclipse .classpath file first, because if Gradle's build fails
+ * we'll want to use Eclipse to debug it. */
+compileJava.dependsOn eclipseClasspath
 
 /*
  * List the compile and runtime dependencies of all the tests.
@@ -57,7 +58,7 @@ dependencies {
   compile "commons-io:commons-io:2.4"
   compile "org.apache.commons:commons-lang3:3.1"
 
-  runtime "org.slf4j:slf4j-api:${slf4jVersion}"
+  compile "org.slf4j:slf4j-api:${slf4jVersion}"
   runtime "org.slf4j:slf4j-simple:${slf4jVersion}"
   runtime "mysql:mysql-connector-java:5.1.21"
 
