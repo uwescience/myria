@@ -4,8 +4,8 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.column.LongColumn;
-import edu.washington.escience.myriad.parallel.ParallelUtility;
 import edu.washington.escience.myriad.table._TupleBatch;
+import edu.washington.escience.myriad.util.MathUtils;
 
 /**
  * Knows how to compute some aggregates over a LongColumn.
@@ -54,7 +54,7 @@ public final class LongAggregator implements Aggregator {
     max = Long.MIN_VALUE;
     sum = 0L;
     count = 0;
-    int numAggOps = ParallelUtility.numBinaryOnesInInteger(aggOps);
+    int numAggOps = MathUtils.numBinaryOnesInInteger(aggOps);
     Type[] types = new Type[numAggOps];
     String[] names = new String[numAggOps];
     int idx = 0;

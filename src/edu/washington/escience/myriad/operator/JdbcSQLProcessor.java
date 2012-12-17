@@ -17,12 +17,6 @@ public class JdbcSQLProcessor extends JdbcQueryScan {
     this.child = child;
   }
 
-  // @Override
-  // public void rewind() throws DbException {
-  // super.rewind();
-  // child.rewind();
-  // }
-
   @Override
   public Operator[] getChildren() {
     return new Operator[] { child };
@@ -30,8 +24,10 @@ public class JdbcSQLProcessor extends JdbcQueryScan {
 
   @Override
   public void init() throws DbException {
+    // wait the child to complete and then run the sql processor
     while (child.next() != null) {
     }
+    super.init();
   }
 
   @Override

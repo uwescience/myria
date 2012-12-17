@@ -21,7 +21,6 @@ import org.apache.commons.io.FilenameUtils;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFutureListener;
-import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
@@ -29,7 +28,7 @@ import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnFactory;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.coordinator.catalog.WorkerCatalog;
-import edu.washington.escience.myriad.operator.BlockingDataReceiver;
+import edu.washington.escience.myriad.operator.BlockingSQLiteDataReceiver;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.operator.SQLiteSQLProcessor;
@@ -42,6 +41,7 @@ import edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageTyp
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType;
 import edu.washington.escience.myriad.table._TupleBatch;
+import edu.washington.escience.myriad.util.JVMUtils;
 
 /**
  * Workers do the real query execution. A query received by the server will be pre-processed and then dispatched to the
@@ -63,7 +63,7 @@ import edu.washington.escience.myriad.table._TupleBatch;
  */
 public class Worker {
   /** The logger for this class. Defaults to myriad level, but could be set to a finer granularity if needed. */
-  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger("edu.washington.escience.myriad");
+  private static final Logger LOGGER = Logger.getLogger(Worker.class.getName());
 
   protected final class MessageProcessor extends Thread {
     @Override
@@ -153,7 +153,7 @@ public class Worker {
         Operator query = null;
         query = queryPlan;
         if (query != null) {
-          LOGGER.debug("Worker start processing query");
+          LOGGER.log(Level.INFO, "Worker start processing query");
           final CollectProducer root = (CollectProducer) query;
           try {
             root.open();
@@ -191,7 +191,7 @@ public class Worker {
       public final void run() {
         if (toShutdown) {
           shutdown();
-          ParallelUtility.shutdownVM();
+          JVMUtils.shutdownVM();
         }
 
       }
@@ -221,7 +221,7 @@ public class Worker {
               + " Maybe the server is down. I'll shutdown now.");
           System.out.println("Bye!");
           timer.cancel();
-          ParallelUtility.shutdownVM();
+          JVMUtils.shutdownVM();
         }
         inRun = false;
       }
@@ -266,12 +266,12 @@ public class Worker {
 
   public static void main(String[] args) throws Throwable {
     if (args.length > 2) {
-      LOGGER.error("Invalid number of arguments.\n" + usage);
-      ParallelUtility.shutdownVM();
+      LOGGER.log(Level.SEVERE, "Invalid number of arguments.\n" + usage);
+      JVMUtils.shutdownVM();
     }
 
-    Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
-    Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
+    // Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
+    // Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
 
     String workingDir = null;
     if (args.length >= 2) {
@@ -280,12 +280,12 @@ public class Worker {
         args = ParallelUtility.removeArg(args, 0);
         ParallelUtility.removeArg(args, 0);
       } else {
-        LOGGER.error("Invalid arguments.\n" + usage);
-        ParallelUtility.shutdownVM();
+        LOGGER.log(Level.SEVERE, "Invalid arguments.\n" + usage);
+        JVMUtils.shutdownVM();
       }
     }
 
-    LOGGER.debug("workingDir: " + workingDir);
+    LOGGER.log(Level.INFO, "workingDir: " + workingDir);
     // Instantiate a new worker
     final Worker w = new Worker(workingDir);
     // int port = w.port;
@@ -297,8 +297,8 @@ public class Worker {
     // Now the worker can accept messages
     w.start();
 
-    System.out.println("Worker started at:" + w.catalog.getWorkers().get(w.myID));
-    LOGGER.debug("Worker started at:" + w.catalog.getWorkers().get(w.myID));
+    // System.out.println("Worker started at:" + w.catalog.getWorkers().get(w.myID));
+    LOGGER.log(Level.INFO, "Worker started at:" + w.catalog.getWorkers().get(w.myID));
 
     // From now on, the worker will listen for
     // messages to arrive on the network. These messages
@@ -385,7 +385,7 @@ public class Worker {
    * should focus on accepting/routing IO requests, rather than do heavily loaded work.
    */
   public final void executeQuery() {
-    LOGGER.debug("Query started");
+    LOGGER.log(Level.INFO, "Query started");
     synchronized (Worker.this.queryExecutor) {
       Worker.this.queryExecutor.notifyAll();
     }
@@ -399,7 +399,7 @@ public class Worker {
       dataBuffer.clear();
       queryPlan = null;
     }
-    LOGGER.debug("My part of the query finished");
+    LOGGER.log(Level.INFO, "My part of the query finished");
   }
 
   /**
@@ -443,12 +443,9 @@ public class Worker {
       c.setInputBuffer(buf);
       exchangeSchema.put(c.getOperatorID(), c.getSchema());
 
-    } else if (queryPlan instanceof BlockingDataReceiver) {
-      final BlockingDataReceiver bdr = (BlockingDataReceiver) queryPlan;
-      final _TupleBatch outputBuffer = bdr.getOutputBuffer();
-      if (outputBuffer instanceof SQLiteTupleBatch) {
-        ((SQLiteTupleBatch) outputBuffer).reset(dataDir.getAbsolutePath());
-      }
+    } else if (queryPlan instanceof BlockingSQLiteDataReceiver) {
+      final BlockingSQLiteDataReceiver bdr = (BlockingSQLiteDataReceiver) queryPlan;
+      bdr.resetDataDir(dataDir.getAbsolutePath());
     }
 
     Operator[] children = queryPlan.getChildren();
@@ -467,7 +464,7 @@ public class Worker {
    */
   public final void receiveData(final ExchangeTupleBatch data) {
     if (data instanceof _TupleBatch) {
-      LOGGER.debug("TupleBag received from " + data.getWorkerID() + " to Operator: " + data.getOperatorID());
+      LOGGER.log(Level.INFO, "TupleBag received from " + data.getWorkerID() + " to Operator: " + data.getOperatorID());
     }
     LinkedBlockingQueue<ExchangeTupleBatch> q = null;
     q = Worker.this.dataBuffer.get(data.getOperatorID());
@@ -484,11 +481,12 @@ public class Worker {
    * @throws DbException
    */
   public final void receiveQuery(final Operator query) throws DbException {
-    LOGGER.debug("Query received");
+    LOGGER.log(Level.INFO, "Query received");
     if (Worker.this.queryPlan != null) {
-      LOGGER.error("Error: Worker is still processing. New query refused");
+      LOGGER.log(Level.INFO, "Error: Worker is still processing. New query refused");
       return;
     }
+    System.out.println("Query received: " + query);
 
     final ArrayList<ExchangePairID> ids = new ArrayList<ExchangePairID>();
     collectConsumerOperatorIDs(query, ids);
@@ -502,7 +500,7 @@ public class Worker {
   }
 
   protected final void sendMessageToMaster(final TransportMessage message, final ChannelFutureListener callback) {
-    LOGGER.debug("send back query ready");
+    LOGGER.log(Level.INFO, "send back query ready");
     Channel s = null;
     s = Worker.this.connectionPool.get(0, 3, null);
     if (callback != null) {
@@ -516,9 +514,9 @@ public class Worker {
    * This method should be called whenever the system is going to shutdown.
    */
   public final void shutdown() {
-    LOGGER.debug("Shutdown requested. Please wait when cleaning up...");
+    LOGGER.log(Level.INFO, "Shutdown requested. Please wait when cleaning up...");
     ParallelUtility.shutdownIPC(ipcServerChannel, connectionPool);
-    LOGGER.debug("shutdown IPC completed");
+    LOGGER.log(Level.INFO, "shutdown IPC completed");
     toShutdown = true;
   }
 

@@ -1,7 +1,5 @@
 package edu.washington.escience.myriad.systemtest;
 
-import static org.junit.Assert.assertTrue;
-
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
@@ -11,11 +9,7 @@ import java.lang.ProcessBuilder.Redirect;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -35,16 +29,16 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.accessmethod.SQLiteAccessMethod;
-import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogMaker;
 import edu.washington.escience.myriad.coordinator.catalog.WorkerCatalog;
-import edu.washington.escience.myriad.operator.SQLiteInsert;
-import edu.washington.escience.myriad.parallel.ParallelUtility;
 import edu.washington.escience.myriad.parallel.Server;
 import edu.washington.escience.myriad.parallel.Worker;
 import edu.washington.escience.myriad.table._TupleBatch;
 import edu.washington.escience.myriad.tool.EclipseClasspathReader;
+import edu.washington.escience.myriad.util.FSUtils;
+import edu.washington.escience.myriad.util.SQLiteUtils;
+import edu.washington.escience.myriad.util.TestUtils;
 
 public class SystemTestBase {
   /** The logger for this class. Defaults to myriad level, but could be set to a finer granularity if needed. */
@@ -130,17 +124,14 @@ public class SystemTestBase {
   public static final Process[] workerProcess = new Process[WORKER_ID.length];
   public static final Thread[] workerStdoutReader = new Thread[WORKER_ID.length];
 
-  // public static final String workerTestBaseFolder = System.getProperty("java.io.tmpdir") + File.separator
-  // + Server.SYSTEM_NAME + "_systemtests";
-
   public static void assertTupleBagEqual(HashMap<Tuple, Integer> expectedResult, HashMap<Tuple, Integer> actualResult) {
     Assert.assertEquals(expectedResult.size(), actualResult.size());
     for (Entry<Tuple, Integer> e : actualResult.entrySet()) {
-      assertTrue(expectedResult.get(e.getKey()).equals(e.getValue()));
+      Assert.assertTrue(expectedResult.get(e.getKey()).equals(e.getValue()));
     }
   }
 
-  private static String workerTestBaseFolder;
+  public static String workerTestBaseFolder;
 
   public static void createTable(final String dbFileAbsolutePath, final String tableName, final String sqlSchemaString)
       throws IOException, CatalogException {
@@ -185,27 +176,6 @@ public class SystemTestBase {
     createTable(getAbsoluteDBFile(workerID, dbFilename).getAbsolutePath(), tableName, sqlSchemaString);
   }
 
-  public static HashMap<Tuple, Integer> distinct(final TupleBatchBuffer content) {
-    final Iterator<TupleBatch> it = content.getAll().iterator();
-    final HashMap<Tuple, Integer> expectedResults = new HashMap<Tuple, Integer>();
-    while (it.hasNext()) {
-      final TupleBatch tb = it.next();
-      final List<Column<?>> columns = tb.outputRawData();
-      final int numRow = columns.get(0).size();
-      final int numColumn = columns.size();
-
-      for (int i = 0; i < numRow; i++) {
-        final Tuple t = new Tuple(numColumn);
-        for (int j = 0; j < numColumn; j++) {
-          t.set(j, columns.get(j).get(i));
-        }
-        expectedResults.put(t, 1);
-      }
-    }
-    return expectedResults;
-
-  }
-
   public static File getAbsoluteDBFile(final int workerID, String dbFilename) throws CatalogException {
     if (!dbFilename.endsWith(".db")) {
       dbFilename = dbFilename + ".db";
@@ -238,7 +208,7 @@ public class SystemTestBase {
       }
     }
 
-    fullyDeleteDirectory(workerTestBaseFolder);
+    FSUtils.blockingDeleteDirectory(workerTestBaseFolder);
 
     boolean finishClean = false;
     while (!finishClean) {
@@ -263,23 +233,9 @@ public class SystemTestBase {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
     Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
 
-    // <<<<<<< HEAD
-    // /* Create the test folder, e.g., in $tmp/Myriad_systemtests. */
-    // final File testBaseFolderF = new File(workerTestBaseFolder);
-    // testBaseFolderF.mkdirs();
-    //
-    // /* Create one folder for each Worker. */
-    // for (final int workerID : WORKER_ID) {
-    // final File f = new File(workerTestBaseFolder + File.separator + "worker_" + workerID);
-    // while (!f.exists()) {
-    // f.mkdirs();
-    // }
-    // }
-    // =======
     Path tempFilePath = Files.createTempDirectory(Server.SYSTEM_NAME + "_systemtests");
     workerTestBaseFolder = tempFilePath.toFile().getAbsolutePath();
     CatalogMaker.makeTwoNodeLocalParallelCatalog(workerTestBaseFolder);
-    // >>>>>>> master
 
     if (!AvailablePortFinder.available(MASTER_PORT)) {
       throw new RuntimeException("Unable to start master, port " + MASTER_PORT + " is taken");
@@ -296,130 +252,16 @@ public class SystemTestBase {
 
   public static void insert(final int workerID, final String tableName, final Schema schema, final _TupleBatch data)
       throws CatalogException {
-    String insertTemplate = SQLiteInsert.insertStatementFromSchema(schema, tableName);
+    String insertTemplate = SQLiteUtils.insertStatementFromSchema(schema, tableName);
     SQLiteAccessMethod.tupleBatchInsert(getAbsoluteDBFile(workerID, tableName).getAbsolutePath(), insertTemplate,
         (TupleBatch) data);
-    // SQLiteAccessMethod.insertIntoSQLite(schema, tableName, getAbsoluteDBFile(workerID, tableName).getAbsolutePath(),
-    // data);
   }
 
   public static void insertWithBothNames(int workerID, String tableName, String dbName, Schema schema, _TupleBatch data)
       throws CatalogException {
-    String insertTemplate = SQLiteInsert.insertStatementFromSchema(schema, tableName);
+    String insertTemplate = SQLiteUtils.insertStatementFromSchema(schema, tableName);
     SQLiteAccessMethod.tupleBatchInsert(getAbsoluteDBFile(workerID, dbName).getAbsolutePath(), insertTemplate,
         (TupleBatch) data);
-    // SQLiteAccessMethod.insertIntoSQLite(schema, tableName, getAbsoluteDBFile(workerID, dbName).getAbsolutePath(),
-    // data);
-  }
-
-  public static String intToString(final long v, final int length) {
-    final StringBuilder sb = new StringBuilder("" + v);
-    while (sb.length() < length) {
-      sb.insert(0, "0");
-    }
-    return sb.toString();
-  }
-
-  @SuppressWarnings("rawtypes")
-  public static HashMap<Tuple, Integer> naturalJoin(final TupleBatchBuffer child1, final TupleBatchBuffer child2,
-      final int child1JoinColumn, final int child2JoinColumn) {
-
-    _TupleBatch child1TB = null;
-
-    /**
-     * join key -> {tuple->num occur}
-     * */
-    final HashMap<Comparable, HashMap<Tuple, Integer>> child1Hash = new HashMap<Comparable, HashMap<Tuple, Integer>>();
-
-    int numChild1Column = 0;
-    final HashMap<Tuple, Integer> result = new HashMap<Tuple, Integer>();
-    Iterator<TupleBatch> child1TBIt = child1.getAll().iterator();
-    while (child1TBIt.hasNext()) {
-      child1TB = child1TBIt.next();
-      final List<Column<?>> child1RawData = child1TB.outputRawData();
-      final int numRow = child1RawData.get(0).size();
-      final int numColumn = child1RawData.size();
-      numChild1Column = numColumn;
-
-      for (int i = 0; i < numRow; i++) {
-        final Tuple t = new Tuple(numColumn);
-        for (int j = 0; j < numColumn; j++) {
-          t.set(j, child1RawData.get(j).get(i));
-        }
-        final Object joinKey = t.get(child1JoinColumn);
-        HashMap<Tuple, Integer> tupleOccur = child1Hash.get(joinKey);
-        if (tupleOccur == null) {
-          tupleOccur = new HashMap<Tuple, Integer>();
-          tupleOccur.put(t, 1);
-          child1Hash.put((Comparable<?>) joinKey, tupleOccur);
-        } else {
-          Integer occur = tupleOccur.get(t);
-          if (occur == null) {
-            occur = 0;
-          }
-          tupleOccur.put(t, occur + 1);
-        }
-      }
-    }
-
-    Iterator<TupleBatch> child2TBIt = child2.getAll().iterator();
-    _TupleBatch child2TB = null;
-    while (child2TBIt.hasNext()) {
-      child2TB = child2TBIt.next();
-      final List<Column<?>> child2Columns = child2TB.outputRawData();
-      final int numRow = child2Columns.get(0).size();
-      final int numChild2Column = child2Columns.size();
-      for (int i = 0; i < numRow; i++) {
-        final Object joinKey = child2Columns.get(child2JoinColumn).get(i);
-        final HashMap<Tuple, Integer> matchedTuples = child1Hash.get(joinKey);
-        if (matchedTuples != null) {
-          final Tuple child2Tuple = new Tuple(numChild2Column);
-
-          for (int j = 0; j < numChild2Column; j++) {
-            child2Tuple.set(j, child2Columns.get(j).get(i));
-          }
-
-          for (final Entry<Tuple, Integer> entry : matchedTuples.entrySet()) {
-            final Tuple child1Tuple = entry.getKey();
-            final int numChild1Occur = entry.getValue();
-
-            final Tuple t = new Tuple(numChild1Column + numChild2Column);
-            t.setAll(0, child1Tuple);
-            t.setAll(numChild1Column, child2Tuple);
-            final Integer occur = result.get(t);
-            if (occur == null) {
-              result.put(t, numChild1Occur);
-            } else {
-              result.put(t, occur + numChild1Occur);
-            }
-          }
-        }
-      }
-    }
-    return result;
-
-  }
-
-  /***/
-  public static String[] randomFixedLengthNumericString(final int min, final int max, final int size, final int length) {
-
-    final String[] result = new String[size];
-    final long[] intV = randomLong(min, max, size);
-
-    for (int i = 0; i < size; i++) {
-      result[i] = intToString(intV[i], length);
-    }
-    return result;
-  }
-
-  public static long[] randomLong(final long min, final long max, final int size) {
-    final long[] result = new long[size];
-    final Random r = new Random();
-    final long top = max - min + 1;
-    for (int i = 0; i < size; i++) {
-      result[i] = r.nextInt((int) top) + min;
-    }
-    return result;
   }
 
   public static HashMap<Tuple, Integer> simpleRandomJoinTestBase() throws CatalogException, IOException {
@@ -436,18 +278,18 @@ public class SystemTestBase {
                                                                                                  // of
     // table2
 
-    final String[] tbl1NamesWorker1 = randomFixedLengthNumericString(1000, 2000, 2, 20);
-    final String[] tbl1NamesWorker2 = randomFixedLengthNumericString(1000, 2000, 2, 20);
-    final long[] tbl1IDsWorker1 = randomLong(1000, 2000, 2);
-    final long[] tbl1IDsWorker2 = randomLong(1000, 2000, 2);
+    final String[] tbl1NamesWorker1 = TestUtils.randomFixedLengthNumericString(1000, 2000, 2, 20);
+    final String[] tbl1NamesWorker2 = TestUtils.randomFixedLengthNumericString(1000, 2000, 2, 20);
+    final long[] tbl1IDsWorker1 = TestUtils.randomLong(1000, 2000, 2);
+    final long[] tbl1IDsWorker2 = TestUtils.randomLong(1000, 2000, 2);
 
-    final String[] tbl2NamesWorker1 = randomFixedLengthNumericString(2001, 3000, 200, 20);
-    final String[] tbl2NamesWorker2 = randomFixedLengthNumericString(2001, 3000, 200, 20);
-    final long[] tbl2IDsWorker1 = randomLong(2001, 3000, 200);
-    final long[] tbl2IDsWorker2 = randomLong(2001, 3000, 200);
+    final String[] tbl2NamesWorker1 = TestUtils.randomFixedLengthNumericString(2001, 3000, 200, 20);
+    final String[] tbl2NamesWorker2 = TestUtils.randomFixedLengthNumericString(2001, 3000, 200, 20);
+    final long[] tbl2IDsWorker1 = TestUtils.randomLong(2001, 3000, 200);
+    final long[] tbl2IDsWorker2 = TestUtils.randomLong(2001, 3000, 200);
 
-    final long[] idsCommon = randomLong(1, 1, 20);
-    final String[] namesCommon = randomFixedLengthNumericString(1, 1, 20, 20);
+    final long[] idsCommon = TestUtils.randomLong(1, 1, 20);
+    final String[] namesCommon = TestUtils.randomFixedLengthNumericString(1, 1, 20, 20);
 
     final TupleBatchBuffer tbl1Worker1 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA);
     final TupleBatchBuffer tbl1Worker2 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA);
@@ -486,7 +328,7 @@ public class SystemTestBase {
     table2.merge(tbl2Worker1);
     table2.merge(tbl2Worker2);
 
-    final HashMap<Tuple, Integer> expectedResult = naturalJoin(table1, table2, 0, 0);
+    final HashMap<Tuple, Integer> expectedResult = TestUtils.naturalJoin(table1, table2, 0, 0);
 
     _TupleBatch tb = null;
     while ((tb = tbl1Worker1.popAny()) != null) {
@@ -567,7 +409,7 @@ public class SystemTestBase {
               if (line == null) {
                 break;
               }
-              LOGGER.debug("localhost:" + WORKER_PORT[myWorkerIdx] + "$ " + line);
+              System.out.println("localhost:" + WORKER_PORT[myWorkerIdx] + "$ " + line);
             }
           } catch (IOException e) {
             // remote has shutdown. Not an exception.
@@ -590,98 +432,4 @@ public class SystemTestBase {
     }
   }
 
-  public static HashMap<Tuple, Integer> mergeBags(List<HashMap<Tuple, Integer>> bags) {
-    HashMap<Tuple, Integer> result = new HashMap<Tuple, Integer>();
-    result.putAll(bags.get(0));
-    for (int i = 1; i < bags.size(); i++) {
-      for (Map.Entry<Tuple, Integer> e : bags.get(i).entrySet()) {
-        Tuple t = e.getKey();
-        Integer occ = e.getValue();
-        Integer existingOcc = result.get(t);
-        if (existingOcc == null) {
-          result.put(t, occ);
-        } else {
-          result.put(t, occ + existingOcc);
-        }
-      }
-    }
-    return result;
-  }
-
-  public static HashMap<Tuple, Integer> tupleBatchToTupleBag(final TupleBatchBuffer tbb) {
-    _TupleBatch tb = null;
-    final HashMap<Tuple, Integer> result = new HashMap<Tuple, Integer>();
-    final Iterator<TupleBatch> it = tbb.getAll().iterator();
-    while (it.hasNext()) {
-      tb = it.next();
-      final int numRow = tb.numOutputTuples();
-      final List<Column<?>> columns = tb.outputRawData();
-      final int numColumn = columns.size();
-      for (int row = 0; row < numRow; row++) {
-        final Tuple t = new Tuple(numColumn);
-        for (int column = 0; column < numColumn; column++) {
-          t.set(column, columns.get(column).get(row));
-        }
-        final Integer numOccur = result.get(t);
-        if (numOccur == null) {
-          result.put(t, new Integer(1));
-        } else {
-          result.put(t, numOccur + 1);
-        }
-      }
-    }
-    return result;
-  }
-
-  public static HashMap<Tuple, Integer> tupleBatchToTupleSet(final TupleBatchBuffer tbb) {
-    _TupleBatch tb = null;
-    final HashMap<Tuple, Integer> result = new HashMap<Tuple, Integer>();
-    final Iterator<TupleBatch> it = tbb.getAll().iterator();
-    while (it.hasNext()) {
-      tb = it.next();
-      final int numRow = tb.numOutputTuples();
-      final List<Column<?>> columns = tb.outputRawData();
-      final int numColumn = columns.size();
-      for (int row = 0; row < numRow; row++) {
-        final Tuple t = new Tuple(numColumn);
-        for (int column = 0; column < numColumn; column++) {
-          t.set(column, columns.get(column).get(row));
-        }
-        result.put(t, 1);
-      }
-    }
-    return result;
-  }
-
-  public static void fullyDeleteDirectory(String pathToDirectory) {
-    final File testBaseFolderF = new File(pathToDirectory);
-    try {
-      ParallelUtility.deleteFileFolder(testBaseFolderF);
-    } catch (final IOException e) {
-      e.printStackTrace();
-    }
-    boolean finishClean = false;
-    while (!finishClean) {
-      finishClean = !testBaseFolderF.exists();
-      if (!finishClean) {
-        try {
-          Thread.sleep(100);
-        } catch (final InterruptedException e) {
-          e.printStackTrace();
-          Thread.currentThread().interrupt();
-        }
-      }
-    }
-
-  }
-  //
-  // @After
-  // public void cleanup() {
-  // fullyDeleteDirectory(workerTestBaseFolder);
-  // }
-  //
-  // @Before
-  // public void init() {
-  // CatalogMaker.makeTwoNodeLocalParallelCatalog(workerTestBaseFolder);
-  // }
 }

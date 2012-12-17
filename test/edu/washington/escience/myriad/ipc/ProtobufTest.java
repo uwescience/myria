@@ -33,9 +33,9 @@ import edu.washington.escience.myriad.proto.DataProto.DataMessage;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageType;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType;
-import edu.washington.escience.myriad.systemtest.SystemTestBase;
 import edu.washington.escience.myriad.systemtest.SystemTestBase.Tuple;
 import edu.washington.escience.myriad.table._TupleBatch;
+import edu.washington.escience.myriad.util.TestUtils;
 
 public class ProtobufTest {
   /** The logger for this class. Defaults to myriad.ipc level. */
@@ -52,8 +52,8 @@ public class ProtobufTest {
 
     int numTuplesEach = totalRestrict / numThreads;
 
-    String[] names = SystemTestBase.randomFixedLengthNumericString(1000, 1005, numTuplesEach, 20);
-    long[] ids = SystemTestBase.randomLong(1000, 1005, names.length);
+    String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, numTuplesEach, 20);
+    long[] ids = TestUtils.randomLong(1000, 1005, names.length);
 
     final Schema schema = new Schema(new Type[] { Type.LONG_TYPE, Type.STRING_TYPE }, new String[] { "id", "name" });
 
@@ -63,13 +63,13 @@ public class ProtobufTest {
       tbb.put(1, names[i]);
     }
 
-    HashMap<Tuple, Integer> expectedOne = SystemTestBase.tupleBatchToTupleBag(tbb);
+    HashMap<Tuple, Integer> expectedOne = TestUtils.tupleBatchToTupleBag(tbb);
     List<HashMap<Tuple, Integer>> toMerge = new ArrayList<HashMap<Tuple, Integer>>(numThreads);
     for (int i = 0; i < numThreads; i++) {
       toMerge.add(expectedOne);
     }
 
-    HashMap<Tuple, Integer> expected = SystemTestBase.mergeBags(toMerge);
+    HashMap<Tuple, Integer> expected = TestUtils.mergeBags(toMerge);
 
     final InetSocketAddress serverAddress = new InetSocketAddress("localhost", 19901);
 
@@ -158,8 +158,8 @@ public class ProtobufTest {
     }
     assertEquals(numThreads, numEOS);
     org.junit.Assert.assertEquals(numSent.get(), numReceived);
-    HashMap<Tuple, Integer> actual = SystemTestBase.tupleBatchToTupleBag(actualTBB);
-    SystemTestBase.assertTupleBagEqual(expected, actual);
+    HashMap<Tuple, Integer> actual = TestUtils.tupleBatchToTupleBag(actualTBB);
+    TestUtils.assertTupleBagEqual(expected, actual);
     LOGGER.debug("Received: " + numReceived + " TupleBatches");
 
   }

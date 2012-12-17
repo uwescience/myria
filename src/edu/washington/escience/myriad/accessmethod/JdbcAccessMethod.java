@@ -123,10 +123,10 @@ public final class JdbcAccessMethod {
       return new JdbcTupleBatchIterator(resultSet, Schema.fromResultSetMetaData(resultSetMetaData));
     } catch (final ClassNotFoundException e) {
       System.err.println(e.getMessage());
-      throw new RuntimeException(e.getMessage());
+      throw new RuntimeException(e);
     } catch (final SQLException e) {
       System.err.println(e.getMessage());
-      throw new RuntimeException(e.getMessage());
+      throw new RuntimeException(e);
     }
   }
 

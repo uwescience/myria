@@ -26,6 +26,7 @@ import edu.washington.escience.myriad.parallel.ShuffleConsumer;
 import edu.washington.escience.myriad.parallel.ShuffleProducer;
 import edu.washington.escience.myriad.parallel.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myriad.table._TupleBatch;
+import edu.washington.escience.myriad.util.TestUtils;
 
 public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
   /** The logger for this class. Defaults to myriad level, but could be set to a finer granularity if needed. */
@@ -36,8 +37,8 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     String testtableName = "testtable";
     createTable(WORKER_ID[0], testtableName, testtableName, "id long, name varchar(20)");
 
-    String[] names = randomFixedLengthNumericString(1000, 1005, 200, 20);
-    long[] ids = randomLong(1000, 1005, names.length);
+    String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, 200, 20);
+    long[] ids = TestUtils.randomLong(1000, 1005, names.length);
 
     final Schema schema = new Schema(new Type[] { Type.LONG_TYPE, Type.STRING_TYPE }, new String[] { "id", "name" });
 
@@ -47,7 +48,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
       tbb.put(1, names[i]);
     }
 
-    HashMap<Tuple, Integer> expectedResults = distinct(tbb);
+    HashMap<Tuple, Integer> expectedResults = TestUtils.distinct(tbb);
 
     _TupleBatch tb = null;
     while ((tb = tbb.popAny()) != null) {
@@ -89,9 +90,9 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
       }
     }
 
-    HashMap<Tuple, Integer> resultSet = tupleBatchToTupleSet(result);
+    HashMap<Tuple, Integer> resultSet = TestUtils.tupleBatchToTupleSet(result);
 
-    SystemTestBase.assertTupleBagEqual(expectedResults, resultSet);
+    TestUtils.assertTupleBagEqual(expectedResults, resultSet);
 
   }
 
@@ -101,8 +102,8 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     createTable(WORKER_ID[0], testtableName, testtableName, "id long, name varchar(20)");
     createTable(WORKER_ID[1], testtableName, testtableName, "id long, name varchar(20)");
 
-    String[] names = randomFixedLengthNumericString(1000, 1005, 200, 20);
-    long[] ids = randomLong(1000, 1005, names.length);
+    String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, 200, 20);
+    long[] ids = TestUtils.randomLong(1000, 1005, names.length);
 
     final Schema schema = new Schema(new Type[] { Type.LONG_TYPE, Type.STRING_TYPE }, new String[] { "id", "name" });
 
@@ -112,7 +113,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
       tbb.put(1, names[i]);
     }
 
-    HashMap<Tuple, Integer> expectedResults = distinct(tbb);
+    HashMap<Tuple, Integer> expectedResults = TestUtils.distinct(tbb);
 
     _TupleBatch tb = null;
     while ((tb = tbb.popAny()) != null) {
@@ -159,9 +160,9 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
       }
     }
 
-    HashMap<Tuple, Integer> resultSet = tupleBatchToTupleSet(result);
+    HashMap<Tuple, Integer> resultSet = TestUtils.tupleBatchToTupleSet(result);
 
-    SystemTestBase.assertTupleBagEqual(expectedResults, resultSet);
+    TestUtils.assertTupleBagEqual(expectedResults, resultSet);
 
   }
 
@@ -223,9 +224,9 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
       }
     }
 
-    HashMap<Tuple, Integer> resultBag = tupleBatchToTupleBag(result);
+    HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(result);
 
-    SystemTestBase.assertTupleBagEqual(expectedResult, resultBag);
+    TestUtils.assertTupleBagEqual(expectedResult, resultBag);
 
   }
 

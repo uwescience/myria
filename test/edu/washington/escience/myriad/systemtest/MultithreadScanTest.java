@@ -30,6 +30,7 @@ import edu.washington.escience.myriad.parallel.ShuffleConsumer;
 import edu.washington.escience.myriad.parallel.ShuffleProducer;
 import edu.washington.escience.myriad.parallel.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myriad.table._TupleBatch;
+import edu.washington.escience.myriad.util.TestUtils;
 
 public class MultithreadScanTest extends SystemTestBase {
   // change configuration here
@@ -102,8 +103,8 @@ public class MultithreadScanTest extends SystemTestBase {
     final String[] joinColumnNames = new String[] { "follower", "followee", "follower", "followee" };
     final Schema joinSchema = new Schema(joinTypes, joinColumnNames);
 
-    long[] tbl1ID1Worker1 = randomLong(1, MaxID - 1, numTbl1Worker1);
-    long[] tbl1ID2Worker1 = randomLong(1, MaxID - 1, numTbl1Worker1);
+    long[] tbl1ID1Worker1 = TestUtils.randomLong(1, MaxID - 1, numTbl1Worker1);
+    long[] tbl1ID2Worker1 = TestUtils.randomLong(1, MaxID - 1, numTbl1Worker1);
     TupleBatchBuffer tbl1Worker1 = new TupleBatchBuffer(tableSchema);
     for (int i = 0; i < numTbl1Worker1; i++) {
       tbl1Worker1.put(0, tbl1ID1Worker1[i]);
@@ -175,8 +176,8 @@ public class MultithreadScanTest extends SystemTestBase {
     final String[] joinColumnNames = new String[] { "follower", "followee", "follower", "followee" };
     final Schema joinSchema = new Schema(joinTypes, joinColumnNames);
 
-    long[] tbl1ID1Worker1 = randomLong(1, MaxID - 1, numTbl1Worker1);
-    long[] tbl1ID2Worker1 = randomLong(1, MaxID - 1, numTbl1Worker1);
+    long[] tbl1ID1Worker1 = TestUtils.randomLong(1, MaxID - 1, numTbl1Worker1);
+    long[] tbl1ID2Worker1 = TestUtils.randomLong(1, MaxID - 1, numTbl1Worker1);
     TupleBatchBuffer tbl1Worker1 = new TupleBatchBuffer(tableSchema);
     for (int i = 0; i < numTbl1Worker1; i++) {
       tbl1Worker1.put(0, tbl1ID1Worker1[i]);

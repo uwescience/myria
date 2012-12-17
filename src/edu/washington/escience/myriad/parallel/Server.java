@@ -41,6 +41,7 @@ import edu.washington.escience.myriad.proto.TransportProto;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType;
 import edu.washington.escience.myriad.table._TupleBatch;
+import edu.washington.escience.myriad.util.JVMUtils;
 
 /**
  * The parallel system is consisted of one server and a bunch of workers.
@@ -338,7 +339,7 @@ public final class Server {
   }
 
   public void shutdown() {
-    ParallelUtility.shutdownVM();
+    JVMUtils.shutdownVM();
   }
 
   protected void start(final String[] argv) throws IOException {

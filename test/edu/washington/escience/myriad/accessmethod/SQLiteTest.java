@@ -19,12 +19,14 @@ import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.operator.SQLiteInsert;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.parallel.Server;
 import edu.washington.escience.myriad.systemtest.SystemTestBase;
 import edu.washington.escience.myriad.systemtest.SystemTestBase.Tuple;
 import edu.washington.escience.myriad.table._TupleBatch;
+import edu.washington.escience.myriad.util.FSUtils;
+import edu.washington.escience.myriad.util.SQLiteUtils;
+import edu.washington.escience.myriad.util.TestUtils;
 
 public class SQLiteTest {
   /** The logger for this class. Defaults to myriad level, but could be set to a finer granularity if needed. */
@@ -42,8 +44,8 @@ public class SQLiteTest {
     String dbAbsolutePath = FilenameUtils.concat(tempDirPath, "sqlite_testtable.db");
     SystemTestBase.createTable(dbAbsolutePath, "testtable", "id long,name varchar(20)");
 
-    String[] names = SystemTestBase.randomFixedLengthNumericString(1000, 1005, 200, 20);
-    long[] ids = SystemTestBase.randomLong(1000, 1005, names.length);
+    String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, 200, 20);
+    long[] ids = TestUtils.randomLong(1000, 1005, names.length);
 
     TupleBatchBuffer tbb = new TupleBatchBuffer(outputSchema);
     for (int i = 0; i < names.length; i++) {
@@ -52,11 +54,11 @@ public class SQLiteTest {
     }
 
     for (_TupleBatch tb : tbb.getAll()) {
-      String insertTemplate = SQLiteInsert.insertStatementFromSchema(outputSchema, "testtable");
+      String insertTemplate = SQLiteUtils.insertStatementFromSchema(outputSchema, "testtable");
       SQLiteAccessMethod.tupleBatchInsert(dbAbsolutePath, insertTemplate, (TupleBatch) tb);
     }
 
-    HashMap<Tuple, Integer> expectedResult = SystemTestBase.tupleBatchToTupleBag(tbb);
+    HashMap<Tuple, Integer> expectedResult = TestUtils.tupleBatchToTupleBag(tbb);
 
     final String query = "SELECT * FROM testtable";
 
@@ -100,11 +102,11 @@ public class SQLiteTest {
     /* Cleanup */
     root.close();
 
-    HashMap<SystemTestBase.Tuple, Integer> resultBag = SystemTestBase.tupleBatchToTupleBag(result);
+    HashMap<SystemTestBase.Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(result);
 
-    SystemTestBase.assertTupleBagEqual(expectedResult, resultBag);
+    TestUtils.assertTupleBagEqual(expectedResult, resultBag);
 
-    SystemTestBase.fullyDeleteDirectory(tempDirPath);
+    FSUtils.blockingDeleteDirectory(tempDirPath);
 
   }
 }

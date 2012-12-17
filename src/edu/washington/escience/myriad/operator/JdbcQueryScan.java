@@ -39,7 +39,8 @@ public class JdbcQueryScan extends Operator {
   @Override
   protected _TupleBatch fetchNext() throws DbException {
     if (tuples.hasNext()) {
-      return tuples.next();
+      TupleBatch tb = tuples.next();
+      return tb;
     } else {
       return null;
     }
