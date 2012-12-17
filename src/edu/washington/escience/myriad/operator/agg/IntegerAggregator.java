@@ -18,7 +18,8 @@ public class IntegerAggregator implements Aggregator {
   private final int afield;
   private final int aggOps;
 
-  private int min, max, sum, count;
+  private int min, max, sum;
+  private long count;
 
   private final Schema resultSchema;
 
@@ -54,7 +55,7 @@ public class IntegerAggregator implements Aggregator {
     String[] names = new String[numAggOps];
     int idx = 0;
     if ((aggOps & Aggregator.AGG_OP_COUNT) != 0) {
-      types[idx] = Type.INT_TYPE;
+      types[idx] = Type.LONG_TYPE;
       names[idx] = "count(" + aFieldName + ")";
       idx += 1;
     }
@@ -89,7 +90,7 @@ public class IntegerAggregator implements Aggregator {
   @Override
   public final void add(final _TupleBatch tup) {
 
-    count += tup.numOutputTuples();
+    count += tup.numTuples();
     IntColumn rawData = (IntColumn) tup.outputRawData().get(afield);
     int numTuples = rawData.size();
     for (int i = 0; i < numTuples; i++) {

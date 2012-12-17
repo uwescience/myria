@@ -53,6 +53,9 @@ public interface Aggregator extends Serializable {
   int availableAgg();
 
   /**
+   * All the count aggregates are of type Long. All the avg aggregates are of type Double. And each of the max/min/sum
+   * aggregate has the same type as the column on which the aggregate is computed.
+   * 
    * @return Result schema of this Aggregator.
    * 
    * */

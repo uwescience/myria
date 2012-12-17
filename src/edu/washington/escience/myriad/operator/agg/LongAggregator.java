@@ -19,7 +19,7 @@ public final class LongAggregator implements Aggregator {
   private final int aggOps;
 
   private long min, max, sum;
-  private int count;
+  private long count;
   private final Schema resultSchema;
 
   public static final int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT | Aggregator.AGG_OP_SUM | Aggregator.AGG_OP_MAX
@@ -89,7 +89,7 @@ public final class LongAggregator implements Aggregator {
   @Override
   public void add(final _TupleBatch tup) {
 
-    count += tup.numOutputTuples();
+    count += tup.numTuples();
     LongColumn rawData = (LongColumn) tup.outputRawData().get(afield);
     int numTuples = rawData.size();
     for (int i = 0; i < numTuples; i++) {

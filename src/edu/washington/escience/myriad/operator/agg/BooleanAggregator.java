@@ -14,7 +14,7 @@ public final class BooleanAggregator implements Aggregator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
-  private int count;
+  private long count;
   private final Schema resultSchema;
   private final int aggOps;
 
@@ -47,7 +47,7 @@ public final class BooleanAggregator implements Aggregator {
     String[] names = new String[numAggOps];
     int idx = 0;
     if ((aggOps & Aggregator.AGG_OP_COUNT) != 0) {
-      types[idx] = Type.INT_TYPE;
+      types[idx] = Type.LONG_TYPE;
       names[idx] = "count(" + aFieldName + ")";
       idx += 1;
     }
@@ -56,7 +56,7 @@ public final class BooleanAggregator implements Aggregator {
 
   @Override
   public void add(final _TupleBatch tup) {
-    count += tup.numOutputTuples();
+    count += tup.numTuples();
   }
 
   @Override

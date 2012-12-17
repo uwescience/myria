@@ -19,7 +19,7 @@ public final class FloatAggregator implements Aggregator {
   private final int aggOps;
 
   private float min, max, sum;
-  private int count;
+  private long count;
   private final Schema resultSchema;
 
   public static final int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT | Aggregator.AGG_OP_SUM | Aggregator.AGG_OP_MAX
@@ -59,22 +59,22 @@ public final class FloatAggregator implements Aggregator {
     String[] names = new String[numAggOps];
     int idx = 0;
     if ((aggOps & Aggregator.AGG_OP_COUNT) != 0) {
-      types[idx] = Type.INT_TYPE;
+      types[idx] = Type.LONG_TYPE;
       names[idx] = "count(" + aFieldName + ")";
       idx += 1;
     }
     if ((aggOps & Aggregator.AGG_OP_MIN) != 0) {
-      types[idx] = Type.INT_TYPE;
+      types[idx] = Type.FLOAT_TYPE;
       names[idx] = "min(" + aFieldName + ")";
       idx += 1;
     }
     if ((aggOps & Aggregator.AGG_OP_MAX) != 0) {
-      types[idx] = Type.INT_TYPE;
+      types[idx] = Type.FLOAT_TYPE;
       names[idx] = "max(" + aFieldName + ")";
       idx += 1;
     }
     if ((aggOps & Aggregator.AGG_OP_SUM) != 0) {
-      types[idx] = Type.INT_TYPE;
+      types[idx] = Type.FLOAT_TYPE;
       names[idx] = "sum(" + aFieldName + ")";
       idx += 1;
     }
@@ -89,7 +89,7 @@ public final class FloatAggregator implements Aggregator {
   @Override
   public void add(final _TupleBatch tup) {
 
-    count += tup.numOutputTuples();
+    count += tup.numTuples();
     FloatColumn rawData = (FloatColumn) tup.outputRawData().get(afield);
     int numTuples = rawData.size();
     for (int i = 0; i < numTuples; i++) {

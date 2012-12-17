@@ -60,7 +60,7 @@ public final class StringAggregator implements Aggregator {
     String[] names = new String[numAggOps];
     int idx = 0;
     if ((aggOps & Aggregator.AGG_OP_COUNT) != 0) {
-      types[idx] = Type.INT_TYPE;
+      types[idx] = Type.LONG_TYPE;
       names[idx] = "count(" + aFieldName + ")";
       idx += 1;
     }
@@ -86,7 +86,7 @@ public final class StringAggregator implements Aggregator {
   @Override
   public void add(final _TupleBatch tup) {
 
-    count += tup.numOutputTuples();
+    count += tup.numTuples();
     if (computeMin || computeMax) {
       StringColumn c = (StringColumn) tup.outputRawData().get(afield);
       int numTuples = c.size();
