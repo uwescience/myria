@@ -10,7 +10,6 @@ import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnFactory;
-import edu.washington.escience.myriad.table._TupleBatch;
 
 /**
  * Used for creating TupleBatch objects on the fly. A helper class used in, e.g., the Scatter operator.
@@ -179,7 +178,7 @@ public class TupleBatchBuffer {
     }
   }
 
-  public final void putAll(_TupleBatch data) {
+  public final void putAll(TupleBatch data) {
     putAll(data.outputRawData());
   }
 

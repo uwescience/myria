@@ -23,6 +23,7 @@ import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnFactory;
@@ -40,7 +41,6 @@ import edu.washington.escience.myriad.proto.QueryProto;
 import edu.washington.escience.myriad.proto.TransportProto;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType;
-import edu.washington.escience.myriad.table._TupleBatch;
 import edu.washington.escience.myriad.util.JVMUtils;
 
 /**
@@ -125,7 +125,7 @@ public final class Server {
             final ExchangePairID exchangePairID = ExchangePairID.fromExisting(data.getOperatorID());
             final Schema operatorSchema = exchangeSchema.get(exchangePairID);
             if (data.getType() == DataMessageType.EOS) {
-              receiveData(new ExchangeTupleBatch(exchangePairID, senderID, operatorSchema));
+              receiveData(new ExchangeData(exchangePairID, senderID, operatorSchema));
             } else {
               final List<ColumnMessage> columnMessages = data.getColumnsList();
               final Column<?>[] columnArray = new Column[columnMessages.size()];
@@ -135,8 +135,8 @@ public final class Server {
               }
               final List<Column<?>> columns = Arrays.asList(columnArray);
 
-              receiveData((new ExchangeTupleBatch(exchangePairID, senderID, columns, operatorSchema, columnMessages
-                  .get(0).getNumTuples())));
+              receiveData((new ExchangeData(exchangePairID, senderID, columns, operatorSchema, columnMessages.get(0)
+                  .getNumTuples())));
             }
             break;
           case TransportMessage.TransportMessageType.CONTROL_VALUE:
@@ -215,7 +215,7 @@ public final class Server {
   /**
    * The I/O buffer, all the ExchangeMessages sent to the server are buffered here.
    */
-  protected final ConcurrentHashMap<ExchangePairID, LinkedBlockingQueue<ExchangeTupleBatch>> dataBuffer;
+  protected final ConcurrentHashMap<ExchangePairID, LinkedBlockingQueue<ExchangeData>> dataBuffer;
 
   protected final LinkedBlockingQueue<MessageWrapper> messageQueue;
 
@@ -238,7 +238,7 @@ public final class Server {
     this.workers.putAll(workers);
 
     this.server = server;
-    dataBuffer = new ConcurrentHashMap<ExchangePairID, LinkedBlockingQueue<ExchangeTupleBatch>>();
+    dataBuffer = new ConcurrentHashMap<ExchangePairID, LinkedBlockingQueue<ExchangeData>>();
     messageQueue = new LinkedBlockingQueue<MessageWrapper>();
     ipcServer = ParallelUtility.createMasterIPCServer(messageQueue);
     exchangeSchema = new ConcurrentHashMap<ExchangePairID, Schema>();
@@ -329,11 +329,11 @@ public final class Server {
   /**
    * This method should be called when a data item is received
    */
-  public void receiveData(final ExchangeTupleBatch data) {
+  public void receiveData(final ExchangeData data) {
 
-    LinkedBlockingQueue<ExchangeTupleBatch> q = null;
+    LinkedBlockingQueue<ExchangeData> q = null;
     q = Server.this.dataBuffer.get(data.getOperatorID());
-    if (data instanceof ExchangeTupleBatch) {
+    if (data instanceof ExchangeData) {
       q.offer(data);
     }
   }
@@ -355,7 +355,7 @@ public final class Server {
     HashMap<Integer, Integer> workersAssigned = workersAssignedToQuery.get(queryId);
     if (workersReceived.nextClearBit(0) >= workersAssigned.size()) {
 
-      final LinkedBlockingQueue<ExchangeTupleBatch> buffer = new LinkedBlockingQueue<ExchangeTupleBatch>();
+      final LinkedBlockingQueue<ExchangeData> buffer = new LinkedBlockingQueue<ExchangeData>();
       exchangeSchema.put(serverPlan.getOperatorID(), serverPlan.getSchema());
       dataBuffer.put(serverPlan.getOperatorID(), buffer);
       serverPlan.setInputBuffer(buffer);
@@ -384,14 +384,13 @@ public final class Server {
 
       TupleBatchBuffer outBufferForTesting = new TupleBatchBuffer(serverPlan.getSchema());
       int cnt = 0;
-      _TupleBatch tup = null;
+      TupleBatch tup = null;
       while ((tup = serverPlan.next()) != null) {
         outBufferForTesting.putAll(tup);
         if (LOGGER.isDebugEnabled()) {
-          LOGGER.debug(new ImmutableInMemoryTupleBatch(serverPlan.getSchema(), tup.outputRawData(), tup
-              .numOutputTuples()).toString());
+          LOGGER.debug(tup.toString());
         }
-        cnt += tup.numOutputTuples();
+        cnt += tup.numTuples();
       }
 
       serverPlan.close();

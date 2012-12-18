@@ -9,8 +9,8 @@ import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.table._TupleBatch;
 
 /**
  * The consumer part of the Collect Exchange operator.
@@ -81,7 +81,7 @@ public final class CollectConsumer extends Consumer {
   }
 
   @Override
-  protected _TupleBatch fetchNext() throws DbException {
+  protected TupleBatch fetchNext() throws DbException {
     try {
       return getTuples(true);
     } catch (final InterruptedException e) {
@@ -105,15 +105,15 @@ public final class CollectConsumer extends Consumer {
     }
   }
 
-  private _TupleBatch getTuples(final boolean blocking) throws InterruptedException {
+  private TupleBatch getTuples(final boolean blocking) throws InterruptedException {
 
     int timeToWait = -1;
     if (!blocking) {
       timeToWait = 0;
     }
 
-    ExchangeTupleBatch tb = null;
-    _TupleBatch result = null;
+    ExchangeData tb = null;
+    TupleBatch result = null;
     while (workerEOS.nextClearBit(0) < sourceWorkers.length) {
       tb = take(timeToWait);
       if (tb != null) {
@@ -144,7 +144,7 @@ public final class CollectConsumer extends Consumer {
   }
 
   @Override
-  public _TupleBatch fetchNextReady() throws DbException {
+  public TupleBatch fetchNextReady() throws DbException {
     if (!eos()) {
       try {
         return getTuples(false);

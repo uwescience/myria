@@ -6,7 +6,7 @@ import java.util.concurrent.Future;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
-import edu.washington.escience.myriad.table._TupleBatch;
+import edu.washington.escience.myriad.TupleBatch;
 
 /**
  * An abstract class used to make those specialized operators that only consume tuples simpler to implement.
@@ -32,7 +32,7 @@ public abstract class RootOperator extends Operator {
    * @param tuples the tuples to be consumed.
    * @throws DbException if there's an error in the database.
    */
-  protected abstract void consumeTuples(_TupleBatch tuples) throws DbException;
+  protected abstract void consumeTuples(TupleBatch tuples) throws DbException;
 
   /**
    * @return the source of the tuples that this Root operator consumes.
@@ -76,13 +76,13 @@ public abstract class RootOperator extends Operator {
   }
 
   @Override
-  protected _TupleBatch fetchNext() {
+  protected TupleBatch fetchNext() {
     startAndWaitChild();
     return null;
   }
 
   @Override
-  public _TupleBatch fetchNextReady() throws DbException {
+  public TupleBatch fetchNextReady() throws DbException {
     startAndWaitChild();
     setEOS();
     return null;
@@ -104,7 +104,7 @@ public abstract class RootOperator extends Operator {
     @Override
     public void run() {
       try {
-        _TupleBatch tup = null;
+        TupleBatch tup = null;
         while ((tup = child.next()) != null) {
           consumeTuples(tup);
         }

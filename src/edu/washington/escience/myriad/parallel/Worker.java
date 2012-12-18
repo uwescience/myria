@@ -40,7 +40,6 @@ import edu.washington.escience.myriad.proto.DataProto.DataMessage;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageType;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType;
-import edu.washington.escience.myriad.table._TupleBatch;
 import edu.washington.escience.myriad.util.JVMUtils;
 
 /**
@@ -104,7 +103,7 @@ public class Worker {
             final Schema operatorSchema = exchangeSchema.get(exchangePairID);
             switch (data.getType().getNumber()) {
               case DataMessageType.EOS_VALUE:
-                receiveData(new ExchangeTupleBatch(exchangePairID, senderID, operatorSchema));
+                receiveData(new ExchangeData(exchangePairID, senderID, operatorSchema));
                 break;
               case DataMessageType.NORMAL_VALUE:
                 final List<ColumnMessage> columnMessages = data.getColumnsList();
@@ -114,7 +113,7 @@ public class Worker {
                   columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm);
                 }
                 final List<Column<?>> columns = Arrays.asList(columnArray);
-                receiveData(new ExchangeTupleBatch(exchangePairID, senderID, columns, operatorSchema, columnMessages
+                receiveData(new ExchangeData(exchangePairID, senderID, columns, operatorSchema, columnMessages
                     .get(0).getNumTuples()));
 
                 break;
@@ -346,7 +345,7 @@ public class Worker {
   /**
    * The I/O buffer, all the ExchangeMessages sent to this worker are buffered here.
    */
-  protected final HashMap<ExchangePairID, LinkedBlockingQueue<ExchangeTupleBatch>> dataBuffer;
+  protected final HashMap<ExchangePairID, LinkedBlockingQueue<ExchangeData>> dataBuffer;
   protected final ConcurrentHashMap<ExchangePairID, Schema> exchangeSchema;
 
   protected final LinkedBlockingQueue<MessageWrapper> messageQueue;
@@ -361,7 +360,7 @@ public class Worker {
     dataDir = new File(catalog.getConfigurationValue("worker.data.sqlite.dir"));
     mySocketInfo = catalog.getWorkers().get(myID);
 
-    dataBuffer = new HashMap<ExchangePairID, LinkedBlockingQueue<ExchangeTupleBatch>>();
+    dataBuffer = new HashMap<ExchangePairID, LinkedBlockingQueue<ExchangeData>>();
     messageQueue = new LinkedBlockingQueue<MessageWrapper>();
     ipcServer = ParallelUtility.createWorkerIPCServer(messageQueue);
     exchangeSchema = new ConcurrentHashMap<ExchangePairID, Schema>();
@@ -438,7 +437,7 @@ public class Worker {
     } else if (queryPlan instanceof Consumer) {
       final Consumer c = (Consumer) queryPlan;
 
-      LinkedBlockingQueue<ExchangeTupleBatch> buf = null;
+      LinkedBlockingQueue<ExchangeData> buf = null;
       buf = Worker.this.dataBuffer.get(((Consumer) queryPlan).getOperatorID());
       c.setInputBuffer(buf);
       exchangeSchema.put(c.getOperatorID(), c.getSchema());
@@ -462,13 +461,11 @@ public class Worker {
   /**
    * This method should be called when a data item is received.
    */
-  public final void receiveData(final ExchangeTupleBatch data) {
-    if (data instanceof _TupleBatch) {
-      LOGGER.log(Level.INFO, "TupleBag received from " + data.getWorkerID() + " to Operator: " + data.getOperatorID());
-    }
-    LinkedBlockingQueue<ExchangeTupleBatch> q = null;
+  public final void receiveData(final ExchangeData data) {
+    LOGGER.log(Level.INFO, "TupleBag received from " + data.getWorkerID() + " to Operator: " + data.getOperatorID());
+    LinkedBlockingQueue<ExchangeData> q = null;
     q = Worker.this.dataBuffer.get(data.getOperatorID());
-    if (data instanceof ExchangeTupleBatch) {
+    if (data instanceof ExchangeData) {
       q.offer(data);
     }
   }
@@ -493,7 +490,7 @@ public class Worker {
     Worker.this.dataBuffer.clear();
     Worker.this.exchangeSchema.clear();
     for (final ExchangePairID id : ids) {
-      Worker.this.dataBuffer.put(id, new LinkedBlockingQueue<ExchangeTupleBatch>());
+      Worker.this.dataBuffer.put(id, new LinkedBlockingQueue<ExchangeData>());
     }
     Worker.this.localizeQueryPlan(query);
     Worker.this.queryPlan = query;

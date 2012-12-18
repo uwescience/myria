@@ -6,7 +6,6 @@ import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.accessmethod.JdbcAccessMethod;
-import edu.washington.escience.myriad.table._TupleBatch;
 
 /**
  * Blocking when receiving data from children.
@@ -42,12 +41,12 @@ public final class BlockingJDBCDataReceiver extends Operator {
   }
 
   @Override
-  protected _TupleBatch fetchNext() throws DbException {
-    _TupleBatch tb = null;
+  protected TupleBatch fetchNext() throws DbException {
+    TupleBatch tb = null;
     while ((tb = child.next()) != null) {
       JdbcAccessMethod.tupleBatchInsert(driverClass, connectionString, "insert into " + tableName + " ( "
-          + StringUtils.join(fieldNames, ',') + " ) values ( " + StringUtils.join(placeHolders, ',') + " )",
-          (TupleBatch) tb, username, password);
+          + StringUtils.join(fieldNames, ',') + " ) values ( " + StringUtils.join(placeHolders, ',') + " )", tb,
+          username, password);
     }
     return null;
   }
@@ -76,7 +75,7 @@ public final class BlockingJDBCDataReceiver extends Operator {
   }
 
   @Override
-  public _TupleBatch fetchNextReady() throws DbException {
+  public TupleBatch fetchNextReady() throws DbException {
     return fetchNext();
   }
 

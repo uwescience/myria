@@ -6,7 +6,6 @@ import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.accessmethod.JdbcAccessMethod;
-import edu.washington.escience.myriad.table._TupleBatch;
 
 public class JdbcQueryScan extends Operator {
 
@@ -37,7 +36,7 @@ public class JdbcQueryScan extends Operator {
   }
 
   @Override
-  protected _TupleBatch fetchNext() throws DbException {
+  protected TupleBatch fetchNext() throws DbException {
     if (tuples.hasNext()) {
       TupleBatch tb = tuples.next();
       return tb;
@@ -67,7 +66,7 @@ public class JdbcQueryScan extends Operator {
   }
 
   @Override
-  public _TupleBatch fetchNextReady() throws DbException {
+  public TupleBatch fetchNextReady() throws DbException {
     return fetchNext();
   }
 

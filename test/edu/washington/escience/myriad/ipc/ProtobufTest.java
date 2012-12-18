@@ -34,7 +34,6 @@ import edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageTyp
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType;
 import edu.washington.escience.myriad.systemtest.SystemTestBase.Tuple;
-import edu.washington.escience.myriad.table._TupleBatch;
 import edu.washington.escience.myriad.util.TestUtils;
 
 public class ProtobufTest {
@@ -88,7 +87,7 @@ public class ProtobufTest {
       Thread tt = new Thread() {
         @Override
         public void run() {
-          _TupleBatch tb = null;
+          TupleBatch tb = null;
           Iterator<TupleBatch> tbs = tbb.getAll().iterator();
           Channel ch = connectionPool.get(0, 3, null);
           while (tbs.hasNext()) {

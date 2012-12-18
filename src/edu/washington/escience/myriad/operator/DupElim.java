@@ -1,13 +1,14 @@
 package edu.washington.escience.myriad.operator;
 
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.HashMap;
 import java.util.List;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.table._TupleBatch;
 
 public final class DupElim extends Operator {
 
@@ -16,15 +17,15 @@ public final class DupElim extends Operator {
 
   private class IndexedTuple {
     private final int index;
-    private final _TupleBatch tb;
+    private final TupleBatch tb;
 
-    public IndexedTuple(final _TupleBatch tb, final int index) {
+    public IndexedTuple(final TupleBatch tb, final int index) {
       this.tb = tb;
       this.index = index;
     }
 
     public boolean compareField(final IndexedTuple another, final int colIndx) {
-      final Type type = tb.inputSchema().getFieldType(colIndx);
+      final Type type = tb.getSchema().getFieldType(colIndx);
       final int rowIndx1 = index;
       final int rowIndx2 = another.index;
       if (type.equals(Type.INT_TYPE)) {
@@ -54,10 +55,10 @@ public final class DupElim extends Operator {
         return false;
       }
       final IndexedTuple another = (IndexedTuple) o;
-      if (!(tb.inputSchema().equals(another.tb.inputSchema()))) {
+      if (!(tb.getSchema().equals(another.tb.getSchema()))) {
         return false;
       }
-      for (int i = 0; i < tb.inputSchema().numFields(); ++i) {
+      for (int i = 0; i < tb.getSchema().numFields(); ++i) {
         if (!compareField(another, i)) {
           return false;
         }
@@ -80,11 +81,11 @@ public final class DupElim extends Operator {
   }
 
   @Override
-  protected _TupleBatch fetchNext() throws DbException {
-    _TupleBatch tb = null;
+  protected TupleBatch fetchNext() throws DbException {
+    TupleBatch tb = null;
     while ((tb = child.next()) != null) {
       tb = doDupElim(tb);
-      if (tb.numOutputTuples() > 0) {
+      if (tb.numTuples() > 0) {
         return tb;
       }
     }
@@ -114,8 +115,13 @@ public final class DupElim extends Operator {
   protected void cleanup() throws DbException {
   }
 
-  protected _TupleBatch doDupElim(_TupleBatch tb) {
-    for (int i = 0; i < tb.numInputTuples(); ++i) {
+  protected TupleBatch doDupElim(TupleBatch tb) {
+    int numTuples = tb.numTuples();
+    if (numTuples <= 0) {
+      return tb;
+    }
+    BitSet toRemove = new BitSet(numTuples);
+    for (int i = 0; i < numTuples; ++i) {
       final IndexedTuple cntTuple = new IndexedTuple(tb, i);
       final int cntHashCode = cntTuple.hashCode();
       // might need to check invalid | change to use outputTuples later
@@ -131,23 +137,23 @@ public final class DupElim extends Operator {
           break;
         }
       }
-      // System.out.println(i + " " + unique);
       if (unique) {
         tupleList.add(cntTuple);
       } else {
-        tb.remove(i);
+        toRemove.set(i);
       }
     }
+    tb.remove(toRemove);
     return tb;
   }
 
   @Override
-  public _TupleBatch fetchNextReady() throws DbException {
-    _TupleBatch tb = null;
+  public TupleBatch fetchNextReady() throws DbException {
+    TupleBatch tb = null;
     while (!eos() && child.nextReady()) {
       tb = child.next();
       tb = doDupElim(tb);
-      if (tb.numOutputTuples() > 0) {
+      if (tb.numTuples() > 0) {
         return tb;
       } else {
         return null;

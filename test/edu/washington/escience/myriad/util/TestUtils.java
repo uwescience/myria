@@ -13,7 +13,6 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.systemtest.SystemTestBase.Tuple;
-import edu.washington.escience.myriad.table._TupleBatch;
 
 public class TestUtils {
 
@@ -21,7 +20,7 @@ public class TestUtils {
   public static HashMap<Tuple, Integer> naturalJoin(final TupleBatchBuffer child1, final TupleBatchBuffer child2,
       final int child1JoinColumn, final int child2JoinColumn) {
 
-    _TupleBatch child1TB = null;
+    TupleBatch child1TB = null;
 
     /**
      * join key -> {tuple->num occur}
@@ -60,7 +59,7 @@ public class TestUtils {
     }
 
     Iterator<TupleBatch> child2TBIt = child2.getAll().iterator();
-    _TupleBatch child2TB = null;
+    TupleBatch child2TB = null;
     while (child2TBIt.hasNext()) {
       child2TB = child2TBIt.next();
       final List<Column<?>> child2Columns = child2TB.outputRawData();
@@ -144,12 +143,12 @@ public class TestUtils {
   }
 
   public static HashMap<Tuple, Integer> tupleBatchToTupleBag(final TupleBatchBuffer tbb) {
-    _TupleBatch tb = null;
+    TupleBatch tb = null;
     final HashMap<Tuple, Integer> result = new HashMap<Tuple, Integer>();
     final Iterator<TupleBatch> it = tbb.getAll().iterator();
     while (it.hasNext()) {
       tb = it.next();
-      final int numRow = tb.numOutputTuples();
+      final int numRow = tb.numTuples();
       final List<Column<?>> columns = tb.outputRawData();
       final int numColumn = columns.size();
       for (int row = 0; row < numRow; row++) {
@@ -169,12 +168,12 @@ public class TestUtils {
   }
 
   public static HashMap<Tuple, Integer> tupleBatchToTupleSet(final TupleBatchBuffer tbb) {
-    _TupleBatch tb = null;
+    TupleBatch tb = null;
     final HashMap<Tuple, Integer> result = new HashMap<Tuple, Integer>();
     final Iterator<TupleBatch> it = tbb.getAll().iterator();
     while (it.hasNext()) {
       tb = it.next();
-      final int numRow = tb.numOutputTuples();
+      final int numRow = tb.numTuples();
       final List<Column<?>> columns = tb.outputRawData();
       final int numColumn = columns.size();
       for (int row = 0; row < numRow; row++) {

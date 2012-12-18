@@ -16,7 +16,6 @@ import edu.washington.escience.myriad.proto.DataProto.DataMessage;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageType;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType;
-import edu.washington.escience.myriad.table._TupleBatch;
 
 /**
  * The producer part of the Collect Exchange operator.
@@ -41,12 +40,12 @@ public final class CollectProducer extends Producer {
 
         TupleBatchBuffer buffer = new TupleBatchBuffer(getSchema());
 
-        _TupleBatch tup = null;
+        TupleBatch tup = null;
         while ((tup = child.next()) != null) {
 
           final List<Column<?>> fromColumns = tup.outputRawData();
 
-          int numTuples = tup.numOutputTuples();
+          int numTuples = tup.numTuples();
           int numColumns = fromColumns.size();
           for (int i = 0; i < numTuples; i++) {
             for (int j = 0; j < numColumns; j++) {
@@ -122,7 +121,7 @@ public final class CollectProducer extends Producer {
   }
 
   @Override
-  protected _TupleBatch fetchNext() throws DbException {
+  protected TupleBatch fetchNext() throws DbException {
     try {
       // wait until the working thread terminate and return an empty tuple set
       runningThread.join();
@@ -155,7 +154,7 @@ public final class CollectProducer extends Producer {
   }
 
   @Override
-  public _TupleBatch fetchNextReady() throws DbException {
+  public TupleBatch fetchNextReady() throws DbException {
     return fetchNext();
   }
 

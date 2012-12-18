@@ -14,7 +14,6 @@ import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.parallel.Server;
 import edu.washington.escience.myriad.systemtest.SystemTestBase;
-import edu.washington.escience.myriad.table._TupleBatch;
 import edu.washington.escience.myriad.util.SQLiteUtils;
 import edu.washington.escience.myriad.util.TestUtils;
 
@@ -43,10 +42,10 @@ public class SQLiteAccessMethodTest {
     final File dbFile = File.createTempFile(Server.SYSTEM_NAME + "_sqlite_access_method_test", ".db");
     SystemTestBase.createTable(dbFile.getAbsolutePath(), "testtable", "id long, name varchar(20)");
 
-    _TupleBatch tb = null;
+    TupleBatch tb = null;
     while ((tb = tbb.popAny()) != null) {
       String insertTemplate = SQLiteUtils.insertStatementFromSchema(schema, "testtable");
-      SQLiteAccessMethod.tupleBatchInsert(dbFile.getAbsolutePath(), insertTemplate, (TupleBatch) tb);
+      SQLiteAccessMethod.tupleBatchInsert(dbFile.getAbsolutePath(), insertTemplate, tb);
     }
 
     Thread[] threads = new Thread[numThreads];
@@ -102,12 +101,12 @@ public class SQLiteAccessMethodTest {
     SystemTestBase.createTable(dbFile.getAbsolutePath(), "testtable0", "id long, name varchar(20)");
     SystemTestBase.createTable(dbFile.getAbsolutePath(), "testtable1", "id long, name varchar(20)");
 
-    _TupleBatch tb = null;
+    TupleBatch tb = null;
     String insertTemplate0 = SQLiteUtils.insertStatementFromSchema(schema, "testtable0");
     String insertTemplate1 = SQLiteUtils.insertStatementFromSchema(schema, "testtable1");
     while ((tb = tbb.popAny()) != null) {
-      SQLiteAccessMethod.tupleBatchInsert(dbFile.getAbsolutePath(), insertTemplate0, (TupleBatch) tb);
-      SQLiteAccessMethod.tupleBatchInsert(dbFile.getAbsolutePath(), insertTemplate1, (TupleBatch) tb);
+      SQLiteAccessMethod.tupleBatchInsert(dbFile.getAbsolutePath(), insertTemplate0, tb);
+      SQLiteAccessMethod.tupleBatchInsert(dbFile.getAbsolutePath(), insertTemplate1, tb);
     }
 
     Thread[] threads = new Thread[numThreads];

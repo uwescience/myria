@@ -14,8 +14,8 @@ import com.almworks.sqlite4java.SQLiteQueue;
 import com.almworks.sqlite4java.SQLiteStatement;
 
 import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.column.Column;
-import edu.washington.escience.myriad.table._TupleBatch;
 import edu.washington.escience.myriad.util.SQLiteUtils;
 
 /**
@@ -111,7 +111,7 @@ public class SQLiteInsert extends RootOperator {
   }
 
   @Override
-  protected final void consumeTuples(final _TupleBatch tupleBatch) throws DbException {
+  protected final void consumeTuples(final TupleBatch tupleBatch) throws DbException {
     SQLiteJob<Object> future = new SQLiteJob<Object>() {
       @Override
       protected Object job(final SQLiteConnection sqliteConnection) throws SQLiteException {
@@ -123,7 +123,7 @@ public class SQLiteInsert extends RootOperator {
         List<Column<?>> columns = tupleBatch.outputRawData();
 
         /* Set up and execute the query */
-        for (int row = 0; row < tupleBatch.numOutputTuples(); ++row) {
+        for (int row = 0; row < tupleBatch.numTuples(); ++row) {
           for (int column = 0; column < getSchema().numFields(); ++column) {
             columns.get(column).getIntoSQLite(row, insertStatement, column + 1);
           }

@@ -13,7 +13,6 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.table._TupleBatch;
 
 public final class LocalJoin extends Operator implements Externalizable {
 
@@ -22,15 +21,15 @@ public final class LocalJoin extends Operator implements Externalizable {
 
   private class IndexedTuple {
     private final int index;
-    private final _TupleBatch tb;
+    private final TupleBatch tb;
 
-    public IndexedTuple(final _TupleBatch tb, final int index) {
+    public IndexedTuple(final TupleBatch tb, final int index) {
       this.tb = tb;
       this.index = index;
     }
 
     public boolean compareField(final IndexedTuple another, final int colIndx1, final int colIndx2) {
-      final Type type1 = tb.inputSchema().getFieldType(colIndx1);
+      final Type type1 = tb.getSchema().getFieldType(colIndx1);
       // type check in query plan?
       final int rowIndx1 = index;
       final int rowIndx2 = another.index;
@@ -57,10 +56,10 @@ public final class LocalJoin extends Operator implements Externalizable {
         return false;
       }
       final IndexedTuple another = (IndexedTuple) o;
-      if (!(tb.inputSchema().equals(another.tb.inputSchema()))) {
+      if (!(tb.getSchema().equals(another.tb.getSchema()))) {
         return false;
       }
-      for (int i = 0; i < tb.inputSchema().numFields(); ++i) {
+      for (int i = 0; i < tb.getSchema().numFields(); ++i) {
         if (!compareField(another, i, i)) {
           return false;
         }
@@ -121,8 +120,8 @@ public final class LocalJoin extends Operator implements Externalizable {
   }
 
   protected void addToAns(final IndexedTuple tuple1, final IndexedTuple tuple2) {
-    int num1 = tuple1.tb.inputSchema().numFields();
-    int num2 = tuple2.tb.inputSchema().numFields();
+    int num1 = tuple1.tb.getSchema().numFields();
+    int num2 = tuple2.tb.getSchema().numFields();
     for (int i = 0; i < num1; ++i) {
       ans.put(i, tuple1.tb.getObject(i, tuple1.index));
     }
@@ -131,8 +130,8 @@ public final class LocalJoin extends Operator implements Externalizable {
     }
   }
 
-  protected void processChild1TB(final _TupleBatch tbFromChild1) {
-    for (int i = 0; i < tbFromChild1.numOutputTuples(); ++i) { // outputTuples?
+  protected void processChild1TB(final TupleBatch tbFromChild1) {
+    for (int i = 0; i < tbFromChild1.numTuples(); ++i) { // outputTuples?
       final IndexedTuple tuple1 = new IndexedTuple(tbFromChild1, i);
       final int cntHashCode = tuple1.hashCode4Keys(compareIndx1);
 
@@ -154,8 +153,8 @@ public final class LocalJoin extends Operator implements Externalizable {
     }
   }
 
-  protected void processChild2TB(final _TupleBatch tbFromChild2) {
-    for (int i = 0; i < tbFromChild2.numOutputTuples(); ++i) { // outputTuples?
+  protected void processChild2TB(final TupleBatch tbFromChild2) {
+    for (int i = 0; i < tbFromChild2.numTuples(); ++i) { // outputTuples?
       final IndexedTuple tuple2 = new IndexedTuple(tbFromChild2, i);
       final int cntHashCode = tuple2.hashCode4Keys(compareIndx2);
 
@@ -178,11 +177,11 @@ public final class LocalJoin extends Operator implements Externalizable {
   }
 
   @Override
-  protected _TupleBatch fetchNext() throws DbException {
+  protected TupleBatch fetchNext() throws DbException {
     TupleBatch nexttb = ans.popFilled();
     while (nexttb == null) {
       boolean hasNewTuple = false; // might change to EOS instead of hasNext()
-      _TupleBatch tb = null;
+      TupleBatch tb = null;
       if ((tb = child1.next()) != null) {
         hasNewTuple = true;
         processChild1TB(tb);
@@ -251,7 +250,7 @@ public final class LocalJoin extends Operator implements Externalizable {
   }
 
   @Override
-  public _TupleBatch fetchNextReady() throws DbException {
+  public TupleBatch fetchNextReady() throws DbException {
     return null;
   }
 

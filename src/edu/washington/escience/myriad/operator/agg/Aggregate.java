@@ -4,10 +4,10 @@ import java.util.Objects;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.table._TupleBatch;
 
 /**
  * The Aggregation operator that computes an aggregate.
@@ -94,9 +94,9 @@ public final class Aggregate extends Operator {
   }
 
   @Override
-  protected _TupleBatch fetchNext() throws DbException {
+  protected TupleBatch fetchNext() throws DbException {
 
-    _TupleBatch tb = null;
+    TupleBatch tb = null;
     while ((tb = child.next()) != null) {
       for (Aggregator ag : agg) {
         ag.add(tb);
@@ -108,7 +108,7 @@ public final class Aggregate extends Operator {
       element.getResult(tbb, fromIndex);
       fromIndex += element.getResultSchema().numFields();
     }
-    _TupleBatch result = tbb.popAny();
+    TupleBatch result = tbb.popAny();
     setEOS();
     return result;
   }
@@ -143,7 +143,7 @@ public final class Aggregate extends Operator {
   }
 
   @Override
-  protected _TupleBatch fetchNextReady() throws DbException {
+  protected TupleBatch fetchNextReady() throws DbException {
     // TODO non-blocking
     return fetchNext();
   }

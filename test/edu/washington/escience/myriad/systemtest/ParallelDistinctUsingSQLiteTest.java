@@ -7,6 +7,7 @@ import org.junit.Test;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
@@ -18,7 +19,6 @@ import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 import edu.washington.escience.myriad.parallel.Server;
-import edu.washington.escience.myriad.table._TupleBatch;
 import edu.washington.escience.myriad.util.TestUtils;
 
 public class ParallelDistinctUsingSQLiteTest extends SystemTestBase {
@@ -44,7 +44,7 @@ public class ParallelDistinctUsingSQLiteTest extends SystemTestBase {
     }
     HashMap<Tuple, Integer> expectedResult = TestUtils.distinct(tbb);
 
-    _TupleBatch tb = null;
+    TupleBatch tb = null;
     while ((tb = tbb.popAny()) != null) {
       insert(WORKER_ID[0], "testtable", schema, tb);
       insert(WORKER_ID[1], "testtable", schema, tb);

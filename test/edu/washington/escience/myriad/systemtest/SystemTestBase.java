@@ -34,7 +34,6 @@ import edu.washington.escience.myriad.coordinator.catalog.CatalogMaker;
 import edu.washington.escience.myriad.coordinator.catalog.WorkerCatalog;
 import edu.washington.escience.myriad.parallel.Server;
 import edu.washington.escience.myriad.parallel.Worker;
-import edu.washington.escience.myriad.table._TupleBatch;
 import edu.washington.escience.myriad.tool.EclipseClasspathReader;
 import edu.washington.escience.myriad.util.FSUtils;
 import edu.washington.escience.myriad.util.SQLiteUtils;
@@ -250,18 +249,16 @@ public class SystemTestBase {
     startWorkers();
   }
 
-  public static void insert(final int workerID, final String tableName, final Schema schema, final _TupleBatch data)
+  public static void insert(final int workerID, final String tableName, final Schema schema, final TupleBatch data)
       throws CatalogException {
     String insertTemplate = SQLiteUtils.insertStatementFromSchema(schema, tableName);
-    SQLiteAccessMethod.tupleBatchInsert(getAbsoluteDBFile(workerID, tableName).getAbsolutePath(), insertTemplate,
-        (TupleBatch) data);
+    SQLiteAccessMethod.tupleBatchInsert(getAbsoluteDBFile(workerID, tableName).getAbsolutePath(), insertTemplate, data);
   }
 
-  public static void insertWithBothNames(int workerID, String tableName, String dbName, Schema schema, _TupleBatch data)
+  public static void insertWithBothNames(int workerID, String tableName, String dbName, Schema schema, TupleBatch data)
       throws CatalogException {
     String insertTemplate = SQLiteUtils.insertStatementFromSchema(schema, tableName);
-    SQLiteAccessMethod.tupleBatchInsert(getAbsoluteDBFile(workerID, dbName).getAbsolutePath(), insertTemplate,
-        (TupleBatch) data);
+    SQLiteAccessMethod.tupleBatchInsert(getAbsoluteDBFile(workerID, dbName).getAbsolutePath(), insertTemplate, data);
   }
 
   public static HashMap<Tuple, Integer> simpleRandomJoinTestBase() throws CatalogException, IOException {
@@ -330,7 +327,7 @@ public class SystemTestBase {
 
     final HashMap<Tuple, Integer> expectedResult = TestUtils.naturalJoin(table1, table2, 0, 0);
 
-    _TupleBatch tb = null;
+    TupleBatch tb = null;
     while ((tb = tbl1Worker1.popAny()) != null) {
       insert(WORKER_ID[0], JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA, tb);
     }

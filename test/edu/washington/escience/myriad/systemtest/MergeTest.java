@@ -9,6 +9,7 @@ import org.junit.Test;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
@@ -19,7 +20,6 @@ import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 import edu.washington.escience.myriad.parallel.Server;
-import edu.washington.escience.myriad.table._TupleBatch;
 import edu.washington.escience.myriad.util.TestUtils;
 
 public class MergeTest extends SystemTestBase {
@@ -53,7 +53,7 @@ public class MergeTest extends SystemTestBase {
 
     createTable(WORKER_ID[0], "testtable0", "testtable", "follower long, followee long");
     createTable(WORKER_ID[0], "testtable1", "testtable", "follower long, followee long");
-    _TupleBatch tb = null;
+    TupleBatch tb = null;
     while ((tb = tbl1.popAny()) != null) {
       insertWithBothNames(WORKER_ID[0], "testtable", "testtable0", tableSchema, tb);
     }

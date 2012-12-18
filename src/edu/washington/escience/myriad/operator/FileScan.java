@@ -12,7 +12,6 @@ import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
-import edu.washington.escience.myriad.table._TupleBatch;
 
 /**
  * Reads data from a file.
@@ -87,7 +86,7 @@ public final class FileScan extends LeafOperator {
   }
 
   @Override
-  protected _TupleBatch fetchNext() throws DbException {
+  protected TupleBatch fetchNext() throws DbException {
     int count = 0;
     while (tokenizer.ttype != StreamTokenizer.TT_EOF && buffer.numTuples() < TupleBatch.BATCH_SIZE) {
       /* First, make sure that if we hit EOL we're at the right number of fields full. */
@@ -192,7 +191,7 @@ public final class FileScan extends LeafOperator {
   }
 
   @Override
-  public _TupleBatch fetchNextReady() throws DbException {
+  public TupleBatch fetchNextReady() throws DbException {
     return fetchNext();
   }
 }

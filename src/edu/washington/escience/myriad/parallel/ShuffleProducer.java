@@ -16,7 +16,6 @@ import edu.washington.escience.myriad.proto.DataProto.DataMessage;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageType;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType;
-import edu.washington.escience.myriad.table._TupleBatch;
 
 /**
  * The producer part of the Shuffle Exchange operator.
@@ -46,7 +45,7 @@ public class ShuffleProducer extends Producer {
         for (int i = 0; i < numWorker; i++) {
           buffers[i] = new TupleBatchBuffer(thisSchema);
         }
-        _TupleBatch tup = null;
+        TupleBatch tup = null;
         while ((tup = child.next()) != null) {
           buffers = tup.partition(partitionFunction, buffers);
           for (int p = 0; p < numWorker; p++) {
@@ -124,7 +123,7 @@ public class ShuffleProducer extends Producer {
   }
 
   @Override
-  protected final _TupleBatch fetchNext() throws DbException {
+  protected final TupleBatch fetchNext() throws DbException {
     try {
       runningThread.join();
     } catch (final InterruptedException e) {
@@ -163,7 +162,7 @@ public class ShuffleProducer extends Producer {
   }
 
   @Override
-  public _TupleBatch fetchNextReady() throws DbException {
+  public TupleBatch fetchNextReady() throws DbException {
     return fetchNext();
   }
 

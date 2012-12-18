@@ -2,7 +2,7 @@ package edu.washington.escience.myriad.operator;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
-import edu.washington.escience.myriad.table._TupleBatch;
+import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.util.SQLiteUtils;
 
 /**
@@ -25,8 +25,8 @@ public final class BlockingSQLiteDataReceiver extends Operator {
   }
 
   @Override
-  protected _TupleBatch fetchNext() throws DbException {
-    _TupleBatch tb = null;
+  protected TupleBatch fetchNext() throws DbException {
+    TupleBatch tb = null;
     while ((tb = child.next()) != null) {
       SQLiteUtils.insertIntoSQLite(child.getSchema(), tableName, dataDir + "/" + dbFileName, tb);
     }
@@ -57,7 +57,7 @@ public final class BlockingSQLiteDataReceiver extends Operator {
   }
 
   @Override
-  public _TupleBatch fetchNextReady() throws DbException {
+  public TupleBatch fetchNextReady() throws DbException {
     return fetchNext();
   }
 

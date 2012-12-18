@@ -1,10 +1,10 @@
 package edu.washington.escience.myriad.operator.agg;
 
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.column.IntColumn;
-import edu.washington.escience.myriad.table._TupleBatch;
 import edu.washington.escience.myriad.util.MathUtils;
 
 /**
@@ -88,7 +88,7 @@ public class IntegerAggregator implements Aggregator {
   }
 
   @Override
-  public final void add(final _TupleBatch tup) {
+  public final void add(final TupleBatch tup) {
 
     count += tup.numTuples();
     IntColumn rawData = (IntColumn) tup.outputRawData().get(afield);

@@ -6,7 +6,6 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.accessmethod.SQLiteAccessMethod;
-import edu.washington.escience.myriad.table._TupleBatch;
 
 public class SQLiteUtils {
   private SQLiteUtils() {
@@ -80,7 +79,7 @@ public class SQLiteUtils {
   }
 
   public static void insertIntoSQLite(final Schema inputSchema, String tableName, String dbFilePath,
-      final _TupleBatch data) {
+      final TupleBatch data) {
 
     final String[] fieldNames = inputSchema.getFieldNames();
     final String[] placeHolders = new String[inputSchema.numFields()];
@@ -90,7 +89,7 @@ public class SQLiteUtils {
 
     SQLiteAccessMethod.tupleBatchInsert(dbFilePath, "insert into " + tableName + " ( "
         + StringUtils.join(fieldNames, ',') + " ) values ( " + StringUtils.join(placeHolders, ',') + " )",
-        new TupleBatch(data.outputSchema(), data.outputRawData(), data.numOutputTuples()));
+        new TupleBatch(data.getSchema(), data.outputRawData(), data.numTuples()));
   }
 
 }

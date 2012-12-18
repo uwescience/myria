@@ -27,7 +27,6 @@ import edu.washington.escience.myriad.parallel.Server;
 import edu.washington.escience.myriad.parallel.ShuffleConsumer;
 import edu.washington.escience.myriad.parallel.ShuffleProducer;
 import edu.washington.escience.myriad.parallel.SingleFieldHashPartitionFunction;
-import edu.washington.escience.myriad.table._TupleBatch;
 import edu.washington.escience.myriad.util.TestUtils;
 
 public class IterativeSelfJoinTest extends SystemTestBase {
@@ -44,7 +43,7 @@ public class IterativeSelfJoinTest extends SystemTestBase {
     boolean graph[][] = new boolean[MaxID][MaxID];
     boolean cntgraph[][] = new boolean[MaxID][MaxID];
     while (tbs.hasNext()) {
-      _TupleBatch tb = tbs.next();
+      TupleBatch tb = tbs.next();
       List<Column<?>> output = tb.outputRawData();
       int numRow = output.get(0).size();
       for (int i = 0; i < numRow; i++) {
@@ -131,7 +130,7 @@ public class IterativeSelfJoinTest extends SystemTestBase {
       createTable(WORKER_ID[0], "testtable" + i, "testtable", "follower long, followee long");
       createTable(WORKER_ID[1], "testtable" + i, "testtable", "follower long, followee long");
     }
-    _TupleBatch tb = null;
+    TupleBatch tb = null;
     while ((tb = tbl1Worker1.popAny()) != null) {
       for (int i = 0; i < numIteration; ++i) {
         insertWithBothNames(WORKER_ID[0], "testtable", "testtable" + i, tableSchema, tb);
