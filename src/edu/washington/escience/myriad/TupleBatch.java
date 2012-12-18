@@ -3,23 +3,27 @@ package edu.washington.escience.myriad;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.tuple.Pair;
 
 import com.google.common.base.Preconditions;
 import com.google.common.primitives.Ints;
 
 import edu.washington.escience.myriad.column.BooleanColumn;
 import edu.washington.escience.myriad.column.Column;
+import edu.washington.escience.myriad.column.ColumnFactory;
 import edu.washington.escience.myriad.column.DoubleColumn;
 import edu.washington.escience.myriad.column.FloatColumn;
 import edu.washington.escience.myriad.column.IntColumn;
 import edu.washington.escience.myriad.column.LongColumn;
 import edu.washington.escience.myriad.column.StringColumn;
-import edu.washington.escience.myriad.table.TupleBatchAdaptor;
-import edu.washington.escience.myriad.table._TupleBatch;
+import edu.washington.escience.myriad.parallel.PartitionFunction;
 
 /**
  * Container class for a batch of tuples. The goal is to amortize memory management overhead.
@@ -27,7 +31,7 @@ import edu.washington.escience.myriad.table._TupleBatch;
  * @author dhalperi
  * 
  */
-public class TupleBatch extends TupleBatchAdaptor {
+public class TupleBatch {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** The hard-coded number of tuples in a batch. */
@@ -152,7 +156,6 @@ public class TupleBatch extends TupleBatchAdaptor {
    * @param operand operand to the predicate.
    * @return a new TupleBatch where all rows that do not match the specified predicate have been removed.
    */
-  @Override
   public final TupleBatch filter(final int column, final Predicate.Op op, final Object operand) {
     Objects.requireNonNull(op);
     Objects.requireNonNull(operand);
@@ -160,7 +163,6 @@ public class TupleBatch extends TupleBatchAdaptor {
     return ret.applyFilter(column, op, operand);
   }
 
-  @Override
   public final boolean getBoolean(final int column, final int row) {
     return ((BooleanColumn) columns.get(column)).getBoolean(row);
   }
@@ -175,27 +177,22 @@ public class TupleBatch extends TupleBatchAdaptor {
     return columns.get(index);
   }
 
-  @Override
   public final double getDouble(final int column, final int row) {
     return ((DoubleColumn) columns.get(column)).getDouble(row);
   }
 
-  @Override
   public final float getFloat(final int column, final int row) {
     return ((FloatColumn) columns.get(column)).getFloat(row);
   }
 
-  @Override
   public final int getInt(final int column, final int row) {
     return ((IntColumn) columns.get(column)).getInt(row);
   }
 
-  @Override
   public final long getLong(final int column, final int row) {
     return ((LongColumn) columns.get(column)).getLong(row);
   }
 
-  @Override
   public final Object getObject(final int column, final int row) {
     return columns.get(column).get(row);
   }
@@ -216,12 +213,10 @@ public class TupleBatch extends TupleBatchAdaptor {
    * @param row row in which the element is stored.
    * @return the element at the specified position in this TupleBatch.
    */
-  @Override
   public final String getString(final int column, final int row) {
     return ((StringColumn) columns.get(column)).getString(row);
   }
 
-  @Override
   public final int hashCode(final int row) {
     final HashCodeBuilder hb = new HashCodeBuilder(MAGIC_HASHCODE1, MAGIC_HASHCODE2);
     for (Column<?> c : columns) {
@@ -237,7 +232,6 @@ public class TupleBatch extends TupleBatchAdaptor {
    * @param hashColumns key columns for the hash.
    * @return the hash code value for the specified tuple using the specified key columns.
    */
-  @Override
   public final int hashCode(final int row, final int[] hashColumns) {
     Objects.requireNonNull(hashColumns);
     /*
@@ -266,7 +260,7 @@ public class TupleBatch extends TupleBatchAdaptor {
    * 
    * @return the number of valid tuples in this TupleBatch.
    */
-  public final int numValidTuples() {
+  public final int numTuples() {
     return validTuples.cardinality();
   }
 
@@ -290,6 +284,31 @@ public class TupleBatch extends TupleBatchAdaptor {
     }
   }
 
+  public TupleBatchBuffer[] partition(final PartitionFunction<?, ?> pf, final TupleBatchBuffer[] buffers) {
+    final List<Column<?>> outputData = outputRawData();
+    final int numColumns = outputData.size();
+
+    final int[] partitions = pf.partition(outputData, schema);
+
+    for (int i = 0; i < partitions.length; i++) {
+      final int pOfTuple = partitions[i];
+      for (int j = 0; j < numColumns; j++) {
+        buffers[pOfTuple].put(j, outputData.get(j).get(i));
+      }
+    }
+    return buffers;
+  }
+
+  public List<Column<?>> outputRawData() {
+    final List<Column<?>> output = ColumnFactory.allocateColumns(getSchema());
+    for (final int row : validTupleIndices()) {
+      for (int column = 0; column < numColumns(); ++column) {
+        output.get(column).putObject(getColumn(column).get(row));
+      }
+    }
+    return output;
+  }
+
   /**
    * Creates a new TupleBatch with only the indicated columns.
    * 
@@ -298,7 +317,6 @@ public class TupleBatch extends TupleBatchAdaptor {
    * @param remainingColumns zero-indexed array of columns to retain.
    * @return a projected TupleBatch.
    */
-  @Override
   public final TupleBatch project(final int[] remainingColumns) {
     Objects.requireNonNull(remainingColumns);
     final List<Column<?>> newColumns = new ArrayList<Column<?>>();
@@ -363,9 +381,44 @@ public class TupleBatch extends TupleBatchAdaptor {
     return numTuples;
   }
 
-  @Override
-  public final _TupleBatch remove(final int innerIdx) {
-    validTuples.clear(innerIdx);
+  public final TupleBatch remove(final BitSet tupleIndicesToRemove) {
+    validTuples.andNot(tupleIndicesToRemove);
     return this;
+  }
+
+  public Set<Pair<Object, TupleBatchBuffer>> groupby(final int groupByColumn,
+      final Map<Object, Pair<Object, TupleBatchBuffer>> buffers) {
+    Set<Pair<Object, TupleBatchBuffer>> ready = null;
+    if (this instanceof TupleBatch) {
+      final TupleBatch tupleBatch = this;
+      List<Column<?>> columns = tupleBatch.outputRawData();
+      Column<?> gC = columns.get(groupByColumn);
+
+      int numR = gC.size();
+      for (int i = 0; i < numR; i++) {
+        Object v = gC.get(i);
+        Pair<Object, TupleBatchBuffer> kvPair = buffers.get(v);
+        TupleBatchBuffer tbb = null;
+        if (kvPair == null) {
+          tbb = new TupleBatchBuffer(getSchema());
+          kvPair = Pair.of(v, tbb);
+          buffers.put(v, kvPair);
+        } else {
+          tbb = kvPair.getRight();
+        }
+        int j = 0;
+        for (Column<?> c : columns) {
+          tbb.put(j, c.get(i));
+          j++;
+        }
+        if (tbb.hasFilledTB()) {
+          if (ready == null) {
+            ready = new HashSet<Pair<Object, TupleBatchBuffer>>();
+          }
+          ready.add(kvPair);
+        }
+      }
+    }
+    return ready;
   }
 }
