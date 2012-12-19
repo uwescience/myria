@@ -45,8 +45,8 @@ public class TupleBatch {
   private final Schema schema;
   /** Tuple data stored as columns in this batch. */
   private final List<Column<?>> columns;
-  /** Number of tuples in this batch. */
-  private final int numTuples;
+  /** Number of total tuples in this batch. */
+  private final int numTotalTuples;
   /** Which tuples are valid in this batch. */
   private final BitSet validTuples;
 
@@ -63,7 +63,7 @@ public class TupleBatch {
     this.columns = Objects.requireNonNull(columns);
     Preconditions.checkArgument(numTuples >= 0 && numTuples <= BATCH_SIZE,
         "numTuples must be at least 1 and no more than TupleBatch.BATCH_SIZE");
-    this.numTuples = numTuples;
+    numTotalTuples = numTuples;
     /* All tuples are valid */
     validTuples = new BitSet(BATCH_SIZE);
     validTuples.set(0, numTuples);
@@ -85,7 +85,7 @@ public class TupleBatch {
 
     Preconditions.checkArgument(numTuples >= 0 && numTuples <= BATCH_SIZE,
         "numTuples must be non-negative and no more than TupleBatch.BATCH_SIZE");
-    this.numTuples = numTuples;
+    numTotalTuples = numTuples;
 
     Preconditions
         .checkArgument(validTuples.size() >= numTuples, "validTuples must support at least numTuples elements");
@@ -103,7 +103,7 @@ public class TupleBatch {
     /* Take the input arguments directly, copying validTuples */
     schema = from.schema;
     columns = from.columns;
-    numTuples = from.numTuples;
+    numTotalTuples = from.numTotalTuples;
     validTuples = (BitSet) from.validTuples.clone();
   }
 
@@ -132,7 +132,7 @@ public class TupleBatch {
   private TupleBatch applyFilter(final int column, final Predicate.Op op, final Object operand) {
     Objects.requireNonNull(op);
     Objects.requireNonNull(operand);
-    if (numTuples > 0) {
+    if (numTotalTuples > 0) {
       final Column<?> columnValues = columns.get(column);
       final Type columnType = schema.getFieldType(column);
       int nextSet = -1;
@@ -329,7 +329,7 @@ public class TupleBatch {
       newNames[count] = schema.getFieldName(remainingColumns[count]);
       count++;
     }
-    return new TupleBatch(new Schema(newTypes, newNames), newColumns, numTuples, validTuples);
+    return new TupleBatch(new Schema(newTypes, newNames), newColumns, numTotalTuples, validTuples);
   }
 
   /**
@@ -377,10 +377,9 @@ public class TupleBatch {
     return validT;
   }
 
-  public final int getNumTuples() {
-    return numTuples;
-  }
-
+  /**
+   * @param
+   * */
   public final TupleBatch remove(final BitSet tupleIndicesToRemove) {
     validTuples.andNot(tupleIndicesToRemove);
     return this;
