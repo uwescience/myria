@@ -49,6 +49,8 @@ public class TupleBatch {
   private final int numTotalTuples;
   /** Which tuples are valid in this batch. */
   private final BitSet validTuples;
+  /** An int[] view of the indices of validTuples. */
+  private int[] validIndices;
 
   /**
    * Standard immutable TupleBatch constructor. All fields must be populated before creation and cannot be changed.
@@ -64,6 +66,7 @@ public class TupleBatch {
     Preconditions.checkArgument(numTuples >= 0 && numTuples <= BATCH_SIZE,
         "numTuples must be at least 1 and no more than TupleBatch.BATCH_SIZE");
     numTotalTuples = numTuples;
+    validIndices = null;
     /* All tuples are valid */
     validTuples = new BitSet(BATCH_SIZE);
     validTuples.set(0, numTuples);
@@ -368,13 +371,17 @@ public class TupleBatch {
    * @return an array containing the indices of all valid rows.
    */
   public final int[] validTupleIndices() {
+    if (validIndices != null) {
+      return validIndices;
+    }
     final int[] validT = new int[validTuples.cardinality()];
     int j = 0;
     for (int i = validTuples.nextSetBit(0); i >= 0; i = validTuples.nextSetBit(i + 1)) {
       // operate on index i here
       validT[j++] = i;
     }
-    return validT;
+    validIndices = validT;
+    return validIndices;
   }
 
   /**
@@ -382,6 +389,7 @@ public class TupleBatch {
    * */
   public final TupleBatch remove(final BitSet tupleIndicesToRemove) {
     validTuples.andNot(tupleIndicesToRemove);
+    validIndices = null;
     return this;
   }
 
