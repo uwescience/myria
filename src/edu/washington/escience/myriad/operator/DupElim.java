@@ -15,8 +15,11 @@ public final class DupElim extends Operator {
   private static final long serialVersionUID = 1L;
 
   private class IndexedTuple {
-    private final int index;
-    private final _TupleBatch tb;
+    int index;
+    _TupleBatch tb;
+
+    public IndexedTuple() {
+    }
 
     public IndexedTuple(final _TupleBatch tb, final int index) {
       this.tb = tb;
@@ -27,23 +30,19 @@ public final class DupElim extends Operator {
       final Type type = tb.inputSchema().getFieldType(colIndx);
       final int rowIndx1 = index;
       final int rowIndx2 = another.index;
-      if (type.equals(Type.INT_TYPE)) {
-        return tb.getInt(colIndx, rowIndx1) == another.tb.getInt(colIndx, rowIndx2);
-      }
-      if (type.equals(Type.DOUBLE_TYPE)) {
-        return tb.getDouble(colIndx, rowIndx1) == another.tb.getDouble(colIndx, rowIndx2);
-      }
-      if (type.equals(Type.STRING_TYPE)) {
-        return tb.getString(colIndx, rowIndx1).equals(another.tb.getString(colIndx, rowIndx2));
-      }
-      if (type.equals(Type.FLOAT_TYPE)) {
-        return tb.getFloat(colIndx, rowIndx1) == another.tb.getFloat(colIndx, rowIndx2);
-      }
-      if (type.equals(Type.BOOLEAN_TYPE)) {
-        return tb.getBoolean(colIndx, rowIndx1) == another.tb.getBoolean(colIndx, rowIndx2);
-      }
-      if (type.equals(Type.LONG_TYPE)) {
-        return tb.getLong(colIndx, rowIndx1) == another.tb.getLong(colIndx, rowIndx2);
+      switch (type) {
+        case BOOLEAN_TYPE:
+          return tb.getBoolean(colIndx, rowIndx1) == another.tb.getBoolean(colIndx, rowIndx2);
+        case DOUBLE_TYPE:
+          return tb.getDouble(colIndx, rowIndx1) == another.tb.getDouble(colIndx, rowIndx2);
+        case FLOAT_TYPE:
+          return tb.getFloat(colIndx, rowIndx1) == another.tb.getFloat(colIndx, rowIndx2);
+        case INT_TYPE:
+          return tb.getInt(colIndx, rowIndx1) == another.tb.getInt(colIndx, rowIndx2);
+        case LONG_TYPE:
+          return tb.getLong(colIndx, rowIndx1) == another.tb.getLong(colIndx, rowIndx2);
+        case STRING_TYPE:
+          return tb.getString(colIndx, rowIndx1).equals(another.tb.getString(colIndx, rowIndx2));
       }
       return false;
     }
@@ -115,25 +114,28 @@ public final class DupElim extends Operator {
   }
 
   protected _TupleBatch doDupElim(_TupleBatch tb) {
+    IndexedTuple currentTuple = new IndexedTuple();
+    currentTuple.tb = tb;
     for (int i = 0; i < tb.numInputTuples(); ++i) {
-      final IndexedTuple cntTuple = new IndexedTuple(tb, i);
-      final int cntHashCode = cntTuple.hashCode();
+      currentTuple.index = i;
+      final int cntHashCode = currentTuple.hashCode();
       // might need to check invalid | change to use outputTuples later
-      if (uniqueTuples.get(cntHashCode) == null) {
-        uniqueTuples.put(cntHashCode, new ArrayList<IndexedTuple>());
+      List<IndexedTuple> tupleList = uniqueTuples.get(cntHashCode);
+      if (tupleList == null) {
+        tupleList = new ArrayList<IndexedTuple>();
+        uniqueTuples.put(cntHashCode, tupleList);
+        tupleList.add(new IndexedTuple(tb, i));
+        continue;
       }
-      final List<IndexedTuple> tupleList = uniqueTuples.get(cntHashCode);
       boolean unique = true;
-      for (int j = 0; j < tupleList.size(); ++j) {
-        final IndexedTuple oldTuple = tupleList.get(j);
-        if (cntTuple.equals(oldTuple)) {
+      for (IndexedTuple oldTuple : tupleList) {
+        if (currentTuple.equals(oldTuple)) {
           unique = false;
           break;
         }
       }
-      // System.out.println(i + " " + unique);
       if (unique) {
-        tupleList.add(cntTuple);
+        tupleList.add(new IndexedTuple(tb, i));
       } else {
         tb.remove(i);
       }
