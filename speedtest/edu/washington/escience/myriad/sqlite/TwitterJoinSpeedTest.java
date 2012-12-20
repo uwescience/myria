@@ -293,8 +293,8 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     long total = 0;
     TupleBatch tb = result.popAny();
     while (tb != null) {
-      for (int i : tb.validTupleIndices()) {
-        total += tb.getLong(0, i);
+      for (int row = 0, totalTuples = tb.numTuples(); row < totalTuples; row++) {
+        total += tb.getLong(0, row);
       }
       tb = result.popAny();
     }

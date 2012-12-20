@@ -54,7 +54,7 @@ public class AggregateTest {
   @SuppressWarnings("unchecked")
   public static <T extends Comparable<T>> T min(TupleBatchBuffer tbb, int column) {
     List<TupleBatch> tbs = tbb.getAll();
-    T min = ((Column<T>) tbb.getAll().get(0).getColumn(column)).get(0);
+    T min = ((Column<T>) tbb.getAll().get(0).outputRawData().get(column)).get(0);
     for (TupleBatch tb : tbs) {
       int numTuples = tb.numTuples();
       Column<T> c = (Column<T>) tb.outputRawData().get(column);
@@ -71,7 +71,7 @@ public class AggregateTest {
   @SuppressWarnings("unchecked")
   public static <T extends Comparable<T>> T max(TupleBatchBuffer tbb, int column) {
     List<TupleBatch> tbs = tbb.getAll();
-    T max = ((Column<T>) tbb.getAll().get(0).getColumn(column)).get(0);
+    T max = ((Column<T>) tbb.getAll().get(0).outputRawData().get(column)).get(0);
     for (TupleBatch tb : tbs) {
       int numTuples = tb.numTuples();
       Column<T> c = (Column<T>) tb.outputRawData().get(column);
