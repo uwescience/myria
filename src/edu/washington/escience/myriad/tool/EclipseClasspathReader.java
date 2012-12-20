@@ -34,7 +34,21 @@ public final class EclipseClasspathReader {
 
     String[] cp = readEclipseClasspath(eclipseCPFile);
 
-    System.out.print(" -Djava.library.path=" + cp[1] + " -classpath " + cp[0] + " ");
+    // 3: need both -Djava.library.path and -classpath
+    // 2: need only -Djava.library.path
+    // 1: need only -classpath
+    // default: 3
+    int pathNeeded = 3;
+    if (args.length > 1)
+    {
+        pathNeeded = Integer.parseInt(args[1]);
+    }
+    if (pathNeeded == 3)
+        System.out.print(" -Djava.library.path=" + cp[1] + " -classpath " + cp[0] + " ");
+    else if (pathNeeded == 2)
+        System.out.print(" -Djava.library.path=" + cp[1] + " ");
+    else if (pathNeeded == 1)
+        System.out.print(" -classpath " + cp[0] + " ");
   }
 
   public static String[] readEclipseClasspath(final File eclipseClasspathXMLFile) throws IOException {

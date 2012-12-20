@@ -1,0 +1,8 @@
+# compile without eclipse
+# use "gradle eclipseClasspath" before to generate .classpath
+# location: bin
+find src/ test/ speedtest/ protobuf/java third-party-src/ -name "*.java" > sourcelist
+javac src/edu/washington/escience/myriad/tool/EclipseClasspathReader.java
+javac -d bin $(java -cp src edu.washington.escience.myriad.tool.EclipseClasspathReader .classpath 1) -sourcepath @sourcelist
+rm sourcelist
+rm src/edu/washington/escience/myriad/tool/EclipseClasspathReader.class
