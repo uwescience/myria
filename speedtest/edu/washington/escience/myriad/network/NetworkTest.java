@@ -2,7 +2,6 @@ package edu.washington.escience.myriad.network;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -18,6 +17,7 @@ import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnFactory;
+import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 import edu.washington.escience.myriad.parallel.IPCConnectionPool;
 import edu.washington.escience.myriad.parallel.ParallelUtility;
 import edu.washington.escience.myriad.parallel.SocketInfo;
@@ -48,7 +48,6 @@ public class NetworkTest {
         tbb.put(0, ids[i]);
         tbb.put(1, ids2[i]);
       }
-      final TupleBatch tb = tbb.popFilled();
 
       HashMap<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
       computingUnits.put(0, new SocketInfo(Receiver.addr.getHostString(), Receiver.addr.getPort()));
@@ -65,22 +64,11 @@ public class NetworkTest {
       int numTB = 2100000000 / TupleBatch.BATCH_SIZE;
       System.out.println("Total num of TupleBatch: " + numTB);
 
+      final TransportMessage tm = tbb.popAnyAsTM(ExchangePairID.fromExisting(0L));// popFilledAsRawColumn();
       for (int i = 0; i < numTB; i++) {
         if (i % 100 == 0) {
           System.out.println(i + " sent");
         }
-        List<Column<?>> columns = tb.outputRawData();
-        final ColumnMessage[] columnProtos = new ColumnMessage[columns.size()];
-        int j = 0;
-        for (final Column<?> c : columns) {
-          columnProtos[j] = c.serializeToProto();
-          j++;
-        }
-
-        TransportMessage tm =
-            TransportMessage.newBuilder().setType(TransportMessageType.DATA).setData(
-                DataMessage.newBuilder().setType(DataMessageType.NORMAL).addAllColumns(Arrays.asList(columnProtos))
-                    .setOperatorID(0l).build()).build();
         ch.write(tm);
         numSent.incrementAndGet();
       }

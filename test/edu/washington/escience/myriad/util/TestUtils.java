@@ -9,7 +9,6 @@ import java.util.Random;
 
 import org.junit.Assert;
 
-import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.systemtest.SystemTestBase.Tuple;
@@ -20,8 +19,6 @@ public class TestUtils {
   public static HashMap<Tuple, Integer> naturalJoin(final TupleBatchBuffer child1, final TupleBatchBuffer child2,
       final int child1JoinColumn, final int child2JoinColumn) {
 
-    TupleBatch child1TB = null;
-
     /**
      * join key -> {tuple->num occur}
      * */
@@ -29,10 +26,8 @@ public class TestUtils {
 
     int numChild1Column = 0;
     final HashMap<Tuple, Integer> result = new HashMap<Tuple, Integer>();
-    Iterator<TupleBatch> child1TBIt = child1.getAll().iterator();
-    while (child1TBIt.hasNext()) {
-      child1TB = child1TBIt.next();
-      final List<Column<?>> child1RawData = child1TB.outputRawData();
+    List<List<Column<?>>> child1TBIt = child1.getAllAsRawColumn();
+    for (List<Column<?>> child1RawData : child1TBIt) {
       final int numRow = child1RawData.get(0).size();
       final int numColumn = child1RawData.size();
       numChild1Column = numColumn;
@@ -58,11 +53,9 @@ public class TestUtils {
       }
     }
 
-    Iterator<TupleBatch> child2TBIt = child2.getAll().iterator();
-    TupleBatch child2TB = null;
+    Iterator<List<Column<?>>> child2TBIt = child2.getAllAsRawColumn().iterator();
     while (child2TBIt.hasNext()) {
-      child2TB = child2TBIt.next();
-      final List<Column<?>> child2Columns = child2TB.outputRawData();
+      final List<Column<?>> child2Columns = child2TBIt.next();
       final int numRow = child2Columns.get(0).size();
       final int numChild2Column = child2Columns.size();
       for (int i = 0; i < numRow; i++) {
@@ -97,11 +90,10 @@ public class TestUtils {
   }
 
   public static HashMap<Tuple, Integer> distinct(final TupleBatchBuffer content) {
-    final Iterator<TupleBatch> it = content.getAll().iterator();
+    final Iterator<List<Column<?>>> it = content.getAllAsRawColumn().iterator();
     final HashMap<Tuple, Integer> expectedResults = new HashMap<Tuple, Integer>();
     while (it.hasNext()) {
-      final TupleBatch tb = it.next();
-      final List<Column<?>> columns = tb.outputRawData();
+      final List<Column<?>> columns = it.next();
       final int numRow = columns.get(0).size();
       final int numColumn = columns.size();
 
@@ -143,14 +135,13 @@ public class TestUtils {
   }
 
   public static HashMap<Tuple, Integer> tupleBatchToTupleBag(final TupleBatchBuffer tbb) {
-    TupleBatch tb = null;
     final HashMap<Tuple, Integer> result = new HashMap<Tuple, Integer>();
-    final Iterator<TupleBatch> it = tbb.getAll().iterator();
+    final Iterator<List<Column<?>>> it = tbb.getAllAsRawColumn().iterator();
+
     while (it.hasNext()) {
-      tb = it.next();
-      final int numRow = tb.numTuples();
-      final List<Column<?>> columns = tb.outputRawData();
+      final List<Column<?>> columns = it.next();
       final int numColumn = columns.size();
+      final int numRow = columns.get(0).size();
       for (int row = 0; row < numRow; row++) {
         final Tuple t = new Tuple(numColumn);
         for (int column = 0; column < numColumn; column++) {
@@ -168,14 +159,12 @@ public class TestUtils {
   }
 
   public static HashMap<Tuple, Integer> tupleBatchToTupleSet(final TupleBatchBuffer tbb) {
-    TupleBatch tb = null;
     final HashMap<Tuple, Integer> result = new HashMap<Tuple, Integer>();
-    final Iterator<TupleBatch> it = tbb.getAll().iterator();
+    final Iterator<List<Column<?>>> it = tbb.getAllAsRawColumn().iterator();
     while (it.hasNext()) {
-      tb = it.next();
-      final int numRow = tb.numTuples();
-      final List<Column<?>> columns = tb.outputRawData();
+      final List<Column<?>> columns = it.next();
       final int numColumn = columns.size();
+      final int numRow = columns.get(0).size();
       for (int row = 0; row < numRow; row++) {
         final Tuple t = new Tuple(numColumn);
         for (int column = 0; column < numColumn; column++) {

@@ -39,12 +39,11 @@ public class MultithreadScanTest extends SystemTestBase {
   public TupleBatchBuffer getResultInMemory(TupleBatchBuffer table1, Schema schema, int numIteration) {
     // a brute force check
 
-    Iterator<TupleBatch> tbs = table1.getAll().iterator();
+    Iterator<List<Column<?>>> tbs = table1.getAllAsRawColumn().iterator();
     boolean graph[][] = new boolean[MaxID][MaxID];
     boolean cntgraph[][] = new boolean[MaxID][MaxID];
     while (tbs.hasNext()) {
-      TupleBatch tb = tbs.next();
-      List<Column<?>> output = tb.outputRawData();
+      List<Column<?>> output = tbs.next();
       int numRow = output.get(0).size();
       for (int i = 0; i < numRow; i++) {
         int fr = Integer.parseInt(output.get(0).get(i).toString());

@@ -95,7 +95,7 @@ public class SQLiteTest {
     TupleBatch tb = null;
     TupleBatchBuffer result = new TupleBatchBuffer(outputSchema);
     while ((tb = root.next()) != null) {
-      result.putAll(tb);
+      tb.compactInto(result);
     }
 
     /* Cleanup */

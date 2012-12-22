@@ -1,21 +1,14 @@
 package edu.washington.escience.myriad.parallel;
 
-import java.util.Arrays;
-import java.util.List;
-
 import org.jboss.netty.channel.Channel;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
-import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
-import edu.washington.escience.myriad.proto.DataProto.DataMessage;
-import edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageType;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
-import edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType;
+import edu.washington.escience.myriad.util.IPCUtils;
 
 /**
  * The producer part of the Shuffle Exchange operator.
@@ -47,42 +40,21 @@ public class ShuffleProducer extends Producer {
         }
         TupleBatch tup = null;
         while ((tup = child.next()) != null) {
-          buffers = tup.partition(partitionFunction, buffers);
+          tup.partition(partitionFunction, buffers);
           for (int p = 0; p < numWorker; p++) {
             final TupleBatchBuffer etb = buffers[p];
-            TupleBatch tb = null;
-            while ((tb = etb.popFilled()) != null) {
-              final List<Column<?>> columns = tb.outputRawData();
-
-              final ColumnMessage[] columnProtos = new ColumnMessage[columns.size()];
-              int i = 0;
-              for (final Column<?> c : columns) {
-                columnProtos[i] = c.serializeToProto();
-                i++;
-              }
-              shuffleChannels[p].write(TransportMessage.newBuilder().setType(TransportMessageType.DATA).setData(
-                  DataMessage.newBuilder().setType(DataMessageType.NORMAL).addAllColumns(Arrays.asList(columnProtos))
-                      .setOperatorID(ShuffleProducer.this.operatorID.getLong()).build()).build());
+            TransportMessage dm = null;
+            while ((dm = etb.popFilledAsTM(operatorID)) != null) {
+              shuffleChannels[p].write(dm);
             }
           }
         }
 
+        TransportMessage dm = null;
         for (int i = 0; i < numWorker; i++) {
-          TupleBatchBuffer tbb = buffers[i];
-          if (tbb.numTuples() > 0) {
-            List<TupleBatch> remain = tbb.getAll();
-            for (TupleBatch tb : remain) {
-              final List<Column<?>> columns = tb.outputRawData();
-              final ColumnMessage[] columnProtos = new ColumnMessage[columns.size()];
-              int j = 0;
-              for (final Column<?> c : columns) {
-                columnProtos[j] = c.serializeToProto();
-                j++;
-              }
-              shuffleChannels[i].write(TransportMessage.newBuilder().setType(TransportMessageType.DATA).setData(
-                  DataMessage.newBuilder().setType(DataMessageType.NORMAL).addAllColumns(Arrays.asList(columnProtos))
-                      .setOperatorID(ShuffleProducer.this.operatorID.getLong()).build()).build());
-            }
+          dm = buffers[i].popAnyAsTM(operatorID);
+          if (dm != null) {
+            shuffleChannels[i].write(dm);
           }
         }
 
@@ -90,12 +62,8 @@ public class ShuffleProducer extends Producer {
         e.printStackTrace();
       }
 
-      final DataMessage eos =
-          DataMessage.newBuilder().setType(DataMessageType.EOS)
-              .setOperatorID(ShuffleProducer.this.operatorID.getLong()).build();
       for (int i = 0; i < numWorker; i++) {
-
-        shuffleChannels[i].write(TransportMessage.newBuilder().setType(TransportMessageType.DATA).setData(eos).build());
+        shuffleChannels[i].write(IPCUtils.eosTM(operatorID));
       }
     }
   }

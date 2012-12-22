@@ -386,7 +386,7 @@ public final class Server {
       int cnt = 0;
       TupleBatch tup = null;
       while ((tup = serverPlan.next()) != null) {
-        outBufferForTesting.putAll(tup);
+        tup.compactInto(outBufferForTesting);
         if (LOGGER.isDebugEnabled()) {
           LOGGER.debug(tup.toString());
         }
