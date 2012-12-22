@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -29,6 +28,7 @@ import edu.washington.escience.myriad.column.IntColumn;
 import edu.washington.escience.myriad.column.LongColumn;
 import edu.washington.escience.myriad.column.StringColumn;
 import edu.washington.escience.myriad.parallel.PartitionFunction;
+import edu.washington.escience.myriad.util.ReadOnlyBitSet;
 
 /**
  * Container class for a batch of tuples. The goal is to amortize memory management overhead.
@@ -37,8 +37,6 @@ import edu.washington.escience.myriad.parallel.PartitionFunction;
  * 
  */
 public class TupleBatch {
-  /** Required for Java serialization. */
-  private static final long serialVersionUID = 1L;
   /** The hard-coded number of tuples in a batch. */
   public static final int BATCH_SIZE = 10 * 1000;
   /** Class-specific magic number used to generate the hash code. */
@@ -50,13 +48,16 @@ public class TupleBatch {
   private final Schema schema;
   /** Tuple data stored as columns in this batch. */
   private final List<Column<?>> columns;
-  /** Number of valid tuples in this TB */
+  /** Number of valid tuples in this TB. */
   private int numValidTuples;
   /** Which tuples are valid in this batch. */
   private final BitSet validTuples;
+  /** Which tuples are valid in this batch light read only version. */
+  private final ReadOnlyBitSet validTuplesRO;
   /** An int[] view of the indices of validTuples. */
   private int[] validIndices;
 
+  /** Identity mapping. */
   protected static final int[] IDENTITY_MAPPING;
 
   static {
@@ -85,6 +86,7 @@ public class TupleBatch {
     /* All tuples are valid */
     validTuples = new BitSet(numTuples);
     validTuples.set(0, numTuples);
+    validTuplesRO = new ReadOnlyBitSet(validTuples);
   }
 
   /**
@@ -93,22 +95,19 @@ public class TupleBatch {
    * 
    * @param schema schema of the tuples in this batch. Must match columns.
    * @param columns contains the column-stored data. Must match schema.
-   * @param numTuples number of tuples in the batch.
    * @param validTuples BitSet determines which tuples are valid tuples in this batch.
+   * @param validIndices valid tuple indices.
    */
   private TupleBatch(final Schema schema, final List<Column<?>> columns, final BitSet validTuples,
-      final int[] validIndices, final int numValidTuples) {
-    /* Check and then store the input arguments */
-    this.schema = schema;// Objects.requireNonNull(schema);
-    this.columns = columns;// Objects.requireNonNull(columns);
+      final int[] validIndices) {
+    /** For a private copy constructor, no data checks are needed. Checks are only needed in the public constructor. */
+    this.schema = schema;
+    this.columns = columns;
 
-    // Preconditions.checkArgument(numTuples >= 0 && numTuples <= BATCH_SIZE,
-    // "numTuples must be non-negative and no more than TupleBatch.BATCH_SIZE");
-    this.numValidTuples = numValidTuples;
+    numValidTuples = validTuples.cardinality();
 
-    // Preconditions
-    // .checkArgument(validTuples.size() >= numTuples, "validTuples must support at least numTuples elements");
     this.validTuples = (BitSet) validTuples.clone();
+    validTuplesRO = new ReadOnlyBitSet(this.validTuples);
     this.validIndices = validIndices;
   }
 
@@ -119,11 +118,11 @@ public class TupleBatch {
    * @param from TupleBatch to duplicate.
    */
   private TupleBatch(final TupleBatch from) {
-    // Objects.requireNonNull(from);
     /* Take the input arguments directly, copying validTuples */
     schema = from.schema;
     columns = from.columns;
     validTuples = (BitSet) from.validTuples.clone();
+    validTuplesRO = new ReadOnlyBitSet(validTuples);
     validIndices = from.validIndices;
     numValidTuples = from.numValidTuples;
   }
@@ -204,7 +203,13 @@ public class TupleBatch {
   // return columns.get(index);
   // }
 
-  public final void getIntoJdbc(PreparedStatement statement) throws SQLException {
+  /**
+   * store this TB into JDBC.
+   * 
+   * @param statement JDBC statement.
+   * @throws SQLException any exception caused by JDBC.
+   * */
+  public final void getIntoJdbc(final PreparedStatement statement) throws SQLException {
     int[] mapping = validTupleIndices();
     for (int row = 0; row < numValidTuples; row++) {
       int column = 0;
@@ -215,7 +220,13 @@ public class TupleBatch {
     }
   }
 
-  public final void getIntoSQLite(SQLiteStatement statement) throws SQLiteException {
+  /**
+   * store this TB into SQLite.
+   * 
+   * @param statement SQLite statement.
+   * @throws SQLiteException any exception caused by SQLite.
+   * */
+  public final void getIntoSQLite(final SQLiteStatement statement) throws SQLiteException {
     int[] mapping = validTupleIndices();
     for (int row = 0; row < numValidTuples; row++) {
       int column = 0;
@@ -338,56 +349,39 @@ public class TupleBatch {
     }
   }
 
-  public TupleBatchBuffer[] partition(final PartitionFunction<?, ?> pf, final TupleBatchBuffer[] buffers) {
+  /**
+   * Partition this TB using the partition function.
+   * 
+   * @param pf the partition function.
+   * @buffers the buffers storing the partitioned data.
+   * */
+  public final void partition(final PartitionFunction<?, ?> pf, final TupleBatchBuffer[] buffers) {
     final int numColumns = numColumns();
-    List<Column<?>> outputData = outputRawData();
 
-    final int[] partitions = pf.partition(outputData, schema);
+    final int[] partitions = pf.partition(columns, validTuplesRO, schema);
 
+    int[] mapping = validTupleIndices();
     for (int i = 0; i < partitions.length; i++) {
       final int pOfTuple = partitions[i];
+      int mappedI = mapping[i];
       for (int j = 0; j < numColumns; j++) {
-        buffers[pOfTuple].put(j, outputData.get(j).get(i));
+        buffers[pOfTuple].put(j, columns.get(j).get(mappedI));
       }
     }
-    return buffers;
   }
 
   /**
-   * A read only iterator class which iterate over the valid values of a column.
+   * Get a COPY of valid tuples held by this TupleBatch.
    * 
-   * This is to prevent column data copy when column data are to be exposed.
+   * DO NOT use this method if not necessary.
+   * 
+   * Call get** methods if single cell values are requested. And call {#link compactInto} if the valid tuples are to be
+   * output to somewhere using a {#link TupleBatchBuffer}.
+   * 
+   * @return a copy of valid tuples
    * */
-  public class ColumnValueIterator<TYPE> implements Iterator<TYPE> {
-
-    private final Column<?> column;
-    private int rowIdx;
-    private final int[] mapping;
-
-    public ColumnValueIterator(int columnIdx) {
-      this.column = columns.get(columnIdx);
-      this.rowIdx = 0;
-      mapping = validTupleIndices();
-    }
-
-    @Override
-    public boolean hasNext() {
-      return this.rowIdx < numValidTuples;
-    }
-
-    @Override
-    public TYPE next() {
-      return (TYPE) this.column.get(mapping[rowIdx++]);
-    }
-
-    @Override
-    public void remove() {
-      throw new java.lang.UnsupportedOperationException();
-    }
-  }
-
-  public List<Column<?>> outputRawData() {
-    final List<Column<?>> output = ColumnFactory.allocateColumns(getSchema());
+  public final List<Column<?>> outputRawData() {
+    final List<Column<?>> output = ColumnFactory.allocateColumns(schema);
     int[] mapping = validTupleIndices();
     for (int row = 0; row < numValidTuples; row++) {
       int mappedRow = mapping[row];
@@ -397,6 +391,22 @@ public class TupleBatch {
       }
     }
     return output;
+  }
+
+  /**
+   * put the valid tuples into tbb.
+   * 
+   * @param tbb the TBB buffer.
+   * */
+  public final void compactInto(TupleBatchBuffer tbb) {
+    int numColumns = columns.size();
+    int[] mapping = validTupleIndices();
+    for (int row = 0; row < numValidTuples; row++) {
+      int mappedRow = mapping[row];
+      for (int column = 0; column < numColumns; column++) {
+        tbb.put(column, columns.get(column).get(mappedRow));
+      }
+    }
   }
 
   /**
@@ -415,11 +425,11 @@ public class TupleBatch {
     int count = 0;
     for (final int i : remainingColumns) {
       newColumns.add(columns.get(i));
-      newTypes[count] = schema.getFieldType(remainingColumns[count]);
-      newNames[count] = schema.getFieldName(remainingColumns[count]);
+      newTypes[count] = schema.getFieldType(i);
+      newNames[count] = schema.getFieldName(i);
       count++;
     }
-    return new TupleBatch(new Schema(newTypes, newNames), newColumns, validTuples, validIndices, numValidTuples);
+    return new TupleBatch(new Schema(newTypes, newNames), newColumns, validTuples, validIndices);
   }
 
   /**
@@ -459,7 +469,7 @@ public class TupleBatch {
    * 
    * @return an array containing the indices of all valid rows.
    */
-  private final int[] validTupleIndices() {
+  private int[] validTupleIndices() {
     if (validIndices != null) {
       return validIndices;
     }

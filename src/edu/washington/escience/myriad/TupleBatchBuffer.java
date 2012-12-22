@@ -1,7 +1,7 @@
 package edu.washington.escience.myriad;
 
+import java.util.Arrays;
 import java.util.BitSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -10,6 +10,12 @@ import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnFactory;
+import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
+import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
+import edu.washington.escience.myriad.proto.DataProto.DataMessage;
+import edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageType;
+import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
+import edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType;
 
 /**
  * Used for creating TupleBatch objects on the fly. A helper class used in, e.g., the Scatter operator.
@@ -23,7 +29,7 @@ public class TupleBatchBuffer {
   /** Convenience constant; must match schema.numColumns() and currentColumns.size(). */
   private final int numColumns;
   /** List of completed TupleBatch objects. */
-  private final List<TupleBatch> readyTuples;
+  private final List<List<Column<?>>> readyTuples;
   /** Internal state used to build up a TupleBatch. */
   private List<Column<?>> currentColumns;
   /** Internal state representing which columns are ready in the current tuple. */
@@ -40,7 +46,7 @@ public class TupleBatchBuffer {
    */
   public TupleBatchBuffer(final Schema schema) {
     this.schema = Objects.requireNonNull(schema);
-    readyTuples = new LinkedList<TupleBatch>();
+    readyTuples = new LinkedList<List<Column<?>>>();
     currentColumns = ColumnFactory.allocateColumns(schema);
     numColumns = schema.numFields();
     columnsReady = new BitSet(numColumns);
@@ -60,7 +66,8 @@ public class TupleBatchBuffer {
     if (currentInProgressTuples == 0) {
       return false;
     }
-    readyTuples.add(new TupleBatch(schema, currentColumns, currentInProgressTuples));
+    // readyTuples.add(new TupleBatch(schema, currentColumns, currentInProgressTuples));
+    readyTuples.add(currentColumns);
     currentColumns = ColumnFactory.allocateColumns(schema);
     currentInProgressTuples = 0;
     return true;
@@ -73,13 +80,68 @@ public class TupleBatchBuffer {
    */
   public final List<TupleBatch> getAll() {
     final List<TupleBatch> output = new LinkedList<TupleBatch>();
-    output.addAll(readyTuples);
+    for (List<Column<?>> columns : readyTuples) {
+      output.add(new TupleBatch(schema, columns, TupleBatch.BATCH_SIZE));
+    }
     if (currentInProgressTuples > 0) {
       output.add(new TupleBatch(schema, currentColumns, currentInProgressTuples));
     }
     return output;
   }
 
+  /**
+   * Return all tuples in this buffer. The data do not get removed.
+   * 
+   * @return a List<TupleBatch> containing all complete tuples that have been inserted into this buffer.
+   */
+  public final List<List<Column<?>>> getAllAsRawColumn() {
+    final List<List<Column<?>>> output = new LinkedList<List<Column<?>>>();
+    for (List<Column<?>> columns : readyTuples) {
+      output.add(columns);
+    }
+    if (currentInProgressTuples > 0) {
+      output.add(currentColumns);
+    }
+    return output;
+  }
+
+  /**
+   * Return all tuples in this buffer. The data do not get removed.
+   * 
+   * @return a List<TupleBatch> containing all complete tuples that have been inserted into this buffer.
+   */
+  public final List<TransportMessage> getAllAsTM(final ExchangePairID oId) {
+    final List<TransportMessage> output = new LinkedList<TransportMessage>();
+    if (numTuples() > 0) {
+      TransportMessage.Builder tmBuilder = TRANSPORTMESSAGE_BUILDER.get();
+      DataMessage.Builder dmBuilder = DATAMESSAGE_BUILDER.get();
+
+      for (List<Column<?>> columns : readyTuples) {
+        final ColumnMessage[] columnProtos = new ColumnMessage[columns.size()];
+
+        int i = 0;
+        for (final Column<?> c : columns) {
+          columnProtos[i++] = c.serializeToProto();
+        }
+        output.add(tmBuilder.setData(
+            dmBuilder.clearColumns().addAllColumns(Arrays.asList(columnProtos)).setOperatorID(oId.getLong())).build());
+      }
+      if (currentInProgressTuples > 0) {
+        final ColumnMessage[] columnProtos = new ColumnMessage[currentColumns.size()];
+        int i = 0;
+        for (final Column<?> c : currentColumns) {
+          columnProtos[i++] = c.serializeToProto();
+        }
+        output.add(tmBuilder.setData(
+            dmBuilder.clearColumns().addAllColumns(Arrays.asList(columnProtos)).setOperatorID(oId.getLong())).build());
+      }
+    }
+    return output;
+  }
+
+  /**
+   * clear this TBB.
+   * */
   public final void clear() {
     columnsReady.clear();
     currentColumns.clear();
@@ -102,6 +164,68 @@ public class TupleBatchBuffer {
    */
   public final TupleBatch popFilled() {
     if (readyTuples.size() > 0) {
+      return new TupleBatch(schema, readyTuples.remove(0), TupleBatch.BATCH_SIZE);
+    }
+    return null;
+  }
+
+  /**
+   * Thread local TransportMessage builder. May reduce the cost of creating builder instances.
+   * 
+   * @return builder.
+   * */
+  protected static final ThreadLocal<TransportMessage.Builder> TRANSPORTMESSAGE_BUILDER =
+      new ThreadLocal<TransportMessage.Builder>() {
+        @Override
+        protected TransportMessage.Builder initialValue() {
+          return TransportMessage.newBuilder().setType(TransportMessageType.DATA);
+        }
+      };
+
+  /**
+   * Thread local DataMessage builder. May reduce the cost of creating builder instances.
+   * 
+   * @return builder.
+   * */
+  protected static final ThreadLocal<DataMessage.Builder> DATAMESSAGE_BUILDER = new ThreadLocal<DataMessage.Builder>() {
+    @Override
+    protected DataMessage.Builder initialValue() {
+      return DataMessage.newBuilder().setType(DataMessageType.NORMAL);
+    }
+  };
+
+  /**
+   * Pop filled as TransportMessage. Avoid the overhead of creating TupleBatch instances if the data in this TBB are to
+   * be sent to other workers.
+   * 
+   * @param oId Destination exchangePairID.
+   * @return TransportMessage popped or null if no filled tuples ready yet.
+   * */
+  public final TransportMessage popFilledAsTM(final ExchangePairID oId) {
+    if (readyTuples.size() > 0) {
+      List<Column<?>> columns = readyTuples.remove(0);
+      final ColumnMessage[] columnProtos = new ColumnMessage[columns.size()];
+
+      int i = 0;
+      for (final Column<?> c : columns) {
+        columnProtos[i] = c.serializeToProto();
+        i++;
+      }
+      TransportMessage.Builder tmBuilder = TRANSPORTMESSAGE_BUILDER.get();
+      DataMessage.Builder dmBuilder = DATAMESSAGE_BUILDER.get();
+      return tmBuilder.setData(
+          dmBuilder.clearColumns().addAllColumns(Arrays.asList(columnProtos)).setOperatorID(oId.getLong())).build();
+    }
+    return null;
+  }
+
+  /**
+   * Pop filled as list of columns. Avoid the overhead of creating TupleBatch instances if needed such as in many tests.
+   * 
+   * @return list of columns popped or null if no filled tuples ready yet.
+   * */
+  public final List<Column<?>> popFilledAsRawColumn() {
+    if (readyTuples.size() > 0) {
       return readyTuples.remove(0);
     }
     return null;
@@ -123,8 +247,44 @@ public class TupleBatchBuffer {
       return tb;
     } else {
       if (currentInProgressTuples > 0) {
+        int size = currentInProgressTuples;
         finishBatch();
-        return popFilled();
+        return new TupleBatch(schema, readyTuples.remove(0), size);
+      } else {
+        return null;
+      }
+    }
+  }
+
+  /**
+   * @param oID destination ExchangePairID
+   * @return pop filled and non-filled TransportMessage
+   * */
+  public final TransportMessage popAnyAsTM(final ExchangePairID oID) {
+    TransportMessage dm = popFilledAsTM(oID);
+    if (dm != null) {
+      return dm;
+    } else {
+      if (currentInProgressTuples > 0) {
+        finishBatch();
+        return popFilledAsTM(oID);
+      } else {
+        return null;
+      }
+    }
+  }
+
+  /**
+   * @return pop filled or non-filled as list of columns.
+   * */
+  public final List<Column<?>> popAnyAsRawColumn() {
+    List<Column<?>> rc = popFilledAsRawColumn();
+    if (rc != null) {
+      return rc;
+    } else {
+      if (currentInProgressTuples > 0) {
+        finishBatch();
+        return popFilledAsRawColumn();
       } else {
         return null;
       }
@@ -155,37 +315,19 @@ public class TupleBatchBuffer {
     }
   }
 
-  public final void putAll(List<Column<?>> columns) {
-    Preconditions.checkState(columns.size() == numColumns);
-    if (columnsReady.get(0)) {
-      throw new RuntimeException("Need to fill up one row of TupleBatchBuffer before starting new one");
-    }
-    int numRow = columns.get(0).size();
-    for (int row = 0; row < numRow; row++) {
-      for (int column = 0; column < numColumns; column++) {
-        currentColumns.get(column).putObject(columns.get(column).get(row));
-        columnsReady.set(column, true);
-        numColumnsReady++;
-        if (numColumnsReady == numColumns) {
-          currentInProgressTuples++;
-          numColumnsReady = 0;
-          columnsReady.clear();
-          if (currentInProgressTuples == TupleBatch.BATCH_SIZE) {
-            finishBatch();
-          }
+  /**
+   * @param another TBB.
+   * */
+  public final void merge(final TupleBatchBuffer another) {
+    readyTuples.addAll(another.readyTuples);
+    if (another.currentInProgressTuples > 0) {
+      for (int row = 0; row < another.currentInProgressTuples; row++) {
+        int column = 0;
+        for (Column<?> c : another.currentColumns) {
+          put(column, c.get(row));
+          column++;
         }
       }
-    }
-  }
-
-  public final void putAll(TupleBatch data) {
-    putAll(data.outputRawData());
-  }
-
-  public final void merge(TupleBatchBuffer another) {
-    Iterator<TupleBatch> it = another.getAll().iterator();
-    while (it.hasNext()) {
-      putAll(it.next());
     }
   }
 
