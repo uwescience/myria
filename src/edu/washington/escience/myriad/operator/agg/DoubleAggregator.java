@@ -4,7 +4,6 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.column.DoubleColumn;
 import edu.washington.escience.myriad.util.MathUtils;
 
 /**
@@ -91,20 +90,20 @@ public final class DoubleAggregator implements Aggregator {
   @Override
   public void add(final TupleBatch tup) {
 
-    count += tup.numTuples();
-    DoubleColumn rawData = (DoubleColumn) tup.outputRawData().get(afield);
-    int numTuples = rawData.size();
-    for (int i = 0; i < numTuples; i++) {
-      double x = rawData.getDouble(i);
-      sum += x;
-      if (Double.compare(x, min) < 0) {
-        min = x;
-      }
-      if (Double.compare(x, max) > 0) {
-        max = x;
+    int numTuples = tup.numTuples();
+    if (numTuples > 0) {
+      count += numTuples;
+      for (int i = 0; i < numTuples; i++) {
+        double x = tup.getDouble(afield, i);
+        sum += x;
+        if (Double.compare(x, min) < 0) {
+          min = x;
+        }
+        if (Double.compare(x, max) > 0) {
+          max = x;
+        }
       }
     }
-
   }
 
   @Override

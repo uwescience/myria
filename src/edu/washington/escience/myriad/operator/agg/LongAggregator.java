@@ -4,7 +4,6 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.column.LongColumn;
 import edu.washington.escience.myriad.util.MathUtils;
 
 /**
@@ -89,20 +88,20 @@ public final class LongAggregator implements Aggregator {
   @Override
   public void add(final TupleBatch tup) {
 
-    count += tup.numTuples();
-    LongColumn rawData = (LongColumn) tup.outputRawData().get(afield);
-    int numTuples = rawData.size();
-    for (int i = 0; i < numTuples; i++) {
-      long x = rawData.getLong(i);
-      sum += x;
-      if (min > x) {
-        min = x;
-      }
-      if (max < x) {
-        max = x;
+    int numTuples = tup.numTuples();
+    if (numTuples > 0) {
+      count += numTuples;
+      for (int i = 0; i < numTuples; i++) {
+        long x = tup.getLong(afield, i);
+        sum += x;
+        if (min > x) {
+          min = x;
+        }
+        if (max < x) {
+          max = x;
+        }
       }
     }
-
   }
 
   @Override

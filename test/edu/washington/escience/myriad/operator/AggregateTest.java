@@ -53,11 +53,11 @@ public class AggregateTest {
 
   @SuppressWarnings("unchecked")
   public static <T extends Comparable<T>> T min(TupleBatchBuffer tbb, int column) {
-    List<TupleBatch> tbs = tbb.getAll();
-    T min = ((Column<T>) tbb.getAll().get(0).outputRawData().get(column)).get(0);
-    for (TupleBatch tb : tbs) {
-      int numTuples = tb.numTuples();
-      Column<T> c = (Column<T>) tb.outputRawData().get(column);
+    List<List<Column<?>>> tbs = tbb.getAllAsRawColumn();
+    T min = ((Column<T>) tbs.get(0).get(column)).get(0);
+    for (List<Column<?>> tb : tbs) {
+      int numTuples = tb.get(0).size();
+      Column<T> c = (Column<T>) tb.get(column);
       for (int i = 0; i < numTuples; i++) {
         T current = c.get(i);
         if (min.compareTo(current) > 0) {
@@ -70,11 +70,11 @@ public class AggregateTest {
 
   @SuppressWarnings("unchecked")
   public static <T extends Comparable<T>> T max(TupleBatchBuffer tbb, int column) {
-    List<TupleBatch> tbs = tbb.getAll();
-    T max = ((Column<T>) tbb.getAll().get(0).outputRawData().get(column)).get(0);
-    for (TupleBatch tb : tbs) {
-      int numTuples = tb.numTuples();
-      Column<T> c = (Column<T>) tb.outputRawData().get(column);
+    List<List<Column<?>>> tbs = tbb.getAllAsRawColumn();
+    T max = ((Column<T>) tbs.get(0).get(column)).get(0);
+    for (List<Column<?>> tb : tbs) {
+      int numTuples = tb.get(0).size();
+      Column<T> c = (Column<T>) tb.get(column);
       for (int i = 0; i < numTuples; i++) {
         T current = c.get(i);
         if (max.compareTo(current) < 0) {
@@ -86,12 +86,12 @@ public class AggregateTest {
   }
 
   public static long sumLong(TupleBatchBuffer tbb, int column) {
-    List<TupleBatch> tbs = tbb.getAll();
+    List<List<Column<?>>> tbs = tbb.getAllAsRawColumn();
     long sum = 0;
-    for (TupleBatch tb : tbs) {
-      int numTuples = tb.numTuples();
+    for (List<Column<?>> tb : tbs) {
+      int numTuples = tb.get(0).size();
       @SuppressWarnings("unchecked")
-      Column<Long> c = (Column<Long>) tb.outputRawData().get(column);
+      Column<Long> c = (Column<Long>) tb.get(column);
       for (int i = 0; i < numTuples; i++) {
         Long current = c.get(i);
         sum += current;
@@ -113,7 +113,7 @@ public class AggregateTest {
     agg.open();
     TupleBatch tb = null;
     while ((tb = agg.next()) != null) {
-      assertEquals(minID, tb.outputRawData().get(0).get(0));
+      assertEquals(minID, tb.getObject(0, 0));
     }
     agg.close();
 
@@ -121,7 +121,7 @@ public class AggregateTest {
     agg.open();
     tb = null;
     while ((tb = agg.next()) != null) {
-      assertEquals(minName, tb.outputRawData().get(0).get(0));
+      assertEquals(minName, tb.getString(0, 0));
     }
   }
 
@@ -137,7 +137,7 @@ public class AggregateTest {
     agg.open();
     TupleBatch tb = null;
     while ((tb = agg.next()) != null) {
-      assertEquals(maxID, tb.outputRawData().get(0).get(0));
+      assertEquals(maxID, tb.getObject(0, 0));
     }
     agg.close();
 
@@ -145,7 +145,7 @@ public class AggregateTest {
     agg.open();
     tb = null;
     while ((tb = agg.next()) != null) {
-      assertEquals(maxName, tb.outputRawData().get(0).get(0));
+      assertEquals(maxName, tb.getString(0, 0));
     }
   }
 
@@ -160,7 +160,7 @@ public class AggregateTest {
     agg.open();
     TupleBatch tb = null;
     while ((tb = agg.next()) != null) {
-      assertEquals(sumID, tb.outputRawData().get(0).get(0));
+      assertEquals(sumID, tb.getObject(0, 0));
     }
     agg.close();
   }
@@ -176,18 +176,17 @@ public class AggregateTest {
     agg.open();
     TupleBatch tb = null;
     while ((tb = agg.next()) != null) {
-      assertTrue(Double.compare(sumID * 1.0 / numTuples, (Double) tb.outputRawData().get(0).get(0)) == 0);
+      assertTrue(Double.compare(sumID * 1.0 / numTuples, tb.getDouble(0, 0)) == 0);
     }
     agg.close();
   }
 
   public static HashMap<SystemTestBase.Tuple, Integer> groupBySumLongColumn(TupleBatchBuffer source, int groupByColumn,
       int aggColumn) {
-    List<TupleBatch> tbs = source.getAll();
+    List<List<Column<?>>> tbs = source.getAllAsRawColumn();
     HashMap<Object, Long> sum = new HashMap<Object, Long>();
-    for (TupleBatch tb : tbs) {
-      int numTuples = tb.numTuples();
-      List<Column<?>> rawData = tb.outputRawData();
+    for (List<Column<?>> rawData : tbs) {
+      int numTuples = rawData.get(0).size();
       for (int i = 0; i < numTuples; i++) {
         Object groupByValue = rawData.get(groupByColumn).get(i);
         Long aggValue = (Long) rawData.get(aggColumn).get(i);
@@ -212,11 +211,10 @@ public class AggregateTest {
   }
 
   public static HashMap<SystemTestBase.Tuple, Long> groupByCount(TupleBatchBuffer source, int groupByColumn) {
-    List<TupleBatch> tbs = source.getAll();
+    List<List<Column<?>>> tbs = source.getAllAsRawColumn();
     HashMap<Object, Long> count = new HashMap<Object, Long>();
-    for (TupleBatch tb : tbs) {
-      int numTuples = tb.numTuples();
-      List<Column<?>> rawData = tb.outputRawData();
+    for (List<Column<?>> rawData : tbs) {
+      int numTuples = rawData.get(0).size();
       for (int i = 0; i < numTuples; i++) {
         Object groupByValue = rawData.get(groupByColumn).get(i);
         Long currentCount = count.get(groupByValue);
@@ -241,12 +239,11 @@ public class AggregateTest {
 
   public static HashMap<SystemTestBase.Tuple, Integer> groupByAvgLongColumn(TupleBatchBuffer source, int groupByColumn,
       int aggColumn) {
-    List<TupleBatch> tbs = source.getAll();
+    List<List<Column<?>>> tbs = source.getAllAsRawColumn();
     HashMap<Object, Long> sum = new HashMap<Object, Long>();
     HashMap<Object, Integer> count = new HashMap<Object, Integer>();
-    for (TupleBatch tb : tbs) {
-      int numTuples = tb.numTuples();
-      List<Column<?>> rawData = tb.outputRawData();
+    for (List<Column<?>> rawData : tbs) {
+      int numTuples = rawData.get(0).size();
       for (int i = 0; i < numTuples; i++) {
         Object groupByValue = rawData.get(groupByColumn).get(i);
         Long aggValue = (Long) rawData.get(aggColumn).get(i);
@@ -275,11 +272,10 @@ public class AggregateTest {
 
   public static <T extends Comparable<T>> HashMap<SystemTestBase.Tuple, Integer> groupByMin(TupleBatchBuffer source,
       int groupByColumn, int aggColumn) {
-    List<TupleBatch> tbs = source.getAll();
+    List<List<Column<?>>> tbs = source.getAllAsRawColumn();
     HashMap<Object, T> min = new HashMap<Object, T>();
-    for (TupleBatch tb : tbs) {
-      int numTuples = tb.numTuples();
-      List<Column<?>> rawData = tb.outputRawData();
+    for (List<Column<?>> rawData : tbs) {
+      int numTuples = rawData.get(0).size();
       for (int i = 0; i < numTuples; i++) {
         Object groupByValue = rawData.get(groupByColumn).get(i);
         @SuppressWarnings("unchecked")
@@ -307,11 +303,10 @@ public class AggregateTest {
 
   public static <T extends Comparable<T>> HashMap<SystemTestBase.Tuple, Integer> groupByMax(TupleBatchBuffer source,
       int groupByColumn, int aggColumn) {
-    List<TupleBatch> tbs = source.getAll();
+    List<List<Column<?>>> tbs = source.getAllAsRawColumn();
     HashMap<Object, T> max = new HashMap<Object, T>();
-    for (TupleBatch tb : tbs) {
-      int numTuples = tb.numTuples();
-      List<Column<?>> rawData = tb.outputRawData();
+    for (List<Column<?>> rawData : tbs) {
+      int numTuples = rawData.get(0).size();
       for (int i = 0; i < numTuples; i++) {
         Object groupByValue = rawData.get(groupByColumn).get(i);
         @SuppressWarnings("unchecked")
@@ -350,7 +345,7 @@ public class AggregateTest {
     TupleBatch tb = null;
     TupleBatchBuffer result = new TupleBatchBuffer(agg.getSchema());
     while ((tb = agg.next()) != null) {
-      result.putAll(tb);
+      tb.compactInto(result);
     }
     agg.close();
     HashMap<SystemTestBase.Tuple, Integer> actualResult = TestUtils.tupleBatchToTupleBag(result);
@@ -370,7 +365,7 @@ public class AggregateTest {
     TupleBatch tb = null;
     TupleBatchBuffer result = new TupleBatchBuffer(agg.getSchema());
     while ((tb = agg.next()) != null) {
-      result.putAll(tb);
+      tb.compactInto(result);
     }
     agg.close();
     HashMap<SystemTestBase.Tuple, Integer> actualResult = TestUtils.tupleBatchToTupleBag(result);
@@ -390,7 +385,7 @@ public class AggregateTest {
     TupleBatch tb = null;
     TupleBatchBuffer result = new TupleBatchBuffer(agg.getSchema());
     while ((tb = agg.next()) != null) {
-      result.putAll(tb);
+      tb.compactInto(result);
     }
     agg.close();
     HashMap<SystemTestBase.Tuple, Integer> actualResult = TestUtils.tupleBatchToTupleBag(result);
@@ -402,7 +397,7 @@ public class AggregateTest {
     tb = null;
     result = new TupleBatchBuffer(agg.getSchema());
     while ((tb = agg.next()) != null) {
-      result.putAll(tb);
+      tb.compactInto(result);
     }
     agg.close();
     actualResult = TestUtils.tupleBatchToTupleBag(result);
@@ -422,7 +417,7 @@ public class AggregateTest {
     TupleBatch tb = null;
     TupleBatchBuffer result = new TupleBatchBuffer(agg.getSchema());
     while ((tb = agg.next()) != null) {
-      result.putAll(tb);
+      tb.compactInto(result);
     }
     agg.close();
     HashMap<SystemTestBase.Tuple, Integer> actualResult = TestUtils.tupleBatchToTupleBag(result);
@@ -434,7 +429,7 @@ public class AggregateTest {
     tb = null;
     result = new TupleBatchBuffer(agg.getSchema());
     while ((tb = agg.next()) != null) {
-      result.putAll(tb);
+      tb.compactInto(result);
     }
     agg.close();
     actualResult = TestUtils.tupleBatchToTupleBag(result);

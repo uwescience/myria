@@ -4,7 +4,6 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.column.StringColumn;
 import edu.washington.escience.myriad.util.MathUtils;
 
 /**
@@ -86,24 +85,25 @@ public final class StringAggregator implements Aggregator {
   @Override
   public void add(final TupleBatch tup) {
 
-    count += tup.numTuples();
-    if (computeMin || computeMax) {
-      StringColumn c = (StringColumn) tup.outputRawData().get(afield);
-      int numTuples = c.size();
-      for (int i = 0; i < numTuples; i++) {
-        String r = c.getString(i);
-        if (computeMin) {
-          if (min == null) {
-            min = r;
-          } else if (r.compareTo(min) < 0) {
-            min = r;
+    int numTuples = tup.numTuples();
+    if (numTuples > 0) {
+      count += numTuples;
+      if (computeMin || computeMax) {
+        for (int i = 0; i < numTuples; i++) {
+          String r = tup.getString(afield, i);
+          if (computeMin) {
+            if (min == null) {
+              min = r;
+            } else if (r.compareTo(min) < 0) {
+              min = r;
+            }
           }
-        }
-        if (computeMax) {
-          if (max == null) {
-            max = r;
-          } else if (r.compareTo(max) > 0) {
-            max = r;
+          if (computeMax) {
+            if (max == null) {
+              max = r;
+            } else if (r.compareTo(max) > 0) {
+              max = r;
+            }
           }
         }
       }

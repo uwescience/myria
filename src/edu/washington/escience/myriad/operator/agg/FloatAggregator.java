@@ -4,7 +4,6 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.column.FloatColumn;
 import edu.washington.escience.myriad.util.MathUtils;
 
 /**
@@ -89,20 +88,20 @@ public final class FloatAggregator implements Aggregator {
   @Override
   public void add(final TupleBatch tup) {
 
-    count += tup.numTuples();
-    FloatColumn rawData = (FloatColumn) tup.outputRawData().get(afield);
-    int numTuples = rawData.size();
-    for (int i = 0; i < numTuples; i++) {
-      float x = rawData.getFloat(i);
-      sum += x;
-      if (Float.compare(x, min) < 0) {
-        min = x;
-      }
-      if (Float.compare(x, max) > 0) {
-        max = x;
+    int numTuples = tup.numTuples();
+    if (numTuples > 0) {
+      count += numTuples;
+      for (int i = 0; i < numTuples; i++) {
+        float x = tup.getFloat(afield, i);
+        sum += x;
+        if (Float.compare(x, min) < 0) {
+          min = x;
+        }
+        if (Float.compare(x, max) > 0) {
+          max = x;
+        }
       }
     }
-
   }
 
   @Override

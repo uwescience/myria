@@ -4,7 +4,6 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.column.IntColumn;
 import edu.washington.escience.myriad.util.MathUtils;
 
 /**
@@ -90,17 +89,18 @@ public class IntegerAggregator implements Aggregator {
   @Override
   public final void add(final TupleBatch tup) {
 
-    count += tup.numTuples();
-    IntColumn rawData = (IntColumn) tup.outputRawData().get(afield);
-    int numTuples = rawData.size();
-    for (int i = 0; i < numTuples; i++) {
-      int x = rawData.getInt(i);
-      sum += x;
-      if (min > x) {
-        min = x;
-      }
-      if (max < x) {
-        max = x;
+    int numTuples = tup.numTuples();
+    if (numTuples > 0) {
+      count += numTuples;
+      for (int i = 0; i < numTuples; i++) {
+        int x = tup.getInt(afield, i);
+        sum += x;
+        if (min > x) {
+          min = x;
+        }
+        if (max < x) {
+          max = x;
+        }
       }
     }
 

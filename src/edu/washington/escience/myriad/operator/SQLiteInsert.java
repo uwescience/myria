@@ -2,7 +2,6 @@ package edu.washington.escience.myriad.operator;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -15,7 +14,6 @@ import com.almworks.sqlite4java.SQLiteStatement;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.TupleBatch;
-import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.util.SQLiteUtils;
 
 /**
@@ -120,16 +118,8 @@ public class SQLiteInsert extends RootOperator {
 
         SQLiteStatement insertStatement = sqliteConnection.prepare(insertString);
 
-        List<Column<?>> columns = tupleBatch.outputRawData();
+        tupleBatch.getIntoSQLite(insertStatement);
 
-        /* Set up and execute the query */
-        for (int row = 0; row < tupleBatch.numTuples(); ++row) {
-          for (int column = 0; column < getSchema().numFields(); ++column) {
-            columns.get(column).getIntoSQLite(row, insertStatement, column + 1);
-          }
-          insertStatement.step();
-          insertStatement.reset();
-        }
         /* COMMIT TRANSACTION */
         sqliteConnection.exec("COMMIT TRANSACTION");
 

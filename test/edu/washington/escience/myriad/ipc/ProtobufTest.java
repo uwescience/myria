@@ -24,6 +24,7 @@ import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnFactory;
+import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 import edu.washington.escience.myriad.parallel.IPCConnectionPool;
 import edu.washington.escience.myriad.parallel.ParallelUtility;
 import edu.washington.escience.myriad.parallel.SocketInfo;
@@ -32,8 +33,8 @@ import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageType;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
-import edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType;
 import edu.washington.escience.myriad.systemtest.SystemTestBase.Tuple;
+import edu.washington.escience.myriad.util.IPCUtils;
 import edu.washington.escience.myriad.util.TestUtils;
 
 public class ProtobufTest {
@@ -81,36 +82,21 @@ public class ProtobufTest {
 
     final IPCConnectionPool connectionPool = new IPCConnectionPool(0, computingUnits, messageQueue);
 
+    final ExchangePairID epID = ExchangePairID.fromExisting(0l);
+    final List<TransportMessage> tbs = tbb.getAllAsTM(epID);
+
     Thread[] threads = new Thread[numThreads];
     final AtomicInteger numSent = new AtomicInteger();
     for (int i = 0; i < numThreads; i++) {
       Thread tt = new Thread() {
         @Override
         public void run() {
-          TupleBatch tb = null;
-          Iterator<TupleBatch> tbs = tbb.getAll().iterator();
           Channel ch = connectionPool.get(0, 3, null);
-          while (tbs.hasNext()) {
-            tb = tbs.next();
-            List<Column<?>> columns = tb.outputRawData();
-            final ColumnMessage[] columnProtos = new ColumnMessage[columns.size()];
-            int j = 0;
-            for (final Column<?> c : columns) {
-              columnProtos[j] = c.serializeToProto();
-              j++;
-            }
-
-            TransportMessage tm =
-                TransportMessage.newBuilder().setType(TransportMessageType.DATA).setData(
-                    DataMessage.newBuilder().setType(DataMessageType.NORMAL).addAllColumns(Arrays.asList(columnProtos))
-                        .setOperatorID(0l).build()).build();
+          for (TransportMessage tm : tbs) {
             ch.write(tm);
             numSent.incrementAndGet();
           }
-          ch.write(
-              TransportMessage.newBuilder().setType(TransportMessageType.DATA).setData(
-                  DataMessage.newBuilder().setType(DataMessageType.EOS).setOperatorID(0l).build()).build())
-              .awaitUninterruptibly();
+          ch.write(IPCUtils.eosTM(epID));
           numSent.incrementAndGet();
         }
       };
@@ -149,8 +135,9 @@ public class ProtobufTest {
               columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm);
             }
             final List<Column<?>> columns = Arrays.asList(columnArray);
+            TupleBatch tb = new TupleBatch(schema, columns, columnArray[0].size());
 
-            actualTBB.putAll(columns);
+            tb.compactInto(actualTBB);
             break;
         }
       }

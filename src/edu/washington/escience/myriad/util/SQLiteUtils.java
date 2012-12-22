@@ -88,8 +88,7 @@ public class SQLiteUtils {
     }
 
     SQLiteAccessMethod.tupleBatchInsert(dbFilePath, "insert into " + tableName + " ( "
-        + StringUtils.join(fieldNames, ',') + " ) values ( " + StringUtils.join(placeHolders, ',') + " )",
-        new TupleBatch(data.getSchema(), data.outputRawData(), data.numTuples()));
+        + StringUtils.join(fieldNames, ',') + " ) values ( " + StringUtils.join(placeHolders, ',') + " )", data);
   }
 
 }
