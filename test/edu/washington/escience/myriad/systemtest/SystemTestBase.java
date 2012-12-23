@@ -9,14 +9,12 @@ import java.lang.ProcessBuilder.Redirect;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
-import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.mina.util.AvailablePortFinder;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.slf4j.LoggerFactory;
 
@@ -122,13 +120,6 @@ public class SystemTestBase {
   public static Process SERVER_PROCESS;
   public static final Process[] workerProcess = new Process[WORKER_ID.length];
   public static final Thread[] workerStdoutReader = new Thread[WORKER_ID.length];
-
-  public static void assertTupleBagEqual(HashMap<Tuple, Integer> expectedResult, HashMap<Tuple, Integer> actualResult) {
-    Assert.assertEquals(expectedResult.size(), actualResult.size());
-    for (Entry<Tuple, Integer> e : actualResult.entrySet()) {
-      Assert.assertTrue(expectedResult.get(e.getKey()).equals(e.getValue()));
-    }
-  }
 
   public static String workerTestBaseFolder;
 
@@ -365,13 +356,26 @@ public class SystemTestBase {
    * */
   static void startWorkers() throws IOException {
     int workerCount = 0;
-    for (final int workerID : WORKER_ID) {
-
+    for (int i = 0; i < WORKER_ID.length; i++) {
+      int workerID = WORKER_ID[i];
       String workingDir = FilenameUtils.concat(workerTestBaseFolder, "worker_" + workerID);
 
       final String[] workerClasspath = EclipseClasspathReader.readEclipseClasspath(new File(".classpath"));
       final ProcessBuilder pb =
-          new ProcessBuilder("java", "-Djava.library.path=" + workerClasspath[1], "-Dorg.jboss.netty.debug",
+          new ProcessBuilder(
+              "java",
+              "-Djava.library.path=" + workerClasspath[1],
+              "-Dorg.jboss.netty.debug",
+              "-Xdebug",
+              // Now eclipse is able to debug remotely the worker processes following the steps:
+              // 1. Set a breakpoint at the beginning of a JUnit test method.
+              // 2. start debug the JUnit test method. The test method should stop at the preset breakpoint.
+              // But now, the worker processes are already started.
+              // 3. Create an Eclipse remote debugger and set to attach to localhost 10001 for worker1 and localhost
+              // 10002 for worker2
+              // 4. Now, you are able to debug the worker processes. All the Java debugging methods are supported such
+              // as breakpoints.
+              "-Xrunjdwp:transport=dt_socket,address=" + (SystemTestBase.WORKER_PORT[i] + 1000) + ",server=y,suspend=n",
               "-classpath", workerClasspath[0], Worker.class.getCanonicalName(), "--workingDir", workingDir);
 
       pb.directory(new File(workingDir));
