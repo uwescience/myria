@@ -27,7 +27,7 @@ public final class Main {
   private static final int MASTER_ID = 0;
   private static int[] WORKER_ID;
   private static final int numIteration = 2;
-  private static final int numPartition = 6;
+  private static final int numPartition = 2;
 
   private static Type[] table1Types = new Type[] { Type.LONG_TYPE, Type.LONG_TYPE };
   private static String[] table1ColumnNames = new String[] { "follower", "followee" };
@@ -131,8 +131,7 @@ public final class Main {
       @Override
       public void run() {
         try {
-          String catalogFileName = FilenameUtils.concat("/homes/gws/jwang/myriad/multitest", "master.catalog");
-          // String catalogFileName = FilenameUtils.concat("/tmp/multitest", "master.catalog");
+          String catalogFileName = FilenameUtils.concat("/tmp/multitest", "master.catalog");
           Server.main(new String[] { catalogFileName });
         } catch (IOException e) {
           throw new RuntimeException(e);
