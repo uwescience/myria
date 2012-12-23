@@ -353,12 +353,12 @@ public class TupleBatch {
    * Partition this TB using the partition function.
    * 
    * @param pf the partition function.
-   * @buffers the buffers storing the partitioned data.
+   * @param buffers the buffers storing the partitioned data.
    * */
   public final void partition(final PartitionFunction<?, ?> pf, final TupleBatchBuffer[] buffers) {
     final int numColumns = numColumns();
 
-    final int[] partitions = pf.partition(columns, validTuplesRO, schema);
+    final int[] partitions = pf.partition(this); // columns, validTuplesRO, schema);
 
     int[] mapping = validTupleIndices();
     for (int i = 0; i < partitions.length; i++) {
