@@ -146,8 +146,7 @@ public final class DupElim extends Operator {
         toRemove.set(i);
       }
     }
-    tb.remove(toRemove);
-    return tb;
+    return tb.remove(toRemove);
   }
 
   @Override
