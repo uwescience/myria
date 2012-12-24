@@ -41,7 +41,7 @@ public final class CollectProducer extends Producer {
           }
         }
 
-        if ((dm = buffer.popAnyAsTM(operatorID)) != null) {
+        while ((dm = buffer.popAnyAsTM(operatorID)) != null) {
           channel.write(dm);
         }
 
@@ -57,10 +57,7 @@ public final class CollectProducer extends Producer {
   private static final long serialVersionUID = 1L;
 
   private transient WorkingThread runningThread;
-  public static final int MAX_SIZE = 100;
-  public static final int MIN_SIZE = 100;
 
-  public static final int MAX_MS = 1000;
   /**
    * The paired collect consumer address.
    */

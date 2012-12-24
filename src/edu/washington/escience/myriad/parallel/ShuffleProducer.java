@@ -39,21 +39,19 @@ public class ShuffleProducer extends Producer {
           buffers[i] = new TupleBatchBuffer(thisSchema);
         }
         TupleBatch tup = null;
+        TransportMessage dm = null;
         while ((tup = child.next()) != null) {
           tup.partition(partitionFunction, buffers);
           for (int p = 0; p < numWorker; p++) {
             final TupleBatchBuffer etb = buffers[p];
-            TransportMessage dm = null;
             while ((dm = etb.popFilledAsTM(operatorID)) != null) {
               shuffleChannels[p].write(dm);
             }
           }
         }
 
-        TransportMessage dm = null;
         for (int i = 0; i < numWorker; i++) {
-          dm = buffers[i].popAnyAsTM(operatorID);
-          if (dm != null) {
+          while ((dm = buffers[i].popAnyAsTM(operatorID))!=null) {
             shuffleChannels[i].write(dm);
           }
         }
