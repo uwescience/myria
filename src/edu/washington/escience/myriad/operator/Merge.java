@@ -2,7 +2,7 @@ package edu.washington.escience.myriad.operator;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
-import edu.washington.escience.myriad.table._TupleBatch;
+import edu.washington.escience.myriad.TupleBatch;
 
 public class Merge extends Operator {
 
@@ -22,8 +22,8 @@ public class Merge extends Operator {
   }
 
   @Override
-  protected _TupleBatch fetchNext() throws DbException {
-    _TupleBatch tb;
+  protected TupleBatch fetchNext() throws DbException {
+    TupleBatch tb;
     System.out.println("merge fetch next");
     if (child1 != null && (tb = child1.next()) != null) {
       System.out.println(" child1 fetched");
@@ -77,7 +77,7 @@ public class Merge extends Operator {
   }
 
   @Override
-  public _TupleBatch fetchNextReady() throws DbException {
+  public TupleBatch fetchNextReady() throws DbException {
     return null;
   }
 

@@ -1,11 +1,10 @@
 package edu.washington.escience.myriad.operator.agg;
 
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.column.StringColumn;
-import edu.washington.escience.myriad.parallel.ParallelUtility;
-import edu.washington.escience.myriad.table._TupleBatch;
+import edu.washington.escience.myriad.util.MathUtils;
 
 /**
  * Knows how to compute some aggregate over a StringColumn.
@@ -55,12 +54,12 @@ public final class StringAggregator implements Aggregator {
 
     this.afield = afield;
     this.aggOps = aggOps;
-    int numAggOps = ParallelUtility.numBinaryOnesInInteger(aggOps);
+    int numAggOps = MathUtils.numBinaryOnesInInteger(aggOps);
     Type[] types = new Type[numAggOps];
     String[] names = new String[numAggOps];
     int idx = 0;
     if ((aggOps & Aggregator.AGG_OP_COUNT) != 0) {
-      types[idx] = Type.INT_TYPE;
+      types[idx] = Type.LONG_TYPE;
       names[idx] = "count(" + aFieldName + ")";
       idx += 1;
     }
@@ -84,26 +83,27 @@ public final class StringAggregator implements Aggregator {
   }
 
   @Override
-  public void add(final _TupleBatch tup) {
+  public void add(final TupleBatch tup) {
 
-    count += tup.numOutputTuples();
-    if (computeMin || computeMax) {
-      StringColumn c = (StringColumn) tup.outputRawData().get(afield);
-      int numTuples = c.size();
-      for (int i = 0; i < numTuples; i++) {
-        String r = c.getString(i);
-        if (computeMin) {
-          if (min == null) {
-            min = r;
-          } else if (r.compareTo(min) < 0) {
-            min = r;
+    int numTuples = tup.numTuples();
+    if (numTuples > 0) {
+      count += numTuples;
+      if (computeMin || computeMax) {
+        for (int i = 0; i < numTuples; i++) {
+          String r = tup.getString(afield, i);
+          if (computeMin) {
+            if (min == null) {
+              min = r;
+            } else if (r.compareTo(min) < 0) {
+              min = r;
+            }
           }
-        }
-        if (computeMax) {
-          if (max == null) {
-            max = r;
-          } else if (r.compareTo(max) > 0) {
-            max = r;
+          if (computeMax) {
+            if (max == null) {
+              max = r;
+            } else if (r.compareTo(max) > 0) {
+              max = r;
+            }
           }
         }
       }

@@ -23,7 +23,8 @@ import edu.washington.escience.myriad.operator.LocalProjectingJoin;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.Project;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
-import edu.washington.escience.myriad.operator.agg.Count;
+import edu.washington.escience.myriad.operator.agg.Aggregate;
+import edu.washington.escience.myriad.operator.agg.Aggregator;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
@@ -252,7 +253,7 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     final ShuffleProducer sp0 = new ShuffleProducer(localProjJoin, arrayID0, WORKER_ID, pf0);
     final ShuffleConsumer sc0 = new ShuffleConsumer(sp0, arrayID0, WORKER_ID);
     final DupElim dupelim = new DupElim(sc0);
-    final Count count = new Count(dupelim);
+    final Aggregate count = new Aggregate(dupelim, new int[] { 0 }, new int[] { Aggregator.AGG_OP_COUNT });
 
     /* Finally, send (CollectProduce) all the results to the master. */
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
@@ -292,8 +293,8 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     long total = 0;
     TupleBatch tb = result.popAny();
     while (tb != null) {
-      for (int i : tb.validTupleIndices()) {
-        total += tb.getLong(0, i);
+      for (int row = 0, totalTuples = tb.numTuples(); row < totalTuples; row++) {
+        total += tb.getLong(0, row);
       }
       tb = result.popAny();
     }

@@ -6,7 +6,6 @@ import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
-import edu.washington.escience.myriad.table._TupleBatch;
 
 /**
  * This class creates a LeafOperator from a batch of tuples. Useful for testing.
@@ -34,7 +33,7 @@ public final class TupleSource extends LeafOperator {
   }
 
   @Override
-  protected _TupleBatch fetchNext() throws DbException {
+  protected TupleBatch fetchNext() throws DbException {
     if (data.isEmpty()) {
       return null;
     }
@@ -55,7 +54,7 @@ public final class TupleSource extends LeafOperator {
   }
 
   @Override
-  public _TupleBatch fetchNextReady() throws DbException {
+  public TupleBatch fetchNextReady() throws DbException {
     return fetchNext();
   }
 

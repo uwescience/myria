@@ -1,7 +1,5 @@
 package edu.washington.escience.myriad.systemtest;
 
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -16,6 +14,7 @@ import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
+import edu.washington.escience.myriad.operator.DupElim;
 import edu.washington.escience.myriad.operator.LocalJoin;
 import edu.washington.escience.myriad.operator.Merge;
 import edu.washington.escience.myriad.operator.Operator;
@@ -29,7 +28,7 @@ import edu.washington.escience.myriad.parallel.Server;
 import edu.washington.escience.myriad.parallel.ShuffleConsumer;
 import edu.washington.escience.myriad.parallel.ShuffleProducer;
 import edu.washington.escience.myriad.parallel.SingleFieldHashPartitionFunction;
-import edu.washington.escience.myriad.table._TupleBatch;
+import edu.washington.escience.myriad.util.TestUtils;
 
 public class MultithreadScanTest extends SystemTestBase {
   // change configuration here
@@ -39,12 +38,11 @@ public class MultithreadScanTest extends SystemTestBase {
   public TupleBatchBuffer getResultInMemory(TupleBatchBuffer table1, Schema schema, int numIteration) {
     // a brute force check
 
-    Iterator<TupleBatch> tbs = table1.getAll().iterator();
+    Iterator<List<Column<?>>> tbs = table1.getAllAsRawColumn().iterator();
     boolean graph[][] = new boolean[MaxID][MaxID];
     boolean cntgraph[][] = new boolean[MaxID][MaxID];
     while (tbs.hasNext()) {
-      _TupleBatch tb = tbs.next();
-      List<Column<?>> output = tb.outputRawData();
+      List<Column<?>> output = tbs.next();
       int numRow = output.get(0).size();
       for (int i = 0; i < numRow; i++) {
         int fr = Integer.parseInt(output.get(0).get(i).toString());
@@ -102,23 +100,22 @@ public class MultithreadScanTest extends SystemTestBase {
     final String[] joinColumnNames = new String[] { "follower", "followee", "follower", "followee" };
     final Schema joinSchema = new Schema(joinTypes, joinColumnNames);
 
-    long[] tbl1ID1Worker1 = randomLong(1, MaxID - 1, numTbl1Worker1);
-    long[] tbl1ID2Worker1 = randomLong(1, MaxID - 1, numTbl1Worker1);
+    long[] tbl1ID1Worker1 = TestUtils.randomLong(1, MaxID - 1, numTbl1Worker1);
+    long[] tbl1ID2Worker1 = TestUtils.randomLong(1, MaxID - 1, numTbl1Worker1);
     TupleBatchBuffer tbl1Worker1 = new TupleBatchBuffer(tableSchema);
     for (int i = 0; i < numTbl1Worker1; i++) {
       tbl1Worker1.put(0, tbl1ID1Worker1[i]);
       tbl1Worker1.put(1, tbl1ID2Worker1[i]);
     }
-    TupleBatchBuffer table1 = new TupleBatchBuffer(tableSchema);
-    table1.merge(tbl1Worker1);
 
-    TupleBatchBuffer expectedTBB = getResultInMemory(table1, tableSchema, 2);
-    // HashMap<Tuple, Integer> expectedResult = SystemTestBase.tupleBatchToTupleBag(expectedTBB);
+    TupleBatchBuffer expectedTBB = getResultInMemory(tbl1Worker1, tableSchema, 2);
+    TupleBatchBuffer expectedTBBCopy = new TupleBatchBuffer(tableSchema);
+    expectedTBBCopy.merge(expectedTBB);
 
     createTable(WORKER_ID[0], "testtable0", "testtable", "follower long, followee long");
     createTable(WORKER_ID[1], "testtable0", "testtable", "follower long, followee long");
     // }
-    _TupleBatch tb = null;
+    TupleBatch tb = null;
     while ((tb = tbl1Worker1.popAny()) != null) {
       insertWithBothNames(WORKER_ID[0], "testtable", "testtable0", tableSchema, tb);
       insertWithBothNames(WORKER_ID[1], "testtable", "testtable0", tableSchema, tb);
@@ -128,9 +125,10 @@ public class MultithreadScanTest extends SystemTestBase {
     final SQLiteQueryScan scan2 = new SQLiteQueryScan("testtable0.db", "select * from testtable", tableSchema);
     final LocalJoin localjoin = new LocalJoin(joinSchema, scan1, scan2, new int[] { 1 }, new int[] { 0 });
     final Project proj = new Project(new Integer[] { 0, 3 }, localjoin);
+    final DupElim de = new DupElim(proj);
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
-    final CollectProducer cp = new CollectProducer(proj, serverReceiveID, MASTER_ID);
+    final CollectProducer cp = new CollectProducer(de, serverReceiveID, MASTER_ID);
 
     final HashMap<Integer, Operator> workerPlans = new HashMap<Integer, Operator>();
     workerPlans.put(WORKER_ID[0], cp);
@@ -159,9 +157,8 @@ public class MultithreadScanTest extends SystemTestBase {
       }
     }
 
-    assertTrue(result.numTuples() == expectedTBB.numTuples() * 2);
-    // HashMap<Tuple, Integer> actual = SystemTestBase.tupleBatchToTupleBag(result);
-    // SystemTestBase.assertTupleBagEqual(expectedResult, actual);
+    expectedTBB.merge(expectedTBBCopy);
+    TestUtils.assertTupleBagEqual(TestUtils.tupleBatchToTupleBag(expectedTBB), TestUtils.tupleBatchToTupleBag(result));
   }
 
   @Test
@@ -175,8 +172,8 @@ public class MultithreadScanTest extends SystemTestBase {
     final String[] joinColumnNames = new String[] { "follower", "followee", "follower", "followee" };
     final Schema joinSchema = new Schema(joinTypes, joinColumnNames);
 
-    long[] tbl1ID1Worker1 = randomLong(1, MaxID - 1, numTbl1Worker1);
-    long[] tbl1ID2Worker1 = randomLong(1, MaxID - 1, numTbl1Worker1);
+    long[] tbl1ID1Worker1 = TestUtils.randomLong(1, MaxID - 1, numTbl1Worker1);
+    long[] tbl1ID2Worker1 = TestUtils.randomLong(1, MaxID - 1, numTbl1Worker1);
     TupleBatchBuffer tbl1Worker1 = new TupleBatchBuffer(tableSchema);
     for (int i = 0; i < numTbl1Worker1; i++) {
       tbl1Worker1.put(0, tbl1ID1Worker1[i]);
@@ -186,10 +183,11 @@ public class MultithreadScanTest extends SystemTestBase {
     table1.merge(tbl1Worker1);
 
     TupleBatchBuffer expectedTBB = getResultInMemory(table1, tableSchema, 2);
+    TupleBatchBuffer expectedTBBCopy = getResultInMemory(table1, tableSchema, 2);
 
     createTable(WORKER_ID[0], "testtable0", "testtable", "follower long, followee long");
     createTable(WORKER_ID[1], "testtable0", "testtable", "follower long, followee long");
-    _TupleBatch tb = null;
+    TupleBatch tb = null;
     while ((tb = tbl1Worker1.popAny()) != null) {
       insertWithBothNames(WORKER_ID[0], "testtable", "testtable0", tableSchema, tb);
       insertWithBothNames(WORKER_ID[1], "testtable", "testtable0", tableSchema, tb);
@@ -199,10 +197,12 @@ public class MultithreadScanTest extends SystemTestBase {
     final SQLiteQueryScan scan2 = new SQLiteQueryScan("testtable0.db", "select * from testtable", tableSchema);
     final LocalJoin localjoin1 = new LocalJoin(joinSchema, scan1, scan2, new int[] { 1 }, new int[] { 0 });
     final Project proj1 = new Project(new Integer[] { 0, 3 }, localjoin1);
+    final DupElim de1 = new DupElim(proj1);
     final SQLiteQueryScan scan3 = new SQLiteQueryScan("testtable0.db", "select * from testtable", tableSchema);
     final SQLiteQueryScan scan4 = new SQLiteQueryScan("testtable0.db", "select * from testtable", tableSchema);
     final LocalJoin localjoin2 = new LocalJoin(joinSchema, scan3, scan4, new int[] { 1 }, new int[] { 0 });
     final Project proj2 = new Project(new Integer[] { 0, 3 }, localjoin2);
+    final DupElim de2 = new DupElim(proj2);
 
     final int numPartition = 2;
     final PartitionFunction<String, Integer> pf0 = new SingleFieldHashPartitionFunction(numPartition); // 2 workers
@@ -211,8 +211,8 @@ public class MultithreadScanTest extends SystemTestBase {
     ExchangePairID arrayID1, arrayID2;
     arrayID1 = ExchangePairID.newID();
     arrayID2 = ExchangePairID.newID();
-    ShuffleProducer sp1 = new ShuffleProducer(proj1, arrayID1, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf0);
-    ShuffleProducer sp2 = new ShuffleProducer(proj2, arrayID2, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf0);
+    ShuffleProducer sp1 = new ShuffleProducer(de1, arrayID1, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf0);
+    ShuffleProducer sp2 = new ShuffleProducer(de2, arrayID2, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf0);
     ShuffleConsumer sc1 = new ShuffleConsumer(sp1, arrayID1, new int[] { WORKER_ID[0], WORKER_ID[1] });
     ShuffleConsumer sc2 = new ShuffleConsumer(sp2, arrayID2, new int[] { WORKER_ID[0], WORKER_ID[1] });
     Merge merge = new Merge(tableSchema, sc1, sc2);
@@ -244,6 +244,11 @@ public class MultithreadScanTest extends SystemTestBase {
         Thread.currentThread().interrupt();
       }
     }
-    assertTrue(result.numTuples() == expectedTBB.numTuples() * 4);
+
+    expectedTBB.merge(expectedTBBCopy);
+    expectedTBB.merge(expectedTBBCopy);
+    expectedTBB.merge(expectedTBBCopy);
+
+    TestUtils.assertTupleBagEqual(TestUtils.tupleBatchToTupleBag(expectedTBB), TestUtils.tupleBatchToTupleBag(result));
   }
 }

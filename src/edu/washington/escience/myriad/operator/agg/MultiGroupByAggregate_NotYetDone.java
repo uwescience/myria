@@ -6,9 +6,9 @@ import java.util.Objects;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.table._TupleBatch;
 
 /**
  * The Aggregation operator that computes an aggregate (e.g., sum, avg, max, min). Note that we only support aggregates
@@ -147,10 +147,10 @@ public class MultiGroupByAggregate_NotYetDone extends Operator {
    * should contain one field representing the result of the aggregate. Should return null if there are no more tuples.
    */
   @Override
-  protected _TupleBatch fetchNext() throws DbException {
+  protected TupleBatch fetchNext() throws DbException {
 
     // Actually perform the aggregation
-    _TupleBatch tb = null;
+    TupleBatch tb = null;
     while ((tb = child.next()) != null) {
       if (!groupBy) {
         for (Aggregator ag : agg) {
@@ -192,7 +192,7 @@ public class MultiGroupByAggregate_NotYetDone extends Operator {
   }
 
   @Override
-  protected _TupleBatch fetchNextReady() throws DbException {
+  protected TupleBatch fetchNextReady() throws DbException {
     // TODO non-blocking
     return fetchNext();
   }

@@ -9,10 +9,10 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.table._TupleBatch;
 
 /**
  * The Aggregation operator that computes an aggregate (e.g., sum, avg, max, min) with a single group by column.
@@ -120,10 +120,10 @@ public class SingleGroupByAggregate extends Operator {
    * should contain one field representing the result of the aggregate. Should return null if there are no more tuples.
    */
   @Override
-  protected final _TupleBatch fetchNext() throws DbException {
+  protected final TupleBatch fetchNext() throws DbException {
 
     if (resultBuffer == null) {
-      _TupleBatch tb = null;
+      TupleBatch tb = null;
       while ((tb = child.next()) != null) {
         Set<Pair<Object, TupleBatchBuffer>> readyTBB = tb.groupby(gfield, groupedTupleBatches);
         if (readyTBB != null) {
@@ -139,7 +139,7 @@ public class SingleGroupByAggregate extends Operator {
               groupAggs.put(groupColumnValue, groupAgg);
             }
 
-            _TupleBatch filledTB = null;
+            TupleBatch filledTB = null;
             while ((filledTB = tbb.popFilled()) != null) {
               for (Aggregator ag : groupAgg) {
                 ag.add(filledTB);
@@ -160,7 +160,7 @@ public class SingleGroupByAggregate extends Operator {
           groupAggs.put(groupColumnValue, groupAgg);
         }
         TupleBatchBuffer tbb = p.getRight();
-        _TupleBatch anyTBB = null;
+        TupleBatch anyTBB = null;
         while ((anyTBB = tbb.popAny()) != null) {
           for (Aggregator ag : groupAgg) {
             ag.add(anyTBB);
@@ -213,7 +213,7 @@ public class SingleGroupByAggregate extends Operator {
   }
 
   @Override
-  protected final _TupleBatch fetchNextReady() throws DbException {
+  protected final TupleBatch fetchNextReady() throws DbException {
     // TODO non-blocking
     return fetchNext();
   }

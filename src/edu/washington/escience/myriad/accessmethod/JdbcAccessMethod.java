@@ -41,18 +41,8 @@ public final class JdbcAccessMethod {
       /* Connect to the database */
       final Connection jdbcConnection = DriverManager.getConnection(connectionString, username, password);
 
-      /* Set up and execute the query */
-      final PreparedStatement statement = jdbcConnection.prepareStatement(insertString);
+      tupleBatchInsert(jdbcConnection, insertString, tupleBatch);
 
-      for (final int row : tupleBatch.validTupleIndices()) {
-        for (int column = 0; column < tupleBatch.numColumns(); ++column) {
-          tupleBatch.getColumn(column).getIntoJdbc(row, statement, column + 1);
-        }
-        statement.addBatch();
-      }
-      statement.executeBatch();
-      statement.close();
-      jdbcConnection.close();
     } catch (final ClassNotFoundException e) {
       System.err.println(e.getMessage());
       throw new RuntimeException(e.getMessage());
@@ -81,12 +71,7 @@ public final class JdbcAccessMethod {
       /* Set up and execute the query */
       final PreparedStatement statement = jdbcConnection.prepareStatement(insertString);
 
-      for (final int row : tupleBatch.validTupleIndices()) {
-        for (int column = 0; column < tupleBatch.numColumns(); ++column) {
-          tupleBatch.getColumn(column).getIntoJdbc(row, statement, column + 1);
-        }
-        statement.addBatch();
-      }
+      tupleBatch.getIntoJdbc(statement);
       statement.executeBatch();
       statement.close();
     } catch (final SQLException e) {
@@ -123,10 +108,10 @@ public final class JdbcAccessMethod {
       return new JdbcTupleBatchIterator(resultSet, Schema.fromResultSetMetaData(resultSetMetaData));
     } catch (final ClassNotFoundException e) {
       System.err.println(e.getMessage());
-      throw new RuntimeException(e.getMessage());
+      throw new RuntimeException(e);
     } catch (final SQLException e) {
       System.err.println(e.getMessage());
-      throw new RuntimeException(e.getMessage());
+      throw new RuntimeException(e);
     }
   }
 

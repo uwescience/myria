@@ -4,8 +4,8 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 
 import edu.washington.escience.myriad.DbException;
@@ -13,7 +13,6 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.table._TupleBatch;
 
 public final class LocalJoin extends Operator implements Externalizable {
 
@@ -22,15 +21,15 @@ public final class LocalJoin extends Operator implements Externalizable {
 
   private class IndexedTuple {
     private final int index;
-    private final _TupleBatch tb;
+    private final TupleBatch tb;
 
-    public IndexedTuple(final _TupleBatch tb, final int index) {
+    public IndexedTuple(final TupleBatch tb, final int index) {
       this.tb = tb;
       this.index = index;
     }
 
     public boolean compareField(final IndexedTuple another, final int colIndx1, final int colIndx2) {
-      final Type type1 = tb.inputSchema().getFieldType(colIndx1);
+      final Type type1 = tb.getSchema().getFieldType(colIndx1);
       // type check in query plan?
       final int rowIndx1 = index;
       final int rowIndx2 = another.index;
@@ -57,10 +56,10 @@ public final class LocalJoin extends Operator implements Externalizable {
         return false;
       }
       final IndexedTuple another = (IndexedTuple) o;
-      if (!(tb.inputSchema().equals(another.tb.inputSchema()))) {
+      if (!(tb.getSchema().equals(another.tb.getSchema()))) {
         return false;
       }
-      for (int i = 0; i < tb.inputSchema().numFields(); ++i) {
+      for (int i = 0; i < tb.getSchema().numFields(); ++i) {
         if (!compareField(another, i, i)) {
           return false;
         }
@@ -121,8 +120,8 @@ public final class LocalJoin extends Operator implements Externalizable {
   }
 
   protected void addToAns(final IndexedTuple tuple1, final IndexedTuple tuple2) {
-    int num1 = tuple1.tb.inputSchema().numFields();
-    int num2 = tuple2.tb.inputSchema().numFields();
+    int num1 = tuple1.tb.getSchema().numFields();
+    int num2 = tuple2.tb.getSchema().numFields();
     for (int i = 0; i < num1; ++i) {
       ans.put(i, tuple1.tb.getObject(i, tuple1.index));
     }
@@ -131,66 +130,57 @@ public final class LocalJoin extends Operator implements Externalizable {
     }
   }
 
-  protected void processChild1TB(final _TupleBatch tbFromChild1) {
-    for (int i = 0; i < tbFromChild1.numOutputTuples(); ++i) { // outputTuples?
-      final IndexedTuple tuple1 = new IndexedTuple(tbFromChild1, i);
-      final int cntHashCode = tuple1.hashCode4Keys(compareIndx1);
-
-      if (hashTable2.get(cntHashCode) != null) {
-        final List<IndexedTuple> tupleList = hashTable2.get(cntHashCode);
-        for (int j = 0; j < tupleList.size(); ++j) {
-          final IndexedTuple tuple2 = tupleList.get(j);
-          if (tuple1.joinEquals(tuple2, compareIndx1, compareIndx2)) {
-            addToAns(tuple1, tuple2);
-          }
-        }
-      }
-
-      if (hashTable1.get(cntHashCode) == null) {
-        hashTable1.put(cntHashCode, new ArrayList<IndexedTuple>());
-      }
-      final List<IndexedTuple> tupleList = hashTable1.get(cntHashCode);
-      tupleList.add(tuple1);
+  protected void processChildTB(final TupleBatch tb, final boolean tbFromChild1) {
+    List<IndexedTuple> tupleList = null;
+    int[] compareIndx2Add = compareIndx1;
+    int[] compareIndx2Join = compareIndx2;
+    HashMap<Integer, List<IndexedTuple>> hashTable2Add = hashTable1;
+    HashMap<Integer, List<IndexedTuple>> hashTable2Join = hashTable2;
+    if (!tbFromChild1) {
+      compareIndx2Add = compareIndx2;
+      compareIndx2Join = compareIndx1;
+      hashTable2Add = hashTable2;
+      hashTable2Join = hashTable1;
     }
-  }
 
-  protected void processChild2TB(final _TupleBatch tbFromChild2) {
-    for (int i = 0; i < tbFromChild2.numOutputTuples(); ++i) { // outputTuples?
-      final IndexedTuple tuple2 = new IndexedTuple(tbFromChild2, i);
-      final int cntHashCode = tuple2.hashCode4Keys(compareIndx2);
-
-      if (hashTable1.get(cntHashCode) != null) {
-        final List<IndexedTuple> tupleList = hashTable1.get(cntHashCode);
-        for (int j = 0; j < tupleList.size(); ++j) {
-          final IndexedTuple tuple1 = tupleList.get(j);
-          if (tuple2.joinEquals(tuple1, compareIndx2, compareIndx1)) {
-            addToAns(tuple1, tuple2);
+    for (int i = 0; i < tb.numTuples(); ++i) { // outputTuples?
+      final IndexedTuple tuple = new IndexedTuple(tb, i);
+      final int cntHashCode = tuple.hashCode4Keys(compareIndx2Add);
+      tupleList = hashTable2Join.get(cntHashCode);
+      if (tupleList != null) {
+        for (IndexedTuple tuple2 : tupleList) {
+          if (tuple.joinEquals(tuple2, compareIndx2Add, compareIndx2Join)) {
+            if (tbFromChild1) {
+              addToAns(tuple, tuple2);
+            } else {
+              addToAns(tuple2, tuple);
+            }
           }
         }
       }
-
-      if (hashTable2.get(cntHashCode) == null) {
-        hashTable2.put(cntHashCode, new ArrayList<IndexedTuple>());
+      tupleList = hashTable2Add.get(cntHashCode);
+      if (tupleList == null) {
+        tupleList = new LinkedList<IndexedTuple>();
+        hashTable2Add.put(cntHashCode, tupleList);
       }
-      final List<IndexedTuple> tupleList = hashTable2.get(cntHashCode);
-      tupleList.add(tuple2);
+      tupleList.add(tuple);
     }
   }
 
   @Override
-  protected _TupleBatch fetchNext() throws DbException {
+  protected TupleBatch fetchNext() throws DbException {
     TupleBatch nexttb = ans.popFilled();
     while (nexttb == null) {
       boolean hasNewTuple = false; // might change to EOS instead of hasNext()
-      _TupleBatch tb = null;
+      TupleBatch tb = null;
       if ((tb = child1.next()) != null) {
         hasNewTuple = true;
-        processChild1TB(tb);
+        processChildTB(tb, true);
       }
       // child2
       if ((tb = child2.next()) != null) {
         hasNewTuple = true;
-        processChild2TB(tb);
+        processChildTB(tb, false);
       }
       nexttb = ans.popFilled();
       if (!hasNewTuple) {
@@ -251,7 +241,7 @@ public final class LocalJoin extends Operator implements Externalizable {
   }
 
   @Override
-  public _TupleBatch fetchNextReady() throws DbException {
+  public TupleBatch fetchNextReady() throws DbException {
     return null;
   }
 

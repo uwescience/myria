@@ -57,13 +57,14 @@ public final class SQLiteAccessMethod {
       /* Set up and execute the query */
       statement = sqliteConnection.prepare(insertString);
 
-      for (final int row : tupleBatch.validTupleIndices()) {
-        for (int column = 0; column < tupleBatch.numColumns(); ++column) {
-          tupleBatch.getColumn(column).getIntoSQLite(row, statement, column + 1);
-        }
-        statement.step();
-        statement.reset();
-      }
+      tupleBatch.getIntoSQLite(statement);
+      // for (int row = 0, totalTuples = tupleBatch.numTuples(); row < totalTuples; row++) {
+      // for (int column = 0; column < tupleBatch.numColumns(); ++column) {
+      // tupleBatch.getColumn(column).getIntoSQLite(row, statement, column + 1);
+      // }
+      // statement.step();
+      // statement.reset();
+      // }
       /* COMMIT TRANSACTION */
       sqliteConnection.exec("COMMIT TRANSACTION");
 

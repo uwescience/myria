@@ -1,10 +1,10 @@
 package edu.washington.escience.myriad.operator.agg;
 
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.parallel.ParallelUtility;
-import edu.washington.escience.myriad.table._TupleBatch;
+import edu.washington.escience.myriad.util.MathUtils;
 
 /**
  * Knows how to compute some aggregates over a BooleanColumn.
@@ -14,7 +14,7 @@ public final class BooleanAggregator implements Aggregator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
-  private int count;
+  private long count;
   private final Schema resultSchema;
   private final int aggOps;
 
@@ -42,12 +42,12 @@ public final class BooleanAggregator implements Aggregator {
 
     this.aggOps = aggOps;
 
-    int numAggOps = ParallelUtility.numBinaryOnesInInteger(aggOps);
+    int numAggOps = MathUtils.numBinaryOnesInInteger(aggOps);
     Type[] types = new Type[numAggOps];
     String[] names = new String[numAggOps];
     int idx = 0;
     if ((aggOps & Aggregator.AGG_OP_COUNT) != 0) {
-      types[idx] = Type.INT_TYPE;
+      types[idx] = Type.LONG_TYPE;
       names[idx] = "count(" + aFieldName + ")";
       idx += 1;
     }
@@ -55,8 +55,8 @@ public final class BooleanAggregator implements Aggregator {
   }
 
   @Override
-  public void add(final _TupleBatch tup) {
-    count += tup.numOutputTuples();
+  public void add(final TupleBatch tup) {
+    count += tup.numTuples();
   }
 
   @Override

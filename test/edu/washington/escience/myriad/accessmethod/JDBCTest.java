@@ -14,7 +14,6 @@ import edu.washington.escience.myriad.operator.Filter;
 import edu.washington.escience.myriad.operator.JdbcQueryScan;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.Project;
-import edu.washington.escience.myriad.table._TupleBatch;
 
 public class JDBCTest {
   /** The logger for this class. Defaults to myriad level, but could be set to a finer granularity if needed. */
@@ -49,10 +48,10 @@ public class JDBCTest {
 
     root.open();
 
-    _TupleBatch tb = null;
+    TupleBatch tb = null;
     while ((tb = root.next()) != null) {
       LOGGER.debug(tb.toString());
-      JdbcAccessMethod.tupleBatchInsert(jdbcDriverName, connectionString, insert, (TupleBatch) tb, user, password);
+      JdbcAccessMethod.tupleBatchInsert(jdbcDriverName, connectionString, insert, tb, user, password);
     }
 
     root.close();

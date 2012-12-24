@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
-import edu.washington.escience.myriad.table._TupleBatch;
+import edu.washington.escience.myriad.TupleBatch;
 
 /**
  * Abstract class for implementing operators.
@@ -25,7 +25,7 @@ public abstract class Operator implements Serializable {
   /**
    * A single buffer for temporally holding a TupleBatch for pull.
    * */
-  private _TupleBatch outputBuffer = null;
+  private TupleBatch outputBuffer = null;
 
   /**
    * A bit denoting whether the operator is open (initialized).
@@ -78,7 +78,7 @@ public abstract class Operator implements Serializable {
 
     if (outputBuffer == null) {
       outputBuffer = fetchNextReady();
-      while (outputBuffer != null && outputBuffer.numOutputTuples() <= 0) {
+      while (outputBuffer != null && outputBuffer.numTuples() <= 0) {
         // XXX while or not while? For a single thread operator, while sounds more efficient generally
         outputBuffer = fetchNextReady();
       }
@@ -110,7 +110,7 @@ public abstract class Operator implements Serializable {
    * 
    * @return next TupleBatch
    * */
-  public final _TupleBatch next() throws DbException {
+  public final TupleBatch next() throws DbException {
     if (!open) {
       throw new IllegalStateException("Operator not yet open");
     }
@@ -118,7 +118,7 @@ public abstract class Operator implements Serializable {
       return null;
     }
 
-    _TupleBatch result = null;
+    TupleBatch result = null;
     if (outputBuffer != null) {
       result = outputBuffer;
     } else {
@@ -126,7 +126,7 @@ public abstract class Operator implements Serializable {
     }
     outputBuffer = null;
 
-    while (result != null && result.numOutputTuples() <= 0) {
+    while (result != null && result.numTuples() <= 0) {
       result = fetchNext();
     }
     if (result == null) {
@@ -195,7 +195,7 @@ public abstract class Operator implements Serializable {
    * 
    * @return next ready output TupleBatch. null if either EOS or no output TupleBatch can be generated currently.
    * */
-  protected abstract _TupleBatch fetchNextReady() throws DbException;
+  protected abstract TupleBatch fetchNextReady() throws DbException;
 
   /**
    * @return return the Schema of the output tuples of this operator.
@@ -214,7 +214,7 @@ public abstract class Operator implements Serializable {
    * @throws DbException if any processing error occurs
    * 
    */
-  protected abstract _TupleBatch fetchNext() throws DbException;
+  protected abstract TupleBatch fetchNext() throws DbException;
 
   /**
    * @return return the children Operators of this operator. If there is only one child, return an array of only one

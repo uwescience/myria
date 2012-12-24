@@ -9,6 +9,7 @@ import org.junit.Test;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
@@ -19,7 +20,7 @@ import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 import edu.washington.escience.myriad.parallel.Server;
-import edu.washington.escience.myriad.table._TupleBatch;
+import edu.washington.escience.myriad.util.TestUtils;
 
 public class MergeTest extends SystemTestBase {
 
@@ -35,10 +36,10 @@ public class MergeTest extends SystemTestBase {
     final String[] table1ColumnNames = new String[] { "follower", "followee" };
     final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
 
-    long[] tbl1ID1 = randomLong(1, MaxID - 1, numTbl1);
-    long[] tbl1ID2 = randomLong(1, MaxID - 1, numTbl1);
-    long[] tbl2ID1 = randomLong(1, MaxID - 1, numTbl2);
-    long[] tbl2ID2 = randomLong(1, MaxID - 1, numTbl2);
+    long[] tbl1ID1 = TestUtils.randomLong(1, MaxID - 1, numTbl1);
+    long[] tbl1ID2 = TestUtils.randomLong(1, MaxID - 1, numTbl1);
+    long[] tbl2ID1 = TestUtils.randomLong(1, MaxID - 1, numTbl2);
+    long[] tbl2ID2 = TestUtils.randomLong(1, MaxID - 1, numTbl2);
     TupleBatchBuffer tbl1 = new TupleBatchBuffer(tableSchema);
     TupleBatchBuffer tbl2 = new TupleBatchBuffer(tableSchema);
     for (int i = 0; i < numTbl1; i++) {
@@ -52,7 +53,7 @@ public class MergeTest extends SystemTestBase {
 
     createTable(WORKER_ID[0], "testtable0", "testtable", "follower long, followee long");
     createTable(WORKER_ID[0], "testtable1", "testtable", "follower long, followee long");
-    _TupleBatch tb = null;
+    TupleBatch tb = null;
     while ((tb = tbl1.popAny()) != null) {
       insertWithBothNames(WORKER_ID[0], "testtable", "testtable0", tableSchema, tb);
     }
