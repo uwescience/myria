@@ -1,14 +1,14 @@
 package edu.washington.escience.myriad.util;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 
-import org.junit.Assert;
-
+import junit.framework.Assert;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.systemtest.SystemTestBase.Tuple;
@@ -110,9 +110,50 @@ public class TestUtils {
   }
 
   public static void assertTupleBagEqual(HashMap<Tuple, Integer> expectedResult, HashMap<Tuple, Integer> actualResult) {
-    Assert.assertEquals(expectedResult.size(), actualResult.size());
-    for (Entry<Tuple, Integer> e : actualResult.entrySet()) {
-      Assert.assertTrue(expectedResult.get(e.getKey()).equals(e.getValue()));
+    StringBuilder errorMessageHolder = new StringBuilder();
+    assertEqualsToStringBuilder(errorMessageHolder, "Number of unique tuples", expectedResult.size(), actualResult
+        .size());
+    HashSet<Tuple> keySet = new HashSet<Tuple>();
+    keySet.addAll(expectedResult.keySet());
+    keySet.addAll(actualResult.keySet());
+    for (Tuple k : keySet) {
+      Integer expected = expectedResult.get(k);
+      Integer actual = actualResult.get(k);
+      if (expected == null) {
+        expected = 0;
+      }
+      if (actual == null) {
+        actual = 0;
+      }
+      assertEqualsToStringBuilder(errorMessageHolder, "Tuple entry{" + k + "}", expected, actual);
+    }
+    if (errorMessageHolder.length() != 0) {
+      Assert.fail(errorMessageHolder.toString());
+    }
+  }
+
+  public static void assertEqualsToStringBuilder(StringBuilder errorMessageHolder, String currentEM, Object expected,
+      Object actual) {
+    if (expected == null) {
+      if (actual != null) {
+        errorMessageHolder.append(currentEM);
+        errorMessageHolder.append(": ");
+        errorMessageHolder.append("expected: <null>");
+        errorMessageHolder.append("but was: <");
+        errorMessageHolder.append(actual);
+        errorMessageHolder.append(">\n");
+      }
+    } else {
+      if (!expected.equals(actual)) {
+        errorMessageHolder.append(currentEM);
+        errorMessageHolder.append(": ");
+        errorMessageHolder.append("expected: <");
+        errorMessageHolder.append(expected);
+        errorMessageHolder.append(">");
+        errorMessageHolder.append("but was: <");
+        errorMessageHolder.append(actual);
+        errorMessageHolder.append(">\n");
+      }
     }
   }
 
