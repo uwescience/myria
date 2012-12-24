@@ -49,13 +49,15 @@ public class TupleBatch {
   /** Tuple data stored as columns in this batch. */
   private final List<Column<?>> columns;
   /** Number of valid tuples in this TB. */
-  private int numValidTuples;
+  private final int numValidTuples;
   /** Which tuples are valid in this batch. */
-  private final BitSet validTuples;
-  /** Which tuples are valid in this batch light read only version. */
-  private final ReadOnlyBitSet validTuplesRO;
+  private final ReadOnlyBitSet validTuples;
+  // /** Which tuples are valid in this batch light read only version. */
+  // private final ReadOnlyBitSet validTuplesRO;
   /** An int[] view of the indices of validTuples. */
   private int[] validIndices;
+
+  // private final boolean distincted = false;
 
   /** Identity mapping. */
   protected static final int[] IDENTITY_MAPPING;
@@ -79,14 +81,17 @@ public class TupleBatch {
     /* Take the input arguments directly */
     this.schema = Objects.requireNonNull(schema);
     this.columns = Objects.requireNonNull(columns);
+    Preconditions.checkArgument(columns.size() == schema.numFields(),
+        "Number of columns in data must equal to the number of fields in schema");
     Preconditions.checkArgument(numTuples >= 0 && numTuples <= BATCH_SIZE,
         "numTuples must be at least 1 and no more than TupleBatch.BATCH_SIZE");
     numValidTuples = numTuples;
     validIndices = IDENTITY_MAPPING;
     /* All tuples are valid */
-    validTuples = new BitSet(numTuples);
-    validTuples.set(0, numTuples);
-    validTuplesRO = new ReadOnlyBitSet(validTuples);
+    BitSet tmp = new BitSet(numTuples);
+    tmp.set(0, numTuples);
+    validTuples = new ReadOnlyBitSet(tmp);
+    // validTuplesRO = new ReadOnlyBitSet(validTuples);
   }
 
   /**
@@ -106,8 +111,13 @@ public class TupleBatch {
 
     numValidTuples = validTuples.cardinality();
 
-    this.validTuples = (BitSet) validTuples.clone();
-    validTuplesRO = new ReadOnlyBitSet(this.validTuples);
+    if (validTuples instanceof ReadOnlyBitSet) {
+      this.validTuples = (ReadOnlyBitSet) validTuples.clone();
+    } else {
+      this.validTuples = new ReadOnlyBitSet((BitSet) validTuples.clone());
+    }
+
+    // validTuplesRO = new ReadOnlyBitSet(this.validTuples);
     this.validIndices = validIndices;
   }
 
@@ -121,8 +131,8 @@ public class TupleBatch {
     /* Take the input arguments directly, copying validTuples */
     schema = from.schema;
     columns = from.columns;
-    validTuples = (BitSet) from.validTuples.clone();
-    validTuplesRO = new ReadOnlyBitSet(validTuples);
+    validTuples = (ReadOnlyBitSet) from.validTuples.clone();
+    // validTuplesRO = new ReadOnlyBitSet(validTuples);
     validIndices = from.validIndices;
     numValidTuples = from.numValidTuples;
   }
@@ -130,10 +140,10 @@ public class TupleBatch {
   /**
    * Helper function to append the specified row into the specified TupleBatchBuffer.
    * 
-   * @param row row to append to the buffer.
+   * @param mappedRow the true row in column list to append to the buffer.
    * @param buffer buffer the row is appended to.
    */
-  private final void appendTupleInto(final int mappedRow, final TupleBatchBuffer buffer) {
+  private void appendTupleInto(final int mappedRow, final TupleBatchBuffer buffer) {
     Objects.requireNonNull(buffer);
     for (int i = 0; i < numColumns(); ++i) {
       buffer.put(i, columns.get(i).get(mappedRow));
@@ -150,26 +160,82 @@ public class TupleBatch {
    * @return a new TupleBatch where all rows that do not match the specified predicate have been removed.
    */
   private TupleBatch applyFilter(final int column, final Predicate.Op op, final Object operand) {
-    Objects.requireNonNull(op);
-    Objects.requireNonNull(operand);
-    boolean indicesMappingChange = false;
+    BitSet newValidTuples = null;
     if (numValidTuples > 0) {
       final Column<?> columnValues = columns.get(column);
       final Type columnType = schema.getFieldType(column);
-      int nextSet = -1;
-      while ((nextSet = validTuples.nextSetBit(nextSet + 1)) >= 0) {
-        if (!columnType.filter(op, columnValues, nextSet, operand)) {
-          validTuples.clear(nextSet);
-          numValidTuples -= 1;
-          indicesMappingChange = true;
+      int[] mapping = validTupleIndices();
+      for (int validIdx : mapping) {
+        if (!columnType.filter(op, columnValues, validIdx, operand)) {
+          if (newValidTuples == null) {
+            newValidTuples = validTuples.cloneAsBitSet();
+          }
+          newValidTuples.clear(validIdx);
         }
       }
     }
-    if (indicesMappingChange) {
-      validIndices = null;
+
+    if (newValidTuples != null) {
+      return new TupleBatch(schema, columns, newValidTuples, null);
     }
+    // If no tuples are filtered, new TupleBatch instance is not needed
     return this;
   }
+
+  // /**
+  // * Do the distinct on this TupleBatch
+  // *
+  // * @return a new TupleBatch where all rows that do not match the specified predicate have been removed.
+  // */
+  // private TupleBatch distinct() {
+  // boolean indicesMappingChange = false;
+  // if (numValidTuples > 0 && !distincted) {
+  //
+  // BitSet toRemove = new BitSet(numValidTuples);
+  // DupElim.IndexedTuple currentTuple = new DupElim.IndexedTuple(this);
+  // for (int i = 0; i < numValidTuples; ++i) {
+  // currentTuple.index = i;
+  // final int cntHashCode = currentTuple.hashCode();
+  // // might need to check invalid | change to use outputTuples later
+  // List<IndexedTuple> tupleList = uniqueTuples.get(cntHashCode);
+  // if (tupleList == null) {
+  // tupleList = new ArrayList<IndexedTuple>();
+  // uniqueTuples.put(cntHashCode, tupleList);
+  // tupleList.add(new IndexedTuple(tb, i));
+  // continue;
+  // }
+  // boolean unique = true;
+  // for (IndexedTuple oldTuple : tupleList) {
+  // if (currentTuple.equals(oldTuple)) {
+  // unique = false;
+  // break;
+  // }
+  // }
+  // if (unique) {
+  // tupleList.add(new IndexedTuple(tb, i));
+  // } else {
+  // toRemove.set(i);
+  // }
+  // }
+  // tb.remove(toRemove);
+  // return tb;
+  //
+  // final Column<?> columnValues = columns.get(column);
+  // final Type columnType = schema.getFieldType(column);
+  // int nextSet = -1;
+  // while ((nextSet = validTuples.nextSetBit(nextSet + 1)) >= 0) {
+  // if (!columnType.filter(op, columnValues, nextSet, operand)) {
+  // validTuples.clear(nextSet);
+  // numValidTuples -= 1;
+  // indicesMappingChange = true;
+  // }
+  // }
+  // }
+  // if (indicesMappingChange) {
+  // validIndices = null;
+  // }
+  // return this;
+  // }
 
   /**
    * Returns a new TupleBatch where all rows that do not match the specified predicate have been removed. Makes a
@@ -185,8 +251,8 @@ public class TupleBatch {
   public final TupleBatch filter(final int column, final Predicate.Op op, final Object operand) {
     Objects.requireNonNull(op);
     Objects.requireNonNull(operand);
-    final TupleBatch ret = new TupleBatch(this);
-    return ret.applyFilter(column, op, operand);
+    // final TupleBatch ret = new TupleBatch(this);
+    return applyFilter(column, op, operand);
   }
 
   public final boolean getBoolean(final int column, final int row) {
@@ -398,7 +464,7 @@ public class TupleBatch {
    * 
    * @param tbb the TBB buffer.
    * */
-  public final void compactInto(TupleBatchBuffer tbb) {
+  public final void compactInto(final TupleBatchBuffer tbb) {
     int numColumns = columns.size();
     int[] mapping = validTupleIndices();
     for (int row = 0; row < numValidTuples; row++) {
@@ -488,13 +554,16 @@ public class TupleBatch {
    * @param
    * */
   public final TupleBatch remove(final BitSet tupleIndicesToRemove) {
-    int oldCard = numValidTuples;
-    validTuples.andNot(tupleIndicesToRemove);
-
-    if ((numValidTuples = validTuples.cardinality()) != oldCard) {
-      validIndices = null;
+    int[] mapping = validTupleIndices();
+    BitSet newValidTuples = validTuples.cloneAsBitSet();
+    for (int i = tupleIndicesToRemove.nextSetBit(0); i >= 0; i = tupleIndicesToRemove.nextSetBit(i + 1)) {
+      newValidTuples.clear(mapping[i]);
     }
-    return this;
+    if (newValidTuples.cardinality() != numValidTuples) {
+      return new TupleBatch(schema, columns, newValidTuples, null);
+    } else {
+      return this;
+    }
   }
 
   public Set<Pair<Object, TupleBatchBuffer>> groupby(final int groupByColumn,

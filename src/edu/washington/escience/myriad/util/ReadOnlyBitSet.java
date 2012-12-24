@@ -54,7 +54,11 @@ public class ReadOnlyBitSet extends BitSet {
 
   @Override
   public Object clone() {
-    return new ReadOnlyBitSet(contents);
+    return new ReadOnlyBitSet((BitSet) contents.clone());
+  }
+
+  public BitSet cloneAsBitSet() {
+    return (BitSet) contents.clone();
   }
 
   @Override
