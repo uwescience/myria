@@ -5,8 +5,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
-import org.jboss.netty.handler.codec.compression.ZlibDecoder;
-import org.jboss.netty.handler.codec.compression.ZlibEncoder;
 import org.jboss.netty.handler.codec.protobuf.ProtobufDecoder;
 import org.jboss.netty.handler.codec.protobuf.ProtobufEncoder;
 import org.jboss.netty.handler.codec.protobuf.ProtobufVarint32FrameDecoder;
@@ -38,12 +36,12 @@ public class IPCPipelineFactories {
     @Override
     public ChannelPipeline getPipeline() throws Exception {
       ChannelPipeline p = Channels.pipeline();
-      p.addLast("compressionDecoder", new ZlibDecoder()); // upstream 1
+      // p.addLast("compressionDecoder", new ZlibDecoder()); // upstream 1
       p.addLast("frameDecoder", new ProtobufVarint32FrameDecoder()); // upstream 2
       p.addLast("protobufDecoder", protobufDecoder); // upstream
                                                      // 3
 
-      p.addLast("compressionEncoder", new ZlibEncoder()); // downstream 1
+      // p.addLast("compressionEncoder", new ZlibEncoder(1)); // downstream 1
       p.addLast("frameEncoder", frameEncoder); // downstream 2
       p.addLast("protobufEncoder", protobufEncoder); // downstream 3
 
@@ -87,12 +85,12 @@ public class IPCPipelineFactories {
     @Override
     public ChannelPipeline getPipeline() throws Exception {
       ChannelPipeline p = Channels.pipeline();
-      p.addLast("compressionDecoder", new ZlibDecoder()); // upstream 1
+      // p.addLast("compressionDecoder", new ZlibDecoder()); // upstream 1
       p.addLast("frameDecoder", new ProtobufVarint32FrameDecoder()); // upstream 2
       p.addLast("protobufDecoder", protobufDecoder); // upstream
                                                      // 3
 
-      p.addLast("compressionEncoder", new ZlibEncoder()); // downstream 1
+      // p.addLast("compressionEncoder", new ZlibEncoder(1)); // downstream 1
       p.addLast("frameEncoder", frameEncoder); // downstream 2
       p.addLast("protobufEncoder", protobufEncoder); // downstream 3
 

@@ -36,7 +36,7 @@ public final class ParallelUtility {
     // new OrderedMemoryAwareThreadPoolExecutor(200, 1048576, 1073741824, 100, TimeUnit.MILLISECONDS, Executors
     // .defaultThreadFactory());
 
-    bootstrap.setPipelineFactory(new IPCPipelineFactories.MasterClientPipelineFactory(messageQueue));
+    bootstrap.setPipelineFactory(new IPCPipelineFactories.MasterServerPipelineFactory(messageQueue));
 
     // ExecutionHandler eh;
 
@@ -73,7 +73,7 @@ public final class ParallelUtility {
     // new OrderedMemoryAwareThreadPoolExecutor(200, 1048576, 1073741824, 100, TimeUnit.MILLISECONDS, Executors
     // .defaultThreadFactory());
 
-    bootstrap.setPipelineFactory(new IPCPipelineFactories.MasterClientPipelineFactory(messageQueue));
+    bootstrap.setPipelineFactory(new IPCPipelineFactories.WorkerServerPipelineFactory(messageQueue));
 
     // ExecutionHandler eh;
 
