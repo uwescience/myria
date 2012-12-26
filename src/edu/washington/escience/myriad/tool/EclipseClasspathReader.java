@@ -87,6 +87,9 @@ public final class EclipseClasspathReader {
         if (kind.equals("lib")) {
           classpathSB.append(new File(e.getAttribute("path")).getAbsolutePath() + separator);
         }
+        if (kind.equals("src")) {
+          classpathSB.append(new File(e.getAttribute("output")).getAbsoluteFile() + separator);
+        }
       }
     }
     final NodeList attributeList = doc.getElementsByTagName("attribute");

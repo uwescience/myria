@@ -1,4 +1,5 @@
 /* This project uses Java and Eclipse. */
+import org.gradle.plugins.ide.eclipse.model.SourceFolder
 apply plugin: "java"
 apply plugin: "eclipse"
 
@@ -17,14 +18,17 @@ sourceSets {
     java.srcDir 'src'
     java.srcDir 'protobuf/java'
     java.srcDir 'third-party-src'
+    output.classesDir = 'build/main'
   }
   /* Code for tests */
   test {
     java.srcDir 'test'
+    output.classesDir = 'build/test'
   }
   /* Code for speedtests */
   speedtest {
     java.srcDir 'speedtest'
+    output.classesDir = 'build/speedtest'
   }
 }
 
@@ -91,12 +95,26 @@ eclipse.classpath {
   downloadJavadoc = true
 
   /* Ugly hack to stick the JNI pointer for sqlite into the .classpath file. */
-  file.withXml {
-    provider -> 
-    provider.asNode().findAll { it.@path.contains("sqlite") }.each { 
-      it.children().each {
-        it.appendNode('attribute', [name: 'org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY', value:'myriad/lib/sqlite4java-282'])
+  file {
+
+    withXml {
+      provider -> 
+      provider.asNode().findAll { it.@path.contains("sqlite") }.each { 
+        it.children().each {
+          it.appendNode('attribute', [name: 'org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY', value:'myriad/lib/sqlite4java-282'])
+        }
       }
     }
+
+    whenMerged {
+      cp ->
+      cp.entries.findAll { it instanceof SourceFolder && it.path.startsWith("src") }*.output = "build/main"
+      cp.entries.findAll { it instanceof SourceFolder && it.path.startsWith("protobuf") }*.output = "build/main"
+      cp.entries.findAll { it instanceof SourceFolder && it.path.startsWith("third-party-src") }*.output = "build/main"
+      cp.entries.findAll { it instanceof SourceFolder && it.path.startsWith("test") }*.output = "build/test"
+      cp.entries.findAll { it instanceof SourceFolder && it.path.startsWith("speedtest") }*.output = "build/speedtest"
+    }
+
   }
+
 }
