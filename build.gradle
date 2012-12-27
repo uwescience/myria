@@ -32,11 +32,13 @@ sourceSets {
   }
 }
 
+
 /* Compile, but don't run the speed tests when building the project. */
 check.dependsOn speedtestClasses
 /* Build the Eclipse .classpath file first, because if Gradle's build fails
  * we'll want to use Eclipse to debug it. */
 compileJava.dependsOn eclipseClasspath
+tasks.eclipseClasspath.dependsOn cleanEclipseClasspath
 
 /*
  * List the compile and runtime dependencies of all the tests.
@@ -88,15 +90,23 @@ task speedtest(type: Test) {
 /* The eclipseClasspath task will build a local Eclipse .classpath file. */
 eclipse.classpath {
   /* Ensure Eclipse compiled output appears in build directory. */
-  defaultOutputDir = file('build/eclipse')
+  defaultOutputDir = file('build/main')
 
-  /* We don't need to download source code. */
-  downloadSources = false
+  /* We don't need to download source code. Why not? With sources, it's much
+   * more convenient in debugging.
+   */
+  downloadSources = true
   downloadJavadoc = true
 
-  /* Ugly hack to stick the JNI pointer for sqlite into the .classpath file. */
   file {
 
+    /* add conf folder to classpath */
+    withXml {
+      def node = it.asNode()
+      node.appendNode('classpathentry',[kind: 'lib', path: 'conf'])
+    }
+
+  /* Ugly hack to stick the JNI pointer for sqlite into the .classpath file. */
     withXml {
       provider -> 
       provider.asNode().findAll { it.@path.contains("sqlite") }.each { 
@@ -106,6 +116,7 @@ eclipse.classpath {
       }
     }
 
+    /* Separate output folder for each src folders*/
     whenMerged {
       cp ->
       cp.entries.findAll { it instanceof SourceFolder && it.path.startsWith("src") }*.output = "build/main"
