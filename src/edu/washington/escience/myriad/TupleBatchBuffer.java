@@ -1,6 +1,5 @@
 package edu.washington.escience.myriad;
 
-import java.util.Arrays;
 import java.util.BitSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -11,11 +10,8 @@ import com.google.common.base.Preconditions;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnFactory;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
-import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
-import edu.washington.escience.myriad.proto.DataProto.DataMessage;
-import edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageType;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
-import edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType;
+import edu.washington.escience.myriad.util.IPCUtils;
 
 /**
  * Used for creating TupleBatch objects on the fly. A helper class used in, e.g., the Scatter operator.
@@ -109,31 +105,16 @@ public class TupleBatchBuffer {
    * Return all tuples in this buffer. The data do not get removed.
    * 
    * @return a List<TupleBatch> containing all complete tuples that have been inserted into this buffer.
+   * @param oId destination exchange operator id.
    */
   public final List<TransportMessage> getAllAsTM(final ExchangePairID oId) {
     final List<TransportMessage> output = new LinkedList<TransportMessage>();
     if (numTuples() > 0) {
-      TransportMessage.Builder tmBuilder = TRANSPORTMESSAGE_BUILDER.get();
-      DataMessage.Builder dmBuilder = DATAMESSAGE_BUILDER.get();
-
       for (List<Column<?>> columns : readyTuples) {
-        final ColumnMessage[] columnProtos = new ColumnMessage[columns.size()];
-
-        int i = 0;
-        for (final Column<?> c : columns) {
-          columnProtos[i++] = c.serializeToProto();
-        }
-        output.add(tmBuilder.setData(
-            dmBuilder.clearColumns().addAllColumns(Arrays.asList(columnProtos)).setOperatorID(oId.getLong())).build());
+        output.add(IPCUtils.normalDataMessage(columns, oId));
       }
       if (currentInProgressTuples > 0) {
-        final ColumnMessage[] columnProtos = new ColumnMessage[currentColumns.size()];
-        int i = 0;
-        for (final Column<?> c : currentColumns) {
-          columnProtos[i++] = c.serializeToProto();
-        }
-        output.add(tmBuilder.setData(
-            dmBuilder.clearColumns().addAllColumns(Arrays.asList(columnProtos)).setOperatorID(oId.getLong())).build());
+        output.add(IPCUtils.normalDataMessage(currentColumns, oId));
       }
     }
     return output;
@@ -170,31 +151,6 @@ public class TupleBatchBuffer {
   }
 
   /**
-   * Thread local TransportMessage builder. May reduce the cost of creating builder instances.
-   * 
-   * @return builder.
-   * */
-  protected static final ThreadLocal<TransportMessage.Builder> TRANSPORTMESSAGE_BUILDER =
-      new ThreadLocal<TransportMessage.Builder>() {
-        @Override
-        protected TransportMessage.Builder initialValue() {
-          return TransportMessage.newBuilder().setType(TransportMessageType.DATA);
-        }
-      };
-
-  /**
-   * Thread local DataMessage builder. May reduce the cost of creating builder instances.
-   * 
-   * @return builder.
-   * */
-  protected static final ThreadLocal<DataMessage.Builder> DATAMESSAGE_BUILDER = new ThreadLocal<DataMessage.Builder>() {
-    @Override
-    protected DataMessage.Builder initialValue() {
-      return DataMessage.newBuilder().setType(DataMessageType.NORMAL);
-    }
-  };
-
-  /**
    * Pop filled as TransportMessage. Avoid the overhead of creating TupleBatch instances if the data in this TBB are to
    * be sent to other workers.
    * 
@@ -204,17 +160,7 @@ public class TupleBatchBuffer {
   public final TransportMessage popFilledAsTM(final ExchangePairID oId) {
     if (readyTuples.size() > 0) {
       List<Column<?>> columns = readyTuples.remove(0);
-      final ColumnMessage[] columnProtos = new ColumnMessage[columns.size()];
-
-      int i = 0;
-      for (final Column<?> c : columns) {
-        columnProtos[i] = c.serializeToProto();
-        i++;
-      }
-      TransportMessage.Builder tmBuilder = TRANSPORTMESSAGE_BUILDER.get();
-      DataMessage.Builder dmBuilder = DATAMESSAGE_BUILDER.get();
-      return tmBuilder.setData(
-          dmBuilder.clearColumns().addAllColumns(Arrays.asList(columnProtos)).setOperatorID(oId.getLong())).build();
+      return IPCUtils.normalDataMessage(columns, oId);
     }
     return null;
   }
