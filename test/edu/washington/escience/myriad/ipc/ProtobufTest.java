@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelFuture;
 import org.junit.Test;
 import org.slf4j.LoggerFactory;
 
@@ -87,7 +88,9 @@ public class ProtobufTest {
 
     Thread[] threads = new Thread[numThreads];
     final AtomicInteger numSent = new AtomicInteger();
+    final ChannelFuture[] cf = new ChannelFuture[numThreads];
     for (int i = 0; i < numThreads; i++) {
+      final int j = i;
       Thread tt = new Thread() {
         @Override
         public void run() {
@@ -96,7 +99,7 @@ public class ProtobufTest {
             ch.write(tm);
             numSent.incrementAndGet();
           }
-          ch.write(IPCUtils.eosTM(epID));
+          cf[j] = ch.write(IPCUtils.eosTM(epID));
           numSent.incrementAndGet();
         }
       };
@@ -106,6 +109,11 @@ public class ProtobufTest {
     }
     for (Thread t : threads) {
       t.join();
+    }
+    for (ChannelFuture cff : cf) {
+      if (cff != null) {
+        cff.awaitUninterruptibly();
+      }
     }
 
     LOGGER.debug("Total sent: " + numSent.get() + " TupleBatches");
