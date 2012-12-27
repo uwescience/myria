@@ -7,7 +7,13 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.accessmethod.SQLiteAccessMethod;
 
-public class SQLiteUtils {
+/**
+ * Util methods for SQLite.
+ * */
+public final class SQLiteUtils {
+  /**
+   * util classes are not instantiable.
+   * */
   private SQLiteUtils() {
   }
 
