@@ -7,6 +7,7 @@ import org.junit.Test;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
@@ -16,7 +17,7 @@ import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 import edu.washington.escience.myriad.parallel.Server;
-import edu.washington.escience.myriad.table._TupleBatch;
+import edu.washington.escience.myriad.util.TestUtils;
 
 public class CollectTest extends SystemTestBase {
 
@@ -26,8 +27,8 @@ public class CollectTest extends SystemTestBase {
     createTable(WORKER_ID[0], testtableName, testtableName, "id long, name varchar(20)");
     createTable(WORKER_ID[1], testtableName, testtableName, "id long, name varchar(20)");
 
-    String[] names = randomFixedLengthNumericString(1000, 1005, 200, 20);
-    long[] ids = randomLong(1000, 1005, names.length);
+    String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, 200, 20);
+    long[] ids = TestUtils.randomLong(1000, 1005, names.length);
 
     final Schema schema = new Schema(new Type[] { Type.LONG_TYPE, Type.STRING_TYPE }, new String[] { "id", "name" });
 
@@ -40,9 +41,9 @@ public class CollectTest extends SystemTestBase {
     TupleBatchBuffer resultTBB = new TupleBatchBuffer(schema);
     resultTBB.merge(tbb);
     resultTBB.merge(tbb);
-    HashMap<Tuple, Integer> expectedResults = SystemTestBase.tupleBatchToTupleBag(resultTBB);
+    HashMap<Tuple, Integer> expectedResults = TestUtils.tupleBatchToTupleBag(resultTBB);
 
-    _TupleBatch tb = null;
+    TupleBatch tb = null;
     while ((tb = tbb.popAny()) != null) {
       insert(WORKER_ID[0], testtableName, schema, tb);
       insert(WORKER_ID[1], testtableName, schema, tb);
@@ -80,9 +81,9 @@ public class CollectTest extends SystemTestBase {
       }
     }
 
-    HashMap<Tuple, Integer> resultSet = tupleBatchToTupleBag(result);
+    HashMap<Tuple, Integer> resultSet = TestUtils.tupleBatchToTupleBag(result);
 
-    SystemTestBase.assertTupleBagEqual(expectedResults, resultSet);
+    TestUtils.assertTupleBagEqual(expectedResults, resultSet);
 
   }
 }

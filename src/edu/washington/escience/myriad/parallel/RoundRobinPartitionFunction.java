@@ -1,9 +1,6 @@
 package edu.washington.escience.myriad.parallel;
 
-import java.util.List;
-
-import edu.washington.escience.myriad.Schema;
-import edu.washington.escience.myriad.column.Column;
+import edu.washington.escience.myriad.TupleBatch;
 
 /**
  * A partition function that simply sends one tuple to each output in turn.
@@ -25,15 +22,38 @@ public class RoundRobinPartitionFunction extends PartitionFunction<String, Integ
     super(numPartitions);
   }
 
-  @Override
-  public final int[] partition(final List<Column<?>> columns, final Schema schema) {
-    final int numTuples = columns.get(0).size();
-    final int[] result = new int[numTuples];
+  // @Override
+  // public final int[] partition(final List<Column<?>> columns, final BitSet validTuples, final Schema schema) {
+  // final int[] result = new int[validTuples.cardinality()];
+  // int j = 0;
+  // for (int i = validTuples.nextSetBit(0); i >= 0; i = validTuples.nextSetBit(i + 1)) {
+  // result[j++] = partition;
+  // partition = (partition + 1) % numPartition;
+  // }
+  // return result;
+  // // final int numTuples = columns.get(0).size();
+  // // final int[] result = new int[numTuples];
+  // //
+  // // for (int i = 0; i < numTuples; i++) {
+  // // result[i] = partition;
+  // // partition = (partition + 1) % numPartition;
+  // // }
+  // // return result;
+  // }
+  //
 
-    for (int i = 0; i < numTuples; i++) {
+  /**
+   * @param tb data.
+   * @return partitions.
+   * */
+  @Override
+  public final int[] partition(final TupleBatch tb) {
+    final int[] result = new int[tb.numTuples()];
+    for (int i = 0; i < result.length; i++) {
       result[i] = partition;
       partition = (partition + 1) % numPartition;
     }
     return result;
   }
+
 }

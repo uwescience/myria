@@ -1,11 +1,10 @@
 package edu.washington.escience.myriad.operator.agg;
 
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.column.IntColumn;
-import edu.washington.escience.myriad.parallel.ParallelUtility;
-import edu.washington.escience.myriad.table._TupleBatch;
+import edu.washington.escience.myriad.util.MathUtils;
 
 /**
  * Knows how to compute some aggregate over a set of IntFields.
@@ -18,7 +17,8 @@ public class IntegerAggregator implements Aggregator {
   private final int afield;
   private final int aggOps;
 
-  private int min, max, sum, count;
+  private int min, max, sum;
+  private long count;
 
   private final Schema resultSchema;
 
@@ -49,12 +49,12 @@ public class IntegerAggregator implements Aggregator {
     max = Integer.MIN_VALUE;
     sum = 0;
     count = 0;
-    int numAggOps = ParallelUtility.numBinaryOnesInInteger(aggOps);
+    int numAggOps = MathUtils.numBinaryOnesInInteger(aggOps);
     Type[] types = new Type[numAggOps];
     String[] names = new String[numAggOps];
     int idx = 0;
     if ((aggOps & Aggregator.AGG_OP_COUNT) != 0) {
-      types[idx] = Type.INT_TYPE;
+      types[idx] = Type.LONG_TYPE;
       names[idx] = "count(" + aFieldName + ")";
       idx += 1;
     }
@@ -87,19 +87,20 @@ public class IntegerAggregator implements Aggregator {
   }
 
   @Override
-  public final void add(final _TupleBatch tup) {
+  public final void add(final TupleBatch tup) {
 
-    count += tup.numOutputTuples();
-    IntColumn rawData = (IntColumn) tup.outputRawData().get(afield);
-    int numTuples = rawData.size();
-    for (int i = 0; i < numTuples; i++) {
-      int x = rawData.getInt(i);
-      sum += x;
-      if (min > x) {
-        min = x;
-      }
-      if (max < x) {
-        max = x;
+    int numTuples = tup.numTuples();
+    if (numTuples > 0) {
+      count += numTuples;
+      for (int i = 0; i < numTuples; i++) {
+        int x = tup.getInt(afield, i);
+        sum += x;
+        if (min > x) {
+          min = x;
+        }
+        if (max < x) {
+          max = x;
+        }
       }
     }
 

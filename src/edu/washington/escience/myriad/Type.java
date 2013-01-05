@@ -248,6 +248,9 @@ public enum Type implements Serializable {
 
   };
 
+  /**
+   * @return true if the #tupleIndex tuple in column satisfy the predicate, else false.
+   * */
   public abstract boolean filter(Predicate.Op op, Column<?> column, int tupleIndex, Object operand);
 
   public abstract String toString(Column<?> column, int tupleIndex);

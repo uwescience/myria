@@ -2,33 +2,33 @@ package edu.washington.escience.myriad.operator;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
-import edu.washington.escience.myriad.table._TupleBatch;
+import edu.washington.escience.myriad.TupleBatch;
+import edu.washington.escience.myriad.util.SQLiteUtils;
 
 /**
  * Blocking when receiving data from children.
  * */
-public final class BlockingDataReceiver extends Operator {
+public final class BlockingSQLiteDataReceiver extends Operator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
-  /**
-   * output buffer.
-   * */
-  private final _TupleBatch outputBuffer;
-
   private Operator child;
+  final String dbFileName;
+  final String tableName;
+  String dataDir = ".";
 
-  public BlockingDataReceiver(final _TupleBatch outputBuffer, final Operator child) {
-    this.outputBuffer = outputBuffer;
+  public BlockingSQLiteDataReceiver(final String dbFileName, final String tableName, final Operator child) {
     this.child = child;
+    this.dbFileName = dbFileName;
+    this.tableName = tableName;
   }
 
   @Override
-  protected _TupleBatch fetchNext() throws DbException {
-    _TupleBatch tb = null;
+  protected TupleBatch fetchNext() throws DbException {
+    TupleBatch tb = null;
     while ((tb = child.next()) != null) {
-      outputBuffer.append(tb);
+      SQLiteUtils.insertIntoSQLite(child.getSchema(), tableName, dataDir + "/" + dbFileName, tb);
     }
     return null;
   }
@@ -36,10 +36,6 @@ public final class BlockingDataReceiver extends Operator {
   @Override
   public Operator[] getChildren() {
     return new Operator[] { child };
-  }
-
-  public _TupleBatch getOutputBuffer() {
-    return outputBuffer;
   }
 
   @Override
@@ -61,8 +57,11 @@ public final class BlockingDataReceiver extends Operator {
   }
 
   @Override
-  public _TupleBatch fetchNextReady() throws DbException {
+  public TupleBatch fetchNextReady() throws DbException {
     return fetchNext();
   }
 
+  public void resetDataDir(String dataDir) {
+    this.dataDir = dataDir;
+  }
 }

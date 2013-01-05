@@ -8,8 +8,8 @@ import org.junit.Test;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.table._TupleBatch;
 
 public class FileScanTest {
 
@@ -41,9 +41,9 @@ public class FileScanTest {
 
     fileScan.open();
     int count = 0;
-    _TupleBatch tb = null;
+    TupleBatch tb = null;
     while ((tb = fileScan.next()) != null) {
-      count += tb.numOutputTuples();
+      count += tb.numTuples();
     }
 
     return count;

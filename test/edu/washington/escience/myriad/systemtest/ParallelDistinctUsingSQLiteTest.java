@@ -7,19 +7,19 @@ import org.junit.Test;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
-import edu.washington.escience.myriad.operator.BlockingDataReceiver;
+import edu.washington.escience.myriad.operator.BlockingSQLiteDataReceiver;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.operator.SQLiteSQLProcessor;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
-import edu.washington.escience.myriad.parallel.SQLiteTupleBatch;
 import edu.washington.escience.myriad.parallel.Server;
-import edu.washington.escience.myriad.table._TupleBatch;
+import edu.washington.escience.myriad.util.TestUtils;
 
 public class ParallelDistinctUsingSQLiteTest extends SystemTestBase {
 
@@ -34,17 +34,17 @@ public class ParallelDistinctUsingSQLiteTest extends SystemTestBase {
     createTable(WORKER_ID[0], "temptable", "temptable", "id int, name varchar(20)");
     createTable(WORKER_ID[1], "temptable", "temptable", "id int, name varchar(20)");
 
-    String[] names = randomFixedLengthNumericString(1000, 1005, 20, 20);
-    long[] ids = randomLong(1000, 1005, names.length);
+    String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, 20, 20);
+    long[] ids = TestUtils.randomLong(1000, 1005, names.length);
 
     TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
       tbb.put(0, ids[i]);
       tbb.put(1, names[i]);
     }
-    HashMap<Tuple, Integer> expectedResult = SystemTestBase.distinct(tbb);
+    HashMap<Tuple, Integer> expectedResult = TestUtils.distinct(tbb);
 
-    _TupleBatch tb = null;
+    TupleBatch tb = null;
     while ((tb = tbb.popAny()) != null) {
       insert(WORKER_ID[0], "testtable", schema, tb);
       insert(WORKER_ID[1], "testtable", schema, tb);
@@ -57,9 +57,8 @@ public class ParallelDistinctUsingSQLiteTest extends SystemTestBase {
     final CollectProducer cp = new CollectProducer(scan, worker2ReceiveID, WORKER_ID[1]);
 
     // CollectProducer child, ParallelOperatorID operatorID, SocketInfo[] workers
-    final SQLiteTupleBatch bufferWorker2 = new SQLiteTupleBatch(schema, "temptable.db", "temptable");
     final CollectConsumer cc = new CollectConsumer(cp, worker2ReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
-    final BlockingDataReceiver block2 = new BlockingDataReceiver(bufferWorker2, cc);
+    final BlockingSQLiteDataReceiver block2 = new BlockingSQLiteDataReceiver("temptable.db", "temptable", cc);
     final SQLiteSQLProcessor scan22 =
         new SQLiteSQLProcessor("temptable.db", "select distinct * from temptable", schema, new Operator[] { block2 });
     final CollectProducer cp22 = new CollectProducer(scan22, serverReceiveID, MASTER_ID);
@@ -86,9 +85,9 @@ public class ParallelDistinctUsingSQLiteTest extends SystemTestBase {
       }
     }
 
-    HashMap<Tuple, Integer> resultSet = tupleBatchToTupleBag(result);
+    HashMap<Tuple, Integer> resultSet = TestUtils.tupleBatchToTupleBag(result);
 
-    SystemTestBase.assertTupleBagEqual(expectedResult, resultSet);
+    TestUtils.assertTupleBagEqual(expectedResult, resultSet);
 
   }
 }

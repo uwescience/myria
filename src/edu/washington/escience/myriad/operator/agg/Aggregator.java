@@ -3,8 +3,8 @@ package edu.washington.escience.myriad.operator.agg;
 import java.io.Serializable;
 
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
-import edu.washington.escience.myriad.table._TupleBatch;
 
 /**
  * Single column aggregator.
@@ -37,7 +37,7 @@ public interface Aggregator extends Serializable {
    * 
    * @param t TupleBatch
    */
-  void add(_TupleBatch t);
+  void add(TupleBatch t);
 
   /**
    * Output the aggregate result. Store the output to buffer.
@@ -53,6 +53,9 @@ public interface Aggregator extends Serializable {
   int availableAgg();
 
   /**
+   * All the count aggregates are of type Long. All the avg aggregates are of type Double. And each of the max/min/sum
+   * aggregate has the same type as the column on which the aggregate is computed.
+   * 
    * @return Result schema of this Aggregator.
    * 
    * */

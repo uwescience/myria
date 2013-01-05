@@ -13,7 +13,7 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
-import edu.washington.escience.myriad.operator.BlockingDataReceiver;
+import edu.washington.escience.myriad.operator.BlockingSQLiteDataReceiver;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.operator.SQLiteSQLProcessor;
@@ -21,11 +21,11 @@ import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 import edu.washington.escience.myriad.parallel.PartitionFunction;
-import edu.washington.escience.myriad.parallel.SQLiteTupleBatch;
 import edu.washington.escience.myriad.parallel.Server;
 import edu.washington.escience.myriad.parallel.ShuffleConsumer;
 import edu.washington.escience.myriad.parallel.ShuffleProducer;
 import edu.washington.escience.myriad.parallel.SingleFieldHashPartitionFunction;
+import edu.washington.escience.myriad.util.TestUtils;
 
 public class ShuffleSQLiteTest extends SystemTestBase {
 
@@ -64,13 +64,11 @@ public class ShuffleSQLiteTest extends SystemTestBase {
 
     final ShuffleProducer sp2 = new ShuffleProducer(scan2, shuffle2ID, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf);
 
-    final SQLiteTupleBatch bufferWorker1 = new SQLiteTupleBatch(schema, "temptable.db", "temptable1");
     final ShuffleConsumer sc1 = new ShuffleConsumer(sp1, shuffle1ID, new int[] { WORKER_ID[0], WORKER_ID[1] });
-    final BlockingDataReceiver buffer1 = new BlockingDataReceiver(bufferWorker1, sc1);
+    final BlockingSQLiteDataReceiver buffer1 = new BlockingSQLiteDataReceiver("temptable.db", "temptable1", sc1);
 
-    final SQLiteTupleBatch bufferWorker2 = new SQLiteTupleBatch(schema, "temptable.db", "temptable2");
     final ShuffleConsumer sc2 = new ShuffleConsumer(sp2, shuffle2ID, new int[] { WORKER_ID[0], WORKER_ID[1] });
-    final BlockingDataReceiver buffer2 = new BlockingDataReceiver(bufferWorker2, sc2);
+    final BlockingSQLiteDataReceiver buffer2 = new BlockingSQLiteDataReceiver("temptable.db", "temptable2", sc2);
 
     final SQLiteSQLProcessor ssp =
         new SQLiteSQLProcessor("temptable.db",
@@ -103,7 +101,7 @@ public class ShuffleSQLiteTest extends SystemTestBase {
       }
     }
 
-    HashMap<Tuple, Integer> resultBag = tupleBatchToTupleBag(result);
+    HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(result);
 
     assertTrue(resultBag.size() == expectedResult.size());
     for (Entry<Tuple, Integer> e : resultBag.entrySet()) {

@@ -27,7 +27,7 @@ import edu.washington.escience.myriad.parallel.Server;
 import edu.washington.escience.myriad.parallel.ShuffleConsumer;
 import edu.washington.escience.myriad.parallel.ShuffleProducer;
 import edu.washington.escience.myriad.parallel.SingleFieldHashPartitionFunction;
-import edu.washington.escience.myriad.table._TupleBatch;
+import edu.washington.escience.myriad.util.TestUtils;
 
 public class IterativeSelfJoinTest extends SystemTestBase {
   // change configuration here
@@ -39,12 +39,11 @@ public class IterativeSelfJoinTest extends SystemTestBase {
   public TupleBatchBuffer getResultInMemory(TupleBatchBuffer table1, Schema schema, int numIteration) {
     // a brute force check
 
-    Iterator<TupleBatch> tbs = table1.getAll().iterator();
+    final Iterator<List<Column<?>>> tbs = table1.getAllAsRawColumn().iterator();
     boolean graph[][] = new boolean[MaxID][MaxID];
     boolean cntgraph[][] = new boolean[MaxID][MaxID];
     while (tbs.hasNext()) {
-      _TupleBatch tb = tbs.next();
-      List<Column<?>> output = tb.outputRawData();
+      List<Column<?>> output = tbs.next();
       int numRow = output.get(0).size();
       for (int i = 0; i < numRow; i++) {
         int fr = Integer.parseInt(output.get(0).get(i).toString());
@@ -93,7 +92,7 @@ public class IterativeSelfJoinTest extends SystemTestBase {
 
   @Test
   public void iterativeSelfJoinTest() throws DbException, CatalogException, IOException {
-
+    System.out.println(System.getProperty("java.util.logging.config.file"));
     // data generation
     final Type[] table1Types = new Type[] { Type.LONG_TYPE, Type.LONG_TYPE };
     final String[] table1ColumnNames = new String[] { "follower", "followee" };
@@ -102,10 +101,10 @@ public class IterativeSelfJoinTest extends SystemTestBase {
     final String[] joinColumnNames = new String[] { "follower", "followee", "follower", "followee" };
     final Schema joinSchema = new Schema(joinTypes, joinColumnNames);
 
-    long[] tbl1ID1Worker1 = randomLong(1, MaxID - 1, numTbl1Worker1);
-    long[] tbl1ID1Worker2 = randomLong(1, MaxID - 1, numTbl1Worker2);
-    long[] tbl1ID2Worker1 = randomLong(1, MaxID - 1, numTbl1Worker1);
-    long[] tbl1ID2Worker2 = randomLong(1, MaxID - 1, numTbl1Worker2);
+    long[] tbl1ID1Worker1 = TestUtils.randomLong(1, MaxID - 1, numTbl1Worker1);
+    long[] tbl1ID1Worker2 = TestUtils.randomLong(1, MaxID - 1, numTbl1Worker2);
+    long[] tbl1ID2Worker1 = TestUtils.randomLong(1, MaxID - 1, numTbl1Worker1);
+    long[] tbl1ID2Worker2 = TestUtils.randomLong(1, MaxID - 1, numTbl1Worker2);
     TupleBatchBuffer tbl1Worker1 = new TupleBatchBuffer(tableSchema);
     TupleBatchBuffer tbl1Worker2 = new TupleBatchBuffer(tableSchema);
     for (int i = 0; i < numTbl1Worker1; i++) {
@@ -123,14 +122,14 @@ public class IterativeSelfJoinTest extends SystemTestBase {
     // generate correct answer in memory
     TupleBatchBuffer expectedTBB = getResultInMemory(table1, tableSchema, numIteration);
 
-    HashMap<Tuple, Integer> expectedResult = SystemTestBase.tupleBatchToTupleBag(expectedTBB);
+    HashMap<Tuple, Integer> expectedResult = TestUtils.tupleBatchToTupleBag(expectedTBB);
 
     // database generation
     for (int i = 0; i < numIteration; ++i) {
       createTable(WORKER_ID[0], "testtable" + i, "testtable", "follower long, followee long");
       createTable(WORKER_ID[1], "testtable" + i, "testtable", "follower long, followee long");
     }
-    _TupleBatch tb = null;
+    TupleBatch tb = null;
     while ((tb = tbl1Worker1.popAny()) != null) {
       for (int i = 0; i < numIteration; ++i) {
         insertWithBothNames(WORKER_ID[0], "testtable", "testtable" + i, tableSchema, tb);
@@ -203,6 +202,7 @@ public class IterativeSelfJoinTest extends SystemTestBase {
     final CollectConsumer serverPlan =
         new CollectConsumer(tableSchema, serverReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
     Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
+    System.out.println("Query dispatched to the workers");
     LOGGER.debug("Query dispatched to the workers");
     TupleBatchBuffer result = null;
     while ((result = Server.runningInstance.startServerQuery(0, serverPlan)) == null) {
@@ -214,7 +214,7 @@ public class IterativeSelfJoinTest extends SystemTestBase {
       }
     }
 
-    HashMap<Tuple, Integer> actual = SystemTestBase.tupleBatchToTupleBag(result);
-    SystemTestBase.assertTupleBagEqual(expectedResult, actual);
+    HashMap<Tuple, Integer> actual = TestUtils.tupleBatchToTupleBag(result);
+    TestUtils.assertTupleBagEqual(expectedResult, actual);
   }
 }

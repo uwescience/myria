@@ -1,22 +1,14 @@
 package edu.washington.escience.myriad.parallel;
 
-import java.util.Arrays;
-import java.util.List;
-
 import org.jboss.netty.channel.Channel;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
-import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
-import edu.washington.escience.myriad.proto.DataProto.DataMessage;
-import edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageType;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
-import edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType;
-import edu.washington.escience.myriad.table._TupleBatch;
+import edu.washington.escience.myriad.util.IPCUtils;
 
 /**
  * The producer part of the Collect Exchange operator.
@@ -35,60 +27,25 @@ public final class CollectProducer extends Producer {
 
       final Channel channel = getThisWorker().connectionPool.get(collectConsumerWorkerID, 3, null);
 
-      final TransportMessage.Builder messageBuilder = TransportMessage.newBuilder();
-
       try {
 
         TupleBatchBuffer buffer = new TupleBatchBuffer(getSchema());
 
-        _TupleBatch tup = null;
+        TupleBatch tup = null;
+        TransportMessage dm = null;
         while ((tup = child.next()) != null) {
+          tup.compactInto(buffer);
 
-          final List<Column<?>> fromColumns = tup.outputRawData();
-
-          int numTuples = tup.numOutputTuples();
-          int numColumns = fromColumns.size();
-          for (int i = 0; i < numTuples; i++) {
-            for (int j = 0; j < numColumns; j++) {
-              buffer.put(j, fromColumns.get(j).get(i));
-            }
-          }
-
-          while ((tup = buffer.popFilled()) != null) {
-            final List<Column<?>> columns = tup.outputRawData();
-            final ColumnMessage[] columnProtos = new ColumnMessage[columns.size()];
-            int i = 0;
-            for (final Column<?> c : columns) {
-              columnProtos[i] = c.serializeToProto();
-              i++;
-            }
-            channel.write(messageBuilder.setType(TransportMessageType.DATA).setData(
-                DataMessage.newBuilder().setType(DataMessageType.NORMAL).addAllColumns(Arrays.asList(columnProtos))
-                    .setOperatorID(CollectProducer.this.operatorID.getLong()).build()).build());
+          while ((dm = buffer.popFilledAsTM(operatorID)) != null) {
+            channel.write(dm);
           }
         }
 
-        if (buffer.numTuples() > 0) {
-          List<TupleBatch> remain = buffer.getAll();
-          for (TupleBatch tb : remain) {
-            final List<Column<?>> columns = tb.outputRawData();
-            final ColumnMessage[] columnProtos = new ColumnMessage[columns.size()];
-            int j = 0;
-            for (final Column<?> c : columns) {
-              columnProtos[j] = c.serializeToProto();
-              j++;
-            }
-
-            channel.write(messageBuilder.setType(TransportMessageType.DATA).setData(
-                DataMessage.newBuilder().setType(DataMessageType.NORMAL).addAllColumns(Arrays.asList(columnProtos))
-                    .setOperatorID(CollectProducer.this.operatorID.getLong()).build()).build());
-          }
+        while ((dm = buffer.popAnyAsTM(operatorID)) != null) {
+          channel.write(dm);
         }
 
-        final DataMessage eos =
-            DataMessage.newBuilder().setType(DataMessageType.EOS).setOperatorID(
-                CollectProducer.this.operatorID.getLong()).build();
-        channel.write(messageBuilder.setType(TransportMessageType.DATA).setData(eos).build());
+        channel.write(IPCUtils.eosTM(operatorID));
 
       } catch (final DbException e) {
         e.printStackTrace();
@@ -100,10 +57,7 @@ public final class CollectProducer extends Producer {
   private static final long serialVersionUID = 1L;
 
   private transient WorkingThread runningThread;
-  public static final int MAX_SIZE = 100;
-  public static final int MIN_SIZE = 100;
 
-  public static final int MAX_MS = 1000;
   /**
    * The paired collect consumer address.
    */
@@ -122,7 +76,7 @@ public final class CollectProducer extends Producer {
   }
 
   @Override
-  protected _TupleBatch fetchNext() throws DbException {
+  protected TupleBatch fetchNext() throws DbException {
     try {
       // wait until the working thread terminate and return an empty tuple set
       runningThread.join();
@@ -155,7 +109,7 @@ public final class CollectProducer extends Producer {
   }
 
   @Override
-  public _TupleBatch fetchNextReady() throws DbException {
+  public TupleBatch fetchNextReady() throws DbException {
     return fetchNext();
   }
 

@@ -2,7 +2,7 @@ package edu.washington.escience.myriad.operator;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
-import edu.washington.escience.myriad.table._TupleBatch;
+import edu.washington.escience.myriad.TupleBatch;
 
 public class DoNothingOperator extends Operator {
 
@@ -18,7 +18,7 @@ public class DoNothingOperator extends Operator {
   }
 
   @Override
-  protected final _TupleBatch fetchNext() throws DbException {
+  protected final TupleBatch fetchNext() throws DbException {
     if (children != null) {
       while (!eos()) {
         for (final Operator child : children) {
@@ -55,7 +55,7 @@ public class DoNothingOperator extends Operator {
   }
 
   @Override
-  public _TupleBatch fetchNextReady() throws DbException {
+  public TupleBatch fetchNextReady() throws DbException {
     // TODO Auto-generated method stub
     return null;
   }

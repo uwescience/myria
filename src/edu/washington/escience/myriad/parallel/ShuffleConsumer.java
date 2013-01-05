@@ -6,8 +6,8 @@ import java.util.Objects;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.table._TupleBatch;
 
 /**
  * The consumer part of the Shuffle Exchange operator.
@@ -53,7 +53,7 @@ public final class ShuffleConsumer extends Consumer {
   }
 
   @Override
-  protected _TupleBatch fetchNext() throws DbException {
+  protected TupleBatch fetchNext() throws DbException {
     try {
       return getTuples(true);
     } catch (final InterruptedException e) {
@@ -85,13 +85,13 @@ public final class ShuffleConsumer extends Consumer {
    * 
    * @throws InterruptedException a
    */
-  _TupleBatch getTuples(final boolean blocking) throws InterruptedException {
+  TupleBatch getTuples(final boolean blocking) throws InterruptedException {
     int timeToWait = -1;
     if (!blocking) {
       timeToWait = 0;
     }
 
-    ExchangeTupleBatch tb = null;
+    ExchangeData tb = null;
 
     while (workerEOS.nextClearBit(0) < sourceWorkers.length) {
       tb = take(timeToWait);
@@ -100,7 +100,7 @@ public final class ShuffleConsumer extends Consumer {
         if (tb.isEos()) {
           workerEOS.set(workerIdToIndex.get(tb.getWorkerID()));
         } else {
-          return tb;
+          return tb.getRealData();
         }
       } else {
         // if blocking=true, no null should be got from take
@@ -123,7 +123,7 @@ public final class ShuffleConsumer extends Consumer {
   }
 
   @Override
-  public _TupleBatch fetchNextReady() throws DbException {
+  public TupleBatch fetchNextReady() throws DbException {
     if (!eos()) {
       try {
         return getTuples(false);

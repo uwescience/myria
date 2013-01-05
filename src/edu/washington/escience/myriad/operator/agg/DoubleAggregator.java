@@ -1,11 +1,10 @@
 package edu.washington.escience.myriad.operator.agg;
 
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.column.DoubleColumn;
-import edu.washington.escience.myriad.parallel.ParallelUtility;
-import edu.washington.escience.myriad.table._TupleBatch;
+import edu.washington.escience.myriad.util.MathUtils;
 
 /**
  * Knows how to compute some aggregates over a DoubleColumn.
@@ -19,7 +18,7 @@ public final class DoubleAggregator implements Aggregator {
   private final int aggOps;
 
   private double min, max, sum;
-  private int count;
+  private long count;
 
   private final Schema resultSchema;
 
@@ -56,27 +55,27 @@ public final class DoubleAggregator implements Aggregator {
     max = Double.MIN_VALUE;
     sum = 0.0;
     count = 0;
-    int numAggOps = ParallelUtility.numBinaryOnesInInteger(aggOps);
+    int numAggOps = MathUtils.numBinaryOnesInInteger(aggOps);
     Type[] types = new Type[numAggOps];
     String[] names = new String[numAggOps];
     int idx = 0;
     if ((aggOps & Aggregator.AGG_OP_COUNT) != 0) {
-      types[idx] = Type.INT_TYPE;
+      types[idx] = Type.LONG_TYPE;
       names[idx] = "count(" + aFieldName + ")";
       idx += 1;
     }
     if ((aggOps & Aggregator.AGG_OP_MIN) != 0) {
-      types[idx] = Type.INT_TYPE;
+      types[idx] = Type.DOUBLE_TYPE;
       names[idx] = "min(" + aFieldName + ")";
       idx += 1;
     }
     if ((aggOps & Aggregator.AGG_OP_MAX) != 0) {
-      types[idx] = Type.INT_TYPE;
+      types[idx] = Type.DOUBLE_TYPE;
       names[idx] = "max(" + aFieldName + ")";
       idx += 1;
     }
     if ((aggOps & Aggregator.AGG_OP_SUM) != 0) {
-      types[idx] = Type.INT_TYPE;
+      types[idx] = Type.DOUBLE_TYPE;
       names[idx] = "sum(" + aFieldName + ")";
       idx += 1;
     }
@@ -89,22 +88,22 @@ public final class DoubleAggregator implements Aggregator {
   }
 
   @Override
-  public void add(final _TupleBatch tup) {
+  public void add(final TupleBatch tup) {
 
-    count += tup.numOutputTuples();
-    DoubleColumn rawData = (DoubleColumn) tup.outputRawData().get(afield);
-    int numTuples = rawData.size();
-    for (int i = 0; i < numTuples; i++) {
-      double x = rawData.getDouble(i);
-      sum += x;
-      if (Double.compare(x, min) < 0) {
-        min = x;
-      }
-      if (Double.compare(x, max) > 0) {
-        max = x;
+    int numTuples = tup.numTuples();
+    if (numTuples > 0) {
+      count += numTuples;
+      for (int i = 0; i < numTuples; i++) {
+        double x = tup.getDouble(afield, i);
+        sum += x;
+        if (Double.compare(x, min) < 0) {
+          min = x;
+        }
+        if (Double.compare(x, max) > 0) {
+          max = x;
+        }
       }
     }
-
   }
 
   @Override

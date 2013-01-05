@@ -7,8 +7,8 @@ import org.apache.commons.lang3.ArrayUtils;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.table._TupleBatch;
 
 /**
  * Project is an operator that implements a relational projection.
@@ -71,8 +71,8 @@ public class Project extends Operator {
    * @return The next tuple, or null if there are no more tuples
    */
   @Override
-  protected _TupleBatch fetchNext() throws NoSuchElementException, DbException {
-    _TupleBatch tmp = child.next();
+  protected TupleBatch fetchNext() throws NoSuchElementException, DbException {
+    TupleBatch tmp = child.next();
     if (tmp != null) {
       return tmp.project(ArrayUtils.toPrimitive(outFieldIds));
     }
@@ -101,7 +101,7 @@ public class Project extends Operator {
   }
 
   @Override
-  public _TupleBatch fetchNextReady() throws DbException {
+  public TupleBatch fetchNextReady() throws DbException {
     if (child.nextReady()) {
       return child.next().project(ArrayUtils.toPrimitive(outFieldIds));
     }

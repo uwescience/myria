@@ -10,6 +10,7 @@ import org.junit.Test;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.DupElim;
@@ -17,7 +18,6 @@ import edu.washington.escience.myriad.operator.LocalJoin;
 import edu.washington.escience.myriad.operator.LocalProjectingJoin;
 import edu.washington.escience.myriad.operator.Project;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
-import edu.washington.escience.myriad.table._TupleBatch;
 
 public class TwitterSingleNodeJoinSpeedTest {
   /**
@@ -59,9 +59,9 @@ public class TwitterSingleNodeJoinSpeedTest {
     dupelim.open();
     long result = 0;
     while (!dupelim.eos()) {
-      _TupleBatch next = dupelim.next();
+      TupleBatch next = dupelim.next();
       if (next != null) {
-        result += next.numOutputTuples();
+        result += next.numTuples();
       }
     }
 
@@ -92,9 +92,9 @@ public class TwitterSingleNodeJoinSpeedTest {
     dupelim.open();
     long result = 0;
     while (!dupelim.eos()) {
-      _TupleBatch next = dupelim.next();
+      TupleBatch next = dupelim.next();
       if (next != null) {
-        result += next.numOutputTuples();
+        result += next.numTuples();
       }
     }
 

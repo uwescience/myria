@@ -1,9 +1,6 @@
 package edu.washington.escience.myriad.parallel;
 
-import java.util.List;
-
-import edu.washington.escience.myriad.Schema;
-import edu.washington.escience.myriad.column.Column;
+import edu.washington.escience.myriad.TupleBatch;
 
 /**
  * The default implementation of the partition function.
@@ -17,20 +14,36 @@ public final class SingleFieldHashPartitionFunction extends PartitionFunction<St
 
   public static final String FIELD_INDEX = "field_index";
 
-  private Integer fieldIndex;
+  private int[] fieldIndex;
 
   public SingleFieldHashPartitionFunction(final int numPartition) {
     super(numPartition);
   }
 
-  @Override
-  public int[] partition(final List<Column<?>> columns, final Schema schema) {
-    final Column<?> partitionColumn = columns.get(fieldIndex);
-    final int numTuples = partitionColumn.size();
-    final int[] result = new int[numTuples];
+  // @Override
+  // public int[] partition(final List<Column<?>> columns, final BitSet validTuples, final Schema schema) {
+  // final int[] result = new int[validTuples.cardinality()];
+  // int j = 0;
+  // final Column<?> partitionColumn = columns.get(fieldIndex);
+  // for (int i = validTuples.nextSetBit(0); i >= 0; i = validTuples.nextSetBit(i + 1)) {
+  // int p = partitionColumn.get(i).hashCode() % numPartition;
+  // if (p < 0) {
+  // p = p + numPartition;
+  // }
+  // result[j++] = p;
+  // }
+  // return result;
+  // }
 
-    for (int i = 0; i < numTuples; i++) {
-      int p = partitionColumn.get(i).hashCode() % numPartition;
+  /**
+   * @param tb data.
+   * @return partitions.
+   * */
+  @Override
+  public int[] partition(final TupleBatch tb) {
+    final int[] result = new int[tb.numTuples()];
+    for (int i = 0; i < result.length; i++) {
+      int p = tb.hashCode(i, fieldIndex) % numPartition;
       if (p < 0) {
         p = p + numPartition;
       }
@@ -43,7 +56,8 @@ public final class SingleFieldHashPartitionFunction extends PartitionFunction<St
   public void setAttribute(final String attribute, final Integer value) {
     super.setAttribute(attribute, value);
     if (attribute.equals(FIELD_INDEX)) {
-      fieldIndex = value;
+      fieldIndex = new int[1];
+      fieldIndex[0] = value;
     }
   }
 
