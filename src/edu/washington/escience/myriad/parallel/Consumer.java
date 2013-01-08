@@ -13,8 +13,10 @@ public abstract class Consumer extends Exchange {
    */
   private transient volatile LinkedBlockingQueue<ExchangeData> inputBuffer;
 
+  protected ExchangePairID operatorID;
+
   public Consumer(final ExchangePairID oID) {
-    super(oID);
+    operatorID = oID;
   }
 
   public void setInputBuffer(final LinkedBlockingQueue<ExchangeData> buffer) {
@@ -35,4 +37,7 @@ public abstract class Consumer extends Exchange {
     }
   }
 
+  public ExchangePairID getOperatorID() {
+    return operatorID;
+  }
 }

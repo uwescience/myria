@@ -33,6 +33,8 @@ public class ShuffleProducer extends Producer {
       Schema thisSchema = null;
       thisSchema = getSchema();
 
+      ExchangePairID operatorID = operatorIDs[0];
+
       try {
         TupleBatchBuffer[] buffers = new TupleBatchBuffer[numWorker];
         for (int i = 0; i < numWorker; i++) {
@@ -51,7 +53,7 @@ public class ShuffleProducer extends Producer {
         }
 
         for (int i = 0; i < numWorker; i++) {
-          while ((dm = buffers[i].popAnyAsTM(operatorID))!=null) {
+          while ((dm = buffers[i].popAnyAsTM(operatorID)) != null) {
             shuffleChannels[i].write(dm);
           }
         }

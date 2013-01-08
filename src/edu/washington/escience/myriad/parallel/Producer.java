@@ -11,8 +11,14 @@ public abstract class Producer extends Exchange {
    */
   private transient Worker thisWorker;
 
+  protected ExchangePairID[] operatorIDs;
+
   public Producer(final ExchangePairID oID) {
-    super(oID);
+    this(new ExchangePairID[] { oID });
+  }
+
+  public Producer(final ExchangePairID[] oIDs) {
+    operatorIDs = oIDs;
   }
 
   public Worker getThisWorker() {
@@ -22,5 +28,4 @@ public abstract class Producer extends Exchange {
   public void setThisWorker(final Worker thisWorker) {
     this.thisWorker = thisWorker;
   }
-
 }
