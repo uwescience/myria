@@ -3,7 +3,10 @@ package edu.washington.escience.myriad.parallel;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-public abstract class Consumer extends Exchange {
+import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
+
+public abstract class Consumer extends Operator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;

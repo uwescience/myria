@@ -74,12 +74,4 @@ public abstract class Exchange extends Operator {
       return oId + "";
     }
   }
-
-  /*
-   * protected final ExchangePairID operatorID;
-   * 
-   * public Exchange(final ExchangePairID oID) { operatorID = oID; }
-   * 
-   * public ExchangePairID getOperatorID() { return operatorID; }
-   */
 }

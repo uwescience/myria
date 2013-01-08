@@ -1,6 +1,9 @@
 package edu.washington.escience.myriad.parallel;
 
-public abstract class Producer extends Exchange {
+import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
+
+public abstract class Producer extends Operator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
