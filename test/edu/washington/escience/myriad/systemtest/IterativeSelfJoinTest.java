@@ -188,9 +188,9 @@ public class IterativeSelfJoinTest extends SystemTestBase {
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final CollectProducer cp = new CollectProducer(dupelim[numIteration - 1], serverReceiveID, MASTER_ID);
 
-    final HashMap<Integer, Operator> workerPlans = new HashMap<Integer, Operator>();
-    workerPlans.put(WORKER_ID[0], cp);
-    workerPlans.put(WORKER_ID[1], cp);
+    final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
+    workerPlans.put(WORKER_ID[0], new Operator[] { cp });
+    workerPlans.put(WORKER_ID[1], new Operator[] { cp });
 
     while (Server.runningInstance == null) {
       try {

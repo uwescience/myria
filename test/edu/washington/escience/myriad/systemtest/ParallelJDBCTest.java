@@ -58,9 +58,9 @@ public class ParallelJDBCTest extends SystemTestBase {
         new JdbcSQLProcessor(driverClass, connectionString, "select distinct * from temptable34", schema, block2,
             username, password);
     final CollectProducer cp22 = new CollectProducer(scan22, serverReceiveID, MASTER_ID);
-    final HashMap<Integer, Operator> workerPlans = new HashMap<Integer, Operator>();
-    workerPlans.put(WORKER_ID[0], cp1);
-    workerPlans.put(WORKER_ID[1], cp22);
+    final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
+    workerPlans.put(WORKER_ID[0], new Operator[] { cp1 });
+    workerPlans.put(WORKER_ID[1], new Operator[] { cp22 });
 
     while (Server.runningInstance == null) {
       try {

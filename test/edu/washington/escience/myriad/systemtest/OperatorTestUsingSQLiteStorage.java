@@ -66,9 +66,9 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
         new SQLiteQueryScan(testtableName + ".db", "select * from " + testtableName, schema);
 
     final DupElim dupElimOnScan = new DupElim(scanTable);
-    final HashMap<Integer, Operator> workerPlans = new HashMap<Integer, Operator>();
+    final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
     final CollectProducer cp1 = new CollectProducer(dupElimOnScan, serverReceiveID, MASTER_ID);
-    workerPlans.put(WORKER_ID[0], cp1);
+    workerPlans.put(WORKER_ID[0], new Operator[] { cp1 });
 
     while (Server.runningInstance == null) {
       try {
@@ -133,12 +133,12 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
         new SQLiteQueryScan(testtableName + ".db", "select * from " + testtableName, schema);
 
     final DupElim dupElimOnScan = new DupElim(scanTable);
-    final HashMap<Integer, Operator> workerPlans = new HashMap<Integer, Operator>();
+    final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
     final CollectProducer cp1 = new CollectProducer(dupElimOnScan, collectID, WORKER_ID[0]);
     final CollectConsumer cc1 = new CollectConsumer(cp1, collectID, new int[] { WORKER_ID[0], WORKER_ID[1] });
     final DupElim dumElim3 = new DupElim(cc1);
-    workerPlans.put(WORKER_ID[0], new CollectProducer(dumElim3, serverReceiveID, MASTER_ID));
-    workerPlans.put(WORKER_ID[1], cp1);
+    workerPlans.put(WORKER_ID[0], new Operator[] { new CollectProducer(dumElim3, serverReceiveID, MASTER_ID) });
+    workerPlans.put(WORKER_ID[1], new Operator[] { cp1 });
 
     while (Server.runningInstance == null) {
       try {
@@ -199,9 +199,9 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final LocalJoin localjoin = new LocalJoin(outputSchema, sc1, sc2, new int[] { 0 }, new int[] { 0 });
 
     final CollectProducer cp1 = new CollectProducer(localjoin, serverReceiveID, MASTER_ID);
-    final HashMap<Integer, Operator> workerPlans = new HashMap<Integer, Operator>();
-    workerPlans.put(WORKER_ID[0], cp1);
-    workerPlans.put(WORKER_ID[1], cp1);
+    final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
+    workerPlans.put(WORKER_ID[0], new Operator[] { cp1 });
+    workerPlans.put(WORKER_ID[1], new Operator[] { cp1 });
 
     while (Server.runningInstance == null) {
       try {

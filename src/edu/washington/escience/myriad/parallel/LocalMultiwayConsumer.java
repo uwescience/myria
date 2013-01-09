@@ -19,10 +19,10 @@ import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
  * A Collect operator collects tuples from all the workers. There is a collect producer on each worker, and a collect
  * consumer on the server and a master worker if a master worker is needed.
  * 
- * The consumer passively collects Tuples from all the paired CollectProducers
+ * The consumer passively collects Tuples from all the paired LocalMultiwayProducers
  * 
  */
-public final class CollectConsumer extends Consumer {
+public final class LocalMultiwayConsumer extends Consumer {
 
   /** The logger for this class. Defaults to myriad level, but could be set to a finer granularity if needed. */
   private static final Logger LOGGER = LoggerFactory.getLogger("edu.washington.escience.myriad");
@@ -37,16 +37,16 @@ public final class CollectConsumer extends Consumer {
   private final Map<Integer, Integer> workerIdToIndex;
 
   /**
-   * The child of a CollectConsumer must be a paired CollectProducer.
+   * The child of a LocalMultiwayConsumer must be a paired LocalMultiwayProducer.
    */
-  private CollectProducer child;
+  private LocalMultiwayProducer child;
 
   /**
    * When a child is provided, the Schema is the child's Schema.
    * 
    * @throws DbException
    */
-  public CollectConsumer(final CollectProducer child, final ExchangePairID operatorID, final int[] workerIDs)
+  public LocalMultiwayConsumer(final LocalMultiwayProducer child, final ExchangePairID operatorID, final int[] workerIDs)
       throws DbException {
     super(operatorID);
     this.child = child;
@@ -63,7 +63,7 @@ public final class CollectConsumer extends Consumer {
   /**
    * If there's no child operator, a Schema is needed.
    */
-  public CollectConsumer(final Schema schema, final ExchangePairID operatorID, final int[] workerIDs) {
+  public LocalMultiwayConsumer(final Schema schema, final ExchangePairID operatorID, final int[] workerIDs) {
     super(operatorID);
     this.schema = schema;
     sourceWorkers = workerIDs;
@@ -120,7 +120,7 @@ public final class CollectConsumer extends Consumer {
       if (tb != null) {
         if (tb.isEos()) {
           workerEOS.set(workerIdToIndex.get(tb.getWorkerID()));
-          LOGGER.debug("EOS received in CollectConsumer. From WorkerID:" + tb.getWorkerID());
+          LOGGER.debug("EOS received in LocalMultiwayConsumer. From WorkerID:" + tb.getWorkerID());
         } else {
           result = tb.getRealData();
           break;
@@ -141,7 +141,7 @@ public final class CollectConsumer extends Consumer {
 
   @Override
   public void setChildren(final Operator[] children) {
-    child = (CollectProducer) children[0];
+    child = (LocalMultiwayProducer) children[0];
   }
 
   @Override

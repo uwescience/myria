@@ -8,6 +8,7 @@ import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 
 /**
  * The consumer part of the Shuffle Exchange operator.
