@@ -24,20 +24,14 @@ public class Merge extends Operator {
   @Override
   protected TupleBatch fetchNext() throws DbException {
     TupleBatch tb;
-    System.out.println("merge fetch next");
     if (child1 != null && (tb = child1.next()) != null) {
-      System.out.println(" child1 fetched");
       return tb;
     }
     if (child2 != null) {
-      System.out.println("entering child2 next");
       if ((tb = child2.next()) != null) {
-        System.out.println(tb + " child2");
         return tb;
       }
-      System.out.println("child2 null");
     }
-    System.out.println("returning null");
     return null;
   }
 
