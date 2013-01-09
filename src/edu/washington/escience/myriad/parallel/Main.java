@@ -94,9 +94,9 @@ public final class Main {
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final CollectProducer cp = new CollectProducer(lastOne, serverReceiveID, MASTER_ID);
-    final HashMap<Integer, Operator> workerPlans = new HashMap<Integer, Operator>();
+    final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
     for (int i = 0; i < numPartition; ++i) {
-      workerPlans.put(WORKER_ID[i], cp);
+      workerPlans.put(WORKER_ID[i], new Operator[] { cp });
     }
     while (Server.runningInstance == null) {
       try {

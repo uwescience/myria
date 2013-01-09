@@ -278,7 +278,7 @@ public final class Server {
     LOGGER.debug("Bye");
   }
 
-  public void dispatchWorkerQueryPlans(final Map<Integer, Operator> plans) throws IOException {
+  public void dispatchWorkerQueryPlans(final Map<Integer, Operator[]> plans) throws IOException {
     ByteArrayOutputStream inMemBuffer = null;
     ObjectOutputStream oos = null;
     HashMap<Integer, Integer> setOfWorkers = new HashMap<Integer, Integer>(plans.size());
@@ -286,10 +286,10 @@ public final class Server {
     workersReceivedQuery.put(0, new BitSet(setOfWorkers.size()));
 
     int workerIdx = 0;
-    for (final Map.Entry<Integer, Operator> e : plans.entrySet()) {
+    for (final Map.Entry<Integer, Operator[]> e : plans.entrySet()) {
       final Integer workerID = e.getKey();
       setOfWorkers.put(workerID, workerIdx++);
-      final Operator plan = e.getValue();
+      final Operator[] plan = e.getValue();
       final Channel ssss0 = connectionPool.get(workerID, 3, null);
       // this session will be reused for the Workers to report the receive
       // of the queryplan, therefore, do not close it

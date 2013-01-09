@@ -54,10 +54,10 @@ public class CollectTest extends SystemTestBase {
     final SQLiteQueryScan scanTable =
         new SQLiteQueryScan(testtableName + ".db", "select * from " + testtableName, schema);
 
-    final HashMap<Integer, Operator> workerPlans = new HashMap<Integer, Operator>();
+    final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
     final CollectProducer cp1 = new CollectProducer(scanTable, serverReceiveID, MASTER_ID);
-    workerPlans.put(WORKER_ID[0], cp1);
-    workerPlans.put(WORKER_ID[1], cp1);
+    workerPlans.put(WORKER_ID[0], new Operator[] { cp1 });
+    workerPlans.put(WORKER_ID[1], new Operator[] { cp1 });
 
     while (Server.runningInstance == null) {
       try {

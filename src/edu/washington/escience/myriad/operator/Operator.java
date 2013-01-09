@@ -171,6 +171,10 @@ public abstract class Operator implements Serializable {
     eos = true;
   }
 
+  public boolean isOpen() {
+    return open;
+  }
+
   /**
    * Do the initialization of this operator.
    * 

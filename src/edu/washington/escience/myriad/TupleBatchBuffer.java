@@ -202,6 +202,14 @@ public class TupleBatchBuffer {
    * @return TransportMessage popped or null if no filled tuples ready yet.
    * */
   public final TransportMessage popFilledAsTM(final ExchangePairID oId) {
+    TransportMessage[] ans = popFilledAsTM(new ExchangePairID[] { oId });
+    if (ans == null) {
+      return null;
+    }
+    return ans[0];
+  }
+
+  public final TransportMessage[] popFilledAsTM(final ExchangePairID[] oIds) {
     if (readyTuples.size() > 0) {
       List<Column<?>> columns = readyTuples.remove(0);
       final ColumnMessage[] columnProtos = new ColumnMessage[columns.size()];
@@ -211,10 +219,14 @@ public class TupleBatchBuffer {
         columnProtos[i] = c.serializeToProto();
         i++;
       }
-      TransportMessage.Builder tmBuilder = TRANSPORTMESSAGE_BUILDER.get();
       DataMessage.Builder dmBuilder = DATAMESSAGE_BUILDER.get();
-      return tmBuilder.setData(
-          dmBuilder.clearColumns().addAllColumns(Arrays.asList(columnProtos)).setOperatorID(oId.getLong())).build();
+      dmBuilder.clearColumns().addAllColumns(Arrays.asList(columnProtos));
+      TransportMessage[] ans = new TransportMessage[oIds.length];
+      for (int j = 0; j < oIds.length; ++j) {
+        TransportMessage.Builder tmBuilder = TRANSPORTMESSAGE_BUILDER.get();
+        ans[j] = tmBuilder.setData(dmBuilder.setOperatorID(oIds[j].getLong())).build();
+      }
+      return ans;
     }
     return null;
   }
@@ -261,13 +273,21 @@ public class TupleBatchBuffer {
    * @return pop filled and non-filled TransportMessage
    * */
   public final TransportMessage popAnyAsTM(final ExchangePairID oID) {
-    TransportMessage dm = popFilledAsTM(oID);
+    TransportMessage[] ans = popAnyAsTM(new ExchangePairID[] { oID });
+    if (ans == null) {
+      return null;
+    }
+    return ans[0];
+  }
+
+  public final TransportMessage[] popAnyAsTM(final ExchangePairID[] oIDs) {
+    TransportMessage[] dm = popFilledAsTM(oIDs);
     if (dm != null) {
       return dm;
     } else {
       if (currentInProgressTuples > 0) {
         finishBatch();
-        return popFilledAsTM(oID);
+        return popFilledAsTM(oIDs);
       } else {
         return null;
       }
