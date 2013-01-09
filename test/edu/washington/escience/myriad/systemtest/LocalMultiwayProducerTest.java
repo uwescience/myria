@@ -18,7 +18,6 @@ import edu.washington.escience.myriad.parallel.CollectProducer;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 import edu.washington.escience.myriad.parallel.LocalMultiwayConsumer;
 import edu.washington.escience.myriad.parallel.LocalMultiwayProducer;
-import edu.washington.escience.myriad.parallel.Producer;
 import edu.washington.escience.myriad.parallel.Server;
 import edu.washington.escience.myriad.util.TestUtils;
 
@@ -76,9 +75,9 @@ public class LocalMultiwayProducerTest extends SystemTestBase {
     final CollectProducer cp2_1 = new CollectProducer(multiConsumer2_1, serverReceiveID, MASTER_ID);
     final CollectProducer cp2_2 = new CollectProducer(multiConsumer2_2, serverReceiveID, MASTER_ID);
 
-    final HashMap<Integer, Operator> workerPlans = new HashMap<Integer, Operator>();
-    workerPlans.put(WORKER_ID[0], new Producer[] { cp1_1, cp1_2 });
-    workerPlans.put(WORKER_ID[1], new Producer[] { cp2_1, cp2_2 });
+    final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
+    workerPlans.put(WORKER_ID[0], new Operator[] { cp1_1, cp1_2 });
+    workerPlans.put(WORKER_ID[1], new Operator[] { cp2_1, cp2_2 });
 
     while (Server.runningInstance == null) {
       try {

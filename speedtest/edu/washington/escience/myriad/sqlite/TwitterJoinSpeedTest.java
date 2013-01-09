@@ -101,9 +101,9 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     final CollectProducer cp = new CollectProducer(dupelim, serverReceiveID, MASTER_ID);
 
     /* Send the worker plans, rooted by CP, to the workers. Note that the plans are identical. */
-    final HashMap<Integer, Operator> workerPlans = new HashMap<Integer, Operator>();
-    workerPlans.put(WORKER_ID[0], cp);
-    workerPlans.put(WORKER_ID[1], cp);
+    final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
+    workerPlans.put(WORKER_ID[0], new Operator[] { cp });
+    workerPlans.put(WORKER_ID[1], new Operator[] { cp });
 
     /* Wait for the server to start. */
     while (Server.runningInstance == null) {
@@ -180,9 +180,9 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     final CollectProducer cp = new CollectProducer(dupelim, serverReceiveID, MASTER_ID);
 
     /* Send the worker plans, rooted by CP, to the workers. Note that the plans are identical. */
-    final HashMap<Integer, Operator> workerPlans = new HashMap<Integer, Operator>();
-    workerPlans.put(WORKER_ID[0], cp);
-    workerPlans.put(WORKER_ID[1], cp);
+    final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
+    workerPlans.put(WORKER_ID[0], new Operator[] { cp });
+    workerPlans.put(WORKER_ID[1], new Operator[] { cp });
 
     /* Wait for the server to start. */
     while (Server.runningInstance == null) {
@@ -260,9 +260,9 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     final CollectProducer cp = new CollectProducer(count, serverReceiveID, MASTER_ID);
 
     /* Send the worker plans, rooted by CP, to the workers. Note that the plans are identical. */
-    final HashMap<Integer, Operator> workerPlans = new HashMap<Integer, Operator>();
-    workerPlans.put(WORKER_ID[0], cp);
-    workerPlans.put(WORKER_ID[1], cp);
+    final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
+    workerPlans.put(WORKER_ID[0], new Operator[] { cp });
+    workerPlans.put(WORKER_ID[1], new Operator[] { cp });
 
     /* Wait for the server to start. */
     while (Server.runningInstance == null) {
