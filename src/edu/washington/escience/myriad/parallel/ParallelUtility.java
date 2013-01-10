@@ -5,7 +5,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.bootstrap.ServerBootstrap;
-import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
@@ -24,7 +23,8 @@ public final class ParallelUtility {
   /**
    * Create a server side acceptor.
    */
-  public static ServerBootstrap createMasterIPCServer(final LinkedBlockingQueue<MessageWrapper> messageQueue) {
+  public static ServerBootstrap createMasterIPCServer(final LinkedBlockingQueue<MessageWrapper> messageQueue,
+      IPCConnectionPool ipcConnectionPool) {
 
     // Start server with Nb of active threads = 2*NB CPU + 1 as maximum.
     ChannelFactory factory =
@@ -32,13 +32,8 @@ public final class ParallelUtility {
             .getRuntime().availableProcessors() * 2 + 1);
 
     ServerBootstrap bootstrap = new ServerBootstrap(factory);
-    // OrderedMemoryAwareThreadPoolExecutor pipelineExecutor =
-    // new OrderedMemoryAwareThreadPoolExecutor(200, 1048576, 1073741824, 100, TimeUnit.MILLISECONDS, Executors
-    // .defaultThreadFactory());
 
-    bootstrap.setPipelineFactory(new IPCPipelineFactories.MasterServerPipelineFactory(messageQueue));
-
-    // ExecutionHandler eh;
+    bootstrap.setPipelineFactory(new IPCPipelineFactories.MasterServerPipelineFactory(messageQueue, ipcConnectionPool));
 
     bootstrap.setOption("child.tcpNoDelay", true);
     bootstrap.setOption("child.keepAlive", false);
@@ -57,7 +52,8 @@ public final class ParallelUtility {
   /**
    * Create a server side acceptor.
    */
-  public static ServerBootstrap createWorkerIPCServer(final LinkedBlockingQueue<MessageWrapper> messageQueue) {
+  public static ServerBootstrap createWorkerIPCServer(final LinkedBlockingQueue<MessageWrapper> messageQueue,
+      IPCConnectionPool ipcConnectionPool) {
 
     // Start server with Nb of active threads = 2*NB CPU + 1 as maximum.
     ChannelFactory factory =
@@ -65,17 +61,8 @@ public final class ParallelUtility {
             .getRuntime().availableProcessors() * 2 + 1);
 
     ServerBootstrap bootstrap = new ServerBootstrap(factory);
-    // Create the global ChannelGroup
-    // ChannelGroup channelGroup = new DefaultChannelGroup(PongSerializeServer.class.getName());
-    // Create the blockingQueue to wait for a limited number of client
-    // 200 threads max, Memory limitation: 1MB by channel, 1GB global, 100 ms of timeout
-    // OrderedMemoryAwareThreadPoolExecutor pipelineExecutor =
-    // new OrderedMemoryAwareThreadPoolExecutor(200, 1048576, 1073741824, 100, TimeUnit.MILLISECONDS, Executors
-    // .defaultThreadFactory());
 
-    bootstrap.setPipelineFactory(new IPCPipelineFactories.WorkerServerPipelineFactory(messageQueue));
-
-    // ExecutionHandler eh;
+    bootstrap.setPipelineFactory(new IPCPipelineFactories.WorkerServerPipelineFactory(messageQueue, ipcConnectionPool));
 
     bootstrap.setOption("child.tcpNoDelay", true);
     bootstrap.setOption("child.keepAlive", false);
@@ -126,18 +113,6 @@ public final class ParallelUtility {
     System.arraycopy(args, 0, newArgs, 0, toBeRemoved);
     System.arraycopy(args, toBeRemoved + 1, newArgs, toBeRemoved, args.length - toBeRemoved - 1);
     return newArgs;
-  }
-
-  /**
-   * Unbind the acceptor from the binded port and close all the connections.
-   */
-  public static void shutdownIPC(final Channel ipcServerChannel, final IPCConnectionPool connectionPool) {
-    connectionPool.shutdown();
-    ipcServerChannel.disconnect();
-    ipcServerChannel.close();
-    ipcServerChannel.unbind();
-
-    ipcServerChannel.getFactory().releaseExternalResources();
   }
 
 }
