@@ -1,6 +1,7 @@
 package edu.washington.escience.myriad.network;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.util.HashMap;
 
 import org.jboss.netty.channel.Channel;
@@ -17,18 +18,17 @@ import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.util.IPCUtils;
 import edu.washington.escience.myriad.util.TestUtils;
 
-public class TupleBatchSender {
+public class TenGBTupleBatchSenderUsingConnectionPool {
+
+  public static final int PORT = 19902;
+
   public static double elapsedInSeconds(long startTimeMS) {
     return (System.currentTimeMillis() - startTimeMS) * 1.0 / 1000;
   }
 
   final static Schema schema = new Schema(new Type[] { Type.LONG_TYPE, Type.LONG_TYPE }, new String[] { "id", "id2" });
 
-  public static void main(String[] args) throws IOException, InterruptedException {
-
-    String hostName = args[0];
-    int port = Integer.valueOf(args[1]);
-
+  public static void main(String[] args) throws Exception {
     int totalRestrict = TupleBatch.BATCH_SIZE;
 
     long[] ids = TestUtils.randomLong(1000, 1005, totalRestrict);
@@ -39,24 +39,33 @@ public class TupleBatchSender {
       tbb.put(0, ids[i]);
       tbb.put(1, ids2[i]);
     }
+    doSend(args, tbb, (Long.SIZE / 8) * 2);
+  }
+
+  public static void doSend(String[] args, TupleBatchBuffer dataToSend, int tupleSize) throws IOException,
+      InterruptedException {
+
+    String receiveHostName = args[0];
 
     HashMap<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
-    computingUnits.put(0, new SocketInfo(hostName, port));
+    computingUnits.put(0, new SocketInfo(receiveHostName, TenGBTupleBatchReceiverUsingConnectionPool.PORT));
+    computingUnits.put(1, new SocketInfo(InetAddress.getLocalHost().getHostName(), PORT));
 
-    final IPCConnectionPool connectionPool = new IPCConnectionPool(0, computingUnits, null);
+    final IPCConnectionPool connectionPool = new IPCConnectionPool(1, computingUnits, null);
+    connectionPool.start();
 
     long numSent = 0;
     long start = 0;
     long end = 0;
 
-    Channel ch = connectionPool.get(0, 3, null);
+    Channel ch = connectionPool.reserveLongTermConnection(0);
     start = System.currentTimeMillis();
     System.out.println("Start at " + start);
 
     ExchangePairID eID = ExchangePairID.fromExisting(0L);
-    final TransportMessage tm = tbb.popAnyAsTM(eID);// popFilledAsRawColumn();
+    final TransportMessage tm = dataToSend.popAnyAsTM(eID);
     long serializedSize = tm.getSerializedSize();
-    System.out.println("TupleBatch payload size: " + ((Long.SIZE / 8) + (Long.SIZE / 8) * 2 * TupleBatch.BATCH_SIZE));
+    System.out.println("TupleBatch payload size: " + ((Long.SIZE / 8) + tupleSize * TupleBatch.BATCH_SIZE));
     System.out.println("TupleBatch serialized size: " + serializedSize);
     long tenGBytes = 10l * 1024l * 1024l * 1024l;
     System.out.println("Total bytes to send: " + tenGBytes);
@@ -80,15 +89,19 @@ public class TupleBatchSender {
       numSent++;
     }
     ch.write(IPCUtils.eosTM(eID)).awaitUninterruptibly();
+    connectionPool.releaseLongTermConnection(ch);
     numSent++;
     end = System.currentTimeMillis();
     System.out.println("Start at " + start);
     System.out.println("End at " + end);
     System.out.println("Total sent: " + numSent + " TupleBatches");
+    System.out.println("Total sent: " + realSentSize / 1024.0 / 1024.0 / 1024.0 + " G-bytes");
+    System.out.println("Total payload: " + numSent * tm.getData().getColumns(0).getNumTuples() * tupleSize / 1024.0
+        / 1024.0 / 1024.0 + " G-bytes");
     System.out.println("Speed: " + realSentSize * 1.0 / 1024 / 1024 / elapsedInSeconds(start) + "mega-bytes/s");
 
     System.out.println();
-    connectionPool.shutdown();
-    System.exit(0);
+    connectionPool.shutdown().awaitUninterruptibly();
+    // System.exit(0);
   }
 }

@@ -139,7 +139,7 @@ public class TenGBCompressReceiver {
       numReceived++;
     }
     System.out.println("Total num received is " + numReceived);
-    System.out.println("Time spent at receive: " + TupleBatchSender.elapsedInSeconds(start) + " seconds");
+    System.out.println("Time spent at receive: " + TenGBTupleBatchSenderUsingConnectionPool.elapsedInSeconds(start) + " seconds");
 
     server.close();
     server.disconnect();
