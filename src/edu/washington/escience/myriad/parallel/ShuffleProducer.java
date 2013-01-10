@@ -7,6 +7,7 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.util.IPCUtils;
 
@@ -33,6 +34,8 @@ public class ShuffleProducer extends Producer {
       }
       Schema thisSchema = null;
       thisSchema = getSchema();
+
+      ExchangePairID operatorID = operatorIDs[0];
 
       try {
         TupleBatchBuffer[] buffers = new TupleBatchBuffer[numWorker];

@@ -62,9 +62,9 @@ public class ParallelDistinctUsingSQLiteTest extends SystemTestBase {
     final SQLiteSQLProcessor scan22 =
         new SQLiteSQLProcessor("temptable.db", "select distinct * from temptable", schema, new Operator[] { block2 });
     final CollectProducer cp22 = new CollectProducer(scan22, serverReceiveID, MASTER_ID);
-    final HashMap<Integer, Operator> workerPlans = new HashMap<Integer, Operator>();
-    workerPlans.put(WORKER_ID[0], cp);
-    workerPlans.put(WORKER_ID[1], cp22);
+    final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
+    workerPlans.put(WORKER_ID[0], new Operator[] { cp });
+    workerPlans.put(WORKER_ID[1], new Operator[] { cp22 });
 
     while (Server.runningInstance == null) {
       try {

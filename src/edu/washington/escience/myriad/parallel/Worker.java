@@ -83,7 +83,7 @@ public class Worker {
             try {
               final ObjectInputStream osis =
                   new ObjectInputStream(new ByteArrayInputStream(m.getQuery().getQuery().toByteArray()));
-              final Operator query = (Operator) (osis.readObject());
+              final Operator[] query = (Operator[]) (osis.readObject());
               try {
                 receiveQuery(query);
               } catch (DbException e) {
@@ -148,18 +148,32 @@ public class Worker {
     @Override
     public final void run() {
       while (true) {
-        Operator query = null;
-        query = queryPlan;
-        if (query != null) {
+        Operator[] queries = null;
+        queries = queryPlan;
+        if (queries != null) {
           LOGGER.log(Level.INFO, "Worker start processing query");
-          final CollectProducer root = (CollectProducer) query;
-          try {
-            root.open();
-            while (root.next() != null) {
+          for (Operator query : queries) {
+            try {
+              ((Producer) query).open();
+            } catch (final DbException e1) {
+              e1.printStackTrace();
             }
-            root.close();
-          } catch (final DbException e1) {
-            e1.printStackTrace();
+          }
+          int endCount = 0;
+          while (true) {
+            for (Operator query : queries) {
+              try {
+                if (query.isOpen() && ((Producer) query).next() == null) {
+                  endCount++;
+                  ((Producer) query).close();
+                }
+              } catch (final DbException e1) {
+                e1.printStackTrace();
+              }
+            }
+            if (endCount == queries.length) {
+              break;
+            }
           }
           finishQuery();
         }
@@ -248,6 +262,12 @@ public class Worker {
    * Find out all the ParallelOperatorIDs of all consuming operators: ShuffleConsumer, CollectConsumer, and
    * BloomFilterConsumer running at this worker. The inBuffer needs the IDs to distribute the ExchangeMessages received.
    */
+  public static void collectConsumerOperatorIDs(final Operator[] roots, final ArrayList<ExchangePairID> oIds) {
+    for (Operator root : roots) {
+      collectConsumerOperatorIDs(root, oIds);
+    }
+  }
+
   public static void collectConsumerOperatorIDs(final Operator root, final ArrayList<ExchangePairID> oIds) {
     if (root instanceof Consumer) {
       oIds.add(((Consumer) root).getOperatorID());
@@ -332,7 +352,7 @@ public class Worker {
   /**
    * The current query plan.
    */
-  private volatile Operator queryPlan = null;
+  private volatile Operator[] queryPlan = null;
 
   /**
    * A indicator of shutting down the worker.
@@ -422,11 +442,19 @@ public class Worker {
    * 
    * @throws DbException
    */
+  public final void localizeQueryPlan(final Operator[] queryPlans) throws DbException {
+    if (queryPlans == null) {
+      return;
+    }
+    for (Operator queryPlan : queryPlans) {
+      localizeQueryPlan(queryPlan);
+    }
+  }
+
   public final void localizeQueryPlan(final Operator queryPlan) throws DbException {
     if (queryPlan == null) {
       return;
     }
-
     if (queryPlan instanceof SQLiteQueryScan) {
       final SQLiteQueryScan ss = ((SQLiteQueryScan) queryPlan);
       ss.setDataDir(dataDir.getAbsolutePath());
@@ -478,23 +506,23 @@ public class Worker {
    * 
    * @throws DbException
    */
-  public final void receiveQuery(final Operator query) throws DbException {
+  public final void receiveQuery(final Operator[] queries) throws DbException {
     LOGGER.log(Level.INFO, "Query received");
     if (Worker.this.queryPlan != null) {
       LOGGER.log(Level.INFO, "Error: Worker is still processing. New query refused");
       return;
     }
-    System.out.println("Query received: " + query);
+    System.out.println("Query received: " + queries);
 
     final ArrayList<ExchangePairID> ids = new ArrayList<ExchangePairID>();
-    collectConsumerOperatorIDs(query, ids);
+    collectConsumerOperatorIDs(queries, ids);
     Worker.this.dataBuffer.clear();
     Worker.this.exchangeSchema.clear();
     for (final ExchangePairID id : ids) {
       Worker.this.dataBuffer.put(id, new LinkedBlockingQueue<ExchangeData>());
     }
-    Worker.this.localizeQueryPlan(query);
-    Worker.this.queryPlan = query;
+    Worker.this.localizeQueryPlan(queries);
+    Worker.this.queryPlan = queries;
   }
 
   protected final void sendMessageToMaster(final TransportMessage message, final ChannelFutureListener callback) {

@@ -268,18 +268,16 @@ public final class Server {
     LOGGER.debug("Bye");
   }
 
-  public void dispatchWorkerQueryPlans(final Map<Integer, Operator> plans) throws IOException {
-
+  public void dispatchWorkerQueryPlans(final Map<Integer, Operator[]> plans) throws IOException {
     HashMap<Integer, Integer> setOfWorkers = new HashMap<Integer, Integer>(plans.size());
     workersAssignedToQuery.put(0, setOfWorkers);
     workersReceivedQuery.put(0, new BitSet(setOfWorkers.size()));
 
     int workerIdx = 0;
-    for (final Map.Entry<Integer, Operator> e : plans.entrySet()) {
+    for (final Map.Entry<Integer, Operator[]> e : plans.entrySet()) {
       final Integer workerID = e.getKey();
       setOfWorkers.put(workerID, workerIdx++);
-      final Operator plan = e.getValue();
-      connectionPool.sendShortMessage(workerID, IPCUtils.queryMessage(plan));
+      connectionPool.sendShortMessage(workerID, IPCUtils.queryMessage(e.getValue()));
     }
   }
 

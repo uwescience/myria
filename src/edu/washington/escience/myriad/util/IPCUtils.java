@@ -144,7 +144,25 @@ public final class IPCUtils {
             operatorPairID.getLong())).build();
   }
 
-  public static TransportMessage queryMessage(Operator query) throws IOException {
+  public static TransportMessage[] normalDataMessageMultiCopy(List<Column<?>> dataColumns,
+      ExchangePairID[] operatorPairID) {
+    final ColumnMessage[] columnProtos = new ColumnMessage[dataColumns.size()];
+
+    int i = 0;
+    for (final Column<?> c : dataColumns) {
+      columnProtos[i] = c.serializeToProto();
+      i++;
+    }
+    TransportMessage[] result = new TransportMessage[operatorPairID.length];
+    DataMessage.Builder dataBuilder = NORMAL_DATAMESSAGE_BUILDER.get();
+    dataBuilder.clearColumns().addAllColumns(Arrays.asList(columnProtos));
+    for (int j = 0; j < operatorPairID.length; j++) {
+      result[j] = DATA_TM_BUILDER.get().setData(dataBuilder.setOperatorID(operatorPairID[j].getLong())).build();
+    }
+    return result;
+  }
+
+  public static TransportMessage queryMessage(Operator[] query) throws IOException {
     ByteArrayOutputStream inMemBuffer = new ByteArrayOutputStream();
     ObjectOutputStream oos = new ObjectOutputStream(inMemBuffer);
     oos.writeObject(query);

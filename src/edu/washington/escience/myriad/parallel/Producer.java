@@ -1,6 +1,9 @@
 package edu.washington.escience.myriad.parallel;
 
-public abstract class Producer extends Exchange {
+import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
+
+public abstract class Producer extends Operator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -11,8 +14,14 @@ public abstract class Producer extends Exchange {
    */
   private transient Worker thisWorker;
 
+  protected final ExchangePairID[] operatorIDs;
+
   public Producer(final ExchangePairID oID) {
-    super(oID);
+    this(new ExchangePairID[] { oID });
+  }
+
+  public Producer(final ExchangePairID[] oIDs) {
+    operatorIDs = oIDs;
   }
 
   public Worker getThisWorker() {
@@ -22,5 +31,4 @@ public abstract class Producer extends Exchange {
   public void setThisWorker(final Worker thisWorker) {
     this.thisWorker = thisWorker;
   }
-
 }

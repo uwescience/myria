@@ -158,9 +158,17 @@ public class TupleBatchBuffer {
    * @return TransportMessage popped or null if no filled tuples ready yet.
    * */
   public final TransportMessage popFilledAsTM(final ExchangePairID oId) {
+    TransportMessage[] ans = popFilledAsTM(new ExchangePairID[] { oId });
+    if (ans == null) {
+      return null;
+    }
+    return ans[0];
+  }
+
+  public final TransportMessage[] popFilledAsTM(final ExchangePairID[] oIds) {
     if (readyTuples.size() > 0) {
       List<Column<?>> columns = readyTuples.remove(0);
-      return IPCUtils.normalDataMessage(columns, oId);
+      return IPCUtils.normalDataMessageMultiCopy(columns, oIds);
     }
     return null;
   }
@@ -207,13 +215,21 @@ public class TupleBatchBuffer {
    * @return pop filled and non-filled TransportMessage
    * */
   public final TransportMessage popAnyAsTM(final ExchangePairID oID) {
-    TransportMessage dm = popFilledAsTM(oID);
+    TransportMessage[] ans = popAnyAsTM(new ExchangePairID[] { oID });
+    if (ans == null) {
+      return null;
+    }
+    return ans[0];
+  }
+
+  public final TransportMessage[] popAnyAsTM(final ExchangePairID[] oIDs) {
+    TransportMessage[] dm = popFilledAsTM(oIDs);
     if (dm != null) {
       return dm;
     } else {
       if (currentInProgressTuples > 0) {
         finishBatch();
-        return popFilledAsTM(oID);
+        return popFilledAsTM(oIDs);
       } else {
         return null;
       }
