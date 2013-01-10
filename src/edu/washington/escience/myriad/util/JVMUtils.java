@@ -1,7 +1,13 @@
 package edu.washington.escience.myriad.util;
 
-public class JVMUtils {
+/**
+ * JVM util methods.
+ */
+public final class JVMUtils {
 
+  /**
+   * util classes are not instantiable.
+   * */
   private JVMUtils() {
   }
 

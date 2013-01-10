@@ -1,5 +1,6 @@
 package edu.washington.escience.myriad.parallel;
 
+import java.nio.channels.ClosedChannelException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -7,17 +8,18 @@ import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelEvent;
 import org.jboss.netty.channel.ChannelHandler.Sharable;
 import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.ChannelStateEvent;
+import org.jboss.netty.channel.DownstreamChannelStateEvent;
 import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
+import org.jboss.netty.channel.SimpleChannelHandler;
+import org.jboss.netty.channel.UpstreamChannelStateEvent;
 
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 
 @Sharable
-public class IPCInputGuard extends SimpleChannelUpstreamHandler {
+public class IPCInputGuard extends SimpleChannelHandler {
 
-  private static final Logger logger = Logger.getLogger(MasterDataHandler.class.getName());
+  private static final Logger logger = Logger.getLogger(IPCInputGuard.class.getName());
 
   /**
    * constructor.
@@ -26,14 +28,37 @@ public class IPCInputGuard extends SimpleChannelUpstreamHandler {
   }
 
   @Override
-  public void handleUpstream(ChannelHandlerContext ctx, ChannelEvent e) throws Exception {
-    if (e instanceof ChannelStateEvent) {
-      logger.info(e.toString());
+  public void handleUpstream(final ChannelHandlerContext ctx, final ChannelEvent e) throws Exception {
+    if (e instanceof UpstreamChannelStateEvent) {
+      UpstreamChannelStateEvent ee = (UpstreamChannelStateEvent) e;
+      switch (ee.getState()) {
+        case OPEN:
+        case BOUND:
+          break;
+        case CONNECTED:
+          logger.info("Connection from remote. " + e.toString());
+          break;
+      }
     }
     super.handleUpstream(ctx, e);
   }
 
-  @SuppressWarnings("unchecked")
+  @Override
+  public void handleDownstream(final ChannelHandlerContext ctx, final ChannelEvent e) throws Exception {
+    if (e instanceof DownstreamChannelStateEvent) {
+      DownstreamChannelStateEvent ee = (DownstreamChannelStateEvent) e;
+      switch (ee.getState()) {
+        case OPEN:
+        case BOUND:
+          break;
+        case CONNECTED:
+          logger.info("Connection to remote. " + e.toString());
+          break;
+      }
+    }
+    super.handleDownstream(ctx, e);
+  }
+
   @Override
   public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e) {
     Object message = e.getMessage();
@@ -46,23 +71,26 @@ public class IPCInputGuard extends SimpleChannelUpstreamHandler {
   }
 
   @Override
-  public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) {
+  public void exceptionCaught(final ChannelHandlerContext ctx, final ExceptionEvent e) {
     Channel c = e.getChannel();
     Throwable cause = e.getCause();
+    String errorMessage = cause.getMessage();
+    if (errorMessage == null) {
+      errorMessage = "";
+    }
     if (cause instanceof java.nio.channels.NotYetConnectedException) {
-      logger.log(Level.WARNING, "Channel not yet connected. " + cause.getMessage());
-      return;
+      logger.log(Level.WARNING, "Channel " + c + ": not yet connected. " + errorMessage, cause);
+    } else if (cause instanceof java.net.ConnectException) {
+      logger.log(Level.WARNING, "Channel " + c + ": Connection failed: " + errorMessage, cause);
+    } else if (cause instanceof java.io.IOException && errorMessage.contains("reset by peer")) {
+      logger.log(Level.WARNING, "Channel " + c + ": Connection reset by peer: " + c.getRemoteAddress() + " "
+          + errorMessage, cause);
+    } else if (cause instanceof ClosedChannelException) {
+      logger.log(Level.WARNING, "Channel " + c + ": Connection reset by peer: " + c.getRemoteAddress() + " "
+          + errorMessage, cause);
+    } else {
+      logger.log(Level.WARNING, "Channel " + c + ": Unexpected exception from downstream.", cause);
     }
-    if (cause instanceof java.net.ConnectException) {
-      logger.log(Level.WARNING, "Connection failed: " + cause.getMessage());
-      return;
-    }
-    if (cause instanceof java.io.IOException && cause.getMessage().contains("reset by peer")) {
-      logger.log(Level.WARNING, "Connection reset by peer: " + c.getRemoteAddress() + " " + cause.getMessage());
-      return;
-    }
-    logger.log(Level.WARNING, "Unexpected exception from downstream.", e.getCause());
-    logger.log(Level.WARNING, "Error channel: " + e.getChannel());
     if (c != null) {
       c.close();
     }
