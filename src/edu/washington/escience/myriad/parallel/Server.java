@@ -1,8 +1,6 @@
 package edu.washington.escience.myriad.parallel;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Date;
@@ -15,11 +13,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.jboss.netty.bootstrap.ServerBootstrap;
-import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelFuture;
 import org.slf4j.LoggerFactory;
-
-import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
@@ -32,15 +27,12 @@ import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 import edu.washington.escience.myriad.parallel.Worker.MessageWrapper;
-import edu.washington.escience.myriad.proto.ControlProto;
 import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageType;
-import edu.washington.escience.myriad.proto.QueryProto;
-import edu.washington.escience.myriad.proto.TransportProto;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
-import edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType;
+import edu.washington.escience.myriad.util.IPCUtils;
 import edu.washington.escience.myriad.util.JVMUtils;
 
 /**
@@ -207,8 +199,6 @@ public final class Server {
   }
 
   final ConcurrentHashMap<Integer, SocketInfo> workers;
-  final ServerBootstrap ipcServer;
-  private Channel ipcServerChannel;
   final ConcurrentHashMap<Integer, HashMap<Integer, Integer>> workersAssignedToQuery;
   final ConcurrentHashMap<Integer, BitSet> workersReceivedQuery;
 
@@ -240,7 +230,6 @@ public final class Server {
     this.server = server;
     dataBuffer = new ConcurrentHashMap<ExchangePairID, LinkedBlockingQueue<ExchangeData>>();
     messageQueue = new LinkedBlockingQueue<MessageWrapper>();
-    ipcServer = ParallelUtility.createMasterIPCServer(messageQueue);
     exchangeSchema = new ConcurrentHashMap<ExchangePairID, Schema>();
 
     final Map<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
@@ -248,39 +237,39 @@ public final class Server {
     computingUnits.put(0, server);
 
     connectionPool = new IPCConnectionPool(0, computingUnits, messageQueue);
+    // ipcServer = ParallelUtility.createMasterIPCServer(messageQueue, connectionPool);
     messageProcessor = new MessageProcessor();
     workersAssignedToQuery = new ConcurrentHashMap<Integer, HashMap<Integer, Integer>>();
     workersReceivedQuery = new ConcurrentHashMap<Integer, BitSet>();
   }
 
+  private volatile boolean cleanup = false;
+
   public void cleanup() {
+    if (cleanup) {// cleanup only once.
+      return;
+    }
+    cleanup = true;
     LOGGER.debug(SYSTEM_NAME + " is going to shutdown");
     LOGGER.debug("Send shutdown requests to the workers, please wait");
     for (final Entry<Integer, SocketInfo> worker : workers.entrySet()) {
       LOGGER.debug("Shuting down #" + worker.getKey() + " : " + worker.getValue());
 
-      Channel ch = null;
-      try {
-        ch = Server.this.connectionPool.get(worker.getKey(), 3, null);
-      } catch (final Throwable e) {
-      }
-      if (ch == null || !ch.isConnected()) {
+      ChannelFuture cf = Server.this.connectionPool.sendShortMessage(worker.getKey(), IPCUtils.CONTROL_SHUTDOWN);
+      if (cf == null) {
         LOGGER.error("Fail to connect the worker: " + worker + ". Continue cleaning");
-        continue;
+      } else {
+        cf.awaitUninterruptibly();
+        LOGGER.debug("Done for worker #" + worker.getKey());
       }
-      ch.write(
-          TransportProto.TransportMessage.newBuilder().setType(TransportMessageType.CONTROL).setControl(
-              ControlProto.ControlMessage.newBuilder().setType(ControlMessage.ControlMessageType.SHUTDOWN).build())
-              .build()).awaitUninterruptibly();
-      LOGGER.debug("Done");
     }
-    ParallelUtility.shutdownIPC(ipcServerChannel, connectionPool);
+    connectionPool.shutdown().awaitUninterruptibly();
+    // ParallelUtility.shutdownIPC(ipcServerChannel, connectionPool);
     LOGGER.debug("Bye");
   }
 
   public void dispatchWorkerQueryPlans(final Map<Integer, Operator> plans) throws IOException {
-    ByteArrayOutputStream inMemBuffer = null;
-    ObjectOutputStream oos = null;
+
     HashMap<Integer, Integer> setOfWorkers = new HashMap<Integer, Integer>(plans.size());
     workersAssignedToQuery.put(0, setOfWorkers);
     workersReceivedQuery.put(0, new BitSet(setOfWorkers.size()));
@@ -290,17 +279,7 @@ public final class Server {
       final Integer workerID = e.getKey();
       setOfWorkers.put(workerID, workerIdx++);
       final Operator plan = e.getValue();
-      final Channel ssss0 = connectionPool.get(workerID, 3, null);
-      // this session will be reused for the Workers to report the receive
-      // of the queryplan, therefore, do not close it
-      inMemBuffer = new ByteArrayOutputStream();
-      oos = new ObjectOutputStream(inMemBuffer);
-      oos.writeObject(plan);
-      oos.flush();
-      inMemBuffer.flush();
-      ssss0.write(TransportMessage.newBuilder().setType(TransportMessageType.QUERY).setQuery(
-          QueryProto.Query.newBuilder().setQuery(ByteString.copyFrom(inMemBuffer.toByteArray()))).build());
-      // oos.reset();
+      connectionPool.sendShortMessage(workerID, IPCUtils.queryMessage(plan));
     }
   }
 
@@ -318,9 +297,7 @@ public final class Server {
   protected void startWorkerQuery(final int queryId) {
     HashMap<Integer, Integer> workersAssigned = workersAssignedToQuery.get(queryId);
     for (final Entry<Integer, Integer> entry : workersAssigned.entrySet()) {
-      Server.this.connectionPool.get(entry.getKey(), 3, null).write(
-          TransportMessage.newBuilder().setType(TransportMessageType.CONTROL).setControl(
-              ControlMessage.newBuilder().setType(ControlMessage.ControlMessageType.START_QUERY).build()).build());
+      Server.this.connectionPool.sendShortMessage(entry.getKey(), IPCUtils.CONTROL_START_QUERY);
     }
     workersAssignedToQuery.remove(queryId);
     workersReceivedQuery.remove(queryId);
@@ -343,7 +320,8 @@ public final class Server {
   }
 
   protected void start(final String[] argv) throws IOException {
-    ipcServerChannel = ipcServer.bind(server.getAddress());
+    // ipcServerChannel = ipcServer.bind(server.getAddress());
+    connectionPool.start();
     messageProcessor.start();
   }
 

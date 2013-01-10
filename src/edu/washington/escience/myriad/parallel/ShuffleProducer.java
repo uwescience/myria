@@ -25,9 +25,10 @@ public class ShuffleProducer extends Producer {
 
       final int numWorker = workerIDs.length;
       final Channel[] shuffleChannels = new Channel[numWorker];
+      IPCConnectionPool connectionPool = getThisWorker().connectionPool;
       int index = 0;
       for (final int workerID : workerIDs) {
-        shuffleChannels[index] = getThisWorker().connectionPool.get(workerID, 3, null);
+        shuffleChannels[index] = connectionPool.reserveLongTermConnection(workerID);
         index++;
       }
       Schema thisSchema = null;
@@ -51,18 +52,21 @@ public class ShuffleProducer extends Producer {
         }
 
         for (int i = 0; i < numWorker; i++) {
-          while ((dm = buffers[i].popAnyAsTM(operatorID))!=null) {
+          while ((dm = buffers[i].popAnyAsTM(operatorID)) != null) {
             shuffleChannels[i].write(dm);
           }
         }
-
+        for (int i = 0; i < numWorker; i++) {
+          shuffleChannels[i].write(IPCUtils.eosTM(operatorID));
+        }
       } catch (final DbException e) {
         e.printStackTrace();
+      } finally {
+        for (Channel ch : shuffleChannels) {
+          connectionPool.releaseLongTermConnection(ch);
+        }
       }
 
-      for (int i = 0; i < numWorker; i++) {
-        shuffleChannels[i].write(IPCUtils.eosTM(operatorID));
-      }
     }
   }
 
