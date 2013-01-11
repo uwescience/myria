@@ -27,7 +27,7 @@ public final class LocalMultiwayProducer extends Producer {
     @Override
     public void run() {
 
-      final Channel channel = getThisWorker().connectionPool.get(selfWorkerID, 3, null);
+      final Channel channel = getThisWorker().connectionPool.reserveLongTermConnection(remoteWorkerID);
 
       try {
 
@@ -57,6 +57,8 @@ public final class LocalMultiwayProducer extends Producer {
 
       } catch (final DbException e) {
         e.printStackTrace();
+      } finally {
+        getThisWorker().connectionPool.releaseLongTermConnection(channel);
       }
     }
   }
@@ -70,14 +72,14 @@ public final class LocalMultiwayProducer extends Producer {
    * The paired collect consumer address.
    */
 
-  private final int selfWorkerID;
+  private final int remoteWorkerID;
 
   private Operator child;
 
-  public LocalMultiwayProducer(final Operator child, final ExchangePairID[] operatorIDs, final int selfWorkerID) {
+  public LocalMultiwayProducer(final Operator child, final ExchangePairID[] operatorIDs, final int remoteWorkerID) {
     super(operatorIDs);
     this.child = child;
-    this.selfWorkerID = selfWorkerID;
+    this.remoteWorkerID = remoteWorkerID;
   }
 
   @Override

@@ -14,7 +14,7 @@ public abstract class Producer extends Operator {
    */
   private transient Worker thisWorker;
 
-  protected ExchangePairID[] operatorIDs;
+  protected final ExchangePairID[] operatorIDs;
 
   public Producer(final ExchangePairID oID) {
     this(new ExchangePairID[] { oID });

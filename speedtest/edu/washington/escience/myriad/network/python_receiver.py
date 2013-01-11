@@ -20,3 +20,5 @@ while received<tenG:
 end = time.time()
 print "end receive: "+str(end)
 print "time spent : "+str(end-start)
+print "speed: " + str(10*1024*1.0/(end-start))+"mega-bytes/s"
+print "speed: " + str(80*1.0/(end-start))+"giga-bits/s"

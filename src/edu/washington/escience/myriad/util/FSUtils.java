@@ -8,8 +8,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-public class FSUtils {
+/**
+ * Filesystem util methods.
+ * */
+public final class FSUtils {
 
+  /**
+   * util classes are not instantiable.
+   * */
   private FSUtils() {
   }
 

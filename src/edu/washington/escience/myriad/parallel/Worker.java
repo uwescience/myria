@@ -18,8 +18,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.commons.io.FilenameUtils;
-import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
 
 import edu.washington.escience.myriad.DbException;
@@ -34,12 +34,11 @@ import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.operator.SQLiteSQLProcessor;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
-import edu.washington.escience.myriad.proto.ControlProto.ControlMessage.ControlMessageType;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageType;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
-import edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType;
+import edu.washington.escience.myriad.util.IPCUtils;
 import edu.washington.escience.myriad.util.JVMUtils;
 
 /**
@@ -91,8 +90,7 @@ public class Worker {
                 e.printStackTrace();
                 throw new RuntimeException(e);
               }
-              sendMessageToMaster(TransportMessage.newBuilder().setType(TransportMessageType.CONTROL).setControl(
-                  ControlMessage.newBuilder().setType(ControlMessageType.QUERY_READY_TO_EXECUTE).build()).build(), null);
+              sendMessageToMaster(IPCUtils.CONTROL_QUERY_READY, null);
             } catch (IOException | ClassNotFoundException e) {
               e.printStackTrace();
             }
@@ -123,6 +121,7 @@ public class Worker {
             final ControlMessage controlM = m.getControl();
             switch (controlM.getType().getNumber()) {
               case ControlMessage.ControlMessageType.SHUTDOWN_VALUE:
+                System.out.println("shutdown requested");
                 toShutdown = true;
                 break;
               case ControlMessage.ControlMessageType.START_QUERY_VALUE:
@@ -204,7 +203,7 @@ public class Worker {
       public final void run() {
         if (toShutdown) {
           shutdown();
-          JVMUtils.shutdownVM();
+          // JVMUtils.shutdownVM();
         }
 
       }
@@ -222,19 +221,21 @@ public class Worker {
         inRun = true;
         Channel serverChannel = null;
         try {
-          serverChannel = connectionPool.get(0, 3, null);
+          serverChannel = connectionPool.reserveLongTermConnection(0);
         } catch (final RuntimeException e) {
           e.printStackTrace();
         } catch (final Exception e) {
           e.printStackTrace();
-        }
-
-        if (serverChannel == null) {
-          System.out.println("Cannot connect the server: " + masterSocketInfo
-              + " Maybe the server is down. I'll shutdown now.");
-          System.out.println("Bye!");
-          timer.cancel();
-          JVMUtils.shutdownVM();
+        } finally {
+          if (serverChannel == null) {
+            System.out.println("Cannot connect the server: " + masterSocketInfo
+                + " Maybe the server is down. I'll shutdown now.");
+            System.out.println("Bye!");
+            timer.cancel();
+            JVMUtils.shutdownVM();
+          } else {
+            connectionPool.releaseLongTermConnection(serverChannel);
+          }
         }
         inRun = false;
       }
@@ -345,8 +346,8 @@ public class Worker {
    * 
    * Other workers send tuples during query execution to this worker also through this acceptor.
    */
-  final ServerBootstrap ipcServer;
-  private Channel ipcServerChannel;
+  // final ServerBootstrap ipcServer;
+  // private Channel ipcServerChannel;
 
   /**
    * The current query plan.
@@ -382,7 +383,6 @@ public class Worker {
 
     dataBuffer = new HashMap<ExchangePairID, LinkedBlockingQueue<ExchangeData>>();
     messageQueue = new LinkedBlockingQueue<MessageWrapper>();
-    ipcServer = ParallelUtility.createWorkerIPCServer(messageQueue);
     exchangeSchema = new ConcurrentHashMap<ExchangePairID, Schema>();
 
     queryExecutor = new QueryExecutor();
@@ -397,6 +397,7 @@ public class Worker {
     computingUnits.put(0, masterSocketInfo);
 
     connectionPool = new IPCConnectionPool(myID, computingUnits, messageQueue);
+    // ipcServer = ParallelUtility.createWorkerIPCServer(messageQueue, connectionPool);
   }
 
   /**
@@ -526,12 +527,9 @@ public class Worker {
 
   protected final void sendMessageToMaster(final TransportMessage message, final ChannelFutureListener callback) {
     LOGGER.log(Level.INFO, "send back query ready");
-    Channel s = null;
-    s = Worker.this.connectionPool.get(0, 3, null);
+    ChannelFuture cf = Worker.this.connectionPool.sendShortMessage(0, message);
     if (callback != null) {
-      s.write(message).addListener(callback);
-    } else {
-      s.write(message);
+      cf.addListener(callback);
     }
   }
 
@@ -540,13 +538,15 @@ public class Worker {
    */
   public final void shutdown() {
     LOGGER.log(Level.INFO, "Shutdown requested. Please wait when cleaning up...");
-    ParallelUtility.shutdownIPC(ipcServerChannel, connectionPool);
+    // ParallelUtility.shutdownIPC(ipcServerChannel, connectionPool);
+    connectionPool.shutdown().awaitUninterruptibly();
     LOGGER.log(Level.INFO, "shutdown IPC completed");
     toShutdown = true;
   }
 
   public final void start() throws IOException {
-    ipcServerChannel = ipcServer.bind(mySocketInfo.getAddress());
+    // ipcServerChannel = ipcServer.bind(mySocketInfo.getAddress());
+    connectionPool.start();
     queryExecutor.start();
     messageProcessor.start();
     // Periodically detect if the server (i.e., coordinator)

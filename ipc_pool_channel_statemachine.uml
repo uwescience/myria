@@ -1,0 +1,562 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<uml:Model xmi:version="2.1" xmlns:xmi="http://schema.omg.org/spec/XMI/2.1" xmlns:uml="http://www.eclipse.org/uml2/3.0.0/UML" xmi:id="_rElRUVhFEeKV78DsrycYaQ" name="model">
+  <packagedElement xmi:type="uml:StateMachine" xmi:id="_rIJisFhFEeKV78DsrycYaQ" name="Accepted Channel State Machine">
+    <ownedComment xmi:id="_javQoFh9EeK2-ceaC4WoOw">
+      <body>c: connected
+r: registered
+p: in pool
+b: in recycle bin
+t: in trash bin
+n: new connection</body>
+    </ownedComment>
+    <ownedComment xmi:id="_jaoi8Fh9EeK2-ceaC4WoOw">
+      <body>s: remove from connection pool
+N:the set of unregistered connections when the remove operation occurs
+t: hold at a temp location</body>
+    </ownedComment>
+    <ownedBehavior xmi:type="uml:StateMachine" xmi:id="_ICJkUFh8EeK2-ceaC4WoOw" name="Connection Pool State Machine">
+      <region xmi:id="_ICJkUVh8EeK2-ceaC4WoOw" name="Region0">
+        <subvertex xmi:type="uml:State" xmi:id="_ICJkUlh8EeK2-ceaC4WoOw" name="!c!r!p!b!t"/>
+        <subvertex xmi:type="uml:State" xmi:id="_ICJkU1h8EeK2-ceaC4WoOw" name="State0"/>
+      </region>
+      <region xmi:id="_ICJkVFh8EeK2-ceaC4WoOw" name="Copy_Of_Region0_1">
+        <subvertex xmi:type="uml:State" xmi:id="_ICJkVVh8EeK2-ceaC4WoOw" name="!c!r!p!b!t"/>
+        <subvertex xmi:type="uml:State" xmi:id="_ICJkVlh8EeK2-ceaC4WoOw" name="State0"/>
+      </region>
+      <region xmi:id="_ICJkV1h8EeK2-ceaC4WoOw" name="Copy_Of_Region0_2">
+        <subvertex xmi:type="uml:State" xmi:id="_ICJkWFh8EeK2-ceaC4WoOw" name="!c!r!p!b!tn"/>
+        <subvertex xmi:type="uml:State" xmi:id="_ICJkWVh8EeK2-ceaC4WoOw" name="State0"/>
+        <subvertex xmi:type="uml:State" xmi:id="_ICJkWlh8EeK2-ceaC4WoOw" name="c!r!p!b!tn!s"/>
+        <subvertex xmi:type="uml:State" xmi:id="_ICJkW1h8EeK2-ceaC4WoOw" name="!c!r!p!bt"/>
+        <subvertex xmi:type="uml:State" xmi:id="_ICJkXFh8EeK2-ceaC4WoOw" name="crpb!t!n!s"/>
+        <subvertex xmi:type="uml:State" xmi:id="_ICJkXVh8EeK2-ceaC4WoOw" name="c!r!p!bt!n"/>
+        <subvertex xmi:type="uml:State" xmi:id="_ICJkXlh8EeK2-ceaC4WoOw" name="Copy_Of_crpb!t_1"/>
+        <subvertex xmi:type="uml:State" xmi:id="_ICJkX1h8EeK2-ceaC4WoOw" name="crp!b!t!n!s"/>
+        <subvertex xmi:type="uml:State" xmi:id="_ICJkYFh8EeK2-ceaC4WoOw" name="Copy_Of_crp!b!t_1"/>
+        <subvertex xmi:type="uml:State" xmi:id="_ICJkYVh8EeK2-ceaC4WoOw" name="cr!p!bt!n!s"/>
+        <subvertex xmi:type="uml:State" xmi:id="_ICJkYlh8EeK2-ceaC4WoOw" name="Copy_Of_!c!r!p!b!tn_1"/>
+        <subvertex xmi:type="uml:State" xmi:id="_ICJkY1h8EeK2-ceaC4WoOw" name="!c!r!p!b!t!n (remove)"/>
+        <subvertex xmi:type="uml:FinalState" xmi:id="_ICJkZFh8EeK2-ceaC4WoOw" name="!c!r!p!b!t!n!s (Remove)"/>
+        <subvertex xmi:type="uml:State" xmi:id="_ICJkZVh8EeK2-ceaC4WoOw" name="Copy_Of_!c!r!p!b!tn_2"/>
+        <subvertex xmi:type="uml:State" xmi:id="_ICJkZlh8EeK2-ceaC4WoOw" name="!c!r!p!b!t!n"/>
+        <subvertex xmi:type="uml:Pseudostate" xmi:id="_ICJkZ1h8EeK2-ceaC4WoOw" name="!c!r!p!b!tn!s"/>
+        <subvertex xmi:type="uml:Pseudostate" xmi:id="_ICJkaFh8EeK2-ceaC4WoOw" name="Junction0" kind="junction"/>
+        <subvertex xmi:type="uml:State" xmi:id="_ICJkaVh8EeK2-ceaC4WoOw" name="crp!b!t!ns"/>
+        <subvertex xmi:type="uml:State" xmi:id="_ICJkalh8EeK2-ceaC4WoOw" name="c!r!p!b!tns"/>
+        <subvertex xmi:type="uml:State" xmi:id="_ICJka1h8EeK2-ceaC4WoOw" name="crpb!t!ns"/>
+        <subvertex xmi:type="uml:State" xmi:id="_ICJkbFh8EeK2-ceaC4WoOw" name="cr!p!bt!ns"/>
+        <transition xmi:id="_ICJkbVh8EeK2-ceaC4WoOw" name="id checking timeout" source="_ICJkZ1h8EeK2-ceaC4WoOw" target="_ICJkZFh8EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_ICJkblh8EeK2-ceaC4WoOw" name="direct remove" source="_ICJkW1h8EeK2-ceaC4WoOw" target="_ICJkWFh8EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_ICJkb1h8EeK2-ceaC4WoOw" name="server side disconnect" source="_ICJkXVh8EeK2-ceaC4WoOw" target="_ICJkXVh8EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_ICJkcFh8EeK2-ceaC4WoOw" name="if write queue is empty, direct disconnect" source="_ICJkbFh8EeK2-ceaC4WoOw" target="_ICJkZFh8EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_ICJkcVh8EeK2-ceaC4WoOw" name="id checking timeout, direct disconnect" source="_ICJkWlh8EeK2-ceaC4WoOw" target="_ICJkZFh8EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_ICJkclh8EeK2-ceaC4WoOw" name="connected" source="_ICJkZ1h8EeK2-ceaC4WoOw" target="_ICJkWlh8EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_ICJkc1h8EeK2-ceaC4WoOw" name="register" source="_ICJkWlh8EeK2-ceaC4WoOw" target="_ICJkX1h8EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_ICJkdFh8EeK2-ceaC4WoOw" name="Too many connections, consider recycle it" source="_ICJkX1h8EeK2-ceaC4WoOw" target="_ICJkXFh8EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_ICJkdVh8EeK2-ceaC4WoOw" name="#connections more than UPPER_BOUND, drop this channel" source="_ICJkX1h8EeK2-ceaC4WoOw" target="_ICJkYVh8EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_ICJkdlh8EeK2-ceaC4WoOw" name="RECYCLE_TIMEOUT, drop this channel" source="_ICJkXFh8EeK2-ceaC4WoOw" target="_ICJkYVh8EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_ICJkd1h8EeK2-ceaC4WoOw" name="reused within RECYCLE_TIMEOUT" source="_ICJkXFh8EeK2-ceaC4WoOw" target="_ICJkX1h8EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_ICJkeFh8EeK2-ceaC4WoOw" name="close requested, direct disconnect" source="_ICJkWlh8EeK2-ceaC4WoOw" target="_ICJkZFh8EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_ICJkeVh8EeK2-ceaC4WoOw" name="close requested" source="_ICJkX1h8EeK2-ceaC4WoOw" target="_ICJkbFh8EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_ICJkelh8EeK2-ceaC4WoOw" name="close requested" source="_ICJkXFh8EeK2-ceaC4WoOw" target="_ICJkbFh8EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_ICJke1h8EeK2-ceaC4WoOw" name="close requested" source="_ICJkYVh8EeK2-ceaC4WoOw" target="_ICJkbFh8EeK2-ceaC4WoOw"/>
+      </region>
+      <region xmi:id="_lBIcIFh8EeK2-ceaC4WoOw" name="Region1"/>
+    </ownedBehavior>
+    <ownedBehavior xmi:type="uml:StateMachine" xmi:id="_IBSosFh8EeK2-ceaC4WoOw" name="Copy_Of_Accepted Channel State Machine_1">
+      <region xmi:id="_IBSosVh8EeK2-ceaC4WoOw" name="Region0">
+        <subvertex xmi:type="uml:State" xmi:id="_IBSoslh8EeK2-ceaC4WoOw" name="!c!r!p!b!t"/>
+        <subvertex xmi:type="uml:State" xmi:id="_IBSos1h8EeK2-ceaC4WoOw" name="State0"/>
+      </region>
+      <region xmi:id="_IBSotFh8EeK2-ceaC4WoOw" name="Copy_Of_Region0_1">
+        <subvertex xmi:type="uml:State" xmi:id="_IBSotVh8EeK2-ceaC4WoOw" name="!c!r!p!b!t"/>
+        <subvertex xmi:type="uml:State" xmi:id="_IBSotlh8EeK2-ceaC4WoOw" name="State0"/>
+      </region>
+      <region xmi:id="_IBSot1h8EeK2-ceaC4WoOw" name="Copy_Of_Region0_2">
+        <subvertex xmi:type="uml:State" xmi:id="_IBSouFh8EeK2-ceaC4WoOw" name="!c!r!p!b!tn"/>
+        <subvertex xmi:type="uml:State" xmi:id="_IBSouVh8EeK2-ceaC4WoOw" name="State0"/>
+        <subvertex xmi:type="uml:State" xmi:id="_IBSoulh8EeK2-ceaC4WoOw" name="c!r!p!b!tn!s"/>
+        <subvertex xmi:type="uml:State" xmi:id="_IBSou1h8EeK2-ceaC4WoOw" name="!c!r!p!bt"/>
+        <subvertex xmi:type="uml:State" xmi:id="_IBSovFh8EeK2-ceaC4WoOw" name="crpb!t!n!s"/>
+        <subvertex xmi:type="uml:State" xmi:id="_IBSovVh8EeK2-ceaC4WoOw" name="c!r!p!bt!n"/>
+        <subvertex xmi:type="uml:State" xmi:id="_IBSovlh8EeK2-ceaC4WoOw" name="Copy_Of_crpb!t_1"/>
+        <subvertex xmi:type="uml:State" xmi:id="_IBSov1h8EeK2-ceaC4WoOw" name="crp!b!t!n!s"/>
+        <subvertex xmi:type="uml:State" xmi:id="_IBSowFh8EeK2-ceaC4WoOw" name="Copy_Of_crp!b!t_1"/>
+        <subvertex xmi:type="uml:State" xmi:id="_IBSowVh8EeK2-ceaC4WoOw" name="cr!p!bt!n!s"/>
+        <subvertex xmi:type="uml:State" xmi:id="_IBSowlh8EeK2-ceaC4WoOw" name="Copy_Of_!c!r!p!b!tn_1"/>
+        <subvertex xmi:type="uml:State" xmi:id="_IBSow1h8EeK2-ceaC4WoOw" name="!c!r!p!b!t!n (remove)"/>
+        <subvertex xmi:type="uml:FinalState" xmi:id="_IBSoxFh8EeK2-ceaC4WoOw" name="!c!r!p!b!t!n!s (Remove)"/>
+        <subvertex xmi:type="uml:State" xmi:id="_IBSoxVh8EeK2-ceaC4WoOw" name="Copy_Of_!c!r!p!b!tn_2"/>
+        <subvertex xmi:type="uml:State" xmi:id="_IBSoxlh8EeK2-ceaC4WoOw" name="!c!r!p!b!t!n"/>
+        <subvertex xmi:type="uml:Pseudostate" xmi:id="_IBSox1h8EeK2-ceaC4WoOw" name="!c!r!p!b!tn!s"/>
+        <subvertex xmi:type="uml:Pseudostate" xmi:id="_IBSoyFh8EeK2-ceaC4WoOw" name="Junction0" kind="junction"/>
+        <subvertex xmi:type="uml:State" xmi:id="_IBSoyVh8EeK2-ceaC4WoOw" name="crp!b!t!ns"/>
+        <subvertex xmi:type="uml:State" xmi:id="_IBSoylh8EeK2-ceaC4WoOw" name="c!r!p!b!tns"/>
+        <subvertex xmi:type="uml:State" xmi:id="_IBSoy1h8EeK2-ceaC4WoOw" name="crpb!t!ns"/>
+        <subvertex xmi:type="uml:State" xmi:id="_IBSozFh8EeK2-ceaC4WoOw" name="cr!p!bt!ns"/>
+        <transition xmi:id="_IBSozVh8EeK2-ceaC4WoOw" name="id checking timeout" source="_IBSox1h8EeK2-ceaC4WoOw" target="_IBSoxFh8EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_IBSozlh8EeK2-ceaC4WoOw" name="direct remove" source="_IBSou1h8EeK2-ceaC4WoOw" target="_IBSouFh8EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_IBSoz1h8EeK2-ceaC4WoOw" name="server side disconnect" source="_IBSovVh8EeK2-ceaC4WoOw" target="_IBSovVh8EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_IBSo0Fh8EeK2-ceaC4WoOw" name="if write queue is empty, direct disconnect" source="_IBSozFh8EeK2-ceaC4WoOw" target="_IBSoxFh8EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_IBSo0Vh8EeK2-ceaC4WoOw" name="id checking timeout, direct disconnect" source="_IBSoulh8EeK2-ceaC4WoOw" target="_IBSoxFh8EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_IBSo0lh8EeK2-ceaC4WoOw" name="connected" source="_IBSox1h8EeK2-ceaC4WoOw" target="_IBSoulh8EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_IBSo01h8EeK2-ceaC4WoOw" name="register" source="_IBSoulh8EeK2-ceaC4WoOw" target="_IBSov1h8EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_IBSo1Fh8EeK2-ceaC4WoOw" name="Too many connections, consider recycle it" source="_IBSov1h8EeK2-ceaC4WoOw" target="_IBSovFh8EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_IBSo1Vh8EeK2-ceaC4WoOw" name="#connections more than UPPER_BOUND, drop this channel" source="_IBSov1h8EeK2-ceaC4WoOw" target="_IBSowVh8EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_IBSo1lh8EeK2-ceaC4WoOw" name="RECYCLE_TIMEOUT, drop this channel" source="_IBSovFh8EeK2-ceaC4WoOw" target="_IBSowVh8EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_IBSo11h8EeK2-ceaC4WoOw" name="reused within RECYCLE_TIMEOUT" source="_IBSovFh8EeK2-ceaC4WoOw" target="_IBSov1h8EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_IBSo2Fh8EeK2-ceaC4WoOw" name="close requested, direct disconnect" source="_IBSoulh8EeK2-ceaC4WoOw" target="_IBSoxFh8EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_IBSo2Vh8EeK2-ceaC4WoOw" name="close requested" source="_IBSov1h8EeK2-ceaC4WoOw" target="_IBSozFh8EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_IBSo2lh8EeK2-ceaC4WoOw" name="close requested" source="_IBSovFh8EeK2-ceaC4WoOw" target="_IBSozFh8EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_IBTPwFh8EeK2-ceaC4WoOw" name="close requested" source="_IBSowVh8EeK2-ceaC4WoOw" target="_IBSozFh8EeK2-ceaC4WoOw"/>
+      </region>
+    </ownedBehavior>
+    <region xmi:id="_rIT6wFhFEeKV78DsrycYaQ" name="Region0">
+      <subvertex xmi:type="uml:State" xmi:id="_3L-g8FhFEeKV78DsrycYaQ" name="!c!r!p!b!t"/>
+      <subvertex xmi:type="uml:State" xmi:id="_-s6i0FhFEeKV78DsrycYaQ" name="State0"/>
+    </region>
+    <region xmi:id="_GO9_AFhGEeKV78DsrycYaQ" name="Copy_Of_Region0_1">
+      <subvertex xmi:type="uml:State" xmi:id="_GO9_AVhGEeKV78DsrycYaQ" name="!c!r!p!b!t"/>
+      <subvertex xmi:type="uml:State" xmi:id="_GO9_AlhGEeKV78DsrycYaQ" name="State0"/>
+    </region>
+    <region xmi:id="_GPMogFhGEeKV78DsrycYaQ" name="Copy_Of_Region0_2">
+      <ownedComment xmi:id="_bPP14Fh9EeK2-ceaC4WoOw">
+        <body>c: connected
+r: registered
+p: in pool
+b: in recycle bin
+t: in trash bin
+n: new connection
+s: close requested</body>
+      </ownedComment>
+      <subvertex xmi:type="uml:State" xmi:id="_GPMogVhGEeKV78DsrycYaQ" name="!c!r!p!b!tn"/>
+      <subvertex xmi:type="uml:State" xmi:id="_GPMoglhGEeKV78DsrycYaQ" name="State0"/>
+      <subvertex xmi:type="uml:State" xmi:id="_Hx5xYFhGEeKV78DsrycYaQ" name="c!r!p!b!tn!s"/>
+      <subvertex xmi:type="uml:State" xmi:id="_Hx-p4FhGEeKV78DsrycYaQ" name="!c!r!p!bt"/>
+      <subvertex xmi:type="uml:State" xmi:id="_OVjEkFhGEeKV78DsrycYaQ" name="crpb!t!n!s"/>
+      <subvertex xmi:type="uml:State" xmi:id="_OVrAYFhGEeKV78DsrycYaQ" name="c!r!p!bt!n"/>
+      <subvertex xmi:type="uml:State" xmi:id="_TyvGAFhGEeKV78DsrycYaQ" name="Copy_Of_crpb!t_1"/>
+      <subvertex xmi:type="uml:State" xmi:id="_TyzXcFhGEeKV78DsrycYaQ" name="crp!b!t!n!s"/>
+      <subvertex xmi:type="uml:State" xmi:id="_Wdy-EFhGEeKV78DsrycYaQ" name="Copy_Of_crp!b!t_1"/>
+      <subvertex xmi:type="uml:State" xmi:id="_Wd654FhGEeKV78DsrycYaQ" name="cr!p!bt!n!s"/>
+      <subvertex xmi:type="uml:State" xmi:id="_shOuIFhIEeKV78DsrycYaQ" name="Copy_Of_!c!r!p!b!tn_1"/>
+      <subvertex xmi:type="uml:State" xmi:id="_shUNsFhIEeKV78DsrycYaQ" name="!c!r!p!b!t!n (remove)"/>
+      <subvertex xmi:type="uml:FinalState" xmi:id="_6guu4FhIEeKV78DsrycYaQ" name="!c!r!p!b!t!n!s (Remove)"/>
+      <subvertex xmi:type="uml:State" xmi:id="_dwfBMFhJEeKV78DsrycYaQ" name="Copy_Of_!c!r!p!b!tn_2"/>
+      <subvertex xmi:type="uml:State" xmi:id="_dwlu4FhJEeKV78DsrycYaQ" name="!c!r!p!b!t!n"/>
+      <subvertex xmi:type="uml:Pseudostate" xmi:id="_dKv9QFhREeKV78DsrycYaQ" name="!c!r!p!b!tn!s"/>
+      <subvertex xmi:type="uml:Pseudostate" xmi:id="_bI0FQFhSEeKV78DsrycYaQ" name="Junction0" kind="junction"/>
+      <subvertex xmi:type="uml:State" xmi:id="_JIjA8FhWEeK2-ceaC4WoOw" name="crp!b!t!ns"/>
+      <subvertex xmi:type="uml:State" xmi:id="_JIpuoFhWEeK2-ceaC4WoOw" name="c!r!p!b!tns"/>
+      <subvertex xmi:type="uml:State" xmi:id="_Rb4JEFhWEeK2-ceaC4WoOw" name="crpb!t!ns"/>
+      <subvertex xmi:type="uml:State" xmi:id="_Rb8agFhWEeK2-ceaC4WoOw" name="cr!p!bt!ns"/>
+      <transition xmi:id="_mw6AMFhGEeKV78DsrycYaQ" name="id checking timeout" source="_dKv9QFhREeKV78DsrycYaQ" target="_6guu4FhIEeKV78DsrycYaQ"/>
+      <transition xmi:id="_s1QIQFhGEeKV78DsrycYaQ" name="direct remove" source="_Hx-p4FhGEeKV78DsrycYaQ" target="_GPMogVhGEeKV78DsrycYaQ"/>
+      <transition xmi:id="_0qMrQFhGEeKV78DsrycYaQ" name="server side disconnect" source="_OVrAYFhGEeKV78DsrycYaQ" target="_OVrAYFhGEeKV78DsrycYaQ"/>
+      <transition xmi:id="_Gh-lIFhHEeKV78DsrycYaQ" name="if complete using (write queue is empty and reference is 0), direct disconnect" source="_Rb8agFhWEeK2-ceaC4WoOw" target="_6guu4FhIEeKV78DsrycYaQ"/>
+      <transition xmi:id="_McHL0FhIEeKV78DsrycYaQ" name="id checking timeout, direct disconnect" source="_Hx5xYFhGEeKV78DsrycYaQ" target="_6guu4FhIEeKV78DsrycYaQ"/>
+      <transition xmi:id="_NnBDQFhJEeKV78DsrycYaQ" name="connected" source="_dKv9QFhREeKV78DsrycYaQ" target="_Hx5xYFhGEeKV78DsrycYaQ"/>
+      <transition xmi:id="_LwSgQFhLEeKV78DsrycYaQ" name="register normal" source="_Hx5xYFhGEeKV78DsrycYaQ" target="_TyzXcFhGEeKV78DsrycYaQ"/>
+      <transition xmi:id="_pgzisFhLEeKV78DsrycYaQ" name="Too many connections, consider recycle it" source="_TyzXcFhGEeKV78DsrycYaQ" target="_OVjEkFhGEeKV78DsrycYaQ"/>
+      <transition xmi:id="_28oOoFhLEeKV78DsrycYaQ" name="#connections more than UPPER_BOUND drop this channel, or owner IPCRemote gets removed" source="_TyzXcFhGEeKV78DsrycYaQ" target="_Wd654FhGEeKV78DsrycYaQ"/>
+      <transition xmi:id="_KGT1QFhMEeKV78DsrycYaQ" name="RECYCLE_TIMEOUT, drop this channel; or owner IPCRemote gets removed" source="_OVjEkFhGEeKV78DsrycYaQ" target="_Wd654FhGEeKV78DsrycYaQ"/>
+      <transition xmi:id="_OG4uwFhMEeKV78DsrycYaQ" name="reused within RECYCLE_TIMEOUT" source="_OVjEkFhGEeKV78DsrycYaQ" target="_TyzXcFhGEeKV78DsrycYaQ"/>
+      <transition xmi:id="_PjUE8FhWEeK2-ceaC4WoOw" name="close requested, direct disconnect" source="_Hx5xYFhGEeKV78DsrycYaQ" target="_6guu4FhIEeKV78DsrycYaQ"/>
+      <transition xmi:id="_QJcQ0FhWEeK2-ceaC4WoOw" name="close requested" source="_TyzXcFhGEeKV78DsrycYaQ" target="_Rb8agFhWEeK2-ceaC4WoOw"/>
+      <transition xmi:id="_ZZjKQFhWEeK2-ceaC4WoOw" name="close requested" source="_OVjEkFhGEeKV78DsrycYaQ" target="_Rb8agFhWEeK2-ceaC4WoOw"/>
+      <transition xmi:id="_Z-fqYFhWEeK2-ceaC4WoOw" name="close requested" source="_Wd654FhGEeKV78DsrycYaQ" target="_Rb8agFhWEeK2-ceaC4WoOw"/>
+      <transition xmi:id="_f8ye4FiEEeK2-ceaC4WoOw" name="register when owner IPCRemote gotton removed" source="_Hx5xYFhGEeKV78DsrycYaQ" target="_Wd654FhGEeKV78DsrycYaQ"/>
+    </region>
+  </packagedElement>
+  <packagedElement xmi:type="uml:StateMachine" xmi:id="_exlGQFhTEeKV78DsrycYaQ" name="Copy_Of_Client Channel State Machine_1">
+    <region xmi:id="_exlGQVhTEeKV78DsrycYaQ" name="Region0">
+      <subvertex xmi:type="uml:State" xmi:id="_exlGQlhTEeKV78DsrycYaQ" name="!c!r!p!b!t"/>
+      <subvertex xmi:type="uml:State" xmi:id="_exlGQ1hTEeKV78DsrycYaQ" name="State0"/>
+    </region>
+    <region xmi:id="_exlGRFhTEeKV78DsrycYaQ" name="Copy_Of_Region0_1">
+      <subvertex xmi:type="uml:State" xmi:id="_exlGRVhTEeKV78DsrycYaQ" name="!c!r!p!b!t"/>
+      <subvertex xmi:type="uml:State" xmi:id="_exlGRlhTEeKV78DsrycYaQ" name="State0"/>
+    </region>
+    <region xmi:id="_exlGR1hTEeKV78DsrycYaQ" name="Copy_Of_Region0_2">
+      <subvertex xmi:type="uml:State" xmi:id="_exlGSFhTEeKV78DsrycYaQ" name="!c!r!p!b!tn"/>
+      <subvertex xmi:type="uml:State" xmi:id="_exlGSVhTEeKV78DsrycYaQ" name="State0"/>
+      <subvertex xmi:type="uml:State" xmi:id="_exlGSlhTEeKV78DsrycYaQ" name="c!r!p!b!tn"/>
+      <subvertex xmi:type="uml:State" xmi:id="_exlGS1hTEeKV78DsrycYaQ" name="!c!r!p!bt"/>
+      <subvertex xmi:type="uml:State" xmi:id="_exlGTFhTEeKV78DsrycYaQ" name="crpb!t!n"/>
+      <subvertex xmi:type="uml:State" xmi:id="_exlGTVhTEeKV78DsrycYaQ" name="c!r!p!bt!n"/>
+      <subvertex xmi:type="uml:State" xmi:id="_exlGTlhTEeKV78DsrycYaQ" name="Copy_Of_crpb!t_1"/>
+      <subvertex xmi:type="uml:State" xmi:id="_exlGT1hTEeKV78DsrycYaQ" name="crp!b!t!n"/>
+      <subvertex xmi:type="uml:State" xmi:id="_exlGUFhTEeKV78DsrycYaQ" name="Copy_Of_crp!b!t_1"/>
+      <subvertex xmi:type="uml:State" xmi:id="_exlGUVhTEeKV78DsrycYaQ" name="cr!p!bt!n"/>
+      <subvertex xmi:type="uml:State" xmi:id="_exlGUlhTEeKV78DsrycYaQ" name="Copy_Of_!c!r!p!b!tn_1"/>
+      <subvertex xmi:type="uml:State" xmi:id="_exlGU1hTEeKV78DsrycYaQ" name="!c!r!p!b!t!n (remove)"/>
+      <subvertex xmi:type="uml:FinalState" xmi:id="_exlGVFhTEeKV78DsrycYaQ" name="!c!r!p!b!t!n (Remove)"/>
+      <subvertex xmi:type="uml:State" xmi:id="_exlGVVhTEeKV78DsrycYaQ" name="Copy_Of_!c!r!p!b!tn_2"/>
+      <subvertex xmi:type="uml:State" xmi:id="_exlGVlhTEeKV78DsrycYaQ" name="!c!r!p!b!t!n"/>
+      <subvertex xmi:type="uml:Pseudostate" xmi:id="_exlGV1hTEeKV78DsrycYaQ" name="!c!r!p!b!tn"/>
+      <subvertex xmi:type="uml:Pseudostate" xmi:id="_exlGWFhTEeKV78DsrycYaQ" name="Junction0" kind="junction"/>
+      <transition xmi:id="_exlGWVhTEeKV78DsrycYaQ" name="id checking timeout" source="_exlGV1hTEeKV78DsrycYaQ" target="_exlGVFhTEeKV78DsrycYaQ"/>
+      <transition xmi:id="_exlGWlhTEeKV78DsrycYaQ" name="direct remove" source="_exlGS1hTEeKV78DsrycYaQ" target="_exlGSFhTEeKV78DsrycYaQ"/>
+      <transition xmi:id="_exlGW1hTEeKV78DsrycYaQ" name="server side disconnect" source="_exlGTVhTEeKV78DsrycYaQ" target="_exlGVFhTEeKV78DsrycYaQ"/>
+      <transition xmi:id="_exlGXFhTEeKV78DsrycYaQ" name="if write queue is empty, send DISCONNECT" source="_exlGUVhTEeKV78DsrycYaQ" target="_exlGTVhTEeKV78DsrycYaQ"/>
+      <transition xmi:id="_exlGXVhTEeKV78DsrycYaQ" name="id checking timeout, direct disconnect" source="_exlGSlhTEeKV78DsrycYaQ" target="_exlGVFhTEeKV78DsrycYaQ"/>
+      <transition xmi:id="_exlGXlhTEeKV78DsrycYaQ" name="connected" source="_exlGV1hTEeKV78DsrycYaQ" target="_exlGSlhTEeKV78DsrycYaQ"/>
+      <transition xmi:id="_exlGX1hTEeKV78DsrycYaQ" name="register" source="_exlGSlhTEeKV78DsrycYaQ" target="_exlGT1hTEeKV78DsrycYaQ"/>
+      <transition xmi:id="_exlGYFhTEeKV78DsrycYaQ" name="Too many connections, consider recycle it" source="_exlGT1hTEeKV78DsrycYaQ" target="_exlGTFhTEeKV78DsrycYaQ"/>
+      <transition xmi:id="_exlGYVhTEeKV78DsrycYaQ" name="#connections more than UPPER_BOUND, drop this channel" source="_exlGT1hTEeKV78DsrycYaQ" target="_exlGUVhTEeKV78DsrycYaQ"/>
+      <transition xmi:id="_exlGYlhTEeKV78DsrycYaQ" name="RECYCLE_TIMEOUT, drop this channel" source="_exlGTFhTEeKV78DsrycYaQ" target="_exlGUVhTEeKV78DsrycYaQ"/>
+      <transition xmi:id="_exlGY1hTEeKV78DsrycYaQ" name="reused within RECYCLE_TIMEOUT" source="_exlGTFhTEeKV78DsrycYaQ" target="_exlGT1hTEeKV78DsrycYaQ"/>
+    </region>
+  </packagedElement>
+  <packagedElement xmi:type="uml:StateMachine" xmi:id="_eyqEUFhTEeKV78DsrycYaQ" name="Client Channel State Machine">
+    <region xmi:id="_eyqEUVhTEeKV78DsrycYaQ" name="Region0">
+      <subvertex xmi:type="uml:State" xmi:id="_eyqEUlhTEeKV78DsrycYaQ" name="!c!r!p!b!t"/>
+      <subvertex xmi:type="uml:State" xmi:id="_eyqEU1hTEeKV78DsrycYaQ" name="State0"/>
+    </region>
+    <region xmi:id="_eyqEVFhTEeKV78DsrycYaQ" name="Copy_Of_Region0_1">
+      <subvertex xmi:type="uml:State" xmi:id="_eyqEVVhTEeKV78DsrycYaQ" name="!c!r!p!b!t"/>
+      <subvertex xmi:type="uml:State" xmi:id="_eyqEVlhTEeKV78DsrycYaQ" name="State0"/>
+    </region>
+    <region xmi:id="_eyqEV1hTEeKV78DsrycYaQ" name="Copy_Of_Region0_2">
+      <ownedComment xmi:id="_8S3AwFh9EeK2-ceaC4WoOw">
+        <body>c:connected
+r:registered
+p:in pool
+b: in recycle bin
+t: in trash bin
+n: new connection</body>
+      </ownedComment>
+      <subvertex xmi:type="uml:State" xmi:id="_eyqEWFhTEeKV78DsrycYaQ" name="!c!r!p!b!tn"/>
+      <subvertex xmi:type="uml:State" xmi:id="_eyqEWVhTEeKV78DsrycYaQ" name="State0"/>
+      <subvertex xmi:type="uml:State" xmi:id="_eyqEWlhTEeKV78DsrycYaQ" name="c!r!p!b!tn"/>
+      <subvertex xmi:type="uml:State" xmi:id="_eyqEW1hTEeKV78DsrycYaQ" name="!c!r!p!bt"/>
+      <subvertex xmi:type="uml:State" xmi:id="_eyqEXFhTEeKV78DsrycYaQ" name="crpb!t!n"/>
+      <subvertex xmi:type="uml:State" xmi:id="_eyqEXVhTEeKV78DsrycYaQ" name="c!r!p!bt!n"/>
+      <subvertex xmi:type="uml:State" xmi:id="_eyqEXlhTEeKV78DsrycYaQ" name="Copy_Of_crpb!t_1"/>
+      <subvertex xmi:type="uml:State" xmi:id="_eyqEX1hTEeKV78DsrycYaQ" name="crp!b!t!n"/>
+      <subvertex xmi:type="uml:State" xmi:id="_eyqEYFhTEeKV78DsrycYaQ" name="Copy_Of_crp!b!t_1"/>
+      <subvertex xmi:type="uml:State" xmi:id="_eyqEYVhTEeKV78DsrycYaQ" name="cr!p!bt!n"/>
+      <subvertex xmi:type="uml:State" xmi:id="_eyqEYlhTEeKV78DsrycYaQ" name="Copy_Of_!c!r!p!b!tn_1"/>
+      <subvertex xmi:type="uml:State" xmi:id="_eyqEY1hTEeKV78DsrycYaQ" name="!c!r!p!b!t!n (remove)"/>
+      <subvertex xmi:type="uml:FinalState" xmi:id="_eyqEZFhTEeKV78DsrycYaQ" name="!c!r!p!b!t!n (Remove)"/>
+      <subvertex xmi:type="uml:State" xmi:id="_eyqEZVhTEeKV78DsrycYaQ" name="Copy_Of_!c!r!p!b!tn_2"/>
+      <subvertex xmi:type="uml:State" xmi:id="_eyqEZlhTEeKV78DsrycYaQ" name="!c!r!p!b!t!n"/>
+      <subvertex xmi:type="uml:Pseudostate" xmi:id="_eyqEZ1hTEeKV78DsrycYaQ" name="!c!r!p!b!tn"/>
+      <subvertex xmi:type="uml:Pseudostate" xmi:id="_eyqEaFhTEeKV78DsrycYaQ" name="Junction0" kind="junction"/>
+      <transition xmi:id="_eyqEaVhTEeKV78DsrycYaQ" name="id checking timeout" source="_eyqEZ1hTEeKV78DsrycYaQ" target="_eyqEZFhTEeKV78DsrycYaQ"/>
+      <transition xmi:id="_eyqEalhTEeKV78DsrycYaQ" name="direct remove" source="_eyqEW1hTEeKV78DsrycYaQ" target="_eyqEWFhTEeKV78DsrycYaQ"/>
+      <transition xmi:id="_eyqEa1hTEeKV78DsrycYaQ" name="server side disconnect" source="_eyqEXVhTEeKV78DsrycYaQ" target="_eyqEZFhTEeKV78DsrycYaQ"/>
+      <transition xmi:id="_eyqEbFhTEeKV78DsrycYaQ" name="if complete using (write queue is empty, and reference is 0), send DISCONNECT" source="_eyqEYVhTEeKV78DsrycYaQ" target="_eyqEXVhTEeKV78DsrycYaQ"/>
+      <transition xmi:id="_eyqEbVhTEeKV78DsrycYaQ" name="id checking timeout, direct disconnect" source="_eyqEWlhTEeKV78DsrycYaQ" target="_eyqEZFhTEeKV78DsrycYaQ"/>
+      <transition xmi:id="_eyqEblhTEeKV78DsrycYaQ" name="connected" source="_eyqEZ1hTEeKV78DsrycYaQ" target="_eyqEWlhTEeKV78DsrycYaQ"/>
+      <transition xmi:id="_eyqEb1hTEeKV78DsrycYaQ" name="register" source="_eyqEWlhTEeKV78DsrycYaQ" target="_eyqEX1hTEeKV78DsrycYaQ"/>
+      <transition xmi:id="_eyqEcFhTEeKV78DsrycYaQ" name="Too many connections, consider recycle it" source="_eyqEX1hTEeKV78DsrycYaQ" target="_eyqEXFhTEeKV78DsrycYaQ"/>
+      <transition xmi:id="_eyqEcVhTEeKV78DsrycYaQ" name="#connections more than UPPER_BOUND, or IPCRemoted gets removed, drop this channel" source="_eyqEX1hTEeKV78DsrycYaQ" target="_eyqEYVhTEeKV78DsrycYaQ"/>
+      <transition xmi:id="_eyqEclhTEeKV78DsrycYaQ" name="RECYCLE_TIMEOUT, or IPCRemote gets removed, drop this channel" source="_eyqEXFhTEeKV78DsrycYaQ" target="_eyqEYVhTEeKV78DsrycYaQ"/>
+      <transition xmi:id="_eyqEc1hTEeKV78DsrycYaQ" name="reused within RECYCLE_TIMEOUT" source="_eyqEXFhTEeKV78DsrycYaQ" target="_eyqEX1hTEeKV78DsrycYaQ"/>
+      <transition xmi:id="_05bQ4FiEEeK2-ceaC4WoOw" name="register when no " source="_eyqEWlhTEeKV78DsrycYaQ" target="_eyqEYVhTEeKV78DsrycYaQ"/>
+    </region>
+  </packagedElement>
+  <packagedElement xmi:type="uml:StateMachine" xmi:id="_F3q0UFh9EeK2-ceaC4WoOw" name="Copy_Of_Accepted Channel State Machine_1">
+    <ownedBehavior xmi:type="uml:StateMachine" xmi:id="_F3q0UVh9EeK2-ceaC4WoOw" name="Connection Pool State Machine">
+      <region xmi:id="_F3q0Ulh9EeK2-ceaC4WoOw" name="Region0">
+        <subvertex xmi:type="uml:State" xmi:id="_F3q0U1h9EeK2-ceaC4WoOw" name="!c!r!p!b!t"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F3q0VFh9EeK2-ceaC4WoOw" name="State0"/>
+      </region>
+      <region xmi:id="_F3q0VVh9EeK2-ceaC4WoOw" name="Copy_Of_Region0_1">
+        <subvertex xmi:type="uml:State" xmi:id="_F3q0Vlh9EeK2-ceaC4WoOw" name="!c!r!p!b!t"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F3q0V1h9EeK2-ceaC4WoOw" name="State0"/>
+      </region>
+      <region xmi:id="_F3q0WFh9EeK2-ceaC4WoOw" name="Copy_Of_Region0_2">
+        <subvertex xmi:type="uml:State" xmi:id="_F3q0WVh9EeK2-ceaC4WoOw" name="!c!r!p!b!tn"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F3q0Wlh9EeK2-ceaC4WoOw" name="State0"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F3q0W1h9EeK2-ceaC4WoOw" name="c!r!p!b!tn!s"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F3q0XFh9EeK2-ceaC4WoOw" name="!c!r!p!bt"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F3q0XVh9EeK2-ceaC4WoOw" name="crpb!t!n!s"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F3q0Xlh9EeK2-ceaC4WoOw" name="c!r!p!bt!n"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F3q0X1h9EeK2-ceaC4WoOw" name="Copy_Of_crpb!t_1"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F3q0YFh9EeK2-ceaC4WoOw" name="crp!b!t!n!s"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F3q0YVh9EeK2-ceaC4WoOw" name="Copy_Of_crp!b!t_1"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F3q0Ylh9EeK2-ceaC4WoOw" name="cr!p!bt!n!s"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F3q0Y1h9EeK2-ceaC4WoOw" name="Copy_Of_!c!r!p!b!tn_1"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F3q0ZFh9EeK2-ceaC4WoOw" name="!c!r!p!b!t!n (remove)"/>
+        <subvertex xmi:type="uml:FinalState" xmi:id="_F3q0ZVh9EeK2-ceaC4WoOw" name="!c!r!p!b!t!n!s (Remove)"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F3q0Zlh9EeK2-ceaC4WoOw" name="Copy_Of_!c!r!p!b!tn_2"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F3q0Z1h9EeK2-ceaC4WoOw" name="!c!r!p!b!t!n"/>
+        <subvertex xmi:type="uml:Pseudostate" xmi:id="_F3q0aFh9EeK2-ceaC4WoOw" name="!c!r!p!b!tn!s"/>
+        <subvertex xmi:type="uml:Pseudostate" xmi:id="_F3q0aVh9EeK2-ceaC4WoOw" name="Junction0" kind="junction"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F3q0alh9EeK2-ceaC4WoOw" name="crp!b!t!ns"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F3q0a1h9EeK2-ceaC4WoOw" name="c!r!p!b!tns"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F3q0bFh9EeK2-ceaC4WoOw" name="crpb!t!ns"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F3q0bVh9EeK2-ceaC4WoOw" name="cr!p!bt!ns"/>
+        <transition xmi:id="_F3q0blh9EeK2-ceaC4WoOw" name="id checking timeout" source="_F3q0aFh9EeK2-ceaC4WoOw" target="_F3q0ZVh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F3q0b1h9EeK2-ceaC4WoOw" name="direct remove" source="_F3q0XFh9EeK2-ceaC4WoOw" target="_F3q0WVh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F3q0cFh9EeK2-ceaC4WoOw" name="server side disconnect" source="_F3q0Xlh9EeK2-ceaC4WoOw" target="_F3q0Xlh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F3q0cVh9EeK2-ceaC4WoOw" name="if write queue is empty, direct disconnect" source="_F3q0bVh9EeK2-ceaC4WoOw" target="_F3q0ZVh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F3q0clh9EeK2-ceaC4WoOw" name="id checking timeout, direct disconnect" source="_F3q0W1h9EeK2-ceaC4WoOw" target="_F3q0ZVh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F3q0c1h9EeK2-ceaC4WoOw" name="connected" source="_F3q0aFh9EeK2-ceaC4WoOw" target="_F3q0W1h9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F3q0dFh9EeK2-ceaC4WoOw" name="register" source="_F3q0W1h9EeK2-ceaC4WoOw" target="_F3q0YFh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F3q0dVh9EeK2-ceaC4WoOw" name="Too many connections, consider recycle it" source="_F3q0YFh9EeK2-ceaC4WoOw" target="_F3q0XVh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F3q0dlh9EeK2-ceaC4WoOw" name="#connections more than UPPER_BOUND, drop this channel" source="_F3q0YFh9EeK2-ceaC4WoOw" target="_F3q0Ylh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F3q0d1h9EeK2-ceaC4WoOw" name="RECYCLE_TIMEOUT, drop this channel" source="_F3q0XVh9EeK2-ceaC4WoOw" target="_F3q0Ylh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F3q0eFh9EeK2-ceaC4WoOw" name="reused within RECYCLE_TIMEOUT" source="_F3q0XVh9EeK2-ceaC4WoOw" target="_F3q0YFh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F3q0eVh9EeK2-ceaC4WoOw" name="close requested, direct disconnect" source="_F3q0W1h9EeK2-ceaC4WoOw" target="_F3q0ZVh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F3q0elh9EeK2-ceaC4WoOw" name="close requested" source="_F3q0YFh9EeK2-ceaC4WoOw" target="_F3q0bVh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F3q0e1h9EeK2-ceaC4WoOw" name="close requested" source="_F3q0XVh9EeK2-ceaC4WoOw" target="_F3q0bVh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F3q0fFh9EeK2-ceaC4WoOw" name="close requested" source="_F3q0Ylh9EeK2-ceaC4WoOw" target="_F3q0bVh9EeK2-ceaC4WoOw"/>
+      </region>
+      <region xmi:id="_F3q0fVh9EeK2-ceaC4WoOw" name="Region1"/>
+    </ownedBehavior>
+    <ownedBehavior xmi:type="uml:StateMachine" xmi:id="_F3q0flh9EeK2-ceaC4WoOw" name="Copy_Of_Accepted Channel State Machine_1">
+      <region xmi:id="_F3rbYFh9EeK2-ceaC4WoOw" name="Region0">
+        <subvertex xmi:type="uml:State" xmi:id="_F3rbYVh9EeK2-ceaC4WoOw" name="!c!r!p!b!t"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F3rbYlh9EeK2-ceaC4WoOw" name="State0"/>
+      </region>
+      <region xmi:id="_F3rbY1h9EeK2-ceaC4WoOw" name="Copy_Of_Region0_1">
+        <subvertex xmi:type="uml:State" xmi:id="_F3rbZFh9EeK2-ceaC4WoOw" name="!c!r!p!b!t"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F3rbZVh9EeK2-ceaC4WoOw" name="State0"/>
+      </region>
+      <region xmi:id="_F3rbZlh9EeK2-ceaC4WoOw" name="Copy_Of_Region0_2">
+        <subvertex xmi:type="uml:State" xmi:id="_F3rbZ1h9EeK2-ceaC4WoOw" name="!c!r!p!b!tn"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F3rbaFh9EeK2-ceaC4WoOw" name="State0"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F3rbaVh9EeK2-ceaC4WoOw" name="c!r!p!b!tn!s"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F3rbalh9EeK2-ceaC4WoOw" name="!c!r!p!bt"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F3rba1h9EeK2-ceaC4WoOw" name="crpb!t!n!s"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F3rbbFh9EeK2-ceaC4WoOw" name="c!r!p!bt!n"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F3rbbVh9EeK2-ceaC4WoOw" name="Copy_Of_crpb!t_1"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F3rbblh9EeK2-ceaC4WoOw" name="crp!b!t!n!s"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F3rbb1h9EeK2-ceaC4WoOw" name="Copy_Of_crp!b!t_1"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F3rbcFh9EeK2-ceaC4WoOw" name="cr!p!bt!n!s"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F3rbcVh9EeK2-ceaC4WoOw" name="Copy_Of_!c!r!p!b!tn_1"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F3rbclh9EeK2-ceaC4WoOw" name="!c!r!p!b!t!n (remove)"/>
+        <subvertex xmi:type="uml:FinalState" xmi:id="_F3rbc1h9EeK2-ceaC4WoOw" name="!c!r!p!b!t!n!s (Remove)"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F3rbdFh9EeK2-ceaC4WoOw" name="Copy_Of_!c!r!p!b!tn_2"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F3rbdVh9EeK2-ceaC4WoOw" name="!c!r!p!b!t!n"/>
+        <subvertex xmi:type="uml:Pseudostate" xmi:id="_F3rbdlh9EeK2-ceaC4WoOw" name="!c!r!p!b!tn!s"/>
+        <subvertex xmi:type="uml:Pseudostate" xmi:id="_F3rbd1h9EeK2-ceaC4WoOw" name="Junction0" kind="junction"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F3rbeFh9EeK2-ceaC4WoOw" name="crp!b!t!ns"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F3rbeVh9EeK2-ceaC4WoOw" name="c!r!p!b!tns"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F3rbelh9EeK2-ceaC4WoOw" name="crpb!t!ns"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F3rbe1h9EeK2-ceaC4WoOw" name="cr!p!bt!ns"/>
+        <transition xmi:id="_F3rbfFh9EeK2-ceaC4WoOw" name="id checking timeout" source="_F3rbdlh9EeK2-ceaC4WoOw" target="_F3rbc1h9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F3rbfVh9EeK2-ceaC4WoOw" name="direct remove" source="_F3rbalh9EeK2-ceaC4WoOw" target="_F3rbZ1h9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F3rbflh9EeK2-ceaC4WoOw" name="server side disconnect" source="_F3rbbFh9EeK2-ceaC4WoOw" target="_F3rbbFh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F3rbf1h9EeK2-ceaC4WoOw" name="if write queue is empty, direct disconnect" source="_F3rbe1h9EeK2-ceaC4WoOw" target="_F3rbc1h9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F3rbgFh9EeK2-ceaC4WoOw" name="id checking timeout, direct disconnect" source="_F3rbaVh9EeK2-ceaC4WoOw" target="_F3rbc1h9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F3rbgVh9EeK2-ceaC4WoOw" name="connected" source="_F3rbdlh9EeK2-ceaC4WoOw" target="_F3rbaVh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F3rbglh9EeK2-ceaC4WoOw" name="register" source="_F3rbaVh9EeK2-ceaC4WoOw" target="_F3rbblh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F3rbg1h9EeK2-ceaC4WoOw" name="Too many connections, consider recycle it" source="_F3rbblh9EeK2-ceaC4WoOw" target="_F3rba1h9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F3rbhFh9EeK2-ceaC4WoOw" name="#connections more than UPPER_BOUND, drop this channel" source="_F3rbblh9EeK2-ceaC4WoOw" target="_F3rbcFh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F3rbhVh9EeK2-ceaC4WoOw" name="RECYCLE_TIMEOUT, drop this channel" source="_F3rba1h9EeK2-ceaC4WoOw" target="_F3rbcFh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F3rbhlh9EeK2-ceaC4WoOw" name="reused within RECYCLE_TIMEOUT" source="_F3rba1h9EeK2-ceaC4WoOw" target="_F3rbblh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F3rbh1h9EeK2-ceaC4WoOw" name="close requested, direct disconnect" source="_F3rbaVh9EeK2-ceaC4WoOw" target="_F3rbc1h9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F3rbiFh9EeK2-ceaC4WoOw" name="close requested" source="_F3rbblh9EeK2-ceaC4WoOw" target="_F3rbe1h9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F3rbiVh9EeK2-ceaC4WoOw" name="close requested" source="_F3rba1h9EeK2-ceaC4WoOw" target="_F3rbe1h9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F3rbilh9EeK2-ceaC4WoOw" name="close requested" source="_F3rbcFh9EeK2-ceaC4WoOw" target="_F3rbe1h9EeK2-ceaC4WoOw"/>
+      </region>
+    </ownedBehavior>
+    <region xmi:id="_F3rbi1h9EeK2-ceaC4WoOw" name="Region0">
+      <subvertex xmi:type="uml:State" xmi:id="_F3rbjFh9EeK2-ceaC4WoOw" name="!c!r!p!b!t"/>
+      <subvertex xmi:type="uml:State" xmi:id="_F3rbjVh9EeK2-ceaC4WoOw" name="State0"/>
+    </region>
+    <region xmi:id="_F3rbjlh9EeK2-ceaC4WoOw" name="Copy_Of_Region0_1">
+      <subvertex xmi:type="uml:State" xmi:id="_F3rbj1h9EeK2-ceaC4WoOw" name="!c!r!p!b!t"/>
+      <subvertex xmi:type="uml:State" xmi:id="_F3rbkFh9EeK2-ceaC4WoOw" name="State0"/>
+    </region>
+    <region xmi:id="_F3rbkVh9EeK2-ceaC4WoOw" name="Copy_Of_Region0_2">
+      <subvertex xmi:type="uml:State" xmi:id="_F3rbklh9EeK2-ceaC4WoOw" name="!c!r!p!b!tn"/>
+      <subvertex xmi:type="uml:State" xmi:id="_F3rbk1h9EeK2-ceaC4WoOw" name="State0"/>
+      <subvertex xmi:type="uml:State" xmi:id="_F3rblFh9EeK2-ceaC4WoOw" name="c!r!p!b!tn!s"/>
+      <subvertex xmi:type="uml:State" xmi:id="_F3rblVh9EeK2-ceaC4WoOw" name="!c!r!p!bt"/>
+      <subvertex xmi:type="uml:State" xmi:id="_F3rbllh9EeK2-ceaC4WoOw" name="crpb!t!n!s"/>
+      <subvertex xmi:type="uml:State" xmi:id="_F3rbl1h9EeK2-ceaC4WoOw" name="c!r!p!bt!n"/>
+      <subvertex xmi:type="uml:State" xmi:id="_F3rbmFh9EeK2-ceaC4WoOw" name="Copy_Of_crpb!t_1"/>
+      <subvertex xmi:type="uml:State" xmi:id="_F3rbmVh9EeK2-ceaC4WoOw" name="crp!b!t!n!s"/>
+      <subvertex xmi:type="uml:State" xmi:id="_F3rbmlh9EeK2-ceaC4WoOw" name="Copy_Of_crp!b!t_1"/>
+      <subvertex xmi:type="uml:State" xmi:id="_F3rbm1h9EeK2-ceaC4WoOw" name="cr!p!bt!n!s"/>
+      <subvertex xmi:type="uml:State" xmi:id="_F3rbnFh9EeK2-ceaC4WoOw" name="Copy_Of_!c!r!p!b!tn_1"/>
+      <subvertex xmi:type="uml:State" xmi:id="_F3rbnVh9EeK2-ceaC4WoOw" name="!c!r!p!b!t!n (remove)"/>
+      <subvertex xmi:type="uml:FinalState" xmi:id="_F3rbnlh9EeK2-ceaC4WoOw" name="!c!r!p!b!t!n!s (Remove)"/>
+      <subvertex xmi:type="uml:State" xmi:id="_F3rbn1h9EeK2-ceaC4WoOw" name="Copy_Of_!c!r!p!b!tn_2"/>
+      <subvertex xmi:type="uml:State" xmi:id="_F3rboFh9EeK2-ceaC4WoOw" name="!c!r!p!b!t!n"/>
+      <subvertex xmi:type="uml:Pseudostate" xmi:id="_F3rboVh9EeK2-ceaC4WoOw" name="!c!r!p!b!tn!s"/>
+      <subvertex xmi:type="uml:Pseudostate" xmi:id="_F3rbolh9EeK2-ceaC4WoOw" name="Junction0" kind="junction"/>
+      <subvertex xmi:type="uml:State" xmi:id="_F3rbo1h9EeK2-ceaC4WoOw" name="crp!b!t!ns"/>
+      <subvertex xmi:type="uml:State" xmi:id="_F3rbpFh9EeK2-ceaC4WoOw" name="c!r!p!b!tns"/>
+      <subvertex xmi:type="uml:State" xmi:id="_F3rbpVh9EeK2-ceaC4WoOw" name="crpb!t!ns"/>
+      <subvertex xmi:type="uml:State" xmi:id="_F3rbplh9EeK2-ceaC4WoOw" name="cr!p!bt!ns"/>
+      <transition xmi:id="_F3rbp1h9EeK2-ceaC4WoOw" name="id checking timeout" source="_F3rboVh9EeK2-ceaC4WoOw" target="_F3rbnlh9EeK2-ceaC4WoOw"/>
+      <transition xmi:id="_F3rbqFh9EeK2-ceaC4WoOw" name="direct remove" source="_F3rblVh9EeK2-ceaC4WoOw" target="_F3rbklh9EeK2-ceaC4WoOw"/>
+      <transition xmi:id="_F3rbqVh9EeK2-ceaC4WoOw" name="server side disconnect" source="_F3rbl1h9EeK2-ceaC4WoOw" target="_F3rbl1h9EeK2-ceaC4WoOw"/>
+      <transition xmi:id="_F3rbqlh9EeK2-ceaC4WoOw" name="if write queue is empty, direct disconnect" source="_F3rbplh9EeK2-ceaC4WoOw" target="_F3rbnlh9EeK2-ceaC4WoOw"/>
+      <transition xmi:id="_F3rbq1h9EeK2-ceaC4WoOw" name="id checking timeout, direct disconnect" source="_F3rblFh9EeK2-ceaC4WoOw" target="_F3rbnlh9EeK2-ceaC4WoOw"/>
+      <transition xmi:id="_F3rbrFh9EeK2-ceaC4WoOw" name="connected" source="_F3rboVh9EeK2-ceaC4WoOw" target="_F3rblFh9EeK2-ceaC4WoOw"/>
+      <transition xmi:id="_F3rbrVh9EeK2-ceaC4WoOw" name="register" source="_F3rblFh9EeK2-ceaC4WoOw" target="_F3rbmVh9EeK2-ceaC4WoOw"/>
+      <transition xmi:id="_F3rbrlh9EeK2-ceaC4WoOw" name="Too many connections, consider recycle it" source="_F3rbmVh9EeK2-ceaC4WoOw" target="_F3rbllh9EeK2-ceaC4WoOw"/>
+      <transition xmi:id="_F3rbr1h9EeK2-ceaC4WoOw" name="#connections more than UPPER_BOUND, drop this channel" source="_F3rbmVh9EeK2-ceaC4WoOw" target="_F3rbm1h9EeK2-ceaC4WoOw"/>
+      <transition xmi:id="_F3rbsFh9EeK2-ceaC4WoOw" name="RECYCLE_TIMEOUT, drop this channel" source="_F3rbllh9EeK2-ceaC4WoOw" target="_F3rbm1h9EeK2-ceaC4WoOw"/>
+      <transition xmi:id="_F3rbsVh9EeK2-ceaC4WoOw" name="reused within RECYCLE_TIMEOUT" source="_F3rbllh9EeK2-ceaC4WoOw" target="_F3rbmVh9EeK2-ceaC4WoOw"/>
+      <transition xmi:id="_F3rbslh9EeK2-ceaC4WoOw" name="close requested, direct disconnect" source="_F3rblFh9EeK2-ceaC4WoOw" target="_F3rbnlh9EeK2-ceaC4WoOw"/>
+      <transition xmi:id="_F3rbs1h9EeK2-ceaC4WoOw" name="close requested" source="_F3rbmVh9EeK2-ceaC4WoOw" target="_F3rbplh9EeK2-ceaC4WoOw"/>
+      <transition xmi:id="_F3rbtFh9EeK2-ceaC4WoOw" name="close requested" source="_F3rbllh9EeK2-ceaC4WoOw" target="_F3rbplh9EeK2-ceaC4WoOw"/>
+      <transition xmi:id="_F3rbtVh9EeK2-ceaC4WoOw" name="close requested" source="_F3rbm1h9EeK2-ceaC4WoOw" target="_F3rbplh9EeK2-ceaC4WoOw"/>
+    </region>
+  </packagedElement>
+  <packagedElement xmi:type="uml:StateMachine" xmi:id="_F4bpUFh9EeK2-ceaC4WoOw" name="IPCRemote(Connection Pool of a remote entity) State Machine">
+    <ownedBehavior xmi:type="uml:StateMachine" xmi:id="_F4bpUVh9EeK2-ceaC4WoOw" name="Connection Pool State Machine">
+      <region xmi:id="_F4bpUlh9EeK2-ceaC4WoOw" name="Region0">
+        <subvertex xmi:type="uml:State" xmi:id="_F4bpU1h9EeK2-ceaC4WoOw" name="!c!r!p!b!t"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F4bpVFh9EeK2-ceaC4WoOw" name="State0"/>
+      </region>
+      <region xmi:id="_F4bpVVh9EeK2-ceaC4WoOw" name="Copy_Of_Region0_1">
+        <subvertex xmi:type="uml:State" xmi:id="_F4bpVlh9EeK2-ceaC4WoOw" name="!c!r!p!b!t"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F4bpV1h9EeK2-ceaC4WoOw" name="State0"/>
+      </region>
+      <region xmi:id="_F4bpWFh9EeK2-ceaC4WoOw" name="Copy_Of_Region0_2">
+        <subvertex xmi:type="uml:State" xmi:id="_F4bpWVh9EeK2-ceaC4WoOw" name="!c!r!p!b!tn"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F4bpWlh9EeK2-ceaC4WoOw" name="State0"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F4bpW1h9EeK2-ceaC4WoOw" name="c!r!p!b!tn!s"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F4bpXFh9EeK2-ceaC4WoOw" name="!c!r!p!bt"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F4bpXVh9EeK2-ceaC4WoOw" name="crpb!t!n!s"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F4bpXlh9EeK2-ceaC4WoOw" name="c!r!p!bt!n"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F4bpX1h9EeK2-ceaC4WoOw" name="Copy_Of_crpb!t_1"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F4bpYFh9EeK2-ceaC4WoOw" name="crp!b!t!n!s"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F4bpYVh9EeK2-ceaC4WoOw" name="Copy_Of_crp!b!t_1"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F4bpYlh9EeK2-ceaC4WoOw" name="cr!p!bt!n!s"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F4bpY1h9EeK2-ceaC4WoOw" name="Copy_Of_!c!r!p!b!tn_1"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F4bpZFh9EeK2-ceaC4WoOw" name="!c!r!p!b!t!n (remove)"/>
+        <subvertex xmi:type="uml:FinalState" xmi:id="_F4bpZVh9EeK2-ceaC4WoOw" name="!c!r!p!b!t!n!s (Remove)"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F4bpZlh9EeK2-ceaC4WoOw" name="Copy_Of_!c!r!p!b!tn_2"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F4bpZ1h9EeK2-ceaC4WoOw" name="!c!r!p!b!t!n"/>
+        <subvertex xmi:type="uml:Pseudostate" xmi:id="_F4bpaFh9EeK2-ceaC4WoOw" name="!c!r!p!b!tn!s"/>
+        <subvertex xmi:type="uml:Pseudostate" xmi:id="_F4bpaVh9EeK2-ceaC4WoOw" name="Junction0" kind="junction"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F4bpalh9EeK2-ceaC4WoOw" name="crp!b!t!ns"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F4bpa1h9EeK2-ceaC4WoOw" name="c!r!p!b!tns"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F4bpbFh9EeK2-ceaC4WoOw" name="crpb!t!ns"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F4bpbVh9EeK2-ceaC4WoOw" name="cr!p!bt!ns"/>
+        <transition xmi:id="_F4bpblh9EeK2-ceaC4WoOw" name="id checking timeout" source="_F4bpaFh9EeK2-ceaC4WoOw" target="_F4bpZVh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F4bpb1h9EeK2-ceaC4WoOw" name="direct remove" source="_F4bpXFh9EeK2-ceaC4WoOw" target="_F4bpWVh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F4bpcFh9EeK2-ceaC4WoOw" name="server side disconnect" source="_F4bpXlh9EeK2-ceaC4WoOw" target="_F4bpXlh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F4bpcVh9EeK2-ceaC4WoOw" name="if write queue is empty, direct disconnect" source="_F4bpbVh9EeK2-ceaC4WoOw" target="_F4bpZVh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F4bpclh9EeK2-ceaC4WoOw" name="id checking timeout, direct disconnect" source="_F4bpW1h9EeK2-ceaC4WoOw" target="_F4bpZVh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F4bpc1h9EeK2-ceaC4WoOw" name="connected" source="_F4bpaFh9EeK2-ceaC4WoOw" target="_F4bpW1h9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F4bpdFh9EeK2-ceaC4WoOw" name="register" source="_F4bpW1h9EeK2-ceaC4WoOw" target="_F4bpYFh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F4bpdVh9EeK2-ceaC4WoOw" name="Too many connections, consider recycle it" source="_F4bpYFh9EeK2-ceaC4WoOw" target="_F4bpXVh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F4bpdlh9EeK2-ceaC4WoOw" name="#connections more than UPPER_BOUND, drop this channel" source="_F4bpYFh9EeK2-ceaC4WoOw" target="_F4bpYlh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F4bpd1h9EeK2-ceaC4WoOw" name="RECYCLE_TIMEOUT, drop this channel" source="_F4bpXVh9EeK2-ceaC4WoOw" target="_F4bpYlh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F4bpeFh9EeK2-ceaC4WoOw" name="reused within RECYCLE_TIMEOUT" source="_F4bpXVh9EeK2-ceaC4WoOw" target="_F4bpYFh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F4bpeVh9EeK2-ceaC4WoOw" name="close requested, direct disconnect" source="_F4bpW1h9EeK2-ceaC4WoOw" target="_F4bpZVh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F4bpelh9EeK2-ceaC4WoOw" name="close requested" source="_F4bpYFh9EeK2-ceaC4WoOw" target="_F4bpbVh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F4bpe1h9EeK2-ceaC4WoOw" name="close requested" source="_F4bpXVh9EeK2-ceaC4WoOw" target="_F4bpbVh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F4bpfFh9EeK2-ceaC4WoOw" name="close requested" source="_F4bpYlh9EeK2-ceaC4WoOw" target="_F4bpbVh9EeK2-ceaC4WoOw"/>
+      </region>
+      <region xmi:id="_F4bpfVh9EeK2-ceaC4WoOw" name="Region1"/>
+    </ownedBehavior>
+    <ownedBehavior xmi:type="uml:StateMachine" xmi:id="_F4bpflh9EeK2-ceaC4WoOw" name="Copy_Of_Accepted Channel State Machine_1">
+      <region xmi:id="_F4bpf1h9EeK2-ceaC4WoOw" name="Region0">
+        <subvertex xmi:type="uml:State" xmi:id="_F4bpgFh9EeK2-ceaC4WoOw" name="!c!r!p!b!t"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F4bpgVh9EeK2-ceaC4WoOw" name="State0"/>
+      </region>
+      <region xmi:id="_F4bpglh9EeK2-ceaC4WoOw" name="Copy_Of_Region0_1">
+        <subvertex xmi:type="uml:State" xmi:id="_F4bpg1h9EeK2-ceaC4WoOw" name="!c!r!p!b!t"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F4bphFh9EeK2-ceaC4WoOw" name="State0"/>
+      </region>
+      <region xmi:id="_F4bphVh9EeK2-ceaC4WoOw" name="Copy_Of_Region0_2">
+        <subvertex xmi:type="uml:State" xmi:id="_F4bphlh9EeK2-ceaC4WoOw" name="!c!r!p!b!tn"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F4bph1h9EeK2-ceaC4WoOw" name="State0"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F4bpiFh9EeK2-ceaC4WoOw" name="c!r!p!b!tn!s"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F4bpiVh9EeK2-ceaC4WoOw" name="!c!r!p!bt"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F4bpilh9EeK2-ceaC4WoOw" name="crpb!t!n!s"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F4bpi1h9EeK2-ceaC4WoOw" name="c!r!p!bt!n"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F4bpjFh9EeK2-ceaC4WoOw" name="Copy_Of_crpb!t_1"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F4bpjVh9EeK2-ceaC4WoOw" name="crp!b!t!n!s"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F4cQYFh9EeK2-ceaC4WoOw" name="Copy_Of_crp!b!t_1"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F4cQYVh9EeK2-ceaC4WoOw" name="cr!p!bt!n!s"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F4cQYlh9EeK2-ceaC4WoOw" name="Copy_Of_!c!r!p!b!tn_1"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F4cQY1h9EeK2-ceaC4WoOw" name="!c!r!p!b!t!n (remove)"/>
+        <subvertex xmi:type="uml:FinalState" xmi:id="_F4cQZFh9EeK2-ceaC4WoOw" name="!c!r!p!b!t!n!s (Remove)"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F4cQZVh9EeK2-ceaC4WoOw" name="Copy_Of_!c!r!p!b!tn_2"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F4cQZlh9EeK2-ceaC4WoOw" name="!c!r!p!b!t!n"/>
+        <subvertex xmi:type="uml:Pseudostate" xmi:id="_F4cQZ1h9EeK2-ceaC4WoOw" name="!c!r!p!b!tn!s"/>
+        <subvertex xmi:type="uml:Pseudostate" xmi:id="_F4cQaFh9EeK2-ceaC4WoOw" name="Junction0" kind="junction"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F4cQaVh9EeK2-ceaC4WoOw" name="crp!b!t!ns"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F4cQalh9EeK2-ceaC4WoOw" name="c!r!p!b!tns"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F4cQa1h9EeK2-ceaC4WoOw" name="crpb!t!ns"/>
+        <subvertex xmi:type="uml:State" xmi:id="_F4cQbFh9EeK2-ceaC4WoOw" name="cr!p!bt!ns"/>
+        <transition xmi:id="_F4cQbVh9EeK2-ceaC4WoOw" name="id checking timeout" source="_F4cQZ1h9EeK2-ceaC4WoOw" target="_F4cQZFh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F4cQblh9EeK2-ceaC4WoOw" name="direct remove" source="_F4bpiVh9EeK2-ceaC4WoOw" target="_F4bphlh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F4cQb1h9EeK2-ceaC4WoOw" name="server side disconnect" source="_F4bpi1h9EeK2-ceaC4WoOw" target="_F4bpi1h9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F4cQcFh9EeK2-ceaC4WoOw" name="if write queue is empty, direct disconnect" source="_F4cQbFh9EeK2-ceaC4WoOw" target="_F4cQZFh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F4cQcVh9EeK2-ceaC4WoOw" name="id checking timeout, direct disconnect" source="_F4bpiFh9EeK2-ceaC4WoOw" target="_F4cQZFh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F4cQclh9EeK2-ceaC4WoOw" name="connected" source="_F4cQZ1h9EeK2-ceaC4WoOw" target="_F4bpiFh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F4cQc1h9EeK2-ceaC4WoOw" name="register" source="_F4bpiFh9EeK2-ceaC4WoOw" target="_F4bpjVh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F4cQdFh9EeK2-ceaC4WoOw" name="Too many connections, consider recycle it" source="_F4bpjVh9EeK2-ceaC4WoOw" target="_F4bpilh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F4cQdVh9EeK2-ceaC4WoOw" name="#connections more than UPPER_BOUND, drop this channel" source="_F4bpjVh9EeK2-ceaC4WoOw" target="_F4cQYVh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F4cQdlh9EeK2-ceaC4WoOw" name="RECYCLE_TIMEOUT, drop this channel" source="_F4bpilh9EeK2-ceaC4WoOw" target="_F4cQYVh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F4cQd1h9EeK2-ceaC4WoOw" name="reused within RECYCLE_TIMEOUT" source="_F4bpilh9EeK2-ceaC4WoOw" target="_F4bpjVh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F4cQeFh9EeK2-ceaC4WoOw" name="close requested, direct disconnect" source="_F4bpiFh9EeK2-ceaC4WoOw" target="_F4cQZFh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F4cQeVh9EeK2-ceaC4WoOw" name="close requested" source="_F4bpjVh9EeK2-ceaC4WoOw" target="_F4cQbFh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F4cQelh9EeK2-ceaC4WoOw" name="close requested" source="_F4bpilh9EeK2-ceaC4WoOw" target="_F4cQbFh9EeK2-ceaC4WoOw"/>
+        <transition xmi:id="_F4cQe1h9EeK2-ceaC4WoOw" name="close requested" source="_F4cQYVh9EeK2-ceaC4WoOw" target="_F4cQbFh9EeK2-ceaC4WoOw"/>
+      </region>
+    </ownedBehavior>
+    <region xmi:id="_F4cQfFh9EeK2-ceaC4WoOw" name="Region0">
+      <subvertex xmi:type="uml:State" xmi:id="_F4cQfVh9EeK2-ceaC4WoOw" name="!c!r!p!b!t"/>
+      <subvertex xmi:type="uml:State" xmi:id="_F4cQflh9EeK2-ceaC4WoOw" name="State0"/>
+    </region>
+    <region xmi:id="_F4cQf1h9EeK2-ceaC4WoOw" name="Copy_Of_Region0_1">
+      <subvertex xmi:type="uml:State" xmi:id="_F4cQgFh9EeK2-ceaC4WoOw" name="!c!r!p!b!t"/>
+      <subvertex xmi:type="uml:State" xmi:id="_F4cQgVh9EeK2-ceaC4WoOw" name="State0"/>
+    </region>
+    <region xmi:id="_F4cQglh9EeK2-ceaC4WoOw" name="Copy_Of_Region0_2">
+      <ownedComment xmi:id="_qE1pwFiAEeK2-ceaC4WoOw">
+        <body>reject new connection applications to this remote
+.
+.
+reject new connection (c) registration if c is not in N. </body>
+      </ownedComment>
+      <subvertex xmi:type="uml:State" xmi:id="_F4cQg1h9EeK2-ceaC4WoOw" name="!c!r!p!b!tn"/>
+      <subvertex xmi:type="uml:State" xmi:id="_F4cQhFh9EeK2-ceaC4WoOw" name="State0"/>
+      <subvertex xmi:type="uml:State" xmi:id="_F4cQhVh9EeK2-ceaC4WoOw" name="c!r!p!b!tn!s"/>
+      <subvertex xmi:type="uml:State" xmi:id="_F4cQhlh9EeK2-ceaC4WoOw" name="!c!r!p!bt"/>
+      <subvertex xmi:type="uml:State" xmi:id="_F4cQh1h9EeK2-ceaC4WoOw" name="crpb!t!n!s"/>
+      <subvertex xmi:type="uml:State" xmi:id="_F4cQiFh9EeK2-ceaC4WoOw" name="c!r!p!bt!n"/>
+      <subvertex xmi:type="uml:State" xmi:id="_F4cQiVh9EeK2-ceaC4WoOw" name="Copy_Of_crpb!t_1"/>
+      <subvertex xmi:type="uml:State" xmi:id="_F4cQilh9EeK2-ceaC4WoOw" name="crp!b!t!n!s"/>
+      <subvertex xmi:type="uml:State" xmi:id="_F4cQi1h9EeK2-ceaC4WoOw" name="Copy_Of_crp!b!t_1"/>
+      <subvertex xmi:type="uml:State" xmi:id="_F4cQjFh9EeK2-ceaC4WoOw" name="cr!p!bt!n!s"/>
+      <subvertex xmi:type="uml:State" xmi:id="_F4cQjVh9EeK2-ceaC4WoOw" name="Copy_Of_!c!r!p!b!tn_1"/>
+      <subvertex xmi:type="uml:State" xmi:id="_F4cQjlh9EeK2-ceaC4WoOw" name="!c!r!p!b!t!n (remove)"/>
+      <subvertex xmi:type="uml:FinalState" xmi:id="_F4cQj1h9EeK2-ceaC4WoOw" name="s!t(Completely remove)"/>
+      <subvertex xmi:type="uml:State" xmi:id="_F4cQkFh9EeK2-ceaC4WoOw" name="Copy_Of_!c!r!p!b!tn_2"/>
+      <subvertex xmi:type="uml:State" xmi:id="_F4cQkVh9EeK2-ceaC4WoOw" name="!c!r!p!b!t!n"/>
+      <subvertex xmi:type="uml:Pseudostate" xmi:id="_F4cQklh9EeK2-ceaC4WoOw" name="!s!t"/>
+      <subvertex xmi:type="uml:Pseudostate" xmi:id="_F4cQk1h9EeK2-ceaC4WoOw" name="Junction0" kind="junction"/>
+      <subvertex xmi:type="uml:State" xmi:id="_F4cQlFh9EeK2-ceaC4WoOw" name="crp!b!t!ns"/>
+      <subvertex xmi:type="uml:State" xmi:id="_F4cQlVh9EeK2-ceaC4WoOw" name="c!r!p!b!tns"/>
+      <subvertex xmi:type="uml:State" xmi:id="_F4cQllh9EeK2-ceaC4WoOw" name="crpb!t!ns"/>
+      <subvertex xmi:type="uml:State" xmi:id="_F4cQl1h9EeK2-ceaC4WoOw" name="cr!p!bt!ns"/>
+      <subvertex xmi:type="uml:State" xmi:id="_UmMBwFh-EeK2-ceaC4WoOw" name="st"/>
+      <subvertex xmi:type="uml:State" xmi:id="_5TTC4Fh-EeK2-ceaC4WoOw" name="sn"/>
+      <subvertex xmi:type="uml:State" xmi:id="_5TWGMFh-EeK2-ceaC4WoOw" name="Copy_Of_s_2"/>
+      <transition xmi:id="_F4cQmFh9EeK2-ceaC4WoOw" name="id checking timeout" source="_F4cQklh9EeK2-ceaC4WoOw" target="_F4cQj1h9EeK2-ceaC4WoOw"/>
+      <transition xmi:id="_F4cQmVh9EeK2-ceaC4WoOw" name="direct remove" source="_F4cQhlh9EeK2-ceaC4WoOw" target="_F4cQg1h9EeK2-ceaC4WoOw"/>
+      <transition xmi:id="_F4cQmlh9EeK2-ceaC4WoOw" name="server side disconnect" source="_F4cQiFh9EeK2-ceaC4WoOw" target="_F4cQiFh9EeK2-ceaC4WoOw"/>
+      <transition xmi:id="_F4cQm1h9EeK2-ceaC4WoOw" name="if write queue is empty, direct disconnect" source="_F4cQl1h9EeK2-ceaC4WoOw" target="_F4cQj1h9EeK2-ceaC4WoOw"/>
+      <transition xmi:id="_F4cQnFh9EeK2-ceaC4WoOw" name="id checking timeout, direct disconnect" source="_F4cQhVh9EeK2-ceaC4WoOw" target="_F4cQj1h9EeK2-ceaC4WoOw"/>
+      <transition xmi:id="_F4cQnVh9EeK2-ceaC4WoOw" name="connected" source="_F4cQklh9EeK2-ceaC4WoOw" target="_F4cQhVh9EeK2-ceaC4WoOw"/>
+      <transition xmi:id="_F4cQnlh9EeK2-ceaC4WoOw" name="register" source="_F4cQhVh9EeK2-ceaC4WoOw" target="_F4cQilh9EeK2-ceaC4WoOw"/>
+      <transition xmi:id="_F4cQn1h9EeK2-ceaC4WoOw" name="Too many connections, consider recycle it" source="_F4cQilh9EeK2-ceaC4WoOw" target="_F4cQh1h9EeK2-ceaC4WoOw"/>
+      <transition xmi:id="_F4cQoFh9EeK2-ceaC4WoOw" name="#connections more than UPPER_BOUND, drop this channel" source="_F4cQilh9EeK2-ceaC4WoOw" target="_F4cQjFh9EeK2-ceaC4WoOw"/>
+      <transition xmi:id="_F4cQoVh9EeK2-ceaC4WoOw" name="RECYCLE_TIMEOUT, drop this channel" source="_F4cQh1h9EeK2-ceaC4WoOw" target="_F4cQjFh9EeK2-ceaC4WoOw"/>
+      <transition xmi:id="_F4cQolh9EeK2-ceaC4WoOw" name="reused within RECYCLE_TIMEOUT" source="_F4cQh1h9EeK2-ceaC4WoOw" target="_F4cQilh9EeK2-ceaC4WoOw"/>
+      <transition xmi:id="_F4cQo1h9EeK2-ceaC4WoOw" name="close requested, direct disconnect" source="_F4cQhVh9EeK2-ceaC4WoOw" target="_F4cQj1h9EeK2-ceaC4WoOw"/>
+      <transition xmi:id="_F4cQpFh9EeK2-ceaC4WoOw" name="close requested" source="_F4cQilh9EeK2-ceaC4WoOw" target="_F4cQl1h9EeK2-ceaC4WoOw"/>
+      <transition xmi:id="_F4cQpVh9EeK2-ceaC4WoOw" name="close requested" source="_F4cQh1h9EeK2-ceaC4WoOw" target="_F4cQl1h9EeK2-ceaC4WoOw"/>
+      <transition xmi:id="_F4cQplh9EeK2-ceaC4WoOw" name="close requested" source="_F4cQjFh9EeK2-ceaC4WoOw" target="_F4cQl1h9EeK2-ceaC4WoOw"/>
+      <transition xmi:id="_cDzC0Fh-EeK2-ceaC4WoOw" name="remove" source="_F4cQklh9EeK2-ceaC4WoOw" target="_UmMBwFh-EeK2-ceaC4WoOw"/>
+      <transition xmi:id="_AJXi0Fh_EeK2-ceaC4WoOw" name="|N|>0" source="_UmMBwFh-EeK2-ceaC4WoOw" target="_UmMBwFh-EeK2-ceaC4WoOw"/>
+      <transition xmi:id="_I1OfsFh_EeK2-ceaC4WoOw" name="|N|==0" source="_UmMBwFh-EeK2-ceaC4WoOw" target="_F4cQj1h9EeK2-ceaC4WoOw"/>
+    </region>
+  </packagedElement>
+</uml:Model>

@@ -1,16 +1,11 @@
 package edu.washington.escience.myriad.parallel;
 
-import java.util.HashMap;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelEvent;
 import org.jboss.netty.channel.ChannelHandler.Sharable;
 import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.ChannelStateEvent;
-import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
 
@@ -32,25 +27,12 @@ public class WorkerDataHandler extends SimpleChannelUpstreamHandler {
   }
 
   @Override
-  public void handleUpstream(final ChannelHandlerContext ctx, final ChannelEvent e) throws Exception {
-    // if (e instanceof ChannelStateEvent) {
-    // logger.info(e.toString());
-    // }
-    super.handleUpstream(ctx, e);
-  }
-
-  @Override
-  public void channelOpen(final ChannelHandlerContext ctx, final ChannelStateEvent e) throws Exception {
-    super.channelOpen(ctx, e);
-  }
-
-  @SuppressWarnings("unchecked")
-  @Override
   public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e) {
     final TransportMessage tm = (TransportMessage) e.getMessage();
     Channel channel = e.getChannel();
-    HashMap<String, Object> attributes = (HashMap<String, Object>) channel.getAttachment();
-    final Integer senderID = (Integer) attributes.get("remoteID");
+    ChannelContext cs = (ChannelContext) channel.getAttachment();
+    ChannelContext.RegisteredChannelContext ecc = cs.getRegisteredChannelContext();
+    final Integer senderID = ecc.getRemoteID();
     final MessageWrapper mw = new MessageWrapper();
     mw.senderID = senderID;
     mw.message = tm;
@@ -59,9 +41,4 @@ public class WorkerDataHandler extends SimpleChannelUpstreamHandler {
     ctx.sendUpstream(e);
   }
 
-  @Override
-  public void exceptionCaught(final ChannelHandlerContext ctx, final ExceptionEvent e) {
-    logger.log(Level.WARNING, "Unexpected exception from downstream.", e.getCause());
-    e.getChannel().close();
-  }
 }
