@@ -31,7 +31,6 @@ public abstract class Consumer extends LeafOperator {
   protected ExchangePairID operatorID;
   private final Schema schema;
   private final BitSet workerEOS;
-  private final int[] sourceWorkers;
   private final Map<Integer, Integer> workerIdToIndex;
   private Producer child;
 
@@ -39,7 +38,6 @@ public abstract class Consumer extends LeafOperator {
     this.operatorID = operatorID;
     this.child = child;
     schema = child.getSchema();
-    sourceWorkers = workerIDs;
     workerIdToIndex = new HashMap<Integer, Integer>();
     int idx = 0;
     for (final int w : workerIDs) {
@@ -51,7 +49,6 @@ public abstract class Consumer extends LeafOperator {
   public Consumer(final Schema schema, final ExchangePairID operatorID, final int[] workerIDs) {
     this.operatorID = operatorID;
     this.schema = schema;
-    sourceWorkers = workerIDs;
     workerIdToIndex = new HashMap<Integer, Integer>();
     int idx = 0;
     for (final int w : workerIDs) {
@@ -123,7 +120,7 @@ public abstract class Consumer extends LeafOperator {
     }
 
     ExchangeData tb = null;
-    while (workerEOS.nextClearBit(0) < sourceWorkers.length) {
+    while (workerEOS.nextClearBit(0) < workerIdToIndex.size()) {
       tb = take(timeToWait);
       if (tb != null) {
         if (tb.isEos()) {
@@ -151,7 +148,6 @@ public abstract class Consumer extends LeafOperator {
    * @param timeout Wait for at most timeout milliseconds. If the timeout is negative, wait until an element arrives.
    */
   public ExchangeData take(final int timeout) throws InterruptedException {
-
     if (timeout >= 0) {
       return inputBuffer.poll(timeout, TimeUnit.MILLISECONDS);
     } else {
