@@ -1,5 +1,6 @@
 package edu.washington.escience.myriad.parallel;
 
+import java.net.SocketAddress;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
@@ -7,11 +8,11 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -90,12 +91,12 @@ public class IPCConnectionPool {
   /**
    * 10 minutes.
    * */
-  public static final int CONNECTION_RECYCLE_INTERVAL = 10 * 60 * 1000;
+  public static final int CONNECTION_RECYCLE_INTERVAL_IN_MS = 10 * 60 * 1000;
 
   /**
    * 10 seconds.
    * */
-  public static final int CONNECTION_DISCONNECT_INTERVAL = 10000;
+  public static final int CONNECTION_DISCONNECT_INTERVAL_IN_MS = 10000;
 
   /**
    * connection id check time out.
@@ -219,7 +220,7 @@ public class IPCConnectionPool {
 
         long recentIOTimestamp = cc.getLastIOTimestamp();
         if (cc.getRegisteredChannelContext().numReferenced() <= 0
-            && (System.currentTimeMillis() - recentIOTimestamp) >= CONNECTION_RECYCLE_INTERVAL) {
+            && (System.currentTimeMillis() - recentIOTimestamp) >= CONNECTION_RECYCLE_INTERVAL_IN_MS) {
           ChannelPrioritySet cps = channelPool.get(ecc.getRemoteID()).registeredChannels;
           logger.info("Recycler decided to close an unused channel: " + c + ". Remote ID is " + ecc.getRemoteID()
               + ". Current channelpool size for this remote entity is: " + cps.size());
@@ -350,6 +351,13 @@ public class IPCConnectionPool {
    * */
   private final int myID;
 
+  private final SocketAddress myIPCServerAddress;
+
+  /**
+   * The simple special wrapper channel for transmitting data between operators within the same JVM.
+   * */
+  private final InJVMChannel inJVMChannel;
+
   /**
    * IPC server bootstrap.
    * */
@@ -389,7 +397,7 @@ public class IPCConnectionPool {
   /**
    * timer for issuing timer tasks.
    * */
-  private final Timer ipcGlobalTimer;
+  private final ScheduledExecutorService scheduledTaskExecutor;
 
   /**
    * channel disconnecter.
@@ -430,6 +438,8 @@ public class IPCConnectionPool {
 
     this.myID = myID;
     myIDTM = IPCUtils.connectTM(myID);
+    inJVMChannel = new InJVMChannel(myID, messageQueue);
+    myIPCServerAddress = remoteAddresses.get(myID).getAddress();
     clientChannelFactory =
         new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
     if (myID == 0) {
@@ -442,7 +452,9 @@ public class IPCConnectionPool {
 
     channelPool = new ConcurrentHashMap<Integer, IPCRemote>();
     for (final Integer id : remoteAddresses.keySet()) {
-      channelPool.put(id, new IPCRemote(id, remoteAddresses.get(id)));
+      if (id != myID) {
+        channelPool.put(id, new IPCRemote(id, remoteAddresses.get(id)));
+      }
     }
 
     recyclableRegisteredChannels = new ConcurrentHashMap<Channel, Channel>();
@@ -450,7 +462,8 @@ public class IPCConnectionPool {
 
     channelTrashBin = new DefaultChannelGroup();
 
-    ipcGlobalTimer = new Timer();
+    // ipcGlobalTimer = new Timer();
+    scheduledTaskExecutor = Executors.newSingleThreadScheduledExecutor();
     disconnecter = new ChannelDisconnecter();
     idChecker = new ChannelIDChecker();
     recycler = new ChannelRecycler();
@@ -462,27 +475,16 @@ public class IPCConnectionPool {
    * start the pool service.
    * */
   public final void start() {
-    serverChannel = serverBootstrap.bind(channelPool.get(myID).address.getAddress());
+    serverChannel = serverBootstrap.bind(myIPCServerAddress);
 
     allPossibleChannels.add(serverChannel);
-    ipcGlobalTimer.scheduleAtFixedRate(new TimerTask() {
-      @Override
-      public void run() {
-        recycler.run();
-      }
-    }, (int) ((0.5 + Math.random()) * CONNECTION_RECYCLE_INTERVAL), CONNECTION_RECYCLE_INTERVAL / 2);
-    ipcGlobalTimer.scheduleAtFixedRate(new TimerTask() {
-      @Override
-      public void run() {
-        disconnecter.run();
-      }
-    }, (int) ((0.5 + Math.random()) * CONNECTION_DISCONNECT_INTERVAL), CONNECTION_DISCONNECT_INTERVAL / 2);
-    ipcGlobalTimer.scheduleAtFixedRate(new TimerTask() {
-      @Override
-      public void run() {
-        idChecker.run();
-      }
-    }, (int) ((0.5 + Math.random()) * CONNECTION_ID_CHECK_TIMEOUT_IN_MS), CONNECTION_ID_CHECK_TIMEOUT_IN_MS / 2);
+    scheduledTaskExecutor.scheduleAtFixedRate(recycler, (int) ((0.5 + Math.random()) * CONNECTION_RECYCLE_INTERVAL_IN_MS),
+        CONNECTION_RECYCLE_INTERVAL_IN_MS / 2, TimeUnit.MILLISECONDS);
+    scheduledTaskExecutor.scheduleAtFixedRate(disconnecter,
+        (int) ((0.5 + Math.random()) * CONNECTION_DISCONNECT_INTERVAL_IN_MS), CONNECTION_DISCONNECT_INTERVAL_IN_MS / 2,
+        TimeUnit.MILLISECONDS);
+    scheduledTaskExecutor.scheduleAtFixedRate(idChecker, (int) ((0.5 + Math.random()) * CONNECTION_ID_CHECK_TIMEOUT_IN_MS),
+        CONNECTION_ID_CHECK_TIMEOUT_IN_MS / 2, TimeUnit.MILLISECONDS);
   }
 
   /**
@@ -522,9 +524,12 @@ public class IPCConnectionPool {
 
       @Override
       public void operationComplete(final ChannelFuture future) throws Exception {
-        ChannelContext cc = ChannelContext.getChannelContext(ch);
-        ChannelContext.RegisteredChannelContext ecc = cc.getRegisteredChannelContext();
-        ecc.decReference();
+        Channel ch = future.getChannel();
+        if (ch != inJVMChannel) {
+          ChannelContext cc = ChannelContext.getChannelContext(ch);
+          ChannelContext.RegisteredChannelContext ecc = cc.getRegisteredChannelContext();
+          ecc.decReference();
+        }
       }
     });
     return cf;
@@ -551,6 +556,9 @@ public class IPCConnectionPool {
    * */
   private Channel getAConnection(final int remoteId) {
     checkShutdown();
+    if (remoteId == myID) {
+      return inJVMChannel;
+    }
     final IPCRemote remote = channelPool.get(remoteId);
     if (remote == null) {
       // id is invalid
@@ -598,6 +606,9 @@ public class IPCConnectionPool {
    * */
   public final void releaseLongTermConnection(final Channel channel) {
     if (channel == null) {
+      return;
+    }
+    if (channel == inJVMChannel) {
       return;
     }
     ChannelContext cc = ChannelContext.getChannelContext(channel);
@@ -699,11 +710,14 @@ public class IPCConnectionPool {
           }
         });
 
+    inJVMChannel.close();
+
     ChannelFuture serverCloseFuture = serverChannel.getCloseFuture();
 
     final Collection<ChannelFuture> allConnectionCloseFutures = new LinkedList<ChannelFuture>();
 
-    ipcGlobalTimer.cancel(); // shutdown timer tasks, take over all the controls.
+    // ipcGlobalTimer.cancel(); // shutdown timer tasks, take over all the controls.
+    scheduledTaskExecutor.shutdown();
     synchronized (idChecker) {
       synchronized (disconnecter) {
         synchronized (recycler) {
@@ -766,6 +780,9 @@ public class IPCConnectionPool {
    * @param remoteAddress remote address.
    * */
   public final void putRemote(final Integer remoteID, final SocketInfo remoteAddress) {
+    if (remoteID == null || remoteID == myID) {
+      return;
+    }
     IPCRemote newOne = new IPCRemote(remoteID, remoteAddress);
     IPCRemote oldOne = channelPool.put(remoteID, newOne);
     if (oldOne == null) {
@@ -784,6 +801,9 @@ public class IPCConnectionPool {
    * */
   public final ChannelGroupFuture removeRemote(final Integer remoteID) {
     logger.info("remove the remote entity #" + remoteID + " from IPC connection pool");
+    if (remoteID == null || remoteID == myID) {
+      return null;
+    }
     final IPCRemote old = channelPool.get(remoteID);
     if (old != null) {
       Channel[] uChannels = new Channel[] {};

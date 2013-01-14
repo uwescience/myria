@@ -40,9 +40,7 @@ public class MasterDataHandler extends SimpleChannelUpstreamHandler {
       ecc = cs.getRegisteredChannelContext();
 
       final Integer senderID = ecc.getRemoteID();
-      final MessageWrapper mw = new MessageWrapper();
-      mw.senderID = senderID;
-      mw.message = tm;
+      final MessageWrapper mw = new MessageWrapper(senderID, tm);
       messageQueue.add(mw);
     } catch (NullPointerException ee) {
       ee.printStackTrace();
