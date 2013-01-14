@@ -137,6 +137,11 @@ public class Worker {
   }
 
   public static class MessageWrapper {
+    public MessageWrapper(final int senderID, final TransportMessage message) {
+      this.senderID = senderID;
+      this.message = message;
+    }
+
     public int senderID;
     public TransportMessage message;
   }
