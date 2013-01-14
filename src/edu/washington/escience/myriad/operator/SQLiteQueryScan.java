@@ -7,9 +7,7 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.accessmethod.SQLiteAccessMethod;
 
-public class SQLiteQueryScan extends Operator {
-
-  private static Operator[] children = new Operator[] {};
+public class SQLiteQueryScan extends LeafOperator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -40,13 +38,7 @@ public class SQLiteQueryScan extends Operator {
       return tuples.next();
     } else {
       return null;
-      // }
     }
-  }
-
-  @Override
-  public Operator[] getChildren() {
-    return children;
   }
 
   @Override
@@ -56,11 +48,6 @@ public class SQLiteQueryScan extends Operator {
 
   @Override
   public void init() throws DbException {
-  }
-
-  @Override
-  public void setChildren(final Operator[] children) {
-    throw new UnsupportedOperationException();
   }
 
   public void setDataDir(final String dataDir) {
