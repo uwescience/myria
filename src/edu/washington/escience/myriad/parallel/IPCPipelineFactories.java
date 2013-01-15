@@ -98,7 +98,6 @@ public final class IPCPipelineFactories {
     public ChannelPipeline getPipeline() throws Exception {
       ChannelPipeline p = Channels.pipeline();
       // p.addLast("compressionDecoder", new ZlibDecoder(ZlibWrapper.NONE)); // upstream 1
-      // p.addLast("ioTimestampRecordHandler", IPC_IO_TIMESTAMP_RECORD_HANDLER);
       p.addLast("frameDecoder", new ProtobufVarint32FrameDecoder()); // upstream 2
       p.addLast("protobufDecoder", PROTOBUF_DECODER); // upstream 3
       p.addLast("inputVerifier", IPC_INPUT_GUARD); // upstream 4
@@ -169,7 +168,6 @@ public final class IPCPipelineFactories {
     public ChannelPipeline getPipeline() throws Exception {
       ChannelPipeline p = Channels.pipeline();
       // p.addLast("compressionDecoder", new ZlibDecoder(ZlibWrapper.NONE)); // upstream 1
-      // p.addLast("ioTimestampRecordHandler", IPC_IO_TIMESTAMP_RECORD_HANDLER);
       p.addLast("frameDecoder", new ProtobufVarint32FrameDecoder()); // upstream 2
       p.addLast("protobufDecoder", PROTOBUF_DECODER); // upstream 3
       p.addLast("inputVerifier", IPC_INPUT_GUARD); // upstream 4
