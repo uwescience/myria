@@ -219,6 +219,8 @@ public class SystemTestBase {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
     Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
 
+    Server.runningInstance = null;
+
     Path tempFilePath = Files.createTempDirectory(Server.SYSTEM_NAME + "_systemtests");
     workerTestBaseFolder = tempFilePath.toFile().getAbsolutePath();
     CatalogMaker.makeTwoNodeLocalParallelCatalog(workerTestBaseFolder);
@@ -422,5 +424,4 @@ public class SystemTestBase {
       }
     }
   }
-
 }

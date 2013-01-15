@@ -40,9 +40,9 @@ public class SplitDataTest extends SystemTestBase {
     /* Create the Insert operator */
     final SQLiteInsert insert = new SQLiteInsert(gather, "tuples_rr", null, null, true);
 
-    final HashMap<Integer, Operator> workerPlans = new HashMap<Integer, Operator>();
+    final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
     for (int i : WORKER_ID) {
-      workerPlans.put(i, insert);
+      workerPlans.put(i, new Operator[] { insert });
     }
 
     while (Server.runningInstance == null) {
