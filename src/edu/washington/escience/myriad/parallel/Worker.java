@@ -473,7 +473,7 @@ public class Worker {
       insert.setPathToSQLiteDb(FilenameUtils.concat(dataDir.getAbsolutePath(), "data.db"));
       insert.setExecutorService(Executors.newSingleThreadExecutor());
     } else if (queryPlan instanceof Producer) {
-      ((Producer) queryPlan).setThisWorker(Worker.this);
+      ((Producer) queryPlan).setConnectionPool(connectionPool);
     } else if (queryPlan instanceof Consumer) {
       final Consumer c = (Consumer) queryPlan;
 

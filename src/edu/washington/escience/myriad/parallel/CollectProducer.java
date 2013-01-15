@@ -26,7 +26,7 @@ public final class CollectProducer extends Producer {
     @Override
     public void run() {
 
-      IPCConnectionPool connectionPool = getThisWorker().connectionPool;
+      IPCConnectionPool connectionPool = getConnectionPool();
       final Channel channel = connectionPool.reserveLongTermConnection(collectConsumerWorkerID);
 
       ExchangePairID operatorID = operatorIDs[0];
