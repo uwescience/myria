@@ -298,23 +298,30 @@ public class IPCConnectionPool {
    * */
   private ChannelFuture closeUnregisteredChannel(final Channel ch) {
     if (ch != null) {
-      ChannelFuture writeFuture = (ChannelContext.getChannelContext(ch)).getMostRecentWriteFuture();
-      if (writeFuture != null) {
-        writeFuture.awaitUninterruptibly();
+      ChannelContext context = ChannelContext.getChannelContext(ch);
+      if (context != null) {
+        ChannelFuture writeFuture = context.getMostRecentWriteFuture();
+        if (writeFuture != null) {
+          writeFuture.awaitUninterruptibly();
+        }
       }
 
-      ch.disconnect();
-      ChannelFuture cf = ch.close();
-      cf.addListener(new ChannelFutureListener() {
-        @Override
-        public void operationComplete(final ChannelFuture future) throws Exception {
-          ChannelPipeline cp = future.getChannel().getPipeline();
-          if (cp instanceof ExternalResourceReleasable) {
-            ((ExternalResourceReleasable) cp).releaseExternalResources();
+      if (ch.isConnected()) {
+        ch.disconnect();
+      }
+      if (ch.isOpen()) {
+        ChannelFuture cf = ch.close();
+        cf.addListener(new ChannelFutureListener() {
+          @Override
+          public void operationComplete(final ChannelFuture future) throws Exception {
+            ChannelPipeline cp = future.getChannel().getPipeline();
+            if (cp instanceof ExternalResourceReleasable) {
+              ((ExternalResourceReleasable) cp).releaseExternalResources();
+            }
           }
-        }
-      });
-      return cf;
+        });
+        return cf;
+      }
     }
     return null;
   }
@@ -339,7 +346,7 @@ public class IPCConnectionPool {
   /**
    * NIO client side factory.
    * */
-  private final ChannelFactory clientChannelFactory;
+  private ChannelFactory clientChannelFactory;
 
   /**
    * pipeline factory.
@@ -361,7 +368,7 @@ public class IPCConnectionPool {
   /**
    * IPC server bootstrap.
    * */
-  private final ServerBootstrap serverBootstrap;
+  private ServerBootstrap serverBootstrap;
 
   /**
    * The server channel of this connection pool.
@@ -426,6 +433,9 @@ public class IPCConnectionPool {
     return myIDTM;
   }
 
+  private final Map<Integer, SocketInfo> remoteAddresses;
+  private final LinkedBlockingQueue<MessageWrapper> messageQueue;
+
   /**
    * Construct a connection pool.
    * 
@@ -437,25 +447,19 @@ public class IPCConnectionPool {
       final LinkedBlockingQueue<MessageWrapper> messageQueue) {
 
     this.myID = myID;
+    this.messageQueue = messageQueue;
     myIDTM = IPCUtils.connectTM(myID);
     inJVMChannel = new InJVMChannel(myID, messageQueue);
     myIPCServerAddress = remoteAddresses.get(myID).getAddress();
-    clientChannelFactory =
-        new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
     if (myID == 0) {
       clientPipelineFactory = new IPCPipelineFactories.MasterClientPipelineFactory(messageQueue, this);
-      serverBootstrap = ParallelUtility.createMasterIPCServer(messageQueue, this);
     } else {
       clientPipelineFactory = new IPCPipelineFactories.WorkerClientPipelineFactory(messageQueue, this);
-      serverBootstrap = ParallelUtility.createWorkerIPCServer(messageQueue, this);
     }
 
     channelPool = new ConcurrentHashMap<Integer, IPCRemote>();
-    for (final Integer id : remoteAddresses.keySet()) {
-      if (id != myID) {
-        channelPool.put(id, new IPCRemote(id, remoteAddresses.get(id)));
-      }
-    }
+
+    this.remoteAddresses = remoteAddresses;
 
     recyclableRegisteredChannels = new ConcurrentHashMap<Channel, Channel>();
     unregisteredChannels = new ConcurrentHashMap<Channel, Channel>();
@@ -475,6 +479,21 @@ public class IPCConnectionPool {
    * start the pool service.
    * */
   public final void start() {
+    clientChannelFactory =
+        new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool());
+
+    for (final Integer id : remoteAddresses.keySet()) {
+      if (id != myID) {
+        channelPool.put(id, new IPCRemote(id, remoteAddresses.get(id)));
+      }
+    }
+
+    if (myID == 0) {
+      serverBootstrap = ParallelUtility.createMasterIPCServer(messageQueue, this);
+    } else {
+      serverBootstrap = ParallelUtility.createWorkerIPCServer(messageQueue, this);
+    }
+
     serverChannel = serverBootstrap.bind(myIPCServerAddress);
 
     allPossibleChannels.add(serverChannel);
@@ -798,8 +817,8 @@ public class IPCConnectionPool {
    * 
    * @param remoteID remoteID to remove.
    * @return a Future object. If the remoteID is in the connection pool, and with a non-empty set of established
-   *         connections, the method will try close these connections asynchronisly. Future object is for looking up the
-   *         progress of closing. Otherwise, null.
+   *         connections, the method will try close these connections asynchronously. Future object is for looking up
+   *         the progress of closing. Otherwise, null.
    * */
   public final ChannelGroupFuture removeRemote(final Integer remoteID) {
     logger.info("remove the remote entity #" + remoteID + " from IPC connection pool");
@@ -866,7 +885,6 @@ public class IPCConnectionPool {
    * @param ic connector;
    * */
   private Channel createANewConnection(final IPCRemote remote, final long connectionTimeoutMS, final ClientBootstrap ic) {
-
     boolean connected = true;
     ChannelFuture c = null;
     try {

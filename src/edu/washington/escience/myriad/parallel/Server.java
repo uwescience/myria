@@ -209,7 +209,7 @@ public final class Server {
         server.cleanup();
       }
     });
-    server.start(args);
+    server.start();
     LOGGER.debug("Server: " + masterSocketInfo.getHost() + " started. Listening on port " + masterSocketInfo.getPort());
   }
 
@@ -258,7 +258,6 @@ public final class Server {
     computingUnits.put(0, hostPort);
 
     connectionPool = new IPCConnectionPool(0, computingUnits, messageQueue);
-    // ipcServer = ParallelUtility.createMasterIPCServer(messageQueue, connectionPool);
     messageProcessor = new MessageProcessor();
     workersAssignedToQuery = new ConcurrentHashMap<Integer, HashMap<Integer, Integer>>();
     workersReceivedQuery = new ConcurrentHashMap<Integer, BitSet>();
@@ -337,7 +336,7 @@ public final class Server {
     // JVMUtils.shutdownVM();
   }
 
-  protected void start(final String[] argv) throws IOException {
+  public void start() throws IOException {
     // ipcServerChannel = ipcServer.bind(server.getAddress());
     connectionPool.start();
     messageProcessor.start();
