@@ -226,8 +226,6 @@ public final class Server {
 
   protected final ConcurrentHashMap<ExchangePairID, Schema> exchangeSchema;
 
-  private final SocketInfo server;
-
   private final IPCConnectionPool connectionPool;
 
   protected final MessageProcessor messageProcessor;
@@ -245,10 +243,8 @@ public final class Server {
    * @param workers a Map describing each worker's ID and its hostname:port address.
    */
   public Server(final SocketInfo hostPort, final Map<Integer, SocketInfo> workers) {
-    this.workers = new ConcurrentHashMap<Integer, SocketInfo>();
-    this.workers.putAll(workers);
+    this.workers = new ConcurrentHashMap<Integer, SocketInfo>(workers);
 
-    server = hostPort;
     dataBuffer = new ConcurrentHashMap<ExchangePairID, LinkedBlockingQueue<ExchangeData>>();
     messageQueue = new LinkedBlockingQueue<MessageWrapper>();
     exchangeSchema = new ConcurrentHashMap<ExchangePairID, Schema>();
