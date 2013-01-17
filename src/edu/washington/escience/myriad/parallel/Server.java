@@ -155,6 +155,7 @@ public final class Server {
       stopped = true;
     }
   }
+
   /** Time constant. */
   private static final int ONE_SEC_IN_MILLIS = 1000;
   /** Time constant. */
@@ -185,6 +186,7 @@ public final class Server {
       catalog = Catalog.open(catalogName);
       masters = catalog.getMasters();
       workers = catalog.getWorkers();
+      catalog.close();
     } catch (final CatalogException e) {
       throw new RuntimeException("Reading information from the catalog failed", e);
     }

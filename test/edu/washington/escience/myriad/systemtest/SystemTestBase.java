@@ -178,11 +178,16 @@ public class SystemTestBase {
   @AfterClass
   public static void globalCleanup() throws IOException {
     if (Server.runningInstance != null) {
-      Server.runningInstance.cleanup();
+      Server.runningInstance.shutdown();
     }
 
     for (final Process p : workerProcess) {
       p.destroy();
+      try {
+        p.waitFor();
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
     }
 
     for (final Thread t : workerStdoutReader) {
@@ -211,12 +216,14 @@ public class SystemTestBase {
           Thread.currentThread().interrupt();
         }
       }
-
+    }
+    if (!finishClean) {
+      LOGGER.warn("did not finish clean!");
     }
   }
 
   @BeforeClass
-  public static void globalInit() throws IOException {
+  public static void globalInit() throws IOException, InterruptedException {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
     Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
 
@@ -403,7 +410,7 @@ public class SystemTestBase {
               if (line == null) {
                 break;
               }
-              System.out.println("localhost:" + WORKER_PORT[myWorkerIdx] + "$ " + line);
+              LOGGER.info("localhost:" + WORKER_PORT[myWorkerIdx] + "$ " + line);
             }
           } catch (final IOException e) {
             // remote has shutdown. Not an exception.
@@ -416,7 +423,7 @@ public class SystemTestBase {
       ++workerCount;
 
       try {
-        // sleep 100 milliseconds.
+        // sleep 1000 milliseconds.
         // yield the CPU so that the worker processes can be
         Thread.sleep(1000);
       } catch (final InterruptedException e) {
