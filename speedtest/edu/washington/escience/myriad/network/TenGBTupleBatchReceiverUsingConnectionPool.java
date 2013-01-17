@@ -23,12 +23,12 @@ public class TenGBTupleBatchReceiverUsingConnectionPool {
 
   public static final int PORT = 19901;
 
-  public static void main(String[] args) throws IOException, InterruptedException {
+  public static void main(final String[] args) throws IOException, InterruptedException {
 
-    String senderHostName = args[0];
+    final String senderHostName = args[0];
 
     final LinkedBlockingQueue<MessageWrapper> messageQueue = new LinkedBlockingQueue<MessageWrapper>();
-    HashMap<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
+    final HashMap<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
     computingUnits.put(0, new SocketInfo(InetAddress.getLocalHost().getHostName(), PORT));
     computingUnits.put(1, new SocketInfo(senderHostName, TenGBTupleBatchSenderUsingConnectionPool.PORT));
 
@@ -41,10 +41,10 @@ public class TenGBTupleBatchReceiverUsingConnectionPool {
 
     long start = 0;
     long end = 0;
-    TupleBatchBuffer tbb = new TupleBatchBuffer(TenGBTupleBatchSenderUsingConnectionPool.schema);
+    final TupleBatchBuffer tbb = new TupleBatchBuffer(TenGBTupleBatchSenderUsingConnectionPool.schema);
 
     RECEIVE_MESSAGE : while ((m = messageQueue.take()) != null) {
-      TransportMessage tm = m.message;
+      final TransportMessage tm = m.message;
       if (tm.getType() == TransportMessage.TransportMessageType.DATA) {
         if (numReceived % 100 == 0) {
           System.out.println(numReceived + " received");
@@ -67,7 +67,9 @@ public class TenGBTupleBatchReceiverUsingConnectionPool {
             for (final ColumnMessage cm : columnMessages) {
               columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm);
             }
-            TupleBatch tb = new TupleBatch(TenGBTupleBatchSenderUsingConnectionPool.schema, Arrays.asList(columnArray), columnArray[0].size());
+            final TupleBatch tb =
+                new TupleBatch(TenGBTupleBatchSenderUsingConnectionPool.schema, Arrays.asList(columnArray),
+                    columnArray[0].size());
             tb.compactInto(tbb);
             while (tbb.popAny() != null) {
             }

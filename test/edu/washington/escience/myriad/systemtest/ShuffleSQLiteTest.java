@@ -38,9 +38,9 @@ public class ShuffleSQLiteTest extends SystemTestBase {
     final ImmutableList<String> columnNames = ImmutableList.of("id", "name");
     final Schema schema = new Schema(types, columnNames);
 
-    HashMap<Tuple, Integer> expectedResult = simpleRandomJoinTestBase();
-    String temptable1Name = "temptable1";
-    String temptable2Name = "temptable2";
+    final HashMap<Tuple, Integer> expectedResult = simpleRandomJoinTestBase();
+    final String temptable1Name = "temptable1";
+    final String temptable2Name = "temptable2";
 
     createTable(WORKER_ID[0], temptable1Name, "id int, name varchar(20)");
     createTable(WORKER_ID[0], temptable2Name, "id int, name varchar(20)");
@@ -98,16 +98,16 @@ public class ShuffleSQLiteTest extends SystemTestBase {
     while ((result = Server.runningInstance.startServerQuery(0, serverPlan)) == null) {
       try {
         Thread.sleep(100);
-      } catch (InterruptedException e) {
+      } catch (final InterruptedException e) {
         e.printStackTrace();
         Thread.currentThread().interrupt();
       }
     }
 
-    HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(result);
+    final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(result);
 
     assertTrue(resultBag.size() == expectedResult.size());
-    for (Entry<Tuple, Integer> e : resultBag.entrySet()) {
+    for (final Entry<Tuple, Integer> e : resultBag.entrySet()) {
       assertTrue(expectedResult.get(e.getKey()).equals(e.getValue()));
     }
 

@@ -35,88 +35,24 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
   private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger("edu.washington.escience.myriad");
 
   @Test
-  public void dupElimTestSingleWorker() throws DbException, IOException, CatalogException {
-    String testtableName = "testtable";
-    createTable(WORKER_ID[0], testtableName, "id long, name varchar(20)");
-
-    String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, 200, 20);
-    long[] ids = TestUtils.randomLong(1000, 1005, names.length);
-
-    final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
-
-    TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
-    for (int i = 0; i < names.length; i++) {
-      tbb.put(0, ids[i]);
-      tbb.put(1, names[i]);
-    }
-
-    HashMap<Tuple, Integer> expectedResults = TestUtils.distinct(tbb);
-
-    TupleBatch tb = null;
-    while ((tb = tbb.popAny()) != null) {
-      insert(WORKER_ID[0], testtableName, schema, tb);
-    }
-
-    final ExchangePairID serverReceiveID = ExchangePairID.newID();
-
-    final int numPartition = 2;
-
-    final PartitionFunction<String, Integer> pf = new SingleFieldHashPartitionFunction(numPartition);
-    pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1); // partition by id
-
-    final SQLiteQueryScan scanTable = new SQLiteQueryScan(null, "select * from " + testtableName, schema);
-
-    final DupElim dupElimOnScan = new DupElim(scanTable);
-    final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
-    final CollectProducer cp1 = new CollectProducer(dupElimOnScan, serverReceiveID, MASTER_ID);
-    workerPlans.put(WORKER_ID[0], new Operator[] { cp1 });
-
-    while (Server.runningInstance == null) {
-      try {
-        Thread.sleep(10);
-      } catch (final InterruptedException e) {
-      }
-    }
-
-    final CollectConsumer serverPlan = new CollectConsumer(schema, serverReceiveID, new int[] { WORKER_ID[0] });
-    Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
-    LOGGER.debug("Query dispatched to the workers");
-    TupleBatchBuffer result = null;
-    while ((result = Server.runningInstance.startServerQuery(0, serverPlan)) == null) {
-      try {
-        Thread.sleep(100);
-      } catch (InterruptedException e) {
-        e.printStackTrace();
-        Thread.currentThread().interrupt();
-      }
-    }
-
-    HashMap<Tuple, Integer> resultSet = TestUtils.tupleBatchToTupleSet(result);
-
-    TestUtils.assertTupleBagEqual(expectedResults, resultSet);
-
-  }
-
-  @Test
   public void dupElimTest() throws DbException, IOException, CatalogException {
-    String testtableName = "testtable";
+    final String testtableName = "testtable";
     createTable(WORKER_ID[0], testtableName, "id long, name varchar(20)");
     createTable(WORKER_ID[1], testtableName, "id long, name varchar(20)");
 
-    String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, 200, 20);
-    long[] ids = TestUtils.randomLong(1000, 1005, names.length);
+    final String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, 200, 20);
+    final long[] ids = TestUtils.randomLong(1000, 1005, names.length);
 
     final Schema schema =
         new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
 
-    TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
+    final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
       tbb.put(0, ids[i]);
       tbb.put(1, names[i]);
     }
 
-    HashMap<Tuple, Integer> expectedResults = TestUtils.distinct(tbb);
+    final HashMap<Tuple, Integer> expectedResults = TestUtils.distinct(tbb);
 
     TupleBatch tb = null;
     while ((tb = tbb.popAny()) != null) {
@@ -156,13 +92,77 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     while ((result = Server.runningInstance.startServerQuery(0, serverPlan)) == null) {
       try {
         Thread.sleep(100);
-      } catch (InterruptedException e) {
+      } catch (final InterruptedException e) {
         e.printStackTrace();
         Thread.currentThread().interrupt();
       }
     }
 
-    HashMap<Tuple, Integer> resultSet = TestUtils.tupleBatchToTupleSet(result);
+    final HashMap<Tuple, Integer> resultSet = TestUtils.tupleBatchToTupleSet(result);
+
+    TestUtils.assertTupleBagEqual(expectedResults, resultSet);
+
+  }
+
+  @Test
+  public void dupElimTestSingleWorker() throws DbException, IOException, CatalogException {
+    final String testtableName = "testtable";
+    createTable(WORKER_ID[0], testtableName, "id long, name varchar(20)");
+
+    final String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, 200, 20);
+    final long[] ids = TestUtils.randomLong(1000, 1005, names.length);
+
+    final Schema schema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+
+    final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
+    for (int i = 0; i < names.length; i++) {
+      tbb.put(0, ids[i]);
+      tbb.put(1, names[i]);
+    }
+
+    final HashMap<Tuple, Integer> expectedResults = TestUtils.distinct(tbb);
+
+    TupleBatch tb = null;
+    while ((tb = tbb.popAny()) != null) {
+      insert(WORKER_ID[0], testtableName, schema, tb);
+    }
+
+    final ExchangePairID serverReceiveID = ExchangePairID.newID();
+
+    final int numPartition = 2;
+
+    final PartitionFunction<String, Integer> pf = new SingleFieldHashPartitionFunction(numPartition);
+    pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1); // partition by id
+
+    final SQLiteQueryScan scanTable = new SQLiteQueryScan(null, "select * from " + testtableName, schema);
+
+    final DupElim dupElimOnScan = new DupElim(scanTable);
+    final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
+    final CollectProducer cp1 = new CollectProducer(dupElimOnScan, serverReceiveID, MASTER_ID);
+    workerPlans.put(WORKER_ID[0], new Operator[] { cp1 });
+
+    while (Server.runningInstance == null) {
+      try {
+        Thread.sleep(10);
+      } catch (final InterruptedException e) {
+      }
+    }
+
+    final CollectConsumer serverPlan = new CollectConsumer(schema, serverReceiveID, new int[] { WORKER_ID[0] });
+    Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
+    LOGGER.debug("Query dispatched to the workers");
+    TupleBatchBuffer result = null;
+    while ((result = Server.runningInstance.startServerQuery(0, serverPlan)) == null) {
+      try {
+        Thread.sleep(100);
+      } catch (final InterruptedException e) {
+        e.printStackTrace();
+        Thread.currentThread().interrupt();
+      }
+    }
+
+    final HashMap<Tuple, Integer> resultSet = TestUtils.tupleBatchToTupleSet(result);
 
     TestUtils.assertTupleBagEqual(expectedResults, resultSet);
 
@@ -173,12 +173,12 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
     Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
 
-    HashMap<Tuple, Integer> expectedResult = simpleRandomJoinTestBase();
+    final HashMap<Tuple, Integer> expectedResult = simpleRandomJoinTestBase();
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final ExchangePairID table1ShuffleID = ExchangePairID.newID();
     final ExchangePairID table2ShuffleID = ExchangePairID.newID();
-    SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(2);
+    final SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(2);
     pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
 
     final ImmutableList<Type> outputTypes =
@@ -219,13 +219,13 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     while ((result = Server.runningInstance.startServerQuery(0, serverPlan)) == null) {
       try {
         Thread.sleep(100);
-      } catch (InterruptedException e) {
+      } catch (final InterruptedException e) {
         e.printStackTrace();
         Thread.currentThread().interrupt();
       }
     }
 
-    HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(result);
+    final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(result);
 
     TestUtils.assertTupleBagEqual(expectedResult, resultBag);
 

@@ -19,6 +19,18 @@ public final class MasterDaemon {
   /** The usage string. */
   private static final String USAGE_STRING = "Usage: MasterDaemon <catalogFilename>";
 
+  /**
+   * @param args the command-line arguments to start the daemon.
+   * @throws Exception if the Restlet server can't start.
+   */
+  public static void main(final String[] args) throws Exception {
+    final MasterDaemon md = new MasterDaemon(args);
+    md.start();
+    System.out.println("Press enter to stop");
+    System.in.read();
+    md.stop();
+  }
+
   /** The catalog for this daemon. */
   private Catalog catalog;
 
@@ -35,6 +47,18 @@ public final class MasterDaemon {
     processArguments(args);
     MasterApiServer.setUp(catalog);
     server = new Server(catalog.getMasters().get(0), catalog.getWorkers());
+  }
+
+  /**
+   * @param args the command-line arguments to start the daemon.
+   * @throws CatalogException if the Catalog cannot be opened.
+   * @throws FileNotFoundException if the catalogFile does not exist.
+   */
+  private void processArguments(final String[] args) throws FileNotFoundException, CatalogException {
+    if (args.length != 1) {
+      throw new IllegalArgumentException(USAGE_STRING);
+    }
+    catalog = Catalog.open(args[0]);
   }
 
   /**
@@ -55,30 +79,6 @@ public final class MasterDaemon {
   public void stop() throws Exception {
     MasterApiServer.INSTANCE.stop();
     server.shutdown();
-  }
-
-  /**
-   * @param args the command-line arguments to start the daemon.
-   * @throws Exception if the Restlet server can't start.
-   */
-  public static void main(final String[] args) throws Exception {
-    MasterDaemon md = new MasterDaemon(args);
-    md.start();
-    System.out.println("Press enter to stop");
-    System.in.read();
-    md.stop();
-  }
-
-  /**
-   * @param args the command-line arguments to start the daemon.
-   * @throws CatalogException if the Catalog cannot be opened.
-   * @throws FileNotFoundException if the catalogFile does not exist.
-   */
-  private void processArguments(final String[] args) throws FileNotFoundException, CatalogException {
-    if (args.length != 1) {
-      throw new IllegalArgumentException(USAGE_STRING);
-    }
-    catalog = Catalog.open(args[0]);
   }
 
 }

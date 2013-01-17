@@ -24,12 +24,21 @@ public final class BlockingSQLiteDataReceiver extends Operator {
   }
 
   @Override
+  protected void cleanup() throws DbException {
+  }
+
+  @Override
   protected TupleBatch fetchNext() throws DbException {
     TupleBatch tb = null;
     while ((tb = child.next()) != null) {
       SQLiteUtils.insertIntoSQLite(child.getSchema(), tableName, pathToSQLiteDb, tb);
     }
     return null;
+  }
+
+  @Override
+  public TupleBatch fetchNextReady() throws DbException {
+    return fetchNext();
   }
 
   @Override
@@ -51,16 +60,7 @@ public final class BlockingSQLiteDataReceiver extends Operator {
     child = children[0];
   }
 
-  @Override
-  protected void cleanup() throws DbException {
-  }
-
-  @Override
-  public TupleBatch fetchNextReady() throws DbException {
-    return fetchNext();
-  }
-
-  public void setPathToSQLiteDb(String pathToSQLiteDb) {
+  public void setPathToSQLiteDb(final String pathToSQLiteDb) {
     this.pathToSQLiteDb = pathToSQLiteDb;
   }
 }

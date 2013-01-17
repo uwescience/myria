@@ -6,12 +6,6 @@ package edu.washington.escience.myriad.util;
 public final class MathUtils {
 
   /**
-   * util classes are not instantiable.
-   * */
-  private MathUtils() {
-  }
-
-  /**
    * Compute the number of 1s in a integer when written in binary.
    * 
    * @param v the integer.
@@ -24,6 +18,12 @@ public final class MathUtils {
       v = v >>> 1;
     }
     return result;
+  }
+
+  /**
+   * util classes are not instantiable.
+   * */
+  private MathUtils() {
   }
 
 }

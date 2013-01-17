@@ -22,6 +22,10 @@ public abstract class Consumer extends Operator {
     operatorID = oID;
   }
 
+  public ExchangePairID getOperatorID() {
+    return operatorID;
+  }
+
   public void setInputBuffer(final LinkedBlockingQueue<ExchangeData> buffer) {
     inputBuffer = buffer;
   }
@@ -38,9 +42,5 @@ public abstract class Consumer extends Operator {
     } else {
       return inputBuffer.take();
     }
-  }
-
-  public ExchangePairID getOperatorID() {
-    return operatorID;
   }
 }

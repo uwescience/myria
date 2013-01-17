@@ -21,11 +21,6 @@ public final class BooleanAggregator implements Aggregator {
 
   public static final int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT;
 
-  @Override
-  public int availableAgg() {
-    return AVAILABLE_AGG;
-  }
-
   private BooleanAggregator(final int aggOps, final Schema resultSchema) {
     this.resultSchema = resultSchema;
     this.aggOps = aggOps;
@@ -43,8 +38,8 @@ public final class BooleanAggregator implements Aggregator {
 
     this.aggOps = aggOps;
 
-    ImmutableList.Builder<Type> types = ImmutableList.builder();
-    ImmutableList.Builder<String> names = ImmutableList.builder();
+    final ImmutableList.Builder<Type> types = ImmutableList.builder();
+    final ImmutableList.Builder<String> names = ImmutableList.builder();
     if ((aggOps & Aggregator.AGG_OP_COUNT) != 0) {
       types.add(Type.LONG_TYPE);
       names.add("count(" + aFieldName + ")");
@@ -55,6 +50,16 @@ public final class BooleanAggregator implements Aggregator {
   @Override
   public void add(final TupleBatch tup) {
     count += tup.numTuples();
+  }
+
+  @Override
+  public int availableAgg() {
+    return AVAILABLE_AGG;
+  }
+
+  @Override
+  public BooleanAggregator freshCopyYourself() {
+    return new BooleanAggregator(aggOps, resultSchema);
   }
 
   @Override
@@ -69,10 +74,5 @@ public final class BooleanAggregator implements Aggregator {
   @Override
   public Schema getResultSchema() {
     return resultSchema;
-  }
-
-  @Override
-  public BooleanAggregator freshCopyYourself() {
-    return new BooleanAggregator(aggOps, resultSchema);
   }
 }

@@ -50,8 +50,8 @@ public class IntegerAggregator implements Aggregator {
     max = Integer.MIN_VALUE;
     sum = 0;
     count = 0;
-    ImmutableList.Builder<Type> types = ImmutableList.builder();
-    ImmutableList.Builder<String> names = ImmutableList.builder();
+    final ImmutableList.Builder<Type> types = ImmutableList.builder();
+    final ImmutableList.Builder<String> names = ImmutableList.builder();
     if ((aggOps & Aggregator.AGG_OP_COUNT) != 0) {
       types.add(Type.LONG_TYPE);
       names.add("count(" + aFieldName + ")");
@@ -76,18 +76,13 @@ public class IntegerAggregator implements Aggregator {
   }
 
   @Override
-  public final int availableAgg() {
-    return AVAILABLE_AGG;
-  }
-
-  @Override
   public final void add(final TupleBatch tup) {
 
-    int numTuples = tup.numTuples();
+    final int numTuples = tup.numTuples();
     if (numTuples > 0) {
       count += numTuples;
       for (int i = 0; i < numTuples; i++) {
-        int x = tup.getInt(afield, i);
+        final int x = tup.getInt(afield, i);
         sum += x;
         if (min > x) {
           min = x;
@@ -98,6 +93,16 @@ public class IntegerAggregator implements Aggregator {
       }
     }
 
+  }
+
+  @Override
+  public final int availableAgg() {
+    return AVAILABLE_AGG;
+  }
+
+  @Override
+  public final Aggregator freshCopyYourself() {
+    return new IntegerAggregator(afield, aggOps, resultSchema);
   }
 
   @Override
@@ -128,10 +133,5 @@ public class IntegerAggregator implements Aggregator {
   @Override
   public final Schema getResultSchema() {
     return resultSchema;
-  }
-
-  @Override
-  public final Aggregator freshCopyYourself() {
-    return new IntegerAggregator(afield, aggOps, resultSchema);
   }
 }

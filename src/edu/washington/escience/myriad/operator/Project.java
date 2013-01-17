@@ -24,22 +24,22 @@ public class Project extends Operator {
   private final Schema schema;
   private final Integer[] outFieldIds; // why not using int[]?
 
+  public Project(final Integer[] fieldList, final Operator child) throws DbException {
+    this(Arrays.asList(fieldList), child);
+  }
+
   public Project(final List<Integer> fieldList, final Operator child) throws DbException {
     this.child = child;
     outFieldIds = fieldList.toArray(new Integer[] {});
     final Schema childSchema = child.getSchema();
 
-    ImmutableList.Builder<Type> types = ImmutableList.builder();
-    ImmutableList.Builder<String> names = ImmutableList.builder();
-    for (int i : fieldList) {
+    final ImmutableList.Builder<Type> types = ImmutableList.builder();
+    final ImmutableList.Builder<String> names = ImmutableList.builder();
+    for (final int i : fieldList) {
       types.add(childSchema.getFieldType(i));
       names.add(childSchema.getFieldName(i));
     }
     schema = new Schema(types, names);
-  }
-
-  public Project(final Integer[] fieldList, final Operator child) throws DbException {
-    this(Arrays.asList(fieldList), child);
   }
 
   @Override
@@ -54,9 +54,17 @@ public class Project extends Operator {
    */
   @Override
   protected TupleBatch fetchNext() throws NoSuchElementException, DbException {
-    TupleBatch tmp = child.next();
+    final TupleBatch tmp = child.next();
     if (tmp != null) {
       return tmp.project(ArrayUtils.toPrimitive(outFieldIds));
+    }
+    return null;
+  }
+
+  @Override
+  public TupleBatch fetchNextReady() throws DbException {
+    if (child.nextReady()) {
+      return child.next().project(ArrayUtils.toPrimitive(outFieldIds));
     }
     return null;
   }
@@ -80,14 +88,6 @@ public class Project extends Operator {
     if (child != children[0]) {
       child = children[0];
     }
-  }
-
-  @Override
-  public TupleBatch fetchNextReady() throws DbException {
-    if (child.nextReady()) {
-      return child.next().project(ArrayUtils.toPrimitive(outFieldIds));
-    }
-    return null;
   }
 
 }

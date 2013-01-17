@@ -38,23 +38,23 @@ public class IterativeSelfJoinTest extends SystemTestBase {
   private final int numTbl1Worker1 = 60;
   private final int numTbl1Worker2 = 60;
 
-  public TupleBatchBuffer getResultInMemory(TupleBatchBuffer table1, Schema schema, int numIteration) {
+  public TupleBatchBuffer getResultInMemory(final TupleBatchBuffer table1, final Schema schema, final int numIteration) {
     // a brute force check
 
     final Iterator<List<Column<?>>> tbs = table1.getAllAsRawColumn().iterator();
-    boolean graph[][] = new boolean[MaxID][MaxID];
-    boolean cntgraph[][] = new boolean[MaxID][MaxID];
+    final boolean graph[][] = new boolean[MaxID][MaxID];
+    final boolean cntgraph[][] = new boolean[MaxID][MaxID];
     while (tbs.hasNext()) {
-      List<Column<?>> output = tbs.next();
-      int numRow = output.get(0).size();
+      final List<Column<?>> output = tbs.next();
+      final int numRow = output.get(0).size();
       for (int i = 0; i < numRow; i++) {
-        int fr = Integer.parseInt(output.get(0).get(i).toString());
-        int fe = Integer.parseInt(output.get(1).get(i).toString());
+        final int fr = Integer.parseInt(output.get(0).get(i).toString());
+        final int fe = Integer.parseInt(output.get(1).get(i).toString());
         graph[fr][fe] = cntgraph[fr][fe] = true;
       }
     }
 
-    boolean tmpgraph[][] = new boolean[MaxID][MaxID];
+    final boolean tmpgraph[][] = new boolean[MaxID][MaxID];
     int cnt = 0;
     while (true) {
       ++cnt;
@@ -78,7 +78,7 @@ public class IterativeSelfJoinTest extends SystemTestBase {
       }
     }
 
-    TupleBatchBuffer result = new TupleBatchBuffer(schema);
+    final TupleBatchBuffer result = new TupleBatchBuffer(schema);
     for (int i = 0; i < MaxID; ++i) {
       for (int j = 0; j < MaxID; ++j) {
         if (cntgraph[i][j]) {
@@ -104,12 +104,12 @@ public class IterativeSelfJoinTest extends SystemTestBase {
     final ImmutableList<String> joinColumnNames = ImmutableList.of("follower", "followee", "follower", "followee");
     final Schema joinSchema = new Schema(joinTypes, joinColumnNames);
 
-    long[] tbl1ID1Worker1 = TestUtils.randomLong(1, MaxID - 1, numTbl1Worker1);
-    long[] tbl1ID1Worker2 = TestUtils.randomLong(1, MaxID - 1, numTbl1Worker2);
-    long[] tbl1ID2Worker1 = TestUtils.randomLong(1, MaxID - 1, numTbl1Worker1);
-    long[] tbl1ID2Worker2 = TestUtils.randomLong(1, MaxID - 1, numTbl1Worker2);
-    TupleBatchBuffer tbl1Worker1 = new TupleBatchBuffer(tableSchema);
-    TupleBatchBuffer tbl1Worker2 = new TupleBatchBuffer(tableSchema);
+    final long[] tbl1ID1Worker1 = TestUtils.randomLong(1, MaxID - 1, numTbl1Worker1);
+    final long[] tbl1ID1Worker2 = TestUtils.randomLong(1, MaxID - 1, numTbl1Worker2);
+    final long[] tbl1ID2Worker1 = TestUtils.randomLong(1, MaxID - 1, numTbl1Worker1);
+    final long[] tbl1ID2Worker2 = TestUtils.randomLong(1, MaxID - 1, numTbl1Worker2);
+    final TupleBatchBuffer tbl1Worker1 = new TupleBatchBuffer(tableSchema);
+    final TupleBatchBuffer tbl1Worker2 = new TupleBatchBuffer(tableSchema);
     for (int i = 0; i < numTbl1Worker1; i++) {
       tbl1Worker1.put(0, tbl1ID1Worker1[i]);
       tbl1Worker1.put(1, tbl1ID2Worker1[i]);
@@ -118,14 +118,14 @@ public class IterativeSelfJoinTest extends SystemTestBase {
       tbl1Worker2.put(0, tbl1ID1Worker2[i]);
       tbl1Worker2.put(1, tbl1ID2Worker2[i]);
     }
-    TupleBatchBuffer table1 = new TupleBatchBuffer(tableSchema);
+    final TupleBatchBuffer table1 = new TupleBatchBuffer(tableSchema);
     table1.merge(tbl1Worker1);
     table1.merge(tbl1Worker2);
 
     // generate correct answer in memory
-    TupleBatchBuffer expectedTBB = getResultInMemory(table1, tableSchema, numIteration);
+    final TupleBatchBuffer expectedTBB = getResultInMemory(table1, tableSchema, numIteration);
 
-    HashMap<Tuple, Integer> expectedResult = TestUtils.tupleBatchToTupleBag(expectedTBB);
+    final HashMap<Tuple, Integer> expectedResult = TestUtils.tupleBatchToTupleBag(expectedTBB);
 
     // database generation
     for (int i = 0; i < numIteration; ++i) {
@@ -211,13 +211,13 @@ public class IterativeSelfJoinTest extends SystemTestBase {
     while ((result = Server.runningInstance.startServerQuery(0, serverPlan)) == null) {
       try {
         Thread.sleep(100);
-      } catch (InterruptedException e) {
+      } catch (final InterruptedException e) {
         e.printStackTrace();
         Thread.currentThread().interrupt();
       }
     }
 
-    HashMap<Tuple, Integer> actual = TestUtils.tupleBatchToTupleBag(result);
+    final HashMap<Tuple, Integer> actual = TestUtils.tupleBatchToTupleBag(result);
     TestUtils.assertTupleBagEqual(expectedResult, actual);
   }
 }

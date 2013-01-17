@@ -20,11 +20,6 @@ public final class Schema implements Serializable {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
-  /** The types of the fields in this relation. */
-  private final ImmutableList<Type> fieldTypes;
-  /** The names of the fields in this relation. */
-  private final ImmutableList<String> fieldNames;
-
   /**
    * Converts a JDBC ResultSetMetaData object into a Schema.
    * 
@@ -75,7 +70,6 @@ public final class Schema implements Serializable {
 
     return new Schema(columnTypes.build(), columnNames.build());
   }
-
   /**
    * Converts a SQLiteStatement object into a Schema.
    * 
@@ -130,8 +124,8 @@ public final class Schema implements Serializable {
    * @return the new Schema.
    */
   public static Schema merge(final Schema first, final Schema second) {
-    ImmutableList.Builder<Type> types = ImmutableList.builder();
-    ImmutableList.Builder<String> names = ImmutableList.builder();
+    final ImmutableList.Builder<Type> types = ImmutableList.builder();
+    final ImmutableList.Builder<String> names = ImmutableList.builder();
 
     types.addAll(first.getTypes()).addAll(second.getTypes());
     names.addAll(first.getFieldNames()).addAll(second.getFieldNames());
@@ -139,16 +133,35 @@ public final class Schema implements Serializable {
     return new Schema(types.build(), names.build());
   }
 
+  /** The types of the fields in this relation. */
+  private final ImmutableList<Type> fieldTypes;
+
+  /** The names of the fields in this relation. */
+  private final ImmutableList<String> fieldNames;
+
   /**
-   * Constructor. Create a new tuple desc with typeAr.length fields with fields of the specified types, with anonymous
-   * (unnamed) fields.
+   * Helper function to build a Schema from builders.
    * 
-   * @param typeAr array specifying the number of and types of fields in this Schema. It must contain at least one
-   *          entry.
+   * @param types the types of the fields in this Schema.
+   * @param names the names of the fields in this Schema.
    */
-  @Deprecated
-  public Schema(final Type[] typeAr) {
-    this(Arrays.asList(typeAr));
+  public Schema(final ImmutableList.Builder<Type> types, final ImmutableList.Builder<String> names) {
+    this(types.build(), names.build());
+  }
+
+  /**
+   * Create a Schema given an array of column types. Column names will be col0, col1, ....
+   * 
+   * @param types the types of the columns.
+   */
+  public Schema(final List<Type> types) {
+    Objects.requireNonNull(types);
+    fieldTypes = ImmutableList.copyOf(types);
+    final ImmutableList.Builder<String> names = ImmutableList.builder();
+    for (int i = 0; i < types.size(); i++) {
+      names.add("col" + i);
+    }
+    fieldNames = names.build();
   }
 
   /**
@@ -169,13 +182,15 @@ public final class Schema implements Serializable {
   }
 
   /**
-   * Helper function to build a Schema from builders.
+   * Constructor. Create a new tuple desc with typeAr.length fields with fields of the specified types, with anonymous
+   * (unnamed) fields.
    * 
-   * @param types the types of the fields in this Schema.
-   * @param names the names of the fields in this Schema.
+   * @param typeAr array specifying the number of and types of fields in this Schema. It must contain at least one
+   *          entry.
    */
-  public Schema(final ImmutableList.Builder<Type> types, final ImmutableList.Builder<String> names) {
-    this(types.build(), names.build());
+  @Deprecated
+  public Schema(final Type[] typeAr) {
+    this(Arrays.asList(typeAr));
   }
 
   /**
@@ -189,21 +204,6 @@ public final class Schema implements Serializable {
   @Deprecated
   public Schema(final Type[] types, final String[] names) {
     this(Arrays.asList(types), Arrays.asList(names));
-  }
-
-  /**
-   * Create a Schema given an array of column types. Column names will be col0, col1, ....
-   * 
-   * @param types the types of the columns.
-   */
-  public Schema(final List<Type> types) {
-    Objects.requireNonNull(types);
-    fieldTypes = ImmutableList.copyOf(types);
-    ImmutableList.Builder<String> names = ImmutableList.builder();
-    for (int i = 0; i < types.size(); i++) {
-      names.add("col" + i);
-    }
-    fieldNames = names.build();
   }
 
   /**
@@ -231,7 +231,7 @@ public final class Schema implements Serializable {
    * @throws NoSuchElementException if no field with a matching name is found.
    */
   public int fieldNameToIndex(final String name) {
-    int ret = fieldNames.indexOf(name);
+    final int ret = fieldNames.indexOf(name);
     if (ret == -1) {
       throw new NoSuchElementException("No field named " + name + " found");
     }
@@ -247,6 +247,15 @@ public final class Schema implements Serializable {
    */
   public String getFieldName(final int index) {
     return fieldNames.get(index);
+  }
+
+  /**
+   * Returns an immutable list containing the names of the columns in this Schema.
+   * 
+   * @return an immutable list containing the names of the columns in this Schema.
+   */
+  public ImmutableList<String> getFieldNames() {
+    return fieldNames;
   }
 
   /**
@@ -267,15 +276,6 @@ public final class Schema implements Serializable {
    */
   public ImmutableList<Type> getTypes() {
     return fieldTypes;
-  }
-
-  /**
-   * Returns an immutable list containing the names of the columns in this Schema.
-   * 
-   * @return an immutable list containing the names of the columns in this Schema.
-   */
-  public ImmutableList<String> getFieldNames() {
-    return fieldNames;
   }
 
   @Override

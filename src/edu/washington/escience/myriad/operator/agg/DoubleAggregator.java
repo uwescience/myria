@@ -26,11 +26,6 @@ public final class DoubleAggregator implements Aggregator {
   public static final int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT | Aggregator.AGG_OP_SUM | Aggregator.AGG_OP_MAX
       | Aggregator.AGG_OP_MIN | Aggregator.AGG_OP_AVG;
 
-  @Override
-  public int availableAgg() {
-    return AVAILABLE_AGG;
-  }
-
   private DoubleAggregator(final int afield, final int aggOps, final Schema resultSchema) {
     this.resultSchema = resultSchema;
     this.afield = afield;
@@ -56,8 +51,8 @@ public final class DoubleAggregator implements Aggregator {
     max = Double.MIN_VALUE;
     sum = 0.0;
     count = 0;
-    ImmutableList.Builder<Type> types = ImmutableList.builder();
-    ImmutableList.Builder<String> names = ImmutableList.builder();
+    final ImmutableList.Builder<Type> types = ImmutableList.builder();
+    final ImmutableList.Builder<String> names = ImmutableList.builder();
     if ((aggOps & Aggregator.AGG_OP_COUNT) != 0) {
       types.add(Type.LONG_TYPE);
       names.add("count(" + aFieldName + ")");
@@ -84,11 +79,11 @@ public final class DoubleAggregator implements Aggregator {
   @Override
   public void add(final TupleBatch tup) {
 
-    int numTuples = tup.numTuples();
+    final int numTuples = tup.numTuples();
     if (numTuples > 0) {
       count += numTuples;
       for (int i = 0; i < numTuples; i++) {
-        double x = tup.getDouble(afield, i);
+        final double x = tup.getDouble(afield, i);
         sum += x;
         if (Double.compare(x, min) < 0) {
           min = x;
@@ -98,6 +93,16 @@ public final class DoubleAggregator implements Aggregator {
         }
       }
     }
+  }
+
+  @Override
+  public int availableAgg() {
+    return AVAILABLE_AGG;
+  }
+
+  @Override
+  public DoubleAggregator freshCopyYourself() {
+    return new DoubleAggregator(afield, aggOps, resultSchema);
   }
 
   @Override
@@ -128,10 +133,5 @@ public final class DoubleAggregator implements Aggregator {
   @Override
   public Schema getResultSchema() {
     return resultSchema;
-  }
-
-  @Override
-  public DoubleAggregator freshCopyYourself() {
-    return new DoubleAggregator(afield, aggOps, resultSchema);
   }
 }

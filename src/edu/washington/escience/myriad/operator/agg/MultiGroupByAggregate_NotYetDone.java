@@ -18,16 +18,6 @@ import edu.washington.escience.myriad.operator.Operator;
  */
 public class MultiGroupByAggregate_NotYetDone extends Operator {
 
-  private static final long serialVersionUID = 1L;
-
-  private final Schema schema;
-  private Operator child;
-  private final Aggregator[] agg;
-  private final int[] afields; // Compute aggregate on each of the afields
-  private final int[] gfields; // group by fields
-  private final boolean groupBy;
-  private final HashMap<SimpleArrayWrapper, Aggregator[]> groupAggs;
-
   /**
    * A simple implementation of multiple-field group key
    * */
@@ -39,18 +29,28 @@ public class MultiGroupByAggregate_NotYetDone extends Operator {
     }
 
     @Override
-    public int hashCode() {
-      return Arrays.hashCode(groupFields);
-    }
-
-    @Override
     public boolean equals(final Object another) {
       if (another == null || !(another instanceof SimpleArrayWrapper)) {
         return false;
       }
       return Arrays.equals(groupFields, ((SimpleArrayWrapper) another).groupFields);
     }
+
+    @Override
+    public int hashCode() {
+      return Arrays.hashCode(groupFields);
+    }
   }
+
+  private static final long serialVersionUID = 1L;
+  private final Schema schema;
+  private Operator child;
+  private final Aggregator[] agg;
+  private final int[] afields; // Compute aggregate on each of the afields
+  private final int[] gfields; // group by fields
+  private final boolean groupBy;
+
+  private final HashMap<SimpleArrayWrapper, Aggregator[]> groupAggs;
 
   /**
    * Constructor.
@@ -64,7 +64,7 @@ public class MultiGroupByAggregate_NotYetDone extends Operator {
    * @param gfields The columns over which we are grouping the result, or -1 if there is no grouping
    * @param aggOps The aggregation operator to use
    */
-  public MultiGroupByAggregate_NotYetDone(Operator child, int[] afields, int[] gfields, int[] aggOps) {
+  public MultiGroupByAggregate_NotYetDone(final Operator child, final int[] afields, int[] gfields, final int[] aggOps) {
     Objects.requireNonNull(afields);
     if (afields.length == 0) {
       throw new IllegalArgumentException("aggregation fields must not be empty");
@@ -83,11 +83,11 @@ public class MultiGroupByAggregate_NotYetDone extends Operator {
       groupAggs = new HashMap<SimpleArrayWrapper, Aggregator[]>();
     }
 
-    ImmutableList.Builder<Type> gTypes = ImmutableList.builder();
-    ImmutableList.Builder<String> gNames = ImmutableList.builder();
+    final ImmutableList.Builder<Type> gTypes = ImmutableList.builder();
+    final ImmutableList.Builder<String> gNames = ImmutableList.builder();
 
-    Schema childSchema = child.getSchema();
-    for (int i : gfields) {
+    final Schema childSchema = child.getSchema();
+    for (final int i : gfields) {
       gTypes.add(childSchema.getFieldType(i));
       gNames.add(childSchema.getFieldName(i));
     }
@@ -100,7 +100,7 @@ public class MultiGroupByAggregate_NotYetDone extends Operator {
     agg = new Aggregator[aggOps.length];
 
     int idx = 0;
-    for (int afield : afields) {
+    for (final int afield : afields) {
       switch (childSchema.getFieldType(afield)) {
         case BOOLEAN_TYPE:
           agg[idx] = new BooleanAggregator(afield, childSchema.getFieldName(afield), aggOps[idx]);
@@ -132,15 +132,16 @@ public class MultiGroupByAggregate_NotYetDone extends Operator {
     schema = outputSchema;
   }
 
-  public int[] groupFields() {
-    return gfields;
-  }
-
   /**
    * @return the aggregate field
    * */
   public int[] aggregateFields() {
     return afields;
+  }
+
+  @Override
+  protected void cleanup() throws DbException {
+    groupAggs.clear();
   }
 
   /**
@@ -155,7 +156,7 @@ public class MultiGroupByAggregate_NotYetDone extends Operator {
     TupleBatch tb = null;
     while ((tb = child.next()) != null) {
       if (!groupBy) {
-        for (Aggregator ag : agg) {
+        for (final Aggregator ag : agg) {
           ag.add(tb);
         }
       } else {
@@ -166,6 +167,17 @@ public class MultiGroupByAggregate_NotYetDone extends Operator {
     return null;
   }
 
+  @Override
+  protected TupleBatch fetchNextReady() throws DbException {
+    // TODO non-blocking
+    return fetchNext();
+  }
+
+  @Override
+  public Operator[] getChildren() {
+    return new Operator[] { child };
+  }
+
   /**
    * The schema of the aggregate output. Grouping fields first and then aggregate fields. The aggregate
    */
@@ -174,14 +186,8 @@ public class MultiGroupByAggregate_NotYetDone extends Operator {
     return schema;
   }
 
-  @Override
-  public Operator[] getChildren() {
-    return new Operator[] { child };
-  }
-
-  @Override
-  public void setChildren(Operator[] children) {
-    child = children[0];
+  public int[] groupFields() {
+    return gfields;
   }
 
   @Override
@@ -189,14 +195,8 @@ public class MultiGroupByAggregate_NotYetDone extends Operator {
   }
 
   @Override
-  protected void cleanup() throws DbException {
-    groupAggs.clear();
-  }
-
-  @Override
-  protected TupleBatch fetchNextReady() throws DbException {
-    // TODO non-blocking
-    return fetchNext();
+  public void setChildren(final Operator[] children) {
+    child = children[0];
   }
 
 }

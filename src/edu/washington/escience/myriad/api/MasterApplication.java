@@ -8,7 +8,7 @@ import javax.ws.rs.core.Application;
 public class MasterApplication extends Application {
   @Override
   public Set<Class<?>> getClasses() {
-    Set<Class<?>> rrcs = new HashSet<Class<?>>();
+    final Set<Class<?>> rrcs = new HashSet<Class<?>>();
     rrcs.add(WorkerCollection.class);
     return rrcs;
   }

@@ -12,14 +12,11 @@ import edu.washington.escience.myriad.Type;
 
 public final class DupElim extends Operator {
 
-  /** Required for Java serialization. */
-  private static final long serialVersionUID = 1L;
-
   private class IndexedTuple {
     private int index;
     private final TupleBatch tb;
 
-    public IndexedTuple(TupleBatch tb) {
+    public IndexedTuple(final TupleBatch tb) {
       this.tb = tb;
     }
 
@@ -72,6 +69,9 @@ public final class DupElim extends Operator {
     }
   }
 
+  /** Required for Java serialization. */
+  private static final long serialVersionUID = 1L;
+
   private Operator child;
   private final HashMap<Integer, List<IndexedTuple>> uniqueTuples;
 
@@ -81,12 +81,65 @@ public final class DupElim extends Operator {
   }
 
   @Override
+  protected void cleanup() throws DbException {
+  }
+
+  protected TupleBatch doDupElim(final TupleBatch tb) {
+    final int numTuples = tb.numTuples();
+    if (numTuples <= 0) {
+      return tb;
+    }
+    final BitSet toRemove = new BitSet(numTuples);
+    final IndexedTuple currentTuple = new IndexedTuple(tb);
+    for (int i = 0; i < numTuples; ++i) {
+      currentTuple.index = i;
+      final int cntHashCode = currentTuple.hashCode();
+      // might need to check invalid | change to use outputTuples later
+      List<IndexedTuple> tupleList = uniqueTuples.get(cntHashCode);
+      if (tupleList == null) {
+        tupleList = new ArrayList<IndexedTuple>();
+        uniqueTuples.put(cntHashCode, tupleList);
+        tupleList.add(new IndexedTuple(tb, i));
+        continue;
+      }
+      boolean unique = true;
+      for (final IndexedTuple oldTuple : tupleList) {
+        if (currentTuple.equals(oldTuple)) {
+          unique = false;
+          break;
+        }
+      }
+      if (unique) {
+        tupleList.add(new IndexedTuple(tb, i));
+      } else {
+        toRemove.set(i);
+      }
+    }
+    return tb.remove(toRemove);
+  }
+
+  @Override
   protected TupleBatch fetchNext() throws DbException {
     TupleBatch tb = null;
     while ((tb = child.next()) != null) {
       tb = doDupElim(tb);
       if (tb.numTuples() > 0) {
         return tb;
+      }
+    }
+    return null;
+  }
+
+  @Override
+  public TupleBatch fetchNextReady() throws DbException {
+    TupleBatch tb = null;
+    while (!eos() && child.nextReady()) {
+      tb = child.next();
+      tb = doDupElim(tb);
+      if (tb.numTuples() > 0) {
+        return tb;
+      } else {
+        return null;
       }
     }
     return null;
@@ -109,58 +162,5 @@ public final class DupElim extends Operator {
   @Override
   public void setChildren(final Operator[] children) {
     child = children[0];
-  }
-
-  @Override
-  protected void cleanup() throws DbException {
-  }
-
-  protected TupleBatch doDupElim(TupleBatch tb) {
-    int numTuples = tb.numTuples();
-    if (numTuples <= 0) {
-      return tb;
-    }
-    BitSet toRemove = new BitSet(numTuples);
-    IndexedTuple currentTuple = new IndexedTuple(tb);
-    for (int i = 0; i < numTuples; ++i) {
-      currentTuple.index = i;
-      final int cntHashCode = currentTuple.hashCode();
-      // might need to check invalid | change to use outputTuples later
-      List<IndexedTuple> tupleList = uniqueTuples.get(cntHashCode);
-      if (tupleList == null) {
-        tupleList = new ArrayList<IndexedTuple>();
-        uniqueTuples.put(cntHashCode, tupleList);
-        tupleList.add(new IndexedTuple(tb, i));
-        continue;
-      }
-      boolean unique = true;
-      for (IndexedTuple oldTuple : tupleList) {
-        if (currentTuple.equals(oldTuple)) {
-          unique = false;
-          break;
-        }
-      }
-      if (unique) {
-        tupleList.add(new IndexedTuple(tb, i));
-      } else {
-        toRemove.set(i);
-      }
-    }
-    return tb.remove(toRemove);
-  }
-
-  @Override
-  public TupleBatch fetchNextReady() throws DbException {
-    TupleBatch tb = null;
-    while (!eos() && child.nextReady()) {
-      tb = child.next();
-      tb = doDupElim(tb);
-      if (tb.numTuples() > 0) {
-        return tb;
-      } else {
-        return null;
-      }
-    }
-    return null;
   }
 }

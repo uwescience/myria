@@ -34,11 +34,189 @@ public class JdbcInsertSpeedTest {
   // Test Constants - vary these to alter the test
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+  /**
+   * A simple class that holds the database connection data and runs the speed test on it's own database.
+   * 
+   * @author aarond79
+   */
+  private final class SpeedTestData {
+
+    // Identifiers for database that is being tested
+    private final String host;
+    private final String jdbcDriverName;
+    private final String user;
+    private final String password;
+    private final String connectionString;
+    private final String table;
+
+    // Total time received
+    private double sum = 0;
+    private int numSuccessfulTrials = 0;
+
+    // Error information
+    private boolean error = false;
+    private String errorMessage = null;
+
+    /**
+     * Construct the object.
+     * 
+     * @param host
+     * @param jdbcDriverName
+     * @param user
+     * @param password
+     * @param connectionString
+     * @param table
+     */
+    private SpeedTestData(final String host, final String jdbcDriverName, final String user, final String password,
+        final String connectionString, final String table) {
+      this.host = host;
+      this.jdbcDriverName = jdbcDriverName;
+      this.user = user;
+      this.password = password;
+      this.connectionString = connectionString;
+      this.table = table;
+    }
+
+    /**
+     * Counts the number of tuples in the database table.
+     * 
+     * @param countQuery
+     * @return
+     */
+    private long countNumberOfTuples(final String countQuery) {
+      final ImmutableList<Type> countTypes = ImmutableList.of(Type.INT_TYPE);
+      final ImmutableList<String> countColumnNames = ImmutableList.of("value");
+      final Schema countSchema = new Schema(countTypes, countColumnNames);
+      final JdbcQueryScan validateScan =
+          new JdbcQueryScan(jdbcDriverName, connectionString, countQuery, countSchema, user, password);
+
+      try {
+        validateScan.open();
+        final TupleBatch vtb = validateScan.fetchNextReady();
+        if (vtb != null) {
+          return vtb.getLong(0, 0);
+        } else {
+          throw new DbException("Error reading results from query: " + countQuery);
+        }
+      } catch (final DbException e) {
+        System.err.println(e.getMessage());
+        return -1;
+      }
+    }
+
+    public void runTest() {
+      System.out.println("testing: " + host + ", using " + jdbcDriverName);
+      // Create the queries
+      final String insertQuery = "INSERT INTO " + table + " VALUES(?, ?)";
+      final String countQuery = "SELECT COUNT(*) FROM " + table;
+
+      // Create the connection
+      try {
+        final Connection jdbcConnection = DriverManager.getConnection(connectionString, user, password);
+
+        // Loop through N trials and insert the tuples
+        for (int i = 0; i < NTRIALS; i++) {
+
+          // Count the number of tuples in the table already
+          final long origNumberTuples = countNumberOfTuples(countQuery);
+          if (origNumberTuples < 0) {
+            throw new Exception("Error reading number of tuples in table.");
+          }
+
+          // Get the list of batches from the buffer
+          final List<TupleBatch> batches = tbb.getAll();
+          // Time the write operation
+          final long startTime = System.nanoTime();
+          for (final TupleBatch batch : batches) {
+            JdbcAccessMethod.tupleBatchInsert(jdbcConnection, insertQuery, batch);
+          }
+          final long endTime = System.nanoTime();
+
+          // Count the number of tuples in the table afterwards
+          final long finalNumberTuples = countNumberOfTuples(countQuery);
+          if (finalNumberTuples < 0) {
+            throw new Exception("Error reading number of tuples in table.");
+          }
+
+          if (finalNumberTuples == origNumberTuples + NUM_TUPLES) {
+            // Add to the sum of writes
+            sum += endTime - startTime;
+            numSuccessfulTrials++;
+          } else {
+            // This insertion had an error, do not add it to the sum
+          }
+        }
+
+        if (numSuccessfulTrials <= 0) {
+          error = true;
+          errorMessage = "No successful trials";
+        }
+
+        // Close the database connection
+        jdbcConnection.close();
+
+      } catch (final SQLException e) {
+        error = true;
+        errorMessage = "Unable to connect to database : " + host;
+      } catch (final Exception e) {
+        error = true;
+        errorMessage = e.getMessage();
+      }
+    }
+
+    @Override
+    public String toString() {
+      if (error) {
+        return errorMessage;
+      }
+
+      // Calculate the total time (in seconds)
+      final double seconds = sum / CONVERSION;
+
+      // Create the result message
+      final StringBuilder sb = new StringBuilder("");
+      sb.append("Results");
+      sb.append("\n\tNumber of trials = " + NTRIALS);
+      sb.append("\n\tTuple batch size = " + TupleBatch.BATCH_SIZE); // TODO : implement ability to alter batch sizes?
+      sb.append("\n\tTuples per trial = " + NUM_TUPLES);
+      sb.append("\n\n\tTotal time = " + String.format("%1$,.2f", seconds) + " seconds");
+      sb.append("\n\tTuples per second = " + String.format("%1$,.2f", (NUM_TUPLES * numSuccessfulTrials / seconds)));
+      return sb.toString();
+    }
+  }
+
   // the number of trials per speed test (higher number gives more accuracy, slower execution)
   private final static int NTRIALS = 5;
 
   // The total number of tuples to write for each trial
   private final static int NUM_TUPLES = 10000;
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  // Test Variables - for test internal use only
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  // Used to convert to seconds from nanoseconds
+  private final static double CONVERSION = 1000000000;
+
+  // The tuples to be used for the test
+  private TupleBatchBuffer tbb = null;
+
+  // The list of tests to run
+  private final List<SpeedTestData> tests = new ArrayList<SpeedTestData>();
+
+  @Test
+  public void runSpeedtest() {
+    System.out.println("Timing Insertion Speed:");
+    for (final SpeedTestData test : tests) {
+      System.out.println();
+      test.runTest();
+      System.out.println(test);
+    }
+  }
+
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  // Private helper classes
+  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   /**
    * Sets up the test structures and data.
@@ -49,9 +227,9 @@ public class JdbcInsertSpeedTest {
   @Before
   public void setup() {
     // Create the test tuple schema
-    ImmutableList<Type> types = ImmutableList.of(Type.INT_TYPE, Type.STRING_TYPE);
-    ImmutableList<String> columnNames = ImmutableList.of("key", "value");
-    Schema schema = new Schema(types, columnNames);
+    final ImmutableList<Type> types = ImmutableList.of(Type.INT_TYPE, Type.STRING_TYPE);
+    final ImmutableList<String> columnNames = ImmutableList.of("key", "value");
+    final Schema schema = new Schema(types, columnNames);
 
     // Create tuples and put them into the batch buffer
     tbb = new TupleBatchBuffer(schema);
@@ -93,183 +271,5 @@ public class JdbcInsertSpeedTest {
     table = "speedtesttable";
     connectionString = "jdbc:" + dbms + "://" + host + "/" + databaseName + "?rewriteBatchedStatements=true";
     tests.add(new SpeedTestData(host, jdbcDriverName, user, password, connectionString, table));
-  }
-
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  // Test Variables - for test internal use only
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  // Used to convert to seconds from nanoseconds
-  private final static double CONVERSION = 1000000000;
-
-  // The tuples to be used for the test
-  private TupleBatchBuffer tbb = null;
-
-  // The list of tests to run
-  private final List<SpeedTestData> tests = new ArrayList<SpeedTestData>();
-
-  @Test
-  public void runSpeedtest() {
-    System.out.println("Timing Insertion Speed:");
-    for (SpeedTestData test : tests) {
-      System.out.println();
-      test.runTest();
-      System.out.println(test);
-    }
-  }
-
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  // Private helper classes
-  // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  /**
-   * A simple class that holds the database connection data and runs the speed test on it's own database.
-   * 
-   * @author aarond79
-   */
-  private final class SpeedTestData {
-
-    // Identifiers for database that is being tested
-    private final String host;
-    private final String jdbcDriverName;
-    private final String user;
-    private final String password;
-    private final String connectionString;
-    private final String table;
-
-    // Total time received
-    private double sum = 0;
-    private int numSuccessfulTrials = 0;
-
-    // Error information
-    private boolean error = false;
-    private String errorMessage = null;
-
-    /**
-     * Construct the object.
-     * 
-     * @param host
-     * @param jdbcDriverName
-     * @param user
-     * @param password
-     * @param connectionString
-     * @param table
-     */
-    private SpeedTestData(String host, String jdbcDriverName, String user, String password, String connectionString,
-        String table) {
-      this.host = host;
-      this.jdbcDriverName = jdbcDriverName;
-      this.user = user;
-      this.password = password;
-      this.connectionString = connectionString;
-      this.table = table;
-    }
-
-    public void runTest() {
-      System.out.println("testing: " + host + ", using " + jdbcDriverName);
-      // Create the queries
-      String insertQuery = "INSERT INTO " + table + " VALUES(?, ?)";
-      String countQuery = "SELECT COUNT(*) FROM " + table;
-
-      // Create the connection
-      try {
-        Connection jdbcConnection = DriverManager.getConnection(connectionString, user, password);
-
-        // Loop through N trials and insert the tuples
-        for (int i = 0; i < NTRIALS; i++) {
-
-          // Count the number of tuples in the table already
-          long origNumberTuples = countNumberOfTuples(countQuery);
-          if (origNumberTuples < 0) {
-            throw new Exception("Error reading number of tuples in table.");
-          }
-
-          // Get the list of batches from the buffer
-          List<TupleBatch> batches = tbb.getAll();
-          // Time the write operation
-          long startTime = System.nanoTime();
-          for (TupleBatch batch : batches) {
-            JdbcAccessMethod.tupleBatchInsert(jdbcConnection, insertQuery, batch);
-          }
-          long endTime = System.nanoTime();
-
-          // Count the number of tuples in the table afterwards
-          long finalNumberTuples = countNumberOfTuples(countQuery);
-          if (finalNumberTuples < 0) {
-            throw new Exception("Error reading number of tuples in table.");
-          }
-
-          if (finalNumberTuples == origNumberTuples + NUM_TUPLES) {
-            // Add to the sum of writes
-            sum += endTime - startTime;
-            numSuccessfulTrials++;
-          } else {
-            // This insertion had an error, do not add it to the sum
-          }
-        }
-
-        if (numSuccessfulTrials <= 0) {
-          error = true;
-          errorMessage = "No successful trials";
-        }
-
-        // Close the database connection
-        jdbcConnection.close();
-
-      } catch (SQLException e) {
-        error = true;
-        errorMessage = "Unable to connect to database : " + host;
-      } catch (Exception e) {
-        error = true;
-        errorMessage = e.getMessage();
-      }
-    }
-
-    /**
-     * Counts the number of tuples in the database table.
-     * 
-     * @param countQuery
-     * @return
-     */
-    private long countNumberOfTuples(String countQuery) {
-      ImmutableList<Type> countTypes = ImmutableList.of(Type.INT_TYPE);
-      ImmutableList<String> countColumnNames = ImmutableList.of("value");
-      Schema countSchema = new Schema(countTypes, countColumnNames);
-      JdbcQueryScan validateScan =
-          new JdbcQueryScan(jdbcDriverName, connectionString, countQuery, countSchema, user, password);
-
-      try {
-        validateScan.open();
-        TupleBatch vtb = (TupleBatch) validateScan.fetchNextReady();
-        if (vtb != null) {
-          return vtb.getLong(0, 0);
-        } else {
-          throw new DbException("Error reading results from query: " + countQuery);
-        }
-      } catch (DbException e) {
-        System.err.println(e.getMessage());
-        return -1;
-      }
-    }
-
-    @Override
-    public String toString() {
-      if (error) {
-        return errorMessage;
-      }
-
-      // Calculate the total time (in seconds)
-      double seconds = sum / CONVERSION;
-
-      // Create the result message
-      StringBuilder sb = new StringBuilder("");
-      sb.append("Results");
-      sb.append("\n\tNumber of trials = " + NTRIALS);
-      sb.append("\n\tTuple batch size = " + TupleBatch.BATCH_SIZE); // TODO : implement ability to alter batch sizes?
-      sb.append("\n\tTuples per trial = " + NUM_TUPLES);
-      sb.append("\n\n\tTotal time = " + String.format("%1$,.2f", seconds) + " seconds");
-      sb.append("\n\tTuples per second = " + String.format("%1$,.2f", (NUM_TUPLES * numSuccessfulTrials / seconds)));
-      return sb.toString();
-    }
   }
 }

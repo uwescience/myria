@@ -38,12 +38,12 @@ public class MergeTest extends SystemTestBase {
     final ImmutableList<String> table1ColumnNames = ImmutableList.of("follower", "followee");
     final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
 
-    long[] tbl1ID1 = TestUtils.randomLong(1, MaxID - 1, numTbl1);
-    long[] tbl1ID2 = TestUtils.randomLong(1, MaxID - 1, numTbl1);
-    long[] tbl2ID1 = TestUtils.randomLong(1, MaxID - 1, numTbl2);
-    long[] tbl2ID2 = TestUtils.randomLong(1, MaxID - 1, numTbl2);
-    TupleBatchBuffer tbl1 = new TupleBatchBuffer(tableSchema);
-    TupleBatchBuffer tbl2 = new TupleBatchBuffer(tableSchema);
+    final long[] tbl1ID1 = TestUtils.randomLong(1, MaxID - 1, numTbl1);
+    final long[] tbl1ID2 = TestUtils.randomLong(1, MaxID - 1, numTbl1);
+    final long[] tbl2ID1 = TestUtils.randomLong(1, MaxID - 1, numTbl2);
+    final long[] tbl2ID2 = TestUtils.randomLong(1, MaxID - 1, numTbl2);
+    final TupleBatchBuffer tbl1 = new TupleBatchBuffer(tableSchema);
+    final TupleBatchBuffer tbl2 = new TupleBatchBuffer(tableSchema);
     for (int i = 0; i < numTbl1; i++) {
       tbl1.put(0, tbl1ID1[i]);
       tbl1.put(1, tbl1ID2[i]);
@@ -86,7 +86,7 @@ public class MergeTest extends SystemTestBase {
     while ((result = Server.runningInstance.startServerQuery(0, serverPlan)) == null) {
       try {
         Thread.sleep(100);
-      } catch (InterruptedException e) {
+      } catch (final InterruptedException e) {
         e.printStackTrace();
         Thread.currentThread().interrupt();
       }

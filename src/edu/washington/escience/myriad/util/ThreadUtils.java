@@ -10,10 +10,10 @@ public class ThreadUtils {
    * @param tag a string printed before the message. For identifying calls to this function.
    */
   public static void printCurrentThreads(final String tag) {
-    Set<Thread> threadSet = Thread.getAllStackTraces().keySet();
+    final Set<Thread> threadSet = Thread.getAllStackTraces().keySet();
     System.out.println(tag + ":" + threadSet.size() + " threads currently active.");
     System.out.print("\t");
-    for (Thread t : threadSet) {
+    for (final Thread t : threadSet) {
       System.out.print(t.getId() + ", ");
     }
     System.out.println();

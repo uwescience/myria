@@ -31,7 +31,7 @@ public final class LocalMultiwayProducer extends Producer {
 
       try {
 
-        TupleBatchBuffer buffer = new TupleBatchBuffer(getSchema());
+        final TupleBatchBuffer buffer = new TupleBatchBuffer(getSchema());
 
         TupleBatch tup = null;
         TransportMessage[] dms = null;
@@ -39,19 +39,19 @@ public final class LocalMultiwayProducer extends Producer {
           tup.compactInto(buffer);
 
           while ((dms = buffer.popFilledAsTM(operatorIDs)) != null) {
-            for (TransportMessage dm : dms) {
+            for (final TransportMessage dm : dms) {
               channel.write(dm);
             }
           }
         }
 
         while ((dms = buffer.popAnyAsTM(operatorIDs)) != null) {
-          for (TransportMessage dm : dms) {
+          for (final TransportMessage dm : dms) {
             channel.write(dm);
           }
         }
 
-        for (ExchangePairID operatorID : operatorIDs) {
+        for (final ExchangePairID operatorID : operatorIDs) {
           channel.write(IPCUtils.eosTM(operatorID));
         }
 
@@ -99,6 +99,11 @@ public final class LocalMultiwayProducer extends Producer {
   }
 
   @Override
+  public TupleBatch fetchNextReady() throws DbException {
+    return fetchNext();
+  }
+
+  @Override
   public Operator[] getChildren() {
     return new Operator[] { child };
   }
@@ -117,11 +122,6 @@ public final class LocalMultiwayProducer extends Producer {
   @Override
   public void setChildren(final Operator[] children) {
     child = children[0];
-  }
-
-  @Override
-  public TupleBatch fetchNextReady() throws DbException {
-    return fetchNext();
   }
 
 }

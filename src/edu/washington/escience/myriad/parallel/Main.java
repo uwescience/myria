@@ -114,7 +114,7 @@ public final class Main {
     while (Server.runningInstance.startServerQuery(0, serverPlan) == null) {
       try {
         Thread.sleep(100);
-      } catch (InterruptedException e) {
+      } catch (final InterruptedException e) {
         e.printStackTrace();
         Thread.currentThread().interrupt();
       }
@@ -133,9 +133,9 @@ public final class Main {
       @Override
       public void run() {
         try {
-          String catalogFileName = FilenameUtils.concat("/tmp/multitest", "master.catalog");
+          final String catalogFileName = FilenameUtils.concat("/tmp/multitest", "master.catalog");
           Server.main(new String[] { catalogFileName });
-        } catch (IOException e) {
+        } catch (final IOException e) {
           throw new RuntimeException(e);
         }
       }

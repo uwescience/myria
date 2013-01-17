@@ -34,7 +34,7 @@ public class CatalogTest {
     try {
       catalog = Catalog.createInMemory(DESCRIPTION);
       assertTrue(catalog.getDescription().equals(DESCRIPTION));
-    } catch (CatalogException e) {
+    } catch (final CatalogException e) {
       e.printStackTrace();
       fail(e.toString());
     }
@@ -42,10 +42,10 @@ public class CatalogTest {
     /* Set and test the server */
     try {
       catalog.addMaster(SERVER);
-      List<SocketInfo> servers = catalog.getMasters();
+      final List<SocketInfo> servers = catalog.getMasters();
       assertTrue(servers.size() == 1);
       assertTrue(servers.get(0).toString().equals(SERVER));
-    } catch (CatalogException e) {
+    } catch (final CatalogException e) {
       e.printStackTrace();
       fail(e.toString());
     }
@@ -55,14 +55,14 @@ public class CatalogTest {
       for (final String worker : WORKERS) {
         catalog.addWorker(worker);
       }
-      Map<Integer, SocketInfo> workers = catalog.getWorkers();
+      final Map<Integer, SocketInfo> workers = catalog.getWorkers();
       assertTrue(workers.size() == WORKERS.length);
       /* Slightly annoying equality check here */
-      Collection<SocketInfo> values = workers.values();
+      final Collection<SocketInfo> values = workers.values();
       for (final String worker : WORKERS) {
         assertTrue(values.contains(SocketInfo.valueOf(worker)));
       }
-    } catch (CatalogException e) {
+    } catch (final CatalogException e) {
       e.printStackTrace();
       fail(e.toString());
     }

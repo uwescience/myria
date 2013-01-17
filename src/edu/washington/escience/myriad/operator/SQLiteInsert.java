@@ -38,15 +38,6 @@ public final class SQLiteInsert extends RootOperator {
   private String insertString;
 
   /**
-   * Needed for Worker.localizeQueryPlan.
-   * 
-   * @param pathToSQLiteDb the path to the database.
-   */
-  public void setPathToSQLiteDb(final String pathToSQLiteDb) {
-    this.pathToSQLiteDb = pathToSQLiteDb;
-  }
-
-  /**
    * Constructs an insertion operator to store the tuples from the specified child in a SQLite database in the specified
    * file. This operator will only append to an existing database, or create and initialize one that does not exist.
    * 
@@ -86,38 +77,17 @@ public final class SQLiteInsert extends RootOperator {
   }
 
   @Override
-  public void init() throws DbException {
-    File dbFile = new File(pathToSQLiteDb);
-
-    /* Try and create a new file. */
-    boolean created;
+  public void cleanup() {
     try {
-      created = dbFile.createNewFile();
-    } catch (IOException e) {
-      throw new DbException(e);
+      queue.stop(true).join();
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
     }
-
-    /* Open a connection to that SQLite database. If creation succeeded, create a new table as well. */
-    queue = new SQLiteQueue(dbFile);
-    queue.start();
-    if (created || createTable) {
-      /* If succeeded, populate its schema. */
-      queue.execute(new SQLiteJob<Integer>() {
-        @Override
-        protected Integer job(final SQLiteConnection connection) throws SQLiteException {
-          connection.exec(SQLiteUtils.createStatementFromSchema(getSchema(), relationName));
-          return null;
-        }
-      });
-    }
-
-    /* Set up the insert statement. */
-    insertString = SQLiteUtils.insertStatementFromSchema(getSchema(), relationName);
   }
 
   @Override
   protected final void consumeTuples(final TupleBatch tupleBatch) throws DbException {
-    SQLiteJob<Object> future = new SQLiteJob<Object>() {
+    final SQLiteJob<Object> future = new SQLiteJob<Object>() {
       @Override
       protected Object job(final SQLiteConnection sqliteConnection) throws SQLiteException {
         /* BEGIN TRANSACTION */
@@ -140,22 +110,52 @@ public final class SQLiteInsert extends RootOperator {
     try {
       future.get();
       queue.flush();
-    } catch (InterruptedException e) {
+    } catch (final InterruptedException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
-    } catch (ExecutionException e) {
+    } catch (final ExecutionException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
     }
   }
 
   @Override
-  public void cleanup() {
+  public void init() throws DbException {
+    final File dbFile = new File(pathToSQLiteDb);
+
+    /* Try and create a new file. */
+    boolean created;
     try {
-      queue.stop(true).join();
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
+      created = dbFile.createNewFile();
+    } catch (final IOException e) {
+      throw new DbException(e);
     }
+
+    /* Open a connection to that SQLite database. If creation succeeded, create a new table as well. */
+    queue = new SQLiteQueue(dbFile);
+    queue.start();
+    if (created || createTable) {
+      /* If succeeded, populate its schema. */
+      queue.execute(new SQLiteJob<Integer>() {
+        @Override
+        protected Integer job(final SQLiteConnection connection) throws SQLiteException {
+          connection.exec(SQLiteUtils.createStatementFromSchema(getSchema(), relationName));
+          return null;
+        }
+      });
+    }
+
+    /* Set up the insert statement. */
+    insertString = SQLiteUtils.insertStatementFromSchema(getSchema(), relationName);
+  }
+
+  /**
+   * Needed for Worker.localizeQueryPlan.
+   * 
+   * @param pathToSQLiteDb the path to the database.
+   */
+  public void setPathToSQLiteDb(final String pathToSQLiteDb) {
+    this.pathToSQLiteDb = pathToSQLiteDb;
   }
 
 }

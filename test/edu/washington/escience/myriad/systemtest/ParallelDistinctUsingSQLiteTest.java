@@ -36,15 +36,15 @@ public class ParallelDistinctUsingSQLiteTest extends SystemTestBase {
     createTable(WORKER_ID[0], "temptable", "id int, name varchar(20)");
     createTable(WORKER_ID[1], "temptable", "id int, name varchar(20)");
 
-    String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, 20, 20);
-    long[] ids = TestUtils.randomLong(1000, 1005, names.length);
+    final String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, 20, 20);
+    final long[] ids = TestUtils.randomLong(1000, 1005, names.length);
 
-    TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
+    final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
       tbb.put(0, ids[i]);
       tbb.put(1, names[i]);
     }
-    HashMap<Tuple, Integer> expectedResult = TestUtils.distinct(tbb);
+    final HashMap<Tuple, Integer> expectedResult = TestUtils.distinct(tbb);
 
     TupleBatch tb = null;
     while ((tb = tbb.popAny()) != null) {
@@ -77,17 +77,17 @@ public class ParallelDistinctUsingSQLiteTest extends SystemTestBase {
     Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
     LOGGER.debug("Query dispatched to the workers");
     TupleBatchBuffer result = null;
-    CollectConsumer serverPlan = new CollectConsumer(schema, serverReceiveID, new int[] { WORKER_ID[1] });
+    final CollectConsumer serverPlan = new CollectConsumer(schema, serverReceiveID, new int[] { WORKER_ID[1] });
     while ((result = Server.runningInstance.startServerQuery(0, serverPlan)) == null) {
       try {
         Thread.sleep(100);
-      } catch (InterruptedException e) {
+      } catch (final InterruptedException e) {
         e.printStackTrace();
         Thread.currentThread().interrupt();
       }
     }
 
-    HashMap<Tuple, Integer> resultSet = TestUtils.tupleBatchToTupleBag(result);
+    final HashMap<Tuple, Integer> resultSet = TestUtils.tupleBatchToTupleBag(result);
 
     TestUtils.assertTupleBagEqual(expectedResult, resultSet);
 

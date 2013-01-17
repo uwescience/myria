@@ -47,17 +47,17 @@ public final class Aggregate extends Operator {
       throw new IllegalArgumentException("aggregation fields must not be empty");
     }
 
-    ImmutableList.Builder<Type> gTypes = ImmutableList.builder();
-    ImmutableList.Builder<String> gNames = ImmutableList.builder();
+    final ImmutableList.Builder<Type> gTypes = ImmutableList.builder();
+    final ImmutableList.Builder<String> gNames = ImmutableList.builder();
 
-    Schema childSchema = child.getSchema();
+    final Schema childSchema = child.getSchema();
 
     this.child = child;
     this.afields = afields;
     agg = new Aggregator[aggOps.length];
 
     int idx = 0;
-    for (int afield : afields) {
+    for (final int afield : afields) {
       switch (childSchema.getFieldType(afield)) {
         case BOOLEAN_TYPE:
           agg[idx] = new BooleanAggregator(afield, childSchema.getFieldName(afield), aggOps[idx]);
@@ -93,28 +93,36 @@ public final class Aggregate extends Operator {
   }
 
   @Override
+  protected void cleanup() throws DbException {
+    for (int i = 0; i < agg.length; i++) {
+      agg[i] = agg[i].freshCopyYourself();
+    }
+  }
+
+  @Override
   protected TupleBatch fetchNext() throws DbException {
 
     TupleBatch tb = null;
     while ((tb = child.next()) != null) {
-      for (Aggregator ag : agg) {
+      for (final Aggregator ag : agg) {
         ag.add(tb);
       }
     }
-    TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
+    final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     int fromIndex = 0;
-    for (Aggregator element : agg) {
+    for (final Aggregator element : agg) {
       element.getResult(tbb, fromIndex);
       fromIndex += element.getResultSchema().numFields();
     }
-    TupleBatch result = tbb.popAny();
+    final TupleBatch result = tbb.popAny();
     setEOS();
     return result;
   }
 
   @Override
-  public Schema getSchema() {
-    return schema;
+  protected TupleBatch fetchNextReady() throws DbException {
+    // TODO non-blocking
+    return fetchNext();
   }
 
   @Override
@@ -123,8 +131,8 @@ public final class Aggregate extends Operator {
   }
 
   @Override
-  public void setChildren(final Operator[] children) {
-    child = children[0];
+  public Schema getSchema() {
+    return schema;
   }
 
   @Override
@@ -132,16 +140,8 @@ public final class Aggregate extends Operator {
   }
 
   @Override
-  protected void cleanup() throws DbException {
-    for (int i = 0; i < agg.length; i++) {
-      agg[i] = agg[i].freshCopyYourself();
-    }
-  }
-
-  @Override
-  protected TupleBatch fetchNextReady() throws DbException {
-    // TODO non-blocking
-    return fetchNext();
+  public void setChildren(final Operator[] children) {
+    child = children[0];
   }
 
 }

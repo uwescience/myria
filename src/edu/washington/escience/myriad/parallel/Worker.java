@@ -62,9 +62,6 @@ import edu.washington.escience.myriad.util.JVMUtils;
  * 
  */
 public class Worker {
-  /** The logger for this class. Defaults to myriad level, but could be set to a finer granularity if needed. */
-  private static final Logger LOGGER = Logger.getLogger(Worker.class.getName());
-
   protected final class MessageProcessor extends Thread {
     @Override
     public void run() {
@@ -88,7 +85,7 @@ public class Worker {
               final Operator[] query = (Operator[]) (osis.readObject());
               try {
                 receiveQuery(query);
-              } catch (DbException e) {
+              } catch (final DbException e) {
                 e.printStackTrace();
                 throw new RuntimeException(e);
               }
@@ -139,13 +136,13 @@ public class Worker {
   }
 
   public static class MessageWrapper {
+    public int senderID;
+
+    public TransportMessage message;
     public MessageWrapper(final int senderID, final TransportMessage message) {
       this.senderID = senderID;
       this.message = message;
     }
-
-    public int senderID;
-    public TransportMessage message;
   }
 
   /**
@@ -159,7 +156,7 @@ public class Worker {
         queries = queryPlan;
         if (queries != null) {
           LOGGER.log(Level.INFO, "Worker start processing query");
-          for (Operator query : queries) {
+          for (final Operator query : queries) {
             try {
               ((Producer) query).open();
             } catch (final DbException e1) {
@@ -168,7 +165,7 @@ public class Worker {
           }
           int endCount = 0;
           while (true) {
-            for (Operator query : queries) {
+            for (final Operator query : queries) {
               try {
                 if (query.isOpen() && ((Producer) query).next() == null) {
                   endCount++;
@@ -203,20 +200,6 @@ public class Worker {
    * a shutdown message is received.
    */
   protected class WorkerLivenessController {
-    private final Timer timer = new Timer();
-
-    protected class ShutdownChecker extends TimerTask {
-      @Override
-      public final void run() {
-        if (toShutdown) {
-          shutdown();
-          // JVMUtils.shutdownVM();
-        }
-
-      }
-
-    }
-
     protected class Reporter extends TimerTask {
       private volatile boolean inRun = false;
 
@@ -248,6 +231,20 @@ public class Worker {
       }
     }
 
+    protected class ShutdownChecker extends TimerTask {
+      @Override
+      public final void run() {
+        if (toShutdown) {
+          shutdown();
+          // JVMUtils.shutdownVM();
+        }
+
+      }
+
+    }
+
+    private final Timer timer = new Timer();
+
     public final void start() {
       try {
         timer.schedule(new ShutdownChecker(), 100, 100);
@@ -261,19 +258,12 @@ public class Worker {
     }
   }
 
+  /** The logger for this class. Defaults to myriad level, but could be set to a finer granularity if needed. */
+  private static final Logger LOGGER = Logger.getLogger(Worker.class.getName());
+
   static final String usage = "Usage: worker [--conf <conf_dir>]";
 
   public static final String DEFAULT_DATA_DIR = "data";
-
-  /**
-   * Find out all the ParallelOperatorIDs of all consuming operators: ShuffleConsumer, CollectConsumer, and
-   * BloomFilterConsumer running at this worker. The inBuffer needs the IDs to distribute the ExchangeMessages received.
-   */
-  public static void collectConsumerOperatorIDs(final Operator[] roots, final ArrayList<ExchangePairID> oIds) {
-    for (Operator root : roots) {
-      collectConsumerOperatorIDs(root, oIds);
-    }
-  }
 
   public static void collectConsumerOperatorIDs(final Operator root, final ArrayList<ExchangePairID> oIds) {
     if (root instanceof Consumer) {
@@ -288,6 +278,16 @@ public class Worker {
           return;
         }
       }
+    }
+  }
+
+  /**
+   * Find out all the ParallelOperatorIDs of all consuming operators: ShuffleConsumer, CollectConsumer, and
+   * BloomFilterConsumer running at this worker. The inBuffer needs the IDs to distribute the ExchangeMessages received.
+   */
+  public static void collectConsumerOperatorIDs(final Operator[] roots, final ArrayList<ExchangePairID> oIds) {
+    for (final Operator root : roots) {
+      collectConsumerOperatorIDs(root, oIds);
     }
   }
 
@@ -386,7 +386,7 @@ public class Worker {
     catalog = WorkerCatalog.open(FilenameUtils.concat(workingDirectory, "worker.catalog"));
     myID = Integer.parseInt(catalog.getConfigurationValue("worker.identifier"));
     databaseHandle = new Properties();
-    String databaseType = catalog.getConfigurationValue("worker.data.type");
+    final String databaseType = catalog.getConfigurationValue("worker.data.type");
     switch (databaseType) {
       case "sqlite":
         databaseHandle.setProperty("sqliteFile", catalog.getConfigurationValue("worker.data.sqlite.db"));
@@ -453,22 +453,6 @@ public class Worker {
     return queryPlan != null;
   }
 
-  /**
-   * localize the received query plan. Some information that are required to get the query plan executed need to be
-   * replaced by local versions. For example, the table in the SeqScan operator need to be replaced by the local table.
-   * Note that Producers and Consumers also needs local information.
-   * 
-   * @throws DbException
-   */
-  public final void localizeQueryPlan(final Operator[] queryPlans) throws DbException {
-    if (queryPlans == null) {
-      return;
-    }
-    for (Operator queryPlan : queryPlans) {
-      localizeQueryPlan(queryPlan);
-    }
-  }
-
   public final void localizeQueryPlan(final Operator queryPlan) throws DbException {
     if (queryPlan == null) {
       return;
@@ -514,7 +498,7 @@ public class Worker {
       bdr.setPathToSQLiteDb(sqliteDatabaseFilename);
     }
 
-    Operator[] children = queryPlan.getChildren();
+    final Operator[] children = queryPlan.getChildren();
 
     if (children != null) {
       for (final Operator child : children) {
@@ -522,6 +506,22 @@ public class Worker {
           localizeQueryPlan(child);
         }
       }
+    }
+  }
+
+  /**
+   * localize the received query plan. Some information that are required to get the query plan executed need to be
+   * replaced by local versions. For example, the table in the SeqScan operator need to be replaced by the local table.
+   * Note that Producers and Consumers also needs local information.
+   * 
+   * @throws DbException
+   */
+  public final void localizeQueryPlan(final Operator[] queryPlans) throws DbException {
+    if (queryPlans == null) {
+      return;
+    }
+    for (final Operator queryPlan : queryPlans) {
+      localizeQueryPlan(queryPlan);
     }
   }
 
@@ -565,7 +565,7 @@ public class Worker {
 
   protected final void sendMessageToMaster(final TransportMessage message, final ChannelFutureListener callback) {
     LOGGER.log(Level.INFO, "send back query ready");
-    ChannelFuture cf = Worker.this.connectionPool.sendShortMessage(0, message);
+    final ChannelFuture cf = Worker.this.connectionPool.sendShortMessage(0, message);
     if (callback != null) {
       cf.addListener(callback);
     }

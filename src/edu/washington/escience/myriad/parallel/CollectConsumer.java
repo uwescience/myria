@@ -93,6 +93,21 @@ public final class CollectConsumer extends Consumer {
   }
 
   @Override
+  public TupleBatch fetchNextReady() throws DbException {
+    if (!eos()) {
+      try {
+        return getTuples(false);
+      } catch (final InterruptedException e) {
+        e.printStackTrace();
+        Thread.currentThread().interrupt();
+        throw new DbException(e.getLocalizedMessage());
+      }
+    }
+    return null;
+
+  }
+
+  @Override
   public Operator[] getChildren() {
     return new Operator[] { child };
   }
@@ -142,20 +157,5 @@ public final class CollectConsumer extends Consumer {
   @Override
   public void setChildren(final Operator[] children) {
     child = (CollectProducer) children[0];
-  }
-
-  @Override
-  public TupleBatch fetchNextReady() throws DbException {
-    if (!eos()) {
-      try {
-        return getTuples(false);
-      } catch (final InterruptedException e) {
-        e.printStackTrace();
-        Thread.currentThread().interrupt();
-        throw new DbException(e.getLocalizedMessage());
-      }
-    }
-    return null;
-
   }
 }

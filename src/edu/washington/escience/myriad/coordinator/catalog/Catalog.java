@@ -372,6 +372,41 @@ public final class Catalog {
   }
 
   /**
+   * @return the set of workers that are alive.
+   * @throws CatalogException if there is an error in the database.
+   */
+  @SuppressWarnings("unchecked")
+  public Set<Integer> getAliveWorkers() throws CatalogException {
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+
+    try {
+      return (Set<Integer>) queue.execute(new SQLiteJob<Object>() {
+        @Override
+        protected Object job(final SQLiteConnection sqliteConnection) throws SQLiteException, CatalogException {
+          final Set<Integer> workers = new HashSet<Integer>();
+
+          try {
+            final SQLiteStatement statement = sqliteConnection.prepare("SELECT worker_id FROM alive_workers;", false);
+            while (statement.step()) {
+              workers.add(statement.columnInt(0));
+            }
+            statement.dispose();
+          } catch (final SQLiteException e) {
+            LOGGER.error(e.toString());
+            throw new CatalogException(e);
+          }
+
+          return workers;
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  /**
    * Extract the value of a particular configuration parameter from the database. Returns null if the parameter is not
    * configured.
    * 
@@ -482,41 +517,6 @@ public final class Catalog {
             final SQLiteStatement statement = sqliteConnection.prepare("SELECT * FROM workers;", false);
             while (statement.step()) {
               workers.put(statement.columnInt(0), SocketInfo.valueOf(statement.columnString(1)));
-            }
-            statement.dispose();
-          } catch (final SQLiteException e) {
-            LOGGER.error(e.toString());
-            throw new CatalogException(e);
-          }
-
-          return workers;
-        }
-      }).get();
-    } catch (InterruptedException | ExecutionException e) {
-      throw new CatalogException(e);
-    }
-  }
-
-  /**
-   * @return the set of workers that are alive.
-   * @throws CatalogException if there is an error in the database.
-   */
-  @SuppressWarnings("unchecked")
-  public Set<Integer> getAliveWorkers() throws CatalogException {
-    if (isClosed) {
-      throw new CatalogException("Catalog is closed.");
-    }
-
-    try {
-      return (Set<Integer>) queue.execute(new SQLiteJob<Object>() {
-        @Override
-        protected Object job(final SQLiteConnection sqliteConnection) throws SQLiteException, CatalogException {
-          final Set<Integer> workers = new HashSet<Integer>();
-
-          try {
-            final SQLiteStatement statement = sqliteConnection.prepare("SELECT worker_id FROM alive_workers;", false);
-            while (statement.step()) {
-              workers.add(statement.columnInt(0));
             }
             statement.dispose();
           } catch (final SQLiteException e) {

@@ -18,6 +18,21 @@ public final class MasterApiServer {
   /** The Catalog for this application. */
   private static Catalog catalog;
 
+  public static Catalog getCatalog() {
+    return catalog;
+  }
+
+  private static void setCatalog(final Catalog catalog) {
+    MasterApiServer.catalog = catalog;
+  }
+
+  public static void setUp(final Catalog catalog) throws Exception {
+    if (MasterApiServer.getCatalog() != null) {
+      throw new IllegalStateException("MasterServer.catalog is already initialized");
+    }
+    MasterApiServer.setCatalog(catalog);
+  }
+
   /** The Reslet Component is the main class that holds multiple servers/hosts for this application. */
   private final Component component;
 
@@ -32,18 +47,11 @@ public final class MasterApiServer {
     server = component.getServers().add(Protocol.HTTP, PORT);
 
     /* Add a JAX-RS runtime environment, using our MasterApplication implemention. */
-    JaxRsApplication application = new JaxRsApplication();
+    final JaxRsApplication application = new JaxRsApplication();
     application.add(new MasterApplication());
 
     /* Attach the application to the component */
     component.getDefaultHost().attach(application);
-  }
-
-  public static void setUp(final Catalog catalog) throws Exception {
-    if (MasterApiServer.getCatalog() != null) {
-      throw new IllegalStateException("MasterServer.catalog is already initialized");
-    }
-    MasterApiServer.setCatalog(catalog);
   }
 
   public void start() throws Exception {
@@ -57,13 +65,5 @@ public final class MasterApiServer {
     component.stop();
     getCatalog().close();
     System.out.println("Server stopped");
-  }
-
-  public static Catalog getCatalog() {
-    return catalog;
-  }
-
-  private static void setCatalog(Catalog catalog) {
-    MasterApiServer.catalog = catalog;
   }
 }

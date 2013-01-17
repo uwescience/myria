@@ -68,20 +68,10 @@ public final class FileScan extends LeafOperator {
   }
 
   @Override
-  public void init() throws DbException {
-    try {
-      tokenizer = new StreamTokenizer(new BufferedReader(new FileReader(file)));
-    } catch (FileNotFoundException e) {
-      throw new DbException(e);
-    }
-    tokenizer.eolIsSignificant(true);
-    if (commaIsDelimiter) {
-      tokenizer.whitespaceChars(',', ',');
-    }
-    try {
-      tokenizer.nextToken();
-    } catch (IOException e) {
-      throw new DbException(e);
+  public void cleanup() {
+    tokenizer = null;
+    while (buffer.numTuples() > 0) {
+      buffer.popAny();
     }
   }
 
@@ -95,7 +85,7 @@ public final class FileScan extends LeafOperator {
           count = 0;
           try {
             tokenizer.nextToken();
-          } catch (IOException e) {
+          } catch (final IOException e) {
             throw new DbException(e);
           }
           continue;
@@ -162,14 +152,14 @@ public final class FileScan extends LeafOperator {
             buffer.put(count, tokenizer.sval);
             break;
         }
-      } catch (NumberFormatException e) {
+      } catch (final NumberFormatException e) {
         throw new DbException("Error parsing column " + count + " of row " + tokenizer.lineno());
       }
 
       /* Advance to next column. */
       try {
         tokenizer.nextToken();
-      } catch (IOException e) {
+      } catch (final IOException e) {
         throw new DbException(e);
       }
       ++count;
@@ -178,20 +168,30 @@ public final class FileScan extends LeafOperator {
   }
 
   @Override
+  public TupleBatch fetchNextReady() throws DbException {
+    return fetchNext();
+  }
+
+  @Override
   public Schema getSchema() {
     return schema;
   }
 
   @Override
-  public void cleanup() {
-    tokenizer = null;
-    while (buffer.numTuples() > 0) {
-      buffer.popAny();
+  public void init() throws DbException {
+    try {
+      tokenizer = new StreamTokenizer(new BufferedReader(new FileReader(file)));
+    } catch (final FileNotFoundException e) {
+      throw new DbException(e);
     }
-  }
-
-  @Override
-  public TupleBatch fetchNextReady() throws DbException {
-    return fetchNext();
+    tokenizer.eolIsSignificant(true);
+    if (commaIsDelimiter) {
+      tokenizer.whitespaceChars(',', ',');
+    }
+    try {
+      tokenizer.nextToken();
+    } catch (final IOException e) {
+      throw new DbException(e);
+    }
   }
 }

@@ -14,20 +14,6 @@ public final class SocketInfo implements Serializable {
   private static final int MAGIC_HASHCODE1 = 365;
   /** Class-specific magic number used to generate the hash code. */
   private static final int MAGIC_HASHCODE2 = 91;
-  /** The hash code of this immutable SocketInfo. */
-  private Integer myHashCode = null;
-
-  /** Required for Java serialization. */
-  private static final long serialVersionUID = 1L;
-  /** The host (name or IP) of the network connection. */
-  private final String host;
-  /** The port of the connection. */
-  private final int port;
-  /** An Address that holds these info. */
-  private transient InetSocketAddress address;
-  /** A String host:port. */
-  private transient String hostPortString;
-
   /**
    * Create a SocketInfo object from a string in the format host:port.
    * 
@@ -43,6 +29,20 @@ public final class SocketInfo implements Serializable {
     return new SocketInfo(parts[0], Integer.parseInt(parts[1]));
   }
 
+  /** The hash code of this immutable SocketInfo. */
+  private Integer myHashCode = null;
+  /** Required for Java serialization. */
+  private static final long serialVersionUID = 1L;
+  /** The host (name or IP) of the network connection. */
+  private final String host;
+  /** The port of the connection. */
+  private final int port;
+  /** An Address that holds these info. */
+  private transient InetSocketAddress address;
+
+  /** A String host:port. */
+  private transient String hostPortString;
+
   /**
    * 
    * @param host the name or IPv4 of the network address.
@@ -53,6 +53,15 @@ public final class SocketInfo implements Serializable {
     Objects.requireNonNull(port);
     this.host = host;
     this.port = port;
+  }
+
+  @Override
+  public boolean equals(final Object other) {
+    if (!(other instanceof SocketInfo)) {
+      return false;
+    }
+    final SocketInfo sockInfo = (SocketInfo) other;
+    return (sockInfo.host.equals(host)) && (sockInfo.port == port);
   }
 
   /**
@@ -80,23 +89,6 @@ public final class SocketInfo implements Serializable {
   }
 
   @Override
-  public String toString() {
-    if (hostPortString == null) {
-      hostPortString = host + ":" + port;
-    }
-    return hostPortString;
-  }
-
-  @Override
-  public boolean equals(final Object other) {
-    if (!(other instanceof SocketInfo)) {
-      return false;
-    }
-    SocketInfo sockInfo = (SocketInfo) other;
-    return (sockInfo.host.equals(host)) && (sockInfo.port == port);
-  }
-
-  @Override
   public int hashCode() {
     /* If cached, use the cached version. */
     if (myHashCode != null) {
@@ -105,8 +97,16 @@ public final class SocketInfo implements Serializable {
     /* Compute and cache the hash code. */
     final HashCodeBuilder hb = new HashCodeBuilder(MAGIC_HASHCODE1, MAGIC_HASHCODE2);
     hb.append(host).append(port);
-    int hash = hb.toHashCode();
+    final int hash = hb.toHashCode();
     myHashCode = hash;
     return hash;
+  }
+
+  @Override
+  public String toString() {
+    if (hostPortString == null) {
+      hostPortString = host + ":" + port;
+    }
+    return hostPortString;
   }
 }

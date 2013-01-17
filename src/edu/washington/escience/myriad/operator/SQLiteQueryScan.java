@@ -52,6 +52,11 @@ public class SQLiteQueryScan extends Operator {
   }
 
   @Override
+  public TupleBatch fetchNextReady() throws DbException {
+    return fetchNext();
+  }
+
+  @Override
   public Operator[] getChildren() {
     return children;
   }
@@ -75,11 +80,6 @@ public class SQLiteQueryScan extends Operator {
       throw new DbException("Can't change the state of an opened operator.");
     }
     this.databaseFilename = databaseFilename;
-  }
-
-  @Override
-  public TupleBatch fetchNextReady() throws DbException {
-    return fetchNext();
   }
 
 }

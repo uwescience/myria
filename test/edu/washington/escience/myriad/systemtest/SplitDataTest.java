@@ -44,7 +44,7 @@ public class SplitDataTest extends SystemTestBase {
     final SQLiteInsert insert = new SQLiteInsert(gather, "tuples_rr", null, null, true);
 
     final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
-    for (int i : WORKER_ID) {
+    for (final int i : WORKER_ID) {
       workerPlans.put(i, new Operator[] { insert });
     }
 
@@ -62,7 +62,7 @@ public class SplitDataTest extends SystemTestBase {
     while (Server.runningInstance.startServerQuery(0, scatter) != true) {
       try {
         Thread.sleep(100);
-      } catch (InterruptedException e) {
+      } catch (final InterruptedException e) {
         e.printStackTrace();
         Thread.currentThread().interrupt();
       }

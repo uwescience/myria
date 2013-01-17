@@ -20,29 +20,12 @@ import edu.washington.escience.myriad.parallel.SocketInfo;
 @Path("/workers")
 public final class WorkerCollection {
   @GET
-  @Produces(MediaType.APPLICATION_JSON)
-  public Map<Integer, String> getWorkers() {
-    Map<Integer, SocketInfo> workers;
-    try {
-      workers = MasterApiServer.getCatalog().getWorkers();
-    } catch (CatalogException e) {
-      /* Catalog failed, throw a 500 (Internal Server Error) */
-      throw new WebApplicationException(Response.status(Status.INTERNAL_SERVER_ERROR).build());
-    }
-    Map<Integer, String> ret = new HashMap<Integer, String>();
-    for (Entry<Integer, SocketInfo> workerInfo : workers.entrySet()) {
-      ret.put(workerInfo.getKey(), workerInfo.getValue().toString());
-    }
-    return ret;
-  }
-
-  @GET
   @Path("/alive")
   @Produces(MediaType.APPLICATION_JSON)
   public Set<Integer> getAliveWorkers() {
     try {
       return MasterApiServer.getCatalog().getAliveWorkers();
-    } catch (CatalogException e) {
+    } catch (final CatalogException e) {
       /* Catalog failed, throw a 500 (Internal Server Error) */
       throw new WebApplicationException(Response.status(Status.INTERNAL_SERVER_ERROR).build());
     }
@@ -55,10 +38,10 @@ public final class WorkerCollection {
     SocketInfo workerInfo;
     try {
       workerInfo = MasterApiServer.getCatalog().getWorkers().get(Integer.parseInt(workerId));
-    } catch (NumberFormatException e) {
+    } catch (final NumberFormatException e) {
       /* Parsing failed, throw a 400 (Bad Request) */
       throw new WebApplicationException(Response.status(Status.BAD_REQUEST).build());
-    } catch (CatalogException e) {
+    } catch (final CatalogException e) {
       /* Catalog failed, throw a 500 (Internal Server Error) */
       throw new WebApplicationException(Response.status(Status.INTERNAL_SERVER_ERROR).build());
     }
@@ -68,5 +51,22 @@ public final class WorkerCollection {
     }
     /* Yay, worked! */
     return workerInfo.toString();
+  }
+
+  @GET
+  @Produces(MediaType.APPLICATION_JSON)
+  public Map<Integer, String> getWorkers() {
+    Map<Integer, SocketInfo> workers;
+    try {
+      workers = MasterApiServer.getCatalog().getWorkers();
+    } catch (final CatalogException e) {
+      /* Catalog failed, throw a 500 (Internal Server Error) */
+      throw new WebApplicationException(Response.status(Status.INTERNAL_SERVER_ERROR).build());
+    }
+    final Map<Integer, String> ret = new HashMap<Integer, String>();
+    for (final Entry<Integer, SocketInfo> workerInfo : workers.entrySet()) {
+      ret.put(workerInfo.getKey(), workerInfo.getValue().toString());
+    }
+    return ret;
   }
 }

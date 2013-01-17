@@ -26,11 +26,6 @@ public final class StringAggregator implements Aggregator {
 
   public static final int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT | Aggregator.AGG_OP_MAX | Aggregator.AGG_OP_MIN;
 
-  @Override
-  public int availableAgg() {
-    return AVAILABLE_AGG;
-  }
-
   private StringAggregator(final int afield, final int aggOps, final boolean computeMin, final boolean computeMax,
       final Schema resultSchema) {
     this.afield = afield;
@@ -55,8 +50,8 @@ public final class StringAggregator implements Aggregator {
 
     this.afield = afield;
     this.aggOps = aggOps;
-    ImmutableList.Builder<Type> types = ImmutableList.builder();
-    ImmutableList.Builder<String> names = ImmutableList.builder();
+    final ImmutableList.Builder<Type> types = ImmutableList.builder();
+    final ImmutableList.Builder<String> names = ImmutableList.builder();
     if ((aggOps & Aggregator.AGG_OP_COUNT) != 0) {
       types.add(Type.LONG_TYPE);
       names.add("count(" + aFieldName + ")");
@@ -81,12 +76,12 @@ public final class StringAggregator implements Aggregator {
   @Override
   public void add(final TupleBatch tup) {
 
-    int numTuples = tup.numTuples();
+    final int numTuples = tup.numTuples();
     if (numTuples > 0) {
       count += numTuples;
       if (computeMin || computeMax) {
         for (int i = 0; i < numTuples; i++) {
-          String r = tup.getString(afield, i);
+          final String r = tup.getString(afield, i);
           if (computeMin) {
             if (min == null) {
               min = r;
@@ -108,6 +103,16 @@ public final class StringAggregator implements Aggregator {
   }
 
   @Override
+  public int availableAgg() {
+    return AVAILABLE_AGG;
+  }
+
+  @Override
+  public StringAggregator freshCopyYourself() {
+    return new StringAggregator(afield, aggOps, computeMin, computeMax, resultSchema);
+  }
+
+  @Override
   public void getResult(final TupleBatchBuffer buffer, final int fromIndex) {
     int idx = fromIndex;
     if ((aggOps & AGG_OP_COUNT) != 0) {
@@ -126,10 +131,5 @@ public final class StringAggregator implements Aggregator {
   @Override
   public Schema getResultSchema() {
     return resultSchema;
-  }
-
-  @Override
-  public StringAggregator freshCopyYourself() {
-    return new StringAggregator(afield, aggOps, computeMin, computeMax, resultSchema);
   }
 }

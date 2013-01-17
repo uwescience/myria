@@ -21,125 +21,6 @@ import edu.washington.escience.myriad.util.IPCUtils;
 
 public class InJVMChannel implements Channel {
 
-  public class InJVMChannelFuture implements ChannelFuture {
-
-    private final boolean success;
-    private final Throwable cause;
-
-    public InJVMChannelFuture() {
-      success = true;
-      cause = null;
-    }
-
-    public InJVMChannelFuture(Throwable cause) {
-      success = false;
-      this.cause = cause;
-    }
-
-    @Override
-    public Channel getChannel() {
-      return InJVMChannel.this;
-    }
-
-    @Override
-    public boolean isDone() {
-      return true;
-    }
-
-    @Override
-    public boolean isCancelled() {
-      return false;
-    }
-
-    @Override
-    public boolean isSuccess() {
-      return success;
-    }
-
-    @Override
-    public Throwable getCause() {
-      return cause;
-    }
-
-    @Override
-    public boolean cancel() {
-      return false;
-    }
-
-    @Override
-    public boolean setSuccess() {
-      return false;
-    }
-
-    @Override
-    public boolean setFailure(final Throwable cause) {
-      return false;
-    }
-
-    @Override
-    public boolean setProgress(final long amount, final long current, final long total) {
-      return true;
-    }
-
-    @Override
-    public void addListener(final ChannelFutureListener listener) {
-      try {
-        listener.operationComplete(this);
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
-    }
-
-    @Override
-    public void removeListener(final ChannelFutureListener listener) {
-    }
-
-    @Override
-    public ChannelFuture rethrowIfFailed() throws Exception {
-      return this;
-    }
-
-    @Override
-    public ChannelFuture sync() throws InterruptedException {
-      return this;
-    }
-
-    @Override
-    public ChannelFuture syncUninterruptibly() {
-      return this;
-    }
-
-    @Override
-    public ChannelFuture await() throws InterruptedException {
-      return this;
-    }
-
-    @Override
-    public ChannelFuture awaitUninterruptibly() {
-      return this;
-    }
-
-    @Override
-    public boolean await(final long timeout, final TimeUnit unit) throws InterruptedException {
-      return true;
-    }
-
-    @Override
-    public boolean await(final long timeoutMillis) throws InterruptedException {
-      return true;
-    }
-
-    @Override
-    public boolean awaitUninterruptibly(final long timeout, final TimeUnit unit) {
-      return true;
-    }
-
-    @Override
-    public boolean awaitUninterruptibly(final long timeoutMillis) {
-      return true;
-    }
-  }
-
   public class InJVMChannelCloseFuture extends InJVMChannelFuture {
 
     private final ConcurrentLinkedQueue<ChannelFutureListener> listeners;
@@ -157,25 +38,30 @@ public class InJVMChannel implements Channel {
       } else {
         try {
           listener.operationComplete(this);
-        } catch (Exception e) {
+        } catch (final Exception e) {
           e.printStackTrace();
         }
       }
     }
 
     @Override
-    public void removeListener(final ChannelFutureListener listener) {
-      listeners.remove(listener);
+    public boolean cancel() {
+      return false;
     }
 
     @Override
-    public boolean isDone() {
-      return done;
+    public Throwable getCause() {
+      return cause;
     }
 
     @Override
     public boolean isCancelled() {
       return false;
+    }
+
+    @Override
+    public boolean isDone() {
+      return done;
     }
 
     @Override
@@ -188,23 +74,19 @@ public class InJVMChannel implements Channel {
     }
 
     @Override
-    public Throwable getCause() {
-      return cause;
+    public void removeListener(final ChannelFutureListener listener) {
+      listeners.remove(listener);
     }
 
     @Override
-    public boolean cancel() {
-      return false;
-    }
-
-    @Override
-    public boolean setSuccess() {
+    public boolean setFailure(final Throwable cause) {
       if (!done) {
+        this.cause = cause;
         done = true;
-        for (ChannelFutureListener cl : listeners) {
+        for (final ChannelFutureListener cl : listeners) {
           try {
             cl.operationComplete(this);
-          } catch (Exception e) {
+          } catch (final Exception e) {
             e.printStackTrace();
           }
         }
@@ -214,14 +96,13 @@ public class InJVMChannel implements Channel {
     }
 
     @Override
-    public boolean setFailure(final Throwable cause) {
+    public boolean setSuccess() {
       if (!done) {
-        this.cause = cause;
         done = true;
-        for (ChannelFutureListener cl : listeners) {
+        for (final ChannelFutureListener cl : listeners) {
           try {
             cl.operationComplete(this);
-          } catch (Exception e) {
+          } catch (final Exception e) {
             e.printStackTrace();
           }
         }
@@ -231,12 +112,131 @@ public class InJVMChannel implements Channel {
     }
   }
 
+  public class InJVMChannelFuture implements ChannelFuture {
+
+    private final boolean success;
+    private final Throwable cause;
+
+    public InJVMChannelFuture() {
+      success = true;
+      cause = null;
+    }
+
+    public InJVMChannelFuture(final Throwable cause) {
+      success = false;
+      this.cause = cause;
+    }
+
+    @Override
+    public void addListener(final ChannelFutureListener listener) {
+      try {
+        listener.operationComplete(this);
+      } catch (final Exception e) {
+        e.printStackTrace();
+      }
+    }
+
+    @Override
+    public ChannelFuture await() throws InterruptedException {
+      return this;
+    }
+
+    @Override
+    public boolean await(final long timeoutMillis) throws InterruptedException {
+      return true;
+    }
+
+    @Override
+    public boolean await(final long timeout, final TimeUnit unit) throws InterruptedException {
+      return true;
+    }
+
+    @Override
+    public ChannelFuture awaitUninterruptibly() {
+      return this;
+    }
+
+    @Override
+    public boolean awaitUninterruptibly(final long timeoutMillis) {
+      return true;
+    }
+
+    @Override
+    public boolean awaitUninterruptibly(final long timeout, final TimeUnit unit) {
+      return true;
+    }
+
+    @Override
+    public boolean cancel() {
+      return false;
+    }
+
+    @Override
+    public Throwable getCause() {
+      return cause;
+    }
+
+    @Override
+    public Channel getChannel() {
+      return InJVMChannel.this;
+    }
+
+    @Override
+    public boolean isCancelled() {
+      return false;
+    }
+
+    @Override
+    public boolean isDone() {
+      return true;
+    }
+
+    @Override
+    public boolean isSuccess() {
+      return success;
+    }
+
+    @Override
+    public void removeListener(final ChannelFutureListener listener) {
+    }
+
+    @Override
+    public ChannelFuture rethrowIfFailed() throws Exception {
+      return this;
+    }
+
+    @Override
+    public boolean setFailure(final Throwable cause) {
+      return false;
+    }
+
+    @Override
+    public boolean setProgress(final long amount, final long current, final long total) {
+      return true;
+    }
+
+    @Override
+    public boolean setSuccess() {
+      return false;
+    }
+
+    @Override
+    public ChannelFuture sync() throws InterruptedException {
+      return this;
+    }
+
+    @Override
+    public ChannelFuture syncUninterruptibly() {
+      return this;
+    }
+  }
+
   private final LinkedBlockingQueue<MessageWrapper> dataQueue;
   private final ChannelFuture closeFuture;
   private final Integer channelID;
   private final int myIPCID;
 
-  public InJVMChannel(int myID, LinkedBlockingQueue<MessageWrapper> dataQueue) {
+  public InJVMChannel(final int myID, final LinkedBlockingQueue<MessageWrapper> dataQueue) {
     myIPCID = myID;
     this.dataQueue = dataQueue;
     closeFuture = new InJVMChannelCloseFuture();
@@ -254,20 +254,15 @@ public class InJVMChannel implements Channel {
     channelID = idTmp;
   }
 
-  /**
-   * Returns the ID of this channel.
-   */
   @Override
-  public final int hashCode() {
-    return channelID;
+  public ChannelFuture bind(final SocketAddress localAddress) {
+    return new InJVMChannelFuture();
   }
 
-  /**
-   * Returns {@code true} if and only if the specified object is identical with this channel (i.e: {@code this == o}).
-   */
   @Override
-  public final boolean equals(final Object o) {
-    return this == o;
+  public ChannelFuture close() {
+    closeFuture.setSuccess();
+    return closeFuture;
   }
 
   /**
@@ -279,12 +274,55 @@ public class InJVMChannel implements Channel {
   }
 
   @Override
+  public ChannelFuture connect(final SocketAddress remoteAddress) {
+    return new InJVMChannelFuture();
+  }
+
+  @Override
+  public ChannelFuture disconnect() {
+    return close();
+  }
+
+  /**
+   * Returns {@code true} if and only if the specified object is identical with this channel (i.e: {@code this == o}).
+   */
+  @Override
+  public final boolean equals(final Object o) {
+    return this == o;
+  }
+
+  @Override
+  public Object getAttachment() {
+    return null;
+  }
+
+  @Override
+  public ChannelFuture getCloseFuture() {
+    return closeFuture;
+  }
+
+  @Override
+  public ChannelConfig getConfig() {
+    return null;
+  }
+
+  @Override
+  public ChannelFactory getFactory() {
+    return null;
+  }
+
+  @Override
   public Integer getId() {
     return channelID;
   }
 
   @Override
-  public ChannelFactory getFactory() {
+  public int getInterestOps() {
+    return Channel.OP_WRITE;
+  }
+
+  @Override
+  public SocketAddress getLocalAddress() {
     return null;
   }
 
@@ -294,18 +332,21 @@ public class InJVMChannel implements Channel {
   }
 
   @Override
-  public ChannelConfig getConfig() {
-    return null;
-  }
-
-  @Override
   public ChannelPipeline getPipeline() {
     return null;
   }
 
   @Override
-  public boolean isOpen() {
-    return !closeFuture.isDone();
+  public SocketAddress getRemoteAddress() {
+    return null;
+  }
+
+  /**
+   * Returns the ID of this channel.
+   */
+  @Override
+  public final int hashCode() {
+    return channelID;
   }
 
   @Override
@@ -319,68 +360,8 @@ public class InJVMChannel implements Channel {
   }
 
   @Override
-  public SocketAddress getLocalAddress() {
-    return null;
-  }
-
-  @Override
-  public SocketAddress getRemoteAddress() {
-    return null;
-  }
-
-  @Override
-  public ChannelFuture write(final Object message) {
-    if (isOpen()) {
-      try {
-        dataQueue.add(new MessageWrapper(myIPCID, IPCUtils.asTM(message)));
-        return new InJVMChannelFuture();
-      } catch (Throwable e) {
-        return new InJVMChannelFuture(e);
-      }
-    } else {
-      return new InJVMChannelFuture(new NotYetConnectedException());
-    }
-  }
-
-  @Override
-  public ChannelFuture write(final Object message, final SocketAddress remoteAddress) {
-    return write(message);
-  }
-
-  @Override
-  public ChannelFuture bind(final SocketAddress localAddress) {
-    return new InJVMChannelFuture();
-  }
-
-  @Override
-  public ChannelFuture connect(final SocketAddress remoteAddress) {
-    return new InJVMChannelFuture();
-  }
-
-  @Override
-  public ChannelFuture disconnect() {
-    return close();
-  }
-
-  @Override
-  public ChannelFuture unbind() {
-    return close();
-  }
-
-  @Override
-  public ChannelFuture close() {
-    closeFuture.setSuccess();
-    return closeFuture;
-  }
-
-  @Override
-  public ChannelFuture getCloseFuture() {
-    return closeFuture;
-  }
-
-  @Override
-  public int getInterestOps() {
-    return Channel.OP_WRITE;
+  public boolean isOpen() {
+    return !closeFuture.isDone();
   }
 
   @Override
@@ -394,6 +375,11 @@ public class InJVMChannel implements Channel {
   }
 
   @Override
+  public void setAttachment(final Object attachment) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
   public ChannelFuture setInterestOps(final int interestOps) {
     throw new UnsupportedOperationException();
   }
@@ -404,13 +390,27 @@ public class InJVMChannel implements Channel {
   }
 
   @Override
-  public Object getAttachment() {
-    return null;
+  public ChannelFuture unbind() {
+    return close();
   }
 
   @Override
-  public void setAttachment(final Object attachment) {
-    throw new UnsupportedOperationException();
+  public ChannelFuture write(final Object message) {
+    if (isOpen()) {
+      try {
+        dataQueue.add(new MessageWrapper(myIPCID, IPCUtils.asTM(message)));
+        return new InJVMChannelFuture();
+      } catch (final Throwable e) {
+        return new InJVMChannelFuture(e);
+      }
+    } else {
+      return new InJVMChannelFuture(new NotYetConnectedException());
+    }
+  }
+
+  @Override
+  public ChannelFuture write(final Object message, final SocketAddress remoteAddress) {
+    return write(message);
   }
 
 }

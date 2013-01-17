@@ -85,6 +85,21 @@ public final class ShuffleConsumer extends Consumer {
   }
 
   @Override
+  public TupleBatch fetchNextReady() throws DbException {
+    if (!eos()) {
+      try {
+        return getTuples(false);
+      } catch (final InterruptedException e) {
+        e.printStackTrace();
+        // retain the interrupted bit
+        Thread.currentThread().interrupt();
+        throw new DbException(e.getLocalizedMessage());
+      }
+    }
+    return null;
+  }
+
+  @Override
   public Operator[] getChildren() {
     if (child != null) {
       return new Operator[] { child };
@@ -145,21 +160,6 @@ public final class ShuffleConsumer extends Consumer {
   public void setChildren(final Operator[] children) {
     child = (ShuffleProducer) children[0];
     schema = child.getSchema();
-  }
-
-  @Override
-  public TupleBatch fetchNextReady() throws DbException {
-    if (!eos()) {
-      try {
-        return getTuples(false);
-      } catch (final InterruptedException e) {
-        e.printStackTrace();
-        // retain the interrupted bit
-        Thread.currentThread().interrupt();
-        throw new DbException(e.getLocalizedMessage());
-      }
-    }
-    return null;
   }
 
 }

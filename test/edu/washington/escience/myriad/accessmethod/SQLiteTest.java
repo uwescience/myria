@@ -41,25 +41,25 @@ public class SQLiteTest {
     final Schema outputSchema =
         new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
 
-    String tempDirPath = Files.createTempDirectory(Server.SYSTEM_NAME + "_SQLiteTest").toFile().getAbsolutePath();
-    String dbAbsolutePath = FilenameUtils.concat(tempDirPath, "sqlite_testtable.db");
+    final String tempDirPath = Files.createTempDirectory(Server.SYSTEM_NAME + "_SQLiteTest").toFile().getAbsolutePath();
+    final String dbAbsolutePath = FilenameUtils.concat(tempDirPath, "sqlite_testtable.db");
     SystemTestBase.createTable(dbAbsolutePath, "testtable", "id long,name varchar(20)");
 
-    String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, 200, 20);
-    long[] ids = TestUtils.randomLong(1000, 1005, names.length);
+    final String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, 200, 20);
+    final long[] ids = TestUtils.randomLong(1000, 1005, names.length);
 
-    TupleBatchBuffer tbb = new TupleBatchBuffer(outputSchema);
+    final TupleBatchBuffer tbb = new TupleBatchBuffer(outputSchema);
     for (int i = 0; i < names.length; i++) {
       tbb.put(0, ids[i]);
       tbb.put(1, names[i]);
     }
 
-    for (TupleBatch tb : tbb.getAll()) {
-      String insertTemplate = SQLiteUtils.insertStatementFromSchema(outputSchema, "testtable");
+    for (final TupleBatch tb : tbb.getAll()) {
+      final String insertTemplate = SQLiteUtils.insertStatementFromSchema(outputSchema, "testtable");
       SQLiteAccessMethod.tupleBatchInsert(dbAbsolutePath, insertTemplate, tb);
     }
 
-    HashMap<Tuple, Integer> expectedResult = TestUtils.tupleBatchToTupleBag(tbb);
+    final HashMap<Tuple, Integer> expectedResult = TestUtils.tupleBatchToTupleBag(tbb);
 
     final String query = "SELECT * FROM testtable";
 
@@ -95,7 +95,7 @@ public class SQLiteTest {
     }
 
     TupleBatch tb = null;
-    TupleBatchBuffer result = new TupleBatchBuffer(outputSchema);
+    final TupleBatchBuffer result = new TupleBatchBuffer(outputSchema);
     while ((tb = root.next()) != null) {
       tb.compactInto(result);
     }
@@ -103,7 +103,7 @@ public class SQLiteTest {
     /* Cleanup */
     root.close();
 
-    HashMap<SystemTestBase.Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(result);
+    final HashMap<SystemTestBase.Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(result);
 
     TestUtils.assertTupleBagEqual(expectedResult, resultBag);
 

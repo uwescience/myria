@@ -21,29 +21,29 @@ public class MasterControlHandler extends SimpleChannelUpstreamHandler {
   private static final Logger logger = Logger.getLogger(MasterControlHandler.class.getName());
 
   @Override
-  public void handleUpstream(ChannelHandlerContext ctx, ChannelEvent e) throws Exception {
+  public void exceptionCaught(final ChannelHandlerContext ctx, final ExceptionEvent e) {
+    logger.log(Level.WARNING, "Unexpected exception from downstream.", e.getCause());
+    e.getChannel().close();
+  }
+
+  @Override
+  public void handleUpstream(final ChannelHandlerContext ctx, final ChannelEvent e) throws Exception {
     super.handleUpstream(ctx, e);
   }
 
   @Override
-  public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) {
+  public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e) {
 
     final TransportMessage tm = (TransportMessage) e.getMessage();
-    Channel channel = e.getChannel();
+    final Channel channel = e.getChannel();
     if ((tm.getType() == TransportMessage.TransportMessageType.CONTROL)
         && (ControlMessage.ControlMessageType.CONNECT == tm.getControl().getType())) {
       // connect request sent from other workers
       final ControlMessage cm = tm.getControl();
-      HashMap<String, Object> attributes = new HashMap<String, Object>();
+      final HashMap<String, Object> attributes = new HashMap<String, Object>();
       channel.setAttachment(attributes);
       attributes.put("remoteID", cm.getRemoteID());
     }
     ctx.sendUpstream(e);
-  }
-
-  @Override
-  public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) {
-    logger.log(Level.WARNING, "Unexpected exception from downstream.", e.getCause());
-    e.getChannel().close();
   }
 }
