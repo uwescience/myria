@@ -11,6 +11,8 @@ import java.util.HashMap;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
+
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -69,14 +71,13 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     assertTrue(successfulSetup);
 
     /* The Schema for the table we read from file. */
-    final Type[] table1Types = new Type[] { Type.LONG_TYPE, Type.LONG_TYPE };
-    final String[] table1ColumnNames = new String[] { "follower", "followee" };
+    final ImmutableList<Type> table1Types = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
+    final ImmutableList<String> table1ColumnNames = ImmutableList.of("follower", "followee");
     final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
-    /* The Schema for the join. */
 
     /* Read the data from the file. */
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan("testtable0.db", "select * from testtable", tableSchema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan("testtable0.db", "select * from testtable", tableSchema);
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan(null, "select * from testtable", tableSchema);
+    final SQLiteQueryScan scan2 = new SQLiteQueryScan(null, "select * from testtable", tableSchema);
 
     /*
      * One worker partitions on the follower, the other worker partitions on the followee. In this way, we can do a
@@ -127,7 +128,7 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     }
 
     /* The server plan. Basically, collect and count tuples. */
-    final Schema collectSchema = new Schema(new Type[] { Type.LONG_TYPE }, new String[] { "COUNT" });
+    final Schema collectSchema = new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("COUNT"));
     final CollectConsumer collectCounts = new CollectConsumer(collectSchema, serverReceiveID, WORKER_ID);
     // final LongAggregator serverPlan = new LongAggregator(0, "COUNT", Aggregator.AGG_OP_SUM);
 
@@ -162,17 +163,18 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     assertTrue(successfulSetup);
 
     /* The Schema for the table we read from file. */
-    final Type[] table1Types = new Type[] { Type.LONG_TYPE, Type.LONG_TYPE };
-    final String[] table1ColumnNames = new String[] { "follower", "followee" };
+    final ImmutableList<Type> table1Types = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
+    final ImmutableList<String> table1ColumnNames = ImmutableList.of("follower", "followee");
     final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
     /* The Schema for the join. */
-    final Type[] joinTypes = new Type[] { Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE };
-    final String[] joinColumnNames = new String[] { "follower", "followee", "follower", "followee" };
-    final Schema joinSchema = new Schema(joinTypes, joinColumnNames);
+    final ImmutableList<Type> joinTypes =
+        ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE);
+    final ImmutableList<String> joinNames = ImmutableList.of("follower", "followee", "follower", "followee");
+    final Schema joinSchema = new Schema(joinTypes, joinNames);
 
     /* Read the data from the file. */
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan("testtable0.db", "select * from testtable", tableSchema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan("testtable0.db", "select * from testtable", tableSchema);
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan(null, "select * from testtable", tableSchema);
+    final SQLiteQueryScan scan2 = new SQLiteQueryScan(null, "select * from testtable", tableSchema);
 
     /*
      * One worker partitions on the follower, the other worker partitions on the followee. In this way, we can do a
@@ -245,14 +247,13 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     assertTrue(successfulSetup);
 
     /* The Schema for the table we read from file. */
-    final Type[] table1Types = new Type[] { Type.LONG_TYPE, Type.LONG_TYPE };
-    final String[] table1ColumnNames = new String[] { "follower", "followee" };
+    final ImmutableList<Type> table1Types = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
+    final ImmutableList<String> table1ColumnNames = ImmutableList.of("follower", "followee");
     final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
-    /* The Schema for the join. */
 
     /* Read the data from the file. */
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan("testtable0.db", "select * from testtable", tableSchema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan("testtable0.db", "select * from testtable", tableSchema);
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan(null, "select * from testtable", tableSchema);
+    final SQLiteQueryScan scan2 = new SQLiteQueryScan(null, "select * from testtable", tableSchema);
 
     /*
      * One worker partitions on the follower, the other worker partitions on the followee. In this way, we can do a

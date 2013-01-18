@@ -22,7 +22,8 @@ public final class IPCPipelineFactories {
 
     protected final IPCSessionManagerClient ipcSessionManagerClient;
 
-    final protected MasterDataHandler masterDataHandler;
+    protected final MasterDataHandler masterDataHandler;
+
     /**
      * constructor.
      * */
@@ -94,6 +95,7 @@ public final class IPCPipelineFactories {
     protected final IPCSessionManagerClient ipcSessionManagerClient;
 
     final WorkerDataHandler workerDataHandler;
+
     /**
      * constructor.
      * */
@@ -127,6 +129,7 @@ public final class IPCPipelineFactories {
     private final WorkerDataHandler workerDataHandler;
 
     protected final IPCSessionManagerServer ipcSessionManagerServer;
+
     /**
      * constructor.
      * */

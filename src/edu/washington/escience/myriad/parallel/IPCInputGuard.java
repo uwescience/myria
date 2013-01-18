@@ -60,6 +60,7 @@ public class IPCInputGuard extends SimpleChannelHandler {
       switch (ee.getState()) {
         case OPEN:
         case BOUND:
+        case INTEREST_OPS:
           break;
         case CONNECTED:
           logger.info("Connection to remote. " + e.toString());
@@ -76,6 +77,7 @@ public class IPCInputGuard extends SimpleChannelHandler {
       switch (ee.getState()) {
         case OPEN:
         case BOUND:
+        case INTEREST_OPS:
           break;
         case CONNECTED:
           logger.info("Connection from remote. " + e.toString());

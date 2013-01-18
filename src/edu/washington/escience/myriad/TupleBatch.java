@@ -123,22 +123,6 @@ public class TupleBatch {
   }
 
   /**
-   * Standard copy constructor. Shallow copy of the schema, column list, and the number of tuples; deep copy of the
-   * valid tuples since that's what we mutate.
-   * 
-   * @param from TupleBatch to duplicate.
-   */
-  private TupleBatch(final TupleBatch from) {
-    /* Take the input arguments directly, copying validTuples */
-    schema = from.schema;
-    columns = from.columns;
-    validTuples = (ReadOnlyBitSet) from.validTuples.clone();
-    // validTuplesRO = new ReadOnlyBitSet(validTuples);
-    validIndices = from.validIndices;
-    numValidTuples = from.numValidTuples;
-  }
-
-  /**
    * Helper function to append the specified row into the specified TupleBatchBuffer.
    * 
    * @param mappedRow the true row in column list to append to the buffer.
