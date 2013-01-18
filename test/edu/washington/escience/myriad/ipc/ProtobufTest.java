@@ -106,7 +106,8 @@ public class ProtobufTest {
     final String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, numTuplesEach, 20);
     final long[] ids = TestUtils.randomLong(1000, 1005, names.length);
 
-    final Schema schema = new Schema(new Type[] { Type.LONG_TYPE, Type.STRING_TYPE }, new String[] { "id", "name" });
+    final Schema schema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
@@ -140,7 +141,6 @@ public class ProtobufTest {
     final Thread[] threads = new Thread[numThreads];
     final AtomicInteger numSent = new AtomicInteger();
     for (int i = 0; i < numThreads; i++) {
-      final int j = i;
       final Thread tt = new Thread() {
         @Override
         public void run() {
@@ -220,7 +220,8 @@ public class ProtobufTest {
     final String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, numTuplesEach, 20);
     final long[] ids = TestUtils.randomLong(1000, 1005, names.length);
 
-    final Schema schema = new Schema(new Type[] { Type.LONG_TYPE, Type.STRING_TYPE }, new String[] { "id", "name" });
+    final Schema schema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
@@ -371,7 +372,6 @@ public class ProtobufTest {
     final AtomicInteger numSent = new AtomicInteger();
     final ConcurrentLinkedQueue<ChannelFuture> cf = new ConcurrentLinkedQueue<ChannelFuture>();
     for (int i = 0; i < numThreads; i++) {
-      final int j = i;
       final Thread tt = new Thread() {
         @Override
         public void run() {
@@ -467,7 +467,8 @@ public class ProtobufTest {
     final String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, numTuplesEach, 20);
     final long[] ids = TestUtils.randomLong(1000, 1005, names.length);
 
-    final Schema schema = new Schema(new Type[] { Type.LONG_TYPE, Type.STRING_TYPE }, new String[] { "id", "name" });
+    final Schema schema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
@@ -502,7 +503,6 @@ public class ProtobufTest {
     final AtomicInteger numSent = new AtomicInteger();
     final ConcurrentLinkedQueue<ChannelFuture> cf = new ConcurrentLinkedQueue<ChannelFuture>();
     for (int i = 0; i < numThreads; i++) {
-      final int j = i;
       final Thread tt = new Thread() {
         @Override
         public void run() {
@@ -591,7 +591,8 @@ public class ProtobufTest {
     final String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, numTuplesEach, 20);
     final long[] ids = TestUtils.randomLong(1000, 1005, names.length);
 
-    final Schema schema = new Schema(new Type[] { Type.LONG_TYPE, Type.STRING_TYPE }, new String[] { "id", "name" });
+    final Schema schema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
@@ -676,7 +677,8 @@ public class ProtobufTest {
     final String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, numTuplesEach, 20);
     final long[] ids = TestUtils.randomLong(1000, 1005, names.length);
 
-    final Schema schema = new Schema(new Type[] { Type.LONG_TYPE, Type.STRING_TYPE }, new String[] { "id", "name" });
+    final Schema schema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
@@ -702,7 +704,6 @@ public class ProtobufTest {
     final List<TransportMessage> tbs = tbb.getAllAsTM(epID);
 
     final AtomicInteger numSent = new AtomicInteger();
-    final ChannelFuture cf;
     try {
       for (final TransportMessage tm : tbs) {
         connectionPool.sendShortMessage(0, tm);
@@ -764,7 +765,8 @@ public class ProtobufTest {
     final String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, numTuplesEach, 20);
     final long[] ids = TestUtils.randomLong(1000, 1005, names.length);
 
-    final Schema schema = new Schema(new Type[] { Type.LONG_TYPE, Type.STRING_TYPE }, new String[] { "id", "name" });
+    final Schema schema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
@@ -867,7 +869,8 @@ public class ProtobufTest {
     final String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, numTuplesEach, 20);
     final long[] ids = TestUtils.randomLong(1000, 1005, names.length);
 
-    final Schema schema = new Schema(new Type[] { Type.LONG_TYPE, Type.STRING_TYPE }, new String[] { "id", "name" });
+    final Schema schema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {

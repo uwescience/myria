@@ -6,6 +6,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 
 import edu.washington.escience.myriad.DbException;
@@ -111,18 +112,16 @@ public final class LocalProjectingJoin extends Operator implements Externalizabl
 
   public LocalProjectingJoin(final Operator child1, final int[] compareIndx1, final int[] answerColumns1,
       final Operator child2, final int[] compareIndx2, final int[] answerColumns2) {
-    final Type[] types = new Type[answerColumns1.length + answerColumns2.length];
-    final String[] names = new String[answerColumns1.length + answerColumns2.length];
-    int curIndex = 0;
+    final List<Type> types = new LinkedList<Type>();
+    final List<String> names = new LinkedList<String>();
+
     for (final int i : answerColumns1) {
-      types[curIndex] = child1.getSchema().getFieldType(i);
-      names[curIndex] = child1.getSchema().getFieldName(i);
-      ++curIndex;
+      types.add(child1.getSchema().getFieldType(i));
+      names.add(child1.getSchema().getFieldName(i));
     }
     for (final int i : answerColumns2) {
-      types[curIndex] = child2.getSchema().getFieldType(i);
-      names[curIndex] = child2.getSchema().getFieldName(i);
-      ++curIndex;
+      types.add(child2.getSchema().getFieldType(i));
+      names.add(child2.getSchema().getFieldName(i));
     }
     outputSchema = new Schema(types, names);
     this.child1 = child1;

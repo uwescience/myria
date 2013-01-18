@@ -7,6 +7,8 @@ import java.util.HashMap;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
 
+import com.google.common.collect.ImmutableList;
+
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
@@ -22,7 +24,8 @@ public class TenGBTupleBatchSenderUsingConnectionPool {
 
   public static final int PORT = 19902;
 
-  final static Schema schema = new Schema(new Type[] { Type.LONG_TYPE, Type.LONG_TYPE }, new String[] { "id", "id2" });
+  final static Schema schema = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("id",
+      "id2"));
 
   public static void doSend(final String[] args, final TupleBatchBuffer dataToSend, final int tupleSize)
       throws IOException, InterruptedException {

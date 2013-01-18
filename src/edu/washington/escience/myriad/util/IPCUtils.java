@@ -106,11 +106,11 @@ public final class IPCUtils {
       TransportMessageType.CONTROL).setControl(
       ControlMessage.newBuilder().setType(ControlMessageType.DISCONNECT).build()).build();
 
-  public static final TransportMessage asTM(final Object m) {
+  public static TransportMessage asTM(final Object m) {
     return (TransportMessage) m;
   }
 
-  public static final Integer checkConnectTM(final TransportMessage message) {
+  public static Integer checkConnectTM(final TransportMessage message) {
     if (message == null) {
       return null;
     }
@@ -121,7 +121,7 @@ public final class IPCUtils {
     return null;
   }
 
-  public static final TransportMessage connectTM(final Integer myID) {
+  public static TransportMessage connectTM(final Integer myID) {
     return CONTROL_TM_BUILDER.get().setControl(
         ControlMessage.newBuilder().setType(ControlMessage.ControlMessageType.CONNECT).setRemoteID(myID).build())
         .build();
@@ -130,11 +130,11 @@ public final class IPCUtils {
   /**
    * create an EOS data message.
    * */
-  public static final TransportMessage eosTM(final ExchangePairID epID) {
+  public static TransportMessage eosTM(final ExchangePairID epID) {
     return DATA_TM_BUILDER.get().setData(EOS_DATAMESSAGE_BUILDER.get().setOperatorID(epID.getLong())).build();
   }
 
-  public static final TransportMessage normalDataMessage(final List<Column<?>> dataColumns,
+  public static TransportMessage normalDataMessage(final List<Column<?>> dataColumns,
       final ExchangePairID operatorPairID) {
     final ColumnMessage[] columnProtos = new ColumnMessage[dataColumns.size()];
 
@@ -148,7 +148,7 @@ public final class IPCUtils {
             operatorPairID.getLong())).build();
   }
 
-  public static final TransportMessage[] normalDataMessageMultiCopy(final List<Column<?>> dataColumns,
+  public static TransportMessage[] normalDataMessageMultiCopy(final List<Column<?>> dataColumns,
       final ExchangePairID[] operatorPairID) {
     final ColumnMessage[] columnProtos = new ColumnMessage[dataColumns.size()];
 
@@ -166,7 +166,7 @@ public final class IPCUtils {
     return result;
   }
 
-  public static final TransportMessage queryMessage(final Operator[] query) throws IOException {
+  public static TransportMessage queryMessage(final Operator[] query) throws IOException {
     final ByteArrayOutputStream inMemBuffer = new ByteArrayOutputStream();
     final ObjectOutputStream oos = new ObjectOutputStream(inMemBuffer);
     oos.writeObject(query);
