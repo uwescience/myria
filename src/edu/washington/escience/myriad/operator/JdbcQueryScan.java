@@ -38,11 +38,16 @@ public class JdbcQueryScan extends Operator {
   @Override
   protected TupleBatch fetchNext() throws DbException {
     if (tuples.hasNext()) {
-      TupleBatch tb = tuples.next();
+      final TupleBatch tb = tuples.next();
       return tb;
     } else {
       return null;
     }
+  }
+
+  @Override
+  public TupleBatch fetchNextReady() throws DbException {
+    return fetchNext();
   }
 
   @Override
@@ -63,11 +68,6 @@ public class JdbcQueryScan extends Operator {
   @Override
   public void setChildren(final Operator[] children) {
     throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public TupleBatch fetchNextReady() throws DbException {
-    return fetchNext();
   }
 
 }

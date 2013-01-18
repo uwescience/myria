@@ -21,6 +21,21 @@ public class Merge extends Operator {
     this.child2 = child2;
   }
 
+  // for Externalizable
+  /*
+   * @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException { child1 = (Operator)
+   * in.readObject(); child2 = (Operator) in.readObject(); outputSchema = (Schema) in.readObject(); name = (String)
+   * in.readObject(); }
+   * 
+   * // for Externalizable
+   * 
+   * @Override public void writeExternal(ObjectOutput out) throws IOException { out.writeObject(child1);
+   * out.writeObject(child2); out.writeObject(outputSchema); out.writeObject(name); }
+   */
+  @Override
+  protected void cleanup() throws DbException {
+  }
+
   @Override
   protected TupleBatch fetchNext() throws DbException {
     TupleBatch tb;
@@ -32,6 +47,11 @@ public class Merge extends Operator {
         return tb;
       }
     }
+    return null;
+  }
+
+  @Override
+  public TupleBatch fetchNextReady() throws DbException {
     return null;
   }
 
@@ -53,26 +73,6 @@ public class Merge extends Operator {
   public void setChildren(final Operator[] children) {
     child1 = children[0];
     child2 = children[1];
-  }
-
-  // for Externalizable
-  /*
-   * @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException { child1 = (Operator)
-   * in.readObject(); child2 = (Operator) in.readObject(); outputSchema = (Schema) in.readObject(); name = (String)
-   * in.readObject(); }
-   * 
-   * // for Externalizable
-   * 
-   * @Override public void writeExternal(ObjectOutput out) throws IOException { out.writeObject(child1);
-   * out.writeObject(child2); out.writeObject(outputSchema); out.writeObject(name); }
-   */
-  @Override
-  protected void cleanup() throws DbException {
-  }
-
-  @Override
-  public TupleBatch fetchNextReady() throws DbException {
-    return null;
   }
 
 }

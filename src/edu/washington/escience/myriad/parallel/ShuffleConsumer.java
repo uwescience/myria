@@ -30,6 +30,25 @@ public final class ShuffleConsumer extends Consumer {
   private final int[] sourceWorkers;
   private final HashMap<Integer, Integer> workerIdToIndex;
   private ShuffleProducer child;
+  private Schema schema;
+
+  public ShuffleConsumer(final Schema schema, final ExchangePairID operatorID, final int[] workerIDs) {
+    super(operatorID);
+
+    Objects.requireNonNull(schema);
+    Objects.requireNonNull(operatorID);
+    Objects.requireNonNull(workerIDs);
+
+    child = null;
+    this.schema = schema;
+    sourceWorkers = workerIDs;
+    workerIdToIndex = new HashMap<Integer, Integer>();
+    int i = 0;
+    for (final Integer w : sourceWorkers) {
+      workerIdToIndex.put(w, i++);
+    }
+    workerEOS = new BitSet(workerIDs.length);
+  }
 
   public ShuffleConsumer(final ShuffleProducer child, final ExchangePairID operatorID, final int[] workerIDs) {
     super(operatorID);
@@ -39,6 +58,7 @@ public final class ShuffleConsumer extends Consumer {
     Objects.requireNonNull(workerIDs);
 
     this.child = child;
+    schema = child.getSchema();
     sourceWorkers = workerIDs;
     workerIdToIndex = new HashMap<Integer, Integer>();
     int i = 0;
@@ -65,13 +85,31 @@ public final class ShuffleConsumer extends Consumer {
   }
 
   @Override
+  public TupleBatch fetchNextReady() throws DbException {
+    if (!eos()) {
+      try {
+        return getTuples(false);
+      } catch (final InterruptedException e) {
+        e.printStackTrace();
+        // retain the interrupted bit
+        Thread.currentThread().interrupt();
+        throw new DbException(e.getLocalizedMessage());
+      }
+    }
+    return null;
+  }
+
+  @Override
   public Operator[] getChildren() {
-    return new Operator[] { child };
+    if (child != null) {
+      return new Operator[] { child };
+    }
+    return null;
   }
 
   @Override
   public Schema getSchema() {
-    return child.getSchema();
+    return schema;
   }
 
   /**
@@ -121,21 +159,7 @@ public final class ShuffleConsumer extends Consumer {
   @Override
   public void setChildren(final Operator[] children) {
     child = (ShuffleProducer) children[0];
-  }
-
-  @Override
-  public TupleBatch fetchNextReady() throws DbException {
-    if (!eos()) {
-      try {
-        return getTuples(false);
-      } catch (final InterruptedException e) {
-        e.printStackTrace();
-        // retain the interrupted bit
-        Thread.currentThread().interrupt();
-        throw new DbException(e.getLocalizedMessage());
-      }
-    }
-    return null;
+    schema = child.getSchema();
   }
 
 }

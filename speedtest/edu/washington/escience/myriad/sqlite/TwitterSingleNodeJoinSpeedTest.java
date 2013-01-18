@@ -29,6 +29,16 @@ public class TwitterSingleNodeJoinSpeedTest {
   /** Whether we were able to copy the data. */
   private static boolean successfulSetup = false;
 
+  @BeforeClass
+  public static void loadSpecificTestData() {
+    final File file = new File(DATASET_PATH);
+    if (!file.exists()) {
+      throw new RuntimeException("Unable to read " + DATASET_PATH
+          + ". Copy it from /projects/db7/dataset/twitter/speedtest .");
+    }
+    successfulSetup = true;
+  }
+
   @Test
   public void twitterSubsetJoinTest() throws DbException, CatalogException, IOException {
     assertTrue(successfulSetup);
@@ -59,7 +69,7 @@ public class TwitterSingleNodeJoinSpeedTest {
     dupelim.open();
     long result = 0;
     while (!dupelim.eos()) {
-      TupleBatch next = dupelim.next();
+      final TupleBatch next = dupelim.next();
       if (next != null) {
         result += next.numTuples();
       }
@@ -92,7 +102,7 @@ public class TwitterSingleNodeJoinSpeedTest {
     dupelim.open();
     long result = 0;
     while (!dupelim.eos()) {
-      TupleBatch next = dupelim.next();
+      final TupleBatch next = dupelim.next();
       if (next != null) {
         result += next.numTuples();
       }
@@ -102,15 +112,5 @@ public class TwitterSingleNodeJoinSpeedTest {
 
     /* Make sure the count matches the known result. */
     assertTrue(result == 3361461);
-  }
-
-  @BeforeClass
-  public static void loadSpecificTestData() {
-    File file = new File(DATASET_PATH);
-    if (!file.exists()) {
-      throw new RuntimeException("Unable to read " + DATASET_PATH
-          + ". Copy it from /projects/db7/dataset/twitter/speedtest .");
-    }
-    successfulSetup = true;
   }
 }

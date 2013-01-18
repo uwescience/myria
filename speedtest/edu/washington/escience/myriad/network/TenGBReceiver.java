@@ -23,22 +23,55 @@ import org.jboss.netty.handler.codec.protobuf.ProtobufVarint32LengthFieldPrepend
 
 public class TenGBReceiver {
 
-  public static InetSocketAddress addr;
+  public static class DataHandler extends SimpleChannelUpstreamHandler {
 
-  public static class ServerPipelineFactory implements ChannelPipelineFactory {
+    final LinkedBlockingQueue<Object> dataQueue;
 
     /**
      * constructor.
      * */
-    public ServerPipelineFactory(LinkedBlockingQueue<Object> dataQueue) {
+    public DataHandler(final LinkedBlockingQueue<Object> dataQueue) {
       this.dataQueue = dataQueue;
     }
 
+    @Override
+    public void exceptionCaught(final ChannelHandlerContext ctx, final ExceptionEvent e) {
+      e.getCause().printStackTrace();
+      e.getChannel().close();
+    }
+
+    @Override
+    public void handleUpstream(final ChannelHandlerContext ctx, final ChannelEvent e) throws Exception {
+      // if (e instanceof ChannelStateEvent) {
+      // logger.info(e.toString());
+      // }
+      super.handleUpstream(ctx, e);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e) {
+      dataQueue.add(e.getMessage());
+
+      ctx.sendUpstream(e);
+    }
+
+  }
+
+  public static class ServerPipelineFactory implements ChannelPipelineFactory {
+
     final LinkedBlockingQueue<Object> dataQueue;
+
+    /**
+     * constructor.
+     * */
+    public ServerPipelineFactory(final LinkedBlockingQueue<Object> dataQueue) {
+      this.dataQueue = dataQueue;
+    }
 
     @Override
     public ChannelPipeline getPipeline() throws Exception {
-      ChannelPipeline p = Channels.pipeline();
+      final ChannelPipeline p = Channels.pipeline();
       p.addLast("frameDecoder", new ProtobufVarint32FrameDecoder()); // upstream 2
 
       p.addLast("frameEncoder", new ProtobufVarint32LengthFieldPrepender()); // downstream 2
@@ -48,53 +81,20 @@ public class TenGBReceiver {
     }
   }
 
-  public static class DataHandler extends SimpleChannelUpstreamHandler {
+  public static InetSocketAddress addr;
 
-    /**
-     * constructor.
-     * */
-    public DataHandler(LinkedBlockingQueue<Object> dataQueue) {
-      this.dataQueue = dataQueue;
-    }
+  public static void main(final String[] args) throws IOException, InterruptedException {
 
-    final LinkedBlockingQueue<Object> dataQueue;
-
-    @Override
-    public void handleUpstream(ChannelHandlerContext ctx, ChannelEvent e) throws Exception {
-      // if (e instanceof ChannelStateEvent) {
-      // logger.info(e.toString());
-      // }
-      super.handleUpstream(ctx, e);
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) {
-      dataQueue.add(e.getMessage());
-
-      ctx.sendUpstream(e);
-    }
-
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) {
-      e.getCause().printStackTrace();
-      e.getChannel().close();
-    }
-
-  }
-
-  public static void main(String[] args) throws IOException, InterruptedException {
-
-    String hostName = args[0];
-    int port = Integer.valueOf(args[1]);
+    final String hostName = args[0];
+    final int port = Integer.valueOf(args[1]);
     addr = new InetSocketAddress(hostName, port);
 
     // Start server with Nb of active threads = 2*NB CPU + 1 as maximum.
-    ChannelFactory factory =
+    final ChannelFactory factory =
         new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool(), Runtime
             .getRuntime().availableProcessors() * 2 + 1);
 
-    ServerBootstrap bootstrap = new ServerBootstrap(factory);
+    final ServerBootstrap bootstrap = new ServerBootstrap(factory);
 
     final LinkedBlockingQueue<Object> dataQueue = new LinkedBlockingQueue<Object>();
     bootstrap.setPipelineFactory(new ServerPipelineFactory(dataQueue));
@@ -110,22 +110,22 @@ public class TenGBReceiver {
 
     bootstrap.setOption("readWriteFair", true);
 
-    Channel server = bootstrap.bind(addr);
+    final Channel server = bootstrap.bind(addr);
 
     long numReceived = 0;
     Object m = null;
 
-    long start = 0;
+    final long start = 0;
 
     while ((m = dataQueue.take()) != null) {
       if (m instanceof byte[]) {
-        byte[] data = (byte[]) m;
+        final byte[] data = (byte[]) m;
         System.out.println("received data block, length: " + data.length);
         if (data.length == 1) {
           break;
         }
       } else if (m instanceof ChannelBuffer) {
-        ChannelBuffer cb = (ChannelBuffer) m;
+        final ChannelBuffer cb = (ChannelBuffer) m;
         System.out.println("received data block, length: " + cb.capacity());
         if (cb.capacity() == 1) {
           break;
@@ -136,7 +136,8 @@ public class TenGBReceiver {
       numReceived++;
     }
     System.out.println("Total num received is " + numReceived);
-    System.out.println("Time spent at receive: " + TenGBTupleBatchSenderUsingConnectionPool.elapsedInSeconds(start) + " seconds");
+    System.out.println("Time spent at receive: " + TenGBTupleBatchSenderUsingConnectionPool.elapsedInSeconds(start)
+        + " seconds");
 
     server.close();
     server.disconnect();

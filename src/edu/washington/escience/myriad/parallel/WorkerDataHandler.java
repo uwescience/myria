@@ -22,16 +22,16 @@ public class WorkerDataHandler extends SimpleChannelUpstreamHandler {
 
   LinkedBlockingQueue<MessageWrapper> messageQueue;
 
-  WorkerDataHandler(LinkedBlockingQueue<MessageWrapper> messageQueue) {
+  WorkerDataHandler(final LinkedBlockingQueue<MessageWrapper> messageQueue) {
     this.messageQueue = messageQueue;
   }
 
   @Override
   public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e) {
     final TransportMessage tm = (TransportMessage) e.getMessage();
-    Channel channel = e.getChannel();
-    ChannelContext cs = (ChannelContext) channel.getAttachment();
-    ChannelContext.RegisteredChannelContext ecc = cs.getRegisteredChannelContext();
+    final Channel channel = e.getChannel();
+    final ChannelContext cs = (ChannelContext) channel.getAttachment();
+    final ChannelContext.RegisteredChannelContext ecc = cs.getRegisteredChannelContext();
     final Integer senderID = ecc.getRemoteID();
     final MessageWrapper mw = new MessageWrapper(senderID, tm);
     messageQueue.add(mw);
