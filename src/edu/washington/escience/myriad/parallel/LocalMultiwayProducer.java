@@ -27,11 +27,11 @@ public final class LocalMultiwayProducer extends Producer {
     @Override
     public void run() {
 
-      final Channel channel = getThisWorker().connectionPool.reserveLongTermConnection(remoteWorkerID);
+      final Channel channel = getConnectionPool().reserveLongTermConnection(remoteWorkerID);
 
       try {
 
-        TupleBatchBuffer buffer = new TupleBatchBuffer(getSchema());
+        final TupleBatchBuffer buffer = new TupleBatchBuffer(getSchema());
 
         TupleBatch tup = null;
         TransportMessage[] dms = null;
@@ -39,26 +39,26 @@ public final class LocalMultiwayProducer extends Producer {
           tup.compactInto(buffer);
 
           while ((dms = buffer.popFilledAsTM(operatorIDs)) != null) {
-            for (TransportMessage dm : dms) {
+            for (final TransportMessage dm : dms) {
               channel.write(dm);
             }
           }
         }
 
         while ((dms = buffer.popAnyAsTM(operatorIDs)) != null) {
-          for (TransportMessage dm : dms) {
+          for (final TransportMessage dm : dms) {
             channel.write(dm);
           }
         }
 
-        for (ExchangePairID operatorID : operatorIDs) {
+        for (final ExchangePairID operatorID : operatorIDs) {
           channel.write(IPCUtils.eosTM(operatorID));
         }
 
       } catch (final DbException e) {
         e.printStackTrace();
       } finally {
-        getThisWorker().connectionPool.releaseLongTermConnection(channel);
+        getConnectionPool().releaseLongTermConnection(channel);
       }
     }
   }
@@ -99,6 +99,11 @@ public final class LocalMultiwayProducer extends Producer {
   }
 
   @Override
+  public TupleBatch fetchNextReady() throws DbException {
+    return fetchNext();
+  }
+
+  @Override
   public Operator[] getChildren() {
     return new Operator[] { child };
   }
@@ -117,11 +122,6 @@ public final class LocalMultiwayProducer extends Producer {
   @Override
   public void setChildren(final Operator[] children) {
     child = children[0];
-  }
-
-  @Override
-  public TupleBatch fetchNextReady() throws DbException {
-    return fetchNext();
   }
 
 }

@@ -51,7 +51,7 @@ public final class WorkerCatalog {
     Objects.requireNonNull(filename);
 
     /* if overwrite is false, error if the file exists. */
-    File catalogFile = new File(filename);
+    final File catalogFile = new File(filename);
     if (!overwrite && catalogFile.exists()) {
       throw new CatalogException(filename + " already exists");
     }
@@ -72,7 +72,7 @@ public final class WorkerCatalog {
     final SQLiteConnection sqliteConnection = new SQLiteConnection(catalogFile);
     try {
       sqliteConnection.open();
-    } catch (SQLiteException e) {
+    } catch (final SQLiteException e) {
       LOGGER.error(e.toString());
       throw new CatalogException("SQLiteException while creating the new WorkerCatalog", e);
     }
@@ -108,14 +108,14 @@ public final class WorkerCatalog {
         + "    shard_index INTEGER NOT NULL,\n"
         + "    location STRING NOT NULL);");
       /* @formatter:on*/
-    } catch (SQLiteException e) {
+    } catch (final SQLiteException e) {
       LOGGER.error(e.toString());
       throw new CatalogException("SQLiteException while creating new WorkerCatalog tables", e);
     }
 
     try {
       return new WorkerCatalog(sqliteConnection);
-    } catch (SQLiteException e) {
+    } catch (final SQLiteException e) {
       LOGGER.error(e.toString());
       throw new CatalogException("SQLiteException while creating WorkerCatalog from SQLiteConnection", e);
     }
@@ -145,18 +145,18 @@ public final class WorkerCatalog {
     Objects.requireNonNull(filename);
 
     /* See if the file exists, and create it if not. */
-    File catalogFile = new File(filename);
+    final File catalogFile = new File(filename);
     if (!catalogFile.exists()) {
       throw new CatalogNotFoundException(filename);
     }
 
     /* Connect to the database */
-    SQLiteConnection sqliteConnection = new SQLiteConnection(catalogFile);
+    final SQLiteConnection sqliteConnection = new SQLiteConnection(catalogFile);
     try {
       sqliteConnection.open(false);
 
       return new WorkerCatalog(sqliteConnection);
-    } catch (SQLiteException e) {
+    } catch (final SQLiteException e) {
       LOGGER.error(e.toString());
       throw new CatalogException(e);
     }
@@ -197,11 +197,11 @@ public final class WorkerCatalog {
       @SuppressWarnings("unused")
       /* Just used to verify that hostPortString is legal */
       final SocketInfo sockInfo = SocketInfo.valueOf(hostPortString);
-      SQLiteStatement statement = sqliteConnection.prepare("INSERT INTO masters(host_port) VALUES(?);", false);
+      final SQLiteStatement statement = sqliteConnection.prepare("INSERT INTO masters(host_port) VALUES(?);", false);
       statement.bind(1, hostPortString);
       statement.step();
       statement.dispose();
-    } catch (SQLiteException e) {
+    } catch (final SQLiteException e) {
       LOGGER.error(e.toString());
       throw new CatalogException(e);
     }
@@ -252,14 +252,44 @@ public final class WorkerCatalog {
 
       /* To complete: commit the transaction. */
       sqliteConnection.exec("COMMIT TRANSACTION;");
-    } catch (SQLiteException e) {
+    } catch (final SQLiteException e) {
       try {
         sqliteConnection.exec("ABORT TRANSACTION;");
-      } catch (SQLiteException e2) {
+      } catch (final SQLiteException e2) {
         assert true; /* Do nothing. */
       }
       throw new CatalogException(e);
     }
+  }
+
+  /**
+   * Adds a worker using the specified host and port to the WorkerCatalog.
+   * 
+   * @param workerId specifies the global identifier of this worker.
+   * @param hostPortString specifies the path to the worker in the format "host:port".
+   * @return this WorkerCatalog.
+   * @throws CatalogException if the hostPortString is invalid or there is a database exception.
+   */
+  public WorkerCatalog addWorker(final int workerId, final String hostPortString) throws CatalogException {
+    Objects.requireNonNull(hostPortString);
+    if (isClosed) {
+      throw new CatalogException("WorkerCatalog is closed.");
+    }
+    try {
+      @SuppressWarnings("unused")
+      /* Just used to verify that hostPortString is legal */
+      final SocketInfo sockInfo = SocketInfo.valueOf(hostPortString);
+      final SQLiteStatement statement =
+          sqliteConnection.prepare("INSERT INTO workers(worker_id, host_port) VALUES(?,?);", false);
+      statement.bind(1, workerId);
+      statement.bind(2, hostPortString);
+      statement.step();
+      statement.dispose();
+    } catch (final SQLiteException e) {
+      LOGGER.error(e.toString());
+      throw new CatalogException(e);
+    }
+    return this;
   }
 
   /**
@@ -289,7 +319,7 @@ public final class WorkerCatalog {
     }
     try {
       /* Getting this out is a simple query, which does not need to be cached. */
-      SQLiteStatement statement =
+      final SQLiteStatement statement =
           sqliteConnection.prepare("SELECT value FROM configuration WHERE key=? LIMIT 1;", false).bind(1, key);
       if (!statement.step()) {
         /* If step() returns false, there's no data. Return null. */
@@ -298,7 +328,7 @@ public final class WorkerCatalog {
       final String ret = statement.columnString(0);
       statement.dispose();
       return ret;
-    } catch (SQLiteException e) {
+    } catch (final SQLiteException e) {
       LOGGER.error(e.toString());
       throw new CatalogException(e);
     }
@@ -313,19 +343,44 @@ public final class WorkerCatalog {
       throw new CatalogException("WorkerCatalog is closed.");
     }
 
-    ArrayList<SocketInfo> masters = new ArrayList<SocketInfo>();
+    final ArrayList<SocketInfo> masters = new ArrayList<SocketInfo>();
     try {
-      SQLiteStatement statement = sqliteConnection.prepare("SELECT * FROM masters;", false);
+      final SQLiteStatement statement = sqliteConnection.prepare("SELECT * FROM masters;", false);
       while (statement.step()) {
         masters.add(SocketInfo.valueOf(statement.columnString(1)));
       }
       statement.dispose();
-    } catch (SQLiteException e) {
+    } catch (final SQLiteException e) {
       LOGGER.error(e.toString());
       throw new CatalogException(e);
     }
 
     return masters;
+  }
+
+  /**
+   * @return the set of workers stored in this WorkerCatalog.
+   * @throws CatalogException if there is an error in the database.
+   */
+  public Map<Integer, SocketInfo> getWorkers() throws CatalogException {
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+
+    final ConcurrentHashMap<Integer, SocketInfo> workers = new ConcurrentHashMap<Integer, SocketInfo>();
+
+    try {
+      final SQLiteStatement statement = sqliteConnection.prepare("SELECT * FROM workers;", false);
+      while (statement.step()) {
+        workers.put(statement.columnInt(0), SocketInfo.valueOf(statement.columnString(1)));
+      }
+      statement.dispose();
+    } catch (final SQLiteException e) {
+      LOGGER.error(e.toString());
+      throw new CatalogException(e);
+    }
+
+    return workers;
   }
 
   /**
@@ -343,69 +398,14 @@ public final class WorkerCatalog {
     }
     try {
       /* Getting this out is a simple query, which does not need to be cached. */
-      SQLiteStatement statement =
+      final SQLiteStatement statement =
           sqliteConnection.prepare("INSERT INTO configuration VALUES(?,?);", false).bind(1, key).bind(2, value);
       statement.step();
       statement.dispose();
-    } catch (SQLiteException e) {
+    } catch (final SQLiteException e) {
       LOGGER.error(e.toString());
       throw new CatalogException(e);
     }
-  }
-
-  /**
-   * @return the set of workers stored in this WorkerCatalog.
-   * @throws CatalogException if there is an error in the database.
-   */
-  public Map<Integer, SocketInfo> getWorkers() throws CatalogException {
-    if (isClosed) {
-      throw new CatalogException("Catalog is closed.");
-    }
-
-    ConcurrentHashMap<Integer, SocketInfo> workers = new ConcurrentHashMap<Integer, SocketInfo>();
-
-    try {
-      SQLiteStatement statement = sqliteConnection.prepare("SELECT * FROM workers;", false);
-      while (statement.step()) {
-        workers.put(statement.columnInt(0), SocketInfo.valueOf(statement.columnString(1)));
-      }
-      statement.dispose();
-    } catch (SQLiteException e) {
-      LOGGER.error(e.toString());
-      throw new CatalogException(e);
-    }
-
-    return workers;
-  }
-
-  /**
-   * Adds a worker using the specified host and port to the WorkerCatalog.
-   * 
-   * @param workerId specifies the global identifier of this worker.
-   * @param hostPortString specifies the path to the worker in the format "host:port".
-   * @return this WorkerCatalog.
-   * @throws CatalogException if the hostPortString is invalid or there is a database exception.
-   */
-  public WorkerCatalog addWorker(final int workerId, final String hostPortString) throws CatalogException {
-    Objects.requireNonNull(hostPortString);
-    if (isClosed) {
-      throw new CatalogException("WorkerCatalog is closed.");
-    }
-    try {
-      @SuppressWarnings("unused")
-      /* Just used to verify that hostPortString is legal */
-      final SocketInfo sockInfo = SocketInfo.valueOf(hostPortString);
-      SQLiteStatement statement =
-          sqliteConnection.prepare("INSERT INTO workers(worker_id, host_port) VALUES(?,?);", false);
-      statement.bind(1, workerId);
-      statement.bind(2, hostPortString);
-      statement.step();
-      statement.dispose();
-    } catch (SQLiteException e) {
-      LOGGER.error(e.toString());
-      throw new CatalogException(e);
-    }
-    return this;
   }
 
 }

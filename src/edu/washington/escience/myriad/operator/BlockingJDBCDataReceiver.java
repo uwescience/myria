@@ -2,6 +2,8 @@ package edu.washington.escience.myriad.operator;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.google.common.collect.ImmutableList;
+
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -21,7 +23,7 @@ public final class BlockingJDBCDataReceiver extends Operator {
   final String username;
   final String password;
   final String tableName;
-  final String[] fieldNames;
+  final ImmutableList<String> fieldNames;
   final String[] placeHolders;
 
   public BlockingJDBCDataReceiver(final String tableName, final String connectionString, final String driverClass,
@@ -32,12 +34,16 @@ public final class BlockingJDBCDataReceiver extends Operator {
     this.driverClass = driverClass;
     this.username = username;
     this.password = password;
-    Schema s = child.getSchema();
+    final Schema s = child.getSchema();
     fieldNames = s.getFieldNames();
     placeHolders = new String[s.numFields()];
     for (int i = 0; i < s.numFields(); ++i) {
       placeHolders[i] = "?";
     }
+  }
+
+  @Override
+  protected void cleanup() throws DbException {
   }
 
   @Override
@@ -49,6 +55,11 @@ public final class BlockingJDBCDataReceiver extends Operator {
           username, password);
     }
     return null;
+  }
+
+  @Override
+  public TupleBatch fetchNextReady() throws DbException {
+    return fetchNext();
   }
 
   @Override
@@ -68,15 +79,6 @@ public final class BlockingJDBCDataReceiver extends Operator {
   @Override
   public void setChildren(final Operator[] children) {
     child = children[0];
-  }
-
-  @Override
-  protected void cleanup() throws DbException {
-  }
-
-  @Override
-  public TupleBatch fetchNextReady() throws DbException {
-    return fetchNext();
   }
 
 }

@@ -5,6 +5,8 @@ import java.util.HashMap;
 
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
+
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -23,25 +25,26 @@ public class CollectTest extends SystemTestBase {
 
   @Test
   public void collectTest() throws DbException, IOException, CatalogException {
-    String testtableName = "testtable";
-    createTable(WORKER_ID[0], testtableName, testtableName, "id long, name varchar(20)");
-    createTable(WORKER_ID[1], testtableName, testtableName, "id long, name varchar(20)");
+    final String testtableName = "testtable";
+    createTable(WORKER_ID[0], testtableName, "id long, name varchar(20)");
+    createTable(WORKER_ID[1], testtableName, "id long, name varchar(20)");
 
-    String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, 200, 20);
-    long[] ids = TestUtils.randomLong(1000, 1005, names.length);
+    final String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, 200, 20);
+    final long[] ids = TestUtils.randomLong(1000, 1005, names.length);
 
-    final Schema schema = new Schema(new Type[] { Type.LONG_TYPE, Type.STRING_TYPE }, new String[] { "id", "name" });
+    final Schema schema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
 
-    TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
+    final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
       tbb.put(0, ids[i]);
       tbb.put(1, names[i]);
     }
 
-    TupleBatchBuffer resultTBB = new TupleBatchBuffer(schema);
+    final TupleBatchBuffer resultTBB = new TupleBatchBuffer(schema);
     resultTBB.merge(tbb);
     resultTBB.merge(tbb);
-    HashMap<Tuple, Integer> expectedResults = TestUtils.tupleBatchToTupleBag(resultTBB);
+    final HashMap<Tuple, Integer> expectedResults = TestUtils.tupleBatchToTupleBag(resultTBB);
 
     TupleBatch tb = null;
     while ((tb = tbb.popAny()) != null) {
@@ -51,8 +54,7 @@ public class CollectTest extends SystemTestBase {
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
 
-    final SQLiteQueryScan scanTable =
-        new SQLiteQueryScan(testtableName + ".db", "select * from " + testtableName, schema);
+    final SQLiteQueryScan scanTable = new SQLiteQueryScan(null, "select * from " + testtableName, schema);
 
     final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
     final CollectProducer cp1 = new CollectProducer(scanTable, serverReceiveID, MASTER_ID);
@@ -67,21 +69,20 @@ public class CollectTest extends SystemTestBase {
       }
     }
 
-    final CollectConsumer serverPlan =
-        new CollectConsumer(schema, serverReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
+    final CollectConsumer serverPlan = new CollectConsumer(schema, serverReceiveID, WORKER_ID);
     Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
     LOGGER.debug("Query dispatched to the workers");
     TupleBatchBuffer result = null;
     while ((result = Server.runningInstance.startServerQuery(0, serverPlan)) == null) {
       try {
         Thread.sleep(100);
-      } catch (InterruptedException e) {
+      } catch (final InterruptedException e) {
         e.printStackTrace();
         Thread.currentThread().interrupt();
       }
     }
 
-    HashMap<Tuple, Integer> resultSet = TestUtils.tupleBatchToTupleBag(result);
+    final HashMap<Tuple, Integer> resultSet = TestUtils.tupleBatchToTupleBag(result);
 
     TestUtils.assertTupleBagEqual(expectedResults, resultSet);
 

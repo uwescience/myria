@@ -48,10 +48,12 @@ tasks.eclipseClasspath.dependsOn cleanEclipseClasspath
 /* Where we will fetch external JAR files from. */
 repositories {
   mavenCentral() /* The standard Java Maven repository. */
+  maven { url "http://maven.restlet.org" }
 }
 
 /* List constants that we use in multiple places. */
 ext.slf4jVersion = "1.6.6"
+ext.restletVersion = "2.0.15"
 
 dependencies {
   compile "com.almworks.sqlite4java:sqlite4java:0.282"
@@ -59,10 +61,14 @@ dependencies {
   compile "com.google.guava:guava:13.0"
   compile "com.google.protobuf:protobuf-java:2.4.1"
 
-  compile "io.netty:netty:3.5.7.Final"
+  compile "io.netty:netty:3.5.11.Final"
 
   compile "commons-io:commons-io:2.4"
   compile "org.apache.commons:commons-lang3:3.1"
+
+  compile "org.restlet.jee:org.restlet:${restletVersion}"
+  compile "org.restlet.jee:org.restlet.ext.jackson:${restletVersion}"
+  compile "org.restlet.jee:org.restlet.ext.jaxrs:${restletVersion}"
 
   compile "org.slf4j:slf4j-api:${slf4jVersion}"
   runtime "org.slf4j:slf4j-simple:${slf4jVersion}"
@@ -128,4 +134,10 @@ eclipse.classpath {
 
   }
 
+}
+
+jar {
+  from configurations.compile.collect {
+    it.isDirectory() ? it : zipTree(it)
+  }
 }

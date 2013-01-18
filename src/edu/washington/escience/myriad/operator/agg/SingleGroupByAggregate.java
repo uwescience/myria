@@ -7,11 +7,12 @@ import java.util.Set;
 
 import org.apache.commons.lang3.tuple.Pair;
 
+import com.google.common.collect.ImmutableList;
+
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
-import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.operator.Operator;
 
 /**
@@ -37,7 +38,7 @@ public class SingleGroupByAggregate extends Operator {
    * {@link StringAggregator} to help you with your implementation of readNext().
    * 
    * 
-   * @param child The DbIterator that is feeding us tuples.
+   * @param child The Operator that is feeding us tuples.
    * @param afields The columns over which we are computing an aggregate.
    * @param gfield The column over which we are grouping the result
    * @param aggOps The aggregation operator to use
@@ -48,20 +49,16 @@ public class SingleGroupByAggregate extends Operator {
       throw new IllegalArgumentException("aggregation fields must not be empty");
     }
 
-    Schema childSchema = child.getSchema();
+    final Schema childSchema = child.getSchema();
     if (gfield < 0 || gfield >= childSchema.numFields()) {
       throw new IllegalArgumentException("Invalid group field");
     }
 
     Schema outputSchema = null;
 
-    Type[] gTypes = new Type[1];
-    String[] gNames = new String[1];
-
-    gTypes[0] = childSchema.getFieldType(gfield);
-    gNames[0] = childSchema.getFieldName(gfield);
-
-    outputSchema = new Schema(gTypes, gNames);
+    outputSchema =
+        new Schema(ImmutableList.of(childSchema.getFieldType(gfield)), ImmutableList.of(childSchema
+            .getFieldName(gfield)));
 
     this.child = child;
     this.afields = afields;
@@ -71,7 +68,7 @@ public class SingleGroupByAggregate extends Operator {
     groupedTupleBatches = new HashMap<Object, Pair<Object, TupleBatchBuffer>>();
 
     int idx = 0;
-    for (int afield : afields) {
+    for (final int afield : afields) {
       switch (childSchema.getFieldType(afield)) {
         case BOOLEAN_TYPE:
           agg[idx] = new BooleanAggregator(afield, childSchema.getFieldName(afield), aggOps[idx]);
@@ -103,15 +100,16 @@ public class SingleGroupByAggregate extends Operator {
     schema = outputSchema;
   }
 
-  public final int groupByField() {
-    return gfield;
-  }
-
   /**
    * @return the aggregate field
    * */
   public final int[] aggregateFields() {
     return afields;
+  }
+
+  @Override
+  protected final void cleanup() throws DbException {
+    groupAggs.clear();
   }
 
   /**
@@ -125,11 +123,11 @@ public class SingleGroupByAggregate extends Operator {
     if (resultBuffer == null) {
       TupleBatch tb = null;
       while ((tb = child.next()) != null) {
-        Set<Pair<Object, TupleBatchBuffer>> readyTBB = tb.groupby(gfield, groupedTupleBatches);
+        final Set<Pair<Object, TupleBatchBuffer>> readyTBB = tb.groupby(gfield, groupedTupleBatches);
         if (readyTBB != null) {
-          for (Pair<Object, TupleBatchBuffer> p : readyTBB) {
-            Object groupColumnValue = p.getKey();
-            TupleBatchBuffer tbb = p.getRight();
+          for (final Pair<Object, TupleBatchBuffer> p : readyTBB) {
+            final Object groupColumnValue = p.getKey();
+            final TupleBatchBuffer tbb = p.getRight();
             Aggregator[] groupAgg = groupAggs.get(groupColumnValue);
             if (groupAgg == null) {
               groupAgg = new Aggregator[agg.length];
@@ -141,7 +139,7 @@ public class SingleGroupByAggregate extends Operator {
 
             TupleBatch filledTB = null;
             while ((filledTB = tbb.popFilled()) != null) {
-              for (Aggregator ag : groupAgg) {
+              for (final Aggregator ag : groupAgg) {
                 ag.add(filledTB);
               }
             }
@@ -149,8 +147,8 @@ public class SingleGroupByAggregate extends Operator {
         }
       }
 
-      for (Pair<Object, TupleBatchBuffer> p : groupedTupleBatches.values()) {
-        Object groupColumnValue = p.getKey();
+      for (final Pair<Object, TupleBatchBuffer> p : groupedTupleBatches.values()) {
+        final Object groupColumnValue = p.getKey();
         Aggregator[] groupAgg = groupAggs.get(groupColumnValue);
         if (groupAgg == null) {
           groupAgg = new Aggregator[agg.length];
@@ -159,10 +157,10 @@ public class SingleGroupByAggregate extends Operator {
           }
           groupAggs.put(groupColumnValue, groupAgg);
         }
-        TupleBatchBuffer tbb = p.getRight();
+        final TupleBatchBuffer tbb = p.getRight();
         TupleBatch anyTBB = null;
         while ((anyTBB = tbb.popAny()) != null) {
-          for (Aggregator ag : groupAgg) {
+          for (final Aggregator ag : groupAgg) {
             ag.add(anyTBB);
           }
         }
@@ -170,12 +168,12 @@ public class SingleGroupByAggregate extends Operator {
 
       resultBuffer = new TupleBatchBuffer(schema);
 
-      for (Map.Entry<Object, Aggregator[]> e : groupAggs.entrySet()) {
-        Object groupByValue = e.getKey();
-        Aggregator[] agg = e.getValue();
+      for (final Map.Entry<Object, Aggregator[]> e : groupAggs.entrySet()) {
+        final Object groupByValue = e.getKey();
+        final Aggregator[] agg = e.getValue();
         resultBuffer.put(0, groupByValue);
         int fromIndex = 1;
-        for (Aggregator element : agg) {
+        for (final Aggregator element : agg) {
           element.getResult(resultBuffer, fromIndex);
           fromIndex += element.getResultSchema().numFields();
         }
@@ -183,6 +181,17 @@ public class SingleGroupByAggregate extends Operator {
 
     }
     return resultBuffer.popAny();
+  }
+
+  @Override
+  protected final TupleBatch fetchNextReady() throws DbException {
+    // TODO non-blocking
+    return fetchNext();
+  }
+
+  @Override
+  public final Operator[] getChildren() {
+    return new Operator[] { child };
   }
 
   /**
@@ -193,14 +202,8 @@ public class SingleGroupByAggregate extends Operator {
     return schema;
   }
 
-  @Override
-  public final Operator[] getChildren() {
-    return new Operator[] { child };
-  }
-
-  @Override
-  public final void setChildren(final Operator[] children) {
-    child = children[0];
+  public final int groupByField() {
+    return gfield;
   }
 
   @Override
@@ -208,14 +211,8 @@ public class SingleGroupByAggregate extends Operator {
   }
 
   @Override
-  protected final void cleanup() throws DbException {
-    groupAggs.clear();
-  }
-
-  @Override
-  protected final TupleBatch fetchNextReady() throws DbException {
-    // TODO non-blocking
-    return fetchNext();
+  public final void setChildren(final Operator[] children) {
+    child = children[0];
   }
 
 }

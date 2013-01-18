@@ -14,15 +14,9 @@ import java.io.OutputStream;
 public final class FSUtils {
 
   /**
-   * util classes are not instantiable.
-   * */
-  private FSUtils() {
-  }
-
-  /**
    * Delete the pathToDirectory. Return only if the directory is actually get deleted on the disk.
    * */
-  public static void blockingDeleteDirectory(String pathToDirectory) {
+  public static void blockingDeleteDirectory(final String pathToDirectory) {
     final File testBaseFolderF = new File(pathToDirectory);
     try {
       FSUtils.deleteFileFolder(testBaseFolderF);
@@ -42,20 +36,6 @@ public final class FSUtils {
       }
     }
 
-  }
-
-  public static void deleteFileFolder(final File f) throws IOException {
-    if (!f.exists()) {
-      return;
-    }
-    if (f.isDirectory()) {
-      for (final File c : f.listFiles()) {
-        deleteFileFolder(c);
-      }
-    }
-    if (!f.delete()) {
-      throw new FileNotFoundException("Failed to delete file: " + f);
-    }
   }
 
   /**
@@ -100,9 +80,29 @@ public final class FSUtils {
     }
   }
 
+  public static void deleteFileFolder(final File f) throws IOException {
+    if (!f.exists()) {
+      return;
+    }
+    if (f.isDirectory()) {
+      for (final File c : f.listFiles()) {
+        deleteFileFolder(c);
+      }
+    }
+    if (!f.delete()) {
+      throw new FileNotFoundException("Failed to delete file: " + f);
+    }
+  }
+
   public static void writeFile(final File f, final String content) throws IOException {
     final FileOutputStream o = new FileOutputStream(f);
     o.write(content.getBytes());
     o.close();
+  }
+
+  /**
+   * util classes are not instantiable.
+   * */
+  private FSUtils() {
   }
 }
