@@ -1,6 +1,7 @@
 package edu.washington.escience.myriad.operator;
 
 import java.io.Serializable;
+import java.util.Arrays;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
@@ -37,6 +38,8 @@ public abstract class Operator implements Serializable {
    * */
   private boolean eos = true;
 
+  private boolean eoi = true;
+
   /**
    * Closes this iterator.
    * 
@@ -47,6 +50,7 @@ public abstract class Operator implements Serializable {
     outputBuffer = null;
     open = false;
     eos = true;
+    eoi = true;
     cleanup();
     Operator[] children = getChildren();
     if (children != null) {
@@ -99,6 +103,10 @@ public abstract class Operator implements Serializable {
     return eos;
   }
 
+  public final boolean eoi() {
+    return eoi;
+  }
+
   /**
    * Get next TupleBatch. If EOS has not meet, it will wait until a TupleBatch is ready
    * 
@@ -114,7 +122,7 @@ public abstract class Operator implements Serializable {
     if (!open) {
       throw new IllegalStateException("Operator not yet open");
     }
-    if (eos()) {
+    if (eos() || eoi()) {
       return null;
     }
 
@@ -130,7 +138,30 @@ public abstract class Operator implements Serializable {
       result = fetchNext();
     }
     if (result == null) {
-      setEOS();
+      Operator[] children = getChildren();
+      boolean[] childrenEOI = getChildrenEOI();
+      boolean allEOS = true;
+      int count = 0;
+      for (int i = 0; i < children.length; ++i) {
+        if (children[i].eos()) {
+          childrenEOI[i] = true;
+        } else if (children[i].eoi()) {
+          childrenEOI[i] = true;
+          children[i].setEOI(false);
+          allEOS = false;
+        }
+        if (childrenEOI[i]) {
+          count++;
+        }
+      }
+      if (count == children.length) {
+        if (allEOS) {
+          setEOS();
+        } else {
+          setEOI(true);
+        }
+        cleanChildrenEOI();
+      }
     }
 
     return result;
@@ -169,6 +200,10 @@ public abstract class Operator implements Serializable {
    * */
   protected final void setEOS() {
     eos = true;
+  }
+
+  protected final void setEOI(boolean x) {
+    eos = x;
   }
 
   public boolean isOpen() {
@@ -234,5 +269,19 @@ public abstract class Operator implements Serializable {
    * 
    * @param children the Operators which are to be set as the children(child) of this operator
    */
+  // have we ever used this function?
   public abstract void setChildren(Operator[] children);
+
+  public boolean[] childrenEOI = null;
+
+  public boolean[] getChildrenEOI() {
+    if (childrenEOI == null) {
+      childrenEOI = new boolean[getChildren().length];
+    }
+    return childrenEOI;
+  }
+
+  public void cleanChildrenEOI() {
+    Arrays.fill(childrenEOI, false);
+  }
 }
