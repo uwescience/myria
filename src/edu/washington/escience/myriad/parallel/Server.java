@@ -149,6 +149,13 @@ public final class Server {
               case WORKER_ALIVE:
                 aliveWorkers.add(senderID);
                 break;
+              case QUERY_COMPLETE:
+                HashMap<Integer, Integer> workersAssigned = workersAssignedToQuery.get(0);
+                if (!workersAssigned.containsKey(senderID)) {
+                  ;// TODO complain about something bad.
+                }
+                workersAssigned.remove(senderID);
+                break;
               case CONNECT:
               case DISCONNECT:
               case SHUTDOWN:
@@ -345,6 +352,13 @@ public final class Server {
     }
   }
 
+  public boolean queryCompleted(int queryId) {
+    if (workersAssignedToQuery.containsKey(0)) {
+      return workersAssignedToQuery.get(0).isEmpty();
+    }
+    return true;
+  }
+
   public void shutdown() {
     messageProcessor.setStopped();
     cleanup();
@@ -482,7 +496,5 @@ public final class Server {
     for (final Entry<Integer, Integer> entry : workersAssigned.entrySet()) {
       getConnectionPool().sendShortMessage(entry.getKey(), IPCUtils.CONTROL_START_QUERY);
     }
-    workersAssignedToQuery.remove(queryId);
-    workersReceivedQuery.remove(queryId);
   }
 }

@@ -9,6 +9,7 @@ message ControlMessage {
     SHUTDOWN = 3; // master -> workers
     DISCONNECT = 4; //disconnect an IPC connection
     WORKER_ALIVE = 5; // worker -> master
+    QUERY_COMPLETE = 6; // worker -> master
   }
 
   required ControlMessageType type = 1;		// See enum above

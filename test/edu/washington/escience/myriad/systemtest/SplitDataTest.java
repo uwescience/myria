@@ -3,6 +3,8 @@ package edu.washington.escience.myriad.systemtest;
 import java.io.IOException;
 import java.util.HashMap;
 
+import org.junit.Test;
+
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.DbException;
@@ -21,7 +23,7 @@ import edu.washington.escience.myriad.parallel.ShuffleProducer;
 
 public class SplitDataTest extends SystemTestBase {
 
-  // @Test
+  @Test
   public void splitDataTest() throws DbException, IOException, CatalogException {
     /* Create a source of tuples containing the numbers 1 to 10001. */
     final Schema schema =
@@ -64,6 +66,14 @@ public class SplitDataTest extends SystemTestBase {
         Thread.sleep(100);
       } catch (final InterruptedException e) {
         e.printStackTrace();
+        Thread.currentThread().interrupt();
+      }
+    }
+
+    while (!Server.runningInstance.queryCompleted(0)) {
+      try {
+        Thread.sleep(100);
+      } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
       }
     }

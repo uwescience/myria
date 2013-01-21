@@ -76,14 +76,14 @@ void protobuf_AddDesc_control_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
   ::google::protobuf::DescriptorPool::InternalAddGeneratedFile(
-    "\n\rcontrol.proto\"\324\001\n\016ControlMessage\0220\n\004ty"
+    "\n\rcontrol.proto\"\351\001\n\016ControlMessage\0220\n\004ty"
     "pe\030\001 \002(\0162\".ControlMessage.ControlMessage"
-    "Type\022\020\n\010remoteID\030\002 \001(\005\"~\n\022ControlMessage"
-    "Type\022\013\n\007CONNECT\020\000\022\017\n\013START_QUERY\020\001\022\032\n\026QU"
-    "ERY_READY_TO_EXECUTE\020\002\022\014\n\010SHUTDOWN\020\003\022\016\n\n"
-    "DISCONNECT\020\004\022\020\n\014WORKER_ALIVE\020\005B4\n$edu.wa"
-    "shington.escience.myriad.protoB\014ControlP"
-    "roto", 284);
+    "Type\022\020\n\010remoteID\030\002 \001(\005\"\222\001\n\022ControlMessag"
+    "eType\022\013\n\007CONNECT\020\000\022\017\n\013START_QUERY\020\001\022\032\n\026Q"
+    "UERY_READY_TO_EXECUTE\020\002\022\014\n\010SHUTDOWN\020\003\022\016\n"
+    "\nDISCONNECT\020\004\022\020\n\014WORKER_ALIVE\020\005\022\022\n\016QUERY"
+    "_COMPLETE\020\006B4\n$edu.washington.escience.m"
+    "yriad.protoB\014ControlProto", 305);
   ::google::protobuf::MessageFactory::InternalRegisterGeneratedFile(
     "control.proto", &protobuf_RegisterTypes);
   ControlMessage::default_instance_ = new ControlMessage();
@@ -113,6 +113,7 @@ bool ControlMessage_ControlMessageType_IsValid(int value) {
     case 3:
     case 4:
     case 5:
+    case 6:
       return true;
     default:
       return false;
@@ -126,6 +127,7 @@ const ControlMessage_ControlMessageType ControlMessage::QUERY_READY_TO_EXECUTE;
 const ControlMessage_ControlMessageType ControlMessage::SHUTDOWN;
 const ControlMessage_ControlMessageType ControlMessage::DISCONNECT;
 const ControlMessage_ControlMessageType ControlMessage::WORKER_ALIVE;
+const ControlMessage_ControlMessageType ControlMessage::QUERY_COMPLETE;
 const ControlMessage_ControlMessageType ControlMessage::ControlMessageType_MIN;
 const ControlMessage_ControlMessageType ControlMessage::ControlMessageType_MAX;
 const int ControlMessage::ControlMessageType_ARRAYSIZE;

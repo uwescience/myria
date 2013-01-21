@@ -159,21 +159,21 @@ public class Worker {
           LOGGER.log(Level.INFO, "Worker start processing query");
           for (final Operator query : queries) {
             try {
-              ((Producer) query).open();
-            } catch (final DbException e1) {
-              e1.printStackTrace();
+              query.open();
+            } catch (final DbException e) {
+              throw new RuntimeException(e);
             }
           }
           int endCount = 0;
           while (true) {
             for (final Operator query : queries) {
               try {
-                if (query.isOpen() && ((Producer) query).next() == null) {
+                if (query.isOpen() && query.next() == null) {
                   endCount++;
-                  ((Producer) query).close();
+                  query.close();
                 }
-              } catch (final DbException e1) {
-                e1.printStackTrace();
+              } catch (final DbException e) {
+                throw new RuntimeException(e);
               }
             }
             if (endCount == queries.length) {
@@ -438,6 +438,7 @@ public class Worker {
       dataBuffer.clear();
       queryPlan = null;
     }
+    sendMessageToMaster(IPCUtils.CONTROL_QUERY_COMPLETE, null);
     LOGGER.log(Level.INFO, "My part of the query finished");
   }
 

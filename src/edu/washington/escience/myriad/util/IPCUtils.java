@@ -102,6 +102,10 @@ public final class IPCUtils {
       TransportMessageType.CONTROL).setControl(ControlMessage.newBuilder().setType(ControlMessageType.START_QUERY))
       .build();
 
+  public static final TransportMessage CONTROL_QUERY_COMPLETE = TransportMessage.newBuilder().setType(
+      TransportMessageType.CONTROL).setControl(ControlMessage.newBuilder().setType(ControlMessageType.QUERY_COMPLETE))
+      .build();
+
   public static final TransportMessage CONTROL_DISCONNECT = TransportMessage.newBuilder().setType(
       TransportMessageType.CONTROL).setControl(ControlMessage.newBuilder().setType(ControlMessageType.DISCONNECT))
       .build();
