@@ -37,11 +37,12 @@ enum ControlMessage_ControlMessageType {
   ControlMessage_ControlMessageType_START_QUERY = 1,
   ControlMessage_ControlMessageType_QUERY_READY_TO_EXECUTE = 2,
   ControlMessage_ControlMessageType_SHUTDOWN = 3,
-  ControlMessage_ControlMessageType_DISCONNECT = 4
+  ControlMessage_ControlMessageType_DISCONNECT = 4,
+  ControlMessage_ControlMessageType_WORKER_ALIVE = 5
 };
 bool ControlMessage_ControlMessageType_IsValid(int value);
 const ControlMessage_ControlMessageType ControlMessage_ControlMessageType_ControlMessageType_MIN = ControlMessage_ControlMessageType_CONNECT;
-const ControlMessage_ControlMessageType ControlMessage_ControlMessageType_ControlMessageType_MAX = ControlMessage_ControlMessageType_DISCONNECT;
+const ControlMessage_ControlMessageType ControlMessage_ControlMessageType_ControlMessageType_MAX = ControlMessage_ControlMessageType_WORKER_ALIVE;
 const int ControlMessage_ControlMessageType_ControlMessageType_ARRAYSIZE = ControlMessage_ControlMessageType_ControlMessageType_MAX + 1;
 
 const ::google::protobuf::EnumDescriptor* ControlMessage_ControlMessageType_descriptor();
@@ -114,6 +115,7 @@ class ControlMessage : public ::google::protobuf::Message {
   static const ControlMessageType QUERY_READY_TO_EXECUTE = ControlMessage_ControlMessageType_QUERY_READY_TO_EXECUTE;
   static const ControlMessageType SHUTDOWN = ControlMessage_ControlMessageType_SHUTDOWN;
   static const ControlMessageType DISCONNECT = ControlMessage_ControlMessageType_DISCONNECT;
+  static const ControlMessageType WORKER_ALIVE = ControlMessage_ControlMessageType_WORKER_ALIVE;
   static inline bool ControlMessageType_IsValid(int value) {
     return ControlMessage_ControlMessageType_IsValid(value);
   }

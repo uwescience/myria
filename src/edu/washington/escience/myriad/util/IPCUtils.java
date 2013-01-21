@@ -92,19 +92,24 @@ public final class IPCUtils {
 
   public static final TransportMessage CONTROL_QUERY_READY = TransportMessage.newBuilder().setType(
       TransportMessageType.CONTROL).setControl(
-      ControlMessage.newBuilder().setType(ControlMessageType.QUERY_READY_TO_EXECUTE).build()).build();
+      ControlMessage.newBuilder().setType(ControlMessageType.QUERY_READY_TO_EXECUTE)).build();
 
   public static final TransportMessage CONTROL_SHUTDOWN = TransportMessage.newBuilder().setType(
-      TransportMessageType.CONTROL)
-      .setControl(ControlMessage.newBuilder().setType(ControlMessageType.SHUTDOWN).build()).build();
+      TransportMessageType.CONTROL).setControl(ControlMessage.newBuilder().setType(ControlMessageType.SHUTDOWN))
+      .build();
 
   public static final TransportMessage CONTROL_START_QUERY = TransportMessage.newBuilder().setType(
-      TransportMessageType.CONTROL).setControl(
-      ControlMessage.newBuilder().setType(ControlMessageType.START_QUERY).build()).build();
+      TransportMessageType.CONTROL).setControl(ControlMessage.newBuilder().setType(ControlMessageType.START_QUERY))
+      .build();
 
   public static final TransportMessage CONTROL_DISCONNECT = TransportMessage.newBuilder().setType(
-      TransportMessageType.CONTROL).setControl(
-      ControlMessage.newBuilder().setType(ControlMessageType.DISCONNECT).build()).build();
+      TransportMessageType.CONTROL).setControl(ControlMessage.newBuilder().setType(ControlMessageType.DISCONNECT))
+      .build();
+
+  /** Control message sent from a worker to tell the master that it is alive. */
+  public static final TransportMessage CONTROL_WORKER_ALIVE = TransportMessage.newBuilder().setType(
+      TransportMessageType.CONTROL).setControl(ControlMessage.newBuilder().setType(ControlMessageType.WORKER_ALIVE))
+      .build();
 
   public static TransportMessage asTM(final Object m) {
     return (TransportMessage) m;

@@ -54,6 +54,7 @@ public final class ControlProto {
       QUERY_READY_TO_EXECUTE(2, 2),
       SHUTDOWN(3, 3),
       DISCONNECT(4, 4),
+      WORKER_ALIVE(5, 5),
       ;
       
       public static final int CONNECT_VALUE = 0;
@@ -61,6 +62,7 @@ public final class ControlProto {
       public static final int QUERY_READY_TO_EXECUTE_VALUE = 2;
       public static final int SHUTDOWN_VALUE = 3;
       public static final int DISCONNECT_VALUE = 4;
+      public static final int WORKER_ALIVE_VALUE = 5;
       
       
       public final int getNumber() { return value; }
@@ -72,6 +74,7 @@ public final class ControlProto {
           case 2: return QUERY_READY_TO_EXECUTE;
           case 3: return SHUTDOWN;
           case 4: return DISCONNECT;
+          case 5: return WORKER_ALIVE;
           default: return null;
         }
       }
@@ -102,7 +105,7 @@ public final class ControlProto {
       }
       
       private static final ControlMessageType[] VALUES = {
-        CONNECT, START_QUERY, QUERY_READY_TO_EXECUTE, SHUTDOWN, DISCONNECT, 
+        CONNECT, START_QUERY, QUERY_READY_TO_EXECUTE, SHUTDOWN, DISCONNECT, WORKER_ALIVE, 
       };
       
       public static ControlMessageType valueOf(
@@ -512,13 +515,14 @@ public final class ControlProto {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\rcontrol.proto\"\302\001\n\016ControlMessage\0220\n\004ty" +
+      "\n\rcontrol.proto\"\324\001\n\016ControlMessage\0220\n\004ty" +
       "pe\030\001 \002(\0162\".ControlMessage.ControlMessage" +
-      "Type\022\020\n\010remoteID\030\002 \001(\005\"l\n\022ControlMessage" +
+      "Type\022\020\n\010remoteID\030\002 \001(\005\"~\n\022ControlMessage" +
       "Type\022\013\n\007CONNECT\020\000\022\017\n\013START_QUERY\020\001\022\032\n\026QU" +
       "ERY_READY_TO_EXECUTE\020\002\022\014\n\010SHUTDOWN\020\003\022\016\n\n" +
-      "DISCONNECT\020\004B4\n$edu.washington.escience." +
-      "myriad.protoB\014ControlProto"
+      "DISCONNECT\020\004\022\020\n\014WORKER_ALIVE\020\005B4\n$edu.wa" +
+      "shington.escience.myriad.protoB\014ControlP" +
+      "roto"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {

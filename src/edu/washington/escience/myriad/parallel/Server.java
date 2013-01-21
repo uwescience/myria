@@ -3,11 +3,13 @@ package edu.washington.escience.myriad.parallel;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -95,7 +97,8 @@ import edu.washington.escience.myriad.util.IPCUtils;
  */
 public final class Server {
 
-  protected final class MessageProcessor extends Thread {
+  private final class MessageProcessor extends Thread {
+    /** Whether the server has been stopped. */
     private volatile boolean stopped = false;
 
     @Override
@@ -139,10 +142,18 @@ public final class Server {
             break;
           case TransportMessage.TransportMessageType.CONTROL_VALUE:
             final ControlMessage controlM = m.getControl();
-            switch (controlM.getType().getNumber()) {
-              case ControlMessage.ControlMessageType.QUERY_READY_TO_EXECUTE_VALUE:
+            switch (controlM.getType()) {
+              case QUERY_READY_TO_EXECUTE:
                 queryReceivedByWorker(0, senderID);
                 break;
+              case WORKER_ALIVE:
+                aliveWorkers.add(senderID);
+                break;
+              case CONNECT:
+              case DISCONNECT:
+              case SHUTDOWN:
+              case START_QUERY:
+                throw new RuntimeException("Unexpected control message received at server" + controlM.toString());
             }
             break;
         }
@@ -198,8 +209,6 @@ public final class Server {
     final SocketInfo masterSocketInfo = masters.get(0);
     final Server server = new Server(masterSocketInfo, workers);
 
-    runningInstance = server;
-
     LOGGER.debug("Workers are: ");
     for (final Entry<Integer, SocketInfo> w : server.workers.entrySet()) {
       LOGGER.debug(w.getKey() + ":  " + w.getValue().getHost() + ":" + w.getValue().getPort());
@@ -213,10 +222,13 @@ public final class Server {
     });
     server.start();
     LOGGER.debug("Server: " + masterSocketInfo.getHost() + " started. Listening on port " + masterSocketInfo.getPort());
+
+    runningInstance = server;
   }
 
   final ConcurrentHashMap<Integer, SocketInfo> workers;
   final ConcurrentHashMap<Integer, HashMap<Integer, Integer>> workersAssignedToQuery;
+  final Set<Integer> aliveWorkers;
   final ConcurrentHashMap<Integer, BitSet> workersReceivedQuery;
 
   /**
@@ -248,6 +260,7 @@ public final class Server {
    */
   public Server(final SocketInfo hostPort, final Map<Integer, SocketInfo> workers) {
     this.workers = new ConcurrentHashMap<Integer, SocketInfo>(workers);
+    aliveWorkers = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
 
     dataBuffer = new ConcurrentHashMap<ExchangePairID, LinkedBlockingQueue<ExchangeData>>();
     messageQueue = new LinkedBlockingQueue<MessageWrapper>();
@@ -282,7 +295,6 @@ public final class Server {
       }
     }
     connectionPool.shutdown().awaitUninterruptibly();
-    // ParallelUtility.shutdownIPC(ipcServerChannel, connectionPool);
     LOGGER.debug("Bye");
   }
 
@@ -295,6 +307,13 @@ public final class Server {
     for (final Map.Entry<Integer, Operator[]> e : plans.entrySet()) {
       final Integer workerID = e.getKey();
       setOfWorkers.put(workerID, workerIdx++);
+      while (!aliveWorkers.contains(workerID)) {
+        try {
+          Thread.sleep(100);
+        } catch (InterruptedException e1) {
+          Thread.currentThread().interrupt();
+        }
+      }
       getConnectionPool().sendShortMessage(workerID, IPCUtils.queryMessage(e.getValue()));
     }
   }
@@ -344,6 +363,12 @@ public final class Server {
   public TupleBatchBuffer startServerQuery(final int queryId, final CollectConsumer serverPlan) throws DbException {
     final BitSet workersReceived = workersReceivedQuery.get(queryId);
     final HashMap<Integer, Integer> workersAssigned = workersAssignedToQuery.get(queryId);
+    for (Integer workerId : workersAssigned.keySet()) {
+      if (!aliveWorkers.contains(workerId)) {
+        return null;
+      }
+    }
+
     if (workersReceived.nextClearBit(0) >= workersAssigned.size()) {
 
       final LinkedBlockingQueue<ExchangeData> buffer = new LinkedBlockingQueue<ExchangeData>();
@@ -416,6 +441,11 @@ public final class Server {
   public boolean startServerQuery(final int queryId, final Producer serverPlan) throws DbException {
     final BitSet workersReceived = workersReceivedQuery.get(queryId);
     final HashMap<Integer, Integer> workersAssigned = workersAssignedToQuery.get(queryId);
+    for (Integer workerId : workersAssigned.keySet()) {
+      if (!aliveWorkers.contains(workerId)) {
+        return false;
+      }
+    }
     if (workersReceived.nextClearBit(0) >= workersAssigned.size()) {
 
       final Date start = new Date();

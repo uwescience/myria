@@ -139,6 +139,7 @@ public class Worker {
     public int senderID;
 
     public TransportMessage message;
+
     public MessageWrapper(final int senderID, final TransportMessage message) {
       this.senderID = senderID;
       this.message = message;
@@ -550,7 +551,7 @@ public class Worker {
       LOGGER.log(Level.INFO, "Error: Worker is still processing. New query refused");
       return;
     }
-    System.out.println("Query received: " + queries);
+    System.out.println("Query received: " + Arrays.toString(queries));
 
     final ArrayList<ExchangePairID> ids = new ArrayList<ExchangePairID>();
     collectConsumerOperatorIDs(queries, ids);
@@ -591,7 +592,7 @@ public class Worker {
     // is still running. IF the server goes down, the
     // worker will stop itself
     new WorkerLivenessController().start();
-
+    /* Tell the master we're alive. */
+    sendMessageToMaster(IPCUtils.CONTROL_WORKER_ALIVE, null);
   }
-
 }

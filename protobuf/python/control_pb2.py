@@ -11,7 +11,7 @@ from google.protobuf import descriptor_pb2
 DESCRIPTOR = descriptor.FileDescriptor(
   name='control.proto',
   package='',
-  serialized_pb='\n\rcontrol.proto\"\xc2\x01\n\x0e\x43ontrolMessage\x12\x30\n\x04type\x18\x01 \x02(\x0e\x32\".ControlMessage.ControlMessageType\x12\x10\n\x08remoteID\x18\x02 \x01(\x05\"l\n\x12\x43ontrolMessageType\x12\x0b\n\x07\x43ONNECT\x10\x00\x12\x0f\n\x0bSTART_QUERY\x10\x01\x12\x1a\n\x16QUERY_READY_TO_EXECUTE\x10\x02\x12\x0c\n\x08SHUTDOWN\x10\x03\x12\x0e\n\nDISCONNECT\x10\x04\x42\x34\n$edu.washington.escience.myriad.protoB\x0c\x43ontrolProto')
+  serialized_pb='\n\rcontrol.proto\"\xd4\x01\n\x0e\x43ontrolMessage\x12\x30\n\x04type\x18\x01 \x02(\x0e\x32\".ControlMessage.ControlMessageType\x12\x10\n\x08remoteID\x18\x02 \x01(\x05\"~\n\x12\x43ontrolMessageType\x12\x0b\n\x07\x43ONNECT\x10\x00\x12\x0f\n\x0bSTART_QUERY\x10\x01\x12\x1a\n\x16QUERY_READY_TO_EXECUTE\x10\x02\x12\x0c\n\x08SHUTDOWN\x10\x03\x12\x0e\n\nDISCONNECT\x10\x04\x12\x10\n\x0cWORKER_ALIVE\x10\x05\x42\x34\n$edu.washington.escience.myriad.protoB\x0c\x43ontrolProto')
 
 
 
@@ -41,11 +41,15 @@ _CONTROLMESSAGE_CONTROLMESSAGETYPE = descriptor.EnumDescriptor(
       name='DISCONNECT', index=4, number=4,
       options=None,
       type=None),
+    descriptor.EnumValueDescriptor(
+      name='WORKER_ALIVE', index=5, number=5,
+      options=None,
+      type=None),
   ],
   containing_type=None,
   options=None,
   serialized_start=104,
-  serialized_end=212,
+  serialized_end=230,
 )
 
 
@@ -81,7 +85,7 @@ _CONTROLMESSAGE = descriptor.Descriptor(
   is_extendable=False,
   extension_ranges=[],
   serialized_start=18,
-  serialized_end=212,
+  serialized_end=230,
 )
 
 _CONTROLMESSAGE.fields_by_name['type'].enum_type = _CONTROLMESSAGE_CONTROLMESSAGETYPE

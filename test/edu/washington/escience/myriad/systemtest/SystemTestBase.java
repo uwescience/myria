@@ -356,6 +356,7 @@ public class SystemTestBase {
    * */
   static void startWorkers() throws IOException {
     int workerCount = 0;
+
     for (int i = 0; i < WORKER_ID.length; i++) {
       final int workerID = WORKER_ID[i];
       final String workingDir = FilenameUtils.concat(workerTestBaseFolder, "worker_" + workerID);
@@ -421,15 +422,6 @@ public class SystemTestBase {
       workerStdoutReader[wc].start();
 
       ++workerCount;
-
-      try {
-        // sleep 1000 milliseconds.
-        // yield the CPU so that the worker processes can be
-        Thread.sleep(1000);
-      } catch (final InterruptedException e) {
-        e.printStackTrace();
-        Thread.currentThread().interrupt();
-      }
     }
   }
 }
