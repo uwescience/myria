@@ -363,12 +363,17 @@ public final class Server {
       TupleBatchBuffer outBufferForTesting = new TupleBatchBuffer(serverPlan.getSchema());
       int cnt = 0;
       TupleBatch tup = null;
-      while ((tup = serverPlan.next()) != null) {
-        tup.compactInto(outBufferForTesting);
-        if (LOGGER.isDebugEnabled()) {
-          LOGGER.debug(tup.toString());
+      while (!serverPlan.eos()) {
+        while ((tup = serverPlan.next()) != null) {
+          tup.compactInto(outBufferForTesting);
+          if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug(tup.toString());
+          }
+          cnt += tup.numTuples();
         }
-        cnt += tup.numTuples();
+        if (serverPlan.eoi()) {
+          serverPlan.setEOI(false);
+        }
       }
 
       serverPlan.close();
