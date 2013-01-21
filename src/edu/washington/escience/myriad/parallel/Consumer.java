@@ -125,6 +125,9 @@ public abstract class Consumer extends LeafOperator {
       if (tb != null) {
         if (tb.isEos()) {
           workerEOS.set(workerIdToIndex.get(tb.getWorkerID()));
+        } else if (tb.isEoi()) {
+          setEOI(true);
+          return null;
         } else {
           return tb.getRealData();
         }
@@ -136,6 +139,10 @@ public abstract class Consumer extends LeafOperator {
     // have received all the eos message from all the workers
     setEOS();
     return null;
+  }
+
+  @Override
+  public void checkEOSAndEOI() {
   }
 
   public void setInputBuffer(final LinkedBlockingQueue<ExchangeData> buffer) {

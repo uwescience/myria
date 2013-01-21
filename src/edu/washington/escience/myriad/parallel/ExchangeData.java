@@ -14,6 +14,9 @@ public final class ExchangeData {
   private final int fromWorkerID;
   private final TupleBatch dataHolder;
 
+  private boolean eos;
+  private boolean eoi;
+
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
@@ -34,10 +37,12 @@ public final class ExchangeData {
    * @param oID the operator to which this TB should be feed
    * @param workerID the source worker where the TB is generated
    */
-  public ExchangeData(final ExchangePairID oID, final int workerID, final Schema schema) {
+  public ExchangeData(final ExchangePairID oID, final int workerID, final Schema schema, final int msg) {
     dataHolder = null;
     operatorID = oID;
     fromWorkerID = workerID;
+    eos = (msg == 0);
+    eoi = (msg == 1);
   }
 
   /**
@@ -59,7 +64,11 @@ public final class ExchangeData {
   }
 
   public boolean isEos() {
-    return dataHolder == null;
+    return eos;
+  }
+
+  public boolean isEoi() {
+    return eoi;
   }
 
   @Override

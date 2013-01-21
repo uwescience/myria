@@ -117,7 +117,9 @@ public final class Server {
             final ExchangePairID exchangePairID = ExchangePairID.fromExisting(data.getOperatorID());
             final Schema operatorSchema = exchangeSchema.get(exchangePairID);
             if (data.getType() == DataMessageType.EOS) {
-              receiveData(new ExchangeData(exchangePairID, senderID, operatorSchema));
+              receiveData(new ExchangeData(exchangePairID, senderID, operatorSchema, 0));
+            } else if (data.getType() == DataMessageType.EOI) {
+              receiveData(new ExchangeData(exchangePairID, senderID, operatorSchema, 1));
             } else {
               final List<ColumnMessage> columnMessages = data.getColumnsList();
               final Column<?>[] columnArray = new Column[columnMessages.size()];
