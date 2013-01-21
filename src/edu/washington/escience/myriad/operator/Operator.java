@@ -138,33 +138,36 @@ public abstract class Operator implements Serializable {
       result = fetchNext();
     }
     if (result == null) {
-      Operator[] children = getChildren();
-      boolean[] childrenEOI = getChildrenEOI();
-      boolean allEOS = true;
-      int count = 0;
-      for (int i = 0; i < children.length; ++i) {
-        if (children[i].eos()) {
-          childrenEOI[i] = true;
-        } else if (children[i].eoi()) {
-          childrenEOI[i] = true;
-          children[i].setEOI(false);
-          allEOS = false;
-        }
-        if (childrenEOI[i]) {
-          count++;
-        }
+      checkEOSAndEOI();
+    }
+    return result;
+  }
+
+  public void checkEOSAndEOI() {
+    Operator[] children = getChildren();
+    boolean[] childrenEOI = getChildrenEOI();
+    boolean allEOS = true;
+    int count = 0;
+    for (int i = 0; i < children.length; ++i) {
+      if (children[i].eos()) {
+        childrenEOI[i] = true;
+      } else if (children[i].eoi()) {
+        childrenEOI[i] = true;
+        children[i].setEOI(false);
+        allEOS = false;
       }
-      if (count == children.length) {
-        if (allEOS) {
-          setEOS();
-        } else {
-          setEOI(true);
-        }
-        cleanChildrenEOI();
+      if (childrenEOI[i]) {
+        count++;
       }
     }
-
-    return result;
+    if (count == children.length) {
+      if (allEOS) {
+        setEOS();
+      } else {
+        setEOI(true);
+      }
+      cleanChildrenEOI();
+    }
   }
 
   /**
