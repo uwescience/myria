@@ -44,19 +44,27 @@ public class ShuffleProducer extends Producer {
         }
         TupleBatch tup = null;
         TransportMessage dm = null;
-        while ((tup = child.next()) != null) {
-          tup.partition(partitionFunction, buffers);
-          for (int p = 0; p < numWorker; p++) {
-            final TupleBatchBuffer etb = buffers[p];
-            while ((dm = etb.popFilledAsTM(operatorID)) != null) {
-              shuffleChannels[p].write(dm);
+        while (!child.eos()) {
+          while ((tup = child.next()) != null) {
+            tup.partition(partitionFunction, buffers);
+            for (int p = 0; p < numWorker; p++) {
+              final TupleBatchBuffer etb = buffers[p];
+              while ((dm = etb.popFilledAsTM(operatorID)) != null) {
+                shuffleChannels[p].write(dm);
+              }
             }
           }
-        }
 
-        for (int i = 0; i < numWorker; i++) {
-          while ((dm = buffers[i].popAnyAsTM(operatorID)) != null) {
-            shuffleChannels[i].write(dm);
+          for (int i = 0; i < numWorker; i++) {
+            while ((dm = buffers[i].popAnyAsTM(operatorID)) != null) {
+              shuffleChannels[i].write(dm);
+            }
+          }
+          if (child.eoi()) {
+            for (int i = 0; i < numWorker; i++) {
+              shuffleChannels[i].write(IPCUtils.eoiTM(operatorID));
+            }
+            child.setEOI(false);
           }
         }
         for (int i = 0; i < numWorker; i++) {

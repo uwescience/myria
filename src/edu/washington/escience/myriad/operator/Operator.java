@@ -201,11 +201,11 @@ public abstract class Operator implements Serializable {
    * Only call this method if the operator is a leaf operator.
    * 
    * */
-  protected final void setEOS() {
+  public final void setEOS() {
     eos = true;
   }
 
-  protected final void setEOI(boolean x) {
+  public final void setEOI(boolean x) {
     eos = x;
   }
 

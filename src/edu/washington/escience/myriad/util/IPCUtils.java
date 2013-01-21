@@ -96,11 +96,23 @@ public final class IPCUtils {
         }
       };
 
+  protected static final ThreadLocal<DataMessage.Builder> EOI_DATAMESSAGE_BUILDER =
+      new ThreadLocal<DataMessage.Builder>() {
+        @Override
+        protected DataMessage.Builder initialValue() {
+          return DataMessage.newBuilder().setType(DataMessageType.EOI);
+        }
+      };
+
   /**
    * create an EOS data message.
    * */
   public static TransportMessage eosTM(ExchangePairID epID) {
     return DATA_TM_BUILDER.get().setData(EOS_DATAMESSAGE_BUILDER.get().setOperatorID(epID.getLong())).build();
+  }
+
+  public static TransportMessage eoiTM(ExchangePairID epID) {
+    return DATA_TM_BUILDER.get().setData(EOI_DATAMESSAGE_BUILDER.get().setOperatorID(epID.getLong())).build();
   }
 
   public static TransportMessage connectTM(Integer myID) {

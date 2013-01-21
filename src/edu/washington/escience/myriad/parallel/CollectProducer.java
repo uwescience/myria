@@ -37,16 +37,23 @@ public final class CollectProducer extends Producer {
 
         TupleBatch tup = null;
         TransportMessage dm = null;
-        while ((tup = child.next()) != null) {
-          tup.compactInto(buffer);
 
-          while ((dm = buffer.popFilledAsTM(operatorID)) != null) {
+        while (!child.eos()) {
+          while ((tup = child.next()) != null) {
+            tup.compactInto(buffer);
+
+            while ((dm = buffer.popFilledAsTM(operatorID)) != null) {
+              channel.write(dm);
+            }
+          }
+
+          while ((dm = buffer.popAnyAsTM(operatorID)) != null) {
             channel.write(dm);
           }
-        }
-
-        while ((dm = buffer.popAnyAsTM(operatorID)) != null) {
-          channel.write(dm);
+          if (child.eoi()) {
+            channel.write(IPCUtils.eoiTM(operatorID));
+            child.setEOI(false);
+          }
         }
 
         channel.write(IPCUtils.eosTM(operatorID));
