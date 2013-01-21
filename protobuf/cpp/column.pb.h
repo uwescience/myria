@@ -41,11 +41,12 @@ class BooleanColumnMessage;
 
 enum DataMessage_DataMessageType {
   DataMessage_DataMessageType_EOS = 0,
-  DataMessage_DataMessageType_NORMAL = 1
+  DataMessage_DataMessageType_NORMAL = 1,
+  DataMessage_DataMessageType_EOI = 2
 };
 bool DataMessage_DataMessageType_IsValid(int value);
 const DataMessage_DataMessageType DataMessage_DataMessageType_DataMessageType_MIN = DataMessage_DataMessageType_EOS;
-const DataMessage_DataMessageType DataMessage_DataMessageType_DataMessageType_MAX = DataMessage_DataMessageType_NORMAL;
+const DataMessage_DataMessageType DataMessage_DataMessageType_DataMessageType_MAX = DataMessage_DataMessageType_EOI;
 const int DataMessage_DataMessageType_DataMessageType_ARRAYSIZE = DataMessage_DataMessageType_DataMessageType_MAX + 1;
 
 const ::google::protobuf::EnumDescriptor* DataMessage_DataMessageType_descriptor();
@@ -138,6 +139,7 @@ class DataMessage : public ::google::protobuf::Message {
   typedef DataMessage_DataMessageType DataMessageType;
   static const DataMessageType EOS = DataMessage_DataMessageType_EOS;
   static const DataMessageType NORMAL = DataMessage_DataMessageType_NORMAL;
+  static const DataMessageType EOI = DataMessage_DataMessageType_EOI;
   static inline bool DataMessageType_IsValid(int value) {
     return DataMessage_DataMessageType_IsValid(value);
   }

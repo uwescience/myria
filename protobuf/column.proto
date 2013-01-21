@@ -5,6 +5,7 @@ message DataMessage {
 	enum DataMessageType{
 		EOS = 0;
 		NORMAL = 1;
+		EOI = 2;
 	}
 	required DataMessageType type=1;
 	required int64 operatorID = 2;

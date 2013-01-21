@@ -55,8 +55,8 @@ public class IDBInput extends Operator {
           setEOS();
         } else {
           setEOI(true);
+          tuplesSentSinceLastEOI = 0;
         }
-        tuplesSentSinceLastEOI = 0;
       }
     }
   }
