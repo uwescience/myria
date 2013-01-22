@@ -40,14 +40,6 @@ public class ShuffleSQLiteTest extends SystemTestBase {
 
     final HashMap<Tuple, Integer> expectedResult = simpleRandomJoinTestBase();
 
-    // <<<<<<< HEAD
-    /*
-     * String temptable1Name = "temptable1"; String temptable2Name = "temptable2"; createTable(WORKER_ID[0],
-     * "temptable", temptable1Name, "id int, name varchar(20)"); createTable(WORKER_ID[0], "temptable", temptable2Name,
-     * "id int, name varchar(20)"); createTable(WORKER_ID[1], "temptable", temptable1Name, "id int, name varchar(20)");
-     * createTable(WORKER_ID[1], "temptable", temptable2Name, "id int, name varchar(20)");
-     */
-    // =======
     final String temptable1Name = "temptable1";
     final String temptable2Name = "temptable2";
 
@@ -55,7 +47,6 @@ public class ShuffleSQLiteTest extends SystemTestBase {
     createTable(WORKER_ID[0], temptable2Name, "id int, name varchar(20)");
     createTable(WORKER_ID[1], temptable1Name, "id int, name varchar(20)");
     createTable(WORKER_ID[1], temptable2Name, "id int, name varchar(20)");
-    // >>>>>>> origin
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final ExchangePairID shuffle1ID = ExchangePairID.newID();
@@ -77,19 +68,6 @@ public class ShuffleSQLiteTest extends SystemTestBase {
 
     final ShuffleProducer sp2 = new ShuffleProducer(scan2, shuffle2ID, WORKER_ID, pf);
 
-    // <<<<<<< HEAD
-    /*
-     * final ShuffleConsumer sc1 = new ShuffleConsumer(sp1.getSchema(), shuffle1ID, new int[] { WORKER_ID[0],
-     * WORKER_ID[1] }); // final BlockingSQLiteDataReceiver buffer1 = new BlockingSQLiteDataReceiver("temptable.db",
-     * "temptable1", sc1);
-     * 
-     * final ShuffleConsumer sc2 = new ShuffleConsumer(sp2.getSchema(), shuffle2ID, new int[] { WORKER_ID[0],
-     * WORKER_ID[1] }); // final BlockingSQLiteDataReceiver buffer2 = new BlockingSQLiteDataReceiver("temptable.db",
-     * "temptable2", sc2);
-     * 
-     * final LocalJoin join = new LocalJoin(outputSchema, sc1, sc2, new int[] { 1 }, new int[] { 1 });
-     */
-    // =======
     final ShuffleConsumer sc1 = new ShuffleConsumer(sp1.getSchema(), shuffle1ID, WORKER_ID);
     final BlockingSQLiteDataReceiver buffer1 = new BlockingSQLiteDataReceiver(null, "temptable1", sc1);
 
@@ -100,15 +78,6 @@ public class ShuffleSQLiteTest extends SystemTestBase {
         new SQLiteSQLProcessor(null,
             "select * from temptable1 inner join temptable2 on temptable1.name=temptable2.name", outputSchema,
             new Operator[] { buffer1, buffer2 });
-    // >>>>>>> origin
-
-    /*
-     * final SQLiteSQLProcessor ssp = new SQLiteSQLProcessor("temptable.db",
-     * "select * from temptable1 inner join temptable2 on temptable1.name=temptable2.name", outputSchema, new Operator[]
-     * { buffer1, buffer2 });
-     */
-
-    // final CollectProducer cp = new CollectProducer(join, serverReceiveID, MASTER_ID);
     final CollectProducer cp = new CollectProducer(ssp, serverReceiveID, MASTER_ID);
 
     final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
