@@ -34,17 +34,12 @@ public abstract class Consumer extends LeafOperator {
   private final Map<Integer, Integer> workerIdToIndex;
   private Producer child;
 
-  public Consumer(final Producer child, final ExchangePairID operatorID, final int[] workerIDs) throws DbException {
-    this.operatorID = operatorID;
-    this.child = child;
-    schema = child.getSchema();
-    workerIdToIndex = new HashMap<Integer, Integer>();
-    int idx = 0;
-    for (final int w : workerIDs) {
-      workerIdToIndex.put(w, idx++);
-    }
-    workerEOS = new BitSet(workerIDs.length);
-  }
+  /*
+   * public Consumer(final Producer child, final ExchangePairID operatorID, final int[] workerIDs) throws DbException {
+   * this.operatorID = operatorID; this.child = child; schema = child.getSchema(); workerIdToIndex = new
+   * HashMap<Integer, Integer>(); int idx = 0; for (final int w : workerIDs) { workerIdToIndex.put(w, idx++); }
+   * workerEOS = new BitSet(workerIDs.length); }
+   */
 
   public Consumer(final Schema schema, final ExchangePairID operatorID, final int[] workerIDs) {
     this.operatorID = operatorID;

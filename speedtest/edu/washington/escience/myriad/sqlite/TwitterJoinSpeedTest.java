@@ -83,9 +83,9 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
 
     /* Each worker receives both partitions, then joins on them. */
     // SC1: receive based on followee (PF1, so SP2 and arrayID2)
-    final ShuffleConsumer sc1 = new ShuffleConsumer(sp2, arrayID2, WORKER_ID);
+    final ShuffleConsumer sc1 = new ShuffleConsumer(sp2.getSchema(), arrayID2, WORKER_ID);
     // SC2: receive based on follower (PF0, so SP1 and arrayID1)
-    final ShuffleConsumer sc2 = new ShuffleConsumer(sp1, arrayID1, WORKER_ID);
+    final ShuffleConsumer sc2 = new ShuffleConsumer(sp1.getSchema(), arrayID1, WORKER_ID);
     // Join on SC1.followee=SC2.follower
     final LocalJoin localjoin = new LocalJoin(joinSchema, sc1, sc2, new int[] { 1 }, new int[] { 0 });
     /* Project down to only the two columns of interest: SC1.follower now transitively follows SC2.followee. */
@@ -93,7 +93,7 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     /* Now reshuffle the results to partition based on the new followee, so that we can dupelim. */
     final ExchangePairID arrayID0 = ExchangePairID.newID();
     final ShuffleProducer sp0 = new ShuffleProducer(proj, arrayID0, WORKER_ID, pf0);
-    final ShuffleConsumer sc0 = new ShuffleConsumer(sp0, arrayID0, WORKER_ID);
+    final ShuffleConsumer sc0 = new ShuffleConsumer(sp0.getSchema(), arrayID0, WORKER_ID);
     final DupElim dupelim = new DupElim(sc0);
 
     /* Finally, send (CollectProduce) all the results to the master. */
@@ -102,8 +102,8 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
 
     /* Send the worker plans, rooted by CP, to the workers. Note that the plans are identical. */
     final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
-    workerPlans.put(WORKER_ID[0], new Operator[] { cp });
-    workerPlans.put(WORKER_ID[1], new Operator[] { cp });
+    workerPlans.put(WORKER_ID[0], new Operator[] { cp, sp1, sp2, sp0 });
+    workerPlans.put(WORKER_ID[1], new Operator[] { cp, sp1, sp2, sp0 });
 
     /* Wait for the server to start. */
     while (Server.runningInstance == null) {
@@ -163,16 +163,16 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
 
     /* Each worker receives both partitions, then joins on them. */
     // SC1: receive based on followee (PF1, so SP2 and arrayID2)
-    final ShuffleConsumer sc1 = new ShuffleConsumer(sp2, arrayID2, WORKER_ID);
+    final ShuffleConsumer sc1 = new ShuffleConsumer(sp2.getSchema(), arrayID2, WORKER_ID);
     // SC2: receive based on follower (PF0, so SP1 and arrayID1)
-    final ShuffleConsumer sc2 = new ShuffleConsumer(sp1, arrayID1, WORKER_ID);
+    final ShuffleConsumer sc2 = new ShuffleConsumer(sp1.getSchema(), arrayID1, WORKER_ID);
     // Join on SC1.followee=SC2.follower
     final LocalProjectingJoin localProjJoin =
         new LocalProjectingJoin(sc1, new int[] { 1 }, new int[] { 0 }, sc2, new int[] { 0 }, new int[] { 1 });
     /* Now reshuffle the results to partition based on the new followee, so that we can dupelim. */
     final ExchangePairID arrayID0 = ExchangePairID.newID();
     final ShuffleProducer sp0 = new ShuffleProducer(localProjJoin, arrayID0, WORKER_ID, pf0);
-    final ShuffleConsumer sc0 = new ShuffleConsumer(sp0, arrayID0, WORKER_ID);
+    final ShuffleConsumer sc0 = new ShuffleConsumer(sp0.getSchema(), arrayID0, WORKER_ID);
     final DupElim dupelim = new DupElim(sc0);
 
     /* Finally, send (CollectProduce) all the results to the master. */
@@ -181,8 +181,8 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
 
     /* Send the worker plans, rooted by CP, to the workers. Note that the plans are identical. */
     final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
-    workerPlans.put(WORKER_ID[0], new Operator[] { cp });
-    workerPlans.put(WORKER_ID[1], new Operator[] { cp });
+    workerPlans.put(WORKER_ID[0], new Operator[] { cp, sp1, sp2, sp0 });
+    workerPlans.put(WORKER_ID[1], new Operator[] { cp, sp1, sp2, sp0 });
 
     /* Wait for the server to start. */
     while (Server.runningInstance == null) {
@@ -242,16 +242,16 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
 
     /* Each worker receives both partitions, then joins on them. */
     // SC1: receive based on followee (PF1, so SP2 and arrayID2)
-    final ShuffleConsumer sc1 = new ShuffleConsumer(sp2, arrayID2, WORKER_ID);
+    final ShuffleConsumer sc1 = new ShuffleConsumer(sp2.getSchema(), arrayID2, WORKER_ID);
     // SC2: receive based on follower (PF0, so SP1 and arrayID1)
-    final ShuffleConsumer sc2 = new ShuffleConsumer(sp1, arrayID1, WORKER_ID);
+    final ShuffleConsumer sc2 = new ShuffleConsumer(sp1.getSchema(), arrayID1, WORKER_ID);
     // Join on SC1.followee=SC2.follower
     final LocalProjectingJoin localProjJoin =
         new LocalProjectingJoin(sc1, new int[] { 1 }, new int[] { 0 }, sc2, new int[] { 0 }, new int[] { 1 });
     /* Now reshuffle the results to partition based on the new followee, so that we can dupelim. */
     final ExchangePairID arrayID0 = ExchangePairID.newID();
     final ShuffleProducer sp0 = new ShuffleProducer(localProjJoin, arrayID0, WORKER_ID, pf0);
-    final ShuffleConsumer sc0 = new ShuffleConsumer(sp0, arrayID0, WORKER_ID);
+    final ShuffleConsumer sc0 = new ShuffleConsumer(sp0.getSchema(), arrayID0, WORKER_ID);
     final DupElim dupelim = new DupElim(sc0);
     final Aggregate count = new Aggregate(dupelim, new int[] { 0 }, new int[] { Aggregator.AGG_OP_COUNT });
 
@@ -261,8 +261,8 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
 
     /* Send the worker plans, rooted by CP, to the workers. Note that the plans are identical. */
     final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
-    workerPlans.put(WORKER_ID[0], new Operator[] { cp });
-    workerPlans.put(WORKER_ID[1], new Operator[] { cp });
+    workerPlans.put(WORKER_ID[0], new Operator[] { cp, sp1, sp2, sp0 });
+    workerPlans.put(WORKER_ID[1], new Operator[] { cp, sp1, sp2, sp0 });
 
     /* Wait for the server to start. */
     while (Server.runningInstance == null) {

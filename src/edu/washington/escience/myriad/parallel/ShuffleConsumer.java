@@ -1,6 +1,5 @@
 package edu.washington.escience.myriad.parallel;
 
-import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 
@@ -16,11 +15,6 @@ public final class ShuffleConsumer extends Consumer {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
-
-  public ShuffleConsumer(final ShuffleProducer child, final ExchangePairID operatorID, final int[] workerIDs)
-      throws DbException {
-    super(child, operatorID, workerIDs);
-  }
 
   public ShuffleConsumer(final Schema schema, final ExchangePairID operatorID, final int[] workerIDs) {
     super(schema, operatorID, workerIDs);

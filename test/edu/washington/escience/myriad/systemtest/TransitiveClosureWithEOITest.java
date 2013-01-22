@@ -157,11 +157,12 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
         new ShuffleProducer(idbinput_worker1, joinArray2ID, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf0);
     final ShuffleProducer sp2_worker2 =
         new ShuffleProducer(idbinput_worker2, joinArray2ID, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf0);
-    final ShuffleConsumer sc1 = new ShuffleConsumer(sp1, joinArray1ID, new int[] { WORKER_ID[0], WORKER_ID[1] });
+    final ShuffleConsumer sc1 =
+        new ShuffleConsumer(sp1.getSchema(), joinArray1ID, new int[] { WORKER_ID[0], WORKER_ID[1] });
     final ShuffleConsumer sc2_worker1 =
-        new ShuffleConsumer(sp2_worker1, joinArray2ID, new int[] { WORKER_ID[0], WORKER_ID[1] });
+        new ShuffleConsumer(sp2_worker1.getSchema(), joinArray2ID, new int[] { WORKER_ID[0], WORKER_ID[1] });
     final ShuffleConsumer sc2_worker2 =
-        new ShuffleConsumer(sp2_worker2, joinArray2ID, new int[] { WORKER_ID[0], WORKER_ID[1] });
+        new ShuffleConsumer(sp2_worker2.getSchema(), joinArray2ID, new int[] { WORKER_ID[0], WORKER_ID[1] });
 
     final LocalJoin join_worker1 = new LocalJoin(joinSchema, sc1, sc2_worker1, new int[] { 1 }, new int[] { 0 });
     final LocalJoin join_worker2 = new LocalJoin(joinSchema, sc1, sc2_worker2, new int[] { 1 }, new int[] { 0 });
@@ -173,9 +174,9 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     final ShuffleProducer sp3_worker2 =
         new ShuffleProducer(proj_worker2, beforeDE, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf0);
     final ShuffleConsumer sc3_worker1 =
-        new ShuffleConsumer(sp3_worker1, beforeDE, new int[] { WORKER_ID[0], WORKER_ID[1] });
+        new ShuffleConsumer(sp3_worker1.getSchema(), beforeDE, new int[] { WORKER_ID[0], WORKER_ID[1] });
     final ShuffleConsumer sc3_worker2 =
-        new ShuffleConsumer(sp3_worker2, beforeDE, new int[] { WORKER_ID[0], WORKER_ID[1] });
+        new ShuffleConsumer(sp3_worker2.getSchema(), beforeDE, new int[] { WORKER_ID[0], WORKER_ID[1] });
     final DupElim dupelim_worker1 = new DupElim(sc3_worker1);
     final DupElim dupelim_worker2 = new DupElim(sc3_worker2);
     final LocalMultiwayProducer multiProducer_worker1 =
