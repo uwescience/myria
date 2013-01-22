@@ -137,7 +137,9 @@ eclipse.classpath {
 }
 
 jar {
-  from configurations.compile.collect {
+  excludes = [ 'META-INF/**/*' ]
+
+  from configurations.runtime.collect {
     it.isDirectory() ? it : zipTree(it)
   }
 }
