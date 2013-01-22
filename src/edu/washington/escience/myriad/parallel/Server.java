@@ -181,7 +181,6 @@ public final class Server {
   private static final int ONE_SEC_IN_MILLIS = 1000;
   /** Time constant. */
   private static final int ONE_MIN_IN_MILLIS = 60 * ONE_SEC_IN_MILLIS;
-
   /** Time constant. */
   private static final int ONE_HR_IN_MILLIS = 60 * ONE_MIN_IN_MILLIS;
 
@@ -287,7 +286,7 @@ public final class Server {
   }
 
   public void cleanup() {
-    if (cleanup) {// cleanup only once.
+    if (cleanup) {
       return;
     }
     cleanup = true;

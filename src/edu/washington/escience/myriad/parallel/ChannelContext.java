@@ -211,7 +211,7 @@ public class ChannelContext {
       final int newRef = numberOfReference.decrementAndGet();
       if (newRef < 0) {
         final String msg = "Number of references is negative";
-        logger.warning(msg);
+        LOGGER.warning(msg);
         throw new IllegalStateException(msg);
       }
       return newRef;
@@ -262,11 +262,13 @@ public class ChannelContext {
     }
   }
 
-  private static final Logger logger = Logger.getLogger(ChannelContext.class.getName());
+  /** The logger for this class. */
+  private static final Logger LOGGER = Logger.getLogger(ChannelContext.class.getName());
 
-  public final static ChannelContext getChannelContext(final Channel channel) {
+  public static final ChannelContext getChannelContext(final Channel channel) {
     return (ChannelContext) channel.getAttachment();
   }
+
   /**
    * The owner channel of this ChannelContext, i.e. ownerChannel.getAttachment() == this.
    * */
@@ -371,7 +373,7 @@ public class ChannelContext {
     while (it.hasNext()) {
       final DelayedTransitionEvent e = it.next();
       if (e.apply()) {
-        logger.info(e.getClass().getCanonicalName() + " delayed applied");
+        LOGGER.info(e.getClass().getCanonicalName() + " delayed applied");
         it.remove();
       }
     }
@@ -526,7 +528,7 @@ public class ChannelContext {
     if (!isClientChannel) {
       // accepted channel
       synchronized (stateMachineLock) {
-        assert (connected && registered && !inPool && !inRecycleBin && inTrashBin && !newConnection && closeRequested);// {
+        assert (connected && registered && !inPool && !inRecycleBin && inTrashBin && !newConnection && closeRequested); // {
         connected = false;
         registered = false;
         inTrashBin = false;

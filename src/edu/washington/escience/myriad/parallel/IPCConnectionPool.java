@@ -82,12 +82,12 @@ public class IPCConnectionPool {
                 cf.addListener(new ChannelFutureListener() {
                   @Override
                   public void operationComplete(final ChannelFuture future) throws Exception {
-                    logger.info("Ready to close a connectoin: " + future.getChannel());
+                    LOGGER.info("Ready to close a connection: " + future.getChannel());
                     cc.readyToClose(channelTrashBin);
                   }
                 });
               } else {
-                logger.info("Ready to close a connectoin: " + c);
+                LOGGER.info("Ready to close a connection: " + c);
                 cc.readyToClose(channelTrashBin);
               }
             }
@@ -132,7 +132,7 @@ public class IPCConnectionPool {
         if (cc.getRegisteredChannelContext().numReferenced() <= 0
             && (System.currentTimeMillis() - recentIOTimestamp) >= CONNECTION_RECYCLE_INTERVAL_IN_MS) {
           final ChannelPrioritySet cps = channelPool.get(ecc.getRemoteID()).registeredChannels;
-          logger.info("Recycler decided to close an unused channel: " + c + ". Remote ID is " + ecc.getRemoteID()
+          LOGGER.info("Recycler decided to close an unused channel: " + c + ". Remote ID is " + ecc.getRemoteID()
               + ". Current channelpool size for this remote entity is: " + cps.size());
           cc.recycleTimeout(recyclableRegisteredChannels, channelTrashBin, cps);
         } else {
@@ -226,7 +226,8 @@ public class IPCConnectionPool {
     }
   }
 
-  private static final Logger logger = Logger.getLogger(IPCConnectionPool.class.getName());
+  /** The logger for this class. */
+  private static final Logger LOGGER = Logger.getLogger(IPCConnectionPool.class.getName());
 
   /**
    * upper bound of the number of connections between this JVM and a remote IPC entity. Should be moved to the system
@@ -419,10 +420,11 @@ public class IPCConnectionPool {
   private void checkShutdown() {
     if (shutdown) {
       final String msg = "IPC connection pool already shutdown.";
-      logger.warning(msg);
+      LOGGER.warning(msg);
       throw new IllegalStateException(msg);
     }
   }
+
   /**
    * A remote IPC entity has requested to close the channel.
    * 
@@ -536,7 +538,7 @@ public class IPCConnectionPool {
 
       cc.registerNormal(remote.id, remote.registeredChannels, unregisteredChannels);
       cc.getRegisteredChannelContext().incReference();
-      logger.info("Created a new registered channel from: " + myID + ", to: " + remote.id + ". Channel: " + channel);
+      LOGGER.info("Created a new registered channel from: " + myID + ", to: " + remote.id + ". Channel: " + channel);
       allPossibleChannels.add(channel);
       return channel;
     } else {
@@ -622,7 +624,7 @@ public class IPCConnectionPool {
   final void newAcceptedRemoteChannel(final Channel newChannel) {
     if (shutdown) {
       // stop accepting new connections if the connection pool is already shutdown.
-      logger.warning("Already shutdown, new remote channel directly close. Channel: "
+      LOGGER.warning("Already shutdown, new remote channel directly close. Channel: "
           + ToStringBuilder.reflectionToString(newChannel));
       newChannel.close();
     }
@@ -647,9 +649,9 @@ public class IPCConnectionPool {
     final IPCRemote newOne = new IPCRemote(remoteID, remoteAddress);
     final IPCRemote oldOne = channelPool.put(remoteID, newOne);
     if (oldOne == null) {
-      logger.info("new IPC remote entity added: " + newOne);
+      LOGGER.info("new IPC remote entity added: " + newOne);
     } else {
-      logger.info("Existing IPC remote entity changed from " + oldOne + " to " + newOne);
+      LOGGER.info("Existing IPC remote entity changed from " + oldOne + " to " + newOne);
     }
   }
 
@@ -663,13 +665,13 @@ public class IPCConnectionPool {
     final IPCRemote remote = channelPool.get(remoteID);
     if (remote == null) {
       final String msg = "Unknown remote, id: " + remoteID + " address: " + channel.getRemoteAddress();
-      logger.warning(msg);
+      LOGGER.warning(msg);
       throw new IllegalStateException(msg);
     }
 
     if (channel.getParent() != serverChannel) {
       final String msg = "Channel " + channel + " does not belong to the connection pool";
-      logger.warning(msg);
+      LOGGER.warning(msg);
       throw new IllegalArgumentException(msg);
     }
 
@@ -680,7 +682,7 @@ public class IPCConnectionPool {
         cc.registerIPCRemoteRemoved(remoteID, channelTrashBin, unregisteredChannels);
       } else {
         final String msg = "Unknown remote, id: " + remoteID + " address: " + channel.getRemoteAddress();
-        logger.warning(msg);
+        LOGGER.warning(msg);
         throw new IllegalStateException(msg);
       }
     } else {
@@ -720,7 +722,7 @@ public class IPCConnectionPool {
    *         the progress of closing. Otherwise, null.
    * */
   public final ChannelGroupFuture removeRemote(final Integer remoteID) {
-    logger.info("remove the remote entity #" + remoteID + " from IPC connection pool");
+    LOGGER.info("remove the remote entity #" + remoteID + " from IPC connection pool");
     if (remoteID == null || remoteID == myID) {
       return null;
     }
@@ -832,7 +834,7 @@ public class IPCConnectionPool {
    * */
   public final ChannelGroupFuture shutdown() {
     shutdown = true;
-    logger.info("IPC connection pool is going to shutdown");
+    LOGGER.info("IPC connection pool is going to shutdown");
     final Iterator<Channel> acceptedChIt = allAcceptedRemoteChannels.iterator();
     final Collection<ChannelFuture> allAcceptedChannelCloseFutures = new LinkedList<ChannelFuture>();
     while (acceptedChIt.hasNext()) {
@@ -897,10 +899,10 @@ public class IPCConnectionPool {
               final Thread resourceReleaser = new Thread() {
                 @Override
                 public void run() {
-                  logger.info("pre release resources");
+                  LOGGER.info("pre release resources");
                   clientChannelFactory.releaseExternalResources();
                   serverChannel.getFactory().releaseExternalResources();
-                  logger.info("post release resources");
+                  LOGGER.info("post release resources");
                 }
               };
               resourceReleaser.start();

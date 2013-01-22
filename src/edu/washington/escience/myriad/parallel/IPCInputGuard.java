@@ -19,7 +19,8 @@ import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 @Sharable
 public class IPCInputGuard extends SimpleChannelHandler {
 
-  private static final Logger logger = Logger.getLogger(IPCInputGuard.class.getName());
+  /** The logger for this class. */
+  private static final Logger LOGGER = Logger.getLogger(IPCInputGuard.class.getName());
 
   /**
    * constructor.
@@ -36,17 +37,17 @@ public class IPCInputGuard extends SimpleChannelHandler {
       errorMessage = "";
     }
     if (cause instanceof java.nio.channels.NotYetConnectedException) {
-      logger.log(Level.WARNING, "Channel " + c + ": not yet connected. " + errorMessage, cause);
+      LOGGER.log(Level.WARNING, "Channel " + c + ": not yet connected. " + errorMessage, cause);
     } else if (cause instanceof java.net.ConnectException) {
-      logger.log(Level.WARNING, "Channel " + c + ": Connection failed: " + errorMessage, cause);
+      LOGGER.log(Level.WARNING, "Channel " + c + ": Connection failed: " + errorMessage, cause);
     } else if (cause instanceof java.io.IOException && errorMessage.contains("reset by peer")) {
-      logger.log(Level.WARNING, "Channel " + c + ": Connection reset by peer: " + c.getRemoteAddress() + " "
+      LOGGER.log(Level.WARNING, "Channel " + c + ": Connection reset by peer: " + c.getRemoteAddress() + " "
           + errorMessage, cause);
     } else if (cause instanceof ClosedChannelException) {
-      logger.log(Level.WARNING, "Channel " + c + ": Connection reset by peer: " + c.getRemoteAddress() + " "
+      LOGGER.log(Level.WARNING, "Channel " + c + ": Connection reset by peer: " + c.getRemoteAddress() + " "
           + errorMessage, cause);
     } else {
-      logger.log(Level.WARNING, "Channel " + c + ": Unexpected exception from downstream.", cause);
+      LOGGER.log(Level.WARNING, "Channel " + c + ": Unexpected exception from downstream.", cause);
     }
     if (c != null) {
       c.close();
@@ -63,7 +64,7 @@ public class IPCInputGuard extends SimpleChannelHandler {
         case INTEREST_OPS:
           break;
         case CONNECTED:
-          logger.info("Connection to remote. " + e.toString());
+          LOGGER.info("Connection to remote. " + e.toString());
           break;
       }
     }
@@ -80,7 +81,7 @@ public class IPCInputGuard extends SimpleChannelHandler {
         case INTEREST_OPS:
           break;
         case CONNECTED:
-          logger.info("Connection from remote. " + e.toString());
+          LOGGER.info("Connection from remote. " + e.toString());
           break;
       }
     }
