@@ -8,6 +8,8 @@ import java.io.IOException;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
+
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -44,19 +46,20 @@ public class TwitterSingleNodeJoinSpeedTest {
     assertTrue(successfulSetup);
 
     /* The Schema for the table we read from file. */
-    final Type[] table1Types = new Type[] { Type.LONG_TYPE, Type.LONG_TYPE };
-    final String[] table1ColumnNames = new String[] { "follower", "followee" };
+    final ImmutableList<Type> table1Types = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
+    final ImmutableList<String> table1ColumnNames = ImmutableList.of("follower", "followee");
     final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
-    /* The Schema for the join. */
 
     /* Read the data from the file. */
     final SQLiteQueryScan scan1 = new SQLiteQueryScan(DATASET_PATH, "select * from twitter_subset", tableSchema);
     final SQLiteQueryScan scan2 = new SQLiteQueryScan(DATASET_PATH, "select * from twitter_subset", tableSchema);
 
     /* The Schema for the join. */
-    final Type[] joinTypes = new Type[] { Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE };
-    final String[] joinColumnNames = new String[] { "follower", "followee", "follower", "followee" };
-    final Schema joinSchema = new Schema(joinTypes, joinColumnNames);
+    /* The Schema for the join. */
+    final ImmutableList<Type> joinTypes =
+        ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE);
+    final ImmutableList<String> joinNames = ImmutableList.of("follower", "followee", "follower", "followee");
+    final Schema joinSchema = new Schema(joinTypes, joinNames);
     // Join on SC1.followee=SC2.follower
     final LocalJoin localJoin = new LocalJoin(joinSchema, scan1, scan2, new int[] { 1 }, new int[] { 0 });
 
@@ -83,11 +86,9 @@ public class TwitterSingleNodeJoinSpeedTest {
   public void twitterSubsetProjectingJoinTest() throws DbException, CatalogException, IOException {
     assertTrue(successfulSetup);
 
-    /* The Schema for the table we read from file. */
-    final Type[] table1Types = new Type[] { Type.LONG_TYPE, Type.LONG_TYPE };
-    final String[] table1ColumnNames = new String[] { "follower", "followee" };
+    final ImmutableList<Type> table1Types = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
+    final ImmutableList<String> table1ColumnNames = ImmutableList.of("follower", "followee");
     final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
-    /* The Schema for the join. */
 
     /* Read the data from the file. */
     final SQLiteQueryScan scan1 = new SQLiteQueryScan(DATASET_PATH, "select * from twitter_subset", tableSchema);

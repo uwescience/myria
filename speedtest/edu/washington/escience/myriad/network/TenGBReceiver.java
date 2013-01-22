@@ -48,7 +48,6 @@ public class TenGBReceiver {
       super.handleUpstream(ctx, e);
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e) {
       dataQueue.add(e.getMessage());

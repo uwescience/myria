@@ -19,6 +19,8 @@ import org.jboss.netty.handler.codec.compression.ZlibEncoder;
 import org.jboss.netty.handler.codec.protobuf.ProtobufVarint32FrameDecoder;
 import org.jboss.netty.handler.codec.protobuf.ProtobufVarint32LengthFieldPrepender;
 
+import com.google.common.collect.ImmutableList;
+
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
@@ -50,7 +52,8 @@ public class TenGBCompressSender {
 
   }
 
-  final static Schema schema = new Schema(new Type[] { Type.LONG_TYPE, Type.LONG_TYPE }, new String[] { "id", "id2" });
+  final static Schema schema = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("id",
+      "id2"));
 
   public static double elapsedInSeconds(final long startTimeMS) {
     return (System.currentTimeMillis() - startTimeMS) * 1.0 / 1000;
@@ -87,18 +90,11 @@ public class TenGBCompressSender {
     bootstrap.setOption("writeBufferLowWaterMark", 16 * 1024);
     bootstrap.setOption("writeBufferHighWaterMark", 256 * 1024);
 
-    boolean connected = true;
-    ChannelFuture c = null;
-    try {
-      c = bootstrap.connect(remoteAddress);
-    } catch (final Exception e) {
-      connected = false;
+    ChannelFuture c = bootstrap.connect(remoteAddress);
+    if (!c.awaitUninterruptibly().isSuccess()) {
+      throw new RuntimeException("Unable to connect");
     }
-    if (!connected) {
-      connected = c.awaitUninterruptibly().isSuccess();
-    }
-    Channel ch = null;
-    ch = c.getChannel();
+    Channel ch = c.getChannel();
 
     long numSent = 0;
     long start = 0;
