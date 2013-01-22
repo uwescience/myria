@@ -48,11 +48,11 @@ public class IDBInput extends Operator {
       child1Ended = true;
     } else {
       if (child2.eos()) {
-        setEOS();
+        setEOS(true);
       } else if (child2.eoi()) {
         child2.setEOI(false);
         if (tuplesSentSinceLastEOI == 0) {
-          setEOS();
+          setEOS(true);
         } else {
           setEOI(true);
           tuplesSentSinceLastEOI = 0;

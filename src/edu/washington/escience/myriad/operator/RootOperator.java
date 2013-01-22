@@ -84,7 +84,7 @@ public abstract class RootOperator extends Operator {
   @Override
   public TupleBatch fetchNextReady() throws DbException {
     startAndWaitChild();
-    setEOS();
+    setEOS(true);
     return null;
   }
 

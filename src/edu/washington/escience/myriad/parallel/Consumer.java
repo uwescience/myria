@@ -137,7 +137,7 @@ public abstract class Consumer extends LeafOperator {
       }
     }
     // have received all the eos message from all the workers
-    setEOS();
+    setEOS(true);
     return null;
   }
 

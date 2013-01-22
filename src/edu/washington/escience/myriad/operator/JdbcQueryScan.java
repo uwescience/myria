@@ -7,7 +7,7 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.accessmethod.JdbcAccessMethod;
 
-public class JdbcQueryScan extends Operator {
+public class JdbcQueryScan extends LeafOperator {
 
   private Iterator<TupleBatch> tuples;
   private final Schema schema;
@@ -46,8 +46,8 @@ public class JdbcQueryScan extends Operator {
   }
 
   @Override
-  public Operator[] getChildren() {
-    return null;
+  public void checkEOSAndEOI() {
+    setEOS(true);
   }
 
   @Override
@@ -58,11 +58,6 @@ public class JdbcQueryScan extends Operator {
   @Override
   public void init() throws DbException {
     tuples = JdbcAccessMethod.tupleBatchIteratorFromQuery(driverClass, connectionString, baseSQL, username, password);
-  }
-
-  @Override
-  public void setChildren(final Operator[] children) {
-    throw new UnsupportedOperationException();
   }
 
   @Override

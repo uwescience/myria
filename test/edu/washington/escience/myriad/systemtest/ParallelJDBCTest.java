@@ -50,7 +50,8 @@ public class ParallelJDBCTest extends SystemTestBase {
             password);
 
     final CollectProducer cp2 = new CollectProducer(scan2, worker2ReceiveID, WORKER_ID[1]);
-    final CollectConsumer cc2 = new CollectConsumer(cp2, worker2ReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
+    final CollectConsumer cc2 =
+        new CollectConsumer(cp2.getSchema(), worker2ReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
     final BlockingJDBCDataReceiver block2 =
         new BlockingJDBCDataReceiver("temptable34", connectionString, driverClass, username, password, cc2);
 
@@ -60,7 +61,7 @@ public class ParallelJDBCTest extends SystemTestBase {
     final CollectProducer cp22 = new CollectProducer(scan22, serverReceiveID, MASTER_ID);
     final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
     workerPlans.put(WORKER_ID[0], new Operator[] { cp1 });
-    workerPlans.put(WORKER_ID[1], new Operator[] { cp22 });
+    workerPlans.put(WORKER_ID[1], new Operator[] { cp2, cp22 });
 
     while (Server.runningInstance == null) {
       try {

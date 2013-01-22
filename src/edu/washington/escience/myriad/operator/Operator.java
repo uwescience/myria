@@ -49,8 +49,8 @@ public abstract class Operator implements Serializable {
     // Ensures that a future call to next() will fail
     outputBuffer = null;
     open = false;
-    eos = true;
-    eoi = true;
+    setEOS(true);
+    setEOI(true);
     cleanup();
     Operator[] children = getChildren();
     if (children != null) {
@@ -162,7 +162,7 @@ public abstract class Operator implements Serializable {
     }
     if (count == children.length) {
       if (allEOS) {
-        setEOS();
+        setEOS(true);
       } else {
         setEOI(true);
       }
@@ -189,7 +189,8 @@ public abstract class Operator implements Serializable {
         }
       }
     }
-    eos = false;
+    setEOS(false);
+    setEOI(false);
     // do my initialization
     init();
     open = true;
@@ -201,12 +202,12 @@ public abstract class Operator implements Serializable {
    * Only call this method if the operator is a leaf operator.
    * 
    * */
-  public final void setEOS() {
-    eos = true;
+  public final void setEOS(boolean x) {
+    eos = x;
   }
 
   public final void setEOI(boolean x) {
-    eos = x;
+    eoi = x;
   }
 
   public boolean isOpen() {

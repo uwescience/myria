@@ -31,14 +31,21 @@ public class SQLiteQueryScan extends LeafOperator {
 
   @Override
   protected TupleBatch fetchNext() throws DbException {
+    System.out.println("SQLiteQueryScan fetchNext()");
     if (tuples == null) {
       tuples = SQLiteAccessMethod.tupleBatchIteratorFromQuery(dataDir + "/" + filename, baseSQL, schema);
     }
     if (tuples.hasNext()) {
+      System.out.println("SQLiteQueryScan fetchNext() get one");
       return tuples.next();
     } else {
       return null;
     }
+  }
+
+  @Override
+  public void checkEOSAndEOI() {
+    setEOS(true);
   }
 
   @Override

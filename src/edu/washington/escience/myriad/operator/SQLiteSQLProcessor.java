@@ -31,8 +31,17 @@ public class SQLiteSQLProcessor extends Operator {
     tuples = null;
   }
 
+  private boolean checked = false;
+
   @Override
   protected TupleBatch fetchNext() throws DbException {
+    if (!checked) {
+      for (final Operator child : children) {
+        while (child.next() != null) {
+        }
+      }
+      checked = true;
+    }
     if (tuples == null) {
       tuples = SQLiteAccessMethod.tupleBatchIteratorFromQuery(dataDir + "/" + filename, baseSQL, schema);
     }
@@ -55,10 +64,6 @@ public class SQLiteSQLProcessor extends Operator {
 
   @Override
   public void init() throws DbException {
-    for (final Operator child : children) {
-      while (child.next() != null) {
-      }
-    }
   }
 
   @Override

@@ -1,6 +1,7 @@
 package edu.washington.escience.myriad.systemtest;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -92,7 +93,7 @@ public class IterativeSelfJoinTest extends SystemTestBase {
 
   @Test
   public void iterativeSelfJoinTest() throws DbException, CatalogException, IOException {
-    System.out.println(System.getProperty("java.util.logging.config.file"));
+    // System.out.println(System.getProperty("java.util.logging.config.file"));
     // data generation
     final Type[] table1Types = new Type[] { Type.LONG_TYPE, Type.LONG_TYPE };
     final String[] table1ColumnNames = new String[] { "follower", "followee" };
@@ -151,6 +152,7 @@ public class IterativeSelfJoinTest extends SystemTestBase {
     final PartitionFunction<String, Integer> pf1 = new SingleFieldHashPartitionFunction(numPartition); // 2 workers
     pf1.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1); // partition by 2nd column
 
+    ArrayList<Operator> subqueries = new ArrayList<Operator>();
     final ShuffleProducer sp0[] = new ShuffleProducer[numIteration];
     final ShuffleProducer sp1[] = new ShuffleProducer[numIteration];
     final ShuffleProducer sp2[] = new ShuffleProducer[numIteration];
@@ -166,15 +168,18 @@ public class IterativeSelfJoinTest extends SystemTestBase {
     arrayID2 = ExchangePairID.newID();
     sp1[0] = new ShuffleProducer(scan1, arrayID1, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf1);
     sp2[0] = new ShuffleProducer(scan2, arrayID2, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf0);
+    subqueries.add(sp1[0]);
+    subqueries.add(sp2[0]);
 
     for (int i = 1; i < numIteration; ++i) {
-      sc1[i] = new ShuffleConsumer(sp1[i - 1], arrayID1, new int[] { WORKER_ID[0], WORKER_ID[1] });
-      sc2[i] = new ShuffleConsumer(sp2[i - 1], arrayID2, new int[] { WORKER_ID[0], WORKER_ID[1] });
+      sc1[i] = new ShuffleConsumer(sp1[i - 1].getSchema(), arrayID1, new int[] { WORKER_ID[0], WORKER_ID[1] });
+      sc2[i] = new ShuffleConsumer(sp2[i - 1].getSchema(), arrayID2, new int[] { WORKER_ID[0], WORKER_ID[1] });
       localjoin[i] = new LocalJoin(joinSchema, sc1[i], sc2[i], new int[] { 1 }, new int[] { 0 });
       proj[i] = new Project(new Integer[] { 0, 3 }, localjoin[i]);
       arrayID0 = ExchangePairID.newID();
       sp0[i] = new ShuffleProducer(proj[i], arrayID0, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf0);
-      sc0[i] = new ShuffleConsumer(sp0[i], arrayID0, new int[] { WORKER_ID[0], WORKER_ID[1] });
+      subqueries.add(sp0[i]);
+      sc0[i] = new ShuffleConsumer(sp0[i].getSchema(), arrayID0, new int[] { WORKER_ID[0], WORKER_ID[1] });
       dupelim[i] = new DupElim(sc0[i]);
       if (i == numIteration - 1) {
         break;
@@ -184,13 +189,16 @@ public class IterativeSelfJoinTest extends SystemTestBase {
       arrayID2 = ExchangePairID.newID();
       sp1[i] = new ShuffleProducer(scan[i], arrayID1, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf1);
       sp2[i] = new ShuffleProducer(dupelim[i], arrayID2, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf0);
+      subqueries.add(sp1[i]);
+      subqueries.add(sp2[i]);
     }
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final CollectProducer cp = new CollectProducer(dupelim[numIteration - 1], serverReceiveID, MASTER_ID);
+    subqueries.add(cp);
 
     final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
-    workerPlans.put(WORKER_ID[0], new Operator[] { cp });
-    workerPlans.put(WORKER_ID[1], new Operator[] { cp });
+    workerPlans.put(WORKER_ID[0], subqueries.toArray(new Operator[subqueries.size()]));
+    workerPlans.put(WORKER_ID[1], subqueries.toArray(new Operator[subqueries.size()]));
 
     while (Server.runningInstance == null) {
       try {

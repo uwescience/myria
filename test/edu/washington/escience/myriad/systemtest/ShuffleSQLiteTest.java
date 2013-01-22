@@ -13,10 +13,9 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
-import edu.washington.escience.myriad.operator.BlockingSQLiteDataReceiver;
+import edu.washington.escience.myriad.operator.LocalJoin;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
-import edu.washington.escience.myriad.operator.SQLiteSQLProcessor;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
@@ -37,13 +36,13 @@ public class ShuffleSQLiteTest extends SystemTestBase {
     final Schema schema = new Schema(types, columnNames);
 
     HashMap<Tuple, Integer> expectedResult = simpleRandomJoinTestBase();
-    String temptable1Name = "temptable1";
-    String temptable2Name = "temptable2";
 
-    createTable(WORKER_ID[0], "temptable", temptable1Name, "id int, name varchar(20)");
-    createTable(WORKER_ID[0], "temptable", temptable2Name, "id int, name varchar(20)");
-    createTable(WORKER_ID[1], "temptable", temptable1Name, "id int, name varchar(20)");
-    createTable(WORKER_ID[1], "temptable", temptable2Name, "id int, name varchar(20)");
+    /*
+     * String temptable1Name = "temptable1"; String temptable2Name = "temptable2"; createTable(WORKER_ID[0],
+     * "temptable", temptable1Name, "id int, name varchar(20)"); createTable(WORKER_ID[0], "temptable", temptable2Name,
+     * "id int, name varchar(20)"); createTable(WORKER_ID[1], "temptable", temptable1Name, "id int, name varchar(20)");
+     * createTable(WORKER_ID[1], "temptable", temptable2Name, "id int, name varchar(20)");
+     */
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final ExchangePairID shuffle1ID = ExchangePairID.newID();
@@ -64,22 +63,27 @@ public class ShuffleSQLiteTest extends SystemTestBase {
 
     final ShuffleProducer sp2 = new ShuffleProducer(scan2, shuffle2ID, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf);
 
-    final ShuffleConsumer sc1 = new ShuffleConsumer(sp1, shuffle1ID, new int[] { WORKER_ID[0], WORKER_ID[1] });
-    final BlockingSQLiteDataReceiver buffer1 = new BlockingSQLiteDataReceiver("temptable.db", "temptable1", sc1);
+    final ShuffleConsumer sc1 =
+        new ShuffleConsumer(sp1.getSchema(), shuffle1ID, new int[] { WORKER_ID[0], WORKER_ID[1] });
+    // final BlockingSQLiteDataReceiver buffer1 = new BlockingSQLiteDataReceiver("temptable.db", "temptable1", sc1);
 
-    final ShuffleConsumer sc2 = new ShuffleConsumer(sp2, shuffle2ID, new int[] { WORKER_ID[0], WORKER_ID[1] });
-    final BlockingSQLiteDataReceiver buffer2 = new BlockingSQLiteDataReceiver("temptable.db", "temptable2", sc2);
+    final ShuffleConsumer sc2 =
+        new ShuffleConsumer(sp2.getSchema(), shuffle2ID, new int[] { WORKER_ID[0], WORKER_ID[1] });
+    // final BlockingSQLiteDataReceiver buffer2 = new BlockingSQLiteDataReceiver("temptable.db", "temptable2", sc2);
 
-    final SQLiteSQLProcessor ssp =
-        new SQLiteSQLProcessor("temptable.db",
-            "select * from temptable1 inner join temptable2 on temptable1.name=temptable2.name", outputSchema,
-            new Operator[] { buffer1, buffer2 });
+    final LocalJoin join = new LocalJoin(outputSchema, sc1, sc2, new int[] { 1 }, new int[] { 1 });
 
-    final CollectProducer cp = new CollectProducer(ssp, serverReceiveID, MASTER_ID);
+    /*
+     * final SQLiteSQLProcessor ssp = new SQLiteSQLProcessor("temptable.db",
+     * "select * from temptable1 inner join temptable2 on temptable1.name=temptable2.name", outputSchema, new Operator[]
+     * { buffer1, buffer2 });
+     */
+
+    final CollectProducer cp = new CollectProducer(join, serverReceiveID, MASTER_ID);
 
     final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
-    workerPlans.put(WORKER_ID[0], new Operator[] { cp });
-    workerPlans.put(WORKER_ID[1], new Operator[] { cp });
+    workerPlans.put(WORKER_ID[0], new Operator[] { cp, sp1, sp2 });
+    workerPlans.put(WORKER_ID[1], new Operator[] { cp, sp1, sp2 });
 
     while (Server.runningInstance == null) {
       try {
