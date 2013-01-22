@@ -6,9 +6,6 @@ import java.util.List;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
-import edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType;
-// import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
-// import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage.ColumnMessageType;
 
 /**
  * A column of a batch of tuples.
@@ -75,18 +72,18 @@ public final class ColumnFactory {
    * @return a Column of the appropriate type and contents.
    */
   public static Column<?> columnFromColumnMessage(final ColumnMessage message) {
-    switch (message.getType().ordinal()) {
-      case ColumnMessageType.BOOLEAN_VALUE:
+    switch (message.getType()) {
+      case BOOLEAN:
         return new BooleanColumn(message);
-      case ColumnMessageType.DOUBLE_VALUE:
+      case DOUBLE:
         return new DoubleColumn(message);
-      case ColumnMessageType.FLOAT_VALUE:
+      case FLOAT:
         return new FloatColumn(message);
-      case ColumnMessageType.INT_VALUE:
+      case INT:
         return new IntColumn(message);
-      case ColumnMessageType.LONG_VALUE:
+      case LONG:
         return new LongColumn(message);
-      case ColumnMessageType.STRING_VALUE:
+      case STRING:
         return new StringColumn(message);
     }
     return null;

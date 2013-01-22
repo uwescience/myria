@@ -33,7 +33,6 @@ import edu.washington.escience.myriad.parallel.SocketInfo;
 import edu.washington.escience.myriad.parallel.Worker.MessageWrapper;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage;
-import edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageType;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.systemtest.SystemTestBase.Tuple;
 import edu.washington.escience.myriad.util.IPCUtils;
@@ -179,11 +178,11 @@ public class ProtobufTest {
       if (tm.getType() == TransportMessage.TransportMessageType.DATA) {
         numReceived++;
         final DataMessage data = tm.getData();
-        switch (data.getType().getNumber()) {
-          case DataMessageType.EOS_VALUE:
+        switch (data.getType()) {
+          case EOS:
             numEOS += 1;
             break;
-          case DataMessageType.NORMAL_VALUE:
+          case NORMAL:
             final List<ColumnMessage> columnMessages = data.getColumnsList();
             final Column<?>[] columnArray = new Column[columnMessages.size()];
             int idx = 0;
@@ -290,11 +289,11 @@ public class ProtobufTest {
       if (tm.getType() == TransportMessage.TransportMessageType.DATA) {
         numReceived++;
         final DataMessage data = tm.getData();
-        switch (data.getType().getNumber()) {
-          case DataMessageType.EOS_VALUE:
+        switch (data.getType()) {
+          case EOS:
             numEOS += 1;
             break;
-          case DataMessageType.NORMAL_VALUE:
+          case NORMAL:
             final List<ColumnMessage> columnMessages = data.getColumnsList();
             final Column<?>[] columnArray = new Column[columnMessages.size()];
             int idx = 0;
@@ -426,11 +425,11 @@ public class ProtobufTest {
       if (tm.getType() == TransportMessage.TransportMessageType.DATA) {
         numReceived++;
         final DataMessage data = tm.getData();
-        switch (data.getType().getNumber()) {
-          case DataMessageType.EOS_VALUE:
+        switch (data.getType()) {
+          case EOS:
             numEOS += 1;
             break;
-          case DataMessageType.NORMAL_VALUE:
+          case NORMAL:
             final List<ColumnMessage> columnMessages = data.getColumnsList();
             final Column<?>[] columnArray = new Column[columnMessages.size()];
             int idx = 0;
@@ -554,11 +553,11 @@ public class ProtobufTest {
       if (tm.getType() == TransportMessage.TransportMessageType.DATA) {
         numReceived++;
         final DataMessage data = tm.getData();
-        switch (data.getType().getNumber()) {
-          case DataMessageType.EOS_VALUE:
+        switch (data.getType()) {
+          case EOS:
             numEOS += 1;
             break;
-          case DataMessageType.NORMAL_VALUE:
+          case NORMAL:
             final List<ColumnMessage> columnMessages = data.getColumnsList();
             final Column<?>[] columnArray = new Column[columnMessages.size()];
             int idx = 0;
@@ -640,11 +639,11 @@ public class ProtobufTest {
       if (tm.getType() == TransportMessage.TransportMessageType.DATA) {
         numReceived++;
         final DataMessage data = tm.getData();
-        switch (data.getType().getNumber()) {
-          case DataMessageType.EOS_VALUE:
+        switch (data.getType()) {
+          case EOS:
             numEOS += 1;
             break;
-          case DataMessageType.NORMAL_VALUE:
+          case NORMAL:
             final List<ColumnMessage> columnMessages = data.getColumnsList();
             final Column<?>[] columnArray = new Column[columnMessages.size()];
             int idx = 0;
@@ -728,11 +727,11 @@ public class ProtobufTest {
       if (tm.getType() == TransportMessage.TransportMessageType.DATA) {
         numReceived++;
         final DataMessage data = tm.getData();
-        switch (data.getType().getNumber()) {
-          case DataMessageType.EOS_VALUE:
+        switch (data.getType()) {
+          case EOS:
             numEOS += 1;
             break;
-          case DataMessageType.NORMAL_VALUE:
+          case NORMAL:
             final List<ColumnMessage> columnMessages = data.getColumnsList();
             final Column<?>[] columnArray = new Column[columnMessages.size()];
             int idx = 0;
@@ -832,11 +831,11 @@ public class ProtobufTest {
       if (tm.getType() == TransportMessage.TransportMessageType.DATA) {
         numReceived++;
         final DataMessage data = tm.getData();
-        switch (data.getType().getNumber()) {
-          case DataMessageType.EOS_VALUE:
+        switch (data.getType()) {
+          case EOS:
             numEOS += 1;
             break;
-          case DataMessageType.NORMAL_VALUE:
+          case NORMAL:
             final List<ColumnMessage> columnMessages = data.getColumnsList();
             final Column<?>[] columnArray = new Column[columnMessages.size()];
             int idx = 0;
@@ -928,11 +927,11 @@ public class ProtobufTest {
       if (tm.getType() == TransportMessage.TransportMessageType.DATA) {
         numReceived++;
         final DataMessage data = tm.getData();
-        switch (data.getType().getNumber()) {
-          case DataMessageType.EOS_VALUE:
+        switch (data.getType()) {
+          case EOS:
             numEOS += 1;
             break;
-          case DataMessageType.NORMAL_VALUE:
+          case NORMAL:
             final List<ColumnMessage> columnMessages = data.getColumnsList();
             final Column<?>[] columnArray = new Column[columnMessages.size()];
             int idx = 0;

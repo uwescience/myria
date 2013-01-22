@@ -38,7 +38,6 @@ import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage;
-import edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageType;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.util.IPCUtils;
 import edu.washington.escience.myriad.util.JVMUtils;
@@ -99,11 +98,11 @@ public class Worker {
             final DataMessage data = m.getData();
             final ExchangePairID exchangePairID = ExchangePairID.fromExisting(data.getOperatorID());
             final Schema operatorSchema = exchangeSchema.get(exchangePairID);
-            switch (data.getType().getNumber()) {
-              case DataMessageType.EOS_VALUE:
+            switch (data.getType()) {
+              case EOS:
                 receiveData(new ExchangeData(exchangePairID, senderID, operatorSchema));
                 break;
-              case DataMessageType.NORMAL_VALUE:
+              case NORMAL:
                 final List<ColumnMessage> columnMessages = data.getColumnsList();
                 final Column<?>[] columnArray = new Column[columnMessages.size()];
                 int idx = 0;
@@ -119,14 +118,20 @@ public class Worker {
             break;
           case CONTROL:
             final ControlMessage controlM = m.getControl();
-            switch (controlM.getType().getNumber()) {
-              case ControlMessage.ControlMessageType.SHUTDOWN_VALUE:
+            switch (controlM.getType()) {
+              case SHUTDOWN:
                 System.out.println("shutdown requested");
                 toShutdown = true;
                 break;
-              case ControlMessage.ControlMessageType.START_QUERY_VALUE:
+              case START_QUERY:
                 executeQuery();
                 break;
+              case CONNECT:
+              case DISCONNECT:
+              case QUERY_COMPLETE:
+              case QUERY_READY_TO_EXECUTE:
+              case WORKER_ALIVE:
+                throw new RuntimeException("Unexpected control message received at worker: " + controlM.getType());
             }
             break;
         }

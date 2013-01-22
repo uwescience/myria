@@ -164,6 +164,8 @@ public final class Server {
                 throw new RuntimeException("Unexpected control message received at server" + controlM.toString());
             }
             break;
+          case QUERY:
+            throw new RuntimeException("Unexpected query message received at server");
         }
 
       }
