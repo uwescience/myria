@@ -149,10 +149,6 @@ public abstract class Consumer extends LeafOperator {
     }
   }
 
-  public ExchangePairID getOperatorID() {
-    return operatorID;
-  }
-
   public void setInputBuffer(final LinkedBlockingQueue<ExchangeData> buffer) {
     inputBuffer = buffer;
   }
@@ -168,5 +164,9 @@ public abstract class Consumer extends LeafOperator {
     } else {
       return inputBuffer.take();
     }
+  }
+
+  public ExchangePairID getOperatorID() {
+    return operatorID;
   }
 }

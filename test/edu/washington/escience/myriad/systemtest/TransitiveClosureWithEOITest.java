@@ -8,8 +8,6 @@ import java.util.Random;
 
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableList;
-
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -90,12 +88,11 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
   @Test
   public void transitiveClosure() throws DbException, CatalogException, IOException {
     // data generation
-    final ImmutableList<Type> table1Types = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
-    final ImmutableList<String> table1ColumnNames = ImmutableList.of("follower", "followee");
+    final Type[] table1Types = new Type[] { Type.LONG_TYPE, Type.LONG_TYPE };
+    final String[] table1ColumnNames = new String[] { "follower", "followee" };
     final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
-    final ImmutableList<Type> joinTypes =
-        ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE);
-    final ImmutableList<String> joinColumnNames = ImmutableList.of("follower", "followee", "follower", "followee");
+    final Type[] joinTypes = new Type[] { Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE };
+    final String[] joinColumnNames = new String[] { "follower", "followee", "follower", "followee" };
     final Schema joinSchema = new Schema(joinTypes, joinColumnNames);
 
     // generate the graph
@@ -117,14 +114,14 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     table1.merge(tbl1Worker1);
     table1.merge(tbl1Worker2);
 
-    createTable(WORKER_ID[0], "testtable", "follower long, followee long");
-    createTable(WORKER_ID[1], "testtable", "follower long, followee long");
+    createTable(WORKER_ID[0], "testtable0", "testtable", "follower long, followee long");
+    createTable(WORKER_ID[1], "testtable0", "testtable", "follower long, followee long");
     TupleBatch tb = null;
     while ((tb = tbl1Worker1.popAny()) != null) {
-      insert(WORKER_ID[0], "testtable", tableSchema, tb);
+      insertWithBothNames(WORKER_ID[0], "testtable", "testtable0", tableSchema, tb);
     }
     while ((tb = tbl1Worker2.popAny()) != null) {
-      insert(WORKER_ID[1], "testtable", tableSchema, tb);
+      insertWithBothNames(WORKER_ID[1], "testtable", "testtable0", tableSchema, tb);
     }
 
     // generate the correct answer in memory
@@ -144,13 +141,13 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
         identity_worker2.put(1, i);
       }
     }
-    createTable(WORKER_ID[0], "identity", "follower long, followee long");
-    createTable(WORKER_ID[1], "identity", "follower long, followee long");
+    createTable(WORKER_ID[0], "testtable0", "identity", "follower long, followee long");
+    createTable(WORKER_ID[1], "testtable0", "identity", "follower long, followee long");
     while ((tb = identity_worker1.popAny()) != null) {
-      insert(WORKER_ID[0], "identity", tableSchema, tb);
+      insertWithBothNames(WORKER_ID[0], "identity", "testtable0", tableSchema, tb);
     }
     while ((tb = identity_worker2.popAny()) != null) {
-      insert(WORKER_ID[1], "identity", tableSchema, tb);
+      insertWithBothNames(WORKER_ID[1], "identity", "testtable0", tableSchema, tb);
     }
 
     // parallel query generation, duplicate db files

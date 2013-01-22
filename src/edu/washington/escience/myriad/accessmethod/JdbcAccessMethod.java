@@ -24,34 +24,6 @@ import edu.washington.escience.myriad.column.ColumnFactory;
 public final class JdbcAccessMethod {
 
   /**
-   * Insert the Tuples in this TupleBatch into the database. Unlike the other tupleBatchInsert method, this does not
-   * open a connection to the database but uses the one it is passed.
-   * 
-   * @param jdbcConnection the connection to the database
-   * @param insertString the insert statement. TODO no sanity checks at all right now
-   * @param tupleBatch the tupleBatch to be inserted
-   */
-  public static void tupleBatchInsert(final Connection jdbcConnection, final String insertString,
-      final TupleBatch tupleBatch) {
-
-    if (jdbcConnection == null) {
-      throw new IllegalArgumentException();
-    }
-
-    try {
-      /* Set up and execute the query */
-      final PreparedStatement statement = jdbcConnection.prepareStatement(insertString);
-
-      tupleBatch.getIntoJdbc(statement);
-      statement.executeBatch();
-      statement.close();
-    } catch (final SQLException e) {
-      System.err.println(e.getMessage());
-      throw new RuntimeException(e.getMessage());
-    }
-  }
-
-  /**
    * Insert the Tuples in this TupleBatch into the database.
    * 
    * @param driverClassName the JDBC driver name
@@ -74,6 +46,34 @@ public final class JdbcAccessMethod {
     } catch (final ClassNotFoundException e) {
       System.err.println(e.getMessage());
       throw new RuntimeException(e.getMessage());
+    } catch (final SQLException e) {
+      System.err.println(e.getMessage());
+      throw new RuntimeException(e.getMessage());
+    }
+  }
+
+  /**
+   * Insert the Tuples in this TupleBatch into the database. Unlike the other tupleBatchInsert method, this does not
+   * open a connection to the database but uses the one it is passed.
+   * 
+   * @param jdbcConnection the connection to the database
+   * @param insertString the insert statement. TODO no sanity checks at all right now
+   * @param tupleBatch the tupleBatch to be inserted
+   */
+  public static void tupleBatchInsert(final Connection jdbcConnection, final String insertString,
+      final TupleBatch tupleBatch) {
+
+    if (jdbcConnection == null) {
+      throw new IllegalArgumentException();
+    }
+
+    try {
+      /* Set up and execute the query */
+      final PreparedStatement statement = jdbcConnection.prepareStatement(insertString);
+
+      tupleBatch.getIntoJdbc(statement);
+      statement.executeBatch();
+      statement.close();
     } catch (final SQLException e) {
       System.err.println(e.getMessage());
       throw new RuntimeException(e.getMessage());

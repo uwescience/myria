@@ -11,23 +11,23 @@ public class ReadOnlyBitSet extends BitSet {
    * */
   private final BitSet contents;
 
+  public ReadOnlyBitSet(BitSet contents) {
+    super(0);
+    this.contents = contents;
+  }
+
   /**
    * 
    */
   private static final long serialVersionUID = 1L;
 
-  public ReadOnlyBitSet(final BitSet contents) {
-    super(0);
-    this.contents = contents;
-  }
-
   @Override
-  public void and(final BitSet set) {
+  public void and(BitSet set) {
     throw new UnsupportedOperationException("Read only BitSet");
   }
 
   @Override
-  public void andNot(final BitSet set) {
+  public void andNot(BitSet set) {
     throw new UnsupportedOperationException("Read only BitSet");
   }
 
@@ -43,12 +43,12 @@ public class ReadOnlyBitSet extends BitSet {
   }
 
   @Override
-  public void clear(final int bitIndex) {
+  public void clear(int bitIndex) {
     throw new UnsupportedOperationException("Read only BitSet");
   }
 
   @Override
-  public void clear(final int fromIndex, final int toIndex) {
+  public void clear(int fromIndex, int toIndex) {
     throw new UnsupportedOperationException("Read only BitSet");
   }
 
@@ -62,22 +62,22 @@ public class ReadOnlyBitSet extends BitSet {
   }
 
   @Override
-  public void flip(final int bitIndex) {
+  public void flip(int bitIndex) {
     throw new UnsupportedOperationException("Read only BitSet");
   }
 
   @Override
-  public void flip(final int fromIndex, final int toIndex) {
+  public void flip(int fromIndex, int toIndex) {
     throw new UnsupportedOperationException("Read only BitSet");
   }
 
   @Override
-  public boolean get(final int bitIndex) {
+  public boolean get(int bitIndex) {
     return contents.get(bitIndex);
   }
 
   @Override
-  public BitSet get(final int fromIndex, final int toIndex) {
+  public BitSet get(int fromIndex, int toIndex) {
     return contents.get(fromIndex, toIndex);
   }
 
@@ -87,7 +87,7 @@ public class ReadOnlyBitSet extends BitSet {
   }
 
   @Override
-  public boolean intersects(final BitSet set) {
+  public boolean intersects(BitSet set) {
     throw new UnsupportedOperationException("Read only BitSet");
   }
 
@@ -102,53 +102,28 @@ public class ReadOnlyBitSet extends BitSet {
   }
 
   @Override
-  public int nextClearBit(final int fromIndex) {
+  public int nextClearBit(int fromIndex) {
     return contents.nextClearBit(fromIndex);
   }
 
   @Override
-  public int nextSetBit(final int fromIndex) {
+  public int nextSetBit(int fromIndex) {
     return contents.nextSetBit(fromIndex);
   }
 
   @Override
-  public void or(final BitSet set) {
+  public void or(BitSet set) {
     throw new UnsupportedOperationException("Read only BitSet");
   }
 
   @Override
-  public int previousClearBit(final int fromIndex) {
+  public int previousClearBit(int fromIndex) {
     return contents.previousClearBit(fromIndex);
   }
 
   @Override
-  public int previousSetBit(final int fromIndex) {
+  public int previousSetBit(int fromIndex) {
     return contents.previousSetBit(fromIndex);
-  }
-
-  @Override
-  public void set(final int bitIndex) {
-    throw new UnsupportedOperationException("Read only BitSet");
-  }
-
-  @Override
-  public void set(final int bitIndex, final boolean value) {
-    throw new UnsupportedOperationException("Read only BitSet");
-  }
-
-  @Override
-  public void set(final int fromIndex, final int toIndex) {
-    throw new UnsupportedOperationException("Read only BitSet");
-  }
-
-  @Override
-  public void set(final int fromIndex, final int toIndex, final boolean value) {
-    throw new UnsupportedOperationException("Read only BitSet");
-  }
-
-  @Override
-  public int size() {
-    return contents.size();
   }
 
   @Override
@@ -162,12 +137,37 @@ public class ReadOnlyBitSet extends BitSet {
   }
 
   @Override
+  public void set(int bitIndex) {
+    throw new UnsupportedOperationException("Read only BitSet");
+  }
+
+  @Override
+  public void set(int bitIndex, boolean value) {
+    throw new UnsupportedOperationException("Read only BitSet");
+  }
+
+  @Override
+  public void set(int fromIndex, int toIndex) {
+    throw new UnsupportedOperationException("Read only BitSet");
+  }
+
+  @Override
+  public void set(int fromIndex, int toIndex, boolean value) {
+    throw new UnsupportedOperationException("Read only BitSet");
+  }
+
+  @Override
+  public int size() {
+    return contents.size();
+  }
+
+  @Override
   public String toString() {
     return contents.toString();
   }
 
   @Override
-  public void xor(final BitSet set) {
+  public void xor(BitSet set) {
     throw new UnsupportedOperationException("Read only BitSet");
   }
 }

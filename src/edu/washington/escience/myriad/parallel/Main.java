@@ -5,10 +5,9 @@ import java.util.HashMap;
 
 import org.apache.commons.io.FilenameUtils;
 
-import com.google.common.collect.ImmutableList;
-
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.operator.DupElim;
 import edu.washington.escience.myriad.operator.LocalJoin;
@@ -30,13 +29,11 @@ public final class Main {
   private static final int numIteration = 2;
   private static final int numPartition = 2;
 
-  private static ImmutableList<Type> table1Types = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
-  private static ImmutableList<String> table1ColumnNames = ImmutableList.of("follower", "followee");
+  private static Type[] table1Types = new Type[] { Type.LONG_TYPE, Type.LONG_TYPE };
+  private static String[] table1ColumnNames = new String[] { "follower", "followee" };
   private static Schema tableSchema = new Schema(table1Types, table1ColumnNames);
-  private static ImmutableList<Type> joinTypes = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE,
-      Type.LONG_TYPE);
-  private static ImmutableList<String> joinColumnNames = ImmutableList.of("follower", "followee", "follower",
-      "followee");
+  private static Type[] joinTypes = new Type[] { Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE };
+  private static String[] joinColumnNames = new String[] { "follower", "followee", "follower", "followee" };
   private static Schema joinSchema = new Schema(joinTypes, joinColumnNames);
 
   public static Operator getQueryPlan_full() throws DbException, IOException {
@@ -111,10 +108,11 @@ public final class Main {
     final CollectConsumer serverPlan = new CollectConsumer(tableSchema, serverReceiveID, WORKER_ID);
     Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
     System.out.println("Query dispatched to the workers");
-    while (Server.runningInstance.startServerQuery(0, serverPlan) == null) {
+    TupleBatchBuffer result = null;
+    while ((result = Server.runningInstance.startServerQuery(0, serverPlan)) == null) {
       try {
         Thread.sleep(100);
-      } catch (final InterruptedException e) {
+      } catch (InterruptedException e) {
         e.printStackTrace();
         Thread.currentThread().interrupt();
       }
@@ -133,9 +131,9 @@ public final class Main {
       @Override
       public void run() {
         try {
-          final String catalogFileName = FilenameUtils.concat("/tmp/multitest", "master.catalog");
+          String catalogFileName = FilenameUtils.concat("/tmp/multitest", "master.catalog");
           Server.main(new String[] { catalogFileName });
-        } catch (final IOException e) {
+        } catch (IOException e) {
           throw new RuntimeException(e);
         }
       }

@@ -30,19 +30,21 @@ public class MasterDataHandler extends SimpleChannelUpstreamHandler {
   }
 
   @Override
-  public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e) {
+  public void messageReceived(ChannelHandlerContext ctx, MessageEvent e) {
     ChannelContext cs = null;
     ChannelContext.RegisteredChannelContext ecc = null;
     try {
-      final Channel channel = e.getChannel();
-      final TransportMessage tm = (TransportMessage) e.getMessage();
+      Channel channel = e.getChannel();
+      TransportMessage tm = (TransportMessage) e.getMessage();
       cs = ChannelContext.getChannelContext(channel);
       ecc = cs.getRegisteredChannelContext();
 
       final Integer senderID = ecc.getRemoteID();
-      final MessageWrapper mw = new MessageWrapper(senderID, tm);
+      final MessageWrapper mw = new MessageWrapper();
+      mw.senderID = senderID;
+      mw.message = tm;
       messageQueue.add(mw);
-    } catch (final NullPointerException ee) {
+    } catch (NullPointerException ee) {
       ee.printStackTrace();
     }
     ctx.sendUpstream(e);

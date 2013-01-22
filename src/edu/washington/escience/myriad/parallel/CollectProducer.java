@@ -26,14 +26,14 @@ public final class CollectProducer extends Producer {
     @Override
     public void run() {
 
-      final IPCConnectionPool connectionPool = getConnectionPool();
+      IPCConnectionPool connectionPool = getThisWorker().connectionPool;
       final Channel channel = connectionPool.reserveLongTermConnection(collectConsumerWorkerID);
 
-      final ExchangePairID operatorID = operatorIDs[0];
+      ExchangePairID operatorID = operatorIDs[0];
 
       try {
 
-        final TupleBatchBuffer buffer = new TupleBatchBuffer(getSchema());
+        TupleBatchBuffer buffer = new TupleBatchBuffer(getSchema());
 
         TupleBatch tup = null;
         TransportMessage dm = null;
@@ -101,11 +101,6 @@ public final class CollectProducer extends Producer {
   }
 
   @Override
-  public TupleBatch fetchNextReady() throws DbException {
-    return fetchNext();
-  }
-
-  @Override
   public Operator[] getChildren() {
     return new Operator[] { child };
   }
@@ -124,6 +119,11 @@ public final class CollectProducer extends Producer {
   @Override
   public void setChildren(final Operator[] children) {
     child = children[0];
+  }
+
+  @Override
+  public TupleBatch fetchNextReady() throws DbException {
+    return fetchNext();
   }
 
 }

@@ -7,8 +7,6 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableList;
-
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -34,8 +32,8 @@ public class JdbcAccessMethodTest {
     final int expectedNumResults = 250; /* Hardcoded in setup_testtablebig.sql */
     /* Query information */
     final String query = "select * from testtablebig";
-    final ImmutableList<Type> types = ImmutableList.of(Type.INT_TYPE);
-    final ImmutableList<String> columnNames = ImmutableList.of("value");
+    final Type[] types = new Type[] { Type.INT_TYPE };
+    final String[] columnNames = new String[] { "value" };
     final Schema schema = new Schema(types, columnNames);
 
     /* Build up the QueryScan parameters and open the scan */
@@ -47,7 +45,7 @@ public class JdbcAccessMethodTest {
     /* Count up the results and assert they match expectations */
     int count = 0;
     TupleBatch tb = null;
-    while ((tb = scan.next()) != null) {
+    while ((tb = (TupleBatch) scan.next()) != null) {
       count += tb.numTuples();
     }
     assertTrue(count == expectedNumResults);

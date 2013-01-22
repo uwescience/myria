@@ -16,41 +16,22 @@ import edu.washington.escience.myriad.parallel.Worker.MessageWrapper;
  */
 public final class ParallelUtility {
 
-  /**
-   * Create a client side connector to the server.
-   * 
-   * @param clientFactory All the client connections share the same generation factory, basically, they share the same
-   *          thread pool
-   */
-  static ClientBootstrap createIPCClient(final ChannelFactory clientFactory, final ChannelPipelineFactory cpf) {
-
-    // Create the bootstrap
-    final ClientBootstrap bootstrap = new ClientBootstrap(clientFactory);
-    bootstrap.setPipelineFactory(cpf);
-    bootstrap.setOption("tcpNoDelay", true);
-    bootstrap.setOption("keepAlive", false);
-    bootstrap.setOption("reuseAddress", true);
-    bootstrap.setOption("connectTimeoutMillis", 3000);
-    bootstrap.setOption("sendBufferSize", 512 * 1024);
-    bootstrap.setOption("receiveBufferSize", 512 * 1024);
-    bootstrap.setOption("writeBufferLowWaterMark", 16 * 1024);
-    bootstrap.setOption("writeBufferHighWaterMark", 256 * 1024);
-
-    return bootstrap;
+  /** Prevent construction of utility class. */
+  private ParallelUtility() {
   }
 
   /**
    * Create a server side acceptor.
    */
   public static ServerBootstrap createMasterIPCServer(final LinkedBlockingQueue<MessageWrapper> messageQueue,
-      final IPCConnectionPool ipcConnectionPool) {
+      IPCConnectionPool ipcConnectionPool) {
 
     // Start server with Nb of active threads = 2*NB CPU + 1 as maximum.
-    final ChannelFactory factory =
+    ChannelFactory factory =
         new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool(), Runtime
             .getRuntime().availableProcessors() * 2 + 1);
 
-    final ServerBootstrap bootstrap = new ServerBootstrap(factory);
+    ServerBootstrap bootstrap = new ServerBootstrap(factory);
 
     bootstrap.setPipelineFactory(new IPCPipelineFactories.MasterServerPipelineFactory(messageQueue, ipcConnectionPool));
 
@@ -72,14 +53,14 @@ public final class ParallelUtility {
    * Create a server side acceptor.
    */
   public static ServerBootstrap createWorkerIPCServer(final LinkedBlockingQueue<MessageWrapper> messageQueue,
-      final IPCConnectionPool ipcConnectionPool) {
+      IPCConnectionPool ipcConnectionPool) {
 
     // Start server with Nb of active threads = 2*NB CPU + 1 as maximum.
-    final ChannelFactory factory =
+    ChannelFactory factory =
         new NioServerSocketChannelFactory(Executors.newCachedThreadPool(), Executors.newCachedThreadPool(), Runtime
             .getRuntime().availableProcessors() * 2 + 1);
 
-    final ServerBootstrap bootstrap = new ServerBootstrap(factory);
+    ServerBootstrap bootstrap = new ServerBootstrap(factory);
 
     bootstrap.setPipelineFactory(new IPCPipelineFactories.WorkerServerPipelineFactory(messageQueue, ipcConnectionPool));
 
@@ -97,6 +78,29 @@ public final class ParallelUtility {
     return bootstrap;
   }
 
+  /**
+   * Create a client side connector to the server.
+   * 
+   * @param clientFactory All the client connections share the same generation factory, basically, they share the same
+   *          thread pool
+   */
+  static ClientBootstrap createIPCClient(final ChannelFactory clientFactory, final ChannelPipelineFactory cpf) {
+
+    // Create the bootstrap
+    ClientBootstrap bootstrap = new ClientBootstrap(clientFactory);
+    bootstrap.setPipelineFactory(cpf);
+    bootstrap.setOption("tcpNoDelay", true);
+    bootstrap.setOption("keepAlive", false);
+    bootstrap.setOption("reuseAddress", true);
+    bootstrap.setOption("connectTimeoutMillis", 3000);
+    bootstrap.setOption("sendBufferSize", 512 * 1024);
+    bootstrap.setOption("receiveBufferSize", 512 * 1024);
+    bootstrap.setOption("writeBufferLowWaterMark", 16 * 1024);
+    bootstrap.setOption("writeBufferHighWaterMark", 256 * 1024);
+
+    return bootstrap;
+  }
+
   public static String[] removeArg(final String[] args, final int toBeRemoved) {
     if (args == null) {
       return null;
@@ -109,10 +113,6 @@ public final class ParallelUtility {
     System.arraycopy(args, 0, newArgs, 0, toBeRemoved);
     System.arraycopy(args, toBeRemoved + 1, newArgs, toBeRemoved, args.length - toBeRemoved - 1);
     return newArgs;
-  }
-
-  /** Prevent construction of utility class. */
-  private ParallelUtility() {
   }
 
 }

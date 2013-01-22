@@ -22,24 +22,14 @@ public class IPCSessionManagerServer extends SimpleChannelHandler {
 
   private static final Logger logger = Logger.getLogger(IPCSessionManagerServer.class.getName());
 
-  private final IPCConnectionPool connectionPool;
-
   /**
    * Help the session management for ipc connection pool at IPC server.
    * */
-  public IPCSessionManagerServer(final IPCConnectionPool connectionPool) {
+  public IPCSessionManagerServer(IPCConnectionPool connectionPool) {
     this.connectionPool = connectionPool;
   }
 
-  /**
-   * Invoked when a {@link Channel} is open, bound to a local address, and connected to a remote address.
-   */
-  @Override
-  public void channelConnected(final ChannelHandlerContext ctx, final ChannelStateEvent e) throws Exception {
-    final ChannelContext cs = ChannelContext.getChannelContext(e.getChannel());
-    cs.connected();
-    ctx.sendUpstream(e);
-  }
+  private final IPCConnectionPool connectionPool;
 
   /**
    * Invoked when a child {@link Channel} was open. (e.g. a server channel accepted a connection)
@@ -50,16 +40,45 @@ public class IPCSessionManagerServer extends SimpleChannelHandler {
     ctx.sendUpstream(e);
   }
 
+  /**
+   * Invoked when a {@link Channel} is open, bound to a local address, and connected to a remote address.
+   */
+  @Override
+  public void channelConnected(final ChannelHandlerContext ctx, final ChannelStateEvent e) throws Exception {
+    ChannelContext cs = ChannelContext.getChannelContext(e.getChannel());
+    cs.connected();
+    ctx.sendUpstream(e);
+  }
+
+  /**
+   * Invoked when something was written into a {@link Channel}.
+   */
+  @Override
+  public void writeComplete(final ChannelHandlerContext ctx, final WriteCompletionEvent e) throws Exception {
+    ChannelContext cs = ChannelContext.getChannelContext(e.getChannel());
+    cs.updateLastIOTimestamp();
+    ctx.sendUpstream(e);
+  }
+
+  /**
+   * Invoked when {@link Channel#write(Object)} is called.
+   */
+  @Override
+  public void writeRequested(final ChannelHandlerContext ctx, final MessageEvent e) throws Exception {
+    ChannelContext.getChannelContext(e.getChannel()).recordWriteFuture(e);
+    ctx.sendDownstream(e);
+  }
+
   @Override
   public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e) {
-    final Channel ch = e.getChannel();
+    Channel ch = e.getChannel();
     final TransportMessage tm = (TransportMessage) e.getMessage();
-    final ChannelContext att = ChannelContext.getChannelContext(ch);
-    final ChannelContext.RegisteredChannelContext ecc = att.getRegisteredChannelContext();
+    ChannelContext att = ChannelContext.getChannelContext(ch);
+    ChannelContext.RegisteredChannelContext ecc = att.getRegisteredChannelContext();
 
     if (ecc == null) {
       // connect request sent from other workers
-      final Integer remoteID = IPCUtils.checkConnectTM(tm);
+      Integer remoteID = IPCUtils.checkConnectTM(tm);
       if (remoteID != null) {
         ch.write(connectionPool.getMyIDAsTM()).awaitUninterruptibly(); // await to finish channel registering
         connectionPool.registerChannel(remoteID, ch);
@@ -77,24 +96,5 @@ public class IPCSessionManagerServer extends SimpleChannelHandler {
       }
       ctx.sendUpstream(e);
     }
-  }
-
-  /**
-   * Invoked when something was written into a {@link Channel}.
-   */
-  @Override
-  public void writeComplete(final ChannelHandlerContext ctx, final WriteCompletionEvent e) throws Exception {
-    final ChannelContext cs = ChannelContext.getChannelContext(e.getChannel());
-    cs.updateLastIOTimestamp();
-    ctx.sendUpstream(e);
-  }
-
-  /**
-   * Invoked when {@link Channel#write(Object)} is called.
-   */
-  @Override
-  public void writeRequested(final ChannelHandlerContext ctx, final MessageEvent e) throws Exception {
-    ChannelContext.getChannelContext(e.getChannel()).recordWriteFuture(e);
-    ctx.sendDownstream(e);
   }
 }

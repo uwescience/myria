@@ -31,14 +31,9 @@ public final class Filter extends Operator {
     this.child = child;
   }
 
-  @Override
-  protected void cleanup() throws DbException {
-    // nothing to clean
-  }
-
   /**
-   * Iterates over tuples from the child operator, applying the predicate to them and returning those that pass the
-   * predicate (i.e. for which the Predicate.filter() returns true.)
+   * AbstractDbIterator.readNext implementation. Iterates over tuples from the child operator, applying the predicate to
+   * them and returning those that pass the predicate (i.e. for which the Predicate.filter() returns true.)
    * 
    * @return The next tuple that passes the filter, or null if there are no more tuples
    * @see Predicate#filter
@@ -59,27 +54,9 @@ public final class Filter extends Operator {
   }
 
   @Override
-  public TupleBatch fetchNextReady() throws DbException {
-    TupleBatch tmp = null;
-    if (child.nextReady()) {
-      tmp = child.next();
-      tmp = tmp.filter(fieldIdx, op, operand);
-      if (tmp.numTuples() > 0) {
-        return tmp;
-      }
-    }
-    return null;
-  }
-
-  @Override
   public Operator[] getChildren() {
     return new Operator[] { child };
   }
-
-  // @Override
-  // public void rewind() throws DbException {
-  // child.rewind();
-  // }
 
   @Override
   public Schema getSchema() {
@@ -91,9 +68,32 @@ public final class Filter extends Operator {
     // need no init
   }
 
+  // @Override
+  // public void rewind() throws DbException {
+  // child.rewind();
+  // }
+
   @Override
   public void setChildren(final Operator[] children) {
     child = children[0];
+  }
+
+  @Override
+  protected void cleanup() throws DbException {
+    // nothing to clean
+  }
+
+  @Override
+  public TupleBatch fetchNextReady() throws DbException {
+    TupleBatch tmp = null;
+    if (child.nextReady()) {
+      tmp = child.next();
+      tmp = tmp.filter(fieldIdx, op, operand);
+      if (tmp.numTuples() > 0) {
+        return tmp;
+      }
+    }
+    return null;
   }
 
 }

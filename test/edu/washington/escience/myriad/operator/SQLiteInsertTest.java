@@ -14,7 +14,6 @@ import org.junit.Test;
 
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteStatement;
-import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatchBuffer;
@@ -42,7 +41,7 @@ public class SQLiteInsertTest {
     tempFile.deleteOnExit();
 
     /* Create the data needed for the tests in this file. */
-    schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.STRING_TYPE));
+    schema = new Schema(new Type[] { Type.INT_TYPE, Type.STRING_TYPE });
     data = new TupleBatchBuffer(schema);
     /* Populate the TupleBatchBuffer. */
     final Random r = new Random();
@@ -55,21 +54,21 @@ public class SQLiteInsertTest {
   @Test
   public void test() throws Exception {
     try {
-      final ExecutorService myExecutor = Executors.newSingleThreadExecutor();
+      ExecutorService myExecutor = Executors.newSingleThreadExecutor();
       Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
 
-      final TupleSource source = new TupleSource(data);
-      final SQLiteInsert insert = new SQLiteInsert(source, "my_tuples", tempFile.getAbsolutePath(), myExecutor, true);
+      TupleSource source = new TupleSource(data);
+      SQLiteInsert insert = new SQLiteInsert(source, "my_tuples", tempFile.getAbsolutePath(), myExecutor, true);
       insert.open();
       while (insert.next() != null) {
       }
       insert.close();
 
-      final SQLiteConnection sqliteConnection = new SQLiteConnection(tempFile);
+      SQLiteConnection sqliteConnection = new SQLiteConnection(tempFile);
       sqliteConnection.open(false);
-      final SQLiteStatement statement = sqliteConnection.prepare("SELECT COUNT(*) FROM my_tuples;");
+      SQLiteStatement statement = sqliteConnection.prepare("SELECT COUNT(*) FROM my_tuples;");
       assertTrue(statement.step());
-      final int inserted = statement.columnInt(0);
+      int inserted = statement.columnInt(0);
       assertTrue(inserted == NUM_TUPLES);
     } finally {
       if (tempFile != null && tempFile.exists()) {

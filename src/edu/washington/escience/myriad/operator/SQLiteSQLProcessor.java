@@ -1,7 +1,6 @@
 package edu.washington.escience.myriad.operator;
 
 import java.util.Iterator;
-import java.util.Objects;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
@@ -16,16 +15,14 @@ public class SQLiteSQLProcessor extends Operator {
   private static final long serialVersionUID = 1L;
   private Iterator<TupleBatch> tuples;
   private final Schema schema;
+  private final String filename;
   private final String baseSQL;
-  private String databaseFilename;
+  private transient String dataDir;
 
-  public SQLiteSQLProcessor(final String filename, final String baseSQL, final Schema outputSchema,
-      final Operator[] children) {
-    Objects.requireNonNull(baseSQL);
-    Objects.requireNonNull(outputSchema);
+  public SQLiteSQLProcessor(final String filename, final String baseSQL, final Schema schema, final Operator[] children) {
     this.baseSQL = baseSQL;
-    schema = outputSchema;
-    databaseFilename = databaseFilename;
+    this.filename = filename;
+    this.schema = schema;
     this.children = children;
   }
 
@@ -46,7 +43,7 @@ public class SQLiteSQLProcessor extends Operator {
       checked = true;
     }
     if (tuples == null) {
-      tuples = SQLiteAccessMethod.tupleBatchIteratorFromQuery(databaseFilename, baseSQL, schema);
+      tuples = SQLiteAccessMethod.tupleBatchIteratorFromQuery(dataDir + "/" + filename, baseSQL, schema);
     }
     if (tuples.hasNext()) {
       return tuples.next();
@@ -74,15 +71,12 @@ public class SQLiteSQLProcessor extends Operator {
     this.children = children;
   }
 
+  public void setDataDir(final String dataDir) {
+    this.dataDir = dataDir;
+  }
+
   @Override
   public TupleBatch fetchNextReady() throws DbException {
     return fetchNext();
-  }
-
-  public void setPathToSQLiteDb(final String databaseFilename) throws DbException {
-    if (isOpen()) {
-      throw new DbException("Can't change the state of an opened operator.");
-    }
-    this.databaseFilename = databaseFilename;
   }
 }

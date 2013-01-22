@@ -15,101 +15,6 @@ import edu.washington.escience.myriad.systemtest.SystemTestBase.Tuple;
 
 public class TestUtils {
 
-  public static void assertEqualsToStringBuilder(final StringBuilder errorMessageHolder, final String currentEM,
-      final Object expected, final Object actual) {
-    if (expected == null) {
-      if (actual != null) {
-        errorMessageHolder.append(currentEM);
-        errorMessageHolder.append(": ");
-        errorMessageHolder.append("expected: <null>");
-        errorMessageHolder.append("but was: <");
-        errorMessageHolder.append(actual);
-        errorMessageHolder.append(">\n");
-      }
-    } else {
-      if (!expected.equals(actual)) {
-        errorMessageHolder.append(currentEM);
-        errorMessageHolder.append(": ");
-        errorMessageHolder.append("expected: <");
-        errorMessageHolder.append(expected);
-        errorMessageHolder.append(">");
-        errorMessageHolder.append("but was: <");
-        errorMessageHolder.append(actual);
-        errorMessageHolder.append(">\n");
-      }
-    }
-  }
-
-  public static void assertTupleBagEqual(final HashMap<Tuple, Integer> expectedResult,
-      final HashMap<Tuple, Integer> actualResult) {
-    final StringBuilder errorMessageHolder = new StringBuilder();
-    assertEqualsToStringBuilder(errorMessageHolder, "Number of unique tuples", expectedResult.size(), actualResult
-        .size());
-    final HashSet<Tuple> keySet = new HashSet<Tuple>();
-    keySet.addAll(expectedResult.keySet());
-    keySet.addAll(actualResult.keySet());
-    for (final Tuple k : keySet) {
-      Integer expected = expectedResult.get(k);
-      Integer actual = actualResult.get(k);
-      if (expected == null) {
-        expected = 0;
-      }
-      if (actual == null) {
-        actual = 0;
-      }
-      assertEqualsToStringBuilder(errorMessageHolder, "Tuple entry{" + k + "}", expected, actual);
-    }
-    if (errorMessageHolder.length() != 0) {
-      Assert.fail(errorMessageHolder.toString());
-    }
-  }
-
-  public static HashMap<Tuple, Integer> distinct(final TupleBatchBuffer content) {
-    final Iterator<List<Column<?>>> it = content.getAllAsRawColumn().iterator();
-    final HashMap<Tuple, Integer> expectedResults = new HashMap<Tuple, Integer>();
-    while (it.hasNext()) {
-      final List<Column<?>> columns = it.next();
-      final int numRow = columns.get(0).size();
-      final int numColumn = columns.size();
-
-      for (int i = 0; i < numRow; i++) {
-        final Tuple t = new Tuple(numColumn);
-        for (int j = 0; j < numColumn; j++) {
-          t.set(j, columns.get(j).get(i));
-        }
-        expectedResults.put(t, 1);
-      }
-    }
-    return expectedResults;
-
-  }
-
-  public static String intToString(final long v, final int length) {
-    final StringBuilder sb = new StringBuilder("" + v);
-    while (sb.length() < length) {
-      sb.insert(0, "0");
-    }
-    return sb.toString();
-  }
-
-  public static HashMap<Tuple, Integer> mergeBags(final List<HashMap<Tuple, Integer>> bags) {
-    final HashMap<Tuple, Integer> result = new HashMap<Tuple, Integer>();
-    result.putAll(bags.get(0));
-    for (int i = 1; i < bags.size(); i++) {
-      for (final Map.Entry<Tuple, Integer> e : bags.get(i).entrySet()) {
-        final Tuple t = e.getKey();
-        final Integer occ = e.getValue();
-        final Integer existingOcc = result.get(t);
-        if (existingOcc == null) {
-          result.put(t, occ);
-        } else {
-          result.put(t, occ + existingOcc);
-        }
-      }
-    }
-    return result;
-  }
-
   @SuppressWarnings("rawtypes")
   public static HashMap<Tuple, Integer> naturalJoin(final TupleBatchBuffer child1, final TupleBatchBuffer child2,
       final int child1JoinColumn, final int child2JoinColumn) {
@@ -121,8 +26,8 @@ public class TestUtils {
 
     int numChild1Column = 0;
     final HashMap<Tuple, Integer> result = new HashMap<Tuple, Integer>();
-    final List<List<Column<?>>> child1TBIt = child1.getAllAsRawColumn();
-    for (final List<Column<?>> child1RawData : child1TBIt) {
+    List<List<Column<?>>> child1TBIt = child1.getAllAsRawColumn();
+    for (List<Column<?>> child1RawData : child1TBIt) {
       final int numRow = child1RawData.get(0).size();
       final int numColumn = child1RawData.size();
       numChild1Column = numColumn;
@@ -148,7 +53,7 @@ public class TestUtils {
       }
     }
 
-    final Iterator<List<Column<?>>> child2TBIt = child2.getAllAsRawColumn().iterator();
+    Iterator<List<Column<?>>> child2TBIt = child2.getAllAsRawColumn().iterator();
     while (child2TBIt.hasNext()) {
       final List<Column<?>> child2Columns = child2TBIt.next();
       final int numRow = child2Columns.get(0).size();
@@ -184,24 +89,88 @@ public class TestUtils {
 
   }
 
-  /***/
-  public static String[] randomFixedLengthNumericString(final int min, final int max, final int size, final int length) {
+  public static HashMap<Tuple, Integer> distinct(final TupleBatchBuffer content) {
+    final Iterator<List<Column<?>>> it = content.getAllAsRawColumn().iterator();
+    final HashMap<Tuple, Integer> expectedResults = new HashMap<Tuple, Integer>();
+    while (it.hasNext()) {
+      final List<Column<?>> columns = it.next();
+      final int numRow = columns.get(0).size();
+      final int numColumn = columns.size();
 
-    final String[] result = new String[size];
-    final long[] intV = randomLong(min, max, size);
-
-    for (int i = 0; i < size; i++) {
-      result[i] = intToString(intV[i], length);
+      for (int i = 0; i < numRow; i++) {
+        final Tuple t = new Tuple(numColumn);
+        for (int j = 0; j < numColumn; j++) {
+          t.set(j, columns.get(j).get(i));
+        }
+        expectedResults.put(t, 1);
+      }
     }
-    return result;
+    return expectedResults;
+
   }
 
-  public static long[] randomLong(final long min, final long max, final int size) {
-    final long[] result = new long[size];
-    final Random r = new Random();
-    final long top = max - min + 1;
-    for (int i = 0; i < size; i++) {
-      result[i] = r.nextInt((int) top) + min;
+  public static void assertTupleBagEqual(HashMap<Tuple, Integer> expectedResult, HashMap<Tuple, Integer> actualResult) {
+    StringBuilder errorMessageHolder = new StringBuilder();
+    assertEqualsToStringBuilder(errorMessageHolder, "Number of unique tuples", expectedResult.size(), actualResult
+        .size());
+    HashSet<Tuple> keySet = new HashSet<Tuple>();
+    keySet.addAll(expectedResult.keySet());
+    keySet.addAll(actualResult.keySet());
+    for (Tuple k : keySet) {
+      Integer expected = expectedResult.get(k);
+      Integer actual = actualResult.get(k);
+      if (expected == null) {
+        expected = 0;
+      }
+      if (actual == null) {
+        actual = 0;
+      }
+      assertEqualsToStringBuilder(errorMessageHolder, "Tuple entry{" + k + "}", expected, actual);
+    }
+    if (errorMessageHolder.length() != 0) {
+      Assert.fail(errorMessageHolder.toString());
+    }
+  }
+
+  public static void assertEqualsToStringBuilder(StringBuilder errorMessageHolder, String currentEM, Object expected,
+      Object actual) {
+    if (expected == null) {
+      if (actual != null) {
+        errorMessageHolder.append(currentEM);
+        errorMessageHolder.append(": ");
+        errorMessageHolder.append("expected: <null>");
+        errorMessageHolder.append("but was: <");
+        errorMessageHolder.append(actual);
+        errorMessageHolder.append(">\n");
+      }
+    } else {
+      if (!expected.equals(actual)) {
+        errorMessageHolder.append(currentEM);
+        errorMessageHolder.append(": ");
+        errorMessageHolder.append("expected: <");
+        errorMessageHolder.append(expected);
+        errorMessageHolder.append(">");
+        errorMessageHolder.append("but was: <");
+        errorMessageHolder.append(actual);
+        errorMessageHolder.append(">\n");
+      }
+    }
+  }
+
+  public static HashMap<Tuple, Integer> mergeBags(List<HashMap<Tuple, Integer>> bags) {
+    HashMap<Tuple, Integer> result = new HashMap<Tuple, Integer>();
+    result.putAll(bags.get(0));
+    for (int i = 1; i < bags.size(); i++) {
+      for (Map.Entry<Tuple, Integer> e : bags.get(i).entrySet()) {
+        Tuple t = e.getKey();
+        Integer occ = e.getValue();
+        Integer existingOcc = result.get(t);
+        if (existingOcc == null) {
+          result.put(t, occ);
+        } else {
+          result.put(t, occ + existingOcc);
+        }
+      }
     }
     return result;
   }
@@ -246,6 +215,36 @@ public class TestUtils {
       }
     }
     return result;
+  }
+
+  public static long[] randomLong(final long min, final long max, final int size) {
+    final long[] result = new long[size];
+    final Random r = new Random();
+    final long top = max - min + 1;
+    for (int i = 0; i < size; i++) {
+      result[i] = r.nextInt((int) top) + min;
+    }
+    return result;
+  }
+
+  /***/
+  public static String[] randomFixedLengthNumericString(final int min, final int max, final int size, final int length) {
+
+    final String[] result = new String[size];
+    final long[] intV = randomLong(min, max, size);
+
+    for (int i = 0; i < size; i++) {
+      result[i] = intToString(intV[i], length);
+    }
+    return result;
+  }
+
+  public static String intToString(final long v, final int length) {
+    final StringBuilder sb = new StringBuilder("" + v);
+    while (sb.length() < length) {
+      sb.insert(0, "0");
+    }
+    return sb.toString();
   }
 
 }

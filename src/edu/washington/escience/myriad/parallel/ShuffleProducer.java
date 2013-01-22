@@ -26,7 +26,7 @@ public class ShuffleProducer extends Producer {
 
       final int numWorker = workerIDs.length;
       final Channel[] shuffleChannels = new Channel[numWorker];
-      final IPCConnectionPool connectionPool = getConnectionPool();
+      IPCConnectionPool connectionPool = getThisWorker().connectionPool;
       int index = 0;
       for (final int workerID : workerIDs) {
         shuffleChannels[index] = connectionPool.reserveLongTermConnection(workerID);
@@ -35,10 +35,10 @@ public class ShuffleProducer extends Producer {
       Schema thisSchema = null;
       thisSchema = getSchema();
 
-      final ExchangePairID operatorID = operatorIDs[0];
+      ExchangePairID operatorID = operatorIDs[0];
 
       try {
-        final TupleBatchBuffer[] buffers = new TupleBatchBuffer[numWorker];
+        TupleBatchBuffer[] buffers = new TupleBatchBuffer[numWorker];
         for (int i = 0; i < numWorker; i++) {
           buffers[i] = new TupleBatchBuffer(thisSchema);
         }
@@ -73,7 +73,7 @@ public class ShuffleProducer extends Producer {
       } catch (final DbException e) {
         e.printStackTrace();
       } finally {
-        for (final Channel ch : shuffleChannels) {
+        for (Channel ch : shuffleChannels) {
           connectionPool.releaseLongTermConnection(ch);
         }
       }
@@ -87,7 +87,7 @@ public class ShuffleProducer extends Producer {
   private transient WorkingThread runningThread;
   private final int[] workerIDs;
 
-  private final PartitionFunction<?, ?> partitionFunction;
+  private PartitionFunction<?, ?> partitionFunction;
 
   private Operator child;
 
@@ -114,11 +114,6 @@ public class ShuffleProducer extends Producer {
   }
 
   @Override
-  public TupleBatch fetchNextReady() throws DbException {
-    return fetchNext();
-  }
-
-  @Override
   public final Operator[] getChildren() {
     return new Operator[] { child };
   }
@@ -141,6 +136,15 @@ public class ShuffleProducer extends Producer {
   @Override
   public final void setChildren(final Operator[] children) {
     child = children[0];
+  }
+
+  public final void setPartitionFunction(final PartitionFunction<?, ?> pf) {
+    partitionFunction = pf;
+  }
+
+  @Override
+  public TupleBatch fetchNextReady() throws DbException {
+    return fetchNext();
   }
 
 }

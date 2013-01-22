@@ -18,10 +18,6 @@ public class DoNothingOperator extends Operator {
   }
 
   @Override
-  protected void cleanup() throws DbException {
-  }
-
-  @Override
   protected final TupleBatch fetchNext() throws DbException {
     if (children != null) {
       while (!eos()) {
@@ -32,12 +28,6 @@ public class DoNothingOperator extends Operator {
         }
       }
     }
-    return null;
-  }
-
-  @Override
-  public TupleBatch fetchNextReady() throws DbException {
-    // TODO Auto-generated method stub
     return null;
   }
 
@@ -58,6 +48,16 @@ public class DoNothingOperator extends Operator {
   @Override
   public final void setChildren(final Operator[] children) {
     this.children = children;
+  }
+
+  @Override
+  protected void cleanup() throws DbException {
+  }
+
+  @Override
+  public TupleBatch fetchNextReady() throws DbException {
+    // TODO Auto-generated method stub
+    return null;
   }
 
 }

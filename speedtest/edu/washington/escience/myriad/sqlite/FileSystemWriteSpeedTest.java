@@ -17,7 +17,7 @@ public class FileSystemWriteSpeedTest {
 
     final Random r = new Random();
     final File f = new File("/tmp/tmpfile");
-    final String[] strings = new String[NUM_TUPLES];
+    String[] strings = new String[NUM_TUPLES];
 
     /* Compute the strings first, so we just test writing speed. */
     for (int i = 0; i < NUM_TUPLES; i++) {
@@ -33,7 +33,7 @@ public class FileSystemWriteSpeedTest {
     fos.close();
 
     /* Print out stats. */
-    final double elapsed = (new Date().getTime() - begin.getTime()) / 1000.0;
+    double elapsed = (new Date().getTime() - begin.getTime()) / 1000.0;
     System.out.printf("\t%.2f seconds in total (%.0f tuples per second)\n", elapsed, NUM_TUPLES / elapsed);
   }
 }

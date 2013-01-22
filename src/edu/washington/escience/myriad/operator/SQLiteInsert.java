@@ -22,12 +22,12 @@ import edu.washington.escience.myriad.util.SQLiteUtils;
  * @author dhalperi
  * 
  */
-public final class SQLiteInsert extends RootOperator {
+public class SQLiteInsert extends RootOperator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** The SQLite Database that they will be inserted into. */
-  private String pathToSQLiteDb;
+  private final String pathToSQLiteDb;
   /** The name of the table the tuples should be inserted into. */
   private final String relationName;
   /** Whether to create the table or not. */
@@ -51,6 +51,7 @@ public final class SQLiteInsert extends RootOperator {
     super(child, executor);
     Objects.requireNonNull(child);
     Objects.requireNonNull(relationName);
+    Objects.requireNonNull(executor);
     this.pathToSQLiteDb = pathToSQLiteDb;
     this.relationName = relationName;
     createTable = false;
@@ -71,23 +72,45 @@ public final class SQLiteInsert extends RootOperator {
     super(child, executor);
     Objects.requireNonNull(child);
     Objects.requireNonNull(relationName);
+    Objects.requireNonNull(executor);
     this.pathToSQLiteDb = pathToSQLiteDb;
     this.relationName = relationName;
     this.createTable = createTable;
   }
 
   @Override
-  public void cleanup() {
+  public final void init() throws DbException {
+    File dbFile = new File(pathToSQLiteDb);
+
+    /* Try and create a new file. */
+    boolean created;
     try {
-      queue.stop(true).join();
-    } catch (final InterruptedException e) {
-      Thread.currentThread().interrupt();
+      created = dbFile.createNewFile();
+    } catch (IOException e) {
+      throw new DbException(e);
     }
+
+    /* Open a connection to that SQLite database. If creation succeeded, create a new table as well. */
+    queue = new SQLiteQueue(dbFile);
+    queue.start();
+    if (created || createTable) {
+      /* If succeeded, populate its schema. */
+      queue.execute(new SQLiteJob<Integer>() {
+        @Override
+        protected Integer job(final SQLiteConnection connection) throws SQLiteException {
+          connection.exec(SQLiteUtils.createStatementFromSchema(getSchema(), relationName));
+          return null;
+        }
+      });
+    }
+
+    /* Set up the insert statement. */
+    insertString = SQLiteUtils.insertStatementFromSchema(getSchema(), relationName);
   }
 
   @Override
   protected final void consumeTuples(final TupleBatch tupleBatch) throws DbException {
-    final SQLiteJob<Object> future = new SQLiteJob<Object>() {
+    SQLiteJob<Object> future = new SQLiteJob<Object>() {
       @Override
       protected Object job(final SQLiteConnection sqliteConnection) throws SQLiteException {
         /* BEGIN TRANSACTION */
@@ -110,52 +133,22 @@ public final class SQLiteInsert extends RootOperator {
     try {
       future.get();
       queue.flush();
-    } catch (final InterruptedException e) {
+    } catch (InterruptedException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
-    } catch (final ExecutionException e) {
+    } catch (ExecutionException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
     }
   }
 
   @Override
-  public void init() throws DbException {
-    final File dbFile = new File(pathToSQLiteDb);
-
-    /* Try and create a new file. */
-    boolean created;
+  public final void cleanup() {
     try {
-      created = dbFile.createNewFile();
-    } catch (final IOException e) {
-      throw new DbException(e);
+      queue.stop(true).join();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
     }
-
-    /* Open a connection to that SQLite database. If creation succeeded, create a new table as well. */
-    queue = new SQLiteQueue(dbFile);
-    queue.start();
-    if (created || createTable) {
-      /* If succeeded, populate its schema. */
-      queue.execute(new SQLiteJob<Integer>() {
-        @Override
-        protected Integer job(final SQLiteConnection connection) throws SQLiteException {
-          connection.exec(SQLiteUtils.createStatementFromSchema(getSchema(), relationName));
-          return null;
-        }
-      });
-    }
-
-    /* Set up the insert statement. */
-    insertString = SQLiteUtils.insertStatementFromSchema(getSchema(), relationName);
-  }
-
-  /**
-   * Needed for Worker.localizeQueryPlan.
-   * 
-   * @param pathToSQLiteDb the path to the database.
-   */
-  public void setPathToSQLiteDb(final String pathToSQLiteDb) {
-    this.pathToSQLiteDb = pathToSQLiteDb;
   }
 
 }

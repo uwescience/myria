@@ -23,118 +23,8 @@ public class ConditionCloseFuture implements ChannelFuture {
   private volatile boolean condition = false;
   private final Object conditionSetLock = new Object();
 
-  private final ConcurrentHashMap<ChannelFutureListener, ChannelFutureListener> listeners =
-      new ConcurrentHashMap<ChannelFutureListener, ChannelFutureListener>();
-
   public ConditionCloseFuture(final Channel channel) {
     this.channel = channel;
-  }
-
-  @Override
-  public void addListener(final ChannelFutureListener listener) {
-    synchronized (conditionSetLock) {
-      if (!conditionSetFlag) {
-        listeners.put(listener, listener);
-        return;
-      }
-    }
-    if (conditionSetFlag) {
-      if (condition) {
-        channel.getCloseFuture().addListener(listener);
-      } else {
-        try {
-          listener.operationComplete(this);
-        } catch (final Throwable t) {
-          t.printStackTrace();
-        }
-      }
-    }
-  }
-
-  @Override
-  public ChannelFuture await() throws InterruptedException {
-    if (Thread.interrupted()) {
-      throw new InterruptedException();
-    }
-    waitForConditionSet(-1, -1);
-    if (condition) {
-      channel.getCloseFuture().await();
-    }
-    return this;
-  }
-
-  @Override
-  public boolean await(final long timeoutMillis) throws InterruptedException {
-    return this.await(timeoutMillis, MILLISECONDS);
-  }
-
-  @Override
-  public boolean await(final long timeout, final TimeUnit unit) throws InterruptedException {
-
-    final long nano = unit.toNanos(timeout);
-    final long milli = nano / 1000000;
-    final int nanoRemain = (int) (nano - milli * 1000000);
-    final long remain = nano - waitForConditionSet(milli, nanoRemain);
-
-    if (conditionSetFlag) {
-      if (condition) {
-        return channel.getCloseFuture().await(remain, TimeUnit.NANOSECONDS);
-      } else {
-        return true;
-      }
-    } else {
-      return false;
-    }
-  }
-
-  @Override
-  public ChannelFuture awaitUninterruptibly() {
-    waitForConditionSetUninterruptibly(-1, -1);
-    if (condition) {
-      channel.getCloseFuture().awaitUninterruptibly();
-    }
-    return this;
-  }
-
-  @Override
-  public boolean awaitUninterruptibly(final long timeoutMillis) {
-    return this.awaitUninterruptibly(timeoutMillis, MILLISECONDS);
-  }
-
-  @Override
-  public boolean awaitUninterruptibly(final long timeout, final TimeUnit unit) {
-    final long nano = unit.toNanos(timeout);
-    final long milli = nano / 1000000;
-    final int nanoRemain = (int) (nano - milli * 1000000);
-    final long remain = nano - waitForConditionSetUninterruptibly(milli, nanoRemain);
-
-    if (conditionSetFlag) {
-      if (condition) {
-        return channel.getCloseFuture().awaitUninterruptibly(remain, TimeUnit.NANOSECONDS);
-      } else {
-        return true;
-      }
-    } else {
-      return false;
-    }
-  }
-
-  @Override
-  public boolean cancel() {
-    return channel.getCloseFuture().cancel();
-  }
-
-  @Override
-  public Throwable getCause() {
-    if (!conditionSetFlag) {
-      return null;
-    } else {
-      if (condition) {
-        return channel.getCloseFuture().getCause();
-      } else {
-        return null;
-      }
-    }
   }
 
   @Override
@@ -142,16 +32,18 @@ public class ConditionCloseFuture implements ChannelFuture {
     return channel;
   }
 
-  @Override
-  public boolean isCancelled() {
-    if (!conditionSetFlag) {
-      return false;
-    } else {
+  public void setCondition(final boolean conditionSatisfied) {
+    synchronized (conditionSetLock) {
+      condition = conditionSatisfied;
+      conditionSetFlag = true;
       if (condition) {
-        return channel.getCloseFuture().isCancelled();
+        for (ChannelFutureListener l : listeners.keySet()) {
+          channel.getCloseFuture().addListener(l);
+        }
       } else {
-        return false;
+        listeners.clear();
       }
+      conditionSetLock.notifyAll();
     }
   }
 
@@ -169,6 +61,19 @@ public class ConditionCloseFuture implements ChannelFuture {
   }
 
   @Override
+  public boolean isCancelled() {
+    if (!conditionSetFlag) {
+      return false;
+    } else {
+      if (condition) {
+        return channel.getCloseFuture().isCancelled();
+      } else {
+        return false;
+      }
+    }
+  }
+
+  @Override
   public boolean isSuccess() {
     if (!conditionSetFlag) {
       return false;
@@ -177,6 +82,63 @@ public class ConditionCloseFuture implements ChannelFuture {
         return channel.getCloseFuture().isSuccess();
       } else {
         return true;
+      }
+    }
+  }
+
+  @Override
+  public Throwable getCause() {
+    if (!conditionSetFlag) {
+      return null;
+    } else {
+      if (condition) {
+        return channel.getCloseFuture().getCause();
+      } else {
+        return null;
+      }
+    }
+  }
+
+  @Override
+  public boolean cancel() {
+    return channel.getCloseFuture().cancel();
+  }
+
+  @Override
+  public boolean setSuccess() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public boolean setFailure(final Throwable cause) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public boolean setProgress(final long amount, final long current, final long total) {
+    throw new UnsupportedOperationException();
+  }
+
+  private final ConcurrentHashMap<ChannelFutureListener, ChannelFutureListener> listeners =
+      new ConcurrentHashMap<ChannelFutureListener, ChannelFutureListener>();
+
+  @Override
+  public void addListener(final ChannelFutureListener listener) {
+    synchronized (conditionSetLock) {
+      if (!conditionSetFlag) {
+        listeners.put(listener, listener);
+        return;
+      }
+    }
+    if (conditionSetFlag) {
+      if (condition) {
+        channel.getCloseFuture().addListener(listener);
+      } else {
+        try {
+          listener.operationComplete(this);
+        } catch (Throwable t) {
+          t.printStackTrace();
+        }
       }
     }
   }
@@ -200,36 +162,6 @@ public class ConditionCloseFuture implements ChannelFuture {
     throw new UnsupportedOperationException();
   }
 
-  public void setCondition(final boolean conditionSatisfied) {
-    synchronized (conditionSetLock) {
-      condition = conditionSatisfied;
-      conditionSetFlag = true;
-      if (condition) {
-        for (final ChannelFutureListener l : listeners.keySet()) {
-          channel.getCloseFuture().addListener(l);
-        }
-      } else {
-        listeners.clear();
-      }
-      conditionSetLock.notifyAll();
-    }
-  }
-
-  @Override
-  public boolean setFailure(final Throwable cause) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public boolean setProgress(final long amount, final long current, final long total) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public boolean setSuccess() {
-    throw new UnsupportedOperationException();
-  }
-
   @Override
   public ChannelFuture sync() throws InterruptedException {
     throw new UnsupportedOperationException();
@@ -240,8 +172,20 @@ public class ConditionCloseFuture implements ChannelFuture {
     throw new UnsupportedOperationException();
   }
 
+  @Override
+  public ChannelFuture await() throws InterruptedException {
+    if (Thread.interrupted()) {
+      throw new InterruptedException();
+    }
+    waitForConditionSet(-1, -1);
+    if (condition) {
+      channel.getCloseFuture().await();
+    }
+    return this;
+  }
+
   private long waitForConditionSet(final long timeoutMS, final int nanos) throws InterruptedException {
-    final long start = System.nanoTime();
+    long start = System.nanoTime();
     synchronized (conditionSetLock) {
       if (!conditionSetFlag) {
         if (timeoutMS >= 0) {
@@ -256,7 +200,7 @@ public class ConditionCloseFuture implements ChannelFuture {
 
   private long waitForConditionSetUninterruptibly(final long timeoutMS, final int nanos) {
     boolean interrupted = false;
-    final long start = System.nanoTime();
+    long start = System.nanoTime();
     synchronized (conditionSetLock) {
       if (!conditionSetFlag) {
         try {
@@ -265,7 +209,7 @@ public class ConditionCloseFuture implements ChannelFuture {
           } else {
             conditionSetLock.wait();
           }
-        } catch (final InterruptedException e) {
+        } catch (InterruptedException e) {
           interrupted = true;
         }
       }
@@ -274,6 +218,62 @@ public class ConditionCloseFuture implements ChannelFuture {
       Thread.currentThread().interrupt();
     }
     return System.nanoTime() - start;
+  }
+
+  @Override
+  public ChannelFuture awaitUninterruptibly() {
+    waitForConditionSetUninterruptibly(-1, -1);
+    if (condition) {
+      channel.getCloseFuture().awaitUninterruptibly();
+    }
+    return this;
+  }
+
+  @Override
+  public boolean await(final long timeout, final TimeUnit unit) throws InterruptedException {
+
+    long nano = unit.toNanos(timeout);
+    long milli = nano / 1000000;
+    int nanoRemain = (int) (nano - milli * 1000000);
+    long remain = nano - waitForConditionSet(milli, nanoRemain);
+
+    if (conditionSetFlag) {
+      if (condition) {
+        return channel.getCloseFuture().await(remain, TimeUnit.NANOSECONDS);
+      } else {
+        return true;
+      }
+    } else {
+      return false;
+    }
+  }
+
+  @Override
+  public boolean await(final long timeoutMillis) throws InterruptedException {
+    return this.await(timeoutMillis, MILLISECONDS);
+  }
+
+  @Override
+  public boolean awaitUninterruptibly(final long timeout, final TimeUnit unit) {
+    long nano = unit.toNanos(timeout);
+    long milli = nano / 1000000;
+    int nanoRemain = (int) (nano - milli * 1000000);
+    long remain = nano - waitForConditionSetUninterruptibly(milli, nanoRemain);
+
+    if (conditionSetFlag) {
+      if (condition) {
+        return channel.getCloseFuture().awaitUninterruptibly(remain, TimeUnit.NANOSECONDS);
+      } else {
+        return true;
+      }
+    } else {
+      return false;
+    }
+  }
+
+  @Override
+  public boolean awaitUninterruptibly(final long timeoutMillis) {
+    return this.awaitUninterruptibly(timeoutMillis, MILLISECONDS);
   }
 
 }

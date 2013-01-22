@@ -12,7 +12,7 @@ public abstract class Producer extends Operator {
    * The worker this operator is located at.
    * 
    */
-  private transient IPCConnectionPool connectionPool;
+  private transient Worker thisWorker;
 
   protected final ExchangePairID[] operatorIDs;
 
@@ -24,11 +24,11 @@ public abstract class Producer extends Operator {
     operatorIDs = oIDs;
   }
 
-  public IPCConnectionPool getConnectionPool() {
-    return connectionPool;
+  public Worker getThisWorker() {
+    return thisWorker;
   }
 
-  public void setConnectionPool(final IPCConnectionPool connectionPool) {
-    this.connectionPool = connectionPool;
+  public void setThisWorker(final Worker thisWorker) {
+    this.thisWorker = thisWorker;
   }
 }

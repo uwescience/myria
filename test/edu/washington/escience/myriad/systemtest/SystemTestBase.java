@@ -21,7 +21,6 @@ import org.slf4j.LoggerFactory;
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
-import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -39,6 +38,9 @@ import edu.washington.escience.myriad.util.SQLiteUtils;
 import edu.washington.escience.myriad.util.TestUtils;
 
 public class SystemTestBase {
+  /** The logger for this class. Defaults to myriad level, but could be set to a finer granularity if needed. */
+  protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger("edu.washington.escience.myriad");
+
   @SuppressWarnings({ "rawtypes", "unchecked" })
   public static class Tuple implements Comparable<Tuple> {
     Comparable[] values;
@@ -93,9 +95,9 @@ public class SystemTestBase {
 
     @Override
     public String toString() {
-      final StringBuilder sb = new StringBuilder("(");
+      StringBuilder sb = new StringBuilder("(");
       for (int i = 0; i < values.length - 1; i++) {
-        final Comparable<?> v = values[i];
+        Comparable<?> v = values[i];
         sb.append(v + ", ");
       }
       sb.append(values[values.length - 1] + ")");
@@ -103,11 +105,8 @@ public class SystemTestBase {
     }
   }
 
-  /** The logger for this class. Defaults to myriad level, but could be set to a finer granularity if needed. */
-  protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger("edu.washington.escience.myriad");
-
-  public static final Schema JOIN_INPUT_SCHEMA = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE),
-      ImmutableList.of("id", "name"));
+  public static final Schema JOIN_INPUT_SCHEMA = new Schema(new Type[] { Type.LONG_TYPE, Type.STRING_TYPE },
+      new String[] { "id", "name" });
   public static final String JOIN_TEST_TABLE_1 = "testtable1";
   public static final String JOIN_TEST_TABLE_2 = "testtable2";
 
@@ -124,17 +123,12 @@ public class SystemTestBase {
 
   public static String workerTestBaseFolder;
 
-  public static void createTable(final int workerID, final String tableName, final String sqlSchemaString)
-      throws IOException, CatalogException {
-    createTable(getAbsoluteDBFile(workerID).getAbsolutePath(), tableName, sqlSchemaString);
-  }
-
   public static void createTable(final String dbFileAbsolutePath, final String tableName, final String sqlSchemaString)
       throws IOException, CatalogException {
     SQLiteConnection sqliteConnection = null;
     SQLiteStatement statement = null;
     try {
-      final File f = new File(dbFileAbsolutePath);
+      File f = new File(dbFileAbsolutePath);
 
       if (!f.getParentFile().exists()) {
         f.getParentFile().mkdirs();
@@ -155,7 +149,7 @@ public class SystemTestBase {
       statement.step();
       statement.reset();
 
-    } catch (final SQLiteException e) {
+    } catch (SQLiteException e) {
       throw new CatalogException(e);
     } finally {
       if (statement != null) {
@@ -167,10 +161,19 @@ public class SystemTestBase {
     }
   }
 
-  public static File getAbsoluteDBFile(final int workerID) throws CatalogException {
-    final String workerDir = FilenameUtils.concat(workerTestBaseFolder, "worker_" + workerID);
-    final WorkerCatalog wc = WorkerCatalog.open(FilenameUtils.concat(workerDir, "worker.catalog"));
-    final File ret = new File(wc.getConfigurationValue("worker.data.sqlite.db"));
+  public static void createTable(final int workerID, final String dbFilename, final String tableName,
+      final String sqlSchemaString) throws IOException, CatalogException {
+    createTable(getAbsoluteDBFile(workerID, dbFilename).getAbsolutePath(), tableName, sqlSchemaString);
+  }
+
+  public static File getAbsoluteDBFile(final int workerID, String dbFilename) throws CatalogException {
+    if (!dbFilename.endsWith(".db")) {
+      dbFilename = dbFilename + ".db";
+    }
+    // return new File(workerTestBaseFolder + File.separator + "worker_" + workerID + File.separator + dbFilename);
+    String workerDir = FilenameUtils.concat(workerTestBaseFolder, "worker_" + workerID);
+    WorkerCatalog wc = WorkerCatalog.open(FilenameUtils.concat(workerDir, "worker.catalog"));
+    File ret = new File(FilenameUtils.concat(wc.getConfigurationValue("worker.data.sqlite.dir"), dbFilename));
     wc.close();
     return ret;
   }
@@ -178,24 +181,19 @@ public class SystemTestBase {
   @AfterClass
   public static void globalCleanup() throws IOException {
     if (Server.runningInstance != null) {
-      Server.runningInstance.shutdown();
+      Server.runningInstance.cleanup();
     }
 
-    for (final Process p : workerProcess) {
+    for (Process p : workerProcess) {
       p.destroy();
-      try {
-        p.waitFor();
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-      }
     }
 
-    for (final Thread t : workerStdoutReader) {
+    for (Thread t : workerStdoutReader) {
       try {
         if (t != null) {
           t.join();
         }
-      } catch (final InterruptedException e) {
+      } catch (InterruptedException e) {
         e.printStackTrace();
       }
     }
@@ -216,27 +214,23 @@ public class SystemTestBase {
           Thread.currentThread().interrupt();
         }
       }
-    }
-    if (!finishClean) {
-      LOGGER.warn("did not finish clean!");
+
     }
   }
 
   @BeforeClass
-  public static void globalInit() throws IOException, InterruptedException {
+  public static void globalInit() throws IOException {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
     Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
 
-    Server.runningInstance = null;
-
-    final Path tempFilePath = Files.createTempDirectory(Server.SYSTEM_NAME + "_systemtests");
+    Path tempFilePath = Files.createTempDirectory(Server.SYSTEM_NAME + "_systemtests");
     workerTestBaseFolder = tempFilePath.toFile().getAbsolutePath();
     CatalogMaker.makeTwoNodeLocalParallelCatalog(workerTestBaseFolder);
 
     if (!AvailablePortFinder.available(MASTER_PORT)) {
       throw new RuntimeException("Unable to start master, port " + MASTER_PORT + " is taken");
     }
-    for (final int port : WORKER_PORT) {
+    for (int port : WORKER_PORT) {
       if (!AvailablePortFinder.available(port)) {
         throw new RuntimeException("Unable to start worker, port " + port + " is taken");
       }
@@ -248,22 +242,28 @@ public class SystemTestBase {
 
   public static void insert(final int workerID, final String tableName, final Schema schema, final TupleBatch data)
       throws CatalogException {
-    final String insertTemplate = SQLiteUtils.insertStatementFromSchema(schema, tableName);
-    SQLiteAccessMethod.tupleBatchInsert(getAbsoluteDBFile(workerID).getAbsolutePath(), insertTemplate, data);
+    String insertTemplate = SQLiteUtils.insertStatementFromSchema(schema, tableName);
+    SQLiteAccessMethod.tupleBatchInsert(getAbsoluteDBFile(workerID, tableName).getAbsolutePath(), insertTemplate, data);
+  }
+
+  public static void insertWithBothNames(int workerID, String tableName, String dbName, Schema schema, TupleBatch data)
+      throws CatalogException {
+    String insertTemplate = SQLiteUtils.insertStatementFromSchema(schema, tableName);
+    SQLiteAccessMethod.tupleBatchInsert(getAbsoluteDBFile(workerID, dbName).getAbsolutePath(), insertTemplate, data);
   }
 
   public static HashMap<Tuple, Integer> simpleRandomJoinTestBase() throws CatalogException, IOException {
-    createTable(WORKER_ID[0], JOIN_TEST_TABLE_1, "id long, name varchar(20)"); // worker 1 partition
-                                                                               // of
+    createTable(WORKER_ID[0], JOIN_TEST_TABLE_1, JOIN_TEST_TABLE_1, "id long, name varchar(20)"); // worker 1 partition
+                                                                                                  // of
     // table1
-    createTable(WORKER_ID[0], JOIN_TEST_TABLE_2, "id long, name varchar(20)"); // worker 1 partition
-                                                                               // of
+    createTable(WORKER_ID[0], JOIN_TEST_TABLE_2, JOIN_TEST_TABLE_2, "id long, name varchar(20)"); // worker 1 partition
+                                                                                                  // of
     // table2
-    createTable(WORKER_ID[1], JOIN_TEST_TABLE_1, "id long, name varchar(20)");// worker 2 partition
-                                                                              // of
+    createTable(WORKER_ID[1], JOIN_TEST_TABLE_1, JOIN_TEST_TABLE_1, "id long, name varchar(20)");// worker 2 partition
+                                                                                                 // of
     // table1
-    createTable(WORKER_ID[1], JOIN_TEST_TABLE_2, "id long, name varchar(20)");// worker 2 partition
-                                                                              // of
+    createTable(WORKER_ID[1], JOIN_TEST_TABLE_2, JOIN_TEST_TABLE_2, "id long, name varchar(20)");// worker 2 partition
+                                                                                                 // of
     // table2
 
     final String[] tbl1NamesWorker1 = TestUtils.randomFixedLengthNumericString(1000, 2000, 2, 20);
@@ -341,9 +341,9 @@ public class SystemTestBase {
       @Override
       public void run() {
         try {
-          final String catalogFileName = FilenameUtils.concat(workerTestBaseFolder, "master.catalog");
+          String catalogFileName = FilenameUtils.concat(workerTestBaseFolder, "master.catalog");
           Server.main(new String[] { catalogFileName });
-        } catch (final IOException e) {
+        } catch (IOException e) {
           throw new RuntimeException(e);
         }
       }
@@ -357,8 +357,8 @@ public class SystemTestBase {
   static void startWorkers() throws IOException {
     int workerCount = 0;
     for (int i = 0; i < WORKER_ID.length; i++) {
-      final int workerID = WORKER_ID[i];
-      final String workingDir = FilenameUtils.concat(workerTestBaseFolder, "worker_" + workerID);
+      int workerID = WORKER_ID[i];
+      String workingDir = FilenameUtils.concat(workerTestBaseFolder, "worker_" + workerID);
 
       final String[] workerClasspath = EclipseClasspathReader.readEclipseClasspath(new File(".classpath"));
       final ProcessBuilder pb =
@@ -394,25 +394,25 @@ public class SystemTestBase {
           try {
             workerProcess[wc] = pb.start();
             writeProcessOutput(workerProcess[wc]);
-          } catch (final Exception e) {
+          } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
           }
         }
 
-        void writeProcessOutput(final Process process) throws Exception {
+        void writeProcessOutput(Process process) throws Exception {
 
-          final InputStreamReader tempReader = new InputStreamReader(new BufferedInputStream(process.getInputStream()));
-          final BufferedReader reader = new BufferedReader(tempReader);
+          InputStreamReader tempReader = new InputStreamReader(new BufferedInputStream(process.getInputStream()));
+          BufferedReader reader = new BufferedReader(tempReader);
           try {
             while (true) {
-              final String line = reader.readLine();
+              String line = reader.readLine();
               if (line == null) {
                 break;
               }
-              LOGGER.info("localhost:" + WORKER_PORT[myWorkerIdx] + "$ " + line);
+              System.out.println("localhost:" + WORKER_PORT[myWorkerIdx] + "$ " + line);
             }
-          } catch (final IOException e) {
+          } catch (IOException e) {
             // remote has shutdown. Not an exception.
           }
         }
@@ -423,7 +423,7 @@ public class SystemTestBase {
       ++workerCount;
 
       try {
-        // sleep 1000 milliseconds.
+        // sleep 100 milliseconds.
         // yield the CPU so that the worker processes can be
         Thread.sleep(1000);
       } catch (final InterruptedException e) {
@@ -432,4 +432,5 @@ public class SystemTestBase {
       }
     }
   }
+
 }

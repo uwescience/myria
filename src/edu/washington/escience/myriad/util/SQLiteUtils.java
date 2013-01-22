@@ -2,8 +2,6 @@ package edu.washington.escience.myriad.util;
 
 import org.apache.commons.lang3.StringUtils;
 
-import com.google.common.collect.ImmutableList;
-
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
@@ -14,36 +12,9 @@ import edu.washington.escience.myriad.accessmethod.SQLiteAccessMethod;
  * */
 public final class SQLiteUtils {
   /**
-   * Generates a SQLite CREATE TABLE statement for a table of the given Schema and name.
-   * 
-   * @param schema the Schema of the table to be created.
-   * @param name the name of the table to be created.
-   * @return a SQLite CREATE TABLE statement for a table of the given Schema and name.
-   */
-  public static String createStatementFromSchema(final Schema schema, final String name) {
-    final StringBuilder sb = new StringBuilder();
-    sb.append("CREATE TABLE ").append(name).append(" (");
-    for (int i = 0; i < schema.numFields(); ++i) {
-      if (i > 0) {
-        sb.append(", ");
-      }
-      sb.append(schema.getFieldName(i)).append(" ").append(typeToSQLiteType(schema.getFieldType(i)));
-    }
-    sb.append(");");
-    return sb.toString();
-  }
-
-  public static void insertIntoSQLite(final Schema inputSchema, final String tableName, final String dbFilePath,
-      final TupleBatch data) {
-
-    final ImmutableList<String> fieldNames = inputSchema.getFieldNames();
-    final String[] placeHolders = new String[inputSchema.numFields()];
-    for (int i = 0; i < inputSchema.numFields(); ++i) {
-      placeHolders[i] = "?";
-    }
-
-    SQLiteAccessMethod.tupleBatchInsert(dbFilePath, "insert into " + tableName + " ( "
-        + StringUtils.join(fieldNames, ',') + " ) values ( " + StringUtils.join(placeHolders, ',') + " )", data);
+   * util classes are not instantiable.
+   * */
+  private SQLiteUtils() {
   }
 
   /**
@@ -54,7 +25,7 @@ public final class SQLiteUtils {
    * @return a SQLite INSERT statement for a table of the given Schema and name.
    */
   public static String insertStatementFromSchema(final Schema schema, final String name) {
-    final StringBuilder sb = new StringBuilder();
+    StringBuilder sb = new StringBuilder();
     sb.append("INSERT INTO ").append(name).append(" (");
     sb.append(StringUtils.join(schema.getFieldNames(), ','));
     sb.append(") VALUES (");
@@ -63,6 +34,26 @@ public final class SQLiteUtils {
         sb.append(',');
       }
       sb.append('?');
+    }
+    sb.append(");");
+    return sb.toString();
+  }
+
+  /**
+   * Generates a SQLite CREATE TABLE statement for a table of the given Schema and name.
+   * 
+   * @param schema the Schema of the table to be created.
+   * @param name the name of the table to be created.
+   * @return a SQLite CREATE TABLE statement for a table of the given Schema and name.
+   */
+  public static String createStatementFromSchema(final Schema schema, final String name) {
+    StringBuilder sb = new StringBuilder();
+    sb.append("CREATE TABLE ").append(name).append(" (");
+    for (int i = 0; i < schema.numFields(); ++i) {
+      if (i > 0) {
+        sb.append(", ");
+      }
+      sb.append(schema.getFieldName(i)).append(" ").append(typeToSQLiteType(schema.getFieldType(i)));
     }
     sb.append(");");
     return sb.toString();
@@ -93,10 +84,17 @@ public final class SQLiteUtils {
     }
   }
 
-  /**
-   * util classes are not instantiable.
-   * */
-  private SQLiteUtils() {
+  public static void insertIntoSQLite(final Schema inputSchema, String tableName, String dbFilePath,
+      final TupleBatch data) {
+
+    final String[] fieldNames = inputSchema.getFieldNames();
+    final String[] placeHolders = new String[inputSchema.numFields()];
+    for (int i = 0; i < inputSchema.numFields(); ++i) {
+      placeHolders[i] = "?";
+    }
+
+    SQLiteAccessMethod.tupleBatchInsert(dbFilePath, "insert into " + tableName + " ( "
+        + StringUtils.join(fieldNames, ',') + " ) values ( " + StringUtils.join(placeHolders, ',') + " )", data);
   }
 
 }

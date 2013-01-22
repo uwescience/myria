@@ -8,8 +8,6 @@ import java.io.IOException;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableList;
-
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -31,35 +29,24 @@ public class TwitterSingleNodeJoinSpeedTest {
   /** Whether we were able to copy the data. */
   private static boolean successfulSetup = false;
 
-  @BeforeClass
-  public static void loadSpecificTestData() {
-    final File file = new File(DATASET_PATH);
-    if (!file.exists()) {
-      throw new RuntimeException("Unable to read " + DATASET_PATH
-          + ". Copy it from /projects/db7/dataset/twitter/speedtest .");
-    }
-    successfulSetup = true;
-  }
-
   @Test
   public void twitterSubsetJoinTest() throws DbException, CatalogException, IOException {
     assertTrue(successfulSetup);
 
     /* The Schema for the table we read from file. */
-    final ImmutableList<Type> table1Types = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
-    final ImmutableList<String> table1ColumnNames = ImmutableList.of("follower", "followee");
+    final Type[] table1Types = new Type[] { Type.LONG_TYPE, Type.LONG_TYPE };
+    final String[] table1ColumnNames = new String[] { "follower", "followee" };
     final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
+    /* The Schema for the join. */
 
     /* Read the data from the file. */
     final SQLiteQueryScan scan1 = new SQLiteQueryScan(DATASET_PATH, "select * from twitter_subset", tableSchema);
     final SQLiteQueryScan scan2 = new SQLiteQueryScan(DATASET_PATH, "select * from twitter_subset", tableSchema);
 
     /* The Schema for the join. */
-    /* The Schema for the join. */
-    final ImmutableList<Type> joinTypes =
-        ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE);
-    final ImmutableList<String> joinNames = ImmutableList.of("follower", "followee", "follower", "followee");
-    final Schema joinSchema = new Schema(joinTypes, joinNames);
+    final Type[] joinTypes = new Type[] { Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE };
+    final String[] joinColumnNames = new String[] { "follower", "followee", "follower", "followee" };
+    final Schema joinSchema = new Schema(joinTypes, joinColumnNames);
     // Join on SC1.followee=SC2.follower
     final LocalJoin localJoin = new LocalJoin(joinSchema, scan1, scan2, new int[] { 1 }, new int[] { 0 });
 
@@ -72,7 +59,7 @@ public class TwitterSingleNodeJoinSpeedTest {
     dupelim.open();
     long result = 0;
     while (!dupelim.eos()) {
-      final TupleBatch next = dupelim.next();
+      TupleBatch next = dupelim.next();
       if (next != null) {
         result += next.numTuples();
       }
@@ -86,9 +73,11 @@ public class TwitterSingleNodeJoinSpeedTest {
   public void twitterSubsetProjectingJoinTest() throws DbException, CatalogException, IOException {
     assertTrue(successfulSetup);
 
-    final ImmutableList<Type> table1Types = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
-    final ImmutableList<String> table1ColumnNames = ImmutableList.of("follower", "followee");
+    /* The Schema for the table we read from file. */
+    final Type[] table1Types = new Type[] { Type.LONG_TYPE, Type.LONG_TYPE };
+    final String[] table1ColumnNames = new String[] { "follower", "followee" };
     final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
+    /* The Schema for the join. */
 
     /* Read the data from the file. */
     final SQLiteQueryScan scan1 = new SQLiteQueryScan(DATASET_PATH, "select * from twitter_subset", tableSchema);
@@ -103,7 +92,7 @@ public class TwitterSingleNodeJoinSpeedTest {
     dupelim.open();
     long result = 0;
     while (!dupelim.eos()) {
-      final TupleBatch next = dupelim.next();
+      TupleBatch next = dupelim.next();
       if (next != null) {
         result += next.numTuples();
       }
@@ -113,5 +102,15 @@ public class TwitterSingleNodeJoinSpeedTest {
 
     /* Make sure the count matches the known result. */
     assertTrue(result == 3361461);
+  }
+
+  @BeforeClass
+  public static void loadSpecificTestData() {
+    File file = new File(DATASET_PATH);
+    if (!file.exists()) {
+      throw new RuntimeException("Unable to read " + DATASET_PATH
+          + ". Copy it from /projects/db7/dataset/twitter/speedtest .");
+    }
+    successfulSetup = true;
   }
 }

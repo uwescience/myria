@@ -4,21 +4,16 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
-import com.almworks.sqlite4java.SQLiteJob;
-import com.almworks.sqlite4java.SQLiteQueue;
 import com.almworks.sqlite4java.SQLiteStatement;
 
 import edu.washington.escience.myriad.Schema;
@@ -65,7 +60,7 @@ public final class Catalog {
     Objects.requireNonNull(description);
 
     /* if overwrite is false, error if the file exists. */
-    final File catalogFile = new File(filename);
+    File catalogFile = new File(filename);
     if (!overwrite && catalogFile.exists()) {
       throw new IOException(filename + " already exists");
     }
@@ -86,60 +81,76 @@ public final class Catalog {
     Objects.requireNonNull(description);
 
     /* Connect to the database. */
-    final SQLiteQueue queue = new SQLiteQueue(catalogFile).start();
+    final SQLiteConnection sqliteConnection = new SQLiteConnection(catalogFile);
     try {
-      queue.execute(new SQLiteJob<Object>() {
-
-        @Override
-        protected Object job(final SQLiteConnection sqliteConnection) throws SQLiteException, CatalogException {
-          /* Create all the tables in the Catalog. */
-          try {
-            sqliteConnection.exec("CREATE TABLE configuration (\n" + "    key STRING UNIQUE NOT NULL,\n"
-                + "    value STRING NOT NULL);");
-            sqliteConnection.exec("CREATE TABLE workers (\n" + "    worker_id INTEGER PRIMARY KEY ASC,\n"
-                + "    host_port STRING NOT NULL);");
-            sqliteConnection.exec("CREATE TABLE alive_workers (\n"
-                + "    worker_id INTEGER PRIMARY KEY ASC REFERENCES workers(worker_id));");
-            sqliteConnection.exec("CREATE TABLE masters (\n" + "    master_id INTEGER PRIMARY KEY ASC,\n"
-                + "    host_port STRING NOT NULL);");
-            sqliteConnection.exec("CREATE TABLE relations (\n" + "    relation_id INTEGER PRIMARY KEY ASC,\n"
-                + "    relation_name STRING NOT NULL UNIQUE);");
-            sqliteConnection.exec("CREATE TABLE relation_schema (\n"
-                + "    relation_id INTEGER NOT NULL REFERENCES relations(relation_id),\n"
-                + "    col_index INTEGER NOT NULL,\n" + "    col_name STRING,\n" + "    col_type STRING NOT NULL);");
-            sqliteConnection.exec("CREATE TABLE stored_relations (\n"
-                + "    stored_relation_id INTEGER PRIMARY KEY ASC,\n"
-                + "    relation_id INTEGER NOT NULL REFERENCES relation_metadata(relation_id),\n"
-                + "    num_shards INTEGER NOT NULL,\n" + "    partitioned STRING NOT NULL);");
-            sqliteConnection.exec("CREATE TABLE shards (\n"
-                + "    stored_relation_id INTEGER NOT NULL REFERENCES stored_relations(stored_relation_id),\n"
-                + "    shard_index INTEGER NOT NULL,\n"
-                + "    worker_id INTEGER NOT NULL REFERENCES workers(worker_id),\n" + "    location STRING NOT NULL);");
-          } catch (final SQLiteException e) {
-            LOGGER.error(e.toString());
-            throw new CatalogException("SQLiteException while creating new Catalog tables", e);
-          }
-
-          /* Populate what tables we can. */
-          try {
-            final SQLiteStatement statement =
-                sqliteConnection.prepare("INSERT INTO configuration (key, value) VALUES (?,?);", false);
-            statement.bind(1, "description");
-            statement.bind(2, description);
-            statement.step();
-            statement.dispose();
-          } catch (final SQLiteException e) {
-            LOGGER.error(e.toString());
-            throw new CatalogException("SQLiteException while populating new Catalog tables", e);
-          }
-          return null;
-        }
-      }).get();
-    } catch (InterruptedException | ExecutionException e) {
-      throw new CatalogException(e);
+      sqliteConnection.open();
+    } catch (SQLiteException e) {
+      LOGGER.error(e.toString());
+      throw new CatalogException("SQLiteException while creating the new Catalog", e);
     }
 
-    return new Catalog(queue);
+    /* Create all the tables in the Catalog. */
+    try {
+      /* @formatter:off */
+      sqliteConnection.exec(
+          "CREATE TABLE configuration (\n"
+        + "    key STRING UNIQUE NOT NULL,\n"
+        + "    value STRING NOT NULL);");
+      sqliteConnection.exec(
+          "CREATE TABLE workers (\n"
+        + "    worker_id INTEGER PRIMARY KEY ASC,\n"
+        + "    host_port STRING NOT NULL);");
+      sqliteConnection.exec(
+          "CREATE TABLE masters (\n"
+        + "    master_id INTEGER PRIMARY KEY ASC,\n"
+        + "    host_port STRING NOT NULL);");
+      sqliteConnection.exec(
+          "CREATE TABLE relations (\n"
+        + "    relation_id INTEGER PRIMARY KEY ASC,\n"
+        + "    relation_name STRING NOT NULL UNIQUE);");
+      sqliteConnection.exec(
+          "CREATE TABLE relation_schema (\n"
+        + "    relation_id INTEGER NOT NULL REFERENCES relations(relation_id),\n"
+        + "    col_index INTEGER NOT NULL,\n"
+        + "    col_name STRING,\n"
+        + "    col_type STRING NOT NULL);");
+      sqliteConnection.exec(
+          "CREATE TABLE stored_relations (\n"
+        + "    stored_relation_id INTEGER PRIMARY KEY ASC,\n"
+        + "    relation_id INTEGER NOT NULL REFERENCES relation_metadata(relation_id),\n"
+        + "    num_shards INTEGER NOT NULL,\n"
+        + "    partitioned STRING NOT NULL);");
+      sqliteConnection.exec(
+          "CREATE TABLE shards (\n"
+        + "    stored_relation_id INTEGER NOT NULL REFERENCES stored_relations(stored_relation_id),\n"
+        + "    shard_index INTEGER NOT NULL,\n"
+        + "    worker_id INTEGER NOT NULL REFERENCES workers(worker_id),\n"
+        + "    location STRING NOT NULL);");
+      /* @formatter:on*/
+    } catch (SQLiteException e) {
+      LOGGER.error(e.toString());
+      throw new CatalogException("SQLiteException while creating new Catalog tables", e);
+    }
+
+    /* Populate what tables we can. */
+    try {
+      SQLiteStatement statement =
+          sqliteConnection.prepare("INSERT INTO configuration (key, value) VALUES (?,?);", false);
+      statement.bind(1, "description");
+      statement.bind(2, description);
+      statement.step();
+      statement.dispose();
+    } catch (SQLiteException e) {
+      LOGGER.error(e.toString());
+      throw new CatalogException("SQLiteException while populating new Catalog tables", e);
+    }
+
+    try {
+      return new Catalog(sqliteConnection);
+    } catch (SQLiteException e) {
+      LOGGER.error(e.toString());
+      throw new CatalogException("SQLiteException while creating Catalog from SQLiteConnection", e);
+    }
   }
 
   /**
@@ -168,14 +179,22 @@ public final class Catalog {
   public static Catalog open(final String filename) throws FileNotFoundException, CatalogException {
     Objects.requireNonNull(filename);
 
-    /* Ensure the file does actually exist. */
-    final File catalogFile = new File(filename);
+    /* See if the file exists, and create it if not. */
+    File catalogFile = new File(filename);
     if (!catalogFile.exists()) {
       throw new FileNotFoundException(filename);
     }
 
     /* Connect to the database */
-    return new Catalog(new SQLiteQueue(catalogFile).start());
+    SQLiteConnection sqliteConnection = new SQLiteConnection(catalogFile);
+    try {
+      sqliteConnection.open(false);
+
+      return new Catalog(sqliteConnection);
+    } catch (SQLiteException e) {
+      LOGGER.error(e.toString());
+      throw new CatalogException(e);
+    }
   }
 
   /**
@@ -187,32 +206,20 @@ public final class Catalog {
   /** Is the Catalog closed? */
   private boolean isClosed = true;
 
-  /** SQLite queue confines all SQLite operations to the same thread. */
-  private final SQLiteQueue queue;
+  /** The connection to the SQLite database that stores the Catalog. */
+  private SQLiteConnection sqliteConnection;
 
   /**
    * Not publicly accessible.
    * 
-   * @param queue thread manager for the SQLite database that stores the Catalog.
-   * @throws CatalogException if there is an error turning on foreign keys or locking the database.
+   * @param sqliteConnection connection to the SQLite database that stores the Catalog.
+   * @throws SQLiteException if there is an error turning on foreign keys.
    */
-  private Catalog(final SQLiteQueue queue) throws CatalogException {
-    this.queue = queue;
+  private Catalog(final SQLiteConnection sqliteConnection) throws SQLiteException {
+    Objects.requireNonNull(sqliteConnection);
+    this.sqliteConnection = sqliteConnection;
     isClosed = false;
-    try {
-      queue.execute(new SQLiteJob<Object>() {
-        @Override
-        protected Object job(final SQLiteConnection sqliteConnection) throws SQLiteException {
-          sqliteConnection.exec("PRAGMA foreign_keys = ON;");
-          sqliteConnection.exec("PRAGMA locking_mode = EXCLUSIVE;");
-          sqliteConnection.exec("BEGIN EXCLUSIVE;");
-          sqliteConnection.exec("COMMIT;");
-          return null;
-        }
-      }).get();
-    } catch (InterruptedException | ExecutionException e) {
-      throw new CatalogException(e);
-    }
+    sqliteConnection.exec("PRAGMA foreign_keys = ON;");
   }
 
   /**
@@ -227,28 +234,18 @@ public final class Catalog {
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
     }
-
-    @SuppressWarnings("unused")
-    /* Just used to verify that hostPortString is legal */
-    final SocketInfo sockInfo = SocketInfo.valueOf(hostPortString);
-
-    /* Do the work */
     try {
-      queue.execute(new SQLiteJob<Object>() {
-        @Override
-        protected Object job(final SQLiteConnection sqliteConnection) throws SQLiteException {
-          final SQLiteStatement statement =
-              sqliteConnection.prepare("INSERT INTO masters(host_port) VALUES(?);", false);
-          statement.bind(1, hostPortString);
-          statement.step();
-          statement.dispose();
-          return null;
-        }
-      }).get();
-    } catch (InterruptedException | ExecutionException e) {
+      @SuppressWarnings("unused")
+      /* Just used to verify that hostPortString is legal */
+      final SocketInfo sockInfo = SocketInfo.valueOf(hostPortString);
+      SQLiteStatement statement = sqliteConnection.prepare("INSERT INTO masters(host_port) VALUES(?);", false);
+      statement.bind(1, hostPortString);
+      statement.step();
+      statement.dispose();
+    } catch (SQLiteException e) {
+      LOGGER.error(e.toString());
       throw new CatalogException(e);
     }
-
     return this;
   }
 
@@ -265,54 +262,43 @@ public final class Catalog {
   public void addRelationMetadata(final String name, final Schema schema) throws CatalogException {
     Objects.requireNonNull(name);
     Objects.requireNonNull(schema);
-    /* Do the work */
     try {
-      queue.execute(new SQLiteJob<Object>() {
-        @Override
-        protected Object job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
-          try {
-            /* To begin: start a transaction. */
-            sqliteConnection.exec("BEGIN TRANSACTION;");
+      /* To begin: start a transaction. */
+      sqliteConnection.exec("BEGIN TRANSACTION;");
 
-            /* First, insert the relation name. */
-            SQLiteStatement statement = sqliteConnection.prepare("INSERT INTO relations (relation_name) VALUES (?);");
-            statement.bind(1, name);
-            statement.stepThrough();
-            statement.dispose();
-            statement = null;
+      /* First, insert the relation name. */
+      SQLiteStatement statement = sqliteConnection.prepare("INSERT INTO relations (relation_name) VALUES (?);");
+      statement.bind(1, name);
+      statement.stepThrough();
+      statement.dispose();
+      statement = null;
 
-            /* Second, figure out what ID this relation was assigned. */
-            final long relationId = sqliteConnection.getLastInsertId();
+      /* Second, figure out what ID this relation was assigned. */
+      final long relationId = sqliteConnection.getLastInsertId();
 
-            /* Third, populate the Schema table. */
-            statement =
-                sqliteConnection.prepare("INSERT INTO relation_schema(relation_id, col_index, col_name, col_type) "
-                    + "VALUES (?,?,?,?);");
-            statement.bind(1, relationId);
-            for (int i = 0; i < schema.numFields(); ++i) {
-              statement.bind(2, i);
-              statement.bind(3, schema.getFieldName(i));
-              statement.bind(4, schema.getFieldType(i).toString());
-              statement.step();
-              statement.reset(false);
-            }
-            statement.dispose();
-            statement = null;
+      /* Third, populate the Schema table. */
+      statement =
+          sqliteConnection.prepare("INSERT INTO relation_schema(relation_id, col_index, col_name, col_type) "
+              + "VALUES (?,?,?,?);");
+      statement.bind(1, relationId);
+      for (int i = 0; i < schema.numFields(); ++i) {
+        statement.bind(2, i);
+        statement.bind(3, schema.getFieldName(i));
+        statement.bind(4, schema.getFieldType(i).toString());
+        statement.step();
+        statement.reset(false);
+      }
+      statement.dispose();
+      statement = null;
 
-            /* To complete: commit the transaction. */
-            sqliteConnection.exec("COMMIT TRANSACTION;");
-          } catch (final SQLiteException e) {
-            try {
-              sqliteConnection.exec("ABORT TRANSACTION;");
-            } catch (final SQLiteException e2) {
-              assert true; /* Do nothing. */
-            }
-            throw new CatalogException(e);
-          }
-          return null;
-        }
-      }).get();
-    } catch (InterruptedException | ExecutionException e) {
+      /* To complete: commit the transaction. */
+      sqliteConnection.exec("COMMIT TRANSACTION;");
+    } catch (SQLiteException e) {
+      try {
+        sqliteConnection.exec("ABORT TRANSACTION;");
+      } catch (SQLiteException e2) {
+        assert true; /* Do nothing. */
+      }
       throw new CatalogException(e);
     }
   }
@@ -330,26 +316,15 @@ public final class Catalog {
       throw new CatalogException("Catalog is closed.");
     }
     try {
-      queue.execute(new SQLiteJob<Object>() {
-        @Override
-        protected Object job(final SQLiteConnection sqliteConnection) throws SQLiteException, CatalogException {
-          try {
-            @SuppressWarnings("unused")
-            /* Just used to verify that hostPortString is legal */
-            final SocketInfo sockInfo = SocketInfo.valueOf(hostPortString);
-            final SQLiteStatement statement =
-                sqliteConnection.prepare("INSERT INTO workers(host_port) VALUES(?);", false);
-            statement.bind(1, hostPortString);
-            statement.step();
-            statement.dispose();
-          } catch (final SQLiteException e) {
-            LOGGER.error(e.toString());
-            throw new CatalogException(e);
-          }
-          return null;
-        }
-      }).get();
-    } catch (InterruptedException | ExecutionException e) {
+      @SuppressWarnings("unused")
+      /* Just used to verify that hostPortString is legal */
+      final SocketInfo sockInfo = SocketInfo.valueOf(hostPortString);
+      SQLiteStatement statement = sqliteConnection.prepare("INSERT INTO workers(host_port) VALUES(?);", false);
+      statement.bind(1, hostPortString);
+      statement.step();
+      statement.dispose();
+    } catch (SQLiteException e) {
+      LOGGER.error(e.toString());
       throw new CatalogException(e);
     }
     return this;
@@ -360,50 +335,14 @@ public final class Catalog {
    * on this Catalog will throw a CatalogException.
    */
   public void close() {
-    try {
-      queue.stop(true).join();
-    } catch (final InterruptedException e) {
-      Thread.currentThread().interrupt();
+    if (sqliteConnection != null) {
+      sqliteConnection.dispose();
+      sqliteConnection = null;
     }
     if (description != null) {
       description = null;
     }
     isClosed = true;
-  }
-
-  /**
-   * @return the set of workers that are alive.
-   * @throws CatalogException if there is an error in the database.
-   */
-  @SuppressWarnings("unchecked")
-  public Set<Integer> getAliveWorkers() throws CatalogException {
-    if (isClosed) {
-      throw new CatalogException("Catalog is closed.");
-    }
-
-    try {
-      return (Set<Integer>) queue.execute(new SQLiteJob<Object>() {
-        @Override
-        protected Object job(final SQLiteConnection sqliteConnection) throws SQLiteException, CatalogException {
-          final Set<Integer> workers = new HashSet<Integer>();
-
-          try {
-            final SQLiteStatement statement = sqliteConnection.prepare("SELECT worker_id FROM alive_workers;", false);
-            while (statement.step()) {
-              workers.add(statement.columnInt(0));
-            }
-            statement.dispose();
-          } catch (final SQLiteException e) {
-            LOGGER.error(e.toString());
-            throw new CatalogException(e);
-          }
-
-          return workers;
-        }
-      }).get();
-    } catch (InterruptedException | ExecutionException e) {
-      throw new CatalogException(e);
-    }
   }
 
   /**
@@ -419,29 +358,19 @@ public final class Catalog {
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
     }
-    /* Do the work */
     try {
-      return (String) queue.execute(new SQLiteJob<Object>() {
-        @Override
-        protected Object job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
-          try {
-            /* Getting this out is a simple query, which does not need to be cached. */
-            final SQLiteStatement statement =
-                sqliteConnection.prepare("SELECT value FROM configuration WHERE key=? LIMIT 1;", false).bind(1, key);
-            if (!statement.step()) {
-              /* If step() returns false, there's no data. Return null. */
-              return null;
-            }
-            final String ret = statement.columnString(0);
-            statement.dispose();
-            return ret;
-          } catch (final SQLiteException e) {
-            LOGGER.error(e.toString());
-            throw new CatalogException(e);
-          }
-        }
-      }).get();
-    } catch (InterruptedException | ExecutionException e) {
+      /* Getting this out is a simple query, which does not need to be cached. */
+      SQLiteStatement statement =
+          sqliteConnection.prepare("SELECT value FROM configuration WHERE key=? LIMIT 1;", false).bind(1, key);
+      if (!statement.step()) {
+        /* If step() returns false, there's no data. Return null. */
+        return null;
+      }
+      final String ret = statement.columnString(0);
+      statement.dispose();
+      return ret;
+    } catch (SQLiteException e) {
+      LOGGER.error(e.toString());
       throw new CatalogException(e);
     }
   }
@@ -467,68 +396,48 @@ public final class Catalog {
    * @return the set of masters stored in this Catalog.
    * @throws CatalogException if there is an error in the database.
    */
-  @SuppressWarnings("unchecked")
   public List<SocketInfo> getMasters() throws CatalogException {
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
     }
 
+    ArrayList<SocketInfo> masters = new ArrayList<SocketInfo>();
     try {
-      return (List<SocketInfo>) queue.execute(new SQLiteJob<Object>() {
-        @Override
-        protected Object job(final SQLiteConnection sqliteConnection) throws SQLiteException, CatalogException {
-          final ArrayList<SocketInfo> masters = new ArrayList<SocketInfo>();
-          try {
-            final SQLiteStatement statement = sqliteConnection.prepare("SELECT * FROM masters;", false);
-            while (statement.step()) {
-              masters.add(SocketInfo.valueOf(statement.columnString(1)));
-            }
-            statement.dispose();
-          } catch (final SQLiteException e) {
-            LOGGER.error(e.toString());
-            throw new CatalogException(e);
-          }
-
-          return masters;
-        }
-      }).get();
-    } catch (InterruptedException | ExecutionException e) {
+      SQLiteStatement statement = sqliteConnection.prepare("SELECT * FROM masters;", false);
+      while (statement.step()) {
+        masters.add(SocketInfo.valueOf(statement.columnString(1)));
+      }
+      statement.dispose();
+    } catch (SQLiteException e) {
+      LOGGER.error(e.toString());
       throw new CatalogException(e);
     }
+
+    return masters;
   }
 
   /**
    * @return the set of workers stored in this Catalog.
    * @throws CatalogException if there is an error in the database.
    */
-  @SuppressWarnings("unchecked")
   public Map<Integer, SocketInfo> getWorkers() throws CatalogException {
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
     }
 
+    ConcurrentHashMap<Integer, SocketInfo> workers = new ConcurrentHashMap<Integer, SocketInfo>();
+
     try {
-      return (Map<Integer, SocketInfo>) queue.execute(new SQLiteJob<Object>() {
-        @Override
-        protected Object job(final SQLiteConnection sqliteConnection) throws SQLiteException, CatalogException {
-          final Map<Integer, SocketInfo> workers = new HashMap<Integer, SocketInfo>();
-
-          try {
-            final SQLiteStatement statement = sqliteConnection.prepare("SELECT * FROM workers;", false);
-            while (statement.step()) {
-              workers.put(statement.columnInt(0), SocketInfo.valueOf(statement.columnString(1)));
-            }
-            statement.dispose();
-          } catch (final SQLiteException e) {
-            LOGGER.error(e.toString());
-            throw new CatalogException(e);
-          }
-
-          return workers;
-        }
-      }).get();
-    } catch (InterruptedException | ExecutionException e) {
+      SQLiteStatement statement = sqliteConnection.prepare("SELECT * FROM workers;", false);
+      while (statement.step()) {
+        workers.put(statement.columnInt(0), SocketInfo.valueOf(statement.columnString(1)));
+      }
+      statement.dispose();
+    } catch (SQLiteException e) {
+      LOGGER.error(e.toString());
       throw new CatalogException(e);
     }
+
+    return workers;
   }
 }

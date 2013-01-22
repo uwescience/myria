@@ -14,21 +14,25 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 public final class EclipseClasspathReader {
+  /** Prevent construction of this class. */
+  private EclipseClasspathReader() {
+  }
+
   public static final String usage = "java EclipseClasspathReader [eclipse CP file path]";
 
-  public static void main(final String[] args) throws IOException {
+  public static void main(String[] args) throws IOException {
     if (args.length < 1) {
       System.out.println(usage);
     }
 
-    final String eclipseCPFilePath = args[0];
-    final File eclipseCPFile = new File(eclipseCPFilePath);
+    String eclipseCPFilePath = args[0];
+    File eclipseCPFile = new File(eclipseCPFilePath);
     if (!eclipseCPFile.exists()) {
       System.err.println("Eclipse classpath file does not exist");
       return;
     }
 
-    final String[] cp = readEclipseClasspath(eclipseCPFile);
+    String[] cp = readEclipseClasspath(eclipseCPFile);
 
     // 1: need -Djava.library.path, for runtime
     // 0: doesn't need -Djava.library.path, for compiling
@@ -55,14 +59,14 @@ public final class EclipseClasspathReader {
     DocumentBuilder dBuilder;
     try {
       dBuilder = dbFactory.newDocumentBuilder();
-    } catch (final ParserConfigurationException e) {
+    } catch (ParserConfigurationException e) {
       throw new IOException(e);
     }
 
     Document doc;
     try {
       doc = dBuilder.parse(eclipseClasspathXMLFile);
-    } catch (final SAXException e) {
+    } catch (SAXException e) {
       throw new IOException(e);
     }
     doc.getDocumentElement().normalize();
@@ -107,9 +111,5 @@ public final class EclipseClasspathReader {
       }
     }
     return new String[] { classpathSB.toString(), libPathSB.toString() };
-  }
-
-  /** Prevent construction of this class. */
-  private EclipseClasspathReader() {
   }
 }

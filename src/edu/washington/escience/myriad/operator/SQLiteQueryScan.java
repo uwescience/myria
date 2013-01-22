@@ -1,7 +1,6 @@
 package edu.washington.escience.myriad.operator;
 
 import java.util.Iterator;
-import java.util.Objects;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
@@ -14,23 +13,15 @@ public class SQLiteQueryScan extends LeafOperator {
   private static final long serialVersionUID = 1L;
   private Iterator<TupleBatch> tuples;
   private final Schema schema;
+  private final String filename;
   private final String baseSQL;
-  private String databaseFilename;
+  private transient String dataDir;
 
-  /**
-   * Construct a new SQLiteQueryScan object.
-   * 
-   * @param databaseFilename the full path to the SQLite database storing the data.
-   * @param baseSQL the selection query.
-   * @param outputSchema the Schema of the returned tuples.
-   */
-
-  public SQLiteQueryScan(final String databaseFilename, final String baseSQL, final Schema outputSchema) {
-    Objects.requireNonNull(baseSQL);
-    Objects.requireNonNull(outputSchema);
+  public SQLiteQueryScan(final String filename, final String baseSQL, final Schema outputSchema) {
     this.baseSQL = baseSQL;
+    this.filename = filename;
     schema = outputSchema;
-    this.databaseFilename = databaseFilename;
+    dataDir = ".";
   }
 
   @Override
@@ -41,7 +32,7 @@ public class SQLiteQueryScan extends LeafOperator {
   @Override
   protected TupleBatch fetchNext() throws DbException {
     if (tuples == null) {
-      tuples = SQLiteAccessMethod.tupleBatchIteratorFromQuery(databaseFilename, baseSQL, schema);
+      tuples = SQLiteAccessMethod.tupleBatchIteratorFromQuery(dataDir + "/" + filename, baseSQL, schema);
     }
     if (tuples.hasNext()) {
       return tuples.next();
@@ -64,16 +55,13 @@ public class SQLiteQueryScan extends LeafOperator {
   public void init() throws DbException {
   }
 
+  public void setDataDir(final String dataDir) {
+    this.dataDir = dataDir;
+  }
+
   @Override
   public TupleBatch fetchNextReady() throws DbException {
     return fetchNext();
-  }
-
-  public void setPathToSQLiteDb(final String databaseFilename) throws DbException {
-    if (isOpen()) {
-      throw new DbException("Can't change the state of an opened operator.");
-    }
-    this.databaseFilename = databaseFilename;
   }
 
 }

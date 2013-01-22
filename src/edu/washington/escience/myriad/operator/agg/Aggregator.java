@@ -40,24 +40,17 @@ public interface Aggregator extends Serializable {
   void add(TupleBatch t);
 
   /**
-   * @return available aggregates this Aggregator supports.
-   * */
-  int availableAgg();
-
-  /**
-   * Copy an Aggregator without states.
-   * 
-   * @return an new Aggregator instance with the same configuration parameters as this instance but without states.
-   * */
-  Aggregator freshCopyYourself();
-
-  /**
    * Output the aggregate result. Store the output to buffer.
    * 
    * @param buffer the buffer to store the aggregate result.
    * @param fromIndex from the fromIndex to put the result columns
    * */
   void getResult(TupleBatchBuffer buffer, int fromIndex);
+
+  /**
+   * @return available aggregates this Aggregator supports.
+   * */
+  int availableAgg();
 
   /**
    * All the count aggregates are of type Long. All the avg aggregates are of type Double. And each of the max/min/sum
@@ -67,5 +60,12 @@ public interface Aggregator extends Serializable {
    * 
    * */
   Schema getResultSchema();
+
+  /**
+   * Copy an Aggregator without states.
+   * 
+   * @return an new Aggregator instance with the same configuration parameters as this instance but without states.
+   * */
+  Aggregator freshCopyYourself();
 
 }

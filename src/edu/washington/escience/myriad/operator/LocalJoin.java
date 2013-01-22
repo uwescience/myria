@@ -16,6 +16,9 @@ import edu.washington.escience.myriad.Type;
 
 public final class LocalJoin extends Operator implements Externalizable {
 
+  /** Required for Java serialization. */
+  private static final long serialVersionUID = 1L;
+
   private class IndexedTuple {
     private final int index;
     private final TupleBatch tb;
@@ -64,15 +67,6 @@ public final class LocalJoin extends Operator implements Externalizable {
       return true;
     }
 
-    @Override
-    public int hashCode() {
-      return tb.hashCode(index);
-    }
-
-    public int hashCode4Keys(final int[] colIndx) {
-      return tb.hashCode(index, colIndx);
-    }
-
     public boolean joinEquals(final Object o, final int[] compareIndx1, final int[] compareIndx2) {
       if (!(o instanceof IndexedTuple)) {
         return false;
@@ -88,10 +82,16 @@ public final class LocalJoin extends Operator implements Externalizable {
       }
       return true;
     }
-  }
 
-  /** Required for Java serialization. */
-  private static final long serialVersionUID = 1L;
+    @Override
+    public int hashCode() {
+      return tb.hashCode(index);
+    }
+
+    public int hashCode4Keys(final int[] colIndx) {
+      return tb.hashCode(index, colIndx);
+    }
+  }
 
   private Operator child1, child2;
   private Schema outputSchema;
@@ -120,8 +120,8 @@ public final class LocalJoin extends Operator implements Externalizable {
   }
 
   protected void addToAns(final IndexedTuple tuple1, final IndexedTuple tuple2) {
-    final int num1 = tuple1.tb.getSchema().numFields();
-    final int num2 = tuple2.tb.getSchema().numFields();
+    int num1 = tuple1.tb.getSchema().numFields();
+    int num2 = tuple2.tb.getSchema().numFields();
     for (int i = 0; i < num1; ++i) {
       ans.put(i, tuple1.tb.getObject(i, tuple1.index));
     }
@@ -130,8 +130,41 @@ public final class LocalJoin extends Operator implements Externalizable {
     }
   }
 
-  @Override
-  protected void cleanup() throws DbException {
+  protected void processChildTB(final TupleBatch tb, final boolean tbFromChild1) {
+    List<IndexedTuple> tupleList = null;
+    int[] compareIndx2Add = compareIndx1;
+    int[] compareIndx2Join = compareIndx2;
+    HashMap<Integer, List<IndexedTuple>> hashTable2Add = hashTable1;
+    HashMap<Integer, List<IndexedTuple>> hashTable2Join = hashTable2;
+    if (!tbFromChild1) {
+      compareIndx2Add = compareIndx2;
+      compareIndx2Join = compareIndx1;
+      hashTable2Add = hashTable2;
+      hashTable2Join = hashTable1;
+    }
+
+    for (int i = 0; i < tb.numTuples(); ++i) { // outputTuples?
+      final IndexedTuple tuple = new IndexedTuple(tb, i);
+      final int cntHashCode = tuple.hashCode4Keys(compareIndx2Add);
+      tupleList = hashTable2Join.get(cntHashCode);
+      if (tupleList != null) {
+        for (IndexedTuple tuple2 : tupleList) {
+          if (tuple.joinEquals(tuple2, compareIndx2Add, compareIndx2Join)) {
+            if (tbFromChild1) {
+              addToAns(tuple, tuple2);
+            } else {
+              addToAns(tuple2, tuple);
+            }
+          }
+        }
+      }
+      tupleList = hashTable2Add.get(cntHashCode);
+      if (tupleList == null) {
+        tupleList = new LinkedList<IndexedTuple>();
+        hashTable2Add.put(cntHashCode, tupleList);
+      }
+      tupleList.add(tuple);
+    }
   }
 
   @Override
@@ -163,11 +196,6 @@ public final class LocalJoin extends Operator implements Externalizable {
   }
 
   @Override
-  public TupleBatch fetchNextReady() throws DbException {
-    return null;
-  }
-
-  @Override
   public Operator[] getChildren() {
     return new Operator[] { child1, child2 };
   }
@@ -181,41 +209,10 @@ public final class LocalJoin extends Operator implements Externalizable {
   public void init() throws DbException {
   }
 
-  protected void processChildTB(final TupleBatch tb, final boolean tbFromChild1) {
-    List<IndexedTuple> tupleList = null;
-    int[] compareIndx2Add = compareIndx1;
-    int[] compareIndx2Join = compareIndx2;
-    HashMap<Integer, List<IndexedTuple>> hashTable2Add = hashTable1;
-    HashMap<Integer, List<IndexedTuple>> hashTable2Join = hashTable2;
-    if (!tbFromChild1) {
-      compareIndx2Add = compareIndx2;
-      compareIndx2Join = compareIndx1;
-      hashTable2Add = hashTable2;
-      hashTable2Join = hashTable1;
-    }
-
-    for (int i = 0; i < tb.numTuples(); ++i) { // outputTuples?
-      final IndexedTuple tuple = new IndexedTuple(tb, i);
-      final int cntHashCode = tuple.hashCode4Keys(compareIndx2Add);
-      tupleList = hashTable2Join.get(cntHashCode);
-      if (tupleList != null) {
-        for (final IndexedTuple tuple2 : tupleList) {
-          if (tuple.joinEquals(tuple2, compareIndx2Add, compareIndx2Join)) {
-            if (tbFromChild1) {
-              addToAns(tuple, tuple2);
-            } else {
-              addToAns(tuple2, tuple);
-            }
-          }
-        }
-      }
-      tupleList = hashTable2Add.get(cntHashCode);
-      if (tupleList == null) {
-        tupleList = new LinkedList<IndexedTuple>();
-        hashTable2Add.put(cntHashCode, tupleList);
-      }
-      tupleList.add(tuple);
-    }
+  @Override
+  public void setChildren(final Operator[] children) {
+    child1 = children[0];
+    child2 = children[1];
   }
 
   @Override
@@ -231,18 +228,21 @@ public final class LocalJoin extends Operator implements Externalizable {
   }
 
   @Override
-  public void setChildren(final Operator[] children) {
-    child1 = children[0];
-    child2 = children[1];
-  }
-
-  @Override
   public void writeExternal(final ObjectOutput out) throws IOException {
     out.writeObject(child1);
     out.writeObject(child2);
     out.writeObject(compareIndx1);
     out.writeObject(compareIndx2);
     out.writeObject(outputSchema);
+  }
+
+  @Override
+  protected void cleanup() throws DbException {
+  }
+
+  @Override
+  public TupleBatch fetchNextReady() throws DbException {
+    return null;
   }
 
 }

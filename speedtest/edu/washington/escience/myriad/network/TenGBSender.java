@@ -17,8 +17,6 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.codec.protobuf.ProtobufVarint32FrameDecoder;
 import org.jboss.netty.handler.codec.protobuf.ProtobufVarint32LengthFieldPrepender;
 
-import com.google.common.collect.ImmutableList;
-
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
@@ -26,6 +24,12 @@ import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.util.TestUtils;
 
 public class TenGBSender {
+
+  public static double elapsedInSeconds(long startTimeMS) {
+    return (System.currentTimeMillis() - startTimeMS) * 1.0 / 1000;
+  }
+
+  final static Schema schema = new Schema(new Type[] { Type.LONG_TYPE, Type.LONG_TYPE }, new String[] { "id", "id2" });
 
   public static class ClientPipelineFactory implements ChannelPipelineFactory {
     /**
@@ -36,7 +40,7 @@ public class TenGBSender {
 
     @Override
     public ChannelPipeline getPipeline() throws Exception {
-      final ChannelPipeline p = Channels.pipeline();
+      ChannelPipeline p = Channels.pipeline();
       // p.addLast("compressionDecoder", new ZlibDecoder()); // upstream 1
       p.addLast("frameDecoder", new ProtobufVarint32FrameDecoder()); // upstream 2
       // p.addLast("protobufDecoder", protobufDecoder); // upstream
@@ -51,22 +55,15 @@ public class TenGBSender {
 
   }
 
-  final static Schema schema = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("id",
-      "id2"));
+  public static void main(String[] args) throws IOException, InterruptedException {
 
-  public static double elapsedInSeconds(final long startTimeMS) {
-    return (System.currentTimeMillis() - startTimeMS) * 1.0 / 1000;
-  }
+    String hostName = args[0];
+    int port = Integer.valueOf(args[1]);
 
-  public static void main(final String[] args) throws IOException, InterruptedException {
+    int totalRestrict = TupleBatch.BATCH_SIZE;
 
-    final String hostName = args[0];
-    final int port = Integer.valueOf(args[1]);
-
-    final int totalRestrict = TupleBatch.BATCH_SIZE;
-
-    final long[] ids = TestUtils.randomLong(1000, 1005, totalRestrict);
-    final long[] ids2 = TestUtils.randomLong(1000, 1005, totalRestrict);
+    long[] ids = TestUtils.randomLong(1000, 1005, totalRestrict);
+    long[] ids2 = TestUtils.randomLong(1000, 1005, totalRestrict);
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < ids.length; i++) {
@@ -74,9 +71,9 @@ public class TenGBSender {
       tbb.put(1, ids2[i]);
     }
 
-    final InetSocketAddress remoteAddress = new InetSocketAddress(hostName, port);
+    InetSocketAddress remoteAddress = new InetSocketAddress(hostName, port);
 
-    final ClientBootstrap bootstrap =
+    ClientBootstrap bootstrap =
         new ClientBootstrap(new NioClientSocketChannelFactory(Executors.newCachedThreadPool(), Executors
             .newCachedThreadPool()));
     bootstrap.setPipelineFactory(new ClientPipelineFactory());
@@ -89,26 +86,33 @@ public class TenGBSender {
     bootstrap.setOption("writeBufferLowWaterMark", 16 * 1024);
     bootstrap.setOption("writeBufferHighWaterMark", 256 * 1024);
 
-    ChannelFuture c = bootstrap.connect(remoteAddress);
-    if (!c.awaitUninterruptibly().isSuccess()) {
-      throw new RuntimeException("Unable to connect");
+    boolean connected = true;
+    ChannelFuture c = null;
+    try {
+      c = bootstrap.connect(remoteAddress);
+    } catch (Exception e) {
+      connected = false;
     }
-    Channel ch = c.getChannel();
+    if (!connected) {
+      connected = c.awaitUninterruptibly().isSuccess();
+    }
+    Channel ch = null;
+    ch = c.getChannel();
 
     long numSent = 0;
     long start = 0;
-    final long end = 0;
+    long end = 0;
 
     start = System.currentTimeMillis();
     System.out.println("Start at " + start);
 
-    final long tenGBytes = 10l * 1024l * 1024l * 1024l;
-    final byte[] buffer = new byte[512 * 1024];
-    final ChannelBuffer cb = new ByteBufferBackedChannelBuffer(ByteBuffer.wrap(buffer));
+    long tenGBytes = 10l * 1024l * 1024l * 1024l;
+    byte[] buffer = new byte[512 * 1024];
+    ChannelBuffer cb = new ByteBufferBackedChannelBuffer(ByteBuffer.wrap(buffer));
 
     System.out.println("Total bytes to send: " + tenGBytes);
 
-    final long numBlocks = tenGBytes / buffer.length;
+    long numBlocks = tenGBytes / buffer.length;
     System.out.println("Total num of 512kb-size blocks: " + numBlocks);
 
     ChannelFuture cf = null;

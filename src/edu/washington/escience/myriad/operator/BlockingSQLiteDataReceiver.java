@@ -14,31 +14,23 @@ public final class BlockingSQLiteDataReceiver extends Operator {
   private static final long serialVersionUID = 1L;
 
   private Operator child;
-  String pathToSQLiteDb;
+  final String dbFileName;
   final String tableName;
+  String dataDir = ".";
 
-  public BlockingSQLiteDataReceiver(final String pathToSQLiteDb, final String tableName, final Operator child) {
+  public BlockingSQLiteDataReceiver(final String dbFileName, final String tableName, final Operator child) {
     this.child = child;
-    this.pathToSQLiteDb = pathToSQLiteDb;
+    this.dbFileName = dbFileName;
     this.tableName = tableName;
-  }
-
-  @Override
-  protected void cleanup() throws DbException {
   }
 
   @Override
   protected TupleBatch fetchNext() throws DbException {
     TupleBatch tb = null;
     while ((tb = child.next()) != null) {
-      SQLiteUtils.insertIntoSQLite(child.getSchema(), tableName, pathToSQLiteDb, tb);
+      SQLiteUtils.insertIntoSQLite(child.getSchema(), tableName, dataDir + "/" + dbFileName, tb);
     }
     return null;
-  }
-
-  @Override
-  public TupleBatch fetchNextReady() throws DbException {
-    return fetchNext();
   }
 
   @Override
@@ -60,7 +52,16 @@ public final class BlockingSQLiteDataReceiver extends Operator {
     child = children[0];
   }
 
-  public void setPathToSQLiteDb(final String pathToSQLiteDb) {
-    this.pathToSQLiteDb = pathToSQLiteDb;
+  @Override
+  protected void cleanup() throws DbException {
+  }
+
+  @Override
+  public TupleBatch fetchNextReady() throws DbException {
+    return fetchNext();
+  }
+
+  public void resetDataDir(String dataDir) {
+    this.dataDir = dataDir;
   }
 }

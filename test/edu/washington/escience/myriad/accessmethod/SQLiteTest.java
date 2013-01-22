@@ -12,8 +12,6 @@ import org.apache.commons.io.FilenameUtils;
 import org.junit.Test;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.ImmutableList;
-
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -39,34 +37,34 @@ public class SQLiteTest {
     Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
 
     final Schema outputSchema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+        new Schema(new Type[] { Type.LONG_TYPE, Type.STRING_TYPE }, new String[] { "id", "name" });
 
-    final String tempDirPath = Files.createTempDirectory(Server.SYSTEM_NAME + "_SQLiteTest").toFile().getAbsolutePath();
-    final String dbAbsolutePath = FilenameUtils.concat(tempDirPath, "sqlite_testtable.db");
+    String tempDirPath = Files.createTempDirectory(Server.SYSTEM_NAME + "_SQLiteTest").toFile().getAbsolutePath();
+    String dbAbsolutePath = FilenameUtils.concat(tempDirPath, "sqlite_testtable.db");
     SystemTestBase.createTable(dbAbsolutePath, "testtable", "id long,name varchar(20)");
 
-    final String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, 200, 20);
-    final long[] ids = TestUtils.randomLong(1000, 1005, names.length);
+    String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, 200, 20);
+    long[] ids = TestUtils.randomLong(1000, 1005, names.length);
 
-    final TupleBatchBuffer tbb = new TupleBatchBuffer(outputSchema);
+    TupleBatchBuffer tbb = new TupleBatchBuffer(outputSchema);
     for (int i = 0; i < names.length; i++) {
       tbb.put(0, ids[i]);
       tbb.put(1, names[i]);
     }
 
-    for (final TupleBatch tb : tbb.getAll()) {
-      final String insertTemplate = SQLiteUtils.insertStatementFromSchema(outputSchema, "testtable");
+    for (TupleBatch tb : tbb.getAll()) {
+      String insertTemplate = SQLiteUtils.insertStatementFromSchema(outputSchema, "testtable");
       SQLiteAccessMethod.tupleBatchInsert(dbAbsolutePath, insertTemplate, tb);
     }
 
-    final HashMap<Tuple, Integer> expectedResult = TestUtils.tupleBatchToTupleBag(tbb);
+    HashMap<Tuple, Integer> expectedResult = TestUtils.tupleBatchToTupleBag(tbb);
 
     final String query = "SELECT * FROM testtable";
 
     /* Scan the testtable in database */
     final SQLiteQueryScan scan = new SQLiteQueryScan(new File(dbAbsolutePath).getName(), query, outputSchema);
 
-    scan.setPathToSQLiteDb(dbAbsolutePath);
+    scan.setDataDir(new File(dbAbsolutePath).getParent());
 
     /* Filter on first column INTEGER >= 50 */
     // Filter filter1 = new Filter(Predicate.Op.GREATER_THAN_OR_EQ, 0, new Long(50), scan);
@@ -95,7 +93,7 @@ public class SQLiteTest {
     }
 
     TupleBatch tb = null;
-    final TupleBatchBuffer result = new TupleBatchBuffer(outputSchema);
+    TupleBatchBuffer result = new TupleBatchBuffer(outputSchema);
     while ((tb = root.next()) != null) {
       tb.compactInto(result);
     }
@@ -103,7 +101,7 @@ public class SQLiteTest {
     /* Cleanup */
     root.close();
 
-    final HashMap<SystemTestBase.Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(result);
+    HashMap<SystemTestBase.Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(result);
 
     TestUtils.assertTupleBagEqual(expectedResult, resultBag);
 

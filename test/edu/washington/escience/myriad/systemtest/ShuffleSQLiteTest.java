@@ -8,8 +8,6 @@ import java.util.Map.Entry;
 
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableList;
-
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatchBuffer;
@@ -33,8 +31,8 @@ public class ShuffleSQLiteTest extends SystemTestBase {
   @Test
   public void shuffleTestSQLite() throws DbException, IOException, CatalogException {
 
-    final ImmutableList<Type> types = ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE);
-    final ImmutableList<String> columnNames = ImmutableList.of("id", "name");
+    final Type[] types = new Type[] { Type.LONG_TYPE, Type.STRING_TYPE };
+    final String[] columnNames = new String[] { "id", "name" };
     final Schema schema = new Schema(types, columnNames);
 
     HashMap<Tuple, Integer> expectedResult = simpleRandomJoinTestBase();
@@ -50,9 +48,8 @@ public class ShuffleSQLiteTest extends SystemTestBase {
     final ExchangePairID shuffle1ID = ExchangePairID.newID();
     final ExchangePairID shuffle2ID = ExchangePairID.newID();
 
-    final ImmutableList<Type> outputTypes =
-        ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE, Type.LONG_TYPE, Type.STRING_TYPE);
-    final ImmutableList<String> outputColumnNames = ImmutableList.of("id", "name", "id", "name");
+    final Type[] outputTypes = new Type[] { Type.LONG_TYPE, Type.STRING_TYPE, Type.LONG_TYPE, Type.STRING_TYPE };
+    final String[] outputColumnNames = new String[] { "id", "name", "id", "name" };
     final Schema outputSchema = new Schema(outputTypes, outputColumnNames);
 
     final int numPartition = 2;
@@ -60,11 +57,11 @@ public class ShuffleSQLiteTest extends SystemTestBase {
     final PartitionFunction<String, Integer> pf = new SingleFieldHashPartitionFunction(numPartition);
     pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1); // partition by name
 
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan(null, "select * from testtable1", schema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan(null, "select * from testtable2", schema);
-    final ShuffleProducer sp1 = new ShuffleProducer(scan1, shuffle1ID, WORKER_ID, pf);
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan("testtable1.db", "select * from testtable1", schema);
+    final SQLiteQueryScan scan2 = new SQLiteQueryScan("testtable2.db", "select * from testtable2", schema);
+    final ShuffleProducer sp1 = new ShuffleProducer(scan1, shuffle1ID, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf);
 
-    final ShuffleProducer sp2 = new ShuffleProducer(scan2, shuffle2ID, WORKER_ID, pf);
+    final ShuffleProducer sp2 = new ShuffleProducer(scan2, shuffle2ID, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf);
 
     final ShuffleConsumer sc1 =
         new ShuffleConsumer(sp1.getSchema(), shuffle1ID, new int[] { WORKER_ID[0], WORKER_ID[1] });
@@ -102,16 +99,16 @@ public class ShuffleSQLiteTest extends SystemTestBase {
     while ((result = Server.runningInstance.startServerQuery(0, serverPlan)) == null) {
       try {
         Thread.sleep(100);
-      } catch (final InterruptedException e) {
+      } catch (InterruptedException e) {
         e.printStackTrace();
         Thread.currentThread().interrupt();
       }
     }
 
-    final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(result);
+    HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(result);
 
     assertTrue(resultBag.size() == expectedResult.size());
-    for (final Entry<Tuple, Integer> e : resultBag.entrySet()) {
+    for (Entry<Tuple, Integer> e : resultBag.entrySet()) {
       assertTrue(expectedResult.get(e.getKey()).equals(e.getValue()));
     }
 

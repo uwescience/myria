@@ -7,8 +7,6 @@ import java.util.Random;
 
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableList;
-
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
@@ -23,18 +21,17 @@ public class SQLiteAccessMethodTest {
   @Test
   public void testConcurrentReadingATable() throws IOException, CatalogException, InterruptedException {
 
-    final Random r = new Random();
+    Random r = new Random();
 
-    final int totalRestrict = 100000;
-    final int numThreads = r.nextInt(50) + 1;
+    int totalRestrict = 100000;
+    int numThreads = r.nextInt(50) + 1;
 
-    final int numTuplesEach = totalRestrict / numThreads;
+    int numTuplesEach = totalRestrict / numThreads;
 
-    final String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, numTuplesEach, 20);
-    final long[] ids = TestUtils.randomLong(1000, 1005, names.length);
+    String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, numTuplesEach, 20);
+    long[] ids = TestUtils.randomLong(1000, 1005, names.length);
 
-    final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+    final Schema schema = new Schema(new Type[] { Type.LONG_TYPE, Type.STRING_TYPE }, new String[] { "id", "name" });
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
@@ -47,17 +44,17 @@ public class SQLiteAccessMethodTest {
 
     TupleBatch tb = null;
     while ((tb = tbb.popAny()) != null) {
-      final String insertTemplate = SQLiteUtils.insertStatementFromSchema(schema, "testtable");
+      String insertTemplate = SQLiteUtils.insertStatementFromSchema(schema, "testtable");
       SQLiteAccessMethod.tupleBatchInsert(dbFile.getAbsolutePath(), insertTemplate, tb);
     }
 
-    final Thread[] threads = new Thread[numThreads];
+    Thread[] threads = new Thread[numThreads];
     for (int i = 0; i < numThreads; i++) {
       final int j = i;
       threads[i] = new Thread() {
         @Override
         public void run() {
-          final Iterator<TupleBatch> it =
+          Iterator<TupleBatch> it =
               SQLiteAccessMethod.tupleBatchIteratorFromQuery(dbFile.getAbsolutePath(), "select * from testtable",
                   schema);
 
@@ -69,10 +66,10 @@ public class SQLiteAccessMethodTest {
       };
     }
 
-    for (final Thread t : threads) {
+    for (Thread t : threads) {
       t.start();
     }
-    for (final Thread t : threads) {
+    for (Thread t : threads) {
       t.join();
     }
     dbFile.deleteOnExit();
@@ -81,18 +78,17 @@ public class SQLiteAccessMethodTest {
   @Test
   public void testConcurrentReadingTwoTablesInSameDBFile() throws IOException, CatalogException, InterruptedException {
 
-    final Random r = new Random();
+    Random r = new Random();
 
-    final int totalRestrict = 100000;
-    final int numThreads = r.nextInt(2) + 1;
+    int totalRestrict = 100000;
+    int numThreads = r.nextInt(2) + 1;
 
-    final int numTuplesEach = totalRestrict / numThreads;
+    int numTuplesEach = totalRestrict / numThreads;
 
-    final String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, numTuplesEach, 20);
-    final long[] ids = TestUtils.randomLong(1000, 1005, names.length);
+    String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, numTuplesEach, 20);
+    long[] ids = TestUtils.randomLong(1000, 1005, names.length);
 
-    final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+    final Schema schema = new Schema(new Type[] { Type.LONG_TYPE, Type.STRING_TYPE }, new String[] { "id", "name" });
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
@@ -106,20 +102,20 @@ public class SQLiteAccessMethodTest {
     SystemTestBase.createTable(dbFile.getAbsolutePath(), "testtable1", "id long, name varchar(20)");
 
     TupleBatch tb = null;
-    final String insertTemplate0 = SQLiteUtils.insertStatementFromSchema(schema, "testtable0");
-    final String insertTemplate1 = SQLiteUtils.insertStatementFromSchema(schema, "testtable1");
+    String insertTemplate0 = SQLiteUtils.insertStatementFromSchema(schema, "testtable0");
+    String insertTemplate1 = SQLiteUtils.insertStatementFromSchema(schema, "testtable1");
     while ((tb = tbb.popAny()) != null) {
       SQLiteAccessMethod.tupleBatchInsert(dbFile.getAbsolutePath(), insertTemplate0, tb);
       SQLiteAccessMethod.tupleBatchInsert(dbFile.getAbsolutePath(), insertTemplate1, tb);
     }
 
-    final Thread[] threads = new Thread[numThreads];
+    Thread[] threads = new Thread[numThreads];
     for (int i = 0; i < numThreads; i++) {
       final int j = i;
       threads[i] = new Thread() {
         @Override
         public void run() {
-          final Iterator<TupleBatch> it =
+          Iterator<TupleBatch> it =
               SQLiteAccessMethod.tupleBatchIteratorFromQuery(dbFile.getAbsolutePath(), "select * from testtable" + j
                   % 2, schema);
 
@@ -131,10 +127,10 @@ public class SQLiteAccessMethodTest {
       };
     }
 
-    for (final Thread t : threads) {
+    for (Thread t : threads) {
       t.start();
     }
-    for (final Thread t : threads) {
+    for (Thread t : threads) {
       t.join();
     }
     dbFile.deleteOnExit();

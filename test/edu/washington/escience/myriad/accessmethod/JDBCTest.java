@@ -5,8 +5,6 @@ import java.util.ArrayList;
 import org.junit.Test;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.ImmutableList;
-
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Predicate;
 import edu.washington.escience.myriad.Schema;
@@ -32,7 +30,7 @@ public class JDBCTest {
     final String jdbcDriverName = "com.mysql.jdbc.Driver";
     final String query = "select * from testtable";
     final String insert = "INSERT INTO testtable2 VALUES(?)";
-    final Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+    final Schema schema = new Schema(new Type[] { Type.INT_TYPE, Type.STRING_TYPE }, new String[] { "id", "name" });
     final String connectionString = "jdbc:" + dbms + "://" + host + ":" + port + "/" + databaseName;
     final JdbcQueryScan scan = new JdbcQueryScan(jdbcDriverName, connectionString, query, schema, user, password);
     final Filter filter1 = new Filter(Predicate.Op.GREATER_THAN_OR_EQ, 0, new Integer(50), scan);
@@ -41,8 +39,10 @@ public class JDBCTest {
 
     final ArrayList<Integer> fieldIdx = new ArrayList<Integer>();
     fieldIdx.add(1);
+    final ArrayList<Type> fieldType = new ArrayList<Type>();
+    fieldType.add(Type.STRING_TYPE);
 
-    final Project project = new Project(fieldIdx, filter2);
+    final Project project = new Project(fieldIdx, fieldType, filter2);
 
     final Operator root = project;
 

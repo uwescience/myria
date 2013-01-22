@@ -6,8 +6,6 @@ import java.io.File;
 
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableList;
-
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -54,42 +52,42 @@ public class FileScanTest {
   @Test(expected = DbException.class)
   public void testBadCommaTwoColumnInt() throws DbException {
     final String filename = "comma_two_col_int.txt";
-    final Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE));
+    final Schema schema = new Schema(new Type[] { Type.INT_TYPE, Type.INT_TYPE });
     assertTrue(getRowCount(filename, schema) == 7);
   }
 
   @Test(expected = DbException.class)
   public void testBadTwoColumnInt() throws DbException {
     final String filename = "bad_two_col_int.txt";
-    final Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE));
+    final Schema schema = new Schema(new Type[] { Type.INT_TYPE, Type.INT_TYPE });
     assertTrue(getRowCount(filename, schema) == 7);
   }
 
   @Test(expected = DbException.class)
   public void testBadTwoColumnInt2() throws DbException {
     final String filename = "bad_two_col_int_2.txt";
-    final Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE));
+    final Schema schema = new Schema(new Type[] { Type.INT_TYPE, Type.INT_TYPE });
     assertTrue(getRowCount(filename, schema) == 7);
   }
 
   @Test(expected = DbException.class)
   public void testBadTwoColumnInt3() throws DbException {
     final String filename = "bad_two_col_int_3.txt";
-    final Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE));
+    final Schema schema = new Schema(new Type[] { Type.INT_TYPE, Type.INT_TYPE });
     assertTrue(getRowCount(filename, schema) == 7);
   }
 
   @Test
   public void testCommaTwoColumnInt() throws DbException {
     final String filename = "comma_two_col_int.txt";
-    final Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE));
+    final Schema schema = new Schema(new Type[] { Type.INT_TYPE, Type.INT_TYPE });
     assertTrue(getRowCount(filename, schema, true) == 7);
   }
 
   @Test
   public void testSimpleTwoColumnInt() throws DbException {
     final String filename = "simple_two_col_int.txt";
-    final Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE));
+    final Schema schema = new Schema(new Type[] { Type.INT_TYPE, Type.INT_TYPE });
     assertTrue(getRowCount(filename, schema) == 7);
   }
 

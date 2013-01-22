@@ -11,6 +11,12 @@ import edu.washington.escience.myriad.operator.Operator;
  */
 public abstract class Exchange extends Operator {
 
+  /** Required for Java serialization. */
+  private static final long serialVersionUID = 1L;
+
+  public Exchange() {
+  }
+
   /**
    * 
    * The identifier of exchange operators. In a query plan, there may be a set of exchange operators, this ID class is
@@ -67,11 +73,5 @@ public abstract class Exchange extends Operator {
     public String toString() {
       return oId + "";
     }
-  }
-
-  /** Required for Java serialization. */
-  private static final long serialVersionUID = 1L;
-
-  public Exchange() {
   }
 }
