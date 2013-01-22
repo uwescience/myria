@@ -26,37 +26,17 @@ public class IPCSessionManagerClient extends SimpleChannelHandler {
   public IPCSessionManagerClient() {
   }
 
-  /**
-   * Invoked when something was written into a {@link Channel}.
-   */
-  @Override
-  public void writeComplete(final ChannelHandlerContext ctx, final WriteCompletionEvent e) throws Exception {
-    ChannelContext cs = ChannelContext.getChannelContext(e.getChannel());
-    cs.updateLastIOTimestamp();
-
-    ctx.sendUpstream(e);
-  }
-
-  /**
-   * Invoked when {@link Channel#write(Object)} is called.
-   */
-  @Override
-  public void writeRequested(final ChannelHandlerContext ctx, final MessageEvent e) throws Exception {
-    ChannelContext.getChannelContext(e.getChannel()).recordWriteFuture(e);
-    ctx.sendDownstream(e);
-  }
-
   @Override
   public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e) {
 
-    Channel ch = e.getChannel();
+    final Channel ch = e.getChannel();
     final TransportMessage tm = (TransportMessage) e.getMessage();
-    ChannelContext cc = ChannelContext.getChannelContext(ch);
-    ChannelContext.RegisteredChannelContext ecc = cc.getRegisteredChannelContext();
+    final ChannelContext cc = ChannelContext.getChannelContext(ch);
+    final ChannelContext.RegisteredChannelContext ecc = cc.getRegisteredChannelContext();
 
     if (ecc == null) {
       // connect request sent from other workers
-      Integer remoteID = IPCUtils.checkConnectTM(tm);
+      final Integer remoteID = IPCUtils.checkConnectTM(tm);
       if (remoteID != null) {
         cc.setRemoteReplyID(remoteID);
       } else {
@@ -72,5 +52,25 @@ public class IPCSessionManagerClient extends SimpleChannelHandler {
     }
     ctx.sendUpstream(e);
 
+  }
+
+  /**
+   * Invoked when something was written into a {@link Channel}.
+   */
+  @Override
+  public void writeComplete(final ChannelHandlerContext ctx, final WriteCompletionEvent e) throws Exception {
+    final ChannelContext cs = ChannelContext.getChannelContext(e.getChannel());
+    cs.updateLastIOTimestamp();
+
+    ctx.sendUpstream(e);
+  }
+
+  /**
+   * Invoked when {@link Channel#write(Object)} is called.
+   */
+  @Override
+  public void writeRequested(final ChannelHandlerContext ctx, final MessageEvent e) throws Exception {
+    ChannelContext.getChannelContext(e.getChannel()).recordWriteFuture(e);
+    ctx.sendDownstream(e);
   }
 }

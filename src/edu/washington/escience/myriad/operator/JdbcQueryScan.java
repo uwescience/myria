@@ -38,7 +38,7 @@ public class JdbcQueryScan extends LeafOperator {
   @Override
   protected TupleBatch fetchNext() throws DbException {
     if (tuples.hasNext()) {
-      TupleBatch tb = tuples.next();
+      final TupleBatch tb = tuples.next();
       return tb;
     } else {
       return null;

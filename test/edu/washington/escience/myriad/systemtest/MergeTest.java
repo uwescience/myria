@@ -7,6 +7,8 @@ import java.util.HashMap;
 
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
+
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -32,16 +34,16 @@ public class MergeTest extends SystemTestBase {
   @Test
   public void mergeTest() throws DbException, CatalogException, IOException {
 
-    final Type[] table1Types = new Type[] { Type.LONG_TYPE, Type.LONG_TYPE };
-    final String[] table1ColumnNames = new String[] { "follower", "followee" };
+    final ImmutableList<Type> table1Types = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
+    final ImmutableList<String> table1ColumnNames = ImmutableList.of("follower", "followee");
     final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
 
-    long[] tbl1ID1 = TestUtils.randomLong(1, MaxID - 1, numTbl1);
-    long[] tbl1ID2 = TestUtils.randomLong(1, MaxID - 1, numTbl1);
-    long[] tbl2ID1 = TestUtils.randomLong(1, MaxID - 1, numTbl2);
-    long[] tbl2ID2 = TestUtils.randomLong(1, MaxID - 1, numTbl2);
-    TupleBatchBuffer tbl1 = new TupleBatchBuffer(tableSchema);
-    TupleBatchBuffer tbl2 = new TupleBatchBuffer(tableSchema);
+    final long[] tbl1ID1 = TestUtils.randomLong(1, MaxID - 1, numTbl1);
+    final long[] tbl1ID2 = TestUtils.randomLong(1, MaxID - 1, numTbl1);
+    final long[] tbl2ID1 = TestUtils.randomLong(1, MaxID - 1, numTbl2);
+    final long[] tbl2ID2 = TestUtils.randomLong(1, MaxID - 1, numTbl2);
+    final TupleBatchBuffer tbl1 = new TupleBatchBuffer(tableSchema);
+    final TupleBatchBuffer tbl2 = new TupleBatchBuffer(tableSchema);
     for (int i = 0; i < numTbl1; i++) {
       tbl1.put(0, tbl1ID1[i]);
       tbl1.put(1, tbl1ID2[i]);
@@ -51,18 +53,18 @@ public class MergeTest extends SystemTestBase {
       tbl2.put(1, tbl2ID2[i]);
     }
 
-    createTable(WORKER_ID[0], "testtable0", "testtable", "follower long, followee long");
-    createTable(WORKER_ID[0], "testtable1", "testtable", "follower long, followee long");
+    createTable(WORKER_ID[0], "testtable0", "follower long, followee long");
+    createTable(WORKER_ID[0], "testtable1", "follower long, followee long");
     TupleBatch tb = null;
     while ((tb = tbl1.popAny()) != null) {
-      insertWithBothNames(WORKER_ID[0], "testtable", "testtable0", tableSchema, tb);
+      insert(WORKER_ID[0], "testtable0", tableSchema, tb);
     }
     while ((tb = tbl2.popAny()) != null) {
-      insertWithBothNames(WORKER_ID[0], "testtable", "testtable1", tableSchema, tb);
+      insert(WORKER_ID[0], "testtable1", tableSchema, tb);
     }
 
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan("testtable0.db", "select * from testtable", tableSchema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan("testtable1.db", "select * from testtable", tableSchema);
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan(null, "select * from testtable0", tableSchema);
+    final SQLiteQueryScan scan2 = new SQLiteQueryScan(null, "select * from testtable1", tableSchema);
     final Merge merge = new Merge(tableSchema, scan1, scan2);
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final CollectProducer cp = new CollectProducer(merge, serverReceiveID, MASTER_ID);
@@ -84,7 +86,7 @@ public class MergeTest extends SystemTestBase {
     while ((result = Server.runningInstance.startServerQuery(0, serverPlan)) == null) {
       try {
         Thread.sleep(100);
-      } catch (InterruptedException e) {
+      } catch (final InterruptedException e) {
         e.printStackTrace();
         Thread.currentThread().interrupt();
       }

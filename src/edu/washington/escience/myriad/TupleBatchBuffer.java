@@ -51,6 +51,17 @@ public class TupleBatchBuffer {
   }
 
   /**
+   * clear this TBB.
+   * */
+  public final void clear() {
+    columnsReady.clear();
+    currentColumns.clear();
+    currentInProgressTuples = 0;
+    numColumnsReady = 0;
+    readyTuples.clear();
+  }
+
+  /**
    * Makes a batch of any tuples in the buffer and appends it to the internal list.
    * 
    * @return true if any tuples were added.
@@ -76,7 +87,7 @@ public class TupleBatchBuffer {
    */
   public final List<TupleBatch> getAll() {
     final List<TupleBatch> output = new LinkedList<TupleBatch>();
-    for (List<Column<?>> columns : readyTuples) {
+    for (final List<Column<?>> columns : readyTuples) {
       output.add(new TupleBatch(schema, columns, TupleBatch.BATCH_SIZE));
     }
     if (currentInProgressTuples > 0) {
@@ -92,7 +103,7 @@ public class TupleBatchBuffer {
    */
   public final List<List<Column<?>>> getAllAsRawColumn() {
     final List<List<Column<?>>> output = new LinkedList<List<Column<?>>>();
-    for (List<Column<?>> columns : readyTuples) {
+    for (final List<Column<?>> columns : readyTuples) {
       output.add(columns);
     }
     if (currentInProgressTuples > 0) {
@@ -110,7 +121,7 @@ public class TupleBatchBuffer {
   public final List<TransportMessage> getAllAsTM(final ExchangePairID oId) {
     final List<TransportMessage> output = new LinkedList<TransportMessage>();
     if (numTuples() > 0) {
-      for (List<Column<?>> columns : readyTuples) {
+      for (final List<Column<?>> columns : readyTuples) {
         output.add(IPCUtils.normalDataMessage(columns, oId));
       }
       if (currentInProgressTuples > 0) {
@@ -121,14 +132,33 @@ public class TupleBatchBuffer {
   }
 
   /**
-   * clear this TBB.
+   * @return the Schema of the tuples in this buffer.
+   */
+  public final Schema getSchema() {
+    return schema;
+  }
+
+  /**
+   * @return if there is filled TupleBatches ready for pop.
    * */
-  public final void clear() {
-    columnsReady.clear();
-    currentColumns.clear();
-    currentInProgressTuples = 0;
-    numColumnsReady = 0;
-    readyTuples.clear();
+  public final boolean hasFilledTB() {
+    return readyTuples.size() > 0;
+  }
+
+  /**
+   * @param another TBB.
+   * */
+  public final void merge(final TupleBatchBuffer another) {
+    readyTuples.addAll(another.readyTuples);
+    if (another.currentInProgressTuples > 0) {
+      for (int row = 0; row < another.currentInProgressTuples; row++) {
+        int column = 0;
+        for (final Column<?> c : another.currentColumns) {
+          put(column, c.get(row));
+          column++;
+        }
+      }
+    }
   }
 
   /**
@@ -139,6 +169,67 @@ public class TupleBatchBuffer {
   }
 
   /**
+   * @return pop filled and non-filled TupleBatch
+   * */
+  public final TupleBatch popAny() {
+    final TupleBatch tb = popFilled();
+    if (tb != null) {
+      return tb;
+    } else {
+      if (currentInProgressTuples > 0) {
+        final int size = currentInProgressTuples;
+        finishBatch();
+        return new TupleBatch(schema, readyTuples.remove(0), size);
+      } else {
+        return null;
+      }
+    }
+  }
+
+  /**
+   * @return pop filled or non-filled as list of columns.
+   * */
+  public final List<Column<?>> popAnyAsRawColumn() {
+    final List<Column<?>> rc = popFilledAsRawColumn();
+    if (rc != null) {
+      return rc;
+    } else {
+      if (currentInProgressTuples > 0) {
+        finishBatch();
+        return popFilledAsRawColumn();
+      } else {
+        return null;
+      }
+    }
+  }
+
+  /**
+   * @param oID destination ExchangePairID
+   * @return pop filled and non-filled TransportMessage
+   * */
+  public final TransportMessage popAnyAsTM(final ExchangePairID oID) {
+    final TransportMessage[] ans = popAnyAsTM(new ExchangePairID[] { oID });
+    if (ans == null) {
+      return null;
+    }
+    return ans[0];
+  }
+
+  public final TransportMessage[] popAnyAsTM(final ExchangePairID[] oIDs) {
+    final TransportMessage[] dm = popFilledAsTM(oIDs);
+    if (dm != null) {
+      return dm;
+    } else {
+      if (currentInProgressTuples > 0) {
+        finishBatch();
+        return popFilledAsTM(oIDs);
+      } else {
+        return null;
+      }
+    }
+  }
+
+  /**
    * Extract and return the first complete TupleBatch in this Buffer.
    * 
    * @return the first complete TupleBatch in this buffer, or null if none is ready.
@@ -146,29 +237,6 @@ public class TupleBatchBuffer {
   public final TupleBatch popFilled() {
     if (readyTuples.size() > 0) {
       return new TupleBatch(schema, readyTuples.remove(0), TupleBatch.BATCH_SIZE);
-    }
-    return null;
-  }
-
-  /**
-   * Pop filled as TransportMessage. Avoid the overhead of creating TupleBatch instances if the data in this TBB are to
-   * be sent to other workers.
-   * 
-   * @param oId Destination exchangePairID.
-   * @return TransportMessage popped or null if no filled tuples ready yet.
-   * */
-  public final TransportMessage popFilledAsTM(final ExchangePairID oId) {
-    TransportMessage[] ans = popFilledAsTM(new ExchangePairID[] { oId });
-    if (ans == null) {
-      return null;
-    }
-    return ans[0];
-  }
-
-  public final TransportMessage[] popFilledAsTM(final ExchangePairID[] oIds) {
-    if (readyTuples.size() > 0) {
-      List<Column<?>> columns = readyTuples.remove(0);
-      return IPCUtils.normalDataMessageMultiCopy(columns, oIds);
     }
     return null;
   }
@@ -186,71 +254,26 @@ public class TupleBatchBuffer {
   }
 
   /**
-   * @return if there is filled TupleBatches ready for pop.
+   * Pop filled as TransportMessage. Avoid the overhead of creating TupleBatch instances if the data in this TBB are to
+   * be sent to other workers.
+   * 
+   * @param oId Destination exchangePairID.
+   * @return TransportMessage popped or null if no filled tuples ready yet.
    * */
-  public final boolean hasFilledTB() {
-    return readyTuples.size() > 0;
-  }
-
-  /**
-   * @return pop filled and non-filled TupleBatch
-   * */
-  public final TupleBatch popAny() {
-    TupleBatch tb = popFilled();
-    if (tb != null) {
-      return tb;
-    } else {
-      if (currentInProgressTuples > 0) {
-        int size = currentInProgressTuples;
-        finishBatch();
-        return new TupleBatch(schema, readyTuples.remove(0), size);
-      } else {
-        return null;
-      }
-    }
-  }
-
-  /**
-   * @param oID destination ExchangePairID
-   * @return pop filled and non-filled TransportMessage
-   * */
-  public final TransportMessage popAnyAsTM(final ExchangePairID oID) {
-    TransportMessage[] ans = popAnyAsTM(new ExchangePairID[] { oID });
+  public final TransportMessage popFilledAsTM(final ExchangePairID oId) {
+    final TransportMessage[] ans = popFilledAsTM(new ExchangePairID[] { oId });
     if (ans == null) {
       return null;
     }
     return ans[0];
   }
 
-  public final TransportMessage[] popAnyAsTM(final ExchangePairID[] oIDs) {
-    TransportMessage[] dm = popFilledAsTM(oIDs);
-    if (dm != null) {
-      return dm;
-    } else {
-      if (currentInProgressTuples > 0) {
-        finishBatch();
-        return popFilledAsTM(oIDs);
-      } else {
-        return null;
-      }
+  public final TransportMessage[] popFilledAsTM(final ExchangePairID[] oIds) {
+    if (readyTuples.size() > 0) {
+      final List<Column<?>> columns = readyTuples.remove(0);
+      return IPCUtils.normalDataMessageMultiCopy(columns, oIds);
     }
-  }
-
-  /**
-   * @return pop filled or non-filled as list of columns.
-   * */
-  public final List<Column<?>> popAnyAsRawColumn() {
-    List<Column<?>> rc = popFilledAsRawColumn();
-    if (rc != null) {
-      return rc;
-    } else {
-      if (currentInProgressTuples > 0) {
-        finishBatch();
-        return popFilledAsRawColumn();
-      } else {
-        return null;
-      }
-    }
+    return null;
   }
 
   /**
@@ -275,29 +298,6 @@ public class TupleBatchBuffer {
         finishBatch();
       }
     }
-  }
-
-  /**
-   * @param another TBB.
-   * */
-  public final void merge(final TupleBatchBuffer another) {
-    readyTuples.addAll(another.readyTuples);
-    if (another.currentInProgressTuples > 0) {
-      for (int row = 0; row < another.currentInProgressTuples; row++) {
-        int column = 0;
-        for (Column<?> c : another.currentColumns) {
-          put(column, c.get(row));
-          column++;
-        }
-      }
-    }
-  }
-
-  /**
-   * @return the Schema of the tuples in this buffer.
-   */
-  public final Schema getSchema() {
-    return schema;
   }
 
 }

@@ -7,6 +7,8 @@ import java.util.HashMap;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
 
+import com.google.common.collect.ImmutableList;
+
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
@@ -22,32 +24,15 @@ public class TenGBTupleBatchSenderUsingConnectionPool {
 
   public static final int PORT = 19902;
 
-  public static double elapsedInSeconds(long startTimeMS) {
-    return (System.currentTimeMillis() - startTimeMS) * 1.0 / 1000;
-  }
+  final static Schema schema = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("id",
+      "id2"));
 
-  final static Schema schema = new Schema(new Type[] { Type.LONG_TYPE, Type.LONG_TYPE }, new String[] { "id", "id2" });
+  public static void doSend(final String[] args, final TupleBatchBuffer dataToSend, final int tupleSize)
+      throws IOException, InterruptedException {
 
-  public static void main(String[] args) throws Exception {
-    int totalRestrict = TupleBatch.BATCH_SIZE;
+    final String receiveHostName = args[0];
 
-    long[] ids = TestUtils.randomLong(1000, 1005, totalRestrict);
-    long[] ids2 = TestUtils.randomLong(1000, 1005, totalRestrict);
-
-    final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
-    for (int i = 0; i < ids.length; i++) {
-      tbb.put(0, ids[i]);
-      tbb.put(1, ids2[i]);
-    }
-    doSend(args, tbb, (Long.SIZE / 8) * 2);
-  }
-
-  public static void doSend(String[] args, TupleBatchBuffer dataToSend, int tupleSize) throws IOException,
-      InterruptedException {
-
-    String receiveHostName = args[0];
-
-    HashMap<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
+    final HashMap<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
     computingUnits.put(0, new SocketInfo(receiveHostName, TenGBTupleBatchReceiverUsingConnectionPool.PORT));
     computingUnits.put(1, new SocketInfo(InetAddress.getLocalHost().getHostName(), PORT));
 
@@ -58,20 +43,20 @@ public class TenGBTupleBatchSenderUsingConnectionPool {
     long start = 0;
     long end = 0;
 
-    Channel ch = connectionPool.reserveLongTermConnection(0);
+    final Channel ch = connectionPool.reserveLongTermConnection(0);
     start = System.currentTimeMillis();
     System.out.println("Start at " + start);
 
-    ExchangePairID eID = ExchangePairID.fromExisting(0L);
+    final ExchangePairID eID = ExchangePairID.fromExisting(0L);
     final TransportMessage tm = dataToSend.popAnyAsTM(eID);
-    long serializedSize = tm.getSerializedSize();
+    final long serializedSize = tm.getSerializedSize();
     System.out.println("TupleBatch payload size: " + ((Long.SIZE / 8) + tupleSize * TupleBatch.BATCH_SIZE));
     System.out.println("TupleBatch serialized size: " + serializedSize);
-    long tenGBytes = 10l * 1024l * 1024l * 1024l;
+    final long tenGBytes = 10l * 1024l * 1024l * 1024l;
     System.out.println("Total bytes to send: " + tenGBytes);
 
-    long numTB = tenGBytes / serializedSize;
-    long realSentSize = numTB * serializedSize;
+    final long numTB = tenGBytes / serializedSize;
+    final long realSentSize = numTB * serializedSize;
     System.out.println("Total num of TupleBatch: " + numTB);
     System.out.println("Real sent size: " + realSentSize * 1.0 / 1024 / 1024 / 1024 + "GBytes");
 
@@ -103,5 +88,23 @@ public class TenGBTupleBatchSenderUsingConnectionPool {
     System.out.println();
     connectionPool.shutdown().awaitUninterruptibly();
     // System.exit(0);
+  }
+
+  public static double elapsedInSeconds(final long startTimeMS) {
+    return (System.currentTimeMillis() - startTimeMS) * 1.0 / 1000;
+  }
+
+  public static void main(final String[] args) throws Exception {
+    final int totalRestrict = TupleBatch.BATCH_SIZE;
+
+    final long[] ids = TestUtils.randomLong(1000, 1005, totalRestrict);
+    final long[] ids2 = TestUtils.randomLong(1000, 1005, totalRestrict);
+
+    final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
+    for (int i = 0; i < ids.length; i++) {
+      tbb.put(0, ids[i]);
+      tbb.put(1, ids2[i]);
+    }
+    doSend(args, tbb, (Long.SIZE / 8) * 2);
   }
 }

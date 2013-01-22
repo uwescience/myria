@@ -11,6 +11,8 @@ import java.util.HashMap;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
+
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -48,22 +50,131 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
   /* Whether we were able to copy the data. */
   private static boolean successfulSetup = false;
 
+  @BeforeClass
+  public static void loadSpecificTestData() {
+    for (int i = 0; i < srcPath.length; ++i) {
+      final Path src = FileSystems.getDefault().getPath(srcPath[i]);
+      final Path dst =
+          FileSystems.getDefault().getPath(workerTestBaseFolder + "/worker_" + (i + 1) + "/sqlite_dbs/" + dstName[i]);
+      try {
+        Files.copy(src, dst);
+      } catch (final Exception e) {
+        throw new RuntimeException("unable to copy files from " + srcPath[i] + " to " + dstName[i]
+            + ". you can find the dataset at /projects/db7/dataset/twitter/speedtest.");
+      }
+    }
+    successfulSetup = true;
+  }
+
+  @Test
+  public void twitterSubsetCountProjectingJoinTest() throws DbException, CatalogException, IOException {
+    assertTrue(successfulSetup);
+
+    /* The Schema for the table we read from file. */
+    final ImmutableList<Type> table1Types = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
+    final ImmutableList<String> table1ColumnNames = ImmutableList.of("follower", "followee");
+    final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
+
+    /* Read the data from the file. */
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan(null, "select * from testtable", tableSchema);
+    final SQLiteQueryScan scan2 = new SQLiteQueryScan(null, "select * from testtable", tableSchema);
+
+    /*
+     * One worker partitions on the follower, the other worker partitions on the followee. In this way, we can do a
+     * self-join at the local node.
+     */
+    final int numPartition = 2;
+    // PF0 : follower (field 0 of the tuple)
+    final PartitionFunction<String, Integer> pf0 = new SingleFieldHashPartitionFunction(numPartition);
+    pf0.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
+    final ExchangePairID arrayID1 = ExchangePairID.newID();
+    final ShuffleProducer sp1 = new ShuffleProducer(scan1, arrayID1, WORKER_ID, pf0);
+    // PF1 : followee (field 1 of the tuple)
+    final PartitionFunction<String, Integer> pf1 = new SingleFieldHashPartitionFunction(numPartition);
+    pf1.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1);
+    final ExchangePairID arrayID2 = ExchangePairID.newID();
+    final ShuffleProducer sp2 = new ShuffleProducer(scan2, arrayID2, WORKER_ID, pf1);
+
+    /* Each worker receives both partitions, then joins on them. */
+    // SC1: receive based on followee (PF1, so SP2 and arrayID2)
+    final ShuffleConsumer sc1 = new ShuffleConsumer(sp2.getSchema(), arrayID2, WORKER_ID);
+    // SC2: receive based on follower (PF0, so SP1 and arrayID1)
+    final ShuffleConsumer sc2 = new ShuffleConsumer(sp1.getSchema(), arrayID1, WORKER_ID);
+    // Join on SC1.followee=SC2.follower
+    final LocalProjectingJoin localProjJoin =
+        new LocalProjectingJoin(sc1, new int[] { 1 }, new int[] { 0 }, sc2, new int[] { 0 }, new int[] { 1 });
+    /* Now reshuffle the results to partition based on the new followee, so that we can dupelim. */
+    final ExchangePairID arrayID0 = ExchangePairID.newID();
+    final ShuffleProducer sp0 = new ShuffleProducer(localProjJoin, arrayID0, WORKER_ID, pf0);
+    final ShuffleConsumer sc0 = new ShuffleConsumer(sp0.getSchema(), arrayID0, WORKER_ID);
+    final DupElim dupelim = new DupElim(sc0);
+    final Aggregate count = new Aggregate(dupelim, new int[] { 0 }, new int[] { Aggregator.AGG_OP_COUNT });
+
+    /* Finally, send (CollectProduce) all the results to the master. */
+    final ExchangePairID serverReceiveID = ExchangePairID.newID();
+    final CollectProducer cp = new CollectProducer(count, serverReceiveID, MASTER_ID);
+
+    /* Send the worker plans, rooted by CP, to the workers. Note that the plans are identical. */
+    final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
+    workerPlans.put(WORKER_ID[0], new Operator[] { cp, sp1, sp2, sp0 });
+    workerPlans.put(WORKER_ID[1], new Operator[] { cp, sp1, sp2, sp0 });
+
+    /* Wait for the server to start. */
+    while (Server.runningInstance == null) {
+      try {
+        Thread.sleep(10);
+      } catch (final InterruptedException e) {
+      }
+    }
+
+    /* The server plan. Basically, collect and count tuples. */
+    final Schema collectSchema = new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("COUNT"));
+    final CollectConsumer collectCounts = new CollectConsumer(collectSchema, serverReceiveID, WORKER_ID);
+    // final LongAggregator serverPlan = new LongAggregator(0, "COUNT", Aggregator.AGG_OP_SUM);
+
+    Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
+    TupleBatchBuffer result = Server.runningInstance.startServerQuery(0, collectCounts);
+    while (result == null) {
+      try {
+        Thread.sleep(100);
+      } catch (final InterruptedException e) {
+        e.printStackTrace();
+        Thread.currentThread().interrupt();
+      }
+      result = Server.runningInstance.startServerQuery(0, collectCounts);
+    }
+
+    /* Count the number of returned tuples. */
+    long total = 0;
+    TupleBatch tb = result.popAny();
+    while (tb != null) {
+      for (int row = 0, totalTuples = tb.numTuples(); row < totalTuples; row++) {
+        total += tb.getLong(0, row);
+      }
+      tb = result.popAny();
+    }
+
+    /* Make sure the count matches the known result. */
+    assertTrue(total == 3361461);
+  }
+
   @Test
   public void twitterSubsetJoinTest() throws DbException, CatalogException, IOException {
     assertTrue(successfulSetup);
 
     /* The Schema for the table we read from file. */
-    final Type[] table1Types = new Type[] { Type.LONG_TYPE, Type.LONG_TYPE };
-    final String[] table1ColumnNames = new String[] { "follower", "followee" };
+    final ImmutableList<Type> table1Types = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
+    final ImmutableList<String> table1ColumnNames = ImmutableList.of("follower", "followee");
     final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
     /* The Schema for the join. */
-    final Type[] joinTypes = new Type[] { Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE };
-    final String[] joinColumnNames = new String[] { "follower", "followee", "follower", "followee" };
-    final Schema joinSchema = new Schema(joinTypes, joinColumnNames);
+    final ImmutableList<Type> joinTypes =
+        ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE);
+    final ImmutableList<String> joinNames = ImmutableList.of("follower", "followee", "follower", "followee");
+    final Schema joinSchema = new Schema(joinTypes, joinNames);
 
     /* Read the data from the file. */
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan("testtable0.db", "select * from testtable", tableSchema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan("testtable0.db", "select * from testtable", tableSchema);
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan(null, "select * from testtable", tableSchema);
+    final SQLiteQueryScan scan2 = new SQLiteQueryScan(null, "select * from testtable", tableSchema);
 
     /*
      * One worker partitions on the follower, the other worker partitions on the followee. In this way, we can do a
@@ -120,7 +231,7 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     while (result == null) {
       try {
         Thread.sleep(100);
-      } catch (InterruptedException e) {
+      } catch (final InterruptedException e) {
         e.printStackTrace();
         Thread.currentThread().interrupt();
       }
@@ -136,14 +247,13 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     assertTrue(successfulSetup);
 
     /* The Schema for the table we read from file. */
-    final Type[] table1Types = new Type[] { Type.LONG_TYPE, Type.LONG_TYPE };
-    final String[] table1ColumnNames = new String[] { "follower", "followee" };
+    final ImmutableList<Type> table1Types = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
+    final ImmutableList<String> table1ColumnNames = ImmutableList.of("follower", "followee");
     final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
-    /* The Schema for the join. */
 
     /* Read the data from the file. */
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan("testtable0.db", "select * from testtable", tableSchema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan("testtable0.db", "select * from testtable", tableSchema);
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan(null, "select * from testtable", tableSchema);
+    final SQLiteQueryScan scan2 = new SQLiteQueryScan(null, "select * from testtable", tableSchema);
 
     /*
      * One worker partitions on the follower, the other worker partitions on the followee. In this way, we can do a
@@ -199,7 +309,7 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     while (result == null) {
       try {
         Thread.sleep(100);
-      } catch (InterruptedException e) {
+      } catch (final InterruptedException e) {
         e.printStackTrace();
         Thread.currentThread().interrupt();
       }
@@ -208,114 +318,5 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
 
     /* Make sure the count matches the known result. */
     assertTrue(result.numTuples() == 3361461);
-  }
-
-  @Test
-  public void twitterSubsetCountProjectingJoinTest() throws DbException, CatalogException, IOException {
-    assertTrue(successfulSetup);
-
-    /* The Schema for the table we read from file. */
-    final Type[] table1Types = new Type[] { Type.LONG_TYPE, Type.LONG_TYPE };
-    final String[] table1ColumnNames = new String[] { "follower", "followee" };
-    final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
-    /* The Schema for the join. */
-
-    /* Read the data from the file. */
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan("testtable0.db", "select * from testtable", tableSchema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan("testtable0.db", "select * from testtable", tableSchema);
-
-    /*
-     * One worker partitions on the follower, the other worker partitions on the followee. In this way, we can do a
-     * self-join at the local node.
-     */
-    final int numPartition = 2;
-    // PF0 : follower (field 0 of the tuple)
-    final PartitionFunction<String, Integer> pf0 = new SingleFieldHashPartitionFunction(numPartition);
-    pf0.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
-    final ExchangePairID arrayID1 = ExchangePairID.newID();
-    final ShuffleProducer sp1 = new ShuffleProducer(scan1, arrayID1, WORKER_ID, pf0);
-    // PF1 : followee (field 1 of the tuple)
-    final PartitionFunction<String, Integer> pf1 = new SingleFieldHashPartitionFunction(numPartition);
-    pf1.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1);
-    final ExchangePairID arrayID2 = ExchangePairID.newID();
-    final ShuffleProducer sp2 = new ShuffleProducer(scan2, arrayID2, WORKER_ID, pf1);
-
-    /* Each worker receives both partitions, then joins on them. */
-    // SC1: receive based on followee (PF1, so SP2 and arrayID2)
-    final ShuffleConsumer sc1 = new ShuffleConsumer(sp2.getSchema(), arrayID2, WORKER_ID);
-    // SC2: receive based on follower (PF0, so SP1 and arrayID1)
-    final ShuffleConsumer sc2 = new ShuffleConsumer(sp1.getSchema(), arrayID1, WORKER_ID);
-    // Join on SC1.followee=SC2.follower
-    final LocalProjectingJoin localProjJoin =
-        new LocalProjectingJoin(sc1, new int[] { 1 }, new int[] { 0 }, sc2, new int[] { 0 }, new int[] { 1 });
-    /* Now reshuffle the results to partition based on the new followee, so that we can dupelim. */
-    final ExchangePairID arrayID0 = ExchangePairID.newID();
-    final ShuffleProducer sp0 = new ShuffleProducer(localProjJoin, arrayID0, WORKER_ID, pf0);
-    final ShuffleConsumer sc0 = new ShuffleConsumer(sp0.getSchema(), arrayID0, WORKER_ID);
-    final DupElim dupelim = new DupElim(sc0);
-    final Aggregate count = new Aggregate(dupelim, new int[] { 0 }, new int[] { Aggregator.AGG_OP_COUNT });
-
-    /* Finally, send (CollectProduce) all the results to the master. */
-    final ExchangePairID serverReceiveID = ExchangePairID.newID();
-    final CollectProducer cp = new CollectProducer(count, serverReceiveID, MASTER_ID);
-
-    /* Send the worker plans, rooted by CP, to the workers. Note that the plans are identical. */
-    final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
-    workerPlans.put(WORKER_ID[0], new Operator[] { cp, sp1, sp2, sp0 });
-    workerPlans.put(WORKER_ID[1], new Operator[] { cp, sp1, sp2, sp0 });
-
-    /* Wait for the server to start. */
-    while (Server.runningInstance == null) {
-      try {
-        Thread.sleep(10);
-      } catch (final InterruptedException e) {
-      }
-    }
-
-    /* The server plan. Basically, collect and count tuples. */
-    final Schema collectSchema = new Schema(new Type[] { Type.LONG_TYPE }, new String[] { "COUNT" });
-    final CollectConsumer collectCounts = new CollectConsumer(collectSchema, serverReceiveID, WORKER_ID);
-    // final LongAggregator serverPlan = new LongAggregator(0, "COUNT", Aggregator.AGG_OP_SUM);
-
-    Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
-    TupleBatchBuffer result = Server.runningInstance.startServerQuery(0, collectCounts);
-    while (result == null) {
-      try {
-        Thread.sleep(100);
-      } catch (InterruptedException e) {
-        e.printStackTrace();
-        Thread.currentThread().interrupt();
-      }
-      result = Server.runningInstance.startServerQuery(0, collectCounts);
-    }
-
-    /* Count the number of returned tuples. */
-    long total = 0;
-    TupleBatch tb = result.popAny();
-    while (tb != null) {
-      for (int row = 0, totalTuples = tb.numTuples(); row < totalTuples; row++) {
-        total += tb.getLong(0, row);
-      }
-      tb = result.popAny();
-    }
-
-    /* Make sure the count matches the known result. */
-    assertTrue(total == 3361461);
-  }
-
-  @BeforeClass
-  public static void loadSpecificTestData() {
-    for (int i = 0; i < srcPath.length; ++i) {
-      Path src = FileSystems.getDefault().getPath(srcPath[i]);
-      Path dst =
-          FileSystems.getDefault().getPath(workerTestBaseFolder + "/worker_" + (i + 1) + "/sqlite_dbs/" + dstName[i]);
-      try {
-        Files.copy(src, dst);
-      } catch (Exception e) {
-        throw new RuntimeException("unable to copy files from " + srcPath[i] + " to " + dstName[i]
-            + ". you can find the dataset at /projects/db7/dataset/twitter/speedtest.");
-      }
-    }
-    successfulSetup = true;
   }
 }

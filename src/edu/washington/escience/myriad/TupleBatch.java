@@ -17,6 +17,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Ints;
 
 import edu.washington.escience.myriad.column.BooleanColumn;
@@ -63,35 +64,11 @@ public class TupleBatch {
   protected static final int[] IDENTITY_MAPPING;
 
   static {
-    int[] tmp = new int[BATCH_SIZE];
+    final int[] tmp = new int[BATCH_SIZE];
     for (int i = 0; i < BATCH_SIZE; i++) {
       tmp[i] = i;
     }
     IDENTITY_MAPPING = tmp;
-  }
-
-  /**
-   * Standard immutable TupleBatch constructor. All fields must be populated before creation and cannot be changed.
-   * 
-   * @param schema schema of the tuples in this batch. Must match columns.
-   * @param columns contains the column-stored data. Must match schema.
-   * @param numTuples number of tuples in the batch.
-   */
-  public TupleBatch(final Schema schema, final List<Column<?>> columns, final int numTuples) {
-    /* Take the input arguments directly */
-    this.schema = Objects.requireNonNull(schema);
-    this.columns = Objects.requireNonNull(columns);
-    Preconditions.checkArgument(columns.size() == schema.numFields(),
-        "Number of columns in data must equal to the number of fields in schema");
-    Preconditions.checkArgument(numTuples >= 0 && numTuples <= BATCH_SIZE,
-        "numTuples must be at least 1 and no more than TupleBatch.BATCH_SIZE");
-    numValidTuples = numTuples;
-    validIndices = IDENTITY_MAPPING;
-    /* All tuples are valid */
-    BitSet tmp = new BitSet(numTuples);
-    tmp.set(0, numTuples);
-    validTuples = new ReadOnlyBitSet(tmp);
-    // validTuplesRO = new ReadOnlyBitSet(validTuples);
   }
 
   /**
@@ -122,19 +99,27 @@ public class TupleBatch {
   }
 
   /**
-   * Standard copy constructor. Shallow copy of the schema, column list, and the number of tuples; deep copy of the
-   * valid tuples since that's what we mutate.
+   * Standard immutable TupleBatch constructor. All fields must be populated before creation and cannot be changed.
    * 
-   * @param from TupleBatch to duplicate.
+   * @param schema schema of the tuples in this batch. Must match columns.
+   * @param columns contains the column-stored data. Must match schema.
+   * @param numTuples number of tuples in the batch.
    */
-  private TupleBatch(final TupleBatch from) {
-    /* Take the input arguments directly, copying validTuples */
-    schema = from.schema;
-    columns = from.columns;
-    validTuples = (ReadOnlyBitSet) from.validTuples.clone();
+  public TupleBatch(final Schema schema, final List<Column<?>> columns, final int numTuples) {
+    /* Take the input arguments directly */
+    this.schema = Objects.requireNonNull(schema);
+    this.columns = Objects.requireNonNull(columns);
+    Preconditions.checkArgument(columns.size() == schema.numFields(),
+        "Number of columns in data must equal to the number of fields in schema");
+    Preconditions.checkArgument(numTuples >= 0 && numTuples <= BATCH_SIZE,
+        "numTuples must be at least 1 and no more than TupleBatch.BATCH_SIZE");
+    numValidTuples = numTuples;
+    validIndices = IDENTITY_MAPPING;
+    /* All tuples are valid */
+    final BitSet tmp = new BitSet(numTuples);
+    tmp.set(0, numTuples);
+    validTuples = new ReadOnlyBitSet(tmp);
     // validTuplesRO = new ReadOnlyBitSet(validTuples);
-    validIndices = from.validIndices;
-    numValidTuples = from.numValidTuples;
   }
 
   /**
@@ -164,8 +149,8 @@ public class TupleBatch {
     if (numValidTuples > 0) {
       final Column<?> columnValues = columns.get(column);
       final Type columnType = schema.getFieldType(column);
-      int[] mapping = validTupleIndices();
-      for (int validIdx : mapping) {
+      final int[] mapping = validTupleIndices();
+      for (final int validIdx : mapping) {
         if (!columnType.filter(op, columnValues, validIdx, operand)) {
           if (newValidTuples == null) {
             newValidTuples = validTuples.cloneAsBitSet();
@@ -238,6 +223,22 @@ public class TupleBatch {
   // }
 
   /**
+   * put the valid tuples into tbb.
+   * 
+   * @param tbb the TBB buffer.
+   * */
+  public final void compactInto(final TupleBatchBuffer tbb) {
+    final int numColumns = columns.size();
+    final int[] mapping = validTupleIndices();
+    for (int row = 0; row < numValidTuples; row++) {
+      final int mappedRow = mapping[row];
+      for (int column = 0; column < numColumns; column++) {
+        tbb.put(column, columns.get(column).get(mappedRow));
+      }
+    }
+  }
+
+  /**
    * Returns a new TupleBatch where all rows that do not match the specified predicate have been removed. Makes a
    * shallow copy of the data, possibly resulting in slowed access to the result, but no copies.
    * 
@@ -255,10 +256,6 @@ public class TupleBatch {
     return applyFilter(column, op, operand);
   }
 
-  public final boolean getBoolean(final int column, final int row) {
-    return ((BooleanColumn) columns.get(column)).getBoolean(validTupleIndices()[row]);
-  }
-
   // /**
   // * Returns the column at the specified index.
   // *
@@ -269,6 +266,22 @@ public class TupleBatch {
   // return columns.get(index);
   // }
 
+  public final boolean getBoolean(final int column, final int row) {
+    return ((BooleanColumn) columns.get(column)).getBoolean(validTupleIndices()[row]);
+  }
+
+  public final double getDouble(final int column, final int row) {
+    return ((DoubleColumn) columns.get(column)).getDouble(validTupleIndices()[row]);
+  }
+
+  public final float getFloat(final int column, final int row) {
+    return ((FloatColumn) columns.get(column)).getFloat(validTupleIndices()[row]);
+  }
+
+  public final int getInt(final int column, final int row) {
+    return ((IntColumn) columns.get(column)).getInt(validTupleIndices()[row]);
+  }
+
   /**
    * store this TB into JDBC.
    * 
@@ -276,10 +289,10 @@ public class TupleBatch {
    * @throws SQLException any exception caused by JDBC.
    * */
   public final void getIntoJdbc(final PreparedStatement statement) throws SQLException {
-    int[] mapping = validTupleIndices();
+    final int[] mapping = validTupleIndices();
     for (int row = 0; row < numValidTuples; row++) {
       int column = 0;
-      for (Column<?> c : columns) {
+      for (final Column<?> c : columns) {
         c.getIntoJdbc(mapping[row], statement, ++column);
       }
       statement.addBatch();
@@ -293,27 +306,15 @@ public class TupleBatch {
    * @throws SQLiteException any exception caused by SQLite.
    * */
   public final void getIntoSQLite(final SQLiteStatement statement) throws SQLiteException {
-    int[] mapping = validTupleIndices();
+    final int[] mapping = validTupleIndices();
     for (int row = 0; row < numValidTuples; row++) {
       int column = 0;
-      for (Column<?> c : columns) {
+      for (final Column<?> c : columns) {
         c.getIntoSQLite(mapping[row], statement, ++column);
       }
       statement.step();
       statement.reset();
     }
-  }
-
-  public final double getDouble(final int column, final int row) {
-    return ((DoubleColumn) columns.get(column)).getDouble(validTupleIndices()[row]);
-  }
-
-  public final float getFloat(final int column, final int row) {
-    return ((FloatColumn) columns.get(column)).getFloat(validTupleIndices()[row]);
-  }
-
-  public final int getInt(final int column, final int row) {
-    return ((IntColumn) columns.get(column)).getInt(validTupleIndices()[row]);
   }
 
   public final long getLong(final int column, final int row) {
@@ -344,10 +345,41 @@ public class TupleBatch {
     return ((StringColumn) columns.get(column)).getString(validTupleIndices()[row]);
   }
 
+  public Set<Pair<Object, TupleBatchBuffer>> groupby(final int groupByColumn,
+      final Map<Object, Pair<Object, TupleBatchBuffer>> buffers) {
+    Set<Pair<Object, TupleBatchBuffer>> ready = null;
+    final Column<?> gC = columns.get(groupByColumn);
+
+    final int[] mapping = validTupleIndices();
+    for (int i = 0; i < numValidTuples; i++) {
+      final Object v = gC.get(mapping[i]);
+      Pair<Object, TupleBatchBuffer> kvPair = buffers.get(v);
+      TupleBatchBuffer tbb = null;
+      if (kvPair == null) {
+        tbb = new TupleBatchBuffer(getSchema());
+        kvPair = Pair.of(v, tbb);
+        buffers.put(v, kvPair);
+      } else {
+        tbb = kvPair.getRight();
+      }
+      int j = 0;
+      for (final Column<?> c : columns) {
+        tbb.put(j++, c.get(mapping[i]));
+      }
+      if (tbb.hasFilledTB()) {
+        if (ready == null) {
+          ready = new HashSet<Pair<Object, TupleBatchBuffer>>();
+        }
+        ready.add(kvPair);
+      }
+    }
+    return ready;
+  }
+
   public final int hashCode(final int row) {
     final HashCodeBuilder hb = new HashCodeBuilder(MAGIC_HASHCODE1, MAGIC_HASHCODE2);
     final int mappedRow = validTupleIndices()[row];
-    for (Column<?> c : columns) {
+    for (final Column<?> c : columns) {
       hb.append(c.get(mappedRow));
     }
     return hb.toHashCode();
@@ -368,7 +400,7 @@ public class TupleBatch {
      * You pick a hard-coded, randomly chosen, non-zero, odd number ideally different for each class.
      */
     final HashCodeBuilder hb = new HashCodeBuilder(MAGIC_HASHCODE1, MAGIC_HASHCODE2);
-    int mappedRow = validTupleIndices()[row];
+    final int mappedRow = validTupleIndices()[row];
     for (final int i : hashColumns) {
       hb.append(columns.get(i).get(mappedRow));
     }
@@ -394,25 +426,26 @@ public class TupleBatch {
   }
 
   /**
-   * Hash the valid tuples in this batch and partition them into the supplied TupleBatchBuffers. This is a useful helper
-   * primitive for, e.g., the Scatter operator.
+   * Get a COPY of valid tuples held by this TupleBatch.
    * 
-   * @param destinations TupleBatchBuffers into which these tuples will be partitioned.
-   * @param hashColumns determines the key columns for the hash.
-   */
-  final void partitionInto(final TupleBatchBuffer[] destinations, final int[] hashColumns) {
-    Objects.requireNonNull(destinations);
-    Objects.requireNonNull(hashColumns);
-    int[] indexMapping = validTupleIndices();
-    for (int i = 0; i < numValidTuples; i++) {
-      final int j = indexMapping[i];
-      int dest = hashCode(j, hashColumns) % destinations.length;
-      /* hashCode can be negative, so wrap positive if necessary */
-      if (dest < destinations.length) {
-        dest += destinations.length;
+   * DO NOT use this method if not necessary.
+   * 
+   * Call get** methods if single cell values are requested. And call {#link compactInto} if the valid tuples are to be
+   * output to somewhere using a {#link TupleBatchBuffer}.
+   * 
+   * @return a copy of valid tuples
+   * */
+  public final List<Column<?>> outputRawData() {
+    final List<Column<?>> output = ColumnFactory.allocateColumns(schema);
+    final int[] mapping = validTupleIndices();
+    for (int row = 0; row < numValidTuples; row++) {
+      final int mappedRow = mapping[row];
+      int i = 0;
+      for (final Column<?> c : columns) {
+        output.get(i++).putObject(c.get(mappedRow));
       }
-      appendTupleInto(j, destinations[dest]);
     }
+    return output;
   }
 
   /**
@@ -426,10 +459,10 @@ public class TupleBatch {
 
     final int[] partitions = pf.partition(this); // columns, validTuplesRO, schema);
 
-    int[] mapping = validTupleIndices();
+    final int[] mapping = validTupleIndices();
     for (int i = 0; i < partitions.length; i++) {
       final int pOfTuple = partitions[i];
-      int mappedI = mapping[i];
+      final int mappedI = mapping[i];
       for (int j = 0; j < numColumns; j++) {
         buffers[pOfTuple].put(j, columns.get(j).get(mappedI));
       }
@@ -437,41 +470,24 @@ public class TupleBatch {
   }
 
   /**
-   * Get a COPY of valid tuples held by this TupleBatch.
+   * Hash the valid tuples in this batch and partition them into the supplied TupleBatchBuffers. This is a useful helper
+   * primitive for, e.g., the Scatter operator.
    * 
-   * DO NOT use this method if not necessary.
-   * 
-   * Call get** methods if single cell values are requested. And call {#link compactInto} if the valid tuples are to be
-   * output to somewhere using a {#link TupleBatchBuffer}.
-   * 
-   * @return a copy of valid tuples
-   * */
-  public final List<Column<?>> outputRawData() {
-    final List<Column<?>> output = ColumnFactory.allocateColumns(schema);
-    int[] mapping = validTupleIndices();
-    for (int row = 0; row < numValidTuples; row++) {
-      int mappedRow = mapping[row];
-      int i = 0;
-      for (Column<?> c : columns) {
-        output.get(i++).putObject(c.get(mappedRow));
+   * @param destinations TupleBatchBuffers into which these tuples will be partitioned.
+   * @param hashColumns determines the key columns for the hash.
+   */
+  final void partitionInto(final TupleBatchBuffer[] destinations, final int[] hashColumns) {
+    Objects.requireNonNull(destinations);
+    Objects.requireNonNull(hashColumns);
+    final int[] indexMapping = validTupleIndices();
+    for (int i = 0; i < numValidTuples; i++) {
+      final int j = indexMapping[i];
+      int dest = hashCode(j, hashColumns) % destinations.length;
+      /* hashCode can be negative, so wrap positive if necessary */
+      if (dest < destinations.length) {
+        dest += destinations.length;
       }
-    }
-    return output;
-  }
-
-  /**
-   * put the valid tuples into tbb.
-   * 
-   * @param tbb the TBB buffer.
-   * */
-  public final void compactInto(final TupleBatchBuffer tbb) {
-    int numColumns = columns.size();
-    int[] mapping = validTupleIndices();
-    for (int row = 0; row < numValidTuples; row++) {
-      int mappedRow = mapping[row];
-      for (int column = 0; column < numColumns; column++) {
-        tbb.put(column, columns.get(column).get(mappedRow));
-      }
+      appendTupleInto(j, destinations[dest]);
     }
   }
 
@@ -485,15 +501,13 @@ public class TupleBatch {
    */
   public final TupleBatch project(final int[] remainingColumns) {
     Objects.requireNonNull(remainingColumns);
+    final ImmutableList.Builder<Type> newTypes = new ImmutableList.Builder<Type>();
+    final ImmutableList.Builder<String> newNames = new ImmutableList.Builder<String>();
     final List<Column<?>> newColumns = new ArrayList<Column<?>>();
-    final Type[] newTypes = new Type[remainingColumns.length];
-    final String[] newNames = new String[remainingColumns.length];
-    int count = 0;
     for (final int i : remainingColumns) {
       newColumns.add(columns.get(i));
-      newTypes[count] = schema.getFieldType(i);
-      newNames[count] = schema.getFieldName(i);
-      count++;
+      newTypes.add(schema.getFieldType(i));
+      newNames.add(schema.getFieldName(i));
     }
     return new TupleBatch(new Schema(newTypes, newNames), newColumns, validTuples, validIndices);
   }
@@ -511,14 +525,30 @@ public class TupleBatch {
     return project(Ints.toArray(Arrays.asList(remainingColumns)));
   }
 
+  /**
+   * @param
+   * */
+  public final TupleBatch remove(final BitSet tupleIndicesToRemove) {
+    final int[] mapping = validTupleIndices();
+    final BitSet newValidTuples = validTuples.cloneAsBitSet();
+    for (int i = tupleIndicesToRemove.nextSetBit(0); i >= 0; i = tupleIndicesToRemove.nextSetBit(i + 1)) {
+      newValidTuples.clear(mapping[i]);
+    }
+    if (newValidTuples.cardinality() != numValidTuples) {
+      return new TupleBatch(schema, columns, newValidTuples, null);
+    } else {
+      return this;
+    }
+  }
+
   @Override
   public final String toString() {
-    final Type[] columnTypes = schema.getTypes();
+    final ImmutableList<Type> columnTypes = schema.getTypes();
     final StringBuilder sb = new StringBuilder();
     for (int i = validTuples.nextSetBit(0); i >= 0; i = validTuples.nextSetBit(i + 1)) {
       sb.append("|\t");
       for (int j = 0; j < schema.numFields(); j++) {
-        sb.append(columnTypes[j].toString(columns.get(j), i));
+        sb.append(columnTypes.get(j).toString(columns.get(j), i));
         sb.append("\t|\t");
       }
       sb.append("\n");
@@ -548,52 +578,5 @@ public class TupleBatch {
     }
     validIndices = validT;
     return validIndices;
-  }
-
-  /**
-   * @param
-   * */
-  public final TupleBatch remove(final BitSet tupleIndicesToRemove) {
-    int[] mapping = validTupleIndices();
-    BitSet newValidTuples = validTuples.cloneAsBitSet();
-    for (int i = tupleIndicesToRemove.nextSetBit(0); i >= 0; i = tupleIndicesToRemove.nextSetBit(i + 1)) {
-      newValidTuples.clear(mapping[i]);
-    }
-    if (newValidTuples.cardinality() != numValidTuples) {
-      return new TupleBatch(schema, columns, newValidTuples, null);
-    } else {
-      return this;
-    }
-  }
-
-  public Set<Pair<Object, TupleBatchBuffer>> groupby(final int groupByColumn,
-      final Map<Object, Pair<Object, TupleBatchBuffer>> buffers) {
-    Set<Pair<Object, TupleBatchBuffer>> ready = null;
-    Column<?> gC = columns.get(groupByColumn);
-
-    int[] mapping = validTupleIndices();
-    for (int i = 0; i < numValidTuples; i++) {
-      Object v = gC.get(mapping[i]);
-      Pair<Object, TupleBatchBuffer> kvPair = buffers.get(v);
-      TupleBatchBuffer tbb = null;
-      if (kvPair == null) {
-        tbb = new TupleBatchBuffer(getSchema());
-        kvPair = Pair.of(v, tbb);
-        buffers.put(v, kvPair);
-      } else {
-        tbb = kvPair.getRight();
-      }
-      int j = 0;
-      for (Column<?> c : columns) {
-        tbb.put(j++, c.get(mapping[i]));
-      }
-      if (tbb.hasFilledTB()) {
-        if (ready == null) {
-          ready = new HashSet<Pair<Object, TupleBatchBuffer>>();
-        }
-        ready.add(kvPair);
-      }
-    }
-    return ready;
   }
 }
