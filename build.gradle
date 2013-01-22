@@ -83,6 +83,11 @@ dependencies {
 }
 
 /* Tell all tasks to add sqlite library to their classpath when running. */
+tasks.withType(Compile) {
+  options.compilerArgs << "-Xlint:deprecation"
+}
+
+/* Tell all tasks to add sqlite library to their classpath when running. */
 tasks.withType(Test) {
   systemProperty "java.library.path", file("lib/sqlite4java-282")
 }
