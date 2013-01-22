@@ -119,8 +119,8 @@ public final class Server {
         final TransportMessage m = mw.message;
         final int senderID = mw.senderID;
 
-        switch (m.getType().getNumber()) {
-          case TransportMessage.TransportMessageType.DATA_VALUE:
+        switch (m.getType()) {
+          case DATA:
 
             final DataMessage data = m.getData();
             final ExchangePairID exchangePairID = ExchangePairID.fromExisting(data.getOperatorID());
@@ -140,17 +140,18 @@ public final class Server {
                   .getNumTuples())));
             }
             break;
-          case TransportMessage.TransportMessageType.CONTROL_VALUE:
+          case CONTROL:
             final ControlMessage controlM = m.getControl();
+            final Long queryId = controlM.getQueryId();
             switch (controlM.getType()) {
               case QUERY_READY_TO_EXECUTE:
-                queryReceivedByWorker(0, senderID);
+                queryReceivedByWorker(queryId, senderID);
                 break;
               case WORKER_ALIVE:
                 aliveWorkers.add(senderID);
                 break;
               case QUERY_COMPLETE:
-                HashMap<Integer, Integer> workersAssigned = workersAssignedToQuery.get(0);
+                HashMap<Integer, Integer> workersAssigned = workersAssignedToQuery.get(controlM.getQueryId());
                 if (!workersAssigned.containsKey(senderID)) {
                   ;// TODO complain about something bad.
                 }
@@ -234,9 +235,9 @@ public final class Server {
   }
 
   final ConcurrentHashMap<Integer, SocketInfo> workers;
-  final ConcurrentHashMap<Integer, HashMap<Integer, Integer>> workersAssignedToQuery;
+  final ConcurrentHashMap<Long, HashMap<Integer, Integer>> workersAssignedToQuery;
   final Set<Integer> aliveWorkers;
-  final ConcurrentHashMap<Integer, BitSet> workersReceivedQuery;
+  final ConcurrentHashMap<Long, BitSet> workersReceivedQuery;
 
   /**
    * The I/O buffer, all the ExchangeMessages sent to the server are buffered here.
@@ -279,8 +280,8 @@ public final class Server {
 
     connectionPool = new IPCConnectionPool(0, computingUnits, messageQueue);
     messageProcessor = new MessageProcessor();
-    workersAssignedToQuery = new ConcurrentHashMap<Integer, HashMap<Integer, Integer>>();
-    workersReceivedQuery = new ConcurrentHashMap<Integer, BitSet>();
+    workersAssignedToQuery = new ConcurrentHashMap<Long, HashMap<Integer, Integer>>();
+    workersReceivedQuery = new ConcurrentHashMap<Long, BitSet>();
   }
 
   public void cleanup() {
@@ -305,10 +306,10 @@ public final class Server {
     LOGGER.debug("Bye");
   }
 
-  public void dispatchWorkerQueryPlans(final Map<Integer, Operator[]> plans) throws IOException {
+  public void dispatchWorkerQueryPlans(final Long queryId, final Map<Integer, Operator[]> plans) throws IOException {
     final HashMap<Integer, Integer> setOfWorkers = new HashMap<Integer, Integer>(plans.size());
-    workersAssignedToQuery.put(0, setOfWorkers);
-    workersReceivedQuery.put(0, new BitSet(setOfWorkers.size()));
+    workersAssignedToQuery.put(queryId, setOfWorkers);
+    workersReceivedQuery.put(queryId, new BitSet(setOfWorkers.size()));
 
     int workerIdx = 0;
     for (final Map.Entry<Integer, Operator[]> e : plans.entrySet()) {
@@ -321,7 +322,7 @@ public final class Server {
           Thread.currentThread().interrupt();
         }
       }
-      getConnectionPool().sendShortMessage(workerID, IPCUtils.queryMessage(e.getValue()));
+      getConnectionPool().sendShortMessage(workerID, IPCUtils.queryMessage(queryId, e.getValue()));
     }
   }
 
@@ -333,7 +334,7 @@ public final class Server {
   }
 
   // TODO implement queryID
-  protected void queryReceivedByWorker(final int queryId, final int workerId) {
+  protected void queryReceivedByWorker(final Long queryId, final int workerId) {
     final BitSet workersReceived = workersReceivedQuery.get(queryId);
     final HashMap<Integer, Integer> workersAssigned = workersAssignedToQuery.get(queryId);
     final int workerIdx = workersAssigned.get(workerId);
@@ -352,9 +353,9 @@ public final class Server {
     }
   }
 
-  public boolean queryCompleted(int queryId) {
-    if (workersAssignedToQuery.containsKey(0)) {
-      return workersAssignedToQuery.get(0).isEmpty();
+  public boolean queryCompleted(final Long queryId) {
+    if (workersAssignedToQuery.containsKey(queryId)) {
+      return workersAssignedToQuery.get(queryId).isEmpty();
     }
     return true;
   }
@@ -374,7 +375,7 @@ public final class Server {
   /**
    * @return if the query is successfully executed.
    * */
-  public TupleBatchBuffer startServerQuery(final int queryId, final CollectConsumer serverPlan) throws DbException {
+  public TupleBatchBuffer startServerQuery(final Long queryId, final CollectConsumer serverPlan) throws DbException {
     final BitSet workersReceived = workersReceivedQuery.get(queryId);
     final HashMap<Integer, Integer> workersAssigned = workersAssignedToQuery.get(queryId);
     for (Integer workerId : workersAssigned.keySet()) {
@@ -452,7 +453,7 @@ public final class Server {
    * @return true if the query is successfully executed.
    * @throws DbException if there are errors executing the serverPlan operators.
    */
-  public boolean startServerQuery(final int queryId, final Producer serverPlan) throws DbException {
+  public boolean startServerQuery(final Long queryId, final Producer serverPlan) throws DbException {
     final BitSet workersReceived = workersReceivedQuery.get(queryId);
     final HashMap<Integer, Integer> workersAssigned = workersAssignedToQuery.get(queryId);
     for (Integer workerId : workersAssigned.keySet()) {
@@ -491,10 +492,10 @@ public final class Server {
     }
   }
 
-  protected void startWorkerQuery(final int queryId) {
+  protected void startWorkerQuery(final Long queryId) {
     final HashMap<Integer, Integer> workersAssigned = workersAssignedToQuery.get(queryId);
     for (final Entry<Integer, Integer> entry : workersAssigned.entrySet()) {
-      getConnectionPool().sendShortMessage(entry.getKey(), IPCUtils.CONTROL_START_QUERY);
+      getConnectionPool().sendShortMessage(entry.getKey(), IPCUtils.startQueryTM(0, queryId));
     }
   }
 }

@@ -13,5 +13,6 @@ message ControlMessage {
   }
 
   required ControlMessageType type = 1;		// See enum above
-  optional int32 remoteID = 2;
+  optional int32 remote_id = 2;
+  optional int64 query_id = 3;
 }

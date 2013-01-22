@@ -132,8 +132,8 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     final CollectConsumer collectCounts = new CollectConsumer(collectSchema, serverReceiveID, WORKER_ID);
     // final LongAggregator serverPlan = new LongAggregator(0, "COUNT", Aggregator.AGG_OP_SUM);
 
-    Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
-    TupleBatchBuffer result = Server.runningInstance.startServerQuery(0, collectCounts);
+    Server.runningInstance.dispatchWorkerQueryPlans(0L, workerPlans);
+    TupleBatchBuffer result = Server.runningInstance.startServerQuery(0L, collectCounts);
     while (result == null) {
       try {
         Thread.sleep(100);
@@ -141,7 +141,7 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
         e.printStackTrace();
         Thread.currentThread().interrupt();
       }
-      result = Server.runningInstance.startServerQuery(0, collectCounts);
+      result = Server.runningInstance.startServerQuery(0L, collectCounts);
     }
 
     /* Count the number of returned tuples. */
@@ -226,8 +226,8 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
 
     /* The server plan. Basically, collect and count tuples. */
     final CollectConsumer serverPlan = new CollectConsumer(tableSchema, serverReceiveID, WORKER_ID);
-    Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
-    TupleBatchBuffer result = Server.runningInstance.startServerQuery(0, serverPlan);
+    Server.runningInstance.dispatchWorkerQueryPlans(0L, workerPlans);
+    TupleBatchBuffer result = Server.runningInstance.startServerQuery(0L, serverPlan);
     while (result == null) {
       try {
         Thread.sleep(100);
@@ -235,7 +235,7 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
         e.printStackTrace();
         Thread.currentThread().interrupt();
       }
-      result = Server.runningInstance.startServerQuery(0, serverPlan);
+      result = Server.runningInstance.startServerQuery(0L, serverPlan);
     }
 
     /* Make sure the count matches the known result. */
@@ -304,8 +304,8 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
 
     /* The server plan. Basically, collect and count tuples. */
     final CollectConsumer serverPlan = new CollectConsumer(tableSchema, serverReceiveID, WORKER_ID);
-    Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
-    TupleBatchBuffer result = Server.runningInstance.startServerQuery(0, serverPlan);
+    Server.runningInstance.dispatchWorkerQueryPlans(0L, workerPlans);
+    TupleBatchBuffer result = Server.runningInstance.startServerQuery(0L, serverPlan);
     while (result == null) {
       try {
         Thread.sleep(100);
@@ -313,7 +313,7 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
         e.printStackTrace();
         Thread.currentThread().interrupt();
       }
-      result = Server.runningInstance.startServerQuery(0, serverPlan);
+      result = Server.runningInstance.startServerQuery(0L, serverPlan);
     }
 
     /* Make sure the count matches the known result. */

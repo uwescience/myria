@@ -77,24 +77,25 @@ public class Worker {
         final TransportMessage m = mw.message;
         final Integer senderID = mw.senderID;
 
-        switch (m.getType().getNumber()) {
-          case TransportMessage.TransportMessageType.QUERY_VALUE:
+        switch (m.getType()) {
+          case QUERY:
             try {
+              final long queryId = m.getQuery().getQueryId();
               final ObjectInputStream osis =
                   new ObjectInputStream(new ByteArrayInputStream(m.getQuery().getQuery().toByteArray()));
               final Operator[] query = (Operator[]) (osis.readObject());
               try {
-                receiveQuery(query);
+                receiveQuery(queryId, query);
               } catch (final DbException e) {
                 e.printStackTrace();
                 throw new RuntimeException(e);
               }
-              sendMessageToMaster(IPCUtils.CONTROL_QUERY_READY, null);
+              sendMessageToMaster(IPCUtils.queryReadyTM(myID, queryId), null);
             } catch (IOException | ClassNotFoundException e) {
               e.printStackTrace();
             }
             break;
-          case TransportMessage.TransportMessageType.DATA_VALUE:
+          case DATA:
             final DataMessage data = m.getData();
             final ExchangePairID exchangePairID = ExchangePairID.fromExisting(data.getOperatorID());
             final Schema operatorSchema = exchangeSchema.get(exchangePairID);
@@ -116,7 +117,7 @@ public class Worker {
                 break;
             }
             break;
-          case TransportMessage.TransportMessageType.CONTROL_VALUE:
+          case CONTROL:
             final ControlMessage controlM = m.getControl();
             switch (controlM.getType().getNumber()) {
               case ControlMessage.ControlMessageType.SHUTDOWN_VALUE:
@@ -153,8 +154,8 @@ public class Worker {
     @Override
     public final void run() {
       while (true) {
-        Operator[] queries = null;
-        queries = queryPlan;
+        Operator[] queries = queryPlan;
+        long queryId = myQueryId;
         if (queries != null) {
           LOGGER.log(Level.INFO, "Worker start processing query");
           for (final Operator query : queries) {
@@ -180,7 +181,7 @@ public class Worker {
               break;
             }
           }
-          finishQuery();
+          finishQuery(queryId);
         }
 
         synchronized (queryExecutor) {
@@ -342,6 +343,9 @@ public class Worker {
    */
   final int myID;
 
+  /** The ID of the currently running query. */
+  long myQueryId;
+
   /**
    * connectionPool[0] is always the master.
    */
@@ -432,13 +436,15 @@ public class Worker {
 
   /**
    * This method should be called when a query is finished.
+   * 
+   * @param queryId the ID of the query that just finished.
    */
-  public final void finishQuery() {
+  public final void finishQuery(final long queryId) {
     if (queryPlan != null) {
       dataBuffer.clear();
       queryPlan = null;
     }
-    sendMessageToMaster(IPCUtils.CONTROL_QUERY_COMPLETE, null);
+    sendMessageToMaster(IPCUtils.queryCompleteTM(myID, queryId), null);
     LOGGER.log(Level.INFO, "My part of the query finished");
   }
 
@@ -546,9 +552,9 @@ public class Worker {
    * 
    * @throws DbException
    */
-  public final void receiveQuery(final Operator[] queries) throws DbException {
+  public final void receiveQuery(final Long queryId, final Operator[] queries) throws DbException {
     LOGGER.log(Level.INFO, "Query received");
-    if (Worker.this.queryPlan != null) {
+    if (queryPlan != null) {
       LOGGER.log(Level.INFO, "Error: Worker is still processing. New query refused");
       return;
     }
@@ -556,13 +562,14 @@ public class Worker {
 
     final ArrayList<ExchangePairID> ids = new ArrayList<ExchangePairID>();
     collectConsumerOperatorIDs(queries, ids);
-    Worker.this.dataBuffer.clear();
-    Worker.this.exchangeSchema.clear();
+    dataBuffer.clear();
+    exchangeSchema.clear();
     for (final ExchangePairID id : ids) {
-      Worker.this.dataBuffer.put(id, new LinkedBlockingQueue<ExchangeData>());
+      dataBuffer.put(id, new LinkedBlockingQueue<ExchangeData>());
     }
-    Worker.this.localizeQueryPlan(queries);
-    Worker.this.queryPlan = queries;
+    localizeQueryPlan(queries);
+    queryPlan = queries;
+    myQueryId = queryId;
   }
 
   protected final void sendMessageToMaster(final TransportMessage message, final ChannelFutureListener callback) {

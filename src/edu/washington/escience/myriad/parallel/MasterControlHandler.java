@@ -42,7 +42,8 @@ public class MasterControlHandler extends SimpleChannelUpstreamHandler {
       final ControlMessage cm = tm.getControl();
       final HashMap<String, Object> attributes = new HashMap<String, Object>();
       channel.setAttachment(attributes);
-      attributes.put("remoteID", cm.getRemoteID());
+      attributes.put("remoteId", cm.getRemoteId());
+      attributes.put("queryId", cm.getQueryId());
     }
     ctx.sendUpstream(e);
   }

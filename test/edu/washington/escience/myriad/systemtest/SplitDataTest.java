@@ -59,9 +59,11 @@ public class SplitDataTest extends SystemTestBase {
 
     scatter.setConnectionPool(Server.runningInstance.getConnectionPool());
 
-    Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
+    final long queryId = 7L;
+
+    Server.runningInstance.dispatchWorkerQueryPlans(queryId, workerPlans);
     System.out.println("Query dispatched to the workers");
-    while (Server.runningInstance.startServerQuery(0, scatter) != true) {
+    while (Server.runningInstance.startServerQuery(queryId, scatter) != true) {
       try {
         Thread.sleep(100);
       } catch (final InterruptedException e) {
@@ -70,7 +72,7 @@ public class SplitDataTest extends SystemTestBase {
       }
     }
 
-    while (!Server.runningInstance.queryCompleted(0)) {
+    while (!Server.runningInstance.queryCompleted(queryId)) {
       try {
         Thread.sleep(100);
       } catch (InterruptedException e) {
