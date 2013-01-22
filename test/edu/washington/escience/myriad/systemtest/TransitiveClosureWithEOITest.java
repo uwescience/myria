@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
 
 import org.junit.Test;
 
@@ -35,11 +36,10 @@ import edu.washington.escience.myriad.util.TestUtils;
 public class TransitiveClosureWithEOITest extends SystemTestBase {
   // change configuration here
   private final int MaxID = 100;
-  private final int numIteration = 4;
-  private final int numTbl1Worker1 = 60;
+  private final int numTbl1Worker1 = 50;
   private final int numTbl1Worker2 = 60;
 
-  public TupleBatchBuffer getResultInMemory(TupleBatchBuffer table1, Schema schema, int numIteration) {
+  public TupleBatchBuffer getResultInMemory(TupleBatchBuffer table1, Schema schema) {
     // a brute force check
 
     final Iterator<List<Column<?>>> tbs = table1.getAllAsRawColumn().iterator();
@@ -87,7 +87,6 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
 
   @Test
   public void transitiveClosure() throws DbException, CatalogException, IOException {
-    System.out.println(System.getProperty("java.util.logging.config.file"));
     // data generation
     final Type[] table1Types = new Type[] { Type.LONG_TYPE, Type.LONG_TYPE };
     final String[] table1ColumnNames = new String[] { "follower", "followee" };
@@ -96,6 +95,7 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     final String[] joinColumnNames = new String[] { "follower", "followee", "follower", "followee" };
     final Schema joinSchema = new Schema(joinTypes, joinColumnNames);
 
+    // generate the graph
     long[] tbl1ID1Worker1 = TestUtils.randomLong(1, MaxID - 1, numTbl1Worker1);
     long[] tbl1ID1Worker2 = TestUtils.randomLong(1, MaxID - 1, numTbl1Worker2);
     long[] tbl1ID2Worker1 = TestUtils.randomLong(1, MaxID - 1, numTbl1Worker1);
@@ -114,12 +114,8 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     table1.merge(tbl1Worker1);
     table1.merge(tbl1Worker2);
 
-    // generate correct answer in memory
-    TupleBatchBuffer expectedTBB = getResultInMemory(table1, tableSchema, numIteration);
-    HashMap<Tuple, Integer> expectedResult = TestUtils.tupleBatchToTupleBag(expectedTBB);
-
-    // database generation
     createTable(WORKER_ID[0], "testtable0", "testtable", "follower long, followee long");
+    createTable(WORKER_ID[1], "testtable0", "testtable", "follower long, followee long");
     TupleBatch tb = null;
     while ((tb = tbl1Worker1.popAny()) != null) {
       insertWithBothNames(WORKER_ID[0], "testtable", "testtable0", tableSchema, tb);
@@ -128,9 +124,35 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
       insertWithBothNames(WORKER_ID[1], "testtable", "testtable0", tableSchema, tb);
     }
 
+    // generate the correct answer in memory
+    TupleBatchBuffer expectedTBB = getResultInMemory(table1, tableSchema);
+    HashMap<Tuple, Integer> expectedResult = TestUtils.tupleBatchToTupleBag(expectedTBB);
+
+    // generate the I matrix
+    TupleBatchBuffer identity_worker1 = new TupleBatchBuffer(tableSchema);
+    TupleBatchBuffer identity_worker2 = new TupleBatchBuffer(tableSchema);
+    Random gen = new Random();
+    for (long i = 1; i < MaxID; ++i) {
+      if (gen.nextInt(1000) % 2 == 0) {
+        identity_worker1.put(0, i);
+        identity_worker1.put(1, i);
+      } else {
+        identity_worker2.put(0, i);
+        identity_worker2.put(1, i);
+      }
+    }
+    createTable(WORKER_ID[0], "testtable0", "identity", "follower long, followee long");
+    createTable(WORKER_ID[1], "testtable0", "identity", "follower long, followee long");
+    while ((tb = identity_worker1.popAny()) != null) {
+      insertWithBothNames(WORKER_ID[0], "identity", "testtable0", tableSchema, tb);
+    }
+    while ((tb = identity_worker2.popAny()) != null) {
+      insertWithBothNames(WORKER_ID[1], "identity", "testtable0", tableSchema, tb);
+    }
+
     // parallel query generation, duplicate db files
     final SQLiteQueryScan scan1 = new SQLiteQueryScan("testtable0.db", "select * from testtable", tableSchema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan("testtable0.db", "select * from testtable", tableSchema);
+    final SQLiteQueryScan scan2 = new SQLiteQueryScan("testtable0.db", "select * from identity", tableSchema);
     final ExchangePairID consumerID1 = ExchangePairID.newID();
     final ExchangePairID consumerID2 = ExchangePairID.newID();
     final LocalMultiwayConsumer sendBack_worker1 =
@@ -188,8 +210,8 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     final CollectProducer cp_worker2 = new CollectProducer(send2server_worker2, serverReceiveID, MASTER_ID);
 
     final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
-    workerPlans.put(WORKER_ID[0], new Operator[] { cp_worker1, multiProducer_worker1 });
-    workerPlans.put(WORKER_ID[1], new Operator[] { cp_worker2, multiProducer_worker2 });
+    workerPlans.put(WORKER_ID[0], new Operator[] { cp_worker1, multiProducer_worker1, sp1, sp2_worker1, sp3_worker1 });
+    workerPlans.put(WORKER_ID[1], new Operator[] { cp_worker2, multiProducer_worker2, sp1, sp2_worker2, sp3_worker2 });
 
     while (Server.runningInstance == null) {
       try {
@@ -212,7 +234,6 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
         Thread.currentThread().interrupt();
       }
     }
-
     HashMap<Tuple, Integer> actual = TestUtils.tupleBatchToTupleBag(result);
     TestUtils.assertTupleBagEqual(expectedResult, actual);
   }

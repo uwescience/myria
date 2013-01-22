@@ -31,6 +31,7 @@ public abstract class Consumer extends LeafOperator {
   protected ExchangePairID operatorID;
   private final Schema schema;
   private final BitSet workerEOS;
+  private final BitSet workerEOI;
   private final Map<Integer, Integer> workerIdToIndex;
   private Producer child;
 
@@ -50,12 +51,14 @@ public abstract class Consumer extends LeafOperator {
       workerIdToIndex.put(w, idx++);
     }
     workerEOS = new BitSet(workerIDs.length);
+    workerEOI = new BitSet(workerIDs.length);
   }
 
   @Override
   public void cleanup() {
     setInputBuffer(null);
     workerEOS.clear();
+    workerEOI.clear();
   }
 
   @Override
@@ -121,7 +124,7 @@ public abstract class Consumer extends LeafOperator {
         if (tb.isEos()) {
           workerEOS.set(workerIdToIndex.get(tb.getWorkerID()));
         } else if (tb.isEoi()) {
-          setEOI(true);
+          workerEOI.set(workerIdToIndex.get(tb.getWorkerID()));
           return null;
         } else {
           return tb.getRealData();
@@ -138,6 +141,12 @@ public abstract class Consumer extends LeafOperator {
 
   @Override
   public void checkEOSAndEOI() {
+    BitSet tmp = workerEOI;
+    tmp.or(workerEOS);
+    if (tmp.nextClearBit(0) == workerIdToIndex.size()) {
+      setEOI(true);
+      workerEOI.clear();
+    }
   }
 
   public void setInputBuffer(final LinkedBlockingQueue<ExchangeData> buffer) {

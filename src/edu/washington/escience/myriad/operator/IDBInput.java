@@ -12,6 +12,9 @@ public class IDBInput extends Operator {
   private Operator child1, child2;
   private Schema outputSchema;
 
+  private boolean child1Ended = false;
+  private int tuplesSentSinceLastEOI = 0;
+
   public IDBInput() {
   }
 
@@ -25,26 +28,25 @@ public class IDBInput extends Operator {
   @Override
   protected TupleBatch fetchNext() throws DbException {
     TupleBatch tb;
-    if (child1 != null && (tb = child1.next()) != null) {
+    if ((tb = child1.next()) != null) {
       tuplesSentSinceLastEOI += tb.numTuples();
       return tb;
     }
-    if (child2 != null) {
-      if ((tb = child2.next()) != null) {
-        tuplesSentSinceLastEOI += tb.numTuples();
-        return tb;
-      }
+    if (!child1Ended) {
+      return null;
+    }
+    if ((tb = child2.next()) != null) {
+      tuplesSentSinceLastEOI += tb.numTuples();
+      return tb;
     }
     return null;
   }
-
-  private boolean child1Ended = false;
-  private int tuplesSentSinceLastEOI = 0;
 
   @Override
   public final void checkEOSAndEOI() {
     if (!child1Ended && child1.eos()) {
       setEOI(true);
+      tuplesSentSinceLastEOI = 0;
       child1Ended = true;
     } else {
       if (child2.eos()) {

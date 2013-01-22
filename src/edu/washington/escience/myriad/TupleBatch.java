@@ -515,7 +515,7 @@ public class TupleBatch {
   public final String toString() {
     final Type[] columnTypes = schema.getTypes();
     final StringBuilder sb = new StringBuilder();
-    for (int i : validTupleIndices()) {
+    for (int i = validTuples.nextSetBit(0); i >= 0; i = validTuples.nextSetBit(i + 1)) {
       sb.append("|\t");
       for (int j = 0; j < schema.numFields(); j++) {
         sb.append(columnTypes[j].toString(columns.get(j), i));
