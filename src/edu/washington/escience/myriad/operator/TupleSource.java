@@ -33,11 +33,20 @@ public final class TupleSource extends LeafOperator {
   }
 
   @Override
+  protected void cleanup() throws DbException {
+  }
+
+  @Override
   protected TupleBatch fetchNext() throws DbException {
     if (data.isEmpty()) {
       return null;
     }
     return data.remove(0);
+  }
+
+  @Override
+  public TupleBatch fetchNextReady() throws DbException {
+    return fetchNext();
   }
 
   @Override
@@ -47,15 +56,6 @@ public final class TupleSource extends LeafOperator {
 
   @Override
   protected void init() throws DbException {
-  }
-
-  @Override
-  protected void cleanup() throws DbException {
-  }
-
-  @Override
-  public TupleBatch fetchNextReady() throws DbException {
-    return fetchNext();
   }
 
 }

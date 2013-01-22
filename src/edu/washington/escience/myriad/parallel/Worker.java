@@ -1,7 +1,6 @@
 package edu.washington.escience.myriad.parallel;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -10,9 +9,11 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -30,6 +31,7 @@ import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.coordinator.catalog.WorkerCatalog;
 import edu.washington.escience.myriad.operator.BlockingSQLiteDataReceiver;
 import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.operator.SQLiteInsert;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.operator.SQLiteSQLProcessor;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
@@ -47,7 +49,7 @@ import edu.washington.escience.myriad.util.JVMUtils;
  * 
  * To execute a query on a worker, 4 steps are proceeded:
  * 
- * 1) A worker receive a DbIterator instance as its execution plan. The worker then stores the plan and does some
+ * 1) A worker receive an Operator instance as its execution plan. The worker then stores the plan and does some
  * pre-processing, e.g. initializes the data structures which are needed during the execution of the plan.
  * 
  * 2) Each worker sends back to the server a message (it's id) to notify the server that the query plan has been
@@ -60,9 +62,6 @@ import edu.washington.escience.myriad.util.JVMUtils;
  * 
  */
 public class Worker {
-  /** The logger for this class. Defaults to myriad level, but could be set to a finer granularity if needed. */
-  private static final Logger LOGGER = Logger.getLogger(Worker.class.getName());
-
   protected final class MessageProcessor extends Thread {
     @Override
     public void run() {
@@ -86,7 +85,7 @@ public class Worker {
               final Operator[] query = (Operator[]) (osis.readObject());
               try {
                 receiveQuery(query);
-              } catch (DbException e) {
+              } catch (final DbException e) {
                 e.printStackTrace();
                 throw new RuntimeException(e);
               }
@@ -141,7 +140,12 @@ public class Worker {
 
   public static class MessageWrapper {
     public int senderID;
+
     public TransportMessage message;
+    public MessageWrapper(final int senderID, final TransportMessage message) {
+      this.senderID = senderID;
+      this.message = message;
+    }
   }
 
   /**
@@ -155,7 +159,7 @@ public class Worker {
         queries = queryPlan;
         if (queries != null) {
           LOGGER.log(Level.INFO, "Worker start processing query");
-          for (Operator query : queries) {
+          for (final Operator query : queries) {
             try {
               ((Producer) query).open();
             } catch (final DbException e1) {
@@ -164,7 +168,7 @@ public class Worker {
           }
           int endCount = 0;
           while (true) {
-            for (Operator query : queries) {
+            for (final Operator query : queries) {
               try {
                 if (query.isOpen() && ((Producer) query).next() == null) {
                   endCount++;
@@ -199,20 +203,6 @@ public class Worker {
    * a shutdown message is received.
    */
   protected class WorkerLivenessController {
-    private final Timer timer = new Timer();
-
-    protected class ShutdownChecker extends TimerTask {
-      @Override
-      public final void run() {
-        if (toShutdown) {
-          shutdown();
-          // JVMUtils.shutdownVM();
-        }
-
-      }
-
-    }
-
     protected class Reporter extends TimerTask {
       private volatile boolean inRun = false;
 
@@ -244,6 +234,20 @@ public class Worker {
       }
     }
 
+    protected class ShutdownChecker extends TimerTask {
+      @Override
+      public final void run() {
+        if (toShutdown) {
+          shutdown();
+          // JVMUtils.shutdownVM();
+        }
+
+      }
+
+    }
+
+    private final Timer timer = new Timer();
+
     public final void start() {
       try {
         timer.schedule(new ShutdownChecker(), 100, 100);
@@ -257,19 +261,12 @@ public class Worker {
     }
   }
 
+  /** The logger for this class. Defaults to myriad level, but could be set to a finer granularity if needed. */
+  private static final Logger LOGGER = Logger.getLogger(Worker.class.getName());
+
   static final String usage = "Usage: worker [--conf <conf_dir>]";
 
   public static final String DEFAULT_DATA_DIR = "data";
-
-  /**
-   * Find out all the ParallelOperatorIDs of all consuming operators: ShuffleConsumer, CollectConsumer, and
-   * BloomFilterConsumer running at this worker. The inBuffer needs the IDs to distribute the ExchangeMessages received.
-   */
-  public static void collectConsumerOperatorIDs(final Operator[] roots, final ArrayList<ExchangePairID> oIds) {
-    for (Operator root : roots) {
-      collectConsumerOperatorIDs(root, oIds);
-    }
-  }
 
   public static void collectConsumerOperatorIDs(final Operator root, final ArrayList<ExchangePairID> oIds) {
     if (root instanceof Consumer) {
@@ -284,6 +281,16 @@ public class Worker {
           return;
         }
       }
+    }
+  }
+
+  /**
+   * Find out all the ParallelOperatorIDs of all consuming operators: ShuffleConsumer, CollectConsumer, and
+   * BloomFilterConsumer running at this worker. The inBuffer needs the IDs to distribute the ExchangeMessages received.
+   */
+  public static void collectConsumerOperatorIDs(final Operator[] roots, final ArrayList<ExchangePairID> oIds) {
+    for (final Operator root : roots) {
+      collectConsumerOperatorIDs(root, oIds);
     }
   }
 
@@ -330,7 +337,7 @@ public class Worker {
 
   }
 
-  private final File dataDir;
+  private final Properties databaseHandle;
 
   /**
    * The ID of this worker.
@@ -381,7 +388,18 @@ public class Worker {
   public Worker(final String workingDirectory) throws CatalogException, FileNotFoundException {
     catalog = WorkerCatalog.open(FilenameUtils.concat(workingDirectory, "worker.catalog"));
     myID = Integer.parseInt(catalog.getConfigurationValue("worker.identifier"));
-    dataDir = new File(catalog.getConfigurationValue("worker.data.sqlite.dir"));
+    databaseHandle = new Properties();
+    final String databaseType = catalog.getConfigurationValue("worker.data.type");
+    switch (databaseType) {
+      case "sqlite":
+        databaseHandle.setProperty("sqliteFile", catalog.getConfigurationValue("worker.data.sqlite.db"));
+        break;
+      case "mysql":
+        /* TODO fill this in. */
+        break;
+      default:
+        throw new CatalogException("Unknown worker type: " + databaseType);
+    }
     mySocketInfo = catalog.getWorkers().get(myID);
 
     dataBuffer = new HashMap<ExchangePairID, LinkedBlockingQueue<ExchangeData>>();
@@ -438,6 +456,62 @@ public class Worker {
     return queryPlan != null;
   }
 
+  public final void localizeQueryPlan(final Operator queryPlan) throws DbException {
+    if (queryPlan == null) {
+      return;
+    }
+    if (queryPlan instanceof SQLiteQueryScan) {
+      final String sqliteDatabaseFilename = databaseHandle.getProperty("sqliteFile");
+      if (sqliteDatabaseFilename == null) {
+        throw new DbException("Unable to instantiate SQLiteQueryScan on non-sqlite worker");
+      }
+      final SQLiteQueryScan ss = ((SQLiteQueryScan) queryPlan);
+      ss.setPathToSQLiteDb(sqliteDatabaseFilename);
+    } else if (queryPlan instanceof SQLiteSQLProcessor) {
+      final String sqliteDatabaseFilename = databaseHandle.getProperty("sqliteFile");
+      if (sqliteDatabaseFilename == null) {
+        throw new DbException("Unable to instantiate SQLiteSQLProcessor on non-sqlite worker");
+      }
+      final SQLiteSQLProcessor ss = ((SQLiteSQLProcessor) queryPlan);
+      ss.setPathToSQLiteDb(sqliteDatabaseFilename);
+    } else if (queryPlan instanceof SQLiteInsert) {
+      final String sqliteDatabaseFilename = databaseHandle.getProperty("sqliteFile");
+      if (sqliteDatabaseFilename == null) {
+        throw new DbException("Unable to instantiate SQLiteInsert on non-sqlite worker");
+      }
+      final SQLiteInsert insert = ((SQLiteInsert) queryPlan);
+      insert.setPathToSQLiteDb(sqliteDatabaseFilename);
+      insert.setExecutorService(Executors.newSingleThreadExecutor());
+    } else if (queryPlan instanceof Producer) {
+      ((Producer) queryPlan).setConnectionPool(connectionPool);
+    } else if (queryPlan instanceof Consumer) {
+      final Consumer c = (Consumer) queryPlan;
+
+      LinkedBlockingQueue<ExchangeData> buf = null;
+      buf = Worker.this.dataBuffer.get(((Consumer) queryPlan).getOperatorID());
+      c.setInputBuffer(buf);
+      exchangeSchema.put(c.getOperatorID(), c.getSchema());
+
+    } else if (queryPlan instanceof BlockingSQLiteDataReceiver) {
+      final String sqliteDatabaseFilename = databaseHandle.getProperty("sqliteFile");
+      if (sqliteDatabaseFilename == null) {
+        throw new DbException("Unable to instantiate BlockingSQLiteDataReceiver on non-sqlite worker");
+      }
+      final BlockingSQLiteDataReceiver bdr = (BlockingSQLiteDataReceiver) queryPlan;
+      bdr.setPathToSQLiteDb(sqliteDatabaseFilename);
+    }
+
+    final Operator[] children = queryPlan.getChildren();
+
+    if (children != null) {
+      for (final Operator child : children) {
+        if (child != null) {
+          localizeQueryPlan(child);
+        }
+      }
+    }
+  }
+
   /**
    * localize the received query plan. Some information that are required to get the query plan executed need to be
    * replaced by local versions. For example, the table in the SeqScan operator need to be replaced by the local table.
@@ -449,44 +523,8 @@ public class Worker {
     if (queryPlans == null) {
       return;
     }
-    for (Operator queryPlan : queryPlans) {
+    for (final Operator queryPlan : queryPlans) {
       localizeQueryPlan(queryPlan);
-    }
-  }
-
-  public final void localizeQueryPlan(final Operator queryPlan) throws DbException {
-    if (queryPlan == null) {
-      return;
-    }
-    if (queryPlan instanceof SQLiteQueryScan) {
-      final SQLiteQueryScan ss = ((SQLiteQueryScan) queryPlan);
-      ss.setDataDir(dataDir.getAbsolutePath());
-    } else if (queryPlan instanceof SQLiteSQLProcessor) {
-      final SQLiteSQLProcessor ss = ((SQLiteSQLProcessor) queryPlan);
-      ss.setDataDir(dataDir.getAbsolutePath());
-    } else if (queryPlan instanceof Producer) {
-      ((Producer) queryPlan).setThisWorker(Worker.this);
-    } else if (queryPlan instanceof Consumer) {
-      final Consumer c = (Consumer) queryPlan;
-
-      LinkedBlockingQueue<ExchangeData> buf = null;
-      buf = Worker.this.dataBuffer.get(((Consumer) queryPlan).getOperatorID());
-      c.setInputBuffer(buf);
-      exchangeSchema.put(c.getOperatorID(), c.getSchema());
-
-    } else if (queryPlan instanceof BlockingSQLiteDataReceiver) {
-      final BlockingSQLiteDataReceiver bdr = (BlockingSQLiteDataReceiver) queryPlan;
-      bdr.resetDataDir(dataDir.getAbsolutePath());
-    }
-
-    Operator[] children = queryPlan.getChildren();
-
-    if (children != null) {
-      for (final Operator child : children) {
-        if (child != null) {
-          localizeQueryPlan(child);
-        }
-      }
     }
   }
 
@@ -530,7 +568,7 @@ public class Worker {
 
   protected final void sendMessageToMaster(final TransportMessage message, final ChannelFutureListener callback) {
     LOGGER.log(Level.INFO, "send back query ready");
-    ChannelFuture cf = Worker.this.connectionPool.sendShortMessage(0, message);
+    final ChannelFuture cf = Worker.this.connectionPool.sendShortMessage(0, message);
     if (callback != null) {
       cf.addListener(callback);
     }

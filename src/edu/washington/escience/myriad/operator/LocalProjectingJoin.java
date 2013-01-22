@@ -6,6 +6,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 
 import edu.washington.escience.myriad.DbException;
@@ -15,9 +16,6 @@ import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 
 public final class LocalProjectingJoin extends Operator implements Externalizable {
-
-  /** Required for Java serialization. */
-  private static final long serialVersionUID = 1L;
 
   private class IndexedTuple {
     private final int index;
@@ -67,6 +65,15 @@ public final class LocalProjectingJoin extends Operator implements Externalizabl
       return true;
     }
 
+    @Override
+    public int hashCode() {
+      return tb.hashCode(index);
+    }
+
+    public int hashCode4Keys(final int[] colIndx) {
+      return tb.hashCode(index, colIndx);
+    }
+
     public boolean joinEquals(final Object o, final int[] compareIndx1, final int[] compareIndx2) {
       if (!(o instanceof IndexedTuple)) {
         return false;
@@ -82,16 +89,10 @@ public final class LocalProjectingJoin extends Operator implements Externalizabl
       }
       return true;
     }
-
-    @Override
-    public int hashCode() {
-      return tb.hashCode(index);
-    }
-
-    public int hashCode4Keys(final int[] colIndx) {
-      return tb.hashCode(index, colIndx);
-    }
   }
+
+  /** Required for Java serialization. */
+  private static final long serialVersionUID = 1L;
 
   private Operator child1, child2;
   private Schema outputSchema;
@@ -111,18 +112,16 @@ public final class LocalProjectingJoin extends Operator implements Externalizabl
 
   public LocalProjectingJoin(final Operator child1, final int[] compareIndx1, final int[] answerColumns1,
       final Operator child2, final int[] compareIndx2, final int[] answerColumns2) {
-    Type[] types = new Type[answerColumns1.length + answerColumns2.length];
-    String[] names = new String[answerColumns1.length + answerColumns2.length];
-    int curIndex = 0;
-    for (int i : answerColumns1) {
-      types[curIndex] = child1.getSchema().getFieldType(i);
-      names[curIndex] = child1.getSchema().getFieldName(i);
-      ++curIndex;
+    final List<Type> types = new LinkedList<Type>();
+    final List<String> names = new LinkedList<String>();
+
+    for (final int i : answerColumns1) {
+      types.add(child1.getSchema().getFieldType(i));
+      names.add(child1.getSchema().getFieldName(i));
     }
-    for (int i : answerColumns2) {
-      types[curIndex] = child2.getSchema().getFieldType(i);
-      names[curIndex] = child2.getSchema().getFieldName(i);
-      ++curIndex;
+    for (final int i : answerColumns2) {
+      types.add(child2.getSchema().getFieldType(i));
+      names.add(child2.getSchema().getFieldName(i));
     }
     outputSchema = new Schema(types, names);
     this.child1 = child1;
@@ -138,14 +137,65 @@ public final class LocalProjectingJoin extends Operator implements Externalizabl
 
   protected void addToAns(final IndexedTuple tuple1, final IndexedTuple tuple2) {
     int curColumn = 0;
-    for (int i : answerColumns1) {
+    for (final int i : answerColumns1) {
       ans.put(curColumn, tuple1.tb.getObject(i, tuple1.index));
       curColumn++;
     }
-    for (int i : answerColumns2) {
+    for (final int i : answerColumns2) {
       ans.put(curColumn, tuple2.tb.getObject(i, tuple2.index));
       curColumn++;
     }
+  }
+
+  @Override
+  protected void cleanup() throws DbException {
+  }
+
+  @Override
+  protected TupleBatch fetchNext() throws DbException {
+    TupleBatch nexttb = ans.popFilled();
+    while (nexttb == null) {
+      boolean hasNewTuple = false; // might change to EOS instead of hasNext()
+      TupleBatch tb = null;
+      if ((tb = child1.next()) != null) {
+        hasNewTuple = true;
+        processChild1TB(tb);
+      }
+      // child2
+      if ((tb = child2.next()) != null) {
+        hasNewTuple = true;
+        processChild2TB(tb);
+      }
+      nexttb = ans.popFilled();
+      if (!hasNewTuple) {
+        break;
+      }
+    }
+    if (nexttb == null) {
+      if (ans.numTuples() > 0) {
+        nexttb = ans.popAny();
+      }
+    }
+    return nexttb;
+  }
+
+  @Override
+  public TupleBatch fetchNextReady() throws DbException {
+    return null;
+  }
+
+  @Override
+  public Operator[] getChildren() {
+    return new Operator[] { child1, child2 };
+  }
+
+  @Override
+  public Schema getSchema() {
+    return outputSchema;
+  }
+
+  @Override
+  public void init() throws DbException {
   }
 
   protected void processChild1TB(final TupleBatch tbFromChild1) {
@@ -195,54 +245,6 @@ public final class LocalProjectingJoin extends Operator implements Externalizabl
   }
 
   @Override
-  protected TupleBatch fetchNext() throws DbException {
-    TupleBatch nexttb = ans.popFilled();
-    while (nexttb == null) {
-      boolean hasNewTuple = false; // might change to EOS instead of hasNext()
-      TupleBatch tb = null;
-      if ((tb = child1.next()) != null) {
-        hasNewTuple = true;
-        processChild1TB(tb);
-      }
-      // child2
-      if ((tb = child2.next()) != null) {
-        hasNewTuple = true;
-        processChild2TB(tb);
-      }
-      nexttb = ans.popFilled();
-      if (!hasNewTuple) {
-        break;
-      }
-    }
-    if (nexttb == null) {
-      if (ans.numTuples() > 0) {
-        nexttb = ans.popAny();
-      }
-    }
-    return nexttb;
-  }
-
-  @Override
-  public Operator[] getChildren() {
-    return new Operator[] { child1, child2 };
-  }
-
-  @Override
-  public Schema getSchema() {
-    return outputSchema;
-  }
-
-  @Override
-  public void init() throws DbException {
-  }
-
-  @Override
-  public void setChildren(final Operator[] children) {
-    child1 = children[0];
-    child2 = children[1];
-  }
-
-  @Override
   public void readExternal(final ObjectInput in) throws IOException, ClassNotFoundException {
     child1 = (Operator) in.readObject();
     child2 = (Operator) in.readObject();
@@ -257,6 +259,12 @@ public final class LocalProjectingJoin extends Operator implements Externalizabl
   }
 
   @Override
+  public void setChildren(final Operator[] children) {
+    child1 = children[0];
+    child2 = children[1];
+  }
+
+  @Override
   public void writeExternal(final ObjectOutput out) throws IOException {
     out.writeObject(child1);
     out.writeObject(child2);
@@ -265,15 +273,6 @@ public final class LocalProjectingJoin extends Operator implements Externalizabl
     out.writeObject(answerColumns1);
     out.writeObject(answerColumns2);
     out.writeObject(outputSchema);
-  }
-
-  @Override
-  protected void cleanup() throws DbException {
-  }
-
-  @Override
-  public TupleBatch fetchNextReady() throws DbException {
-    return null;
   }
 
 }

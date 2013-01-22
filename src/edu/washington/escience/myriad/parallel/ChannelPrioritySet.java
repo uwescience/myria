@@ -18,6 +18,41 @@ import org.jboss.netty.channel.group.ChannelGroup;
 public class ChannelPrioritySet {
 
   /**
+   * Snapshot iterator that works off copy of underlying q array.
+   */
+  final class Itr implements Iterator<Channel> {
+    final Object[] array; // Array of all elements
+    int cursor; // index of next element to return;
+    int lastRet; // index of last element, or -1 if no such
+
+    Itr(final Object[] array) {
+      lastRet = -1;
+      this.array = array;
+    }
+
+    @Override
+    public boolean hasNext() {
+      return cursor < array.length;
+    }
+
+    @Override
+    public Channel next() {
+      if (cursor >= array.length) {
+        throw new NoSuchElementException();
+      }
+      lastRet = cursor;
+      return (Channel) array[cursor++];
+    }
+
+    /**
+     * Unsupport remove because we are not able to get the modification lock used in {#link PriorityBlockingQueue}
+     * */
+    @Override
+    public void remove() {
+      throw new UnsupportedOperationException();
+    }
+  }
+  /**
    * guard the modification of this data structure.
    * */
   private final Object updateLock = new Object();
@@ -33,6 +68,7 @@ public class ChannelPrioritySet {
    * using PriorityQueue for ordering.
    * */
   private final PriorityQueue<Channel> orderedChannels;
+
   /**
    * using HashSet to keep elements unique.
    * */
@@ -76,22 +112,24 @@ public class ChannelPrioritySet {
     }
   }
 
+  public Collection<Channel> allChannels() {
+    return Collections.unmodifiableCollection(orderedChannels);
+  }
+
   /**
-   * Update the priority value of element e.
+   * Returns an iterator over the elements in this queue. The iterator does not return the elements in any particular
+   * order.
    * 
-   * It's implemented as first remove e from queue and then add e back. If e is not in queue, simply add it to queue.
+   * <p>
+   * The returned iterator is a "weakly consistent" iterator that will never throw
+   * {@link java.util.ConcurrentModificationException ConcurrentModificationException}, and guarantees to traverse
+   * elements as they existed upon construction of the iterator, and may (but is not guaranteed to) reflect any
+   * modifications subsequent to construction.
    * 
-   * @param e element.
-   * @return true if this queue changed.
-   * */
-  public final boolean update(final Channel e) {
-    synchronized (updateLock) {
-      if (remove(e)) {
-        return add(e);
-      } else {
-        return false;
-      }
-    }
+   * @return an iterator over the elements in this queue
+   */
+  public Iterator<Channel> iterator() {
+    return new Itr(toArray());
   }
 
   /**
@@ -101,9 +139,9 @@ public class ChannelPrioritySet {
    * */
   public final Channel peekAndReserve() {
     synchronized (updateLock) {
-      Channel cc = orderedChannels.peek();
+      final Channel cc = orderedChannels.peek();
       if (cc != null) {
-        ChannelContext bc = ChannelContext.getChannelContext(cc);
+        final ChannelContext bc = ChannelContext.getChannelContext(cc);
         (bc.getRegisteredChannelContext()).incReference();
       }
       return cc;
@@ -119,11 +157,11 @@ public class ChannelPrioritySet {
    * */
   public final void release(final Channel ch, final ChannelGroup trash,
       final ConcurrentHashMap<Channel, Channel> recyclableConnections) {
-    ChannelContext cc = ChannelContext.getChannelContext(ch);
-    ChannelContext.RegisteredChannelContext ecc = cc.getRegisteredChannelContext();
+    final ChannelContext cc = ChannelContext.getChannelContext(ch);
+    final ChannelContext.RegisteredChannelContext ecc = cc.getRegisteredChannelContext();
     synchronized (updateLock) {
-      int size = size();
-      int currentReferenced = ecc.decReference();
+      final int size = size();
+      final int currentReferenced = ecc.decReference();
       if (currentReferenced <= 0) {
         if (size > upperBound) {
           // release
@@ -137,15 +175,6 @@ public class ChannelPrioritySet {
   }
 
   /**
-   * @return size of this channel set.
-   * */
-  public final int size() {
-    synchronized (updateLock) {
-      return set.size();
-    }
-  }
-
-  /**
    * Removes a single instance of the specified element from this queue, if it is present. More formally, removes an
    * element {@code e} such that {@code o.equals(e)}, if this queue contains one or more such elements. Returns
    * {@code true} if and only if this queue contained the specified element (or equivalently, if this queue changed as a
@@ -154,7 +183,7 @@ public class ChannelPrioritySet {
    * @param o element to be removed from this queue, if present
    * @return {@code true} if this queue changed as a result of the call
    */
-  public final boolean remove(Channel o) {
+  public final boolean remove(final Channel o) {
     synchronized (updateLock) {
       if (set.remove(o)) {
         return orderedChannels.remove(o);
@@ -164,10 +193,18 @@ public class ChannelPrioritySet {
     }
   }
 
-  @Override
-  public String toString() {
+  /**
+   * @return size of this channel set.
+   * */
+  public final int size() {
     synchronized (updateLock) {
-      return orderedChannels.toString();
+      return set.size();
+    }
+  }
+
+  public Object[] toArray() {
+    synchronized (updateLock) {
+      return orderedChannels.toArray();
     }
   }
 
@@ -202,71 +239,34 @@ public class ChannelPrioritySet {
    *           every element in this queue
    * @throws NullPointerException if the specified array is null
    */
-  public <T> T[] toArray(T[] a) {
+  public <T> T[] toArray(final T[] a) {
     synchronized (updateLock) {
       return orderedChannels.toArray(a);
     }
   }
 
-  public Object[] toArray() {
+  @Override
+  public String toString() {
     synchronized (updateLock) {
-      return orderedChannels.toArray();
+      return orderedChannels.toString();
     }
-  }
-
-  public Collection<Channel> allChannels() {
-    return Collections.unmodifiableCollection(orderedChannels);
   }
 
   /**
-   * Returns an iterator over the elements in this queue. The iterator does not return the elements in any particular
-   * order.
+   * Update the priority value of element e.
    * 
-   * <p>
-   * The returned iterator is a "weakly consistent" iterator that will never throw
-   * {@link java.util.ConcurrentModificationException ConcurrentModificationException}, and guarantees to traverse
-   * elements as they existed upon construction of the iterator, and may (but is not guaranteed to) reflect any
-   * modifications subsequent to construction.
+   * It's implemented as first remove e from queue and then add e back. If e is not in queue, simply add it to queue.
    * 
-   * @return an iterator over the elements in this queue
-   */
-  public Iterator<Channel> iterator() {
-    return new Itr(toArray());
-  }
-
-  /**
-   * Snapshot iterator that works off copy of underlying q array.
-   */
-  final class Itr implements Iterator<Channel> {
-    final Object[] array; // Array of all elements
-    int cursor; // index of next element to return;
-    int lastRet; // index of last element, or -1 if no such
-
-    Itr(Object[] array) {
-      lastRet = -1;
-      this.array = array;
-    }
-
-    @Override
-    public boolean hasNext() {
-      return cursor < array.length;
-    }
-
-    @Override
-    public Channel next() {
-      if (cursor >= array.length) {
-        throw new NoSuchElementException();
+   * @param e element.
+   * @return true if this queue changed.
+   * */
+  public final boolean update(final Channel e) {
+    synchronized (updateLock) {
+      if (remove(e)) {
+        return add(e);
+      } else {
+        return false;
       }
-      lastRet = cursor;
-      return (Channel) array[cursor++];
-    }
-
-    /**
-     * Unsupport remove because we are not able to get the modification lock used in {#link PriorityBlockingQueue}
-     * */
-    @Override
-    public void remove() {
-      throw new UnsupportedOperationException();
     }
   }
 }

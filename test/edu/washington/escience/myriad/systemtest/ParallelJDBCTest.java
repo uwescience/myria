@@ -5,9 +5,10 @@ import java.util.HashMap;
 
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
+
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
-import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.operator.BlockingJDBCDataReceiver;
 import edu.washington.escience.myriad.operator.JdbcQueryScan;
@@ -35,8 +36,8 @@ public class ParallelJDBCTest extends SystemTestBase {
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final ExchangePairID worker2ReceiveID = ExchangePairID.newID();
 
-    final Type[] types = new Type[] { Type.INT_TYPE, Type.STRING_TYPE };
-    final String[] columnNames = new String[] { "id", "name" };
+    final ImmutableList<Type> types = ImmutableList.of(Type.INT_TYPE, Type.STRING_TYPE);
+    final ImmutableList<String> columnNames = ImmutableList.of("id", "name");
     final Schema schema = new Schema(types, columnNames);
 
     final JdbcQueryScan scan1 =
@@ -73,11 +74,10 @@ public class ParallelJDBCTest extends SystemTestBase {
     final CollectConsumer serverPlan = new CollectConsumer(schema, serverReceiveID, new int[] { WORKER_ID[1] });
     Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
     LOGGER.debug("Query dispatched to the workers");
-    TupleBatchBuffer result = null;
-    while ((result = Server.runningInstance.startServerQuery(0, serverPlan)) == null) {
+    while (Server.runningInstance.startServerQuery(0, serverPlan) == null) {
       try {
         Thread.sleep(100);
-      } catch (InterruptedException e) {
+      } catch (final InterruptedException e) {
         e.printStackTrace();
         Thread.currentThread().interrupt();
       }

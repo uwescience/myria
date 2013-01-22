@@ -28,52 +28,9 @@ public class IPCInputGuard extends SimpleChannelHandler {
   }
 
   @Override
-  public void handleUpstream(final ChannelHandlerContext ctx, final ChannelEvent e) throws Exception {
-    if (e instanceof UpstreamChannelStateEvent) {
-      UpstreamChannelStateEvent ee = (UpstreamChannelStateEvent) e;
-      switch (ee.getState()) {
-        case OPEN:
-        case BOUND:
-          break;
-        case CONNECTED:
-          logger.info("Connection from remote. " + e.toString());
-          break;
-      }
-    }
-    super.handleUpstream(ctx, e);
-  }
-
-  @Override
-  public void handleDownstream(final ChannelHandlerContext ctx, final ChannelEvent e) throws Exception {
-    if (e instanceof DownstreamChannelStateEvent) {
-      DownstreamChannelStateEvent ee = (DownstreamChannelStateEvent) e;
-      switch (ee.getState()) {
-        case OPEN:
-        case BOUND:
-          break;
-        case CONNECTED:
-          logger.info("Connection to remote. " + e.toString());
-          break;
-      }
-    }
-    super.handleDownstream(ctx, e);
-  }
-
-  @Override
-  public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e) {
-    Object message = e.getMessage();
-    if (!(message instanceof TransportMessage)) {
-      throw new RuntimeException("Non-TransportMessage received: \n" + "\tfrom " + e.getRemoteAddress() + "\n"
-          + "\tmessage: " + message);
-    }
-
-    ctx.sendUpstream(e);
-  }
-
-  @Override
   public void exceptionCaught(final ChannelHandlerContext ctx, final ExceptionEvent e) {
-    Channel c = e.getChannel();
-    Throwable cause = e.getCause();
+    final Channel c = e.getChannel();
+    final Throwable cause = e.getCause();
     String errorMessage = cause.getMessage();
     if (errorMessage == null) {
       errorMessage = "";
@@ -94,5 +51,50 @@ public class IPCInputGuard extends SimpleChannelHandler {
     if (c != null) {
       c.close();
     }
+  }
+
+  @Override
+  public void handleDownstream(final ChannelHandlerContext ctx, final ChannelEvent e) throws Exception {
+    if (e instanceof DownstreamChannelStateEvent) {
+      final DownstreamChannelStateEvent ee = (DownstreamChannelStateEvent) e;
+      switch (ee.getState()) {
+        case OPEN:
+        case BOUND:
+        case INTEREST_OPS:
+          break;
+        case CONNECTED:
+          logger.info("Connection to remote. " + e.toString());
+          break;
+      }
+    }
+    super.handleDownstream(ctx, e);
+  }
+
+  @Override
+  public void handleUpstream(final ChannelHandlerContext ctx, final ChannelEvent e) throws Exception {
+    if (e instanceof UpstreamChannelStateEvent) {
+      final UpstreamChannelStateEvent ee = (UpstreamChannelStateEvent) e;
+      switch (ee.getState()) {
+        case OPEN:
+        case BOUND:
+        case INTEREST_OPS:
+          break;
+        case CONNECTED:
+          logger.info("Connection from remote. " + e.toString());
+          break;
+      }
+    }
+    super.handleUpstream(ctx, e);
+  }
+
+  @Override
+  public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e) {
+    final Object message = e.getMessage();
+    if (!(message instanceof TransportMessage)) {
+      throw new RuntimeException("Non-TransportMessage received: \n" + "\tfrom " + e.getRemoteAddress() + "\n"
+          + "\tmessage: " + message);
+    }
+
+    ctx.sendUpstream(e);
   }
 }

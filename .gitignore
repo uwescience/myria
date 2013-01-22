@@ -1,8 +1,8 @@
 .DS_Store
-bin
 .*.swp
 *.pyc
 .gradle
 build
 .classpath
 *nocommit*
+*NodeLocalParallel

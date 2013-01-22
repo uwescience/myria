@@ -1,10 +1,11 @@
 package edu.washington.escience.myriad.operator.agg;
 
+import com.google.common.collect.ImmutableList;
+
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.util.MathUtils;
 
 /**
  * Knows how to compute some aggregates over a LongColumn.
@@ -23,11 +24,6 @@ public final class LongAggregator implements Aggregator {
 
   public static final int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT | Aggregator.AGG_OP_SUM | Aggregator.AGG_OP_MAX
       | Aggregator.AGG_OP_MIN | Aggregator.AGG_OP_AVG;
-
-  @Override
-  public int availableAgg() {
-    return AVAILABLE_AGG;
-  }
 
   private LongAggregator(final int afield, final int aggOps, final Schema resultSchema) {
     this.resultSchema = resultSchema;
@@ -53,34 +49,27 @@ public final class LongAggregator implements Aggregator {
     max = Long.MIN_VALUE;
     sum = 0L;
     count = 0;
-    int numAggOps = MathUtils.numBinaryOnesInInteger(aggOps);
-    Type[] types = new Type[numAggOps];
-    String[] names = new String[numAggOps];
-    int idx = 0;
+    final ImmutableList.Builder<Type> types = ImmutableList.builder();
+    final ImmutableList.Builder<String> names = ImmutableList.builder();
     if ((aggOps & Aggregator.AGG_OP_COUNT) != 0) {
-      types[idx] = Type.LONG_TYPE;
-      names[idx] = "count(" + aFieldName + ")";
-      idx += 1;
+      types.add(Type.LONG_TYPE);
+      names.add("count(" + aFieldName + ")");
     }
     if ((aggOps & Aggregator.AGG_OP_MIN) != 0) {
-      types[idx] = Type.LONG_TYPE;
-      names[idx] = "min(" + aFieldName + ")";
-      idx += 1;
+      types.add(Type.LONG_TYPE);
+      names.add("min(" + aFieldName + ")");
     }
     if ((aggOps & Aggregator.AGG_OP_MAX) != 0) {
-      types[idx] = Type.LONG_TYPE;
-      names[idx] = "max(" + aFieldName + ")";
-      idx += 1;
+      types.add(Type.LONG_TYPE);
+      names.add("max(" + aFieldName + ")");
     }
     if ((aggOps & Aggregator.AGG_OP_SUM) != 0) {
-      types[idx] = Type.LONG_TYPE;
-      names[idx] = "sum(" + aFieldName + ")";
-      idx += 1;
+      types.add(Type.LONG_TYPE);
+      names.add("sum(" + aFieldName + ")");
     }
     if ((aggOps & Aggregator.AGG_OP_AVG) != 0) {
-      types[idx] = Type.DOUBLE_TYPE;
-      names[idx] = "avg(" + aFieldName + ")";
-      idx += 1;
+      types.add(Type.DOUBLE_TYPE);
+      names.add("avg(" + aFieldName + ")");
     }
     resultSchema = new Schema(types, names);
   }
@@ -88,11 +77,11 @@ public final class LongAggregator implements Aggregator {
   @Override
   public void add(final TupleBatch tup) {
 
-    int numTuples = tup.numTuples();
+    final int numTuples = tup.numTuples();
     if (numTuples > 0) {
       count += numTuples;
       for (int i = 0; i < numTuples; i++) {
-        long x = tup.getLong(afield, i);
+        final long x = tup.getLong(afield, i);
         sum += x;
         if (min > x) {
           min = x;
@@ -102,6 +91,16 @@ public final class LongAggregator implements Aggregator {
         }
       }
     }
+  }
+
+  @Override
+  public int availableAgg() {
+    return AVAILABLE_AGG;
+  }
+
+  @Override
+  public LongAggregator freshCopyYourself() {
+    return new LongAggregator(afield, aggOps, resultSchema);
   }
 
   @Override
@@ -132,10 +131,5 @@ public final class LongAggregator implements Aggregator {
   @Override
   public Schema getResultSchema() {
     return resultSchema;
-  }
-
-  @Override
-  public LongAggregator freshCopyYourself() {
-    return new LongAggregator(afield, aggOps, resultSchema);
   }
 }

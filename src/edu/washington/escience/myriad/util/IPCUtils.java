@@ -26,12 +26,6 @@ import edu.washington.escience.myriad.proto.TransportProto.TransportMessage.Tran
 public final class IPCUtils {
 
   /**
-   * util classes are not instantiable.
-   * */
-  private IPCUtils() {
-  }
-
-  /**
    * Thread local TransportMessage builder. May reduce the cost of creating builder instances.
    * 
    * @return builder.
@@ -104,24 +98,27 @@ public final class IPCUtils {
         }
       };
 
-  /**
-   * create an EOS data message.
-   * */
-  public static TransportMessage eosTM(ExchangePairID epID) {
-    return DATA_TM_BUILDER.get().setData(EOS_DATAMESSAGE_BUILDER.get().setOperatorID(epID.getLong())).build();
+  public static final TransportMessage CONTROL_QUERY_READY = TransportMessage.newBuilder().setType(
+      TransportMessageType.CONTROL).setControl(
+      ControlMessage.newBuilder().setType(ControlMessageType.QUERY_READY_TO_EXECUTE).build()).build();
+
+  public static final TransportMessage CONTROL_SHUTDOWN = TransportMessage.newBuilder().setType(
+      TransportMessageType.CONTROL)
+      .setControl(ControlMessage.newBuilder().setType(ControlMessageType.SHUTDOWN).build()).build();
+
+  public static final TransportMessage CONTROL_START_QUERY = TransportMessage.newBuilder().setType(
+      TransportMessageType.CONTROL).setControl(
+      ControlMessage.newBuilder().setType(ControlMessageType.START_QUERY).build()).build();
+
+  public static final TransportMessage CONTROL_DISCONNECT = TransportMessage.newBuilder().setType(
+      TransportMessageType.CONTROL).setControl(
+      ControlMessage.newBuilder().setType(ControlMessageType.DISCONNECT).build()).build();
+
+  public static TransportMessage asTM(final Object m) {
+    return (TransportMessage) m;
   }
 
-  public static TransportMessage eoiTM(ExchangePairID epID) {
-    return DATA_TM_BUILDER.get().setData(EOI_DATAMESSAGE_BUILDER.get().setOperatorID(epID.getLong())).build();
-  }
-
-  public static TransportMessage connectTM(Integer myID) {
-    return CONTROL_TM_BUILDER.get().setControl(
-        ControlMessage.newBuilder().setType(ControlMessage.ControlMessageType.CONNECT).setRemoteID(myID).build())
-        .build();
-  }
-
-  public static Integer checkConnectTM(TransportMessage message) {
+  public static Integer checkConnectTM(final TransportMessage message) {
     if (message == null) {
       return null;
     }
@@ -132,18 +129,25 @@ public final class IPCUtils {
     return null;
   }
 
-  public static TransportMessage CONTROL_QUERY_READY = TransportMessage.newBuilder().setType(
-      TransportMessageType.CONTROL).setControl(
-      ControlMessage.newBuilder().setType(ControlMessageType.QUERY_READY_TO_EXECUTE).build()).build();
+  public static TransportMessage connectTM(final Integer myID) {
+    return CONTROL_TM_BUILDER.get().setControl(
+        ControlMessage.newBuilder().setType(ControlMessage.ControlMessageType.CONNECT).setRemoteID(myID).build())
+        .build();
+  }
 
-  public static TransportMessage CONTROL_SHUTDOWN = TransportMessage.newBuilder().setType(TransportMessageType.CONTROL)
-      .setControl(ControlMessage.newBuilder().setType(ControlMessageType.SHUTDOWN).build()).build();
+  /**
+   * create an EOS data message.
+   * */
+  public static TransportMessage eosTM(final ExchangePairID epID) {
+    return DATA_TM_BUILDER.get().setData(EOS_DATAMESSAGE_BUILDER.get().setOperatorID(epID.getLong())).build();
+  }
 
-  public static TransportMessage CONTROL_START_QUERY = TransportMessage.newBuilder().setType(
-      TransportMessageType.CONTROL).setControl(
-      ControlMessage.newBuilder().setType(ControlMessageType.START_QUERY).build()).build();
+  public static TransportMessage eoiTM(final ExchangePairID epID) {
+    return DATA_TM_BUILDER.get().setData(EOI_DATAMESSAGE_BUILDER.get().setOperatorID(epID.getLong())).build();
+  }
 
-  public static TransportMessage normalDataMessage(List<Column<?>> dataColumns, ExchangePairID operatorPairID) {
+  public static TransportMessage normalDataMessage(final List<Column<?>> dataColumns,
+      final ExchangePairID operatorPairID) {
     final ColumnMessage[] columnProtos = new ColumnMessage[dataColumns.size()];
 
     int i = 0;
@@ -156,8 +160,8 @@ public final class IPCUtils {
             operatorPairID.getLong())).build();
   }
 
-  public static TransportMessage[] normalDataMessageMultiCopy(List<Column<?>> dataColumns,
-      ExchangePairID[] operatorPairID) {
+  public static TransportMessage[] normalDataMessageMultiCopy(final List<Column<?>> dataColumns,
+      final ExchangePairID[] operatorPairID) {
     final ColumnMessage[] columnProtos = new ColumnMessage[dataColumns.size()];
 
     int i = 0;
@@ -165,8 +169,8 @@ public final class IPCUtils {
       columnProtos[i] = c.serializeToProto();
       i++;
     }
-    TransportMessage[] result = new TransportMessage[operatorPairID.length];
-    DataMessage.Builder dataBuilder = NORMAL_DATAMESSAGE_BUILDER.get();
+    final TransportMessage[] result = new TransportMessage[operatorPairID.length];
+    final DataMessage.Builder dataBuilder = NORMAL_DATAMESSAGE_BUILDER.get();
     dataBuilder.clearColumns().addAllColumns(Arrays.asList(columnProtos));
     for (int j = 0; j < operatorPairID.length; j++) {
       result[j] = DATA_TM_BUILDER.get().setData(dataBuilder.setOperatorID(operatorPairID[j].getLong())).build();
@@ -174,9 +178,9 @@ public final class IPCUtils {
     return result;
   }
 
-  public static TransportMessage queryMessage(Operator[] query) throws IOException {
-    ByteArrayOutputStream inMemBuffer = new ByteArrayOutputStream();
-    ObjectOutputStream oos = new ObjectOutputStream(inMemBuffer);
+  public static TransportMessage queryMessage(final Operator[] query) throws IOException {
+    final ByteArrayOutputStream inMemBuffer = new ByteArrayOutputStream();
+    final ObjectOutputStream oos = new ObjectOutputStream(inMemBuffer);
     oos.writeObject(query);
     oos.flush();
     inMemBuffer.flush();
@@ -184,7 +188,9 @@ public final class IPCUtils {
         QueryProto.Query.newBuilder().setQuery(ByteString.copyFrom(inMemBuffer.toByteArray()))).build();
   }
 
-  public static TransportMessage CONTROL_DISCONNECT = TransportMessage.newBuilder().setType(
-      TransportMessageType.CONTROL).setControl(
-      ControlMessage.newBuilder().setType(ControlMessageType.DISCONNECT).build()).build();
+  /**
+   * util classes are not instantiable.
+   * */
+  private IPCUtils() {
+  }
 }
