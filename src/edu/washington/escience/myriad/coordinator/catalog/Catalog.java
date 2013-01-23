@@ -31,8 +31,8 @@ import edu.washington.escience.myriad.parallel.SocketInfo;
  * 
  */
 public final class Catalog {
-  /** The logger for this class. Defaults to myriad level, but could be set to a finer granularity if needed. */
-  private static final Logger LOGGER = LoggerFactory.getLogger("edu.washington.escience.myriad");
+  /** The logger for this class. */
+  private static final Logger LOGGER = LoggerFactory.getLogger(Catalog.class.getName());
 
   /**
    * @param filename the path to the SQLite database storing the catalog.
@@ -146,8 +146,6 @@ public final class Catalog {
    * @param description specifies a description for the configuration stored in this Catalog.
    * @return a fresh Catalog fitting the specified description.
    * @throws CatalogException if there is an error opening the database.
-   * 
-   *           TODO add some sanity checks to the filename?
    */
   public static Catalog createInMemory(final String description) throws CatalogException {
     Objects.requireNonNull(description);

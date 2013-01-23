@@ -5,13 +5,13 @@ import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Logger;
 
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.group.ChannelGroup;
+import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myriad.util.IPCUtils;
 
@@ -42,7 +42,7 @@ public class ChannelContext {
             || connected && registered && inPool && inRecycleBin && !inTrashBin && !newConnection && !closeRequested
             || connected && registered && !inPool && !inRecycleBin && inTrashBin && !newConnection && !closeRequested) {
           if (!registered) {
-            System.out.println("Close at no registered");
+            LOGGER.debug("Close at no registered");
             ownerChannel.disconnect();
             connected = false;
             closeRequested = true;
@@ -211,7 +211,7 @@ public class ChannelContext {
       final int newRef = numberOfReference.decrementAndGet();
       if (newRef < 0) {
         final String msg = "Number of references is negative";
-        logger.warning(msg);
+        LOGGER.warn(msg);
         throw new IllegalStateException(msg);
       }
       return newRef;
@@ -262,11 +262,13 @@ public class ChannelContext {
     }
   }
 
-  private static final Logger logger = Logger.getLogger(ChannelContext.class.getName());
+  /** The logger for this class. */
+  protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(ChannelContext.class.getName());
 
-  public final static ChannelContext getChannelContext(final Channel channel) {
+  public static final ChannelContext getChannelContext(final Channel channel) {
     return (ChannelContext) channel.getAttachment();
   }
+
   /**
    * The owner channel of this ChannelContext, i.e. ownerChannel.getAttachment() == this.
    * */
@@ -371,7 +373,7 @@ public class ChannelContext {
     while (it.hasNext()) {
       final DelayedTransitionEvent e = it.next();
       if (e.apply()) {
-        logger.info(e.getClass().getCanonicalName() + " delayed applied");
+        LOGGER.info(e.getClass().getCanonicalName() + " delayed applied");
         it.remove();
       }
     }
@@ -415,7 +417,7 @@ public class ChannelContext {
           inRecycleBin = true;
           recycleBin.put(ownerChannel, ownerChannel);
         } else {
-          System.out.println("consider recycle unsatisfied: " + ownerChannel);
+          LOGGER.debug("consider recycle unsatisfied: " + ownerChannel);
         }
       }
     } else {
@@ -425,7 +427,7 @@ public class ChannelContext {
           inRecycleBin = true;
           recycleBin.put(ownerChannel, ownerChannel);
         } else {
-          System.out.println("consider recycle unsatisfied: " + ownerChannel);
+          LOGGER.debug("consider recycle unsatisfied: " + ownerChannel);
         }
       }
     }
@@ -500,7 +502,7 @@ public class ChannelContext {
           }
           trashBin.add(ownerChannel);
         } else {
-          System.out.println("reach upperbound Fail: " + ownerChannel);
+          LOGGER.debug("reach upperbound Fail: " + ownerChannel);
         }
       }
     } else {
@@ -514,7 +516,7 @@ public class ChannelContext {
           }
           trashBin.add(ownerChannel);
         } else {
-          System.out.println("reach upperbound Fail: " + ownerChannel);
+          LOGGER.debug("reach upperbound Fail: " + ownerChannel);
         }
       }
     }
@@ -526,7 +528,7 @@ public class ChannelContext {
     if (!isClientChannel) {
       // accepted channel
       synchronized (stateMachineLock) {
-        assert (connected && registered && !inPool && !inRecycleBin && inTrashBin && !newConnection && closeRequested);// {
+        assert (connected && registered && !inPool && !inRecycleBin && inTrashBin && !newConnection && closeRequested); // {
         connected = false;
         registered = false;
         inTrashBin = false;
@@ -545,8 +547,8 @@ public class ChannelContext {
             public void operationComplete(final ChannelFuture future) throws Exception {
               final Channel ch = future.getChannel();
               if (!future.isSuccess()) {
-                System.err.println("Error write disconnect message to channel " + ch + ", cause is "
-                    + future.getCause() + ", connected: " + ch.isConnected() + ", disconnect anyway");
+                LOGGER.warn("Error write disconnect message to channel " + ch + ", cause is " + future.getCause()
+                    + ", connected: " + ch.isConnected() + ", disconnect anyway");
                 ch.disconnect();
               }
             }

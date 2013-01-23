@@ -14,6 +14,10 @@ public final class QueryProto {
     // required bytes query = 1;
     boolean hasQuery();
     com.google.protobuf.ByteString getQuery();
+    
+    // required uint64 query_id = 2;
+    boolean hasQueryId();
+    long getQueryId();
   }
   public static final class Query extends
       com.google.protobuf.GeneratedMessage
@@ -54,8 +58,19 @@ public final class QueryProto {
       return query_;
     }
     
+    // required uint64 query_id = 2;
+    public static final int QUERY_ID_FIELD_NUMBER = 2;
+    private long queryId_;
+    public boolean hasQueryId() {
+      return ((bitField0_ & 0x00000002) == 0x00000002);
+    }
+    public long getQueryId() {
+      return queryId_;
+    }
+    
     private void initFields() {
       query_ = com.google.protobuf.ByteString.EMPTY;
+      queryId_ = 0L;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -63,6 +78,10 @@ public final class QueryProto {
       if (isInitialized != -1) return isInitialized == 1;
       
       if (!hasQuery()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasQueryId()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -76,6 +95,9 @@ public final class QueryProto {
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeBytes(1, query_);
       }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        output.writeUInt64(2, queryId_);
+      }
       getUnknownFields().writeTo(output);
     }
     
@@ -88,6 +110,10 @@ public final class QueryProto {
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         size += com.google.protobuf.CodedOutputStream
           .computeBytesSize(1, query_);
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeUInt64Size(2, queryId_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -215,6 +241,8 @@ public final class QueryProto {
         super.clear();
         query_ = com.google.protobuf.ByteString.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000001);
+        queryId_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00000002);
         return this;
       }
       
@@ -257,6 +285,10 @@ public final class QueryProto {
           to_bitField0_ |= 0x00000001;
         }
         result.query_ = query_;
+        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+          to_bitField0_ |= 0x00000002;
+        }
+        result.queryId_ = queryId_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -276,12 +308,19 @@ public final class QueryProto {
         if (other.hasQuery()) {
           setQuery(other.getQuery());
         }
+        if (other.hasQueryId()) {
+          setQueryId(other.getQueryId());
+        }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
       
       public final boolean isInitialized() {
         if (!hasQuery()) {
+          
+          return false;
+        }
+        if (!hasQueryId()) {
           
           return false;
         }
@@ -316,6 +355,11 @@ public final class QueryProto {
               query_ = input.readBytes();
               break;
             }
+            case 16: {
+              bitField0_ |= 0x00000002;
+              queryId_ = input.readUInt64();
+              break;
+            }
           }
         }
       }
@@ -346,6 +390,27 @@ public final class QueryProto {
         return this;
       }
       
+      // required uint64 query_id = 2;
+      private long queryId_ ;
+      public boolean hasQueryId() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
+      }
+      public long getQueryId() {
+        return queryId_;
+      }
+      public Builder setQueryId(long value) {
+        bitField0_ |= 0x00000002;
+        queryId_ = value;
+        onChanged();
+        return this;
+      }
+      public Builder clearQueryId() {
+        bitField0_ = (bitField0_ & ~0x00000002);
+        queryId_ = 0L;
+        onChanged();
+        return this;
+      }
+      
       // @@protoc_insertion_point(builder_scope:Query)
     }
     
@@ -371,9 +436,9 @@ public final class QueryProto {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\013query.proto\"\026\n\005Query\022\r\n\005query\030\001 \002(\014B2\n" +
-      "$edu.washington.escience.myriad.protoB\nQ" +
-      "ueryProto"
+      "\n\013query.proto\"(\n\005Query\022\r\n\005query\030\001 \002(\014\022\020\n" +
+      "\010query_id\030\002 \002(\004B2\n$edu.washington.escien" +
+      "ce.myriad.protoB\nQueryProto"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -385,7 +450,7 @@ public final class QueryProto {
           internal_static_Query_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_Query_descriptor,
-              new java.lang.String[] { "Query", },
+              new java.lang.String[] { "Query", "QueryId", },
               edu.washington.escience.myriad.proto.QueryProto.Query.class,
               edu.washington.escience.myriad.proto.QueryProto.Query.Builder.class);
           return null;

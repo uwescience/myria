@@ -11,7 +11,7 @@ from google.protobuf import descriptor_pb2
 DESCRIPTOR = descriptor.FileDescriptor(
   name='query.proto',
   package='',
-  serialized_pb='\n\x0bquery.proto\"\x16\n\x05Query\x12\r\n\x05query\x18\x01 \x02(\x0c\x42\x32\n$edu.washington.escience.myriad.protoB\nQueryProto')
+  serialized_pb='\n\x0bquery.proto\"(\n\x05Query\x12\r\n\x05query\x18\x01 \x02(\x0c\x12\x10\n\x08query_id\x18\x02 \x02(\x04\x42\x32\n$edu.washington.escience.myriad.protoB\nQueryProto')
 
 
 
@@ -30,6 +30,13 @@ _QUERY = descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    descriptor.FieldDescriptor(
+      name='query_id', full_name='Query.query_id', index=1,
+      number=2, type=4, cpp_type=4, label=2,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -40,7 +47,7 @@ _QUERY = descriptor.Descriptor(
   is_extendable=False,
   extension_ranges=[],
   serialized_start=15,
-  serialized_end=37,
+  serialized_end=55,
 )
 
 DESCRIPTOR.message_types_by_name['Query'] = _QUERY

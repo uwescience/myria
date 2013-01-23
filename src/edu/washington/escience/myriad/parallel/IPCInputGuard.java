@@ -1,8 +1,6 @@
 package edu.washington.escience.myriad.parallel;
 
 import java.nio.channels.ClosedChannelException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelEvent;
@@ -13,13 +11,15 @@ import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
 import org.jboss.netty.channel.UpstreamChannelStateEvent;
+import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 
 @Sharable
 public class IPCInputGuard extends SimpleChannelHandler {
 
-  private static final Logger logger = Logger.getLogger(IPCInputGuard.class.getName());
+  /** The logger for this class. */
+  protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(IPCInputGuard.class.getName());
 
   /**
    * constructor.
@@ -36,17 +36,15 @@ public class IPCInputGuard extends SimpleChannelHandler {
       errorMessage = "";
     }
     if (cause instanceof java.nio.channels.NotYetConnectedException) {
-      logger.log(Level.WARNING, "Channel " + c + ": not yet connected. " + errorMessage, cause);
+      LOGGER.warn("Channel " + c + ": not yet connected. " + errorMessage, cause);
     } else if (cause instanceof java.net.ConnectException) {
-      logger.log(Level.WARNING, "Channel " + c + ": Connection failed: " + errorMessage, cause);
+      LOGGER.warn("Channel " + c + ": Connection failed: " + errorMessage, cause);
     } else if (cause instanceof java.io.IOException && errorMessage.contains("reset by peer")) {
-      logger.log(Level.WARNING, "Channel " + c + ": Connection reset by peer: " + c.getRemoteAddress() + " "
-          + errorMessage, cause);
+      LOGGER.warn("Channel " + c + ": Connection reset by peer: " + c.getRemoteAddress() + " " + errorMessage, cause);
     } else if (cause instanceof ClosedChannelException) {
-      logger.log(Level.WARNING, "Channel " + c + ": Connection reset by peer: " + c.getRemoteAddress() + " "
-          + errorMessage, cause);
+      LOGGER.warn("Channel " + c + ": Connection reset by peer: " + c.getRemoteAddress() + " " + errorMessage, cause);
     } else {
-      logger.log(Level.WARNING, "Channel " + c + ": Unexpected exception from downstream.", cause);
+      LOGGER.warn("Channel " + c + ": Unexpected exception from downstream.", cause);
     }
     if (c != null) {
       c.close();
@@ -63,7 +61,7 @@ public class IPCInputGuard extends SimpleChannelHandler {
         case INTEREST_OPS:
           break;
         case CONNECTED:
-          logger.info("Connection to remote. " + e.toString());
+          LOGGER.debug("Connection to remote. " + e.toString());
           break;
       }
     }
@@ -80,7 +78,7 @@ public class IPCInputGuard extends SimpleChannelHandler {
         case INTEREST_OPS:
           break;
         case CONNECTED:
-          logger.info("Connection from remote. " + e.toString());
+          LOGGER.debug("Connection from remote. " + e.toString());
           break;
       }
     }

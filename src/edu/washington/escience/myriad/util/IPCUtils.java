@@ -25,6 +25,11 @@ import edu.washington.escience.myriad.proto.TransportProto.TransportMessage.Tran
  * */
 public final class IPCUtils {
 
+  /** The string constant used for the "remote_id" attribute. */
+  public static final String IPC_ATTR_REMOTE_ID = "remoteId";
+  /** The string constant used for the "query_id" attribute. */
+  public static final String IPC_ATTR_QUERY_ID = "queryId";
+
   /**
    * Thread local TransportMessage builder. May reduce the cost of creating builder instances.
    * 
@@ -90,21 +95,18 @@ public final class IPCUtils {
         }
       };
 
-  public static final TransportMessage CONTROL_QUERY_READY = TransportMessage.newBuilder().setType(
-      TransportMessageType.CONTROL).setControl(
-      ControlMessage.newBuilder().setType(ControlMessageType.QUERY_READY_TO_EXECUTE).build()).build();
-
   public static final TransportMessage CONTROL_SHUTDOWN = TransportMessage.newBuilder().setType(
-      TransportMessageType.CONTROL)
-      .setControl(ControlMessage.newBuilder().setType(ControlMessageType.SHUTDOWN).build()).build();
-
-  public static final TransportMessage CONTROL_START_QUERY = TransportMessage.newBuilder().setType(
-      TransportMessageType.CONTROL).setControl(
-      ControlMessage.newBuilder().setType(ControlMessageType.START_QUERY).build()).build();
+      TransportMessageType.CONTROL).setControl(ControlMessage.newBuilder().setType(ControlMessageType.SHUTDOWN))
+      .build();
 
   public static final TransportMessage CONTROL_DISCONNECT = TransportMessage.newBuilder().setType(
-      TransportMessageType.CONTROL).setControl(
-      ControlMessage.newBuilder().setType(ControlMessageType.DISCONNECT).build()).build();
+      TransportMessageType.CONTROL).setControl(ControlMessage.newBuilder().setType(ControlMessageType.DISCONNECT))
+      .build();
+
+  /** Control message sent from a worker to tell the master that it is alive. */
+  public static final TransportMessage CONTROL_WORKER_ALIVE = TransportMessage.newBuilder().setType(
+      TransportMessageType.CONTROL).setControl(ControlMessage.newBuilder().setType(ControlMessageType.WORKER_ALIVE))
+      .build();
 
   public static TransportMessage asTM(final Object m) {
     return (TransportMessage) m;
@@ -116,15 +118,32 @@ public final class IPCUtils {
     }
     if ((message.getType() == TransportMessage.TransportMessageType.CONTROL)
         && (ControlMessage.ControlMessageType.CONNECT == message.getControl().getType())) {
-      return message.getControl().getRemoteID();
+      return message.getControl().getRemoteId();
     }
     return null;
   }
 
   public static TransportMessage connectTM(final Integer myID) {
     return CONTROL_TM_BUILDER.get().setControl(
-        ControlMessage.newBuilder().setType(ControlMessage.ControlMessageType.CONNECT).setRemoteID(myID).build())
-        .build();
+        ControlMessage.newBuilder().setType(ControlMessage.ControlMessageType.CONNECT).setRemoteId(myID)).build();
+  }
+
+  public static TransportMessage queryReadyTM(final Integer myID, final Long queryId) {
+    return CONTROL_TM_BUILDER.get().setControl(
+        ControlMessage.newBuilder().setType(ControlMessage.ControlMessageType.QUERY_READY_TO_EXECUTE).setRemoteId(myID)
+            .setQueryId(queryId)).build();
+  }
+
+  public static TransportMessage queryCompleteTM(final Integer myID, final Long queryId) {
+    return CONTROL_TM_BUILDER.get().setControl(
+        ControlMessage.newBuilder().setType(ControlMessage.ControlMessageType.QUERY_COMPLETE).setRemoteId(myID)
+            .setQueryId(queryId)).build();
+  }
+
+  public static TransportMessage startQueryTM(final Integer myID, final Long queryId) {
+    return CONTROL_TM_BUILDER.get().setControl(
+        ControlMessage.newBuilder().setType(ControlMessage.ControlMessageType.START_QUERY).setRemoteId(myID)
+            .setQueryId(queryId)).build();
   }
 
   /**
@@ -166,14 +185,15 @@ public final class IPCUtils {
     return result;
   }
 
-  public static TransportMessage queryMessage(final Operator[] query) throws IOException {
+  public static TransportMessage queryMessage(final Long queryId, final Operator[] query) throws IOException {
     final ByteArrayOutputStream inMemBuffer = new ByteArrayOutputStream();
     final ObjectOutputStream oos = new ObjectOutputStream(inMemBuffer);
     oos.writeObject(query);
     oos.flush();
     inMemBuffer.flush();
     return QUERY_TM_BUILDER.get().setQuery(
-        QueryProto.Query.newBuilder().setQuery(ByteString.copyFrom(inMemBuffer.toByteArray()))).build();
+        QueryProto.Query.newBuilder().setQueryId(queryId).setQuery(ByteString.copyFrom(inMemBuffer.toByteArray())))
+        .build();
   }
 
   /**

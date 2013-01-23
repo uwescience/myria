@@ -5,5 +5,6 @@ message Query {
  
  // for now, the query is a simple java serialized object.
  required bytes query = 1;
+ required uint64 query_id = 2;
  
 }

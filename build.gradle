@@ -52,16 +52,16 @@ repositories {
 }
 
 /* List constants that we use in multiple places. */
-ext.slf4jVersion = "1.6.6"
-ext.restletVersion = "2.0.15"
+ext.slf4jVersion = "1.7.2"
+ext.restletVersion = "2.1.1"
 
 dependencies {
   compile "com.almworks.sqlite4java:sqlite4java:0.282"
 
-  compile "com.google.guava:guava:13.0"
+  compile "com.google.guava:guava:13.0.1"
   compile "com.google.protobuf:protobuf-java:2.4.1"
 
-  compile "io.netty:netty:3.5.11.Final"
+  compile "io.netty:netty:3.6.1.Final"
 
   compile "commons-io:commons-io:2.4"
   compile "org.apache.commons:commons-lang3:3.1"
@@ -71,15 +71,20 @@ dependencies {
   compile "org.restlet.jee:org.restlet.ext.jaxrs:${restletVersion}"
 
   compile "org.slf4j:slf4j-api:${slf4jVersion}"
-  runtime "org.slf4j:slf4j-simple:${slf4jVersion}"
-  runtime "mysql:mysql-connector-java:5.1.21"
+  runtime "org.slf4j:slf4j-log4j12:${slf4jVersion}"
+  runtime "mysql:mysql-connector-java:5.1.22"
 
-  testCompile "junit:junit:4.10"
+  testCompile "junit:junit:4.11"
 
   speedtestCompile sourceSets.main.output
   speedtestCompile configurations.testCompile
   speedtestCompile sourceSets.test.output
   speedtestRuntime configurations.testRuntime
+}
+
+/* Tell all tasks to add sqlite library to their classpath when running. */
+tasks.withType(Compile) {
+  options.compilerArgs << "-Xlint:deprecation"
 }
 
 /* Tell all tasks to add sqlite library to their classpath when running. */
