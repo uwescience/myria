@@ -19,7 +19,7 @@ public class IDBInput extends Operator {
   }
 
   public IDBInput(final Schema outputSchema, final Operator child1, final Operator child2) {
-    // should have some restrictions on which operators are valid, e.g. child1 = scan, child2 = dupelim. later
+    // should have some restrictions on which operators are valid, e.g. child1 = scan, child2 = consumer. later
     this.outputSchema = outputSchema;
     this.child1 = child1;
     this.child2 = child2;

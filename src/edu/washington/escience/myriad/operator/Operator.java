@@ -129,12 +129,16 @@ public abstract class Operator implements Serializable {
       result = fetchNext();
     }
     if (result == null) {
+      // now we have two possibilities when result == null: EOS or EOI.
       checkEOSAndEOI();
     }
     return result;
   }
 
   public void checkEOSAndEOI() {
+    // this is the implementation for ordinary operators, e.g. join, project.
+    // some operators have their own logics, e.g. LeafOperator, IDBInput.
+    // so they should override this function
     Operator[] children = getChildren();
     boolean[] childrenEOI = getChildrenEOI();
     boolean allEOS = true;
@@ -286,6 +290,7 @@ public abstract class Operator implements Serializable {
 
   public boolean[] getChildrenEOI() {
     if (childrenEOI == null) {
+      // getChildren() == null indicates a leaf operator, which has its own checkEOSAndEOI()
       childrenEOI = new boolean[getChildren().length];
     }
     return childrenEOI;

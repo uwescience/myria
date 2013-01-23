@@ -142,6 +142,7 @@ public abstract class Consumer extends LeafOperator {
   @Override
   public void checkEOSAndEOI() {
     BitSet tmp = workerEOI;
+    // EOS could be used as an EOI
     tmp.or(workerEOS);
     if (tmp.nextClearBit(0) == workerIdToIndex.size()) {
       setEOI(true);
