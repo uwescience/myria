@@ -19,4 +19,9 @@ public abstract class LeafOperator extends Operator {
   public final void setChildren(final Operator[] children) {
     throw new UnsupportedOperationException();
   }
+
+  @Override
+  public void checkEOSAndEOI() {
+    setEOS(true);
+  }
 }

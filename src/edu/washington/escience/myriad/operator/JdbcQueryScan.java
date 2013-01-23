@@ -46,11 +46,6 @@ public class JdbcQueryScan extends LeafOperator {
   }
 
   @Override
-  public void checkEOSAndEOI() {
-    setEOS(true);
-  }
-
-  @Override
   public Schema getSchema() {
     return schema;
   }
