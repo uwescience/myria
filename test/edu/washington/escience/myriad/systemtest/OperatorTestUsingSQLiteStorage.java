@@ -75,7 +75,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final CollectProducer cp1 = new CollectProducer(dupElimOnScan, collectID, WORKER_ID[0]);
     final CollectConsumer cc1 = new CollectConsumer(cp1.getSchema(), collectID, WORKER_ID);
     final DupElim dumElim3 = new DupElim(cc1);
-    workerPlans.put(WORKER_ID[0], new Operator[] { new CollectProducer(dumElim3, serverReceiveID, MASTER_ID) });
+    workerPlans.put(WORKER_ID[0], new Operator[] { cp1, new CollectProducer(dumElim3, serverReceiveID, MASTER_ID) });
     workerPlans.put(WORKER_ID[1], new Operator[] { cp1 });
 
     while (Server.runningInstance == null) {
