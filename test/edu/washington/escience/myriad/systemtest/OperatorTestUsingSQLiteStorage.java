@@ -31,8 +31,9 @@ import edu.washington.escience.myriad.parallel.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myriad.util.TestUtils;
 
 public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
-  /** The logger for this class. Defaults to myriad level, but could be set to a finer granularity if needed. */
-  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger("edu.washington.escience.myriad");
+  /** The logger for this class. */
+  private static final org.slf4j.Logger LOGGER = LoggerFactory
+      .getLogger(OperatorTestUsingSQLiteStorage.class.getName());
 
   @Test
   public void dupElimTest() throws DbException, IOException, CatalogException {

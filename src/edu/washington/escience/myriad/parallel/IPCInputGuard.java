@@ -61,7 +61,7 @@ public class IPCInputGuard extends SimpleChannelHandler {
         case INTEREST_OPS:
           break;
         case CONNECTED:
-          LOGGER.info("Connection to remote. " + e.toString());
+          LOGGER.debug("Connection to remote. " + e.toString());
           break;
       }
     }
@@ -78,7 +78,7 @@ public class IPCInputGuard extends SimpleChannelHandler {
         case INTEREST_OPS:
           break;
         case CONNECTED:
-          LOGGER.info("Connection from remote. " + e.toString());
+          LOGGER.debug("Connection from remote. " + e.toString());
           break;
       }
     }

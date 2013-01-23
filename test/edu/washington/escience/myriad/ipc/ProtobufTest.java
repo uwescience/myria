@@ -16,7 +16,11 @@ import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.group.ChannelGroupFuture;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
@@ -39,8 +43,18 @@ import edu.washington.escience.myriad.util.IPCUtils;
 import edu.washington.escience.myriad.util.TestUtils;
 
 public class ProtobufTest {
-  /** The logger for this class. Defaults to myriad.ipc level. */
-  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(ProtobufTest.class.getPackage().toString());
+  @Rule
+  public TestRule watcher = new TestWatcher() {
+    @Override
+    protected void starting(Description description) {
+      LOGGER.warn("*********************************************");
+      LOGGER.warn(String.format("Starting test: %s()...", description.getMethodName()));
+      LOGGER.warn("*********************************************");
+    };
+  };
+
+  /** The logger for this class. */
+  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(ProtobufTest.class.getName());
 
   // @Test
   public void protobufExhaustNoWaitTest() throws IOException, InterruptedException {
@@ -790,7 +804,7 @@ public class ProtobufTest {
     if (cf != null) {
       cf.awaitUninterruptibly();
     } else {
-      System.out.println("cf is null!");
+      LOGGER.warn("cf is null!");
     }
 
     LOGGER.info("Total sent: " + numSent.get() + " TupleBatches");
@@ -887,7 +901,7 @@ public class ProtobufTest {
     if (cf != null) {
       cf.awaitUninterruptibly();
     } else {
-      System.out.println("cf is null!");
+      LOGGER.warn("cf is null!");
     }
 
     LOGGER.debug("Total sent: " + numSent.get() + " TupleBatches");

@@ -187,8 +187,8 @@ public final class Server {
   private static final int ONE_HR_IN_MILLIS = 60 * ONE_MIN_IN_MILLIS;
 
   static final String usage = "Usage: Server catalogFile [-explain] [-f queryFile]";
-  /** The logger for this class. Defaults to myriad level, but could be set to a finer granularity if needed. */
-  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger("edu.washington.escience.myriad");
+  /** The logger for this class. */
+  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(Server.class.getName());
 
   public static void main(final String[] args) throws IOException {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
@@ -430,8 +430,7 @@ public final class Server {
       serverPlan.close();
       dataBuffer.remove(serverPlan.getOperatorID());
       final Date end = new Date();
-      LOGGER.debug("Number of results: " + cnt);
-      System.out.println("Number of results: " + cnt);
+      LOGGER.info("Number of results: " + cnt);
       int elapse = (int) (end.getTime() - start.getTime());
       final int hour = elapse / ONE_HR_IN_MILLIS;
       elapse -= hour * ONE_HR_IN_MILLIS;
@@ -440,8 +439,7 @@ public final class Server {
       final int second = elapse / ONE_SEC_IN_MILLIS;
       elapse -= second * ONE_SEC_IN_MILLIS;
 
-      LOGGER.debug(String.format("Time elapsed: %1$dh%2$dm%3$ds.%4$03d", hour, minute, second, elapse));
-      System.out.println(String.format("Time elapsed: %1$dh%2$dm%3$ds.%4$03d", hour, minute, second, elapse));
+      LOGGER.info(String.format("Time elapsed: %1$dh%2$dm%3$ds.%4$03d", hour, minute, second, elapse));
       return outBufferForTesting;
     } else {
       return null;
@@ -488,7 +486,6 @@ public final class Server {
       elapse -= second * ONE_SEC_IN_MILLIS;
 
       LOGGER.debug(String.format("Time elapsed: %1$dh%2$dm%3$ds.%4$03d", hour, minute, second, elapse));
-      System.out.println(String.format("Time elapsed: %1$dh%2$dm%3$ds.%4$03d", hour, minute, second, elapse));
       return true;
     } else {
       return false;

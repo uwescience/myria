@@ -149,7 +149,6 @@ public class MultithreadScanTest extends SystemTestBase {
 
     Server.runningInstance.dispatchWorkerQueryPlans(0L, workerPlans);
     LOGGER.debug("Query dispatched to the workers");
-    System.out.println("Query dispatched to the workers");
     TupleBatchBuffer result = null;
     while ((result = Server.runningInstance.startServerQuery(0L, serverPlan)) == null) {
       try {
@@ -238,7 +237,6 @@ public class MultithreadScanTest extends SystemTestBase {
         new CollectConsumer(tableSchema, serverReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
     Server.runningInstance.dispatchWorkerQueryPlans(0L, workerPlans);
     LOGGER.debug("Query dispatched to the workers");
-    System.out.println("Query dispatched to the workers");
     TupleBatchBuffer result = null;
     while ((result = Server.runningInstance.startServerQuery(0L, serverPlan)) == null) {
       try {

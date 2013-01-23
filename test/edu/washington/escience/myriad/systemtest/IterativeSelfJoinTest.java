@@ -94,8 +94,6 @@ public class IterativeSelfJoinTest extends SystemTestBase {
 
   @Test
   public void iterativeSelfJoinTest() throws DbException, CatalogException, IOException {
-    System.out.println(System.getProperty("java.util.logging.config.file"));
-    // data generation
     final ImmutableList<Type> table1Types = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
     final ImmutableList<String> table1ColumnNames = ImmutableList.of("follower", "followee");
     final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
@@ -205,7 +203,6 @@ public class IterativeSelfJoinTest extends SystemTestBase {
     final CollectConsumer serverPlan =
         new CollectConsumer(tableSchema, serverReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
     Server.runningInstance.dispatchWorkerQueryPlans(0L, workerPlans);
-    System.out.println("Query dispatched to the workers");
     LOGGER.debug("Query dispatched to the workers");
     TupleBatchBuffer result = null;
     while ((result = Server.runningInstance.startServerQuery(0L, serverPlan)) == null) {

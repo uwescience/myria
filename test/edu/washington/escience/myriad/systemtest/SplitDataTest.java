@@ -62,7 +62,7 @@ public class SplitDataTest extends SystemTestBase {
     final long queryId = 7L;
 
     Server.runningInstance.dispatchWorkerQueryPlans(queryId, workerPlans);
-    System.out.println("Query dispatched to the workers");
+    LOGGER.debug("Query dispatched to the workers");
     while (Server.runningInstance.startServerQuery(queryId, scatter) != true) {
       try {
         Thread.sleep(100);

@@ -10,6 +10,8 @@ import java.sql.Statement;
 import java.util.Iterator;
 import java.util.List;
 
+import org.slf4j.LoggerFactory;
+
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.column.Column;
@@ -22,6 +24,9 @@ import edu.washington.escience.myriad.column.ColumnFactory;
  * 
  */
 public final class JdbcAccessMethod {
+
+  /** The logger for this class. */
+  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(JdbcAccessMethod.class.getName());
 
   /**
    * Insert the Tuples in this TupleBatch into the database. Unlike the other tupleBatchInsert method, this does not
@@ -46,7 +51,7 @@ public final class JdbcAccessMethod {
       statement.executeBatch();
       statement.close();
     } catch (final SQLException e) {
-      System.err.println(e.getMessage());
+      LOGGER.error(e.getMessage());
       throw new RuntimeException(e.getMessage());
     }
   }
@@ -72,10 +77,10 @@ public final class JdbcAccessMethod {
       tupleBatchInsert(jdbcConnection, insertString, tupleBatch);
 
     } catch (final ClassNotFoundException e) {
-      System.err.println(e.getMessage());
+      LOGGER.error(e.getMessage());
       throw new RuntimeException(e.getMessage());
     } catch (final SQLException e) {
-      System.err.println(e.getMessage());
+      LOGGER.error(e.getMessage());
       throw new RuntimeException(e.getMessage());
     }
   }
@@ -107,10 +112,10 @@ public final class JdbcAccessMethod {
 
       return new JdbcTupleBatchIterator(resultSet, Schema.fromResultSetMetaData(resultSetMetaData));
     } catch (final ClassNotFoundException e) {
-      System.err.println(e.getMessage());
+      LOGGER.error(e.getMessage());
       throw new RuntimeException(e);
     } catch (final SQLException e) {
-      System.err.println(e.getMessage());
+      LOGGER.error(e.getMessage());
       throw new RuntimeException(e);
     }
   }
@@ -130,6 +135,8 @@ public final class JdbcAccessMethod {
  * 
  */
 class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
+  /** The logger for this class, uses JdbcAccessMethod settings. */
+  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(JdbcAccessMethod.class.getName());
   /** The results from a JDBC query that will be returned in TupleBatches by this Iterator. */
   private final ResultSet resultSet;
   /** The Schema of the TupleBatches returned by this Iterator. */
@@ -151,7 +158,7 @@ class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
     try {
       return !(resultSet.isClosed() || resultSet.isLast());
     } catch (final SQLException e) {
-      System.err.println("Dropping SQLException:" + e);
+      LOGGER.error("Dropping SQLException:" + e);
       return false;
     }
   }
@@ -181,7 +188,7 @@ class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
         }
       }
     } catch (final SQLException e) {
-      System.err.println("Got SQLException:" + e + "in JdbcTupleBatchIterator.next()");
+      LOGGER.error("Got SQLException:" + e + "in JdbcTupleBatchIterator.next()");
       throw new RuntimeException(e.getMessage());
     }
 

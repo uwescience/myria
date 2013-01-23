@@ -53,14 +53,12 @@ public class SQLiteAccessMethodTest {
 
     final Thread[] threads = new Thread[numThreads];
     for (int i = 0; i < numThreads; i++) {
-      final int j = i;
       threads[i] = new Thread() {
         @Override
         public void run() {
           final Iterator<TupleBatch> it =
               SQLiteAccessMethod.tupleBatchIteratorFromQuery(dbFile.getAbsolutePath(), "select * from testtable",
                   schema);
-
           while (it.hasNext()) {
             it.next();
           }

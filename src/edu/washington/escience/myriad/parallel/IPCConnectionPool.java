@@ -82,12 +82,12 @@ public class IPCConnectionPool {
                 cf.addListener(new ChannelFutureListener() {
                   @Override
                   public void operationComplete(final ChannelFuture future) throws Exception {
-                    LOGGER.info("Ready to close a connection: " + future.getChannel());
+                    LOGGER.debug("Ready to close a connection: " + future.getChannel());
                     cc.readyToClose(channelTrashBin);
                   }
                 });
               } else {
-                LOGGER.info("Ready to close a connection: " + c);
+                LOGGER.debug("Ready to close a connection: " + c);
                 cc.readyToClose(channelTrashBin);
               }
             }
@@ -132,7 +132,7 @@ public class IPCConnectionPool {
         if (cc.getRegisteredChannelContext().numReferenced() <= 0
             && (System.currentTimeMillis() - recentIOTimestamp) >= CONNECTION_RECYCLE_INTERVAL_IN_MS) {
           final ChannelPrioritySet cps = channelPool.get(ecc.getRemoteID()).registeredChannels;
-          LOGGER.info("Recycler decided to close an unused channel: " + c + ". Remote ID is " + ecc.getRemoteID()
+          LOGGER.debug("Recycler decided to close an unused channel: " + c + ". Remote ID is " + ecc.getRemoteID()
               + ". Current channelpool size for this remote entity is: " + cps.size());
           cc.recycleTimeout(recyclableRegisteredChannels, channelTrashBin, cps);
         } else {
@@ -538,7 +538,7 @@ public class IPCConnectionPool {
 
       cc.registerNormal(remote.id, remote.registeredChannels, unregisteredChannels);
       cc.getRegisteredChannelContext().incReference();
-      LOGGER.info("Created a new registered channel from: " + myID + ", to: " + remote.id + ". Channel: " + channel);
+      LOGGER.debug("Created a new registered channel from: " + myID + ", to: " + remote.id + ". Channel: " + channel);
       allPossibleChannels.add(channel);
       return channel;
     } else {
@@ -649,9 +649,9 @@ public class IPCConnectionPool {
     final IPCRemote newOne = new IPCRemote(remoteID, remoteAddress);
     final IPCRemote oldOne = channelPool.put(remoteID, newOne);
     if (oldOne == null) {
-      LOGGER.info("new IPC remote entity added: " + newOne);
+      LOGGER.debug("new IPC remote entity added: " + newOne);
     } else {
-      LOGGER.info("Existing IPC remote entity changed from " + oldOne + " to " + newOne);
+      LOGGER.debug("Existing IPC remote entity changed from " + oldOne + " to " + newOne);
     }
   }
 
@@ -722,7 +722,7 @@ public class IPCConnectionPool {
    *         the progress of closing. Otherwise, null.
    * */
   public final ChannelGroupFuture removeRemote(final Integer remoteID) {
-    LOGGER.info("remove the remote entity #" + remoteID + " from IPC connection pool");
+    LOGGER.debug("remove the remote entity #" + remoteID + " from IPC connection pool");
     if (remoteID == null || remoteID == myID) {
       return null;
     }
@@ -834,7 +834,7 @@ public class IPCConnectionPool {
    * */
   public final ChannelGroupFuture shutdown() {
     shutdown = true;
-    LOGGER.info("IPC connection pool is going to shutdown");
+    LOGGER.debug("IPC connection pool is going to shutdown");
     final Iterator<Channel> acceptedChIt = allAcceptedRemoteChannels.iterator();
     final Collection<ChannelFuture> allAcceptedChannelCloseFutures = new LinkedList<ChannelFuture>();
     while (acceptedChIt.hasNext()) {
@@ -899,10 +899,10 @@ public class IPCConnectionPool {
               final Thread resourceReleaser = new Thread() {
                 @Override
                 public void run() {
-                  LOGGER.info("pre release resources");
+                  LOGGER.debug("pre release resources");
                   clientChannelFactory.releaseExternalResources();
                   serverChannel.getFactory().releaseExternalResources();
-                  LOGGER.info("post release resources");
+                  LOGGER.debug("post release resources");
                 }
               };
               resourceReleaser.start();

@@ -120,11 +120,12 @@ public class Worker {
             final ControlMessage controlM = m.getControl();
             switch (controlM.getType()) {
               case SHUTDOWN:
-                System.out.println("shutdown requested");
+                LOGGER.info("shutdown requested");
                 toShutdown = true;
                 break;
               case START_QUERY:
-                executeQuery();
+                Long queryId = controlM.getQueryId();
+                executeQuery(queryId);
                 break;
               case DISCONNECT:
                 /* TODO */
@@ -164,7 +165,7 @@ public class Worker {
         Operator[] queries = queryPlan;
         long queryId = myQueryId;
         if (queries != null) {
-          LOGGER.log(Level.INFO, "Worker start processing query");
+          LOGGER.info("Worker start processing query " + queryId);
           for (final Operator query : queries) {
             try {
               query.open();
@@ -227,9 +228,9 @@ public class Worker {
           e.printStackTrace();
         } finally {
           if (serverChannel == null) {
-            System.out.println("Cannot connect the server: " + masterSocketInfo
+            LOGGER.info("Cannot connect the server: " + masterSocketInfo
                 + " Maybe the server is down. I'll shutdown now.");
-            System.out.println("Bye!");
+            LOGGER.info("Bye!");
             timer.cancel();
             JVMUtils.shutdownVM();
           } else {
@@ -267,8 +268,8 @@ public class Worker {
     }
   }
 
-  /** The logger for this class. Defaults to myriad level, but could be set to a finer granularity if needed. */
-  private static final Logger LOGGER = Logger.getLogger(Worker.class.getName());
+  /** The logger for this class. */
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Worker.class.getName());
 
   static final String usage = "Usage: worker [--conf <conf_dir>]";
 
@@ -301,13 +302,13 @@ public class Worker {
   }
 
   public static void main(String[] args) throws Throwable {
+    Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
+    Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
+
     if (args.length > 2) {
-      LOGGER.log(Level.SEVERE, "Invalid number of arguments.\n" + usage);
+      LOGGER.warn("Invalid number of arguments.\n" + usage);
       JVMUtils.shutdownVM();
     }
-
-    // Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
-    // Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
 
     String workingDir = null;
     if (args.length >= 2) {
@@ -316,12 +317,12 @@ public class Worker {
         args = ParallelUtility.removeArg(args, 0);
         ParallelUtility.removeArg(args, 0);
       } else {
-        LOGGER.log(Level.SEVERE, "Invalid arguments.\n" + usage);
+        LOGGER.warn("Invalid arguments.\n" + usage);
         JVMUtils.shutdownVM();
       }
     }
 
-    LOGGER.log(Level.INFO, "workingDir: " + workingDir);
+    LOGGER.debug("workingDir: " + workingDir);
     // Instantiate a new worker
     final Worker w = new Worker(workingDir);
     // int port = w.port;
@@ -333,8 +334,7 @@ public class Worker {
     // Now the worker can accept messages
     w.start();
 
-    // System.out.println("Worker started at:" + w.catalog.getWorkers().get(w.myID));
-    LOGGER.log(Level.INFO, "Worker started at:" + w.catalog.getWorkers().get(w.myID));
+    LOGGER.info("Worker started at:" + w.catalog.getWorkers().get(w.myID));
 
     // From now on, the worker will listen for
     // messages to arrive on the network. These messages
@@ -433,11 +433,13 @@ public class Worker {
   /**
    * execute the current query, note that this method is invoked by the Mina IOHandler thread. Typically, IOHandlers
    * should focus on accepting/routing IO requests, rather than do heavily loaded work.
+   * 
+   * @param queryId the query being started.
    */
-  public final void executeQuery() {
-    LOGGER.log(Level.INFO, "Query started");
-    synchronized (Worker.this.queryExecutor) {
-      Worker.this.queryExecutor.notifyAll();
+  public final void executeQuery(final Long queryId) {
+    LOGGER.info("Query " + queryId + " started");
+    synchronized (queryExecutor) {
+      queryExecutor.notifyAll();
     }
   }
 
@@ -452,7 +454,7 @@ public class Worker {
       queryPlan = null;
     }
     sendMessageToMaster(IPCUtils.queryCompleteTM(myID, queryId), null);
-    LOGGER.log(Level.INFO, "My part of the query finished");
+    LOGGER.info("My part of query " + queryId + " finished");
   }
 
   /**
@@ -544,7 +546,7 @@ public class Worker {
    * This method should be called when a data item is received.
    */
   public final void receiveData(final ExchangeData data) {
-    LOGGER.log(Level.INFO, "TupleBag received from " + data.getWorkerID() + " to Operator: " + data.getOperatorID());
+    LOGGER.debug("TupleBag received from " + data.getWorkerID() + " to Operator: " + data.getOperatorID());
     LinkedBlockingQueue<ExchangeData> q = null;
     q = Worker.this.dataBuffer.get(data.getOperatorID());
     if (data instanceof ExchangeData) {
@@ -560,12 +562,11 @@ public class Worker {
    * @throws DbException
    */
   public final void receiveQuery(final Long queryId, final Operator[] queries) throws DbException {
-    LOGGER.log(Level.INFO, "Query received");
+    LOGGER.info("Query " + queryId + " received");
     if (queryPlan != null) {
-      LOGGER.log(Level.INFO, "Error: Worker is still processing. New query refused");
+      LOGGER.info("Error: Worker is still processing " + myQueryId + ". New query " + queryId + " refused");
       return;
     }
-    System.out.println("Query received: " + Arrays.toString(queries));
 
     final ArrayList<ExchangePairID> ids = new ArrayList<ExchangePairID>();
     collectConsumerOperatorIDs(queries, ids);
@@ -580,7 +581,6 @@ public class Worker {
   }
 
   protected final void sendMessageToMaster(final TransportMessage message, final ChannelFutureListener callback) {
-    LOGGER.log(Level.INFO, "send back query ready");
     final ChannelFuture cf = Worker.this.connectionPool.sendShortMessage(0, message);
     if (callback != null) {
       cf.addListener(callback);
@@ -591,15 +591,13 @@ public class Worker {
    * This method should be called whenever the system is going to shutdown.
    */
   public final void shutdown() {
-    LOGGER.log(Level.INFO, "Shutdown requested. Please wait when cleaning up...");
-    // ParallelUtility.shutdownIPC(ipcServerChannel, connectionPool);
+    LOGGER.info("Shutdown requested. Please wait when cleaning up...");
     connectionPool.shutdown().awaitUninterruptibly();
-    LOGGER.log(Level.INFO, "shutdown IPC completed");
+    LOGGER.info("shutdown IPC completed");
     toShutdown = true;
   }
 
   public final void start() throws IOException {
-    // ipcServerChannel = ipcServer.bind(mySocketInfo.getAddress());
     connectionPool.start();
     queryExecutor.start();
     messageProcessor.start();
