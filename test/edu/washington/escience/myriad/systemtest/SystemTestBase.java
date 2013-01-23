@@ -104,7 +104,7 @@ public class SystemTestBase {
   }
 
   /** The logger for this class. Defaults to myriad level, but could be set to a finer granularity if needed. */
-  protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger("edu.washington.escience.myriad");
+  protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(SystemTestBase.class.getName());
 
   public static final Schema JOIN_INPUT_SCHEMA = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE),
       ImmutableList.of("id", "name"));

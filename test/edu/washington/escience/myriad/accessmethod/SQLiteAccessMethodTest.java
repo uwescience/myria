@@ -62,7 +62,6 @@ public class SQLiteAccessMethodTest {
                   schema);
 
           while (it.hasNext()) {
-            System.out.println("Thread #" + j + " get a TupleBatch");
             it.next();
           }
         }
@@ -101,7 +100,6 @@ public class SQLiteAccessMethodTest {
     }
 
     final File dbFile = File.createTempFile(Server.SYSTEM_NAME + "_sqlite_access_method_test", ".db");
-    System.out.println(dbFile.getAbsolutePath());
     SystemTestBase.createTable(dbFile.getAbsolutePath(), "testtable0", "id long, name varchar(20)");
     SystemTestBase.createTable(dbFile.getAbsolutePath(), "testtable1", "id long, name varchar(20)");
 
@@ -124,7 +122,6 @@ public class SQLiteAccessMethodTest {
                   % 2, schema);
 
           while (it.hasNext()) {
-            System.out.println("Thread #" + j + " get a TupleBatch");
             it.next();
           }
         }

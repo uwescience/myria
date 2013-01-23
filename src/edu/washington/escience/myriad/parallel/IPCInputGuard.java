@@ -1,8 +1,6 @@
 package edu.washington.escience.myriad.parallel;
 
 import java.nio.channels.ClosedChannelException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelEvent;
@@ -13,6 +11,7 @@ import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
 import org.jboss.netty.channel.UpstreamChannelStateEvent;
+import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 
@@ -20,7 +19,7 @@ import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 public class IPCInputGuard extends SimpleChannelHandler {
 
   /** The logger for this class. */
-  private static final Logger LOGGER = Logger.getLogger(IPCInputGuard.class.getName());
+  protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(IPCInputGuard.class.getName());
 
   /**
    * constructor.
@@ -37,17 +36,15 @@ public class IPCInputGuard extends SimpleChannelHandler {
       errorMessage = "";
     }
     if (cause instanceof java.nio.channels.NotYetConnectedException) {
-      LOGGER.log(Level.WARNING, "Channel " + c + ": not yet connected. " + errorMessage, cause);
+      LOGGER.warn("Channel " + c + ": not yet connected. " + errorMessage, cause);
     } else if (cause instanceof java.net.ConnectException) {
-      LOGGER.log(Level.WARNING, "Channel " + c + ": Connection failed: " + errorMessage, cause);
+      LOGGER.warn("Channel " + c + ": Connection failed: " + errorMessage, cause);
     } else if (cause instanceof java.io.IOException && errorMessage.contains("reset by peer")) {
-      LOGGER.log(Level.WARNING, "Channel " + c + ": Connection reset by peer: " + c.getRemoteAddress() + " "
-          + errorMessage, cause);
+      LOGGER.warn("Channel " + c + ": Connection reset by peer: " + c.getRemoteAddress() + " " + errorMessage, cause);
     } else if (cause instanceof ClosedChannelException) {
-      LOGGER.log(Level.WARNING, "Channel " + c + ": Connection reset by peer: " + c.getRemoteAddress() + " "
-          + errorMessage, cause);
+      LOGGER.warn("Channel " + c + ": Connection reset by peer: " + c.getRemoteAddress() + " " + errorMessage, cause);
     } else {
-      LOGGER.log(Level.WARNING, "Channel " + c + ": Unexpected exception from downstream.", cause);
+      LOGGER.warn("Channel " + c + ": Unexpected exception from downstream.", cause);
     }
     if (c != null) {
       c.close();

@@ -13,7 +13,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.jboss.netty.bootstrap.ClientBootstrap;
@@ -31,6 +30,7 @@ import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroupFuture;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.util.ExternalResourceReleasable;
+import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myriad.parallel.Worker.MessageWrapper;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
@@ -227,7 +227,7 @@ public class IPCConnectionPool {
   }
 
   /** The logger for this class. */
-  private static final Logger LOGGER = Logger.getLogger(IPCConnectionPool.class.getName());
+  protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(IPCConnectionPool.class.getName());
 
   /**
    * upper bound of the number of connections between this JVM and a remote IPC entity. Should be moved to the system
@@ -420,7 +420,7 @@ public class IPCConnectionPool {
   private void checkShutdown() {
     if (shutdown) {
       final String msg = "IPC connection pool already shutdown.";
-      LOGGER.warning(msg);
+      LOGGER.warn(msg);
       throw new IllegalStateException(msg);
     }
   }
@@ -624,7 +624,7 @@ public class IPCConnectionPool {
   final void newAcceptedRemoteChannel(final Channel newChannel) {
     if (shutdown) {
       // stop accepting new connections if the connection pool is already shutdown.
-      LOGGER.warning("Already shutdown, new remote channel directly close. Channel: "
+      LOGGER.warn("Already shutdown, new remote channel directly close. Channel: "
           + ToStringBuilder.reflectionToString(newChannel));
       newChannel.close();
     }
@@ -665,13 +665,13 @@ public class IPCConnectionPool {
     final IPCRemote remote = channelPool.get(remoteID);
     if (remote == null) {
       final String msg = "Unknown remote, id: " + remoteID + " address: " + channel.getRemoteAddress();
-      LOGGER.warning(msg);
+      LOGGER.warn(msg);
       throw new IllegalStateException(msg);
     }
 
     if (channel.getParent() != serverChannel) {
       final String msg = "Channel " + channel + " does not belong to the connection pool";
-      LOGGER.warning(msg);
+      LOGGER.warn(msg);
       throw new IllegalArgumentException(msg);
     }
 
@@ -682,7 +682,7 @@ public class IPCConnectionPool {
         cc.registerIPCRemoteRemoved(remoteID, channelTrashBin, unregisteredChannels);
       } else {
         final String msg = "Unknown remote, id: " + remoteID + " address: " + channel.getRemoteAddress();
-        LOGGER.warning(msg);
+        LOGGER.warn(msg);
         throw new IllegalStateException(msg);
       }
     } else {
