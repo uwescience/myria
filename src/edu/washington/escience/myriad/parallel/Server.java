@@ -157,11 +157,13 @@ public final class Server {
                 }
                 workersAssigned.remove(senderID);
                 break;
-              case CONNECT:
               case DISCONNECT:
+                /* TODO */
+                break;
+              case CONNECT:
               case SHUTDOWN:
               case START_QUERY:
-                throw new RuntimeException("Unexpected control message received at server" + controlM.toString());
+                throw new RuntimeException("Unexpected control message received at server: " + controlM.toString());
             }
             break;
           case QUERY:

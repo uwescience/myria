@@ -126,8 +126,10 @@ public class Worker {
               case START_QUERY:
                 executeQuery();
                 break;
-              case CONNECT:
               case DISCONNECT:
+                /* TODO */
+                break;
+              case CONNECT:
               case QUERY_COMPLETE:
               case QUERY_READY_TO_EXECUTE:
               case WORKER_ALIVE:
