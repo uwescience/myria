@@ -2,7 +2,22 @@ package edu.washington.escience.myriad.util;
 
 import java.util.Set;
 
-public class ThreadUtils {
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * Helper class to aid in Thread debugging.
+ * 
+ * @author dhalperi
+ */
+public final class ThreadUtils {
+
+  /** Prevent construction of utility class. */
+  private ThreadUtils() {
+  }
+
+  /** The logger for this class. */
+  private static final Logger LOGGER = LoggerFactory.getLogger(ThreadUtils.class.getName());
 
   /**
    * Print out the list of currently active threads.
@@ -11,11 +26,13 @@ public class ThreadUtils {
    */
   public static void printCurrentThreads(final String tag) {
     final Set<Thread> threadSet = Thread.getAllStackTraces().keySet();
-    System.out.println(tag + ":" + threadSet.size() + " threads currently active.");
-    System.out.print("\t");
+    StringBuilder sb = new StringBuilder();
+    sb.append(tag + ":" + threadSet.size() + " threads currently active.\n");
+    sb.append("\t");
     for (final Thread t : threadSet) {
-      System.out.print(t.getId() + ", ");
+      sb.append(t.getId() + "[" + t.getName() + "], ");
     }
-    System.out.println();
+    sb.append('\n');
+    LOGGER.warn(sb.toString());
   }
 }

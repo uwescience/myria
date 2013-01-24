@@ -79,11 +79,13 @@ public class MergeTest extends SystemTestBase {
       }
     }
 
+    final Long queryId = 0L;
+
     final CollectConsumer serverPlan = new CollectConsumer(tableSchema, serverReceiveID, new int[] { WORKER_ID[0] });
-    Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
-    System.out.println("Query dispatched to the workers");
+    Server.runningInstance.dispatchWorkerQueryPlans(queryId, workerPlans);
+    LOGGER.debug("Query dispatched to the workers");
     TupleBatchBuffer result = null;
-    while ((result = Server.runningInstance.startServerQuery(0, serverPlan)) == null) {
+    while ((result = Server.runningInstance.startServerQuery(queryId, serverPlan)) == null) {
       try {
         Thread.sleep(100);
       } catch (final InterruptedException e) {
@@ -92,7 +94,6 @@ public class MergeTest extends SystemTestBase {
       }
     }
 
-    // System.out.println(result.numTuples());
     assertTrue(result.numTuples() == (numTbl1 + numTbl2));
   }
 }

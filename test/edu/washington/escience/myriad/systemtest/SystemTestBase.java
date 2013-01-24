@@ -16,6 +16,10 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.mina.util.AvailablePortFinder;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.slf4j.LoggerFactory;
 
 import com.almworks.sqlite4java.SQLiteConnection;
@@ -39,6 +43,17 @@ import edu.washington.escience.myriad.util.SQLiteUtils;
 import edu.washington.escience.myriad.util.TestUtils;
 
 public class SystemTestBase {
+
+  @Rule
+  public TestRule watcher = new TestWatcher() {
+    @Override
+    protected void starting(Description description) {
+      LOGGER.warn("*********************************************");
+      LOGGER.warn(String.format("Starting test: %s()...", description.getMethodName()));
+      LOGGER.warn("*********************************************");
+    };
+  };
+
   @SuppressWarnings({ "rawtypes", "unchecked" })
   public static class Tuple implements Comparable<Tuple> {
     Comparable[] values;
@@ -103,8 +118,8 @@ public class SystemTestBase {
     }
   }
 
-  /** The logger for this class. Defaults to myriad level, but could be set to a finer granularity if needed. */
-  protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger("edu.washington.escience.myriad");
+  /** The logger for this class. */
+  protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(SystemTestBase.class.getName());
 
   public static final Schema JOIN_INPUT_SCHEMA = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE),
       ImmutableList.of("id", "name"));
@@ -179,15 +194,6 @@ public class SystemTestBase {
   public static void globalCleanup() throws IOException {
     if (Server.runningInstance != null) {
       Server.runningInstance.shutdown();
-    }
-
-    for (final Process p : workerProcess) {
-      p.destroy();
-      try {
-        p.waitFor();
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-      }
     }
 
     for (final Thread t : workerStdoutReader) {
@@ -356,6 +362,7 @@ public class SystemTestBase {
    * */
   static void startWorkers() throws IOException {
     int workerCount = 0;
+
     for (int i = 0; i < WORKER_ID.length; i++) {
       final int workerID = WORKER_ID[i];
       final String workingDir = FilenameUtils.concat(workerTestBaseFolder, "worker_" + workerID);
@@ -421,15 +428,6 @@ public class SystemTestBase {
       workerStdoutReader[wc].start();
 
       ++workerCount;
-
-      try {
-        // sleep 1000 milliseconds.
-        // yield the CPU so that the worker processes can be
-        Thread.sleep(1000);
-      } catch (final InterruptedException e) {
-        e.printStackTrace();
-        Thread.currentThread().interrupt();
-      }
     }
   }
 }

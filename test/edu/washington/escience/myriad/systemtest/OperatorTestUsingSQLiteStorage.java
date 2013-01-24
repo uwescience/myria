@@ -31,8 +31,9 @@ import edu.washington.escience.myriad.parallel.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myriad.util.TestUtils;
 
 public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
-  /** The logger for this class. Defaults to myriad level, but could be set to a finer granularity if needed. */
-  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger("edu.washington.escience.myriad");
+  /** The logger for this class. */
+  private static final org.slf4j.Logger LOGGER = LoggerFactory
+      .getLogger(OperatorTestUsingSQLiteStorage.class.getName());
 
   @Test
   public void dupElimTest() throws DbException, IOException, CatalogException {
@@ -84,12 +85,13 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
       } catch (final InterruptedException e) {
       }
     }
+    final long queryId = 2;
 
     final CollectConsumer serverPlan = new CollectConsumer(schema, serverReceiveID, new int[] { WORKER_ID[0] });
-    Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
+    Server.runningInstance.dispatchWorkerQueryPlans(queryId, workerPlans);
     LOGGER.debug("Query dispatched to the workers");
     TupleBatchBuffer result = null;
-    while ((result = Server.runningInstance.startServerQuery(0, serverPlan)) == null) {
+    while ((result = Server.runningInstance.startServerQuery(queryId, serverPlan)) == null) {
       try {
         Thread.sleep(100);
       } catch (final InterruptedException e) {
@@ -129,7 +131,6 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     }
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
-
     final int numPartition = 2;
 
     final PartitionFunction<String, Integer> pf = new SingleFieldHashPartitionFunction(numPartition);
@@ -150,11 +151,13 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
       }
     }
 
+    final long queryId = 0;
+
     final CollectConsumer serverPlan = new CollectConsumer(schema, serverReceiveID, new int[] { WORKER_ID[0] });
-    Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
+    Server.runningInstance.dispatchWorkerQueryPlans(queryId, workerPlans);
     LOGGER.debug("Query dispatched to the workers");
     TupleBatchBuffer result = null;
-    while ((result = Server.runningInstance.startServerQuery(0, serverPlan)) == null) {
+    while ((result = Server.runningInstance.startServerQuery(queryId, serverPlan)) == null) {
       try {
         Thread.sleep(100);
       } catch (final InterruptedException e) {
@@ -214,12 +217,13 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
       }
     }
 
+    final long queryId = 1;
     final CollectConsumer serverPlan =
         new CollectConsumer(outputSchema, serverReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
-    Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
+    Server.runningInstance.dispatchWorkerQueryPlans(queryId, workerPlans);
     LOGGER.debug("Query dispatched to the workers");
     TupleBatchBuffer result = null;
-    while ((result = Server.runningInstance.startServerQuery(0, serverPlan)) == null) {
+    while ((result = Server.runningInstance.startServerQuery(queryId, serverPlan)) == null) {
       try {
         Thread.sleep(100);
       } catch (final InterruptedException e) {

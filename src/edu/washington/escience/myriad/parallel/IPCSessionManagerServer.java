@@ -20,7 +20,8 @@ import edu.washington.escience.myriad.util.IPCUtils;
 @Sharable
 public class IPCSessionManagerServer extends SimpleChannelHandler {
 
-  private static final Logger logger = Logger.getLogger(IPCSessionManagerServer.class.getName());
+  /** The logger for this class. */
+  private static final Logger LOGGER = Logger.getLogger(IPCSessionManagerServer.class.getName());
 
   private final IPCConnectionPool connectionPool;
 
@@ -64,7 +65,7 @@ public class IPCSessionManagerServer extends SimpleChannelHandler {
         ch.write(connectionPool.getMyIDAsTM()).awaitUninterruptibly(); // await to finish channel registering
         connectionPool.registerChannel(remoteID, ch);
       } else {
-        logger.log(Level.WARNING, "Channel: " + ch + ". Unknown session. Send me the remote id before data transfer.");
+        LOGGER.log(Level.WARNING, "Channel: " + ch + ". Unknown session. Send me the remote id before data transfer.");
         throw new IllegalStateException("Unknown session. Send me the remote id before data transfer.");
       }
     } else {

@@ -54,7 +54,7 @@ public final class IPCPipelineFactories {
 
   public static class MasterServerPipelineFactory implements ChannelPipelineFactory {
 
-    final protected MasterDataHandler masterDataHandler;
+    protected final MasterDataHandler masterDataHandler;
 
     /**
      * master control handler.

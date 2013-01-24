@@ -1,7 +1,9 @@
 package edu.washington.escience.myriad.operator;
 
+import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import edu.washington.escience.myriad.DbException;
@@ -46,6 +48,8 @@ public abstract class RootOperator extends Operator {
 
   /** The task that gets run. */
   private Future<?> task;
+  /** True if I created my own executor. */
+  private boolean myExecutor;
 
   /**
    * Sets important parameters for successful operation.
@@ -56,6 +60,7 @@ public abstract class RootOperator extends Operator {
   public RootOperator(final Operator child, final ExecutorService executor) {
     this.child = child;
     this.executor = executor;
+    myExecutor = false;
   }
 
   /**
@@ -92,10 +97,18 @@ public abstract class RootOperator extends Operator {
    * @param executor the executor service that controls threads for this process.
    */
   public final void setExecutorService(final ExecutorService executor) {
+    Objects.requireNonNull(executor);
+    if (executor != null) {
+      throw new IllegalStateException("RootOperator already has an Executor");
+    }
     this.executor = executor;
   }
 
   private void startAndWaitChild() {
+    if (executor == null) {
+      executor = Executors.newSingleThreadExecutor();
+      myExecutor = true;
+    }
     task = executor.submit(new CollectTuplesTask());
     try {
       task.get();
@@ -103,6 +116,9 @@ public abstract class RootOperator extends Operator {
       e.printStackTrace();
     } catch (final InterruptedException e) {
       Thread.currentThread().interrupt();
+    }
+    if (myExecutor) {
+      executor.shutdown();
     }
   }
 

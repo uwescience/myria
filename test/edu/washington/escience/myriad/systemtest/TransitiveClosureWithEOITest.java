@@ -223,13 +223,15 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
       }
     }
 
+    final Long queryId = 0L;
+
     final CollectConsumer serverPlan =
         new CollectConsumer(tableSchema, serverReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
-    Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
+    Server.runningInstance.dispatchWorkerQueryPlans(queryId, workerPlans);
     System.out.println("Query dispatched to the workers");
     LOGGER.debug("Query dispatched to the workers");
     TupleBatchBuffer result = null;
-    while ((result = Server.runningInstance.startServerQuery(0, serverPlan)) == null) {
+    while ((result = Server.runningInstance.startServerQuery(queryId, serverPlan)) == null) {
       try {
         Thread.sleep(100);
       } catch (InterruptedException e) {
@@ -237,7 +239,7 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
         Thread.currentThread().interrupt();
       }
     }
-    HashMap<Tuple, Integer> actual = TestUtils.tupleBatchToTupleBag(result);
+    final HashMap<Tuple, Integer> actual = TestUtils.tupleBatchToTupleBag(result);
     TestUtils.assertTupleBagEqual(expectedResult, actual);
   }
 }

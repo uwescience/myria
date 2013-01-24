@@ -11,13 +11,17 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Logger;
 
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.group.ChannelGroupFuture;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
 
@@ -33,16 +37,24 @@ import edu.washington.escience.myriad.parallel.SocketInfo;
 import edu.washington.escience.myriad.parallel.Worker.MessageWrapper;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage;
-import edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageType;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.systemtest.SystemTestBase.Tuple;
 import edu.washington.escience.myriad.util.IPCUtils;
 import edu.washington.escience.myriad.util.TestUtils;
 
 public class ProtobufTest {
-  /** The logger for this class. Defaults to myriad.ipc level. */
-  // private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(ProtobufTest.class.getPackage().toString());
-  private static final Logger LOGGER = Logger.getLogger(ProtobufTest.class.getPackage().toString());
+  @Rule
+  public TestRule watcher = new TestWatcher() {
+    @Override
+    protected void starting(Description description) {
+      LOGGER.warn("*********************************************");
+      LOGGER.warn(String.format("Starting test: %s()...", description.getMethodName()));
+      LOGGER.warn("*********************************************");
+    };
+  };
+
+  /** The logger for this class. */
+  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(ProtobufTest.class.getName());
 
   // @Test
   public void protobufExhaustNoWaitTest() throws IOException, InterruptedException {
@@ -52,7 +64,6 @@ public class ProtobufTest {
       } else {
         protobufSingleThreadNoWaitTest();
       }
-      System.out.println("\nFinish round #" + i + "\n");
     }
   }
 
@@ -64,7 +75,6 @@ public class ProtobufTest {
       } else {
         protobufMultiThreadSendMessageTest();
       }
-      System.out.println("\nFinish round #" + i + "\n");
     }
   }
 
@@ -76,7 +86,6 @@ public class ProtobufTest {
       } else {
         protobufMultiThreadSeparatePoolTest();
       }
-      System.out.println("\nFinish round #" + i + "\n");
     }
   }
 
@@ -88,7 +97,6 @@ public class ProtobufTest {
       } else {
         protobufMultiThreadTest();
       }
-      System.out.println("\nFinish round #" + i + "\n");
     }
   }
 
@@ -145,7 +153,6 @@ public class ProtobufTest {
         @Override
         public void run() {
           final Channel ch = connectionPool.reserveLongTermConnection(0);
-          System.out.println("Reserved a longterm connection: " + ch + ", connected: " + ch.isConnected());
           try {
             for (final TransportMessage tm : tbs) {
               ch.write(tm);
@@ -167,9 +174,7 @@ public class ProtobufTest {
     }
 
     LOGGER.info("Total sent: " + numSent.get() + " TupleBatches");
-    System.out.println("Pre shutdown");
     connectionPool.shutdown().awaitUninterruptibly();
-    System.out.println("Post shutdown");
     int numReceived = 0;
     final TupleBatchBuffer actualTBB = new TupleBatchBuffer(tbb.getSchema());
     int numEOS = 0;
@@ -179,11 +184,14 @@ public class ProtobufTest {
       if (tm.getType() == TransportMessage.TransportMessageType.DATA) {
         numReceived++;
         final DataMessage data = tm.getData();
-        switch (data.getType().getNumber()) {
-          case DataMessageType.EOS_VALUE:
+        switch (data.getType()) {
+          case EOS:
             numEOS += 1;
             break;
-          case DataMessageType.NORMAL_VALUE:
+          case EOI:
+            // nothing to do
+            break;
+          case NORMAL:
             final List<ColumnMessage> columnMessages = data.getColumnsList();
             final Column<?>[] columnArray = new Column[columnMessages.size()];
             int idx = 0;
@@ -278,9 +286,7 @@ public class ProtobufTest {
     }
 
     LOGGER.info("Total sent: " + numSent.get() + " TupleBatches");
-    System.out.println("Pre shutdown");
     connectionPool.shutdown().awaitUninterruptibly();
-    System.out.println("Post shutdown");
     int numReceived = 0;
     final TupleBatchBuffer actualTBB = new TupleBatchBuffer(tbb.getSchema());
     int numEOS = 0;
@@ -290,11 +296,14 @@ public class ProtobufTest {
       if (tm.getType() == TransportMessage.TransportMessageType.DATA) {
         numReceived++;
         final DataMessage data = tm.getData();
-        switch (data.getType().getNumber()) {
-          case DataMessageType.EOS_VALUE:
+        switch (data.getType()) {
+          case EOS:
             numEOS += 1;
             break;
-          case DataMessageType.NORMAL_VALUE:
+          case EOI:
+            // nothing to do
+            break;
+          case NORMAL:
             final List<ColumnMessage> columnMessages = data.getColumnsList();
             final Column<?>[] columnArray = new Column[columnMessages.size()];
             int idx = 0;
@@ -376,7 +385,6 @@ public class ProtobufTest {
         @Override
         public void run() {
           final Channel ch = clientConnectionPool.reserveLongTermConnection(0);
-          System.out.println("reserved a connection: " + ch + ", connected: " + ch.isConnected());
           try {
             for (final TransportMessage tm : tbs) {
               ch.write(tm);
@@ -411,12 +419,10 @@ public class ProtobufTest {
     }
 
     LOGGER.info("Total sent: " + numSent.get() + " TupleBatches");
-    System.out.println("Pre shutdown");
     final ChannelGroupFuture cgfClient = clientConnectionPool.shutdown();
     final ChannelGroupFuture cgfServer = serverConnectionPool.shutdown();
     cgfClient.awaitUninterruptibly();
     cgfServer.awaitUninterruptibly();
-    System.out.println("Post shutdown");
     int numReceived = 0;
     final TupleBatchBuffer actualTBB = new TupleBatchBuffer(tbb.getSchema());
     int numEOS = 0;
@@ -426,11 +432,14 @@ public class ProtobufTest {
       if (tm.getType() == TransportMessage.TransportMessageType.DATA) {
         numReceived++;
         final DataMessage data = tm.getData();
-        switch (data.getType().getNumber()) {
-          case DataMessageType.EOS_VALUE:
+        switch (data.getType()) {
+          case EOS:
             numEOS += 1;
             break;
-          case DataMessageType.NORMAL_VALUE:
+          case EOI:
+            // nothing to do
+            break;
+          case NORMAL:
             final List<ColumnMessage> columnMessages = data.getColumnsList();
             final Column<?>[] columnArray = new Column[columnMessages.size()];
             int idx = 0;
@@ -507,7 +516,6 @@ public class ProtobufTest {
         @Override
         public void run() {
           final Channel ch = connectionPool.reserveLongTermConnection(0);
-          System.out.println("reserved a connection: " + ch + ", connected: " + ch.isConnected());
           try {
             for (final TransportMessage tm : tbs) {
               ch.write(tm);
@@ -542,9 +550,7 @@ public class ProtobufTest {
     }
 
     LOGGER.info("Total sent: " + numSent.get() + " TupleBatches");
-    System.out.println("Pre shutdown");
     connectionPool.shutdown().awaitUninterruptibly();
-    System.out.println("Post shutdown");
     int numReceived = 0;
     final TupleBatchBuffer actualTBB = new TupleBatchBuffer(tbb.getSchema());
     int numEOS = 0;
@@ -554,11 +560,14 @@ public class ProtobufTest {
       if (tm.getType() == TransportMessage.TransportMessageType.DATA) {
         numReceived++;
         final DataMessage data = tm.getData();
-        switch (data.getType().getNumber()) {
-          case DataMessageType.EOS_VALUE:
+        switch (data.getType()) {
+          case EOS:
             numEOS += 1;
             break;
-          case DataMessageType.NORMAL_VALUE:
+          case EOI:
+            // nothing to do
+            break;
+          case NORMAL:
             final List<ColumnMessage> columnMessages = data.getColumnsList();
             final Column<?>[] columnArray = new Column[columnMessages.size()];
             int idx = 0;
@@ -627,9 +636,7 @@ public class ProtobufTest {
     }
 
     LOGGER.info("Total sent: " + numSent.get() + " TupleBatches");
-    System.out.println("Pre shutdown");
     connectionPool.shutdown().awaitUninterruptibly();
-    System.out.println("Post shutdown");
 
     int numReceived = 0;
     final TupleBatchBuffer actualTBB = new TupleBatchBuffer(tbb.getSchema());
@@ -640,11 +647,14 @@ public class ProtobufTest {
       if (tm.getType() == TransportMessage.TransportMessageType.DATA) {
         numReceived++;
         final DataMessage data = tm.getData();
-        switch (data.getType().getNumber()) {
-          case DataMessageType.EOS_VALUE:
+        switch (data.getType()) {
+          case EOS:
             numEOS += 1;
             break;
-          case DataMessageType.NORMAL_VALUE:
+          case EOI:
+            // nothing to do
+            break;
+          case NORMAL:
             final List<ColumnMessage> columnMessages = data.getColumnsList();
             final Column<?>[] columnArray = new Column[columnMessages.size()];
             int idx = 0;
@@ -715,9 +725,7 @@ public class ProtobufTest {
     }
 
     LOGGER.info("Total sent: " + numSent.get() + " TupleBatches");
-    System.out.println("Pre shutdown");
     connectionPool.shutdown().awaitUninterruptibly();
-    System.out.println("Post shutdown");
 
     int numReceived = 0;
     final TupleBatchBuffer actualTBB = new TupleBatchBuffer(tbb.getSchema());
@@ -728,11 +736,14 @@ public class ProtobufTest {
       if (tm.getType() == TransportMessage.TransportMessageType.DATA) {
         numReceived++;
         final DataMessage data = tm.getData();
-        switch (data.getType().getNumber()) {
-          case DataMessageType.EOS_VALUE:
+        switch (data.getType()) {
+          case EOS:
             numEOS += 1;
             break;
-          case DataMessageType.NORMAL_VALUE:
+          case EOI:
+            // nothing to do
+            break;
+          case NORMAL:
             final List<ColumnMessage> columnMessages = data.getColumnsList();
             final Column<?>[] columnArray = new Column[columnMessages.size()];
             int idx = 0;
@@ -811,17 +822,14 @@ public class ProtobufTest {
     if (cf != null) {
       cf.awaitUninterruptibly();
     } else {
-      System.out.println("cf is null!");
+      LOGGER.warn("cf is null!");
     }
 
     LOGGER.info("Total sent: " + numSent.get() + " TupleBatches");
-    System.out.println("Pre shutdown");
     final ChannelGroupFuture cgfClient = connectionPoolClient.shutdown();
     final ChannelGroupFuture cgfServer = connectionPoolServer.shutdown();
     cgfClient.awaitUninterruptibly();
     cgfServer.awaitUninterruptibly();
-
-    System.out.println("Post shutdown");
 
     int numReceived = 0;
     final TupleBatchBuffer actualTBB = new TupleBatchBuffer(tbb.getSchema());
@@ -832,11 +840,14 @@ public class ProtobufTest {
       if (tm.getType() == TransportMessage.TransportMessageType.DATA) {
         numReceived++;
         final DataMessage data = tm.getData();
-        switch (data.getType().getNumber()) {
-          case DataMessageType.EOS_VALUE:
+        switch (data.getType()) {
+          case EOS:
             numEOS += 1;
             break;
-          case DataMessageType.NORMAL_VALUE:
+          case EOI:
+            // nothing to do
+            break;
+          case NORMAL:
             final List<ColumnMessage> columnMessages = data.getColumnsList();
             final Column<?>[] columnArray = new Column[columnMessages.size()];
             int idx = 0;
@@ -911,13 +922,11 @@ public class ProtobufTest {
     if (cf != null) {
       cf.awaitUninterruptibly();
     } else {
-      System.out.println("cf is null!");
+      LOGGER.warn("cf is null!");
     }
 
-    LOGGER.info("Total sent: " + numSent.get() + " TupleBatches");
-    System.out.println("Pre shutdown");
+    LOGGER.debug("Total sent: " + numSent.get() + " TupleBatches");
     connectionPool.shutdown().awaitUninterruptibly();
-    System.out.println("Post shutdown");
 
     int numReceived = 0;
     final TupleBatchBuffer actualTBB = new TupleBatchBuffer(tbb.getSchema());
@@ -928,11 +937,14 @@ public class ProtobufTest {
       if (tm.getType() == TransportMessage.TransportMessageType.DATA) {
         numReceived++;
         final DataMessage data = tm.getData();
-        switch (data.getType().getNumber()) {
-          case DataMessageType.EOS_VALUE:
+        switch (data.getType()) {
+          case EOS:
             numEOS += 1;
             break;
-          case DataMessageType.NORMAL_VALUE:
+          case EOI:
+            // nothing to do
+            break;
+          case NORMAL:
             final List<ColumnMessage> columnMessages = data.getColumnsList();
             final Column<?>[] columnArray = new Column[columnMessages.size()];
             int idx = 0;

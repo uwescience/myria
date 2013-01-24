@@ -53,16 +53,13 @@ public class SQLiteAccessMethodTest {
 
     final Thread[] threads = new Thread[numThreads];
     for (int i = 0; i < numThreads; i++) {
-      final int j = i;
       threads[i] = new Thread() {
         @Override
         public void run() {
           final Iterator<TupleBatch> it =
               SQLiteAccessMethod.tupleBatchIteratorFromQuery(dbFile.getAbsolutePath(), "select * from testtable",
                   schema);
-
           while (it.hasNext()) {
-            System.out.println("Thread #" + j + " get a TupleBatch");
             it.next();
           }
         }
@@ -101,7 +98,6 @@ public class SQLiteAccessMethodTest {
     }
 
     final File dbFile = File.createTempFile(Server.SYSTEM_NAME + "_sqlite_access_method_test", ".db");
-    System.out.println(dbFile.getAbsolutePath());
     SystemTestBase.createTable(dbFile.getAbsolutePath(), "testtable0", "id long, name varchar(20)");
     SystemTestBase.createTable(dbFile.getAbsolutePath(), "testtable1", "id long, name varchar(20)");
 
@@ -124,7 +120,6 @@ public class SQLiteAccessMethodTest {
                   % 2, schema);
 
           while (it.hasNext()) {
-            System.out.println("Thread #" + j + " get a TupleBatch");
             it.next();
           }
         }

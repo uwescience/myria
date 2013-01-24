@@ -16,7 +16,6 @@ import edu.washington.escience.myriad.parallel.SocketInfo;
 import edu.washington.escience.myriad.parallel.Worker.MessageWrapper;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage;
-import edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageType;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 
 public class TenGBTupleBatchReceiverUsingConnectionPool {
@@ -50,13 +49,16 @@ public class TenGBTupleBatchReceiverUsingConnectionPool {
           System.out.println(numReceived + " received");
         }
         final DataMessage data = tm.getData();
-        switch (data.getType().getNumber()) {
-          case DataMessageType.EOS_VALUE:
+        switch (data.getType()) {
+          case EOS:
             end = System.currentTimeMillis();
             System.out.println("Receive start at " + start);
             System.out.println("Receive end at " + end);
             break RECEIVE_MESSAGE;
-          case DataMessageType.NORMAL_VALUE:
+          case EOI:
+            // nothing to do
+            break RECEIVE_MESSAGE;
+          case NORMAL:
             if (numReceived == 0) {
               start = System.currentTimeMillis();
               System.out.println("Receive start at new " + start);

@@ -64,20 +64,21 @@ public class CollectTest extends SystemTestBase {
     while (Server.runningInstance == null) {
       try {
         Thread.sleep(10);
-        System.out.println("waiting");
       } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
       }
     }
 
+    final Long queryId = 0L;
+
     final CollectConsumer serverPlan = new CollectConsumer(schema, serverReceiveID, WORKER_ID);
-    Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
+    Server.runningInstance.dispatchWorkerQueryPlans(queryId, workerPlans);
     LOGGER.debug("Query dispatched to the workers");
     TupleBatchBuffer result = null;
-    while ((result = Server.runningInstance.startServerQuery(0, serverPlan)) == null) {
+    while ((result = Server.runningInstance.startServerQuery(queryId, serverPlan)) == null) {
       try {
         Thread.sleep(100);
       } catch (final InterruptedException e) {
-        e.printStackTrace();
         Thread.currentThread().interrupt();
       }
     }

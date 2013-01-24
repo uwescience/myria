@@ -108,10 +108,12 @@ public final class Main {
       }
     }
 
+    final Long queryId = 9L;
+
     final CollectConsumer serverPlan = new CollectConsumer(tableSchema, serverReceiveID, WORKER_ID);
-    Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
+    Server.runningInstance.dispatchWorkerQueryPlans(queryId, workerPlans);
     System.out.println("Query dispatched to the workers");
-    while (Server.runningInstance.startServerQuery(0, serverPlan) == null) {
+    while (Server.runningInstance.startServerQuery(queryId, serverPlan) == null) {
       try {
         Thread.sleep(100);
       } catch (final InterruptedException e) {
