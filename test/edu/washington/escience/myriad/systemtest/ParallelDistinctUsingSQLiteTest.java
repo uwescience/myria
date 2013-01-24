@@ -69,16 +69,8 @@ public class ParallelDistinctUsingSQLiteTest extends SystemTestBase {
 
     server.dispatchWorkerQueryPlans(0L, workerPlans);
     LOGGER.debug("Query dispatched to the workers");
-    TupleBatchBuffer result = null;
     final CollectConsumer serverPlan = new CollectConsumer(schema, serverReceiveID, new int[] { WORKER_ID[1] });
-    while ((result = server.startServerQuery(0L, serverPlan)) == null) {
-      try {
-        Thread.sleep(100);
-      } catch (final InterruptedException e) {
-        e.printStackTrace();
-        Thread.currentThread().interrupt();
-      }
-    }
+    TupleBatchBuffer result = server.startServerQuery(0L, serverPlan);
 
     final HashMap<Tuple, Integer> resultSet = TestUtils.tupleBatchToTupleBag(result);
 

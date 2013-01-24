@@ -370,79 +370,87 @@ public final class Server {
   }
 
   /**
-   * @return if the query is successfully executed.
+   * @return the collected tuples.
    * */
   public TupleBatchBuffer startServerQuery(final Long queryId, final CollectConsumer serverPlan) throws DbException {
     final BitSet workersReceived = workersReceivedQuery.get(queryId);
     final HashMap<Integer, Integer> workersAssigned = workersAssignedToQuery.get(queryId);
-    for (Integer workerId : workersAssigned.keySet()) {
-      if (!aliveWorkers.contains(workerId)) {
-        return null;
+
+    /* Can't progress until all assigned workers are alive. */
+    while (!aliveWorkers.containsAll(workersAssigned.keySet())) {
+      try {
+        Thread.sleep(100);
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
       }
     }
 
-    if (workersReceived.nextClearBit(0) >= workersAssigned.size()) {
-
-      final LinkedBlockingQueue<ExchangeData> buffer = new LinkedBlockingQueue<ExchangeData>();
-      exchangeSchema.put(serverPlan.getOperatorID(), serverPlan.getSchema());
-      dataBuffer.put(serverPlan.getOperatorID(), buffer);
-      serverPlan.setInputBuffer(buffer);
-
-      final Schema schema = serverPlan.getSchema();
-
-      String names = "";
-      for (int i = 0; i < schema.numFields(); i++) {
-        names += schema.getFieldName(i) + "\t";
+    /* Can't progress until all assigned workers have received the query. */
+    while (workersReceived.nextClearBit(0) < workersAssigned.size()) {
+      try {
+        Thread.sleep(100);
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
       }
-
-      if (LOGGER.isDebugEnabled()) {
-        final StringBuilder sb = new StringBuilder();
-        sb.append(names).append('\n');
-        for (int i = 0; i < names.length() + schema.numFields() * 4; i++) {
-          sb.append("-");
-        }
-        sb.append("");
-        LOGGER.debug(sb.toString());
-      }
-
-      final Date start = new Date();
-      serverPlan.open();
-
-      startWorkerQuery(queryId);
-
-      final TupleBatchBuffer outBufferForTesting = new TupleBatchBuffer(serverPlan.getSchema());
-      int cnt = 0;
-      TupleBatch tup = null;
-      while (!serverPlan.eos()) {
-        while ((tup = serverPlan.next()) != null) {
-          tup.compactInto(outBufferForTesting);
-          if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(tup.toString());
-          }
-          cnt += tup.numTuples();
-        }
-        if (serverPlan.eoi()) {
-          serverPlan.setEOI(false);
-        }
-      }
-
-      serverPlan.close();
-      dataBuffer.remove(serverPlan.getOperatorID());
-      final Date end = new Date();
-      LOGGER.info("Number of results: " + cnt);
-      int elapse = (int) (end.getTime() - start.getTime());
-      final int hour = elapse / ONE_HR_IN_MILLIS;
-      elapse -= hour * ONE_HR_IN_MILLIS;
-      final int minute = elapse / ONE_MIN_IN_MILLIS;
-      elapse -= minute * ONE_MIN_IN_MILLIS;
-      final int second = elapse / ONE_SEC_IN_MILLIS;
-      elapse -= second * ONE_SEC_IN_MILLIS;
-
-      LOGGER.info(String.format("Time elapsed: %1$dh%2$dm%3$ds.%4$03d", hour, minute, second, elapse));
-      return outBufferForTesting;
-    } else {
-      return null;
     }
+
+    final LinkedBlockingQueue<ExchangeData> buffer = new LinkedBlockingQueue<ExchangeData>();
+    exchangeSchema.put(serverPlan.getOperatorID(), serverPlan.getSchema());
+    dataBuffer.put(serverPlan.getOperatorID(), buffer);
+    serverPlan.setInputBuffer(buffer);
+
+    final Schema schema = serverPlan.getSchema();
+
+    String names = "";
+    for (int i = 0; i < schema.numFields(); i++) {
+      names += schema.getFieldName(i) + "\t";
+    }
+
+    if (LOGGER.isDebugEnabled()) {
+      final StringBuilder sb = new StringBuilder();
+      sb.append(names).append('\n');
+      for (int i = 0; i < names.length() + schema.numFields() * 4; i++) {
+        sb.append("-");
+      }
+      sb.append("");
+      LOGGER.debug(sb.toString());
+    }
+
+    final Date start = new Date();
+    serverPlan.open();
+
+    startWorkerQuery(queryId);
+
+    final TupleBatchBuffer outBufferForTesting = new TupleBatchBuffer(serverPlan.getSchema());
+    int cnt = 0;
+    TupleBatch tup = null;
+    while (!serverPlan.eos()) {
+      while ((tup = serverPlan.next()) != null) {
+        tup.compactInto(outBufferForTesting);
+        if (LOGGER.isDebugEnabled()) {
+          LOGGER.debug(tup.toString());
+        }
+        cnt += tup.numTuples();
+      }
+      if (serverPlan.eoi()) {
+        serverPlan.setEOI(false);
+      }
+    }
+
+    serverPlan.close();
+    dataBuffer.remove(serverPlan.getOperatorID());
+    final Date end = new Date();
+    LOGGER.info("Number of results: " + cnt);
+    int elapse = (int) (end.getTime() - start.getTime());
+    final int hour = elapse / ONE_HR_IN_MILLIS;
+    elapse -= hour * ONE_HR_IN_MILLIS;
+    final int minute = elapse / ONE_MIN_IN_MILLIS;
+    elapse -= minute * ONE_MIN_IN_MILLIS;
+    final int second = elapse / ONE_SEC_IN_MILLIS;
+    elapse -= second * ONE_SEC_IN_MILLIS;
+
+    LOGGER.info(String.format("Time elapsed: %1$dh%2$dm%3$ds.%4$03d", hour, minute, second, elapse));
+    return outBufferForTesting;
   }
 
   /**
@@ -450,45 +458,51 @@ public final class Server {
    * 
    * @param queryId the id of this query. TODO currently always 0.
    * @param serverPlan the query plan to be executed.
-   * @return true if the query is successfully executed.
    * @throws DbException if there are errors executing the serverPlan operators.
    */
-  public boolean startServerQuery(final Long queryId, final Producer serverPlan) throws DbException {
+  public void startServerQuery(final Long queryId, final Producer serverPlan) throws DbException {
     final BitSet workersReceived = workersReceivedQuery.get(queryId);
     final HashMap<Integer, Integer> workersAssigned = workersAssignedToQuery.get(queryId);
-    for (Integer workerId : workersAssigned.keySet()) {
-      if (!aliveWorkers.contains(workerId)) {
-        return false;
+    /* Can't progress until all assigned workers are alive. */
+    while (!aliveWorkers.containsAll(workersAssigned.keySet())) {
+      try {
+        Thread.sleep(100);
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
       }
     }
-    if (workersReceived.nextClearBit(0) >= workersAssigned.size()) {
 
-      final Date start = new Date();
-
-      serverPlan.open();
-
-      startWorkerQuery(queryId);
-
-      while (serverPlan.next() != null) {
-        /* Do nothing. */
+    /* Can't progress until all assigned workers have received the query. */
+    while (workersReceived.nextClearBit(0) < workersAssigned.size()) {
+      try {
+        Thread.sleep(100);
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
       }
-
-      serverPlan.close();
-
-      final Date end = new Date();
-      int elapse = (int) (end.getTime() - start.getTime());
-      final int hour = elapse / ONE_HR_IN_MILLIS;
-      elapse -= hour * ONE_HR_IN_MILLIS;
-      final int minute = elapse / ONE_MIN_IN_MILLIS;
-      elapse -= minute * ONE_MIN_IN_MILLIS;
-      final int second = elapse / ONE_SEC_IN_MILLIS;
-      elapse -= second * ONE_SEC_IN_MILLIS;
-
-      LOGGER.debug(String.format("Time elapsed: %1$dh%2$dm%3$ds.%4$03d", hour, minute, second, elapse));
-      return true;
-    } else {
-      return false;
     }
+
+    final Date start = new Date();
+
+    serverPlan.open();
+
+    startWorkerQuery(queryId);
+
+    while (serverPlan.next() != null) {
+      /* Do nothing. */
+    }
+
+    serverPlan.close();
+
+    final Date end = new Date();
+    int elapse = (int) (end.getTime() - start.getTime());
+    final int hour = elapse / ONE_HR_IN_MILLIS;
+    elapse -= hour * ONE_HR_IN_MILLIS;
+    final int minute = elapse / ONE_MIN_IN_MILLIS;
+    elapse -= minute * ONE_MIN_IN_MILLIS;
+    final int second = elapse / ONE_SEC_IN_MILLIS;
+    elapse -= second * ONE_SEC_IN_MILLIS;
+
+    LOGGER.debug(String.format("Time elapsed: %1$dh%2$dm%3$ds.%4$03d", hour, minute, second, elapse));
   }
 
   protected void startWorkerQuery(final Long queryId) {

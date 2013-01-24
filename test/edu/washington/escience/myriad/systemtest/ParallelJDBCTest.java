@@ -66,14 +66,6 @@ public class ParallelJDBCTest extends SystemTestBase {
     final CollectConsumer serverPlan = new CollectConsumer(schema, serverReceiveID, new int[] { WORKER_ID[1] });
     server.dispatchWorkerQueryPlans(0L, workerPlans);
     LOGGER.debug("Query dispatched to the workers");
-    while (server.startServerQuery(0L, serverPlan) == null) {
-      try {
-        Thread.sleep(100);
-      } catch (final InterruptedException e) {
-        e.printStackTrace();
-        Thread.currentThread().interrupt();
-      }
-    }
-
+    server.startServerQuery(0L, serverPlan);
   }
 }

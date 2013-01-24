@@ -107,14 +107,7 @@ public final class Main {
     final CollectConsumer serverPlan = new CollectConsumer(tableSchema, serverReceiveID, WORKER_ID);
     serverInstance.dispatchWorkerQueryPlans(queryId, workerPlans);
     System.out.println("Query dispatched to the workers");
-    while (serverInstance.startServerQuery(queryId, serverPlan) == null) {
-      try {
-        Thread.sleep(100);
-      } catch (final InterruptedException e) {
-        e.printStackTrace();
-        Thread.currentThread().interrupt();
-      }
-    }
+    serverInstance.startServerQuery(queryId, serverPlan);
 
   }
 

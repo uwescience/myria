@@ -76,15 +76,7 @@ public class MergeTest extends SystemTestBase {
     final CollectConsumer serverPlan = new CollectConsumer(tableSchema, serverReceiveID, new int[] { WORKER_ID[0] });
     server.dispatchWorkerQueryPlans(queryId, workerPlans);
     LOGGER.debug("Query dispatched to the workers");
-    TupleBatchBuffer result = null;
-    while ((result = server.startServerQuery(queryId, serverPlan)) == null) {
-      try {
-        Thread.sleep(100);
-      } catch (final InterruptedException e) {
-        e.printStackTrace();
-        Thread.currentThread().interrupt();
-      }
-    }
+    TupleBatchBuffer result = server.startServerQuery(queryId, serverPlan);
 
     assertTrue(result.numTuples() == (numTbl1 + numTbl2));
   }

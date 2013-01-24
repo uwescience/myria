@@ -62,14 +62,7 @@ public class SplitDataTest extends SystemTestBase {
 
     server.dispatchWorkerQueryPlans(queryId, workerPlans);
     LOGGER.debug("Query part 1 (round robin ruple shuffle) dispatched to the workers");
-    while (server.startServerQuery(queryId, scatter) != true) {
-      try {
-        Thread.sleep(100);
-      } catch (final InterruptedException e) {
-        e.printStackTrace();
-        Thread.currentThread().interrupt();
-      }
-    }
+    server.startServerQuery(queryId, scatter);
 
     while (!server.queryCompleted(queryId)) {
       try {
@@ -99,15 +92,7 @@ public class SplitDataTest extends SystemTestBase {
     /* Start the query and collect the results. */
     queryId = 8L;
     TupleBatchBuffer result = server.startServerQuery(queryId, receive);
-    while (result == null) {
-      try {
-        Thread.sleep(100);
-      } catch (final InterruptedException e) {
-        e.printStackTrace();
-        Thread.currentThread().interrupt();
-      }
-      result = server.startServerQuery(queryId, receive);
-    }
+
     /* Sanity-check the results, sum them, then confirm. */
     TupleBatch aggregate = result.popAny();
     assertTrue(aggregate.numTuples() == WORKER_ID.length);

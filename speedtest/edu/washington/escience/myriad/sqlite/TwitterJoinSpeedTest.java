@@ -126,15 +126,6 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
 
     server.dispatchWorkerQueryPlans(queryId, workerPlans);
     TupleBatchBuffer result = server.startServerQuery(queryId, collectCounts);
-    while (result == null) {
-      try {
-        Thread.sleep(100);
-      } catch (final InterruptedException e) {
-        e.printStackTrace();
-        Thread.currentThread().interrupt();
-      }
-      result = server.startServerQuery(queryId, collectCounts);
-    }
 
     /* Count the number of returned tuples. */
     long total = 0;
@@ -214,15 +205,6 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     final CollectConsumer serverPlan = new CollectConsumer(tableSchema, serverReceiveID, WORKER_ID);
     server.dispatchWorkerQueryPlans(queryId, workerPlans);
     TupleBatchBuffer result = server.startServerQuery(queryId, serverPlan);
-    while (result == null) {
-      try {
-        Thread.sleep(100);
-      } catch (final InterruptedException e) {
-        e.printStackTrace();
-        Thread.currentThread().interrupt();
-      }
-      result = server.startServerQuery(queryId, serverPlan);
-    }
 
     /* Make sure the count matches the known result. */
     assertTrue(result.numTuples() == 3361461);
@@ -286,15 +268,6 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     final CollectConsumer serverPlan = new CollectConsumer(tableSchema, serverReceiveID, WORKER_ID);
     server.dispatchWorkerQueryPlans(queryId, workerPlans);
     TupleBatchBuffer result = server.startServerQuery(queryId, serverPlan);
-    while (result == null) {
-      try {
-        Thread.sleep(100);
-      } catch (final InterruptedException e) {
-        e.printStackTrace();
-        Thread.currentThread().interrupt();
-      }
-      result = server.startServerQuery(queryId, serverPlan);
-    }
 
     /* Make sure the count matches the known result. */
     assertTrue(result.numTuples() == 3361461);

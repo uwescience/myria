@@ -83,15 +83,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final CollectConsumer serverPlan = new CollectConsumer(schema, serverReceiveID, new int[] { WORKER_ID[0] });
     server.dispatchWorkerQueryPlans(queryId, workerPlans);
     LOGGER.debug("Query dispatched to the workers");
-    TupleBatchBuffer result = null;
-    while ((result = server.startServerQuery(queryId, serverPlan)) == null) {
-      try {
-        Thread.sleep(100);
-      } catch (final InterruptedException e) {
-        e.printStackTrace();
-        Thread.currentThread().interrupt();
-      }
-    }
+    TupleBatchBuffer result = server.startServerQuery(queryId, serverPlan);
 
     final HashMap<Tuple, Integer> resultSet = TestUtils.tupleBatchToTupleSet(result);
 
@@ -142,15 +134,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final CollectConsumer serverPlan = new CollectConsumer(schema, serverReceiveID, new int[] { WORKER_ID[0] });
     server.dispatchWorkerQueryPlans(queryId, workerPlans);
     LOGGER.debug("Query dispatched to the workers");
-    TupleBatchBuffer result = null;
-    while ((result = server.startServerQuery(queryId, serverPlan)) == null) {
-      try {
-        Thread.sleep(100);
-      } catch (final InterruptedException e) {
-        e.printStackTrace();
-        Thread.currentThread().interrupt();
-      }
-    }
+    TupleBatchBuffer result = server.startServerQuery(queryId, serverPlan);
 
     final HashMap<Tuple, Integer> resultSet = TestUtils.tupleBatchToTupleSet(result);
 
@@ -201,15 +185,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
         new CollectConsumer(outputSchema, serverReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
     server.dispatchWorkerQueryPlans(queryId, workerPlans);
     LOGGER.debug("Query dispatched to the workers");
-    TupleBatchBuffer result = null;
-    while ((result = server.startServerQuery(queryId, serverPlan)) == null) {
-      try {
-        Thread.sleep(100);
-      } catch (final InterruptedException e) {
-        e.printStackTrace();
-        Thread.currentThread().interrupt();
-      }
-    }
+    TupleBatchBuffer result = server.startServerQuery(queryId, serverPlan);
 
     final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(result);
 

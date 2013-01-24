@@ -143,15 +143,7 @@ public class MultithreadScanTest extends SystemTestBase {
 
     server.dispatchWorkerQueryPlans(queryId, workerPlans);
     LOGGER.debug("Query dispatched to the workers");
-    TupleBatchBuffer result = null;
-    while ((result = server.startServerQuery(queryId, serverPlan)) == null) {
-      try {
-        Thread.sleep(100);
-      } catch (final InterruptedException e) {
-        e.printStackTrace();
-        Thread.currentThread().interrupt();
-      }
-    }
+    TupleBatchBuffer result = server.startServerQuery(queryId, serverPlan);
 
     expectedTBB.merge(expectedTBBCopy);
     TestUtils.assertTupleBagEqual(TestUtils.tupleBatchToTupleBag(expectedTBB), TestUtils.tupleBatchToTupleBag(result));
@@ -228,15 +220,7 @@ public class MultithreadScanTest extends SystemTestBase {
         new CollectConsumer(tableSchema, serverReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
     server.dispatchWorkerQueryPlans(queryId, workerPlans);
     LOGGER.debug("Query dispatched to the workers");
-    TupleBatchBuffer result = null;
-    while ((result = server.startServerQuery(queryId, serverPlan)) == null) {
-      try {
-        Thread.sleep(100);
-      } catch (final InterruptedException e) {
-        e.printStackTrace();
-        Thread.currentThread().interrupt();
-      }
-    }
+    TupleBatchBuffer result = server.startServerQuery(queryId, serverPlan);
 
     expectedTBB.merge(expectedTBBCopy);
     expectedTBB.merge(expectedTBBCopy);

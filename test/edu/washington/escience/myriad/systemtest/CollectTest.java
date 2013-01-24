@@ -65,14 +65,7 @@ public class CollectTest extends SystemTestBase {
     final CollectConsumer serverPlan = new CollectConsumer(schema, serverReceiveID, WORKER_ID);
     server.dispatchWorkerQueryPlans(queryId, workerPlans);
     LOGGER.debug("Query dispatched to the workers");
-    TupleBatchBuffer result = null;
-    while ((result = server.startServerQuery(queryId, serverPlan)) == null) {
-      try {
-        Thread.sleep(100);
-      } catch (final InterruptedException e) {
-        Thread.currentThread().interrupt();
-      }
-    }
+    TupleBatchBuffer result = server.startServerQuery(queryId, serverPlan);
 
     final HashMap<Tuple, Integer> resultSet = TestUtils.tupleBatchToTupleBag(result);
 

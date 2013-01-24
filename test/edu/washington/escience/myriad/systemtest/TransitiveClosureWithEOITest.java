@@ -215,29 +215,13 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     workerPlans.put(WORKER_ID[0], new Operator[] { cp_worker1, multiProducer_worker1, sp1, sp2_worker1, sp3_worker1 });
     workerPlans.put(WORKER_ID[1], new Operator[] { cp_worker2, multiProducer_worker2, sp1, sp2_worker2, sp3_worker2 });
 
-    while (server == null) {
-      try {
-        Thread.sleep(10);
-      } catch (final InterruptedException e) {
-      }
-    }
-
     final Long queryId = 0L;
 
     final CollectConsumer serverPlan =
         new CollectConsumer(tableSchema, serverReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
     server.dispatchWorkerQueryPlans(queryId, workerPlans);
-    System.out.println("Query dispatched to the workers");
     LOGGER.debug("Query dispatched to the workers");
-    TupleBatchBuffer result = null;
-    while ((result = server.startServerQuery(queryId, serverPlan)) == null) {
-      try {
-        Thread.sleep(100);
-      } catch (InterruptedException e) {
-        e.printStackTrace();
-        Thread.currentThread().interrupt();
-      }
-    }
+    TupleBatchBuffer result = server.startServerQuery(queryId, serverPlan);
     final HashMap<Tuple, Integer> actual = TestUtils.tupleBatchToTupleBag(result);
     TestUtils.assertTupleBagEqual(expectedResult, actual);
   }
