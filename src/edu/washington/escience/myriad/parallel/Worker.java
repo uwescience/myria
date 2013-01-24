@@ -14,6 +14,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -61,13 +62,21 @@ import edu.washington.escience.myriad.util.JVMUtils;
  */
 public class Worker {
   protected final class MessageProcessor extends Thread {
+
+    /** Whether this thread should stop. */
+    private volatile boolean stopped = false;
+
     @Override
     public void run() {
 
-      TERMINATE_MESSAGE_PROCESSING : while (true) {
+      TERMINATE_MESSAGE_PROCESSING : while (!stopped) {
         MessageWrapper mw = null;
         try {
-          mw = messageQueue.take();
+          final int pollDelay = 100;
+          mw = messageQueue.poll(pollDelay, TimeUnit.MILLISECONDS);
+          if (mw == null) {
+            continue;
+          }
         } catch (final InterruptedException e) {
           e.printStackTrace();
           break TERMINATE_MESSAGE_PROCESSING;
@@ -141,6 +150,11 @@ public class Worker {
       }
 
     }
+
+    /** Stop this thread. */
+    public void setStopped() {
+      stopped = true;
+    }
   }
 
   public static class MessageWrapper {
@@ -158,12 +172,15 @@ public class Worker {
    * The working thread, which executes the query plan.
    */
   protected class QueryExecutor extends Thread {
+    /** Whether this worker has been stopped. */
+    private volatile boolean stopped = false;
+
     @Override
     public final void run() {
-      while (true) {
+      while (!stopped) {
         Operator[] queries = queryPlan;
         long queryId = myQueryId;
-        if (queries != null) {
+        if (queries != null && startedQueryId >= myQueryId) {
           LOGGER.info("Worker start processing query " + queryId);
           for (final Operator query : queries) {
             try {
@@ -194,12 +211,17 @@ public class Worker {
         synchronized (queryExecutor) {
           try {
             // wait until a query plan is received
-            queryExecutor.wait();
+            queryExecutor.wait(100);
           } catch (final InterruptedException e) {
             break;
           }
         }
       }
+    }
+
+    /** Stop this queryExecutor after the query finishes. */
+    public final void setStopped() {
+      stopped = true;
     }
   }
 
@@ -245,6 +267,7 @@ public class Worker {
       public final void run() {
         if (toShutdown) {
           shutdown();
+          timer.cancel();
           // JVMUtils.shutdownVM();
         }
 
@@ -257,10 +280,7 @@ public class Worker {
     public final void start() {
       try {
         timer.schedule(new ShutdownChecker(), 100, 100);
-        timer.schedule(new Reporter(), (long) (Math.random() * 3000) + 5000, // initial
-            // delay
-            (long) (Math.random() * 2000) + 1000); // subsequent
-        // rate
+        timer.schedule(new Reporter(), (long) (Math.random() * 3000) + 5000, (long) (Math.random() * 2000) + 1000);
       } catch (final IllegalStateException e) {
         /* already got canceled, ignore. */
       }
@@ -347,10 +367,13 @@ public class Worker {
   /**
    * The ID of this worker.
    */
-  final int myID;
+  private final int myID;
 
   /** The ID of the currently running query. */
-  long myQueryId;
+  private volatile long myQueryId;
+
+  /** The ID of the highest started query. */
+  private volatile long startedQueryId;
 
   /**
    * connectionPool[0] is always the master.
@@ -396,6 +419,7 @@ public class Worker {
   public Worker(final String workingDirectory) throws CatalogException, FileNotFoundException {
     catalog = WorkerCatalog.open(FilenameUtils.concat(workingDirectory, "worker.catalog"));
     myID = Integer.parseInt(catalog.getConfigurationValue("worker.identifier"));
+    startedQueryId = -1;
     databaseHandle = new Properties();
     final String databaseType = catalog.getConfigurationValue("worker.data.type");
     switch (databaseType) {
@@ -437,6 +461,7 @@ public class Worker {
    */
   public final void executeQuery(final Long queryId) {
     LOGGER.info("Query " + queryId + " started");
+    startedQueryId = queryId;
     synchronized (queryExecutor) {
       queryExecutor.notifyAll();
     }
@@ -591,8 +616,10 @@ public class Worker {
   public final void shutdown() {
     LOGGER.info("Shutdown requested. Please wait when cleaning up...");
     connectionPool.shutdown().awaitUninterruptibly();
+    queryExecutor.setStopped();
+    messageProcessor.setStopped();
     LOGGER.info("shutdown IPC completed");
-    toShutdown = true;
+    toShutdown = false;
   }
 
   public final void start() throws IOException {
