@@ -23,7 +23,6 @@ import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 import edu.washington.escience.myriad.parallel.PartitionFunction;
-import edu.washington.escience.myriad.parallel.Server;
 import edu.washington.escience.myriad.parallel.ShuffleConsumer;
 import edu.washington.escience.myriad.parallel.ShuffleProducer;
 import edu.washington.escience.myriad.parallel.SingleFieldHashPartitionFunction;
@@ -84,18 +83,12 @@ public class ShuffleSQLiteTest extends SystemTestBase {
     workerPlans.put(WORKER_ID[0], new Operator[] { cp, sp1, sp2 });
     workerPlans.put(WORKER_ID[1], new Operator[] { cp, sp1, sp2 });
 
-    while (Server.runningInstance == null) {
-      try {
-        Thread.sleep(10);
-      } catch (final InterruptedException e) {
-      }
-    }
     final CollectConsumer serverPlan =
         new CollectConsumer(outputSchema, serverReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
-    Server.runningInstance.dispatchWorkerQueryPlans(0L, workerPlans);
+    server.dispatchWorkerQueryPlans(0L, workerPlans);
     LOGGER.debug("Query dispatched to the workers");
     TupleBatchBuffer result = null;
-    while ((result = Server.runningInstance.startServerQuery(0L, serverPlan)) == null) {
+    while ((result = server.startServerQuery(0L, serverPlan)) == null) {
       try {
         Thread.sleep(100);
       } catch (final InterruptedException e) {

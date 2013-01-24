@@ -31,7 +31,6 @@ import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 import edu.washington.escience.myriad.parallel.PartitionFunction;
-import edu.washington.escience.myriad.parallel.Server;
 import edu.washington.escience.myriad.parallel.ShuffleConsumer;
 import edu.washington.escience.myriad.parallel.ShuffleProducer;
 import edu.washington.escience.myriad.parallel.SingleFieldHashPartitionFunction;
@@ -119,22 +118,14 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     workerPlans.put(WORKER_ID[0], new Operator[] { cp, sp1, sp2, sp0 });
     workerPlans.put(WORKER_ID[1], new Operator[] { cp, sp1, sp2, sp0 });
 
-    /* Wait for the server to start. */
-    while (Server.runningInstance == null) {
-      try {
-        Thread.sleep(10);
-      } catch (final InterruptedException e) {
-      }
-    }
-
     /* The server plan. Basically, collect and count tuples. */
     final Schema collectSchema = new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("COUNT"));
     final CollectConsumer collectCounts = new CollectConsumer(collectSchema, serverReceiveID, WORKER_ID);
 
     final Long queryId = 1L;
 
-    Server.runningInstance.dispatchWorkerQueryPlans(queryId, workerPlans);
-    TupleBatchBuffer result = Server.runningInstance.startServerQuery(queryId, collectCounts);
+    server.dispatchWorkerQueryPlans(queryId, workerPlans);
+    TupleBatchBuffer result = server.startServerQuery(queryId, collectCounts);
     while (result == null) {
       try {
         Thread.sleep(100);
@@ -142,7 +133,7 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
         e.printStackTrace();
         Thread.currentThread().interrupt();
       }
-      result = Server.runningInstance.startServerQuery(queryId, collectCounts);
+      result = server.startServerQuery(queryId, collectCounts);
     }
 
     /* Count the number of returned tuples. */
@@ -217,20 +208,12 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     workerPlans.put(WORKER_ID[0], new Operator[] { cp, sp1, sp2, sp0 });
     workerPlans.put(WORKER_ID[1], new Operator[] { cp, sp1, sp2, sp0 });
 
-    /* Wait for the server to start. */
-    while (Server.runningInstance == null) {
-      try {
-        Thread.sleep(10);
-      } catch (final InterruptedException e) {
-      }
-    }
-
     final Long queryId = 3L;
 
     /* The server plan. Basically, collect and count tuples. */
     final CollectConsumer serverPlan = new CollectConsumer(tableSchema, serverReceiveID, WORKER_ID);
-    Server.runningInstance.dispatchWorkerQueryPlans(queryId, workerPlans);
-    TupleBatchBuffer result = Server.runningInstance.startServerQuery(queryId, serverPlan);
+    server.dispatchWorkerQueryPlans(queryId, workerPlans);
+    TupleBatchBuffer result = server.startServerQuery(queryId, serverPlan);
     while (result == null) {
       try {
         Thread.sleep(100);
@@ -238,7 +221,7 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
         e.printStackTrace();
         Thread.currentThread().interrupt();
       }
-      result = Server.runningInstance.startServerQuery(queryId, serverPlan);
+      result = server.startServerQuery(queryId, serverPlan);
     }
 
     /* Make sure the count matches the known result. */
@@ -297,20 +280,12 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     workerPlans.put(WORKER_ID[0], new Operator[] { cp, sp1, sp2, sp0 });
     workerPlans.put(WORKER_ID[1], new Operator[] { cp, sp1, sp2, sp0 });
 
-    /* Wait for the server to start. */
-    while (Server.runningInstance == null) {
-      try {
-        Thread.sleep(10);
-      } catch (final InterruptedException e) {
-      }
-    }
-
     final Long queryId = 5L;
 
     /* The server plan. Basically, collect and count tuples. */
     final CollectConsumer serverPlan = new CollectConsumer(tableSchema, serverReceiveID, WORKER_ID);
-    Server.runningInstance.dispatchWorkerQueryPlans(queryId, workerPlans);
-    TupleBatchBuffer result = Server.runningInstance.startServerQuery(queryId, serverPlan);
+    server.dispatchWorkerQueryPlans(queryId, workerPlans);
+    TupleBatchBuffer result = server.startServerQuery(queryId, serverPlan);
     while (result == null) {
       try {
         Thread.sleep(100);
@@ -318,7 +293,7 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
         e.printStackTrace();
         Thread.currentThread().interrupt();
       }
-      result = Server.runningInstance.startServerQuery(queryId, serverPlan);
+      result = server.startServerQuery(queryId, serverPlan);
     }
 
     /* Make sure the count matches the known result. */

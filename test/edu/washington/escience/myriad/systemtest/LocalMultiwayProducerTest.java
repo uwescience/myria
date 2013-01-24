@@ -21,7 +21,6 @@ import edu.washington.escience.myriad.parallel.CollectProducer;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 import edu.washington.escience.myriad.parallel.LocalMultiwayConsumer;
 import edu.washington.escience.myriad.parallel.LocalMultiwayProducer;
-import edu.washington.escience.myriad.parallel.Server;
 import edu.washington.escience.myriad.util.TestUtils;
 
 public class LocalMultiwayProducerTest extends SystemTestBase {
@@ -101,19 +100,13 @@ public class LocalMultiwayProducerTest extends SystemTestBase {
     workerPlans.put(WORKER_ID[0], new Operator[] { multiProducer1, cp1 });
     workerPlans.put(WORKER_ID[1], new Operator[] { multiProducer2, cp2 });
 
-    while (Server.runningInstance == null) {
-      try {
-        Thread.sleep(10);
-      } catch (final InterruptedException e) {
-      }
-    }
     final Long queryId = 0L;
 
     final CollectConsumer serverPlan =
         new CollectConsumer(tableSchema, serverReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
-    Server.runningInstance.dispatchWorkerQueryPlans(queryId, workerPlans);
+    server.dispatchWorkerQueryPlans(queryId, workerPlans);
     TupleBatchBuffer result = null;
-    while ((result = Server.runningInstance.startServerQuery(queryId, serverPlan)) == null) {
+    while ((result = server.startServerQuery(queryId, serverPlan)) == null) {
       try {
         Thread.sleep(100);
       } catch (final InterruptedException e) {

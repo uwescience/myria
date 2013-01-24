@@ -21,7 +21,6 @@ import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
-import edu.washington.escience.myriad.parallel.Server;
 import edu.washington.escience.myriad.util.TestUtils;
 
 public class MergeTest extends SystemTestBase {
@@ -72,20 +71,13 @@ public class MergeTest extends SystemTestBase {
     final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
     workerPlans.put(WORKER_ID[0], new Operator[] { cp });
 
-    while (Server.runningInstance == null) {
-      try {
-        Thread.sleep(10);
-      } catch (final InterruptedException e) {
-      }
-    }
-
     final Long queryId = 0L;
 
     final CollectConsumer serverPlan = new CollectConsumer(tableSchema, serverReceiveID, new int[] { WORKER_ID[0] });
-    Server.runningInstance.dispatchWorkerQueryPlans(queryId, workerPlans);
+    server.dispatchWorkerQueryPlans(queryId, workerPlans);
     LOGGER.debug("Query dispatched to the workers");
     TupleBatchBuffer result = null;
-    while ((result = Server.runningInstance.startServerQuery(queryId, serverPlan)) == null) {
+    while ((result = server.startServerQuery(queryId, serverPlan)) == null) {
       try {
         Thread.sleep(100);
       } catch (final InterruptedException e) {

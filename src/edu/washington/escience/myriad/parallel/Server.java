@@ -203,24 +203,7 @@ public final class Server {
 
     final String catalogName = args[0];
 
-    Catalog catalog;
-    List<SocketInfo> masters;
-    Map<Integer, SocketInfo> workers;
-    try {
-      catalog = Catalog.open(catalogName);
-      masters = catalog.getMasters();
-      workers = catalog.getWorkers();
-      catalog.close();
-    } catch (final CatalogException e) {
-      throw new RuntimeException("Reading information from the catalog failed", e);
-    }
-
-    if (masters.size() != 1) {
-      throw new RuntimeException("Unexpected number of masters: expected 1, got " + masters.size());
-    }
-
-    final SocketInfo masterSocketInfo = masters.get(0);
-    final Server server = new Server(masterSocketInfo, workers);
+    final Server server = new Server(catalogName);
 
     LOGGER.debug("Workers are: ");
     for (final Entry<Integer, SocketInfo> w : server.workers.entrySet()) {
@@ -234,9 +217,7 @@ public final class Server {
       }
     });
     server.start();
-    LOGGER.debug("Server: " + masterSocketInfo.getHost() + " started. Listening on port " + masterSocketInfo.getPort());
-
-    runningInstance = server;
+    LOGGER.debug("Server started.");
   }
 
   final ConcurrentHashMap<Integer, SocketInfo> workers;
@@ -257,21 +238,33 @@ public final class Server {
 
   protected final MessageProcessor messageProcessor;
 
-  public static volatile Server runningInstance = null;
-
   protected boolean interactive = true;
 
   public static final String SYSTEM_NAME = "Myriad";
 
   private volatile boolean cleanup = false;
 
-  /**
-   * Instantiates a new Myriad server.
-   * 
-   * @param hostPort the hostname and port that this server will listen on.
-   * @param workers a Map describing each worker's ID and its hostname:port address.
-   */
-  public Server(final SocketInfo hostPort, final Map<Integer, SocketInfo> workers) {
+  public Server(final String catalogFileName) throws IOException {
+    Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
+    Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
+
+    Catalog catalog;
+    List<SocketInfo> masters;
+    Map<Integer, SocketInfo> workers;
+    try {
+      catalog = Catalog.open(catalogFileName);
+      masters = catalog.getMasters();
+      workers = catalog.getWorkers();
+      catalog.close();
+    } catch (final CatalogException e) {
+      throw new RuntimeException("Reading information from the catalog failed", e);
+    }
+
+    if (masters.size() != 1) {
+      throw new RuntimeException("Unexpected number of masters: expected 1, got " + masters.size());
+    }
+
+    final SocketInfo hostPort = masters.get(0);
     this.workers = new ConcurrentHashMap<Integer, SocketInfo>(workers);
     aliveWorkers = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
 
@@ -368,7 +361,6 @@ public final class Server {
   public void shutdown() {
     messageProcessor.setStopped();
     cleanup();
-    // JVMUtils.shutdownVM();
   }
 
   public void start() throws IOException {

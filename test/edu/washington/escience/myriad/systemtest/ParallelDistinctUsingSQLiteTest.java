@@ -20,7 +20,6 @@ import edu.washington.escience.myriad.operator.SQLiteSQLProcessor;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
-import edu.washington.escience.myriad.parallel.Server;
 import edu.washington.escience.myriad.util.TestUtils;
 
 public class ParallelDistinctUsingSQLiteTest extends SystemTestBase {
@@ -68,17 +67,11 @@ public class ParallelDistinctUsingSQLiteTest extends SystemTestBase {
     workerPlans.put(WORKER_ID[0], new Operator[] { cp });
     workerPlans.put(WORKER_ID[1], new Operator[] { cp, cp22 });
 
-    while (Server.runningInstance == null) {
-      try {
-        Thread.sleep(10);
-      } catch (final InterruptedException e) {
-      }
-    }
-    Server.runningInstance.dispatchWorkerQueryPlans(0L, workerPlans);
+    server.dispatchWorkerQueryPlans(0L, workerPlans);
     LOGGER.debug("Query dispatched to the workers");
     TupleBatchBuffer result = null;
     final CollectConsumer serverPlan = new CollectConsumer(schema, serverReceiveID, new int[] { WORKER_ID[1] });
-    while ((result = Server.runningInstance.startServerQuery(0L, serverPlan)) == null) {
+    while ((result = server.startServerQuery(0L, serverPlan)) == null) {
       try {
         Thread.sleep(100);
       } catch (final InterruptedException e) {

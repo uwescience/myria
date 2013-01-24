@@ -17,7 +17,6 @@ import edu.washington.escience.myriad.operator.SQLiteInsert;
 import edu.washington.escience.myriad.operator.TupleSource;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 import edu.washington.escience.myriad.parallel.RoundRobinPartitionFunction;
-import edu.washington.escience.myriad.parallel.Server;
 import edu.washington.escience.myriad.parallel.ShuffleConsumer;
 import edu.washington.escience.myriad.parallel.ShuffleProducer;
 
@@ -50,20 +49,13 @@ public class SplitDataTest extends SystemTestBase {
       workerPlans.put(i, new Operator[] { insert });
     }
 
-    while (Server.runningInstance == null) {
-      try {
-        Thread.sleep(10);
-      } catch (final InterruptedException e) {
-      }
-    }
-
-    scatter.setConnectionPool(Server.runningInstance.getConnectionPool());
+    scatter.setConnectionPool(server.getConnectionPool());
 
     final long queryId = 7L;
 
-    Server.runningInstance.dispatchWorkerQueryPlans(queryId, workerPlans);
+    server.dispatchWorkerQueryPlans(queryId, workerPlans);
     LOGGER.debug("Query dispatched to the workers");
-    while (Server.runningInstance.startServerQuery(queryId, scatter) != true) {
+    while (server.startServerQuery(queryId, scatter) != true) {
       try {
         Thread.sleep(100);
       } catch (final InterruptedException e) {
@@ -72,7 +64,7 @@ public class SplitDataTest extends SystemTestBase {
       }
     }
 
-    while (!Server.runningInstance.queryCompleted(queryId)) {
+    while (!server.queryCompleted(queryId)) {
       try {
         Thread.sleep(100);
       } catch (InterruptedException e) {

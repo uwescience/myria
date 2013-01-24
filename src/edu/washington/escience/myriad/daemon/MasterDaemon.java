@@ -45,8 +45,9 @@ public final class MasterDaemon {
    */
   public MasterDaemon(final String[] args) throws Exception {
     processArguments(args);
+    server = new Server(args[0]);
+    catalog = Catalog.open(args[0]);
     MasterApiServer.setUp(catalog);
-    server = new Server(catalog.getMasters().get(0), catalog.getWorkers());
   }
 
   /**
@@ -59,6 +60,7 @@ public final class MasterDaemon {
       throw new IllegalArgumentException(USAGE_STRING);
     }
     catalog = Catalog.open(args[0]);
+    catalog.close();
   }
 
   /**
