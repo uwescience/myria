@@ -18,8 +18,8 @@ import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.Project;
 
 public class JDBCTest {
-  /** The logger for this class. Defaults to myriad level, but could be set to a finer granularity if needed. */
-  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger("edu.washington.escience.myriad");
+  /** The logger for this class. */
+  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(JDBCTest.class.getName());
 
   @Test
   public void JdbcTest() throws DbException {

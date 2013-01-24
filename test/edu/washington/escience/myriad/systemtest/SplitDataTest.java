@@ -3,6 +3,8 @@ package edu.washington.escience.myriad.systemtest;
 import java.io.IOException;
 import java.util.HashMap;
 
+import org.junit.Test;
+
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.DbException;
@@ -21,7 +23,7 @@ import edu.washington.escience.myriad.parallel.ShuffleProducer;
 
 public class SplitDataTest extends SystemTestBase {
 
-  // @Test
+  @Test
   public void splitDataTest() throws DbException, IOException, CatalogException {
     /* Create a source of tuples containing the numbers 1 to 10001. */
     final Schema schema =
@@ -57,13 +59,23 @@ public class SplitDataTest extends SystemTestBase {
 
     scatter.setConnectionPool(Server.runningInstance.getConnectionPool());
 
-    Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
-    System.out.println("Query dispatched to the workers");
-    while (Server.runningInstance.startServerQuery(0, scatter) != true) {
+    final long queryId = 7L;
+
+    Server.runningInstance.dispatchWorkerQueryPlans(queryId, workerPlans);
+    LOGGER.debug("Query dispatched to the workers");
+    while (Server.runningInstance.startServerQuery(queryId, scatter) != true) {
       try {
         Thread.sleep(100);
       } catch (final InterruptedException e) {
         e.printStackTrace();
+        Thread.currentThread().interrupt();
+      }
+    }
+
+    while (!Server.runningInstance.queryCompleted(queryId)) {
+      try {
+        Thread.sleep(100);
+      } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
       }
     }

@@ -30,8 +30,8 @@ import edu.washington.escience.myriad.util.SQLiteUtils;
 import edu.washington.escience.myriad.util.TestUtils;
 
 public class SQLiteTest {
-  /** The logger for this class. Defaults to myriad level, but could be set to a finer granularity if needed. */
-  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger("edu.washington.escience.myriad");
+  /** The logger for this class. */
+  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(SQLiteTest.class.getName());
 
   @Test
   public void sqliteTest() throws DbException, IOException, CatalogException {

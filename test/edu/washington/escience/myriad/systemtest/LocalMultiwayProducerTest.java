@@ -110,10 +110,9 @@ public class LocalMultiwayProducerTest extends SystemTestBase {
 
     final CollectConsumer serverPlan =
         new CollectConsumer(tableSchema, serverReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
-    Server.runningInstance.dispatchWorkerQueryPlans(workerPlans);
-    System.out.println("Query dispatched to the workers");
+    Server.runningInstance.dispatchWorkerQueryPlans(0L, workerPlans);
     TupleBatchBuffer result = null;
-    while ((result = Server.runningInstance.startServerQuery(0, serverPlan)) == null) {
+    while ((result = Server.runningInstance.startServerQuery(0L, serverPlan)) == null) {
       try {
         Thread.sleep(100);
       } catch (final InterruptedException e) {
@@ -124,9 +123,6 @@ public class LocalMultiwayProducerTest extends SystemTestBase {
 
     final HashMap<Tuple, Integer> tbag0 = TestUtils.tupleBatchToTupleBag(expected);
     final HashMap<Tuple, Integer> tbag1 = TestUtils.tupleBatchToTupleBag(result);
-    System.out.println(result.numTuples());
-    System.out.println(expected.numTuples());
     TestUtils.assertTupleBagEqual(tbag0, tbag1);
-
   }
 }

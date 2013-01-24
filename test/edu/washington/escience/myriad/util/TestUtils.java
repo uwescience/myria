@@ -8,7 +8,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 
-import junit.framework.Assert;
+import org.junit.Assert;
+
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.systemtest.SystemTestBase.Tuple;

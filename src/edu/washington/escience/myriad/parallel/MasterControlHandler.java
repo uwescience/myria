@@ -18,11 +18,12 @@ import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 @Sharable
 public class MasterControlHandler extends SimpleChannelUpstreamHandler {
 
-  private static final Logger logger = Logger.getLogger(MasterControlHandler.class.getName());
+  /** The logger for this class. */
+  private static final Logger LOGGER = Logger.getLogger(MasterControlHandler.class.getName());
 
   @Override
   public void exceptionCaught(final ChannelHandlerContext ctx, final ExceptionEvent e) {
-    logger.log(Level.WARNING, "Unexpected exception from downstream.", e.getCause());
+    LOGGER.log(Level.WARNING, "Unexpected exception from downstream.", e.getCause());
     e.getChannel().close();
   }
 
@@ -42,7 +43,8 @@ public class MasterControlHandler extends SimpleChannelUpstreamHandler {
       final ControlMessage cm = tm.getControl();
       final HashMap<String, Object> attributes = new HashMap<String, Object>();
       channel.setAttachment(attributes);
-      attributes.put("remoteID", cm.getRemoteID());
+      attributes.put("remoteId", cm.getRemoteId());
+      attributes.put("queryId", cm.getQueryId());
     }
     ctx.sendUpstream(e);
   }
