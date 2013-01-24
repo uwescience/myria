@@ -1,6 +1,8 @@
 package edu.washington.escience.myriad.daemon;
 
 import java.io.FileNotFoundException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import edu.washington.escience.myriad.api.MasterApiServer;
 import edu.washington.escience.myriad.coordinator.catalog.Catalog;
@@ -59,6 +61,8 @@ public final class MasterDaemon {
     if (args.length != 1) {
       throw new IllegalArgumentException(USAGE_STRING);
     }
+    Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
+    Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
     catalog = Catalog.open(args[0]);
     catalog.close();
   }
