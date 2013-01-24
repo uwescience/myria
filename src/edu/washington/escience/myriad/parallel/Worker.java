@@ -13,7 +13,6 @@ import java.util.Properties;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -495,7 +494,6 @@ public class Worker {
       }
       final SQLiteInsert insert = ((SQLiteInsert) queryPlan);
       insert.setPathToSQLiteDb(sqliteDatabaseFilename);
-      insert.setExecutorService(Executors.newSingleThreadExecutor());
     } else if (queryPlan instanceof Producer) {
       ((Producer) queryPlan).setConnectionPool(connectionPool);
     } else if (queryPlan instanceof Consumer) {
