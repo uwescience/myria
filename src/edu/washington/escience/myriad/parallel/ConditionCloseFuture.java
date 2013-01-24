@@ -196,6 +196,7 @@ public class ConditionCloseFuture implements ChannelFuture {
   }
 
   @Override
+  @Deprecated
   public ChannelFuture rethrowIfFailed() throws Exception {
     throw new UnsupportedOperationException();
   }

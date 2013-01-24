@@ -196,15 +196,6 @@ public class SystemTestBase {
       Server.runningInstance.shutdown();
     }
 
-    for (final Process p : workerProcess) {
-      p.destroy();
-      try {
-        p.waitFor();
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-      }
-    }
-
     for (final Thread t : workerStdoutReader) {
       try {
         if (t != null) {

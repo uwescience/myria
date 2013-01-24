@@ -107,12 +107,13 @@ public class LocalMultiwayProducerTest extends SystemTestBase {
       } catch (final InterruptedException e) {
       }
     }
+    final Long queryId = 0L;
 
     final CollectConsumer serverPlan =
         new CollectConsumer(tableSchema, serverReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
-    Server.runningInstance.dispatchWorkerQueryPlans(0L, workerPlans);
+    Server.runningInstance.dispatchWorkerQueryPlans(queryId, workerPlans);
     TupleBatchBuffer result = null;
-    while ((result = Server.runningInstance.startServerQuery(0L, serverPlan)) == null) {
+    while ((result = Server.runningInstance.startServerQuery(queryId, serverPlan)) == null) {
       try {
         Thread.sleep(100);
       } catch (final InterruptedException e) {

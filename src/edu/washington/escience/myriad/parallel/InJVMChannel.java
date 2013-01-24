@@ -201,6 +201,7 @@ public class InJVMChannel implements Channel {
     }
 
     @Override
+    @Deprecated
     public ChannelFuture rethrowIfFailed() throws Exception {
       return this;
     }
