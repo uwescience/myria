@@ -289,15 +289,15 @@ public final class Server {
     cleanup = true;
     LOGGER.debug(SYSTEM_NAME + " is going to shutdown");
     LOGGER.debug("Send shutdown requests to the workers, please wait");
-    for (final Entry<Integer, SocketInfo> worker : workers.entrySet()) {
-      LOGGER.debug("Shutting down #" + worker.getKey() + " : " + worker.getValue());
+    for (int workerId : aliveWorkers) {
+      LOGGER.debug("Shutting down #" + workerId);
 
-      final ChannelFuture cf = getConnectionPool().sendShortMessage(worker.getKey(), IPCUtils.CONTROL_SHUTDOWN);
+      final ChannelFuture cf = getConnectionPool().sendShortMessage(workerId, IPCUtils.CONTROL_SHUTDOWN);
       if (cf == null) {
-        LOGGER.error("Fail to connect the worker: " + worker + ". Continue cleaning");
+        LOGGER.error("Fail to connect the worker: " + workerId + ". Continue cleaning");
       } else {
         cf.awaitUninterruptibly();
-        LOGGER.debug("Done for worker #" + worker.getKey());
+        LOGGER.debug("Done for worker #" + workerId);
       }
     }
     connectionPool.shutdown().awaitUninterruptibly();
