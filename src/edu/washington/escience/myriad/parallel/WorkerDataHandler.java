@@ -1,13 +1,14 @@
 package edu.washington.escience.myriad.parallel;
 
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.logging.Logger;
 
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelHandler.Sharable;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myriad.parallel.Worker.MessageWrapper;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
@@ -19,7 +20,7 @@ import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 public class WorkerDataHandler extends SimpleChannelUpstreamHandler {
 
   /** The logger for this class. */
-  private static final Logger LOGGER = Logger.getLogger(WorkerDataHandler.class.getName());
+  private static final Logger LOGGER = LoggerFactory.getLogger(WorkerDataHandler.class.getName());
 
   LinkedBlockingQueue<MessageWrapper> messageQueue;
 
@@ -34,6 +35,7 @@ public class WorkerDataHandler extends SimpleChannelUpstreamHandler {
     final ChannelContext cs = (ChannelContext) channel.getAttachment();
     final ChannelContext.RegisteredChannelContext ecc = cs.getRegisteredChannelContext();
     final Integer senderID = ecc.getRemoteID();
+    LOGGER.debug("received a message from " + senderID);
     final MessageWrapper mw = new MessageWrapper(senderID, tm);
     messageQueue.add(mw);
 

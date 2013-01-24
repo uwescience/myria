@@ -85,12 +85,13 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
       } catch (final InterruptedException e) {
       }
     }
+    final long queryId = 2;
 
     final CollectConsumer serverPlan = new CollectConsumer(schema, serverReceiveID, new int[] { WORKER_ID[0] });
-    Server.runningInstance.dispatchWorkerQueryPlans(0L, workerPlans);
+    Server.runningInstance.dispatchWorkerQueryPlans(queryId, workerPlans);
     LOGGER.debug("Query dispatched to the workers");
     TupleBatchBuffer result = null;
-    while ((result = Server.runningInstance.startServerQuery(0L, serverPlan)) == null) {
+    while ((result = Server.runningInstance.startServerQuery(queryId, serverPlan)) == null) {
       try {
         Thread.sleep(100);
       } catch (final InterruptedException e) {
@@ -130,7 +131,6 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     }
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
-
     final int numPartition = 2;
 
     final PartitionFunction<String, Integer> pf = new SingleFieldHashPartitionFunction(numPartition);
@@ -150,11 +150,13 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
       }
     }
 
+    final long queryId = 0;
+
     final CollectConsumer serverPlan = new CollectConsumer(schema, serverReceiveID, new int[] { WORKER_ID[0] });
-    Server.runningInstance.dispatchWorkerQueryPlans(0L, workerPlans);
+    Server.runningInstance.dispatchWorkerQueryPlans(queryId, workerPlans);
     LOGGER.debug("Query dispatched to the workers");
     TupleBatchBuffer result = null;
-    while ((result = Server.runningInstance.startServerQuery(0L, serverPlan)) == null) {
+    while ((result = Server.runningInstance.startServerQuery(queryId, serverPlan)) == null) {
       try {
         Thread.sleep(100);
       } catch (final InterruptedException e) {
@@ -212,12 +214,13 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
       }
     }
 
+    final long queryId = 1;
     final CollectConsumer serverPlan =
         new CollectConsumer(outputSchema, serverReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
-    Server.runningInstance.dispatchWorkerQueryPlans(0L, workerPlans);
+    Server.runningInstance.dispatchWorkerQueryPlans(queryId, workerPlans);
     LOGGER.debug("Query dispatched to the workers");
     TupleBatchBuffer result = null;
-    while ((result = Server.runningInstance.startServerQuery(0L, serverPlan)) == null) {
+    while ((result = Server.runningInstance.startServerQuery(queryId, serverPlan)) == null) {
       try {
         Thread.sleep(100);
       } catch (final InterruptedException e) {
