@@ -141,9 +141,9 @@ public abstract class Consumer extends LeafOperator {
       setEOS(true);
       return;
     }
-    BitSet tmp = workerEOI;
-    // EOS could be used as an EOI
+    BitSet tmp = (BitSet) workerEOI.clone();
     tmp.or(workerEOS);
+    // EOS could be used as an EOI
     if (tmp.nextClearBit(0) == workerIdToIndex.size()) {
       setEOI(true);
       workerEOI.clear();
