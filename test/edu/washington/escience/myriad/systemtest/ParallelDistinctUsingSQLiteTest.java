@@ -59,14 +59,14 @@ public class ParallelDistinctUsingSQLiteTest extends SystemTestBase {
     final CollectProducer cp = new CollectProducer(scan, worker2ReceiveID, WORKER_ID[1]);
 
     // CollectProducer child, ParallelOperatorID operatorID, SocketInfo[] workers
-    final CollectConsumer cc = new CollectConsumer(cp, worker2ReceiveID, WORKER_ID);
+    final CollectConsumer cc = new CollectConsumer(cp.getSchema(), worker2ReceiveID, WORKER_ID);
     final BlockingSQLiteDataReceiver block2 = new BlockingSQLiteDataReceiver(null, "temptable", cc);
     final SQLiteSQLProcessor scan22 =
         new SQLiteSQLProcessor(null, "select distinct * from temptable", schema, new Operator[] { block2 });
     final CollectProducer cp22 = new CollectProducer(scan22, serverReceiveID, MASTER_ID);
     final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
     workerPlans.put(WORKER_ID[0], new Operator[] { cp });
-    workerPlans.put(WORKER_ID[1], new Operator[] { cp22 });
+    workerPlans.put(WORKER_ID[1], new Operator[] { cp, cp22 });
 
     while (Server.runningInstance == null) {
       try {

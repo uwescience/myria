@@ -106,9 +106,13 @@ public class Worker {
             final DataMessage data = m.getData();
             final ExchangePairID exchangePairID = ExchangePairID.fromExisting(data.getOperatorID());
             final Schema operatorSchema = exchangeSchema.get(exchangePairID);
+
             switch (data.getType()) {
               case EOS:
-                receiveData(new ExchangeData(exchangePairID, senderID, operatorSchema));
+                receiveData(new ExchangeData(exchangePairID, senderID, operatorSchema, 0));
+                break;
+              case EOI:
+                receiveData(new ExchangeData(exchangePairID, senderID, operatorSchema, 1));
                 break;
               case NORMAL:
                 final List<ColumnMessage> columnMessages = data.getColumnsList();

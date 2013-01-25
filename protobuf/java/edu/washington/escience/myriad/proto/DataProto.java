@@ -61,10 +61,12 @@ public final class DataProto {
         implements com.google.protobuf.ProtocolMessageEnum {
       EOS(0, 0),
       NORMAL(1, 1),
+      EOI(2, 2),
       ;
       
       public static final int EOS_VALUE = 0;
       public static final int NORMAL_VALUE = 1;
+      public static final int EOI_VALUE = 2;
       
       
       public final int getNumber() { return value; }
@@ -73,6 +75,7 @@ public final class DataProto {
         switch (value) {
           case 0: return EOS;
           case 1: return NORMAL;
+          case 2: return EOI;
           default: return null;
         }
       }
@@ -103,7 +106,7 @@ public final class DataProto {
       }
       
       private static final DataMessageType[] VALUES = {
-        EOS, NORMAL, 
+        EOS, NORMAL, EOI, 
       };
       
       public static DataMessageType valueOf(
@@ -4492,29 +4495,30 @@ public final class DataProto {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\014column.proto\"\226\001\n\013DataMessage\022*\n\004type\030\001" +
+      "\n\014column.proto\"\237\001\n\013DataMessage\022*\n\004type\030\001" +
       " \002(\0162\034.DataMessage.DataMessageType\022\022\n\nop" +
       "eratorID\030\002 \002(\003\022\037\n\007columns\030\003 \003(\0132\016.Column" +
-      "Message\"&\n\017DataMessageType\022\007\n\003EOS\020\000\022\n\n\006N" +
-      "ORMAL\020\001\"\257\003\n\rColumnMessage\022.\n\004type\030\001 \002(\0162" +
-      " .ColumnMessage.ColumnMessageType\022\022\n\nnum" +
-      "_tuples\030\002 \002(\r\022%\n\nint_column\030\003 \001(\0132\021.IntC" +
-      "olumnMessage\022\'\n\013long_column\030\004 \001(\0132\022.Long" +
-      "ColumnMessage\022)\n\014float_column\030\005 \001(\0132\023.Fl" +
-      "oatColumnMessage\022+\n\rdouble_column\030\006 \001(\0132",
-      "\024.DoubleColumnMessage\022+\n\rstring_column\030\007" +
-      " \001(\0132\024.StringColumnMessage\022-\n\016boolean_co" +
-      "lumn\030\010 \001(\0132\025.BooleanColumnMessage\"V\n\021Col" +
-      "umnMessageType\022\007\n\003INT\020\000\022\010\n\004LONG\020\001\022\t\n\005FLO" +
-      "AT\020\002\022\n\n\006DOUBLE\020\003\022\n\n\006STRING\020\004\022\013\n\007BOOLEAN\020" +
-      "\005\" \n\020IntColumnMessage\022\014\n\004data\030\001 \002(\014\"!\n\021L" +
-      "ongColumnMessage\022\014\n\004data\030\001 \002(\014\"\"\n\022FloatC" +
-      "olumnMessage\022\014\n\004data\030\001 \002(\014\"#\n\023DoubleColu" +
-      "mnMessage\022\014\n\004data\030\001 \002(\014\"O\n\023StringColumnM" +
-      "essage\022\014\n\004data\030\001 \002(\014\022\025\n\rstart_indices\030\002 ",
-      "\002(\014\022\023\n\013end_indices\030\003 \002(\014\"$\n\024BooleanColum" +
-      "nMessage\022\014\n\004data\030\001 \002(\014B1\n$edu.washington" +
-      ".escience.myriad.protoB\tDataProto"
+      "Message\"/\n\017DataMessageType\022\007\n\003EOS\020\000\022\n\n\006N" +
+      "ORMAL\020\001\022\007\n\003EOI\020\002\"\257\003\n\rColumnMessage\022.\n\004ty" +
+      "pe\030\001 \002(\0162 .ColumnMessage.ColumnMessageTy" +
+      "pe\022\022\n\nnum_tuples\030\002 \002(\r\022%\n\nint_column\030\003 \001" +
+      "(\0132\021.IntColumnMessage\022\'\n\013long_column\030\004 \001" +
+      "(\0132\022.LongColumnMessage\022)\n\014float_column\030\005" +
+      " \001(\0132\023.FloatColumnMessage\022+\n\rdouble_colu",
+      "mn\030\006 \001(\0132\024.DoubleColumnMessage\022+\n\rstring" +
+      "_column\030\007 \001(\0132\024.StringColumnMessage\022-\n\016b" +
+      "oolean_column\030\010 \001(\0132\025.BooleanColumnMessa" +
+      "ge\"V\n\021ColumnMessageType\022\007\n\003INT\020\000\022\010\n\004LONG" +
+      "\020\001\022\t\n\005FLOAT\020\002\022\n\n\006DOUBLE\020\003\022\n\n\006STRING\020\004\022\013\n" +
+      "\007BOOLEAN\020\005\" \n\020IntColumnMessage\022\014\n\004data\030\001" +
+      " \002(\014\"!\n\021LongColumnMessage\022\014\n\004data\030\001 \002(\014\"" +
+      "\"\n\022FloatColumnMessage\022\014\n\004data\030\001 \002(\014\"#\n\023D" +
+      "oubleColumnMessage\022\014\n\004data\030\001 \002(\014\"O\n\023Stri" +
+      "ngColumnMessage\022\014\n\004data\030\001 \002(\014\022\025\n\rstart_i",
+      "ndices\030\002 \002(\014\022\023\n\013end_indices\030\003 \002(\014\"$\n\024Boo" +
+      "leanColumnMessage\022\014\n\004data\030\001 \002(\014B1\n$edu.w" +
+      "ashington.escience.myriad.protoB\tDataPro" +
+      "to"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {

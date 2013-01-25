@@ -95,6 +95,18 @@ public final class IPCUtils {
         }
       };
 
+  protected static final ThreadLocal<DataMessage.Builder> EOI_DATAMESSAGE_BUILDER =
+      new ThreadLocal<DataMessage.Builder>() {
+        @Override
+        protected DataMessage.Builder initialValue() {
+          return DataMessage.newBuilder().setType(DataMessageType.EOI);
+        }
+      };
+
+  // public static final TransportMessage CONTROL_QUERY_READY = TransportMessage.newBuilder().setType(
+  // TransportMessageType.CONTROL).setControl(
+  // ControlMessage.newBuilder().setType(ControlMessageType.QUERY_READY_TO_EXECUTE).build()).build();
+
   public static final TransportMessage CONTROL_SHUTDOWN = TransportMessage.newBuilder().setType(
       TransportMessageType.CONTROL).setControl(ControlMessage.newBuilder().setType(ControlMessageType.SHUTDOWN))
       .build();
@@ -151,6 +163,10 @@ public final class IPCUtils {
    * */
   public static TransportMessage eosTM(final ExchangePairID epID) {
     return DATA_TM_BUILDER.get().setData(EOS_DATAMESSAGE_BUILDER.get().setOperatorID(epID.getLong())).build();
+  }
+
+  public static TransportMessage eoiTM(final ExchangePairID epID) {
+    return DATA_TM_BUILDER.get().setData(EOI_DATAMESSAGE_BUILDER.get().setOperatorID(epID.getLong())).build();
   }
 
   public static TransportMessage normalDataMessage(final List<Column<?>> dataColumns,
