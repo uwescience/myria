@@ -55,6 +55,9 @@ public class TenGBTupleBatchReceiverUsingConnectionPool {
             System.out.println("Receive start at " + start);
             System.out.println("Receive end at " + end);
             break RECEIVE_MESSAGE;
+          case EOI:
+            // nothing to do
+            break RECEIVE_MESSAGE;
           case NORMAL:
             if (numReceived == 0) {
               start = System.currentTimeMillis();

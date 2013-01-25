@@ -188,6 +188,9 @@ public class ProtobufTest {
           case EOS:
             numEOS += 1;
             break;
+          case EOI:
+            // nothing to do
+            break;
           case NORMAL:
             final List<ColumnMessage> columnMessages = data.getColumnsList();
             final Column<?>[] columnArray = new Column[columnMessages.size()];
@@ -296,6 +299,9 @@ public class ProtobufTest {
         switch (data.getType()) {
           case EOS:
             numEOS += 1;
+            break;
+          case EOI:
+            // nothing to do
             break;
           case NORMAL:
             final List<ColumnMessage> columnMessages = data.getColumnsList();
@@ -430,6 +436,9 @@ public class ProtobufTest {
           case EOS:
             numEOS += 1;
             break;
+          case EOI:
+            // nothing to do
+            break;
           case NORMAL:
             final List<ColumnMessage> columnMessages = data.getColumnsList();
             final Column<?>[] columnArray = new Column[columnMessages.size()];
@@ -555,6 +564,9 @@ public class ProtobufTest {
           case EOS:
             numEOS += 1;
             break;
+          case EOI:
+            // nothing to do
+            break;
           case NORMAL:
             final List<ColumnMessage> columnMessages = data.getColumnsList();
             final Column<?>[] columnArray = new Column[columnMessages.size()];
@@ -638,6 +650,9 @@ public class ProtobufTest {
         switch (data.getType()) {
           case EOS:
             numEOS += 1;
+            break;
+          case EOI:
+            // nothing to do
             break;
           case NORMAL:
             final List<ColumnMessage> columnMessages = data.getColumnsList();
@@ -724,6 +739,9 @@ public class ProtobufTest {
         switch (data.getType()) {
           case EOS:
             numEOS += 1;
+            break;
+          case EOI:
+            // nothing to do
             break;
           case NORMAL:
             final List<ColumnMessage> columnMessages = data.getColumnsList();
@@ -826,6 +844,9 @@ public class ProtobufTest {
           case EOS:
             numEOS += 1;
             break;
+          case EOI:
+            // nothing to do
+            break;
           case NORMAL:
             final List<ColumnMessage> columnMessages = data.getColumnsList();
             final Column<?>[] columnArray = new Column[columnMessages.size()];
@@ -919,6 +940,9 @@ public class ProtobufTest {
         switch (data.getType()) {
           case EOS:
             numEOS += 1;
+            break;
+          case EOI:
+            // nothing to do
             break;
           case NORMAL:
             final List<ColumnMessage> columnMessages = data.getColumnsList();

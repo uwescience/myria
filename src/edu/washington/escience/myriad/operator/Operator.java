@@ -1,6 +1,7 @@
 package edu.washington.escience.myriad.operator;
 
 import java.io.Serializable;
+import java.util.Arrays;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
@@ -37,12 +38,7 @@ public abstract class Operator implements Serializable {
    * */
   private boolean eos = true;
 
-  /**
-   * Do the clean up, release resources.
-   * 
-   * @throws DbException if any error occurs
-   * */
-  protected abstract void cleanup() throws DbException;
+  private boolean eoi = true;
 
   /**
    * Closes this iterator.
@@ -53,7 +49,8 @@ public abstract class Operator implements Serializable {
     // Ensures that a future call to next() will fail
     outputBuffer = null;
     open = false;
-    eos = true;
+    setEOS(true);
+    setEOI(true);
     cleanup();
     final Operator[] children = getChildren();
     if (children != null) {
@@ -77,6 +74,10 @@ public abstract class Operator implements Serializable {
     return eos;
   }
 
+  public final boolean eoi() {
+    return eoi;
+  }
+
   /**
    * Returns the next output TupleBatch, or null if EOS is meet.
    * 
@@ -91,43 +92,11 @@ public abstract class Operator implements Serializable {
   protected abstract TupleBatch fetchNext() throws DbException;
 
   /**
-   * Generate next output TupleBatch if possible. Return null immediately if currently no output can be generated.
-   * 
-   * Do not block the execution thread in this method, including sleep, wait on locks, etc.
-   * 
-   * @throws DbException if any error occurs
-   * 
-   * @return next ready output TupleBatch. null if either EOS or no output TupleBatch can be generated currently.
-   * */
-  protected abstract TupleBatch fetchNextReady() throws DbException;
-
-  /**
    * @return return the children Operators of this operator. If there is only one child, return an array of only one
    *         element. For join operators, the order of the children is not important. But they should be consistent
    *         among multiple calls.
    */
   public abstract Operator[] getChildren();
-
-  /**
-   * @return return the Schema of the output tuples of this operator.
-   * 
-   */
-  public abstract Schema getSchema();
-
-  /**
-   * Do the initialization of this operator.
-   * 
-   * @throws DbException if any error occurs
-   * 
-   */
-  protected abstract void init() throws DbException;
-
-  /**
-   * @return true if this operator is open.
-   */
-  public final boolean isOpen() {
-    return open;
-  }
 
   /**
    * Get next TupleBatch. If EOS has not meet, it will wait until a TupleBatch is ready
@@ -144,7 +113,7 @@ public abstract class Operator implements Serializable {
     if (!open) {
       throw new IllegalStateException("Operator not yet open");
     }
-    if (eos()) {
+    if (eos() || eoi()) {
       return null;
     }
 
@@ -160,10 +129,40 @@ public abstract class Operator implements Serializable {
       result = fetchNext();
     }
     if (result == null) {
-      setEOS();
+      // now we have two possibilities when result == null: EOS or EOI.
+      checkEOSAndEOI();
     }
-
     return result;
+  }
+
+  public void checkEOSAndEOI() {
+    // this is the implementation for ordinary operators, e.g. join, project.
+    // some operators have their own logics, e.g. LeafOperator, IDBInput.
+    // so they should override this function
+    Operator[] children = getChildren();
+    boolean[] childrenEOI = getChildrenEOI();
+    boolean allEOS = true;
+    int count = 0;
+    for (int i = 0; i < children.length; ++i) {
+      if (children[i].eos()) {
+        childrenEOI[i] = true;
+      } else if (children[i].eoi()) {
+        childrenEOI[i] = true;
+        children[i].setEOI(false);
+        allEOS = false;
+      }
+      if (childrenEOI[i]) {
+        count++;
+      }
+    }
+    if (count == children.length) {
+      if (allEOS) {
+        setEOS(true);
+      } else {
+        setEOI(true);
+      }
+      cleanChildrenEOI();
+    }
   }
 
   /**
@@ -214,28 +213,90 @@ public abstract class Operator implements Serializable {
         }
       }
     }
-    eos = false;
+    setEOS(false);
+    setEOI(false);
     // do my initialization
     init();
     open = true;
   }
 
   /**
-   * Set the children(child) of this operator. If the operator has only one child, children[0] should be used. If the
-   * operator is a join, children[0] and children[1] should be used.
-   * 
-   * 
-   * @param children the Operators which are to be set as the children(child) of this operator
-   */
-  public abstract void setChildren(Operator[] children);
-
-  /**
    * Explicitly set EOS for this operator.
    * 
    * Only call this method if the operator is a leaf operator.
    * 
+   * */
+  public final void setEOS(boolean x) {
+    eos = x;
+  }
+
+  public final void setEOI(boolean x) {
+    eoi = x;
+  }
+
+  public boolean isOpen() {
+    return open;
+  }
+
+  /**
+   * Do the initialization of this operator.
+   * 
+   * @throws DbException if any error occurs
+   * 
    */
-  protected final void setEOS() {
-    eos = true;
+  protected abstract void init() throws DbException;
+
+  /**
+   * Do the clean up, release resources.
+   * 
+   * @throws DbException if any error occurs
+   * */
+  protected abstract void cleanup() throws DbException;
+
+  /**
+   * Generate next output TupleBatch if possible. Return null immediately if currently no output can be generated.
+   * 
+   * Do not block the execution thread in this method, including sleep, wait on locks, etc.
+   * 
+   * @throws DbException if any error occurs
+   * 
+   * @return next ready output TupleBatch. null if either EOS or no output TupleBatch can be generated currently.
+   * */
+  protected abstract TupleBatch fetchNextReady() throws DbException;
+
+  /**
+   * @return return the Schema of the output tuples of this operator.
+   * 
+   */
+  public abstract Schema getSchema();
+
+  /**
+   * Returns the next output TupleBatch, or null if EOS is meet.
+   * 
+   * This method is blocking.
+   * 
+   * 
+   * @return the next output TupleBatch, or null if EOS Set the children(child) of this operator. If the operator has
+   *         only one child, children[0] should be used. If the operator is a join, children[0] and children[1] should
+   *         be used.
+   * 
+   * 
+   * @param children the Operators which are to be set as the children(child) of this operator
+   */
+  // have we ever used this function?
+  public abstract void setChildren(Operator[] children);
+
+  public boolean[] childrenEOI = null;
+
+  public boolean[] getChildrenEOI() {
+    if (childrenEOI == null) {
+      // getChildren() == null indicates a leaf operator, which has its own checkEOSAndEOI()
+      childrenEOI = new boolean[getChildren().length];
+    }
+    return childrenEOI;
+  }
+
+  public void cleanChildrenEOI() {
+    Arrays.fill(childrenEOI, false);
   }
 }

@@ -39,6 +39,7 @@ public class ShuffleSQLiteTest extends SystemTestBase {
     final Schema schema = new Schema(types, columnNames);
 
     final HashMap<Tuple, Integer> expectedResult = simpleRandomJoinTestBase();
+
     final String temptable1Name = "temptable1";
     final String temptable2Name = "temptable2";
 
@@ -67,22 +68,21 @@ public class ShuffleSQLiteTest extends SystemTestBase {
 
     final ShuffleProducer sp2 = new ShuffleProducer(scan2, shuffle2ID, WORKER_ID, pf);
 
-    final ShuffleConsumer sc1 = new ShuffleConsumer(sp1, shuffle1ID, WORKER_ID);
+    final ShuffleConsumer sc1 = new ShuffleConsumer(sp1.getSchema(), shuffle1ID, WORKER_ID);
     final BlockingSQLiteDataReceiver buffer1 = new BlockingSQLiteDataReceiver(null, "temptable1", sc1);
 
-    final ShuffleConsumer sc2 = new ShuffleConsumer(sp2, shuffle2ID, WORKER_ID);
+    final ShuffleConsumer sc2 = new ShuffleConsumer(sp2.getSchema(), shuffle2ID, WORKER_ID);
     final BlockingSQLiteDataReceiver buffer2 = new BlockingSQLiteDataReceiver(null, "temptable2", sc2);
 
     final SQLiteSQLProcessor ssp =
         new SQLiteSQLProcessor(null,
             "select * from temptable1 inner join temptable2 on temptable1.name=temptable2.name", outputSchema,
             new Operator[] { buffer1, buffer2 });
-
     final CollectProducer cp = new CollectProducer(ssp, serverReceiveID, MASTER_ID);
 
     final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
-    workerPlans.put(WORKER_ID[0], new Operator[] { cp });
-    workerPlans.put(WORKER_ID[1], new Operator[] { cp });
+    workerPlans.put(WORKER_ID[0], new Operator[] { cp, sp1, sp2 });
+    workerPlans.put(WORKER_ID[1], new Operator[] { cp, sp1, sp2 });
 
     while (Server.runningInstance == null) {
       try {

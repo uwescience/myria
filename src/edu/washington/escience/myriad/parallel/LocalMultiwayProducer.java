@@ -35,19 +35,28 @@ public final class LocalMultiwayProducer extends Producer {
 
         TupleBatch tup = null;
         TransportMessage[] dms = null;
-        while ((tup = child.next()) != null) {
-          tup.compactInto(buffer);
 
-          while ((dms = buffer.popFilledAsTM(operatorIDs)) != null) {
-            for (final TransportMessage dm : dms) {
+        while (!child.eos()) {
+          while ((tup = child.next()) != null) {
+            tup.compactInto(buffer);
+
+            while ((dms = buffer.popFilledAsTM(operatorIDs)) != null) {
+              for (TransportMessage dm : dms) {
+                channel.write(dm);
+              }
+            }
+          }
+
+          while ((dms = buffer.popAnyAsTM(operatorIDs)) != null) {
+            for (TransportMessage dm : dms) {
               channel.write(dm);
             }
           }
-        }
-
-        while ((dms = buffer.popAnyAsTM(operatorIDs)) != null) {
-          for (final TransportMessage dm : dms) {
-            channel.write(dm);
+          if (child.eoi()) {
+            for (ExchangePairID operatorID : operatorIDs) {
+              channel.write(IPCUtils.eoiTM(operatorID));
+            }
+            child.setEOI(false);
           }
         }
 

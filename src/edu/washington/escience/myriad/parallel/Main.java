@@ -66,13 +66,13 @@ public final class Main {
     sp2[0] = new ShuffleProducer(scan2, arrayID2, WORKER_ID, pf0);
 
     for (int i = 1; i < numIteration; ++i) {
-      sc1[i] = new ShuffleConsumer(sp1[i - 1], arrayID1, WORKER_ID);
-      sc2[i] = new ShuffleConsumer(sp2[i - 1], arrayID2, WORKER_ID);
+      sc1[i] = new ShuffleConsumer(sp1[i - 1].getSchema(), arrayID1, WORKER_ID);
+      sc2[i] = new ShuffleConsumer(sp2[i - 1].getSchema(), arrayID2, WORKER_ID);
       localjoin[i] = new LocalJoin(joinSchema, sc1[i], sc2[i], new int[] { 1 }, new int[] { 0 });
       proj[i] = new Project(new Integer[] { 0, 3 }, localjoin[i]);
       arrayID0 = ExchangePairID.newID();
       sp0[i] = new ShuffleProducer(proj[i], arrayID0, WORKER_ID, pf0);
-      sc0[i] = new ShuffleConsumer(sp0[i], arrayID0, WORKER_ID);
+      sc0[i] = new ShuffleConsumer(sp0[i].getSchema(), arrayID0, WORKER_ID);
       dupelim[i] = new DupElim(sc0[i]);
       if (i == numIteration - 1) {
         break;

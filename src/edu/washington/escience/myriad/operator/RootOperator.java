@@ -72,19 +72,6 @@ public abstract class RootOperator extends Operator {
    */
   protected abstract void consumeTuples(TupleBatch tuples) throws DbException;
 
-  @Override
-  protected TupleBatch fetchNext() {
-    startAndWaitChild();
-    return null;
-  }
-
-  @Override
-  public TupleBatch fetchNextReady() throws DbException {
-    startAndWaitChild();
-    setEOS();
-    return null;
-  }
-
   /**
    * @return the source of the tuples that this Root operator consumes.
    */
@@ -95,11 +82,6 @@ public abstract class RootOperator extends Operator {
   @Override
   public final Operator[] getChildren() {
     return new Operator[] { child };
-  }
-
-  @Override
-  public final Schema getSchema() {
-    return child.getSchema();
   }
 
   @Override
@@ -140,4 +122,21 @@ public abstract class RootOperator extends Operator {
     }
   }
 
+  @Override
+  protected TupleBatch fetchNext() {
+    startAndWaitChild();
+    return null;
+  }
+
+  @Override
+  public TupleBatch fetchNextReady() throws DbException {
+    startAndWaitChild();
+    setEOS(true);
+    return null;
+  }
+
+  @Override
+  public final Schema getSchema() {
+    return child.getSchema();
+  }
 }

@@ -19,4 +19,10 @@ public abstract class LeafOperator extends Operator {
   public final void setChildren(final Operator[] children) {
     throw new UnsupportedOperationException();
   }
+
+  @Override
+  public void checkEOSAndEOI() {
+    // for reading static files, e.g. scan, there is no EOI
+    setEOS(true);
+  }
 }

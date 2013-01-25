@@ -218,15 +218,17 @@ public class MultithreadScanTest extends SystemTestBase {
     arrayID2 = ExchangePairID.newID();
     final ShuffleProducer sp1 = new ShuffleProducer(de1, arrayID1, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf0);
     final ShuffleProducer sp2 = new ShuffleProducer(de2, arrayID2, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf0);
-    final ShuffleConsumer sc1 = new ShuffleConsumer(sp1, arrayID1, new int[] { WORKER_ID[0], WORKER_ID[1] });
-    final ShuffleConsumer sc2 = new ShuffleConsumer(sp2, arrayID2, new int[] { WORKER_ID[0], WORKER_ID[1] });
+    final ShuffleConsumer sc1 =
+        new ShuffleConsumer(sp1.getSchema(), arrayID1, new int[] { WORKER_ID[0], WORKER_ID[1] });
+    final ShuffleConsumer sc2 =
+        new ShuffleConsumer(sp2.getSchema(), arrayID2, new int[] { WORKER_ID[0], WORKER_ID[1] });
     final Merge merge = new Merge(tableSchema, sc1, sc2);
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final CollectProducer cp = new CollectProducer(merge, serverReceiveID, MASTER_ID);
     final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
-    workerPlans.put(WORKER_ID[0], new Operator[] { cp });
-    workerPlans.put(WORKER_ID[1], new Operator[] { cp });
+    workerPlans.put(WORKER_ID[0], new Operator[] { cp, sp1, sp2 });
+    workerPlans.put(WORKER_ID[1], new Operator[] { cp, sp1, sp2 });
 
     while (Server.runningInstance == null) {
       try {

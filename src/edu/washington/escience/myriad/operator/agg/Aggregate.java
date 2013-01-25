@@ -115,7 +115,7 @@ public final class Aggregate extends Operator {
       fromIndex += element.getResultSchema().numFields();
     }
     final TupleBatch result = tbb.popAny();
-    setEOS();
+    setEOS(true);
     return result;
   }
 

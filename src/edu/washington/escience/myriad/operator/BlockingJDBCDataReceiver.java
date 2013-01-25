@@ -49,10 +49,15 @@ public final class BlockingJDBCDataReceiver extends Operator {
   @Override
   protected TupleBatch fetchNext() throws DbException {
     TupleBatch tb = null;
-    while ((tb = child.next()) != null) {
-      JdbcAccessMethod.tupleBatchInsert(driverClass, connectionString, "insert into " + tableName + " ( "
-          + StringUtils.join(fieldNames, ',') + " ) values ( " + StringUtils.join(placeHolders, ',') + " )", tb,
-          username, password);
+    while (!child.eos()) {
+      while ((tb = child.next()) != null) {
+        JdbcAccessMethod.tupleBatchInsert(driverClass, connectionString, "insert into " + tableName + " ( "
+            + StringUtils.join(fieldNames, ',') + " ) values ( " + StringUtils.join(placeHolders, ',') + " )", tb,
+            username, password);
+      }
+      if (child.eoi()) {
+        child.setEOI(false);
+      }
     }
     return null;
   }
