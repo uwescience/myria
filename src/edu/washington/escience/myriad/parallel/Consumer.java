@@ -118,29 +118,29 @@ public abstract class Consumer extends LeafOperator {
     }
 
     ExchangeData tb = null;
-    while (workerEOS.nextClearBit(0) < workerIdToIndex.size()) {
-      tb = take(timeToWait);
-      if (tb != null) {
-        if (tb.isEos()) {
-          workerEOS.set(workerIdToIndex.get(tb.getWorkerID()));
-        } else if (tb.isEoi()) {
-          workerEOI.set(workerIdToIndex.get(tb.getWorkerID()));
-          return null;
-        } else {
-          return tb.getRealData();
-        }
-      } else {
-        // i.e. blocking = false. if blocking = true then tb is either a TupleBatch or a message
+    tb = take(timeToWait);
+    if (tb != null) {
+      if (tb.isEos()) {
+        workerEOS.set(workerIdToIndex.get(tb.getWorkerID()));
         return null;
+      } else if (tb.isEoi()) {
+        workerEOI.set(workerIdToIndex.get(tb.getWorkerID()));
+        return null;
+      } else {
+        return tb.getRealData();
       }
+    } else {
+      // i.e. blocking = false. if blocking = true then tb is either a TupleBatch or a message
+      return null;
     }
-    // have received all the eos message from all the workers
-    setEOS(true);
-    return null;
   }
 
   @Override
   public void checkEOSAndEOI() {
+    if (workerEOS.nextClearBit(0) == workerIdToIndex.size()) {
+      setEOS(true);
+      return;
+    }
     BitSet tmp = workerEOI;
     // EOS could be used as an EOI
     tmp.or(workerEOS);
