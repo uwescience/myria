@@ -124,7 +124,7 @@ public final class Main {
       final String catalogFileName = FilenameUtils.concat("/tmp/multitest", "master.catalog");
       serverInstance = new Server(catalogFileName);
       serverInstance.start();
-    } catch (final IOException e) {
+    } catch (final Exception e) {
       throw new RuntimeException(e);
     }
     return serverInstance;

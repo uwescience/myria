@@ -346,7 +346,7 @@ public class SystemTestBase {
       final String catalogFileName = FilenameUtils.concat(workerTestBaseFolder, "master.catalog");
       server = new Server(catalogFileName);
       server.start();
-    } catch (final IOException e) {
+    } catch (final Exception e) {
       throw new RuntimeException(e);
     }
     return server;

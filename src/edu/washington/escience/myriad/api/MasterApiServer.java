@@ -1,11 +1,10 @@
 package edu.washington.escience.myriad.api;
 
 import org.restlet.Component;
-import org.restlet.Server;
 import org.restlet.data.Protocol;
 import org.restlet.ext.jaxrs.JaxRsApplication;
 
-import edu.washington.escience.myriad.coordinator.catalog.Catalog;
+import edu.washington.escience.myriad.parallel.Server;
 
 public final class MasterApiServer {
 
@@ -15,36 +14,36 @@ public final class MasterApiServer {
   /** The default port for the server. */
   private static final int PORT = 8753;
 
-  /** The Catalog for this application. */
-  private static Catalog catalog;
+  /** The Server for this application. */
+  private static Server myriaServer;
 
-  public static Catalog getCatalog() {
-    return catalog;
+  public static Server getMyriaServer() {
+    return myriaServer;
   }
 
-  private static void setCatalog(final Catalog catalog) {
-    MasterApiServer.catalog = catalog;
+  private static void setMyriaServer(final Server myriaServer) {
+    MasterApiServer.myriaServer = myriaServer;
   }
 
-  public static void setUp(final Catalog catalog) throws Exception {
-    if (MasterApiServer.getCatalog() != null) {
+  public static void setUp(final Server myriaServer) throws Exception {
+    if (MasterApiServer.getMyriaServer() != null) {
       throw new IllegalStateException("MasterServer.catalog is already initialized");
     }
-    MasterApiServer.setCatalog(catalog);
+    MasterApiServer.setMyriaServer(myriaServer);
   }
 
   /** The Reslet Component is the main class that holds multiple servers/hosts for this application. */
   private final Component component;
 
   /** The RESTlet server object. */
-  private final Server server;
+  private final org.restlet.Server restletServer;
 
   private MasterApiServer() {
     /* create Component (as ever for Restlet) */
     component = new Component();
 
     /* Add a server that responds to HTTP on port PORT. */
-    server = component.getServers().add(Protocol.HTTP, PORT);
+    restletServer = component.getServers().add(Protocol.HTTP, PORT);
 
     /* Add a JAX-RS runtime environment, using our MasterApplication implemention. */
     final JaxRsApplication application = new JaxRsApplication();
@@ -57,13 +56,12 @@ public final class MasterApiServer {
   public void start() throws Exception {
     System.out.println("Starting server");
     component.start();
-    System.out.println("Server started on port " + server.getPort());
+    System.out.println("Server started on port " + restletServer.getPort());
   }
 
   public void stop() throws Exception {
     System.out.println("Stopping server");
     component.stop();
-    getCatalog().close();
     System.out.println("Server stopped");
   }
 }

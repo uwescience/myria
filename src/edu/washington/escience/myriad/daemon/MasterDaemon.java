@@ -5,7 +5,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import edu.washington.escience.myriad.api.MasterApiServer;
-import edu.washington.escience.myriad.coordinator.catalog.Catalog;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.parallel.Server;
 
@@ -33,9 +32,6 @@ public final class MasterDaemon {
     md.stop();
   }
 
-  /** The catalog for this daemon. */
-  private Catalog catalog;
-
   /** The Myriad server. */
   private final Server server;
 
@@ -48,8 +44,7 @@ public final class MasterDaemon {
   public MasterDaemon(final String[] args) throws Exception {
     processArguments(args);
     server = new Server(args[0]);
-    catalog = Catalog.open(args[0]);
-    MasterApiServer.setUp(catalog);
+    MasterApiServer.setUp(server);
   }
 
   /**
@@ -63,8 +58,6 @@ public final class MasterDaemon {
     }
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
     Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
-    catalog = Catalog.open(args[0]);
-    catalog.close();
   }
 
   /**
