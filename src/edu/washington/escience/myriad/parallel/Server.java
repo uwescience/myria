@@ -99,9 +99,11 @@ public final class Server {
                 aliveWorkers.add(senderID);
                 break;
               case QUERY_COMPLETE:
-                HashMap<Integer, Integer> workersAssigned = workersAssignedToQuery.get(controlM.getQueryId());
+                HashMap<Integer, Integer> workersAssigned = workersAssignedToQuery.get(queryId);
                 if (!workersAssigned.containsKey(senderID)) {
-                  ;// TODO complain about something bad.
+                  LOGGER.warn("Got a QUERY_COMPLETE message from worker " + senderID + " who is not assigned to query"
+                      + queryId);
+                  return;
                 }
                 workersAssigned.remove(senderID);
                 break;
@@ -458,15 +460,15 @@ public final class Server {
   protected void startWorkerQuery(final Long queryId) {
     final HashMap<Integer, Integer> workersAssigned = workersAssignedToQuery.get(queryId);
     for (final Entry<Integer, Integer> entry : workersAssigned.entrySet()) {
-      getConnectionPool().sendShortMessage(entry.getKey(), IPCUtils.startQueryTM(0, queryId));
+      getConnectionPool().sendShortMessage(entry.getKey(), IPCUtils.startQueryTM(MyriaConstants.MASTER_ID, queryId));
     }
   }
 
-  public final Set<Integer> getAliveWorkers() {
+  public Set<Integer> getAliveWorkers() {
     return aliveWorkers;
   }
 
-  public final Map<Integer, SocketInfo> getWorkers() {
+  public Map<Integer, SocketInfo> getWorkers() {
     return workers;
   }
 }
