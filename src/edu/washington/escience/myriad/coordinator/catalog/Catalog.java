@@ -21,8 +21,10 @@ import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteJob;
 import com.almworks.sqlite4java.SQLiteQueue;
 import com.almworks.sqlite4java.SQLiteStatement;
+import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.parallel.SocketInfo;
 
 /**
@@ -527,6 +529,45 @@ public final class Catalog {
           }
 
           return workers;
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  /**
+   * @param relationName the name of the desired relation.
+   * @return the schema of the specified relation, or null if not found.
+   * @throws CatalogException if there is an error accessing the desired Schema.
+   */
+  public Schema getSchema(final String relationName) throws CatalogException {
+    Objects.requireNonNull(relationName);
+    /* Do the work */
+    try {
+      return (Schema) queue.execute(new SQLiteJob<Object>() {
+        @Override
+        protected Object job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+          try {
+            /* First, insert the relation name. */
+            SQLiteStatement statement =
+                sqliteConnection
+                    .prepare("SELECT rs.col_name,rs.col_type FROM relations r, relation_schema rs WHERE r.relation_id=rs.relation_id AND r.relation_name=?; ORDER BY rs.col_index");
+            statement.bind(1, relationName);
+            ImmutableList.Builder<String> names = ImmutableList.builder();
+            ImmutableList.Builder<Type> types = ImmutableList.builder();
+            if (!statement.step()) {
+              return null;
+            }
+            do {
+              names.add(statement.columnString(0));
+              types.add(Type.valueOf(statement.columnString(1)));
+            } while (statement.step());
+            statement.dispose();
+            return new Schema(types, names);
+          } catch (final SQLiteException e) {
+            throw new CatalogException(e);
+          }
         }
       }).get();
     } catch (InterruptedException | ExecutionException e) {

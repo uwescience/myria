@@ -471,4 +471,13 @@ public final class Server {
   public Map<Integer, SocketInfo> getWorkers() {
     return workers;
   }
+
+  /**
+   * @param relationName the name of the desired relation.
+   * @return the schema of the specified relation, or null if not found.
+   * @throws CatalogException if there is an error getting the Schema out of the catalog.
+   */
+  public Schema getSchema(final String relationName) throws CatalogException {
+    return catalog.getSchema(relationName);
+  }
 }
