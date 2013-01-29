@@ -192,9 +192,7 @@ public class SystemTestBase {
 
   @AfterClass
   public static void globalCleanup() throws IOException {
-    if (Server.runningInstance != null) {
-      Server.runningInstance.shutdown();
-    }
+    server.shutdown();
 
     for (final Thread t : workerStdoutReader) {
       try {
@@ -232,8 +230,6 @@ public class SystemTestBase {
   public static void globalInit() throws IOException, InterruptedException {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
     Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
-
-    Server.runningInstance = null;
 
     final Path tempFilePath = Files.createTempDirectory(Server.SYSTEM_NAME + "_systemtests");
     workerTestBaseFolder = tempFilePath.toFile().getAbsolutePath();
@@ -342,19 +338,18 @@ public class SystemTestBase {
 
   }
 
+  /** The Server being run for the system test. */
+  protected static Server server;
+
   static Server startMaster() {
-    new Thread() {
-      @Override
-      public void run() {
-        try {
-          final String catalogFileName = FilenameUtils.concat(workerTestBaseFolder, "master.catalog");
-          Server.main(new String[] { catalogFileName });
-        } catch (final IOException e) {
-          throw new RuntimeException(e);
-        }
-      }
-    }.start();
-    return Server.runningInstance;
+    try {
+      final String catalogFileName = FilenameUtils.concat(workerTestBaseFolder, "master.catalog");
+      server = new Server(catalogFileName);
+      server.start();
+    } catch (final Exception e) {
+      throw new RuntimeException(e);
+    }
+    return server;
   }
 
   /**

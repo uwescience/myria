@@ -29,7 +29,6 @@ import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 import edu.washington.escience.myriad.parallel.LocalMultiwayConsumer;
 import edu.washington.escience.myriad.parallel.LocalMultiwayProducer;
 import edu.washington.escience.myriad.parallel.PartitionFunction;
-import edu.washington.escience.myriad.parallel.Server;
 import edu.washington.escience.myriad.parallel.ShuffleConsumer;
 import edu.washington.escience.myriad.parallel.ShuffleProducer;
 import edu.washington.escience.myriad.parallel.SingleFieldHashPartitionFunction;
@@ -216,29 +215,13 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     workerPlans.put(WORKER_ID[0], new Operator[] { cp_worker1, multiProducer_worker1, sp1, sp2_worker1, sp3_worker1 });
     workerPlans.put(WORKER_ID[1], new Operator[] { cp_worker2, multiProducer_worker2, sp1, sp2_worker2, sp3_worker2 });
 
-    while (Server.runningInstance == null) {
-      try {
-        Thread.sleep(10);
-      } catch (final InterruptedException e) {
-      }
-    }
-
     final Long queryId = 0L;
 
     final CollectConsumer serverPlan =
         new CollectConsumer(tableSchema, serverReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
-    Server.runningInstance.dispatchWorkerQueryPlans(queryId, workerPlans);
-    System.out.println("Query dispatched to the workers");
+    server.dispatchWorkerQueryPlans(queryId, workerPlans);
     LOGGER.debug("Query dispatched to the workers");
-    TupleBatchBuffer result = null;
-    while ((result = Server.runningInstance.startServerQuery(queryId, serverPlan)) == null) {
-      try {
-        Thread.sleep(100);
-      } catch (InterruptedException e) {
-        e.printStackTrace();
-        Thread.currentThread().interrupt();
-      }
-    }
+    TupleBatchBuffer result = server.startServerQuery(queryId, serverPlan);
     final HashMap<Tuple, Integer> actual = TestUtils.tupleBatchToTupleBag(result);
     TestUtils.assertTupleBagEqual(expectedResult, actual);
   }

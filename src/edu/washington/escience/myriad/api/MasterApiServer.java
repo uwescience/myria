@@ -1,12 +1,17 @@
 package edu.washington.escience.myriad.api;
 
 import org.restlet.Component;
-import org.restlet.Server;
 import org.restlet.data.Protocol;
 import org.restlet.ext.jaxrs.JaxRsApplication;
 
-import edu.washington.escience.myriad.coordinator.catalog.Catalog;
+import edu.washington.escience.myriad.parallel.Server;
 
+/**
+ * The main class for the Myria API server.
+ * 
+ * @author dhalperi
+ * 
+ */
 public final class MasterApiServer {
 
   /** The instance. */
@@ -15,38 +20,57 @@ public final class MasterApiServer {
   /** The default port for the server. */
   private static final int PORT = 8753;
 
-  /** The Catalog for this application. */
-  private static Catalog catalog;
+  /** The Server for this application. */
+  private static Server myriaServer;
 
-  public static Catalog getCatalog() {
-    return catalog;
+  /**
+   * Used by the API collection classes to access data about system internals.
+   * 
+   * @return the Myriad Server object that handles/knows the distributed system state.
+   */
+  protected static Server getMyriaServer() {
+    return myriaServer;
   }
 
-  private static void setCatalog(final Catalog catalog) {
-    MasterApiServer.catalog = catalog;
+  /**
+   * Private method to configure the API Server's pointer to the Myriad Server.
+   * 
+   * @param myriaServer a handle the the Myriad server currently running.
+   */
+  private static void setMyriaServer(final Server myriaServer) {
+    MasterApiServer.myriaServer = myriaServer;
   }
 
-  public static void setUp(final Catalog catalog) throws Exception {
-    if (MasterApiServer.getCatalog() != null) {
+  /**
+   * Set the local handle to the Myriad Server so that we can serve API calls requesting information.
+   * 
+   * @param myriaServer a handle the the Myriad server currently running.
+   * @throws IllegalStateException if this pointer has already been initialized.
+   */
+  public static void setUp(final Server myriaServer) throws IllegalStateException {
+    if (MasterApiServer.getMyriaServer() != null) {
       throw new IllegalStateException("MasterServer.catalog is already initialized");
     }
-    MasterApiServer.setCatalog(catalog);
+    MasterApiServer.setMyriaServer(myriaServer);
   }
 
-  /** The Reslet Component is the main class that holds multiple servers/hosts for this application. */
+  /** The RESTlet Component is the main class that holds multiple servers/hosts for this application. */
   private final Component component;
 
   /** The RESTlet server object. */
-  private final Server server;
+  private final org.restlet.Server restletServer;
 
+  /**
+   * Constructor for the Master API Server.
+   */
   private MasterApiServer() {
     /* create Component (as ever for Restlet) */
     component = new Component();
 
     /* Add a server that responds to HTTP on port PORT. */
-    server = component.getServers().add(Protocol.HTTP, PORT);
+    restletServer = component.getServers().add(Protocol.HTTP, PORT);
 
-    /* Add a JAX-RS runtime environment, using our MasterApplication implemention. */
+    /* Add a JAX-RS runtime environment, using our MasterApplication implementation. */
     final JaxRsApplication application = new JaxRsApplication();
     application.add(new MasterApplication());
 
@@ -54,16 +78,25 @@ public final class MasterApiServer {
     component.getDefaultHost().attach(application);
   }
 
+  /**
+   * Starts the master RESTlet API server.
+   * 
+   * @throws Exception if there is an error starting the server.
+   */
   public void start() throws Exception {
     System.out.println("Starting server");
     component.start();
-    System.out.println("Server started on port " + server.getPort());
+    System.out.println("Server started on port " + restletServer.getPort());
   }
 
+  /**
+   * Stops the master RESTlet API server.
+   * 
+   * @throws Exception if there is an error stopping the server.
+   */
   public void stop() throws Exception {
     System.out.println("Stopping server");
     component.stop();
-    getCatalog().close();
     System.out.println("Server stopped");
   }
 }

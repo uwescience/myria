@@ -101,26 +101,13 @@ public final class Main {
     for (int i = 0; i < numPartition; ++i) {
       workerPlans.put(WORKER_ID[i], new Operator[] { cp });
     }
-    while (Server.runningInstance == null) {
-      try {
-        Thread.sleep(10);
-      } catch (final InterruptedException e) {
-      }
-    }
 
     final Long queryId = 9L;
 
     final CollectConsumer serverPlan = new CollectConsumer(tableSchema, serverReceiveID, WORKER_ID);
-    Server.runningInstance.dispatchWorkerQueryPlans(queryId, workerPlans);
+    serverInstance.dispatchWorkerQueryPlans(queryId, workerPlans);
     System.out.println("Query dispatched to the workers");
-    while (Server.runningInstance.startServerQuery(queryId, serverPlan) == null) {
-      try {
-        Thread.sleep(100);
-      } catch (final InterruptedException e) {
-        e.printStackTrace();
-        Thread.currentThread().interrupt();
-      }
-    }
+    serverInstance.startServerQuery(queryId, serverPlan);
 
   }
 
@@ -130,19 +117,17 @@ public final class Main {
     iterativeSelfJoinTest(args);
   }
 
+  private static Server serverInstance;
+
   static Server startMaster() {
-    new Thread() {
-      @Override
-      public void run() {
-        try {
-          final String catalogFileName = FilenameUtils.concat("/tmp/multitest", "master.catalog");
-          Server.main(new String[] { catalogFileName });
-        } catch (final IOException e) {
-          throw new RuntimeException(e);
-        }
-      }
-    }.start();
-    return Server.runningInstance;
+    try {
+      final String catalogFileName = FilenameUtils.concat("/tmp/multitest", "master.catalog");
+      serverInstance = new Server(catalogFileName);
+      serverInstance.start();
+    } catch (final Exception e) {
+      throw new RuntimeException(e);
+    }
+    return serverInstance;
   }
 
   /** Inaccessible. */

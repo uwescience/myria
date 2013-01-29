@@ -24,7 +24,6 @@ import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 import edu.washington.escience.myriad.parallel.PartitionFunction;
-import edu.washington.escience.myriad.parallel.Server;
 import edu.washington.escience.myriad.parallel.ShuffleConsumer;
 import edu.washington.escience.myriad.parallel.ShuffleProducer;
 import edu.washington.escience.myriad.parallel.SingleFieldHashPartitionFunction;
@@ -79,26 +78,12 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     workerPlans.put(WORKER_ID[0], new Operator[] { cp1, new CollectProducer(dumElim3, serverReceiveID, MASTER_ID) });
     workerPlans.put(WORKER_ID[1], new Operator[] { cp1 });
 
-    while (Server.runningInstance == null) {
-      try {
-        Thread.sleep(10);
-      } catch (final InterruptedException e) {
-      }
-    }
     final long queryId = 2;
 
     final CollectConsumer serverPlan = new CollectConsumer(schema, serverReceiveID, new int[] { WORKER_ID[0] });
-    Server.runningInstance.dispatchWorkerQueryPlans(queryId, workerPlans);
+    server.dispatchWorkerQueryPlans(queryId, workerPlans);
     LOGGER.debug("Query dispatched to the workers");
-    TupleBatchBuffer result = null;
-    while ((result = Server.runningInstance.startServerQuery(queryId, serverPlan)) == null) {
-      try {
-        Thread.sleep(100);
-      } catch (final InterruptedException e) {
-        e.printStackTrace();
-        Thread.currentThread().interrupt();
-      }
-    }
+    TupleBatchBuffer result = server.startServerQuery(queryId, serverPlan);
 
     final HashMap<Tuple, Integer> resultSet = TestUtils.tupleBatchToTupleSet(result);
 
@@ -144,27 +129,12 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final CollectProducer cp1 = new CollectProducer(dupElimOnScan, serverReceiveID, MASTER_ID);
     workerPlans.put(WORKER_ID[0], new Operator[] { cp1 });
 
-    while (Server.runningInstance == null) {
-      try {
-        Thread.sleep(10);
-      } catch (final InterruptedException e) {
-      }
-    }
-
     final long queryId = 0;
 
     final CollectConsumer serverPlan = new CollectConsumer(schema, serverReceiveID, new int[] { WORKER_ID[0] });
-    Server.runningInstance.dispatchWorkerQueryPlans(queryId, workerPlans);
+    server.dispatchWorkerQueryPlans(queryId, workerPlans);
     LOGGER.debug("Query dispatched to the workers");
-    TupleBatchBuffer result = null;
-    while ((result = Server.runningInstance.startServerQuery(queryId, serverPlan)) == null) {
-      try {
-        Thread.sleep(100);
-      } catch (final InterruptedException e) {
-        e.printStackTrace();
-        Thread.currentThread().interrupt();
-      }
-    }
+    TupleBatchBuffer result = server.startServerQuery(queryId, serverPlan);
 
     final HashMap<Tuple, Integer> resultSet = TestUtils.tupleBatchToTupleSet(result);
 
@@ -210,27 +180,12 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     workerPlans.put(WORKER_ID[0], new Operator[] { sp1, sp2, cp1 });
     workerPlans.put(WORKER_ID[1], new Operator[] { sp1, sp2, cp1 });
 
-    while (Server.runningInstance == null) {
-      try {
-        Thread.sleep(10);
-      } catch (final InterruptedException e) {
-      }
-    }
-
     final long queryId = 1;
     final CollectConsumer serverPlan =
         new CollectConsumer(outputSchema, serverReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
-    Server.runningInstance.dispatchWorkerQueryPlans(queryId, workerPlans);
+    server.dispatchWorkerQueryPlans(queryId, workerPlans);
     LOGGER.debug("Query dispatched to the workers");
-    TupleBatchBuffer result = null;
-    while ((result = Server.runningInstance.startServerQuery(queryId, serverPlan)) == null) {
-      try {
-        Thread.sleep(100);
-      } catch (final InterruptedException e) {
-        e.printStackTrace();
-        Thread.currentThread().interrupt();
-      }
-    }
+    TupleBatchBuffer result = server.startServerQuery(queryId, serverPlan);
 
     final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(result);
 
