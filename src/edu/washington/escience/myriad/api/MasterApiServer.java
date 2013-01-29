@@ -45,7 +45,7 @@ public final class MasterApiServer {
     /* Add a server that responds to HTTP on port PORT. */
     restletServer = component.getServers().add(Protocol.HTTP, PORT);
 
-    /* Add a JAX-RS runtime environment, using our MasterApplication implemention. */
+    /* Add a JAX-RS runtime environment, using our MasterApplication implementation. */
     final JaxRsApplication application = new JaxRsApplication();
     application.add(new MasterApplication());
 

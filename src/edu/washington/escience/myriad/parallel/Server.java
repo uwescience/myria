@@ -165,10 +165,10 @@ public final class Server {
     LOGGER.debug("Server started.");
   }
 
-  final ConcurrentHashMap<Integer, SocketInfo> workers;
-  final ConcurrentHashMap<Long, HashMap<Integer, Integer>> workersAssignedToQuery;
-  final Set<Integer> aliveWorkers;
-  final ConcurrentHashMap<Long, BitSet> workersReceivedQuery;
+  private final ConcurrentHashMap<Integer, SocketInfo> workers;
+  private final ConcurrentHashMap<Long, HashMap<Integer, Integer>> workersAssignedToQuery;
+  private final Set<Integer> aliveWorkers;
+  private final ConcurrentHashMap<Long, BitSet> workersReceivedQuery;
 
   /**
    * The I/O buffer, all the ExchangeMessages sent to the server are buffered here.
