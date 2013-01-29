@@ -6,6 +6,12 @@ import org.restlet.ext.jaxrs.JaxRsApplication;
 
 import edu.washington.escience.myriad.parallel.Server;
 
+/**
+ * The main class for the Myria API server.
+ * 
+ * @author dhalperi
+ * 
+ */
 public final class MasterApiServer {
 
   /** The instance. */
@@ -17,27 +23,46 @@ public final class MasterApiServer {
   /** The Server for this application. */
   private static Server myriaServer;
 
-  public static Server getMyriaServer() {
+  /**
+   * Used by the API collection classes to access data about system internals.
+   * 
+   * @return the Myriad Server object that handles/knows the distributed system state.
+   */
+  protected static Server getMyriaServer() {
     return myriaServer;
   }
 
+  /**
+   * Private method to configure the API Server's pointer to the Myriad Server.
+   * 
+   * @param myriaServer a handle the the Myriad server currently running.
+   */
   private static void setMyriaServer(final Server myriaServer) {
     MasterApiServer.myriaServer = myriaServer;
   }
 
-  public static void setUp(final Server myriaServer) throws Exception {
+  /**
+   * Set the local handle to the Myriad Server so that we can serve API calls requesting information.
+   * 
+   * @param myriaServer a handle the the Myriad server currently running.
+   * @throws IllegalStateException if this pointer has already been initialized.
+   */
+  public static void setUp(final Server myriaServer) throws IllegalStateException {
     if (MasterApiServer.getMyriaServer() != null) {
       throw new IllegalStateException("MasterServer.catalog is already initialized");
     }
     MasterApiServer.setMyriaServer(myriaServer);
   }
 
-  /** The Reslet Component is the main class that holds multiple servers/hosts for this application. */
+  /** The RESTlet Component is the main class that holds multiple servers/hosts for this application. */
   private final Component component;
 
   /** The RESTlet server object. */
   private final org.restlet.Server restletServer;
 
+  /**
+   * Constructor for the Master API Server.
+   */
   private MasterApiServer() {
     /* create Component (as ever for Restlet) */
     component = new Component();
@@ -53,12 +78,22 @@ public final class MasterApiServer {
     component.getDefaultHost().attach(application);
   }
 
+  /**
+   * Starts the master RESTlet API server.
+   * 
+   * @throws Exception if there is an error starting the server.
+   */
   public void start() throws Exception {
     System.out.println("Starting server");
     component.start();
     System.out.println("Server started on port " + restletServer.getPort());
   }
 
+  /**
+   * Stops the master RESTlet API server.
+   * 
+   * @throws Exception if there is an error stopping the server.
+   */
   public void stop() throws Exception {
     System.out.println("Stopping server");
     component.stop();

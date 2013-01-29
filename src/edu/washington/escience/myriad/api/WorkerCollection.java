@@ -16,8 +16,16 @@ import javax.ws.rs.core.Response.Status;
 
 import edu.washington.escience.myriad.parallel.SocketInfo;
 
+/**
+ * This is the class that handles API calls that return workers.
+ * 
+ * @author dhalperi
+ */
 @Path("/workers")
 public final class WorkerCollection {
+  /**
+   * @return the list of identifiers of workers that are currently alive.
+   */
   @GET
   @Path("/alive")
   @Produces(MediaType.APPLICATION_JSON)
@@ -25,6 +33,10 @@ public final class WorkerCollection {
     return MasterApiServer.getMyriaServer().getAliveWorkers();
   }
 
+  /**
+   * @param workerId identifier of the worker.
+   * @return the hostname and port number of the specified worker.
+   */
   @GET
   @Path("/worker-{workerId}")
   @Produces(MediaType.APPLICATION_JSON)
@@ -44,6 +56,9 @@ public final class WorkerCollection {
     return workerInfo.toString();
   }
 
+  /**
+   * @return the set of workers (identifier : host-port string) known by this server.
+   */
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   public Map<Integer, String> getWorkers() {

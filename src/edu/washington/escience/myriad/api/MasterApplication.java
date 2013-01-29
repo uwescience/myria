@@ -5,9 +5,14 @@ import java.util.Set;
 
 import javax.ws.rs.core.Application;
 
+/**
+ * This object simply contains the list of resources that can be requested via the RESTlet server.
+ * 
+ * @author dhalperi
+ */
 public class MasterApplication extends Application {
   @Override
-  public Set<Class<?>> getClasses() {
+  public final Set<Class<?>> getClasses() {
     final Set<Class<?>> rrcs = new HashSet<Class<?>>();
     rrcs.add(WorkerCollection.class);
     rrcs.add(ReceiveQuery.class);
