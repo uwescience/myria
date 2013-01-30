@@ -16,7 +16,7 @@ import edu.washington.escience.myriad.Type;
 /**
  * Project is an operator that implements a relational projection.
  */
-public class Project extends Operator {
+public final class Project extends Operator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;

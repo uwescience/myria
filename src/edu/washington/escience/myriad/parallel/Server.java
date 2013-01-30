@@ -252,7 +252,6 @@ public final class Server {
     return connectionPool;
   }
 
-  // TODO implement queryID
   protected void queryReceivedByWorker(final Long queryId, final int workerId) {
     final BitSet workersReceived = workersReceivedQuery.get(queryId);
     final HashMap<Integer, Integer> workersAssigned = workersAssignedToQuery.get(queryId);
@@ -261,7 +260,9 @@ public final class Server {
   }
 
   /**
-   * This method should be called when a data item is received
+   * This method should be called when a data item is received.
+   * 
+   * @param data the data that was received.
    */
   public void receiveData(final ExchangeData data) {
 
@@ -435,7 +436,7 @@ public final class Server {
     startWorkerQuery(queryId);
 
     while (serverPlan.next() != null) {
-      /* Do nothing. */
+      assert true; /* Do nothing. */
     }
 
     serverPlan.close();

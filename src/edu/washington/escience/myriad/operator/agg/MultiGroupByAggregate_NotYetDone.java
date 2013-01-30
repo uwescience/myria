@@ -64,21 +64,19 @@ public class MultiGroupByAggregate_NotYetDone extends Operator {
    * @param gfields The columns over which we are grouping the result, or -1 if there is no grouping
    * @param aggOps The aggregation operator to use
    */
-  public MultiGroupByAggregate_NotYetDone(final Operator child, final int[] afields, int[] gfields, final int[] aggOps) {
+  public MultiGroupByAggregate_NotYetDone(final Operator child, final int[] afields, final int[] gfields,
+      final int[] aggOps) {
     Objects.requireNonNull(afields);
     if (afields.length == 0) {
       throw new IllegalArgumentException("aggregation fields must not be empty");
     }
 
-    Schema outputSchema = null;
-    if (gfields == null) {
-      gfields = new int[0];
-      groupBy = false;
-      groupAggs = null;
-    } else if (gfields.length == 0) {
+    if (gfields == null || gfields.length == 0) {
+      this.gfields = new int[0];
       groupBy = false;
       groupAggs = null;
     } else {
+      this.gfields = gfields;
       groupBy = true;
       groupAggs = new HashMap<SimpleArrayWrapper, Aggregator[]>();
     }
@@ -87,16 +85,15 @@ public class MultiGroupByAggregate_NotYetDone extends Operator {
     final ImmutableList.Builder<String> gNames = ImmutableList.builder();
 
     final Schema childSchema = child.getSchema();
-    for (final int i : gfields) {
+    for (final int i : this.gfields) {
       gTypes.add(childSchema.getColumnType(i));
       gNames.add(childSchema.getColumnName(i));
     }
 
-    outputSchema = new Schema(gTypes, gNames);
+    Schema outputSchema = new Schema(gTypes, gNames);
 
     this.child = child;
     this.afields = afields;
-    this.gfields = gfields;
     agg = new Aggregator[aggOps.length];
 
     int idx = 0;

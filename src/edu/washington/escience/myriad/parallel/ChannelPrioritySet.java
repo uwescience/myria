@@ -15,7 +15,7 @@ import org.jboss.netty.channel.group.ChannelGroup;
 /**
  * A set of channels. Ordered by a comparator.
  * */
-public class ChannelPrioritySet {
+public final class ChannelPrioritySet {
 
   /**
    * Snapshot iterator that works off copy of underlying q array.
@@ -44,14 +44,12 @@ public class ChannelPrioritySet {
       return (Channel) array[cursor++];
     }
 
-    /**
-     * Unsupport remove because we are not able to get the modification lock used in {#link PriorityBlockingQueue}
-     * */
     @Override
     public void remove() {
       throw new UnsupportedOperationException();
     }
   }
+
   /**
    * guard the modification of this data structure.
    * */
@@ -102,7 +100,7 @@ public class ChannelPrioritySet {
    *           queue according to the priority queue's ordering
    * @throws NullPointerException if the specified element is null
    */
-  public final boolean add(final Channel e) {
+  public boolean add(final Channel e) {
     synchronized (updateLock) {
       if (set.add(e)) {
         return orderedChannels.add(e);
@@ -137,7 +135,7 @@ public class ChannelPrioritySet {
    * 
    * @return the top channel .
    * */
-  public final Channel peekAndReserve() {
+  public Channel peekAndReserve() {
     synchronized (updateLock) {
       final Channel cc = orderedChannels.peek();
       if (cc != null) {
@@ -155,7 +153,7 @@ public class ChannelPrioritySet {
    * @param recyclableConnections collection of recyclable connections
    * @param trash the trash bin.
    * */
-  public final void release(final Channel ch, final ChannelGroup trash,
+  public void release(final Channel ch, final ChannelGroup trash,
       final ConcurrentHashMap<Channel, Channel> recyclableConnections) {
     final ChannelContext cc = ChannelContext.getChannelContext(ch);
     final ChannelContext.RegisteredChannelContext ecc = cc.getRegisteredChannelContext();
@@ -183,7 +181,7 @@ public class ChannelPrioritySet {
    * @param o element to be removed from this queue, if present
    * @return {@code true} if this queue changed as a result of the call
    */
-  public final boolean remove(final Channel o) {
+  public boolean remove(final Channel o) {
     synchronized (updateLock) {
       if (set.remove(o)) {
         return orderedChannels.remove(o);
@@ -196,7 +194,7 @@ public class ChannelPrioritySet {
   /**
    * @return size of this channel set.
    * */
-  public final int size() {
+  public int size() {
     synchronized (updateLock) {
       return set.size();
     }
@@ -260,7 +258,7 @@ public class ChannelPrioritySet {
    * @param e element.
    * @return true if this queue changed.
    * */
-  public final boolean update(final Channel e) {
+  public boolean update(final Channel e) {
     synchronized (updateLock) {
       if (remove(e)) {
         return add(e);

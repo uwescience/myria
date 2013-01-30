@@ -24,7 +24,7 @@ public abstract class Exchange extends Operator {
     private static final long serialVersionUID = 1L;
 
     /**
-     * The id
+     * The id.
      */
     private final long oId;
 
