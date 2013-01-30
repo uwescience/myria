@@ -240,10 +240,10 @@ public final class WorkerCatalog {
           sqliteConnection.prepare("INSERT INTO relation_schema(relation_id, col_index, col_name, col_type) "
               + "VALUES (?,?,?,?);");
       statement.bind(1, relationId);
-      for (int i = 0; i < schema.numFields(); ++i) {
+      for (int i = 0; i < schema.numColumns(); ++i) {
         statement.bind(2, i);
-        statement.bind(3, schema.getFieldName(i));
-        statement.bind(4, schema.getFieldType(i).toString());
+        statement.bind(3, schema.getColumnName(i));
+        statement.bind(4, schema.getColumnType(i).toString());
         statement.step();
         statement.reset(false);
       }

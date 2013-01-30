@@ -36,8 +36,8 @@ public class Project extends Operator {
     final ImmutableList.Builder<Type> types = ImmutableList.builder();
     final ImmutableList.Builder<String> names = ImmutableList.builder();
     for (final int i : fieldList) {
-      types.add(childSchema.getFieldType(i));
-      names.add(childSchema.getFieldName(i));
+      types.add(childSchema.getColumnType(i));
+      names.add(childSchema.getColumnName(i));
     }
     schema = new Schema(types, names);
   }

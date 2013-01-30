@@ -23,11 +23,11 @@ public final class SQLiteUtils {
   public static String createStatementFromSchema(final Schema schema, final String name) {
     final StringBuilder sb = new StringBuilder();
     sb.append("CREATE TABLE ").append(name).append(" (");
-    for (int i = 0; i < schema.numFields(); ++i) {
+    for (int i = 0; i < schema.numColumns(); ++i) {
       if (i > 0) {
         sb.append(", ");
       }
-      sb.append(schema.getFieldName(i)).append(" ").append(typeToSQLiteType(schema.getFieldType(i)));
+      sb.append(schema.getColumnName(i)).append(" ").append(typeToSQLiteType(schema.getColumnType(i)));
     }
     sb.append(");");
     return sb.toString();
@@ -36,9 +36,9 @@ public final class SQLiteUtils {
   public static void insertIntoSQLite(final Schema inputSchema, final String tableName, final String dbFilePath,
       final TupleBatch data) {
 
-    final ImmutableList<String> fieldNames = inputSchema.getFieldNames();
-    final String[] placeHolders = new String[inputSchema.numFields()];
-    for (int i = 0; i < inputSchema.numFields(); ++i) {
+    final ImmutableList<String> fieldNames = inputSchema.getColumnNames();
+    final String[] placeHolders = new String[inputSchema.numColumns()];
+    for (int i = 0; i < inputSchema.numColumns(); ++i) {
       placeHolders[i] = "?";
     }
 
@@ -56,9 +56,9 @@ public final class SQLiteUtils {
   public static String insertStatementFromSchema(final Schema schema, final String name) {
     final StringBuilder sb = new StringBuilder();
     sb.append("INSERT INTO ").append(name).append(" (");
-    sb.append(StringUtils.join(schema.getFieldNames(), ','));
+    sb.append(StringUtils.join(schema.getColumnNames(), ','));
     sb.append(") VALUES (");
-    for (int i = 0; i < schema.numFields(); ++i) {
+    for (int i = 0; i < schema.numColumns(); ++i) {
       if (i > 0) {
         sb.append(',');
       }

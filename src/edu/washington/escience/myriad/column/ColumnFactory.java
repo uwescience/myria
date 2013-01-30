@@ -22,10 +22,10 @@ public final class ColumnFactory {
    * @return the list of Columns
    */
   public static List<Column<?>> allocateColumns(final Schema schema) {
-    final int numColumns = schema.numFields();
+    final int numColumns = schema.numColumns();
     final Type[] columnTypes = new Type[numColumns];
     for (int columnIndex = 0; columnIndex < numColumns; ++columnIndex) {
-      columnTypes[columnIndex] = schema.getFieldType(columnIndex);
+      columnTypes[columnIndex] = schema.getColumnType(columnIndex);
     }
     return allocateColumns(columnTypes);
   }

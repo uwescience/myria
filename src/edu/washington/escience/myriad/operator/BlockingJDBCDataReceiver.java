@@ -35,9 +35,9 @@ public final class BlockingJDBCDataReceiver extends Operator {
     this.username = username;
     this.password = password;
     final Schema s = child.getSchema();
-    fieldNames = s.getFieldNames();
-    placeHolders = new String[s.numFields()];
-    for (int i = 0; i < s.numFields(); ++i) {
+    fieldNames = s.getColumnNames();
+    placeHolders = new String[s.numColumns()];
+    for (int i = 0; i < s.numColumns(); ++i) {
       placeHolders[i] = "?";
     }
   }

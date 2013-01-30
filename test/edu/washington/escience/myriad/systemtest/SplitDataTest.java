@@ -96,7 +96,7 @@ public class SplitDataTest extends SystemTestBase {
     /* Sanity-check the results, sum them, then confirm. */
     TupleBatch aggregate = result.popAny();
     assertTrue(aggregate.numTuples() == WORKER_ID.length);
-    assertTrue(aggregate.getSchema().numFields() == 1);
+    assertTrue(aggregate.getSchema().numColumns() == 1);
     long sum = 0;
     for (int i = 0; i < aggregate.numTuples(); ++i) {
       sum += aggregate.getLong(0, i);

@@ -348,14 +348,14 @@ public final class Server {
     final Schema schema = serverPlan.getSchema();
 
     String names = "";
-    for (int i = 0; i < schema.numFields(); i++) {
-      names += schema.getFieldName(i) + "\t";
+    for (int i = 0; i < schema.numColumns(); i++) {
+      names += schema.getColumnName(i) + "\t";
     }
 
     if (LOGGER.isDebugEnabled()) {
       final StringBuilder sb = new StringBuilder();
       sb.append(names).append('\n');
-      for (int i = 0; i < names.length() + schema.numFields() * 4; i++) {
+      for (int i = 0; i < names.length() + schema.numColumns() * 4; i++) {
         sb.append("-");
       }
       sb.append("");

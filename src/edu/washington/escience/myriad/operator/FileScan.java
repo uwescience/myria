@@ -81,7 +81,7 @@ public final class FileScan extends LeafOperator {
     while (tokenizer.ttype != StreamTokenizer.TT_EOF && buffer.numTuples() < TupleBatch.BATCH_SIZE) {
       /* First, make sure that if we hit EOL we're at the right number of fields full. */
       if (tokenizer.ttype == StreamTokenizer.TT_EOL) {
-        if (count == schema.numFields()) {
+        if (count == schema.numColumns()) {
           count = 0;
           try {
             tokenizer.nextToken();
@@ -95,7 +95,7 @@ public final class FileScan extends LeafOperator {
       }
 
       /* Second, make sure that if we didn't hit EOL we're at less than the right number of fields. */
-      if (count >= schema.numFields()) { // == should work here, but >= to be safe.
+      if (count >= schema.numColumns()) { // == should work here, but >= to be safe.
         throw new DbException("Line " + tokenizer.lineno() + " does not match the given schema");
       }
 
@@ -106,7 +106,7 @@ public final class FileScan extends LeafOperator {
 
       /* Make sure the schema matches. */
       try {
-        switch (schema.getFieldType(count)) {
+        switch (schema.getColumnType(count)) {
           case BOOLEAN_TYPE:
             if (tokenizer.ttype == StreamTokenizer.TT_NUMBER) {
               buffer.put(count, Boolean.valueOf(tokenizer.nval != 0));

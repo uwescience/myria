@@ -26,7 +26,7 @@ public final class LocalJoin extends Operator implements Externalizable {
     }
 
     public boolean compareField(final IndexedTuple another, final int colIndx1, final int colIndx2) {
-      final Type type1 = tb.getSchema().getFieldType(colIndx1);
+      final Type type1 = tb.getSchema().getColumnType(colIndx1);
       // type check in query plan?
       final int rowIndx1 = index;
       final int rowIndx2 = another.index;
@@ -56,7 +56,7 @@ public final class LocalJoin extends Operator implements Externalizable {
       if (!(tb.getSchema().equals(another.tb.getSchema()))) {
         return false;
       }
-      for (int i = 0; i < tb.getSchema().numFields(); ++i) {
+      for (int i = 0; i < tb.getSchema().numColumns(); ++i) {
         if (!compareField(another, i, i)) {
           return false;
         }
@@ -120,8 +120,8 @@ public final class LocalJoin extends Operator implements Externalizable {
   }
 
   protected void addToAns(final IndexedTuple tuple1, final IndexedTuple tuple2) {
-    final int num1 = tuple1.tb.getSchema().numFields();
-    final int num2 = tuple2.tb.getSchema().numFields();
+    final int num1 = tuple1.tb.getSchema().numColumns();
+    final int num2 = tuple2.tb.getSchema().numColumns();
     for (int i = 0; i < num1; ++i) {
       ans.put(i, tuple1.tb.getObject(i, tuple1.index));
     }
