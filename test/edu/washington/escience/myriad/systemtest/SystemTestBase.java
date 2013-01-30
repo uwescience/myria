@@ -3,6 +3,7 @@ package edu.washington.escience.myriad.systemtest;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.ProcessBuilder.Redirect;
@@ -182,7 +183,7 @@ public class SystemTestBase {
     }
   }
 
-  public static File getAbsoluteDBFile(final int workerID) throws CatalogException {
+  public static File getAbsoluteDBFile(final int workerID) throws CatalogException, FileNotFoundException {
     final String workerDir = FilenameUtils.concat(workerTestBaseFolder, "worker_" + workerID);
     final WorkerCatalog wc = WorkerCatalog.open(FilenameUtils.concat(workerDir, "worker.catalog"));
     final File ret = new File(wc.getConfigurationValue("worker.data.sqlite.db"));
@@ -249,7 +250,7 @@ public class SystemTestBase {
   }
 
   public static void insert(final int workerID, final String tableName, final Schema schema, final TupleBatch data)
-      throws CatalogException {
+      throws CatalogException, FileNotFoundException {
     final String insertTemplate = SQLiteUtils.insertStatementFromSchema(schema, tableName);
     SQLiteAccessMethod.tupleBatchInsert(getAbsoluteDBFile(workerID).getAbsolutePath(), insertTemplate, data);
   }

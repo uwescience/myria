@@ -86,7 +86,7 @@ public final class SQLiteInsert extends RootOperator {
   }
 
   @Override
-  protected final void consumeTuples(final TupleBatch tupleBatch) throws DbException {
+  protected void consumeTuples(final TupleBatch tupleBatch) throws DbException {
     final SQLiteJob<Object> future = new SQLiteJob<Object>() {
       @Override
       protected Object job(final SQLiteConnection sqliteConnection) throws SQLiteException {
