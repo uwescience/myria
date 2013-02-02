@@ -33,6 +33,26 @@ public final class SQLiteUtils {
     return sb.toString();
   }
 
+  /**
+   * Generates a SQLite CREATE TABLE statement for a table of the given Schema and name.
+   * 
+   * @param schema the Schema of the table to be created.
+   * @param name the name of the table to be created.
+   * @return a SQLite CREATE TABLE statement for a table of the given Schema and name.
+   */
+  public static String createIfNotExistsStatementFromSchema(final Schema schema, final String name) {
+    final StringBuilder sb = new StringBuilder();
+    sb.append("CREATE TABLE IF NOT EXISTS ").append(name).append(" (\n");
+    for (int i = 0; i < schema.numColumns(); ++i) {
+      if (i > 0) {
+        sb.append(",\n");
+      }
+      sb.append("    ").append(schema.getColumnName(i)).append(" ").append(typeToSQLiteType(schema.getColumnType(i)));
+    }
+    sb.append(");");
+    return sb.toString();
+  }
+
   public static void insertIntoSQLite(final Schema inputSchema, final String tableName, final String dbFilePath,
       final TupleBatch data) {
 
@@ -99,4 +119,13 @@ public final class SQLiteUtils {
   private SQLiteUtils() {
   }
 
+  /**
+   * Creates a SQLite "DROP TABLE IF EXISTS" statement.
+   * 
+   * @param tableName the table to be dropped.
+   * @return "DROP TABLE IF EXISTS <tt>tableName</tt>;"
+   */
+  public static String dropTableIfExistsStatement(final String tableName) {
+    return "DROP TABLE IF EXISTS " + tableName + ";";
+  }
 }
