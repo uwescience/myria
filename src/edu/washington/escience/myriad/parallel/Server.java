@@ -474,6 +474,25 @@ public final class Server {
   }
 
   /**
+   * Insert the given query into the Catalog, dispatch the query to the workers, and return its query ID. This is useful
+   * for receiving queries from an external interface (e.g., the REST API).
+   * 
+   * @param rawQuery the raw user-defined query. E.g., the source Datalog program.
+   * @param logicalRa the logical relational algebra of the compiled plan.
+   * @param plans the physical parallel plan fragments for each worker.
+   * @return the query ID assigned to this query.
+   * @throws CatalogException if there is an error in the Catalog.
+   * @throws IOException if there is an error communicating with the workers.
+   */
+  public Long startQuery(final String rawQuery, final String logicalRa, final Map<Integer, Operator[]> plans)
+      throws CatalogException, IOException {
+    final Long queryId = catalog.newQuery(rawQuery, logicalRa);
+    dispatchWorkerQueryPlans(queryId, plans);
+    startWorkerQuery(queryId);
+    return queryId;
+  }
+
+  /**
    * @param relationName the name of the desired relation.
    * @return the schema of the specified relation, or null if not found.
    * @throws CatalogException if there is an error getting the Schema out of the catalog.
