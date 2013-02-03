@@ -118,6 +118,8 @@ public final class Catalog {
                 + "    stored_relation_id INTEGER NOT NULL REFERENCES stored_relations(stored_relation_id),\n"
                 + "    shard_index INTEGER NOT NULL,\n"
                 + "    worker_id INTEGER NOT NULL REFERENCES workers(worker_id),\n" + "    location STRING NOT NULL);");
+            sqliteConnection.exec("CREATE TABLE queries (\n" + "    query_id INTEGER NOT NULL PRIMARY KEY ASC,\n"
+                + "    raw_query TEXT NOT NULL,\n" + "    logical_ra TEXT NOT NULL);");
           } catch (final SQLiteException e) {
             LOGGER.error(e.toString());
             throw new CatalogException("SQLiteException while creating new Catalog tables", e);
@@ -565,6 +567,40 @@ public final class Catalog {
             } while (statement.step());
             statement.dispose();
             return new Schema(types, names);
+          } catch (final SQLiteException e) {
+            throw new CatalogException(e);
+          }
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  /**
+   * Insert a new query into the Catalog.
+   * 
+   * @param rawQuery the original user data of the query.
+   * @param logicalRa the compiled logical relational algebra plan of the query.
+   * @return the newly generated ID of this query.
+   * @throws CatalogException if there is an error adding the new query.
+   */
+  public Long newQuery(final String rawQuery, final String logicalRa) throws CatalogException {
+    Objects.requireNonNull(rawQuery);
+    Objects.requireNonNull(logicalRa);
+    try {
+      return (Long) queue.execute(new SQLiteJob<Object>() {
+        @Override
+        protected Object job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+          try {
+            /* First, insert the relation name. */
+            SQLiteStatement statement =
+                sqliteConnection.prepare("INSERT INTO queries (raw_query,logical_ra) VALUES (?,?);");
+            statement.bind(1, rawQuery);
+            statement.bind(2, logicalRa);
+            statement.stepThrough();
+            statement.dispose();
+            return sqliteConnection.getLastInsertId();
           } catch (final SQLiteException e) {
             throw new CatalogException(e);
           }
