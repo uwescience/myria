@@ -26,7 +26,6 @@ import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 import edu.washington.escience.myriad.parallel.PartitionFunction;
-import edu.washington.escience.myriad.parallel.Server;
 import edu.washington.escience.myriad.parallel.ShuffleConsumer;
 import edu.washington.escience.myriad.parallel.ShuffleProducer;
 import edu.washington.escience.myriad.parallel.SingleFieldHashPartitionFunction;
@@ -201,28 +200,13 @@ public class IterativeSelfJoinTest extends SystemTestBase {
     workerPlans.put(WORKER_ID[0], subqueries.toArray(new Operator[subqueries.size()]));
     workerPlans.put(WORKER_ID[1], subqueries.toArray(new Operator[subqueries.size()]));
 
-    while (Server.runningInstance == null) {
-      try {
-        Thread.sleep(10);
-      } catch (final InterruptedException e) {
-      }
-    }
-
     final Long queryId = 0L;
 
     final CollectConsumer serverPlan =
         new CollectConsumer(tableSchema, serverReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
-    Server.runningInstance.dispatchWorkerQueryPlans(queryId, workerPlans);
+    server.dispatchWorkerQueryPlans(queryId, workerPlans);
     LOGGER.debug("Query dispatched to the workers");
-    TupleBatchBuffer result = null;
-    while ((result = Server.runningInstance.startServerQuery(queryId, serverPlan)) == null) {
-      try {
-        Thread.sleep(100);
-      } catch (final InterruptedException e) {
-        e.printStackTrace();
-        Thread.currentThread().interrupt();
-      }
-    }
+    TupleBatchBuffer result = server.startServerQuery(queryId, serverPlan);
 
     final HashMap<Tuple, Integer> actual = TestUtils.tupleBatchToTupleBag(result);
     TestUtils.assertTupleBagEqual(expectedResult, actual);

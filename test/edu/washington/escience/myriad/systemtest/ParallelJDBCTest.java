@@ -17,7 +17,6 @@ import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
-import edu.washington.escience.myriad.parallel.Server;
 
 public class ParallelJDBCTest extends SystemTestBase {
 
@@ -64,24 +63,9 @@ public class ParallelJDBCTest extends SystemTestBase {
     workerPlans.put(WORKER_ID[0], new Operator[] { cp1 });
     workerPlans.put(WORKER_ID[1], new Operator[] { cp2, cp22 });
 
-    while (Server.runningInstance == null) {
-      try {
-        Thread.sleep(10);
-      } catch (final InterruptedException e) {
-      }
-    }
-
     final CollectConsumer serverPlan = new CollectConsumer(schema, serverReceiveID, new int[] { WORKER_ID[1] });
-    Server.runningInstance.dispatchWorkerQueryPlans(0L, workerPlans);
+    server.dispatchWorkerQueryPlans(0L, workerPlans);
     LOGGER.debug("Query dispatched to the workers");
-    while (Server.runningInstance.startServerQuery(0L, serverPlan) == null) {
-      try {
-        Thread.sleep(100);
-      } catch (final InterruptedException e) {
-        e.printStackTrace();
-        Thread.currentThread().interrupt();
-      }
-    }
-
+    server.startServerQuery(0L, serverPlan);
   }
 }

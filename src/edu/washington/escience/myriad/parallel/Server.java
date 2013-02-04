@@ -1,5 +1,6 @@
 package edu.washington.escience.myriad.parallel;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -20,6 +21,7 @@ import org.jboss.netty.channel.ChannelFuture;
 import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
@@ -37,65 +39,10 @@ import edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageTyp
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.util.IPCUtils;
 
-/**
- * The parallel system is consisted of one server and a bunch of workers.
- * 
- * The server accepts SQL from commandline, generate a query plan, optimize it, parallelize it. And then the server send
- * a query plan to each worker. Each worker may receive different query plans. The server does not execute any part of a
- * query. The server then receives query results from the workers and display them in the commandline.
- * 
- * The data of a database is averagely spread over all the workers. The execution of each query is conducted
- * simultaneously at each worker.
- * 
- * Currently, we only support equi-join.
- * 
- * The server and the workers run in separate processes. They may or may not cross the boundary of computers.
- * 
- * The server address is configurable at conf/server.conf, the default is
- * 
- * localhost:24444
- * 
- * The worker addresses are configurable at conf/workers.conf, one line for each worker. the default are
- * 
- * localhost:24448 localhost:24449
- * 
- * You may add more workers by adding more host:port lines.
- * 
- * You may change the configurations to cross computers. But make that, the server is able to access the workers and
- * each worker is able to access both the server and all other workers.
- * 
- * 
- * Given a query, there can be up to two different query plans. If the query contains order by or aggregates without
- * group by, a "master worker" is needed to collect the tuples to be ordered or to be aggregated from all the workers.
- * All the other workers are correspondingly called slave workers.
- * 
- * For example, for a query:
- * 
- * select * from actor order by id;
- * 
- * at slave workers, the query plan is:
- * 
- * scan actor -> send data to the master worker
- * 
- * at the master worker, the query plan is:
- * 
- * scan actor -> send data to myself -> collect data from all the workers -> order by -> send output to the server
- * 
- * 
- * at slave workers: | at the master worker: | at the server: | | worker_1 : scan actor | | worker_2 : scan actor | |
- * ... | collect -> order by (id) ------| ---> output result worker_(n-1): scan actor | | worker_n : scan actor | |
- * 
- * If there is no order by and aggregate without group by, all the workers will have the same query plan. The results of
- * each worker are sent directly to the server.
- * 
- * 
- * We use Apache Mina for inter-process communication. Mina is a wrapper library of java nio. To start using Mina,
- * http://mina.apache.org/user-guide.html is a good place to seek information.
- * 
- * 
- * 
- */
 public final class Server {
+
+  /** A short amount of time to sleep waiting for network events. */
+  public static final int SHORT_SLEEP_MILLIS = 100;
 
   private final class MessageProcessor extends Thread {
     /** Whether the server has been stopped. */
@@ -107,8 +54,7 @@ public final class Server {
       TERMINATE_MESSAGE_PROCESSING : while (!stopped) {
         MessageWrapper mw = null;
         try {
-          final int pollDelay = 100;
-          mw = messageQueue.poll(pollDelay, TimeUnit.MILLISECONDS);
+          mw = messageQueue.poll(SHORT_SLEEP_MILLIS, TimeUnit.MILLISECONDS);
           if (mw == null) {
             continue;
           }
@@ -176,6 +122,7 @@ public final class Server {
 
     }
 
+    /** Tell the MessageProcessor to stop running after the next message is received. */
     public void setStopped() {
       stopped = true;
     }
@@ -202,47 +149,26 @@ public final class Server {
     }
 
     final String catalogName = args[0];
-
-    Catalog catalog;
-    List<SocketInfo> masters;
-    Map<Integer, SocketInfo> workers;
+    final Server server;
     try {
-      catalog = Catalog.open(catalogName);
-      masters = catalog.getMasters();
-      workers = catalog.getWorkers();
-      catalog.close();
-    } catch (final CatalogException e) {
-      throw new RuntimeException("Reading information from the catalog failed", e);
+      server = new Server(catalogName);
+    } catch (CatalogException e) {
+      throw new IOException(e);
     }
-
-    if (masters.size() != 1) {
-      throw new RuntimeException("Unexpected number of masters: expected 1, got " + masters.size());
-    }
-
-    final SocketInfo masterSocketInfo = masters.get(0);
-    final Server server = new Server(masterSocketInfo, workers);
 
     LOGGER.debug("Workers are: ");
     for (final Entry<Integer, SocketInfo> w : server.workers.entrySet()) {
       LOGGER.debug(w.getKey() + ":  " + w.getValue().getHost() + ":" + w.getValue().getPort());
     }
 
-    Runtime.getRuntime().addShutdownHook(new Thread() {
-      @Override
-      public void run() {
-        server.cleanup();
-      }
-    });
     server.start();
-    LOGGER.debug("Server: " + masterSocketInfo.getHost() + " started. Listening on port " + masterSocketInfo.getPort());
-
-    runningInstance = server;
+    LOGGER.debug("Server started.");
   }
 
-  final ConcurrentHashMap<Integer, SocketInfo> workers;
-  final ConcurrentHashMap<Long, HashMap<Integer, Integer>> workersAssignedToQuery;
-  final Set<Integer> aliveWorkers;
-  final ConcurrentHashMap<Long, BitSet> workersReceivedQuery;
+  private final ConcurrentHashMap<Integer, SocketInfo> workers;
+  private final ConcurrentHashMap<Long, HashMap<Integer, Integer>> workersAssignedToQuery;
+  private final Set<Integer> aliveWorkers;
+  private final ConcurrentHashMap<Long, BitSet> workersReceivedQuery;
 
   /**
    * The I/O buffer, all the ExchangeMessages sent to the server are buffered here.
@@ -257,58 +183,44 @@ public final class Server {
 
   protected final MessageProcessor messageProcessor;
 
-  public static volatile Server runningInstance = null;
-
   protected boolean interactive = true;
 
   public static final String SYSTEM_NAME = "Myriad";
 
-  private volatile boolean cleanup = false;
+  /** The Catalog stores the metadata about the Myria instance. */
+  private final Catalog catalog;
 
   /**
-   * Instantiates a new Myriad server.
+   * Construct a server object, with configuration stored in the specified catalog file.
    * 
-   * @param hostPort the hostname and port that this server will listen on.
-   * @param workers a Map describing each worker's ID and its hostname:port address.
+   * @param catalogFileName the name of the file containing the catalog.
+   * @throws FileNotFoundException the specified file not found.
+   * @throws CatalogException if there is an error reading from the Catalog.
    */
-  public Server(final SocketInfo hostPort, final Map<Integer, SocketInfo> workers) {
-    this.workers = new ConcurrentHashMap<Integer, SocketInfo>(workers);
+  public Server(final String catalogFileName) throws FileNotFoundException, CatalogException {
+    catalog = Catalog.open(catalogFileName);
+
+    /* Get the master socket info */
+    List<SocketInfo> masters = catalog.getMasters();
+    if (masters.size() != 1) {
+      throw new RuntimeException("Unexpected number of masters: expected 1, got " + masters.size());
+    }
+    final SocketInfo masterSocketInfo = masters.get(MyriaConstants.MASTER_ID);
+
+    workers = new ConcurrentHashMap<Integer, SocketInfo>(catalog.getWorkers());
     aliveWorkers = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
 
     dataBuffer = new ConcurrentHashMap<ExchangePairID, LinkedBlockingQueue<ExchangeData>>();
     messageQueue = new LinkedBlockingQueue<MessageWrapper>();
     exchangeSchema = new ConcurrentHashMap<ExchangePairID, Schema>();
 
-    final Map<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
-    computingUnits.putAll(workers);
-    computingUnits.put(0, hostPort);
+    final Map<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>(workers);
+    computingUnits.put(MyriaConstants.MASTER_ID, masterSocketInfo);
 
-    connectionPool = new IPCConnectionPool(0, computingUnits, messageQueue);
+    connectionPool = new IPCConnectionPool(MyriaConstants.MASTER_ID, computingUnits, messageQueue);
     messageProcessor = new MessageProcessor();
     workersAssignedToQuery = new ConcurrentHashMap<Long, HashMap<Integer, Integer>>();
     workersReceivedQuery = new ConcurrentHashMap<Long, BitSet>();
-  }
-
-  public void cleanup() {
-    if (cleanup) {
-      return;
-    }
-    cleanup = true;
-    LOGGER.debug(SYSTEM_NAME + " is going to shutdown");
-    LOGGER.debug("Send shutdown requests to the workers, please wait");
-    for (final Entry<Integer, SocketInfo> worker : workers.entrySet()) {
-      LOGGER.debug("Shutting down #" + worker.getKey() + " : " + worker.getValue());
-
-      final ChannelFuture cf = getConnectionPool().sendShortMessage(worker.getKey(), IPCUtils.CONTROL_SHUTDOWN);
-      if (cf == null) {
-        LOGGER.error("Fail to connect the worker: " + worker + ". Continue cleaning");
-      } else {
-        cf.awaitUninterruptibly();
-        LOGGER.debug("Done for worker #" + worker.getKey());
-      }
-    }
-    connectionPool.shutdown().awaitUninterruptibly();
-    LOGGER.debug("Bye");
   }
 
   public void dispatchWorkerQueryPlans(final Long queryId, final Map<Integer, Operator[]> plans) throws IOException {
@@ -322,7 +234,7 @@ public final class Server {
       setOfWorkers.put(workerID, workerIdx++);
       while (!aliveWorkers.contains(workerID)) {
         try {
-          Thread.sleep(100);
+          Thread.sleep(SHORT_SLEEP_MILLIS);
         } catch (InterruptedException e1) {
           Thread.currentThread().interrupt();
         }
@@ -365,144 +277,195 @@ public final class Server {
     return true;
   }
 
+  /**
+   * Shutdown all the threads doing work on this server.
+   */
   public void shutdown() {
     messageProcessor.setStopped();
-    cleanup();
-    // JVMUtils.shutdownVM();
+    LOGGER.debug(SYSTEM_NAME + " is going to shutdown");
+    LOGGER.debug("Send shutdown requests to the workers, please wait");
+    for (int workerId : aliveWorkers) {
+      LOGGER.debug("Shutting down #" + workerId);
+
+      final ChannelFuture cf = getConnectionPool().sendShortMessage(workerId, IPCUtils.CONTROL_SHUTDOWN);
+      if (cf == null) {
+        LOGGER.error("Fail to connect the worker: " + workerId + ". Continue cleaning");
+      } else {
+        cf.awaitUninterruptibly();
+        LOGGER.debug("Done for worker #" + workerId);
+      }
+    }
+    connectionPool.shutdown().awaitUninterruptibly();
+    catalog.close();
+    LOGGER.debug("Bye");
   }
 
-  public void start() throws IOException {
-    // ipcServerChannel = ipcServer.bind(server.getAddress());
+  /**
+   * Start all the threads that do work for the server.
+   */
+  public void start() {
     connectionPool.start();
     messageProcessor.start();
   }
 
   /**
-   * @return if the query is successfully executed.
-   * */
+   * This starts a query from the server using the query plan rooted by the given Consumer.
+   * 
+   * @param queryId the id of this query.
+   * @param serverPlan the query plan to be executed.
+   * @return @return the collected tuples gathered by the given Consumer.
+   * @throws DbException if there are errors executing the serverPlan operators.
+   */
   public TupleBatchBuffer startServerQuery(final Long queryId, final CollectConsumer serverPlan) throws DbException {
     final BitSet workersReceived = workersReceivedQuery.get(queryId);
     final HashMap<Integer, Integer> workersAssigned = workersAssignedToQuery.get(queryId);
-    for (Integer workerId : workersAssigned.keySet()) {
-      if (!aliveWorkers.contains(workerId)) {
-        return null;
+
+    /* Can't progress until all assigned workers are alive. */
+    while (!aliveWorkers.containsAll(workersAssigned.keySet())) {
+      try {
+        Thread.sleep(SHORT_SLEEP_MILLIS);
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
       }
     }
 
-    if (workersReceived.nextClearBit(0) >= workersAssigned.size()) {
-
-      final LinkedBlockingQueue<ExchangeData> buffer = new LinkedBlockingQueue<ExchangeData>();
-      exchangeSchema.put(serverPlan.getOperatorID(), serverPlan.getSchema());
-      dataBuffer.put(serverPlan.getOperatorID(), buffer);
-      serverPlan.setInputBuffer(buffer);
-
-      final Schema schema = serverPlan.getSchema();
-
-      String names = "";
-      for (int i = 0; i < schema.numFields(); i++) {
-        names += schema.getFieldName(i) + "\t";
+    /* Can't progress until all assigned workers have received the query. */
+    while (workersReceived.nextClearBit(0) < workersAssigned.size()) {
+      try {
+        Thread.sleep(SHORT_SLEEP_MILLIS);
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
       }
-
-      if (LOGGER.isDebugEnabled()) {
-        final StringBuilder sb = new StringBuilder();
-        sb.append(names).append('\n');
-        for (int i = 0; i < names.length() + schema.numFields() * 4; i++) {
-          sb.append("-");
-        }
-        sb.append("");
-        LOGGER.debug(sb.toString());
-      }
-
-      final Date start = new Date();
-      serverPlan.open();
-
-      startWorkerQuery(queryId);
-
-      final TupleBatchBuffer outBufferForTesting = new TupleBatchBuffer(serverPlan.getSchema());
-      int cnt = 0;
-      TupleBatch tup = null;
-      while (!serverPlan.eos()) {
-        while ((tup = serverPlan.next()) != null) {
-          tup.compactInto(outBufferForTesting);
-          if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug(tup.toString());
-          }
-          cnt += tup.numTuples();
-        }
-        if (serverPlan.eoi()) {
-          serverPlan.setEOI(false);
-        }
-      }
-
-      serverPlan.close();
-      dataBuffer.remove(serverPlan.getOperatorID());
-      final Date end = new Date();
-      LOGGER.info("Number of results: " + cnt);
-      int elapse = (int) (end.getTime() - start.getTime());
-      final int hour = elapse / ONE_HR_IN_MILLIS;
-      elapse -= hour * ONE_HR_IN_MILLIS;
-      final int minute = elapse / ONE_MIN_IN_MILLIS;
-      elapse -= minute * ONE_MIN_IN_MILLIS;
-      final int second = elapse / ONE_SEC_IN_MILLIS;
-      elapse -= second * ONE_SEC_IN_MILLIS;
-
-      LOGGER.info(String.format("Time elapsed: %1$dh%2$dm%3$ds.%4$03d", hour, minute, second, elapse));
-      return outBufferForTesting;
-    } else {
-      return null;
     }
+
+    final LinkedBlockingQueue<ExchangeData> buffer = new LinkedBlockingQueue<ExchangeData>();
+    exchangeSchema.put(serverPlan.getOperatorID(), serverPlan.getSchema());
+    dataBuffer.put(serverPlan.getOperatorID(), buffer);
+    serverPlan.setInputBuffer(buffer);
+
+    final Schema schema = serverPlan.getSchema();
+
+    String names = "";
+    for (int i = 0; i < schema.numFields(); i++) {
+      names += schema.getFieldName(i) + "\t";
+    }
+
+    if (LOGGER.isDebugEnabled()) {
+      final StringBuilder sb = new StringBuilder();
+      sb.append(names).append('\n');
+      for (int i = 0; i < names.length() + schema.numFields() * 4; i++) {
+        sb.append("-");
+      }
+      sb.append("");
+      LOGGER.debug(sb.toString());
+    }
+
+    final Date start = new Date();
+    serverPlan.open();
+
+    startWorkerQuery(queryId);
+
+    final TupleBatchBuffer outBufferForTesting = new TupleBatchBuffer(serverPlan.getSchema());
+    int cnt = 0;
+    TupleBatch tup = null;
+    while (!serverPlan.eos()) {
+      while ((tup = serverPlan.next()) != null) {
+        tup.compactInto(outBufferForTesting);
+        if (LOGGER.isDebugEnabled()) {
+          LOGGER.debug(tup.toString());
+        }
+        cnt += tup.numTuples();
+      }
+      if (serverPlan.eoi()) {
+        serverPlan.setEOI(false);
+      }
+    }
+
+    serverPlan.close();
+    dataBuffer.remove(serverPlan.getOperatorID());
+    final Date end = new Date();
+    LOGGER.info("Number of results: " + cnt);
+    int elapse = (int) (end.getTime() - start.getTime());
+    final int hour = elapse / ONE_HR_IN_MILLIS;
+    elapse -= hour * ONE_HR_IN_MILLIS;
+    final int minute = elapse / ONE_MIN_IN_MILLIS;
+    elapse -= minute * ONE_MIN_IN_MILLIS;
+    final int second = elapse / ONE_SEC_IN_MILLIS;
+    elapse -= second * ONE_SEC_IN_MILLIS;
+
+    LOGGER.info(String.format("Time elapsed: %1$dh%2$dm%3$ds.%4$03d", hour, minute, second, elapse));
+    return outBufferForTesting;
   }
 
   /**
    * This starts a query from the server using the query plan rooted by the given Producer.
    * 
-   * @param queryId the id of this query. TODO currently always 0.
+   * @param queryId the id of this query.
    * @param serverPlan the query plan to be executed.
-   * @return true if the query is successfully executed.
    * @throws DbException if there are errors executing the serverPlan operators.
    */
-  public boolean startServerQuery(final Long queryId, final Producer serverPlan) throws DbException {
+  public void startServerQuery(final Long queryId, final Producer serverPlan) throws DbException {
     final BitSet workersReceived = workersReceivedQuery.get(queryId);
     final HashMap<Integer, Integer> workersAssigned = workersAssignedToQuery.get(queryId);
-    for (Integer workerId : workersAssigned.keySet()) {
-      if (!aliveWorkers.contains(workerId)) {
-        return false;
+    /* Can't progress until all assigned workers are alive. */
+    while (!aliveWorkers.containsAll(workersAssigned.keySet())) {
+      try {
+        Thread.sleep(SHORT_SLEEP_MILLIS);
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
       }
     }
-    if (workersReceived.nextClearBit(0) >= workersAssigned.size()) {
 
-      final Date start = new Date();
-
-      serverPlan.open();
-
-      startWorkerQuery(queryId);
-
-      while (serverPlan.next() != null) {
-        /* Do nothing. */
+    /* Can't progress until all assigned workers have received the query. */
+    while (workersReceived.nextClearBit(0) < workersAssigned.size()) {
+      try {
+        Thread.sleep(SHORT_SLEEP_MILLIS);
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
       }
-
-      serverPlan.close();
-
-      final Date end = new Date();
-      int elapse = (int) (end.getTime() - start.getTime());
-      final int hour = elapse / ONE_HR_IN_MILLIS;
-      elapse -= hour * ONE_HR_IN_MILLIS;
-      final int minute = elapse / ONE_MIN_IN_MILLIS;
-      elapse -= minute * ONE_MIN_IN_MILLIS;
-      final int second = elapse / ONE_SEC_IN_MILLIS;
-      elapse -= second * ONE_SEC_IN_MILLIS;
-
-      LOGGER.debug(String.format("Time elapsed: %1$dh%2$dm%3$ds.%4$03d", hour, minute, second, elapse));
-      return true;
-    } else {
-      return false;
     }
+
+    final Date start = new Date();
+
+    serverPlan.open();
+
+    startWorkerQuery(queryId);
+
+    while (serverPlan.next() != null) {
+      /* Do nothing. */
+    }
+
+    serverPlan.close();
+
+    final Date end = new Date();
+    int elapse = (int) (end.getTime() - start.getTime());
+    final int hour = elapse / ONE_HR_IN_MILLIS;
+    elapse -= hour * ONE_HR_IN_MILLIS;
+    final int minute = elapse / ONE_MIN_IN_MILLIS;
+    elapse -= minute * ONE_MIN_IN_MILLIS;
+    final int second = elapse / ONE_SEC_IN_MILLIS;
+    elapse -= second * ONE_SEC_IN_MILLIS;
+
+    LOGGER.debug(String.format("Time elapsed: %1$dh%2$dm%3$ds.%4$03d", hour, minute, second, elapse));
   }
 
+  /**
+   * Tells all the workers to start the given query.
+   * 
+   * @param queryId the id of the query to be started.
+   */
   protected void startWorkerQuery(final Long queryId) {
     final HashMap<Integer, Integer> workersAssigned = workersAssignedToQuery.get(queryId);
     for (final Entry<Integer, Integer> entry : workersAssigned.entrySet()) {
       getConnectionPool().sendShortMessage(entry.getKey(), IPCUtils.startQueryTM(0, queryId));
     }
+  }
+
+  public final Set<Integer> getAliveWorkers() {
+    return aliveWorkers;
+  }
+
+  public final Map<Integer, SocketInfo> getWorkers() {
+    return workers;
   }
 }

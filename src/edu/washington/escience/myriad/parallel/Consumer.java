@@ -33,7 +33,6 @@ public abstract class Consumer extends LeafOperator {
   private final BitSet workerEOS;
   private final BitSet workerEOI;
   private final Map<Integer, Integer> workerIdToIndex;
-  private Producer child;
 
   /*
    * public Consumer(final Producer child, final ExchangePairID operatorID, final int[] workerIDs) throws DbException {
@@ -52,6 +51,7 @@ public abstract class Consumer extends LeafOperator {
     }
     workerEOS = new BitSet(workerIDs.length);
     workerEOI = new BitSet(workerIDs.length);
+    LOGGER.trace("created Consumer for ExchangePairId=" + operatorID);
   }
 
   @Override
@@ -73,12 +73,8 @@ public abstract class Consumer extends LeafOperator {
   }
 
   @Override
-  public Schema getSchema() {
-    if (child != null) {
-      return child.getSchema();
-    } else {
-      return schema;
-    }
+  public final Schema getSchema() {
+    return schema;
   }
 
   @Override

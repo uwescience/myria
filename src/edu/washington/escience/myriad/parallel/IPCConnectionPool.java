@@ -627,6 +627,7 @@ public class IPCConnectionPool {
       LOGGER.warn("Already shutdown, new remote channel directly close. Channel: "
           + ToStringBuilder.reflectionToString(newChannel));
       newChannel.close();
+      return;
     }
     allPossibleChannels.add(newChannel);
     allAcceptedRemoteChannels.add(newChannel);

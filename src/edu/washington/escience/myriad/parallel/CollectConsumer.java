@@ -25,5 +25,6 @@ public final class CollectConsumer extends Consumer {
 
   public CollectConsumer(final Schema schema, final ExchangePairID operatorID, final int[] workerIDs) {
     super(schema, operatorID, workerIDs);
+    LOGGER.trace("created CollectConsumer for ExchangePairId=" + operatorID);
   }
 }

@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.logging.Level;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -165,6 +166,9 @@ public final class Catalog {
    */
   public static Catalog open(final String filename) throws FileNotFoundException, CatalogException {
     Objects.requireNonNull(filename);
+
+    java.util.logging.Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
+    java.util.logging.Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
 
     /* Ensure the file does actually exist. */
     final File catalogFile = new File(filename);

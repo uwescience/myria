@@ -25,5 +25,6 @@ public final class LocalMultiwayConsumer extends Consumer {
 
   public LocalMultiwayConsumer(final Schema schema, final ExchangePairID operatorID, final int[] workerIDs) {
     super(schema, operatorID, workerIDs);
+    LOGGER.trace("created multiway consumer for ExchangePairID=" + operatorID);
   }
 }

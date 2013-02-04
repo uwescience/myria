@@ -17,9 +17,6 @@ public final class ExchangeData {
   private boolean eos;
   private boolean eoi;
 
-  /** Required for Java serialization. */
-  private static final long serialVersionUID = 1L;
-
   /**
    * @param oID the operator to which this TB should be feed
    * @param workerID the source worker where the TB is generated
