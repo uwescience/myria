@@ -99,7 +99,7 @@ public class IterativeSelfJoinTest extends SystemTestBase {
     final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
     final ImmutableList<Type> joinTypes =
         ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE);
-    final ImmutableList<String> joinColumnNames = ImmutableList.of("follower", "followee", "follower", "followee");
+    final ImmutableList<String> joinColumnNames = ImmutableList.of("follower1", "followee1", "follower2", "followee2");
     final Schema joinSchema = new Schema(joinTypes, joinColumnNames);
 
     final long[] tbl1ID1Worker1 = TestUtils.randomLong(1, MaxID - 1, numTbl1Worker1);

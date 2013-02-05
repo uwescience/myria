@@ -157,7 +157,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
 
     final ImmutableList<Type> outputTypes =
         ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE, Type.LONG_TYPE, Type.STRING_TYPE);
-    final ImmutableList<String> outputColumnNames = ImmutableList.of("id", "name", "id", "name");
+    final ImmutableList<String> outputColumnNames = ImmutableList.of("id1", "name1", "id2", "name2");
     final Schema outputSchema = new Schema(outputTypes, outputColumnNames);
 
     final SQLiteQueryScan scan1 = new SQLiteQueryScan(null, "select * from " + JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA);

@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -178,6 +179,10 @@ public final class Schema implements Serializable {
     Objects.requireNonNull(columnAr);
     if (typeAr.size() != columnAr.size()) {
       throw new IllegalArgumentException("Invalid Schema: must have the same number of column types and column");
+    }
+    HashSet<String> uniqueNames = new HashSet<String>(columnAr);
+    if (uniqueNames.size() != columnAr.size()) {
+      throw new IllegalArgumentException("Invalid Schema: column names must be unique.");
     }
     columnTypes = ImmutableList.copyOf(typeAr);
     columnNames = ImmutableList.copyOf(columnAr);
