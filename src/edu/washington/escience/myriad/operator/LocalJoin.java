@@ -7,6 +7,9 @@ import java.io.ObjectOutput;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
+
+import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
@@ -107,8 +110,49 @@ public final class LocalJoin extends Operator implements Externalizable {
   public LocalJoin() {
   }
 
+  /**
+   * Construct an EquiJoin operator. It returns all columns from both children when the corresponding columns in
+   * compareIndx1 and compareIndx2 match.
+   * 
+   * @param child1 the left child.
+   * @param child2 the right child.
+   * @param compareIndx1 the columns of the left child to be compared with the right. Order matters.
+   * @param compareIndx2 the columns of the right child to be compared with the left. Order matters.
+   * @throw IllegalArgumentException if there are duplicated column names from the children.
+   */
+  public LocalJoin(final Operator child1, final Operator child2, final int[] compareIndx1, final int[] compareIndx2) {
+    this(Schema.merge(child1.getSchema(), child2.getSchema()), child1, child2, compareIndx1, compareIndx2);
+  }
+
+  /**
+   * Construct an EquiJoin operator. It returns all columns from both children when the corresponding columns in
+   * compareIndx1 and compareIndx2 match.
+   * 
+   * @param outputSchema the Schema of the output table.
+   * @param child1 the left child.
+   * @param child2 the right child.
+   * @param compareIndx1 the columns of the left child to be compared with the right. Order matters.
+   * @param compareIndx2 the columns of the right child to be compared with the left. Order matters.
+   * @throw IllegalArgumentException if there are duplicated column names in <tt>outputSchema</tt>, or if
+   *        <tt>outputSchema</tt> does not have the correct number of columns and column types.
+   */
   public LocalJoin(final Schema outputSchema, final Operator child1, final Operator child2, final int[] compareIndx1,
       final int[] compareIndx2) {
+    Objects.requireNonNull(child1);
+    Objects.requireNonNull(child2);
+    Objects.requireNonNull(compareIndx1);
+    Objects.requireNonNull(compareIndx2);
+    Preconditions.checkArgument(compareIndx1.length == compareIndx2.length,
+        "Must compare the same number of columns from both children");
+    Preconditions.checkArgument(outputSchema.numColumns() == child1.getSchema().numColumns()
+        + child2.getSchema().numColumns(),
+        "Number of columns in provided schema must match the concatenation of children schema.");
+    Preconditions.checkArgument(outputSchema.getColumnTypes().subList(0, child1.getSchema().numColumns()).equals(
+        child1.getSchema().getColumnTypes()),
+        "Types of columns in provided schema must match the concatenation of children schema.");
+    Preconditions.checkArgument(outputSchema.getColumnTypes().subList(child1.getSchema().numColumns(),
+        outputSchema.numColumns()).equals(child2.getSchema().getColumnTypes()),
+        "Types of columns in provided schema must match the concatenation of children schema.");
     this.outputSchema = outputSchema;
     this.child1 = child1;
     this.child2 = child2;
