@@ -233,7 +233,7 @@ public class SystemTestBase {
 
     final Path tempFilePath = Files.createTempDirectory(Server.SYSTEM_NAME + "_systemtests");
     workerTestBaseFolder = tempFilePath.toFile().getAbsolutePath();
-    CatalogMaker.makeTwoNodeLocalParallelCatalog(workerTestBaseFolder);
+    CatalogMaker.makeNNodesLocalParallelCatalog(workerTestBaseFolder, 2);
 
     if (!AvailablePortFinder.available(MASTER_PORT)) {
       throw new RuntimeException("Unable to start master, port " + MASTER_PORT + " is taken");
