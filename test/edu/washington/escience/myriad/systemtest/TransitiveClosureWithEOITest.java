@@ -157,14 +157,10 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     final SQLiteQueryScan scan2 = new SQLiteQueryScan("testtable0.db", "select * from identity", tableSchema);
     final ExchangePairID consumerID1 = ExchangePairID.newID();
     final ExchangePairID consumerID2 = ExchangePairID.newID();
-    final LocalMultiwayConsumer sendBack_worker1 =
-        new LocalMultiwayConsumer(tableSchema, consumerID1, new int[] { WORKER_ID[0] });
-    final LocalMultiwayConsumer sendBack_worker2 =
-        new LocalMultiwayConsumer(tableSchema, consumerID1, new int[] { WORKER_ID[1] });
-    final LocalMultiwayConsumer send2server_worker1 =
-        new LocalMultiwayConsumer(tableSchema, consumerID2, new int[] { WORKER_ID[0] });
-    final LocalMultiwayConsumer send2server_worker2 =
-        new LocalMultiwayConsumer(tableSchema, consumerID2, new int[] { WORKER_ID[1] });
+    final LocalMultiwayConsumer sendBack_worker1 = new LocalMultiwayConsumer(tableSchema, consumerID1, WORKER_ID[0]);
+    final LocalMultiwayConsumer sendBack_worker2 = new LocalMultiwayConsumer(tableSchema, consumerID1, WORKER_ID[1]);
+    final LocalMultiwayConsumer send2server_worker1 = new LocalMultiwayConsumer(tableSchema, consumerID2, WORKER_ID[0]);
+    final LocalMultiwayConsumer send2server_worker2 = new LocalMultiwayConsumer(tableSchema, consumerID2, WORKER_ID[1]);
     final IDBInput idbinput_worker1 = new IDBInput(tableSchema, scan2, sendBack_worker1);
     final IDBInput idbinput_worker2 = new IDBInput(tableSchema, scan2, sendBack_worker2);
 
