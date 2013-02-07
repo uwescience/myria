@@ -17,7 +17,6 @@ import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.DupElim;
 import edu.washington.escience.myriad.operator.LocalJoin;
-import edu.washington.escience.myriad.operator.LocalProjectingJoin;
 import edu.washington.escience.myriad.operator.Project;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 
@@ -95,8 +94,8 @@ public class TwitterSingleNodeJoinSpeedTest {
     final SQLiteQueryScan scan2 = new SQLiteQueryScan(DATASET_PATH, "select * from twitter_subset", tableSchema);
 
     // Join on SC1.followee=SC2.follower
-    final LocalProjectingJoin localProjJoin =
-        new LocalProjectingJoin(scan1, new int[] { 1 }, new int[] { 0 }, scan2, new int[] { 0 }, new int[] { 1 });
+    final LocalJoin localProjJoin =
+        new LocalJoin(scan1, scan2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
     /* Now Dupelim */
     final DupElim dupelim = new DupElim(localProjJoin);
 
