@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.MyriaConstants;
+import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
@@ -493,11 +494,11 @@ public final class Server {
   }
 
   /**
-   * @param relationName the name of the desired relation.
+   * @param relationKey the key of the desired relation.
    * @return the schema of the specified relation, or null if not found.
    * @throws CatalogException if there is an error getting the Schema out of the catalog.
    */
-  public Schema getSchema(final String relationName) throws CatalogException {
-    return catalog.getSchema(relationName);
+  public Schema getSchema(final RelationKey relationKey) throws CatalogException {
+    return catalog.getSchema(relationKey);
   }
 }

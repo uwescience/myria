@@ -10,6 +10,7 @@ import org.junit.Test;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
@@ -50,8 +51,10 @@ public class SplitDataTest extends SystemTestBase {
     /* ... and the corresponding shuffle consumer. */
     final ShuffleConsumer gather = new ShuffleConsumer(schema, shuffleId, new int[] { MASTER_ID });
 
+    final RelationKey tuplesRRKey = RelationKey.of("test", "test", "tuples_rr");
+
     /* Create the Insert operator */
-    final SQLiteInsert insert = new SQLiteInsert(gather, "tuples_rr", null, null, true);
+    final SQLiteInsert insert = new SQLiteInsert(gather, tuplesRRKey, null, null, true);
 
     final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
     for (final int i : WORKER_ID) {
@@ -75,7 +78,8 @@ public class SplitDataTest extends SystemTestBase {
     /*** TEST PHASE 2: Count them up, make sure the answer agrees. ***/
     /* Create the worker plan: QueryScan with count, then send it to master. */
     Schema countResultSchema = new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("localCount"));
-    final SQLiteQueryScan scanCount = new SQLiteQueryScan(null, "SELECT COUNT(*) FROM tuples_rr", countResultSchema);
+    final SQLiteQueryScan scanCount =
+        new SQLiteQueryScan(null, "SELECT COUNT(*) FROM " + tuplesRRKey, countResultSchema);
     final ExchangePairID collectId = ExchangePairID.newID();
     final CollectProducer send = new CollectProducer(scanCount, collectId, 0);
     workerPlans.clear();

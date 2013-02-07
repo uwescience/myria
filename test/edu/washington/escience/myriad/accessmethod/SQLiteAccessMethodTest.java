@@ -2,13 +2,16 @@ package edu.washington.escience.myriad.accessmethod;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Random;
 
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 
+import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
@@ -27,6 +30,7 @@ public class SQLiteAccessMethodTest {
 
     final int totalRestrict = 100000;
     final int numThreads = r.nextInt(50) + 1;
+    final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
 
     final int numTuplesEach = totalRestrict / numThreads;
 
@@ -43,11 +47,11 @@ public class SQLiteAccessMethodTest {
     }
 
     final File dbFile = File.createTempFile(Server.SYSTEM_NAME + "_sqlite_access_method_test", ".db");
-    SystemTestBase.createTable(dbFile.getAbsolutePath(), "testtable", "id long, name varchar(20)");
+    SystemTestBase.createTable(dbFile.getAbsolutePath(), testtableKey, "id long, name varchar(20)");
 
     TupleBatch tb = null;
     while ((tb = tbb.popAny()) != null) {
-      final String insertTemplate = SQLiteUtils.insertStatementFromSchema(schema, "testtable");
+      final String insertTemplate = SQLiteUtils.insertStatementFromSchema(schema, testtableKey);
       SQLiteAccessMethod.tupleBatchInsert(dbFile.getAbsolutePath(), insertTemplate, tb);
     }
 
@@ -57,7 +61,7 @@ public class SQLiteAccessMethodTest {
         @Override
         public void run() {
           final Iterator<TupleBatch> it =
-              SQLiteAccessMethod.tupleBatchIteratorFromQuery(dbFile.getAbsolutePath(), "select * from testtable",
+              SQLiteAccessMethod.tupleBatchIteratorFromQuery(dbFile.getAbsolutePath(), "select * from " + testtableKey,
                   schema);
           while (it.hasNext()) {
             it.next();
@@ -83,6 +87,12 @@ public class SQLiteAccessMethodTest {
     final int totalRestrict = 100000;
     final int numThreads = r.nextInt(2) + 1;
 
+    final List<RelationKey> testtableKeys = new ArrayList<RelationKey>();
+    final RelationKey testtable0Key = RelationKey.of("test", "test", "testtable0");
+    final RelationKey testtable1Key = RelationKey.of("test", "test", "testtable1");
+    testtableKeys.add(testtable0Key);
+    testtableKeys.add(testtable1Key);
+
     final int numTuplesEach = totalRestrict / numThreads;
 
     final String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, numTuplesEach, 20);
@@ -98,12 +108,12 @@ public class SQLiteAccessMethodTest {
     }
 
     final File dbFile = File.createTempFile(Server.SYSTEM_NAME + "_sqlite_access_method_test", ".db");
-    SystemTestBase.createTable(dbFile.getAbsolutePath(), "testtable0", "id long, name varchar(20)");
-    SystemTestBase.createTable(dbFile.getAbsolutePath(), "testtable1", "id long, name varchar(20)");
+    SystemTestBase.createTable(dbFile.getAbsolutePath(), testtable0Key, "id long, name varchar(20)");
+    SystemTestBase.createTable(dbFile.getAbsolutePath(), testtable1Key, "id long, name varchar(20)");
 
     TupleBatch tb = null;
-    final String insertTemplate0 = SQLiteUtils.insertStatementFromSchema(schema, "testtable0");
-    final String insertTemplate1 = SQLiteUtils.insertStatementFromSchema(schema, "testtable1");
+    final String insertTemplate0 = SQLiteUtils.insertStatementFromSchema(schema, testtable0Key);
+    final String insertTemplate1 = SQLiteUtils.insertStatementFromSchema(schema, testtable1Key);
     while ((tb = tbb.popAny()) != null) {
       SQLiteAccessMethod.tupleBatchInsert(dbFile.getAbsolutePath(), insertTemplate0, tb);
       SQLiteAccessMethod.tupleBatchInsert(dbFile.getAbsolutePath(), insertTemplate1, tb);
@@ -116,8 +126,8 @@ public class SQLiteAccessMethodTest {
         @Override
         public void run() {
           final Iterator<TupleBatch> it =
-              SQLiteAccessMethod.tupleBatchIteratorFromQuery(dbFile.getAbsolutePath(), "select * from testtable" + j
-                  % 2, schema);
+              SQLiteAccessMethod.tupleBatchIteratorFromQuery(dbFile.getAbsolutePath(), "select * from "
+                  + testtableKeys.get(j % 2), schema);
 
           while (it.hasNext()) {
             it.next();

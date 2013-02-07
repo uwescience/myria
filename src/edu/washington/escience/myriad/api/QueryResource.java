@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 
+import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.LocalJoin;
@@ -148,6 +149,8 @@ public final class QueryResource {
     /* Generic variable names */
     String childName;
     String child2Name;
+    String userName;
+    String programName;
     String relationName;
     Operator child;
     Operator child2;
@@ -160,13 +163,17 @@ public final class QueryResource {
         Objects.requireNonNull(childName, "missing SQLiteInsert field: arg_child");
         child = operators.get(childName);
         Objects.requireNonNull(child, "SQLiteInsert child Operator " + childName + " not previously defined");
+        userName = (String) jsonOperator.get("arg_user_name");
+        Objects.requireNonNull(userName, "missing SQLiteInsert field: arg_user_name");
+        programName = (String) jsonOperator.get("arg_program_name");
+        Objects.requireNonNull(programName, "missing SQLiteInsert field: arg_program_name");
         relationName = (String) jsonOperator.get("arg_relation_name");
         Objects.requireNonNull(relationName, "missing SQLiteInsert field: arg_relation_name");
         if (jsonOperator.containsKey("arg_overwrite_table")) {
           Boolean overwrite = Boolean.parseBoolean((String) jsonOperator.get("arg_overwrite_table"));
-          return new SQLiteInsert(child, relationName, null, null, overwrite);
+          return new SQLiteInsert(child, RelationKey.of(userName, programName, relationName), null, null, overwrite);
         }
-        return new SQLiteInsert(child, relationName, null, null);
+        return new SQLiteInsert(child, RelationKey.of(userName, programName, relationName), null, null);
 
       case "LocalJoin":
         /* Child 1 */
@@ -205,11 +212,15 @@ public final class QueryResource {
         return new LocalJoin(child, child2, child1Columns, child2Columns);
 
       case "SQLiteScan":
+        userName = (String) jsonOperator.get("arg_user_name");
+        Objects.requireNonNull(userName, "missing SQLiteScan field: arg_user_name");
+        programName = (String) jsonOperator.get("arg_program_name");
+        Objects.requireNonNull(programName, "missing SQLiteScan field: arg_program_name");
         relationName = (String) jsonOperator.get("arg_relation_name");
         Objects.requireNonNull(relationName, "missing SQLiteScan field: arg_relation_name");
         Schema schema;
         try {
-          schema = MasterApiServer.getMyriaServer().getSchema(relationName);
+          schema = MasterApiServer.getMyriaServer().getSchema(RelationKey.of(userName, programName, relationName));
         } catch (final CatalogException e) {
           /* Throw a 500 (Internal Server Error) */
           throw new WebApplicationException(Response.status(Status.INTERNAL_SERVER_ERROR).build());

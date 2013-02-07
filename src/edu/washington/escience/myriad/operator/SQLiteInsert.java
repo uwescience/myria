@@ -12,6 +12,7 @@ import com.almworks.sqlite4java.SQLiteQueue;
 import com.almworks.sqlite4java.SQLiteStatement;
 
 import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.util.SQLiteUtils;
 
@@ -28,7 +29,7 @@ public final class SQLiteInsert extends RootOperator {
   /** The SQLite Database that they will be inserted into. */
   private String pathToSQLiteDb;
   /** The name of the table the tuples should be inserted into. */
-  private final String relationName;
+  private final RelationKey relationKey;
   /** Whether to overwrite an existing table or not. */
   private final boolean overwriteTable;
   /** SQLite queue confines all SQLite operations to the same thread. */
@@ -42,17 +43,17 @@ public final class SQLiteInsert extends RootOperator {
    * and initialize one that does not exist.
    * 
    * @param child the source of tuples to be inserted.
-   * @param relationName the name of the table the tuples should be inserted into.
+   * @param relationKey the key of the table the tuples should be inserted into.
    * @param pathToSQLiteDb the path to the database.
    * @param executor the ExecutorService for this process.
    */
-  public SQLiteInsert(final Operator child, final String relationName, final String pathToSQLiteDb,
+  public SQLiteInsert(final Operator child, final RelationKey relationKey, final String pathToSQLiteDb,
       final ExecutorService executor) {
     super(child, executor);
     Objects.requireNonNull(child);
-    Objects.requireNonNull(relationName);
+    Objects.requireNonNull(relationKey);
     this.pathToSQLiteDb = pathToSQLiteDb;
-    this.relationName = relationName;
+    this.relationKey = relationKey;
     overwriteTable = false;
   }
 
@@ -61,18 +62,18 @@ public final class SQLiteInsert extends RootOperator {
    * file. This operator will only append to an existing database, or create and initialize one that does not exist.
    * 
    * @param child the source of tuples to be inserted.
-   * @param relationName the name of the table the tuples should be inserted into.
+   * @param relationKey the key of the table the tuples should be inserted into.
    * @param pathToSQLiteDb the path to the database.
    * @param executor the ExecutorService for this process.
    * @param overwriteTable whether to overwrite a table that already exists.
    */
-  public SQLiteInsert(final Operator child, final String relationName, final String pathToSQLiteDb,
+  public SQLiteInsert(final Operator child, final RelationKey relationKey, final String pathToSQLiteDb,
       final ExecutorService executor, final boolean overwriteTable) {
     super(child, executor);
     Objects.requireNonNull(child);
-    Objects.requireNonNull(relationName);
+    Objects.requireNonNull(relationKey);
     this.pathToSQLiteDb = pathToSQLiteDb;
-    this.relationName = relationName;
+    this.relationKey = relationKey;
     this.overwriteTable = overwriteTable;
   }
 
@@ -134,10 +135,10 @@ public final class SQLiteInsert extends RootOperator {
         protected Integer job(final SQLiteConnection connection) throws SQLiteException {
           /* If we should overwrite, drop the existing table. */
           if (overwriteTable) {
-            connection.exec(SQLiteUtils.dropTableIfExistsStatement(relationName));
+            connection.exec(SQLiteUtils.dropTableIfExistsStatement(relationKey));
           }
           /* Create the table if it does not currently exist. */
-          connection.exec(SQLiteUtils.createIfNotExistsStatementFromSchema(getSchema(), relationName));
+          connection.exec(SQLiteUtils.createIfNotExistsStatementFromSchema(getSchema(), relationKey));
           return null;
         }
       }).get();
@@ -146,7 +147,7 @@ public final class SQLiteInsert extends RootOperator {
     }
 
     /* Set up the insert statement. */
-    insertString = SQLiteUtils.insertStatementFromSchema(getSchema(), relationName);
+    insertString = SQLiteUtils.insertStatementFromSchema(getSchema(), relationKey);
   }
 
   /**

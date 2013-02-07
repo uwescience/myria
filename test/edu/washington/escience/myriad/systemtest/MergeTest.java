@@ -10,6 +10,7 @@ import org.junit.Test;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
@@ -52,18 +53,21 @@ public class MergeTest extends SystemTestBase {
       tbl2.put(1, tbl2ID2[i]);
     }
 
-    createTable(WORKER_ID[0], "testtable0", "follower long, followee long");
-    createTable(WORKER_ID[0], "testtable1", "follower long, followee long");
+    final RelationKey testtable0Key = RelationKey.of("test", "test", "testtable0");
+    final RelationKey testtable1Key = RelationKey.of("test", "test", "testtable1");
+
+    createTable(WORKER_ID[0], testtable0Key, "follower long, followee long");
+    createTable(WORKER_ID[0], testtable1Key, "follower long, followee long");
     TupleBatch tb = null;
     while ((tb = tbl1.popAny()) != null) {
-      insert(WORKER_ID[0], "testtable0", tableSchema, tb);
+      insert(WORKER_ID[0], testtable0Key, tableSchema, tb);
     }
     while ((tb = tbl2.popAny()) != null) {
-      insert(WORKER_ID[0], "testtable1", tableSchema, tb);
+      insert(WORKER_ID[0], testtable1Key, tableSchema, tb);
     }
 
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan(null, "select * from testtable0", tableSchema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan(null, "select * from testtable1", tableSchema);
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan(null, "select * from " + testtable0Key, tableSchema);
+    final SQLiteQueryScan scan2 = new SQLiteQueryScan(null, "select * from " + testtable1Key, tableSchema);
     final Merge merge = new Merge(tableSchema, scan1, scan2);
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final CollectProducer cp = new CollectProducer(merge, serverReceiveID, MASTER_ID);

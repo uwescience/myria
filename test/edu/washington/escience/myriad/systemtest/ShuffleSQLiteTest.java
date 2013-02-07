@@ -11,6 +11,7 @@ import org.junit.Test;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
@@ -39,13 +40,15 @@ public class ShuffleSQLiteTest extends SystemTestBase {
 
     final HashMap<Tuple, Integer> expectedResult = simpleRandomJoinTestBase();
 
-    final String temptable1Name = "temptable1";
-    final String temptable2Name = "temptable2";
+    final RelationKey testtable1Key = RelationKey.of("test", "test", "testtable1");
+    final RelationKey testtable2Key = RelationKey.of("test", "test", "testtable2");
+    final RelationKey temptable1Key = RelationKey.of("test", "test", "temptable1");
+    final RelationKey temptable2Key = RelationKey.of("test", "test", "temptable2");
 
-    createTable(WORKER_ID[0], temptable1Name, "id int, name varchar(20)");
-    createTable(WORKER_ID[0], temptable2Name, "id int, name varchar(20)");
-    createTable(WORKER_ID[1], temptable1Name, "id int, name varchar(20)");
-    createTable(WORKER_ID[1], temptable2Name, "id int, name varchar(20)");
+    createTable(WORKER_ID[0], temptable1Key, "id int, name varchar(20)");
+    createTable(WORKER_ID[0], temptable2Key, "id int, name varchar(20)");
+    createTable(WORKER_ID[1], temptable1Key, "id int, name varchar(20)");
+    createTable(WORKER_ID[1], temptable2Key, "id int, name varchar(20)");
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final ExchangePairID shuffle1ID = ExchangePairID.newID();
@@ -61,22 +64,21 @@ public class ShuffleSQLiteTest extends SystemTestBase {
     final PartitionFunction<String, Integer> pf = new SingleFieldHashPartitionFunction(numPartition);
     pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1); // partition by name
 
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan(null, "select * from testtable1", schema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan(null, "select * from testtable2", schema);
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan(null, "select * from " + testtable1Key, schema);
+    final SQLiteQueryScan scan2 = new SQLiteQueryScan(null, "select * from " + testtable2Key, schema);
     final ShuffleProducer sp1 = new ShuffleProducer(scan1, shuffle1ID, WORKER_ID, pf);
 
     final ShuffleProducer sp2 = new ShuffleProducer(scan2, shuffle2ID, WORKER_ID, pf);
 
     final ShuffleConsumer sc1 = new ShuffleConsumer(sp1.getSchema(), shuffle1ID, WORKER_ID);
-    final BlockingSQLiteDataReceiver buffer1 = new BlockingSQLiteDataReceiver(null, "temptable1", sc1);
+    final BlockingSQLiteDataReceiver buffer1 = new BlockingSQLiteDataReceiver(null, temptable1Key, sc1);
 
     final ShuffleConsumer sc2 = new ShuffleConsumer(sp2.getSchema(), shuffle2ID, WORKER_ID);
-    final BlockingSQLiteDataReceiver buffer2 = new BlockingSQLiteDataReceiver(null, "temptable2", sc2);
+    final BlockingSQLiteDataReceiver buffer2 = new BlockingSQLiteDataReceiver(null, temptable2Key, sc2);
 
     final SQLiteSQLProcessor ssp =
-        new SQLiteSQLProcessor(null,
-            "select * from temptable1 inner join temptable2 on temptable1.name=temptable2.name", outputSchema,
-            new Operator[] { buffer1, buffer2 });
+        new SQLiteSQLProcessor(null, "select * from " + temptable1Key + " inner join " + temptable2Key + " on "
+            + temptable1Key + ".name=" + temptable2Key + ".name", outputSchema, new Operator[] { buffer1, buffer2 });
     final CollectProducer cp = new CollectProducer(ssp, serverReceiveID, MASTER_ID);
 
     final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();

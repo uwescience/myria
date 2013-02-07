@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
@@ -37,13 +38,14 @@ public class SQLiteTest {
   public void sqliteTest() throws DbException, IOException, CatalogException {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
     Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
+    final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
 
     final Schema outputSchema =
         new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
 
     final String tempDirPath = Files.createTempDirectory(Server.SYSTEM_NAME + "_SQLiteTest").toFile().getAbsolutePath();
     final String dbAbsolutePath = FilenameUtils.concat(tempDirPath, "sqlite_testtable.db");
-    SystemTestBase.createTable(dbAbsolutePath, "testtable", "id long,name varchar(20)");
+    SystemTestBase.createTable(dbAbsolutePath, testtableKey, "id long,name varchar(20)");
 
     final String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, 200, 20);
     final long[] ids = TestUtils.randomLong(1000, 1005, names.length);
@@ -55,13 +57,13 @@ public class SQLiteTest {
     }
 
     for (final TupleBatch tb : tbb.getAll()) {
-      final String insertTemplate = SQLiteUtils.insertStatementFromSchema(outputSchema, "testtable");
+      final String insertTemplate = SQLiteUtils.insertStatementFromSchema(outputSchema, testtableKey);
       SQLiteAccessMethod.tupleBatchInsert(dbAbsolutePath, insertTemplate, tb);
     }
 
     final HashMap<Tuple, Integer> expectedResult = TestUtils.tupleBatchToTupleBag(tbb);
 
-    final String query = "SELECT * FROM testtable";
+    final String query = "SELECT * FROM " + testtableKey;
 
     /* Scan the testtable in database */
     final SQLiteQueryScan scan = new SQLiteQueryScan(new File(dbAbsolutePath).getName(), query, outputSchema);

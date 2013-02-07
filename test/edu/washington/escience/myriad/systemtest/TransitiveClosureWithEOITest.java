@@ -11,6 +11,7 @@ import org.junit.Test;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
@@ -96,6 +97,8 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
         ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE);
     final ImmutableList<String> joinColumnNames = ImmutableList.of("follower1", "followee1", "follower2", "followee2");
     final Schema joinSchema = new Schema(joinTypes, joinColumnNames);
+    RelationKey identityKey = RelationKey.of("test", "test", "identity");
+    RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
 
     // generate the graph
     long[] tbl1ID1Worker1 = TestUtils.randomLong(1, MaxID - 1, numTbl1Worker1);
@@ -116,14 +119,14 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     table1.merge(tbl1Worker1);
     table1.merge(tbl1Worker2);
 
-    createTable(WORKER_ID[0], "testtable", "follower long, followee long");
-    createTable(WORKER_ID[1], "testtable", "follower long, followee long");
+    createTable(WORKER_ID[0], testtableKey, "follower long, followee long");
+    createTable(WORKER_ID[1], testtableKey, "follower long, followee long");
     TupleBatch tb = null;
     while ((tb = tbl1Worker1.popAny()) != null) {
-      insert(WORKER_ID[0], "testtable", tableSchema, tb);
+      insert(WORKER_ID[0], testtableKey, tableSchema, tb);
     }
     while ((tb = tbl1Worker2.popAny()) != null) {
-      insert(WORKER_ID[1], "testtable", tableSchema, tb);
+      insert(WORKER_ID[1], testtableKey, tableSchema, tb);
     }
 
     // generate the correct answer in memory
@@ -143,18 +146,18 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
         identity_worker2.put(1, i);
       }
     }
-    createTable(WORKER_ID[0], "identity", "follower long, followee long");
-    createTable(WORKER_ID[1], "identity", "follower long, followee long");
+    createTable(WORKER_ID[0], identityKey, "follower long, followee long");
+    createTable(WORKER_ID[1], identityKey, "follower long, followee long");
     while ((tb = identity_worker1.popAny()) != null) {
-      insert(WORKER_ID[0], "identity", tableSchema, tb);
+      insert(WORKER_ID[0], identityKey, tableSchema, tb);
     }
     while ((tb = identity_worker2.popAny()) != null) {
-      insert(WORKER_ID[1], "identity", tableSchema, tb);
+      insert(WORKER_ID[1], identityKey, tableSchema, tb);
     }
 
     // parallel query generation, duplicate db files
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan("testtable0.db", "select * from testtable", tableSchema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan("testtable0.db", "select * from identity", tableSchema);
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan("testtable0.db", "select * from " + testtableKey, tableSchema);
+    final SQLiteQueryScan scan2 = new SQLiteQueryScan("testtable0.db", "select * from " + identityKey, tableSchema);
     final ExchangePairID consumerID1 = ExchangePairID.newID();
     final ExchangePairID consumerID2 = ExchangePairID.newID();
     final LocalMultiwayConsumer sendBack_worker1 =
