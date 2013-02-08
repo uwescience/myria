@@ -191,7 +191,7 @@ public abstract class Operator implements Serializable {
       }
     }
 
-    return outputBuffer == null;
+    return outputBuffer != null;
   }
 
   /**
