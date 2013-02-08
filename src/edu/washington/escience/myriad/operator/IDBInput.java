@@ -86,6 +86,7 @@ public class IDBInput extends Producer {
           buffer.put(2, tuplesSentSinceLastEOI);
           final ExchangePairID operatorID = operatorIDs[0];
           channel.write(buffer.popAnyAsTM(operatorID));
+          connectionPool.releaseLongTermConnection(channel);
           tuplesSentSinceLastEOI = 0;
         }
       } catch (DbException e) {
