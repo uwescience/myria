@@ -235,7 +235,6 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     TupleBatchBuffer result = server.startServerQuery(queryId, serverPlan);
     final HashMap<Tuple, Integer> actual = TestUtils.tupleBatchToTupleBag(result);
     TestUtils.assertTupleBagEqual(expectedResult, actual);
-    System.out.println("passed!");
   }
 
   public Schema getEOIReportSchema() {

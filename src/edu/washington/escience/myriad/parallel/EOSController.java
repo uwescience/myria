@@ -38,7 +38,6 @@ public class EOSController extends Producer {
         index++;
       }
 
-      System.out.println("EOSController running " + numIDB + " " + numWorker + " " + idbOpIDs[0]);
       final ArrayList<Integer> zeroCol = new ArrayList<Integer>();
       final int[][] numEOI = new int[numIDB][numWorker];
       try {
@@ -74,11 +73,9 @@ public class EOSController extends Producer {
       } catch (final DbException e) {
         e.printStackTrace();
       } finally {
-        System.out.println("releaing!");
         for (final Channel ch : channels) {
           connectionPool.releaseLongTermConnection(ch);
         }
-        System.out.println("released!");
       }
 
     }
