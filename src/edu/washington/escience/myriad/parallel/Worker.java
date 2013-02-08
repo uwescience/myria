@@ -576,7 +576,8 @@ public class Worker {
     LOGGER.debug("TupleBag received from " + data.getWorkerID() + " to Operator: " + data.getOperatorID());
     LinkedBlockingQueue<ExchangeData> q = null;
     q = Worker.this.dataBuffer.get(data.getOperatorID());
-    if (data instanceof ExchangeData) {
+    if (q != null && data instanceof ExchangeData) {
+      // if q == null it means dataBuffer has been cleaned by finishQuery()
       q.offer(data);
     }
   }
