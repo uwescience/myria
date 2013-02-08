@@ -25,6 +25,8 @@ import edu.washington.escience.myriad.operator.Project;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
+import edu.washington.escience.myriad.parallel.Consumer;
+import edu.washington.escience.myriad.parallel.EOSController;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 import edu.washington.escience.myriad.parallel.LocalMultiwayConsumer;
 import edu.washington.escience.myriad.parallel.LocalMultiwayProducer;
@@ -161,8 +163,15 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     final LocalMultiwayConsumer sendBack_worker2 = new LocalMultiwayConsumer(tableSchema, consumerID1, WORKER_ID[1]);
     final LocalMultiwayConsumer send2server_worker1 = new LocalMultiwayConsumer(tableSchema, consumerID2, WORKER_ID[0]);
     final LocalMultiwayConsumer send2server_worker2 = new LocalMultiwayConsumer(tableSchema, consumerID2, WORKER_ID[1]);
-    final IDBInput idbinput_worker1 = new IDBInput(tableSchema, scan2, sendBack_worker1);
-    final IDBInput idbinput_worker2 = new IDBInput(tableSchema, scan2, sendBack_worker2);
+    final ExchangePairID eosReceiverOpID = ExchangePairID.newID();
+    // on each worker
+    final ExchangePairID eoiReceiverOpID = ExchangePairID.newID();
+    // only one the worker with EOSController
+    final Consumer eosReceiver = new Consumer(getEOSReportSchema(), eosReceiverOpID, new int[] { WORKER_ID[0] });
+    final IDBInput idbinput_worker1 =
+        new IDBInput(tableSchema, WORKER_ID[0], 0, eoiReceiverOpID, WORKER_ID[0], scan2, sendBack_worker1, eosReceiver);
+    final IDBInput idbinput_worker2 =
+        new IDBInput(tableSchema, WORKER_ID[1], 0, eoiReceiverOpID, WORKER_ID[0], scan2, sendBack_worker2, eosReceiver);
 
     final int numPartition = 2;
     final PartitionFunction<String, Integer> pf0 = new SingleFieldHashPartitionFunction(numPartition);
@@ -207,8 +216,14 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     final CollectProducer cp_worker1 = new CollectProducer(send2server_worker1, serverReceiveID, MASTER_ID);
     final CollectProducer cp_worker2 = new CollectProducer(send2server_worker2, serverReceiveID, MASTER_ID);
 
+    final Consumer eoiReceiver = new Consumer(getEOIReportSchema(), eoiReceiverOpID, WORKER_ID);
+    // only on the worker with EOSController
+    final EOSController eosController =
+        new EOSController(eoiReceiver, eoiReceiverOpID, new ExchangePairID[] { eosReceiverOpID }, WORKER_ID);
+
     final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
-    workerPlans.put(WORKER_ID[0], new Operator[] { cp_worker1, multiProducer_worker1, sp1, sp2_worker1, sp3_worker1 });
+    workerPlans.put(WORKER_ID[0], new Operator[] {
+        cp_worker1, multiProducer_worker1, sp1, sp2_worker1, sp3_worker1, eosController });
     workerPlans.put(WORKER_ID[1], new Operator[] { cp_worker2, multiProducer_worker2, sp1, sp2_worker2, sp3_worker2 });
 
     final Long queryId = 0L;
@@ -220,5 +235,20 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     TupleBatchBuffer result = server.startServerQuery(queryId, serverPlan);
     final HashMap<Tuple, Integer> actual = TestUtils.tupleBatchToTupleBag(result);
     TestUtils.assertTupleBagEqual(expectedResult, actual);
+    System.out.println("passed!");
+  }
+
+  public Schema getEOIReportSchema() {
+    final ImmutableList<Type> types = ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE, Type.INT_TYPE);
+    final ImmutableList<String> columnNames = ImmutableList.of("idbID", "workerID", "numNewTuples");
+    final Schema schema = new Schema(types, columnNames);
+    return schema;
+  }
+
+  public Schema getEOSReportSchema() {
+    final ImmutableList<Type> types = ImmutableList.of(Type.BOOLEAN_TYPE);
+    final ImmutableList<String> columnNames = ImmutableList.of("EOS");
+    final Schema schema = new Schema(types, columnNames);
+    return schema;
   }
 }
