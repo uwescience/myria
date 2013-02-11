@@ -14,9 +14,6 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType;
 import edu.washington.escience.myriad.proto.DataProto.LongColumnMessage;
-// import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
-// import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage.ColumnMessageType;
-// import edu.washington.escience.myriad.proto.TransportProto.LongColumnMessage;
 
 /**
  * A column of Long values.
