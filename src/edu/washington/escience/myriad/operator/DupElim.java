@@ -1,9 +1,8 @@
 package edu.washington.escience.myriad.operator;
 
-import java.io.Externalizable;
 import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
@@ -15,17 +14,14 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnFactory;
 
-public final class DupElim extends Operator implements Externalizable {
+public final class DupElim extends Operator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   private Operator child;
 
-  private HashMap<Integer, List<Integer>> uniqueTupleIndices;
-  private List<Column<?>> uniqueTuples = null;
-
-  public DupElim() {
-  }
+  private transient HashMap<Integer, List<Integer>> uniqueTupleIndices;
+  private transient List<Column<?>> uniqueTuples = null;
 
   public DupElim(final Operator child) {
     this.child = child;
@@ -133,15 +129,13 @@ public final class DupElim extends Operator implements Externalizable {
     child = children[0];
   }
 
-  @Override
-  public void readExternal(final ObjectInput in) throws IOException, ClassNotFoundException {
-    child = (Operator) in.readObject();
+  private void readObject(final ObjectInputStream in) throws IOException, ClassNotFoundException {
+    in.defaultReadObject();
     uniqueTupleIndices = new HashMap<Integer, List<Integer>>();
     uniqueTuples = ColumnFactory.allocateColumns(getSchema());
   }
 
-  @Override
-  public void writeExternal(final ObjectOutput out) throws IOException {
-    out.writeObject(child);
+  private void writeObject(final ObjectOutputStream out) throws IOException {
+    out.defaultWriteObject();
   }
 }

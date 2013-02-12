@@ -1,9 +1,8 @@
 package edu.washington.escience.myriad.operator;
 
-import java.io.Externalizable;
 import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -15,26 +14,20 @@ import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnFactory;
 
-public final class LocalJoin extends Operator implements Externalizable {
+public final class LocalJoin extends Operator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   private Operator child1, child2;
-  private Schema outputSchema;
-  private int[] compareIndx1;
-  private int[] compareIndx2;
-  private HashMap<Integer, List<Integer>> hashTable1Indices;
-  private HashMap<Integer, List<Integer>> hashTable2Indices;
-  private List<Column<?>> hashTable1;
-  private List<Column<?>> hashTable2;
-  private TupleBatchBuffer ans;
-
-  /**
-   * For Java serialization. This constructor is called before readExternal()
-   */
-  public LocalJoin() {
-  }
+  private final Schema outputSchema;
+  private final int[] compareIndx1;
+  private final int[] compareIndx2;
+  private transient HashMap<Integer, List<Integer>> hashTable1Indices;
+  private transient HashMap<Integer, List<Integer>> hashTable2Indices;
+  private transient List<Column<?>> hashTable1;
+  private transient List<Column<?>> hashTable2;
+  private transient TupleBatchBuffer ans;
 
   public LocalJoin(final Schema outputSchema, final Operator child1, final Operator child2, final int[] compareIndx1,
       final int[] compareIndx2) {
@@ -154,34 +147,22 @@ public final class LocalJoin extends Operator implements Externalizable {
   }
 
   @Override
-  public void readExternal(final ObjectInput in) throws IOException, ClassNotFoundException {
-    child1 = (Operator) in.readObject();
-    child2 = (Operator) in.readObject();
-    compareIndx1 = (int[]) in.readObject();
-    compareIndx2 = (int[]) in.readObject();
-    outputSchema = (Schema) in.readObject();
-    hashTable1 = new ArrayList<Column<?>>();
-    hashTable2 = new ArrayList<Column<?>>();
-    hashTable1Indices = new HashMap<Integer, List<Integer>>();
-    hashTable2Indices = new HashMap<Integer, List<Integer>>();
-    ans = new TupleBatchBuffer(getSchema());
-    hashTable1 = ColumnFactory.allocateColumns(child1.getSchema());
-    hashTable2 = ColumnFactory.allocateColumns(child2.getSchema());
-  }
-
-  @Override
   public void setChildren(final Operator[] children) {
     child1 = children[0];
     child2 = children[1];
   }
 
-  @Override
-  public void writeExternal(final ObjectOutput out) throws IOException {
-    out.writeObject(child1);
-    out.writeObject(child2);
-    out.writeObject(compareIndx1);
-    out.writeObject(compareIndx2);
-    out.writeObject(outputSchema);
+  private void readObject(final ObjectInputStream in) throws IOException, ClassNotFoundException {
+    in.defaultReadObject();
+    hashTable1Indices = new HashMap<Integer, List<Integer>>();
+    hashTable2Indices = new HashMap<Integer, List<Integer>>();
+    hashTable1 = ColumnFactory.allocateColumns(child1.getSchema());
+    hashTable2 = ColumnFactory.allocateColumns(child2.getSchema());
+    ans = new TupleBatchBuffer(getSchema());
+  }
+
+  private void writeObject(final ObjectOutputStream out) throws IOException {
+    out.defaultWriteObject();
   }
 
 }
