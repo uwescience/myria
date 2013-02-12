@@ -1,5 +1,9 @@
 package edu.washington.escience.myriad.operator;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
@@ -11,18 +15,20 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnFactory;
 
-public final class DupElim extends Operator {
+public final class DupElim extends Operator implements Externalizable {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   private Operator child;
 
-  private final HashMap<Integer, List<Integer>> uniqueTupleIndices;
+  private HashMap<Integer, List<Integer>> uniqueTupleIndices;
   private List<Column<?>> uniqueTuples = null;
+
+  public DupElim() {
+  }
 
   public DupElim(final Operator child) {
     this.child = child;
-    uniqueTupleIndices = new HashMap<Integer, List<Integer>>();
   }
 
   private boolean compareTuple(final int index, final List<Object> cntTuple) {
@@ -116,7 +122,6 @@ public final class DupElim extends Operator {
 
   @Override
   public void init() throws DbException {
-    uniqueTuples = ColumnFactory.allocateColumns(getSchema());
   }
 
   @Override
@@ -126,5 +131,17 @@ public final class DupElim extends Operator {
   @Override
   public void setChildren(final Operator[] children) {
     child = children[0];
+  }
+
+  @Override
+  public void readExternal(final ObjectInput in) throws IOException, ClassNotFoundException {
+    child = (Operator) in.readObject();
+    uniqueTupleIndices = new HashMap<Integer, List<Integer>>();
+    uniqueTuples = ColumnFactory.allocateColumns(getSchema());
+  }
+
+  @Override
+  public void writeExternal(final ObjectOutput out) throws IOException {
+    out.writeObject(child);
   }
 }
