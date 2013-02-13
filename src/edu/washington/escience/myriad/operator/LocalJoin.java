@@ -11,8 +11,6 @@ import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
-import edu.washington.escience.myriad.column.Column;
-import edu.washington.escience.myriad.column.ColumnFactory;
 
 public final class LocalJoin extends Operator {
 
@@ -25,8 +23,8 @@ public final class LocalJoin extends Operator {
   private final int[] compareIndx2;
   private transient HashMap<Integer, List<Integer>> hashTable1Indices;
   private transient HashMap<Integer, List<Integer>> hashTable2Indices;
-  private transient List<Column<?>> hashTable1;
-  private transient List<Column<?>> hashTable2;
+  private transient TupleBatchBuffer hashTable1;
+  private transient TupleBatchBuffer hashTable2;
   private transient TupleBatchBuffer ans;
 
   public LocalJoin(final Schema outputSchema, final Operator child1, final Operator child2, final int[] compareIndx1,
@@ -38,15 +36,15 @@ public final class LocalJoin extends Operator {
     this.compareIndx2 = compareIndx2;
   }
 
-  protected void addToAns(final List<Object> cntTuple, final List<Column<?>> hashTable, final int index,
+  protected void addToAns(final List<Object> cntTuple, final TupleBatchBuffer hashTable, final int index,
       final boolean fromChild1) {
-    final int offset1 = (fromChild1 ? 0 : hashTable.size());
+    final int offset1 = (fromChild1 ? 0 : hashTable.numColumns());
     final int offset2 = (fromChild1 ? cntTuple.size() : 0);
     for (int i = 0; i < cntTuple.size(); ++i) {
       ans.put(i + offset1, cntTuple.get(i));
     }
-    for (int i = 0; i < hashTable.size(); ++i) {
-      ans.put(i + offset2, hashTable.get(i).get(index));
+    for (int i = 0; i < hashTable.numColumns(); ++i) {
+      ans.put(i + offset2, hashTable.get(i, index));
     }
   }
 
@@ -102,21 +100,21 @@ public final class LocalJoin extends Operator {
   public void init() throws DbException {
   }
 
-  private boolean compareTuple(final List<Object> cntTuple, final List<Column<?>> hashTable, final int index,
+  private boolean compareTuple(final List<Object> cntTuple, final TupleBatchBuffer hashTable, final int index,
       final int[] compareIndx1, final int[] compareIndx2) {
     if (compareIndx1.length != compareIndx2.length) {
       return false;
     }
     for (int i = 0; i < compareIndx1.length; ++i) {
-      if (!cntTuple.get(compareIndx1[i]).equals(hashTable.get(compareIndx2[i]).get(index))) {
+      if (!cntTuple.get(compareIndx1[i]).equals(hashTable.get(compareIndx2[i], index))) {
         return false;
       }
     }
     return true;
   }
 
-  protected void processChildTB(final TupleBatch tb, final List<Column<?>> hashTable1,
-      final List<Column<?>> hashTable2, final HashMap<Integer, List<Integer>> hashTable1Indices,
+  protected void processChildTB(final TupleBatch tb, final TupleBatchBuffer hashTable1,
+      final TupleBatchBuffer hashTable2, final HashMap<Integer, List<Integer>> hashTable1Indices,
       final HashMap<Integer, List<Integer>> hashTable2Indices, final int[] compareIndx1, final int[] compareIndx2,
       final boolean fromChild1) {
 
@@ -125,7 +123,7 @@ public final class LocalJoin extends Operator {
       for (int j = 0; j < tb.numColumns(); ++j) {
         cntTuple.add(tb.getObject(j, i));
       }
-      final int nextIndex = hashTable1.get(0).size();
+      final int nextIndex = hashTable1.numTuples();
       final int cntHashCode = tb.hashCode(i, compareIndx1);
       List<Integer> indexList = hashTable2Indices.get(cntHashCode);
       if (indexList != null) {
@@ -140,7 +138,7 @@ public final class LocalJoin extends Operator {
       }
       hashTable1Indices.get(cntHashCode).add(nextIndex);
       for (int j = 0; j < tb.numColumns(); ++j) {
-        hashTable1.get(j).putObject(cntTuple.get(j));
+        hashTable1.put(j, cntTuple.get(j));
       }
 
     }
@@ -156,8 +154,8 @@ public final class LocalJoin extends Operator {
     in.defaultReadObject();
     hashTable1Indices = new HashMap<Integer, List<Integer>>();
     hashTable2Indices = new HashMap<Integer, List<Integer>>();
-    hashTable1 = ColumnFactory.allocateColumns(child1.getSchema());
-    hashTable2 = ColumnFactory.allocateColumns(child2.getSchema());
+    hashTable1 = new TupleBatchBuffer(child1.getSchema());
+    hashTable2 = new TupleBatchBuffer(child2.getSchema());
     ans = new TupleBatchBuffer(getSchema());
   }
 

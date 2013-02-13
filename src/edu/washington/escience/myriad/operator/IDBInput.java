@@ -19,8 +19,6 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.column.Column;
-import edu.washington.escience.myriad.column.ColumnFactory;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 import edu.washington.escience.myriad.parallel.IPCConnectionPool;
 import edu.washington.escience.myriad.parallel.Producer;
@@ -40,7 +38,7 @@ public class IDBInput extends Producer {
   private final int selfIDBID;
 
   private transient HashMap<Integer, List<Integer>> uniqueTupleIndices;
-  private transient List<Column<?>> uniqueTuples = null;
+  private transient TupleBatchBuffer uniqueTuples = null;
 
   private static final Logger LOGGER = LoggerFactory.getLogger("edu.washington.escience.myriad");
 
@@ -59,7 +57,7 @@ public class IDBInput extends Producer {
 
   private boolean compareTuple(final int index, final List<Object> cntTuple) {
     for (int i = 0; i < cntTuple.size(); ++i) {
-      if (!(uniqueTuples.get(i).get(index)).equals(cntTuple.get(i))) {
+      if (!(uniqueTuples.get(i, index).equals(cntTuple.get(i)))) {
         return false;
       }
     }
@@ -78,12 +76,12 @@ public class IDBInput extends Producer {
       for (int j = 0; j < tb.numColumns(); ++j) {
         cntTuple.add(tb.getObject(j, i));
       }
-      final int nextIndex = uniqueTuples.get(0).size();
+      final int nextIndex = uniqueTuples.numTuples();
       final int cntHashCode = tb.hashCode(i);
       List<Integer> tupleIndexList = uniqueTupleIndices.get(cntHashCode);
       if (tupleIndexList == null) {
         for (int j = 0; j < tb.numColumns(); ++j) {
-          uniqueTuples.get(j).putObject(cntTuple.get(j));
+          uniqueTuples.put(j, cntTuple.get(j));
         }
         tupleIndexList = new ArrayList<Integer>();
         tupleIndexList.add(nextIndex);
@@ -99,7 +97,7 @@ public class IDBInput extends Producer {
       }
       if (unique) {
         for (int j = 0; j < tb.numColumns(); ++j) {
-          uniqueTuples.get(j).putObject(cntTuple.get(j));
+          uniqueTuples.put(j, cntTuple.get(j));
         }
         tupleIndexList.add(nextIndex);
       } else {
@@ -203,7 +201,7 @@ public class IDBInput extends Producer {
   private void readObject(final ObjectInputStream in) throws IOException, ClassNotFoundException {
     in.defaultReadObject();
     uniqueTupleIndices = new HashMap<Integer, List<Integer>>();
-    uniqueTuples = ColumnFactory.allocateColumns(getSchema());
+    uniqueTuples = new TupleBatchBuffer(getSchema());
   }
 
   private void writeObject(final ObjectOutputStream out) throws IOException {

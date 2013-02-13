@@ -11,8 +11,7 @@ import java.util.List;
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
-import edu.washington.escience.myriad.column.Column;
-import edu.washington.escience.myriad.column.ColumnFactory;
+import edu.washington.escience.myriad.TupleBatchBuffer;
 
 public final class DupElim extends Operator {
 
@@ -21,7 +20,7 @@ public final class DupElim extends Operator {
   private Operator child;
 
   private transient HashMap<Integer, List<Integer>> uniqueTupleIndices;
-  private transient List<Column<?>> uniqueTuples = null;
+  private transient TupleBatchBuffer uniqueTuples = null;
 
   public DupElim(final Operator child) {
     this.child = child;
@@ -29,7 +28,7 @@ public final class DupElim extends Operator {
 
   private boolean compareTuple(final int index, final List<Object> cntTuple) {
     for (int i = 0; i < cntTuple.size(); ++i) {
-      if (!(uniqueTuples.get(i).get(index)).equals(cntTuple.get(i))) {
+      if (!(uniqueTuples.get(i, index)).equals(cntTuple.get(i))) {
         return false;
       }
     }
@@ -48,12 +47,12 @@ public final class DupElim extends Operator {
       for (int j = 0; j < tb.numColumns(); ++j) {
         cntTuple.add(tb.getObject(j, i));
       }
-      final int nextIndex = uniqueTuples.get(0).size();
+      final int nextIndex = uniqueTuples.numTuples();
       final int cntHashCode = tb.hashCode(i);
       List<Integer> tupleIndexList = uniqueTupleIndices.get(cntHashCode);
       if (tupleIndexList == null) {
         for (int j = 0; j < tb.numColumns(); ++j) {
-          uniqueTuples.get(j).putObject(cntTuple.get(j));
+          uniqueTuples.put(j, cntTuple.get(j));
         }
         tupleIndexList = new ArrayList<Integer>();
         tupleIndexList.add(nextIndex);
@@ -69,7 +68,7 @@ public final class DupElim extends Operator {
       }
       if (unique) {
         for (int j = 0; j < tb.numColumns(); ++j) {
-          uniqueTuples.get(j).putObject(cntTuple.get(j));
+          uniqueTuples.put(j, cntTuple.get(j));
         }
         tupleIndexList.add(nextIndex);
       } else {
@@ -132,7 +131,7 @@ public final class DupElim extends Operator {
   private void readObject(final ObjectInputStream in) throws IOException, ClassNotFoundException {
     in.defaultReadObject();
     uniqueTupleIndices = new HashMap<Integer, List<Integer>>();
-    uniqueTuples = ColumnFactory.allocateColumns(getSchema());
+    uniqueTuples = new TupleBatchBuffer(getSchema());
   }
 
   private void writeObject(final ObjectOutputStream out) throws IOException {
