@@ -33,10 +33,10 @@ import edu.washington.escience.myriad.util.TestUtils;
 
 public class IterativeSelfJoinTest extends SystemTestBase {
   // change configuration here
-  private final int MaxID = 100;
+  private final int MaxID = 400;
   private final int numIteration = 4;
-  private final int numTbl1Worker1 = 60;
-  private final int numTbl1Worker2 = 60;
+  private final int numTbl1Worker1 = 500;
+  private final int numTbl1Worker2 = 600;
 
   public TupleBatchBuffer getResultInMemory(final TupleBatchBuffer table1, final Schema schema, final int numIteration) {
     // a brute force check
