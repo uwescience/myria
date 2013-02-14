@@ -11,6 +11,8 @@ import java.util.logging.Logger;
 
 import org.apache.commons.io.FilenameUtils;
 
+import com.google.common.base.Preconditions;
+
 import edu.washington.escience.myriad.parallel.SocketInfo;
 
 /**
@@ -33,7 +35,7 @@ public final class CatalogMaker {
     // args[2]: master, if specified, otherwise localhost
     // args[3-n]: workers, if specified, otherwise localhost
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
-    assert (args.length >= 2);
+    Preconditions.checkArgument(args.length >= 2, "Usage: CatalogMaker <directory> <N> [master] [workers...]");
     try {
       if (args.length > 2) {
         makeNNodesParallelCatalog(args);
@@ -42,6 +44,8 @@ public final class CatalogMaker {
       }
     } catch (final IOException e) {
       System.err.println("Error creating catalog " + args[0] + ": " + e.getMessage());
+    } catch (final NumberFormatException e) {
+      System.err.println("args[1] " + args[1] + " is not a number!");
     }
   }
 
