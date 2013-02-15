@@ -370,6 +370,7 @@ public final class Server {
     TupleBatch tup = null;
     while (!serverPlan.eos()) {
       while ((tup = serverPlan.next()) != null) {
+        // NOTICE: the next line needs to be removed when running on a large dataset!
         tup.compactInto(outBufferForTesting);
         if (LOGGER.isDebugEnabled()) {
           LOGGER.debug(tup.toString());

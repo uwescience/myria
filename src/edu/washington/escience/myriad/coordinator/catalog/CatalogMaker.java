@@ -11,6 +11,8 @@ import java.util.logging.Logger;
 
 import org.apache.commons.io.FilenameUtils;
 
+import com.google.common.base.Preconditions;
+
 import edu.washington.escience.myriad.parallel.SocketInfo;
 
 /**
@@ -28,20 +30,22 @@ public final class CatalogMaker {
    * @param args unused arguments.
    */
   public static void main(final String[] args) {
+    // args[0]: directory name
+    // args[1]: number of workers
+    // args[2]: master, if specified, otherwise localhost
+    // args[3-n]: workers, if specified, otherwise localhost
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
-    if (args.length > 0) {
-      // just for making my life easier because I need to pass the arg in my script
-      try {
-        makeTwoNodeLocalParallelCatalog(args[0]);
-      } catch (final IOException e) {
-        System.err.println("Error creating catalog " + args[0] + ": " + e.getMessage());
+    Preconditions.checkArgument(args.length >= 2, "Usage: CatalogMaker <directory> <N> [master] [workers...]");
+    try {
+      if (args.length > 2) {
+        makeNNodesParallelCatalog(args);
+      } else {
+        makeNNodesLocalParallelCatalog(args[0], Integer.parseInt(args[1]));
       }
-    } else {
-      try {
-        makeNNodeLocalParallelCatalog(null, 2);
-      } catch (final IOException e) {
-        System.err.println("Error creating nNodeLocalParallelCatalog: " + e.getMessage());
-      }
+    } catch (final IOException e) {
+      System.err.println("Error creating catalog " + args[0] + ": " + e.getMessage());
+    } catch (final NumberFormatException e) {
+      System.err.println("args[1] " + args[1] + " is not a number!");
     }
   }
 
@@ -52,15 +56,31 @@ public final class CatalogMaker {
    * @param n the number of nodes.
    * @throws IOException if the catalog file already exists.
    */
-  public static void makeNNodeLocalParallelCatalog(final String directoryName, final int n) throws IOException {
-    final String description = numberToEnglish(n) + "NodeLocalParallel";
+  public static void makeNNodesLocalParallelCatalog(final String directoryName, final int n) throws IOException {
+    final int baseMasterPort = 8001;
     final int baseWorkerPort = 9001;
-    String baseDirectoryName;
-    if (directoryName == null) {
-      baseDirectoryName = description;
-    } else {
-      baseDirectoryName = directoryName;
+    final String[] args = new String[n + 3];
+    args[0] = directoryName;
+    args[1] = Integer.toString(n);
+    args[2] = "localhost:" + baseMasterPort;
+    for (int i = 0; i < n; ++i) {
+      args[i + 3] = "localhost:" + (baseWorkerPort + i);
     }
+    makeNNodesParallelCatalog(args);
+  }
+
+  /**
+   * Creates a Catalog for an N-node parallel system on the local machine and the corresponding WorkerCatalogs, with
+   * node addresses and ports specified.
+   * 
+   * @param directoryName the directory where all the files should be stored.
+   * @param n the number of nodes.
+   * @throws IOException if the catalog file already exists.
+   */
+  public static void makeNNodesParallelCatalog(final String[] args) throws IOException {
+    final int n = args.length - 3;
+    String baseDirectoryName = args[0];
+    final String description = numberToEnglish(n) + "NodeParallel";
     List<SocketInfo> masters;
     Map<Integer, SocketInfo> workers;
 
@@ -73,9 +93,9 @@ public final class CatalogMaker {
         catalogDir.mkdirs();
       }
       c = newCatalog(catalogFileName, description);
-      c.addMaster("localhost:8001");
+      c.addMaster(args[2]);
       for (int i = 0; i < n; ++i) {
-        c.addWorker("localhost:" + (baseWorkerPort + i));
+        c.addWorker(args[i + 3]);
       }
       masters = c.getMasters();
       workers = c.getWorkers();
@@ -125,16 +145,6 @@ public final class CatalogMaker {
 
       wc.close();
     }
-  }
-
-  /**
-   * Creates a Catalog for a 2-node parallel system on the local machine and the corresponding WorkerCatalogs.
-   * 
-   * @param directoryName the directory where all the files should be stored.
-   * @throws IOException if the catalog file already exists.
-   */
-  public static void makeTwoNodeLocalParallelCatalog(final String directoryName) throws IOException {
-    makeNNodeLocalParallelCatalog(directoryName, 2);
   }
 
   /**
