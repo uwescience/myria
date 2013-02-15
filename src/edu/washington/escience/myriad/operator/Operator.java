@@ -148,7 +148,6 @@ public abstract class Operator implements Serializable {
         childrenEOI[i] = true;
       } else if (children[i].eoi()) {
         childrenEOI[i] = true;
-        children[i].setEOI(false);
         allEOS = false;
       }
       if (childrenEOI[i]) {
@@ -160,6 +159,9 @@ public abstract class Operator implements Serializable {
         setEOS(true);
       } else {
         setEOI(true);
+      }
+      for (Operator child : children) {
+        child.setEOI(false);
       }
       cleanChildrenEOI();
     }
