@@ -3,6 +3,7 @@ package edu.washington.escience.myriad.operator;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 
 import org.junit.Test;
 
@@ -35,11 +36,17 @@ public class FileScanTest {
    * @param commaIsDelimiter true if commas should be considered delimiting characters.
    * @return the number of rows in the file.
    * @throws DbException if the file does not match the given Schema.
+   * @throws FileNotFoundException if the specified file does not exist.
    */
   private static int getRowCount(final String filename, final Schema schema, final boolean commaIsDelimiter)
       throws DbException {
     final String realFilename = "testdata" + File.separatorChar + "filescan" + File.separatorChar + filename;
-    final FileScan fileScan = new FileScan(realFilename, schema, commaIsDelimiter);
+    FileScan fileScan;
+    try {
+      fileScan = new FileScan(realFilename, schema, commaIsDelimiter);
+    } catch (FileNotFoundException e) {
+      throw new DbException(e);
+    }
 
     fileScan.open();
     int count = 0;

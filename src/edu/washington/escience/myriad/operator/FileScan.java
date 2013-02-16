@@ -1,10 +1,11 @@
 package edu.washington.escience.myriad.operator;
 
 import java.io.BufferedReader;
-import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.StreamTokenizer;
 import java.util.Objects;
 
@@ -20,8 +21,8 @@ import edu.washington.escience.myriad.TupleBatchBuffer;
  * 
  */
 public final class FileScan extends LeafOperator {
-  /** The file this scan is reading from. */
-  private final File file;
+  /** The input stream that this scan is reading from. */
+  private final InputStream inputStream;
   /** The Schema of the relation stored in this file. */
   private final Schema schema;
   /** StringTokenizer used to parse the file. */
@@ -40,14 +41,10 @@ public final class FileScan extends LeafOperator {
    * 
    * @param filename the file containing the relation.
    * @param schema the Schema of the relation contained in the file.
+   * @throws FileNotFoundException if the given filename does not exist.
    */
-  public FileScan(final String filename, final Schema schema) {
-    Objects.requireNonNull(filename);
-    Objects.requireNonNull(schema);
-    file = new File(filename);
-    this.schema = schema;
-    commaIsDelimiter = false;
-    buffer = new TupleBatchBuffer(schema);
+  public FileScan(final String filename, final Schema schema) throws FileNotFoundException {
+    this(filename, schema, false);
   }
 
   /**
@@ -57,14 +54,42 @@ public final class FileScan extends LeafOperator {
    * @param filename the file containing the relation.
    * @param schema the Schema of the relation contained in the file.
    * @param commaIsDelimiter whether commas are also delimiters in the file.
+   * @throws FileNotFoundException if the given filename does not exist.
    */
-  public FileScan(final String filename, final Schema schema, final boolean commaIsDelimiter) {
+  public FileScan(final String filename, final Schema schema, final boolean commaIsDelimiter)
+      throws FileNotFoundException {
     Objects.requireNonNull(filename);
     Objects.requireNonNull(schema);
-    file = new File(filename);
+    inputStream = new FileInputStream(filename);
     this.schema = schema;
     this.commaIsDelimiter = commaIsDelimiter;
     buffer = new TupleBatchBuffer(schema);
+  }
+
+  /**
+   * Construct a new FileScan object to read from the specified InputStream. If commaIsDelimiter is true, then records
+   * may be whitespace or comma-separated.
+   * 
+   * @param inputStream the data containing the relation.
+   * @param schema the Schema of the relation contained in the file.
+   * @param commaIsDelimiter whether commas are also delimiters in the file.
+   */
+  public FileScan(final InputStream inputStream, final Schema schema, final boolean commaIsDelimiter) {
+    this.inputStream = inputStream;
+    this.schema = schema;
+    this.commaIsDelimiter = commaIsDelimiter;
+    buffer = new TupleBatchBuffer(schema);
+  }
+
+  /**
+   * Construct a new FileScan object to read from the specified InputStream. The data is assumed to be
+   * whitespace-separated and have one record per line.
+   * 
+   * @param inputStream the data containing the relation.
+   * @param schema the Schema of the relation contained in the file.
+   */
+  public FileScan(final InputStream inputStream, final Schema schema) {
+    this(inputStream, schema, false);
   }
 
   @Override
@@ -179,11 +204,7 @@ public final class FileScan extends LeafOperator {
 
   @Override
   public void init() throws DbException {
-    try {
-      tokenizer = new StreamTokenizer(new BufferedReader(new FileReader(file)));
-    } catch (final FileNotFoundException e) {
-      throw new DbException(e);
-    }
+    tokenizer = new StreamTokenizer(new BufferedReader(new InputStreamReader(inputStream)));
     tokenizer.eolIsSignificant(true);
     if (commaIsDelimiter) {
       tokenizer.whitespaceChars(',', ',');
