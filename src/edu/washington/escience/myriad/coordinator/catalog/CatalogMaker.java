@@ -77,8 +77,7 @@ public final class CatalogMaker {
    * Creates a Catalog for an N-node parallel system on the local machine and the corresponding WorkerCatalogs, with
    * node addresses and ports specified.
    * 
-   * @param directoryName the directory where all the files should be stored.
-   * @param n the number of nodes.
+   * @param args the description and list of machines in this catalog.
    * @throws IOException if the catalog file already exists.
    */
   public static void makeNNodesParallelCatalog(final String[] args) throws IOException {
@@ -105,8 +104,8 @@ public final class CatalogMaker {
       workers = c.getWorkers();
 
       /* A simple test relation. */
-      c.addRelationMetadata(RelationKey.of("test", "test", "testRelation"), new Schema(ImmutableList.of(
-          Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("x", "y")));
+      c.addRelationMetadata(RelationKey.of("test", "test", "testRelation"), new Schema(ImmutableList.of(Type.LONG_TYPE,
+          Type.LONG_TYPE), ImmutableList.of("x", "y")));
 
       /* Close the master catalog. */
       c.close();
