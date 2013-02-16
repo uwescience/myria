@@ -166,7 +166,7 @@ class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
   @Override
   public TupleBatch next() {
     /* Allocate TupleBatch parameters */
-    final int numFields = schema.numFields();
+    final int numFields = schema.numColumns();
     final List<Column<?>> columns = ColumnFactory.allocateColumns(schema);
 
     /**

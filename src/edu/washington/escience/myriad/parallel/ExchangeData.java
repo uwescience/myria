@@ -54,7 +54,7 @@ public final class ExchangeData {
   }
 
   /**
-   * Get the worker id from which the message was sent
+   * @return worker id from which the message was sent.
    */
   public int getWorkerID() {
     return fromWorkerID;

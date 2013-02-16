@@ -5,7 +5,7 @@ import java.util.BitSet;
 /**
  * A read only wrapper class for BitSet. In this way, exposing valid indices in TupleBatch should be safe.
  * */
-public class ReadOnlyBitSet extends BitSet {
+public final class ReadOnlyBitSet extends BitSet {
   /**
    * 
    * */

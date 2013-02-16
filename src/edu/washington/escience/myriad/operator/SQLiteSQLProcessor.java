@@ -38,6 +38,7 @@ public class SQLiteSQLProcessor extends Operator {
     if (!checked) {
       for (final Operator child : children) {
         while (child.next() != null) {
+          assert true; /* Do nothing. */
         }
       }
       checked = true;

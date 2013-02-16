@@ -738,11 +738,11 @@ public class ChannelContext {
     }
   }
 
-  public final boolean waitForRemoteReply(final long timeout_in_ms) {
+  public final boolean waitForRemoteReply(final long timeoutInMillis) {
     if (remoteReplyID == null) {
       synchronized (remoteReplyLock) {
         try {
-          remoteReplyLock.wait(timeout_in_ms);
+          remoteReplyLock.wait(timeoutInMillis);
         } catch (final InterruptedException e) {
           Thread.currentThread().interrupt();
         }

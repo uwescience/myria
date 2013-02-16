@@ -10,6 +10,7 @@ import org.junit.Test;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
@@ -99,7 +100,7 @@ public class MultithreadScanTest extends SystemTestBase {
     final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
     final ImmutableList<Type> joinTypes =
         ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE);
-    final ImmutableList<String> joinColumnNames = ImmutableList.of("follower", "followee", "follower", "followee");
+    final ImmutableList<String> joinColumnNames = ImmutableList.of("follower1", "followee1", "follower2", "followee2");
     final Schema joinSchema = new Schema(joinTypes, joinColumnNames);
 
     final long[] tbl1ID1Worker1 = TestUtils.randomLong(1, MaxID - 1, numTbl1Worker1);
@@ -113,18 +114,19 @@ public class MultithreadScanTest extends SystemTestBase {
     final TupleBatchBuffer expectedTBB = getResultInMemory(tbl1Worker1, tableSchema, 2);
     final TupleBatchBuffer expectedTBBCopy = new TupleBatchBuffer(tableSchema);
     expectedTBBCopy.merge(expectedTBB);
+    final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
 
-    createTable(WORKER_ID[0], "testtable", "follower long, followee long");
-    createTable(WORKER_ID[1], "testtable", "follower long, followee long");
+    createTable(WORKER_ID[0], testtableKey, "follower long, followee long");
+    createTable(WORKER_ID[1], testtableKey, "follower long, followee long");
     // }
     TupleBatch tb = null;
     while ((tb = tbl1Worker1.popAny()) != null) {
-      insert(WORKER_ID[0], "testtable", tableSchema, tb);
-      insert(WORKER_ID[1], "testtable", tableSchema, tb);
+      insert(WORKER_ID[0], testtableKey, tableSchema, tb);
+      insert(WORKER_ID[1], testtableKey, tableSchema, tb);
     }
 
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan(null, "select * from testtable", tableSchema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan(null, "select * from testtable", tableSchema);
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan(null, "select * from " + testtableKey, tableSchema);
+    final SQLiteQueryScan scan2 = new SQLiteQueryScan(null, "select * from " + testtableKey, tableSchema);
     final LocalJoin localjoin = new LocalJoin(joinSchema, scan1, scan2, new int[] { 1 }, new int[] { 0 });
     final Project proj = new Project(new Integer[] { 0, 3 }, localjoin);
     final DupElim de = new DupElim(proj);
@@ -158,7 +160,7 @@ public class MultithreadScanTest extends SystemTestBase {
     final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
     final ImmutableList<Type> joinTypes =
         ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE);
-    final ImmutableList<String> joinColumnNames = ImmutableList.of("follower", "followee", "follower", "followee");
+    final ImmutableList<String> joinColumnNames = ImmutableList.of("follower1", "followee1", "follower2", "followee2");
     final Schema joinSchema = new Schema(joinTypes, joinColumnNames);
 
     final long[] tbl1ID1Worker1 = TestUtils.randomLong(1, MaxID - 1, numTbl1Worker1);
@@ -174,21 +176,23 @@ public class MultithreadScanTest extends SystemTestBase {
     final TupleBatchBuffer expectedTBB = getResultInMemory(table1, tableSchema, 2);
     final TupleBatchBuffer expectedTBBCopy = getResultInMemory(table1, tableSchema, 2);
 
-    createTable(WORKER_ID[0], "testtable", "follower long, followee long");
-    createTable(WORKER_ID[1], "testtable", "follower long, followee long");
+    final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
+
+    createTable(WORKER_ID[0], testtableKey, "follower long, followee long");
+    createTable(WORKER_ID[1], testtableKey, "follower long, followee long");
     TupleBatch tb = null;
     while ((tb = tbl1Worker1.popAny()) != null) {
-      insert(WORKER_ID[0], "testtable", tableSchema, tb);
-      insert(WORKER_ID[1], "testtable", tableSchema, tb);
+      insert(WORKER_ID[0], testtableKey, tableSchema, tb);
+      insert(WORKER_ID[1], testtableKey, tableSchema, tb);
     }
 
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan(null, "select * from testtable", tableSchema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan(null, "select * from testtable", tableSchema);
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan(null, "select * from " + testtableKey, tableSchema);
+    final SQLiteQueryScan scan2 = new SQLiteQueryScan(null, "select * from " + testtableKey, tableSchema);
     final LocalJoin localjoin1 = new LocalJoin(joinSchema, scan1, scan2, new int[] { 1 }, new int[] { 0 });
     final Project proj1 = new Project(new Integer[] { 0, 3 }, localjoin1);
     final DupElim de1 = new DupElim(proj1);
-    final SQLiteQueryScan scan3 = new SQLiteQueryScan(null, "select * from testtable", tableSchema);
-    final SQLiteQueryScan scan4 = new SQLiteQueryScan(null, "select * from testtable", tableSchema);
+    final SQLiteQueryScan scan3 = new SQLiteQueryScan(null, "select * from " + testtableKey, tableSchema);
+    final SQLiteQueryScan scan4 = new SQLiteQueryScan(null, "select * from " + testtableKey, tableSchema);
     final LocalJoin localjoin2 = new LocalJoin(joinSchema, scan3, scan4, new int[] { 1 }, new int[] { 0 });
     final Project proj2 = new Project(new Integer[] { 0, 3 }, localjoin2);
     final DupElim de2 = new DupElim(proj2);

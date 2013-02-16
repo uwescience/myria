@@ -1,6 +1,7 @@
 package edu.washington.escience.myriad.coordinator.catalog;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -136,18 +137,18 @@ public final class WorkerCatalog {
    * 
    * @param filename the path to the SQLite database storing the catalog.
    * @return an initialized WorkerCatalog object ready to be used for experiments.
-   * @throws CatalogNotFoundException if the given file does not exist.
+   * @throws FileNotFoundException if the given file does not exist.
    * @throws CatalogException if there is an error connecting to the database.
    * 
    *           TODO add some sanity checks to the filename?
    */
-  public static WorkerCatalog open(final String filename) throws CatalogNotFoundException, CatalogException {
+  public static WorkerCatalog open(final String filename) throws FileNotFoundException, CatalogException {
     Objects.requireNonNull(filename);
 
     /* See if the file exists, and create it if not. */
     final File catalogFile = new File(filename);
     if (!catalogFile.exists()) {
-      throw new CatalogNotFoundException(filename);
+      throw new FileNotFoundException(filename);
     }
 
     /* Connect to the database */
@@ -240,10 +241,10 @@ public final class WorkerCatalog {
           sqliteConnection.prepare("INSERT INTO relation_schema(relation_id, col_index, col_name, col_type) "
               + "VALUES (?,?,?,?);");
       statement.bind(1, relationId);
-      for (int i = 0; i < schema.numFields(); ++i) {
+      for (int i = 0; i < schema.numColumns(); ++i) {
         statement.bind(2, i);
-        statement.bind(3, schema.getFieldName(i));
-        statement.bind(4, schema.getFieldType(i).toString());
+        statement.bind(3, schema.getColumnName(i));
+        statement.bind(4, schema.getColumnType(i).toString());
         statement.step();
         statement.reset(false);
       }

@@ -1,7 +1,6 @@
 package edu.washington.escience.myriad.operator;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -13,6 +12,7 @@ import com.almworks.sqlite4java.SQLiteQueue;
 import com.almworks.sqlite4java.SQLiteStatement;
 
 import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.util.SQLiteUtils;
 
@@ -29,9 +29,9 @@ public final class SQLiteInsert extends RootOperator {
   /** The SQLite Database that they will be inserted into. */
   private String pathToSQLiteDb;
   /** The name of the table the tuples should be inserted into. */
-  private final String relationName;
-  /** Whether to create the table or not. */
-  private final boolean createTable;
+  private final RelationKey relationKey;
+  /** Whether to overwrite an existing table or not. */
+  private final boolean overwriteTable;
   /** SQLite queue confines all SQLite operations to the same thread. */
   private SQLiteQueue queue;
   /** The statement used to insert tuples into the database. */
@@ -39,21 +39,22 @@ public final class SQLiteInsert extends RootOperator {
 
   /**
    * Constructs an insertion operator to store the tuples from the specified child in a SQLite database in the specified
-   * file. This operator will only append to an existing database, or create and initialize one that does not exist.
+   * file. This operator will not overwrite an existing table; it will only append to an existing database, or create
+   * and initialize one that does not exist.
    * 
    * @param child the source of tuples to be inserted.
-   * @param relationName the name of the table the tuples should be inserted into.
+   * @param relationKey the key of the table the tuples should be inserted into.
    * @param pathToSQLiteDb the path to the database.
    * @param executor the ExecutorService for this process.
    */
-  public SQLiteInsert(final Operator child, final String relationName, final String pathToSQLiteDb,
+  public SQLiteInsert(final Operator child, final RelationKey relationKey, final String pathToSQLiteDb,
       final ExecutorService executor) {
     super(child, executor);
     Objects.requireNonNull(child);
-    Objects.requireNonNull(relationName);
+    Objects.requireNonNull(relationKey);
     this.pathToSQLiteDb = pathToSQLiteDb;
-    this.relationName = relationName;
-    createTable = false;
+    this.relationKey = relationKey;
+    overwriteTable = false;
   }
 
   /**
@@ -61,19 +62,19 @@ public final class SQLiteInsert extends RootOperator {
    * file. This operator will only append to an existing database, or create and initialize one that does not exist.
    * 
    * @param child the source of tuples to be inserted.
-   * @param relationName the name of the table the tuples should be inserted into.
+   * @param relationKey the key of the table the tuples should be inserted into.
    * @param pathToSQLiteDb the path to the database.
    * @param executor the ExecutorService for this process.
-   * @param createTable whether to create the table if the file already exists.
+   * @param overwriteTable whether to overwrite a table that already exists.
    */
-  public SQLiteInsert(final Operator child, final String relationName, final String pathToSQLiteDb,
-      final ExecutorService executor, final boolean createTable) {
+  public SQLiteInsert(final Operator child, final RelationKey relationKey, final String pathToSQLiteDb,
+      final ExecutorService executor, final boolean overwriteTable) {
     super(child, executor);
     Objects.requireNonNull(child);
-    Objects.requireNonNull(relationName);
+    Objects.requireNonNull(relationKey);
     this.pathToSQLiteDb = pathToSQLiteDb;
-    this.relationName = relationName;
-    this.createTable = createTable;
+    this.relationKey = relationKey;
+    this.overwriteTable = overwriteTable;
   }
 
   @Override
@@ -86,7 +87,7 @@ public final class SQLiteInsert extends RootOperator {
   }
 
   @Override
-  protected final void consumeTuples(final TupleBatch tupleBatch) throws DbException {
+  protected void consumeTuples(final TupleBatch tupleBatch) throws DbException {
     final SQLiteJob<Object> future = new SQLiteJob<Object>() {
       @Override
       protected Object job(final SQLiteConnection sqliteConnection) throws SQLiteException {
@@ -123,30 +124,30 @@ public final class SQLiteInsert extends RootOperator {
   public void init() throws DbException {
     final File dbFile = new File(pathToSQLiteDb);
 
-    /* Try and create a new file. */
-    boolean created;
-    try {
-      created = dbFile.createNewFile();
-    } catch (final IOException e) {
-      throw new DbException(e);
-    }
-
-    /* Open a connection to that SQLite database. If creation succeeded, create a new table as well. */
+    /* Open a connection to that SQLite database. */
     queue = new SQLiteQueue(dbFile);
     queue.start();
-    if (created || createTable) {
-      /* If succeeded, populate its schema. */
+
+    /* Overwrite and/or create the new table */
+    try {
       queue.execute(new SQLiteJob<Integer>() {
         @Override
         protected Integer job(final SQLiteConnection connection) throws SQLiteException {
-          connection.exec(SQLiteUtils.createStatementFromSchema(getSchema(), relationName));
+          /* If we should overwrite, drop the existing table. */
+          if (overwriteTable) {
+            connection.exec(SQLiteUtils.dropTableIfExistsStatement(relationKey));
+          }
+          /* Create the table if it does not currently exist. */
+          connection.exec(SQLiteUtils.createIfNotExistsStatementFromSchema(getSchema(), relationKey));
           return null;
         }
-      });
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new DbException(e);
     }
 
     /* Set up the insert statement. */
-    insertString = SQLiteUtils.insertStatementFromSchema(getSchema(), relationName);
+    insertString = SQLiteUtils.insertStatementFromSchema(getSchema(), relationKey);
   }
 
   /**
