@@ -10,7 +10,6 @@ import java.util.Objects;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
@@ -19,7 +18,6 @@ import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
-import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
@@ -45,18 +43,14 @@ public final class QueryResource {
   /**
    * For now, simply echoes back its input.
    * 
-   * @param input the payload of the POST request itself.
+   * @param userData the payload of the POST request itself.
    * @param uriInfo the URI of the current request.
-   * @return the payload.
+   * @return the URI of the created query.
    */
   @POST
-  @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public Response postNewQuery(final String input, @Context final UriInfo uriInfo) {
+  public Response postNewQuery(final Map<?, ?> userData, @Context final UriInfo uriInfo) {
     try {
-      ObjectMapper mapper = new ObjectMapper();
-      final Map<?, ?> userData;
-      userData = mapper.readValue(input, Map.class);
       /* Must contain the raw data, the logical_ra, and the query_plan. */
       if (!userData.containsKey("raw_datalog") || !userData.containsKey("logical_ra")
           || !userData.containsKey("query_plan")) {
@@ -68,6 +62,13 @@ public final class QueryResource {
       final String rawQuery = (String) userData.get("raw_datalog");
       final String logicalRa = (String) userData.get("logical_ra");
       Map<Integer, Operator[]> queryPlan = deserializeJsonQueryPlan(userData.get("query_plan"));
+
+      /* Make sure that the requested workers are alive. */
+      if (!MasterApiServer.getMyriaServer().getAliveWorkers().containsAll(queryPlan.keySet())) {
+        /* Throw a 503 (Service Unavailable) */
+        throw new WebApplicationException(Response.status(Status.SERVICE_UNAVAILABLE).build());
+      }
+
       /* Start the query, and get its Server-assigned Query ID */
       final Long queryId = MasterApiServer.getMyriaServer().startQuery(rawQuery, logicalRa, queryPlan);
       /* In the response, tell the client what ID this query was assigned. */
