@@ -31,13 +31,18 @@ public final class CatalogMaker {
   /**
    * Used in Catalog creation.
    * 
-   * @param args unused arguments.
+   * args[0]: directory name
+   * 
+   * args[1]: number of workers
+   * 
+   * args[2]: master, if specified, otherwise localhost
+   * 
+   * args[3-n]: workers, if specified, otherwise localhost
+   * 
+   * @param args contains the parameters necessary to start the catalog.
+   * @throws IOException if there is an error creating the catalog.
    */
-  public static void main(final String[] args) {
-    // args[0]: directory name
-    // args[1]: number of workers
-    // args[2]: master, if specified, otherwise localhost
-    // args[3-n]: workers, if specified, otherwise localhost
+  public static void main(final String[] args) throws IOException {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
     Preconditions.checkArgument(args.length >= 2, "Usage: CatalogMaker <directory> <N> [master] [workers...]");
     try {
@@ -48,8 +53,10 @@ public final class CatalogMaker {
       }
     } catch (final IOException e) {
       System.err.println("Error creating catalog " + args[0] + ": " + e.getMessage());
+      throw (e);
     } catch (final NumberFormatException e) {
       System.err.println("args[1] " + args[1] + " is not a number!");
+      throw (e);
     }
   }
 
