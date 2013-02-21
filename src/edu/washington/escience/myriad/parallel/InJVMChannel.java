@@ -19,9 +19,9 @@ import org.jboss.netty.channel.ChannelPipeline;
 import edu.washington.escience.myriad.parallel.Worker.MessageWrapper;
 import edu.washington.escience.myriad.util.IPCUtils;
 
-public class InJVMChannel implements Channel {
+public final class InJVMChannel implements Channel {
 
-  public class InJVMChannelCloseFuture extends InJVMChannelFuture {
+  public final class InJVMChannelCloseFuture extends InJVMChannelFuture {
 
     private final ConcurrentLinkedQueue<ChannelFutureListener> listeners;
     private volatile boolean done = false;
@@ -66,11 +66,7 @@ public class InJVMChannel implements Channel {
 
     @Override
     public boolean isSuccess() {
-      if (done && cause == null) {
-        return true;
-      } else {
-        return false;
-      }
+      return done && (cause == null);
     }
 
     @Override
@@ -270,7 +266,7 @@ public class InJVMChannel implements Channel {
    * Compares the {@linkplain #getId() ID} of the two channels.
    */
   @Override
-  public final int compareTo(final Channel o) {
+  public int compareTo(final Channel o) {
     return getId().compareTo(o.getId());
   }
 
@@ -288,7 +284,7 @@ public class InJVMChannel implements Channel {
    * Returns {@code true} if and only if the specified object is identical with this channel (i.e: {@code this == o}).
    */
   @Override
-  public final boolean equals(final Object o) {
+  public boolean equals(final Object o) {
     return this == o;
   }
 
@@ -342,11 +338,8 @@ public class InJVMChannel implements Channel {
     return null;
   }
 
-  /**
-   * Returns the ID of this channel.
-   */
   @Override
-  public final int hashCode() {
+  public int hashCode() {
     return channelID;
   }
 

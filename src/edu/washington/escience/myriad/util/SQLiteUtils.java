@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import com.google.common.collect.ImmutableList;
 
+import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
@@ -17,32 +18,52 @@ public final class SQLiteUtils {
    * Generates a SQLite CREATE TABLE statement for a table of the given Schema and name.
    * 
    * @param schema the Schema of the table to be created.
-   * @param name the name of the table to be created.
+   * @param relationKey the name of the table to be created.
    * @return a SQLite CREATE TABLE statement for a table of the given Schema and name.
    */
-  public static String createStatementFromSchema(final Schema schema, final String name) {
+  public static String createStatementFromSchema(final Schema schema, final RelationKey relationKey) {
     final StringBuilder sb = new StringBuilder();
-    sb.append("CREATE TABLE ").append(name).append(" (");
-    for (int i = 0; i < schema.numFields(); ++i) {
+    sb.append("CREATE TABLE ").append(relationKey).append(" (");
+    for (int i = 0; i < schema.numColumns(); ++i) {
       if (i > 0) {
         sb.append(", ");
       }
-      sb.append(schema.getFieldName(i)).append(" ").append(typeToSQLiteType(schema.getFieldType(i)));
+      sb.append(schema.getColumnName(i)).append(" ").append(typeToSQLiteType(schema.getColumnType(i)));
     }
     sb.append(");");
     return sb.toString();
   }
 
-  public static void insertIntoSQLite(final Schema inputSchema, final String tableName, final String dbFilePath,
+  /**
+   * Generates a SQLite CREATE TABLE statement for a table of the given Schema and name.
+   * 
+   * @param schema the Schema of the table to be created.
+   * @param relationKey the table to be created.
+   * @return a SQLite CREATE TABLE statement for a table of the given Schema and name.
+   */
+  public static String createIfNotExistsStatementFromSchema(final Schema schema, final RelationKey relationKey) {
+    final StringBuilder sb = new StringBuilder();
+    sb.append("CREATE TABLE IF NOT EXISTS ").append(relationKey).append(" (\n");
+    for (int i = 0; i < schema.numColumns(); ++i) {
+      if (i > 0) {
+        sb.append(",\n");
+      }
+      sb.append("    ").append(schema.getColumnName(i)).append(" ").append(typeToSQLiteType(schema.getColumnType(i)));
+    }
+    sb.append(");");
+    return sb.toString();
+  }
+
+  public static void insertIntoSQLite(final Schema inputSchema, final RelationKey relationKey, final String dbFilePath,
       final TupleBatch data) {
 
-    final ImmutableList<String> fieldNames = inputSchema.getFieldNames();
-    final String[] placeHolders = new String[inputSchema.numFields()];
-    for (int i = 0; i < inputSchema.numFields(); ++i) {
+    final ImmutableList<String> fieldNames = inputSchema.getColumnNames();
+    final String[] placeHolders = new String[inputSchema.numColumns()];
+    for (int i = 0; i < inputSchema.numColumns(); ++i) {
       placeHolders[i] = "?";
     }
 
-    SQLiteAccessMethod.tupleBatchInsert(dbFilePath, "insert into " + tableName + " ( "
+    SQLiteAccessMethod.tupleBatchInsert(dbFilePath, "insert into " + relationKey + " ( "
         + StringUtils.join(fieldNames, ',') + " ) values ( " + StringUtils.join(placeHolders, ',') + " )", data);
   }
 
@@ -50,15 +71,15 @@ public final class SQLiteUtils {
    * Generates a SQLite INSERT statement for a table of the given Schema and name.
    * 
    * @param schema the Schema of the table to be created.
-   * @param name the name of the table to be created.
+   * @param relationKey the key of the table to be created.
    * @return a SQLite INSERT statement for a table of the given Schema and name.
    */
-  public static String insertStatementFromSchema(final Schema schema, final String name) {
+  public static String insertStatementFromSchema(final Schema schema, final RelationKey relationKey) {
     final StringBuilder sb = new StringBuilder();
-    sb.append("INSERT INTO ").append(name).append(" (");
-    sb.append(StringUtils.join(schema.getFieldNames(), ','));
+    sb.append("INSERT INTO ").append(relationKey).append(" (");
+    sb.append(StringUtils.join(schema.getColumnNames(), ','));
     sb.append(") VALUES (");
-    for (int i = 0; i < schema.numFields(); ++i) {
+    for (int i = 0; i < schema.numColumns(); ++i) {
       if (i > 0) {
         sb.append(',');
       }
@@ -99,4 +120,13 @@ public final class SQLiteUtils {
   private SQLiteUtils() {
   }
 
+  /**
+   * Creates a SQLite "DROP TABLE IF EXISTS" statement.
+   * 
+   * @param relationKey the table to be dropped.
+   * @return "DROP TABLE IF EXISTS <tt>relationKey.getCanonicalName()</tt>;"
+   */
+  public static String dropTableIfExistsStatement(final RelationKey relationKey) {
+    return "DROP TABLE IF EXISTS " + relationKey + ";";
+  }
 }

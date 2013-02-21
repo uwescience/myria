@@ -8,6 +8,7 @@ import org.junit.Test;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
@@ -36,6 +37,7 @@ public class LocalMultiwayProducerTest extends SystemTestBase {
     final ImmutableList<Type> table1Types = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
     final ImmutableList<String> table1ColumnNames = ImmutableList.of("follower", "followee");
     final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
+    final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
 
     final TupleBatchBuffer expected = new TupleBatchBuffer(tableSchema);
 
@@ -63,17 +65,17 @@ public class LocalMultiwayProducerTest extends SystemTestBase {
       }
     }
 
-    createTable(WORKER_ID[0], "testtable", "follower long, followee long");
-    createTable(WORKER_ID[1], "testtable", "follower long, followee long");
+    createTable(WORKER_ID[0], testtableKey, "follower long, followee long");
+    createTable(WORKER_ID[1], testtableKey, "follower long, followee long");
     TupleBatch tb = null;
     while ((tb = tbl1.popAny()) != null) {
-      insert(WORKER_ID[0], "testtable", tableSchema, tb);
+      insert(WORKER_ID[0], testtableKey, tableSchema, tb);
     }
     while ((tb = tbl2.popAny()) != null) {
-      insert(WORKER_ID[1], "testtable", tableSchema, tb);
+      insert(WORKER_ID[1], testtableKey, tableSchema, tb);
     }
 
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan(null, "select * from testtable", tableSchema);
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan(null, "select * from " + testtableKey, tableSchema);
     final ExchangePairID consumerID1 = ExchangePairID.newID();
     final ExchangePairID consumerID2 = ExchangePairID.newID();
     final LocalMultiwayProducer multiProducer1 =

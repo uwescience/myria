@@ -3,6 +3,7 @@ package edu.washington.escience.myriad.systemtest;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.ProcessBuilder.Redirect;
@@ -27,6 +28,7 @@ import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.collect.ImmutableList;
 
+import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
@@ -123,8 +125,8 @@ public class SystemTestBase {
 
   public static final Schema JOIN_INPUT_SCHEMA = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE),
       ImmutableList.of("id", "name"));
-  public static final String JOIN_TEST_TABLE_1 = "testtable1";
-  public static final String JOIN_TEST_TABLE_2 = "testtable2";
+  public static final RelationKey JOIN_TEST_TABLE_1 = RelationKey.of("test", "test", "testtable1");
+  public static final RelationKey JOIN_TEST_TABLE_2 = RelationKey.of("test", "test", "testtable2");
 
   public static final int MASTER_ID = 0;
 
@@ -139,13 +141,13 @@ public class SystemTestBase {
 
   public static String workerTestBaseFolder;
 
-  public static void createTable(final int workerID, final String tableName, final String sqlSchemaString)
+  public static void createTable(final int workerID, final RelationKey relationKey, final String sqlSchemaString)
       throws IOException, CatalogException {
-    createTable(getAbsoluteDBFile(workerID).getAbsolutePath(), tableName, sqlSchemaString);
+    createTable(getAbsoluteDBFile(workerID).getAbsolutePath(), relationKey, sqlSchemaString);
   }
 
-  public static void createTable(final String dbFileAbsolutePath, final String tableName, final String sqlSchemaString)
-      throws IOException, CatalogException {
+  public static void createTable(final String dbFileAbsolutePath, final RelationKey relationKey,
+      final String sqlSchemaString) throws IOException, CatalogException {
     SQLiteConnection sqliteConnection = null;
     SQLiteStatement statement = null;
     try {
@@ -160,13 +162,13 @@ public class SystemTestBase {
       sqliteConnection.open(true);
 
       /* Create the table if not exist */
-      statement = sqliteConnection.prepare("create table if not exists " + tableName + "(" + sqlSchemaString + ");");
+      statement = sqliteConnection.prepare("create table if not exists " + relationKey + " (" + sqlSchemaString + ");");
 
       statement.step();
       statement.reset();
 
       /* Clear table data in case it already exists */
-      statement = sqliteConnection.prepare("delete from " + tableName);
+      statement = sqliteConnection.prepare("delete from " + relationKey);
       statement.step();
       statement.reset();
 
@@ -182,7 +184,7 @@ public class SystemTestBase {
     }
   }
 
-  public static File getAbsoluteDBFile(final int workerID) throws CatalogException {
+  public static File getAbsoluteDBFile(final int workerID) throws CatalogException, FileNotFoundException {
     final String workerDir = FilenameUtils.concat(workerTestBaseFolder, "worker_" + workerID);
     final WorkerCatalog wc = WorkerCatalog.open(FilenameUtils.concat(workerDir, "worker.catalog"));
     final File ret = new File(wc.getConfigurationValue("worker.data.sqlite.db"));
@@ -248,25 +250,21 @@ public class SystemTestBase {
     startWorkers();
   }
 
-  public static void insert(final int workerID, final String tableName, final Schema schema, final TupleBatch data)
-      throws CatalogException {
-    final String insertTemplate = SQLiteUtils.insertStatementFromSchema(schema, tableName);
+  public static void insert(final int workerID, final RelationKey relationKey, final Schema schema,
+      final TupleBatch data) throws CatalogException, FileNotFoundException {
+    final String insertTemplate = SQLiteUtils.insertStatementFromSchema(schema, relationKey);
     SQLiteAccessMethod.tupleBatchInsert(getAbsoluteDBFile(workerID).getAbsolutePath(), insertTemplate, data);
   }
 
   public static HashMap<Tuple, Integer> simpleRandomJoinTestBase() throws CatalogException, IOException {
-    createTable(WORKER_ID[0], JOIN_TEST_TABLE_1, "id long, name varchar(20)"); // worker 1 partition
-                                                                               // of
-    // table1
-    createTable(WORKER_ID[0], JOIN_TEST_TABLE_2, "id long, name varchar(20)"); // worker 1 partition
-                                                                               // of
-    // table2
-    createTable(WORKER_ID[1], JOIN_TEST_TABLE_1, "id long, name varchar(20)");// worker 2 partition
-                                                                              // of
-    // table1
-    createTable(WORKER_ID[1], JOIN_TEST_TABLE_2, "id long, name varchar(20)");// worker 2 partition
-                                                                              // of
-    // table2
+    /* worker 1 partition of table1 */
+    createTable(WORKER_ID[0], JOIN_TEST_TABLE_1, "id long, name varchar(20)");
+    /* worker 1 partition of table2 */
+    createTable(WORKER_ID[0], JOIN_TEST_TABLE_2, "id long, name varchar(20)");
+    /* worker 2 partition of table1 */
+    createTable(WORKER_ID[1], JOIN_TEST_TABLE_1, "id long, name varchar(20)");
+    /* worker 2 partition of table2 */
+    createTable(WORKER_ID[1], JOIN_TEST_TABLE_2, "id long, name varchar(20)");
 
     final String[] tbl1NamesWorker1 = TestUtils.randomFixedLengthNumericString(1000, 2000, 2, 20);
     final String[] tbl1NamesWorker2 = TestUtils.randomFixedLengthNumericString(1000, 2000, 2, 20);

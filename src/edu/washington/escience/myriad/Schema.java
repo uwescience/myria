@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
@@ -20,6 +21,7 @@ public final class Schema implements Serializable {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
+
   /**
    * Converts a JDBC ResultSetMetaData object into a Schema.
    * 
@@ -70,6 +72,7 @@ public final class Schema implements Serializable {
 
     return new Schema(columnTypes.build(), columnNames.build());
   }
+
   /**
    * Converts a SQLiteStatement object into a Schema.
    * 
@@ -117,33 +120,33 @@ public final class Schema implements Serializable {
   }
 
   /**
-   * Merge two Schemas into one. The result has the fields of the first concatenated with the fields of the second.
+   * Merge two Schemas into one. The result has the columns of the first concatenated with the columns of the second.
    * 
-   * @param first The Schema with the first fields of the new Schema.
-   * @param second The Schema with the last fields of the Schema.
+   * @param first The Schema with the first columns of the new Schema.
+   * @param second The Schema with the last columns of the Schema.
    * @return the new Schema.
    */
   public static Schema merge(final Schema first, final Schema second) {
     final ImmutableList.Builder<Type> types = ImmutableList.builder();
     final ImmutableList.Builder<String> names = ImmutableList.builder();
 
-    types.addAll(first.getTypes()).addAll(second.getTypes());
-    names.addAll(first.getFieldNames()).addAll(second.getFieldNames());
+    types.addAll(first.getColumnTypes()).addAll(second.getColumnTypes());
+    names.addAll(first.getColumnNames()).addAll(second.getColumnNames());
 
     return new Schema(types.build(), names.build());
   }
 
-  /** The types of the fields in this relation. */
-  private final ImmutableList<Type> fieldTypes;
+  /** The types of the columns in this relation. */
+  private final ImmutableList<Type> columnTypes;
 
-  /** The names of the fields in this relation. */
-  private final ImmutableList<String> fieldNames;
+  /** The names of the columns in this relation. */
+  private final ImmutableList<String> columnNames;
 
   /**
    * Helper function to build a Schema from builders.
    * 
-   * @param types the types of the fields in this Schema.
-   * @param names the names of the fields in this Schema.
+   * @param types the types of the columns in this Schema.
+   * @param names the names of the columns in this Schema.
    */
   public Schema(final ImmutableList.Builder<Type> types, final ImmutableList.Builder<String> names) {
     this(types.build(), names.build());
@@ -156,36 +159,40 @@ public final class Schema implements Serializable {
    */
   public Schema(final List<Type> types) {
     Objects.requireNonNull(types);
-    fieldTypes = ImmutableList.copyOf(types);
+    columnTypes = ImmutableList.copyOf(types);
     final ImmutableList.Builder<String> names = ImmutableList.builder();
     for (int i = 0; i < types.size(); i++) {
       names.add("col" + i);
     }
-    fieldNames = names.build();
+    columnNames = names.build();
   }
 
   /**
-   * Create a new Schema with typeAr.length fields with fields of the specified types, with associated named fields.
+   * Create a new Schema with typeAr.length columns with columns of the specified types, with associated named columns.
    * 
-   * @param typeAr array specifying the number of and types of fields in this Schema. It must contain at least one
+   * @param typeAr array specifying the number of and types of columns in this Schema. It must contain at least one
    *          entry.
-   * @param fieldAr array specifying the names of the fields. Note that names may be null.
+   * @param columnAr array specifying the names of the columns. Note that names may be null.
    */
-  public Schema(final List<Type> typeAr, final List<String> fieldAr) {
+  public Schema(final List<Type> typeAr, final List<String> columnAr) {
     Objects.requireNonNull(typeAr);
-    Objects.requireNonNull(fieldAr);
-    if (typeAr.size() != fieldAr.size()) {
-      throw new IllegalArgumentException("Invalid Schema: must have the same number of field types and field");
+    Objects.requireNonNull(columnAr);
+    if (typeAr.size() != columnAr.size()) {
+      throw new IllegalArgumentException("Invalid Schema: must have the same number of column types and column");
     }
-    fieldTypes = ImmutableList.copyOf(typeAr);
-    fieldNames = ImmutableList.copyOf(fieldAr);
+    HashSet<String> uniqueNames = new HashSet<String>(columnAr);
+    if (uniqueNames.size() != columnAr.size()) {
+      throw new IllegalArgumentException("Invalid Schema: column names must be unique.");
+    }
+    columnTypes = ImmutableList.copyOf(typeAr);
+    columnNames = ImmutableList.copyOf(columnAr);
   }
 
   /**
-   * Constructor. Create a new tuple desc with typeAr.length fields with fields of the specified types, with anonymous
-   * (unnamed) fields.
+   * Constructor. Create a new tuple desc with typeAr.length columns with columns of the specified types, with anonymous
+   * (unnamed) columns.
    * 
-   * @param typeAr array specifying the number of and types of fields in this Schema. It must contain at least one
+   * @param typeAr array specifying the number of and types of columns in this Schema. It must contain at least one
    *          entry.
    */
   @Deprecated
@@ -198,8 +205,8 @@ public final class Schema implements Serializable {
    * 
    * This function is deprecated as it requires a copy: arrays are mutable and Schema objects are immutable.
    * 
-   * @param types the types of the fields in this Schema.
-   * @param names the names of the fields in this Schema.
+   * @param types the types of the columns in this Schema.
+   * @param names the names of the columns in this Schema.
    */
   @Deprecated
   public Schema(final Type[] types, final String[] names) {
@@ -220,33 +227,33 @@ public final class Schema implements Serializable {
     }
     final Schema other = (Schema) o;
 
-    return fieldTypes.equals(other.fieldTypes);
+    return columnTypes.equals(other.columnTypes);
   }
 
   /**
-   * Find the index of the field with a given name.
+   * Find the index of the column with a given name.
    * 
-   * @param name name of the field.
-   * @return the index of the field that is first to have the given name.
-   * @throws NoSuchElementException if no field with a matching name is found.
+   * @param name name of the column.
+   * @return the index of the column that is first to have the given name.
+   * @throws NoSuchElementException if no column with a matching name is found.
    */
-  public int fieldNameToIndex(final String name) {
-    final int ret = fieldNames.indexOf(name);
+  public int columnNameToIndex(final String name) {
+    final int ret = columnNames.indexOf(name);
     if (ret == -1) {
-      throw new NoSuchElementException("No field named " + name + " found");
+      throw new NoSuchElementException("No column named " + name + " found");
     }
     return ret;
   }
 
   /**
-   * Gets the (possibly null) field name of the ith field of this Schema.
+   * Gets the (possibly null) column name of the ith column of this Schema.
    * 
-   * @param index index of the field name to return. It must be a valid index.
-   * @return the name of the ith field
-   * @throws IndexOutOfBoundsException if index is negative or not less than numFields.
+   * @param index index of the column name to return. It must be a valid index.
+   * @return the name of the ith column
+   * @throws IndexOutOfBoundsException if index is negative or not less than numColumns.
    */
-  public String getFieldName(final int index) {
-    return fieldNames.get(index);
+  public String getColumnName(final int index) {
+    return columnNames.get(index);
   }
 
   /**
@@ -254,19 +261,19 @@ public final class Schema implements Serializable {
    * 
    * @return an immutable list containing the names of the columns in this Schema.
    */
-  public ImmutableList<String> getFieldNames() {
-    return fieldNames;
+  public ImmutableList<String> getColumnNames() {
+    return columnNames;
   }
 
   /**
-   * Gets the type of the ith field of this Schema.
+   * Gets the type of the ith column of this Schema.
    * 
-   * @param index index of the field to get the type of. It must be a valid index.
-   * @return the type of the ith field
-   * @throws IndexOutOfBoundsException if index is negative or not less than numFields.
+   * @param index index of the column to get the type of. It must be a valid index.
+   * @return the type of the ith column
+   * @throws IndexOutOfBoundsException if index is negative or not less than numColumns.
    */
-  public Type getFieldType(final int index) {
-    return fieldTypes.get(index);
+  public Type getColumnType(final int index) {
+    return columnTypes.get(index);
   }
 
   /**
@@ -274,8 +281,8 @@ public final class Schema implements Serializable {
    * 
    * @return an immutable list containing the types of the columns in this Schema.
    */
-  public ImmutableList<Type> getTypes() {
-    return fieldTypes;
+  public ImmutableList<Type> getColumnTypes() {
+    return columnTypes;
   }
 
   @Override
@@ -286,26 +293,26 @@ public final class Schema implements Serializable {
   }
 
   /**
-   * @return the number of fields in this Schema
+   * @return the number of columns in this Schema
    */
-  public int numFields() {
-    return fieldTypes.size();
+  public int numColumns() {
+    return columnTypes.size();
   }
 
   /**
    * Returns a String describing this descriptor. It should be of the form
-   * "fieldType[0](fieldName[0]), ..., fieldType[M](fieldName[M])", although the exact format does not matter.
+   * "columnType[0](columnName[0]), ..., columnType[M](columnName[M])", although the exact format does not matter.
    * 
    * @return String describing this descriptor.
    */
   @Override
   public String toString() {
     final StringBuilder sb = new StringBuilder();
-    for (int i = 0; i < fieldTypes.size(); ++i) {
+    for (int i = 0; i < columnTypes.size(); ++i) {
       if (i > 0) {
         sb.append(", ");
       }
-      sb.append(fieldNames.get(i)).append(" (").append(fieldTypes.get(i)).append(")");
+      sb.append(columnNames.get(i)).append(" (").append(columnTypes.get(i)).append(")");
     }
     return sb.toString();
   }

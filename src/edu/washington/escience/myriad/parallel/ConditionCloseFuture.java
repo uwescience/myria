@@ -70,10 +70,10 @@ public class ConditionCloseFuture implements ChannelFuture {
 
   @Override
   public boolean await(final long timeout, final TimeUnit unit) throws InterruptedException {
-
+    final long nanosPerMilli = 1000 * 1000;
     final long nano = unit.toNanos(timeout);
-    final long milli = nano / 1000000;
-    final int nanoRemain = (int) (nano - milli * 1000000);
+    final long milli = nano / nanosPerMilli;
+    final int nanoRemain = (int) (nano - milli * nanosPerMilli);
     final long remain = nano - waitForConditionSet(milli, nanoRemain);
 
     if (conditionSetFlag) {
@@ -103,9 +103,10 @@ public class ConditionCloseFuture implements ChannelFuture {
 
   @Override
   public boolean awaitUninterruptibly(final long timeout, final TimeUnit unit) {
+    final long nanosPerMilli = 1000 * 1000;
     final long nano = unit.toNanos(timeout);
-    final long milli = nano / 1000000;
-    final int nanoRemain = (int) (nano - milli * 1000000);
+    final long milli = nano / nanosPerMilli;
+    final int nanoRemain = (int) (nano - milli * nanosPerMilli);
     final long remain = nano - waitForConditionSetUninterruptibly(milli, nanoRemain);
 
     if (conditionSetFlag) {

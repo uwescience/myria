@@ -8,6 +8,7 @@ import org.junit.Test;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
@@ -24,9 +25,9 @@ public class CollectTest extends SystemTestBase {
 
   @Test
   public void collectTest() throws DbException, IOException, CatalogException {
-    final String testtableName = "testtable";
-    createTable(WORKER_ID[0], testtableName, "id long, name varchar(20)");
-    createTable(WORKER_ID[1], testtableName, "id long, name varchar(20)");
+    final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
+    createTable(WORKER_ID[0], testtableKey, "id long, name varchar(20)");
+    createTable(WORKER_ID[1], testtableKey, "id long, name varchar(20)");
 
     final String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, 200, 20);
     final long[] ids = TestUtils.randomLong(1000, 1005, names.length);
@@ -47,13 +48,13 @@ public class CollectTest extends SystemTestBase {
 
     TupleBatch tb = null;
     while ((tb = tbb.popAny()) != null) {
-      insert(WORKER_ID[0], testtableName, schema, tb);
-      insert(WORKER_ID[1], testtableName, schema, tb);
+      insert(WORKER_ID[0], testtableKey, schema, tb);
+      insert(WORKER_ID[1], testtableKey, schema, tb);
     }
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
 
-    final SQLiteQueryScan scanTable = new SQLiteQueryScan(null, "select * from " + testtableName, schema);
+    final SQLiteQueryScan scanTable = new SQLiteQueryScan(null, "select * from " + testtableKey, schema);
 
     final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
     final CollectProducer cp1 = new CollectProducer(scanTable, serverReceiveID, MASTER_ID);

@@ -12,10 +12,16 @@ import java.io.OutputStream;
  * Filesystem util methods.
  * */
 public final class FSUtils {
+  /** A short amount of time to sleep waiting for filesystem events. */
+  public static final int SHORT_SLEEP_MILLIS = 100;
+  /** Block size for file copying. */
+  public static final int BLOCK_SIZE_BYTES = 1024;
 
   /**
    * Delete the pathToDirectory. Return only if the directory is actually get deleted on the disk.
-   * */
+   * 
+   * @param pathToDirectory the directory to be deleted.
+   */
   public static void blockingDeleteDirectory(final String pathToDirectory) {
     final File testBaseFolderF = new File(pathToDirectory);
     try {
@@ -28,7 +34,7 @@ public final class FSUtils {
       finishClean = !testBaseFolderF.exists();
       if (!finishClean) {
         try {
-          Thread.sleep(100);
+          Thread.sleep(SHORT_SLEEP_MILLIS);
         } catch (final InterruptedException e) {
           e.printStackTrace();
           Thread.currentThread().interrupt();
@@ -64,7 +70,7 @@ public final class FSUtils {
         out = new FileOutputStream(dest);
 
         // Transfer bytes from in to out
-        final byte[] buf = new byte[1024];
+        final byte[] buf = new byte[BLOCK_SIZE_BYTES];
         int len;
         while ((len = in.read(buf)) > 0) {
           out.write(buf, 0, len);

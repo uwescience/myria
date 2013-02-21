@@ -50,15 +50,15 @@ public class SingleGroupByAggregate extends Operator {
     }
 
     final Schema childSchema = child.getSchema();
-    if (gfield < 0 || gfield >= childSchema.numFields()) {
+    if (gfield < 0 || gfield >= childSchema.numColumns()) {
       throw new IllegalArgumentException("Invalid group field");
     }
 
     Schema outputSchema = null;
 
     outputSchema =
-        new Schema(ImmutableList.of(childSchema.getFieldType(gfield)), ImmutableList.of(childSchema
-            .getFieldName(gfield)));
+        new Schema(ImmutableList.of(childSchema.getColumnType(gfield)), ImmutableList.of(childSchema
+            .getColumnName(gfield)));
 
     this.child = child;
     this.afields = afields;
@@ -69,29 +69,29 @@ public class SingleGroupByAggregate extends Operator {
 
     int idx = 0;
     for (final int afield : afields) {
-      switch (childSchema.getFieldType(afield)) {
+      switch (childSchema.getColumnType(afield)) {
         case BOOLEAN_TYPE:
-          agg[idx] = new BooleanAggregator(afield, childSchema.getFieldName(afield), aggOps[idx]);
+          agg[idx] = new BooleanAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
           outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
           break;
         case INT_TYPE:
-          agg[idx] = new IntegerAggregator(afield, childSchema.getFieldName(afield), aggOps[idx]);
+          agg[idx] = new IntegerAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
           outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
           break;
         case LONG_TYPE:
-          agg[idx] = new LongAggregator(afield, childSchema.getFieldName(afield), aggOps[idx]);
+          agg[idx] = new LongAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
           outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
           break;
         case FLOAT_TYPE:
-          agg[idx] = new FloatAggregator(afield, childSchema.getFieldName(afield), aggOps[idx]);
+          agg[idx] = new FloatAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
           outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
           break;
         case DOUBLE_TYPE:
-          agg[idx] = new DoubleAggregator(afield, childSchema.getFieldName(afield), aggOps[idx]);
+          agg[idx] = new DoubleAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
           outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
           break;
         case STRING_TYPE:
-          agg[idx] = new StringAggregator(afield, childSchema.getFieldName(afield), aggOps[idx]);
+          agg[idx] = new StringAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
           outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
           break;
       }
@@ -175,7 +175,7 @@ public class SingleGroupByAggregate extends Operator {
         int fromIndex = 1;
         for (final Aggregator element : agg) {
           element.getResult(resultBuffer, fromIndex);
-          fromIndex += element.getResultSchema().numFields();
+          fromIndex += element.getResultSchema().numColumns();
         }
       }
 

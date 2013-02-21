@@ -11,6 +11,7 @@ import org.junit.Test;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
@@ -99,7 +100,7 @@ public class IterativeSelfJoinTest extends SystemTestBase {
     final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
     final ImmutableList<Type> joinTypes =
         ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE);
-    final ImmutableList<String> joinColumnNames = ImmutableList.of("follower", "followee", "follower", "followee");
+    final ImmutableList<String> joinColumnNames = ImmutableList.of("follower1", "followee1", "follower2", "followee2");
     final Schema joinSchema = new Schema(joinTypes, joinColumnNames);
 
     final long[] tbl1ID1Worker1 = TestUtils.randomLong(1, MaxID - 1, numTbl1Worker1);
@@ -125,26 +126,29 @@ public class IterativeSelfJoinTest extends SystemTestBase {
 
     final HashMap<Tuple, Integer> expectedResult = TestUtils.tupleBatchToTupleBag(expectedTBB);
 
+    ArrayList<RelationKey> testtableKeys = new ArrayList<RelationKey>(numIteration);
+
     // database generation
     for (int i = 0; i < numIteration; ++i) {
-      createTable(WORKER_ID[0], "testtable" + i, "follower long, followee long");
-      createTable(WORKER_ID[1], "testtable" + i, "follower long, followee long");
+      testtableKeys.add(RelationKey.of("test", "test", "testtable" + i));
+      createTable(WORKER_ID[0], testtableKeys.get(i), "follower long, followee long");
+      createTable(WORKER_ID[1], testtableKeys.get(i), "follower long, followee long");
     }
     TupleBatch tb = null;
     while ((tb = tbl1Worker1.popAny()) != null) {
       for (int i = 0; i < numIteration; ++i) {
-        insert(WORKER_ID[0], "testtable" + i, tableSchema, tb);
+        insert(WORKER_ID[0], testtableKeys.get(i), tableSchema, tb);
       }
     }
     while ((tb = tbl1Worker2.popAny()) != null) {
       for (int i = 0; i < numIteration; ++i) {
-        insert(WORKER_ID[1], "testtable" + i, tableSchema, tb);
+        insert(WORKER_ID[1], testtableKeys.get(i), tableSchema, tb);
       }
     }
 
     // parallel query generation, duplicate db files
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan(null, "select * from testtable0", tableSchema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan(null, "select * from testtable0", tableSchema);
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan(null, "select * from " + testtableKeys.get(0), tableSchema);
+    final SQLiteQueryScan scan2 = new SQLiteQueryScan(null, "select * from " + testtableKeys.get(0), tableSchema);
 
     final int numPartition = 2;
     final PartitionFunction<String, Integer> pf0 = new SingleFieldHashPartitionFunction(numPartition); // 2 workers
@@ -184,7 +188,7 @@ public class IterativeSelfJoinTest extends SystemTestBase {
       if (i == numIteration - 1) {
         break;
       }
-      scan[i] = new SQLiteQueryScan(null, "select * from testtable" + i, tableSchema);
+      scan[i] = new SQLiteQueryScan(null, "select * from " + testtableKeys.get(i), tableSchema);
       arrayID1 = ExchangePairID.newID();
       arrayID2 = ExchangePairID.newID();
       sp1[i] = new ShuffleProducer(scan[i], arrayID1, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf1);

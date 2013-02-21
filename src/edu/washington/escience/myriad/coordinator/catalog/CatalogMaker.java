@@ -12,7 +12,11 @@ import java.util.logging.Logger;
 import org.apache.commons.io.FilenameUtils;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 
+import edu.washington.escience.myriad.RelationKey;
+import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.parallel.SocketInfo;
 
 /**
@@ -85,8 +89,8 @@ public final class CatalogMaker {
     Map<Integer, SocketInfo> workers;
 
     /* The server configuration. */
+    Catalog c = null;
     try {
-      Catalog c;
       final String catalogFileName = FilenameUtils.concat(baseDirectoryName, "master.catalog");
       final File catalogDir = new File(baseDirectoryName);
       while (!catalogDir.exists()) {
@@ -99,8 +103,21 @@ public final class CatalogMaker {
       }
       masters = c.getMasters();
       workers = c.getWorkers();
+
+      /* A simple test relation. */
+      c.addRelationMetadata(RelationKey.of("test", "test", "testRelation"), new Schema(ImmutableList.of(
+          Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("x", "y")));
+
+      /* Close the master catalog. */
       c.close();
     } catch (final CatalogException e) {
+      try {
+        if (c != null) {
+          c.close();
+        }
+      } catch (Exception e1) {
+        assert true; /* Pass */
+      }
       throw new RuntimeException(e);
     }
 
@@ -205,8 +222,6 @@ public final class CatalogMaker {
         return "eight";
       case 9:
         return "nine";
-      case 10:
-        return "ten";
       default:
         return n + "_";
     }

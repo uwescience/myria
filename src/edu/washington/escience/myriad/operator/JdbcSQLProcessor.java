@@ -45,6 +45,7 @@ public class JdbcSQLProcessor extends Operator {
   protected TupleBatch fetchNext() throws DbException {
     if (!checked) {
       while (child.next() != null) {
+        assert true; /* Do nothing. */
       }
       checked = true;
     }

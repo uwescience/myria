@@ -44,7 +44,7 @@ public class TupleBatchBuffer {
     this.schema = Objects.requireNonNull(schema);
     readyTuples = new LinkedList<List<Column<?>>>();
     currentColumns = ColumnFactory.allocateColumns(schema);
-    numColumns = schema.numFields();
+    numColumns = schema.numColumns();
     columnsReady = new BitSet(numColumns);
     numColumnsReady = 0;
     currentInProgressTuples = 0;
