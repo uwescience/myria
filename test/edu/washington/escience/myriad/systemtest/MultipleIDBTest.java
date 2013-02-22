@@ -433,7 +433,7 @@ public class MultipleIDBTest extends SystemTestBase {
       workerPlans.get(WORKER_ID[1])[i] = workerPlan.get(1).get(i);
     }
 
-    final Long queryId = 0L;
+    final Long queryId = 1L;
     server.dispatchWorkerQueryPlans(queryId, workerPlans);
     LOGGER.debug("Query dispatched to the workers");
     final CollectConsumer serverPlan = new CollectConsumer(tableSchema, serverReceiveID, WORKER_ID);
