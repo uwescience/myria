@@ -1,5 +1,7 @@
 package edu.washington.escience.myriad.parallel;
 
+import java.util.ArrayList;
+
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 
@@ -21,7 +23,13 @@ public abstract class Producer extends Operator {
   }
 
   public Producer(final ExchangePairID[] oIDs) {
-    operatorIDs = oIDs;
+    ArrayList<ExchangePairID> tmp = new ArrayList<ExchangePairID>();
+    for (ExchangePairID id : oIDs) {
+      if (id != null) {
+        tmp.add(id);
+      }
+    }
+    operatorIDs = tmp.toArray(new ExchangePairID[0]);
   }
 
   public IPCConnectionPool getConnectionPool() {

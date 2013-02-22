@@ -132,8 +132,8 @@ public class MultipleIDBTest extends SystemTestBase {
 
   public void generateJoinPlan(final ArrayList<ArrayList<Operator>> workerPlan, final Schema tableSchema,
       final Schema joinSchema, final String initName, final ExchangePairID eoiReceiverOpID, final boolean isHead,
-      final boolean isTail, final ExchangePairID sendingOpID, final ExchangePairID receivingOpID,
-      final ExchangePairID eosReceiverOpID, final int selfIDBID) throws DbException {
+      final ExchangePairID sendingOpID, final ExchangePairID receivingOpID, final ExchangePairID eosReceiverOpID,
+      final ExchangePairID serverReceivingOpID, final int selfIDBID) throws DbException {
 
     final int numPartition = 2;
     final PartitionFunction<String, Integer> pf0 = new SingleFieldHashPartitionFunction(numPartition);
@@ -166,16 +166,34 @@ public class MultipleIDBTest extends SystemTestBase {
         new IDBInput(tableSchema, WORKER_ID[0], selfIDBID, eoiReceiverOpID, WORKER_ID[0], sc2, sc3_worker1, eosReceiver);
     final IDBInput idbinput_worker2 =
         new IDBInput(tableSchema, WORKER_ID[1], selfIDBID, eoiReceiverOpID, WORKER_ID[0], sc2, sc3_worker2, eosReceiver);
-    final ExchangePairID consumerID1 = ExchangePairID.newID();
-    final ExchangePairID consumerID2 = ExchangePairID.newID();
+
+    final ExchangePairID[] consumerIDs = new ExchangePairID[] { ExchangePairID.newID(), null, null };
+    if (sendingOpID != null) {
+      consumerIDs[1] = ExchangePairID.newID();
+    }
+    if (serverReceivingOpID != null) {
+      consumerIDs[2] = ExchangePairID.newID();
+    }
     final LocalMultiwayProducer multiProducer_worker1 =
-        new LocalMultiwayProducer(idbinput_worker1, new ExchangePairID[] { consumerID1, consumerID2 }, WORKER_ID[0]);
+        new LocalMultiwayProducer(idbinput_worker1, consumerIDs, WORKER_ID[0]);
     final LocalMultiwayProducer multiProducer_worker2 =
-        new LocalMultiwayProducer(idbinput_worker2, new ExchangePairID[] { consumerID1, consumerID2 }, WORKER_ID[1]);
-    final LocalMultiwayConsumer send2join_worker1 = new LocalMultiwayConsumer(tableSchema, consumerID1, WORKER_ID[0]);
-    final LocalMultiwayConsumer send2join_worker2 = new LocalMultiwayConsumer(tableSchema, consumerID1, WORKER_ID[1]);
-    final LocalMultiwayConsumer send2others_worker1 = new LocalMultiwayConsumer(tableSchema, consumerID2, WORKER_ID[0]);
-    final LocalMultiwayConsumer send2others_worker2 = new LocalMultiwayConsumer(tableSchema, consumerID2, WORKER_ID[1]);
+        new LocalMultiwayProducer(idbinput_worker2, consumerIDs, WORKER_ID[1]);
+    final LocalMultiwayConsumer send2join_worker1 =
+        new LocalMultiwayConsumer(tableSchema, consumerIDs[0], WORKER_ID[0]);
+    final LocalMultiwayConsumer send2join_worker2 =
+        new LocalMultiwayConsumer(tableSchema, consumerIDs[0], WORKER_ID[1]);
+    LocalMultiwayConsumer send2others_worker1 = null;
+    LocalMultiwayConsumer send2others_worker2 = null;
+    if (sendingOpID != null) {
+      send2others_worker1 = new LocalMultiwayConsumer(tableSchema, consumerIDs[1], WORKER_ID[0]);
+      send2others_worker2 = new LocalMultiwayConsumer(tableSchema, consumerIDs[1], WORKER_ID[1]);
+    }
+    LocalMultiwayConsumer send2server_worker1 = null;
+    LocalMultiwayConsumer send2server_worker2 = null;
+    if (serverReceivingOpID != null) {
+      send2server_worker1 = new LocalMultiwayConsumer(tableSchema, consumerIDs[2], WORKER_ID[0]);
+      send2server_worker2 = new LocalMultiwayConsumer(tableSchema, consumerIDs[2], WORKER_ID[1]);
+    }
     final LocalJoin join_worker1 = new LocalJoin(joinSchema, sc1, send2join_worker1, new int[] { 1 }, new int[] { 0 });
     final LocalJoin join_worker2 = new LocalJoin(joinSchema, sc1, send2join_worker2, new int[] { 1 }, new int[] { 0 });
     final Project proj_worker1 = new Project(new Integer[] { 0, 3 }, join_worker1);
@@ -186,12 +204,13 @@ public class MultipleIDBTest extends SystemTestBase {
     workerPlan.get(0).addAll(Arrays.asList(new Operator[] { multiProducer_worker1, sp2, sp3_worker1 }));
     workerPlan.get(1).addAll(Arrays.asList(new Operator[] { multiProducer_worker2, sp2, sp3_worker2 }));
 
-    if (isTail) {
-      final CollectProducer cp_worker1 = new CollectProducer(send2others_worker1, sendingOpID, MASTER_ID);
-      final CollectProducer cp_worker2 = new CollectProducer(send2others_worker2, sendingOpID, MASTER_ID);
+    if (serverReceivingOpID != null) {
+      final CollectProducer cp_worker1 = new CollectProducer(send2server_worker1, serverReceivingOpID, MASTER_ID);
+      final CollectProducer cp_worker2 = new CollectProducer(send2server_worker2, serverReceivingOpID, MASTER_ID);
       workerPlan.get(0).add(cp_worker1);
       workerPlan.get(1).add(cp_worker2);
-    } else {
+    }
+    if (sendingOpID != null) {
       final ShuffleProducer sp_others_worker1 = new ShuffleProducer(send2others_worker1, sendingOpID, WORKER_ID, pf1);
       final ShuffleProducer sp_others_worker2 = new ShuffleProducer(send2others_worker2, sendingOpID, WORKER_ID, pf1);
       workerPlan.get(0).add(sp_others_worker1);
@@ -201,7 +220,7 @@ public class MultipleIDBTest extends SystemTestBase {
 
   @Test
   public void joinChain() throws DbException, CatalogException, IOException {
-    // EDB: R, A0, B0
+    // EDB: R, A0, B0, C0
     // A := A0
     // A := R join A
     // B := B0
@@ -242,12 +261,12 @@ public class MultipleIDBTest extends SystemTestBase {
     final ExchangePairID receivingAonB = ExchangePairID.newID();
     final ExchangePairID receivingBonC = ExchangePairID.newID();
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
-    generateJoinPlan(workerPlan, tableSchema, joinSchema, "a0", eoiReceiverOpID, true, false, receivingAonB, null,
-        eosReceiverOpID_idb1, 0);
-    generateJoinPlan(workerPlan, tableSchema, joinSchema, "b0", eoiReceiverOpID, false, false, receivingBonC,
-        receivingAonB, eosReceiverOpID_idb2, 1);
-    generateJoinPlan(workerPlan, tableSchema, joinSchema, "c0", eoiReceiverOpID, false, true, serverReceiveID,
-        receivingBonC, eosReceiverOpID_idb3, 2);
+    generateJoinPlan(workerPlan, tableSchema, joinSchema, "a0", eoiReceiverOpID, true, receivingAonB, null,
+        eosReceiverOpID_idb1, null, 0);
+    generateJoinPlan(workerPlan, tableSchema, joinSchema, "b0", eoiReceiverOpID, false, receivingBonC, receivingAonB,
+        eosReceiverOpID_idb2, null, 1);
+    generateJoinPlan(workerPlan, tableSchema, joinSchema, "c0", eoiReceiverOpID, false, null, receivingBonC,
+        eosReceiverOpID_idb3, serverReceiveID, 2);
 
     final Consumer eoiReceiver = new Consumer(getEOIReportSchema(), eoiReceiverOpID, WORKER_ID);
     final EOSController eosController =
@@ -271,7 +290,155 @@ public class MultipleIDBTest extends SystemTestBase {
     final CollectConsumer serverPlan = new CollectConsumer(tableSchema, serverReceiveID, WORKER_ID);
     TupleBatchBuffer result = server.startServerQuery(queryId, serverPlan);
     final HashMap<Tuple, Integer> actual = TestUtils.tupleBatchToTupleBag(result);
-    System.out.println(b.numTuples() + " " + result.numTuples());
+    TestUtils.assertTupleBagEqual(expectedResult, actual);
+  }
+
+  public TupleBatchBuffer getCircularJoinResult(TupleBatchBuffer a, TupleBatchBuffer b, TupleBatchBuffer c,
+      Schema schema) {
+
+    final Iterator<List<Column<?>>> iter1 = a.getAllAsRawColumn().iterator();
+    boolean s1[][] = new boolean[MaxID][MaxID];
+    while (iter1.hasNext()) {
+      List<Column<?>> output = iter1.next();
+      int numRow = output.get(0).size();
+      for (int i = 0; i < numRow; i++) {
+        int fr = Integer.parseInt(output.get(0).get(i).toString());
+        int fe = Integer.parseInt(output.get(1).get(i).toString());
+        s1[fr][fe] = true;
+      }
+    }
+    final Iterator<List<Column<?>>> iter2 = b.getAllAsRawColumn().iterator();
+    boolean s2[][] = new boolean[MaxID][MaxID];
+    while (iter2.hasNext()) {
+      List<Column<?>> output = iter2.next();
+      int numRow = output.get(0).size();
+      for (int i = 0; i < numRow; i++) {
+        int fr = Integer.parseInt(output.get(0).get(i).toString());
+        int fe = Integer.parseInt(output.get(1).get(i).toString());
+        s2[fr][fe] = true;
+      }
+    }
+    final Iterator<List<Column<?>>> iter3 = c.getAllAsRawColumn().iterator();
+    boolean s3[][] = new boolean[MaxID][MaxID];
+    while (iter3.hasNext()) {
+      List<Column<?>> output = iter3.next();
+      int numRow = output.get(0).size();
+      for (int i = 0; i < numRow; i++) {
+        int fr = Integer.parseInt(output.get(0).get(i).toString());
+        int fe = Integer.parseInt(output.get(1).get(i).toString());
+        s3[fr][fe] = true;
+      }
+    }
+
+    while (true) {
+      boolean update = false;
+      for (int i = 0; i < MaxID; ++i) {
+        for (int j = 0; j < MaxID; ++j) {
+          for (int k = 0; k < MaxID; ++k) {
+            if (s3[j][i] && s1[i][k] && !s1[j][k]) {
+              s1[j][k] = true;
+              update = true;
+            }
+            if (s1[j][i] && s2[i][k] && !s2[j][k]) {
+              s2[j][k] = true;
+              update = true;
+            }
+            if (s2[j][i] && s3[i][k] && !s3[j][k]) {
+              s3[j][k] = true;
+              update = true;
+            }
+          }
+        }
+      }
+      if (!update) {
+        break;
+      }
+    }
+
+    TupleBatchBuffer result = new TupleBatchBuffer(schema);
+    for (int i = 0; i < MaxID; ++i) {
+      for (int j = 0; j < MaxID; ++j) {
+        if (s3[i][j]) {
+          result.put(0, (long) i);
+          result.put(1, (long) j);
+          LOGGER.debug(i + "\t" + j);
+        }
+      }
+    }
+    LOGGER.debug("" + result.numTuples());
+    return result;
+  }
+
+  @Test
+  public void joinCircle() throws DbException, CatalogException, IOException {
+    // EDB: A0, B0, C0
+    // A := A0
+    // B := B0
+    // C := C0
+    // A := C join A
+    // B := A join B
+    // C := B join C
+    // ans: C
+
+    // data generation
+    final ImmutableList<Type> table1Types = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
+    final ImmutableList<String> table1ColumnNames = ImmutableList.of("follower", "followee");
+    final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
+    final ImmutableList<Type> joinTypes =
+        ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE);
+    final ImmutableList<String> joinColumnNames = ImmutableList.of("follower", "followee", "follower", "followee");
+    final Schema joinSchema = new Schema(joinTypes, joinColumnNames);
+
+    // generate the graph
+    TupleBatchBuffer a0 = generateAMatrix("A0", tableSchema);
+    TupleBatchBuffer b0 = generateAMatrix("B0", tableSchema);
+    TupleBatchBuffer c0 = generateAMatrix("C0", tableSchema);
+
+    // generate the correct answer in memory
+    TupleBatchBuffer tmp = getCircularJoinResult(a0, b0, c0, tableSchema);
+    HashMap<Tuple, Integer> expectedResult = TestUtils.tupleBatchToTupleBag(tmp);
+
+    // the query plan
+    final ArrayList<ArrayList<Operator>> workerPlan = new ArrayList<ArrayList<Operator>>();
+    workerPlan.add(new ArrayList<Operator>());
+    workerPlan.add(new ArrayList<Operator>());
+    final ExchangePairID eoiReceiverOpID = ExchangePairID.newID();
+    final ExchangePairID eosReceiverOpID_idb1 = ExchangePairID.newID();
+    final ExchangePairID eosReceiverOpID_idb2 = ExchangePairID.newID();
+    final ExchangePairID eosReceiverOpID_idb3 = ExchangePairID.newID();
+    final ExchangePairID receivingAonB = ExchangePairID.newID();
+    final ExchangePairID receivingBonC = ExchangePairID.newID();
+    final ExchangePairID receivingConA = ExchangePairID.newID();
+    final ExchangePairID serverReceiveID = ExchangePairID.newID();
+    generateJoinPlan(workerPlan, tableSchema, joinSchema, "a0", eoiReceiverOpID, false, receivingAonB, receivingConA,
+        eosReceiverOpID_idb1, null, 0);
+    generateJoinPlan(workerPlan, tableSchema, joinSchema, "b0", eoiReceiverOpID, false, receivingBonC, receivingAonB,
+        eosReceiverOpID_idb2, null, 1);
+    generateJoinPlan(workerPlan, tableSchema, joinSchema, "c0", eoiReceiverOpID, false, receivingConA, receivingBonC,
+        eosReceiverOpID_idb3, serverReceiveID, 2);
+
+    final Consumer eoiReceiver = new Consumer(getEOIReportSchema(), eoiReceiverOpID, WORKER_ID);
+    final EOSController eosController =
+        new EOSController(eoiReceiver, eoiReceiverOpID, new ExchangePairID[] {
+            eosReceiverOpID_idb1, eosReceiverOpID_idb2, eosReceiverOpID_idb3 }, WORKER_ID);
+    workerPlan.get(0).add(eosController);
+
+    HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
+    workerPlans.put(WORKER_ID[0], new Operator[workerPlan.get(0).size()]);
+    workerPlans.put(WORKER_ID[1], new Operator[workerPlan.get(1).size()]);
+    for (int i = 0; i < workerPlan.get(0).size(); ++i) {
+      workerPlans.get(WORKER_ID[0])[i] = workerPlan.get(0).get(i);
+    }
+    for (int i = 0; i < workerPlan.get(1).size(); ++i) {
+      workerPlans.get(WORKER_ID[1])[i] = workerPlan.get(1).get(i);
+    }
+
+    final Long queryId = 0L;
+    server.dispatchWorkerQueryPlans(queryId, workerPlans);
+    LOGGER.debug("Query dispatched to the workers");
+    final CollectConsumer serverPlan = new CollectConsumer(tableSchema, serverReceiveID, WORKER_ID);
+    TupleBatchBuffer result = server.startServerQuery(queryId, serverPlan);
+    final HashMap<Tuple, Integer> actual = TestUtils.tupleBatchToTupleBag(result);
     TestUtils.assertTupleBagEqual(expectedResult, actual);
   }
 
