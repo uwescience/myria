@@ -206,7 +206,9 @@ public class MultipleIDBTest extends SystemTestBase {
     // A := R join A
     // B := B0
     // B := A join B
-    // ans: B
+    // C := C0
+    // C := B join C
+    // ans: C
 
     // data generation
     final ImmutableList<Type> table1Types = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
@@ -221,11 +223,13 @@ public class MultipleIDBTest extends SystemTestBase {
     TupleBatchBuffer r = generateAMatrix("R", tableSchema);
     TupleBatchBuffer a0 = generateAMatrix("A0", tableSchema);
     TupleBatchBuffer b0 = generateAMatrix("B0", tableSchema);
+    TupleBatchBuffer c0 = generateAMatrix("C0", tableSchema);
 
     // generate the correct answer in memory
     TupleBatchBuffer a = getAJoinResult(a0, r, tableSchema);
     TupleBatchBuffer b = getAJoinResult(b0, a, tableSchema);
-    HashMap<Tuple, Integer> expectedResult = TestUtils.tupleBatchToTupleBag(b);
+    TupleBatchBuffer c = getAJoinResult(c0, b, tableSchema);
+    HashMap<Tuple, Integer> expectedResult = TestUtils.tupleBatchToTupleBag(c);
 
     // the query plan
     final ArrayList<ArrayList<Operator>> workerPlan = new ArrayList<ArrayList<Operator>>();
@@ -234,17 +238,21 @@ public class MultipleIDBTest extends SystemTestBase {
     final ExchangePairID eoiReceiverOpID = ExchangePairID.newID();
     final ExchangePairID eosReceiverOpID_idb1 = ExchangePairID.newID();
     final ExchangePairID eosReceiverOpID_idb2 = ExchangePairID.newID();
+    final ExchangePairID eosReceiverOpID_idb3 = ExchangePairID.newID();
     final ExchangePairID receivingAonB = ExchangePairID.newID();
+    final ExchangePairID receivingBonC = ExchangePairID.newID();
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     generateJoinPlan(workerPlan, tableSchema, joinSchema, "a0", eoiReceiverOpID, true, false, receivingAonB, null,
         eosReceiverOpID_idb1, 0);
-    generateJoinPlan(workerPlan, tableSchema, joinSchema, "b0", eoiReceiverOpID, false, true, serverReceiveID,
+    generateJoinPlan(workerPlan, tableSchema, joinSchema, "b0", eoiReceiverOpID, false, false, receivingBonC,
         receivingAonB, eosReceiverOpID_idb2, 1);
+    generateJoinPlan(workerPlan, tableSchema, joinSchema, "c0", eoiReceiverOpID, false, true, serverReceiveID,
+        receivingBonC, eosReceiverOpID_idb3, 2);
 
     final Consumer eoiReceiver = new Consumer(getEOIReportSchema(), eoiReceiverOpID, WORKER_ID);
     final EOSController eosController =
         new EOSController(eoiReceiver, eoiReceiverOpID, new ExchangePairID[] {
-            eosReceiverOpID_idb1, eosReceiverOpID_idb2 }, WORKER_ID);
+            eosReceiverOpID_idb1, eosReceiverOpID_idb2, eosReceiverOpID_idb3 }, WORKER_ID);
     workerPlan.get(0).add(eosController);
 
     HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
