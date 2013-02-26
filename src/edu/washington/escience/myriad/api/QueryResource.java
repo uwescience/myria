@@ -10,7 +10,6 @@ import java.util.Objects;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
@@ -19,7 +18,6 @@ import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
-import org.codehaus.jackson.map.ObjectMapper;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
@@ -45,18 +43,14 @@ public final class QueryResource {
   /**
    * For now, simply echoes back its input.
    * 
-   * @param input the payload of the POST request itself.
+   * @param userData the payload of the POST request itself.
    * @param uriInfo the URI of the current request.
-   * @return the payload.
+   * @return the URI of the created query.
    */
   @POST
-  @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public Response postNewQuery(final String input, @Context final UriInfo uriInfo) {
+  public Response postNewQuery(final Map<?, ?> userData, @Context final UriInfo uriInfo) {
     try {
-      ObjectMapper mapper = new ObjectMapper();
-      final Map<?, ?> userData;
-      userData = mapper.readValue(input, Map.class);
       /* Must contain the raw data, the logical_ra, and the query_plan. */
       if (!userData.containsKey("raw_datalog") || !userData.containsKey("logical_ra")
           || !userData.containsKey("query_plan")) {
@@ -68,6 +62,13 @@ public final class QueryResource {
       final String rawQuery = (String) userData.get("raw_datalog");
       final String logicalRa = (String) userData.get("logical_ra");
       Map<Integer, Operator[]> queryPlan = deserializeJsonQueryPlan(userData.get("query_plan"));
+
+      /* Make sure that the requested workers are alive. */
+      if (!MasterApiServer.getMyriaServer().getAliveWorkers().containsAll(queryPlan.keySet())) {
+        /* Throw a 503 (Service Unavailable) */
+        throw new WebApplicationException(Response.status(Status.SERVICE_UNAVAILABLE).build());
+      }
+
       /* Start the query, and get its Server-assigned Query ID */
       final Long queryId = MasterApiServer.getMyriaServer().startQuery(rawQuery, logicalRa, queryPlan);
       /* In the response, tell the client what ID this query was assigned. */
@@ -154,84 +155,121 @@ public final class QueryResource {
     String relationName;
     Operator child;
     Operator child2;
-    int i;
 
     /* Do the case-by-case work. */
     switch (opType) {
       case "SQLiteInsert":
-        childName = (String) jsonOperator.get("arg_child");
-        Objects.requireNonNull(childName, "missing SQLiteInsert field: arg_child");
+        childName = deserializeString(jsonOperator, "arg_child");
         child = operators.get(childName);
         Objects.requireNonNull(child, "SQLiteInsert child Operator " + childName + " not previously defined");
-        userName = (String) jsonOperator.get("arg_user_name");
-        Objects.requireNonNull(userName, "missing SQLiteInsert field: arg_user_name");
-        programName = (String) jsonOperator.get("arg_program_name");
-        Objects.requireNonNull(programName, "missing SQLiteInsert field: arg_program_name");
-        relationName = (String) jsonOperator.get("arg_relation_name");
-        Objects.requireNonNull(relationName, "missing SQLiteInsert field: arg_relation_name");
-        if (jsonOperator.containsKey("arg_overwrite_table")) {
-          Boolean overwrite = Boolean.parseBoolean((String) jsonOperator.get("arg_overwrite_table"));
-          return new SQLiteInsert(child, RelationKey.of(userName, programName, relationName), null, null, overwrite);
+        userName = deserializeString(jsonOperator, "arg_user_name");
+        programName = deserializeString(jsonOperator, "arg_program_name");
+        relationName = deserializeString(jsonOperator, "arg_relation_name");
+        String overwriteString = deserializeOptionalField(jsonOperator, "arg_overwrite_table");
+        Boolean overwrite = Boolean.FALSE;
+        if (overwriteString != null) {
+          overwrite = Boolean.parseBoolean(overwriteString);
         }
-        return new SQLiteInsert(child, RelationKey.of(userName, programName, relationName), null, null);
+        return new SQLiteInsert(child, RelationKey.of(userName, programName, relationName), null, null, overwrite);
 
       case "LocalJoin":
         /* Child 1 */
-        childName = (String) jsonOperator.get("arg_child1");
-        List<?> child1ColumnStr = (List<?>) jsonOperator.get("arg_columns1");
-        /* Child 1 checks */
-        Objects.requireNonNull(childName, "missing LocalJoin field: arg_child1");
-        Objects.requireNonNull(child1ColumnStr, "missing LocalJoin field: arg_columns1");
+        childName = deserializeString(jsonOperator, "arg_child1");
+        int[] child1columns = deserializeIntArray(jsonOperator, "arg_columns1", false);
         /* Child 2 arguments */
-        child2Name = (String) jsonOperator.get("arg_child2");
-        List<?> child2ColumnStr = (List<?>) jsonOperator.get("arg_columns2");
-        /* Child 2 checks */
-        Objects.requireNonNull(childName, "missing LocalJoin field: arg_child2");
-        Objects.requireNonNull(child2ColumnStr, "missing LocalJoin field: arg_columns2");
+        child2Name = deserializeString(jsonOperator, "arg_child2");
+        int[] child2columns = deserializeIntArray(jsonOperator, "arg_columns2", false);
         /* Mutual checks */
-        Preconditions.checkState(child1ColumnStr.size() == child2ColumnStr.size(),
+        Preconditions.checkState(child1columns.length == child2columns.length,
             "arg_columns1 and arg_columns2 must have the same length!");
 
-        /* Convert the arguments over */
+        /* Find the operators. */
         child = operators.get(childName);
         Objects.requireNonNull(child, "LocalJoin child Operator " + childName + " not previously defined");
         child2 = operators.get(child2Name);
         Objects.requireNonNull(child2, "LocalJoin child2 Operator " + child2Name + " not previously defined");
-        /* Child 1 columns */
-        int[] child1Columns = new int[child1ColumnStr.size()];
-        i = 0;
-        for (final Object o : child1ColumnStr) {
-          child1Columns[i] = Integer.parseInt((String) o);
+
+        /* Get the optional arguments. */
+        int[] child1select = deserializeIntArray(jsonOperator, "arg_select1", true);
+        int[] child2select = deserializeIntArray(jsonOperator, "arg_select2", true);
+        if ((child1select != null) && (child2select != null)) {
+          return new LocalJoin(child, child2, child1columns, child2columns, child1select, child2select);
         }
-        /* Child 2 columns */
-        int[] child2Columns = new int[child2ColumnStr.size()];
-        i = 0;
-        for (final Object o : child2ColumnStr) {
-          child2Columns[i] = Integer.parseInt((String) o);
+        if ((child1select == null) && (child2select == null)) {
+          return new LocalJoin(child, child2, child1columns, child2columns);
         }
-        return new LocalJoin(child, child2, child1Columns, child2Columns);
+        throw new IllegalArgumentException(
+            "LocalJoin: either both or neither of arg_select1 and arg_select2 must be specified");
 
       case "SQLiteScan":
-        userName = (String) jsonOperator.get("arg_user_name");
-        Objects.requireNonNull(userName, "missing SQLiteScan field: arg_user_name");
-        programName = (String) jsonOperator.get("arg_program_name");
-        Objects.requireNonNull(programName, "missing SQLiteScan field: arg_program_name");
-        relationName = (String) jsonOperator.get("arg_relation_name");
-        Objects.requireNonNull(relationName, "missing SQLiteScan field: arg_relation_name");
+        userName = deserializeString(jsonOperator, "arg_user_name");
+        programName = deserializeString(jsonOperator, "arg_program_name");
+        relationName = deserializeString(jsonOperator, "arg_relation_name");
+        RelationKey relationKey = RelationKey.of(userName, programName, relationName);
         Schema schema;
         try {
-          schema = MasterApiServer.getMyriaServer().getSchema(RelationKey.of(userName, programName, relationName));
+          schema = MasterApiServer.getMyriaServer().getSchema(relationKey);
         } catch (final CatalogException e) {
           /* Throw a 500 (Internal Server Error) */
           throw new WebApplicationException(Response.status(Status.INTERNAL_SERVER_ERROR).build());
         }
         if (schema == null) {
-          throw new IOException("Specified relation " + relationName + " does not exist.");
+          throw new IOException("Specified relation " + relationKey + " does not exist.");
         }
-        return new SQLiteQueryScan(null, "SELECT * from " + relationName, schema);
+        return new SQLiteQueryScan(null, "SELECT * from " + relationKey, schema);
 
       default:
         throw new RuntimeException("Not implemented deserializing Operator of type " + opType);
     }
+  }
+
+  /**
+   * Helper function to deserialize a String.
+   * 
+   * @param map the JSON map.
+   * @param field the name of the field.
+   * @return the String value of the field.
+   * @throws NullPointerException if the field is not present.
+   */
+  private static String deserializeString(final Map<String, Object> map, final String field) {
+    Object ret = map.get(field);
+    Objects.requireNonNull(ret, "missing field: " + field);
+    return (String) ret;
+  }
+
+  /**
+   * Helper function to deserialize an optional String.
+   * 
+   * @param map the JSON map.
+   * @param field the name of the field.
+   * @return the String value of the field, or null if the field is not present.
+   */
+  private static String deserializeOptionalField(final Map<String, Object> map, final String field) {
+    Object ret = map.get(field);
+    return (String) ret;
+  }
+
+  /**
+   * Helper function to deserialize an array of Integers.
+   * 
+   * @param map the JSON map.
+   * @param field the field containing the list.
+   * @param optional whether the field is optional, or an IllegalArgumentException should be thrown.
+   * @return the list of integers stored in field, or null if the field is missing and optional is true.
+   */
+  private static int[] deserializeIntArray(final Map<String, Object> map, final String field, final boolean optional) {
+    List<?> list = (List<?>) map.get(field);
+    if (list == null) {
+      if (optional) {
+        return null;
+      }
+      Preconditions.checkArgument(false, "mandatory field " + field + " missing");
+    }
+    int[] ret = new int[list.size()];
+    int count = 0;
+    for (final Object o : list) {
+      ret[count] = Integer.parseInt((String) o);
+    }
+    return ret;
   }
 }

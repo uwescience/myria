@@ -22,7 +22,6 @@ import edu.washington.escience.myriad.operator.DupElim;
 import edu.washington.escience.myriad.operator.IDBInput;
 import edu.washington.escience.myriad.operator.LocalJoin;
 import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.operator.Project;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
@@ -93,10 +92,6 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     final ImmutableList<Type> table1Types = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
     final ImmutableList<String> table1ColumnNames = ImmutableList.of("follower", "followee");
     final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
-    final ImmutableList<Type> joinTypes =
-        ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE);
-    final ImmutableList<String> joinColumnNames = ImmutableList.of("follower1", "followee1", "follower2", "followee2");
-    final Schema joinSchema = new Schema(joinTypes, joinColumnNames);
     RelationKey identityKey = RelationKey.of("test", "test", "identity");
     RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
 
@@ -191,15 +186,15 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     final ShuffleConsumer sc2_worker2 =
         new ShuffleConsumer(sp2_worker2.getSchema(), joinArray2ID, new int[] { WORKER_ID[0], WORKER_ID[1] });
 
-    final LocalJoin join_worker1 = new LocalJoin(joinSchema, sc1, sc2_worker1, new int[] { 1 }, new int[] { 0 });
-    final LocalJoin join_worker2 = new LocalJoin(joinSchema, sc1, sc2_worker2, new int[] { 1 }, new int[] { 0 });
-    final Project proj_worker1 = new Project(new Integer[] { 0, 3 }, join_worker1);
-    final Project proj_worker2 = new Project(new Integer[] { 0, 3 }, join_worker2);
+    final LocalJoin join_worker1 =
+        new LocalJoin(sc1, sc2_worker1, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
+    final LocalJoin join_worker2 =
+        new LocalJoin(sc1, sc2_worker2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
     ExchangePairID beforeDE = ExchangePairID.newID();
     final ShuffleProducer sp3_worker1 =
-        new ShuffleProducer(proj_worker1, beforeDE, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf0);
+        new ShuffleProducer(join_worker1, beforeDE, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf0);
     final ShuffleProducer sp3_worker2 =
-        new ShuffleProducer(proj_worker2, beforeDE, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf0);
+        new ShuffleProducer(join_worker2, beforeDE, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf0);
     final ShuffleConsumer sc3_worker1 =
         new ShuffleConsumer(sp3_worker1.getSchema(), beforeDE, new int[] { WORKER_ID[0], WORKER_ID[1] });
     final ShuffleConsumer sc3_worker2 =

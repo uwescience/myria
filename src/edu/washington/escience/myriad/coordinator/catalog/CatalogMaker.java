@@ -31,13 +31,18 @@ public final class CatalogMaker {
   /**
    * Used in Catalog creation.
    * 
-   * @param args unused arguments.
+   * args[0]: directory name
+   * 
+   * args[1]: number of workers
+   * 
+   * args[2]: master, if specified, otherwise localhost
+   * 
+   * args[3-n]: workers, if specified, otherwise localhost
+   * 
+   * @param args contains the parameters necessary to start the catalog.
+   * @throws IOException if there is an error creating the catalog.
    */
-  public static void main(final String[] args) {
-    // args[0]: directory name
-    // args[1]: number of workers
-    // args[2]: master, if specified, otherwise localhost
-    // args[3-n]: workers, if specified, otherwise localhost
+  public static void main(final String[] args) throws IOException {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
     Preconditions.checkArgument(args.length >= 2, "Usage: CatalogMaker <directory> <N> [master] [workers...]");
     try {
@@ -48,8 +53,10 @@ public final class CatalogMaker {
       }
     } catch (final IOException e) {
       System.err.println("Error creating catalog " + args[0] + ": " + e.getMessage());
+      throw (e);
     } catch (final NumberFormatException e) {
       System.err.println("args[1] " + args[1] + " is not a number!");
+      throw (e);
     }
   }
 
@@ -77,8 +84,7 @@ public final class CatalogMaker {
    * Creates a Catalog for an N-node parallel system on the local machine and the corresponding WorkerCatalogs, with
    * node addresses and ports specified.
    * 
-   * @param directoryName the directory where all the files should be stored.
-   * @param n the number of nodes.
+   * @param args the description and list of machines in this catalog.
    * @throws IOException if the catalog file already exists.
    */
   public static void makeNNodesParallelCatalog(final String[] args) throws IOException {
@@ -105,8 +111,8 @@ public final class CatalogMaker {
       workers = c.getWorkers();
 
       /* A simple test relation. */
-      c.addRelationMetadata(RelationKey.of("test", "test", "testRelation"), new Schema(ImmutableList.of(
-          Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("x", "y")));
+      c.addRelationMetadata(RelationKey.of("test", "test", "testRelation"), new Schema(ImmutableList.of(Type.LONG_TYPE,
+          Type.LONG_TYPE), ImmutableList.of("x", "y")));
 
       /* Close the master catalog. */
       c.close();

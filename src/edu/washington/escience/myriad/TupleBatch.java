@@ -497,7 +497,7 @@ public class TupleBatch {
 
   @Override
   public final String toString() {
-    final ImmutableList<Type> columnTypes = schema.getColumnTypes();
+    final List<Type> columnTypes = schema.getColumnTypes();
     final StringBuilder sb = new StringBuilder();
     for (final int i : getValidIndices()) {
       sb.append("|\t");

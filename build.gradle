@@ -142,7 +142,11 @@ eclipse.classpath {
 }
 
 jar {
-  excludes = [ 'META-INF/**/*' ]
+  manifest {
+    attributes("Implementation-Title" : "Myria",
+               "Implementation-Version": version,
+	       "Main-Class": "edu.washington.escience.myriad.daemon.MasterDaemon")
+  }
 
   from configurations.runtime.collect {
     it.isDirectory() ? it : zipTree(it)

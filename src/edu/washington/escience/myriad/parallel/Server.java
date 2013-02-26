@@ -1,5 +1,6 @@
 package edu.washington.escience.myriad.parallel;
 
+import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
@@ -17,8 +18,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.ws.rs.WebApplicationException;
+
 import org.jboss.netty.channel.ChannelFuture;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.MyriaConstants;
@@ -30,7 +36,9 @@ import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnFactory;
 import edu.washington.escience.myriad.coordinator.catalog.Catalog;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
+import edu.washington.escience.myriad.operator.FileScan;
 import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.operator.SQLiteInsert;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 import edu.washington.escience.myriad.parallel.Worker.MessageWrapper;
 import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
@@ -270,7 +278,11 @@ public final class Server {
     LinkedBlockingQueue<ExchangeData> q = null;
     q = dataBuffer.get(data.getOperatorID());
     if (data instanceof ExchangeData) {
-      q.offer(data);
+      if (q != null) {
+        q.offer(data);
+      } else {
+        LOGGER.warn("weird: got ExchangeData (" + data + ") on null q");
+      }
     }
   }
 
@@ -466,12 +478,18 @@ public final class Server {
     }
   }
 
+  /**
+   * @return the set of workers that are currently alive.
+   */
   public Set<Integer> getAliveWorkers() {
-    return aliveWorkers;
+    return ImmutableSet.copyOf(aliveWorkers);
   }
 
+  /**
+   * @return the set of known workers in this Server.
+   */
   public Map<Integer, SocketInfo> getWorkers() {
-    return workers;
+    return ImmutableMap.copyOf(workers);
   }
 
   /**
@@ -491,6 +509,68 @@ public final class Server {
     dispatchWorkerQueryPlans(queryId, plans);
     startWorkerQuery(queryId);
     return queryId;
+  }
+
+  /**
+   * Adds the data for the specified dataset to all alive workers.
+   * 
+   * @param relationKey the name of the dataset.
+   * @param schema the format of the tuples.
+   * @param data the data.
+   * @throws CatalogException if there is an error.
+   */
+  public void ingestDataset(final RelationKey relationKey, final Schema schema, final byte[] data)
+      throws CatalogException {
+    /* The Server plan: scan the data and scatter it to all the workers. */
+    FileScan fileScan = new FileScan(new ByteArrayInputStream(data), schema);
+    ExchangePairID scatterId = ExchangePairID.newID();
+    int[] workersArray = new int[workers.size()];
+    int count = 0;
+    final Set<Integer> ingestWorkers = getAliveWorkers();
+    for (int i : ingestWorkers) {
+      workersArray[count] = i;
+      count++;
+    }
+    ShuffleProducer scatter =
+        new ShuffleProducer(fileScan, scatterId, workersArray, new RoundRobinPartitionFunction(ingestWorkers.size()));
+    scatter.setConnectionPool(getConnectionPool());
+
+    /* The workers' plan */
+    ShuffleConsumer gather = new ShuffleConsumer(schema, scatterId, new int[] { MyriaConstants.MASTER_ID });
+    SQLiteInsert insert = new SQLiteInsert(gather, relationKey, null, null, true);
+    Map<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
+    for (Integer i : ingestWorkers) {
+      workerPlans.put(i, new Operator[] { insert });
+    }
+
+    try {
+      /* Start the workers */
+      Long queryId = startQuery("ingest " + relationKey, "ingest " + relationKey, workerPlans);
+
+      /* Do it! */
+      scatter.open();
+      while (!scatter.eos()) {
+        scatter.next();
+      }
+      scatter.close();
+
+      while (!queryCompleted(queryId)) {
+        try {
+          Thread.sleep(SHORT_SLEEP_MILLIS);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
+      }
+
+    } catch (CatalogException | IOException | DbException e) {
+      throw new WebApplicationException(e);
+    }
+
+    /* Now that the query has finished, add the metadata about this relation to the dataset. */
+    catalog.addRelationMetadata(relationKey, schema);
+
+    /* Add the round robin-partitioned shard. */
+    catalog.addStoredRelation(relationKey, ingestWorkers, "RoundRobin");
   }
 
   /**

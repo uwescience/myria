@@ -21,7 +21,6 @@ import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.DupElim;
 import edu.washington.escience.myriad.operator.LocalJoin;
-import edu.washington.escience.myriad.operator.LocalProjectingJoin;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.Project;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
@@ -100,8 +99,8 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     // SC2: receive based on follower (PF0, so SP1 and arrayID1)
     final ShuffleConsumer sc2 = new ShuffleConsumer(sp1.getSchema(), arrayID1, WORKER_ID);
     // Join on SC1.followee=SC2.follower
-    final LocalProjectingJoin localProjJoin =
-        new LocalProjectingJoin(sc1, new int[] { 1 }, new int[] { 0 }, sc2, new int[] { 0 }, new int[] { 1 });
+    final LocalJoin localProjJoin =
+        new LocalJoin(sc1, sc2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
     /* Now reshuffle the results to partition based on the new followee, so that we can dupelim. */
     final ExchangePairID arrayID0 = ExchangePairID.newID();
     final ShuffleProducer sp0 = new ShuffleProducer(localProjJoin, arrayID0, WORKER_ID, pf0);
@@ -245,8 +244,8 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     // SC2: receive based on follower (PF0, so SP1 and arrayID1)
     final ShuffleConsumer sc2 = new ShuffleConsumer(sp1.getSchema(), arrayID1, WORKER_ID);
     // Join on SC1.followee=SC2.follower
-    final LocalProjectingJoin localProjJoin =
-        new LocalProjectingJoin(sc1, new int[] { 1 }, new int[] { 0 }, sc2, new int[] { 0 }, new int[] { 1 });
+    final LocalJoin localProjJoin =
+        new LocalJoin(sc1, sc2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
     /* Now reshuffle the results to partition based on the new followee, so that we can dupelim. */
     final ExchangePairID arrayID0 = ExchangePairID.newID();
     final ShuffleProducer sp0 = new ShuffleProducer(localProjJoin, arrayID0, WORKER_ID, pf0);
