@@ -2,8 +2,11 @@ package edu.washington.escience.myriad.operator;
 
 import static org.junit.Assert.assertTrue;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.PrintStream;
 
 import org.junit.Test;
 
@@ -47,8 +50,19 @@ public class FileScanTest {
     } catch (FileNotFoundException e) {
       throw new DbException(e);
     }
+    return getRowCount(fileScan);
+  }
 
+  /**
+   * Helper function used to run tests.
+   * 
+   * @param fileScan the FileScan object to be tested.
+   * @return the number of rows in the file.
+   * @throws DbException if the file does not match the given Schema.
+   */
+  private static int getRowCount(FileScan fileScan) throws DbException {
     fileScan.open();
+
     int count = 0;
     TupleBatch tb = null;
     while ((tb = fileScan.next()) != null) {
@@ -98,6 +112,22 @@ public class FileScanTest {
     final String filename = "simple_two_col_int.txt";
     final Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE));
     assertTrue(getRowCount(filename, schema) == 7);
+  }
+
+  @Test
+  public void testBigFile() throws DbException {
+    ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+    PrintStream printedBytes = new PrintStream(bytes);
+    /* Print 2*TupleBatch.BATCH_SIZE lines */
+    for (int i = 0; i < TupleBatch.BATCH_SIZE * 2; ++i) {
+      printedBytes.print(i);
+      printedBytes.print('\n');
+    }
+    printedBytes.flush();
+    FileScan scanBytes =
+        new FileScan(new ByteArrayInputStream(bytes.toByteArray()), Schema.of(ImmutableList.of(Type.INT_TYPE),
+            ImmutableList.of("col1")));
+    assertTrue(getRowCount(scanBytes) == 2 * TupleBatch.BATCH_SIZE);
   }
 
 }
