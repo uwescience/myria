@@ -129,7 +129,9 @@ public abstract class Operator implements Serializable {
       result = fetchNext();
     }
     if (result == null) {
-      // now we have two possibilities when result == null: EOS or EOI.
+      // now we have three possibilities when result == null: EOS, EOI, or just a null.
+      // returns a null won't cause a problem so far, since a producer will keep calling fetchNext() until EOS
+      // call checkEOSAndEOI to set self EOS and EOI, if applicable
       checkEOSAndEOI();
     }
     return result;
