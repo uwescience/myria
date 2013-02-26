@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
+import org.codehaus.jackson.annotate.JsonProperty;
+
 import com.almworks.sqlite4java.SQLiteConstants;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
@@ -136,10 +138,23 @@ public final class Schema implements Serializable {
     return new Schema(types.build(), names.build());
   }
 
+  /**
+   * Static factory method.
+   * 
+   * @param types the types of columns in this Schema. It must contain at least one entry.
+   * @param names the names of the columns. Note that names may be null.
+   * @return a Schema representing the specified column types and names.
+   */
+  public static Schema of(final List<Type> types, final List<String> names) {
+    return new Schema(types, names);
+  }
+
   /** The types of the columns in this relation. */
+  @JsonProperty("column_types")
   private final ImmutableList<Type> columnTypes;
 
   /** The names of the columns in this relation. */
+  @JsonProperty("column_names")
   private final ImmutableList<String> columnNames;
 
   /**
@@ -170,22 +185,23 @@ public final class Schema implements Serializable {
   /**
    * Create a new Schema with typeAr.length columns with columns of the specified types, with associated named columns.
    * 
-   * @param typeAr array specifying the number of and types of columns in this Schema. It must contain at least one
+   * @param columnTypes array specifying the number of and types of columns in this Schema. It must contain at least one
    *          entry.
-   * @param columnAr array specifying the names of the columns. Note that names may be null.
+   * @param columnNames array specifying the names of the columns.
    */
-  public Schema(final List<Type> typeAr, final List<String> columnAr) {
-    Objects.requireNonNull(typeAr);
-    Objects.requireNonNull(columnAr);
-    if (typeAr.size() != columnAr.size()) {
+  public Schema(@JsonProperty("column_types") final List<Type> columnTypes,
+      @JsonProperty("column_names") final List<String> columnNames) {
+    Objects.requireNonNull(columnTypes, "Column types cannot be null");
+    Objects.requireNonNull(columnNames, "Column names cannot be null");
+    if (columnTypes.size() != columnNames.size()) {
       throw new IllegalArgumentException("Invalid Schema: must have the same number of column types and column");
     }
-    HashSet<String> uniqueNames = new HashSet<String>(columnAr);
-    if (uniqueNames.size() != columnAr.size()) {
+    HashSet<String> uniqueNames = new HashSet<String>(columnNames);
+    if (uniqueNames.size() != columnNames.size()) {
       throw new IllegalArgumentException("Invalid Schema: column names must be unique.");
     }
-    columnTypes = ImmutableList.copyOf(typeAr);
-    columnNames = ImmutableList.copyOf(columnAr);
+    this.columnTypes = ImmutableList.copyOf(columnTypes);
+    this.columnNames = ImmutableList.copyOf(columnNames);
   }
 
   /**
@@ -257,11 +273,11 @@ public final class Schema implements Serializable {
   }
 
   /**
-   * Returns an immutable list containing the names of the columns in this Schema.
+   * Returns a list containing the names of the columns in this Schema.
    * 
-   * @return an immutable list containing the names of the columns in this Schema.
+   * @return a list containing the names of the columns in this Schema.
    */
-  public ImmutableList<String> getColumnNames() {
+  public List<String> getColumnNames() {
     return columnNames;
   }
 
@@ -281,7 +297,7 @@ public final class Schema implements Serializable {
    * 
    * @return an immutable list containing the types of the columns in this Schema.
    */
-  public ImmutableList<Type> getColumnTypes() {
+  public List<Type> getColumnTypes() {
     return columnTypes;
   }
 

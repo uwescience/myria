@@ -1,1 +1,1 @@
-java $(java -cp $1 edu.washington.escience.myriad.tool.EclipseClasspathReader .classpath 1 $1) edu.washington.escience.myriad.parallel.Main
+java -Djava.library.path=lib/sqlite4java-282 -cp conf:$1 edu.washington.escience.myriad.daemon.MasterDaemon $2

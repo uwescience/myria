@@ -21,7 +21,6 @@ import edu.washington.escience.myriad.operator.DupElim;
 import edu.washington.escience.myriad.operator.LocalJoin;
 import edu.washington.escience.myriad.operator.Merge;
 import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.operator.Project;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
@@ -98,10 +97,6 @@ public class MultithreadScanTest extends SystemTestBase {
     final ImmutableList<Type> table1Types = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
     final ImmutableList<String> table1ColumnNames = ImmutableList.of("follower", "followee");
     final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
-    final ImmutableList<Type> joinTypes =
-        ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE);
-    final ImmutableList<String> joinColumnNames = ImmutableList.of("follower1", "followee1", "follower2", "followee2");
-    final Schema joinSchema = new Schema(joinTypes, joinColumnNames);
 
     final long[] tbl1ID1Worker1 = TestUtils.randomLong(1, MaxID - 1, numTbl1Worker1);
     final long[] tbl1ID2Worker1 = TestUtils.randomLong(1, MaxID - 1, numTbl1Worker1);
@@ -127,9 +122,9 @@ public class MultithreadScanTest extends SystemTestBase {
 
     final SQLiteQueryScan scan1 = new SQLiteQueryScan(null, "select * from " + testtableKey, tableSchema);
     final SQLiteQueryScan scan2 = new SQLiteQueryScan(null, "select * from " + testtableKey, tableSchema);
-    final LocalJoin localjoin = new LocalJoin(joinSchema, scan1, scan2, new int[] { 1 }, new int[] { 0 });
-    final Project proj = new Project(new Integer[] { 0, 3 }, localjoin);
-    final DupElim de = new DupElim(proj);
+    final LocalJoin localjoin =
+        new LocalJoin(scan1, scan2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
+    final DupElim de = new DupElim(localjoin);
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final CollectProducer cp = new CollectProducer(de, serverReceiveID, MASTER_ID);
@@ -158,10 +153,6 @@ public class MultithreadScanTest extends SystemTestBase {
     final ImmutableList<Type> table1Types = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
     final ImmutableList<String> table1ColumnNames = ImmutableList.of("follower", "followee");
     final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
-    final ImmutableList<Type> joinTypes =
-        ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE);
-    final ImmutableList<String> joinColumnNames = ImmutableList.of("follower1", "followee1", "follower2", "followee2");
-    final Schema joinSchema = new Schema(joinTypes, joinColumnNames);
 
     final long[] tbl1ID1Worker1 = TestUtils.randomLong(1, MaxID - 1, numTbl1Worker1);
     final long[] tbl1ID2Worker1 = TestUtils.randomLong(1, MaxID - 1, numTbl1Worker1);
@@ -188,14 +179,14 @@ public class MultithreadScanTest extends SystemTestBase {
 
     final SQLiteQueryScan scan1 = new SQLiteQueryScan(null, "select * from " + testtableKey, tableSchema);
     final SQLiteQueryScan scan2 = new SQLiteQueryScan(null, "select * from " + testtableKey, tableSchema);
-    final LocalJoin localjoin1 = new LocalJoin(joinSchema, scan1, scan2, new int[] { 1 }, new int[] { 0 });
-    final Project proj1 = new Project(new Integer[] { 0, 3 }, localjoin1);
-    final DupElim de1 = new DupElim(proj1);
+    final LocalJoin localjoin1 =
+        new LocalJoin(scan1, scan2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
+    final DupElim de1 = new DupElim(localjoin1);
     final SQLiteQueryScan scan3 = new SQLiteQueryScan(null, "select * from " + testtableKey, tableSchema);
     final SQLiteQueryScan scan4 = new SQLiteQueryScan(null, "select * from " + testtableKey, tableSchema);
-    final LocalJoin localjoin2 = new LocalJoin(joinSchema, scan3, scan4, new int[] { 1 }, new int[] { 0 });
-    final Project proj2 = new Project(new Integer[] { 0, 3 }, localjoin2);
-    final DupElim de2 = new DupElim(proj2);
+    final LocalJoin localjoin2 =
+        new LocalJoin(scan3, scan4, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
+    final DupElim de2 = new DupElim(localjoin2);
 
     final int numPartition = 2;
     final PartitionFunction<String, Integer> pf0 = new SingleFieldHashPartitionFunction(numPartition); // 2 workers

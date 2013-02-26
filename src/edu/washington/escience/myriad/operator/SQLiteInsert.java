@@ -39,8 +39,8 @@ public final class SQLiteInsert extends RootOperator {
 
   /**
    * Constructs an insertion operator to store the tuples from the specified child in a SQLite database in the specified
-   * file. This operator will not overwrite an existing table; it will only append to an existing database, or create
-   * and initialize one that does not exist.
+   * file. If the table does not exist, it will be created; if it does exist then old data will persist and new data
+   * will be inserted.
    * 
    * @param child the source of tuples to be inserted.
    * @param relationKey the key of the table the tuples should be inserted into.
@@ -59,7 +59,9 @@ public final class SQLiteInsert extends RootOperator {
 
   /**
    * Constructs an insertion operator to store the tuples from the specified child in a SQLite database in the specified
-   * file. This operator will only append to an existing database, or create and initialize one that does not exist.
+   * file. If the table does not exist, it will be created. If the table exists and overwriteTable is true, the existing
+   * data will be dropped from the database before the new data is inserted. If overwriteTable is false, any existing
+   * data will remain and new data will be appended.
    * 
    * @param child the source of tuples to be inserted.
    * @param relationKey the key of the table the tuples should be inserted into.

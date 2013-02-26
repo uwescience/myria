@@ -121,7 +121,7 @@ public final class Catalog {
             sqliteConnection.exec("CREATE TABLE shards (\n"
                 + "    stored_relation_id INTEGER NOT NULL REFERENCES stored_relations(stored_relation_id),\n"
                 + "    shard_index INTEGER NOT NULL,\n"
-                + "    worker_id INTEGER NOT NULL REFERENCES workers(worker_id),\n" + "    location STRING NOT NULL);");
+                + "    worker_id INTEGER NOT NULL REFERENCES workers(worker_id));");
             sqliteConnection.exec("CREATE TABLE queries (\n" + "    query_id INTEGER NOT NULL PRIMARY KEY ASC,\n"
                 + "    raw_query TEXT NOT NULL,\n" + "    logical_ra TEXT NOT NULL);");
           } catch (final SQLiteException e) {
@@ -358,6 +358,75 @@ public final class Catalog {
             } catch (final SQLiteException e2) {
               assert true; /* Do nothing. */
             }
+            throw new CatalogException(e);
+          }
+          return null;
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  /**
+   * Adds the metadata for a relation into the Catalog.
+   * 
+   * @param relation the relation to create.
+   * @param workers the IDs of the workers storing this copy of the relation.
+   * @param howPartitioned how this copy of the relation is partitioned.
+   * @throws CatalogException if there is an error in the database.
+   */
+  public void addStoredRelation(final RelationKey relation, final Set<Integer> workers, final String howPartitioned)
+      throws CatalogException {
+    Objects.requireNonNull(relation);
+    Objects.requireNonNull(workers);
+    Objects.requireNonNull(howPartitioned);
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+
+    /* Do the work */
+    try {
+      queue.execute(new SQLiteJob<Object>() {
+        @Override
+        protected Object job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+          try {
+            /* To begin: start a transaction. */
+            sqliteConnection.exec("BEGIN TRANSACTION;");
+
+            /* First, populate the stored_relation table. */
+            SQLiteStatement statement =
+                sqliteConnection
+                    .prepare("INSERT INTO stored_relations (user_name,program_name,relation_name,num_shards,how_partitioned) VALUES (?,?,?,?,?);");
+            statement.bind(1, relation.getUserName());
+            statement.bind(2, relation.getProgramName());
+            statement.bind(3, relation.getRelationName());
+            statement.bind(4, workers.size());
+            statement.bind(5, howPartitioned);
+            statement.stepThrough();
+            statement.dispose();
+            statement = null;
+
+            Long storedRelationId = sqliteConnection.getLastInsertId();
+            /* Second, populate the shards table. */
+            statement =
+                sqliteConnection.prepare("INSERT INTO shards(stored_relation_id,shard_index,worker_id) "
+                    + "VALUES (?,?,?);");
+            statement.bind(1, storedRelationId);
+            int count = 0;
+            for (int i : workers) {
+              statement.bind(2, count);
+              statement.bind(3, i);
+              statement.step();
+              statement.reset(false);
+              ++count;
+            }
+            statement.dispose();
+            statement = null;
+
+            /* To complete: commit the transaction. */
+            sqliteConnection.exec("COMMIT TRANSACTION;");
+          } catch (final SQLiteException e) {
             throw new CatalogException(e);
           }
           return null;
