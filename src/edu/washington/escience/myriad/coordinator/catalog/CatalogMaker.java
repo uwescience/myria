@@ -11,6 +11,12 @@ import java.util.logging.Logger;
 
 import org.apache.commons.io.FilenameUtils;
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+
+import edu.washington.escience.myriad.RelationKey;
+import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.parallel.SocketInfo;
 
 /**
@@ -25,15 +31,20 @@ public final class CatalogMaker {
   /**
    * Used in Catalog creation.
    * 
-   * @param args unused arguments.
+   * args[0]: directory name
+   * 
+   * args[1]: number of workers
+   * 
+   * args[2]: master, if specified, otherwise localhost
+   * 
+   * args[3-n]: workers, if specified, otherwise localhost
+   * 
+   * @param args contains the parameters necessary to start the catalog.
+   * @throws IOException if there is an error creating the catalog.
    */
-  public static void main(final String[] args) {
-    // args[0]: directory name
-    // args[1]: number of workers
-    // args[2]: master, if specified, otherwise localhost
-    // args[3-n]: workers, if specified, otherwise localhost
+  public static void main(final String[] args) throws IOException {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
-    assert (args.length >= 2);
+    Preconditions.checkArgument(args.length >= 2, "Usage: CatalogMaker <directory> <N> [master] [workers...]");
     try {
       if (args.length > 2) {
         makeNNodesParallelCatalog(args);
@@ -42,6 +53,10 @@ public final class CatalogMaker {
       }
     } catch (final IOException e) {
       System.err.println("Error creating catalog " + args[0] + ": " + e.getMessage());
+      throw (e);
+    } catch (final NumberFormatException e) {
+      System.err.println("args[1] " + args[1] + " is not a number!");
+      throw (e);
     }
   }
 
@@ -69,8 +84,7 @@ public final class CatalogMaker {
    * Creates a Catalog for an N-node parallel system on the local machine and the corresponding WorkerCatalogs, with
    * node addresses and ports specified.
    * 
-   * @param directoryName the directory where all the files should be stored.
-   * @param n the number of nodes.
+   * @param args the description and list of machines in this catalog.
    * @throws IOException if the catalog file already exists.
    */
   public static void makeNNodesParallelCatalog(final String[] args) throws IOException {
@@ -81,8 +95,8 @@ public final class CatalogMaker {
     Map<Integer, SocketInfo> workers;
 
     /* The server configuration. */
+    Catalog c = null;
     try {
-      Catalog c;
       final String catalogFileName = FilenameUtils.concat(baseDirectoryName, "master.catalog");
       final File catalogDir = new File(baseDirectoryName);
       while (!catalogDir.exists()) {
@@ -95,8 +109,21 @@ public final class CatalogMaker {
       }
       masters = c.getMasters();
       workers = c.getWorkers();
+
+      /* A simple test relation. */
+      c.addRelationMetadata(RelationKey.of("test", "test", "testRelation"), new Schema(ImmutableList.of(Type.LONG_TYPE,
+          Type.LONG_TYPE), ImmutableList.of("x", "y")));
+
+      /* Close the master catalog. */
       c.close();
     } catch (final CatalogException e) {
+      try {
+        if (c != null) {
+          c.close();
+        }
+      } catch (Exception e1) {
+        assert true; /* Pass */
+      }
       throw new RuntimeException(e);
     }
 
@@ -201,8 +228,6 @@ public final class CatalogMaker {
         return "eight";
       case 9:
         return "nine";
-      case 10:
-        return "ten";
       default:
         return n + "_";
     }

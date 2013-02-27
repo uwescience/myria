@@ -1,6 +1,7 @@
 package edu.washington.escience.myriad.operator;
 
 import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.util.SQLiteUtils;
@@ -15,12 +16,12 @@ public final class BlockingSQLiteDataReceiver extends Operator {
 
   private Operator child;
   String pathToSQLiteDb;
-  final String tableName;
+  final RelationKey relationKey;
 
-  public BlockingSQLiteDataReceiver(final String pathToSQLiteDb, final String tableName, final Operator child) {
+  public BlockingSQLiteDataReceiver(final String pathToSQLiteDb, final RelationKey relationKey, final Operator child) {
     this.child = child;
     this.pathToSQLiteDb = pathToSQLiteDb;
-    this.tableName = tableName;
+    this.relationKey = relationKey;
   }
 
   @Override
@@ -32,7 +33,7 @@ public final class BlockingSQLiteDataReceiver extends Operator {
     TupleBatch tb = null;
     while (!child.eos()) {
       while ((tb = child.next()) != null) {
-        SQLiteUtils.insertIntoSQLite(child.getSchema(), tableName, pathToSQLiteDb, tb);
+        SQLiteUtils.insertIntoSQLite(child.getSchema(), relationKey, pathToSQLiteDb, tb);
       }
       if (child.eoi()) {
         child.setEOI(false);

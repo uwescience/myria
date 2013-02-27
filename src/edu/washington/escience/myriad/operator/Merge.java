@@ -4,7 +4,7 @@ import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 
-public class Merge extends Operator {
+public final class Merge extends Operator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;

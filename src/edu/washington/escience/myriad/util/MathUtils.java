@@ -11,11 +11,12 @@ public final class MathUtils {
    * @param v the integer.
    * @return the number of 1s.
    * */
-  public static int numBinaryOnesInInteger(int v) {
+  public static int numBinaryOnesInInteger(final int v) {
     int result = 0;
-    while (v != 0) {
-      result += (v & 0x01);
-      v = v >>> 1;
+    int value = v;
+    while (value != 0) {
+      result += (value & 0x1);
+      value = value >>> 1;
     }
     return result;
   }

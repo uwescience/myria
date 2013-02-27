@@ -26,7 +26,7 @@ public final class DupElim_RefOnly extends Operator {
     }
 
     public boolean compareField(final IndexedTuple another, final int colIndx) {
-      final Type type = tb.getSchema().getFieldType(colIndx);
+      final Type type = tb.getSchema().getColumnType(colIndx);
       final int rowIndx1 = index;
       final int rowIndx2 = another.index;
       switch (type) {
@@ -55,7 +55,7 @@ public final class DupElim_RefOnly extends Operator {
       if (!(tb.getSchema().equals(another.tb.getSchema()))) {
         return false;
       }
-      for (int i = 0; i < tb.getSchema().numFields(); ++i) {
+      for (int i = 0; i < tb.getSchema().numColumns(); ++i) {
         if (!compareField(another, i)) {
           return false;
         }

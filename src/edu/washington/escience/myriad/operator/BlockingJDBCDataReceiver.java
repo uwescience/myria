@@ -1,8 +1,8 @@
 package edu.washington.escience.myriad.operator;
 
-import org.apache.commons.lang3.StringUtils;
+import java.util.List;
 
-import com.google.common.collect.ImmutableList;
+import org.apache.commons.lang3.StringUtils;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
@@ -23,7 +23,7 @@ public final class BlockingJDBCDataReceiver extends Operator {
   final String username;
   final String password;
   final String tableName;
-  final ImmutableList<String> fieldNames;
+  final List<String> fieldNames;
   final String[] placeHolders;
 
   public BlockingJDBCDataReceiver(final String tableName, final String connectionString, final String driverClass,
@@ -35,9 +35,9 @@ public final class BlockingJDBCDataReceiver extends Operator {
     this.username = username;
     this.password = password;
     final Schema s = child.getSchema();
-    fieldNames = s.getFieldNames();
-    placeHolders = new String[s.numFields()];
-    for (int i = 0; i < s.numFields(); ++i) {
+    fieldNames = s.getColumnNames();
+    placeHolders = new String[s.numColumns()];
+    for (int i = 0; i < s.numColumns(); ++i) {
       placeHolders[i] = "?";
     }
   }

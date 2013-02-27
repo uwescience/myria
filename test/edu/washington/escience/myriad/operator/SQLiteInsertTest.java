@@ -16,6 +16,7 @@ import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.collect.ImmutableList;
 
+import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
@@ -57,9 +58,10 @@ public class SQLiteInsertTest {
     try {
       final ExecutorService myExecutor = Executors.newSingleThreadExecutor();
       Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
+      final RelationKey tuplesKey = RelationKey.of("test", "test", "my_tuples");
 
       final TupleSource source = new TupleSource(data);
-      final SQLiteInsert insert = new SQLiteInsert(source, "my_tuples", tempFile.getAbsolutePath(), myExecutor, true);
+      final SQLiteInsert insert = new SQLiteInsert(source, tuplesKey, tempFile.getAbsolutePath(), myExecutor, true);
       insert.open();
       while (insert.next() != null) {
       }
@@ -67,7 +69,7 @@ public class SQLiteInsertTest {
 
       final SQLiteConnection sqliteConnection = new SQLiteConnection(tempFile);
       sqliteConnection.open(false);
-      final SQLiteStatement statement = sqliteConnection.prepare("SELECT COUNT(*) FROM my_tuples;");
+      final SQLiteStatement statement = sqliteConnection.prepare("SELECT COUNT(*) FROM " + tuplesKey + ";");
       assertTrue(statement.step());
       final int inserted = statement.columnInt(0);
       assertTrue(inserted == NUM_TUPLES);

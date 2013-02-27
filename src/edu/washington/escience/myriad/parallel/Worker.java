@@ -61,6 +61,9 @@ import edu.washington.escience.myriad.util.JVMUtils;
  * 
  */
 public class Worker {
+  /** A short amount of time to sleep waiting for network events. */
+  public static final int SHORT_SLEEP_MILLIS = 100;
+
   protected final class MessageProcessor extends Thread {
 
     /** Whether this thread should stop. */
@@ -215,7 +218,7 @@ public class Worker {
         synchronized (queryExecutor) {
           try {
             // wait until a query plan is received
-            queryExecutor.wait(100);
+            queryExecutor.wait(SHORT_SLEEP_MILLIS);
           } catch (final InterruptedException e) {
             break;
           }
@@ -283,10 +286,11 @@ public class Worker {
 
     public final void start() {
       try {
-        timer.schedule(new ShutdownChecker(), 100, 100);
+        timer.schedule(new ShutdownChecker(), 100, SHORT_SLEEP_MILLIS);
         timer.schedule(new Reporter(), (long) (Math.random() * 3000) + 5000, (long) (Math.random() * 2000) + 1000);
       } catch (final IllegalStateException e) {
         /* already got canceled, ignore. */
+        assert true; /* Do nothing. */
       }
     }
   }

@@ -16,6 +16,19 @@ import edu.washington.escience.myriad.parallel.Worker.MessageWrapper;
  */
 public final class ParallelUtility {
 
+  /** Constant. */
+  private static final int ONE_KB_IN_BYTES = 1024;
+  /** Constant parameter. */
+  private static final long SEND_BUFFER_SIZE_BYTES = 512 * ONE_KB_IN_BYTES;
+  /** Constant parameter. */
+  private static final long RECEIVE_BUFFER_SIZE_BYTES = 512 * ONE_KB_IN_BYTES;
+  /** Constant parameter. */
+  private static final long WRITE_BUFFER_LOW_MARK_BYTES = 16 * ONE_KB_IN_BYTES;
+  /** Constant parameter. */
+  private static final long WRITE_BUFFER_HIGH_MARK_BYTES = 256 * ONE_KB_IN_BYTES;
+  /** Constant parameter. */
+  private static final long CONNECT_TIMEOUT_MILLIS = 3 * 1000;
+
   /**
    * Create a client side connector to the server.
    * 
@@ -30,11 +43,11 @@ public final class ParallelUtility {
     bootstrap.setOption("tcpNoDelay", true);
     bootstrap.setOption("keepAlive", false);
     bootstrap.setOption("reuseAddress", true);
-    bootstrap.setOption("connectTimeoutMillis", 3000);
-    bootstrap.setOption("sendBufferSize", 512 * 1024);
-    bootstrap.setOption("receiveBufferSize", 512 * 1024);
-    bootstrap.setOption("writeBufferLowWaterMark", 16 * 1024);
-    bootstrap.setOption("writeBufferHighWaterMark", 256 * 1024);
+    bootstrap.setOption("connectTimeoutMillis", CONNECT_TIMEOUT_MILLIS);
+    bootstrap.setOption("sendBufferSize", SEND_BUFFER_SIZE_BYTES);
+    bootstrap.setOption("receiveBufferSize", RECEIVE_BUFFER_SIZE_BYTES);
+    bootstrap.setOption("writeBufferLowWaterMark", WRITE_BUFFER_LOW_MARK_BYTES);
+    bootstrap.setOption("writeBufferHighWaterMark", WRITE_BUFFER_HIGH_MARK_BYTES);
 
     return bootstrap;
   }
@@ -57,11 +70,11 @@ public final class ParallelUtility {
     bootstrap.setOption("child.tcpNoDelay", true);
     bootstrap.setOption("child.keepAlive", false);
     bootstrap.setOption("child.reuseAddress", true);
-    bootstrap.setOption("child.connectTimeoutMillis", 3000);
-    bootstrap.setOption("child.sendBufferSize", 512 * 1024);
-    bootstrap.setOption("child.receiveBufferSize", 512 * 1024);
-    bootstrap.setOption("child.writeBufferLowWaterMark", 16 * 1024);
-    bootstrap.setOption("child.writeBufferHighWaterMark", 256 * 1024);
+    bootstrap.setOption("child.connectTimeoutMillis", CONNECT_TIMEOUT_MILLIS);
+    bootstrap.setOption("child.sendBufferSize", SEND_BUFFER_SIZE_BYTES);
+    bootstrap.setOption("child.receiveBufferSize", RECEIVE_BUFFER_SIZE_BYTES);
+    bootstrap.setOption("child.writeBufferLowWaterMark", WRITE_BUFFER_LOW_MARK_BYTES);
+    bootstrap.setOption("child.writeBufferHighWaterMark", WRITE_BUFFER_HIGH_MARK_BYTES);
 
     bootstrap.setOption("readWriteFair", true);
 
@@ -70,6 +83,10 @@ public final class ParallelUtility {
 
   /**
    * Create a server side acceptor.
+   * 
+   * @param messageQueue
+   * @param ipcConnectionPool
+   * @return
    */
   public static ServerBootstrap createWorkerIPCServer(final LinkedBlockingQueue<MessageWrapper> messageQueue,
       final IPCConnectionPool ipcConnectionPool) {
@@ -86,11 +103,11 @@ public final class ParallelUtility {
     bootstrap.setOption("child.tcpNoDelay", true);
     bootstrap.setOption("child.keepAlive", false);
     bootstrap.setOption("child.reuseAddress", true);
-    bootstrap.setOption("child.connectTimeoutMillis", 3000);
-    bootstrap.setOption("child.sendBufferSize", 512 * 1024);
-    bootstrap.setOption("child.receiveBufferSize", 512 * 1024);
-    bootstrap.setOption("child.writeBufferLowWaterMark", 16 * 1024);
-    bootstrap.setOption("child.writeBufferHighWaterMark", 256 * 1024);
+    bootstrap.setOption("child.connectTimeoutMillis", CONNECT_TIMEOUT_MILLIS);
+    bootstrap.setOption("child.sendBufferSize", SEND_BUFFER_SIZE_BYTES);
+    bootstrap.setOption("child.receiveBufferSize", RECEIVE_BUFFER_SIZE_BYTES);
+    bootstrap.setOption("child.writeBufferLowWaterMark", WRITE_BUFFER_LOW_MARK_BYTES);
+    bootstrap.setOption("child.writeBufferHighWaterMark", WRITE_BUFFER_HIGH_MARK_BYTES);
 
     bootstrap.setOption("readWriteFair", true);
 

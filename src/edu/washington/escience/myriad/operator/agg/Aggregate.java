@@ -58,28 +58,28 @@ public final class Aggregate extends Operator {
 
     int idx = 0;
     for (final int afield : afields) {
-      switch (childSchema.getFieldType(afield)) {
+      switch (childSchema.getColumnType(afield)) {
         case BOOLEAN_TYPE:
-          agg[idx] = new BooleanAggregator(afield, childSchema.getFieldName(afield), aggOps[idx]);
+          agg[idx] = new BooleanAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
           break;
         case INT_TYPE:
-          agg[idx] = new IntegerAggregator(afield, childSchema.getFieldName(afield), aggOps[idx]);
+          agg[idx] = new IntegerAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
           break;
         case LONG_TYPE:
-          agg[idx] = new LongAggregator(afield, childSchema.getFieldName(afield), aggOps[idx]);
+          agg[idx] = new LongAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
           break;
         case FLOAT_TYPE:
-          agg[idx] = new FloatAggregator(afield, childSchema.getFieldName(afield), aggOps[idx]);
+          agg[idx] = new FloatAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
           break;
         case DOUBLE_TYPE:
-          agg[idx] = new DoubleAggregator(afield, childSchema.getFieldName(afield), aggOps[idx]);
+          agg[idx] = new DoubleAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
           break;
         case STRING_TYPE:
-          agg[idx] = new StringAggregator(afield, childSchema.getFieldName(afield), aggOps[idx]);
+          agg[idx] = new StringAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
           break;
       }
-      gTypes.addAll(agg[idx].getResultSchema().getTypes());
-      gNames.addAll(agg[idx].getResultSchema().getFieldNames());
+      gTypes.addAll(agg[idx].getResultSchema().getColumnTypes());
+      gNames.addAll(agg[idx].getResultSchema().getColumnNames());
       idx++;
     }
     schema = new Schema(gTypes, gNames);
@@ -112,7 +112,7 @@ public final class Aggregate extends Operator {
     int fromIndex = 0;
     for (final Aggregator element : agg) {
       element.getResult(tbb, fromIndex);
-      fromIndex += element.getResultSchema().numFields();
+      fromIndex += element.getResultSchema().numColumns();
     }
     final TupleBatch result = tbb.popAny();
     setEOS(true);

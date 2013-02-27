@@ -16,7 +16,7 @@ import edu.washington.escience.myriad.Type;
 /**
  * Project is an operator that implements a relational projection.
  */
-public class Project extends Operator {
+public final class Project extends Operator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -36,8 +36,8 @@ public class Project extends Operator {
     final ImmutableList.Builder<Type> types = ImmutableList.builder();
     final ImmutableList.Builder<String> names = ImmutableList.builder();
     for (final int i : fieldList) {
-      types.add(childSchema.getFieldType(i));
-      names.add(childSchema.getFieldName(i));
+      types.add(childSchema.getColumnType(i));
+      names.add(childSchema.getColumnName(i));
     }
     schema = new Schema(types, names);
   }

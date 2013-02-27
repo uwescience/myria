@@ -104,7 +104,7 @@ public class TupleBatch {
     /* Take the input arguments directly */
     this.schema = Objects.requireNonNull(schema);
     this.columns = Objects.requireNonNull(columns);
-    Preconditions.checkArgument(columns.size() == schema.numFields(),
+    Preconditions.checkArgument(columns.size() == schema.numColumns(),
         "Number of columns in data must equal to the number of fields in schema");
     Preconditions.checkArgument(numTuples >= 0 && numTuples <= BATCH_SIZE,
         "numTuples must be at least 1 and no more than TupleBatch.BATCH_SIZE");
@@ -142,7 +142,7 @@ public class TupleBatch {
     BitSet newValidTuples = null;
     if (numValidTuples > 0) {
       final Column<?> columnValues = columns.get(column);
-      final Type columnType = schema.getFieldType(column);
+      final Type columnType = schema.getColumnType(column);
       for (final int validIdx : getValidIndices()) {
         if (!columnType.filter(op, columnValues, validIdx, operand)) {
           if (newValidTuples == null) {
@@ -371,7 +371,7 @@ public class TupleBatch {
    * @return number of columns in this TupleBatch.
    */
   public final int numColumns() {
-    return schema.numFields();
+    return schema.numColumns();
   }
 
   /**
@@ -460,8 +460,8 @@ public class TupleBatch {
     final List<Column<?>> newColumns = new ArrayList<Column<?>>();
     for (final int i : remainingColumns) {
       newColumns.add(columns.get(i));
-      newTypes.add(schema.getFieldType(i));
-      newNames.add(schema.getFieldName(i));
+      newTypes.add(schema.getColumnType(i));
+      newNames.add(schema.getColumnName(i));
     }
     return new TupleBatch(new Schema(newTypes, newNames), newColumns, validTuples, validIndices);
   }
@@ -497,11 +497,11 @@ public class TupleBatch {
 
   @Override
   public final String toString() {
-    final ImmutableList<Type> columnTypes = schema.getTypes();
+    final List<Type> columnTypes = schema.getColumnTypes();
     final StringBuilder sb = new StringBuilder();
     for (final int i : getValidIndices()) {
       sb.append("|\t");
-      for (int j = 0; j < schema.numFields(); j++) {
+      for (int j = 0; j < schema.numColumns(); j++) {
         sb.append(columnTypes.get(j).toString(columns.get(j), i));
         sb.append("\t|\t");
       }

@@ -1,5 +1,6 @@
 package edu.washington.escience.myriad.parallel;
 
+import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Arrays;
@@ -17,11 +18,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.ws.rs.WebApplicationException;
+
 import org.jboss.netty.channel.ChannelFuture;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.MyriaConstants;
+import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
@@ -29,7 +36,9 @@ import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnFactory;
 import edu.washington.escience.myriad.coordinator.catalog.Catalog;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
+import edu.washington.escience.myriad.operator.FileScan;
 import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.operator.SQLiteInsert;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 import edu.washington.escience.myriad.parallel.Worker.MessageWrapper;
 import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
@@ -99,9 +108,11 @@ public final class Server {
                 aliveWorkers.add(senderID);
                 break;
               case QUERY_COMPLETE:
-                HashMap<Integer, Integer> workersAssigned = workersAssignedToQuery.get(controlM.getQueryId());
+                HashMap<Integer, Integer> workersAssigned = workersAssignedToQuery.get(queryId);
                 if (!workersAssigned.containsKey(senderID)) {
-                  ;// TODO complain about something bad.
+                  LOGGER.warn("Got a QUERY_COMPLETE message from worker " + senderID + " who is not assigned to query"
+                      + queryId);
+                  return;
                 }
                 workersAssigned.remove(senderID);
                 break;
@@ -250,7 +261,6 @@ public final class Server {
     return connectionPool;
   }
 
-  // TODO implement queryID
   protected void queryReceivedByWorker(final Long queryId, final int workerId) {
     final BitSet workersReceived = workersReceivedQuery.get(queryId);
     final HashMap<Integer, Integer> workersAssigned = workersAssignedToQuery.get(queryId);
@@ -259,14 +269,20 @@ public final class Server {
   }
 
   /**
-   * This method should be called when a data item is received
+   * This method should be called when a data item is received.
+   * 
+   * @param data the data that was received.
    */
   public void receiveData(final ExchangeData data) {
 
     LinkedBlockingQueue<ExchangeData> q = null;
     q = dataBuffer.get(data.getOperatorID());
     if (data instanceof ExchangeData) {
-      q.offer(data);
+      if (q != null) {
+        q.offer(data);
+      } else {
+        LOGGER.warn("weird: got ExchangeData (" + data + ") on null q");
+      }
     }
   }
 
@@ -346,14 +362,14 @@ public final class Server {
     final Schema schema = serverPlan.getSchema();
 
     String names = "";
-    for (int i = 0; i < schema.numFields(); i++) {
-      names += schema.getFieldName(i) + "\t";
+    for (int i = 0; i < schema.numColumns(); i++) {
+      names += schema.getColumnName(i) + "\t";
     }
 
     if (LOGGER.isDebugEnabled()) {
       final StringBuilder sb = new StringBuilder();
       sb.append(names).append('\n');
-      for (int i = 0; i < names.length() + schema.numFields() * 4; i++) {
+      for (int i = 0; i < names.length() + schema.numColumns() * 4; i++) {
         sb.append("-");
       }
       sb.append("");
@@ -433,7 +449,7 @@ public final class Server {
     startWorkerQuery(queryId);
 
     while (serverPlan.next() != null) {
-      /* Do nothing. */
+      assert true; /* Do nothing. */
     }
 
     serverPlan.close();
@@ -458,15 +474,111 @@ public final class Server {
   protected void startWorkerQuery(final Long queryId) {
     final HashMap<Integer, Integer> workersAssigned = workersAssignedToQuery.get(queryId);
     for (final Entry<Integer, Integer> entry : workersAssigned.entrySet()) {
-      getConnectionPool().sendShortMessage(entry.getKey(), IPCUtils.startQueryTM(0, queryId));
+      getConnectionPool().sendShortMessage(entry.getKey(), IPCUtils.startQueryTM(MyriaConstants.MASTER_ID, queryId));
     }
   }
 
-  public final Set<Integer> getAliveWorkers() {
-    return aliveWorkers;
+  /**
+   * @return the set of workers that are currently alive.
+   */
+  public Set<Integer> getAliveWorkers() {
+    return ImmutableSet.copyOf(aliveWorkers);
   }
 
-  public final Map<Integer, SocketInfo> getWorkers() {
-    return workers;
+  /**
+   * @return the set of known workers in this Server.
+   */
+  public Map<Integer, SocketInfo> getWorkers() {
+    return ImmutableMap.copyOf(workers);
+  }
+
+  /**
+   * Insert the given query into the Catalog, dispatch the query to the workers, and return its query ID. This is useful
+   * for receiving queries from an external interface (e.g., the REST API).
+   * 
+   * @param rawQuery the raw user-defined query. E.g., the source Datalog program.
+   * @param logicalRa the logical relational algebra of the compiled plan.
+   * @param plans the physical parallel plan fragments for each worker.
+   * @return the query ID assigned to this query.
+   * @throws CatalogException if there is an error in the Catalog.
+   * @throws IOException if there is an error communicating with the workers.
+   */
+  public Long startQuery(final String rawQuery, final String logicalRa, final Map<Integer, Operator[]> plans)
+      throws CatalogException, IOException {
+    final Long queryId = catalog.newQuery(rawQuery, logicalRa);
+    dispatchWorkerQueryPlans(queryId, plans);
+    startWorkerQuery(queryId);
+    return queryId;
+  }
+
+  /**
+   * Adds the data for the specified dataset to all alive workers.
+   * 
+   * @param relationKey the name of the dataset.
+   * @param schema the format of the tuples.
+   * @param data the data.
+   * @throws CatalogException if there is an error.
+   */
+  public void ingestDataset(final RelationKey relationKey, final Schema schema, final byte[] data)
+      throws CatalogException {
+    /* The Server plan: scan the data and scatter it to all the workers. */
+    FileScan fileScan = new FileScan(new ByteArrayInputStream(data), schema);
+    ExchangePairID scatterId = ExchangePairID.newID();
+    int[] workersArray = new int[workers.size()];
+    int count = 0;
+    final Set<Integer> ingestWorkers = getAliveWorkers();
+    for (int i : ingestWorkers) {
+      workersArray[count] = i;
+      count++;
+    }
+    ShuffleProducer scatter =
+        new ShuffleProducer(fileScan, scatterId, workersArray, new RoundRobinPartitionFunction(ingestWorkers.size()));
+    scatter.setConnectionPool(getConnectionPool());
+
+    /* The workers' plan */
+    ShuffleConsumer gather = new ShuffleConsumer(schema, scatterId, new int[] { MyriaConstants.MASTER_ID });
+    SQLiteInsert insert = new SQLiteInsert(gather, relationKey, null, null, true);
+    Map<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
+    for (Integer i : ingestWorkers) {
+      workerPlans.put(i, new Operator[] { insert });
+    }
+
+    try {
+      /* Start the workers */
+      Long queryId = startQuery("ingest " + relationKey, "ingest " + relationKey, workerPlans);
+
+      /* Do it! */
+      scatter.open();
+      while (!scatter.eos()) {
+        scatter.next();
+      }
+      scatter.close();
+
+      while (!queryCompleted(queryId)) {
+        try {
+          Thread.sleep(SHORT_SLEEP_MILLIS);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
+      }
+
+    } catch (CatalogException | IOException | DbException e) {
+      throw new WebApplicationException(e);
+    }
+
+    /* Now that the query has finished, add the metadata about this relation to the dataset. */
+    catalog.addRelationMetadata(relationKey, schema);
+
+    /* Add the round robin-partitioned shard. */
+    catalog.addStoredRelation(relationKey, ingestWorkers, "RoundRobin");
+  }
+
+  /**
+   * @param relationKey the key of the desired relation.
+   * @return the schema of the specified relation, or null if not found.
+   * @throws CatalogException if there is an error getting the Schema out of the catalog.
+   */
+  public Schema getSchema(final RelationKey relationKey) throws CatalogException {
+    return catalog.getSchema(relationKey);
   }
 }

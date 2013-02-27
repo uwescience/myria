@@ -8,6 +8,7 @@ import org.junit.Test;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
@@ -30,10 +31,13 @@ public class ParallelDistinctUsingSQLiteTest extends SystemTestBase {
     final ImmutableList<String> columnNames = ImmutableList.of("id", "name");
     final Schema schema = new Schema(types, columnNames);
 
-    createTable(WORKER_ID[0], "testtable", "id int, name varchar(20)");
-    createTable(WORKER_ID[1], "testtable", "id int, name varchar(20)");
-    createTable(WORKER_ID[0], "temptable", "id int, name varchar(20)");
-    createTable(WORKER_ID[1], "temptable", "id int, name varchar(20)");
+    final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
+    final RelationKey temptableKey = RelationKey.of("test", "test", "temptable");
+
+    createTable(WORKER_ID[0], testtableKey, "id int, name varchar(20)");
+    createTable(WORKER_ID[1], testtableKey, "id int, name varchar(20)");
+    createTable(WORKER_ID[0], temptableKey, "id int, name varchar(20)");
+    createTable(WORKER_ID[1], temptableKey, "id int, name varchar(20)");
 
     final String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, 20, 20);
     final long[] ids = TestUtils.randomLong(1000, 1005, names.length);
@@ -47,21 +51,22 @@ public class ParallelDistinctUsingSQLiteTest extends SystemTestBase {
 
     TupleBatch tb = null;
     while ((tb = tbb.popAny()) != null) {
-      insert(WORKER_ID[0], "testtable", schema, tb);
-      insert(WORKER_ID[1], "testtable", schema, tb);
+      insert(WORKER_ID[0], testtableKey, schema, tb);
+      insert(WORKER_ID[1], testtableKey, schema, tb);
     }
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final ExchangePairID worker2ReceiveID = ExchangePairID.newID();
 
-    final SQLiteQueryScan scan = new SQLiteQueryScan(null, "select distinct * from testtable", schema);
+    final SQLiteQueryScan scan = new SQLiteQueryScan(null, "select distinct * from " + testtableKey, schema);
     final CollectProducer cp = new CollectProducer(scan, worker2ReceiveID, WORKER_ID[1]);
 
     // CollectProducer child, ParallelOperatorID operatorID, SocketInfo[] workers
     final CollectConsumer cc = new CollectConsumer(cp.getSchema(), worker2ReceiveID, WORKER_ID);
-    final BlockingSQLiteDataReceiver block2 = new BlockingSQLiteDataReceiver(null, "temptable", cc);
+    final BlockingSQLiteDataReceiver block2 =
+        new BlockingSQLiteDataReceiver(null, RelationKey.of("test", "test", "temptable"), cc);
     final SQLiteSQLProcessor scan22 =
-        new SQLiteSQLProcessor(null, "select distinct * from temptable", schema, new Operator[] { block2 });
+        new SQLiteSQLProcessor(null, "select distinct * from " + temptableKey, schema, new Operator[] { block2 });
     final CollectProducer cp22 = new CollectProducer(scan22, serverReceiveID, MASTER_ID);
     final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
     workerPlans.put(WORKER_ID[0], new Operator[] { cp });

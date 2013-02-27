@@ -229,16 +229,25 @@ public abstract class Operator implements Serializable {
    * 
    * Only call this method if the operator is a leaf operator.
    * 
-   * */
-  public final void setEOS(boolean x) {
-    eos = x;
+   * @param eos the new value of eos.
+   */
+  public final void setEOS(final boolean eos) {
+    this.eos = eos;
   }
 
-  public final void setEOI(boolean x) {
-    eoi = x;
+  /**
+   * Mark the end of an iteration.
+   * 
+   * @param eoi the new value of eoi.
+   */
+  public final void setEOI(final boolean eoi) {
+    this.eoi = eoi;
   }
 
-  public boolean isOpen() {
+  /**
+   * @return true if this operator is open.
+   */
+  public final boolean isOpen() {
     return open;
   }
 
@@ -278,12 +287,6 @@ public abstract class Operator implements Serializable {
    * Returns the next output TupleBatch, or null if EOS is meet.
    * 
    * This method is blocking.
-   * 
-   * 
-   * @return the next output TupleBatch, or null if EOS Set the children(child) of this operator. If the operator has
-   *         only one child, children[0] should be used. If the operator is a join, children[0] and children[1] should
-   *         be used.
-   * 
    * 
    * @param children the Operators which are to be set as the children(child) of this operator
    */

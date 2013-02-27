@@ -12,6 +12,7 @@ import org.junit.Test;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
@@ -21,7 +22,6 @@ import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.IDBInput;
 import edu.washington.escience.myriad.operator.LocalJoin;
 import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.operator.Project;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
@@ -98,7 +98,7 @@ public class MultipleIDBTest extends SystemTestBase {
     return result;
   }
 
-  public TupleBatchBuffer generateAMatrix(final String tableName, final Schema tableSchema) throws IOException,
+  public TupleBatchBuffer generateAMatrix(final RelationKey tableKey, final Schema tableSchema) throws IOException,
       CatalogException {
     long[] tblAID1Worker1 = TestUtils.randomLong(1, MaxID - 1, numTbl1Worker1);
     long[] tblAID1Worker2 = TestUtils.randomLong(1, MaxID - 1, numTbl1Worker2);
@@ -118,20 +118,20 @@ public class MultipleIDBTest extends SystemTestBase {
     table1.merge(tblAWorker1);
     table1.merge(tblAWorker2);
 
-    createTable(WORKER_ID[0], tableName, "follower long, followee long");
-    createTable(WORKER_ID[1], tableName, "follower long, followee long");
+    createTable(WORKER_ID[0], tableKey, "follower long, followee long");
+    createTable(WORKER_ID[1], tableKey, "follower long, followee long");
     TupleBatch tb = null;
     while ((tb = tblAWorker1.popAny()) != null) {
-      insert(WORKER_ID[0], tableName, tableSchema, tb);
+      insert(WORKER_ID[0], tableKey, tableSchema, tb);
     }
     while ((tb = tblAWorker2.popAny()) != null) {
-      insert(WORKER_ID[1], tableName, tableSchema, tb);
+      insert(WORKER_ID[1], tableKey, tableSchema, tb);
     }
     return table1;
   }
 
   public void generateJoinPlan(final ArrayList<ArrayList<Operator>> workerPlan, final Schema tableSchema,
-      final Schema joinSchema, final String initName, final ExchangePairID eoiReceiverOpID, final boolean isHead,
+      final String initName, final ExchangePairID eoiReceiverOpID, final boolean isHead,
       final ExchangePairID sendingOpID, final ExchangePairID receivingOpID, final ExchangePairID eosReceiverOpID,
       final ExchangePairID serverReceivingOpID, final int selfIDBID) throws DbException {
 
@@ -144,7 +144,8 @@ public class MultipleIDBTest extends SystemTestBase {
     final ShuffleConsumer sc1;
     if (isHead) {
       ExchangePairID joinArrayID = ExchangePairID.newID();
-      final SQLiteQueryScan scan1 = new SQLiteQueryScan(null, "select * from r", tableSchema);
+      final SQLiteQueryScan scan1 =
+          new SQLiteQueryScan(null, "select * from " + RelationKey.of("test", "test", "r"), tableSchema);
       final ShuffleProducer sp1 = new ShuffleProducer(scan1, joinArrayID, WORKER_ID, pf1);
       sc1 = new ShuffleConsumer(tableSchema, joinArrayID, WORKER_ID);
       workerPlan.get(0).add(sp1);
@@ -152,7 +153,8 @@ public class MultipleIDBTest extends SystemTestBase {
     } else {
       sc1 = new ShuffleConsumer(tableSchema, receivingOpID, WORKER_ID);
     }
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan(null, "select * from " + initName, tableSchema);
+    final SQLiteQueryScan scan2 =
+        new SQLiteQueryScan(null, "select * from " + RelationKey.of("test", "test", initName), tableSchema);
     final ExchangePairID beforeIngress1 = ExchangePairID.newID();
     final ShuffleProducer sp2 = new ShuffleProducer(scan2, beforeIngress1, WORKER_ID, pf0);
     final ShuffleConsumer sc2 = new ShuffleConsumer(tableSchema, beforeIngress1, WORKER_ID);
@@ -194,12 +196,12 @@ public class MultipleIDBTest extends SystemTestBase {
       send2server_worker1 = new LocalMultiwayConsumer(tableSchema, consumerIDs[2], WORKER_ID[0]);
       send2server_worker2 = new LocalMultiwayConsumer(tableSchema, consumerIDs[2], WORKER_ID[1]);
     }
-    final LocalJoin join_worker1 = new LocalJoin(joinSchema, sc1, send2join_worker1, new int[] { 1 }, new int[] { 0 });
-    final LocalJoin join_worker2 = new LocalJoin(joinSchema, sc1, send2join_worker2, new int[] { 1 }, new int[] { 0 });
-    final Project proj_worker1 = new Project(new Integer[] { 0, 3 }, join_worker1);
-    final Project proj_worker2 = new Project(new Integer[] { 0, 3 }, join_worker2);
-    sp3_worker1.setChildren(new Operator[] { proj_worker1 });
-    sp3_worker2.setChildren(new Operator[] { proj_worker2 });
+    final LocalJoin join_worker1 =
+        new LocalJoin(sc1, send2join_worker1, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
+    final LocalJoin join_worker2 =
+        new LocalJoin(sc1, send2join_worker2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
+    sp3_worker1.setChildren(new Operator[] { join_worker1 });
+    sp3_worker2.setChildren(new Operator[] { join_worker2 });
 
     workerPlan.get(0).addAll(Arrays.asList(new Operator[] { multiProducer_worker1, sp2, sp3_worker1 }));
     workerPlan.get(1).addAll(Arrays.asList(new Operator[] { multiProducer_worker2, sp2, sp3_worker2 }));
@@ -233,16 +235,12 @@ public class MultipleIDBTest extends SystemTestBase {
     final ImmutableList<Type> table1Types = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
     final ImmutableList<String> table1ColumnNames = ImmutableList.of("follower", "followee");
     final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
-    final ImmutableList<Type> joinTypes =
-        ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE);
-    final ImmutableList<String> joinColumnNames = ImmutableList.of("follower", "followee", "follower", "followee");
-    final Schema joinSchema = new Schema(joinTypes, joinColumnNames);
 
     // generate the graph
-    TupleBatchBuffer r = generateAMatrix("R", tableSchema);
-    TupleBatchBuffer a0 = generateAMatrix("A0", tableSchema);
-    TupleBatchBuffer b0 = generateAMatrix("B0", tableSchema);
-    TupleBatchBuffer c0 = generateAMatrix("C0", tableSchema);
+    TupleBatchBuffer r = generateAMatrix(RelationKey.of("test", "test", "r"), tableSchema);
+    TupleBatchBuffer a0 = generateAMatrix(RelationKey.of("test", "test", "a0"), tableSchema);
+    TupleBatchBuffer b0 = generateAMatrix(RelationKey.of("test", "test", "b0"), tableSchema);
+    TupleBatchBuffer c0 = generateAMatrix(RelationKey.of("test", "test", "c0"), tableSchema);
 
     // generate the correct answer in memory
     TupleBatchBuffer a = getAJoinResult(a0, r, tableSchema);
@@ -261,12 +259,12 @@ public class MultipleIDBTest extends SystemTestBase {
     final ExchangePairID receivingAonB = ExchangePairID.newID();
     final ExchangePairID receivingBonC = ExchangePairID.newID();
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
-    generateJoinPlan(workerPlan, tableSchema, joinSchema, "a0", eoiReceiverOpID, true, receivingAonB, null,
-        eosReceiverOpID_idb1, null, 0);
-    generateJoinPlan(workerPlan, tableSchema, joinSchema, "b0", eoiReceiverOpID, false, receivingBonC, receivingAonB,
+    generateJoinPlan(workerPlan, tableSchema, "a0", eoiReceiverOpID, true, receivingAonB, null, eosReceiverOpID_idb1,
+        null, 0);
+    generateJoinPlan(workerPlan, tableSchema, "b0", eoiReceiverOpID, false, receivingBonC, receivingAonB,
         eosReceiverOpID_idb2, null, 1);
-    generateJoinPlan(workerPlan, tableSchema, joinSchema, "c0", eoiReceiverOpID, false, null, receivingBonC,
-        eosReceiverOpID_idb3, serverReceiveID, 2);
+    generateJoinPlan(workerPlan, tableSchema, "c0", eoiReceiverOpID, false, null, receivingBonC, eosReceiverOpID_idb3,
+        serverReceiveID, 2);
 
     final Consumer eoiReceiver = new Consumer(getEOIReportSchema(), eoiReceiverOpID, WORKER_ID);
     final EOSController eosController =
@@ -275,6 +273,7 @@ public class MultipleIDBTest extends SystemTestBase {
     workerPlan.get(0).add(eosController);
 
     HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
+
     workerPlans.put(WORKER_ID[0], new Operator[workerPlan.get(0).size()]);
     workerPlans.put(WORKER_ID[1], new Operator[workerPlan.get(1).size()]);
     for (int i = 0; i < workerPlan.get(0).size(); ++i) {
@@ -384,15 +383,11 @@ public class MultipleIDBTest extends SystemTestBase {
     final ImmutableList<Type> table1Types = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
     final ImmutableList<String> table1ColumnNames = ImmutableList.of("follower", "followee");
     final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
-    final ImmutableList<Type> joinTypes =
-        ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE);
-    final ImmutableList<String> joinColumnNames = ImmutableList.of("follower", "followee", "follower", "followee");
-    final Schema joinSchema = new Schema(joinTypes, joinColumnNames);
 
     // generate the graph
-    TupleBatchBuffer a0 = generateAMatrix("A0", tableSchema);
-    TupleBatchBuffer b0 = generateAMatrix("B0", tableSchema);
-    TupleBatchBuffer c0 = generateAMatrix("C0", tableSchema);
+    TupleBatchBuffer a0 = generateAMatrix(RelationKey.of("test", "test", "a0"), tableSchema);
+    TupleBatchBuffer b0 = generateAMatrix(RelationKey.of("test", "test", "b0"), tableSchema);
+    TupleBatchBuffer c0 = generateAMatrix(RelationKey.of("test", "test", "c0"), tableSchema);
 
     // generate the correct answer in memory
     TupleBatchBuffer tmp = getCircularJoinResult(a0, b0, c0, tableSchema);
@@ -410,11 +405,11 @@ public class MultipleIDBTest extends SystemTestBase {
     final ExchangePairID receivingBonC = ExchangePairID.newID();
     final ExchangePairID receivingConA = ExchangePairID.newID();
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
-    generateJoinPlan(workerPlan, tableSchema, joinSchema, "a0", eoiReceiverOpID, false, receivingAonB, receivingConA,
+    generateJoinPlan(workerPlan, tableSchema, "a0", eoiReceiverOpID, false, receivingAonB, receivingConA,
         eosReceiverOpID_idb1, null, 0);
-    generateJoinPlan(workerPlan, tableSchema, joinSchema, "b0", eoiReceiverOpID, false, receivingBonC, receivingAonB,
+    generateJoinPlan(workerPlan, tableSchema, "b0", eoiReceiverOpID, false, receivingBonC, receivingAonB,
         eosReceiverOpID_idb2, null, 1);
-    generateJoinPlan(workerPlan, tableSchema, joinSchema, "c0", eoiReceiverOpID, false, receivingConA, receivingBonC,
+    generateJoinPlan(workerPlan, tableSchema, "c0", eoiReceiverOpID, false, receivingConA, receivingBonC,
         eosReceiverOpID_idb3, serverReceiveID, 2);
 
     final Consumer eoiReceiver = new Consumer(getEOIReportSchema(), eoiReceiverOpID, WORKER_ID);

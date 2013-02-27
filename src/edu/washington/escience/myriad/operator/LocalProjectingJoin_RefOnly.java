@@ -27,7 +27,7 @@ public final class LocalProjectingJoin_RefOnly extends Operator implements Exter
     }
 
     public boolean compareField(final IndexedTuple another, final int colIndx1, final int colIndx2) {
-      final Type type1 = tb.getSchema().getFieldType(colIndx1);
+      final Type type1 = tb.getSchema().getColumnType(colIndx1);
       // type check in query plan?
       final int rowIndx1 = index;
       final int rowIndx2 = another.index;
@@ -57,7 +57,7 @@ public final class LocalProjectingJoin_RefOnly extends Operator implements Exter
       if (!(tb.getSchema().equals(another.tb.getSchema()))) {
         return false;
       }
-      for (int i = 0; i < tb.getSchema().numFields(); ++i) {
+      for (int i = 0; i < tb.getSchema().numColumns(); ++i) {
         if (!compareField(another, i, i)) {
           return false;
         }
@@ -116,12 +116,12 @@ public final class LocalProjectingJoin_RefOnly extends Operator implements Exter
     final List<String> names = new LinkedList<String>();
 
     for (final int i : answerColumns1) {
-      types.add(child1.getSchema().getFieldType(i));
-      names.add(child1.getSchema().getFieldName(i));
+      types.add(child1.getSchema().getColumnType(i));
+      names.add(child1.getSchema().getColumnName(i));
     }
     for (final int i : answerColumns2) {
-      types.add(child2.getSchema().getFieldType(i));
-      names.add(child2.getSchema().getFieldName(i));
+      types.add(child2.getSchema().getColumnType(i));
+      names.add(child2.getSchema().getColumnName(i));
     }
     outputSchema = new Schema(types, names);
     this.child1 = child1;
