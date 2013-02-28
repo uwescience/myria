@@ -113,7 +113,7 @@ public final class QueryResource {
     Operator[] ret = new Operator[localPlanList.size()];
     int i = 0;
     for (Object o : localPlanList) {
-      ret[i] = deserializeJsonLocalPlan(o);
+      ret[i++] = deserializeJsonLocalPlan(o);
     }
     return ret;
   }
@@ -268,7 +268,7 @@ public final class QueryResource {
     int[] ret = new int[list.size()];
     int count = 0;
     for (final Object o : list) {
-      ret[count] = Integer.parseInt((String) o);
+      ret[count++] = Integer.parseInt((String) o);
     }
     return ret;
   }
