@@ -30,13 +30,18 @@ import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
+import edu.washington.escience.myriad.operator.DupElim;
+import edu.washington.escience.myriad.operator.IDBInput;
 import edu.washington.escience.myriad.operator.LocalJoin;
+import edu.washington.escience.myriad.operator.Merge;
 import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.operator.Project;
 import edu.washington.escience.myriad.operator.SQLiteInsert;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
 import edu.washington.escience.myriad.parallel.Consumer;
+import edu.washington.escience.myriad.parallel.EOSController;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 import edu.washington.escience.myriad.parallel.LocalMultiwayConsumer;
 import edu.washington.escience.myriad.parallel.LocalMultiwayProducer;
@@ -168,20 +173,16 @@ public final class QueryResource {
     Objects.requireNonNull(opType, "all Operators must have an op_type defined");
 
     /* Generic variable names */
-    String childName;
-    String child2Name;
     String userName;
     String programName;
     String relationName;
-    Operator child;
-    Operator child2;
 
     /* Do the case-by-case work. */
     switch (opType) {
 
-      case "SQLiteInsert":
-        childName = deserializeString(jsonOperator, "arg_child");
-        child = operators.get(childName);
+      case "SQLiteInsert": {
+        String childName = deserializeString(jsonOperator, "arg_child");
+        Operator child = operators.get(childName);
         Objects.requireNonNull(child, "SQLiteInsert child Operator " + childName + " not previously defined");
         userName = deserializeString(jsonOperator, "arg_user_name");
         programName = deserializeString(jsonOperator, "arg_program_name");
@@ -192,22 +193,23 @@ public final class QueryResource {
           overwrite = Boolean.parseBoolean(overwriteString);
         }
         return new SQLiteInsert(child, RelationKey.of(userName, programName, relationName), null, null, overwrite);
+      }
 
-      case "LocalJoin":
+      case "LocalJoin": {
         /* Child 1 */
-        childName = deserializeString(jsonOperator, "arg_child1");
+        String childName = deserializeString(jsonOperator, "arg_child1");
         int[] child1columns = deserializeIntArray(jsonOperator, "arg_columns1", false);
         /* Child 2 arguments */
-        child2Name = deserializeString(jsonOperator, "arg_child2");
+        String child2Name = deserializeString(jsonOperator, "arg_child2");
         int[] child2columns = deserializeIntArray(jsonOperator, "arg_columns2", false);
         /* Mutual checks */
         Preconditions.checkState(child1columns.length == child2columns.length,
             "arg_columns1 and arg_columns2 must have the same length!");
 
         /* Find the operators. */
-        child = operators.get(childName);
+        Operator child = operators.get(childName);
         Objects.requireNonNull(child, "LocalJoin child Operator " + childName + " not previously defined");
-        child2 = operators.get(child2Name);
+        Operator child2 = operators.get(child2Name);
         Objects.requireNonNull(child2, "LocalJoin child2 Operator " + child2Name + " not previously defined");
 
         /* Get the optional arguments. */
@@ -221,6 +223,7 @@ public final class QueryResource {
         }
         throw new IllegalArgumentException(
             "LocalJoin: either both or neither of arg_select1 and arg_select2 must be specified");
+      }
 
       case "SQLiteScan": {
         userName = deserializeString(jsonOperator, "arg_user_name");
@@ -272,8 +275,8 @@ public final class QueryResource {
         int[] workerIDs = deserializeIntArray(jsonOperator, "arg_workerIDs", false);
         PartitionFunction<?, ?> pf = deserializePF(jsonOperator, "arg_pf", workerIDs.length);
         ExchangePairID operatorID = ExchangePairID.fromExisting(deserializeLong(jsonOperator, "arg_operatorID"));
-        childName = deserializeString(jsonOperator, "arg_child");
-        child = operators.get(childName);
+        String childName = deserializeString(jsonOperator, "arg_child");
+        Operator child = operators.get(childName);
         Objects.requireNonNull(child, "ShuffleProducer child Operator " + childName + " not previously defined");
         return new ShuffleProducer(child, operatorID, workerIDs, pf);
       }
@@ -281,8 +284,8 @@ public final class QueryResource {
       case "CollectProducer": {
         int workerID = deserializeInt(jsonOperator, "arg_workerID");
         ExchangePairID operatorID = ExchangePairID.fromExisting(deserializeLong(jsonOperator, "arg_operatorID"));
-        childName = deserializeString(jsonOperator, "arg_child");
-        child = operators.get(childName);
+        String childName = deserializeString(jsonOperator, "arg_child");
+        Operator child = operators.get(childName);
         Objects.requireNonNull(child, "CollectProducer child Operator " + childName + " not previously defined");
         return new CollectProducer(child, operatorID, workerID);
       }
@@ -294,10 +297,68 @@ public final class QueryResource {
         for (int i = 0; i < tmpOpIDs.length; ++i) {
           operatorIDs[i] = ExchangePairID.fromExisting(tmpOpIDs[i]);
         }
-        childName = deserializeString(jsonOperator, "arg_child");
-        child = operators.get(childName);
+        String childName = deserializeString(jsonOperator, "arg_child");
+        Operator child = operators.get(childName);
         Objects.requireNonNull(child, "CollectProducer child Operator " + childName + " not previously defined");
         return new LocalMultiwayProducer(child, operatorIDs, workerID);
+      }
+
+      case "IDBInput": {
+        Schema schema = deserializeSchema(jsonOperator, "arg_schema");
+        int selfWorkerID = deserializeInt(jsonOperator, "arg_workerID");
+        int selfIDBID = deserializeInt(jsonOperator, "arg_idbID");
+        ExchangePairID operatorID = ExchangePairID.fromExisting(deserializeLong(jsonOperator, "arg_operatorID"));
+        int controllerWorkerID = deserializeInt(jsonOperator, "arg_controllerWorkerID");
+        String child1Name = deserializeString(jsonOperator, "arg_child1");
+        String child2Name = deserializeString(jsonOperator, "arg_child2");
+        String child3Name = deserializeString(jsonOperator, "arg_child3");
+        Operator child1 = operators.get(child1Name);
+        Operator child2 = operators.get(child2Name);
+        Operator child3 = operators.get(child3Name);
+        Objects.requireNonNull(child1, "IDBInput child1 Operator " + child1Name + " not previously defined");
+        Objects.requireNonNull(child2, "IDBInput child2 Operator " + child2Name + " not previously defined");
+        Objects.requireNonNull(child3, "IDBInput child3 Operator " + child3Name + " not previously defined");
+        return new IDBInput(schema, selfWorkerID, selfIDBID, operatorID, controllerWorkerID, child1, child2, child3);
+      }
+
+      case "EOSController": {
+        String childName = deserializeString(jsonOperator, "arg_child");
+        Operator child = operators.get(childName);
+        Objects.requireNonNull(child, "IDBInput child Operator " + childName + " not previously defined");
+        ExchangePairID operatorID = ExchangePairID.fromExisting(deserializeLong(jsonOperator, "arg_operatorID"));
+        long[] tmpOpIDs = deserializeLongArray(jsonOperator, "arg_idbOpIDs", false);
+        ExchangePairID[] idbOpIDs = new ExchangePairID[tmpOpIDs.length];
+        for (int i = 0; i < tmpOpIDs.length; ++i) {
+          idbOpIDs[i] = ExchangePairID.fromExisting(tmpOpIDs[i]);
+        }
+        int[] workerIDs = deserializeIntArray(jsonOperator, "arg_workerIDs", false);
+        return new EOSController(child, operatorID, idbOpIDs, workerIDs);
+      }
+
+      case "DupElim": {
+        String childName = deserializeString(jsonOperator, "arg_child");
+        Operator child = operators.get(childName);
+        Objects.requireNonNull(child, "DupElim child Operator " + childName + " not previously defined");
+        return new DupElim(child);
+      }
+
+      case "Merge": {
+        Schema schema = deserializeSchema(jsonOperator, "arg_schema");
+        String child1Name = deserializeString(jsonOperator, "arg_child1");
+        Operator child1 = operators.get(child1Name);
+        Objects.requireNonNull(child1, "Merge child1 Operator " + child1Name + " not previously defined");
+        String child2Name = deserializeString(jsonOperator, "arg_child2");
+        Operator child2 = operators.get(child2Name);
+        Objects.requireNonNull(child2, "Merge child2 Operator " + child2Name + " not previously defined");
+        return new Merge(schema, child1, child2);
+      }
+
+      case "Project": {
+        int[] fieldList = deserializeIntArray(jsonOperator, "arg_fieldList", false);
+        String childName = deserializeString(jsonOperator, "arg_child");
+        Operator child = operators.get(childName);
+        Objects.requireNonNull(child, "Merge child Operator " + childName + " not previously defined");
+        return new Project(fieldList, child);
       }
 
       default:
