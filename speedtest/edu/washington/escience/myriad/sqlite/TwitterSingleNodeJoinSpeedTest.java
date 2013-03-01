@@ -63,7 +63,7 @@ public class TwitterSingleNodeJoinSpeedTest {
     final LocalJoin localJoin = new LocalJoin(joinSchema, scan1, scan2, new int[] { 1 }, new int[] { 0 });
 
     /* Project down to only the two columns of interest: SC1.follower now transitively follows SC2.followee. */
-    final Project proj = new Project(new Integer[] { 0, 3 }, localJoin);
+    final Project proj = new Project(new int[] { 0, 3 }, localJoin);
 
     /* Now Dupelim */
     final DupElim dupelim = new DupElim(proj);

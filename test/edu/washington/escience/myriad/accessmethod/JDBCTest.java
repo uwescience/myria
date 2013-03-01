@@ -1,7 +1,5 @@
 package edu.washington.escience.myriad.accessmethod;
 
-import java.util.ArrayList;
-
 import org.junit.Test;
 import org.slf4j.LoggerFactory;
 
@@ -36,14 +34,8 @@ public class JDBCTest {
     final String connectionString = "jdbc:" + dbms + "://" + host + ":" + port + "/" + databaseName;
     final JdbcQueryScan scan = new JdbcQueryScan(jdbcDriverName, connectionString, query, schema, user, password);
     final Filter filter1 = new Filter(Predicate.Op.GREATER_THAN_OR_EQ, 0, new Integer(50), scan);
-
     final Filter filter2 = new Filter(Predicate.Op.LESS_THAN_OR_EQ, 0, new Integer(60), filter1);
-
-    final ArrayList<Integer> fieldIdx = new ArrayList<Integer>();
-    fieldIdx.add(1);
-
-    final Project project = new Project(fieldIdx, filter2);
-
+    final Project project = new Project(new int[] { 1 }, filter2);
     final Operator root = project;
 
     root.open();

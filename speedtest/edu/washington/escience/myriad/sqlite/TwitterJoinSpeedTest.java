@@ -182,7 +182,7 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     // Join on SC1.followee=SC2.follower
     final LocalJoin localjoin = new LocalJoin(joinSchema, sc1, sc2, new int[] { 1 }, new int[] { 0 });
     /* Project down to only the two columns of interest: SC1.follower now transitively follows SC2.followee. */
-    final Project proj = new Project(new Integer[] { 0, 3 }, localjoin);
+    final Project proj = new Project(new int[] { 0, 3 }, localjoin);
     /* Now reshuffle the results to partition based on the new followee, so that we can dupelim. */
     final ExchangePairID arrayID0 = ExchangePairID.newID();
     final ShuffleProducer sp0 = new ShuffleProducer(proj, arrayID0, WORKER_ID, pf0);

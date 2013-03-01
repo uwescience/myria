@@ -230,20 +230,14 @@ public final class Schema implements Serializable {
   }
 
   /**
-   * Compares the specified object with this Schema for equality. Two Schemas are considered equal if they are the same
-   * size and if the n-th type in this Schema is equal to the n-th type in the other.
+   * Compares the specified object with this Schema for equality. Two Schemas are considered equal if they have the same
+   * size, column types, and column names.
    * 
-   * @param o the Object to be compared for equality with this Schema.
-   * @return true if the object is equal to this Schema.
+   * @param schema the Schema to be compared with.
+   * @return true if schema is equal to this Schema.
    */
-  @Override
-  public boolean equals(final Object o) {
-    if (!(o instanceof Schema)) {
-      return false;
-    }
-    final Schema other = (Schema) o;
-
-    return columnTypes.equals(other.columnTypes);
+  public boolean equals(final Schema schema) {
+    return columnTypes.equals(schema.columnTypes) && columnNames.equals(schema.columnNames);
   }
 
   /**
