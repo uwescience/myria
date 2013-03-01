@@ -6,9 +6,7 @@ import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Objects;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.DbException;
@@ -84,29 +82,8 @@ public final class LocalJoin extends Operator {
    * @throw IllegalArgumentException if there are duplicated column names in <tt>outputSchema</tt>, or if
    *        <tt>outputSchema</tt> does not have the correct number of columns and column types.
    */
-  public LocalJoin(final Schema outputSchema, final Operator child1, final Operator child2, final int[] compareIndx1,
+  private LocalJoin(final Schema outputSchema, final Operator child1, final Operator child2, final int[] compareIndx1,
       final int[] compareIndx2, final int[] answerColumns1, final int[] answerColumns2) {
-    Objects.requireNonNull(outputSchema);
-    Objects.requireNonNull(child1);
-    Objects.requireNonNull(child2);
-    Objects.requireNonNull(compareIndx1);
-    Objects.requireNonNull(compareIndx2);
-    Objects.requireNonNull(answerColumns1);
-    Objects.requireNonNull(answerColumns2);
-
-    Preconditions.checkArgument(compareIndx1.length == compareIndx2.length,
-        "Must compare the same number of columns from both children");
-    Preconditions.checkArgument(outputSchema.numColumns() == answerColumns1.length + answerColumns2.length,
-        "Number of columns in provided schema must match the number of output columns");
-
-    /* TODO FIX the below checks. */
-    // Preconditions.checkArgument(outputSchema.getColumnTypes().subList(0, child1.getSchema().numColumns()).equals(
-    // child1.getSchema().getColumnTypes()),
-    // "Types of columns in provided schema must match the concatenation of children schema.");
-    // Preconditions.checkArgument(outputSchema.getColumnTypes().subList(child1.getSchema().numColumns(),
-    // outputSchema.numColumns()).equals(child2.getSchema().getColumnTypes()),
-    // "Types of columns in provided schema must match the concatenation of children schema.");
-
     this.outputSchema = outputSchema;
     this.child1 = child1;
     this.child2 = child2;
