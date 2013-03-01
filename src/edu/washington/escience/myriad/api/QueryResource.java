@@ -1,11 +1,15 @@
 package edu.washington.escience.myriad.api;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Set;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
@@ -24,11 +28,20 @@ import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.LocalJoin;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.SQLiteInsert;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
+import edu.washington.escience.myriad.parallel.CollectConsumer;
+import edu.washington.escience.myriad.parallel.CollectProducer;
+import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
+import edu.washington.escience.myriad.parallel.PartitionFunction;
+import edu.washington.escience.myriad.parallel.RoundRobinPartitionFunction;
+import edu.washington.escience.myriad.parallel.ShuffleConsumer;
+import edu.washington.escience.myriad.parallel.ShuffleProducer;
+import edu.washington.escience.myriad.parallel.SingleFieldHashPartitionFunction;
 
 /**
  * Class that handles queries.
@@ -63,8 +76,12 @@ public final class QueryResource {
       final String logicalRa = (String) userData.get("logical_ra");
       Map<Integer, Operator[]> queryPlan = deserializeJsonQueryPlan(userData.get("query_plan"));
 
+      Set<Integer> usingWorkers = new HashSet<Integer>();
+      usingWorkers.addAll(queryPlan.keySet());
+      /* Remove the server plan if present */
+      usingWorkers.remove(0);
       /* Make sure that the requested workers are alive. */
-      if (!MasterApiServer.getMyriaServer().getAliveWorkers().containsAll(queryPlan.keySet())) {
+      if (!MasterApiServer.getMyriaServer().getAliveWorkers().containsAll(usingWorkers)) {
         /* Throw a 503 (Service Unavailable) */
         throw new WebApplicationException(Response.status(Status.SERVICE_UNAVAILABLE).build());
       }
@@ -158,6 +175,7 @@ public final class QueryResource {
 
     /* Do the case-by-case work. */
     switch (opType) {
+
       case "SQLiteInsert":
         childName = deserializeString(jsonOperator, "arg_child");
         child = operators.get(childName);
@@ -201,7 +219,7 @@ public final class QueryResource {
         throw new IllegalArgumentException(
             "LocalJoin: either both or neither of arg_select1 and arg_select2 must be specified");
 
-      case "SQLiteScan":
+      case "SQLiteScan": {
         userName = deserializeString(jsonOperator, "arg_user_name");
         programName = deserializeString(jsonOperator, "arg_program_name");
         relationName = deserializeString(jsonOperator, "arg_relation_name");
@@ -217,6 +235,45 @@ public final class QueryResource {
           throw new IOException("Specified relation " + relationKey + " does not exist.");
         }
         return new SQLiteQueryScan(null, "SELECT * from " + relationKey, schema);
+      }
+
+      case "ShuffleConsumer": {
+        Schema schema = deserializeSchema(jsonOperator, "arg_schema");
+        int[] workerIDs = deserializeIntArray(jsonOperator, "arg_workerIDs", false);
+        ExchangePairID operatorID =
+            ExchangePairID.fromExisting(Long.parseLong(deserializeString(jsonOperator, "arg_operatorID")));
+        return new ShuffleConsumer(schema, operatorID, workerIDs);
+      }
+
+      case "CollectConsumer": {
+        Schema schema = deserializeSchema(jsonOperator, "arg_schema");
+        int[] workerIDs = deserializeIntArray(jsonOperator, "arg_workerIDs", false);
+        ExchangePairID operatorID =
+            ExchangePairID.fromExisting(Long.parseLong(deserializeString(jsonOperator, "arg_operatorID")));
+        return new CollectConsumer(schema, operatorID, workerIDs);
+      }
+
+      case "ShuffleProducer": {
+        int[] workerIDs = deserializeIntArray(jsonOperator, "arg_workerIDs", false);
+        PartitionFunction<?, ?> pf = deserializePF(jsonOperator, "arg_pf", workerIDs.length);
+        ExchangePairID operatorID =
+            ExchangePairID.fromExisting(Long.parseLong(deserializeString(jsonOperator, "arg_operatorID")));
+
+        childName = deserializeString(jsonOperator, "arg_child");
+        child = operators.get(childName);
+        Objects.requireNonNull(child, "ShuffleProducer child Operator " + childName + " not previously defined");
+        return new ShuffleProducer(child, operatorID, workerIDs, pf);
+      }
+
+      case "CollectProducer": {
+        int workerID = Integer.parseInt(deserializeString(jsonOperator, "arg_workerID"));
+        ExchangePairID operatorID =
+            ExchangePairID.fromExisting(Long.parseLong(deserializeString(jsonOperator, "arg_operatorID")));
+        childName = deserializeString(jsonOperator, "arg_child");
+        child = operators.get(childName);
+        Objects.requireNonNull(child, "CollectProducer child Operator " + childName + " not previously defined");
+        return new CollectProducer(child, operatorID, workerID);
+      }
 
       default:
         throw new RuntimeException("Not implemented deserializing Operator of type " + opType);
@@ -271,5 +328,81 @@ public final class QueryResource {
       ret[count++] = Integer.parseInt((String) o);
     }
     return ret;
+  }
+
+  /**
+   * Helper function to deserialize a schema.
+   * 
+   * @param map the JSON map.
+   * @param field the field containing the list.
+   * @param optional whether the field is optional, or an IllegalArgumentException should be thrown.
+   * @return the schema, or null if the field is missing and optional is true.
+   */
+  private static Schema deserializeSchema(final Map<String, Object> map, final String field) {
+    Schema schema;
+    LinkedHashMap<?, ?> tmp = (LinkedHashMap<?, ?>) map.get(field);
+    List<String> tmpTypes = (List<String>) tmp.get("column_types");
+    List<Type> types = new ArrayList<Type>();
+
+    for (String s : tmpTypes) {
+      switch (s) {
+        case "INT_TYPE":
+          types.add(Type.INT_TYPE);
+          break;
+        case "FLOAT_TYPE":
+          types.add(Type.FLOAT_TYPE);
+          break;
+        case "DOUBLE_TYPE":
+          types.add(Type.DOUBLE_TYPE);
+          break;
+        case "BOOLEAN_TYPE":
+          types.add(Type.BOOLEAN_TYPE);
+          break;
+        case "STRING_TYPE":
+          types.add(Type.STRING_TYPE);
+          break;
+        case "LONG_TYPE":
+          types.add(Type.LONG_TYPE);
+          break;
+      }
+    }
+    List<String> names = (List<String>) tmp.get("column_names");
+    schema = Schema.of(types, names);
+    // schema = objectMapper.readValue((String) (map.get(field)), Schema.class);
+    if (schema == null) {
+      Preconditions.checkArgument(false, "mandatory field " + field + " missing");
+    }
+    return schema;
+  }
+
+  /**
+   * Helper function to deserialize a partition function.
+   * 
+   * @param map the JSON map.
+   * @param field the field containing the list.
+   * @param optional whether the field is optional, or an IllegalArgumentException should be thrown.
+   * @return the schema, or null if the field is missing and optional is true.
+   */
+  private static PartitionFunction<?, ?> deserializePF(final Map<String, Object> map, final String field,
+      final int numWorker) {
+    List<?> list = (List<?>) map.get(field);
+    if (list == null) {
+      Preconditions.checkArgument(false, "mandatory field " + field + " missing");
+    }
+    if (list.size() == 1) {
+      Preconditions.checkArgument(((String) list.get(0)).equals("RoundRobin"), "unknown partition function "
+          + (String) list.get(0));
+      return new RoundRobinPartitionFunction(numWorker);
+    } else if (list.size() == 2) {
+      Preconditions.checkArgument(((String) list.get(0)).equals("SingleFieldHash"), "unknown partition function "
+          + (String) list.get(0));
+      int tmp = Integer.parseInt((String) list.get(1));
+      SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(numWorker);
+      pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, tmp);
+      return pf;
+    } else {
+      Preconditions.checkArgument(false, "unknown partition function " + list);
+    }
+    return null;
   }
 }

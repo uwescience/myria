@@ -502,11 +502,20 @@ public final class Server {
    * @return the query ID assigned to this query.
    * @throws CatalogException if there is an error in the Catalog.
    * @throws IOException if there is an error communicating with the workers.
+   * @throws DbException if there are any error when running server plan
    */
   public Long startQuery(final String rawQuery, final String logicalRa, final Map<Integer, Operator[]> plans)
-      throws CatalogException, IOException {
+      throws CatalogException, IOException, DbException {
     final Long queryId = catalog.newQuery(rawQuery, logicalRa);
+    Operator[] serverPlan = null;
+    if (plans.containsKey(0)) {
+      serverPlan = plans.get(0);
+      plans.remove(0);
+    }
     dispatchWorkerQueryPlans(queryId, plans);
+    if (serverPlan != null) {
+      startServerQuery(queryId, (CollectConsumer) serverPlan[0]);
+    }
     startWorkerQuery(queryId);
     return queryId;
   }
