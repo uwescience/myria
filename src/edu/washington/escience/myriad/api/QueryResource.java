@@ -36,7 +36,10 @@ import edu.washington.escience.myriad.operator.SQLiteInsert;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
+import edu.washington.escience.myriad.parallel.Consumer;
 import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
+import edu.washington.escience.myriad.parallel.LocalMultiwayConsumer;
+import edu.washington.escience.myriad.parallel.LocalMultiwayProducer;
 import edu.washington.escience.myriad.parallel.PartitionFunction;
 import edu.washington.escience.myriad.parallel.RoundRobinPartitionFunction;
 import edu.washington.escience.myriad.parallel.ShuffleConsumer;
@@ -237,28 +240,38 @@ public final class QueryResource {
         return new SQLiteQueryScan(null, "SELECT * from " + relationKey, schema);
       }
 
+      case "Consumer": {
+        Schema schema = deserializeSchema(jsonOperator, "arg_schema");
+        int[] workerIDs = deserializeIntArray(jsonOperator, "arg_workerIDs", false);
+        ExchangePairID operatorID = ExchangePairID.fromExisting(deserializeLong(jsonOperator, "arg_operatorID"));
+        return new Consumer(schema, operatorID, workerIDs);
+      }
+
       case "ShuffleConsumer": {
         Schema schema = deserializeSchema(jsonOperator, "arg_schema");
         int[] workerIDs = deserializeIntArray(jsonOperator, "arg_workerIDs", false);
-        ExchangePairID operatorID =
-            ExchangePairID.fromExisting(Long.parseLong(deserializeString(jsonOperator, "arg_operatorID")));
+        ExchangePairID operatorID = ExchangePairID.fromExisting(deserializeLong(jsonOperator, "arg_operatorID"));
         return new ShuffleConsumer(schema, operatorID, workerIDs);
       }
 
       case "CollectConsumer": {
         Schema schema = deserializeSchema(jsonOperator, "arg_schema");
         int[] workerIDs = deserializeIntArray(jsonOperator, "arg_workerIDs", false);
-        ExchangePairID operatorID =
-            ExchangePairID.fromExisting(Long.parseLong(deserializeString(jsonOperator, "arg_operatorID")));
+        ExchangePairID operatorID = ExchangePairID.fromExisting(deserializeLong(jsonOperator, "arg_operatorID"));
         return new CollectConsumer(schema, operatorID, workerIDs);
+      }
+
+      case "LocalMultiwayConsumer": {
+        Schema schema = deserializeSchema(jsonOperator, "arg_schema");
+        int workerID = deserializeInt(jsonOperator, "arg_workerID");
+        ExchangePairID operatorID = ExchangePairID.fromExisting(deserializeLong(jsonOperator, "arg_operatorID"));
+        return new LocalMultiwayConsumer(schema, operatorID, workerID);
       }
 
       case "ShuffleProducer": {
         int[] workerIDs = deserializeIntArray(jsonOperator, "arg_workerIDs", false);
         PartitionFunction<?, ?> pf = deserializePF(jsonOperator, "arg_pf", workerIDs.length);
-        ExchangePairID operatorID =
-            ExchangePairID.fromExisting(Long.parseLong(deserializeString(jsonOperator, "arg_operatorID")));
-
+        ExchangePairID operatorID = ExchangePairID.fromExisting(deserializeLong(jsonOperator, "arg_operatorID"));
         childName = deserializeString(jsonOperator, "arg_child");
         child = operators.get(childName);
         Objects.requireNonNull(child, "ShuffleProducer child Operator " + childName + " not previously defined");
@@ -266,13 +279,25 @@ public final class QueryResource {
       }
 
       case "CollectProducer": {
-        int workerID = Integer.parseInt(deserializeString(jsonOperator, "arg_workerID"));
-        ExchangePairID operatorID =
-            ExchangePairID.fromExisting(Long.parseLong(deserializeString(jsonOperator, "arg_operatorID")));
+        int workerID = deserializeInt(jsonOperator, "arg_workerID");
+        ExchangePairID operatorID = ExchangePairID.fromExisting(deserializeLong(jsonOperator, "arg_operatorID"));
         childName = deserializeString(jsonOperator, "arg_child");
         child = operators.get(childName);
         Objects.requireNonNull(child, "CollectProducer child Operator " + childName + " not previously defined");
         return new CollectProducer(child, operatorID, workerID);
+      }
+
+      case "LocalMultiwayProducer": {
+        int workerID = deserializeInt(jsonOperator, "arg_workerID");
+        long[] tmpOpIDs = deserializeLongArray(jsonOperator, "arg_operatorIDs", false);
+        ExchangePairID[] operatorIDs = new ExchangePairID[tmpOpIDs.length];
+        for (int i = 0; i < tmpOpIDs.length; ++i) {
+          operatorIDs[i] = ExchangePairID.fromExisting(tmpOpIDs[i]);
+        }
+        childName = deserializeString(jsonOperator, "arg_child");
+        child = operators.get(childName);
+        Objects.requireNonNull(child, "CollectProducer child Operator " + childName + " not previously defined");
+        return new LocalMultiwayProducer(child, operatorIDs, workerID);
       }
 
       default:
@@ -307,6 +332,52 @@ public final class QueryResource {
   }
 
   /**
+   * Helper function to deserialize an integer.
+   * 
+   * @param map the JSON map.
+   * @param field the field containing the list.
+   * @return the integer, or null if the field is missing and optional is true.
+   */
+  private static int deserializeInt(final Map<String, Object> map, final String field) {
+    return Integer.parseInt(deserializeString(map, field));
+  }
+
+  /**
+   * Helper function to deserialize an long.
+   * 
+   * @param map the JSON map.
+   * @param field the field containing the list.
+   * @return the long, or null if the field is missing and optional is true.
+   */
+  private static long deserializeLong(final Map<String, Object> map, final String field) {
+    return Long.parseLong(deserializeString(map, field));
+  }
+
+  /**
+   * Helper function to deserialize an array of Integers.
+   * 
+   * @param map the JSON map.
+   * @param field the field containing the list.
+   * @param optional whether the field is optional, or an IllegalArgumentException should be thrown.
+   * @return the list of integers stored in field, or null if the field is missing and optional is true.
+   */
+  private static String[] deserializeStringArray(final Map<String, Object> map, final String field,
+      final boolean optional) {
+    List<?> list = (List<?>) map.get(field);
+    if (list == null) {
+      if (optional) {
+        return null;
+      }
+      Preconditions.checkArgument(false, "mandatory field " + field + " missing");
+    }
+    String[] ret = new String[list.size()];
+    for (int i = 0; i < ret.length; ++i) {
+      ret[i] = (String) list.get(i);
+    }
+    return ret;
+  }
+
+  /**
    * Helper function to deserialize an array of Integers.
    * 
    * @param map the JSON map.
@@ -315,17 +386,27 @@ public final class QueryResource {
    * @return the list of integers stored in field, or null if the field is missing and optional is true.
    */
   private static int[] deserializeIntArray(final Map<String, Object> map, final String field, final boolean optional) {
-    List<?> list = (List<?>) map.get(field);
-    if (list == null) {
-      if (optional) {
-        return null;
-      }
-      Preconditions.checkArgument(false, "mandatory field " + field + " missing");
+    String[] tmp = deserializeStringArray(map, field, optional);
+    int[] ret = new int[tmp.length];
+    for (int i = 0; i < tmp.length; ++i) {
+      ret[i] = Integer.parseInt(tmp[i]);
     }
-    int[] ret = new int[list.size()];
-    int count = 0;
-    for (final Object o : list) {
-      ret[count++] = Integer.parseInt((String) o);
+    return ret;
+  }
+
+  /**
+   * Helper function to deserialize an array of Longs.
+   * 
+   * @param map the JSON map.
+   * @param field the field containing the list.
+   * @param optional whether the field is optional, or an IllegalArgumentException should be thrown.
+   * @return the list of longs stored in field, or null if the field is missing and optional is true.
+   */
+  private static long[] deserializeLongArray(final Map<String, Object> map, final String field, final boolean optional) {
+    String[] tmp = deserializeStringArray(map, field, optional);
+    long[] ret = new long[tmp.length];
+    for (int i = 0; i < tmp.length; ++i) {
+      ret[i] = Long.parseLong(tmp[i]);
     }
     return ret;
   }
