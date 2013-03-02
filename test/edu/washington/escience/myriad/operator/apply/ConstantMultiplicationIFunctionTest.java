@@ -13,12 +13,12 @@ public class ConstantMultiplicationIFunctionTest {
   private static final int CONSTANT = 5;
 
   private long[] data;
-  private ConstantMultiplicationIFunction<Long> multiplier;
+  private ConstantMultiplicationIFunction multiplier;
 
   @Before
   public void setUp() throws Exception {
     data = TestUtils.randomLong(0, 1000, 100000);
-    multiplier = new ConstantMultiplicationIFunction<Long>(CONSTANT);
+    multiplier = new ConstantMultiplicationIFunction(CONSTANT);
   }
 
   @Test

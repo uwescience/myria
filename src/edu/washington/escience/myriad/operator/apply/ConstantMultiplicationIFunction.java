@@ -9,8 +9,7 @@ import edu.washington.escience.myriad.Type;
  *          Type of the data being fed and output
  */
 
-public class ConstantMultiplicationIFunction<Tin extends Number> implements
-    IFunction<Tin, Tin> {
+public class ConstantMultiplicationIFunction implements IFunction {
 
   private final int constant;
 
@@ -35,15 +34,14 @@ public class ConstantMultiplicationIFunction<Tin extends Number> implements
   /**
    * {@inheritDoc}
    */
-  @SuppressWarnings("unchecked")
   @Override
-  public Tin execute(Tin src) {
+  public Number execute(Number src) {
     if (src instanceof Long) {
-      return (Tin) (Long) (constant * src.longValue());
+      return constant * src.longValue();
     } else if (src instanceof Integer) {
-      return (Tin) (Integer) (constant * src.intValue());
+      return constant * src.intValue();
     } else {
-      return (Tin) (Double) (constant * src.doubleValue());
+      return constant * src.doubleValue();
     }
   }
 
