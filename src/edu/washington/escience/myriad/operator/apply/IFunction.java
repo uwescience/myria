@@ -6,7 +6,7 @@ import edu.washington.escience.myriad.Type;
  * An interface for Math operations to be used with Apply
  */
 
-public interface IFunction<Tout, Tin> {
+public interface IFunction {
 
   /**
    * Determines what should the Type of the resulting field be
@@ -25,6 +25,6 @@ public interface IFunction<Tout, Tin> {
    * @return the value after the function is applied on src
    * 
    */
-  Tout execute(Tin src);
+  Number execute(Number src);
 
 }
