@@ -5,7 +5,7 @@ import edu.washington.escience.myriad.Type;
 /**
  * SQRT Function sqrt(x)
  */
-public class SqrtIFunction implements IFunction<Double, Number> {
+public class SqrtIFunction implements IFunction {
 
   /**
    * Executes the function on src
@@ -13,9 +13,8 @@ public class SqrtIFunction implements IFunction<Double, Number> {
    * @return Math.sqrt(src), return type will always be Double
    */
   @Override
-  public Double execute(Number src) {
-    double tmp = src.doubleValue();
-    return Math.sqrt(tmp);
+  public Number execute(Number src) {
+    return Math.sqrt(src.doubleValue());
   }
 
   @Override

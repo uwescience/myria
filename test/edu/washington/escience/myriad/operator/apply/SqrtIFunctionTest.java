@@ -24,23 +24,20 @@ public class SqrtIFunctionTest {
       values.add(i * i);
     }
     ImmutableList<Integer> list = values.build();
-    SqrtIFunction sqrt = new SqrtIFunction();
     for (int i = 0; i < list.size(); i++) {
-      double result = sqrt.execute(list.get(i));
-      assertEquals(i, result, 0.000001);
+      Number result = sqrt.execute(list.get(i));
+      assertEquals(1.0 * i, result);
     }
   }
 
   @Test
   public void testNegativeNumber() {
-    SqrtIFunction sqrt = new SqrtIFunction();
-    double result = sqrt.execute(-1);
-    assertTrue(Double.isNaN(result));
+    Number result = sqrt.execute(new Long(-1));
+    assertTrue(Double.isNaN(result.doubleValue()));
   }
 
   @Test
   public void testToString() {
-    SqrtIFunction sqrt = new SqrtIFunction();
     assertEquals("SQRT", sqrt.toString());
   }
 }
