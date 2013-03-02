@@ -12,13 +12,13 @@ public class PowIFunctionTest {
 
   private static int LOW_POW = 0;
   private static int HIGH_POW = 5;
-  private ImmutableList<PowIFunction<Long>> pow;
+  private ImmutableList<PowIFunction> pow;
 
   @Before
   public void setup() {
-    ImmutableList.Builder<PowIFunction<Long>> values = ImmutableList.builder();
+    ImmutableList.Builder<PowIFunction> values = ImmutableList.builder();
     for (int i = LOW_POW; i < HIGH_POW; i++) {
-      values.add(new PowIFunction<Long>(i));
+      values.add(new PowIFunction(i));
     }
     pow = values.build();
   }
@@ -49,9 +49,9 @@ public class PowIFunctionTest {
   private void testPowerWithinRange(int start, int end) {
     ImmutableList<Long> list = generateData(start, end);
     for (int powFnIndex = 0; powFnIndex < pow.size(); powFnIndex++) {
-      PowIFunction<Long> fn = pow.get(powFnIndex);
+      PowIFunction fn = pow.get(powFnIndex);
       for (int i = start; i < end; i++) {
-        long result = fn.execute(list.get(i + (Math.abs(start))));
+        long result = (Long) fn.execute(list.get(i + (Math.abs(start))));
         assertEquals((long) Math.pow(i, powFnIndex), result);
       }
     }
