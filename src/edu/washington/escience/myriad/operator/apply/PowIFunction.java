@@ -8,7 +8,7 @@ import edu.washington.escience.myriad.Type;
  * @param <Tin>
  *          Type of the data being fed and output
  */
-public class PowIFunction<Tin extends Number> implements IFunction<Tin, Tin> {
+public class PowIFunction implements IFunction {
 
   private final int power;
 
@@ -33,15 +33,13 @@ public class PowIFunction<Tin extends Number> implements IFunction<Tin, Tin> {
   /**
    * {@inheritDoc}
    */
-  @SuppressWarnings("unchecked")
   @Override
-  public Tin execute(Tin src) {
-    Double result = Math.pow(src.doubleValue(), power);
-    Tin retval = (Tin) result;
+  public Number execute(Number src) {
+    Number retval = Math.pow(src.doubleValue(), power);
     if (src instanceof Long) {
-      retval = (Tin) ((Long) result.longValue());
+      return retval.longValue();
     } else if (src instanceof Integer) {
-      retval = (Tin) ((Integer) result.intValue());
+      return retval.intValue();
     }
     return retval;
   }
