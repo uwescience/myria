@@ -6,8 +6,12 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.StreamTokenizer;
 import java.util.Objects;
+
+import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
@@ -22,15 +26,16 @@ import edu.washington.escience.myriad.TupleBatchBuffer;
  */
 public final class FileScan extends LeafOperator {
   /** The input stream that this scan is reading from. */
-  private final InputStream inputStream;
+  private transient InputStream inputStream = null;
   /** The Schema of the relation stored in this file. */
   private final Schema schema;
   /** StringTokenizer used to parse the file. */
   private StreamTokenizer tokenizer = null;
   /** Whether a comma is a delimiter in this file. */
   private final boolean commaIsDelimiter;
+  private String filename = null;
   /** Holds the tuples that are ready for release. */
-  private final TupleBatchBuffer buffer;
+  private transient TupleBatchBuffer buffer;
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -60,36 +65,36 @@ public final class FileScan extends LeafOperator {
       throws FileNotFoundException {
     Objects.requireNonNull(filename);
     Objects.requireNonNull(schema);
-    inputStream = new FileInputStream(filename);
     this.schema = schema;
     this.commaIsDelimiter = commaIsDelimiter;
-    buffer = new TupleBatchBuffer(schema);
+    this.filename = filename;
   }
 
   /**
-   * Construct a new FileScan object to read from the specified InputStream. If commaIsDelimiter is true, then records
-   * may be whitespace or comma-separated.
+   * Construct a new FileScan object to read from a inputStream. If commaIsDelimiter is true, then records may be
+   * whitespace or comma-separated. inputStream is assumed to be set later by setInputStream().
    * 
    * @param inputStream the data containing the relation.
    * @param schema the Schema of the relation contained in the file.
    * @param commaIsDelimiter whether commas are also delimiters in the file.
    */
-  public FileScan(final InputStream inputStream, final Schema schema, final boolean commaIsDelimiter) {
-    this.inputStream = inputStream;
+  public FileScan(final Schema schema, final boolean commaIsDelimiter) {
     this.schema = schema;
     this.commaIsDelimiter = commaIsDelimiter;
-    buffer = new TupleBatchBuffer(schema);
   }
 
   /**
-   * Construct a new FileScan object to read from the specified InputStream. The data is assumed to be
-   * whitespace-separated and have one record per line.
+   * Construct a new FileScan object to read from a input stream. The data is assumed to be whitespace-separated and
+   * have one record per line. inputStream is assumed to be set later by setInputStream().
    * 
-   * @param inputStream the data containing the relation.
    * @param schema the Schema of the relation contained in the file.
    */
-  public FileScan(final InputStream inputStream, final Schema schema) {
-    this(inputStream, schema, false);
+  public FileScan(final Schema schema) {
+    this(schema, false);
+  }
+
+  public void setInputStream(final InputStream inputStream) {
+    this.inputStream = inputStream;
   }
 
   @Override
@@ -207,6 +212,16 @@ public final class FileScan extends LeafOperator {
 
   @Override
   public void init() throws DbException {
+    buffer = new TupleBatchBuffer(getSchema());
+    if (filename != null) {
+      try {
+        inputStream = new FileInputStream(filename);
+      } catch (FileNotFoundException e) {
+        e.printStackTrace();
+        return;
+      }
+    }
+    Preconditions.checkArgument(inputStream != null, "FileScan input stream has not been set!");
     tokenizer = new StreamTokenizer(new BufferedReader(new InputStreamReader(inputStream)));
     tokenizer.eolIsSignificant(true);
     if (commaIsDelimiter) {
@@ -217,5 +232,13 @@ public final class FileScan extends LeafOperator {
     } catch (final IOException e) {
       throw new DbException(e);
     }
+  }
+
+  private void readObject(final ObjectInputStream in) throws IOException, ClassNotFoundException {
+    in.defaultReadObject();
+  }
+
+  private void writeObject(final ObjectOutputStream out) throws IOException {
+    out.defaultWriteObject();
   }
 }

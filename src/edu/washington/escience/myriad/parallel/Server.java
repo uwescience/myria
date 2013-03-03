@@ -531,7 +531,8 @@ public final class Server {
   public void ingestDataset(final RelationKey relationKey, final Schema schema, final byte[] data)
       throws CatalogException {
     /* The Server plan: scan the data and scatter it to all the workers. */
-    FileScan fileScan = new FileScan(new ByteArrayInputStream(data), schema);
+    FileScan fileScan = new FileScan(schema);
+    fileScan.setInputStream(new ByteArrayInputStream(data));
     ExchangePairID scatterId = ExchangePairID.newID();
     int[] workersArray = new int[workers.size()];
     int count = 0;
