@@ -1,0 +1,45 @@
+// just for helping write json queries
+// these numbers are not strictly ordered, but correct
+// see MultipleIDBTest for the meaning of these arguments
+
+a
+
+eoiReceiverOpID	0
+sendingOpID	1
+receivingOpID	null	
+eosReceiverOpID	3
+serverReceivingOpID	null	
+joinArrayID	5
+beforeIngress1	6
+beforeIngress2	7
+consumerID1	8
+consumerID2	9
+consumerID3	null
+
+b
+
+eoiReceiverOpID	0
+sendingOpID	2
+receivingOpID	1
+eosReceiverOpID	4
+serverReceivingOpID	null	
+joinArrayID	null	
+beforeIngress1	11	
+beforeIngress2	12
+consumerID1	13
+consumerID2	14	
+consumerID3	null
+
+c
+
+eoiReceiverOpID	0
+sendingOpID	null
+receivingOpID	2
+eosReceiverOpID	15
+serverReceivingOpID	16
+joinArrayID	null	
+beforeIngress1	18	
+beforeIngress2	19
+consumerID1	20	
+consumerID2	null	
+consumerID3	21
