@@ -82,6 +82,7 @@ public final class QueryResource {
       /* Deserialize the three arguments we need */
       final String rawQuery = (String) userData.get("raw_datalog");
       final String logicalRa = (String) userData.get("logical_ra");
+      final String expectedResultSize = (String) userData.get("expected_result_size");
       Map<Integer, Operator[]> queryPlan = deserializeJsonQueryPlan(userData.get("query_plan"));
 
       Set<Integer> usingWorkers = new HashSet<Integer>();
@@ -95,7 +96,8 @@ public final class QueryResource {
       }
 
       /* Start the query, and get its Server-assigned Query ID */
-      final Long queryId = MasterApiServer.getMyriaServer().startQuery(rawQuery, logicalRa, queryPlan);
+      final Long queryId =
+          MasterApiServer.getMyriaServer().startQuery(rawQuery, logicalRa, queryPlan, expectedResultSize);
       /* In the response, tell the client what ID this query was assigned. */
       UriBuilder queryUri = uriInfo.getAbsolutePathBuilder();
       return Response.created(queryUri.path("query-" + queryId.toString()).build()).build();
