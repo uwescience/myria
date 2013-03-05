@@ -8,80 +8,28 @@ import java.util.List;
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
-import edu.washington.escience.myriad.Type;
+import edu.washington.escience.myriad.TupleBatchBuffer;
 
 public final class DupElim extends Operator {
 
-  private class IndexedTuple {
-    private int index;
-    private final TupleBatch tb;
-
-    public IndexedTuple(final TupleBatch tb) {
-      this.tb = tb;
-    }
-
-    public IndexedTuple(final TupleBatch tb, final int index) {
-      this.tb = tb;
-      this.index = index;
-    }
-
-    public boolean compareField(final IndexedTuple another, final int colIndx) {
-      final Type type = tb.getSchema().getColumnType(colIndx);
-      final int rowIndx1 = index;
-      final int rowIndx2 = another.index;
-      switch (type) {
-        case BOOLEAN_TYPE:
-          return tb.getBoolean(colIndx, rowIndx1) == another.tb.getBoolean(colIndx, rowIndx2);
-        case DOUBLE_TYPE:
-          return tb.getDouble(colIndx, rowIndx1) == another.tb.getDouble(colIndx, rowIndx2);
-        case FLOAT_TYPE:
-          return tb.getFloat(colIndx, rowIndx1) == another.tb.getFloat(colIndx, rowIndx2);
-        case INT_TYPE:
-          return tb.getInt(colIndx, rowIndx1) == another.tb.getInt(colIndx, rowIndx2);
-        case LONG_TYPE:
-          return tb.getLong(colIndx, rowIndx1) == another.tb.getLong(colIndx, rowIndx2);
-        case STRING_TYPE:
-          return tb.getString(colIndx, rowIndx1).equals(another.tb.getString(colIndx, rowIndx2));
-      }
-      return false;
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-      if (!(o instanceof IndexedTuple)) {
-        return false;
-      }
-      final IndexedTuple another = (IndexedTuple) o;
-      if (!(tb.getSchema().equals(another.tb.getSchema()))) {
-        return false;
-      }
-      for (int i = 0; i < tb.getSchema().numColumns(); ++i) {
-        if (!compareField(another, i)) {
-          return false;
-        }
-      }
-      return true;
-    }
-
-    @Override
-    public int hashCode() {
-      return tb.hashCode(index);
-    }
-  }
-
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
-
   private Operator child;
-  private final HashMap<Integer, List<IndexedTuple>> uniqueTuples;
+
+  private transient HashMap<Integer, List<Integer>> uniqueTupleIndices;
+  private transient TupleBatchBuffer uniqueTuples = null;
 
   public DupElim(final Operator child) {
     this.child = child;
-    uniqueTuples = new HashMap<Integer, List<IndexedTuple>>();
   }
 
-  @Override
-  protected void cleanup() throws DbException {
+  private boolean compareTuple(final int index, final List<Object> cntTuple) {
+    for (int i = 0; i < cntTuple.size(); ++i) {
+      if (!(uniqueTuples.get(i, index)).equals(cntTuple.get(i))) {
+        return false;
+      }
+    }
+    return true;
   }
 
   protected TupleBatch doDupElim(final TupleBatch tb) {
@@ -90,27 +38,36 @@ public final class DupElim extends Operator {
       return tb;
     }
     final BitSet toRemove = new BitSet(numTuples);
-    final IndexedTuple currentTuple = new IndexedTuple(tb);
+    final List<Object> cntTuple = new ArrayList<Object>();
     for (int i = 0; i < numTuples; ++i) {
-      currentTuple.index = i;
-      final int cntHashCode = currentTuple.hashCode();
-      // might need to check invalid | change to use outputTuples later
-      List<IndexedTuple> tupleList = uniqueTuples.get(cntHashCode);
-      if (tupleList == null) {
-        tupleList = new ArrayList<IndexedTuple>();
-        uniqueTuples.put(cntHashCode, tupleList);
-        tupleList.add(new IndexedTuple(tb, i));
+      cntTuple.clear();
+      for (int j = 0; j < tb.numColumns(); ++j) {
+        cntTuple.add(tb.getObject(j, i));
+      }
+      final int nextIndex = uniqueTuples.numTuples();
+      final int cntHashCode = tb.hashCode(i);
+      List<Integer> tupleIndexList = uniqueTupleIndices.get(cntHashCode);
+      if (tupleIndexList == null) {
+        for (int j = 0; j < tb.numColumns(); ++j) {
+          uniqueTuples.put(j, cntTuple.get(j));
+        }
+        tupleIndexList = new ArrayList<Integer>();
+        tupleIndexList.add(nextIndex);
+        uniqueTupleIndices.put(cntHashCode, tupleIndexList);
         continue;
       }
       boolean unique = true;
-      for (final IndexedTuple oldTuple : tupleList) {
-        if (currentTuple.equals(oldTuple)) {
+      for (final int oldTupleIndex : tupleIndexList) {
+        if (compareTuple(oldTupleIndex, cntTuple)) {
           unique = false;
           break;
         }
       }
       if (unique) {
-        tupleList.add(new IndexedTuple(tb, i));
+        for (int j = 0; j < tb.numColumns(); ++j) {
+          uniqueTuples.put(j, cntTuple.get(j));
+        }
+        tupleIndexList.add(nextIndex);
       } else {
         toRemove.set(i);
       }
@@ -157,6 +114,12 @@ public final class DupElim extends Operator {
 
   @Override
   public void init() throws DbException {
+    uniqueTupleIndices = new HashMap<Integer, List<Integer>>();
+    uniqueTuples = new TupleBatchBuffer(getSchema());
+  }
+
+  @Override
+  protected void cleanup() throws DbException {
   }
 
   @Override

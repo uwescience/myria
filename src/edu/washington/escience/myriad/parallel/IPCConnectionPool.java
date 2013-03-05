@@ -712,7 +712,6 @@ public class IPCConnectionPool {
     if (r != null) {
       r.registeredChannels.release(channel, channelTrashBin, recyclableRegisteredChannels);
     }
-
   }
 
   /**
