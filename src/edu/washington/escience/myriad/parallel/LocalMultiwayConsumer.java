@@ -23,8 +23,8 @@ public final class LocalMultiwayConsumer extends Consumer {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
-  public LocalMultiwayConsumer(final Schema schema, final ExchangePairID operatorID, final int[] workerIDs) {
-    super(schema, operatorID, workerIDs);
+  public LocalMultiwayConsumer(final Schema schema, final ExchangePairID operatorID, final int workerID) {
+    super(schema, operatorID, new int[] { workerID });
     LOGGER.trace("created multiway consumer for ExchangePairID=" + operatorID);
   }
 }

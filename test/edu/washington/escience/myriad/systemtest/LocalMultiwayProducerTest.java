@@ -81,15 +81,15 @@ public class LocalMultiwayProducerTest extends SystemTestBase {
     final LocalMultiwayProducer multiProducer1 =
         new LocalMultiwayProducer(scan1, new ExchangePairID[] { consumerID1, consumerID2 }, WORKER_ID[0]);
     final LocalMultiwayConsumer multiConsumer1_1 =
-        new LocalMultiwayConsumer(multiProducer1.getSchema(), consumerID1, new int[] { WORKER_ID[0] });
+        new LocalMultiwayConsumer(multiProducer1.getSchema(), consumerID1, WORKER_ID[0]);
     final LocalMultiwayConsumer multiConsumer1_2 =
-        new LocalMultiwayConsumer(multiProducer1.getSchema(), consumerID2, new int[] { WORKER_ID[0] });
+        new LocalMultiwayConsumer(multiProducer1.getSchema(), consumerID2, WORKER_ID[0]);
     final LocalMultiwayProducer multiProducer2 =
         new LocalMultiwayProducer(scan1, new ExchangePairID[] { consumerID1, consumerID2 }, WORKER_ID[1]);
     final LocalMultiwayConsumer multiConsumer2_1 =
-        new LocalMultiwayConsumer(multiProducer2.getSchema(), consumerID1, new int[] { WORKER_ID[1] });
+        new LocalMultiwayConsumer(multiProducer2.getSchema(), consumerID1, WORKER_ID[1]);
     final LocalMultiwayConsumer multiConsumer2_2 =
-        new LocalMultiwayConsumer(multiProducer2.getSchema(), consumerID2, new int[] { WORKER_ID[1] });
+        new LocalMultiwayConsumer(multiProducer2.getSchema(), consumerID2, WORKER_ID[1]);
 
     final Merge merge1 = new Merge(tableSchema, multiConsumer1_1, multiConsumer1_2);
     final Merge merge2 = new Merge(tableSchema, multiConsumer2_1, multiConsumer2_2);
