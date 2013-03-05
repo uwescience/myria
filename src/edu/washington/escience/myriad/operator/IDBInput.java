@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 
 import org.jboss.netty.channel.Channel;
 import org.slf4j.Logger;
@@ -46,6 +47,16 @@ public class IDBInput extends Producer {
       final ExchangePairID operatorID, final int controllerWorkerID, final Operator child1, final Operator child2,
       final Operator child3) {
     super(operatorID);
+
+    Objects.requireNonNull(operatorID);
+    Objects.requireNonNull(child1);
+    Objects.requireNonNull(child2);
+    Objects.requireNonNull(child3);
+    Objects.requireNonNull(controllerWorkerID);
+    Objects.requireNonNull(selfWorkerID);
+    Objects.requireNonNull(selfIDBID);
+    Objects.requireNonNull(outputSchema);
+
     this.outputSchema = outputSchema;
     this.controllerWorkerID = controllerWorkerID;
     this.selfWorkerID = selfWorkerID;
