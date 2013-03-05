@@ -1,8 +1,5 @@
 package edu.washington.escience.myriad.operator;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
@@ -117,6 +114,8 @@ public final class DupElim extends Operator {
 
   @Override
   public void init() throws DbException {
+    uniqueTupleIndices = new HashMap<Integer, List<Integer>>();
+    uniqueTuples = new TupleBatchBuffer(getSchema());
   }
 
   @Override
@@ -126,15 +125,5 @@ public final class DupElim extends Operator {
   @Override
   public void setChildren(final Operator[] children) {
     child = children[0];
-  }
-
-  private void readObject(final ObjectInputStream in) throws IOException, ClassNotFoundException {
-    in.defaultReadObject();
-    uniqueTupleIndices = new HashMap<Integer, List<Integer>>();
-    uniqueTuples = new TupleBatchBuffer(getSchema());
-  }
-
-  private void writeObject(final ObjectOutputStream out) throws IOException {
-    out.defaultWriteObject();
   }
 }

@@ -1,8 +1,5 @@
 package edu.washington.escience.myriad.operator;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -243,6 +240,11 @@ public final class LocalJoin extends Operator {
 
   @Override
   public void init() throws DbException {
+    hashTable1Indices = new HashMap<Integer, List<Integer>>();
+    hashTable2Indices = new HashMap<Integer, List<Integer>>();
+    hashTable1 = new TupleBatchBuffer(child1.getSchema());
+    hashTable2 = new TupleBatchBuffer(child2.getSchema());
+    ans = new TupleBatchBuffer(getSchema());
   }
 
   private boolean compareTuple(final List<Object> cntTuple, final TupleBatchBuffer hashTable, final int index,
@@ -293,18 +295,4 @@ public final class LocalJoin extends Operator {
     child1 = children[0];
     child2 = children[1];
   }
-
-  private void readObject(final ObjectInputStream in) throws IOException, ClassNotFoundException {
-    in.defaultReadObject();
-    hashTable1Indices = new HashMap<Integer, List<Integer>>();
-    hashTable2Indices = new HashMap<Integer, List<Integer>>();
-    hashTable1 = new TupleBatchBuffer(child1.getSchema());
-    hashTable2 = new TupleBatchBuffer(child2.getSchema());
-    ans = new TupleBatchBuffer(getSchema());
-  }
-
-  private void writeObject(final ObjectOutputStream out) throws IOException {
-    out.defaultWriteObject();
-  }
-
 }
