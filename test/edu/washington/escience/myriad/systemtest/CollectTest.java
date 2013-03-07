@@ -54,7 +54,8 @@ public class CollectTest extends SystemTestBase {
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
 
-    final SQLiteQueryScan scanTable = new SQLiteQueryScan(null, "select * from " + testtableKey, schema);
+    final SQLiteQueryScan scanTable =
+        new SQLiteQueryScan(null, "select * from " + testtableKey.toString("sqlite"), schema);
 
     final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
     final CollectProducer cp1 = new CollectProducer(scanTable, serverReceiveID, MASTER_ID);

@@ -128,8 +128,10 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     HashMap<Tuple, Integer> expectedResult = TestUtils.tupleBatchToTupleBag(expectedTBB);
 
     // parallel query generation, duplicate db files
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan(null, "select * from " + testtableKey, tableSchema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan(null, "select * from " + testtableKey, tableSchema);
+    final SQLiteQueryScan scan1 =
+        new SQLiteQueryScan(null, "select * from " + testtableKey.toString("sqlite"), tableSchema);
+    final SQLiteQueryScan scan2 =
+        new SQLiteQueryScan(null, "select * from " + testtableKey.toString("sqlite"), tableSchema);
 
     final int numPartition = 2;
     final PartitionFunction<String, Integer> pf0 = new SingleFieldHashPartitionFunction(numPartition);
