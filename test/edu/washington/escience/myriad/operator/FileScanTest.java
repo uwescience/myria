@@ -124,10 +124,8 @@ public class FileScanTest {
       printedBytes.print('\n');
     }
     printedBytes.flush();
-    FileScan scanBytes =
-        new FileScan(new ByteArrayInputStream(bytes.toByteArray()), Schema.of(ImmutableList.of(Type.INT_TYPE),
-            ImmutableList.of("col1")));
+    FileScan scanBytes = new FileScan(Schema.of(ImmutableList.of(Type.INT_TYPE), ImmutableList.of("col1")));
+    scanBytes.setInputStream(new ByteArrayInputStream(bytes.toByteArray()));
     assertTrue(getRowCount(scanBytes) == 2 * TupleBatch.BATCH_SIZE);
   }
-
 }

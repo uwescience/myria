@@ -174,7 +174,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final ShuffleConsumer sc2 =
         new ShuffleConsumer(sp2.getSchema(), table2ShuffleID, new int[] { WORKER_ID[0], WORKER_ID[1] });
 
-    final LocalJoin localjoin = new LocalJoin(outputSchema, sc1, sc2, new int[] { 0 }, new int[] { 0 });
+    final LocalJoin localjoin = new LocalJoin(sc1, sc2, new int[] { 0 }, new int[] { 0 });
 
     final CollectProducer cp1 = new CollectProducer(localjoin, serverReceiveID, MASTER_ID);
     final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();

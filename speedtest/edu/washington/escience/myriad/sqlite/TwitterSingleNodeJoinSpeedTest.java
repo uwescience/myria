@@ -60,10 +60,11 @@ public class TwitterSingleNodeJoinSpeedTest {
     final ImmutableList<String> joinNames = ImmutableList.of("follower", "followee", "follower", "followee");
     final Schema joinSchema = new Schema(joinTypes, joinNames);
     // Join on SC1.followee=SC2.follower
-    final LocalJoin localJoin = new LocalJoin(joinSchema, scan1, scan2, new int[] { 1 }, new int[] { 0 });
+    final LocalJoin localJoin =
+        new LocalJoin(scan1, scan2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
 
     /* Project down to only the two columns of interest: SC1.follower now transitively follows SC2.followee. */
-    final Project proj = new Project(new Integer[] { 0, 3 }, localJoin);
+    final Project proj = new Project(new int[] { 0, 3 }, localJoin);
 
     /* Now Dupelim */
     final DupElim dupelim = new DupElim(proj);
