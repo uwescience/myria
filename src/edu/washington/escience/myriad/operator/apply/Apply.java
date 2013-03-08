@@ -1,5 +1,7 @@
 package edu.washington.escience.myriad.operator.apply;
 
+import java.util.List;
+
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.DbException;
@@ -25,8 +27,7 @@ public class Apply extends Operator {
 
   private Operator child;
   /** the field we want to apply the function on */
-  private final int[] applyField;
-  private final IFunction[] functions;
+  private final List<IFunctionCaller> callers;
   private final Schema schema;
 
   /**
@@ -37,11 +38,9 @@ public class Apply extends Operator {
    * @param applyField
    *          the fields we want to apply the operation on
    */
-  public Apply(final Operator child, final int[] applyField,
-      final IFunction[] functions) {
+  public Apply(final Operator child, List<IFunctionCaller> callers) {
     this.child = child;
-    this.applyField = applyField;
-    this.functions = functions;
+    this.callers = callers;
 
     final Schema childSchema = child.getSchema();
 
@@ -51,14 +50,18 @@ public class Apply extends Operator {
     schemaTypes.addAll(childSchema.getTypes());
     schemaNames.addAll(childSchema.getFieldNames());
 
-    for (int i = 0; i < applyField.length; i++) {
-      // for of the fields add a type and a name to it
-      String header = functions[i].toString() + "("
-          + childSchema.getFieldName(applyField[i]) + ")";
-      schemaNames.add(header);
-      schemaTypes.add(functions[i].getResultType(childSchema
-          .getFieldType(applyField[i])));
+    for (IFunctionCaller caller : callers) {
+      List<Integer> applyFields = caller.getApplyField();
+      final ImmutableList.Builder<String> names = ImmutableList.builder();
+      final ImmutableList.Builder<Type> typesList = ImmutableList.builder();
+      for (Integer i : applyFields) {
+        names.add(child.getSchema().getFieldName(i));
+        typesList.add(child.getSchema().getFieldType(i));
+      }
+      schemaNames.add(caller.toString(names.build()));
+      schemaTypes.add(caller.getResultType(typesList.build()));
     }
+
     schema = new Schema(schemaTypes, schemaNames);
   }
 
@@ -76,16 +79,22 @@ public class Apply extends Operator {
         tbb.put(j, tb.getObject(j, i));
       }
       // put the result into the tbb
-      for (int j = 0; j < functions.length; j++) {
-        Type applyFieldType = tb.getSchema().getFieldType(applyField[j]);
+      for (int j = 0; j < callers.size(); j++) {
+        final ImmutableList.Builder<Number> srcNums = ImmutableList.builder();
         Number value = null;
-        if (applyFieldType == Type.INT_TYPE) {
-          value = functions[j].execute(tb.getInt(applyField[j], i));
-        } else if (applyFieldType == Type.LONG_TYPE) {
-          value = functions[j].execute(tb.getLong(applyField[j], i));
-        } else if (applyFieldType == Type.DOUBLE_TYPE) {
-          value = functions[j].execute(tb.getDouble(applyField[j], i));
+        for (Integer index : callers.get(j).getApplyField()) {
+          Type applyFieldType = schema.getFieldType(index);
+          if (applyFieldType == Type.INT_TYPE) {
+            srcNums.add(tb.getInt(index, i));
+          } else if (applyFieldType == Type.LONG_TYPE) {
+            srcNums.add(tb.getLong(index, i));
+          } else if (applyFieldType == Type.FLOAT_TYPE) {
+            srcNums.add(tb.getFloat(index, i));
+          } else if (applyFieldType == Type.DOUBLE_TYPE) {
+            srcNums.add(tb.getDouble(index, i));
+          }
         }
+        value = callers.get(j).execute(srcNums.build());
         tbb.put(j + tb.numColumns(), value);
       }
     }

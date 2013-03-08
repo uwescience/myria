@@ -8,6 +8,8 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 
+import edu.washington.escience.myriad.util.TestUtils;
+
 public class PowIFunctionTest {
 
   private static int LOW_POW = 0;
@@ -18,7 +20,7 @@ public class PowIFunctionTest {
   public void setup() {
     ImmutableList.Builder<PowIFunction> values = ImmutableList.builder();
     for (int i = LOW_POW; i < HIGH_POW; i++) {
-      values.add(new PowIFunction(i));
+      values.add(new PowIFunction());
     }
     pow = values.build();
   }
@@ -37,13 +39,25 @@ public class PowIFunctionTest {
 
   @Test
   public void testSameTypeInputAndResult() {
-    Object o = pow.get(0).execute(1L);
+    ImmutableList.Builder<Number> sourceListBuilder = TestUtils
+        .generateListBuilderWithElement(1L);
+    ImmutableList.Builder<Number> argumentListBuilder = TestUtils
+        .generateListBuilderWithElement(1L);
+    Object o = pow.get(0).execute(sourceListBuilder.build(),
+        argumentListBuilder.build());
     assertTrue(o instanceof Long);
   }
 
   @Test
   public void testToString() {
-    assertEquals("POW", pow.get(0).toString());
+    ImmutableList.Builder<String> nameListBuilder = ImmutableList.builder();
+    nameListBuilder.add("x");
+    ImmutableList.Builder<Number> argumentListBuilder = TestUtils
+        .generateListBuilderWithElement(2L);
+    assertEquals(
+        "POW(x,2)",
+        pow.get(0).toString(nameListBuilder.build(),
+            argumentListBuilder.build()));
   }
 
   private void testPowerWithinRange(int start, int end) {
@@ -51,7 +65,12 @@ public class PowIFunctionTest {
     for (int powFnIndex = 0; powFnIndex < pow.size(); powFnIndex++) {
       PowIFunction fn = pow.get(powFnIndex);
       for (int i = start; i < end; i++) {
-        long result = (Long) fn.execute(list.get(i + (Math.abs(start))));
+        ImmutableList.Builder<Number> sourceListBuilder = TestUtils
+            .generateListBuilderWithElement(list.get(i + (Math.abs(start))));
+        ImmutableList.Builder<Number> argumentListBuilder = TestUtils
+            .generateListBuilderWithElement(powFnIndex);
+        long result = (Long) fn.execute(sourceListBuilder.build(),
+            argumentListBuilder.build());
         assertEquals((long) Math.pow(i, powFnIndex), result);
       }
     }
@@ -68,5 +87,4 @@ public class PowIFunctionTest {
     ImmutableList<Long> list = values.build();
     return list;
   }
-
 }
