@@ -10,13 +10,16 @@ import java.util.Random;
 
 import org.junit.Assert;
 
+import com.google.common.collect.ImmutableList;
+
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.systemtest.SystemTestBase.Tuple;
 
 public class TestUtils {
 
-  public static void assertEqualsToStringBuilder(final StringBuilder errorMessageHolder, final String currentEM,
+  public static void assertEqualsToStringBuilder(
+      final StringBuilder errorMessageHolder, final String currentEM,
       final Object expected, final Object actual) {
     if (expected == null) {
       if (actual != null) {
@@ -41,11 +44,12 @@ public class TestUtils {
     }
   }
 
-  public static void assertTupleBagEqual(final HashMap<Tuple, Integer> expectedResult,
+  public static void assertTupleBagEqual(
+      final HashMap<Tuple, Integer> expectedResult,
       final HashMap<Tuple, Integer> actualResult) {
     final StringBuilder errorMessageHolder = new StringBuilder();
-    assertEqualsToStringBuilder(errorMessageHolder, "Number of unique tuples", expectedResult.size(), actualResult
-        .size());
+    assertEqualsToStringBuilder(errorMessageHolder, "Number of unique tuples",
+        expectedResult.size(), actualResult.size());
     final HashSet<Tuple> keySet = new HashSet<Tuple>();
     keySet.addAll(expectedResult.keySet());
     keySet.addAll(actualResult.keySet());
@@ -58,7 +62,8 @@ public class TestUtils {
       if (actual == null) {
         actual = 0;
       }
-      assertEqualsToStringBuilder(errorMessageHolder, "Tuple entry{" + k + "}", expected, actual);
+      assertEqualsToStringBuilder(errorMessageHolder, "Tuple entry{" + k + "}",
+          expected, actual);
     }
     if (errorMessageHolder.length() != 0) {
       Assert.fail(errorMessageHolder.toString());
@@ -93,7 +98,8 @@ public class TestUtils {
     return sb.toString();
   }
 
-  public static HashMap<Tuple, Integer> mergeBags(final List<HashMap<Tuple, Integer>> bags) {
+  public static HashMap<Tuple, Integer> mergeBags(
+      final List<HashMap<Tuple, Integer>> bags) {
     final HashMap<Tuple, Integer> result = new HashMap<Tuple, Integer>();
     result.putAll(bags.get(0));
     for (int i = 1; i < bags.size(); i++) {
@@ -112,7 +118,8 @@ public class TestUtils {
   }
 
   @SuppressWarnings("rawtypes")
-  public static HashMap<Tuple, Integer> naturalJoin(final TupleBatchBuffer child1, final TupleBatchBuffer child2,
+  public static HashMap<Tuple, Integer> naturalJoin(
+      final TupleBatchBuffer child1, final TupleBatchBuffer child2,
       final int child1JoinColumn, final int child2JoinColumn) {
 
     /**
@@ -149,7 +156,8 @@ public class TestUtils {
       }
     }
 
-    final Iterator<List<Column<?>>> child2TBIt = child2.getAllAsRawColumn().iterator();
+    final Iterator<List<Column<?>>> child2TBIt = child2.getAllAsRawColumn()
+        .iterator();
     while (child2TBIt.hasNext()) {
       final List<Column<?>> child2Columns = child2TBIt.next();
       final int numRow = child2Columns.get(0).size();
@@ -186,7 +194,8 @@ public class TestUtils {
   }
 
   /***/
-  public static String[] randomFixedLengthNumericString(final int min, final int max, final int size, final int length) {
+  public static String[] randomFixedLengthNumericString(final int min,
+      final int max, final int size, final int length) {
 
     final String[] result = new String[size];
     final long[] intV = randomLong(min, max, size);
@@ -207,7 +216,8 @@ public class TestUtils {
     return result;
   }
 
-  public static HashMap<Tuple, Integer> tupleBatchToTupleBag(final TupleBatchBuffer tbb) {
+  public static HashMap<Tuple, Integer> tupleBatchToTupleBag(
+      final TupleBatchBuffer tbb) {
     final HashMap<Tuple, Integer> result = new HashMap<Tuple, Integer>();
     final Iterator<List<Column<?>>> it = tbb.getAllAsRawColumn().iterator();
 
@@ -231,7 +241,8 @@ public class TestUtils {
     return result;
   }
 
-  public static HashMap<Tuple, Integer> tupleBatchToTupleSet(final TupleBatchBuffer tbb) {
+  public static HashMap<Tuple, Integer> tupleBatchToTupleSet(
+      final TupleBatchBuffer tbb) {
     final HashMap<Tuple, Integer> result = new HashMap<Tuple, Integer>();
     final Iterator<List<Column<?>>> it = tbb.getAllAsRawColumn().iterator();
     while (it.hasNext()) {
@@ -247,6 +258,13 @@ public class TestUtils {
       }
     }
     return result;
+  }
+
+  public static ImmutableList.Builder<Number> generateListBuilderWithElement(
+      long element) {
+    ImmutableList.Builder<Number> sourceListBuilder = ImmutableList.builder();
+    sourceListBuilder.add(element);
+    return sourceListBuilder;
   }
 
 }

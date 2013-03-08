@@ -16,7 +16,7 @@ import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.operator.apply.Apply;
 import edu.washington.escience.myriad.operator.apply.ConstantMultiplicationIFunction;
-import edu.washington.escience.myriad.operator.apply.IFunction;
+import edu.washington.escience.myriad.operator.apply.IFunctionCaller;
 import edu.washington.escience.myriad.operator.apply.SqrtIFunction;
 
 public class ApplyTest {
@@ -29,7 +29,7 @@ public class ApplyTest {
   public void setUp() throws Exception {
     Random rand = new Random();
     // numTuples = rand.nextInt(RANDOM_LIMIT);
-    numTuples = 10000000;
+    numTuples = 1000;
     // multiplicationFactor = rand.nextInt(RANDOM_LIMIT);
     multiplicationFactor = 2;
   }
@@ -38,13 +38,16 @@ public class ApplyTest {
   public void testApplySqrt() throws DbException {
     final Schema schema = new Schema(ImmutableList.of(Type.LONG_TYPE),
         ImmutableList.of("a"));
-
+    System.out.println("ApplyTest: ApplySqrt()");
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (long i = 0; i < numTuples; i++) {
       tbb.put(0, (long) Math.pow(i, 2));
     }
-    Apply apply = new Apply(new TupleSource(tbb), new int[] { 0 },
-        new IFunction[] { new SqrtIFunction() });
+    ImmutableList.Builder<Integer> arguments = ImmutableList.builder();
+    arguments.add(0, 2);
+    ImmutableList.Builder<IFunctionCaller> callers = ImmutableList.builder();
+    callers.add(new IFunctionCaller(new SqrtIFunction(), arguments.build()));
+    Apply apply = new Apply(new TupleSource(tbb), callers.build());
     apply.open();
     TupleBatch result;
     int resultSize = 0;
@@ -62,6 +65,7 @@ public class ApplyTest {
 
   @Test
   public void testApplyMultiFunctions() throws DbException {
+    System.out.println("ApplyTest: MultiFunctions");
     final Schema schema = new Schema(ImmutableList.of(Type.LONG_TYPE),
         ImmutableList.of("a"));
 
@@ -69,9 +73,15 @@ public class ApplyTest {
     for (long i = 0; i < numTuples; i++) {
       tbb.put(0, (long) Math.pow(i, 2));
     }
-    Apply apply = new Apply(new TupleSource(tbb), new int[] { 0, 0 },
-        new IFunction[] { new SqrtIFunction(),
-            new ConstantMultiplicationIFunction(multiplicationFactor) });
+    ImmutableList.Builder<Integer> argumentsOne = ImmutableList.builder();
+    argumentsOne.add(0);
+    ImmutableList.Builder<Integer> argumentsTwo = ImmutableList.builder();
+    argumentsTwo.add(0, multiplicationFactor);
+    ImmutableList.Builder<IFunctionCaller> callers = ImmutableList.builder();
+    callers.add(new IFunctionCaller(new SqrtIFunction(), argumentsOne.build()));
+    callers.add(new IFunctionCaller(new ConstantMultiplicationIFunction(),
+        argumentsTwo.build()));
+    Apply apply = new Apply(new TupleSource(tbb), callers.build());
     apply.open();
     TupleBatch result;
     int resultSize = 0;

@@ -8,6 +8,8 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 
+import edu.washington.escience.myriad.util.TestUtils;
+
 public class SqrtIFunctionTest {
 
   private static SqrtIFunction sqrt;
@@ -25,19 +27,30 @@ public class SqrtIFunctionTest {
     }
     ImmutableList<Integer> list = values.build();
     for (int i = 0; i < list.size(); i++) {
-      Number result = sqrt.execute(list.get(i));
+      ImmutableList.Builder<Number> sourceListBuilder = TestUtils
+          .generateListBuilderWithElement(list.get(i));
+      ImmutableList.Builder<Number> argumentListBuilder = ImmutableList
+          .builder();
+      Number result = sqrt.execute(sourceListBuilder.build(),
+          argumentListBuilder.build());
       assertEquals(1.0 * i, result);
     }
   }
 
   @Test
   public void testNegativeNumber() {
-    Number result = sqrt.execute(new Long(-1));
+    ImmutableList.Builder<Number> sourceListBuilder = TestUtils
+        .generateListBuilderWithElement(-1);
+    ImmutableList.Builder<Number> argumentListBuilder = ImmutableList.builder();
+    Number result = sqrt.execute(sourceListBuilder.build(),
+        argumentListBuilder.build());
     assertTrue(Double.isNaN(result.doubleValue()));
   }
 
   @Test
   public void testToString() {
-    assertEquals("SQRT", sqrt.toString());
+    ImmutableList.Builder<String> namesListBuilder = ImmutableList.builder();
+    namesListBuilder.add("x");
+    assertEquals("SQRT(x)", sqrt.toString(namesListBuilder.build(), null));
   }
 }

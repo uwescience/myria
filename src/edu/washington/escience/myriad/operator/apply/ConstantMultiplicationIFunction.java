@@ -1,6 +1,6 @@
 package edu.washington.escience.myriad.operator.apply;
 
-import edu.washington.escience.myriad.Type;
+import java.util.List;
 
 /**
  * Constant multiplication Function for use in Apply
@@ -9,9 +9,7 @@ import edu.washington.escience.myriad.Type;
  *          Type of the data being fed and output
  */
 
-public class ConstantMultiplicationIFunction implements IFunction {
-
-  private final int constant;
+public class ConstantMultiplicationIFunction extends IFunction {
 
   /**
    * creates the Constant Multiplication function with the desired power value
@@ -19,34 +17,50 @@ public class ConstantMultiplicationIFunction implements IFunction {
    * @param constant
    *          the constant to multiply through
    */
-  public ConstantMultiplicationIFunction(int constant) {
-    this.constant = constant;
+  public ConstantMultiplicationIFunction() {
   }
 
   /**
    * {@inheritDoc}
+   * 
+   * @throws IllegalArgumentException
+   *           , the wrong argument was passed
    */
   @Override
-  public Type getResultType(Type srcField) {
-    return srcField;
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  @Override
-  public Number execute(Number src) {
+  public Number execute(List<Number> source, List<Number> arguments) {
+    checkPreconditions(source, numApplyFields());
+    checkPreconditions(arguments, numExtraArgument());
+    Number src = source.get(0);
+    Number constant = arguments.get(0);
     if (src instanceof Long) {
-      return constant * src.longValue();
+      return constant.longValue() * src.longValue();
     } else if (src instanceof Integer) {
-      return constant * src.intValue();
+      return constant.intValue() * src.intValue();
     } else {
-      return constant * src.doubleValue();
+      return constant.doubleValue() * src.doubleValue();
     }
   }
 
   @Override
-  public String toString() {
-    return constant + " * ";
+  public String toString(List<String> names, List<Number> arguments) {
+    checkPreconditions(arguments, numExtraArgument());
+    checkPreconditions(names, numApplyFields());
+    return arguments.get(0) + " * " + names.get(0);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public int numApplyFields() {
+    return 1;
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public int numExtraArgument() {
+    return 1;
   }
 }
