@@ -58,7 +58,8 @@ public final class Main {
 
     final ShuffleConsumer sc1 = new ShuffleConsumer(sp1.getSchema(), arrayID1, WORKER_ID);
     final ShuffleConsumer sc2 = new ShuffleConsumer(sp2.getSchema(), arrayID2, WORKER_ID);
-    final LocalJoin localjoin = new LocalJoin(joinSchema, sc1, sc2, new int[] { 1 }, new int[] { 0 });
+    final LocalJoin localjoin =
+        new LocalJoin(sc1, sc2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
     final Project proj = new Project(new int[] { 0, 3 }, localjoin);
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final CollectProducer cp = new CollectProducer(proj, serverReceiveID, MASTER_ID);
