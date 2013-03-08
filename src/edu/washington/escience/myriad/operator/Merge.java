@@ -10,10 +10,7 @@ public final class Merge extends Operator {
   private static final long serialVersionUID = 1L;
 
   private Operator child1, child2;
-  private Schema outputSchema;
-
-  public Merge() {
-  }
+  private final Schema outputSchema;
 
   public Merge(final Schema outputSchema, final Operator child1, final Operator child2) {
     this.outputSchema = outputSchema;
@@ -21,17 +18,6 @@ public final class Merge extends Operator {
     this.child2 = child2;
   }
 
-  // for Externalizable
-  /*
-   * @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException { child1 = (Operator)
-   * in.readObject(); child2 = (Operator) in.readObject(); outputSchema = (Schema) in.readObject(); name = (String)
-   * in.readObject(); }
-   * 
-   * // for Externalizable
-   * 
-   * @Override public void writeExternal(ObjectOutput out) throws IOException { out.writeObject(child1);
-   * out.writeObject(child2); out.writeObject(outputSchema); out.writeObject(name); }
-   */
   @Override
   protected void cleanup() throws DbException {
   }

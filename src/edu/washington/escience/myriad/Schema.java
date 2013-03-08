@@ -3,6 +3,7 @@ package edu.washington.escience.myriad;
 import java.io.Serializable;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -130,10 +131,23 @@ public final class Schema implements Serializable {
    */
   public static Schema merge(final Schema first, final Schema second) {
     final ImmutableList.Builder<Type> types = ImmutableList.builder();
-    final ImmutableList.Builder<String> names = ImmutableList.builder();
-
     types.addAll(first.getColumnTypes()).addAll(second.getColumnTypes());
-    names.addAll(first.getColumnNames()).addAll(second.getColumnNames());
+
+    List<String> names1 = new ArrayList<String>();
+    names1.addAll(first.getColumnNames());
+    List<String> names2 = new ArrayList<String>();
+    names2.addAll(second.getColumnNames());
+    for (int i = 0; i < names1.size(); ++i) {
+      for (int j = 0; j < names2.size(); ++j) {
+        if (names1.get(i).equals(names2.get(j))) {
+          names1.set(i, names1.get(i) + "_1");
+          names2.set(j, names2.get(j) + "_2");
+          break;
+        }
+      }
+    }
+    final ImmutableList.Builder<String> names = ImmutableList.builder();
+    names.addAll(names1).addAll(names2);
 
     return new Schema(types.build(), names.build());
   }
@@ -230,11 +244,11 @@ public final class Schema implements Serializable {
   }
 
   /**
-   * Compares the specified object with this Schema for equality. Two Schemas are considered equal if they are the same
-   * size and if the n-th type in this Schema is equal to the n-th type in the other.
+   * Compares the specified object with this Schema for equality. Two Schemas are considered equal if they have the same
+   * size, column types, and column names.
    * 
-   * @param o the Object to be compared for equality with this Schema.
-   * @return true if the object is equal to this Schema.
+   * @param schema the Schema to be compared with.
+   * @return true if schema is equal to this Schema.
    */
   @Override
   public boolean equals(final Object o) {
@@ -242,8 +256,7 @@ public final class Schema implements Serializable {
       return false;
     }
     final Schema other = (Schema) o;
-
-    return columnTypes.equals(other.columnTypes);
+    return columnTypes.equals(other.columnTypes) && columnNames.equals(other.columnNames);
   }
 
   /**

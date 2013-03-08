@@ -324,6 +324,10 @@ public final class Server {
     messageProcessor.start();
   }
 
+  public TupleBatchBuffer startServerQuery(final Long queryId, final CollectConsumer serverPlan) throws DbException {
+    return startServerQuery(queryId, serverPlan, null);
+  }
+
   /**
    * This starts a query from the server using the query plan rooted by the given Consumer.
    * 
@@ -332,7 +336,8 @@ public final class Server {
    * @return @return the collected tuples gathered by the given Consumer.
    * @throws DbException if there are errors executing the serverPlan operators.
    */
-  public TupleBatchBuffer startServerQuery(final Long queryId, final CollectConsumer serverPlan) throws DbException {
+  public TupleBatchBuffer startServerQuery(final Long queryId, final CollectConsumer serverPlan,
+      final String expectedResultSize) throws DbException {
     final BitSet workersReceived = workersReceivedQuery.get(queryId);
     final HashMap<Integer, Integer> workersAssigned = workersAssignedToQuery.get(queryId);
 
@@ -402,6 +407,13 @@ public final class Server {
     dataBuffer.remove(serverPlan.getOperatorID());
     final Date end = new Date();
     LOGGER.info("Number of results: " + cnt);
+    if (expectedResultSize != null) {
+      if (Integer.parseInt(expectedResultSize) != cnt) {
+        LOGGER.info("WRONG SIZE! expected to be: " + expectedResultSize);
+      } else {
+        LOGGER.info("Correct size!");
+      }
+    }
     int elapse = (int) (end.getTime() - start.getTime());
     final int hour = elapse / ONE_HR_IN_MILLIS;
     elapse -= hour * ONE_HR_IN_MILLIS;
@@ -492,6 +504,11 @@ public final class Server {
     return ImmutableMap.copyOf(workers);
   }
 
+  public Long startQuery(final String rawQuery, final String logicalRa, final Map<Integer, Operator[]> plans)
+      throws CatalogException, IOException, DbException {
+    return startQuery(rawQuery, logicalRa, plans, null);
+  }
+
   /**
    * Insert the given query into the Catalog, dispatch the query to the workers, and return its query ID. This is useful
    * for receiving queries from an external interface (e.g., the REST API).
@@ -502,11 +519,20 @@ public final class Server {
    * @return the query ID assigned to this query.
    * @throws CatalogException if there is an error in the Catalog.
    * @throws IOException if there is an error communicating with the workers.
+   * @throws DbException if there are any error when running server plan
    */
-  public Long startQuery(final String rawQuery, final String logicalRa, final Map<Integer, Operator[]> plans)
-      throws CatalogException, IOException {
+  public Long startQuery(final String rawQuery, final String logicalRa, final Map<Integer, Operator[]> plans,
+      String expectedResultSize) throws CatalogException, IOException, DbException {
     final Long queryId = catalog.newQuery(rawQuery, logicalRa);
+    Operator[] serverPlan = null;
+    if (plans.containsKey(0)) {
+      serverPlan = plans.get(0);
+      plans.remove(0);
+    }
     dispatchWorkerQueryPlans(queryId, plans);
+    if (serverPlan != null) {
+      startServerQuery(queryId, (CollectConsumer) serverPlan[0], expectedResultSize);
+    }
     startWorkerQuery(queryId);
     return queryId;
   }
@@ -522,7 +548,8 @@ public final class Server {
   public void ingestDataset(final RelationKey relationKey, final Schema schema, final byte[] data)
       throws CatalogException {
     /* The Server plan: scan the data and scatter it to all the workers. */
-    FileScan fileScan = new FileScan(new ByteArrayInputStream(data), schema);
+    FileScan fileScan = new FileScan(schema);
+    fileScan.setInputStream(new ByteArrayInputStream(data));
     ExchangePairID scatterId = ExchangePairID.newID();
     int[] workersArray = new int[workers.size()];
     int count = 0;

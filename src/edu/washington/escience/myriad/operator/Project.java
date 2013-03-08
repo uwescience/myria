@@ -1,10 +1,6 @@
 package edu.washington.escience.myriad.operator;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.NoSuchElementException;
-
-import org.apache.commons.lang3.ArrayUtils;
 
 import com.google.common.collect.ImmutableList;
 
@@ -22,15 +18,11 @@ public final class Project extends Operator {
   private static final long serialVersionUID = 1L;
   private Operator child;
   private final Schema schema;
-  private final Integer[] outFieldIds; // why not using int[]?
+  private final int[] outFieldIds; // why not using int[]?
 
-  public Project(final Integer[] fieldList, final Operator child) throws DbException {
-    this(Arrays.asList(fieldList), child);
-  }
-
-  public Project(final List<Integer> fieldList, final Operator child) throws DbException {
+  public Project(final int[] fieldList, final Operator child) throws DbException {
     this.child = child;
-    outFieldIds = fieldList.toArray(new Integer[] {});
+    outFieldIds = fieldList;
     final Schema childSchema = child.getSchema();
 
     final ImmutableList.Builder<Type> types = ImmutableList.builder();
@@ -56,7 +48,7 @@ public final class Project extends Operator {
   protected TupleBatch fetchNext() throws NoSuchElementException, DbException {
     final TupleBatch tmp = child.next();
     if (tmp != null) {
-      return tmp.project(ArrayUtils.toPrimitive(outFieldIds));
+      return tmp.project(outFieldIds);
     }
     return null;
   }
@@ -64,7 +56,7 @@ public final class Project extends Operator {
   @Override
   public TupleBatch fetchNextReady() throws DbException {
     if (child.nextReady()) {
-      return child.next().project(ArrayUtils.toPrimitive(outFieldIds));
+      return child.next().project(outFieldIds);
     }
     return null;
   }
