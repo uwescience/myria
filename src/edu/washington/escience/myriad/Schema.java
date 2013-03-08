@@ -236,8 +236,13 @@ public final class Schema implements Serializable {
    * @param schema the Schema to be compared with.
    * @return true if schema is equal to this Schema.
    */
-  public boolean equals(final Schema schema) {
-    return columnTypes.equals(schema.columnTypes) && columnNames.equals(schema.columnNames);
+  @Override
+  public boolean equals(final Object o) {
+    if (!(o instanceof Schema)) {
+      return false;
+    }
+    final Schema other = (Schema) o;
+    return columnTypes.equals(other.columnTypes) && columnNames.equals(other.columnNames);
   }
 
   /**
