@@ -6,8 +6,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.StreamTokenizer;
 import java.util.Objects;
 
@@ -232,13 +230,5 @@ public final class FileScan extends LeafOperator {
     } catch (final IOException e) {
       throw new DbException(e);
     }
-  }
-
-  private void readObject(final ObjectInputStream in) throws IOException, ClassNotFoundException {
-    in.defaultReadObject();
-  }
-
-  private void writeObject(final ObjectOutputStream out) throws IOException {
-    out.defaultWriteObject();
   }
 }
