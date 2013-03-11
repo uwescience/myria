@@ -47,10 +47,13 @@ public abstract class Exchange extends Operator {
 
     @Override
     public boolean equals(final Object o) {
-      final ExchangePairID oID = (ExchangePairID) o;
-      if (oID == null) {
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof ExchangePairID)) {
         return false;
       }
+      final ExchangePairID oID = (ExchangePairID) o;
       return oId == oID.oId;
     }
 

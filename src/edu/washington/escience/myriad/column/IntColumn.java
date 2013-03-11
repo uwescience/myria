@@ -126,7 +126,7 @@ public final class IntColumn implements Column<Integer> {
       }
       sb.append(data.get(i));
     }
-    sb.append("]");
+    sb.append(']');
     return sb.toString();
   }
 }

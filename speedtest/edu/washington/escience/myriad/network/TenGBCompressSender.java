@@ -103,7 +103,7 @@ public class TenGBCompressSender {
     start = System.currentTimeMillis();
     System.out.println("Start at " + start);
 
-    final long tenGBytes = 10l * 1024l * 1024l * 1024l;
+    final long tenGBytes = 10L * 1024L * 1024L * 1024L;
     final byte[] buffer = new byte[512 * 1024];
     final ChannelBuffer cb = new ByteBufferBackedChannelBuffer(ByteBuffer.wrap(buffer));
 

@@ -28,7 +28,7 @@ public final class FileScan extends LeafOperator {
   /** The Schema of the relation stored in this file. */
   private final Schema schema;
   /** StringTokenizer used to parse the file. */
-  private StreamTokenizer tokenizer = null;
+  private transient StreamTokenizer tokenizer = null;
   /** Whether a comma is a delimiter in this file. */
   private final boolean commaIsDelimiter;
   private String filename = null;

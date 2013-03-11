@@ -505,7 +505,7 @@ public class TupleBatch {
         sb.append(columnTypes.get(j).toString(columns.get(j), i));
         sb.append("\t|\t");
       }
-      sb.append("\n");
+      sb.append('\n');
     }
     return sb.toString();
 

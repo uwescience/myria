@@ -277,12 +277,10 @@ public final class Server {
 
     LinkedBlockingQueue<ExchangeData> q = null;
     q = dataBuffer.get(data.getOperatorID());
-    if (data instanceof ExchangeData) {
-      if (q != null) {
-        q.offer(data);
-      } else {
-        LOGGER.warn("weird: got ExchangeData (" + data + ") on null q");
-      }
+    if (q != null) {
+      q.offer(data);
+    } else {
+      LOGGER.warn("weird: got ExchangeData (" + data + ") on null q");
     }
   }
 
@@ -368,16 +366,15 @@ public final class Server {
 
     String names = "";
     for (int i = 0; i < schema.numColumns(); i++) {
-      names += schema.getColumnName(i) + "\t";
+      names += schema.getColumnName(i) + '\t';
     }
 
     if (LOGGER.isDebugEnabled()) {
       final StringBuilder sb = new StringBuilder();
       sb.append(names).append('\n');
       for (int i = 0; i < names.length() + schema.numColumns() * 4; i++) {
-        sb.append("-");
+        sb.append('-');
       }
-      sb.append("");
       LOGGER.debug(sb.toString());
     }
 

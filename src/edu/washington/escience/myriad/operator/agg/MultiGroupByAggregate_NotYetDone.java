@@ -30,10 +30,13 @@ public class MultiGroupByAggregate_NotYetDone extends Operator {
 
     @Override
     public boolean equals(final Object another) {
-      if (another == null || !(another instanceof SimpleArrayWrapper)) {
+      if (this == another) {
+        return true;
+      }
+      if (!(another instanceof SimpleArrayWrapper)) {
         return false;
       }
-      return Arrays.equals(groupFields, ((SimpleArrayWrapper) another).groupFields);
+      return (another != null) && Arrays.equals(groupFields, ((SimpleArrayWrapper) another).groupFields);
     }
 
     @Override
