@@ -75,7 +75,7 @@ def copy_distribution(workers, dirname, remote_root):
     for (hostname, port) in workers:
         remote_path = "%s:%s/%s-files" % (hostname, remote_root, dirname)
         to_copy = ["myriad-0.1.jar", "sqlite4java-282",
-                   "startWorker.sh", "startMaster.sh",
+                   "start_server.py", "start_workers.py",
                    "conf"]
         args = ["scp", "-qr"] + to_copy + [remote_path]
         if subprocess.call(args):
