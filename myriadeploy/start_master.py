@@ -4,6 +4,7 @@ import socket
 import subprocess
 import sys
 import time
+import getpass
 
 def read_workers(filename):
     ret = []
@@ -12,6 +13,14 @@ def read_workers(filename):
         # Skip blank lines or comments
         if len(line) == 0 or line[0] == '#':
             continue
+
+        # Extract the username@host:port string
+        wholeline = line.split('@')
+        if len(wholeline) == 2:
+            username = wholeline[0]
+            line = wholeline[1]
+        else:
+            username = getpass.getuser()
 
         # Extract the host:port string
         hostline = line.split(':')
@@ -26,17 +35,19 @@ def read_workers(filename):
             port = int(hostline[1])
         except:
             raise Exception("unable to convert %s to an int" % (port))
-        ret.append((hostname, port))
+        ret.append((hostname, port, username))
     return ret
 
 def start_master(description, root, workers):
-    for (hostname, port) in workers:
+    for (hostname, port, username) in workers:
     	cmd = "cd %s/%s-files; nohup java -cp myriad-0.1.jar:conf -Djava.library.path=sqlite4java-282 edu.washington.escience.myriad.daemon.MasterDaemon %s 0</dev/null 1>master_stdout 2>master_stderr &" % (root, description, description)
-    	args = ["ssh", hostname, cmd];
+    	args = ["ssh", "%s@%s" % (username, hostname), cmd];
    	#print args
     	if subprocess.call(args):
         	print >> sys.stderr, "error starting master %s" % (hostname)
-	time.sleep(0.5);
+        print hostname
+	# don't start workers too quickly before master is ready
+	time.sleep(0.5)
     	break;
 
 def main(argv):

@@ -8,7 +8,8 @@ You can put java 7 in your directory, and let your PATH include it BEFORE the de
 3) copy workers.txt.sample to workers.txt and modify it for your needs
 the first line is always the master.
 
-4) make sure you can access any machine in the cluster from your client side, using ssh with no password.
+4) better make sure you can access any machine in the cluster from your client side, using ssh with no password.
+otherwise you will need to enter them a lot of times.
 easiest way to make it happen:
 ssh-keygen
 ssh-copy-id username@remote_machine_address
@@ -26,7 +27,7 @@ e.g.
 ./launch_cluster.sh fourNodes /tmp/jwang workers.txt
 
 This script will run the following 3 scripts in order: setup_cluster, start_mater, start_workers.
-You can run this script on any machine where ssh to node_list is possible, hereinafter the same.
+You can run this script on any machine where ssh to node_list is possible, like your laptop, hereinafter the same.
 
 Then you are done.
 
@@ -79,9 +80,9 @@ curl -i beijing:8753/server/shutdown
 this will shoutdown everything, including the server and all the workers.
 
 2) if anything happened to make the above shutdown not work
-./stop_all_by_force <node_list> <username>
+./stop_all_by_force <node_list> 
 e.g.
-./stop_all_by_force workers.txt jwang
+./stop_all_by_force workers.txt
 
 this will go to all the nodes, find the master/worker processes under your username, and kill them.
 
