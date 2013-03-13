@@ -74,8 +74,8 @@ def copy_catalogs(description, remote_root, workers):
 def copy_distribution(workers, dirname, remote_root):
     for (hostname, port) in workers:
         remote_path = "%s:%s/%s-files" % (hostname, remote_root, dirname)
-        to_copy = ["jre1.7.0_13", "myriad-0.1.jar", "sqlite4java-282",
-                   ".classpath", "startWorker.sh", "startMaster.sh",
+        to_copy = ["myriad-0.1.jar", "sqlite4java-282",
+                   "startWorker.sh", "startMaster.sh",
                    "conf"]
         args = ["scp", "-qr"] + to_copy + [remote_path]
         if subprocess.call(args):

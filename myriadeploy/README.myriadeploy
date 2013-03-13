@@ -2,8 +2,7 @@ TO USE:
 
 1) in myria source, run gradle jar and copy myriad-0.1.jar here
 
-2) if the destination machines need it, copy JRE 7 here.
-   if not, fix the setup_cluster script to not care.
+2) if the destination machines need it, copy JRE 7 here, or at least make sure "java -version" shows 7.
 
 3) copy workers.txt.sample to workers.txt and modify it for your needs
 
