@@ -32,6 +32,8 @@ def read_workers(filename):
     return ret
 
 def make_catalog(description, workers):
+    args = ["rm", "-r", description]
+    subprocess.call(args);
     args = ["./run_catalog_maker.sh", \
             description, \
             str(len(workers))]
