@@ -14,7 +14,7 @@ import edu.washington.escience.myriad.parallel.Worker.MessageWrapper;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 
 /**
- * handler for control data
+ * handler for control data.
  */
 @Sharable
 public class WorkerDataHandler extends SimpleChannelUpstreamHandler {

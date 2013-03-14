@@ -28,7 +28,7 @@ public class Consumer extends LeafOperator {
    */
   private transient volatile LinkedBlockingQueue<ExchangeData> inputBuffer;
 
-  protected ExchangePairID operatorID;
+  private final ExchangePairID operatorID;
   private final Schema schema;
   private final BitSet workerEOS;
   private final BitSet workerEOI;

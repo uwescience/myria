@@ -131,7 +131,7 @@ public final class QueryResource {
     return ret;
   }
 
-  private static Operator[] deserializeJsonLocalPlans(Object jsonLocalPlanList) throws Exception {
+  private static Operator[] deserializeJsonLocalPlans(final Object jsonLocalPlanList) throws Exception {
     /* Better be a List */
     if (!(jsonLocalPlanList instanceof List)) {
       throw new ClassCastException("argument is not a List of Operator definitions.");
@@ -145,7 +145,7 @@ public final class QueryResource {
     return ret;
   }
 
-  private static Operator deserializeJsonLocalPlan(Object jsonLocalPlan) throws Exception {
+  private static Operator deserializeJsonLocalPlan(final Object jsonLocalPlan) throws Exception {
     /* Better be a List */
     if (!(jsonLocalPlan instanceof List)) {
       throw new ClassCastException("argument is not a List of Operator definitions.");
@@ -479,7 +479,6 @@ public final class QueryResource {
    * 
    * @param map the JSON map.
    * @param field the field containing the list.
-   * @param optional whether the field is optional, or an IllegalArgumentException should be thrown.
    * @return the schema, or null if the field is missing and optional is true.
    */
   private static Schema deserializeSchema(final Map<String, Object> map, final String field) {
@@ -526,7 +525,6 @@ public final class QueryResource {
    * 
    * @param map the JSON map.
    * @param field the field containing the list.
-   * @param optional whether the field is optional, or an IllegalArgumentException should be thrown.
    * @return the schema, or null if the field is missing and optional is true.
    */
   private static PartitionFunction<?, ?> deserializePF(final Map<String, Object> map, final String field,

@@ -35,7 +35,7 @@ public class ShuffleProducer extends Producer {
       Schema thisSchema = null;
       thisSchema = getSchema();
 
-      final ExchangePairID operatorID = operatorIDs[0];
+      final ExchangePairID operatorID = getOperatorIDs()[0];
 
       try {
         final TupleBatchBuffer[] buffers = new TupleBatchBuffer[numWorker];

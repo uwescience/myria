@@ -159,7 +159,7 @@ public class IDBInput extends Producer {
           buffer.put(0, selfIDBID);
           buffer.put(1, selfWorkerID);
           buffer.put(2, tuplesSentSinceLastEOI);
-          final ExchangePairID operatorID = operatorIDs[0];
+          final ExchangePairID operatorID = getOperatorIDs()[0];
           channel.write(buffer.popAnyAsTM(operatorID));
           connectionPool.releaseLongTermConnection(channel);
           tuplesSentSinceLastEOI = 0;

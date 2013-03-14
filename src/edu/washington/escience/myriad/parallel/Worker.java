@@ -298,7 +298,7 @@ public class Worker {
   /** The logger for this class. */
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Worker.class.getName());
 
-  static final String usage = "Usage: worker [--conf <conf_dir>]";
+  static final String USAGE = "Usage: worker [--conf <conf_dir>]";
 
   public static final String DEFAULT_DATA_DIR = "data";
 
@@ -333,7 +333,7 @@ public class Worker {
     Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
 
     if (args.length > 2) {
-      LOGGER.warn("Invalid number of arguments.\n" + usage);
+      LOGGER.warn("Invalid number of arguments.\n" + USAGE);
       JVMUtils.shutdownVM();
     }
 
@@ -344,7 +344,7 @@ public class Worker {
         args = ParallelUtility.removeArg(args, 0);
         ParallelUtility.removeArg(args, 0);
       } else {
-        LOGGER.warn("Invalid arguments.\n" + usage);
+        LOGGER.warn("Invalid arguments.\n" + USAGE);
         JVMUtils.shutdownVM();
       }
     }
@@ -386,7 +386,7 @@ public class Worker {
   /**
    * connectionPool[0] is always the master.
    */
-  protected final IPCConnectionPool connectionPool;
+  private final IPCConnectionPool connectionPool;
 
   /**
    * The acceptor, which binds to a TCP socket and waits for connections
@@ -408,21 +408,20 @@ public class Worker {
    */
   private volatile boolean toShutdown = false;
 
-  public final QueryExecutor queryExecutor;
+  private final QueryExecutor queryExecutor;
 
-  public final MessageProcessor messageProcessor;
+  private final MessageProcessor messageProcessor;
 
   /**
    * The I/O buffer, all the ExchangeMessages sent to this worker are buffered here.
    */
-  protected final HashMap<ExchangePairID, LinkedBlockingQueue<ExchangeData>> dataBuffer;
-  protected final ConcurrentHashMap<ExchangePairID, Schema> exchangeSchema;
+  private final HashMap<ExchangePairID, LinkedBlockingQueue<ExchangeData>> dataBuffer;
+  private final ConcurrentHashMap<ExchangePairID, Schema> exchangeSchema;
 
-  protected final LinkedBlockingQueue<MessageWrapper> messageQueue;
+  private final LinkedBlockingQueue<MessageWrapper> messageQueue;
 
-  protected final WorkerCatalog catalog;
-  protected final SocketInfo masterSocketInfo;
-  protected final SocketInfo mySocketInfo;
+  private final WorkerCatalog catalog;
+  private final SocketInfo masterSocketInfo;
 
   public Worker(final String workingDirectory) throws CatalogException, FileNotFoundException {
     catalog = WorkerCatalog.open(FilenameUtils.concat(workingDirectory, "worker.catalog"));
@@ -440,7 +439,6 @@ public class Worker {
       default:
         throw new CatalogException("Unknown worker type: " + databaseType);
     }
-    mySocketInfo = catalog.getWorkers().get(myID);
 
     dataBuffer = new HashMap<ExchangePairID, LinkedBlockingQueue<ExchangeData>>();
     messageQueue = new LinkedBlockingQueue<MessageWrapper>();

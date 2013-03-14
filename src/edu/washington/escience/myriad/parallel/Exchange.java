@@ -28,7 +28,7 @@ public abstract class Exchange extends Operator {
      */
     private final long oId;
 
-    private static final AtomicLong idGenerator = new AtomicLong();
+    private static final AtomicLong ID_GENERATOR = new AtomicLong();
 
     public static ExchangePairID fromExisting(final long l) {
       return new ExchangePairID(l);
@@ -38,7 +38,7 @@ public abstract class Exchange extends Operator {
      * The only way to create a ParallelOperatorID.
      */
     public static ExchangePairID newID() {
-      return new ExchangePairID(idGenerator.getAndIncrement());
+      return new ExchangePairID(ID_GENERATOR.getAndIncrement());
     }
 
     private ExchangePairID(final long oId) {

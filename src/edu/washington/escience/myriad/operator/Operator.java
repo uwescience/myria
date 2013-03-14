@@ -293,7 +293,7 @@ public abstract class Operator implements Serializable {
   // have we ever used this function?
   public abstract void setChildren(Operator[] children);
 
-  public boolean[] childrenEOI = null;
+  private boolean[] childrenEOI = null;
 
   public boolean[] getChildrenEOI() {
     if (childrenEOI == null) {

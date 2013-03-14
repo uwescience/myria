@@ -18,11 +18,11 @@ import edu.washington.escience.myriad.proto.TransportProto;
  * */
 public final class IPCPipelineFactories {
 
-  public static class MasterClientPipelineFactory implements ChannelPipelineFactory {
+  public static final class MasterClientPipelineFactory implements ChannelPipelineFactory {
 
-    protected final IPCSessionManagerClient ipcSessionManagerClient;
+    private final IPCSessionManagerClient ipcSessionManagerClient;
 
-    protected final MasterDataHandler masterDataHandler;
+    private final MasterDataHandler masterDataHandler;
 
     /**
      * constructor.
@@ -52,14 +52,14 @@ public final class IPCPipelineFactories {
 
   }
 
-  public static class MasterServerPipelineFactory implements ChannelPipelineFactory {
+  public static final class MasterServerPipelineFactory implements ChannelPipelineFactory {
 
-    protected final MasterDataHandler masterDataHandler;
+    private final MasterDataHandler masterDataHandler;
 
     /**
      * master control handler.
      * */
-    protected final IPCSessionManagerServer ipcSessionManagerServer;
+    private final IPCSessionManagerServer ipcSessionManagerServer;
 
     /**
      * constructor.
@@ -94,7 +94,7 @@ public final class IPCPipelineFactories {
     // private final LinkedBlockingQueue<MessageWrapper> messageQueue;
     protected final IPCSessionManagerClient ipcSessionManagerClient;
 
-    final WorkerDataHandler workerDataHandler;
+    private final WorkerDataHandler workerDataHandler;
 
     /**
      * constructor.

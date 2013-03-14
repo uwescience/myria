@@ -16,7 +16,7 @@ public abstract class Producer extends Operator {
    */
   private transient IPCConnectionPool connectionPool;
 
-  protected final ExchangePairID[] operatorIDs;
+  private final ExchangePairID[] operatorIDs;
 
   public Producer(final ExchangePairID oID) {
     this(new ExchangePairID[] { oID });
@@ -38,5 +38,9 @@ public abstract class Producer extends Operator {
 
   public void setConnectionPool(final IPCConnectionPool connectionPool) {
     this.connectionPool = connectionPool;
+  }
+
+  protected final ExchangePairID[] getOperatorIDs() {
+    return operatorIDs;
   }
 }

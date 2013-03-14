@@ -247,7 +247,7 @@ public final class Schema implements Serializable {
    * Compares the specified object with this Schema for equality. Two Schemas are considered equal if they have the same
    * size, column types, and column names.
    * 
-   * @param schema the Schema to be compared with.
+   * @param o the Object to be compared with.
    * @return true if schema is equal to this Schema.
    */
   @Override

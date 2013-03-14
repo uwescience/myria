@@ -22,9 +22,9 @@ import edu.washington.escience.myriad.util.IPCUtils;
 public class ChannelContext {
 
   public class ChannelCloseRequested implements DelayedTransitionEvent {
-    final ChannelPrioritySet channelPool;
-    final ConcurrentHashMap<Channel, Channel> recycleBin;
-    final ChannelGroup trashBin;
+    private final ChannelPrioritySet channelPool;
+    private final ConcurrentHashMap<Channel, Channel> recycleBin;
+    private final ChannelGroup trashBin;
 
     public ChannelCloseRequested(final ChannelPrioritySet channelPool,
         final ConcurrentHashMap<Channel, Channel> recycleBin, final ChannelGroup trashBin) {
@@ -80,7 +80,7 @@ public class ChannelContext {
   }
 
   public class IDCheckingTimeout implements DelayedTransitionEvent {
-    final ConcurrentHashMap<Channel, Channel> unregisteredNewChannels;
+    private final ConcurrentHashMap<Channel, Channel> unregisteredNewChannels;
 
     public IDCheckingTimeout(final ConcurrentHashMap<Channel, Channel> unregisteredNewChannels) {
       this.unregisteredNewChannels = unregisteredNewChannels;
@@ -128,10 +128,10 @@ public class ChannelContext {
     }
   }
 
-  public class IPCRemoteRemoved implements DelayedTransitionEvent {
-    final ConcurrentHashMap<Channel, Channel> recycleBin;
-    final ChannelGroup trashBin;
-    final ChannelPrioritySet channelPool;
+  public final class IPCRemoteRemoved implements DelayedTransitionEvent {
+    private final ConcurrentHashMap<Channel, Channel> recycleBin;
+    private final ChannelGroup trashBin;
+    private final ChannelPrioritySet channelPool;
 
     public IPCRemoteRemoved(final ConcurrentHashMap<Channel, Channel> recycleBin, final ChannelGroup trashBin,
         final ChannelPrioritySet channelPool) {
@@ -298,8 +298,8 @@ public class ChannelContext {
    * can be open by the Papyrus Eclipse plugin.
    * 
    */
-  protected final Object stateMachineLock;
-  protected volatile RegisteredChannelContext registeredContext;
+  private final Object stateMachineLock;
+  private volatile RegisteredChannelContext registeredContext;
   /**
    * Binary state variable, channel is connected.
    * */

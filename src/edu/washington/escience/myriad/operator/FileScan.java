@@ -72,7 +72,6 @@ public final class FileScan extends LeafOperator {
    * Construct a new FileScan object to read from a inputStream. If commaIsDelimiter is true, then records may be
    * whitespace or comma-separated. inputStream is assumed to be set later by setInputStream().
    * 
-   * @param inputStream the data containing the relation.
    * @param schema the Schema of the relation contained in the file.
    * @param commaIsDelimiter whether commas are also delimiters in the file.
    */
@@ -91,6 +90,9 @@ public final class FileScan extends LeafOperator {
     this(schema, false);
   }
 
+  /**
+   * @param inputStream the data containing the relation.
+   */
   public void setInputStream(final InputStream inputStream) {
     this.inputStream = inputStream;
   }

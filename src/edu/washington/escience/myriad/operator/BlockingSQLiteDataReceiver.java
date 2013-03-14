@@ -15,8 +15,8 @@ public final class BlockingSQLiteDataReceiver extends Operator {
   private static final long serialVersionUID = 1L;
 
   private Operator child;
-  String pathToSQLiteDb;
-  final RelationKey relationKey;
+  private String pathToSQLiteDb;
+  private final RelationKey relationKey;
 
   public BlockingSQLiteDataReceiver(final String pathToSQLiteDb, final RelationKey relationKey, final Operator child) {
     this.child = child;
