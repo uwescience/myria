@@ -193,7 +193,7 @@ public class ProtobufTest {
             break;
           case NORMAL:
             final List<ColumnMessage> columnMessages = data.getColumnsList();
-            final Column<?>[] columnArray = new Column[columnMessages.size()];
+            final Column<?>[] columnArray = new Column<?>[columnMessages.size()];
             int idx = 0;
             for (final ColumnMessage cm : columnMessages) {
               columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm);
@@ -305,7 +305,7 @@ public class ProtobufTest {
             break;
           case NORMAL:
             final List<ColumnMessage> columnMessages = data.getColumnsList();
-            final Column<?>[] columnArray = new Column[columnMessages.size()];
+            final Column<?>[] columnArray = new Column<?>[columnMessages.size()];
             int idx = 0;
             for (final ColumnMessage cm : columnMessages) {
               columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm);
@@ -441,7 +441,7 @@ public class ProtobufTest {
             break;
           case NORMAL:
             final List<ColumnMessage> columnMessages = data.getColumnsList();
-            final Column<?>[] columnArray = new Column[columnMessages.size()];
+            final Column<?>[] columnArray = new Column<?>[columnMessages.size()];
             int idx = 0;
             for (final ColumnMessage cm : columnMessages) {
               columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm);
@@ -569,7 +569,7 @@ public class ProtobufTest {
             break;
           case NORMAL:
             final List<ColumnMessage> columnMessages = data.getColumnsList();
-            final Column<?>[] columnArray = new Column[columnMessages.size()];
+            final Column<?>[] columnArray = new Column<?>[columnMessages.size()];
             int idx = 0;
             for (final ColumnMessage cm : columnMessages) {
               columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm);
@@ -656,7 +656,7 @@ public class ProtobufTest {
             break;
           case NORMAL:
             final List<ColumnMessage> columnMessages = data.getColumnsList();
-            final Column<?>[] columnArray = new Column[columnMessages.size()];
+            final Column<?>[] columnArray = new Column<?>[columnMessages.size()];
             int idx = 0;
             for (final ColumnMessage cm : columnMessages) {
               columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm);
@@ -745,7 +745,7 @@ public class ProtobufTest {
             break;
           case NORMAL:
             final List<ColumnMessage> columnMessages = data.getColumnsList();
-            final Column<?>[] columnArray = new Column[columnMessages.size()];
+            final Column<?>[] columnArray = new Column<?>[columnMessages.size()];
             int idx = 0;
             for (final ColumnMessage cm : columnMessages) {
               columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm);
@@ -849,7 +849,7 @@ public class ProtobufTest {
             break;
           case NORMAL:
             final List<ColumnMessage> columnMessages = data.getColumnsList();
-            final Column<?>[] columnArray = new Column[columnMessages.size()];
+            final Column<?>[] columnArray = new Column<?>[columnMessages.size()];
             int idx = 0;
             for (final ColumnMessage cm : columnMessages) {
               columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm);
@@ -946,7 +946,7 @@ public class ProtobufTest {
             break;
           case NORMAL:
             final List<ColumnMessage> columnMessages = data.getColumnsList();
-            final Column<?>[] columnArray = new Column[columnMessages.size()];
+            final Column<?>[] columnArray = new Column<?>[columnMessages.size()];
             int idx = 0;
             for (final ColumnMessage cm : columnMessages) {
               columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm);
