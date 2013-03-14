@@ -143,6 +143,7 @@ eclipse.classpath {
 }
 
 jar {
+  excludes = [ 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA' ] 
   manifest {
     attributes("Implementation-Title" : "Myria",
                "Implementation-Version": version,
