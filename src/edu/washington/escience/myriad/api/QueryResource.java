@@ -485,6 +485,7 @@ public final class QueryResource {
   private static Schema deserializeSchema(final Map<String, Object> map, final String field) {
     Schema schema;
     LinkedHashMap<?, ?> tmp = (LinkedHashMap<?, ?>) map.get(field);
+    @SuppressWarnings("unchecked")
     List<String> tmpTypes = (List<String>) tmp.get("column_types");
     List<Type> types = new ArrayList<Type>();
 
@@ -510,6 +511,7 @@ public final class QueryResource {
           break;
       }
     }
+    @SuppressWarnings("unchecked")
     List<String> names = (List<String>) tmp.get("column_names");
     schema = Schema.of(types, names);
     // schema = objectMapper.readValue((String) (map.get(field)), Schema.class);
