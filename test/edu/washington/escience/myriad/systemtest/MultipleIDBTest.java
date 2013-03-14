@@ -145,7 +145,8 @@ public class MultipleIDBTest extends SystemTestBase {
     if (isHead) {
       ExchangePairID joinArrayID = ExchangePairID.newID();
       final SQLiteQueryScan scan1 =
-          new SQLiteQueryScan(null, "select * from " + RelationKey.of("test", "test", "r"), tableSchema);
+          new SQLiteQueryScan(null, "select * from " + RelationKey.of("test", "test", "r").toString("sqlite"),
+              tableSchema);
       final ShuffleProducer sp1 = new ShuffleProducer(scan1, joinArrayID, WORKER_ID, pf1);
       sc1 = new ShuffleConsumer(tableSchema, joinArrayID, WORKER_ID);
       workerPlan.get(0).add(sp1);
@@ -154,7 +155,8 @@ public class MultipleIDBTest extends SystemTestBase {
       sc1 = new ShuffleConsumer(tableSchema, receivingOpID, WORKER_ID);
     }
     final SQLiteQueryScan scan2 =
-        new SQLiteQueryScan(null, "select * from " + RelationKey.of("test", "test", initName), tableSchema);
+        new SQLiteQueryScan(null, "select * from " + RelationKey.of("test", "test", initName).toString("sqlite"),
+            tableSchema);
     final ExchangePairID beforeIngress1 = ExchangePairID.newID();
     final ShuffleProducer sp2 = new ShuffleProducer(scan2, beforeIngress1, WORKER_ID, pf0);
     final ShuffleConsumer sc2 = new ShuffleConsumer(tableSchema, beforeIngress1, WORKER_ID);

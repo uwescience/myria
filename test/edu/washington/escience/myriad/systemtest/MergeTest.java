@@ -66,8 +66,10 @@ public class MergeTest extends SystemTestBase {
       insert(WORKER_ID[0], testtable1Key, tableSchema, tb);
     }
 
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan(null, "select * from " + testtable0Key, tableSchema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan(null, "select * from " + testtable1Key, tableSchema);
+    final SQLiteQueryScan scan1 =
+        new SQLiteQueryScan(null, "select * from " + testtable0Key.toString("sqlite"), tableSchema);
+    final SQLiteQueryScan scan2 =
+        new SQLiteQueryScan(null, "select * from " + testtable1Key.toString("sqlite"), tableSchema);
     final Merge merge = new Merge(tableSchema, scan1, scan2);
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final CollectProducer cp = new CollectProducer(merge, serverReceiveID, MASTER_ID);

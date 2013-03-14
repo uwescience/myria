@@ -75,7 +75,8 @@ public class LocalMultiwayProducerTest extends SystemTestBase {
       insert(WORKER_ID[1], testtableKey, tableSchema, tb);
     }
 
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan(null, "select * from " + testtableKey, tableSchema);
+    final SQLiteQueryScan scan1 =
+        new SQLiteQueryScan(null, "select * from " + testtableKey.toString("sqlite"), tableSchema);
     final ExchangePairID consumerID1 = ExchangePairID.newID();
     final ExchangePairID consumerID2 = ExchangePairID.newID();
     final LocalMultiwayProducer multiProducer1 =
