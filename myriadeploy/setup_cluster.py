@@ -3,9 +3,10 @@
 import socket
 import subprocess
 import sys
+import getpass
 
 def host_port_list(workers):
-    return map(lambda (x,y) : str(x)+':'+str(y), workers)
+    return map(lambda (x,y,z) : str(x)+':'+str(y), workers)
 
 def read_workers(filename):
     ret = []
@@ -14,6 +15,14 @@ def read_workers(filename):
         # Skip blank lines or comments
         if len(line) == 0 or line[0] == '#':
             continue
+
+        # Extract the username@host:port string
+        wholeline = line.split('@')
+        if len(wholeline) == 2:
+	    username = wholeline[0]
+	    line = wholeline[1]
+	else:
+	    username = getpass.getuser()
 
         # Extract the host:port string
         hostline = line.split(':')
@@ -28,10 +37,12 @@ def read_workers(filename):
             port = int(hostline[1])
         except:
             raise Exception("unable to convert %s to an int" % (port))
-        ret.append((hostname, port))
+        ret.append((hostname, port, username))
     return ret
 
 def make_catalog(description, workers):
+    args = ["rm", "-r", description]
+    subprocess.call(args);
     args = ["./run_catalog_maker.sh", \
             description, \
             str(len(workers))]
@@ -40,44 +51,42 @@ def make_catalog(description, workers):
         print >> sys.stderr, "error making the Catalog"
         sys.exit(1)
 
-def remote_mkdir(hostname, dirname):
-    args = ["ssh", hostname, "mkdir", "-p", dirname]
+def remote_mkdir(hostname, dirname, username):
+    args = ["ssh", "%s@%s" % (username, hostname), "mkdir", "-p", dirname]
     return subprocess.call(args)
 
-def copy_master_catalog(hostname, dirname, remote_root):
+def copy_master_catalog(hostname, dirname, remote_root, username):
     local_path = "%s/%s" % (dirname, "master.catalog")
-    remote_path = "%s:%s/%s-files/%s" % (hostname, remote_root, dirname, dirname)
+    remote_path = "%s@%s:%s/%s-files/%s" % (username, hostname, remote_root, dirname, dirname)
     args = ["scp", local_path, remote_path]
     return subprocess.call(args)
 
-def copy_worker_catalog(hostname, dirname, remote_root, i):
+def copy_worker_catalog(hostname, dirname, remote_root, i, username):
     local_path = "%s/worker_%d" % (dirname, i)
-    remote_path = "%s:%s/%s-files/%s" % (hostname, remote_root, dirname, dirname)
+    remote_path = "%s@%s:%s/%s-files/%s" % (username, hostname, remote_root, dirname, dirname)
     args = ["scp", "-r", local_path, remote_path]
     return subprocess.call(args)
 
 def copy_catalogs(description, remote_root, workers):
-    for (i,(hostname,port)) in enumerate(workers):
+    for (i,(hostname,port,username)) in enumerate(workers):
         if remote_mkdir(hostname, "%s/%s-files/%s" \
-                % (remote_root, description, description)):
+                % (remote_root, description, description), username):
             raise Exception("Error making directory on master %s" \
                     % (hostname,))
         # Master
         if i == 0:
-            if copy_master_catalog(hostname, description, remote_root):
+            if copy_master_catalog(hostname, description, remote_root, username):
                 raise Exception("Error copying master.catalog to %s" % (hostname,))
         # Workers
         else:
-            if copy_worker_catalog(hostname, description, remote_root, i):
+            if copy_worker_catalog(hostname, description, remote_root, i, username):
                 raise Exception("Error copying worker.catalog to %s " % (hostname,))
 
 def copy_distribution(workers, dirname, remote_root):
-    for (hostname, port) in workers:
-        remote_path = "%s:%s/%s-files" % (hostname, remote_root, dirname)
-        to_copy = ["myriad-0.1.jar", "sqlite4java-282",
-                   "startWorker.sh", "startMaster.sh",
-                   "conf"]
-        args = ["scp", "-qr"] + to_copy + [remote_path]
+    for (hostname, port, username) in workers:
+        remote_path = "%s@%s:%s/%s-files" % (username, hostname, remote_root, dirname)
+        to_copy = ["myriad-0.1.jar", "sqlite4java-282", "conf"]
+        args = ["scp", "-r"] + to_copy + [remote_path]
         if subprocess.call(args):
             raise Exception("Error copying distribution to %s" % (hostname,))
 
