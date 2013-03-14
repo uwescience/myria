@@ -69,7 +69,8 @@ public class SQLiteInsertTest {
 
       final SQLiteConnection sqliteConnection = new SQLiteConnection(tempFile);
       sqliteConnection.open(false);
-      final SQLiteStatement statement = sqliteConnection.prepare("SELECT COUNT(*) FROM " + tuplesKey + ";");
+      final SQLiteStatement statement =
+          sqliteConnection.prepare("SELECT COUNT(*) FROM " + tuplesKey.toString("sqlite") + ";");
       assertTrue(statement.step());
       final int inserted = statement.columnInt(0);
       assertTrue(inserted == NUM_TUPLES);

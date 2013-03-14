@@ -1,10 +1,11 @@
 package edu.washington.escience.myriad.jdbc;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -17,7 +18,9 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.accessmethod.JdbcAccessMethod;
+import edu.washington.escience.myriad.accessmethod.JdbcInfo;
 import edu.washington.escience.myriad.operator.JdbcQueryScan;
+import edu.washington.escience.myriad.util.JdbcUtils;
 
 /**
  * Test the insertion speed of specified databases.
@@ -42,11 +45,7 @@ public class JdbcInsertSpeedTest {
   private final class SpeedTestData {
 
     // Identifiers for database that is being tested
-    private final String host;
-    private final String jdbcDriverName;
-    private final String user;
-    private final String password;
-    private final String connectionString;
+    private final JdbcInfo jdbcInfo;
     private final String table;
 
     // Total time received
@@ -67,13 +66,8 @@ public class JdbcInsertSpeedTest {
      * @param connectionString
      * @param table
      */
-    private SpeedTestData(final String host, final String jdbcDriverName, final String user, final String password,
-        final String connectionString, final String table) {
-      this.host = host;
-      this.jdbcDriverName = jdbcDriverName;
-      this.user = user;
-      this.password = password;
-      this.connectionString = connectionString;
+    private SpeedTestData(final JdbcInfo jdbcInfo, final String table) {
+      this.jdbcInfo = jdbcInfo;
       this.table = table;
     }
 
@@ -87,8 +81,7 @@ public class JdbcInsertSpeedTest {
       final ImmutableList<Type> countTypes = ImmutableList.of(Type.INT_TYPE);
       final ImmutableList<String> countColumnNames = ImmutableList.of("value");
       final Schema countSchema = new Schema(countTypes, countColumnNames);
-      final JdbcQueryScan validateScan =
-          new JdbcQueryScan(jdbcDriverName, connectionString, countQuery, countSchema, user, password);
+      final JdbcQueryScan validateScan = new JdbcQueryScan(jdbcInfo, countQuery, countSchema);
 
       try {
         validateScan.open();
@@ -105,14 +98,28 @@ public class JdbcInsertSpeedTest {
     }
 
     public void runTest() {
-      System.out.println("testing: " + host + ", using " + jdbcDriverName);
+      System.out.println("testing: " + jdbcInfo.getHost() + ", using " + jdbcInfo.getDriverClass());
       // Create the queries
+      final String dropQuery = "DROP TABLE " + table;
+      final String createQuery =
+          "CREATE TABLE " + table + " (k " + JdbcUtils.typeToDbmsType(Type.INT_TYPE, jdbcInfo.getDbms()) + ", v "
+              + JdbcUtils.typeToDbmsType(Type.STRING_TYPE, jdbcInfo.getDbms()) + ")";
       final String insertQuery = "INSERT INTO " + table + " VALUES(?, ?)";
       final String countQuery = "SELECT COUNT(*) FROM " + table;
 
       // Create the connection
       try {
-        final Connection jdbcConnection = DriverManager.getConnection(connectionString, user, password);
+        final Connection jdbcConnection = JdbcAccessMethod.getConnection(jdbcInfo);
+
+        try {
+          Statement statement = jdbcConnection.createStatement();
+          statement.execute(dropQuery);
+        } catch (SQLException e) {
+          /* Okay, pass. */
+        }
+
+        Statement statement = jdbcConnection.createStatement();
+        statement.execute(createQuery);
 
         // Loop through N trials and insert the tuples
         for (int i = 0; i < NTRIALS; i++) {
@@ -157,7 +164,7 @@ public class JdbcInsertSpeedTest {
 
       } catch (final SQLException e) {
         error = true;
-        errorMessage = "Unable to connect to database : " + host;
+        errorMessage = "Unable to connect to database : " + jdbcInfo.getHost();
       } catch (final Exception e) {
         error = true;
         errorMessage = e.getMessage();
@@ -189,7 +196,7 @@ public class JdbcInsertSpeedTest {
   private final static int NTRIALS = 5;
 
   // The total number of tuples to write for each trial
-  private final static int NUM_TUPLES = 10000;
+  private final static int NUM_TUPLES = 100000;
 
   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   // Test Variables - for test internal use only
@@ -245,10 +252,21 @@ public class JdbcInsertSpeedTest {
     String dbms;
     String databaseName;
     String jdbcDriverName;
-    String connectionString;
     String table;
+    JdbcInfo jdbcInfo;
 
     // Set up connection data for the databases to be tested
+
+    host = "54.245.108.198";
+    port = 50000;
+    user = "myria";
+    password = "nays26[shark";
+    dbms = "monetdb";
+    databaseName = "myria-test";
+    jdbcDriverName = "nl.cwi.monetdb.jdbc.MonetDriver";;
+    jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, databaseName, user, password);
+    table = "speedtesttable";
+    tests.add(new SpeedTestData(jdbcInfo, table));
 
     host = "54.245.108.198";
     port = 3306;
@@ -257,10 +275,11 @@ public class JdbcInsertSpeedTest {
     dbms = "mysql";
     databaseName = "myriad_test";
     jdbcDriverName = "com.mysql.jdbc.Driver";
-    connectionString =
-        "jdbc:" + dbms + "://" + host + ":" + port + "/" + databaseName + "?rewriteBatchedStatements=true";
+    Properties properties = new Properties();
+    properties.setProperty("rewriteBatchedStatements", "true");
+    jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, databaseName, user, password, properties);
     table = "speedtesttable";
-    tests.add(new SpeedTestData(host, jdbcDriverName, user, password, connectionString, table));
+    tests.add(new SpeedTestData(jdbcInfo, table));
 
     host = "localhost";
     user = "";
@@ -268,8 +287,9 @@ public class JdbcInsertSpeedTest {
     dbms = "mysql";
     databaseName = "test";
     jdbcDriverName = "com.mysql.jdbc.Driver";
+    jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, databaseName, user, password);
     table = "speedtesttable";
-    connectionString = "jdbc:" + dbms + "://" + host + "/" + databaseName + "?rewriteBatchedStatements=true";
-    tests.add(new SpeedTestData(host, jdbcDriverName, user, password, connectionString, table));
+    /* connectionString = "jdbc:" + dbms + "://" + host + "/" + databaseName + "?rewriteBatchedStatements=true"; */
+    tests.add(new SpeedTestData(jdbcInfo, table));
   }
 }

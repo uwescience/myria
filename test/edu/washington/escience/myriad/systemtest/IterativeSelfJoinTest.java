@@ -142,8 +142,10 @@ public class IterativeSelfJoinTest extends SystemTestBase {
     }
 
     // parallel query generation, duplicate db files
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan(null, "select * from " + testtableKeys.get(0), tableSchema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan(null, "select * from " + testtableKeys.get(0), tableSchema);
+    final SQLiteQueryScan scan1 =
+        new SQLiteQueryScan(null, "select * from " + testtableKeys.get(0).toString("sqlite"), tableSchema);
+    final SQLiteQueryScan scan2 =
+        new SQLiteQueryScan(null, "select * from " + testtableKeys.get(0).toString("sqlite"), tableSchema);
 
     final int numPartition = 2;
     final PartitionFunction<String, Integer> pf0 = new SingleFieldHashPartitionFunction(numPartition); // 2 workers
@@ -181,7 +183,7 @@ public class IterativeSelfJoinTest extends SystemTestBase {
       if (i == numIteration - 1) {
         break;
       }
-      scan[i] = new SQLiteQueryScan(null, "select * from " + testtableKeys.get(i), tableSchema);
+      scan[i] = new SQLiteQueryScan(null, "select * from " + testtableKeys.get(i).toString("sqlite"), tableSchema);
       arrayID1 = ExchangePairID.newID();
       arrayID2 = ExchangePairID.newID();
       sp1[i] = new ShuffleProducer(scan[i], arrayID1, WORKER_ID, pf1);
