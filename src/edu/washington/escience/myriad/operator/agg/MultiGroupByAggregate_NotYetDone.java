@@ -144,11 +144,6 @@ public class MultiGroupByAggregate_NotYetDone extends Operator {
     groupAggs.clear();
   }
 
-  /**
-   * Returns the next tuple. If there is a group by field, then the first field is the field by which we are grouping,
-   * and the second field is the result of computing the aggregate, If there is no group by field, then the result tuple
-   * should contain one field representing the result of the aggregate. Should return null if there are no more tuples.
-   */
   @Override
   protected TupleBatch fetchNext() throws DbException {
 
