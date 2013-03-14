@@ -4,6 +4,8 @@ import java.io.FileNotFoundException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.commons.io.FilenameUtils;
+
 import edu.washington.escience.myriad.api.MasterApiServer;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.parallel.Server;
@@ -27,9 +29,9 @@ public final class MasterDaemon {
   public static void main(final String[] args) throws Exception {
     final MasterDaemon md = new MasterDaemon(args);
     md.start();
-    System.out.println("Press enter to stop");
-    System.in.read();
-    md.stop();
+    // System.out.println("Press enter to stop");
+    // System.in.read();
+    // md.stop();
   }
 
   /** The Myriad server. */
@@ -43,7 +45,7 @@ public final class MasterDaemon {
    */
   public MasterDaemon(final String[] args) throws Exception {
     processArguments(args);
-    server = new Server(args[0]);
+    server = new Server(FilenameUtils.concat(args[0], "master.catalog"));
     MasterApiServer.setUp(server);
   }
 
