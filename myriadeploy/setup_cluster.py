@@ -93,7 +93,7 @@ def copy_distribution(workers, dirname, remote_root):
 def main(argv):
     # Usage
     if len(argv) != 4:
-        print >> sys.stderr, "Usage: %s <description> <expt_root> <workers.txt> <username>" % (argv[0])
+        print >> sys.stderr, "Usage: %s <description> <expt_root> <workers.txt>" % (argv[0])
         print >> sys.stderr, "       description: any alphanumeric plus '-_' string."
         print >> sys.stderr, "       expt_root: where the files should be stored locally, e.g., /scratch."
         print >> sys.stderr, "       workers.txt: a list of host:port strings;"
