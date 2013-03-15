@@ -15,7 +15,7 @@ public final class DataProto {
     boolean hasType();
     edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageType getType();
     
-    // required int64 operatorID = 2;
+    // optional uint64 operatorID = 2;
     boolean hasOperatorID();
     long getOperatorID();
     
@@ -28,6 +28,10 @@ public final class DataProto {
         getColumnsOrBuilderList();
     edu.washington.escience.myriad.proto.DataProto.ColumnMessageOrBuilder getColumnsOrBuilder(
         int index);
+    
+    // optional uint32 num_tuples = 4;
+    boolean hasNumTuples();
+    int getNumTuples();
   }
   public static final class DataMessage extends
       com.google.protobuf.GeneratedMessage
@@ -62,11 +66,13 @@ public final class DataProto {
       EOS(0, 0),
       NORMAL(1, 1),
       EOI(2, 2),
+      BOS(3, 3),
       ;
       
       public static final int EOS_VALUE = 0;
       public static final int NORMAL_VALUE = 1;
       public static final int EOI_VALUE = 2;
+      public static final int BOS_VALUE = 3;
       
       
       public final int getNumber() { return value; }
@@ -76,6 +82,7 @@ public final class DataProto {
           case 0: return EOS;
           case 1: return NORMAL;
           case 2: return EOI;
+          case 3: return BOS;
           default: return null;
         }
       }
@@ -106,7 +113,7 @@ public final class DataProto {
       }
       
       private static final DataMessageType[] VALUES = {
-        EOS, NORMAL, EOI, 
+        EOS, NORMAL, EOI, BOS, 
       };
       
       public static DataMessageType valueOf(
@@ -140,7 +147,7 @@ public final class DataProto {
       return type_;
     }
     
-    // required int64 operatorID = 2;
+    // optional uint64 operatorID = 2;
     public static final int OPERATORID_FIELD_NUMBER = 2;
     private long operatorID_;
     public boolean hasOperatorID() {
@@ -171,10 +178,21 @@ public final class DataProto {
       return columns_.get(index);
     }
     
+    // optional uint32 num_tuples = 4;
+    public static final int NUM_TUPLES_FIELD_NUMBER = 4;
+    private int numTuples_;
+    public boolean hasNumTuples() {
+      return ((bitField0_ & 0x00000004) == 0x00000004);
+    }
+    public int getNumTuples() {
+      return numTuples_;
+    }
+    
     private void initFields() {
       type_ = edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageType.EOS;
       operatorID_ = 0L;
       columns_ = java.util.Collections.emptyList();
+      numTuples_ = 0;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -182,10 +200,6 @@ public final class DataProto {
       if (isInitialized != -1) return isInitialized == 1;
       
       if (!hasType()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      if (!hasOperatorID()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -206,10 +220,13 @@ public final class DataProto {
         output.writeEnum(1, type_.getNumber());
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeInt64(2, operatorID_);
+        output.writeUInt64(2, operatorID_);
       }
       for (int i = 0; i < columns_.size(); i++) {
         output.writeMessage(3, columns_.get(i));
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        output.writeUInt32(4, numTuples_);
       }
       getUnknownFields().writeTo(output);
     }
@@ -226,11 +243,15 @@ public final class DataProto {
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeInt64Size(2, operatorID_);
+          .computeUInt64Size(2, operatorID_);
       }
       for (int i = 0; i < columns_.size(); i++) {
         size += com.google.protobuf.CodedOutputStream
           .computeMessageSize(3, columns_.get(i));
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeUInt32Size(4, numTuples_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -367,6 +388,8 @@ public final class DataProto {
         } else {
           columnsBuilder_.clear();
         }
+        numTuples_ = 0;
+        bitField0_ = (bitField0_ & ~0x00000008);
         return this;
       }
       
@@ -422,6 +445,10 @@ public final class DataProto {
         } else {
           result.columns_ = columnsBuilder_.build();
         }
+        if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
+          to_bitField0_ |= 0x00000004;
+        }
+        result.numTuples_ = numTuples_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -470,16 +497,15 @@ public final class DataProto {
             }
           }
         }
+        if (other.hasNumTuples()) {
+          setNumTuples(other.getNumTuples());
+        }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
       
       public final boolean isInitialized() {
         if (!hasType()) {
-          
-          return false;
-        }
-        if (!hasOperatorID()) {
           
           return false;
         }
@@ -528,13 +554,18 @@ public final class DataProto {
             }
             case 16: {
               bitField0_ |= 0x00000002;
-              operatorID_ = input.readInt64();
+              operatorID_ = input.readUInt64();
               break;
             }
             case 26: {
               edu.washington.escience.myriad.proto.DataProto.ColumnMessage.Builder subBuilder = edu.washington.escience.myriad.proto.DataProto.ColumnMessage.newBuilder();
               input.readMessage(subBuilder, extensionRegistry);
               addColumns(subBuilder.buildPartial());
+              break;
+            }
+            case 32: {
+              bitField0_ |= 0x00000008;
+              numTuples_ = input.readUInt32();
               break;
             }
           }
@@ -567,7 +598,7 @@ public final class DataProto {
         return this;
       }
       
-      // required int64 operatorID = 2;
+      // optional uint64 operatorID = 2;
       private long operatorID_ ;
       public boolean hasOperatorID() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
@@ -774,6 +805,27 @@ public final class DataProto {
         return columnsBuilder_;
       }
       
+      // optional uint32 num_tuples = 4;
+      private int numTuples_ ;
+      public boolean hasNumTuples() {
+        return ((bitField0_ & 0x00000008) == 0x00000008);
+      }
+      public int getNumTuples() {
+        return numTuples_;
+      }
+      public Builder setNumTuples(int value) {
+        bitField0_ |= 0x00000008;
+        numTuples_ = value;
+        onChanged();
+        return this;
+      }
+      public Builder clearNumTuples() {
+        bitField0_ = (bitField0_ & ~0x00000008);
+        numTuples_ = 0;
+        onChanged();
+        return this;
+      }
+      
       // @@protoc_insertion_point(builder_scope:DataMessage)
     }
     
@@ -791,10 +843,6 @@ public final class DataProto {
     // required .ColumnMessage.ColumnMessageType type = 1;
     boolean hasType();
     edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType getType();
-    
-    // required uint32 num_tuples = 2;
-    boolean hasNumTuples();
-    int getNumTuples();
     
     // optional .IntColumnMessage int_column = 3;
     boolean hasIntColumn();
@@ -946,21 +994,11 @@ public final class DataProto {
       return type_;
     }
     
-    // required uint32 num_tuples = 2;
-    public static final int NUM_TUPLES_FIELD_NUMBER = 2;
-    private int numTuples_;
-    public boolean hasNumTuples() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
-    }
-    public int getNumTuples() {
-      return numTuples_;
-    }
-    
     // optional .IntColumnMessage int_column = 3;
     public static final int INT_COLUMN_FIELD_NUMBER = 3;
     private edu.washington.escience.myriad.proto.DataProto.IntColumnMessage intColumn_;
     public boolean hasIntColumn() {
-      return ((bitField0_ & 0x00000004) == 0x00000004);
+      return ((bitField0_ & 0x00000002) == 0x00000002);
     }
     public edu.washington.escience.myriad.proto.DataProto.IntColumnMessage getIntColumn() {
       return intColumn_;
@@ -973,7 +1011,7 @@ public final class DataProto {
     public static final int LONG_COLUMN_FIELD_NUMBER = 4;
     private edu.washington.escience.myriad.proto.DataProto.LongColumnMessage longColumn_;
     public boolean hasLongColumn() {
-      return ((bitField0_ & 0x00000008) == 0x00000008);
+      return ((bitField0_ & 0x00000004) == 0x00000004);
     }
     public edu.washington.escience.myriad.proto.DataProto.LongColumnMessage getLongColumn() {
       return longColumn_;
@@ -986,7 +1024,7 @@ public final class DataProto {
     public static final int FLOAT_COLUMN_FIELD_NUMBER = 5;
     private edu.washington.escience.myriad.proto.DataProto.FloatColumnMessage floatColumn_;
     public boolean hasFloatColumn() {
-      return ((bitField0_ & 0x00000010) == 0x00000010);
+      return ((bitField0_ & 0x00000008) == 0x00000008);
     }
     public edu.washington.escience.myriad.proto.DataProto.FloatColumnMessage getFloatColumn() {
       return floatColumn_;
@@ -999,7 +1037,7 @@ public final class DataProto {
     public static final int DOUBLE_COLUMN_FIELD_NUMBER = 6;
     private edu.washington.escience.myriad.proto.DataProto.DoubleColumnMessage doubleColumn_;
     public boolean hasDoubleColumn() {
-      return ((bitField0_ & 0x00000020) == 0x00000020);
+      return ((bitField0_ & 0x00000010) == 0x00000010);
     }
     public edu.washington.escience.myriad.proto.DataProto.DoubleColumnMessage getDoubleColumn() {
       return doubleColumn_;
@@ -1012,7 +1050,7 @@ public final class DataProto {
     public static final int STRING_COLUMN_FIELD_NUMBER = 7;
     private edu.washington.escience.myriad.proto.DataProto.StringColumnMessage stringColumn_;
     public boolean hasStringColumn() {
-      return ((bitField0_ & 0x00000040) == 0x00000040);
+      return ((bitField0_ & 0x00000020) == 0x00000020);
     }
     public edu.washington.escience.myriad.proto.DataProto.StringColumnMessage getStringColumn() {
       return stringColumn_;
@@ -1025,7 +1063,7 @@ public final class DataProto {
     public static final int BOOLEAN_COLUMN_FIELD_NUMBER = 8;
     private edu.washington.escience.myriad.proto.DataProto.BooleanColumnMessage booleanColumn_;
     public boolean hasBooleanColumn() {
-      return ((bitField0_ & 0x00000080) == 0x00000080);
+      return ((bitField0_ & 0x00000040) == 0x00000040);
     }
     public edu.washington.escience.myriad.proto.DataProto.BooleanColumnMessage getBooleanColumn() {
       return booleanColumn_;
@@ -1036,7 +1074,6 @@ public final class DataProto {
     
     private void initFields() {
       type_ = edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType.INT;
-      numTuples_ = 0;
       intColumn_ = edu.washington.escience.myriad.proto.DataProto.IntColumnMessage.getDefaultInstance();
       longColumn_ = edu.washington.escience.myriad.proto.DataProto.LongColumnMessage.getDefaultInstance();
       floatColumn_ = edu.washington.escience.myriad.proto.DataProto.FloatColumnMessage.getDefaultInstance();
@@ -1050,10 +1087,6 @@ public final class DataProto {
       if (isInitialized != -1) return isInitialized == 1;
       
       if (!hasType()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      if (!hasNumTuples()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -1104,24 +1137,21 @@ public final class DataProto {
         output.writeEnum(1, type_.getNumber());
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeUInt32(2, numTuples_);
-      }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
         output.writeMessage(3, intColumn_);
       }
-      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
         output.writeMessage(4, longColumn_);
       }
-      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
         output.writeMessage(5, floatColumn_);
       }
-      if (((bitField0_ & 0x00000020) == 0x00000020)) {
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
         output.writeMessage(6, doubleColumn_);
       }
-      if (((bitField0_ & 0x00000040) == 0x00000040)) {
+      if (((bitField0_ & 0x00000020) == 0x00000020)) {
         output.writeMessage(7, stringColumn_);
       }
-      if (((bitField0_ & 0x00000080) == 0x00000080)) {
+      if (((bitField0_ & 0x00000040) == 0x00000040)) {
         output.writeMessage(8, booleanColumn_);
       }
       getUnknownFields().writeTo(output);
@@ -1139,29 +1169,25 @@ public final class DataProto {
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeUInt32Size(2, numTuples_);
+          .computeMessageSize(3, intColumn_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(3, intColumn_);
+          .computeMessageSize(4, longColumn_);
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(4, longColumn_);
+          .computeMessageSize(5, floatColumn_);
       }
       if (((bitField0_ & 0x00000010) == 0x00000010)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(5, floatColumn_);
+          .computeMessageSize(6, doubleColumn_);
       }
       if (((bitField0_ & 0x00000020) == 0x00000020)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(6, doubleColumn_);
-      }
-      if (((bitField0_ & 0x00000040) == 0x00000040)) {
-        size += com.google.protobuf.CodedOutputStream
           .computeMessageSize(7, stringColumn_);
       }
-      if (((bitField0_ & 0x00000080) == 0x00000080)) {
+      if (((bitField0_ & 0x00000040) == 0x00000040)) {
         size += com.google.protobuf.CodedOutputStream
           .computeMessageSize(8, booleanColumn_);
       }
@@ -1297,44 +1323,42 @@ public final class DataProto {
         super.clear();
         type_ = edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType.INT;
         bitField0_ = (bitField0_ & ~0x00000001);
-        numTuples_ = 0;
-        bitField0_ = (bitField0_ & ~0x00000002);
         if (intColumnBuilder_ == null) {
           intColumn_ = edu.washington.escience.myriad.proto.DataProto.IntColumnMessage.getDefaultInstance();
         } else {
           intColumnBuilder_.clear();
         }
-        bitField0_ = (bitField0_ & ~0x00000004);
+        bitField0_ = (bitField0_ & ~0x00000002);
         if (longColumnBuilder_ == null) {
           longColumn_ = edu.washington.escience.myriad.proto.DataProto.LongColumnMessage.getDefaultInstance();
         } else {
           longColumnBuilder_.clear();
         }
-        bitField0_ = (bitField0_ & ~0x00000008);
+        bitField0_ = (bitField0_ & ~0x00000004);
         if (floatColumnBuilder_ == null) {
           floatColumn_ = edu.washington.escience.myriad.proto.DataProto.FloatColumnMessage.getDefaultInstance();
         } else {
           floatColumnBuilder_.clear();
         }
-        bitField0_ = (bitField0_ & ~0x00000010);
+        bitField0_ = (bitField0_ & ~0x00000008);
         if (doubleColumnBuilder_ == null) {
           doubleColumn_ = edu.washington.escience.myriad.proto.DataProto.DoubleColumnMessage.getDefaultInstance();
         } else {
           doubleColumnBuilder_.clear();
         }
-        bitField0_ = (bitField0_ & ~0x00000020);
+        bitField0_ = (bitField0_ & ~0x00000010);
         if (stringColumnBuilder_ == null) {
           stringColumn_ = edu.washington.escience.myriad.proto.DataProto.StringColumnMessage.getDefaultInstance();
         } else {
           stringColumnBuilder_.clear();
         }
-        bitField0_ = (bitField0_ & ~0x00000040);
+        bitField0_ = (bitField0_ & ~0x00000020);
         if (booleanColumnBuilder_ == null) {
           booleanColumn_ = edu.washington.escience.myriad.proto.DataProto.BooleanColumnMessage.getDefaultInstance();
         } else {
           booleanColumnBuilder_.clear();
         }
-        bitField0_ = (bitField0_ & ~0x00000080);
+        bitField0_ = (bitField0_ & ~0x00000040);
         return this;
       }
       
@@ -1380,49 +1404,45 @@ public final class DataProto {
         if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
           to_bitField0_ |= 0x00000002;
         }
-        result.numTuples_ = numTuples_;
-        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
-          to_bitField0_ |= 0x00000004;
-        }
         if (intColumnBuilder_ == null) {
           result.intColumn_ = intColumn_;
         } else {
           result.intColumn_ = intColumnBuilder_.build();
         }
-        if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
-          to_bitField0_ |= 0x00000008;
+        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+          to_bitField0_ |= 0x00000004;
         }
         if (longColumnBuilder_ == null) {
           result.longColumn_ = longColumn_;
         } else {
           result.longColumn_ = longColumnBuilder_.build();
         }
-        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
-          to_bitField0_ |= 0x00000010;
+        if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
+          to_bitField0_ |= 0x00000008;
         }
         if (floatColumnBuilder_ == null) {
           result.floatColumn_ = floatColumn_;
         } else {
           result.floatColumn_ = floatColumnBuilder_.build();
         }
-        if (((from_bitField0_ & 0x00000020) == 0x00000020)) {
-          to_bitField0_ |= 0x00000020;
+        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+          to_bitField0_ |= 0x00000010;
         }
         if (doubleColumnBuilder_ == null) {
           result.doubleColumn_ = doubleColumn_;
         } else {
           result.doubleColumn_ = doubleColumnBuilder_.build();
         }
-        if (((from_bitField0_ & 0x00000040) == 0x00000040)) {
-          to_bitField0_ |= 0x00000040;
+        if (((from_bitField0_ & 0x00000020) == 0x00000020)) {
+          to_bitField0_ |= 0x00000020;
         }
         if (stringColumnBuilder_ == null) {
           result.stringColumn_ = stringColumn_;
         } else {
           result.stringColumn_ = stringColumnBuilder_.build();
         }
-        if (((from_bitField0_ & 0x00000080) == 0x00000080)) {
-          to_bitField0_ |= 0x00000080;
+        if (((from_bitField0_ & 0x00000040) == 0x00000040)) {
+          to_bitField0_ |= 0x00000040;
         }
         if (booleanColumnBuilder_ == null) {
           result.booleanColumn_ = booleanColumn_;
@@ -1448,9 +1468,6 @@ public final class DataProto {
         if (other.hasType()) {
           setType(other.getType());
         }
-        if (other.hasNumTuples()) {
-          setNumTuples(other.getNumTuples());
-        }
         if (other.hasIntColumn()) {
           mergeIntColumn(other.getIntColumn());
         }
@@ -1475,10 +1492,6 @@ public final class DataProto {
       
       public final boolean isInitialized() {
         if (!hasType()) {
-          
-          return false;
-        }
-        if (!hasNumTuples()) {
           
           return false;
         }
@@ -1553,11 +1566,6 @@ public final class DataProto {
                 bitField0_ |= 0x00000001;
                 type_ = value;
               }
-              break;
-            }
-            case 16: {
-              bitField0_ |= 0x00000002;
-              numTuples_ = input.readUInt32();
               break;
             }
             case 26: {
@@ -1644,33 +1652,12 @@ public final class DataProto {
         return this;
       }
       
-      // required uint32 num_tuples = 2;
-      private int numTuples_ ;
-      public boolean hasNumTuples() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
-      }
-      public int getNumTuples() {
-        return numTuples_;
-      }
-      public Builder setNumTuples(int value) {
-        bitField0_ |= 0x00000002;
-        numTuples_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearNumTuples() {
-        bitField0_ = (bitField0_ & ~0x00000002);
-        numTuples_ = 0;
-        onChanged();
-        return this;
-      }
-      
       // optional .IntColumnMessage int_column = 3;
       private edu.washington.escience.myriad.proto.DataProto.IntColumnMessage intColumn_ = edu.washington.escience.myriad.proto.DataProto.IntColumnMessage.getDefaultInstance();
       private com.google.protobuf.SingleFieldBuilder<
           edu.washington.escience.myriad.proto.DataProto.IntColumnMessage, edu.washington.escience.myriad.proto.DataProto.IntColumnMessage.Builder, edu.washington.escience.myriad.proto.DataProto.IntColumnMessageOrBuilder> intColumnBuilder_;
       public boolean hasIntColumn() {
-        return ((bitField0_ & 0x00000004) == 0x00000004);
+        return ((bitField0_ & 0x00000002) == 0x00000002);
       }
       public edu.washington.escience.myriad.proto.DataProto.IntColumnMessage getIntColumn() {
         if (intColumnBuilder_ == null) {
@@ -1689,7 +1676,7 @@ public final class DataProto {
         } else {
           intColumnBuilder_.setMessage(value);
         }
-        bitField0_ |= 0x00000004;
+        bitField0_ |= 0x00000002;
         return this;
       }
       public Builder setIntColumn(
@@ -1700,12 +1687,12 @@ public final class DataProto {
         } else {
           intColumnBuilder_.setMessage(builderForValue.build());
         }
-        bitField0_ |= 0x00000004;
+        bitField0_ |= 0x00000002;
         return this;
       }
       public Builder mergeIntColumn(edu.washington.escience.myriad.proto.DataProto.IntColumnMessage value) {
         if (intColumnBuilder_ == null) {
-          if (((bitField0_ & 0x00000004) == 0x00000004) &&
+          if (((bitField0_ & 0x00000002) == 0x00000002) &&
               intColumn_ != edu.washington.escience.myriad.proto.DataProto.IntColumnMessage.getDefaultInstance()) {
             intColumn_ =
               edu.washington.escience.myriad.proto.DataProto.IntColumnMessage.newBuilder(intColumn_).mergeFrom(value).buildPartial();
@@ -1716,7 +1703,7 @@ public final class DataProto {
         } else {
           intColumnBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000004;
+        bitField0_ |= 0x00000002;
         return this;
       }
       public Builder clearIntColumn() {
@@ -1726,11 +1713,11 @@ public final class DataProto {
         } else {
           intColumnBuilder_.clear();
         }
-        bitField0_ = (bitField0_ & ~0x00000004);
+        bitField0_ = (bitField0_ & ~0x00000002);
         return this;
       }
       public edu.washington.escience.myriad.proto.DataProto.IntColumnMessage.Builder getIntColumnBuilder() {
-        bitField0_ |= 0x00000004;
+        bitField0_ |= 0x00000002;
         onChanged();
         return getIntColumnFieldBuilder().getBuilder();
       }
@@ -1760,7 +1747,7 @@ public final class DataProto {
       private com.google.protobuf.SingleFieldBuilder<
           edu.washington.escience.myriad.proto.DataProto.LongColumnMessage, edu.washington.escience.myriad.proto.DataProto.LongColumnMessage.Builder, edu.washington.escience.myriad.proto.DataProto.LongColumnMessageOrBuilder> longColumnBuilder_;
       public boolean hasLongColumn() {
-        return ((bitField0_ & 0x00000008) == 0x00000008);
+        return ((bitField0_ & 0x00000004) == 0x00000004);
       }
       public edu.washington.escience.myriad.proto.DataProto.LongColumnMessage getLongColumn() {
         if (longColumnBuilder_ == null) {
@@ -1779,7 +1766,7 @@ public final class DataProto {
         } else {
           longColumnBuilder_.setMessage(value);
         }
-        bitField0_ |= 0x00000008;
+        bitField0_ |= 0x00000004;
         return this;
       }
       public Builder setLongColumn(
@@ -1790,12 +1777,12 @@ public final class DataProto {
         } else {
           longColumnBuilder_.setMessage(builderForValue.build());
         }
-        bitField0_ |= 0x00000008;
+        bitField0_ |= 0x00000004;
         return this;
       }
       public Builder mergeLongColumn(edu.washington.escience.myriad.proto.DataProto.LongColumnMessage value) {
         if (longColumnBuilder_ == null) {
-          if (((bitField0_ & 0x00000008) == 0x00000008) &&
+          if (((bitField0_ & 0x00000004) == 0x00000004) &&
               longColumn_ != edu.washington.escience.myriad.proto.DataProto.LongColumnMessage.getDefaultInstance()) {
             longColumn_ =
               edu.washington.escience.myriad.proto.DataProto.LongColumnMessage.newBuilder(longColumn_).mergeFrom(value).buildPartial();
@@ -1806,7 +1793,7 @@ public final class DataProto {
         } else {
           longColumnBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000008;
+        bitField0_ |= 0x00000004;
         return this;
       }
       public Builder clearLongColumn() {
@@ -1816,11 +1803,11 @@ public final class DataProto {
         } else {
           longColumnBuilder_.clear();
         }
-        bitField0_ = (bitField0_ & ~0x00000008);
+        bitField0_ = (bitField0_ & ~0x00000004);
         return this;
       }
       public edu.washington.escience.myriad.proto.DataProto.LongColumnMessage.Builder getLongColumnBuilder() {
-        bitField0_ |= 0x00000008;
+        bitField0_ |= 0x00000004;
         onChanged();
         return getLongColumnFieldBuilder().getBuilder();
       }
@@ -1850,7 +1837,7 @@ public final class DataProto {
       private com.google.protobuf.SingleFieldBuilder<
           edu.washington.escience.myriad.proto.DataProto.FloatColumnMessage, edu.washington.escience.myriad.proto.DataProto.FloatColumnMessage.Builder, edu.washington.escience.myriad.proto.DataProto.FloatColumnMessageOrBuilder> floatColumnBuilder_;
       public boolean hasFloatColumn() {
-        return ((bitField0_ & 0x00000010) == 0x00000010);
+        return ((bitField0_ & 0x00000008) == 0x00000008);
       }
       public edu.washington.escience.myriad.proto.DataProto.FloatColumnMessage getFloatColumn() {
         if (floatColumnBuilder_ == null) {
@@ -1869,7 +1856,7 @@ public final class DataProto {
         } else {
           floatColumnBuilder_.setMessage(value);
         }
-        bitField0_ |= 0x00000010;
+        bitField0_ |= 0x00000008;
         return this;
       }
       public Builder setFloatColumn(
@@ -1880,12 +1867,12 @@ public final class DataProto {
         } else {
           floatColumnBuilder_.setMessage(builderForValue.build());
         }
-        bitField0_ |= 0x00000010;
+        bitField0_ |= 0x00000008;
         return this;
       }
       public Builder mergeFloatColumn(edu.washington.escience.myriad.proto.DataProto.FloatColumnMessage value) {
         if (floatColumnBuilder_ == null) {
-          if (((bitField0_ & 0x00000010) == 0x00000010) &&
+          if (((bitField0_ & 0x00000008) == 0x00000008) &&
               floatColumn_ != edu.washington.escience.myriad.proto.DataProto.FloatColumnMessage.getDefaultInstance()) {
             floatColumn_ =
               edu.washington.escience.myriad.proto.DataProto.FloatColumnMessage.newBuilder(floatColumn_).mergeFrom(value).buildPartial();
@@ -1896,7 +1883,7 @@ public final class DataProto {
         } else {
           floatColumnBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000010;
+        bitField0_ |= 0x00000008;
         return this;
       }
       public Builder clearFloatColumn() {
@@ -1906,11 +1893,11 @@ public final class DataProto {
         } else {
           floatColumnBuilder_.clear();
         }
-        bitField0_ = (bitField0_ & ~0x00000010);
+        bitField0_ = (bitField0_ & ~0x00000008);
         return this;
       }
       public edu.washington.escience.myriad.proto.DataProto.FloatColumnMessage.Builder getFloatColumnBuilder() {
-        bitField0_ |= 0x00000010;
+        bitField0_ |= 0x00000008;
         onChanged();
         return getFloatColumnFieldBuilder().getBuilder();
       }
@@ -1940,7 +1927,7 @@ public final class DataProto {
       private com.google.protobuf.SingleFieldBuilder<
           edu.washington.escience.myriad.proto.DataProto.DoubleColumnMessage, edu.washington.escience.myriad.proto.DataProto.DoubleColumnMessage.Builder, edu.washington.escience.myriad.proto.DataProto.DoubleColumnMessageOrBuilder> doubleColumnBuilder_;
       public boolean hasDoubleColumn() {
-        return ((bitField0_ & 0x00000020) == 0x00000020);
+        return ((bitField0_ & 0x00000010) == 0x00000010);
       }
       public edu.washington.escience.myriad.proto.DataProto.DoubleColumnMessage getDoubleColumn() {
         if (doubleColumnBuilder_ == null) {
@@ -1959,7 +1946,7 @@ public final class DataProto {
         } else {
           doubleColumnBuilder_.setMessage(value);
         }
-        bitField0_ |= 0x00000020;
+        bitField0_ |= 0x00000010;
         return this;
       }
       public Builder setDoubleColumn(
@@ -1970,12 +1957,12 @@ public final class DataProto {
         } else {
           doubleColumnBuilder_.setMessage(builderForValue.build());
         }
-        bitField0_ |= 0x00000020;
+        bitField0_ |= 0x00000010;
         return this;
       }
       public Builder mergeDoubleColumn(edu.washington.escience.myriad.proto.DataProto.DoubleColumnMessage value) {
         if (doubleColumnBuilder_ == null) {
-          if (((bitField0_ & 0x00000020) == 0x00000020) &&
+          if (((bitField0_ & 0x00000010) == 0x00000010) &&
               doubleColumn_ != edu.washington.escience.myriad.proto.DataProto.DoubleColumnMessage.getDefaultInstance()) {
             doubleColumn_ =
               edu.washington.escience.myriad.proto.DataProto.DoubleColumnMessage.newBuilder(doubleColumn_).mergeFrom(value).buildPartial();
@@ -1986,7 +1973,7 @@ public final class DataProto {
         } else {
           doubleColumnBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000020;
+        bitField0_ |= 0x00000010;
         return this;
       }
       public Builder clearDoubleColumn() {
@@ -1996,11 +1983,11 @@ public final class DataProto {
         } else {
           doubleColumnBuilder_.clear();
         }
-        bitField0_ = (bitField0_ & ~0x00000020);
+        bitField0_ = (bitField0_ & ~0x00000010);
         return this;
       }
       public edu.washington.escience.myriad.proto.DataProto.DoubleColumnMessage.Builder getDoubleColumnBuilder() {
-        bitField0_ |= 0x00000020;
+        bitField0_ |= 0x00000010;
         onChanged();
         return getDoubleColumnFieldBuilder().getBuilder();
       }
@@ -2030,7 +2017,7 @@ public final class DataProto {
       private com.google.protobuf.SingleFieldBuilder<
           edu.washington.escience.myriad.proto.DataProto.StringColumnMessage, edu.washington.escience.myriad.proto.DataProto.StringColumnMessage.Builder, edu.washington.escience.myriad.proto.DataProto.StringColumnMessageOrBuilder> stringColumnBuilder_;
       public boolean hasStringColumn() {
-        return ((bitField0_ & 0x00000040) == 0x00000040);
+        return ((bitField0_ & 0x00000020) == 0x00000020);
       }
       public edu.washington.escience.myriad.proto.DataProto.StringColumnMessage getStringColumn() {
         if (stringColumnBuilder_ == null) {
@@ -2049,7 +2036,7 @@ public final class DataProto {
         } else {
           stringColumnBuilder_.setMessage(value);
         }
-        bitField0_ |= 0x00000040;
+        bitField0_ |= 0x00000020;
         return this;
       }
       public Builder setStringColumn(
@@ -2060,12 +2047,12 @@ public final class DataProto {
         } else {
           stringColumnBuilder_.setMessage(builderForValue.build());
         }
-        bitField0_ |= 0x00000040;
+        bitField0_ |= 0x00000020;
         return this;
       }
       public Builder mergeStringColumn(edu.washington.escience.myriad.proto.DataProto.StringColumnMessage value) {
         if (stringColumnBuilder_ == null) {
-          if (((bitField0_ & 0x00000040) == 0x00000040) &&
+          if (((bitField0_ & 0x00000020) == 0x00000020) &&
               stringColumn_ != edu.washington.escience.myriad.proto.DataProto.StringColumnMessage.getDefaultInstance()) {
             stringColumn_ =
               edu.washington.escience.myriad.proto.DataProto.StringColumnMessage.newBuilder(stringColumn_).mergeFrom(value).buildPartial();
@@ -2076,7 +2063,7 @@ public final class DataProto {
         } else {
           stringColumnBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000040;
+        bitField0_ |= 0x00000020;
         return this;
       }
       public Builder clearStringColumn() {
@@ -2086,11 +2073,11 @@ public final class DataProto {
         } else {
           stringColumnBuilder_.clear();
         }
-        bitField0_ = (bitField0_ & ~0x00000040);
+        bitField0_ = (bitField0_ & ~0x00000020);
         return this;
       }
       public edu.washington.escience.myriad.proto.DataProto.StringColumnMessage.Builder getStringColumnBuilder() {
-        bitField0_ |= 0x00000040;
+        bitField0_ |= 0x00000020;
         onChanged();
         return getStringColumnFieldBuilder().getBuilder();
       }
@@ -2120,7 +2107,7 @@ public final class DataProto {
       private com.google.protobuf.SingleFieldBuilder<
           edu.washington.escience.myriad.proto.DataProto.BooleanColumnMessage, edu.washington.escience.myriad.proto.DataProto.BooleanColumnMessage.Builder, edu.washington.escience.myriad.proto.DataProto.BooleanColumnMessageOrBuilder> booleanColumnBuilder_;
       public boolean hasBooleanColumn() {
-        return ((bitField0_ & 0x00000080) == 0x00000080);
+        return ((bitField0_ & 0x00000040) == 0x00000040);
       }
       public edu.washington.escience.myriad.proto.DataProto.BooleanColumnMessage getBooleanColumn() {
         if (booleanColumnBuilder_ == null) {
@@ -2139,7 +2126,7 @@ public final class DataProto {
         } else {
           booleanColumnBuilder_.setMessage(value);
         }
-        bitField0_ |= 0x00000080;
+        bitField0_ |= 0x00000040;
         return this;
       }
       public Builder setBooleanColumn(
@@ -2150,12 +2137,12 @@ public final class DataProto {
         } else {
           booleanColumnBuilder_.setMessage(builderForValue.build());
         }
-        bitField0_ |= 0x00000080;
+        bitField0_ |= 0x00000040;
         return this;
       }
       public Builder mergeBooleanColumn(edu.washington.escience.myriad.proto.DataProto.BooleanColumnMessage value) {
         if (booleanColumnBuilder_ == null) {
-          if (((bitField0_ & 0x00000080) == 0x00000080) &&
+          if (((bitField0_ & 0x00000040) == 0x00000040) &&
               booleanColumn_ != edu.washington.escience.myriad.proto.DataProto.BooleanColumnMessage.getDefaultInstance()) {
             booleanColumn_ =
               edu.washington.escience.myriad.proto.DataProto.BooleanColumnMessage.newBuilder(booleanColumn_).mergeFrom(value).buildPartial();
@@ -2166,7 +2153,7 @@ public final class DataProto {
         } else {
           booleanColumnBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000080;
+        bitField0_ |= 0x00000040;
         return this;
       }
       public Builder clearBooleanColumn() {
@@ -2176,11 +2163,11 @@ public final class DataProto {
         } else {
           booleanColumnBuilder_.clear();
         }
-        bitField0_ = (bitField0_ & ~0x00000080);
+        bitField0_ = (bitField0_ & ~0x00000040);
         return this;
       }
       public edu.washington.escience.myriad.proto.DataProto.BooleanColumnMessage.Builder getBooleanColumnBuilder() {
-        bitField0_ |= 0x00000080;
+        bitField0_ |= 0x00000040;
         onChanged();
         return getBooleanColumnFieldBuilder().getBuilder();
       }
@@ -4495,30 +4482,30 @@ public final class DataProto {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\014column.proto\"\237\001\n\013DataMessage\022*\n\004type\030\001" +
+      "\n\014column.proto\"\274\001\n\013DataMessage\022*\n\004type\030\001" +
       " \002(\0162\034.DataMessage.DataMessageType\022\022\n\nop" +
-      "eratorID\030\002 \002(\003\022\037\n\007columns\030\003 \003(\0132\016.Column" +
-      "Message\"/\n\017DataMessageType\022\007\n\003EOS\020\000\022\n\n\006N" +
-      "ORMAL\020\001\022\007\n\003EOI\020\002\"\257\003\n\rColumnMessage\022.\n\004ty" +
-      "pe\030\001 \002(\0162 .ColumnMessage.ColumnMessageTy" +
-      "pe\022\022\n\nnum_tuples\030\002 \002(\r\022%\n\nint_column\030\003 \001" +
-      "(\0132\021.IntColumnMessage\022\'\n\013long_column\030\004 \001" +
-      "(\0132\022.LongColumnMessage\022)\n\014float_column\030\005" +
-      " \001(\0132\023.FloatColumnMessage\022+\n\rdouble_colu",
-      "mn\030\006 \001(\0132\024.DoubleColumnMessage\022+\n\rstring" +
-      "_column\030\007 \001(\0132\024.StringColumnMessage\022-\n\016b" +
-      "oolean_column\030\010 \001(\0132\025.BooleanColumnMessa" +
-      "ge\"V\n\021ColumnMessageType\022\007\n\003INT\020\000\022\010\n\004LONG" +
-      "\020\001\022\t\n\005FLOAT\020\002\022\n\n\006DOUBLE\020\003\022\n\n\006STRING\020\004\022\013\n" +
-      "\007BOOLEAN\020\005\" \n\020IntColumnMessage\022\014\n\004data\030\001" +
-      " \002(\014\"!\n\021LongColumnMessage\022\014\n\004data\030\001 \002(\014\"" +
-      "\"\n\022FloatColumnMessage\022\014\n\004data\030\001 \002(\014\"#\n\023D" +
-      "oubleColumnMessage\022\014\n\004data\030\001 \002(\014\"O\n\023Stri" +
-      "ngColumnMessage\022\014\n\004data\030\001 \002(\014\022\025\n\rstart_i",
-      "ndices\030\002 \002(\014\022\023\n\013end_indices\030\003 \002(\014\"$\n\024Boo" +
-      "leanColumnMessage\022\014\n\004data\030\001 \002(\014B1\n$edu.w" +
-      "ashington.escience.myriad.protoB\tDataPro" +
-      "to"
+      "eratorID\030\002 \001(\004\022\037\n\007columns\030\003 \003(\0132\016.Column" +
+      "Message\022\022\n\nnum_tuples\030\004 \001(\r\"8\n\017DataMessa" +
+      "geType\022\007\n\003EOS\020\000\022\n\n\006NORMAL\020\001\022\007\n\003EOI\020\002\022\007\n\003" +
+      "BOS\020\003\"\233\003\n\rColumnMessage\022.\n\004type\030\001 \002(\0162 ." +
+      "ColumnMessage.ColumnMessageType\022%\n\nint_c" +
+      "olumn\030\003 \001(\0132\021.IntColumnMessage\022\'\n\013long_c" +
+      "olumn\030\004 \001(\0132\022.LongColumnMessage\022)\n\014float" +
+      "_column\030\005 \001(\0132\023.FloatColumnMessage\022+\n\rdo",
+      "uble_column\030\006 \001(\0132\024.DoubleColumnMessage\022" +
+      "+\n\rstring_column\030\007 \001(\0132\024.StringColumnMes" +
+      "sage\022-\n\016boolean_column\030\010 \001(\0132\025.BooleanCo" +
+      "lumnMessage\"V\n\021ColumnMessageType\022\007\n\003INT\020" +
+      "\000\022\010\n\004LONG\020\001\022\t\n\005FLOAT\020\002\022\n\n\006DOUBLE\020\003\022\n\n\006ST" +
+      "RING\020\004\022\013\n\007BOOLEAN\020\005\" \n\020IntColumnMessage\022" +
+      "\014\n\004data\030\001 \002(\014\"!\n\021LongColumnMessage\022\014\n\004da" +
+      "ta\030\001 \002(\014\"\"\n\022FloatColumnMessage\022\014\n\004data\030\001" +
+      " \002(\014\"#\n\023DoubleColumnMessage\022\014\n\004data\030\001 \002(" +
+      "\014\"O\n\023StringColumnMessage\022\014\n\004data\030\001 \002(\014\022\025",
+      "\n\rstart_indices\030\002 \002(\014\022\023\n\013end_indices\030\003 \002" +
+      "(\014\"$\n\024BooleanColumnMessage\022\014\n\004data\030\001 \002(\014" +
+      "B1\n$edu.washington.escience.myriad.proto" +
+      "B\tDataProto"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -4530,7 +4517,7 @@ public final class DataProto {
           internal_static_DataMessage_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_DataMessage_descriptor,
-              new java.lang.String[] { "Type", "OperatorID", "Columns", },
+              new java.lang.String[] { "Type", "OperatorID", "Columns", "NumTuples", },
               edu.washington.escience.myriad.proto.DataProto.DataMessage.class,
               edu.washington.escience.myriad.proto.DataProto.DataMessage.Builder.class);
           internal_static_ColumnMessage_descriptor =
@@ -4538,7 +4525,7 @@ public final class DataProto {
           internal_static_ColumnMessage_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_ColumnMessage_descriptor,
-              new java.lang.String[] { "Type", "NumTuples", "IntColumn", "LongColumn", "FloatColumn", "DoubleColumn", "StringColumn", "BooleanColumn", },
+              new java.lang.String[] { "Type", "IntColumn", "LongColumn", "FloatColumn", "DoubleColumn", "StringColumn", "BooleanColumn", },
               edu.washington.escience.myriad.proto.DataProto.ColumnMessage.class,
               edu.washington.escience.myriad.proto.DataProto.ColumnMessage.Builder.class);
           internal_static_IntColumnMessage_descriptor =

@@ -29,6 +29,10 @@ public final class TransportProto {
     boolean hasControl();
     edu.washington.escience.myriad.proto.ControlProto.ControlMessage getControl();
     edu.washington.escience.myriad.proto.ControlProto.ControlMessageOrBuilder getControlOrBuilder();
+    
+    // optional int64 seq = 6;
+    boolean hasSeq();
+    long getSeq();
   }
   public static final class TransportMessage extends
       com.google.protobuf.GeneratedMessage
@@ -180,11 +184,22 @@ public final class TransportProto {
       return control_;
     }
     
+    // optional int64 seq = 6;
+    public static final int SEQ_FIELD_NUMBER = 6;
+    private long seq_;
+    public boolean hasSeq() {
+      return ((bitField0_ & 0x00000010) == 0x00000010);
+    }
+    public long getSeq() {
+      return seq_;
+    }
+    
     private void initFields() {
       type_ = edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType.DATA;
       data_ = edu.washington.escience.myriad.proto.DataProto.DataMessage.getDefaultInstance();
       query_ = edu.washington.escience.myriad.proto.QueryProto.Query.getDefaultInstance();
       control_ = edu.washington.escience.myriad.proto.ControlProto.ControlMessage.getDefaultInstance();
+      seq_ = 0L;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -232,6 +247,9 @@ public final class TransportProto {
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         output.writeMessage(5, control_);
       }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        output.writeInt64(6, seq_);
+      }
       getUnknownFields().writeTo(output);
     }
     
@@ -256,6 +274,10 @@ public final class TransportProto {
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         size += com.google.protobuf.CodedOutputStream
           .computeMessageSize(5, control_);
+      }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt64Size(6, seq_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -404,6 +426,8 @@ public final class TransportProto {
           controlBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000008);
+        seq_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00000010);
         return this;
       }
       
@@ -470,6 +494,10 @@ public final class TransportProto {
         } else {
           result.control_ = controlBuilder_.build();
         }
+        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+          to_bitField0_ |= 0x00000010;
+        }
+        result.seq_ = seq_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -497,6 +525,9 @@ public final class TransportProto {
         }
         if (other.hasControl()) {
           mergeControl(other.getControl());
+        }
+        if (other.hasSeq()) {
+          setSeq(other.getSeq());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -587,6 +618,11 @@ public final class TransportProto {
               }
               input.readMessage(subBuilder, extensionRegistry);
               setControl(subBuilder.buildPartial());
+              break;
+            }
+            case 48: {
+              bitField0_ |= 0x00000010;
+              seq_ = input.readInt64();
               break;
             }
           }
@@ -889,6 +925,27 @@ public final class TransportProto {
         return controlBuilder_;
       }
       
+      // optional int64 seq = 6;
+      private long seq_ ;
+      public boolean hasSeq() {
+        return ((bitField0_ & 0x00000010) == 0x00000010);
+      }
+      public long getSeq() {
+        return seq_;
+      }
+      public Builder setSeq(long value) {
+        bitField0_ |= 0x00000010;
+        seq_ = value;
+        onChanged();
+        return this;
+      }
+      public Builder clearSeq() {
+        bitField0_ = (bitField0_ & ~0x00000010);
+        seq_ = 0L;
+        onChanged();
+        return this;
+      }
+      
       // @@protoc_insertion_point(builder_scope:TransportMessage)
     }
     
@@ -915,14 +972,14 @@ public final class TransportProto {
   static {
     java.lang.String[] descriptorData = {
       "\n\nmain.proto\032\014column.proto\032\rcontrol.prot" +
-      "o\032\013query.proto\"\327\001\n\020TransportMessage\0224\n\004t" +
+      "o\032\013query.proto\"\344\001\n\020TransportMessage\0224\n\004t" +
       "ype\030\001 \002(\0162&.TransportMessage.TransportMe" +
       "ssageType\022\032\n\004data\030\002 \001(\0132\014.DataMessage\022\025\n" +
       "\005query\030\004 \001(\0132\006.Query\022 \n\007control\030\005 \001(\0132\017." +
-      "ControlMessage\"8\n\024TransportMessageType\022\010" +
-      "\n\004DATA\020\000\022\t\n\005QUERY\020\001\022\013\n\007CONTROL\020\002B6\n$edu." +
-      "washington.escience.myriad.protoB\016Transp" +
-      "ortProto"
+      "ControlMessage\022\013\n\003seq\030\006 \001(\003\"8\n\024Transport" +
+      "MessageType\022\010\n\004DATA\020\000\022\t\n\005QUERY\020\001\022\013\n\007CONT" +
+      "ROL\020\002B6\n$edu.washington.escience.myriad." +
+      "protoB\016TransportProto"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -934,7 +991,7 @@ public final class TransportProto {
           internal_static_TransportMessage_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_TransportMessage_descriptor,
-              new java.lang.String[] { "Type", "Data", "Query", "Control", },
+              new java.lang.String[] { "Type", "Data", "Query", "Control", "Seq", },
               edu.washington.escience.myriad.proto.TransportProto.TransportMessage.class,
               edu.washington.escience.myriad.proto.TransportProto.TransportMessage.Builder.class);
           return null;
