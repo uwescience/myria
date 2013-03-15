@@ -27,6 +27,7 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.LocalJoin;
 import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SQLiteInsert;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 
@@ -61,7 +62,7 @@ public final class QueryResource {
       /* Deserialize the three arguments we need */
       final String rawQuery = (String) userData.get("raw_datalog");
       final String logicalRa = (String) userData.get("logical_ra");
-      Map<Integer, Operator[]> queryPlan = deserializeJsonQueryPlan(userData.get("query_plan"));
+      Map<Integer, RootOperator[]> queryPlan = deserializeJsonQueryPlan(userData.get("query_plan"));
 
       /* Make sure that the requested workers are alive. */
       if (!MasterApiServer.getMyriaServer().getAliveWorkers().containsAll(queryPlan.keySet())) {
@@ -89,28 +90,28 @@ public final class QueryResource {
    * @return the query plan.
    * @throws Exception in the event of a bad plan.
    */
-  private static Map<Integer, Operator[]> deserializeJsonQueryPlan(final Object jsonQuery) throws Exception {
+  private static Map<Integer, RootOperator[]> deserializeJsonQueryPlan(final Object jsonQuery) throws Exception {
     /* Better be a map */
     if (!(jsonQuery instanceof Map)) {
       throw new ClassCastException("argument is not a Map");
     }
     Map<?, ?> jsonQueryPlan = (Map<?, ?>) jsonQuery;
-    Map<Integer, Operator[]> ret = new HashMap<Integer, Operator[]>();
+    Map<Integer, RootOperator[]> ret = new HashMap<Integer, RootOperator[]>();
     for (Entry<?, ?> entry : jsonQueryPlan.entrySet()) {
       Integer workerId = Integer.parseInt((String) entry.getKey());
-      Operator[] workerPlan = deserializeJsonLocalPlans(entry.getValue());
+      RootOperator[] workerPlan = deserializeJsonLocalPlans(entry.getValue());
       ret.put(workerId, workerPlan);
     }
     return ret;
   }
 
-  private static Operator[] deserializeJsonLocalPlans(Object jsonLocalPlanList) throws Exception {
+  private static RootOperator[] deserializeJsonLocalPlans(Object jsonLocalPlanList) throws Exception {
     /* Better be a List */
     if (!(jsonLocalPlanList instanceof List)) {
       throw new ClassCastException("argument is not a List of Operator definitions.");
     }
     List<?> localPlanList = (List<?>) jsonLocalPlanList;
-    Operator[] ret = new Operator[localPlanList.size()];
+    RootOperator[] ret = new RootOperator[localPlanList.size()];
     int i = 0;
     for (Object o : localPlanList) {
       ret[i] = deserializeJsonLocalPlan(o);
@@ -118,7 +119,7 @@ public final class QueryResource {
     return ret;
   }
 
-  private static Operator deserializeJsonLocalPlan(Object jsonLocalPlan) throws Exception {
+  private static RootOperator deserializeJsonLocalPlan(Object jsonLocalPlan) throws Exception {
     /* Better be a List */
     if (!(jsonLocalPlan instanceof List)) {
       throw new ClassCastException("argument is not a List of Operator definitions.");
@@ -138,7 +139,8 @@ public final class QueryResource {
       op = deserializeJsonOperator(jsonOperator, operators);
       operators.put(opName, op);
     }
-    return op;
+    // The root must be a RootOperator
+    return (RootOperator) op;
   }
 
   private static Operator deserializeJsonOperator(final Map<String, Object> jsonOperator,
@@ -170,7 +172,7 @@ public final class QueryResource {
         if (overwriteString != null) {
           overwrite = Boolean.parseBoolean(overwriteString);
         }
-        return new SQLiteInsert(child, RelationKey.of(userName, programName, relationName), null, null, overwrite);
+        return new SQLiteInsert(child, RelationKey.of(userName, programName, relationName), overwrite);
 
       case "LocalJoin":
         /* Child 1 */
@@ -216,7 +218,7 @@ public final class QueryResource {
         if (schema == null) {
           throw new IOException("Specified relation " + relationKey + " does not exist.");
         }
-        return new SQLiteQueryScan(null, "SELECT * from " + relationKey, schema);
+        return new SQLiteQueryScan("SELECT * from " + relationKey, schema);
 
       default:
         throw new RuntimeException("Not implemented deserializing Operator of type " + opType);
