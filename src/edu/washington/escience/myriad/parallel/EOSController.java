@@ -25,6 +25,12 @@ import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 public class EOSController extends Producer {
 
   final class WorkingThread extends Thread {
+    /** Constructor, set the thread name. */
+    public WorkingThread() {
+      super();
+      setName("EOSController-WorkingThread-" + getId());
+    }
+
     @Override
     public void run() {
 

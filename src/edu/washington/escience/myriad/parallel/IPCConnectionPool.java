@@ -770,7 +770,7 @@ public class IPCConnectionPool {
               channelPool.remove(remoteID);
             }
           };
-          removeRemoteThread.setName("Remove-remote-" + remoteID);
+          removeRemoteThread.setName("removeRemote-" + remoteID);
           removeRemoteThread.start();
         }
       });
@@ -909,6 +909,7 @@ public class IPCConnectionPool {
                   LOGGER.debug("post release resources");
                 }
               };
+              resourceReleaser.setName("IPCConnectionPool-operationComplete-" + resourceReleaser.getId());
               resourceReleaser.start();
             }
           });

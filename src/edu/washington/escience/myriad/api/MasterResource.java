@@ -27,7 +27,7 @@ public final class MasterResource {
         }
       }
     };
-    shutdownThread.setName("Shutdown thread");
+    shutdownThread.setName("MasterResource-Shutdown");
     shutdownThread.start();
   }
 }
