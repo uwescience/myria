@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Objects;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
@@ -147,7 +148,7 @@ public class MultiGroupByAggregate_NotYetDone extends Operator {
    * should contain one field representing the result of the aggregate. Should return null if there are no more tuples.
    */
   @Override
-  protected TupleBatch fetchNext() throws DbException {
+  protected TupleBatch fetchNext() throws DbException, InterruptedException {
 
     // Actually perform the aggregation
     TupleBatch tb = null;
@@ -167,7 +168,12 @@ public class MultiGroupByAggregate_NotYetDone extends Operator {
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
     // TODO non-blocking
-    return fetchNext();
+    try {
+      return fetchNext();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      return null;
+    }
   }
 
   @Override
@@ -188,7 +194,7 @@ public class MultiGroupByAggregate_NotYetDone extends Operator {
   }
 
   @Override
-  protected void init() throws DbException {
+  protected void init(ImmutableMap<String, Object> initProperties) throws DbException {
   }
 
   @Override
