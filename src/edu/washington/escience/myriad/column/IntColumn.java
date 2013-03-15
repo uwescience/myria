@@ -15,9 +15,6 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType;
 import edu.washington.escience.myriad.proto.DataProto.IntColumnMessage;
-// import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
-// import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage.ColumnMessageType;
-// import edu.washington.escience.myriad.proto.TransportProto.IntColumnMessage;
 
 /**
  * A column of Integer values.
@@ -41,8 +38,9 @@ public final class IntColumn implements Column<Integer> {
    * Constructs an IntColumn by deserializing the given ColumnMessage.
    * 
    * @param message a ColumnMessage containing the contents of this column.
+   * @param numTuples num tuples in the column message
    */
-  public IntColumn(final ColumnMessage message) {
+  public IntColumn(final ColumnMessage message, final int numTuples) {
     if (message.getType().ordinal() != ColumnMessageType.INT_VALUE) {
       throw new IllegalArgumentException("Trying to construct IntColumn from non-INT ColumnMessage");
     }
@@ -51,7 +49,7 @@ public final class IntColumn implements Column<Integer> {
     }
     dataBytes = message.getIntColumn().getData().asReadOnlyByteBuffer();
     data = dataBytes.asIntBuffer();
-    data.position(message.getNumTuples());
+    data.position(numTuples);
   }
 
   @Override
@@ -111,7 +109,7 @@ public final class IntColumn implements Column<Integer> {
   public ColumnMessage serializeToProto() {
     /* Note that we do *not* build the inner class. We pass its builder instead. */
     final IntColumnMessage.Builder inner = IntColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
-    return ColumnMessage.newBuilder().setType(ColumnMessageType.INT).setNumTuples(size()).setIntColumn(inner).build();
+    return ColumnMessage.newBuilder().setType(ColumnMessageType.INT).setIntColumn(inner).build();
   }
 
   @Override

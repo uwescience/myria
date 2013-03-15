@@ -14,9 +14,6 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.proto.DataProto.BooleanColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType;
-// import edu.washington.escience.myriad.proto.TransportProto.BooleanColumnMessage;
-// import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
-// import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage.ColumnMessageType;
 
 /**
  * A column of Boolean values. To save space, this implementation uses a BitSet as the internal representation.
@@ -40,8 +37,9 @@ public final class BooleanColumn implements Column<Boolean> {
    * Constructs a BooleanColumn by deserializing the given ColumnMessage.
    * 
    * @param message a ColumnMessage containing the contents of this column.
+   * @param numTuples num tuples in the column message
    */
-  public BooleanColumn(final ColumnMessage message) {
+  public BooleanColumn(final ColumnMessage message, final int numTuples) {
     if (message.getType().ordinal() != ColumnMessageType.BOOLEAN_VALUE) {
       throw new IllegalArgumentException("Trying to construct BooleanColumn from non-BOOLEAN ColumnMessage");
     }
@@ -49,7 +47,7 @@ public final class BooleanColumn implements Column<Boolean> {
       throw new IllegalArgumentException("ColumnMessage has type BOOLEAN but no BooleanColumn");
     }
     data = BitSet.valueOf(message.getBooleanColumn().getData().asReadOnlyByteBuffer());
-    numBits = message.getNumTuples();
+    numBits = numTuples;
   }
 
   @Override
@@ -112,8 +110,7 @@ public final class BooleanColumn implements Column<Boolean> {
     /* Note that we do *not* build the inner class. We pass its builder instead. */
     final BooleanColumnMessage.Builder inner =
         BooleanColumnMessage.newBuilder().setData(ByteString.copyFrom(data.toByteArray()));
-    return ColumnMessage.newBuilder().setType(ColumnMessageType.BOOLEAN).setNumTuples(size()).setBooleanColumn(inner)
-        .build();
+    return ColumnMessage.newBuilder().setType(ColumnMessageType.BOOLEAN).setBooleanColumn(inner).build();
   }
 
   @Override

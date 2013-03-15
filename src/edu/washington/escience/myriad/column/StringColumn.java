@@ -15,9 +15,6 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType;
 import edu.washington.escience.myriad.proto.DataProto.StringColumnMessage;
-// import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage;
-// import edu.washington.escience.myriad.proto.TransportProto.ColumnMessage.ColumnMessageType;
-// import edu.washington.escience.myriad.proto.TransportProto.StringColumnMessage;
 
 /**
  * A column of String values.
@@ -59,8 +56,9 @@ public final class StringColumn implements Column<String> {
    * Constructs a StringColumn by deserializing the given ColumnMessage.
    * 
    * @param message a ColumnMessage containing the contents of this column.
+   * @param numTuples num tuples in the column message
    */
-  public StringColumn(final ColumnMessage message) {
+  public StringColumn(final ColumnMessage message, final int numTuples) {
     if (message.getType().ordinal() != ColumnMessageType.STRING_VALUE) {
       throw new IllegalArgumentException("Trying to construct StringColumn from non-STRING ColumnMessage");
     }
@@ -73,7 +71,7 @@ public final class StringColumn implements Column<String> {
     endIndicesBytes = stringColumn.getEndIndices().asReadOnlyByteBuffer();
     endIndices = endIndicesBytes.asIntBuffer();
     data = new StringBuilder(stringColumn.getData().toStringUtf8());
-    numStrings = message.getNumTuples();
+    numStrings = numTuples;
   }
 
   /**
@@ -154,8 +152,7 @@ public final class StringColumn implements Column<String> {
         StringColumnMessage.newBuilder().setData(ByteString.copyFromUtf8(data.toString()));
     inner.setStartIndices(ByteString.copyFrom(startIndicesBytes));
     inner.setEndIndices(ByteString.copyFrom(endIndicesBytes));
-    return ColumnMessage.newBuilder().setType(ColumnMessageType.STRING).setNumTuples(size()).setStringColumn(inner)
-        .build();
+    return ColumnMessage.newBuilder().setType(ColumnMessageType.STRING).setStringColumn(inner).build();
   }
 
   @Override
