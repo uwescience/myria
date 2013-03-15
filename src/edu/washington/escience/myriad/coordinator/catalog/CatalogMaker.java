@@ -2,6 +2,8 @@ package edu.washington.escience.myriad.coordinator.catalog;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -14,6 +16,7 @@ import org.apache.commons.io.FilenameUtils;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
+import edu.washington.escience.myriad.MyriaSystemConfigKeys;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.Type;
@@ -68,26 +71,51 @@ public final class CatalogMaker {
    * @throws IOException if the catalog file already exists.
    */
   public static void makeNNodesLocalParallelCatalog(final String directoryName, final int n) throws IOException {
-    final int baseMasterPort = 8001;
-    final int baseWorkerPort = 9001;
+    HashMap<String, String> mc = new HashMap<String, String>();
+    mc.put(MyriaSystemConfigKeys.IPC_SERVER_PORT, "8001");
+    HashMap<String, String> wc = new HashMap<String, String>();
+    wc.put(MyriaSystemConfigKeys.IPC_SERVER_PORT, "9001");
+    makeNNodesLocalParallelCatalog(directoryName, n, mc, wc);
+  }
+
+  /**
+   * Creates a Catalog for an N-node parallel system on the local machine and the corresponding WorkerCatalogs with
+   * worker configurations.
+   * 
+   * @param directoryName the directory where all the files should be stored.
+   * @param n the number of nodes.
+   * @param masterConfigurations the configurations for the master
+   * @param workerConfigurations the configurations for the worker
+   * @throws IOException if the catalog file already exists.
+   */
+  public static void makeNNodesLocalParallelCatalog(final String directoryName, final int n,
+      final Map<String, String> masterConfigurations, final Map<String, String> workerConfigurations)
+      throws IOException {
     final String[] args = new String[n + 3];
     args[0] = directoryName;
     args[1] = Integer.toString(n);
-    args[2] = "localhost:" + baseMasterPort;
+    args[2] = "localhost:" + masterConfigurations.get(MyriaSystemConfigKeys.IPC_SERVER_PORT);
+    final int baseWorkerPort = Integer.valueOf(workerConfigurations.get(MyriaSystemConfigKeys.IPC_SERVER_PORT));
     for (int i = 0; i < n; ++i) {
       args[i + 3] = "localhost:" + (baseWorkerPort + i);
     }
-    makeNNodesParallelCatalog(args);
+    makeNNodesParallelCatalog(args, masterConfigurations, workerConfigurations);
   }
 
   /**
    * Creates a Catalog for an N-node parallel system on the local machine and the corresponding WorkerCatalogs, with
    * node addresses and ports specified.
+   * <p>
+   * With worker configurations.
+   * <p>
    * 
    * @param args the description and list of machines in this catalog.
    * @throws IOException if the catalog file already exists.
+   * @param masterConfigurations the configurations for the master
+   * @param workerConfigurations the configurations for the worker
    */
-  public static void makeNNodesParallelCatalog(final String[] args) throws IOException {
+  public static void makeNNodesParallelCatalog(final String[] args, final Map<String, String> masterConfigurations,
+      final Map<String, String> workerConfigurations) throws IOException {
     final int n = args.length - 3;
     String baseDirectoryName = args[0];
     final String description = numberToEnglish(n) + "NodeParallel";
@@ -113,6 +141,30 @@ public final class CatalogMaker {
       /* A simple test relation. */
       c.addRelationMetadata(RelationKey.of("test", "test", "testRelation"), new Schema(ImmutableList.of(Type.LONG_TYPE,
           Type.LONG_TYPE), ImmutableList.of("x", "y")));
+
+      String val = masterConfigurations.get(MyriaSystemConfigKeys.FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES);
+      val = val == null ? 5 * 1024 * 1024 + "" : val;
+      c.setConfigurationValue(MyriaSystemConfigKeys.FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES, val);
+
+      val = masterConfigurations.get(MyriaSystemConfigKeys.FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES);
+      val = val == null ? 512 * 1024 + "" : val;
+      c.setConfigurationValue(MyriaSystemConfigKeys.FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES, val);
+
+      val = masterConfigurations.get(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY);
+      val = val == null ? 100 + "" : val;
+      c.setConfigurationValue(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY, val);
+
+      val = masterConfigurations.get(MyriaSystemConfigKeys.TCP_CONNECTION_TIMEOUT_MILLIS);
+      val = val == null ? 3000 + "" : val;
+      c.setConfigurationValue(MyriaSystemConfigKeys.TCP_CONNECTION_TIMEOUT_MILLIS, val);
+
+      val = masterConfigurations.get(MyriaSystemConfigKeys.TCP_RECEIVE_BUFFER_SIZE_BYTES);
+      val = val == null ? 2 * 1024 * 1024 + "" : val;
+      c.setConfigurationValue(MyriaSystemConfigKeys.TCP_RECEIVE_BUFFER_SIZE_BYTES, val);
+
+      val = masterConfigurations.get(MyriaSystemConfigKeys.TCP_SEND_BUFFER_SIZE_BYTES);
+      val = val == null ? 2 * 1024 * 1024 + "" : val;
+      c.setConfigurationValue(MyriaSystemConfigKeys.TCP_SEND_BUFFER_SIZE_BYTES, val);
 
       /* Close the master catalog. */
       c.close();
@@ -158,9 +210,32 @@ public final class CatalogMaker {
         }
 
         /* Set up the other three configuration variables it uses. */
-        wc.setConfigurationValue("worker.identifier", "" + workerId);
-        wc.setConfigurationValue("worker.data.type", "sqlite");
-        wc.setConfigurationValue("worker.data.sqlite.db", sqliteDbName);
+        wc.setConfigurationValue(MyriaSystemConfigKeys.WORKER_IDENTIFIER, "" + workerId);
+        wc.setConfigurationValue(MyriaSystemConfigKeys.WORKER_STORAGE_SYSTEM_TYPE, "sqlite");
+        wc.setConfigurationValue(MyriaSystemConfigKeys.WORKER_DATA_SQLITE_DB, sqliteDbName);
+        String val = workerConfigurations.get(MyriaSystemConfigKeys.FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES);
+        val = val == null ? 5 * 1024 * 1024 + "" : val;
+        wc.setConfigurationValue(MyriaSystemConfigKeys.FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES, val);
+
+        val = workerConfigurations.get(MyriaSystemConfigKeys.FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES);
+        val = val == null ? 512 * 1024 + "" : val;
+        wc.setConfigurationValue(MyriaSystemConfigKeys.FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES, val);
+
+        val = workerConfigurations.get(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY);
+        val = val == null ? 100 + "" : val;
+        wc.setConfigurationValue(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY, val);
+
+        val = workerConfigurations.get(MyriaSystemConfigKeys.TCP_CONNECTION_TIMEOUT_MILLIS);
+        val = val == null ? 3000 + "" : val;
+        wc.setConfigurationValue(MyriaSystemConfigKeys.TCP_CONNECTION_TIMEOUT_MILLIS, val);
+
+        val = workerConfigurations.get(MyriaSystemConfigKeys.TCP_RECEIVE_BUFFER_SIZE_BYTES);
+        val = val == null ? 2 * 1024 * 1024 + "" : val;
+        wc.setConfigurationValue(MyriaSystemConfigKeys.TCP_RECEIVE_BUFFER_SIZE_BYTES, val);
+
+        val = workerConfigurations.get(MyriaSystemConfigKeys.TCP_SEND_BUFFER_SIZE_BYTES);
+        val = val == null ? 2 * 1024 * 1024 + "" : val;
+        wc.setConfigurationValue(MyriaSystemConfigKeys.TCP_SEND_BUFFER_SIZE_BYTES, val);
 
       } catch (final CatalogException e) {
         throw new RuntimeException(e);
@@ -168,6 +243,19 @@ public final class CatalogMaker {
 
       wc.close();
     }
+  }
+
+  /**
+   * Creates a Catalog for an N-node parallel system on the local machine and the corresponding WorkerCatalogs, with
+   * node addresses and ports specified.
+   * 
+   * @param args the description and list of machines in this catalog.
+   * @throws IOException if the catalog file already exists.
+   */
+  public static void makeNNodesParallelCatalog(final String[] args) throws IOException {
+    Map<String, String> mc = Collections.emptyMap();
+    Map<String, String> wc = Collections.emptyMap();
+    makeNNodesParallelCatalog(args, mc, wc);
   }
 
   /**
