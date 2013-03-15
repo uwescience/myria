@@ -1,10 +1,11 @@
-package edu.washington.escience.myriad.parallel;
+package edu.washington.escience.myriad.parallel.ipc;
 
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
@@ -286,6 +287,8 @@ public class ChannelContext {
 
   private final Object channelRegisterLock = new Object();
 
+  private final AtomicReference<Object> attachment;
+
   /**
    * last IO timestamp. 0 or negative means the channel is connected by not used. If the channel is assigned to do some
    * IO task, then this field must be updated to the timestamp of assignment. Also, each IO operation on this channel
@@ -353,6 +356,24 @@ public class ChannelContext {
     registeredContext = null;
     registerConditionFutures = new HashSet<EqualityCloseFuture<Integer>>();
     delayedEvents = new ConcurrentLinkedQueue<DelayedTransitionEvent>();
+    attachment = new AtomicReference<Object>();
+  }
+
+  public Object getAttachment() {
+    return attachment.get();
+  }
+
+  /**
+   * Set attachment to the new value and return old value.
+   * 
+   * @return the old value.
+   * */
+  public Object setAttachment(final Object attachment) {
+    return this.attachment.getAndSet(attachment);
+  }
+
+  public boolean setAttachmentIfAbsent(final Object attachment) {
+    return this.attachment.compareAndSet(null, attachment);
   }
 
   public final void addConditionFuture(final EqualityCloseFuture<Integer> future) {
@@ -373,7 +394,9 @@ public class ChannelContext {
     while (it.hasNext()) {
       final DelayedTransitionEvent e = it.next();
       if (e.apply()) {
-        LOGGER.info(e.getClass().getCanonicalName() + " delayed applied");
+        if (LOGGER.isInfoEnabled()) {
+          LOGGER.info(e.getClass().getCanonicalName() + " delayed applied");
+        }
         it.remove();
       }
     }
@@ -417,7 +440,9 @@ public class ChannelContext {
           inRecycleBin = true;
           recycleBin.put(ownerChannel, ownerChannel);
         } else {
-          LOGGER.debug("consider recycle unsatisfied: " + ownerChannel);
+          if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("consider recycle unsatisfied: " + ownerChannel);
+          }
         }
       }
     } else {
@@ -502,7 +527,9 @@ public class ChannelContext {
           }
           trashBin.add(ownerChannel);
         } else {
-          LOGGER.debug("reach upperbound Fail: " + ownerChannel);
+          if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("reach upperbound Fail: " + ownerChannel);
+          }
         }
       }
     } else {
@@ -516,13 +543,15 @@ public class ChannelContext {
           }
           trashBin.add(ownerChannel);
         } else {
-          LOGGER.debug("reach upperbound Fail: " + ownerChannel);
+          if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("reach upperbound Fail: " + ownerChannel);
+          }
         }
       }
     }
   }
 
-  public final void readyToClose(final ChannelGroup trashBin) {
+  public final void readyToClose() {
     // no delay, must apply
     applyDelayedTransitionEvents();
     if (!isClientChannel) {
@@ -553,6 +582,10 @@ public class ChannelContext {
               }
             }
           });
+        } else {
+          if (!IPCUtils.isRemoteConnected(ownerChannel)) {// if the remote is already disconnected
+            ownerChannel.disconnect();
+          }
         }
       }
     }

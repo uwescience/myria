@@ -1,4 +1,4 @@
-package edu.washington.escience.myriad.parallel;
+package edu.washington.escience.myriad.parallel.ipc;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -52,7 +52,7 @@ public class IPCSessionManagerServer extends SimpleChannelHandler {
   }
 
   @Override
-  public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e) {
+  public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e) throws Exception {
     final Channel ch = e.getChannel();
     final TransportMessage tm = (TransportMessage) e.getMessage();
     final ChannelContext att = ChannelContext.getChannelContext(ch);
@@ -62,7 +62,7 @@ public class IPCSessionManagerServer extends SimpleChannelHandler {
       // connect request sent from other workers
       final Integer remoteID = IPCUtils.checkConnectTM(tm);
       if (remoteID != null) {
-        ch.write(connectionPool.getMyIDAsTM()).awaitUninterruptibly(); // await to finish channel registering
+        ch.write(connectionPool.getMyIDAsTM()).await(); // await to finish channel registering
         connectionPool.registerChannel(remoteID, ch);
       } else {
         LOGGER.log(Level.WARNING, "Channel: " + ch + ". Unknown session. Send me the remote id before data transfer.");

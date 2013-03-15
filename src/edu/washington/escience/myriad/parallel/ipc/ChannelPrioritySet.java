@@ -1,4 +1,4 @@
-package edu.washington.escience.myriad.parallel;
+package edu.washington.escience.myriad.parallel.ipc;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -11,6 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.group.ChannelGroup;
+
 
 /**
  * A set of channels. Ordered by a comparator.

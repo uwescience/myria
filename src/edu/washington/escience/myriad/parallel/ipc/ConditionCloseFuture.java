@@ -1,11 +1,14 @@
-package edu.washington.escience.myriad.parallel;
+package edu.washington.escience.myriad.parallel.ipc;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelException;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
 
@@ -14,7 +17,7 @@ import org.jboss.netty.channel.ChannelFutureListener;
  * It works as the following: <br>
  * 1. wait until the condition is set<br>
  * 2. if condition is true, pass all the operations directly to the wrapped close future.<br>
- * 3. else set the wrapper future as done and succeed.
+ * 3. else set the wrapper future as done and treat it as fail by default, or succeed if specified in constructor.
  * */
 public class ConditionCloseFuture implements ChannelFuture {
 
@@ -22,12 +25,20 @@ public class ConditionCloseFuture implements ChannelFuture {
   private volatile boolean conditionSetFlag = false;
   private volatile boolean condition = false;
   private final Object conditionSetLock = new Object();
+  private static final Logger logger = Logger.getLogger(ConditionCloseFuture.class.getName());
+  private final boolean asFail;
 
   private final ConcurrentHashMap<ChannelFutureListener, ChannelFutureListener> listeners =
       new ConcurrentHashMap<ChannelFutureListener, ChannelFutureListener>();
 
   public ConditionCloseFuture(final Channel channel) {
     this.channel = channel;
+    asFail = true;
+  }
+
+  public ConditionCloseFuture(final Channel channel, final boolean conditionUnSatisfiedAsSucceed) {
+    this.channel = channel;
+    asFail = !conditionUnSatisfiedAsSucceed;
   }
 
   @Override
@@ -45,7 +56,7 @@ public class ConditionCloseFuture implements ChannelFuture {
         try {
           listener.operationComplete(this);
         } catch (final Throwable t) {
-          t.printStackTrace();
+          logger.log(Level.WARNING, "Exception occured when executing ChannelGroupFutureListener", t);
         }
       }
     }
@@ -70,10 +81,10 @@ public class ConditionCloseFuture implements ChannelFuture {
 
   @Override
   public boolean await(final long timeout, final TimeUnit unit) throws InterruptedException {
-    final long nanosPerMilli = 1000 * 1000;
+
     final long nano = unit.toNanos(timeout);
-    final long milli = nano / nanosPerMilli;
-    final int nanoRemain = (int) (nano - milli * nanosPerMilli);
+    final long milli = nano / 1000000;
+    final int nanoRemain = (int) (nano - milli * 1000000);
     final long remain = nano - waitForConditionSet(milli, nanoRemain);
 
     if (conditionSetFlag) {
@@ -103,10 +114,9 @@ public class ConditionCloseFuture implements ChannelFuture {
 
   @Override
   public boolean awaitUninterruptibly(final long timeout, final TimeUnit unit) {
-    final long nanosPerMilli = 1000 * 1000;
     final long nano = unit.toNanos(timeout);
-    final long milli = nano / nanosPerMilli;
-    final int nanoRemain = (int) (nano - milli * nanosPerMilli);
+    final long milli = nano / 1000000;
+    final int nanoRemain = (int) (nano - milli * 1000000);
     final long remain = nano - waitForConditionSetUninterruptibly(milli, nanoRemain);
 
     if (conditionSetFlag) {
@@ -132,8 +142,10 @@ public class ConditionCloseFuture implements ChannelFuture {
     } else {
       if (condition) {
         return channel.getCloseFuture().getCause();
-      } else {
+      } else if (!asFail) {
         return null;
+      } else {
+        return new ConditionUnsatisfiedException();
       }
     }
   }
@@ -145,15 +157,7 @@ public class ConditionCloseFuture implements ChannelFuture {
 
   @Override
   public boolean isCancelled() {
-    if (!conditionSetFlag) {
-      return false;
-    } else {
-      if (condition) {
-        return channel.getCloseFuture().isCancelled();
-      } else {
-        return false;
-      }
-    }
+    return channel.getCloseFuture().isCancelled();
   }
 
   @Override
@@ -177,7 +181,7 @@ public class ConditionCloseFuture implements ChannelFuture {
       if (condition) {
         return channel.getCloseFuture().isSuccess();
       } else {
-        return true;
+        return !asFail;
       }
     }
   }
@@ -187,19 +191,26 @@ public class ConditionCloseFuture implements ChannelFuture {
     synchronized (conditionSetLock) {
       if (!conditionSetFlag) {
         listeners.remove(listener);
+        return;
       }
     }
-    if (conditionSetFlag) {
-      if (condition) {
-        channel.getCloseFuture().removeListener(listener);
-      }
+    if (condition) {
+      channel.getCloseFuture().removeListener(listener);
     }
   }
 
   @Override
   @Deprecated
-  public ChannelFuture rethrowIfFailed() throws Exception {
-    throw new UnsupportedOperationException();
+  public final ChannelFuture rethrowIfFailed() throws Exception {
+    if (!conditionSetFlag) {
+      return this;
+    }
+    if (condition) {
+      channel.getCloseFuture().rethrowIfFailed();
+    } else if (asFail) {
+      throw new ConditionUnsatisfiedException();
+    }
+    return this;
   }
 
   public void setCondition(final boolean conditionSatisfied) {
@@ -210,8 +221,15 @@ public class ConditionCloseFuture implements ChannelFuture {
         for (final ChannelFutureListener l : listeners.keySet()) {
           channel.getCloseFuture().addListener(l);
         }
-      } else {
         listeners.clear();
+      } else {
+        for (final ChannelFutureListener l : listeners.keySet()) {
+          try {
+            l.operationComplete(this);
+          } catch (final Throwable t) {
+            logger.log(Level.WARNING, "Exception occured when executing ChannelGroupFutureListener", t);
+          }
+        }
       }
       conditionSetLock.notifyAll();
     }
@@ -234,12 +252,24 @@ public class ConditionCloseFuture implements ChannelFuture {
 
   @Override
   public ChannelFuture sync() throws InterruptedException {
-    throw new UnsupportedOperationException();
+    await();
+    try {
+      rethrowIfFailed();
+    } catch (Exception e) {
+      throw new ChannelException(e);
+    }
+    return this;
   }
 
   @Override
   public ChannelFuture syncUninterruptibly() {
-    throw new UnsupportedOperationException();
+    this.awaitUninterruptibly();
+    try {
+      rethrowIfFailed();
+    } catch (Exception e) {
+      throw new ChannelException(e);
+    }
+    return this;
   }
 
   private long waitForConditionSet(final long timeoutMS, final int nanos) throws InterruptedException {

@@ -1,4 +1,4 @@
-package edu.washington.escience.myriad.parallel;
+package edu.washington.escience.myriad.parallel.ipc;
 
 import org.jboss.netty.channel.Channel;
 

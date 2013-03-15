@@ -1,4 +1,4 @@
-package edu.washington.escience.myriad.parallel;
+package edu.washington.escience.myriad.parallel.ipc;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
