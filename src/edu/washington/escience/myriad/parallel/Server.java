@@ -546,7 +546,9 @@ public final class Server {
 
     try {
       /* Start the workers */
-      Long queryId = startQuery("ingest " + relationKey, "ingest " + relationKey, workerPlans);
+      Long queryId =
+          startQuery("ingest " + relationKey.toString("sqlite"), "ingest " + relationKey.toString("sqlite"),
+              workerPlans);
 
       /* Do it! */
       scatter.open();
