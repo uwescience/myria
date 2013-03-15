@@ -14,11 +14,11 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 public final class EclipseClasspathReader {
-  public static final String usage = "java EclipseClasspathReader [eclipse CP file path]";
+  public static final String USAGE = "java EclipseClasspathReader [eclipse CP file path]";
 
   public static void main(final String[] args) throws IOException {
     if (args.length < 1) {
-      System.out.println(usage);
+      System.out.println(USAGE);
     }
 
     final String eclipseCPFilePath = args[0];

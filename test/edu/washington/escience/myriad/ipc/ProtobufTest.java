@@ -143,7 +143,7 @@ public class ProtobufTest {
     // Channel server = acceptor.bind(serverAddress);
     connectionPool.start();
 
-    final ExchangePairID epID = ExchangePairID.fromExisting(0l);
+    final ExchangePairID epID = ExchangePairID.fromExisting(0L);
     final List<TransportMessage> tbs = tbb.getAllAsTM(epID);
 
     final Thread[] threads = new Thread[numThreads];
@@ -257,7 +257,7 @@ public class ProtobufTest {
     // Channel server = acceptor.bind(serverAddress);
     connectionPool.start();
 
-    final ExchangePairID epID = ExchangePairID.fromExisting(0l);
+    final ExchangePairID epID = ExchangePairID.fromExisting(0L);
     final List<TransportMessage> tbs = tbb.getAllAsTM(epID);
 
     final Thread[] threads = new Thread[numThreads];
@@ -374,7 +374,7 @@ public class ProtobufTest {
     clientConnectionPool.start();
     serverConnectionPool.start();
 
-    final ExchangePairID epID = ExchangePairID.fromExisting(0l);
+    final ExchangePairID epID = ExchangePairID.fromExisting(0L);
     final List<TransportMessage> tbs = tbb.getAllAsTM(epID);
 
     final Thread[] threads = new Thread[numThreads];
@@ -505,7 +505,7 @@ public class ProtobufTest {
     // Channel server = acceptor.bind(serverAddress);
     connectionPool.start();
 
-    final ExchangePairID epID = ExchangePairID.fromExisting(0l);
+    final ExchangePairID epID = ExchangePairID.fromExisting(0L);
     final List<TransportMessage> tbs = tbb.getAllAsTM(epID);
 
     final Thread[] threads = new Thread[numThreads];
@@ -619,7 +619,7 @@ public class ProtobufTest {
     final IPCConnectionPool connectionPool = new IPCConnectionPool(0, computingUnits, messageQueue);
     connectionPool.start();
 
-    final ExchangePairID epID = ExchangePairID.fromExisting(0l);
+    final ExchangePairID epID = ExchangePairID.fromExisting(0L);
     final List<TransportMessage> tbs = tbb.getAllAsTM(epID);
 
     final AtomicInteger numSent = new AtomicInteger();
@@ -710,7 +710,7 @@ public class ProtobufTest {
     // ServerBootstrap acceptor = ParallelUtility.createMasterIPCServer(messageQueue, connectionPool);
     // Channel server = acceptor.bind(serverAddress);
 
-    final ExchangePairID epID = ExchangePairID.fromExisting(0l);
+    final ExchangePairID epID = ExchangePairID.fromExisting(0L);
     final List<TransportMessage> tbs = tbb.getAllAsTM(epID);
 
     final AtomicInteger numSent = new AtomicInteger();
@@ -803,7 +803,7 @@ public class ProtobufTest {
                                   // connectionPool);
     // Channel server = acceptor.bind(serverAddress);
 
-    final ExchangePairID epID = ExchangePairID.fromExisting(0l);
+    final ExchangePairID epID = ExchangePairID.fromExisting(0L);
     final List<TransportMessage> tbs = tbb.getAllAsTM(epID);
 
     final AtomicInteger numSent = new AtomicInteger();
@@ -903,7 +903,7 @@ public class ProtobufTest {
     // ServerBootstrap acceptor = ParallelUtility.createMasterIPCServer(messageQueue, connectionPool);
     // Channel server = acceptor.bind(serverAddress);
 
-    final ExchangePairID epID = ExchangePairID.fromExisting(0l);
+    final ExchangePairID epID = ExchangePairID.fromExisting(0L);
     final List<TransportMessage> tbs = tbb.getAllAsTM(epID);
 
     final AtomicInteger numSent = new AtomicInteger();

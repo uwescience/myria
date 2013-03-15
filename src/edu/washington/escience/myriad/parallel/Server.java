@@ -15,8 +15,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javax.ws.rs.WebApplicationException;
 
@@ -146,35 +144,10 @@ public final class Server {
   /** Time constant. */
   private static final int ONE_HR_IN_MILLIS = 60 * ONE_MIN_IN_MILLIS;
 
-  static final String usage = "Usage: Server catalogFile [-explain] [-f queryFile]";
+  /** The usage message for this server. */
+  static final String USAGE = "Usage: Server catalogFile [-explain] [-f queryFile]";
   /** The logger for this class. */
   private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(Server.class.getName());
-
-  public static void main(final String[] args) throws IOException {
-    Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
-    Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
-
-    if (args.length < 1) {
-      LOGGER.error(usage);
-      System.exit(-1);
-    }
-
-    final String catalogName = args[0];
-    final Server server;
-    try {
-      server = new Server(catalogName);
-    } catch (CatalogException e) {
-      throw new IOException(e);
-    }
-
-    LOGGER.debug("Workers are: ");
-    for (final Entry<Integer, SocketInfo> w : server.workers.entrySet()) {
-      LOGGER.debug(w.getKey() + ":  " + w.getValue().getHost() + ":" + w.getValue().getPort());
-    }
-
-    server.start();
-    LOGGER.debug("Server started.");
-  }
 
   private final ConcurrentHashMap<Integer, SocketInfo> workers;
   private final ConcurrentHashMap<Long, HashMap<Integer, Integer>> workersAssignedToQuery;
@@ -184,19 +157,17 @@ public final class Server {
   /**
    * The I/O buffer, all the ExchangeMessages sent to the server are buffered here.
    */
-  protected final ConcurrentHashMap<ExchangePairID, LinkedBlockingQueue<ExchangeData>> dataBuffer;
+  private final ConcurrentHashMap<ExchangePairID, LinkedBlockingQueue<ExchangeData>> dataBuffer;
 
-  protected final LinkedBlockingQueue<MessageWrapper> messageQueue;
+  private final LinkedBlockingQueue<MessageWrapper> messageQueue;
 
-  protected final ConcurrentHashMap<ExchangePairID, Schema> exchangeSchema;
+  private final ConcurrentHashMap<ExchangePairID, Schema> exchangeSchema;
 
   private final IPCConnectionPool connectionPool;
 
-  protected final MessageProcessor messageProcessor;
+  private final MessageProcessor messageProcessor;
 
-  protected boolean interactive = true;
-
-  public static final String SYSTEM_NAME = "Myriad";
+  public static final String SYSTEM_NAME = "Myria";
 
   /** The Catalog stores the metadata about the Myria instance. */
   private final Catalog catalog;
@@ -277,12 +248,10 @@ public final class Server {
 
     LinkedBlockingQueue<ExchangeData> q = null;
     q = dataBuffer.get(data.getOperatorID());
-    if (data instanceof ExchangeData) {
-      if (q != null) {
-        q.offer(data);
-      } else {
-        LOGGER.warn("weird: got ExchangeData (" + data + ") on null q");
-      }
+    if (q != null) {
+      q.offer(data);
+    } else {
+      LOGGER.warn("weird: got ExchangeData (" + data + ") on null q");
     }
   }
 
@@ -368,16 +337,15 @@ public final class Server {
 
     String names = "";
     for (int i = 0; i < schema.numColumns(); i++) {
-      names += schema.getColumnName(i) + "\t";
+      names += schema.getColumnName(i) + '\t';
     }
 
     if (LOGGER.isDebugEnabled()) {
       final StringBuilder sb = new StringBuilder();
       sb.append(names).append('\n');
       for (int i = 0; i < names.length() + schema.numColumns() * 4; i++) {
-        sb.append("-");
+        sb.append('-');
       }
-      sb.append("");
       LOGGER.debug(sb.toString());
     }
 
@@ -522,7 +490,7 @@ public final class Server {
    * @throws DbException if there are any error when running server plan
    */
   public Long startQuery(final String rawQuery, final String logicalRa, final Map<Integer, Operator[]> plans,
-      String expectedResultSize) throws CatalogException, IOException, DbException {
+      final String expectedResultSize) throws CatalogException, IOException, DbException {
     final Long queryId = catalog.newQuery(rawQuery, logicalRa);
     Operator[] serverPlan = null;
     if (plans.containsKey(0)) {

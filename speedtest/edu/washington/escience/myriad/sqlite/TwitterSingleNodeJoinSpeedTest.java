@@ -53,12 +53,6 @@ public class TwitterSingleNodeJoinSpeedTest {
     final SQLiteQueryScan scan1 = new SQLiteQueryScan(DATASET_PATH, "select * from twitter_subset", tableSchema);
     final SQLiteQueryScan scan2 = new SQLiteQueryScan(DATASET_PATH, "select * from twitter_subset", tableSchema);
 
-    /* The Schema for the join. */
-    /* The Schema for the join. */
-    final ImmutableList<Type> joinTypes =
-        ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE);
-    final ImmutableList<String> joinNames = ImmutableList.of("follower", "followee", "follower", "followee");
-    final Schema joinSchema = new Schema(joinTypes, joinNames);
     // Join on SC1.followee=SC2.follower
     final LocalJoin localJoin =
         new LocalJoin(scan1, scan2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });

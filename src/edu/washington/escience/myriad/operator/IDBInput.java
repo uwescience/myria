@@ -10,8 +10,6 @@ import java.util.List;
 import java.util.Objects;
 
 import org.jboss.netty.channel.Channel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
 
@@ -41,7 +39,7 @@ public class IDBInput extends Producer {
   private transient HashMap<Integer, List<Integer>> uniqueTupleIndices;
   private transient TupleBatchBuffer uniqueTuples = null;
 
-  private static final Logger LOGGER = LoggerFactory.getLogger("edu.washington.escience.myriad");
+  // private static final Logger LOGGER = LoggerFactory.getLogger("edu.washington.escience.myriad");
 
   public IDBInput(final Schema outputSchema, final int selfWorkerID, final int selfIDBID,
       final ExchangePairID operatorID, final int controllerWorkerID, final Operator child1, final Operator child2,
@@ -161,7 +159,7 @@ public class IDBInput extends Producer {
           buffer.put(0, selfIDBID);
           buffer.put(1, selfWorkerID);
           buffer.put(2, tuplesSentSinceLastEOI);
-          final ExchangePairID operatorID = operatorIDs[0];
+          final ExchangePairID operatorID = getOperatorIDs()[0];
           channel.write(buffer.popAnyAsTM(operatorID));
           connectionPool.releaseLongTermConnection(channel);
           tuplesSentSinceLastEOI = 0;

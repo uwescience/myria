@@ -40,27 +40,27 @@ public final class LocalMultiwayProducer extends Producer {
           while ((tup = child.next()) != null) {
             tup.compactInto(buffer);
 
-            while ((dms = buffer.popFilledAsTM(operatorIDs)) != null) {
+            while ((dms = buffer.popFilledAsTM(getOperatorIDs())) != null) {
               for (TransportMessage dm : dms) {
                 channel.write(dm);
               }
             }
           }
 
-          while ((dms = buffer.popAnyAsTM(operatorIDs)) != null) {
+          while ((dms = buffer.popAnyAsTM(getOperatorIDs())) != null) {
             for (TransportMessage dm : dms) {
               channel.write(dm);
             }
           }
           if (child.eoi()) {
-            for (ExchangePairID operatorID : operatorIDs) {
+            for (ExchangePairID operatorID : getOperatorIDs()) {
               channel.write(IPCUtils.eoiTM(operatorID));
             }
             child.setEOI(false);
           }
         }
 
-        for (final ExchangePairID operatorID : operatorIDs) {
+        for (final ExchangePairID operatorID : getOperatorIDs()) {
           channel.write(IPCUtils.eosTM(operatorID));
         }
 

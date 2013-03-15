@@ -247,16 +247,19 @@ public final class Schema implements Serializable {
    * Compares the specified object with this Schema for equality. Two Schemas are considered equal if they have the same
    * size, column types, and column names.
    * 
-   * @param schema the Schema to be compared with.
+   * @param o the Object to be compared with.
    * @return true if schema is equal to this Schema.
    */
   @Override
   public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
     if (!(o instanceof Schema)) {
       return false;
     }
     final Schema other = (Schema) o;
-    return columnTypes.equals(other.columnTypes) && columnNames.equals(other.columnNames);
+    return (this == o) || columnTypes.equals(other.columnTypes) && columnNames.equals(other.columnNames);
   }
 
   /**
@@ -341,7 +344,7 @@ public final class Schema implements Serializable {
       if (i > 0) {
         sb.append(", ");
       }
-      sb.append(columnNames.get(i)).append(" (").append(columnTypes.get(i)).append(")");
+      sb.append(columnNames.get(i)).append(" (").append(columnTypes.get(i)).append(')');
     }
     return sb.toString();
   }

@@ -86,9 +86,9 @@ dependencies {
   speedtestRuntime configurations.testRuntime
 }
 
-/* Tell all tasks to add sqlite library to their classpath when running. */
+/* Tell Java to emit all compiler warnings. */
 tasks.withType(Compile) {
-  options.compilerArgs << "-Xlint:deprecation"
+  options.compilerArgs << "-Xlint"
 }
 
 /* Tell all tasks to add sqlite library to their classpath when running. */

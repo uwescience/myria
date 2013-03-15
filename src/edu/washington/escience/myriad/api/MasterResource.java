@@ -11,13 +11,13 @@ import javax.ws.rs.Path;
 @Path("/server")
 public final class MasterResource {
   /**
-   * @return the list of identifiers of workers that are currently alive.
+   * Shutdown the server.
    */
   @GET
   @Path("/shutdown")
   public void shutdown() {
     MasterApiServer.getMyriaServer().shutdown();
-    new Thread() {
+    Thread shutdownThread = new Thread() {
       @Override
       public void run() {
         try {
@@ -26,6 +26,8 @@ public final class MasterResource {
           e.printStackTrace();
         }
       }
-    }.start();
+    };
+    shutdownThread.setName("Shutdown thread");
+    shutdownThread.start();
   }
 }

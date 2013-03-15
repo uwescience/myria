@@ -28,9 +28,9 @@ public final class ThreadUtils {
     final Set<Thread> threadSet = Thread.getAllStackTraces().keySet();
     StringBuilder sb = new StringBuilder();
     sb.append(tag + ":" + threadSet.size() + " threads currently active.\n");
-    sb.append("\t");
+    sb.append('\t');
     for (final Thread t : threadSet) {
-      sb.append(t.getId() + "[" + t.getName() + "], ");
+      sb.append(t.getId() + '[' + t.getName() + "], ");
     }
     sb.append('\n');
     LOGGER.warn(sb.toString());

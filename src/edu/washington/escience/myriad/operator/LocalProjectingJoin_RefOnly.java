@@ -50,6 +50,9 @@ public final class LocalProjectingJoin_RefOnly extends Operator implements Exter
 
     @Override
     public boolean equals(final Object o) {
+      if (this == o) {
+        return true;
+      }
       if (!(o instanceof IndexedTuple)) {
         return false;
       }

@@ -43,7 +43,7 @@ public final class ExchangeData {
   }
 
   /**
-   * Get the ParallelOperatorID, to which this message is targeted
+   * Get the ParallelOperatorID, to which this message is targeted.
    */
   public ExchangePairID getOperatorID() {
     return operatorID;
