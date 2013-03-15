@@ -3,6 +3,8 @@ package edu.washington.escience.myriad.operator;
 // import edu.washington.escience.Schema;
 import java.util.Iterator;
 
+import com.google.common.collect.ImmutableMap;
+
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -10,7 +12,8 @@ import edu.washington.escience.myriad.accessmethod.JdbcAccessMethod;
 
 public class JdbcSQLProcessor extends Operator {
 
-  private Operator child;
+  private Operator[] children;
+  private boolean allChildrenEOS = false;
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -24,31 +27,71 @@ public class JdbcSQLProcessor extends Operator {
   private final String password;
 
   public JdbcSQLProcessor(final String driverClass, final String connectionString, final String baseSQL,
-      final Schema schema, final Operator child, final String username, final String password) {
+      final Schema schema, final Operator[] children, final String username, final String password) {
     this.driverClass = driverClass;
     this.connectionString = connectionString;
     this.baseSQL = baseSQL;
     this.username = username;
     this.password = password;
     this.schema = schema;
-    this.child = child;
+    this.children = children;
   }
 
   @Override
   public Operator[] getChildren() {
-    return new Operator[] { child };
+    return children;
   }
 
-  private boolean checked = false;
+  private void waitChildren() throws DbException, InterruptedException {
+    if (allChildrenEOS) {
+      return;
+    }
+    for (final Operator child : children) {
+      while (!child.eos()) {
+        child.next();
+      }
+    }
+    allChildrenEOS = true;
+  }
+
+  private void waitChildrenReady() throws DbException {
+    for (final Operator child : children) {
+      TupleBatch tb = null;
+      while (!child.eos() && (tb = child.nextReady()) != null) {
+      }
+    }
+    boolean tmpAllChildrenEOS = true;
+    for (Operator child : children) {
+      if (!child.eos()) {
+        tmpAllChildrenEOS = false;
+        break;
+      }
+    }
+    allChildrenEOS = tmpAllChildrenEOS;
+
+  }
 
   @Override
-  protected TupleBatch fetchNext() throws DbException {
-    if (!checked) {
-      while (child.next() != null) {
-        assert true; /* Do nothing. */
+  protected TupleBatch fetchNextReady() throws DbException {
+    try {
+      if (allChildrenEOS) {
+        return fetchNext();
+      } else {
+        waitChildrenReady();
+        if (allChildrenEOS) {
+          return fetchNext();
+        }
       }
-      checked = true;
+      return null;
+    } catch (InterruptedException ee) {
+      Thread.currentThread().interrupt();
+      return null;
     }
+  }
+
+  @Override
+  protected TupleBatch fetchNext() throws DbException, InterruptedException {
+    waitChildren();
     if (tuples == null) {
       tuples = JdbcAccessMethod.tupleBatchIteratorFromQuery(driverClass, connectionString, baseSQL, username, password);
     }
@@ -65,17 +108,12 @@ public class JdbcSQLProcessor extends Operator {
   }
 
   @Override
-  public void init() throws DbException {
+  public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
   }
 
   @Override
   public void setChildren(final Operator[] children) {
-    child = children[0];
-  }
-
-  @Override
-  public TupleBatch fetchNextReady() throws DbException {
-    return fetchNext();
+    this.children = children;
   }
 
   @Override

@@ -1,5 +1,8 @@
 package edu.washington.escience.myriad.operator;
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
+
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -9,41 +12,35 @@ public final class Merge extends Operator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
-  private Operator child1, child2;
-  private Schema outputSchema;
+  private final Operator[] children;
+  private final Schema outputSchema;
 
-  public Merge() {
+  public Merge(final Schema schema, final Operator child1, final Operator child2) {
+    Preconditions.checkArgument(child1.getSchema().equals(child2.getSchema()));
+    Preconditions.checkArgument(child1.getSchema().equals(schema));
+    outputSchema = schema;
+    children = new Operator[2];
+    children[0] = child1;
+    children[1] = child2;
   }
 
-  public Merge(final Schema outputSchema, final Operator child1, final Operator child2) {
-    this.outputSchema = outputSchema;
-    this.child1 = child1;
-    this.child2 = child2;
+  public Merge(final Operator child1, final Operator child2) {
+    Preconditions.checkArgument(child1.getSchema().equals(child2.getSchema()));
+    outputSchema = child1.getSchema();
+    children = new Operator[2];
+    children[0] = child1;
+    children[1] = child2;
   }
 
-  // for Externalizable
-  /*
-   * @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException { child1 = (Operator)
-   * in.readObject(); child2 = (Operator) in.readObject(); outputSchema = (Schema) in.readObject(); name = (String)
-   * in.readObject(); }
-   * 
-   * // for Externalizable
-   * 
-   * @Override public void writeExternal(ObjectOutput out) throws IOException { out.writeObject(child1);
-   * out.writeObject(child2); out.writeObject(outputSchema); out.writeObject(name); }
-   */
   @Override
   protected void cleanup() throws DbException {
   }
 
   @Override
-  protected TupleBatch fetchNext() throws DbException {
+  protected TupleBatch fetchNext() throws DbException, InterruptedException {
     TupleBatch tb;
-    if (child1 != null && (tb = child1.next()) != null) {
-      return tb;
-    }
-    if (child2 != null) {
-      if ((tb = child2.next()) != null) {
+    for (Operator child : children) {
+      if ((tb = child.next()) != null) {
         return tb;
       }
     }
@@ -51,13 +48,25 @@ public final class Merge extends Operator {
   }
 
   @Override
-  public TupleBatch fetchNextReady() throws DbException {
+  protected TupleBatch fetchNextReady() throws DbException {
+    // boolean allChildrenEOS = true;
+
+    for (Operator child : children) {
+      if (child.eos()) {
+        continue;
+      }
+      TupleBatch tb = null;
+      if ((tb = child.nextReady()) != null) {
+        return tb;
+      }
+    }
+
     return null;
   }
 
   @Override
   public Operator[] getChildren() {
-    return new Operator[] { child1, child2 };
+    return children;
   }
 
   @Override
@@ -66,13 +75,12 @@ public final class Merge extends Operator {
   }
 
   @Override
-  public void init() throws DbException {
+  public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
   }
 
   @Override
   public void setChildren(final Operator[] children) {
-    child1 = children[0];
-    child2 = children[1];
+    this.children[0] = children[0];
+    this.children[1] = children[1];
   }
-
 }

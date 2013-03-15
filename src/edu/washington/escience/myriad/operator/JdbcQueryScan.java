@@ -2,6 +2,8 @@ package edu.washington.escience.myriad.operator;
 
 import java.util.Iterator;
 
+import com.google.common.collect.ImmutableMap;
+
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -9,7 +11,7 @@ import edu.washington.escience.myriad.accessmethod.JdbcAccessMethod;
 
 public class JdbcQueryScan extends LeafOperator {
 
-  private Iterator<TupleBatch> tuples;
+  private transient Iterator<TupleBatch> tuples;
   private final Schema schema;
   private final String driverClass;
   private final String connectionString;
@@ -36,11 +38,25 @@ public class JdbcQueryScan extends LeafOperator {
   }
 
   @Override
-  protected TupleBatch fetchNext() throws DbException {
+  protected TupleBatch fetchNext() throws DbException, InterruptedException {
     if (tuples.hasNext()) {
       final TupleBatch tb = tuples.next();
       return tb;
     } else {
+      return null;
+    }
+  }
+
+  @Override
+  protected TupleBatch fetchNextReady() throws DbException {
+    try {
+      TupleBatch tb = fetchNext();
+      if (tb == null) {
+        setEOS();
+      }
+      return tb;
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
       return null;
     }
   }
@@ -51,13 +67,8 @@ public class JdbcQueryScan extends LeafOperator {
   }
 
   @Override
-  public void init() throws DbException {
+  public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     tuples = JdbcAccessMethod.tupleBatchIteratorFromQuery(driverClass, connectionString, baseSQL, username, password);
-  }
-
-  @Override
-  public TupleBatch fetchNextReady() throws DbException {
-    return fetchNext();
   }
 
 }

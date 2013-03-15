@@ -4,6 +4,8 @@ import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.google.common.collect.ImmutableMap;
+
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -47,7 +49,7 @@ public final class BlockingJDBCDataReceiver extends Operator {
   }
 
   @Override
-  protected TupleBatch fetchNext() throws DbException {
+  protected TupleBatch fetchNext() throws DbException, InterruptedException {
     TupleBatch tb = null;
     while (!child.eos()) {
       while ((tb = child.next()) != null) {
@@ -55,16 +57,20 @@ public final class BlockingJDBCDataReceiver extends Operator {
             + StringUtils.join(fieldNames, ',') + " ) values ( " + StringUtils.join(placeHolders, ',') + " )", tb,
             username, password);
       }
-      if (child.eoi()) {
-        child.setEOI(false);
-      }
     }
     return null;
   }
 
   @Override
-  public TupleBatch fetchNextReady() throws DbException {
-    return fetchNext();
+  protected TupleBatch fetchNextReady() throws DbException {
+    TupleBatch tb = null;
+    while (!child.eos() && (tb = child.nextReady()) != null) {
+      // tb = child.next();
+      JdbcAccessMethod.tupleBatchInsert(driverClass, connectionString, "insert into " + tableName + " ( "
+          + StringUtils.join(fieldNames, ',') + " ) values ( " + StringUtils.join(placeHolders, ',') + " )", tb,
+          username, password);
+    }
+    return null;
   }
 
   @Override
@@ -78,7 +84,7 @@ public final class BlockingJDBCDataReceiver extends Operator {
   }
 
   @Override
-  public void init() throws DbException {
+  public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
   }
 
   @Override

@@ -9,6 +9,8 @@ import java.io.InputStreamReader;
 import java.io.StreamTokenizer;
 import java.util.Objects;
 
+import com.google.common.collect.ImmutableMap;
+
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -26,11 +28,11 @@ public final class FileScan extends LeafOperator {
   /** The Schema of the relation stored in this file. */
   private final Schema schema;
   /** StringTokenizer used to parse the file. */
-  private StreamTokenizer tokenizer = null;
+  private transient StreamTokenizer tokenizer = null;
   /** Whether a comma is a delimiter in this file. */
   private final boolean commaIsDelimiter;
   /** Holds the tuples that are ready for release. */
-  private final TupleBatchBuffer buffer;
+  private transient TupleBatchBuffer buffer;
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -63,7 +65,6 @@ public final class FileScan extends LeafOperator {
     inputStream = new FileInputStream(filename);
     this.schema = schema;
     this.commaIsDelimiter = commaIsDelimiter;
-    buffer = new TupleBatchBuffer(schema);
   }
 
   /**
@@ -78,7 +79,6 @@ public final class FileScan extends LeafOperator {
     this.inputStream = inputStream;
     this.schema = schema;
     this.commaIsDelimiter = commaIsDelimiter;
-    buffer = new TupleBatchBuffer(schema);
   }
 
   /**
@@ -206,7 +206,7 @@ public final class FileScan extends LeafOperator {
   }
 
   @Override
-  public void init() throws DbException {
+  protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     tokenizer = new StreamTokenizer(new BufferedReader(new InputStreamReader(inputStream)));
     tokenizer.eolIsSignificant(true);
     if (commaIsDelimiter) {
@@ -217,5 +217,7 @@ public final class FileScan extends LeafOperator {
     } catch (final IOException e) {
       throw new DbException(e);
     }
+    buffer = new TupleBatchBuffer(schema);
   }
+
 }

@@ -2,6 +2,8 @@ package edu.washington.escience.myriad.operator;
 
 import java.util.NoSuchElementException;
 
+import com.google.common.collect.ImmutableMap;
+
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Predicate;
 import edu.washington.escience.myriad.Schema;
@@ -44,7 +46,7 @@ public final class Filter extends Operator {
    * @see Predicate#filter
    */
   @Override
-  protected TupleBatch fetchNext() throws NoSuchElementException, DbException {
+  protected TupleBatch fetchNext() throws DbException, InterruptedException {
     TupleBatch tmp = null;
 
     while ((tmp = child.next()) != null) {
@@ -59,15 +61,18 @@ public final class Filter extends Operator {
   }
 
   @Override
-  public TupleBatch fetchNextReady() throws DbException {
+  protected TupleBatch fetchNextReady() throws DbException {
     TupleBatch tmp = null;
-    if (child.nextReady()) {
-      tmp = child.next();
+    while (!child.eos() && (tmp = child.nextReady()) != null) {
+      // tmp = child.next();
       tmp = tmp.filter(fieldIdx, op, operand);
       if (tmp.numTuples() > 0) {
         return tmp;
       }
     }
+    // if (child.eos()) {
+    // setEOS();
+    // }
     return null;
   }
 
@@ -76,18 +81,13 @@ public final class Filter extends Operator {
     return new Operator[] { child };
   }
 
-  // @Override
-  // public void rewind() throws DbException {
-  // child.rewind();
-  // }
-
   @Override
   public Schema getSchema() {
     return child.getSchema();
   }
 
   @Override
-  public void init() throws DbException, NoSuchElementException {
+  public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException, NoSuchElementException {
     // need no init
   }
 

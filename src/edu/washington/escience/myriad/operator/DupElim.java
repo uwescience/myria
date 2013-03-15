@@ -5,6 +5,8 @@ import java.util.BitSet;
 import java.util.HashMap;
 import java.util.List;
 
+import com.google.common.collect.ImmutableMap;
+
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -73,15 +75,15 @@ public final class DupElim extends Operator {
   private static final long serialVersionUID = 1L;
 
   private Operator child;
-  private final HashMap<Integer, List<IndexedTuple>> uniqueTuples;
+  private transient HashMap<Integer, List<IndexedTuple>> uniqueTuples;
 
   public DupElim(final Operator child) {
     this.child = child;
-    uniqueTuples = new HashMap<Integer, List<IndexedTuple>>();
   }
 
   @Override
   protected void cleanup() throws DbException {
+    uniqueTuples = null;
   }
 
   protected TupleBatch doDupElim(final TupleBatch tb) {
@@ -119,7 +121,7 @@ public final class DupElim extends Operator {
   }
 
   @Override
-  protected TupleBatch fetchNext() throws DbException {
+  protected TupleBatch fetchNext() throws DbException, InterruptedException {
     TupleBatch tb = null;
     while ((tb = child.next()) != null) {
       tb = doDupElim(tb);
@@ -131,15 +133,14 @@ public final class DupElim extends Operator {
   }
 
   @Override
-  public TupleBatch fetchNextReady() throws DbException {
+  protected TupleBatch fetchNextReady() throws DbException {
     TupleBatch tb = null;
-    while (!eos() && child.nextReady()) {
-      tb = child.next();
+    while (!child.eos() && (tb = child.nextReady()) != null) {
       tb = doDupElim(tb);
       if (tb.numTuples() > 0) {
         return tb;
       } else {
-        return null;
+        continue;
       }
     }
     return null;
@@ -156,7 +157,8 @@ public final class DupElim extends Operator {
   }
 
   @Override
-  public void init() throws DbException {
+  public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+    uniqueTuples = new HashMap<Integer, List<IndexedTuple>>();
   }
 
   @Override

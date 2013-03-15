@@ -1,5 +1,7 @@
 package edu.washington.escience.myriad.operator;
 
+import com.google.common.collect.ImmutableMap;
+
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
@@ -15,12 +17,11 @@ public final class BlockingSQLiteDataReceiver extends Operator {
   private static final long serialVersionUID = 1L;
 
   private Operator child;
-  String pathToSQLiteDb;
-  final RelationKey relationKey;
+  private String pathToSQLiteDb;
+  private final RelationKey relationKey;
 
-  public BlockingSQLiteDataReceiver(final String pathToSQLiteDb, final RelationKey relationKey, final Operator child) {
+  public BlockingSQLiteDataReceiver(final RelationKey relationKey, final Operator child) {
     this.child = child;
-    this.pathToSQLiteDb = pathToSQLiteDb;
     this.relationKey = relationKey;
   }
 
@@ -29,22 +30,24 @@ public final class BlockingSQLiteDataReceiver extends Operator {
   }
 
   @Override
-  protected TupleBatch fetchNext() throws DbException {
+  protected TupleBatch fetchNext() throws DbException, InterruptedException {
     TupleBatch tb = null;
     while (!child.eos()) {
       while ((tb = child.next()) != null) {
         SQLiteUtils.insertIntoSQLite(child.getSchema(), relationKey, pathToSQLiteDb, tb);
-      }
-      if (child.eoi()) {
-        child.setEOI(false);
       }
     }
     return null;
   }
 
   @Override
-  public TupleBatch fetchNextReady() throws DbException {
-    return fetchNext();
+  protected TupleBatch fetchNextReady() throws DbException {
+    TupleBatch tb = null;
+    while (!child.eos() && (tb = child.nextReady()) != null) {
+      // tb = child.next();
+      SQLiteUtils.insertIntoSQLite(child.getSchema(), relationKey, pathToSQLiteDb, tb);
+    }
+    return null;
   }
 
   @Override
@@ -58,15 +61,16 @@ public final class BlockingSQLiteDataReceiver extends Operator {
   }
 
   @Override
-  public void init() throws DbException {
+  public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+    final String sqliteDatabaseFilename = (String) execEnvVars.get("sqliteFile");
+    if (sqliteDatabaseFilename == null) {
+      throw new DbException("Unable to instantiate SQLiteQueryScan on non-sqlite worker");
+    }
+    pathToSQLiteDb = sqliteDatabaseFilename;
   }
 
   @Override
   public void setChildren(final Operator[] children) {
     child = children[0];
-  }
-
-  public void setPathToSQLiteDb(final String pathToSQLiteDb) {
-    this.pathToSQLiteDb = pathToSQLiteDb;
   }
 }

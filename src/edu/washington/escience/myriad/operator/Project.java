@@ -2,11 +2,11 @@ package edu.washington.escience.myriad.operator;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.NoSuchElementException;
 
 import org.apache.commons.lang3.ArrayUtils;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
@@ -53,7 +53,7 @@ public final class Project extends Operator {
    * @return The next tuple, or null if there are no more tuples
    */
   @Override
-  protected TupleBatch fetchNext() throws NoSuchElementException, DbException {
+  protected TupleBatch fetchNext() throws DbException, InterruptedException {
     final TupleBatch tmp = child.next();
     if (tmp != null) {
       return tmp.project(ArrayUtils.toPrimitive(outFieldIds));
@@ -62,9 +62,11 @@ public final class Project extends Operator {
   }
 
   @Override
-  public TupleBatch fetchNextReady() throws DbException {
-    if (child.nextReady()) {
-      return child.next().project(ArrayUtils.toPrimitive(outFieldIds));
+  protected TupleBatch fetchNextReady() throws DbException {
+
+    TupleBatch tb = null;
+    if ((tb = child.nextReady()) != null) {
+      return tb.project(ArrayUtils.toPrimitive(outFieldIds));
     }
     return null;
   }
@@ -80,7 +82,7 @@ public final class Project extends Operator {
   }
 
   @Override
-  public void init() throws DbException {
+  public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
   }
 
   @Override
