@@ -48,7 +48,8 @@ tasks.eclipseClasspath.dependsOn cleanEclipseClasspath
 /* Where we will fetch external JAR files from. */
 repositories {
   mavenCentral() /* The standard Java Maven repository. */
-  maven { url "http://maven.restlet.org" }
+  maven { url "http://maven.restlet.org" } /* Restlet */
+  maven { url "http://clojars.org/repo" } /* Clojars, for MonetDB */
 }
 
 /* List constants that we use in multiple places. */
@@ -73,6 +74,8 @@ dependencies {
 
   compile "org.slf4j:slf4j-api:${slf4jVersion}"
   runtime "org.slf4j:slf4j-log4j12:${slf4jVersion}"
+
+  runtime "monetdb:monetdb-jdbc:2.8"
   runtime "mysql:mysql-connector-java:5.1.22"
 
   testCompile "junit:junit:4.11"
