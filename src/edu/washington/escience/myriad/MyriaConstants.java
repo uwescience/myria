@@ -12,6 +12,8 @@ public final class MyriaConstants {
   }
 
   /** The identity of the master worker is current always zero. */
-  public static final Integer MASTER_ID = Integer.valueOf(0);
+  public static final int MASTER_ID = 0;
+
+  public static final String SYSTEM_NAME = "Myria";
 
 }
