@@ -426,6 +426,7 @@ public class SystemTestBase {
         }
       };
 
+      workerStdoutReader[wc].setName("WorkerStdoutReader-" + wc);
       workerStdoutReader[wc].start();
 
       ++workerCount;

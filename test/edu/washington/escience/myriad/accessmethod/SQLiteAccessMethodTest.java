@@ -68,6 +68,7 @@ public class SQLiteAccessMethodTest {
           }
         }
       };
+      threads[i].setName("SQLiteAccessMethodTest-" + i);
     }
 
     for (final Thread t : threads) {
@@ -134,6 +135,7 @@ public class SQLiteAccessMethodTest {
           }
         }
       };
+      threads[i].setName("SQLiteAccessMethodTest-" + i);
     }
 
     for (final Thread t : threads) {

@@ -166,6 +166,7 @@ public class ProtobufTest {
         }
       };
       threads[i] = tt;
+      tt.setName("protobufMultiThreadNoWaitTest-" + i);
       tt.setDaemon(false);
       tt.start();
     }
@@ -278,6 +279,7 @@ public class ProtobufTest {
         }
       };
       threads[i] = tt;
+      tt.setName("protobufMultiThreadSendMessageTest-" + i);
       tt.setDaemon(false);
       tt.start();
     }
@@ -406,6 +408,7 @@ public class ProtobufTest {
         }
       };
       threads[i] = tt;
+      tt.setName("protobufMultiThreadSeparatePoolTest-" + i);
       tt.setDaemon(false);
       tt.start();
     }
@@ -537,6 +540,7 @@ public class ProtobufTest {
         }
       };
       threads[i] = tt;
+      tt.setName("protobufMultiThreadTest-" + i);
       tt.setDaemon(false);
       tt.start();
     }

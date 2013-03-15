@@ -55,6 +55,12 @@ public final class Server {
     /** Whether the server has been stopped. */
     private volatile boolean stopped = false;
 
+    /** Constructor, set the thread name. */
+    public MessageProcessor() {
+      super();
+      setName("Server-MessageProcessor-" + getId());
+    }
+
     @Override
     public void run() {
 

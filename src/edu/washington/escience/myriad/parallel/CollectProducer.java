@@ -23,6 +23,12 @@ public final class CollectProducer extends Producer {
    * The working thread, which executes the child operator and send the tuples to the paired CollectConsumer operator.
    */
   class WorkingThread extends Thread {
+    /** Constructor, set the thread name. */
+    public WorkingThread() {
+      super();
+      setName("CollectProducer-WorkingThread-" + getId());
+    }
+
     @Override
     public void run() {
 
