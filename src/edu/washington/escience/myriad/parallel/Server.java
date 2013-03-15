@@ -90,7 +90,7 @@ public final class Server {
               receiveData(new ExchangeData(exchangePairID, senderID, operatorSchema, 1));
             } else {
               final List<ColumnMessage> columnMessages = data.getColumnsList();
-              final Column<?>[] columnArray = new Column[columnMessages.size()];
+              final Column<?>[] columnArray = new Column<?>[columnMessages.size()];
               int idx = 0;
               for (final ColumnMessage cm : columnMessages) {
                 columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm);
