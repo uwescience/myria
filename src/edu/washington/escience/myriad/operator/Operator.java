@@ -3,6 +3,8 @@ package edu.washington.escience.myriad.operator;
 import java.io.Serializable;
 import java.util.Arrays;
 
+import com.google.common.collect.ImmutableMap;
+
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -20,13 +22,13 @@ import edu.washington.escience.myriad.TupleBatch;
  */
 public abstract class Operator implements Serializable {
 
+  /**
+   * logger.
+   * */
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Operator.class.getName());
+
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
-
-  /**
-   * A single buffer for temporally holding a TupleBatch for pull.
-   * */
-  private TupleBatch outputBuffer = null;
 
   /**
    * A bit denoting whether the operator is open (initialized).
@@ -36,9 +38,9 @@ public abstract class Operator implements Serializable {
   /**
    * EOS. Initially set it as true;
    * */
-  private boolean eos = true;
+  private volatile boolean eos = true;
 
-  private boolean eoi = true;
+  private boolean eoi = false;
 
   /**
    * Closes this iterator.
@@ -46,11 +48,11 @@ public abstract class Operator implements Serializable {
    * @throws DbException if any errors occur
    */
   public final void close() throws DbException {
-    // Ensures that a future call to next() will fail
-    outputBuffer = null;
+    // Ensures that a future call to next() or nextReady() will fail
+    // outputBuffer = null;
     open = false;
-    setEOS(true);
-    setEOI(true);
+    eos = true;
+    eoi = false;
     cleanup();
     final Operator[] children = getChildren();
     if (children != null) {
@@ -79,6 +81,17 @@ public abstract class Operator implements Serializable {
   }
 
   /**
+   * rewind the operator. It will be used in fault-tolerance.
+   * 
+   * @param execEnvVars the environment variables of the execution unit.
+   * @throws DbException if any processing error occurs
+   */
+  public void rewind(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+    cleanup();
+    init(execEnvVars);
+  }
+
+  /**
    * Returns the next output TupleBatch, or null if EOS is meet.
    * 
    * This method is blocking.
@@ -87,9 +100,10 @@ public abstract class Operator implements Serializable {
    * @return the next output TupleBatch, or null if EOS
    * 
    * @throws DbException if any processing error occurs
+   * @throws InterruptedException if the execution thread is interrupted
    * 
    */
-  protected abstract TupleBatch fetchNext() throws DbException;
+  protected abstract TupleBatch fetchNext() throws DbException, InterruptedException;
 
   /**
    * @return return the children Operators of this operator. If there is only one child, return an array of only one
@@ -103,13 +117,13 @@ public abstract class Operator implements Serializable {
    * 
    * This method is blocking.
    * 
+   * @return next TupleBatch, or null if EOS or EOI
+   * 
    * @throws DbException if there's any problem in fetching the next TupleBatch.
-   * 
    * @throws IllegalStateException if the operator is not open yet
-   * 
-   * @return next TupleBatch
+   * @throws InterruptedException if the execution thread is interrupted
    * */
-  public final TupleBatch next() throws DbException {
+  public final TupleBatch next() throws DbException, InterruptedException {
     if (!open) {
       throw new IllegalStateException("Operator not yet open");
     }
@@ -118,16 +132,13 @@ public abstract class Operator implements Serializable {
     }
 
     TupleBatch result = null;
-    if (outputBuffer != null) {
-      result = outputBuffer;
-    } else {
-      result = fetchNext();
-    }
-    outputBuffer = null;
+
+    result = fetchNext();
 
     while (result != null && result.numTuples() <= 0) {
       result = fetchNext();
     }
+
     if (result == null) {
       // now we have two possibilities when result == null: EOS or EOI.
       checkEOSAndEOI();
@@ -135,33 +146,40 @@ public abstract class Operator implements Serializable {
     return result;
   }
 
-  public void checkEOSAndEOI() {
+  protected void checkEOSAndEOI() {
     // this is the implementation for ordinary operators, e.g. join, project.
     // some operators have their own logics, e.g. LeafOperator, IDBInput.
     // so they should override this function
     Operator[] children = getChildren();
-    boolean[] childrenEOI = getChildrenEOI();
-    boolean allEOS = true;
-    int count = 0;
-    for (int i = 0; i < children.length; ++i) {
-      if (children[i].eos()) {
-        childrenEOI[i] = true;
-      } else if (children[i].eoi()) {
-        childrenEOI[i] = true;
-        children[i].setEOI(false);
-        allEOS = false;
+    childrenEOI = getChildrenEOI();
+    boolean hasEOI = false;
+    if (children.length > 0) {
+      boolean allEOS = true;
+      int count = 0;
+      for (int i = 0; i < children.length; ++i) {
+        if (children[i].eos()) {
+          childrenEOI[i] = true;
+        } else {
+          allEOS = false;
+          if (children[i].eoi()) {
+            hasEOI = true;
+            childrenEOI[i] = true;
+            children[i].setEOI(false);
+          }
+        }
+        if (childrenEOI[i]) {
+          count++;
+        }
       }
-      if (childrenEOI[i]) {
-        count++;
-      }
-    }
-    if (count == children.length) {
+
       if (allEOS) {
-        setEOS(true);
-      } else {
-        setEOI(true);
+        setEOS();
       }
-      cleanChildrenEOI();
+
+      if (count == children.length && hasEOI) {// only emit EOI if it actually received at least one EOI
+        eoi = true;
+        Arrays.fill(childrenEOI, false);
+      }
     }
   }
 
@@ -170,36 +188,47 @@ public abstract class Operator implements Serializable {
    * 
    * This method is non-blocking.
    * 
+   * If the thread is interrupted during the processing of nextReady, the interrupt status will be kept.
+   * 
    * @throws DbException if any problem
    * 
    * @return if currently there's output for pulling.
    * 
    * */
-  public final boolean nextReady() throws DbException {
+  public final TupleBatch nextReady() throws DbException {
     if (!open) {
       throw new DbException("Operator not yet open");
     }
     if (eos()) {
-      throw new DbException("Operator already eos");
+      return null;
     }
 
-    if (outputBuffer == null) {
-      outputBuffer = fetchNextReady();
-      while (outputBuffer != null && outputBuffer.numTuples() <= 0) {
-        // XXX while or not while? For a single thread operator, while sounds more efficient generally
-        outputBuffer = fetchNextReady();
-      }
+    TupleBatch result = null;
+    result = fetchNextReady();
+    while (result != null && result.numTuples() <= 0) {
+      // XXX while or not while? For a single thread operator, while sounds more efficient generally
+      result = fetchNextReady();
     }
 
-    return outputBuffer == null;
+    if (result == null) {
+      checkEOSAndEOI();
+    } else {
+      numOutput++;
+    }
+
+    return result;
   }
+
+  private long numOutput;
 
   /**
    * open the operator and do initializations.
    * 
+   * @param execEnvVars the environment variables of the execution unit.
+   * 
    * @throws DbException if any error occurs
    * */
-  public final void open() throws DbException {
+  public final void open(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     // open the children first
     if (open) {
       // XXX Do some error handling to multi-open?
@@ -209,26 +238,15 @@ public abstract class Operator implements Serializable {
     if (children != null) {
       for (final Operator child : children) {
         if (child != null) {
-          child.open();
+          child.open(execEnvVars);
         }
       }
     }
-    setEOS(false);
-    setEOI(false);
+    eos = false;
+    eoi = false;
     // do my initialization
-    init();
+    init(execEnvVars);
     open = true;
-  }
-
-  /**
-   * Explicitly set EOS for this operator.
-   * 
-   * Only call this method if the operator is a leaf operator.
-   * 
-   * @param eos the new value of eos.
-   */
-  public final void setEOS(final boolean eos) {
-    this.eos = eos;
   }
 
   /**
@@ -250,10 +268,10 @@ public abstract class Operator implements Serializable {
   /**
    * Do the initialization of this operator.
    * 
+   * @param execEnvVars execution environment variables
    * @throws DbException if any error occurs
-   * 
    */
-  protected abstract void init() throws DbException;
+  protected abstract void init(final ImmutableMap<String, Object> execEnvVars) throws DbException;
 
   /**
    * Do the clean up, release resources.
@@ -274,24 +292,33 @@ public abstract class Operator implements Serializable {
   protected abstract TupleBatch fetchNextReady() throws DbException;
 
   /**
+   * Explicitly set EOS for this operator.
+   * 
+   */
+  protected final void setEOS() {
+    LOGGER.info("Operator EOS: " + this);
+    LOGGER.info("Operator " + this + " #output:" + numOutput);
+    eos = true;
+  }
+
+  /**
    * @return return the Schema of the output tuples of this operator.
    * 
    */
   public abstract Schema getSchema();
 
   /**
-   * Returns the next output TupleBatch, or null if EOS is meet.
-   * 
    * This method is blocking.
    * 
    * @param children the Operators which are to be set as the children(child) of this operator
    */
   // have we ever used this function?
+  // May be used soon after operator refactoring.
   public abstract void setChildren(Operator[] children);
 
-  public boolean[] childrenEOI = null;
+  private boolean[] childrenEOI = null;
 
-  public boolean[] getChildrenEOI() {
+  protected final boolean[] getChildrenEOI() {
     if (childrenEOI == null) {
       // getChildren() == null indicates a leaf operator, which has its own checkEOSAndEOI()
       childrenEOI = new boolean[getChildren().length];
@@ -299,7 +326,6 @@ public abstract class Operator implements Serializable {
     return childrenEOI;
   }
 
-  public void cleanChildrenEOI() {
-    Arrays.fill(childrenEOI, false);
-  }
+  protected static final Operator[] NO_CHILDREN = new Operator[] {};
+
 }
