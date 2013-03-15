@@ -11,18 +11,21 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 
+import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
+import edu.washington.escience.myriad.operator.SQLiteInsert;
+import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.parallel.Server;
 import edu.washington.escience.myriad.systemtest.SystemTestBase;
 import edu.washington.escience.myriad.util.SQLiteUtils;
 import edu.washington.escience.myriad.util.TestUtils;
 
-public class SQLiteAccessMethodTest {
+public class SQLiteAccessMethodTest extends SystemTestBase {
   @Test
   public void testConcurrentReadingATable() throws IOException, CatalogException, InterruptedException {
 
@@ -143,5 +146,42 @@ public class SQLiteAccessMethodTest {
       t.join();
     }
     dbFile.deleteOnExit();
+  }
+
+  @Test
+  public void concurrentlyReadAndWriteTest() throws DbException, CatalogException, IOException {
+
+    final int numTuples = 1000000;
+
+    final ImmutableList<Type> table1Types = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
+    final ImmutableList<String> table1ColumnNames = ImmutableList.of("follower", "followee");
+    final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
+
+    final long[] tbl1ID1 = TestUtils.randomLong(1, 1000, numTuples);
+    final long[] tbl1ID2 = TestUtils.randomLong(1, 1000, numTuples);
+    final TupleBatchBuffer tbl1 = new TupleBatchBuffer(tableSchema);
+    for (int i = 0; i < numTuples; i++) {
+      tbl1.put(0, tbl1ID1[i]);
+      tbl1.put(1, tbl1ID2[i]);
+    }
+
+    final RelationKey inputKey = RelationKey.of("test", "testWrite", "input");
+    final RelationKey outputKey = RelationKey.of("test", "testWrite", "output");
+    createTable(WORKER_ID[0], inputKey, "follower long, followee long");
+    TupleBatch tb = null;
+    while ((tb = tbl1.popAny()) != null) {
+      insert(WORKER_ID[0], inputKey, tableSchema, tb);
+    }
+    final SQLiteQueryScan scan =
+        new SQLiteQueryScan(getAbsoluteDBFile(WORKER_ID[0]).getAbsolutePath(), "select * from " + inputKey, tableSchema);
+    scan.setWAL(true);
+    final SQLiteInsert insert =
+        new SQLiteInsert(scan, outputKey, getAbsoluteDBFile(WORKER_ID[0]).getAbsolutePath(), null, true);
+    // insert.setWAL(true);
+
+    insert.open();
+    while (!insert.eos()) {
+      insert.next();
+    }
   }
 }

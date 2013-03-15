@@ -57,6 +57,7 @@ public final class SQLiteAccessMethod {
       /* Connect to the database */
       sqliteConnection = new SQLiteConnection(new File(pathToSQLiteDb));
       sqliteConnection.open(false);
+
       sqliteConnection.setBusyTimeout(SQLiteAccessMethod.DEFAULT_BUSY_TIMEOUT);
 
       /* BEGIN TRANSACTION */
@@ -64,16 +65,8 @@ public final class SQLiteAccessMethod {
 
       /* Set up and execute the query */
       statement = sqliteConnection.prepare(insertString);
-
       tupleBatch.getIntoSQLite(statement);
-      // for (int row = 0, totalTuples = tupleBatch.numTuples(); row < totalTuples; row++) {
-      // for (int column = 0; column < tupleBatch.numColumns(); ++column) {
-      // tupleBatch.getColumn(column).getIntoSQLite(row, statement, column + 1);
-      // }
-      // statement.step();
-      // statement.reset();
-      // }
-      /* COMMIT TRANSACTION */
+
       sqliteConnection.exec("COMMIT TRANSACTION");
 
     } catch (final SQLiteException e) {
@@ -99,10 +92,18 @@ public final class SQLiteAccessMethod {
    */
   public static Iterator<TupleBatch> tupleBatchIteratorFromQuery(final String pathToSQLiteDb, final String queryString,
       final Schema schema) {
+    return tupleBatchIteratorFromQuery(pathToSQLiteDb, queryString, schema, false);
+  }
+
+  public static Iterator<TupleBatch> tupleBatchIteratorFromQuery(final String pathToSQLiteDb, final String queryString,
+      final Schema schema, final boolean WAL) {
     try {
       /* Connect to the database */
       final SQLiteConnection sqliteConnection = new SQLiteConnection(new File(pathToSQLiteDb));
       sqliteConnection.open(false);
+      if (WAL) {
+        sqliteConnection.exec("PRAGMA journal_mode=WAL;");
+      }
 
       /* Set up and execute the query */
       final SQLiteStatement statement = sqliteConnection.prepare(queryString);

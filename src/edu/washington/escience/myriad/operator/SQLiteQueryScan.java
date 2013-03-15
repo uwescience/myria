@@ -16,6 +16,7 @@ public class SQLiteQueryScan extends LeafOperator {
   private final Schema schema;
   private final String baseSQL;
   private String databaseFilename;
+  private boolean WAL = false;
 
   /**
    * Construct a new SQLiteQueryScan object.
@@ -32,6 +33,10 @@ public class SQLiteQueryScan extends LeafOperator {
     this.databaseFilename = databaseFilename;
   }
 
+  public void setWAL(final boolean WAL) {
+    this.WAL = WAL;
+  }
+
   @Override
   public void cleanup() {
     tuples = null;
@@ -40,7 +45,7 @@ public class SQLiteQueryScan extends LeafOperator {
   @Override
   protected TupleBatch fetchNext() throws DbException {
     if (tuples == null) {
-      tuples = SQLiteAccessMethod.tupleBatchIteratorFromQuery(databaseFilename, baseSQL, schema);
+      tuples = SQLiteAccessMethod.tupleBatchIteratorFromQuery(databaseFilename, baseSQL, schema, WAL);
     }
     if (tuples.hasNext()) {
       return tuples.next();
