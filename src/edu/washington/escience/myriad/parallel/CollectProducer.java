@@ -29,7 +29,7 @@ public final class CollectProducer extends Producer {
       final IPCConnectionPool connectionPool = getConnectionPool();
       final Channel channel = connectionPool.reserveLongTermConnection(collectConsumerWorkerID);
 
-      final ExchangePairID operatorID = operatorIDs[0];
+      final ExchangePairID operatorID = getOperatorIDs()[0];
 
       try {
 

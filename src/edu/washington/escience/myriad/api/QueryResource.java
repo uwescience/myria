@@ -131,7 +131,7 @@ public final class QueryResource {
     return ret;
   }
 
-  private static Operator[] deserializeJsonLocalPlans(Object jsonLocalPlanList) throws Exception {
+  private static Operator[] deserializeJsonLocalPlans(final Object jsonLocalPlanList) throws Exception {
     /* Better be a List */
     if (!(jsonLocalPlanList instanceof List)) {
       throw new ClassCastException("argument is not a List of Operator definitions.");
@@ -145,7 +145,7 @@ public final class QueryResource {
     return ret;
   }
 
-  private static Operator deserializeJsonLocalPlan(Object jsonLocalPlan) throws Exception {
+  private static Operator deserializeJsonLocalPlan(final Object jsonLocalPlan) throws Exception {
     /* Better be a List */
     if (!(jsonLocalPlan instanceof List)) {
       throw new ClassCastException("argument is not a List of Operator definitions.");
@@ -479,12 +479,12 @@ public final class QueryResource {
    * 
    * @param map the JSON map.
    * @param field the field containing the list.
-   * @param optional whether the field is optional, or an IllegalArgumentException should be thrown.
    * @return the schema, or null if the field is missing and optional is true.
    */
   private static Schema deserializeSchema(final Map<String, Object> map, final String field) {
     Schema schema;
     LinkedHashMap<?, ?> tmp = (LinkedHashMap<?, ?>) map.get(field);
+    @SuppressWarnings("unchecked")
     List<String> tmpTypes = (List<String>) tmp.get("column_types");
     List<Type> types = new ArrayList<Type>();
 
@@ -510,6 +510,7 @@ public final class QueryResource {
           break;
       }
     }
+    @SuppressWarnings("unchecked")
     List<String> names = (List<String>) tmp.get("column_names");
     schema = Schema.of(types, names);
     // schema = objectMapper.readValue((String) (map.get(field)), Schema.class);
@@ -524,7 +525,6 @@ public final class QueryResource {
    * 
    * @param map the JSON map.
    * @param field the field containing the list.
-   * @param optional whether the field is optional, or an IllegalArgumentException should be thrown.
    * @return the schema, or null if the field is missing and optional is true.
    */
   private static PartitionFunction<?, ?> deserializePF(final Map<String, Object> map, final String field,

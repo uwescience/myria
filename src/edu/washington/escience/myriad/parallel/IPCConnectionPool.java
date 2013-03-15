@@ -150,27 +150,27 @@ public class IPCConnectionPool {
     /**
      * All the registered connected connections to a remote IPC entity.
      * */
-    final ChannelPrioritySet registeredChannels;
+    private final ChannelPrioritySet registeredChannels;
 
     /**
      * remote IPC entity ID.
      * */
-    final Integer id;
+    private final Integer id;
 
     /**
      * remote address.
      * */
-    final SocketInfo address;
+    private final SocketInfo address;
 
     /**
      * Connection bootstrap.
      * */
-    final ClientBootstrap bootstrap;
+    private final ClientBootstrap bootstrap;
 
     /**
      * Set of all unregistered channels at the time when this remote entity gets removed.
      * */
-    volatile HashSet<Channel> unregisteredChannelsAtRemove = null;
+    private volatile HashSet<Channel> unregisteredChannelsAtRemove = null;
 
     IPCRemote(final Integer id, final SocketInfo remoteAddress) {
       this.id = id;
@@ -764,12 +764,14 @@ public class IPCConnectionPool {
       cgf.addListener(new ChannelGroupFutureListener() {
         @Override
         public void operationComplete(final ChannelGroupFuture future) throws Exception {
-          new Thread() {
+          Thread removeRemoteThread = new Thread() {
             @Override
             public void run() {
               channelPool.remove(remoteID);
             }
-          }.start();
+          };
+          removeRemoteThread.setName("Remove-remote-" + remoteID);
+          removeRemoteThread.start();
         }
       });
       return cgf;
@@ -873,7 +875,7 @@ public class IPCConnectionPool {
           for (final Channel ch : allPossibleChannels) {
             allConnectionCloseFutures.add(ch.getCloseFuture());
           }
-          new Thread() {
+          Thread shutdownThread = new Thread() {
             @Override
             public void run() {
               while (allPossibleChannels.size() > 0) {
@@ -888,7 +890,9 @@ public class IPCConnectionPool {
                 }
               }
             }
-          }.start();
+          };
+          shutdownThread.setName("IPCConnectionPool-Shutdown");
+          shutdownThread.start();
 
           final DefaultChannelGroupFuture closeAll =
               new DefaultChannelGroupFuture(allPossibleChannels, allConnectionCloseFutures);

@@ -8,7 +8,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelEvent;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelPipeline;
@@ -38,14 +37,6 @@ public class TenGBReceiver {
     public void exceptionCaught(final ChannelHandlerContext ctx, final ExceptionEvent e) {
       e.getCause().printStackTrace();
       e.getChannel().close();
-    }
-
-    @Override
-    public void handleUpstream(final ChannelHandlerContext ctx, final ChannelEvent e) throws Exception {
-      // if (e instanceof ChannelStateEvent) {
-      // logger.info(e.toString());
-      // }
-      super.handleUpstream(ctx, e);
     }
 
     @Override

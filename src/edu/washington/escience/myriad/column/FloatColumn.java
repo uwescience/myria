@@ -128,7 +128,7 @@ public final class FloatColumn implements Column<Float> {
       }
       sb.append(data.get(i));
     }
-    sb.append("]");
+    sb.append(']');
     return sb.toString();
   }
 }

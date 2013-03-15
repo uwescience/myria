@@ -63,7 +63,8 @@ public class SQLiteInsertTest {
       final TupleSource source = new TupleSource(data);
       final SQLiteInsert insert = new SQLiteInsert(source, tuplesKey, tempFile.getAbsolutePath(), myExecutor, true);
       insert.open();
-      while (insert.next() != null) {
+      while (!insert.eos()) {
+        insert.next(); /* Do nothing. */
       }
       insert.close();
 

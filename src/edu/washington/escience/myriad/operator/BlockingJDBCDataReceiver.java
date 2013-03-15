@@ -19,10 +19,10 @@ public final class BlockingJDBCDataReceiver extends Operator {
   private static final long serialVersionUID = 1L;
 
   private Operator child;
-  final JdbcInfo jdbcInfo;
-  final String tableName;
-  final List<String> fieldNames;
-  final String[] placeHolders;
+  private final JdbcInfo jdbcInfo;
+  private final String tableName;
+  private final List<String> fieldNames;
+  private final String[] placeHolders;
 
   public BlockingJDBCDataReceiver(final String tableName, final JdbcInfo jdbcInfo, final Operator child) {
     this.tableName = tableName;

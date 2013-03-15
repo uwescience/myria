@@ -36,13 +36,6 @@ public final class Filter extends Operator {
     // nothing to clean
   }
 
-  /**
-   * Iterates over tuples from the child operator, applying the predicate to them and returning those that pass the
-   * predicate (i.e. for which the Predicate.filter() returns true.)
-   * 
-   * @return The next tuple that passes the filter, or null if there are no more tuples
-   * @see Predicate#filter
-   */
   @Override
   protected TupleBatch fetchNext() throws NoSuchElementException, DbException {
     TupleBatch tmp = null;

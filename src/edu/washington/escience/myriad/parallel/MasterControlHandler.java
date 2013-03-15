@@ -5,7 +5,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelEvent;
 import org.jboss.netty.channel.ChannelHandler.Sharable;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ExceptionEvent;
@@ -25,11 +24,6 @@ public class MasterControlHandler extends SimpleChannelUpstreamHandler {
   public void exceptionCaught(final ChannelHandlerContext ctx, final ExceptionEvent e) {
     LOGGER.log(Level.WARNING, "Unexpected exception from downstream.", e.getCause());
     e.getChannel().close();
-  }
-
-  @Override
-  public void handleUpstream(final ChannelHandlerContext ctx, final ChannelEvent e) throws Exception {
-    super.handleUpstream(ctx, e);
   }
 
   @Override
