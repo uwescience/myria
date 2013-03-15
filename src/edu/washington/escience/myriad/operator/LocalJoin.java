@@ -1,9 +1,6 @@
 package edu.washington.escience.myriad.operator;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -11,6 +8,7 @@ import java.util.Objects;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
@@ -18,7 +16,7 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 
-public final class LocalJoin extends Operator implements Externalizable {
+public final class LocalJoin extends Operator {
 
   private class IndexedTuple {
     private final int index;
@@ -98,22 +96,16 @@ public final class LocalJoin extends Operator implements Externalizable {
   private static final long serialVersionUID = 1L;
 
   private Operator child1, child2;
-  private Schema outputSchema;
-  private int[] compareIndx1;
-  private int[] compareIndx2;
-  private HashMap<Integer, List<IndexedTuple>> hashTable1;
-  private HashMap<Integer, List<IndexedTuple>> hashTable2;
-  private TupleBatchBuffer ans;
+  private final Schema outputSchema;
+  private final int[] compareIndx1;
+  private final int[] compareIndx2;
+  private transient HashMap<Integer, List<IndexedTuple>> hashTable1;
+  private transient HashMap<Integer, List<IndexedTuple>> hashTable2;
+  private transient TupleBatchBuffer ans;
   /** Which columns in the left child are to be output. */
-  private int[] answerColumns1;
+  private final int[] answerColumns1;
   /** Which columns in the right child are to be output. */
-  private int[] answerColumns2;
-
-  /**
-   * For Java serialization.
-   */
-  public LocalJoin() {
-  }
+  private final int[] answerColumns2;
 
   /**
    * Construct an EquiJoin operator. It returns all columns from both children when the corresponding columns in
@@ -192,9 +184,7 @@ public final class LocalJoin extends Operator implements Externalizable {
     this.compareIndx2 = compareIndx2;
     this.answerColumns1 = answerColumns1;
     this.answerColumns2 = answerColumns2;
-    hashTable1 = new HashMap<Integer, List<IndexedTuple>>();
-    hashTable2 = new HashMap<Integer, List<IndexedTuple>>();
-    ans = new TupleBatchBuffer(outputSchema);
+
   }
 
   /**
@@ -268,10 +258,13 @@ public final class LocalJoin extends Operator implements Externalizable {
 
   @Override
   protected void cleanup() throws DbException {
+    hashTable1 = null;
+    hashTable2 = null;
+    ans = null;
   }
 
   @Override
-  protected TupleBatch fetchNext() throws DbException {
+  protected TupleBatch fetchNext() throws DbException, InterruptedException {
     TupleBatch nexttb = ans.popFilled();
     while (nexttb == null) {
       boolean hasNewTuple = false; // might change to EOS instead of hasNext()
@@ -279,13 +272,26 @@ public final class LocalJoin extends Operator implements Externalizable {
       if ((tb = child1.next()) != null) {
         hasNewTuple = true;
         processChildTB(tb, true);
+      } else {
+        if (child1.eoi()) {
+          child1.setEOI(false);
+          childrenEOI[0] = true;
+        }
       }
       // child2
       if ((tb = child2.next()) != null) {
         hasNewTuple = true;
         processChildTB(tb, false);
+      } else {
+        if (child2.eoi()) {
+          child2.setEOI(false);
+          childrenEOI[1] = true;
+        }
       }
       nexttb = ans.popFilled();
+      if (nexttb != null) {
+        return nexttb;
+      }
       if (!hasNewTuple) {
         break;
       }
@@ -294,13 +300,103 @@ public final class LocalJoin extends Operator implements Externalizable {
       if (ans.numTuples() > 0) {
         nexttb = ans.popAny();
       }
+      checkEOSAndEOI();
     }
     return nexttb;
   }
 
   @Override
-  public TupleBatch fetchNextReady() throws DbException {
-    return null;
+  public void checkEOSAndEOI() {
+
+    if (child1.eos() && child2.eos()) {
+      setEOS();
+      return;
+    }
+
+    // EOS could be used as an EOI
+    if ((childrenEOI[0] || child1.eos()) && (childrenEOI[1] || child2.eos())) {
+      setEOI(true);
+      Arrays.fill(childrenEOI, false);
+    }
+  }
+
+  private final boolean[] childrenEOI = new boolean[2];
+
+  @Override
+  protected TupleBatch fetchNextReady() throws DbException {
+    TupleBatch nexttb = ans.popFilled();
+    if (nexttb != null) {
+      return nexttb;
+    }
+
+    if (eoi()) {
+      return ans.popAny();
+    }
+
+    TupleBatch child1TB = null;
+    TupleBatch child2TB = null;
+
+    int numEOS = child1.eos() ? 1 : 0;
+    numEOS += child2.eos() ? 1 : 0;
+    int numNoData = numEOS;
+
+    while (numEOS < 2 && numNoData < 2) {
+      child1TB = null;
+      child2TB = null;
+      if (!child1.eos()) {
+        child1TB = child1.nextReady();
+        if (child1TB != null) { // data
+          processChildTB(child1TB, true);
+          nexttb = ans.popFilled();
+          if (nexttb != null) {
+            return nexttb;
+          }
+        } else {
+          // eoi or eos or no data
+          if (child1.eoi()) {
+            child1.setEOI(false);
+            childrenEOI[0] = true;
+            checkEOSAndEOI();
+            if (eoi()) {
+              break;
+            }
+          } else if (child1.eos()) {
+            numEOS++;
+          } else {
+            numNoData++;
+          }
+        }
+      }
+      if (!child2.eos()) {
+        child2TB = child2.nextReady();
+        if (child2TB != null) {
+          processChildTB(child2TB, false);
+          nexttb = ans.popFilled();
+          if (nexttb != null) {
+            return nexttb;
+          }
+        } else {
+          if (child2.eoi()) {
+            child2.setEOI(false);
+            childrenEOI[1] = true;
+            checkEOSAndEOI();
+            if (eoi()) {
+              break;
+            }
+          } else if (child2.eos()) {
+            numEOS++;
+          } else {
+            numNoData++;
+          }
+        }
+      }
+    }
+
+    checkEOSAndEOI();
+    if (eoi() || eos()) {
+      nexttb = ans.popAny();
+    }
+    return nexttb;
   }
 
   @Override
@@ -314,7 +410,10 @@ public final class LocalJoin extends Operator implements Externalizable {
   }
 
   @Override
-  public void init() throws DbException {
+  public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+    hashTable1 = new HashMap<Integer, List<IndexedTuple>>();
+    hashTable2 = new HashMap<Integer, List<IndexedTuple>>();
+    ans = new TupleBatchBuffer(outputSchema);
   }
 
   protected void processChildTB(final TupleBatch tb, final boolean tbFromChild1) {
@@ -355,34 +454,9 @@ public final class LocalJoin extends Operator implements Externalizable {
   }
 
   @Override
-  public void readExternal(final ObjectInput in) throws IOException, ClassNotFoundException {
-    child1 = (Operator) in.readObject();
-    child2 = (Operator) in.readObject();
-    compareIndx1 = (int[]) in.readObject();
-    compareIndx2 = (int[]) in.readObject();
-    outputSchema = (Schema) in.readObject();
-    answerColumns1 = (int[]) in.readObject();
-    answerColumns2 = (int[]) in.readObject();
-    hashTable1 = new HashMap<Integer, List<IndexedTuple>>();
-    hashTable2 = new HashMap<Integer, List<IndexedTuple>>();
-    ans = new TupleBatchBuffer(outputSchema);
-  }
-
-  @Override
   public void setChildren(final Operator[] children) {
     child1 = children[0];
     child2 = children[1];
-  }
-
-  @Override
-  public void writeExternal(final ObjectOutput out) throws IOException {
-    out.writeObject(child1);
-    out.writeObject(child2);
-    out.writeObject(compareIndx1);
-    out.writeObject(compareIndx2);
-    out.writeObject(outputSchema);
-    out.writeObject(answerColumns1);
-    out.writeObject(answerColumns2);
   }
 
 }
