@@ -7,6 +7,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.RandomAccessFile;
 
 /**
  * Filesystem util methods.
@@ -104,6 +105,21 @@ public final class FSUtils {
     final FileOutputStream o = new FileOutputStream(f);
     o.write(content.getBytes());
     o.close();
+  }
+
+  public static void resetFileSize(final File f, final long desired) throws IOException {
+    boolean ok = f.length() == desired;
+    if (!ok) {
+      RandomAccessFile raf = null;
+      try {
+        raf = new RandomAccessFile(f, "rws");
+        raf.setLength(desired);
+      } finally {
+        if (raf != null) {
+          raf.close();
+        }
+      }
+    }
   }
 
   /**
