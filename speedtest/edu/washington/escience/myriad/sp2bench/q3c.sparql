@@ -1,0 +1,10 @@
+PREFIX rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX swrc:  <http://swrc.ontoware.org/ontology#>
+PREFIX bench: <http://localhost/vocabulary/bench/>
+
+SELECT ?article
+WHERE {
+  ?article rdf:type bench:Article .
+  ?article ?property ?value
+  FILTER (?property=swrc:isbn)
+}
