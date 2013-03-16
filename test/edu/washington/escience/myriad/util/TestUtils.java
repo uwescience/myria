@@ -6,15 +6,41 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Queue;
 import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 
+import org.jboss.netty.bootstrap.ClientBootstrap;
+import org.jboss.netty.bootstrap.ServerBootstrap;
+import org.jboss.netty.channel.ChannelEvent;
+import org.jboss.netty.channel.ChannelFactory;
+import org.jboss.netty.channel.ChannelHandlerContext;
+import org.jboss.netty.channel.ChannelPipeline;
+import org.jboss.netty.channel.ChannelPipelineFactory;
+import org.jboss.netty.channel.ChannelUpstreamHandler;
+import org.jboss.netty.channel.Channels;
+import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
+import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.junit.Assert;
 
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.column.Column;
+import edu.washington.escience.myriad.parallel.SocketInfo;
+import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
+import edu.washington.escience.myriad.parallel.ipc.InJVMLoopbackChannelSink;
+import edu.washington.escience.myriad.parallel.ipc.MessageChannelHandler;
+import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.systemtest.SystemTestBase.Tuple;
+import edu.washington.escience.myriad.util.QueueBasedMessageHandler.TestMessageWrapper;
 
-public class TestUtils {
+public final class TestUtils {
+
+  public static MessageChannelHandler<TransportMessage> messageQueueWrapperFullChannelHandler(
+      final Queue<TestMessageWrapper> messageQueue) {
+    return new QueueBasedMessageHandler(messageQueue);
+  }
 
   public static void assertEqualsToStringBuilder(final StringBuilder errorMessageHolder, final String currentEM,
       final Object expected, final Object actual) {
@@ -247,6 +273,50 @@ public class TestUtils {
       }
     }
     return result;
+  }
+
+  public final static IPCConnectionPool startIPCConnectionPool(final int myID,
+      final HashMap<Integer, SocketInfo> computingUnits, final LinkedBlockingQueue<TestMessageWrapper> messageQueue)
+      throws Exception {
+    final IPCConnectionPool connectionPool =
+        new IPCConnectionPool(myID, computingUnits, new ServerBootstrap(), new ClientBootstrap());
+
+    ExecutorService bossExecutor = Executors.newCachedThreadPool();
+    ExecutorService workerExecutor = Executors.newCachedThreadPool();
+
+    ChannelFactory clientChannelFactory =
+        new NioClientSocketChannelFactory(bossExecutor, workerExecutor,
+            Runtime.getRuntime().availableProcessors() * 2 + 1);
+
+    // Start server with Nb of active threads = 2*NB CPU + 1 as maximum.
+    ChannelFactory serverChannelFactory =
+        new NioServerSocketChannelFactory(bossExecutor, workerExecutor,
+            Runtime.getRuntime().availableProcessors() * 2 + 1);
+
+    MessageChannelHandler<TransportMessage> h = TestUtils.messageQueueWrapperFullChannelHandler(messageQueue);
+
+    ChannelPipelineFactory serverPipelineFactory =
+        new TestIPCPipelineFactories.ServerPipelineFactory(connectionPool, h, null);
+    ChannelPipelineFactory clientPipelineFactory = new TestIPCPipelineFactories.ClientPipelineFactory(h);
+
+    ChannelPipelineFactory doNothingInJVMPipelineFactory = new ChannelPipelineFactory() {
+      @Override
+      public ChannelPipeline getPipeline() throws Exception {
+        ChannelPipeline cp = Channels.pipeline();
+        cp.addLast("doNothingHandler", new ChannelUpstreamHandler() {
+
+          @Override
+          public void handleUpstream(ChannelHandlerContext ctx, ChannelEvent e) throws Exception {
+            ctx.sendUpstream(e);
+          }
+        });
+        return cp;
+      }
+    };
+
+    connectionPool.start(serverChannelFactory, serverPipelineFactory, clientChannelFactory, clientPipelineFactory,
+        doNothingInJVMPipelineFactory, new InJVMLoopbackChannelSink<TransportMessage>(h, myID));
+    return connectionPool;
   }
 
 }
