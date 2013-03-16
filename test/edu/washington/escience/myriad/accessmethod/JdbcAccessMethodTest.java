@@ -22,7 +22,7 @@ import edu.washington.escience.myriad.operator.JdbcQueryScan;
 public class JdbcAccessMethodTest {
 
   @Test
-  public void testNumberResultsAndMultipleBatches() throws DbException {
+  public void testNumberResultsAndMultipleBatches() throws DbException, InterruptedException {
     /* Connection information */
     final String host = "54.245.108.198";
     final int port = 3306;
@@ -42,7 +42,7 @@ public class JdbcAccessMethodTest {
     final String connectionString = "jdbc:" + dbms + "://" + host + ":" + port + "/" + databaseName;
     final JdbcQueryScan scan = new JdbcQueryScan(jdbcDriverName, connectionString, query, schema, user, password);
 
-    scan.open();
+    scan.open(null);
 
     /* Count up the results and assert they match expectations */
     int count = 0;

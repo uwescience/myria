@@ -1,6 +1,5 @@
 package edu.washington.escience.myriad.accessmethod;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -13,8 +12,10 @@ import org.junit.Test;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -23,7 +24,6 @@ import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
-import edu.washington.escience.myriad.parallel.Server;
 import edu.washington.escience.myriad.systemtest.SystemTestBase;
 import edu.washington.escience.myriad.systemtest.SystemTestBase.Tuple;
 import edu.washington.escience.myriad.util.FSUtils;
@@ -35,7 +35,7 @@ public class SQLiteTest {
   private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(SQLiteTest.class.getName());
 
   @Test
-  public void sqliteTest() throws DbException, IOException, CatalogException {
+  public void sqliteTest() throws DbException, IOException, CatalogException, InterruptedException {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
     Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
     final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
@@ -43,7 +43,8 @@ public class SQLiteTest {
     final Schema outputSchema =
         new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
 
-    final String tempDirPath = Files.createTempDirectory(Server.SYSTEM_NAME + "_SQLiteTest").toFile().getAbsolutePath();
+    final String tempDirPath =
+        Files.createTempDirectory(MyriaConstants.SYSTEM_NAME + "_SQLiteTest").toFile().getAbsolutePath();
     final String dbAbsolutePath = FilenameUtils.concat(tempDirPath, "sqlite_testtable.db");
     SystemTestBase.createTable(dbAbsolutePath, testtableKey, "id long,name varchar(20)");
 
@@ -66,9 +67,11 @@ public class SQLiteTest {
     final String query = "SELECT * FROM " + testtableKey;
 
     /* Scan the testtable in database */
-    final SQLiteQueryScan scan = new SQLiteQueryScan(new File(dbAbsolutePath).getName(), query, outputSchema);
+    final SQLiteQueryScan scan = new SQLiteQueryScan(query, outputSchema);
 
-    scan.setPathToSQLiteDb(dbAbsolutePath);
+    HashMap<String, Object> sqliteFilename = new HashMap<String, Object>();
+    sqliteFilename.put("sqliteFile", dbAbsolutePath);
+    final ImmutableMap<String, Object> execEnvVars = ImmutableMap.copyOf(sqliteFilename);
 
     /* Filter on first column INTEGER >= 50 */
     // Filter filter1 = new Filter(Predicate.Op.GREATER_THAN_OR_EQ, 0, new Long(50), scan);
@@ -84,7 +87,7 @@ public class SQLiteTest {
 
     /* Project is the output operator */
     final Operator root = scan;
-    root.open();
+    root.open(execEnvVars);
 
     /* For debugging purposes, print Schema */
     final Schema schema = root.getSchema();

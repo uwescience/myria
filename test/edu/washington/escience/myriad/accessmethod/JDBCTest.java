@@ -22,7 +22,7 @@ public class JDBCTest {
   private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(JDBCTest.class.getName());
 
   @Test
-  public void JdbcTest() throws DbException {
+  public void JdbcTest() throws DbException, InterruptedException {
     final String host = "54.245.108.198";
     final int port = 3306;
     final String user = "myriad";
@@ -46,7 +46,7 @@ public class JDBCTest {
 
     final Operator root = project;
 
-    root.open();
+    root.open(null);
 
     TupleBatch tb = null;
     while ((tb = root.next()) != null) {
