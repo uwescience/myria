@@ -4,7 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myriad.Schema;
-import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 
 /**
  * The consumer part of the Collect Exchange operator.
@@ -27,4 +26,5 @@ public final class CollectConsumer extends Consumer {
     super(schema, operatorID, workerIDs);
     LOGGER.trace("created CollectConsumer for ExchangePairId=" + operatorID);
   }
+
 }
