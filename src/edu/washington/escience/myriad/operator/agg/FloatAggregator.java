@@ -19,13 +19,16 @@ public final class FloatAggregator implements Aggregator {
   private final int aggOps;
 
   private float min, max, sum;
+  private double stdev;
   private long count;
   private final Schema resultSchema;
 
-  public static final int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT | Aggregator.AGG_OP_SUM | Aggregator.AGG_OP_MAX
-      | Aggregator.AGG_OP_MIN | Aggregator.AGG_OP_AVG;
+  public static final int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT
+      | Aggregator.AGG_OP_SUM | Aggregator.AGG_OP_MAX | Aggregator.AGG_OP_MIN
+      | Aggregator.AGG_OP_AVG | Aggregator.AGG_OP_STDEV;
 
-  private FloatAggregator(final int afield, final int aggOps, final Schema resultSchema) {
+  private FloatAggregator(final int afield, final int aggOps,
+      final Schema resultSchema) {
     this.resultSchema = resultSchema;
     this.afield = afield;
     this.aggOps = aggOps;
@@ -35,13 +38,16 @@ public final class FloatAggregator implements Aggregator {
     max = Float.MIN_VALUE;
   }
 
-  public FloatAggregator(final int afield, final String aFieldName, final int aggOps) {
+  public FloatAggregator(final int afield, final String aFieldName,
+      final int aggOps) {
     if (aggOps <= 0) {
-      throw new IllegalArgumentException("No aggregation operations are selected");
+      throw new IllegalArgumentException(
+          "No aggregation operations are selected");
     }
 
     if ((aggOps | AVAILABLE_AGG) != AVAILABLE_AGG) {
-      throw new IllegalArgumentException("Unsupported aggregation on float column.");
+      throw new IllegalArgumentException(
+          "Unsupported aggregation on float column.");
     }
     this.afield = afield;
     this.aggOps = aggOps;
@@ -80,6 +86,7 @@ public final class FloatAggregator implements Aggregator {
     final int numTuples = tup.numTuples();
     if (numTuples > 0) {
       count += numTuples;
+      double m = 0.0, s = 0.0;
       for (int i = 0; i < numTuples; i++) {
         final float x = tup.getFloat(afield, i);
         sum += x;
@@ -89,7 +96,12 @@ public final class FloatAggregator implements Aggregator {
         if (Float.compare(x, max) > 0) {
           max = x;
         }
+        // computing the standard deviation
+        double tempM = m;
+        m += (x - tempM) / (i + 1);
+        s += (x - tempM) * (x - m);
       }
+      stdev = Math.sqrt(s / numTuples - 1);
     }
   }
 
@@ -126,11 +138,15 @@ public final class FloatAggregator implements Aggregator {
       buffer.put(idx, sum * 1.0 / count);
       idx++;
     }
-    buffer.put(0, count);
-    buffer.put(1, sum);
-    buffer.put(2, sum / count);
-    buffer.put(3, min);
-    buffer.put(4, min);
+    if ((aggOps & AGG_OP_STDEV) != 0) {
+      buffer.put(idx, stdev);
+      idx++;
+    }
+    // buffer.put(0, count);
+    // buffer.put(1, sum);
+    // buffer.put(2, sum / count);
+    // buffer.put(3, min);
+    // buffer.put(4, min);
   }
 
   @Override
