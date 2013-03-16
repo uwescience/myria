@@ -4,6 +4,8 @@ import java.nio.channels.ClosedChannelException;
 
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelEvent;
+import org.jboss.netty.channel.ChannelFuture;
+import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.ChannelHandler.Sharable;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.DownstreamChannelStateEvent;
@@ -24,7 +26,7 @@ public class IPCInputGuard extends SimpleChannelHandler {
   /**
    * constructor.
    * */
-  IPCInputGuard() {
+  public IPCInputGuard() {
   }
 
   @Override
@@ -61,10 +63,24 @@ public class IPCInputGuard extends SimpleChannelHandler {
         case INTEREST_OPS:
           break;
         case CONNECTED:
-          LOGGER.debug("Connection to remote. " + e.toString());
+          if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Connection to remote. " + e.toString());
+          }
           break;
       }
     }
+
+    e.getFuture().addListener(new ChannelFutureListener() {
+
+      @Override
+      public void operationComplete(final ChannelFuture future) throws Exception {
+        if (!future.isSuccess()) {
+          if (LOGGER.isWarnEnabled()) {
+            LOGGER.warn("Unknown downstream operation error: ChannelEvent: " + e + "; Cause: {}", future.getCause());
+          }
+        }
+      }
+    });
     super.handleDownstream(ctx, e);
   }
 
@@ -78,7 +94,9 @@ public class IPCInputGuard extends SimpleChannelHandler {
         case INTEREST_OPS:
           break;
         case CONNECTED:
-          LOGGER.debug("Connection from remote. " + e.toString());
+          if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Connection from remote. " + e.toString());
+          }
           break;
       }
     }
