@@ -4,7 +4,7 @@ import org.jboss.netty.channel.socket.nio.NioSocketChannelConfig;
 
 import edu.washington.escience.myriad.parallel.Consumer;
 import edu.washington.escience.myriad.parallel.FlowControlInputBuffer;
-import edu.washington.escience.myriad.parallel.ipc.InputBuffer;
+import edu.washington.escience.myriad.parallel.InputBuffer;
 
 /**
  * Myria system configuration keys.
