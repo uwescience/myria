@@ -82,8 +82,9 @@ public class JdbcInsertSpeedTest {
      * 
      * @param countQuery
      * @return
+     * @throws InterruptedException
      */
-    private long countNumberOfTuples(final String countQuery) {
+    private long countNumberOfTuples(final String countQuery) throws InterruptedException {
       final ImmutableList<Type> countTypes = ImmutableList.of(Type.INT_TYPE);
       final ImmutableList<String> countColumnNames = ImmutableList.of("value");
       final Schema countSchema = new Schema(countTypes, countColumnNames);
@@ -91,8 +92,8 @@ public class JdbcInsertSpeedTest {
           new JdbcQueryScan(jdbcDriverName, connectionString, countQuery, countSchema, user, password);
 
       try {
-        validateScan.open();
-        final TupleBatch vtb = validateScan.fetchNextReady();
+        validateScan.open(null);
+        final TupleBatch vtb = validateScan.next();
         if (vtb != null) {
           return vtb.getLong(0, 0);
         } else {

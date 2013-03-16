@@ -2,33 +2,32 @@ package edu.washington.escience.myriad.sqlite;
 
 import static org.junit.Assert.assertTrue;
 
-import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
-import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.DupElim;
 import edu.washington.escience.myriad.operator.LocalJoin;
-import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.Project;
+import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
+import edu.washington.escience.myriad.operator.SinkRoot;
+import edu.washington.escience.myriad.operator.TBQueueExporter;
 import edu.washington.escience.myriad.operator.agg.Aggregate;
 import edu.washington.escience.myriad.operator.agg.Aggregator;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
-import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
+import edu.washington.escience.myriad.parallel.ExchangePairID;
 import edu.washington.escience.myriad.parallel.PartitionFunction;
 import edu.washington.escience.myriad.parallel.ShuffleConsumer;
 import edu.washington.escience.myriad.parallel.ShuffleProducer;
@@ -65,7 +64,7 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
   }
 
   @Test
-  public void twitterSubsetCountProjectingJoinTest() throws DbException, CatalogException, IOException {
+  public void twitterSubsetCountProjectingJoinTest() throws Exception {
     assertTrue(successfulSetup);
 
     /* The Schema for the table we read from file. */
@@ -74,8 +73,8 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
 
     /* Read the data from the file. */
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan(null, "select * from testtable", tableSchema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan(null, "select * from testtable", tableSchema);
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan("select * from testtable", tableSchema);
+    final SQLiteQueryScan scan2 = new SQLiteQueryScan("select * from testtable", tableSchema);
 
     /*
      * One worker partitions on the follower, the other worker partitions on the followee. In this way, we can do a
@@ -113,35 +112,26 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     final CollectProducer cp = new CollectProducer(count, serverReceiveID, MASTER_ID);
 
     /* Send the worker plans, rooted by CP, to the workers. Note that the plans are identical. */
-    final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
-    workerPlans.put(WORKER_ID[0], new Operator[] { cp, sp1, sp2, sp0 });
-    workerPlans.put(WORKER_ID[1], new Operator[] { cp, sp1, sp2, sp0 });
+    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
+    workerPlans.put(WORKER_ID[0], new RootOperator[] { cp, sp1, sp2, sp0 });
+    workerPlans.put(WORKER_ID[1], new RootOperator[] { cp, sp1, sp2, sp0 });
 
     /* The server plan. Basically, collect and count tuples. */
     final Schema collectSchema = new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("COUNT"));
     final CollectConsumer collectCounts = new CollectConsumer(collectSchema, serverReceiveID, WORKER_ID);
+    Aggregate sumCount = new Aggregate(collectCounts, new int[] { 0 }, new int[] { Aggregator.AGG_OP_SUM });
+    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
+    TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, sumCount);
+    SinkRoot serverPlan = new SinkRoot(queueStore);
 
-    final Long queryId = 1L;
-
-    server.dispatchWorkerQueryPlans(queryId, workerPlans);
-    TupleBatchBuffer result = server.startServerQuery(queryId, collectCounts);
-
-    /* Count the number of returned tuples. */
-    long total = 0;
-    TupleBatch tb = result.popAny();
-    while (tb != null) {
-      for (int row = 0, totalTuples = tb.numTuples(); row < totalTuples; row++) {
-        total += tb.getLong(0, row);
-      }
-      tb = result.popAny();
-    }
-
+    server.submitQueryPlan(serverPlan, workerPlans).sync();
     /* Make sure the count matches the known result. */
-    assertTrue(total == 3361461);
+    assertTrue(receivedTupleBatches.take().getLong(0, 0) == 3361461);
+
   }
 
   @Test
-  public void twitterSubsetJoinTest() throws DbException, CatalogException, IOException {
+  public void twitterSubsetJoinTest() throws Exception {
     assertTrue(successfulSetup);
 
     /* The Schema for the table we read from file. */
@@ -155,8 +145,8 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     final Schema joinSchema = new Schema(joinTypes, joinNames);
 
     /* Read the data from the file. */
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan(null, "select * from testtable", tableSchema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan(null, "select * from testtable", tableSchema);
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan("select * from testtable", tableSchema);
+    final SQLiteQueryScan scan2 = new SQLiteQueryScan("select * from testtable", tableSchema);
 
     /*
      * One worker partitions on the follower, the other worker partitions on the followee. In this way, we can do a
@@ -194,23 +184,22 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     final CollectProducer cp = new CollectProducer(dupelim, serverReceiveID, MASTER_ID);
 
     /* Send the worker plans, rooted by CP, to the workers. Note that the plans are identical. */
-    final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
-    workerPlans.put(WORKER_ID[0], new Operator[] { cp, sp1, sp2, sp0 });
-    workerPlans.put(WORKER_ID[1], new Operator[] { cp, sp1, sp2, sp0 });
-
-    final Long queryId = 3L;
+    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
+    workerPlans.put(WORKER_ID[0], new RootOperator[] { cp, sp1, sp2, sp0 });
+    workerPlans.put(WORKER_ID[1], new RootOperator[] { cp, sp1, sp2, sp0 });
 
     /* The server plan. Basically, collect and count tuples. */
-    final CollectConsumer serverPlan = new CollectConsumer(tableSchema, serverReceiveID, WORKER_ID);
-    server.dispatchWorkerQueryPlans(queryId, workerPlans);
-    TupleBatchBuffer result = server.startServerQuery(queryId, serverPlan);
+    final CollectConsumer collect = new CollectConsumer(cp.getSchema(), serverReceiveID, WORKER_ID);
+    final SinkRoot serverPlan = new SinkRoot(collect);
 
+    server.submitQueryPlan(serverPlan, workerPlans).sync();
     /* Make sure the count matches the known result. */
-    assertTrue(result.numTuples() == 3361461);
+    assertTrue(serverPlan.getCount() == 3361461);
+
   }
 
   @Test
-  public void twitterSubsetProjectingJoinTest() throws DbException, CatalogException, IOException {
+  public void twitterSubsetProjectingJoinTest() throws Exception {
     assertTrue(successfulSetup);
 
     /* The Schema for the table we read from file. */
@@ -219,8 +208,8 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
 
     /* Read the data from the file. */
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan(null, "select * from testtable", tableSchema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan(null, "select * from testtable", tableSchema);
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan("select * from testtable", tableSchema);
+    final SQLiteQueryScan scan2 = new SQLiteQueryScan("select * from testtable", tableSchema);
 
     /*
      * One worker partitions on the follower, the other worker partitions on the followee. In this way, we can do a
@@ -257,18 +246,17 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     final CollectProducer cp = new CollectProducer(dupelim, serverReceiveID, MASTER_ID);
 
     /* Send the worker plans, rooted by CP, to the workers. Note that the plans are identical. */
-    final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
-    workerPlans.put(WORKER_ID[0], new Operator[] { cp, sp1, sp2, sp0 });
-    workerPlans.put(WORKER_ID[1], new Operator[] { cp, sp1, sp2, sp0 });
-
-    final Long queryId = 5L;
+    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
+    workerPlans.put(WORKER_ID[0], new RootOperator[] { cp, sp1, sp2, sp0 });
+    workerPlans.put(WORKER_ID[1], new RootOperator[] { cp, sp1, sp2, sp0 });
 
     /* The server plan. Basically, collect and count tuples. */
-    final CollectConsumer serverPlan = new CollectConsumer(tableSchema, serverReceiveID, WORKER_ID);
-    server.dispatchWorkerQueryPlans(queryId, workerPlans);
-    TupleBatchBuffer result = server.startServerQuery(queryId, serverPlan);
+    final CollectConsumer collect = new CollectConsumer(cp.getSchema(), serverReceiveID, WORKER_ID);
+    final SinkRoot serverPlan = new SinkRoot(collect);
 
+    server.submitQueryPlan(serverPlan, workerPlans).sync();
     /* Make sure the count matches the known result. */
-    assertTrue(result.numTuples() == 3361461);
+    assertTrue(serverPlan.getCount() == 3361461);
+
   }
 }
