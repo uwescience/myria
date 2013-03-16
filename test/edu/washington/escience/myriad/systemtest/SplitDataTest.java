@@ -2,27 +2,29 @@ package edu.washington.escience.myriad.systemtest;
 
 import static org.junit.Assert.assertTrue;
 
-import java.io.IOException;
 import java.util.HashMap;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
-import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SQLiteInsert;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
+import edu.washington.escience.myriad.operator.SinkRoot;
+import edu.washington.escience.myriad.operator.TBQueueExporter;
 import edu.washington.escience.myriad.operator.TupleSource;
+import edu.washington.escience.myriad.operator.agg.Aggregate;
+import edu.washington.escience.myriad.operator.agg.Aggregator;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
-import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
+import edu.washington.escience.myriad.parallel.ExchangePairID;
 import edu.washington.escience.myriad.parallel.RoundRobinPartitionFunction;
 import edu.washington.escience.myriad.parallel.ShuffleConsumer;
 import edu.washington.escience.myriad.parallel.ShuffleProducer;
@@ -30,7 +32,7 @@ import edu.washington.escience.myriad.parallel.ShuffleProducer;
 public class SplitDataTest extends SystemTestBase {
 
   @Test
-  public void splitDataTest() throws DbException, IOException, CatalogException {
+  public void splitDataTest() throws Exception {
     /* Create a source of tuples containing the numbers 1 to 10001. */
     final Schema schema =
         new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
@@ -47,65 +49,50 @@ public class SplitDataTest extends SystemTestBase {
     final ExchangePairID shuffleId = ExchangePairID.newID();
     final ShuffleProducer scatter =
         new ShuffleProducer(source, shuffleId, WORKER_ID, new RoundRobinPartitionFunction(WORKER_ID.length));
-    scatter.setConnectionPool(server.getConnectionPool());
+
     /* ... and the corresponding shuffle consumer. */
     final ShuffleConsumer gather = new ShuffleConsumer(schema, shuffleId, new int[] { MASTER_ID });
 
     final RelationKey tuplesRRKey = RelationKey.of("test", "test", "tuples_rr");
 
     /* Create the Insert operator */
-    final SQLiteInsert insert = new SQLiteInsert(gather, tuplesRRKey, null, null, true);
+    final SQLiteInsert insert = new SQLiteInsert(gather, tuplesRRKey, true);
 
-    final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
+    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
     for (final int i : WORKER_ID) {
-      workerPlans.put(i, new Operator[] { insert });
+      workerPlans.put(i, new RootOperator[] { insert });
     }
 
-    long queryId = 7L;
-
-    server.dispatchWorkerQueryPlans(queryId, workerPlans);
-    LOGGER.debug("Query part 1 (round robin ruple shuffle) dispatched to the workers");
-    server.startServerQuery(queryId, scatter);
-
-    while (!server.queryCompleted(queryId)) {
-      try {
-        Thread.sleep(100);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-      }
-    }
+    server.submitQueryPlan(scatter, workerPlans).sync();
 
     /*** TEST PHASE 2: Count them up, make sure the answer agrees. ***/
     /* Create the worker plan: QueryScan with count, then send it to master. */
     Schema countResultSchema = new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("localCount"));
-    final SQLiteQueryScan scanCount =
-        new SQLiteQueryScan(null, "SELECT COUNT(*) FROM " + tuplesRRKey, countResultSchema);
+    final SQLiteQueryScan scanCount = new SQLiteQueryScan("SELECT COUNT(*) FROM " + tuplesRRKey, countResultSchema);
     final ExchangePairID collectId = ExchangePairID.newID();
     final CollectProducer send = new CollectProducer(scanCount, collectId, 0);
     workerPlans.clear();
     for (final int i : WORKER_ID) {
-      workerPlans.put(i, new Operator[] { send });
+      workerPlans.put(i, new RootOperator[] { send });
     }
     /* Create the Server plan: CollectConsumer and Sum. */
     final CollectConsumer receive = new CollectConsumer(countResultSchema, collectId, WORKER_ID);
+    Aggregate sumCount =
+        new Aggregate(receive, new int[] { 0 }, new int[] { Aggregator.AGG_OP_SUM | Aggregator.AGG_OP_COUNT });
+    final LinkedBlockingQueue<TupleBatch> aggResult = new LinkedBlockingQueue<TupleBatch>();
+    final TBQueueExporter queueStore = new TBQueueExporter(aggResult, sumCount);
+    final SinkRoot serverPlan = new SinkRoot(queueStore);
 
     /* Actually dispatch the worker plans. */
-    queryId = 8L;
-    server.dispatchWorkerQueryPlans(queryId, workerPlans);
-    LOGGER.debug("Query part 2 (count, collect, sum) dispatched to the workers");
     /* Start the query and collect the results. */
-    queryId = 8L;
-    TupleBatchBuffer result = server.startServerQuery(queryId, receive);
+    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    TupleBatch result = aggResult.take();
 
     /* Sanity-check the results, sum them, then confirm. */
-    TupleBatch aggregate = result.popAny();
-    assertTrue(aggregate.numTuples() == WORKER_ID.length);
-    assertTrue(aggregate.getSchema().numColumns() == 1);
-    long sum = 0;
-    for (int i = 0; i < aggregate.numTuples(); ++i) {
-      sum += aggregate.getLong(0, i);
-    }
-    LOGGER.debug("numTuplesInsert=" + numTuplesInserted + ", sum=" + sum);
-    assertTrue(numTuplesInserted == sum);
+    assertTrue(result.getLong(0, 0) == WORKER_ID.length);
+
+    LOGGER.debug("numTuplesInsert=" + numTuplesInserted + ", sum=" + result.getObject(0, 0));
+    assertTrue(result.getLong(1, 0) == numTuplesInserted);
+
   }
 }

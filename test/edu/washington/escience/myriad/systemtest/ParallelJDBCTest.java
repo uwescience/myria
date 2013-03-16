@@ -1,27 +1,32 @@
 package edu.washington.escience.myriad.systemtest;
 
-import java.io.IOException;
 import java.util.HashMap;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatch;
+import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.operator.BlockingJDBCDataReceiver;
 import edu.washington.escience.myriad.operator.JdbcQueryScan;
 import edu.washington.escience.myriad.operator.JdbcSQLProcessor;
 import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.operator.RootOperator;
+import edu.washington.escience.myriad.operator.SinkRoot;
+import edu.washington.escience.myriad.operator.TBQueueExporter;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
-import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
+import edu.washington.escience.myriad.parallel.ExchangePairID;
+import edu.washington.escience.myriad.util.TestUtils;
 
 public class ParallelJDBCTest extends SystemTestBase {
 
   @Test
-  public void parallelTestJDBC() throws DbException, IOException {
+  public void parallelTestJDBC() throws Exception {
     final String host = "54.245.108.198";
     final int port = 3306;
     final String username = "myriad";
@@ -56,16 +61,29 @@ public class ParallelJDBCTest extends SystemTestBase {
         new BlockingJDBCDataReceiver("temptable34", connectionString, driverClass, username, password, cc2);
 
     final JdbcSQLProcessor scan22 =
-        new JdbcSQLProcessor(driverClass, connectionString, "select distinct * from temptable34", schema, block2,
-            username, password);
+        new JdbcSQLProcessor(driverClass, connectionString, "select distinct * from temptable34", schema,
+            new Operator[] { block2 }, username, password);
     final CollectProducer cp22 = new CollectProducer(scan22, serverReceiveID, MASTER_ID);
-    final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
-    workerPlans.put(WORKER_ID[0], new Operator[] { cp1 });
-    workerPlans.put(WORKER_ID[1], new Operator[] { cp2, cp22 });
+    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
+    workerPlans.put(WORKER_ID[0], new RootOperator[] { cp1 });
+    workerPlans.put(WORKER_ID[1], new RootOperator[] { cp2, cp22 });
 
-    final CollectConsumer serverPlan = new CollectConsumer(schema, serverReceiveID, new int[] { WORKER_ID[1] });
-    server.dispatchWorkerQueryPlans(0L, workerPlans);
-    LOGGER.debug("Query dispatched to the workers");
-    server.startServerQuery(0L, serverPlan);
+    final CollectConsumer serverCollect = new CollectConsumer(schema, serverReceiveID, new int[] { WORKER_ID[1] });
+    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
+    final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
+    SinkRoot serverPlan = new SinkRoot(queueStore);
+
+    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
+    TupleBatch tb = null;
+    while (!receivedTupleBatches.isEmpty()) {
+      tb = receivedTupleBatches.poll();
+      if (tb != null) {
+        tb.compactInto(actualResult);
+      }
+    }
+    final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
+    // TODO test the result.
+
   }
 }
