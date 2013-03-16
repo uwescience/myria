@@ -3,11 +3,9 @@ package edu.washington.escience.myriad.parallel;
 import org.jboss.netty.channel.Channel;
 
 import edu.washington.escience.myriad.DbException;
-import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.util.IPCUtils;
 
@@ -18,119 +16,56 @@ import edu.washington.escience.myriad.util.IPCUtils;
  * 
  */
 public final class LocalMultiwayProducer extends Producer {
+  /** Required for Java serialization. */
+  private static final long serialVersionUID = 1L;
 
-  /**
-   * The working thread, which executes the child operator and send the tuples to the paired LocalMultiwayConsumer
-   * operator.
-   */
-  class WorkingThread extends Thread {
-    @Override
-    public void run() {
+  public LocalMultiwayProducer(final Operator child, final ExchangePairID[] operatorIDs) {
+    super(child, operatorIDs);
+  }
 
-      final Channel channel = getConnectionPool().reserveLongTermConnection(remoteWorkerID);
-
-      try {
-
-        final TupleBatchBuffer buffer = new TupleBatchBuffer(getSchema());
-
-        TupleBatch tup = null;
-        TransportMessage[] dms = null;
-
-        while (!child.eos()) {
-          while ((tup = child.next()) != null) {
-            tup.compactInto(buffer);
-
-            while ((dms = buffer.popFilledAsTM(operatorIDs)) != null) {
-              for (TransportMessage dm : dms) {
-                channel.write(dm);
-              }
-            }
-          }
-
-          while ((dms = buffer.popAnyAsTM(operatorIDs)) != null) {
-            for (TransportMessage dm : dms) {
-              channel.write(dm);
-            }
-          }
-          if (child.eoi()) {
-            for (ExchangePairID operatorID : operatorIDs) {
-              channel.write(IPCUtils.eoiTM(operatorID));
-            }
-            child.setEOI(false);
-          }
-        }
-
-        for (final ExchangePairID operatorID : operatorIDs) {
-          channel.write(IPCUtils.eosTM(operatorID));
-        }
-
-      } catch (final DbException e) {
-        e.printStackTrace();
-      } finally {
-        getConnectionPool().releaseLongTermConnection(channel);
+  @Override
+  protected void consumeTuples(final TupleBatch tup) throws DbException {
+    TupleBatchBuffer[] buffers = getBuffers();
+    Channel[] ioChannels = getChannels();
+    TransportMessage dm = null;
+    tup.compactInto(buffers[0]);
+    while ((dm = buffers[0].popFilledAsTM(super.outputSeq[0])) != null) {
+      super.outputSeq[0]++;
+      for (Channel ch : ioChannels) {
+        ch.write(dm);
       }
     }
   }
 
-  /** Required for Java serialization. */
-  private static final long serialVersionUID = 1L;
-
-  private transient WorkingThread runningThread;
-
-  /**
-   * The paired collect consumer address.
-   */
-
-  private final int remoteWorkerID;
-
-  private Operator child;
-
-  public LocalMultiwayProducer(final Operator child, final ExchangePairID[] operatorIDs, final int remoteWorkerID) {
-    super(operatorIDs);
-    this.child = child;
-    this.remoteWorkerID = remoteWorkerID;
-  }
-
   @Override
-  public void cleanup() {
-  }
-
-  @Override
-  protected TupleBatch fetchNext() throws DbException {
-    try {
-      // wait until the working thread terminate and return an empty tuple set
-      runningThread.join();
-    } catch (final InterruptedException e) {
-      e.printStackTrace();
+  protected void childEOS() throws DbException {
+    TransportMessage dm = null;
+    TupleBatchBuffer[] buffers = getBuffers();
+    Channel[] ioChannels = getChannels();
+    while ((dm = buffers[0].popAnyAsTM(super.outputSeq[0])) != null) {
+      super.outputSeq[0]++;
+      for (Channel ch : ioChannels) {
+        ch.write(dm);
+      }
     }
-
-    return null;
+    for (Channel channel : ioChannels) {
+      channel.write(IPCUtils.EOS);
+    }
   }
 
   @Override
-  public TupleBatch fetchNextReady() throws DbException {
-    return fetchNext();
+  protected void childEOI() throws DbException {
+    TransportMessage dm = null;
+    TupleBatchBuffer[] buffers = getBuffers();
+    Channel[] ioChannels = getChannels();
+    while ((dm = buffers[0].popAnyAsTM(super.outputSeq[0])) != null) {
+      super.outputSeq[0]++;
+      for (Channel ch : ioChannels) {
+        ch.write(dm);
+      }
+    }
+    for (Channel channel : ioChannels) {
+      channel.write(IPCUtils.EOI);
+    }
   }
-
-  @Override
-  public Operator[] getChildren() {
-    return new Operator[] { child };
-  }
-
-  @Override
-  public Schema getSchema() {
-    return child.getSchema();
-  }
-
-  @Override
-  public void init() throws DbException {
-    runningThread = new WorkingThread();
-    runningThread.start();
-  }
-
-  @Override
-  public void setChildren(final Operator[] children) {
-    child = children[0];
-  }
-
 }
