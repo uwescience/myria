@@ -24,6 +24,12 @@ public final class LocalMultiwayProducer extends Producer {
    * operator.
    */
   class WorkingThread extends Thread {
+    /** Constructor, set the thread name. */
+    public WorkingThread() {
+      super();
+      setName("LocalMultiwayProducer-WorkingThread-" + getId());
+    }
+
     @Override
     public void run() {
 

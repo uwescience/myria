@@ -66,6 +66,12 @@ public class Worker {
 
   protected final class MessageProcessor extends Thread {
 
+    /** Constructor, set the thread name. */
+    public MessageProcessor() {
+      super();
+      setName("Worker-MessageProcessor-" + getId());
+    }
+
     /** Whether this thread should stop. */
     private volatile boolean stopped = false;
 
@@ -119,7 +125,7 @@ public class Worker {
                 break;
               case NORMAL:
                 final List<ColumnMessage> columnMessages = data.getColumnsList();
-                final Column<?>[] columnArray = new Column[columnMessages.size()];
+                final Column<?>[] columnArray = new Column<?>[columnMessages.size()];
                 int idx = 0;
                 for (final ColumnMessage cm : columnMessages) {
                   columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm);
@@ -179,6 +185,12 @@ public class Worker {
    * The working thread, which executes the query plan.
    */
   protected class QueryExecutor extends Thread {
+    /** Constructor, set the thread name. */
+    public QueryExecutor() {
+      super();
+      setName("Worker-QueryExecutor-" + getId());
+    }
+
     /** Whether this worker has been stopped. */
     private volatile boolean stopped = false;
 

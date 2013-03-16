@@ -21,6 +21,12 @@ import edu.washington.escience.myriad.util.IPCUtils;
 public class ShuffleProducer extends Producer {
 
   final class WorkingThread extends Thread {
+    /** Constructor, set the thread name. */
+    public WorkingThread() {
+      super();
+      setName("ShuffleProducer-WorkingThread-" + getId());
+    }
+
     @Override
     public void run() {
 
