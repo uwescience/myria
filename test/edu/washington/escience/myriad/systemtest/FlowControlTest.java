@@ -46,7 +46,7 @@ public class FlowControlTest extends SystemTestBase {
     final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
     createTable(WORKER_ID[0], testtableKey, "id long, name varchar(20)");
 
-    final int numTuples = 200000;
+    final int numTuples = 50000;
 
     final Schema schema =
         new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
@@ -70,7 +70,7 @@ public class FlowControlTest extends SystemTestBase {
     final ExchangePairID worker1ReceiveID = ExchangePairID.newID();
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
 
-    final SQLiteQueryScan scanTable = new SQLiteQueryScan("select * from " + testtableKey, schema);
+    final SQLiteQueryScan scanTable = new SQLiteQueryScan("select * from " + testtableKey.toString("sqlite"), schema);
 
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
     final CollectProducer cp1 = new CollectProducer(scanTable, worker1ReceiveID, WORKER_ID[1]);

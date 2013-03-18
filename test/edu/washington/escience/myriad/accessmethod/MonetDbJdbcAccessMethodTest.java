@@ -10,7 +10,6 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -57,11 +56,11 @@ public class MonetDbJdbcAccessMethodTest {
   }
 
   @Test
-  public void testCreateTableAndCountMultipleBatches() throws DbException {
+  public void testCreateTableAndCountMultipleBatches() throws Exception {
     /* Insert the NUM_TUPLES tuples */
     TupleSource source = new TupleSource(buffer);
-    JdbcInsert insert = new JdbcInsert(source, relationKey, jdbcInfo, null);
-    insert.open();
+    JdbcInsert insert = new JdbcInsert(source, relationKey, jdbcInfo);
+    insert.open(null);
     while (!insert.eos()) {
       insert.next();
     }
@@ -71,7 +70,7 @@ public class MonetDbJdbcAccessMethodTest {
     JdbcQueryScan count =
         new JdbcQueryScan(jdbcInfo, "SELECT COUNT(*) FROM " + relationKey.toString(jdbcInfo.getDbms()), Schema.of(
             ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("count")));
-    count.open();
+    count.open(null);
     TupleBatch result = count.next();
     assertTrue(result != null);
     assertTrue(result.getLong(0, 0) == NUM_TUPLES);
