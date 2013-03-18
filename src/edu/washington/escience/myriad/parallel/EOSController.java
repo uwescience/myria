@@ -1,19 +1,21 @@
 package edu.washington.escience.myriad.parallel;
 
+import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.ExchangeTupleBatch;
+import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatch;
+import edu.washington.escience.myriad.operator.Merge;
+import edu.washington.escience.myriad.util.IPCUtils;
+import gnu.trove.impl.unmodifiable.TUnmodifiableIntIntMap;
+import gnu.trove.impl.unmodifiable.TUnmodifiableLongIntMap;
+import gnu.trove.map.TIntIntMap;
+import gnu.trove.map.TLongIntMap;
+import gnu.trove.map.hash.TIntIntHashMap;
+import gnu.trove.map.hash.TLongIntHashMap;
+
 import java.util.ArrayList;
 
 import org.jboss.netty.channel.Channel;
-
-import com.google.common.collect.ImmutableList;
-
-import edu.washington.escience.myriad.DbException;
-import edu.washington.escience.myriad.Schema;
-import edu.washington.escience.myriad.TupleBatch;
-import edu.washington.escience.myriad.TupleBatchBuffer;
-import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
-import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 
 /**
  * The producer part of the Shuffle Exchange operator.
@@ -24,130 +26,90 @@ import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
  */
 public class EOSController extends Producer {
 
-  final class WorkingThread extends Thread {
-    /** Constructor, set the thread name. */
-    public WorkingThread() {
-      super();
-      setName("EOSController-WorkingThread-" + getId());
-    }
-
-    @Override
-    public void run() {
-
-      final int numWorker = workerIDs.length;
-      final int numIDB = idbOpIDs.length;
-      final Channel[] channels = new Channel[numWorker];
-      final IPCConnectionPool connectionPool = getConnectionPool();
-      int index = 0;
-      for (final int workerID : workerIDs) {
-        channels[index] = connectionPool.reserveLongTermConnection(workerID);
-        index++;
-      }
-
-      final ArrayList<Integer> zeroCol = new ArrayList<Integer>();
-      final int[][] numEOI = new int[numIDB][numWorker];
-      try {
-        TupleBatch tb = null;
-        while ((tb = child.next()) != null) {
-          for (int i = 0; i < tb.numTuples(); ++i) {
-            int idbID = tb.getInt(0, i);
-            int workerID = tb.getInt(1, i) - 1;
-            int numNewTuples = tb.getInt(2, i);
-            if (numEOI[idbID][workerID] >= zeroCol.size()) {
-              zeroCol.add(0);
-            }
-            int tmp = zeroCol.get(numEOI[idbID][workerID]);
-            if (numNewTuples != 0) {
-              zeroCol.set(numEOI[idbID][workerID], -1);
-            } else if (tmp >= 0) {
-              zeroCol.set(numEOI[idbID][workerID], tmp + 1);
-              if (tmp + 1 == numIDB * numWorker) {
-                TupleBatchBuffer tbb = new TupleBatchBuffer(getEOSReportSchema());
-                for (int k = 0; k < numIDB; k++) {
-                  tbb.put(0, true);
-                  TransportMessage tm = tbb.popAnyAsTM(idbOpIDs[k]);
-                  for (int j = 0; j < numWorker; j++) {
-                    channels[j].write(tm);
-                  }
-                }
-                return;
-              }
-            }
-            numEOI[idbID][workerID]++;
-          }
-        }
-      } catch (final DbException e) {
-        e.printStackTrace();
-      } finally {
-        for (final Channel ch : channels) {
-          connectionPool.releaseLongTermConnection(ch);
-        }
-      }
-
-    }
-  }
-
-  public Schema getEOSReportSchema() {
-    final ImmutableList<Type> types = ImmutableList.of(Type.BOOLEAN_TYPE);
-    final ImmutableList<String> columnNames = ImmutableList.of("EOS");
-    final Schema schema = new Schema(types, columnNames);
-    return schema;
-  }
-
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
-  private transient WorkingThread runningThread;
-  private final int[] workerIDs;
-  private Operator child;
-  private final ExchangePairID[] idbOpIDs;
+  private final int[][] numEOI;
+  private final ArrayList<Integer> zeroCol;
+  private final int eosZeroColValue;
+  private final TIntIntMap workerIdToIndex;
+  private final TLongIntMap idbEOSReceiverIDToIndex;
 
-  public EOSController(final Operator child, final ExchangePairID operatorID, final ExchangePairID[] idbOpIDs,
-      final int[] workerIDs) {
-    super(operatorID);
-    this.child = child;
-    this.workerIDs = workerIDs;
-    this.idbOpIDs = idbOpIDs;
-  }
+  /**
+   * Each worker in workerIDs has the whole array of idbOpIDS. So the total number of IDBInput operators are
+   * idbOpIDs.length*workerIDs.length.
+   * 
+   * @param children The children are responsible for receiving EOI report from all controlled IDBInputs.
+   * @param workerIDs the workers where the IDBInput operators resides
+   * @param idbOpIDs the IDB operatorIDs in each Worker
+   * */
+  public EOSController(final Consumer[] children, final ExchangePairID[] idbOpIDs, final int[] workerIDs) {
+    super(new Merge(children), idbOpIDs, workerIDs, false);
+    numEOI = new int[idbOpIDs.length][workerIDs.length];
+    zeroCol = new ArrayList<Integer>();
+    eosZeroColValue = idbOpIDs.length * workerIDs.length;
 
-  @Override
-  public final void cleanup() {
-  }
-
-  @Override
-  protected final TupleBatch fetchNext() throws DbException {
-    try {
-      runningThread.join();
-    } catch (final InterruptedException e) {
-      e.printStackTrace();
+    TIntIntMap tmp = new TIntIntHashMap();
+    int idx = 0;
+    for (int workerID : workerIDs) {
+      tmp.put(workerID, idx++);
     }
-    return null;
+    workerIdToIndex = new TUnmodifiableIntIntMap(tmp);
+
+    TLongIntMap tmp2 = new TLongIntHashMap();
+    idx = 0;
+    for (ExchangePairID idbID : idbOpIDs) {
+      tmp2.put(idbID.getLong(), idx++);
+    }
+    idbEOSReceiverIDToIndex = new TUnmodifiableLongIntMap(tmp2);
   }
 
   @Override
-  public TupleBatch fetchNextReady() throws DbException {
-    return fetchNext();
+  protected final void consumeTuples(final TupleBatch otb) throws DbException {
+    if (isEOSSent) {
+      // after eos, do nothing.
+      return;
+    }
+    ExchangeTupleBatch etb = (ExchangeTupleBatch) otb;
+    for (int i = 0; i < etb.numTuples(); ++i) {
+      // int idbIdx = idbIDToIndex.get(etb.getLong(0, i));
+      int idbIdx = etb.getInt(0, i);
+      boolean isEmpty = etb.getBoolean(1, i);
+      int workerIdx = workerIdToIndex.get(etb.getSourceWorkerID());
+      while (numEOI[idbIdx][workerIdx] >= zeroCol.size()) {
+        zeroCol.add(0);
+      }
+      int tmp = zeroCol.get(numEOI[idbIdx][workerIdx]);
+      if (!isEmpty) {
+        zeroCol.set(numEOI[idbIdx][workerIdx], -1);
+      } else if (tmp >= 0) {
+        zeroCol.set(numEOI[idbIdx][workerIdx], tmp + 1);
+        if (tmp + 1 == eosZeroColValue) {
+          final Channel[] channels = super.getChannels();
+          for (Channel ch : channels) {
+            ch.write(IPCUtils.EOS); // directly emit an EOS makes more sense.
+          }
+          isEOSSent = true;
+          return;
+        }
+      }
+      numEOI[idbIdx][workerIdx]++;
+    }
+  }
+
+  public static final Schema eosReportSchema = Schema.EMPTY_SCHEMA;
+
+  // TODO add Root operator init and cleanup.
+  private volatile boolean isEOSSent = false;
+
+  @Override
+  protected void childEOS() throws DbException {
+
   }
 
   @Override
-  public final Operator[] getChildren() {
-    return new Operator[] { child };
-  }
+  protected void childEOI() throws DbException {
 
-  @Override
-  public final Schema getSchema() {
-    return child.getSchema();
-  }
-
-  @Override
-  public final void init() throws DbException {
-    runningThread = new WorkingThread();
-    runningThread.start();
-  }
-
-  @Override
-  public final void setChildren(final Operator[] children) {
-    child = children[0];
   }
 
 }
