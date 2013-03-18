@@ -11,10 +11,10 @@ import org.jboss.netty.channel.Channel;
  * */
 public class ProducerChannel {
 
-  public ProducerChannel(final QuerySubTreeTask ownerTask, final Producer op, final ExchangeChannelID ecID) {
+  public ProducerChannel(final QuerySubTreeTask ownerTask, final ExchangeChannelID ecID) {
     id = ecID;
     ownerQuerySubTreeTask = ownerTask;
-    this.op = op;
+    // this.op = op;
   }
 
   /**
@@ -31,7 +31,7 @@ public class ProducerChannel {
     ownerQuerySubTreeTask.notifyOutputEnabled(id);
   }
 
-  final Producer op;
+  // final Producer op;
 
   /**
    * Physical channel for IO.
