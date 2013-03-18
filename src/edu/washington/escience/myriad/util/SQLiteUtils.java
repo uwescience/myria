@@ -23,12 +23,12 @@ public final class SQLiteUtils {
    */
   public static String createStatementFromSchema(final Schema schema, final RelationKey relationKey) {
     final StringBuilder sb = new StringBuilder();
-    sb.append("CREATE TABLE ").append(relationKey).append(" (");
+    sb.append("CREATE TABLE ").append(relationKey.toString("sqlite")).append(" (");
     for (int i = 0; i < schema.numColumns(); ++i) {
       if (i > 0) {
         sb.append(", ");
       }
-      sb.append(schema.getColumnName(i)).append(" ").append(typeToSQLiteType(schema.getColumnType(i)));
+      sb.append(schema.getColumnName(i)).append(' ').append(typeToSQLiteType(schema.getColumnType(i)));
     }
     sb.append(");");
     return sb.toString();
@@ -43,12 +43,12 @@ public final class SQLiteUtils {
    */
   public static String createIfNotExistsStatementFromSchema(final Schema schema, final RelationKey relationKey) {
     final StringBuilder sb = new StringBuilder();
-    sb.append("CREATE TABLE IF NOT EXISTS ").append(relationKey).append(" (\n");
+    sb.append("CREATE TABLE IF NOT EXISTS ").append(relationKey.toString("sqlite")).append(" (\n");
     for (int i = 0; i < schema.numColumns(); ++i) {
       if (i > 0) {
         sb.append(",\n");
       }
-      sb.append("    ").append(schema.getColumnName(i)).append(" ").append(typeToSQLiteType(schema.getColumnType(i)));
+      sb.append("    ").append(schema.getColumnName(i)).append(' ').append(typeToSQLiteType(schema.getColumnType(i)));
     }
     sb.append(");");
     return sb.toString();
@@ -63,7 +63,7 @@ public final class SQLiteUtils {
       placeHolders[i] = "?";
     }
 
-    SQLiteAccessMethod.tupleBatchInsert(dbFilePath, "insert into " + relationKey + " ( "
+    SQLiteAccessMethod.tupleBatchInsert(dbFilePath, "insert into " + relationKey.toString("sqlite") + " ( "
         + StringUtils.join(fieldNames, ',') + " ) values ( " + StringUtils.join(placeHolders, ',') + " )", data);
   }
 
@@ -76,7 +76,7 @@ public final class SQLiteUtils {
    */
   public static String insertStatementFromSchema(final Schema schema, final RelationKey relationKey) {
     final StringBuilder sb = new StringBuilder();
-    sb.append("INSERT INTO ").append(relationKey).append(" (");
+    sb.append("INSERT INTO ").append(relationKey.toString("sqlite")).append(" (");
     sb.append(StringUtils.join(schema.getColumnNames(), ','));
     sb.append(") VALUES (");
     for (int i = 0; i < schema.numColumns(); ++i) {
@@ -127,6 +127,6 @@ public final class SQLiteUtils {
    * @return "DROP TABLE IF EXISTS <tt>relationKey.getCanonicalName()</tt>;"
    */
   public static String dropTableIfExistsStatement(final RelationKey relationKey) {
-    return "DROP TABLE IF EXISTS " + relationKey + ";";
+    return "DROP TABLE IF EXISTS " + relationKey.toString("sqlite") + ";";
   }
 }

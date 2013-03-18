@@ -1,12 +1,10 @@
 package edu.washington.escience.myriad.operator;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
@@ -17,90 +15,18 @@ import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 
 public final class LocalJoin extends Operator {
-
-  private class IndexedTuple {
-    private final int index;
-    private final TupleBatch tb;
-
-    public IndexedTuple(final TupleBatch tb, final int index) {
-      this.tb = tb;
-      this.index = index;
-    }
-
-    public boolean compareField(final IndexedTuple another, final int colIndx1, final int colIndx2) {
-      final Type type1 = tb.getSchema().getColumnType(colIndx1);
-      // type check in query plan?
-      final int rowIndx1 = index;
-      final int rowIndx2 = another.index;
-      switch (type1) {
-        case INT_TYPE:
-          return tb.getInt(colIndx1, rowIndx1) == another.tb.getInt(colIndx2, rowIndx2);
-        case DOUBLE_TYPE:
-          return tb.getDouble(colIndx1, rowIndx1) == another.tb.getDouble(colIndx2, rowIndx2);
-        case STRING_TYPE:
-          return tb.getString(colIndx1, rowIndx1).equals(another.tb.getString(colIndx2, rowIndx2));
-        case FLOAT_TYPE:
-          return tb.getFloat(colIndx1, rowIndx1) == another.tb.getFloat(colIndx2, rowIndx2);
-        case BOOLEAN_TYPE:
-          return tb.getBoolean(colIndx1, rowIndx1) == another.tb.getBoolean(colIndx2, rowIndx2);
-        case LONG_TYPE:
-          return tb.getLong(colIndx1, rowIndx1) == another.tb.getLong(colIndx2, rowIndx2);
-      }
-      return false;
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-      if (!(o instanceof IndexedTuple)) {
-        return false;
-      }
-      final IndexedTuple another = (IndexedTuple) o;
-      if (!(tb.getSchema().equals(another.tb.getSchema()))) {
-        return false;
-      }
-      for (int i = 0; i < tb.getSchema().numColumns(); ++i) {
-        if (!compareField(another, i, i)) {
-          return false;
-        }
-      }
-      return true;
-    }
-
-    @Override
-    public int hashCode() {
-      return tb.hashCode(index);
-    }
-
-    public int hashCode4Keys(final int[] colIndx) {
-      return tb.hashCode(index, colIndx);
-    }
-
-    public boolean joinEquals(final Object o, final int[] compareIndx1, final int[] compareIndx2) {
-      if (!(o instanceof IndexedTuple)) {
-        return false;
-      }
-      if (compareIndx1.length != compareIndx2.length) {
-        return false;
-      }
-      final IndexedTuple another = (IndexedTuple) o;
-      for (int i = 0; i < compareIndx1.length; ++i) {
-        if (!compareField(another, compareIndx1[i], compareIndx2[i])) {
-          return false;
-        }
-      }
-      return true;
-    }
-  }
-
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   private Operator child1, child2;
+
   private final Schema outputSchema;
   private final int[] compareIndx1;
   private final int[] compareIndx2;
-  private transient HashMap<Integer, List<IndexedTuple>> hashTable1;
-  private transient HashMap<Integer, List<IndexedTuple>> hashTable2;
+  private transient HashMap<Integer, List<Integer>> hashTable1Indices;
+  private transient HashMap<Integer, List<Integer>> hashTable2Indices;
+  private transient TupleBatchBuffer hashTable1;
+  private transient TupleBatchBuffer hashTable2;
   private transient TupleBatchBuffer ans;
   /** Which columns in the left child are to be output. */
   private final int[] answerColumns1;
@@ -154,29 +80,8 @@ public final class LocalJoin extends Operator {
    * @throw IllegalArgumentException if there are duplicated column names in <tt>outputSchema</tt>, or if
    *        <tt>outputSchema</tt> does not have the correct number of columns and column types.
    */
-  public LocalJoin(final Schema outputSchema, final Operator child1, final Operator child2, final int[] compareIndx1,
+  private LocalJoin(final Schema outputSchema, final Operator child1, final Operator child2, final int[] compareIndx1,
       final int[] compareIndx2, final int[] answerColumns1, final int[] answerColumns2) {
-    Objects.requireNonNull(outputSchema);
-    Objects.requireNonNull(child1);
-    Objects.requireNonNull(child2);
-    Objects.requireNonNull(compareIndx1);
-    Objects.requireNonNull(compareIndx2);
-    Objects.requireNonNull(answerColumns1);
-    Objects.requireNonNull(answerColumns2);
-
-    Preconditions.checkArgument(compareIndx1.length == compareIndx2.length,
-        "Must compare the same number of columns from both children");
-    Preconditions.checkArgument(outputSchema.numColumns() == answerColumns1.length + answerColumns2.length,
-        "Number of columns in provided schema must match the number of output columns");
-
-    /* TODO FIX the below checks. */
-    // Preconditions.checkArgument(outputSchema.getColumnTypes().subList(0, child1.getSchema().numColumns()).equals(
-    // child1.getSchema().getColumnTypes()),
-    // "Types of columns in provided schema must match the concatenation of children schema.");
-    // Preconditions.checkArgument(outputSchema.getColumnTypes().subList(child1.getSchema().numColumns(),
-    // outputSchema.numColumns()).equals(child2.getSchema().getColumnTypes()),
-    // "Types of columns in provided schema must match the concatenation of children schema.");
-
     this.outputSchema = outputSchema;
     this.child1 = child1;
     this.child2 = child2;
@@ -184,7 +89,6 @@ public final class LocalJoin extends Operator {
     this.compareIndx2 = compareIndx2;
     this.answerColumns1 = answerColumns1;
     this.answerColumns2 = answerColumns2;
-
   }
 
   /**
@@ -199,7 +103,7 @@ public final class LocalJoin extends Operator {
    * @throw IllegalArgumentException if there are duplicated column names in <tt>outputSchema</tt>, or if
    *        <tt>outputSchema</tt> does not have the correct number of columns and column types.
    */
-  public LocalJoin(final Schema outputSchema, final Operator child1, final Operator child2, final int[] compareIndx1,
+  private LocalJoin(final Schema outputSchema, final Operator child1, final Operator child2, final int[] compareIndx1,
       final int[] compareIndx2) {
     this(outputSchema, child1, child2, compareIndx1, compareIndx2, range(child1.getSchema().numColumns()), range(child2
         .getSchema().numColumns()));
@@ -244,15 +148,22 @@ public final class LocalJoin extends Operator {
     return new Schema(types, names);
   }
 
-  protected void addToAns(final IndexedTuple tuple1, final IndexedTuple tuple2) {
-    int count = 0;
-    for (int i : answerColumns1) {
-      ans.put(count, tuple1.tb.getObject(i, tuple1.index));
-      count++;
-    }
-    for (int i : answerColumns2) {
-      ans.put(count, tuple2.tb.getObject(i, tuple2.index));
-      count++;
+  protected void addToAns(final List<Object> cntTuple, final TupleBatchBuffer hashTable, final int index,
+      final boolean fromChild1) {
+    if (fromChild1) {
+      for (int i = 0; i < answerColumns1.length; ++i) {
+        ans.put(i, cntTuple.get(answerColumns1[i]));
+      }
+      for (int i = 0; i < answerColumns2.length; ++i) {
+        ans.put(i + answerColumns1.length, hashTable.get(answerColumns2[i], index));
+      }
+    } else {
+      for (int i = 0; i < answerColumns1.length; ++i) {
+        ans.put(i, hashTable.get(answerColumns1[i], index));
+      }
+      for (int i = 0; i < answerColumns2.length; ++i) {
+        ans.put(i + answerColumns1.length, cntTuple.get(answerColumns2[i]));
+      }
     }
   }
 
@@ -267,21 +178,22 @@ public final class LocalJoin extends Operator {
   protected TupleBatch fetchNext() throws DbException, InterruptedException {
     TupleBatch nexttb = ans.popFilled();
     while (nexttb == null) {
-      boolean hasNewTuple = false; // might change to EOS instead of hasNext()
+      boolean hasNewTuple = false;
       TupleBatch tb = null;
       if ((tb = child1.next()) != null) {
         hasNewTuple = true;
-        processChildTB(tb, true);
+        processChildTB(tb, hashTable1, hashTable2, hashTable1Indices, hashTable2Indices, compareIndx1, compareIndx2,
+            true);
       } else {
         if (child1.eoi()) {
           child1.setEOI(false);
           childrenEOI[0] = true;
         }
       }
-      // child2
       if ((tb = child2.next()) != null) {
         hasNewTuple = true;
-        processChildTB(tb, false);
+        processChildTB(tb, hashTable2, hashTable1, hashTable2Indices, hashTable1Indices, compareIndx2, compareIndx1,
+            false);
       } else {
         if (child2.eoi()) {
           child2.setEOI(false);
@@ -346,7 +258,8 @@ public final class LocalJoin extends Operator {
       if (!child1.eos()) {
         child1TB = child1.nextReady();
         if (child1TB != null) { // data
-          processChildTB(child1TB, true);
+          processChildTB(child1TB, hashTable1, hashTable2, hashTable1Indices, hashTable2Indices, compareIndx1,
+              compareIndx2, true);
           nexttb = ans.popFilled();
           if (nexttb != null) {
             return nexttb;
@@ -370,7 +283,8 @@ public final class LocalJoin extends Operator {
       if (!child2.eos()) {
         child2TB = child2.nextReady();
         if (child2TB != null) {
-          processChildTB(child2TB, false);
+          processChildTB(child2TB, hashTable2, hashTable1, hashTable2Indices, hashTable1Indices, compareIndx2,
+              compareIndx1, false);
           nexttb = ans.popFilled();
           if (nexttb != null) {
             return nexttb;
@@ -411,45 +325,53 @@ public final class LocalJoin extends Operator {
 
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    hashTable1 = new HashMap<Integer, List<IndexedTuple>>();
-    hashTable2 = new HashMap<Integer, List<IndexedTuple>>();
+    hashTable1Indices = new HashMap<Integer, List<Integer>>();
+    hashTable2Indices = new HashMap<Integer, List<Integer>>();
+    hashTable1 = new TupleBatchBuffer(child1.getSchema());
+    hashTable2 = new TupleBatchBuffer(child2.getSchema());
     ans = new TupleBatchBuffer(outputSchema);
   }
 
-  protected void processChildTB(final TupleBatch tb, final boolean tbFromChild1) {
-    List<IndexedTuple> tupleList = null;
-    int[] compareIndx2Add = compareIndx1;
-    int[] compareIndx2Join = compareIndx2;
-    HashMap<Integer, List<IndexedTuple>> hashTable2Add = hashTable1;
-    HashMap<Integer, List<IndexedTuple>> hashTable2Join = hashTable2;
-    if (!tbFromChild1) {
-      compareIndx2Add = compareIndx2;
-      compareIndx2Join = compareIndx1;
-      hashTable2Add = hashTable2;
-      hashTable2Join = hashTable1;
+  private boolean compareTuple(final List<Object> cntTuple, final TupleBatchBuffer hashTable, final int index,
+      final int[] compareIndx1, final int[] compareIndx2) {
+    if (compareIndx1.length != compareIndx2.length) {
+      return false;
     }
+    for (int i = 0; i < compareIndx1.length; ++i) {
+      if (!cntTuple.get(compareIndx1[i]).equals(hashTable.get(compareIndx2[i], index))) {
+        return false;
+      }
+    }
+    return true;
+  }
 
-    for (int i = 0; i < tb.numTuples(); ++i) { // outputTuples?
-      final IndexedTuple tuple = new IndexedTuple(tb, i);
-      final int cntHashCode = tuple.hashCode4Keys(compareIndx2Add);
-      tupleList = hashTable2Join.get(cntHashCode);
-      if (tupleList != null) {
-        for (final IndexedTuple tuple2 : tupleList) {
-          if (tuple.joinEquals(tuple2, compareIndx2Add, compareIndx2Join)) {
-            if (tbFromChild1) {
-              addToAns(tuple, tuple2);
-            } else {
-              addToAns(tuple2, tuple);
-            }
+  protected void processChildTB(final TupleBatch tb, final TupleBatchBuffer hashTable1,
+      final TupleBatchBuffer hashTable2, final HashMap<Integer, List<Integer>> hashTable1Indices,
+      final HashMap<Integer, List<Integer>> hashTable2Indices, final int[] compareIndx1, final int[] compareIndx2,
+      final boolean fromChild1) {
+
+    for (int i = 0; i < tb.numTuples(); ++i) {
+      final List<Object> cntTuple = new ArrayList<Object>();
+      for (int j = 0; j < tb.numColumns(); ++j) {
+        cntTuple.add(tb.getObject(j, i));
+      }
+      final int nextIndex = hashTable1.numTuples();
+      final int cntHashCode = tb.hashCode(i, compareIndx1);
+      List<Integer> indexList = hashTable2Indices.get(cntHashCode);
+      if (indexList != null) {
+        for (final int index : indexList) {
+          if (compareTuple(cntTuple, hashTable2, index, compareIndx1, compareIndx2)) {
+            addToAns(cntTuple, hashTable2, index, fromChild1);
           }
         }
       }
-      tupleList = hashTable2Add.get(cntHashCode);
-      if (tupleList == null) {
-        tupleList = new LinkedList<IndexedTuple>();
-        hashTable2Add.put(cntHashCode, tupleList);
+      if (hashTable1Indices.get(cntHashCode) == null) {
+        hashTable1Indices.put(cntHashCode, new ArrayList<Integer>());
       }
-      tupleList.add(tuple);
+      hashTable1Indices.get(cntHashCode).add(nextIndex);
+      for (int j = 0; j < tb.numColumns(); ++j) {
+        hashTable1.put(j, cntTuple.get(j));
+      }
     }
   }
 
@@ -458,5 +380,4 @@ public final class LocalJoin extends Operator {
     child1 = children[0];
     child2 = children[1];
   }
-
 }

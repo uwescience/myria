@@ -31,10 +31,13 @@ public class MultiGroupByAggregate_NotYetDone extends Operator {
 
     @Override
     public boolean equals(final Object another) {
-      if (another == null || !(another instanceof SimpleArrayWrapper)) {
+      if (this == another) {
+        return true;
+      }
+      if (!(another instanceof SimpleArrayWrapper)) {
         return false;
       }
-      return Arrays.equals(groupFields, ((SimpleArrayWrapper) another).groupFields);
+      return (another != null) && Arrays.equals(groupFields, ((SimpleArrayWrapper) another).groupFields);
     }
 
     @Override
@@ -142,11 +145,6 @@ public class MultiGroupByAggregate_NotYetDone extends Operator {
     groupAggs.clear();
   }
 
-  /**
-   * Returns the next tuple. If there is a group by field, then the first field is the field by which we are grouping,
-   * and the second field is the result of computing the aggregate, If there is no group by field, then the result tuple
-   * should contain one field representing the result of the aggregate. Should return null if there are no more tuples.
-   */
   @Override
   protected TupleBatch fetchNext() throws DbException, InterruptedException {
 

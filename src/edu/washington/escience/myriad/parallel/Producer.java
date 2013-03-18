@@ -40,7 +40,7 @@ public abstract class Producer extends RootOperator {
    * no worker means to the owner worker.
    * */
   public Producer(final Operator child, final ExchangePairID[] oIDs) {
-    this(child, oIDs, expandArray(new int[oIDs.length], -1)); // fill -1 at creation and change it at init.
+    this(child, oIDs, expandArray(new int[oIDs.length], -1), true);
   }
 
   /**
@@ -48,31 +48,58 @@ public abstract class Producer extends RootOperator {
    * */
   public Producer(final Operator child, final ExchangePairID oID, final int[] destinationWorkerIDs) {
     this(child, (ExchangePairID[]) expandArray(new ExchangePairID[destinationWorkerIDs.length], oID),
-        destinationWorkerIDs);
+        destinationWorkerIDs, true);
   }
 
   /**
    * same worker with different oIDs (multiway copy).
    * */
   public Producer(final Operator child, final ExchangePairID[] oIDs, final int destinationWorkerID) {
-    this(child, oIDs, expandArray(new int[oIDs.length], Integer.valueOf(destinationWorkerID)));
+    this(child, oIDs, expandArray(new int[oIDs.length], Integer.valueOf(destinationWorkerID)), true);
   }
 
   /**
    * A single oID to a single worker (collect).
    * */
   public Producer(final Operator child, final ExchangePairID oID, final int destinationWorkerID) {
-    this(child, new ExchangePairID[] { oID }, new int[] { destinationWorkerID });
+    this(child, new ExchangePairID[] { oID }, new int[] { destinationWorkerID }, true);
   }
 
   /**
-   * oID and worker pairs.
+   * Two modes:
+   * <p>
+   * 
+   * <pre>
+   * if (isOne2OneMapping)
+   *    Each ( oIDs[i], destinationWorkerIDs[i] ) pair is a producer channel.
+   *    It's required that oIDs.length==destinationWorkerIDs.length
+   *    The number of producer channels is oID.length==destinationWorkerIDs.length
+   * else
+   *    Each combination of oID and workerID is a producer channel.
+   *    The number of producer channels is oID.length*destinationWorkerIDs.length
+   * </pre>
+   * 
    * */
-  public Producer(final Operator child, final ExchangePairID[] oIDs, final int[] destinationWorkerIDs) {
+  public Producer(final Operator child, final ExchangePairID[] oIDs, final int[] destinationWorkerIDs,
+      final boolean isOne2OneMapping) {
     super(child);
-    Preconditions.checkArgument(oIDs.length == destinationWorkerIDs.length);
-    operatorIDs = oIDs;
-    this.destinationWorkerIDs = destinationWorkerIDs;
+    if (isOne2OneMapping) {
+      // oID and worker pairs. each ( oIDs[i], destinationWorkerIDs[i] ) pair is a logical channel.
+      Preconditions.checkArgument(oIDs.length == destinationWorkerIDs.length);
+      operatorIDs = oIDs;
+      this.destinationWorkerIDs = destinationWorkerIDs;
+    } else {
+      operatorIDs = new ExchangePairID[oIDs.length * destinationWorkerIDs.length];
+      this.destinationWorkerIDs = new int[oIDs.length * destinationWorkerIDs.length];
+      int idx = 0;
+      for (int wID : destinationWorkerIDs) {
+        for (ExchangePairID oID : oIDs) {
+          operatorIDs[idx] = oID;
+          this.destinationWorkerIDs[idx] = wID;
+          idx++;
+        }
+      }
+    }
   }
 
   @Override
@@ -141,5 +168,9 @@ public abstract class Producer extends RootOperator {
 
   protected final TupleBatchBuffer[] getBuffers() {
     return buffers;
+  }
+
+  protected final ExchangePairID[] getOperatorIDs() {
+    return operatorIDs;
   }
 }

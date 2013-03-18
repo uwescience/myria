@@ -218,9 +218,6 @@ public class SingleGroupByAggregate extends Operator {
     return new Operator[] { child };
   }
 
-  /**
-   * The schema of the aggregate output. Grouping fields first and then aggregate fields. The aggregate
-   */
   @Override
   public final Schema getSchema() {
     return schema;

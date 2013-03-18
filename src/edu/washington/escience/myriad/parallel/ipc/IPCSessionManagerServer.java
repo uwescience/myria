@@ -80,9 +80,6 @@ public class IPCSessionManagerServer extends SimpleChannelHandler {
     }
   }
 
-  /**
-   * Invoked when something was written into a {@link Channel}.
-   */
   @Override
   public void writeComplete(final ChannelHandlerContext ctx, final WriteCompletionEvent e) throws Exception {
     final ChannelContext cs = ChannelContext.getChannelContext(e.getChannel());
@@ -90,9 +87,6 @@ public class IPCSessionManagerServer extends SimpleChannelHandler {
     ctx.sendUpstream(e);
   }
 
-  /**
-   * Invoked when {@link Channel#write(Object)} is called.
-   */
   @Override
   public void writeRequested(final ChannelHandlerContext ctx, final MessageEvent e) throws Exception {
     ChannelContext.getChannelContext(e.getChannel()).recordWriteFuture(e);

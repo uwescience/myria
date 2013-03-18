@@ -157,7 +157,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
     /**
      * All the registered connected connections to a remote IPC entity.
      * */
-    final ChannelPrioritySet registeredChannels;
+    private final ChannelPrioritySet registeredChannels;
 
     /**
      * remote IPC entity ID.
@@ -167,17 +167,17 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
     /**
      * remote address.
      * */
-    final SocketInfo address;
+    private final SocketInfo address;
 
     /**
      * Connection bootstrap.
      * */
-    final ClientBootstrap bootstrap;
+    private final ClientBootstrap bootstrap;
 
     /**
      * Set of all unregistered channels at the time when this remote entity gets removed.
      * */
-    volatile HashSet<Channel> unregisteredChannelsAtRemove = null;
+    private volatile HashSet<Channel> unregisteredChannelsAtRemove = null;
 
     IPCRemote(final int id, final SocketInfo remoteAddress, final ClientBootstrap bootstrap) {
       this.id = id;
@@ -788,7 +788,6 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
     if (r != null) {
       r.registeredChannels.release(channel, channelTrashBin, recyclableRegisteredChannels);
     }
-
   }
 
   /**

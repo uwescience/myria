@@ -22,12 +22,12 @@ public final class ChannelPrioritySet {
    * Snapshot iterator that works off copy of underlying q array.
    */
   final class Itr implements Iterator<Channel> {
-    final Object[] array; // Array of all elements
-    int cursor; // index of next element to return;
-    int lastRet; // index of last element, or -1 if no such
+    /** Array of all elements. */
+    private final Object[] array;
+    /** Index of next element to return. */
+    private int cursor;
 
     Itr(final Object[] array) {
-      lastRet = -1;
       this.array = array;
     }
 
@@ -41,7 +41,6 @@ public final class ChannelPrioritySet {
       if (cursor >= array.length) {
         throw new NoSuchElementException();
       }
-      lastRet = cursor;
       return (Channel) array[cursor++];
     }
 

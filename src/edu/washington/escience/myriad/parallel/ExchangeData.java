@@ -51,7 +51,7 @@ public final class ExchangeData implements ExchangeMessage<TupleBatch> {
   }
 
   /**
-   * Get the ParallelOperatorID, to which this message is targeted
+   * Get the ParallelOperatorID, to which this message is targeted.
    */
   public ExchangePairID getOperatorID() {
     return operatorID;

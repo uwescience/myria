@@ -68,7 +68,9 @@ public class SplitDataTest extends SystemTestBase {
     /*** TEST PHASE 2: Count them up, make sure the answer agrees. ***/
     /* Create the worker plan: QueryScan with count, then send it to master. */
     Schema countResultSchema = new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("localCount"));
-    final SQLiteQueryScan scanCount = new SQLiteQueryScan("SELECT COUNT(*) FROM " + tuplesRRKey, countResultSchema);
+    final SQLiteQueryScan scanCount =
+        new SQLiteQueryScan("SELECT COUNT(*) FROM " + tuplesRRKey.toString("sqlite"), countResultSchema);
+
     final ExchangePairID collectId = ExchangePairID.newID();
     final CollectProducer send = new CollectProducer(scanCount, collectId, 0);
     workerPlans.clear();

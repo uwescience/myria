@@ -1,5 +1,7 @@
 package edu.washington.escience.myriad.operator;
 
+import java.util.Objects;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 
@@ -15,21 +17,16 @@ public final class Merge extends Operator {
   private final Operator[] children;
   private final Schema outputSchema;
 
-  public Merge(final Schema schema, final Operator child1, final Operator child2) {
-    Preconditions.checkArgument(child1.getSchema().equals(child2.getSchema()));
-    Preconditions.checkArgument(child1.getSchema().equals(schema));
-    outputSchema = schema;
-    children = new Operator[2];
-    children[0] = child1;
-    children[1] = child2;
-  }
+  public Merge(final Operator[] children) {
+    Objects.requireNonNull(children);
+    Preconditions.checkArgument(children.length > 0);
 
-  public Merge(final Operator child1, final Operator child2) {
-    Preconditions.checkArgument(child1.getSchema().equals(child2.getSchema()));
-    outputSchema = child1.getSchema();
-    children = new Operator[2];
-    children[0] = child1;
-    children[1] = child2;
+    for (Operator op : children) {
+      Preconditions.checkArgument(op.getSchema().equals(children[0].getSchema()));
+    }
+
+    outputSchema = children[0].getSchema();
+    this.children = children;
   }
 
   @Override
@@ -80,7 +77,9 @@ public final class Merge extends Operator {
 
   @Override
   public void setChildren(final Operator[] children) {
-    this.children[0] = children[0];
-    this.children[1] = children[1];
+    int size = this.children.length > children.length ? children.length : this.children.length;
+    for (int i = 0; i < size; i++) {
+      this.children[i] = children[i];
+    }
   }
 }

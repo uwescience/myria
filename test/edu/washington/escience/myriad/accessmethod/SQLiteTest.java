@@ -64,7 +64,7 @@ public class SQLiteTest {
 
     final HashMap<Tuple, Integer> expectedResult = TestUtils.tupleBatchToTupleBag(tbb);
 
-    final String query = "SELECT * FROM " + testtableKey;
+    final String query = "SELECT * FROM " + testtableKey.toString("sqlite");
 
     /* Scan the testtable in database */
     final SQLiteQueryScan scan = new SQLiteQueryScan(query, outputSchema);

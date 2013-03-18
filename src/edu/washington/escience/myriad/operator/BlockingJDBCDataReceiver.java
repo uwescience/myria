@@ -10,6 +10,7 @@ import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.accessmethod.JdbcAccessMethod;
+import edu.washington.escience.myriad.accessmethod.JdbcInfo;
 
 /**
  * Blocking when receiving data from children.
@@ -20,22 +21,15 @@ public final class BlockingJDBCDataReceiver extends Operator {
   private static final long serialVersionUID = 1L;
 
   private Operator child;
-  final String connectionString;
-  final String driverClass;
-  final String username;
-  final String password;
-  final String tableName;
-  final List<String> fieldNames;
-  final String[] placeHolders;
+  private final JdbcInfo jdbcInfo;
+  private final String tableName;
+  private final List<String> fieldNames;
+  private final String[] placeHolders;
 
-  public BlockingJDBCDataReceiver(final String tableName, final String connectionString, final String driverClass,
-      final String username, final String password, final Operator child) {
+  public BlockingJDBCDataReceiver(final String tableName, final JdbcInfo jdbcInfo, final Operator child) {
     this.tableName = tableName;
     this.child = child;
-    this.connectionString = connectionString;
-    this.driverClass = driverClass;
-    this.username = username;
-    this.password = password;
+    this.jdbcInfo = jdbcInfo;
     final Schema s = child.getSchema();
     fieldNames = s.getColumnNames();
     placeHolders = new String[s.numColumns()];
@@ -53,9 +47,8 @@ public final class BlockingJDBCDataReceiver extends Operator {
     TupleBatch tb = null;
     while (!child.eos()) {
       while ((tb = child.next()) != null) {
-        JdbcAccessMethod.tupleBatchInsert(driverClass, connectionString, "insert into " + tableName + " ( "
-            + StringUtils.join(fieldNames, ',') + " ) values ( " + StringUtils.join(placeHolders, ',') + " )", tb,
-            username, password);
+        JdbcAccessMethod.tupleBatchInsert(jdbcInfo, "insert into " + tableName + " ( "
+            + StringUtils.join(fieldNames, ',') + " ) values ( " + StringUtils.join(placeHolders, ',') + " )", tb);
       }
     }
     return null;

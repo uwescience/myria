@@ -1,10 +1,5 @@
 package edu.washington.escience.myriad.operator;
 
-import java.util.Arrays;
-import java.util.List;
-
-import org.apache.commons.lang3.ArrayUtils;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
@@ -22,15 +17,11 @@ public final class Project extends Operator {
   private static final long serialVersionUID = 1L;
   private Operator child;
   private final Schema schema;
-  private final Integer[] outFieldIds; // why not using int[]?
+  private final int[] outFieldIds; // why not using int[]?
 
-  public Project(final Integer[] fieldList, final Operator child) throws DbException {
-    this(Arrays.asList(fieldList), child);
-  }
-
-  public Project(final List<Integer> fieldList, final Operator child) throws DbException {
+  public Project(final int[] fieldList, final Operator child) throws DbException {
     this.child = child;
-    outFieldIds = fieldList.toArray(new Integer[] {});
+    outFieldIds = fieldList;
     final Schema childSchema = child.getSchema();
 
     final ImmutableList.Builder<Type> types = ImmutableList.builder();
@@ -46,17 +37,11 @@ public final class Project extends Operator {
   public void cleanup() {
   }
 
-  /**
-   * Operator.fetchNext implementation. Iterates over tuples from the child operator, projecting out the fields from the
-   * tuple
-   * 
-   * @return The next tuple, or null if there are no more tuples
-   */
   @Override
   protected TupleBatch fetchNext() throws DbException, InterruptedException {
     final TupleBatch tmp = child.next();
     if (tmp != null) {
-      return tmp.project(ArrayUtils.toPrimitive(outFieldIds));
+      return tmp.project(outFieldIds);
     }
     return null;
   }
@@ -66,7 +51,7 @@ public final class Project extends Operator {
 
     TupleBatch tb = null;
     if ((tb = child.nextReady()) != null) {
-      return tb.project(ArrayUtils.toPrimitive(outFieldIds));
+      return tb.project(outFieldIds);
     }
     return null;
   }

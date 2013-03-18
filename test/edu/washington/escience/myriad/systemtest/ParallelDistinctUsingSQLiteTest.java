@@ -59,7 +59,8 @@ public class ParallelDistinctUsingSQLiteTest extends SystemTestBase {
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final ExchangePairID worker2ReceiveID = ExchangePairID.newID();
 
-    final SQLiteQueryScan scan = new SQLiteQueryScan("select distinct * from " + testtableKey, schema);
+    final SQLiteQueryScan scan =
+        new SQLiteQueryScan("select distinct * from " + testtableKey.toString("sqlite"), schema);
     final CollectProducer cp = new CollectProducer(scan, worker2ReceiveID, WORKER_ID[1]);
 
     // CollectProducer child, ParallelOperatorID operatorID, SocketInfo[] workers
@@ -67,7 +68,8 @@ public class ParallelDistinctUsingSQLiteTest extends SystemTestBase {
     final BlockingSQLiteDataReceiver block2 =
         new BlockingSQLiteDataReceiver(RelationKey.of("test", "test", "temptable"), cc);
     final SQLiteSQLProcessor scan22 =
-        new SQLiteSQLProcessor("select distinct * from " + temptableKey, schema, new Operator[] { block2 });
+        new SQLiteSQLProcessor("select distinct * from " + temptableKey.toString("sqlite"), schema,
+            new Operator[] { block2 });
     final CollectProducer cp22 = new CollectProducer(scan22, serverReceiveID, MASTER_ID);
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
     workerPlans.put(WORKER_ID[0], new RootOperator[] { cp });

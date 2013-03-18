@@ -44,6 +44,7 @@ import edu.washington.escience.myriad.column.ColumnFactory;
 import edu.washington.escience.myriad.coordinator.catalog.Catalog;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.FileScan;
+import edu.washington.escience.myriad.operator.IDBInput;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SQLiteInsert;
@@ -68,6 +69,11 @@ public final class Server {
   public static final int SHORT_SLEEP_MILLIS = 100;
 
   private final class MessageProcessor implements Runnable {
+
+    /** Constructor, set the thread name. */
+    public MessageProcessor() {
+      super();
+    }
 
     @Override
     public void run() {
@@ -109,7 +115,6 @@ public final class Server {
                   columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm, data.getNumTuples());
                 }
                 final List<Column<?>> columns = Arrays.asList(columnArray);
-
                 receiveData((new ExchangeData(exchangePairID, senderID, columns, operatorSchema, data.getNumTuples(), m
                     .getSeq())));
                 cc.ownerTask.notifyNewInput();
@@ -480,12 +485,10 @@ public final class Server {
   private void receiveData(final ExchangeData data) {
     InputBuffer<TupleBatch, ExchangeData> q = null;
     q = dataBuffer.get(data.getOperatorID());
-    if (data instanceof ExchangeData) {
-      if (q != null) {
-        q.offer(data);
-      } else {
-        LOGGER.warn("weird: got ExchangeData (" + data + ") on null q");
-      }
+    if (q != null) {
+      q.offer(data);
+    } else {
+      LOGGER.warn("weird: got ExchangeData (" + data + ") on null q");
     }
   }
 
@@ -574,7 +577,8 @@ public final class Server {
       int[] destWorkers = p.getDestinationWorkerIDs(MyriaConstants.MASTER_ID);
       for (int i = 0; i < destWorkers.length; i++) {
         ExchangeChannelID ecID = new ExchangeChannelID(oIDs[i].getLong(), destWorkers[i]);
-        ProducerChannel pc = new ProducerChannel(drivingTask, p, ecID);
+        // ProducerChannel pc = new ProducerChannel(drivingTask, p, ecID);
+        ProducerChannel pc = new ProducerChannel(drivingTask, ecID);
         producerChannelMap.put(ecID, pc);
       }
     }
@@ -628,6 +632,14 @@ public final class Server {
         break QUERY_PLAN_TYPE_SWITCH;
       }
 
+      if (currentOperator instanceof IDBInput) {
+        IDBInput p = (IDBInput) currentOperator;
+        ExchangePairID oID = p.getControllerOperatorID();
+        int wID = p.getControllerWorkerID();
+        ExchangeChannelID ecID = new ExchangeChannelID(oID.getLong(), wID);
+        ProducerChannel pc = new ProducerChannel(drivingTask, ecID);
+        producerChannelMap.putIfAbsent(ecID, pc);
+      }
     }
 
     final Operator[] children = currentOperator.getChildren();
@@ -652,6 +664,18 @@ public final class Server {
       throws DbException, CatalogException {
     String catalogInfoPlaceHolder = "MasterPlan: " + masterPlan + "; WorkerPlan: " + workerPlans;
     return submitQuery(catalogInfoPlaceHolder, catalogInfoPlaceHolder, masterPlan, workerPlans);
+  }
+
+  /**
+   * Submit a query for execution. The plans may be removed in the future if the query compiler and schedulers are ready
+   * such that the plan can be generated from either the rawQuery or the logicalRa.
+   * */
+  public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final Map<Integer, RootOperator[]> plans)
+      throws DbException, CatalogException {
+    RootOperator masterPlan = plans.get(MyriaConstants.MASTER_ID)[0];
+    Map<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>(plans);
+    workerPlans.remove(MyriaConstants.MASTER_ID);
+    return this.submitQuery(rawQuery, logicalRa, masterPlan, workerPlans);
   }
 
   /**
@@ -742,7 +766,8 @@ public final class Server {
   public void ingestDataset(final RelationKey relationKey, final Schema schema, final byte[] data)
       throws CatalogException, InterruptedException {
     /* The Master plan: scan the data and scatter it to all the workers. */
-    FileScan fileScan = new FileScan(new ByteArrayInputStream(data), schema);
+    FileScan fileScan = new FileScan(schema);
+    fileScan.setInputStream(new ByteArrayInputStream(data));
     ExchangePairID scatterId = ExchangePairID.newID();
     int[] workersArray = new int[workers.size()];
     int count = 0;

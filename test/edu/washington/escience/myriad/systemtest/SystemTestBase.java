@@ -83,6 +83,12 @@ public class SystemTestBase {
 
     @Override
     public boolean equals(final Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof Tuple)) {
+        return false;
+      }
       return compareTo((Tuple) o) == 0;
     }
 
@@ -170,13 +176,15 @@ public class SystemTestBase {
       sqliteConnection.open(true);
 
       /* Create the table if not exist */
-      statement = sqliteConnection.prepare("create table if not exists " + relationKey + " (" + sqlSchemaString + ");");
+      statement =
+          sqliteConnection.prepare("create table if not exists " + relationKey.toString("sqlite") + " ("
+              + sqlSchemaString + ");");
 
       statement.step();
       statement.reset();
 
       /* Clear table data in case it already exists */
-      statement = sqliteConnection.prepare("delete from " + relationKey);
+      statement = sqliteConnection.prepare("delete from " + relationKey.toString("sqlite"));
       statement.step();
       statement.reset();
 
@@ -549,6 +557,7 @@ public class SystemTestBase {
         }
       };
 
+      workerStdoutReader[wc].setName("WorkerStdoutReader-" + wc);
       workerStdoutReader[wc].start();
 
       ++workerCount;

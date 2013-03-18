@@ -104,7 +104,6 @@ public final class IPCPipelineFactories {
   }
 
   public static final class MasterServerPipelineFactory implements ChannelPipelineFactory {
-
     /**
      * master control handler.
      * */

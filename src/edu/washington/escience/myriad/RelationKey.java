@@ -27,19 +27,19 @@ public final class RelationKey implements Serializable {
   private String canonicalTableName;
 
   /**
-   * Static function to create a RelationName object.
+   * Static function to create a RelationKey object.
    * 
    * @param userName the user who owns/creates this relation.
    * @param programName the user's program that owns/creates this relation.
    * @param relationName the name of the relation.
-   * @return a new RelationName reference to the specified relation.
+   * @return a new RelationKey reference to the specified relation.
    */
   public static RelationKey of(final String userName, final String programName, final String relationName) {
     return new RelationKey(userName, programName, relationName);
   }
 
   /**
-   * Private constructor to create a RelationName object.
+   * Private constructor to create a RelationKey object.
    * 
    * @param userName the user who owns/creates this relation.
    * @param programName the user's program that owns/creates this relation.
@@ -76,14 +76,53 @@ public final class RelationKey implements Serializable {
     return userName;
   }
 
+  @SuppressWarnings("unused")
   @Override
   public String toString() {
+    if (true) {
+      throw new UnsupportedOperationException("Use toString(dbms)!");
+    }
+    if (canonicalTableName != null) {
+      return canonicalTableName;
+    }
+    canonicalTableName = toString('[', '#', ']');
+    return canonicalTableName;
+  }
+
+  /**
+   * Helper function for computing strings of different types.
+   * 
+   * @param leftEscape the left escape character, e.g., '['.
+   * @param separate the separating character, e.g., '#'.
+   * @param rightEscape the right escape character, e.g., ']'.
+   * @return [user#program#relation].
+   */
+  private String toString(final char leftEscape, final char separate, final char rightEscape) {
     if (canonicalTableName != null) {
       return canonicalTableName;
     }
     StringBuilder sb = new StringBuilder();
-    sb.append('[').append(userName).append('#').append(programName).append('#').append(relationName).append(']');
+    sb.append(leftEscape).append(userName).append(separate).append(programName).append(separate).append(relationName)
+        .append(rightEscape);
     canonicalTableName = sb.toString();
     return canonicalTableName;
+  }
+
+  /**
+   * Helper function for computing strings of different types.
+   * 
+   * @param dbms the DBMS, e.g., "mysql".
+   * @return [user#program#relation].
+   */
+  public String toString(final String dbms) {
+    switch (dbms) {
+      case "sqlite":
+      case "mysql":
+        return toString('[', '#', ']');
+      case "monetdb":
+        return toString('\"', ' ', '\"');
+      default:
+        throw new IllegalArgumentException("Unsupported dbms " + dbms);
+    }
   }
 }

@@ -19,7 +19,7 @@ import edu.washington.escience.myriad.operator.JdbcQueryScan;
  * @author dhalperi
  * 
  */
-public class JdbcAccessMethodTest {
+public class MysqlJdbcAccessMethodTest {
 
   @Test
   public void testNumberResultsAndMultipleBatches() throws DbException, InterruptedException {
@@ -32,6 +32,7 @@ public class JdbcAccessMethodTest {
     final String databaseName = "myriad_test";
     final String jdbcDriverName = "com.mysql.jdbc.Driver";
     final int expectedNumResults = 250; /* Hardcoded in setup_testtablebig.sql */
+    final JdbcInfo jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, databaseName, user, password);
     /* Query information */
     final String query = "select * from testtablebig";
     final ImmutableList<Type> types = ImmutableList.of(Type.INT_TYPE);
@@ -39,8 +40,7 @@ public class JdbcAccessMethodTest {
     final Schema schema = new Schema(types, columnNames);
 
     /* Build up the QueryScan parameters and open the scan */
-    final String connectionString = "jdbc:" + dbms + "://" + host + ":" + port + "/" + databaseName;
-    final JdbcQueryScan scan = new JdbcQueryScan(jdbcDriverName, connectionString, query, schema, user, password);
+    final JdbcQueryScan scan = new JdbcQueryScan(jdbcInfo, query, schema);
 
     scan.open(null);
 

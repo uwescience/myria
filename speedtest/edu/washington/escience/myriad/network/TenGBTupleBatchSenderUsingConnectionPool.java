@@ -54,7 +54,7 @@ public class TenGBTupleBatchSenderUsingConnectionPool {
     final long serializedSize = tm.getSerializedSize();
     System.out.println("TupleBatch payload size: " + ((Long.SIZE / 8) + tupleSize * TupleBatch.BATCH_SIZE));
     System.out.println("TupleBatch serialized size: " + serializedSize);
-    final long tenGBytes = 10l * 1024l * 1024l * 1024l;
+    final long tenGBytes = 10L * 1024L * 1024L * 1024L;
     System.out.println("Total bytes to send: " + tenGBytes);
 
     final long numTB = tenGBytes / serializedSize;

@@ -32,6 +32,7 @@ import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.MyriaSystemConfigKeys;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.coordinator.catalog.WorkerCatalog;
+import edu.washington.escience.myriad.operator.IDBInput;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
@@ -125,6 +126,20 @@ public final class Worker {
                     q.startBlockingExecution();
                   }
                   break;
+                case DISCONNECT:
+                case CONNECT:
+                  // DISCONNECT and CONNECT are used exclusively in IPC connection pool. They should not arrive here.
+                  if (LOGGER.isErrorEnabled()) {
+                    LOGGER
+                        .error("DISCONNECT and CONNECT are used exclusively in IPC connection pool. They should not arrive here.");
+                  }
+                  break;
+                case QUERY_COMPLETE:
+                case QUERY_READY_TO_EXECUTE:
+                case WORKER_ALIVE:
+                  if (LOGGER.isErrorEnabled()) {
+                    LOGGER.error("Unexpected control message received at worker: " + cm.getType());
+                  }
               }
             }
           } catch (InterruptedException e) {
@@ -493,7 +508,8 @@ public final class Worker {
         int[] destWorkers = p.getDestinationWorkerIDs(myID);
         for (int i = 0; i < destWorkers.length; i++) {
           ExchangeChannelID ecID = new ExchangeChannelID(oIDs[i].getLong(), destWorkers[i]);
-          producerChannelMapping.put(ecID, new ProducerChannel(drivingTask, p, ecID));
+          // producerChannelMapping.put(ecID, new ProducerChannel(drivingTask, p, ecID));
+          producerChannelMapping.put(ecID, new ProducerChannel(drivingTask, ecID));
         }
       }
       setupConsumerChannels(task, drivingTask);
@@ -542,6 +558,15 @@ public final class Worker {
         consumerChannelMapping.put(ecID, cc);
         operator.exchangeChannels[idx++] = cc;
       }
+    }
+
+    if (currentOperator instanceof IDBInput) {
+      IDBInput p = (IDBInput) currentOperator;
+      ExchangePairID oID = p.getControllerOperatorID();
+      int wID = p.getControllerWorkerID();
+      ExchangeChannelID ecID = new ExchangeChannelID(oID.getLong(), wID);
+      ProducerChannel pc = new ProducerChannel(drivingTask, ecID);
+      producerChannelMapping.putIfAbsent(ecID, pc);
     }
 
     final Operator[] children = currentOperator.getChildren();

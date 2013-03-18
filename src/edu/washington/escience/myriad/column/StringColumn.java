@@ -170,7 +170,7 @@ public final class StringColumn implements Column<String> {
       }
       sb.append(getString(i));
     }
-    sb.append("]");
+    sb.append(']');
     return sb.toString();
   }
 }

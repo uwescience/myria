@@ -1,6 +1,5 @@
 package edu.washington.escience.myriad.operator;
 
-// import edu.washington.escience.Schema;
 import java.util.Iterator;
 
 import com.google.common.collect.ImmutableMap;
@@ -9,6 +8,7 @@ import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.accessmethod.JdbcAccessMethod;
+import edu.washington.escience.myriad.accessmethod.JdbcInfo;
 
 public class JdbcSQLProcessor extends Operator {
 
@@ -20,19 +20,12 @@ public class JdbcSQLProcessor extends Operator {
 
   private Iterator<TupleBatch> tuples;
   private final Schema schema;
-  private final String driverClass;
-  private final String connectionString;
+  private final JdbcInfo jdbcInfo;
   private final String baseSQL;
-  private final String username;
-  private final String password;
 
-  public JdbcSQLProcessor(final String driverClass, final String connectionString, final String baseSQL,
-      final Schema schema, final Operator[] children, final String username, final String password) {
-    this.driverClass = driverClass;
-    this.connectionString = connectionString;
+  public JdbcSQLProcessor(final JdbcInfo jdbcInfo, final String baseSQL, final Schema schema, final Operator[] children) {
+    this.jdbcInfo = jdbcInfo;
     this.baseSQL = baseSQL;
-    this.username = username;
-    this.password = password;
     this.schema = schema;
     this.children = children;
   }
@@ -93,7 +86,7 @@ public class JdbcSQLProcessor extends Operator {
   protected TupleBatch fetchNext() throws DbException, InterruptedException {
     waitChildren();
     if (tuples == null) {
-      tuples = JdbcAccessMethod.tupleBatchIteratorFromQuery(driverClass, connectionString, baseSQL, username, password);
+      tuples = JdbcAccessMethod.tupleBatchIteratorFromQuery(jdbcInfo, baseSQL);
     }
     if (tuples.hasNext()) {
       return tuples.next();

@@ -17,7 +17,7 @@ import gnu.trove.impl.unmodifiable.TUnmodifiableIntIntMap;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;
 
-public abstract class Consumer extends LeafOperator {
+public class Consumer extends LeafOperator {
 
   /** The logger for this class. Defaults to myriad level, but could be set to a finer granularity if needed. */
   private static final Logger LOGGER = LoggerFactory.getLogger(Consumer.class);
@@ -32,13 +32,13 @@ public abstract class Consumer extends LeafOperator {
 
   private final ExchangePairID operatorID;
   private final Schema schema;
-
   private transient BitSet workerEOS;
   private transient BitSet workerEOI;
   private transient TIntIntMap workerIdToIndex;
   private final int[] sourceWorkers;
   public transient long[] recentSeqNum;
-  public transient LinkedList<Integer> inputGlobalOrder; // recording data message only, list of worker IDs
+  public transient LinkedList<Integer> inputGlobalOrder; // recording data message only, list of worker IDs, for fault
+                                                         // tolerance
   public transient boolean inRewinding;
   public transient ConsumerChannel[] exchangeChannels;
 
@@ -52,10 +52,7 @@ public abstract class Consumer extends LeafOperator {
     workerEOI = new BitSet(sourceWorkers.length);
   }
 
-  /**
-   * If there's no child operator, a Schema is needed.
-   */
-  protected Consumer(final Schema schema, final ExchangePairID operatorID, final int[] workerIDs) {
+  public Consumer(final Schema schema, final ExchangePairID operatorID, final int[] workerIDs) {
     this.operatorID = operatorID;
     this.schema = schema;
     sourceWorkers = workerIDs;

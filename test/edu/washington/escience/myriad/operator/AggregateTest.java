@@ -37,7 +37,7 @@ public class AggregateTest {
         final Long aggValue = (Long) rawData.get(aggColumn).get(i);
         Long currentSum = sum.get(groupByValue);
         if (currentSum == null) {
-          currentSum = 0l;
+          currentSum = 0L;
           count.put(groupByValue, 1);
         } else {
           count.put(groupByValue, count.get(groupByValue) + 1);
@@ -67,7 +67,7 @@ public class AggregateTest {
         final Object groupByValue = rawData.get(groupByColumn).get(i);
         Long currentCount = count.get(groupByValue);
         if (currentCount == null) {
-          currentCount = 0l;
+          currentCount = 0L;
         }
         count.put(groupByValue, currentCount++);
       }
@@ -80,7 +80,7 @@ public class AggregateTest {
       final SystemTestBase.Tuple t = new SystemTestBase.Tuple(2);
       t.set(0, (Comparable<?>) gValue);
       t.set(1, countV);
-      result.put(t, 1l);
+      result.put(t, 1L);
     }
     return result;
   }
@@ -94,7 +94,7 @@ public class AggregateTest {
       for (int i = 0; i < numTuples; i++) {
         final Object groupByValue = rawData.get(groupByColumn).get(i);
         @SuppressWarnings("unchecked")
-        final T aggValue = ((Column<T>) rawData.get(aggColumn)).get(i);
+        final T aggValue = (T) rawData.get(aggColumn).get(i);
         final T currentMax = max.get(groupByValue);
         if (currentMax == null) {
           max.put(groupByValue, aggValue);
@@ -125,7 +125,7 @@ public class AggregateTest {
       for (int i = 0; i < numTuples; i++) {
         final Object groupByValue = rawData.get(groupByColumn).get(i);
         @SuppressWarnings("unchecked")
-        final T aggValue = ((Column<T>) rawData.get(aggColumn)).get(i);
+        final T aggValue = (T) rawData.get(aggColumn).get(i);
         final T currentMin = min.get(groupByValue);
         if (currentMin == null) {
           min.put(groupByValue, aggValue);
@@ -158,7 +158,7 @@ public class AggregateTest {
         final Long aggValue = (Long) rawData.get(aggColumn).get(i);
         Long currentSum = sum.get(groupByValue);
         if (currentSum == null) {
-          currentSum = 0l;
+          currentSum = 0L;
         }
         sum.put(groupByValue, currentSum + aggValue);
       }
@@ -179,12 +179,12 @@ public class AggregateTest {
   @SuppressWarnings("unchecked")
   public static <T extends Comparable<T>> T max(final TupleBatchBuffer tbb, final int column) {
     final List<List<Column<?>>> tbs = tbb.getAllAsRawColumn();
-    T max = ((Column<T>) tbs.get(0).get(column)).get(0);
+    T max = (T) tbs.get(0).get(column).get(0);
     for (final List<Column<?>> tb : tbs) {
       final int numTuples = tb.get(0).size();
-      final Column<T> c = (Column<T>) tb.get(column);
+      final Column<?> c = tb.get(column);
       for (int i = 0; i < numTuples; i++) {
-        final T current = c.get(i);
+        final T current = (T) c.get(i);
         if (max.compareTo(current) < 0) {
           max = current;
         }
@@ -196,12 +196,12 @@ public class AggregateTest {
   @SuppressWarnings("unchecked")
   public static <T extends Comparable<T>> T min(final TupleBatchBuffer tbb, final int column) {
     final List<List<Column<?>>> tbs = tbb.getAllAsRawColumn();
-    T min = ((Column<T>) tbs.get(0).get(column)).get(0);
+    T min = (T) tbs.get(0).get(column).get(0);
     for (final List<Column<?>> tb : tbs) {
       final int numTuples = tb.get(0).size();
-      final Column<T> c = (Column<T>) tb.get(column);
+      final Column<?> c = tb.get(column);
       for (int i = 0; i < numTuples; i++) {
-        final T current = c.get(i);
+        final T current = (T) c.get(i);
         if (min.compareTo(current) > 0) {
           min = current;
         }
@@ -215,10 +215,9 @@ public class AggregateTest {
     long sum = 0;
     for (final List<Column<?>> tb : tbs) {
       final int numTuples = tb.get(0).size();
-      @SuppressWarnings("unchecked")
-      final Column<Long> c = (Column<Long>) tb.get(column);
+      final Column<?> c = tb.get(column);
       for (int i = 0; i < numTuples; i++) {
-        final Long current = c.get(i);
+        final Long current = (Long) c.get(i);
         sum += current;
       }
     }

@@ -169,6 +169,24 @@ public class TupleBatchBuffer {
     return readyTuples.size() * TupleBatch.BATCH_SIZE + currentInProgressTuples;
   }
 
+  public final Object get(final int colIndex, final int rowIndex) throws IndexOutOfBoundsException {
+    int tupleBatchIndex = rowIndex / TupleBatch.BATCH_SIZE;
+    int tupleIndex = rowIndex % TupleBatch.BATCH_SIZE;
+    if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
+        && tupleIndex >= currentInProgressTuples) {
+      throw new IndexOutOfBoundsException();
+    }
+    if (tupleBatchIndex < readyTuples.size()) {
+      return readyTuples.get(tupleBatchIndex).get(colIndex).get(tupleIndex);
+    }
+    return currentColumns.get(colIndex).get(tupleIndex);
+
+  }
+
+  public final int numColumns() {
+    return numColumns;
+  }
+
   /**
    * @return pop filled and non-filled TupleBatch
    * */

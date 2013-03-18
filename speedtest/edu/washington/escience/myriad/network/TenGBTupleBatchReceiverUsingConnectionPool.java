@@ -72,6 +72,7 @@ public class TenGBTupleBatchReceiverUsingConnectionPool {
                     columnArray[0].size(), -1, -1);
             tb.compactInto(tbb);
             while (tbb.popAny() != null) {
+              /* Pass -- emptying tuple buffer. */
             }
 
             numReceived += 1;

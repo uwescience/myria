@@ -13,6 +13,7 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.operator.Merge;
+import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.operator.SinkRoot;
@@ -75,7 +76,7 @@ public class LocalMultiwayProducerTest extends SystemTestBase {
       insert(WORKER_ID[1], testtableKey, tableSchema, tb);
     }
 
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan("select * from " + testtableKey, tableSchema);
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan("select * from " + testtableKey.toString("sqlite"), tableSchema);
     final ExchangePairID consumerID1 = ExchangePairID.newID();
     final ExchangePairID consumerID2 = ExchangePairID.newID();
     final LocalMultiwayProducer multiProducer1 =
@@ -87,8 +88,8 @@ public class LocalMultiwayProducerTest extends SystemTestBase {
     final LocalMultiwayConsumer multiConsumer2_1 = new LocalMultiwayConsumer(multiProducer2.getSchema(), consumerID1);
     final LocalMultiwayConsumer multiConsumer2_2 = new LocalMultiwayConsumer(multiProducer2.getSchema(), consumerID2);
 
-    final Merge merge1 = new Merge(tableSchema, multiConsumer1_1, multiConsumer1_2);
-    final Merge merge2 = new Merge(tableSchema, multiConsumer2_1, multiConsumer2_2);
+    final Merge merge1 = new Merge(new Operator[] { multiConsumer1_1, multiConsumer1_2 });
+    final Merge merge2 = new Merge(new Operator[] { multiConsumer2_1, multiConsumer2_2 });
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final CollectProducer cp1 = new CollectProducer(merge1, serverReceiveID, MASTER_ID);

@@ -56,7 +56,6 @@ public class SQLiteInsertTest {
   @Test
   public void test() throws Exception {
     try {
-      // final ExecutorService myExecutor = Executors.newSingleThreadExecutor();
       Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
       final RelationKey tuplesKey = RelationKey.of("test", "test", "my_tuples");
 
@@ -72,7 +71,8 @@ public class SQLiteInsertTest {
 
       final SQLiteConnection sqliteConnection = new SQLiteConnection(tempFile);
       sqliteConnection.open(false);
-      final SQLiteStatement statement = sqliteConnection.prepare("SELECT COUNT(*) FROM " + tuplesKey + ";");
+      final SQLiteStatement statement =
+          sqliteConnection.prepare("SELECT COUNT(*) FROM " + tuplesKey.toString("sqlite") + ";");
       assertTrue(statement.step());
       final int inserted = statement.columnInt(0);
       assertTrue(inserted == NUM_TUPLES);

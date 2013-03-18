@@ -125,7 +125,7 @@ public final class LongColumn implements Column<Long> {
       }
       sb.append(data.get(i));
     }
-    sb.append("]");
+    sb.append(']');
     return sb.toString();
   }
 }

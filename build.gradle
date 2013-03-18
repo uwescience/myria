@@ -48,12 +48,13 @@ tasks.eclipseClasspath.dependsOn cleanEclipseClasspath
 /* Where we will fetch external JAR files from. */
 repositories {
   mavenCentral() /* The standard Java Maven repository. */
-  maven { url "http://maven.restlet.org" }
+  maven { url "http://maven.restlet.org" } /* Restlet */
+  maven { url "http://clojars.org/repo" } /* Clojars, for MonetDB */
 }
 
 /* List constants that we use in multiple places. */
 ext.slf4jVersion = "1.7.2"
-ext.restletVersion = "2.1.1"
+ext.restletVersion = "2.1.2"
 
 dependencies {
   compile "com.almworks.sqlite4java:sqlite4java:0.282"
@@ -68,13 +69,16 @@ dependencies {
   compile "org.apache.commons:commons-lang3:3.1"
   compile "commons-cli:commons-cli:1.2"
 
-  compile "org.restlet.jee:org.restlet:${restletVersion}"
-  compile "org.restlet.jee:org.restlet.ext.jackson:${restletVersion}"
-  compile "org.restlet.jee:org.restlet.ext.jaxrs:${restletVersion}"
+  compile "org.restlet.jse:org.restlet:${restletVersion}"
+  compile "org.restlet.jse:org.restlet.ext.jackson:${restletVersion}"
+  compile "org.restlet.jse:org.restlet.ext.jaxrs:${restletVersion}"
+  compile "org.restlet.jse:org.restlet.ext.jetty:${restletVersion}"
 
   compile "org.slf4j:slf4j-api:${slf4jVersion}"
   runtime "org.slf4j:slf4j-simple:${slf4jVersion}"
   //runtime "org.slf4j:slf4j-log4j12:${slf4jVersion}"
+
+  runtime "monetdb:monetdb-jdbc:2.8"
   runtime "mysql:mysql-connector-java:5.1.22"
 
   testCompile "junit:junit:4.11"
@@ -85,9 +89,9 @@ dependencies {
   speedtestRuntime configurations.testRuntime
 }
 
-/* Tell all tasks to add sqlite library to their classpath when running. */
+/* Tell Java to emit all compiler warnings. */
 tasks.withType(Compile) {
-  options.compilerArgs << "-Xlint:deprecation"
+  options.compilerArgs << "-Xlint"
 }
 
 /* Tell all tasks to add sqlite library to their classpath when running. */
@@ -145,6 +149,7 @@ eclipse.classpath {
 }
 
 jar {
+  excludes = [ 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA' ] 
   manifest {
     attributes("Implementation-Title" : "Myria",
                "Implementation-Version": version,

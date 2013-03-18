@@ -140,7 +140,9 @@ public abstract class Operator implements Serializable {
     }
 
     if (result == null) {
-      // now we have two possibilities when result == null: EOS or EOI.
+      // now we have three possibilities when result == null: EOS, EOI, or just a null.
+      // returns a null won't cause a problem so far, since a producer will keep calling fetchNext() until EOS
+      // call checkEOSAndEOI to set self EOS and EOI, if applicable
       checkEOSAndEOI();
     }
     return result;
@@ -294,6 +296,7 @@ public abstract class Operator implements Serializable {
   /**
    * Explicitly set EOS for this operator.
    * 
+   * Operators should not be able to unset an already set EOS except reopen it.
    */
   protected final void setEOS() {
     LOGGER.info("Operator EOS: " + this);

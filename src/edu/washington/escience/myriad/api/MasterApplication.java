@@ -8,7 +8,7 @@ import javax.ws.rs.core.Application;
 /**
  * This object simply contains the list of resources that can be requested via the RESTlet server.
  * 
- * @author dhalperi
+ * @author dhalperi, jwang
  */
 public class MasterApplication extends Application {
   @Override
@@ -17,6 +17,7 @@ public class MasterApplication extends Application {
     rrcs.add(QueryResource.class);
     rrcs.add(DatasetResource.class);
     rrcs.add(WorkerCollection.class);
+    rrcs.add(MasterResource.class);
     return rrcs;
   }
 }

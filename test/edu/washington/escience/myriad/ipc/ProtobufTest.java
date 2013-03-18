@@ -167,6 +167,7 @@ public class ProtobufTest {
         }
       };
       threads[i] = tt;
+      tt.setName("protobufMultiThreadNoWaitTest-" + i);
       tt.setDaemon(false);
       tt.start();
     }
@@ -196,13 +197,13 @@ public class ProtobufTest {
           case NORMAL:
             numReceived++;
             final List<ColumnMessage> columnMessages = data.getColumnsList();
-            final Column<?>[] columnArray = new Column[columnMessages.size()];
+            final Column<?>[] columnArray = new Column<?>[columnMessages.size()];
             int idx = 0;
             for (final ColumnMessage cm : columnMessages) {
               columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm, data.getNumTuples());
             }
             final List<Column<?>> columns = Arrays.asList(columnArray);
-            final TupleBatch tb = new TupleBatch(schema, columns, columnArray[0].size(), -1, -1);
+            final TupleBatch tb = new TupleBatch(schema, columns, columnArray[0].size());
 
             tb.compactInto(actualTBB);
             break;
@@ -251,6 +252,7 @@ public class ProtobufTest {
         }
       };
       threads[i] = tt;
+      tt.setName("protobufMultiThreadSendMessageTest-" + i);
       tt.setDaemon(false);
       tt.start();
     }
@@ -351,6 +353,7 @@ public class ProtobufTest {
         }
       };
       threads[i] = tt;
+      tt.setName("protobufMultiThreadSeparatePoolTest-" + i);
       tt.setDaemon(false);
       tt.start();
     }
@@ -389,13 +392,13 @@ public class ProtobufTest {
           case NORMAL:
             numReceived++;
             final List<ColumnMessage> columnMessages = data.getColumnsList();
-            final Column<?>[] columnArray = new Column[columnMessages.size()];
+            final Column<?>[] columnArray = new Column<?>[columnMessages.size()];
             int idx = 0;
             for (final ColumnMessage cm : columnMessages) {
               columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm, data.getNumTuples());
             }
             final List<Column<?>> columns = Arrays.asList(columnArray);
-            final TupleBatch tb = new TupleBatch(schema, columns, columnArray[0].size(), -1, -1);
+            final TupleBatch tb = new TupleBatch(schema, columns, columnArray[0].size());
 
             tb.compactInto(actualTBB);
             break;
@@ -482,6 +485,7 @@ public class ProtobufTest {
         }
       };
       threads[i] = tt;
+      tt.setName("protobufMultiThreadTest-" + i);
       tt.setDaemon(false);
       tt.start();
     }
@@ -516,13 +520,13 @@ public class ProtobufTest {
           case NORMAL:
             numReceived++;
             final List<ColumnMessage> columnMessages = data.getColumnsList();
-            final Column<?>[] columnArray = new Column[columnMessages.size()];
+            final Column<?>[] columnArray = new Column<?>[columnMessages.size()];
             int idx = 0;
             for (final ColumnMessage cm : columnMessages) {
               columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm, data.getNumTuples());
             }
             final List<Column<?>> columns = Arrays.asList(columnArray);
-            final TupleBatch tb = new TupleBatch(schema, columns, columnArray[0].size(), -1, -1);
+            final TupleBatch tb = new TupleBatch(schema, columns, columnArray[0].size());
 
             tb.compactInto(actualTBB);
             break;
@@ -606,13 +610,13 @@ public class ProtobufTest {
           case NORMAL:
             numReceived++;
             final List<ColumnMessage> columnMessages = data.getColumnsList();
-            final Column<?>[] columnArray = new Column[columnMessages.size()];
+            final Column<?>[] columnArray = new Column<?>[columnMessages.size()];
             int idx = 0;
             for (final ColumnMessage cm : columnMessages) {
               columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm, data.getNumTuples());
             }
             final List<Column<?>> columns = Arrays.asList(columnArray);
-            final TupleBatch tb = new TupleBatch(schema, columns, columnArray[0].size(), -1, -1);
+            final TupleBatch tb = new TupleBatch(schema, columns, columnArray[0].size());
 
             tb.compactInto(actualTBB);
             break;
@@ -755,13 +759,13 @@ public class ProtobufTest {
           case NORMAL:
             numReceived++;
             final List<ColumnMessage> columnMessages = data.getColumnsList();
-            final Column<?>[] columnArray = new Column[columnMessages.size()];
+            final Column<?>[] columnArray = new Column<?>[columnMessages.size()];
             int idx = 0;
             for (final ColumnMessage cm : columnMessages) {
               columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm, data.getNumTuples());
             }
             final List<Column<?>> columns = Arrays.asList(columnArray);
-            final TupleBatch tb = new TupleBatch(schema, columns, columnArray[0].size(), -1, -1);
+            final TupleBatch tb = new TupleBatch(schema, columns, columnArray[0].size());
 
             tb.compactInto(actualTBB);
             break;
@@ -851,13 +855,13 @@ public class ProtobufTest {
           case NORMAL:
             numReceived++;
             final List<ColumnMessage> columnMessages = data.getColumnsList();
-            final Column<?>[] columnArray = new Column[columnMessages.size()];
+            final Column<?>[] columnArray = new Column<?>[columnMessages.size()];
             int idx = 0;
             for (final ColumnMessage cm : columnMessages) {
               columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm, data.getNumTuples());
             }
             final List<Column<?>> columns = Arrays.asList(columnArray);
-            final TupleBatch tb = new TupleBatch(schema, columns, columnArray[0].size(), -1, -1);
+            final TupleBatch tb = new TupleBatch(schema, columns, columnArray[0].size());
 
             tb.compactInto(actualTBB);
             break;

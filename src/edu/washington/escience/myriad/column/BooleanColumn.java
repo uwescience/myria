@@ -128,7 +128,7 @@ public final class BooleanColumn implements Column<Boolean> {
       }
       sb.append(data.get(i));
     }
-    sb.append("]");
+    sb.append(']');
     return sb.toString();
   }
 }

@@ -33,7 +33,7 @@ import edu.washington.escience.myriad.util.TestUtils;
 
 public class IterativeSelfJoinTest extends SystemTestBase {
   // change configuration here
-  private final int MaxID = 100;
+  private final int MaxID = 400;
   private final int numIteration = 4;
   private final int numTbl1Worker1 = 2000;
   private final int numTbl1Worker2 = 2000;
@@ -142,8 +142,10 @@ public class IterativeSelfJoinTest extends SystemTestBase {
     }
 
     // parallel query generation, duplicate db files
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan("select * from " + testtableKeys.get(0), tableSchema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan("select * from " + testtableKeys.get(0), tableSchema);
+    final SQLiteQueryScan scan1 =
+        new SQLiteQueryScan("select * from " + testtableKeys.get(0).toString("sqlite"), tableSchema);
+    final SQLiteQueryScan scan2 =
+        new SQLiteQueryScan("select * from " + testtableKeys.get(0).toString("sqlite"), tableSchema);
 
     final int numPartition = 2;
     final PartitionFunction<String, Integer> pf0 = new SingleFieldHashPartitionFunction(numPartition); // 2 workers
@@ -164,28 +166,28 @@ public class IterativeSelfJoinTest extends SystemTestBase {
     ExchangePairID arrayID1, arrayID2, arrayID0;
     arrayID1 = ExchangePairID.newID();
     arrayID2 = ExchangePairID.newID();
-    sp1[0] = new ShuffleProducer(scan1, arrayID1, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf1);
-    sp2[0] = new ShuffleProducer(scan2, arrayID2, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf0);
+    sp1[0] = new ShuffleProducer(scan1, arrayID1, WORKER_ID, pf1);
+    sp2[0] = new ShuffleProducer(scan2, arrayID2, WORKER_ID, pf0);
     subqueries.add(sp1[0]);
     subqueries.add(sp2[0]);
 
     for (int i = 1; i < numIteration; ++i) {
-      sc1[i] = new ShuffleConsumer(sp1[i - 1].getSchema(), arrayID1, new int[] { WORKER_ID[0], WORKER_ID[1] });
-      sc2[i] = new ShuffleConsumer(sp2[i - 1].getSchema(), arrayID2, new int[] { WORKER_ID[0], WORKER_ID[1] });
+      sc1[i] = new ShuffleConsumer(sp1[i - 1].getSchema(), arrayID1, WORKER_ID);
+      sc2[i] = new ShuffleConsumer(sp2[i - 1].getSchema(), arrayID2, WORKER_ID);
       localjoin[i] = new LocalJoin(sc1[i], sc2[i], new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
       arrayID0 = ExchangePairID.newID();
-      sp0[i] = new ShuffleProducer(localjoin[i], arrayID0, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf0);
+      sp0[i] = new ShuffleProducer(localjoin[i], arrayID0, WORKER_ID, pf0);
       subqueries.add(sp0[i]);
-      sc0[i] = new ShuffleConsumer(sp0[i].getSchema(), arrayID0, new int[] { WORKER_ID[0], WORKER_ID[1] });
+      sc0[i] = new ShuffleConsumer(sp0[i].getSchema(), arrayID0, WORKER_ID);
       dupelim[i] = new DupElim(sc0[i]);
       if (i == numIteration - 1) {
         break;
       }
-      scan[i] = new SQLiteQueryScan("select * from " + testtableKeys.get(i), tableSchema);
+      scan[i] = new SQLiteQueryScan("select * from " + testtableKeys.get(i).toString("sqlite"), tableSchema);
       arrayID1 = ExchangePairID.newID();
       arrayID2 = ExchangePairID.newID();
-      sp1[i] = new ShuffleProducer(scan[i], arrayID1, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf1);
-      sp2[i] = new ShuffleProducer(dupelim[i], arrayID2, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf0);
+      sp1[i] = new ShuffleProducer(scan[i], arrayID1, WORKER_ID, pf1);
+      sp2[i] = new ShuffleProducer(dupelim[i], arrayID2, WORKER_ID, pf0);
       subqueries.add(sp1[i]);
       subqueries.add(sp2[i]);
     }

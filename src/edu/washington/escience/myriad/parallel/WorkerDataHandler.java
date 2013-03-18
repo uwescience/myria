@@ -93,19 +93,66 @@ public final class WorkerDataHandler extends SimpleChannelUpstreamHandler implem
             break;
           case EOI:
             cc = ecp.getInputChannel();
-            pushToBufferSucceed =
-                cc.op.inputBuffer.offer(new ExchangeData(cc.op.getOperatorID(), remoteID, cc.op.getSchema(),
-                    MetaMessage.EOI));
-            cc.ownerTask.notifyNewInput();
+            if (cc.op.inputBuffer == null) {
+              if (cc.ownerTask.isFinished()) {
+                if (LOGGER.isDebugEnabled()) {
+                  LOGGER.debug("Iteration EOI input for iteration input of IDBInput. Drop directly.");
+                }
+              } else {
+                if (LOGGER.isErrorEnabled()) {
+                  LOGGER.error("Operator inputbuffer is null.",
+                      new NullPointerException("Operator inputbuffer is null"));
+                }
+              }
+            } else {
+              pushToBufferSucceed =
+                  cc.op.inputBuffer.offer(new ExchangeData(cc.op.getOperatorID(), remoteID, cc.op.getSchema(),
+                      MetaMessage.EOI));
+              cc.ownerTask.notifyNewInput();
+            }
             break;
           case BOS:
             break;
           case EOS:
             cc = ecp.getInputChannel();
-            pushToBufferSucceed =
-                cc.op.inputBuffer.offer(new ExchangeData(cc.op.getOperatorID(), remoteID, cc.op.getSchema(),
-                    MetaMessage.EOS));
-            cc.ownerTask.notifyNewInput();
+            // if (cc != null) {
+            // eosReceived.put(ch.getId(), cc.op);
+            // }
+            // if (cc == null) {
+            // Consumer supposed = eosReceived.get(ch.getId());
+            // LOGGER.debug("" + supposed);
+            // } else if (cc.op == null) {
+            // LOGGER.debug("");
+            // }
+
+            if (LOGGER.isDebugEnabled()) {
+              LOGGER.debug("EOS message @ WorkerDataHandler; worker[" + remoteID + "]; opID[" + cc.op.getOperatorID()
+                  + "]");
+            }
+
+            if (cc.op.inputBuffer == null) {
+              // This happens at the iteration input child, because IDBInput emits EOS without EOS input from the
+              // iteration
+              // child. The driving task of IDBInput will terminate and cleanup before the iteration input child
+              // receives
+              // an EOS from the final EOS iteration. It doesn't affect working but logically incorrect.
+              // TODO refactoring of the operator interface may solve this.
+              if (cc.ownerTask.isFinished()) {
+                if (LOGGER.isDebugEnabled()) {
+                  LOGGER.debug("Iteration EOS input for iteration input of IDBInput. Drop directly.");
+                }
+              } else {
+                if (LOGGER.isErrorEnabled()) {
+                  LOGGER.error("Operator inputbuffer is null.",
+                      new NullPointerException("Operator inputbuffer is null"));
+                }
+              }
+            } else {
+              pushToBufferSucceed =
+                  cc.op.inputBuffer.offer(new ExchangeData(cc.op.getOperatorID(), remoteID, cc.op.getSchema(),
+                      MetaMessage.EOS));
+              cc.ownerTask.notifyNewInput();
+            }
             break;
         }
         break;
@@ -137,4 +184,8 @@ public final class WorkerDataHandler extends SimpleChannelUpstreamHandler implem
     }
     return pushToBufferSucceed;
   }
+
+  // for debugging
+  // public final java.util.concurrent.ConcurrentHashMap<Integer, Consumer> eosReceived =
+  // new ConcurrentHashMap<Integer, Consumer>();
 }

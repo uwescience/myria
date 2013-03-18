@@ -59,7 +59,7 @@ public final class TestUtils {
         errorMessageHolder.append(": ");
         errorMessageHolder.append("expected: <");
         errorMessageHolder.append(expected);
-        errorMessageHolder.append(">");
+        errorMessageHolder.append('>');
         errorMessageHolder.append("but was: <");
         errorMessageHolder.append(actual);
         errorMessageHolder.append(">\n");

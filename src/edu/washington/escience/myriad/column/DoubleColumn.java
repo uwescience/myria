@@ -128,7 +128,7 @@ public final class DoubleColumn implements Column<Double> {
       }
       sb.append(data.get(i));
     }
-    sb.append("]");
+    sb.append(']');
     return sb.toString();
   }
 }

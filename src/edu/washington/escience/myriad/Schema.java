@@ -129,7 +129,6 @@ public final class Schema implements Serializable {
    * @return the new Schema. Server.runningInstance = null;
    */
   public static Schema merge(final Schema first, final Schema second) {
-
     return new Schema(first, second);
   }
 
@@ -242,20 +241,22 @@ public final class Schema implements Serializable {
   }
 
   /**
-   * Compares the specified object with this Schema for equality. Two Schemas are considered equal if they are the same
-   * size and if the n-th type in this Schema is equal to the n-th type in the other.
+   * Compares the specified object with this Schema for equality. Two Schemas are considered equal if they have the same
+   * size, column types, and column names.
    * 
-   * @param o the Object to be compared for equality with this Schema.
-   * @return true if the object is equal to this Schema.
+   * @param o the Object to be compared with.
+   * @return true if schema is equal to this Schema.
    */
   @Override
   public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
     if (!(o instanceof Schema)) {
       return false;
     }
     final Schema other = (Schema) o;
-
-    return columnTypes.equals(other.columnTypes);
+    return (this == o) || columnTypes.equals(other.columnTypes) && columnNames.equals(other.columnNames);
   }
 
   /**
@@ -340,8 +341,14 @@ public final class Schema implements Serializable {
       if (i > 0) {
         sb.append(", ");
       }
-      sb.append(columnNames.get(i)).append(" (").append(columnTypes.get(i)).append(")");
+      sb.append(columnNames.get(i)).append(" (").append(columnTypes.get(i)).append(')');
     }
     return sb.toString();
   }
+
+  /**
+   * The empty schema.
+   * */
+  public static final Schema EMPTY_SCHEMA = Schema.of(Arrays.asList(new Type[] {}), Arrays.asList(new String[] {}));
+
 }

@@ -16,6 +16,7 @@ import edu.washington.escience.myriad.util.IPCUtils;
  * 
  */
 public final class LocalMultiwayProducer extends Producer {
+
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
