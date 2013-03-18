@@ -224,7 +224,8 @@ public final class FlowControlHandler extends SimpleChannelHandler {
               ecp = (ExchangeChannelPair) cc.getAttachment();
             }
           }
-          ecp.mapOutputChannel(producerChannelMap.get(ecID), ioChannel);
+          ProducerChannel pc = producerChannelMap.get(ecID);
+          ecp.mapOutputChannel(pc, ioChannel);
           break;
         case EOS:
           isEOS = true;
