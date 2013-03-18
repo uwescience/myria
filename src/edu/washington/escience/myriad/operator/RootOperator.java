@@ -15,7 +15,7 @@ public abstract class RootOperator extends Operator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** Source of the tuples to be consumed. */
-  private final Operator child;
+  private Operator child;
 
   /**
    * Sets important parameters for successful operation.
@@ -106,6 +106,7 @@ public abstract class RootOperator extends Operator {
     if (children.length != 1) {
       throw new IllegalArgumentException("a root operator must have exactly one child");
     }
+    child = children[0];
   }
 
   @Override
