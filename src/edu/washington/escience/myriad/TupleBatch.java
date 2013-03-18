@@ -56,13 +56,6 @@ public class TupleBatch {
   /** An ImmutableList<Integer> view of the indices of validTuples. */
   private ImmutableList<Integer> validIndices;
 
-  /**
-   * The seq num of the first tuple in this TB.
-   * */
-  private final long startingSeqNum;
-
-  private final long lsn;
-
   /** Identity mapping. */
   protected static final ImmutableList<Integer> IDENTITY_MAPPING;
 
@@ -74,10 +67,6 @@ public class TupleBatch {
     IDENTITY_MAPPING = tmp.build();
   }
 
-  public final long getStartingSeqNum() {
-    return startingSeqNum;
-  }
-
   /**
    * Broken-out copy constructor. Shallow copy of the schema, column list, and the number of tuples; deep copy of the
    * valid tuples since that's what we mutate.
@@ -87,13 +76,11 @@ public class TupleBatch {
    * @param validTuples BitSet determines which tuples are valid tuples in this batch.
    * @param validIndices valid tuple indices.
    */
-  private TupleBatch(final Schema schema, final List<Column<?>> columns, final BitSet validTuples,
-      final ImmutableList<Integer> validIndices, final long startingTSN, final long lsn) {
+  protected TupleBatch(final Schema schema, final List<Column<?>> columns, final BitSet validTuples,
+      final ImmutableList<Integer> validIndices) {
     /** For a private copy constructor, no data checks are needed. Checks are only needed in the public constructor. */
     this.schema = schema;
     this.columns = columns;
-    startingSeqNum = startingTSN;
-    this.lsn = lsn;
 
     numValidTuples = validTuples.cardinality();
 
@@ -106,15 +93,9 @@ public class TupleBatch {
     this.validIndices = validIndices;
   }
 
-  /**
-   * Standard immutable TupleBatch constructor. All fields must be populated before creation and cannot be changed.
-   * 
-   * @param schema schema of the tuples in this batch. Must match columns.
-   * @param columns contains the column-stored data. Must match schema.
-   * @param numTuples number of tuples in the batch.
-   */
-  public TupleBatch(final Schema schema, final List<Column<?>> columns, final int numTuples) {
-    this(schema, columns, numTuples, -1, -1);
+  protected TupleBatch shallowCopy(final Schema schema, final List<Column<?>> columns, final BitSet validTuples,
+      final ImmutableList<Integer> validIndices) {
+    return new TupleBatch(schema, columns, validTuples, validIndices);
   }
 
   /**
@@ -124,8 +105,7 @@ public class TupleBatch {
    * @param columns contains the column-stored data. Must match schema.
    * @param numTuples number of tuples in the batch.
    */
-  public TupleBatch(final Schema schema, final List<Column<?>> columns, final int numTuples,
-      final long startingTupleSeqNum, final long lsn) {
+  public TupleBatch(final Schema schema, final List<Column<?>> columns, final int numTuples) {
     /* Take the input arguments directly */
     this.schema = Objects.requireNonNull(schema);
     this.columns = Objects.requireNonNull(columns);
@@ -139,8 +119,6 @@ public class TupleBatch {
     final BitSet tmp = new BitSet(numTuples);
     tmp.set(0, numTuples);
     validTuples = new ReadOnlyBitSet(tmp);
-    startingSeqNum = startingTupleSeqNum;
-    this.lsn = lsn;
   }
 
   /**
@@ -181,7 +159,7 @@ public class TupleBatch {
     }
 
     if (newValidTuples != null) {
-      return new TupleBatch(schema, columns, newValidTuples, null, startingSeqNum, lsn);
+      return shallowCopy(schema, columns, newValidTuples, null);
     }
 
     /* If no tuples are filtered, new TupleBatch instance is not needed */
@@ -327,7 +305,7 @@ public class TupleBatch {
     return ((StringColumn) columns.get(column)).getString(getValidIndices().get(row));
   }
 
-  public Set<Pair<Object, TupleBatchBuffer>> groupby(final int groupByColumn,
+  public final Set<Pair<Object, TupleBatchBuffer>> groupby(final int groupByColumn,
       final Map<Object, Pair<Object, TupleBatchBuffer>> buffers) {
     Set<Pair<Object, TupleBatchBuffer>> ready = null;
     final Column<?> gC = columns.get(groupByColumn);
@@ -490,7 +468,7 @@ public class TupleBatch {
       newTypes.add(schema.getColumnType(i));
       newNames.add(schema.getColumnName(i));
     }
-    return new TupleBatch(new Schema(newTypes, newNames), newColumns, validTuples, validIndices, startingSeqNum, lsn);
+    return shallowCopy(new Schema(newTypes, newNames), newColumns, validTuples, validIndices);
   }
 
   /**
@@ -506,10 +484,6 @@ public class TupleBatch {
     return project(Ints.toArray(Arrays.asList(remainingColumns)));
   }
 
-  public final TupleBatch applyLog(long startingSeqNum, int lsn) {
-    return new TupleBatch(schema, columns, validTuples, validIndices, startingSeqNum, lsn);
-  }
-
   /**
    * @param
    * */
@@ -520,7 +494,7 @@ public class TupleBatch {
       newValidTuples.clear(mapping.get(i));
     }
     if (newValidTuples.cardinality() != numValidTuples) {
-      return new TupleBatch(schema, columns, newValidTuples, null, startingSeqNum, lsn);
+      return shallowCopy(schema, columns, newValidTuples, null);
     } else {
       return this;
     }
