@@ -9,6 +9,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
+import com.google.common.collect.ImmutableMap;
+
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -155,7 +157,7 @@ public final class LocalProjectingJoin_RefOnly extends Operator implements Exter
   }
 
   @Override
-  protected TupleBatch fetchNext() throws DbException {
+  protected TupleBatch fetchNext() throws DbException, InterruptedException {
     TupleBatch nexttb = ans.popFilled();
     while (nexttb == null) {
       boolean hasNewTuple = false; // might change to EOS instead of hasNext()
@@ -184,7 +186,7 @@ public final class LocalProjectingJoin_RefOnly extends Operator implements Exter
 
   @Override
   public TupleBatch fetchNextReady() throws DbException {
-    return null;
+    throw new UnsupportedOperationException("This operator is not implemented.");
   }
 
   @Override
@@ -198,7 +200,7 @@ public final class LocalProjectingJoin_RefOnly extends Operator implements Exter
   }
 
   @Override
-  public void init() throws DbException {
+  public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
   }
 
   protected void processChild1TB(final TupleBatch tbFromChild1) {
