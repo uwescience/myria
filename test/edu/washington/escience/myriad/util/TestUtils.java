@@ -14,13 +14,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.bootstrap.ServerBootstrap;
-import org.jboss.netty.channel.ChannelEvent;
 import org.jboss.netty.channel.ChannelFactory;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.channel.ChannelUpstreamHandler;
-import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.junit.Assert;
@@ -299,23 +294,10 @@ public final class TestUtils {
         new TestIPCPipelineFactories.ServerPipelineFactory(connectionPool, h, null);
     ChannelPipelineFactory clientPipelineFactory = new TestIPCPipelineFactories.ClientPipelineFactory(h);
 
-    ChannelPipelineFactory doNothingInJVMPipelineFactory = new ChannelPipelineFactory() {
-      @Override
-      public ChannelPipeline getPipeline() throws Exception {
-        ChannelPipeline cp = Channels.pipeline();
-        cp.addLast("doNothingHandler", new ChannelUpstreamHandler() {
-
-          @Override
-          public void handleUpstream(ChannelHandlerContext ctx, ChannelEvent e) throws Exception {
-            ctx.sendUpstream(e);
-          }
-        });
-        return cp;
-      }
-    };
+    ChannelPipelineFactory inJVMPipelineFactory = new TestIPCPipelineFactories.InJVMPipelineFactory(h);
 
     connectionPool.start(serverChannelFactory, serverPipelineFactory, clientChannelFactory, clientPipelineFactory,
-        doNothingInJVMPipelineFactory, new InJVMLoopbackChannelSink<TransportMessage>(h, myID));
+        inJVMPipelineFactory, new InJVMLoopbackChannelSink<TransportMessage>(h, myID));
     return connectionPool;
   }
 

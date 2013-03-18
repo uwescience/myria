@@ -18,20 +18,37 @@ import edu.washington.escience.myriad.proto.TransportProto;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 
 public class TestIPCPipelineFactories {
+
+  public static class InJVMPipelineFactory implements ChannelPipelineFactory {
+    protected final MessageChannelHandler<TransportMessage> messageHandler;
+
+    /**
+     * constructor.
+     * */
+    public InJVMPipelineFactory(final MessageChannelHandler<TransportMessage> queueMessageHandler) {
+      messageHandler = queueMessageHandler;
+    }
+
+    @Override
+    public ChannelPipeline getPipeline() throws Exception {
+      final ChannelPipeline p = Channels.pipeline();
+      p.addLast("inputVerifier", IPC_INPUT_GUARD); // upstream 4
+      p.addLast("dataHandler", messageHandler); // upstream 6
+
+      return p;
+    }
+  }
+
   public static class ClientPipelineFactory implements ChannelPipelineFactory {
-    // private final LinkedBlockingQueue<MessageWrapper> messageQueue;
     protected final IPCSessionManagerClient ipcSessionManagerClient;
 
     protected final MessageChannelHandler<TransportMessage> messageHandler;
-
-    // protected final FlowControlHandler flowController;
 
     /**
      * constructor.
      * */
     public ClientPipelineFactory(final MessageChannelHandler<TransportMessage> queueMessageHandler) {
       ipcSessionManagerClient = new IPCSessionManagerClient();
-      // flowController = new FlowControlHandler();
       messageHandler = queueMessageHandler;
     }
 
