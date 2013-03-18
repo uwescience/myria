@@ -12,6 +12,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.operator.IDBInput;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.parallel.Worker.QueryExecutionMode;
@@ -26,72 +27,72 @@ final class QuerySubTreeTask {
   /**
    * The root operator.
    * */
-  final RootOperator root;
+  private final RootOperator root;
 
   /**
    * Num input TupleBatch from consumer operators.
    * */
-  final AtomicLong numInputTBs;
+  private final AtomicLong numInputTBs;
 
   /**
    * The executor who is responsible for executing the task.
    * */
-  final ExecutorService myExecutor;
+  private final ExecutorService myExecutor;
 
   /**
    * Denoting if currently the task is in blocking execution by the executor.
    * */
-  volatile boolean inBlockingExecution;
+  private volatile boolean inBlockingExecution;
 
   /**
    * if the task is initialized.
    * */
-  volatile boolean initialized;
+  private volatile boolean initialized;
 
   /**
    * There are available output slots.
    * */
-  volatile boolean outputAvailable;
+  private volatile boolean outputAvailable;
 
   /**
    * Each bit for each output channel. Currently, if a single output channel is not writable, the whole task stops.
    * */
-  final BitSet outputChannelAvailable;
+  private final BitSet outputChannelAvailable;
 
   /**
    * the owner query partition.
    * */
-  final QueryPartition ownerQuery;
+  private final QueryPartition ownerQuery;
 
   /**
    * Non-blocking execution task.
    * */
-  final Callable<Boolean> nonBlockingExecutionTask;
+  private final Callable<Boolean> nonBlockingExecutionTask;
 
   /**
    * Blocking execution task.
    * */
-  final Callable<Boolean> blockingExecutionTask;
+  private final Callable<Boolean> blockingExecutionTask;
 
   /**
    * Current execution mode.
    * */
-  final QueryExecutionMode executionMode;
+  private final QueryExecutionMode executionMode;
 
   /**
    * The output channels belonging to this task.
    * */
-  final ExchangeChannelID[] outputChannels;
+  private final ExchangeChannelID[] outputChannels;
 
   /**
    * The output channels belonging to this task.
    * */
-  final ExchangeChannelID[] inputChannels;
+  private final ExchangeChannelID[] inputChannels;
 
   /**
    * IPC ID of the owner {@link Worker} or {@link Server}.
    * */
-  final int ipcEntityID;
+  private final int ipcEntityID;
 
   QuerySubTreeTask(final int ipcEntityID, final QueryPartition ownerQuery, final RootOperator root,
       final ExecutorService executor, final QueryExecutionMode executionMode) {
@@ -141,6 +142,11 @@ final class QuerySubTreeTask {
       for (int i = 0; i < destWorkers.length; i++) {
         outputExchangeChannels.add(new ExchangeChannelID(oIDs[i].getLong(), destWorkers[i]));
       }
+    } else if (currentOperator instanceof IDBInput) {
+      IDBInput p = (IDBInput) currentOperator;
+      ExchangePairID oID = p.getControllerOperatorID();
+      int wID = p.getControllerWorkerID();
+      outputExchangeChannels.add(new ExchangeChannelID(oID.getLong(), wID));
     }
 
     final Operator[] children = currentOperator.getChildren();
@@ -151,6 +157,10 @@ final class QuerySubTreeTask {
         }
       }
     }
+  }
+
+  public boolean isFinished() {
+    return root.eos();
   }
 
   private void collectUpChannels(final Operator currentOperator, final HashSet<ExchangeChannelID> inputExchangeChannels) {
