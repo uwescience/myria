@@ -3,6 +3,7 @@ package edu.washington.escience.myriad.parallel;
 import java.util.List;
 import java.util.Objects;
 
+import edu.washington.escience.myriad.ExchangeTupleBatch;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.column.Column;
@@ -32,7 +33,7 @@ public final class ExchangeData implements ExchangeMessage<TupleBatch> {
       final Schema inputSchema, final int numTuples, final long seqNum) {
     Objects.requireNonNull(columns);
     this.seqNum = seqNum;
-    dataHolder = new TupleBatch(inputSchema, columns, numTuples, -1, -1);
+    dataHolder = new ExchangeTupleBatch(inputSchema, columns, numTuples, -1, seqNum, workerID);
     operatorID = oID;
     fromWorkerID = workerID;
   }
