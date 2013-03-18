@@ -12,6 +12,7 @@ import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.operator.DupElim;
 import edu.washington.escience.myriad.operator.LocalJoin;
 import edu.washington.escience.myriad.operator.Merge;
+import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.Project;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
@@ -91,17 +92,17 @@ public class Q9 implements QueryPlanGenerator {
         new LocalJoin(multiPersonInConsumer, multiTriplesInConsumer, new int[] { 0 }, new int[] { 2 });
     // schema: (personID long, subject long, predicateName String, personID long)
 
-    final Project projInPredicates = new Project(new Integer[] { 2 }, joinPersonsTriplesIn);
+    final Project projInPredicates = new Project(new int[] { 2 }, joinPersonsTriplesIn);
     // schema: (predicateName string)
 
     final LocalJoin joinPersonsTriplesOut =
         new LocalJoin(multiPersonOutConsumer, multiTriplesOutConsumer, new int[] { 0 }, new int[] { 0 });
     // schema: (personID long, personID long, predicateName String, object long)
 
-    final Project projOutPredicates = new Project(new Integer[] { 2 }, joinPersonsTriplesOut);
+    final Project projOutPredicates = new Project(new int[] { 2 }, joinPersonsTriplesOut);
     // schema: (predicateName String)
 
-    final Merge union = new Merge(projInPredicates, projOutPredicates);
+    final Merge union = new Merge(new Operator[] { projInPredicates, projOutPredicates });
     // schema: (predicateName string)
 
     final DupElim localDE = new DupElim(union); // local dupelim

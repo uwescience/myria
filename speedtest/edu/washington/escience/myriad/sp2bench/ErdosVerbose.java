@@ -88,7 +88,7 @@ public class ErdosVerbose {
         new LocalJoin(paulErdoesPubsShuffleC, allPubsShuffleC, new int[] { 0 }, new int[] { 0 });
     // schema: (pubName string, pubName String, authorName string)
 
-    final Project projCoAuthorID = new Project(new Integer[] { 2 }, joinCoAuthors);
+    final Project projCoAuthorID = new Project(new int[] { 2 }, joinCoAuthors);
     // schema: (authorName String)
     final DupElim localDECoAuthorID = new DupElim(projCoAuthorID); // local dupelim
     // schema: (authorName String)
@@ -134,7 +134,7 @@ public class ErdosVerbose {
         new LocalJoin(erdosNMinus1, allPubsShuffleByAuthorC, new int[] { 0 }, new int[] { 1 });
     // schema: (authorName string, pubName string, authorName String)
 
-    final Project projCoAuthorPubsID = new Project(new Integer[] { 1 }, joinCoAuthorPubs);
+    final Project projCoAuthorPubsID = new Project(new int[] { 1 }, joinCoAuthorPubs);
     // schema: (pubName string)
 
     final DupElim coAuthorPubsLocalDE = new DupElim(projCoAuthorPubsID); // local dupelim
@@ -171,7 +171,7 @@ public class ErdosVerbose {
         new LocalJoin(coAuthorPubsGlobalDE, coAuthorNamesPubsShuffleC, new int[] { 0 }, new int[] { 0 });
     // schema: (pubName string, pubName string, authorName string)
 
-    final Project projCoCoAuthorName = new Project(new Integer[] { 2 }, joinCoCoAuthorPubs);
+    final Project projCoCoAuthorName = new Project(new int[] { 2 }, joinCoCoAuthorPubs);
     // schema: (authorName string)
 
     final DupElim coCoAuthorNameLocalDE = new DupElim(projCoCoAuthorName); // local dupelim

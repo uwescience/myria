@@ -80,7 +80,7 @@ public class Q5A_Count implements QueryPlanGenerator {
         new LocalJoin(shuffleArticlesC, shuffleCreatorsC, new int[] { 0 }, new int[] { 0 });
     // schema: (articleId long, articleId long, creatorID long)
 
-    final Project projArticleCreatorsID = new Project(new Integer[] { 2 }, joinArticleCreator);
+    final Project projArticleCreatorsID = new Project(new int[] { 2 }, joinArticleCreator);
     // schema: (articleAuthorIDs long)
 
     final DupElim deArticleAuthors = new DupElim(projArticleCreatorsID); // local dupelim
@@ -122,7 +122,7 @@ public class Q5A_Count implements QueryPlanGenerator {
         new LocalJoin(shuffleProceedingsC, shuffleCreators2C, new int[] { 0 }, new int[] { 0 });
     // schema: (proceedingId long, proceedingId long, creatorID long)
 
-    final Project projProceedingsID = new Project(new Integer[] { 2 }, joinProceedingsCreator);
+    final Project projProceedingsID = new Project(new int[] { 2 }, joinProceedingsCreator);
     // schema: (proceedingAuthorID long)
 
     final DupElim deProceedingAuthors = new DupElim(projProceedingsID); // local dupelim
@@ -153,7 +153,7 @@ public class Q5A_Count implements QueryPlanGenerator {
         new LocalJoin(articleProceedingsCreatorJoin, shuffleFOAF2C, new int[] { 1 }, new int[] { 0 });
     // schema: (articleProceedingAuthorID long, articleProceedingAuthorID long, foafNameID long)
 
-    final Project finalProject = new Project(new Integer[] { 1, 2 }, articleProceedingsCreatorFOAFJoin);
+    final Project finalProject = new Project(new int[] { 1, 2 }, articleProceedingsCreatorFOAFJoin);
     // schema: (articleProceedingAuthorID long, foafNameID long)
 
     final ShuffleProducer forDupElimShuffleP =

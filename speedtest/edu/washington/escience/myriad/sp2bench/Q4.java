@@ -44,31 +44,8 @@ public class Q4 implements QueryPlanGenerator {
     final ExchangePairID allWithTitleShuffleID = ExchangePairID.newID();
     final ExchangePairID allIssuedYearShuffleID = ExchangePairID.newID();
 
-    final ExchangePairID allArticlesShuffleID = ExchangePairID.newID();
-    final ExchangePairID allSwrcJournalShuffleID = ExchangePairID.newID();
-    final ExchangePairID collectCountID = ExchangePairID.newID();
-
-    final SQLiteQueryScan allArticles =
-        new SQLiteQueryScan(
-            "select t.subject from Triples t, Dictionary dtype, Dictionary darticle where t.predicate=dtype.id and t.object=darticle.id and darticle.val='bench:Article' and dtype.val='rdf:type';",
-            subjectSchema);
-
-    final SQLiteQueryScan allCreator =
-        new SQLiteQueryScan(
-            "select t.subject from Triples t, Dictionary dtype, Dictionary dcreator where t.predicate=dtype.id and dtype.val='dc:creator';",
-            subjectSchema);
-
-    final SQLiteQueryScan allWithSwrcPages =
-        new SQLiteQueryScan(
-            "select t.subject from Triples t,Dictionary dtype where t.predicate=dtype.ID and dtype.val='swrc:pages';",
-            subjectSchema);
-
     final SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(allWorkers.length);
     pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
-
-    final ShuffleProducer shuffleArticlesP = new ShuffleProducer(allArticles, allArticlesShuffleID, allWorkers, pf);
-    final ShuffleConsumer shuffleArticlesC =
-        new ShuffleConsumer(shuffleArticlesP.getSchema(), allArticlesShuffleID, allWorkers);
 
     final ImmutableList<Type> subjectYearTypes = ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE);
     final ImmutableList<String> subjectYearColumnNames = ImmutableList.of("subject", "year");
@@ -109,7 +86,7 @@ public class Q4 implements QueryPlanGenerator {
     final LocalJoin joinJournalTitleYear =
         new LocalJoin(joinJournalTitle, shuffleIssuedYearC, new int[] { 0 }, new int[] { 0 });
 
-    final Project finalProject = new Project(new Integer[] { 3 }, joinJournalTitleYear);
+    final Project finalProject = new Project(new int[] { 3 }, joinJournalTitleYear);
 
     final CollectProducer sendToMaster = new CollectProducer(finalProject, sendToMasterID, 0);
 

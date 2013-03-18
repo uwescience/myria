@@ -82,7 +82,7 @@ public class Q1 implements QueryPlanGenerator {
     final LocalJoin joinJournalTitleYear =
         new LocalJoin(joinJournalTitle, shuffleIssuedYearC, new int[] { 0 }, new int[] { 0 });
 
-    final Project finalProject = new Project(new Integer[] { 3 }, joinJournalTitleYear);
+    final Project finalProject = new Project(new int[] { 3 }, joinJournalTitleYear);
 
     final CollectProducer sendToMaster = new CollectProducer(finalProject, sendToMasterID, 0);
 

@@ -100,7 +100,7 @@ public class ErdosExtraVerbose {
         new ShuffleConsumer(coAuthorShuffleP.getSchema(), coAuthorShuffleID, allWorkers);
     // schema: (pubName string, pubName String, authorName string)
 
-    final Project projCoAuthorID = new Project(new Integer[] { 2 }, coAuthorShuffleC);
+    final Project projCoAuthorID = new Project(new int[] { 2 }, coAuthorShuffleC);
     // schema: (authorName string)
 
     producers.add(coAuthorShuffleP);
@@ -153,7 +153,7 @@ public class ErdosExtraVerbose {
         new ShuffleConsumer(coAuthorPubsShuffleP.getSchema(), coAuthorPubsShuffleID, allWorkers);
     // schema: (authorName string, pubName string, authorName String)
 
-    final Project projCoAuthorPubsID = new Project(new Integer[] { 1 }, coAuthorPubsShuffleC);
+    final Project projCoAuthorPubsID = new Project(new int[] { 1 }, coAuthorPubsShuffleC);
     // schema: (pubName string)
 
     final DupElim coAuthorPubsGlobalDE = new DupElim(projCoAuthorPubsID); // local dupelim
@@ -192,7 +192,7 @@ public class ErdosExtraVerbose {
         new ShuffleConsumer(coCoAuthorNameShuffleP.getSchema(), coCoAuthorNameShuffleID, allWorkers);
     // schema: (pubName string, pubName string, authorName string)
 
-    final Project projCoCoAuthorName = new Project(new Integer[] { 2 }, coCoAuthorNameShuffleC);
+    final Project projCoCoAuthorName = new Project(new int[] { 2 }, coCoAuthorNameShuffleC);
 
     producers.add(coCoAuthorNameShuffleP);
     producers.add(coAuthorNamesPubsShuffleP);

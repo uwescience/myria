@@ -69,7 +69,7 @@ public class TenGBTupleBatchReceiverUsingConnectionPool {
             }
             final TupleBatch tb =
                 new TupleBatch(TenGBTupleBatchSenderUsingConnectionPool.schema, Arrays.asList(columnArray),
-                    columnArray[0].size(), -1, -1);
+                    columnArray[0].size());
             tb.compactInto(tbb);
             while (tbb.popAny() != null) {
               /* Pass -- emptying tuple buffer. */

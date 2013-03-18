@@ -88,7 +88,7 @@ public class Erdos {
         new LocalJoin(paulErdoesPubsShuffleC, allPubsShuffleC, new int[] { 0 }, new int[] { 0 });
     // schema: (pubId long, pubId long, authorId long)
 
-    final Project projCoAuthorID = new Project(new Integer[] { 2 }, joinCoAuthors);
+    final Project projCoAuthorID = new Project(new int[] { 2 }, joinCoAuthors);
     // schema: (authorId long)
     final DupElim localDECoAuthorID = new DupElim(projCoAuthorID); // local dupelim
     // schema: (authorId long)
@@ -132,7 +132,7 @@ public class Erdos {
         new LocalJoin(erdosNMinus1, allPubsShuffleByAuthorC, new int[] { 0 }, new int[] { 1 });
     // schema: (authorId long, pubId long, authorId long)
 
-    final Project projCoAuthorPubsID = new Project(new Integer[] { 1 }, joinCoAuthorPubs);
+    final Project projCoAuthorPubsID = new Project(new int[] { 1 }, joinCoAuthorPubs);
     // schema: (pubId long)
 
     final DupElim coAuthorPubsLocalDE = new DupElim(projCoAuthorPubsID); // local dupelim
@@ -167,7 +167,7 @@ public class Erdos {
         new LocalJoin(coAuthorPubsGlobalDE, coAuthorNamesPubsShuffleC, new int[] { 0 }, new int[] { 0 });
     // schema: (pubId long, pubId long, authorId long)
 
-    final Project projCoCoAuthorName = new Project(new Integer[] { 2 }, joinCoCoAuthorPubs);
+    final Project projCoCoAuthorName = new Project(new int[] { 2 }, joinCoCoAuthorPubs);
     // schema: (authorId long)
 
     final DupElim coCoAuthorNameLocalDE = new DupElim(projCoCoAuthorName); // local dupelim
