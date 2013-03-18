@@ -89,10 +89,10 @@ public class TupleBatchBuffer {
   public final List<TupleBatch> getAll() {
     final List<TupleBatch> output = new ArrayList<TupleBatch>();
     for (final List<Column<?>> columns : readyTuples) {
-      output.add(new TupleBatch(schema, columns, TupleBatch.BATCH_SIZE, -1, -1));
+      output.add(new TupleBatch(schema, columns, TupleBatch.BATCH_SIZE));
     }
     if (currentInProgressTuples > 0) {
-      output.add(new TupleBatch(schema, currentColumns, currentInProgressTuples, -1, -1));
+      output.add(new TupleBatch(schema, currentColumns, currentInProgressTuples));
     }
     return output;
   }
@@ -198,7 +198,7 @@ public class TupleBatchBuffer {
       if (currentInProgressTuples > 0) {
         final int size = currentInProgressTuples;
         finishBatch();
-        return new TupleBatch(schema, readyTuples.remove(0), size, -1, -1);
+        return new TupleBatch(schema, readyTuples.remove(0), size);
       } else {
         return null;
       }
@@ -250,7 +250,7 @@ public class TupleBatchBuffer {
    */
   public final TupleBatch popFilled() {
     if (readyTuples.size() > 0) {
-      return new TupleBatch(schema, readyTuples.remove(0), TupleBatch.BATCH_SIZE, -1, -1);
+      return new TupleBatch(schema, readyTuples.remove(0), TupleBatch.BATCH_SIZE);
     }
     return null;
   }
