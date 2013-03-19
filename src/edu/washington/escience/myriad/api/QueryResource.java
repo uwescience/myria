@@ -240,9 +240,9 @@ public final class QueryResource {
           throw new WebApplicationException(Response.status(Status.INTERNAL_SERVER_ERROR).build());
         }
         if (schema == null) {
-          throw new IOException("Specified relation " + relationKey + " does not exist.");
+          throw new IOException("Specified relation " + relationKey.toString("sqlite") + " does not exist.");
         }
-        return new SQLiteQueryScan(null, "SELECT * from " + relationKey, schema);
+        return new SQLiteQueryScan(null, "SELECT * from " + relationKey.toString("sqlite"), schema);
       }
 
       case "Consumer": {
