@@ -156,7 +156,7 @@ public final class FileScan extends LeafOperator {
             break;
           case FLOAT_TYPE:
             if (tokenizer.ttype == StreamTokenizer.TT_NUMBER) {
-              buffer.put(count, tokenizer.nval);
+              buffer.put(count, (float) tokenizer.nval);
             } else {
               buffer.put(count, Float.parseFloat(tokenizer.sval));
             }
