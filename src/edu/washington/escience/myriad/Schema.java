@@ -3,6 +3,7 @@ package edu.washington.escience.myriad;
 import java.io.Serializable;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -126,10 +127,44 @@ public final class Schema implements Serializable {
    * 
    * @param first The Schema with the first columns of the new Schema.
    * @param second The Schema with the last columns of the Schema.
-   * @return the new Schema. Server.runningInstance = null;
+   * @return the new Schema.
+   */
+  public static Schema mergeKeepDuplicateNames(final Schema first, final Schema second) {
+    return new Schema(first, second);
+  }
+
+  /**
+   * Merge two Schemas into one. The result has the columns of the first concatenated with the columns of the second.
+   * <p>
+   * Note that if there are duplicate column names from the two merging schemas, the duplicate columns from the first
+   * schema will be automatically renamed by adding a suffix "_1", and the duplicate columns from the second schema will
+   * be automatically renamed by adding a suffix "_2".
+   * 
+   * @param first The Schema with the first columns of the new Schema.
+   * @param second The Schema with the last columns of the Schema.
+   * @return the new Schema.
    */
   public static Schema merge(final Schema first, final Schema second) {
-    return new Schema(first, second);
+    final ImmutableList.Builder<Type> types = ImmutableList.builder();
+    types.addAll(first.getColumnTypes()).addAll(second.getColumnTypes());
+
+    List<String> names1 = new ArrayList<String>();
+    names1.addAll(first.getColumnNames());
+    List<String> names2 = new ArrayList<String>();
+    names2.addAll(second.getColumnNames());
+    for (int i = 0; i < names1.size(); ++i) {
+      for (int j = 0; j < names2.size(); ++j) {
+        if (names1.get(i).equals(names2.get(j))) {
+          names1.set(i, names1.get(i) + "_1");
+          names2.set(j, names2.get(j) + "_2");
+          break;
+        }
+      }
+    }
+    final ImmutableList.Builder<String> names = ImmutableList.builder();
+    names.addAll(names1).addAll(names2);
+
+    return new Schema(types.build(), names.build());
   }
 
   /**
@@ -316,8 +351,6 @@ public final class Schema implements Serializable {
 
   @Override
   public int hashCode() {
-    // If you want to use Schema as keys for HashMap, implement this so
-    // that equal objects have equals hashCode() results
     return Arrays.hashCode(new Object[] { columnNames, columnTypes });
   }
 
