@@ -21,7 +21,7 @@ public abstract class LeafOperator extends Operator {
   }
 
   @Override
-  public void checkEOSAndEOI() {
+  protected void checkEOSAndEOI() {
     // for reading static files, e.g. scan, there is no EOI
     setEOS();
   }

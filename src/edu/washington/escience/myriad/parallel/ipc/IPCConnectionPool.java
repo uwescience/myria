@@ -33,6 +33,7 @@ import org.jboss.netty.channel.group.DefaultChannelGroupFuture;
 import org.jboss.netty.util.ExternalResourceReleasable;
 import org.slf4j.LoggerFactory;
 
+import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.parallel.RenamingThreadFactory;
 import edu.washington.escience.myriad.parallel.SocketInfo;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
@@ -162,7 +163,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
     /**
      * remote IPC entity ID.
      * */
-    final int id;
+    private final int id;
 
     /**
      * remote address.
@@ -179,6 +180,11 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
      * */
     private volatile HashSet<Channel> unregisteredChannelsAtRemove = null;
 
+    /**
+     * @param id remote id.
+     * @param remoteAddress remote IPC address.
+     * @param bootstrap the bootstrap for creating IPC clients to this remote.
+     * */
     IPCRemote(final int id, final SocketInfo remoteAddress, final ClientBootstrap bootstrap) {
       this.id = id;
       address = remoteAddress;
@@ -288,13 +294,13 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
    * If the number of connections is between the upper bound and the lower bound. We may drop some connections if the
    * number of independent connections required is not big.
    * */
-  final ConcurrentHashMap<Channel, Channel> recyclableRegisteredChannels;
+  private final ConcurrentHashMap<Channel, Channel> recyclableRegisteredChannels;
 
   /**
    * Groups of connections, which are not needed and to be closed sooner or later, including both registered and
    * unregistered.
    * */
-  final ChannelGroup channelTrashBin;
+  private final ChannelGroup channelTrashBin;
 
   /**
    * Pipeline factory which generates pipelines for InJVM channels.
@@ -319,7 +325,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
   /**
    * The simple special wrapper channel for transmitting short messages between operators within the same JVM.
    * */
-  volatile InJVMChannel inJVMShortMessageChannel;
+  private volatile InJVMChannel inJVMShortMessageChannel;
 
   /**
    * IPC server bootstrap.
@@ -334,18 +340,18 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
   /**
    * The server channel of this connection pool.
    * */
-  volatile Channel serverChannel;
+  private volatile Channel serverChannel;
 
   /**
    * All Channel instances which can be possibly created through operations of this IPCConnectionPool shall be included
    * in this ChannelGroup.
    * */
-  final DefaultChannelGroup allPossibleChannels;
+  private final DefaultChannelGroup allPossibleChannels;
 
   /**
    * All channels that are accepted by the IPC server. It is useful when shutting down the IPC server channel.
    * */
-  final DefaultChannelGroup allAcceptedRemoteChannels;
+  private final DefaultChannelGroup allAcceptedRemoteChannels;
 
   /**
    * guard the modifications of the set of unregistered channels.
@@ -385,7 +391,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
   /**
    * set of unregistered channels.
    * */
-  final ConcurrentHashMap<Channel, Channel> unregisteredChannels;
+  private final ConcurrentHashMap<Channel, Channel> unregisteredChannels;
 
   /**
    * initial remote addresses.
@@ -587,12 +593,13 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
   /**
    * @return get a connection to a remote IPC entity with ID id. The connection may be newly created or an existing one
    *         from the connection pool.
-   * @param ipcID the remote ID.
+   * @param ipcIDP the remote ID.
    * 
    * */
-  private Channel getAConnection(int ipcID) {
+  private Channel getAConnection(final int ipcIDP) {
     checkShutdown();
-    if (ipcID < 0) {
+    int ipcID = ipcIDP;
+    if (ipcIDP < 0) {
       ipcID = myID;
     }
     final IPCRemote remote = channelPool.get(ipcID);
@@ -673,14 +680,14 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
   /**
    * @return my id as TM.
    * */
-  final TransportMessage getMyIDAsTM() {
+  TransportMessage getMyIDAsTM() {
     return myIDTM;
   }
 
   /**
    * @return if the IPC pool is shutdown already.
    * */
-  public final boolean isShutdown() {
+  public boolean isShutdown() {
     return shutdown;
   }
 
@@ -689,7 +696,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
    * 
    * @param newChannel new accepted channel.
    * */
-  final void newAcceptedRemoteChannel(final Channel newChannel) {
+  void newAcceptedRemoteChannel(final Channel newChannel) {
     if (shutdown) {
       // stop accepting new connections if the connection pool is already shutdown.
       LOGGER.warn("Already shutdown, new remote channel directly close. Channel: "
@@ -711,7 +718,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
    * @param remoteID remoteID to put.
    * @param remoteAddress remote address.
    * */
-  public final void putRemote(final int remoteID, final SocketInfo remoteAddress) {
+  public void putRemote(final int remoteID, final SocketInfo remoteAddress) {
     if (remoteID == myID || remoteID < 0) {
       return;
     }
@@ -731,11 +738,12 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
   /**
    * Other workers/the master initiate connection to this worker/master. Add the connection to the pool.
    * 
-   * @param remoteID remoteID.
+   * @param remoteIDP remoteID.
    * @param channel the new channel.
    * */
-  final void registerChannel(int remoteID, final Channel channel) {
-    if (remoteID < 0) {
+  void registerChannel(final int remoteIDP, final Channel channel) {
+    int remoteID = remoteIDP;
+    if (remoteIDP < 0) {
       remoteID = myID;
     }
     final IPCRemote remote = channelPool.get(remoteID);
@@ -769,7 +777,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
   /**
    * @param channel the channel.
    * */
-  public final void releaseLongTermConnection(final Channel channel) {
+  public void releaseLongTermConnection(final Channel channel) {
     if (channel == null) {
       return;
     }
@@ -797,7 +805,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
    *         connections, the method will try close these connections asynchronously. Future object is for looking up
    *         the progress of closing. Otherwise, null.
    * */
-  public final ChannelGroupFuture removeRemote(final int remoteID) {
+  public ChannelGroupFuture removeRemote(final int remoteID) {
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("remove the remote entity #" + remoteID + " from IPC connection pool");
     }
@@ -842,12 +850,13 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
       cgf.addListener(new ChannelGroupFutureListener() {
         @Override
         public void operationComplete(final ChannelGroupFuture future) throws Exception {
-          new Thread("Remote remover") {
+          Thread rt = new Thread("Remote remover") {
             @Override
             public void run() {
               channelPool.remove(remoteID);
             }
-          }.start();
+          };
+          rt.start();
         }
       });
       return cgf;
@@ -863,7 +872,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
    * @return IPC channel, null if id is invalid or connect fails.
    * @throws IllegalStateException if the connection pool is already shutdown
    */
-  public final Channel reserveLongTermConnection(final int id) {
+  public Channel reserveLongTermConnection(final int id) {
     checkShutdown();
     return getAConnection(id);
   }
@@ -877,7 +886,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
    * @throws IllegalStateException if the connection pool is already shutdown
    * @throws ChannelException if any problem occurs at getting connection to the remote
    * */
-  public final ChannelFuture sendShortMessage(final int ipcID, final TransportMessage message) {
+  public ChannelFuture sendShortMessage(final int ipcID, final TransportMessage message) {
     checkShutdown();
     if (ipcID == myID || ipcID < 0) {
       return inJVMShortMessageChannel.write(message);
@@ -917,7 +926,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
    * 
    * @return the future instance, which will be called back if all the connections have been closed or any error occurs.
    * */
-  public final ChannelGroupFuture shutdownNow() {
+  public ChannelGroupFuture shutdownNow() {
     shutdown = true;
     if (LOGGER.isInfoEnabled()) {
       LOGGER.info("Abrupt shutdown of IPC connection pool is requested!");
@@ -963,7 +972,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
    * @return the future instance for the shutdown event of this pool.
    * 
    */
-  public final ChannelGroupFuture getShutdownFuture() {
+  public ChannelGroupFuture getShutdownFuture() {
     return shutdownFuture;
   }
 
@@ -979,7 +988,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
    * 
    * @return the future instance, which will be called back if all the connections have been closed or any error occurs.
    * */
-  public final ChannelGroupFuture shutdown() {
+  public ChannelGroupFuture shutdown() {
     if (shutdown) {
       // already shutdown
       return shutdownFuture;
@@ -1047,7 +1056,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
         idChecker.run();
         disconnecter.run();
         try {
-          Thread.sleep(100);
+          Thread.sleep(MyriaConstants.SHORT_WAITING_INTERVAL_MS);
         } catch (final InterruptedException e) {
           Thread.currentThread().interrupt();
           e.printStackTrace();
@@ -1062,14 +1071,18 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
   /**
    * Start the pool service. all the external resources are allocated at this point.
    * 
-   * @param
+   * @param serverChannelFactory IPC server channel factory
+   * @param serverPipelineFactory IPC server pipeline factory
+   * @param clientChannelFactory IPC client channel factory
+   * @param clientPipelineFactory IPC client pipeline factory
+   * @param localInJVMPipelineFactory IPC in JVM channel pipeline factory
+   * @param localInJVMChannelSink IPC in JVM channel sink.
    * 
    * @throws Exception if any error occurs.
    * */
-  public final void start(final ChannelFactory serverChannelFactory,
-      final ChannelPipelineFactory serverPipelineFactory, final ChannelFactory clientChannelFactory,
-      final ChannelPipelineFactory clientPipelineFactory, final ChannelPipelineFactory localInJVMPipelineFactory,
-      final ChannelSink localInJVMChannelSink) throws Exception {
+  public void start(final ChannelFactory serverChannelFactory, final ChannelPipelineFactory serverPipelineFactory,
+      final ChannelFactory clientChannelFactory, final ChannelPipelineFactory clientPipelineFactory,
+      final ChannelPipelineFactory localInJVMPipelineFactory, final ChannelSink localInJVMChannelSink) throws Exception {
 
     serverBootstrap.setFactory(serverChannelFactory);
     serverBootstrap.setPipelineFactory(serverPipelineFactory);
@@ -1102,13 +1115,12 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
 
     allPossibleChannels.add(serverChannel);
     scheduledTaskExecutor.scheduleAtFixedRate(recycler,
-        (int) ((0.5 + Math.random()) * CONNECTION_RECYCLE_INTERVAL_IN_MS), CONNECTION_RECYCLE_INTERVAL_IN_MS / 2,
+        (int) ((1 + Math.random()) * CONNECTION_RECYCLE_INTERVAL_IN_MS / 2), CONNECTION_RECYCLE_INTERVAL_IN_MS / 2,
         TimeUnit.MILLISECONDS);
-    scheduledTaskExecutor.scheduleAtFixedRate(disconnecter,
-        (int) ((0.5 + Math.random()) * CONNECTION_DISCONNECT_INTERVAL_IN_MS), CONNECTION_DISCONNECT_INTERVAL_IN_MS / 2,
-        TimeUnit.MILLISECONDS);
+    scheduledTaskExecutor.scheduleAtFixedRate(disconnecter, (int) ((1 + Math.random())
+        * CONNECTION_DISCONNECT_INTERVAL_IN_MS / 2), CONNECTION_DISCONNECT_INTERVAL_IN_MS / 2, TimeUnit.MILLISECONDS);
     scheduledTaskExecutor.scheduleAtFixedRate(idChecker,
-        (int) ((0.5 + Math.random()) * CONNECTION_ID_CHECK_TIMEOUT_IN_MS), CONNECTION_ID_CHECK_TIMEOUT_IN_MS / 2,
+        (int) ((1 + Math.random()) * CONNECTION_ID_CHECK_TIMEOUT_IN_MS / 2), CONNECTION_ID_CHECK_TIMEOUT_IN_MS / 2,
         TimeUnit.MILLISECONDS);
   }
 

@@ -177,14 +177,14 @@ public class SystemTestBase {
 
       /* Create the table if not exist */
       statement =
-          sqliteConnection.prepare("create table if not exists " + relationKey.toString("sqlite") + " ("
-              + sqlSchemaString + ");");
+          sqliteConnection.prepare("create table if not exists "
+              + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE) + " (" + sqlSchemaString + ");");
 
       statement.step();
       statement.reset();
 
       /* Clear table data in case it already exists */
-      statement = sqliteConnection.prepare("delete from " + relationKey.toString("sqlite"));
+      statement = sqliteConnection.prepare("delete from " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE));
       statement.step();
       statement.reset();
 
@@ -212,7 +212,7 @@ public class SystemTestBase {
   public void globalCleanup() throws IOException {
     server.shutdown();
     server = null;
-    Server.runningInstance = null;
+    Server.resetRunningInstance();
 
     for (final Thread t : workerStdoutReader) {
       try {
@@ -484,10 +484,10 @@ public class SystemTestBase {
         }
       }
     }.start();
-    while (Server.runningInstance == null) {
+    while (Server.getRunningInstance() == null) {
       // Wait the Server to finish starting.
       Thread.sleep(100);
-      server = Server.runningInstance;
+      server = Server.getRunningInstance();
     }
     return server;
   }

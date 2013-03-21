@@ -133,7 +133,9 @@ public interface QueryFuture {
    * Notifies the progress of the operation to the listeners that implements {@link QueryFutureProgressListener}. Please
    * note that this method will not do anything and return {@code false} if this future is complete already.
    * 
-   * @param amount
+   * @param amount the amount of progress finished in the most recent operation
+   * @param current the total current amount finished
+   * @param total the total amount to finish
    * @return {@code true} if and only if notification was made.
    */
   boolean setProgress(final long amount, final long current, final long total);

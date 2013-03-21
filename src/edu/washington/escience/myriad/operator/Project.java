@@ -15,13 +15,27 @@ public final class Project extends Operator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
+  /**
+   * the child.
+   * */
   private Operator child;
+  /**
+   * The result schema.
+   * */
   private final Schema schema;
-  private final int[] outFieldIds; // why not using int[]?
+  /**
+   * The column indices to remain.
+   * */
+  private final int[] outColumnIndices;
 
+  /**
+   * @param fieldList The column indices to remain.
+   * @param child the child
+   * @throws DbException if any error occurs.
+   * */
   public Project(final int[] fieldList, final Operator child) throws DbException {
     this.child = child;
-    outFieldIds = fieldList;
+    outColumnIndices = fieldList;
     final Schema childSchema = child.getSchema();
 
     final ImmutableList.Builder<Type> types = ImmutableList.builder();
@@ -41,7 +55,7 @@ public final class Project extends Operator {
   protected TupleBatch fetchNext() throws DbException, InterruptedException {
     final TupleBatch tmp = child.next();
     if (tmp != null) {
-      return tmp.project(outFieldIds);
+      return tmp.project(outColumnIndices);
     }
     return null;
   }
@@ -49,9 +63,9 @@ public final class Project extends Operator {
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
 
-    TupleBatch tb = null;
-    if ((tb = child.nextReady()) != null) {
-      return tb.project(outFieldIds);
+    TupleBatch tb = child.nextReady();
+    if (tb != null) {
+      return tb.project(outColumnIndices);
     }
     return null;
   }

@@ -46,7 +46,10 @@ public final class FSUtils {
   }
 
   /**
-   * @param dest will be replaced if exists and override
+   * @param source the source file or folder
+   * @param dest the dest file or folder
+   * @param override if to override if the dest exists.
+   * @throws IOException if any error occurs.
    */
   public static void copyFileFolder(final File source, final File dest, final boolean override) throws IOException {
     if (dest.exists()) {
@@ -87,6 +90,10 @@ public final class FSUtils {
     }
   }
 
+  /**
+   * @param f the file or folder to be deleted.
+   * @throws IOException if any error occurs.
+   * */
   public static void deleteFileFolder(final File f) throws IOException {
     if (!f.exists()) {
       return;
@@ -101,12 +108,26 @@ public final class FSUtils {
     }
   }
 
+  /**
+   * Write the content to the file.
+   * 
+   * @param f the file.
+   * @param content the content.
+   * @throws IOException if any error occurs.
+   * */
   public static void writeFile(final File f, final String content) throws IOException {
     final FileOutputStream o = new FileOutputStream(f);
     o.write(content.getBytes());
     o.close();
   }
 
+  /**
+   * Reset the file length of a file.
+   * 
+   * @param f the file.
+   * @param desired the file length desired.
+   * @throws IOException if any error occurs.
+   * */
   public static void resetFileSize(final File f, final long desired) throws IOException {
     boolean ok = f.length() == desired;
     if (!ok) {

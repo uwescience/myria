@@ -64,7 +64,7 @@ public class SQLiteTest {
 
     final HashMap<Tuple, Integer> expectedResult = TestUtils.tupleBatchToTupleBag(tbb);
 
-    final String query = "SELECT * FROM " + testtableKey.toString("sqlite");
+    final String query = "SELECT * FROM " + testtableKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE);
 
     /* Scan the testtable in database */
     final SQLiteQueryScan scan = new SQLiteQueryScan(query, outputSchema);

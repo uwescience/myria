@@ -20,18 +20,42 @@ public final class BlockingJDBCDataReceiver extends Operator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
+  /**
+   * the child.
+   * */
   private Operator child;
+
+  /**
+   * JDBC info.
+   * */
   private final JdbcInfo jdbcInfo;
+
+  /**
+   * the source table name.
+   * */
   private final String tableName;
-  private final List<String> fieldNames;
+
+  /**
+   * The columns the query should get from the JDBC database.
+   * */
+  private final List<String> columnNames;
+
+  /**
+   * Question mark place holders in the query SQL statement.
+   * */
   private final String[] placeHolders;
 
+  /**
+   * @param tableName the table name.
+   * @param jdbcInfo the JDBC info.
+   * @param child the child.
+   * */
   public BlockingJDBCDataReceiver(final String tableName, final JdbcInfo jdbcInfo, final Operator child) {
     this.tableName = tableName;
     this.child = child;
     this.jdbcInfo = jdbcInfo;
     final Schema s = child.getSchema();
-    fieldNames = s.getColumnNames();
+    columnNames = s.getColumnNames();
     placeHolders = new String[s.numColumns()];
     for (int i = 0; i < s.numColumns(); ++i) {
       placeHolders[i] = "?";
@@ -48,7 +72,7 @@ public final class BlockingJDBCDataReceiver extends Operator {
     while (!child.eos()) {
       while ((tb = child.next()) != null) {
         JdbcAccessMethod.tupleBatchInsert(jdbcInfo, "insert into " + tableName + " ( "
-            + StringUtils.join(fieldNames, ',') + " ) values ( " + StringUtils.join(placeHolders, ',') + " )", tb);
+            + StringUtils.join(columnNames, ',') + " ) values ( " + StringUtils.join(placeHolders, ',') + " )", tb);
       }
     }
     return null;
@@ -57,9 +81,11 @@ public final class BlockingJDBCDataReceiver extends Operator {
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
     TupleBatch tb = null;
-    while (!child.eos() && (tb = child.nextReady()) != null) {
+    tb = child.nextReady();
+    while (tb != null) {
       JdbcAccessMethod.tupleBatchInsert(jdbcInfo, "insert into " + tableName + " ( "
-          + StringUtils.join(fieldNames, ',') + " ) values ( " + StringUtils.join(placeHolders, ',') + " )", tb);
+          + StringUtils.join(columnNames, ',') + " ) values ( " + StringUtils.join(placeHolders, ',') + " )", tb);
+      tb = child.nextReady();
     }
     return null;
   }

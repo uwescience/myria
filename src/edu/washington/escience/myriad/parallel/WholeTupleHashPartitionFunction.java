@@ -10,6 +10,9 @@ public final class WholeTupleHashPartitionFunction extends PartitionFunction<Str
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
+  /**
+   * @param numPartition total number of partitions.
+   * */
   public WholeTupleHashPartitionFunction(final int numPartition) {
     super(numPartition);
   }
@@ -22,17 +25,13 @@ public final class WholeTupleHashPartitionFunction extends PartitionFunction<Str
   public int[] partition(final TupleBatch tb) {
     final int[] result = new int[tb.numTuples()];
     for (int i = 0; i < result.length; i++) {
-      int p = tb.hashCode(i) % numPartition;
+      int p = tb.hashCode(i) % numPartition();
       if (p < 0) {
-        p = p + numPartition;
+        p = p + numPartition();
       }
       result[i] = p;
     }
     return result;
-  }
-
-  @Override
-  public void setAttribute(final String attribute, final Integer value) {
   }
 
 }

@@ -2,6 +2,7 @@ package edu.washington.escience.myriad.parallel;
 
 import java.util.BitSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
@@ -36,12 +37,12 @@ public class MasterQueryPartition implements QueryPartition {
   /**
    * The root operator of the master query partition.
    * */
-  final RootOperator root;
+  private final RootOperator root;
 
   /**
    * The worker plans of the owner query of this master query partition.
    * */
-  final ConcurrentHashMap<Integer, RootOperator[]> workerPlans;
+  private final ConcurrentHashMap<Integer, RootOperator[]> workerPlans;
 
   /**
    * If the root is EOS.
@@ -61,27 +62,27 @@ public class MasterQueryPartition implements QueryPartition {
   /**
    * The workers who have received their part of the query plan.
    * */
-  final BitSet workersReceivedQuery;
+  private final BitSet workersReceivedQuery;
 
   /**
    * The workers who have completed their part of the query plan.
    * */
-  final BitSet workersCompleteQuery;
+  private final BitSet workersCompleteQuery;
 
   /**
    * The workers get assigned to compute the query. WorkerID -> Worker Index.
    * */
-  final ConcurrentHashMap<Integer, Integer> workersAssigned;
+  private final ConcurrentHashMap<Integer, Integer> workersAssigned;
 
   /**
    * The future object denoting the worker receive query plan operation.
    * */
-  final QueryFuture workerReceiveFuture = new DefaultQueryFuture(this, true);
+  private final QueryFuture workerReceiveFuture = new DefaultQueryFuture(this, true);
 
   /**
    * The future object denoting the query execution progress.
    * */
-  final QueryFuture queryExecutionFuture = new DefaultQueryFuture(this, true);
+  private final QueryFuture queryExecutionFuture = new DefaultQueryFuture(this, true);
 
   /**
    * Callback when a query plan is received by a worker.
@@ -95,6 +96,41 @@ public class MasterQueryPartition implements QueryPartition {
     if (workersReceivedQuery.cardinality() >= workersAssigned.size()) {
       workerReceiveFuture.setSuccess();
     }
+  }
+
+  /**
+   * @return worker plans.
+   * */
+  final Map<Integer, RootOperator[]> getWorkerPlans() {
+    return workerPlans;
+  }
+
+  /**
+   * @return query future for the worker receiving query action.
+   * */
+  final QueryFuture getWorkerReceiveFuture() {
+    return workerReceiveFuture;
+  }
+
+  /**
+   * @return query future for the worker receiving query action.
+   * */
+  final QueryFuture getQueryExecutionFuture() {
+    return queryExecutionFuture;
+  }
+
+  /**
+   * @return my root operator.
+   * */
+  final RootOperator getRootOperator() {
+    return root;
+  }
+
+  /**
+   * @return the set of workers get assigned to run the query.
+   * */
+  final Set<Integer> getWorkerAssigned() {
+    return workersAssigned.keySet();
   }
 
   /**
@@ -115,6 +151,12 @@ public class MasterQueryPartition implements QueryPartition {
     }
   }
 
+  /**
+   * @param rootOp the root operator of the master query.
+   * @param workerPlans the worker plans.
+   * @param queryID queryID.
+   * @param master the master on which the query partition is running.
+   * */
   public MasterQueryPartition(final RootOperator rootOp, final Map<Integer, RootOperator[]> workerPlans,
       final long queryID, final Server master) {
     root = rootOp;
@@ -155,6 +197,11 @@ public class MasterQueryPartition implements QueryPartition {
     return rootTask + ", priority:" + priority;
   }
 
+  /**
+   * set my execution task.
+   * 
+   * @param rootTask my task.
+   * */
   public final void setRootTask(final QuerySubTreeTask rootTask) {
     this.rootTask = rootTask;
   }
@@ -164,16 +211,19 @@ public class MasterQueryPartition implements QueryPartition {
     if (LOGGER.isInfoEnabled()) {
       LOGGER.info("Query : " + this + " start processing.");
     }
-    rootTask.init(ImmutableMap.copyOf(master.execEnvVars));
+    rootTask.init(ImmutableMap.copyOf(master.getExecEnvVars()));
     rootTask.nonBlockingExecute();
   }
 
+  /**
+   * start blocking execution.
+   */
   @Deprecated
   public final void startBlockingExecution() {
     if (LOGGER.isInfoEnabled()) {
       LOGGER.info("Query : " + this + " start processing.");
     }
-    rootTask.init(ImmutableMap.copyOf(master.execEnvVars));
+    rootTask.init(ImmutableMap.copyOf(master.getExecEnvVars()));
     rootTask.blockingExecute();
   }
 
@@ -207,7 +257,10 @@ public class MasterQueryPartition implements QueryPartition {
 
   @Override
   public final int getNumTaskEOS() {
-    return rootTaskEOS ? 1 : 0;
+    if (rootTaskEOS) {
+      return 1;
+    }
+    return 0;
   }
 
 }

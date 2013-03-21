@@ -52,6 +52,11 @@ public class WorkerQueryPartition implements QueryPartition {
    * */
   private volatile int priority;
 
+  /**
+   * @param operators the operators belonging to this query partition.
+   * @param queryID the id of the query.
+   * @param ownerWorker the worker on which this query partition is going to run
+   * */
   public WorkerQueryPartition(final RootOperator[] operators, final long queryID, final Worker ownerWorker) {
     this.queryID = queryID;
     this.operators = operators;
@@ -61,18 +66,21 @@ public class WorkerQueryPartition implements QueryPartition {
   }
 
   @Override
-  public long getQueryID() {
+  public final long getQueryID() {
     return queryID;
   }
 
   @Override
-  public int compareTo(final QueryPartition o) {
+  public final int compareTo(final QueryPartition o) {
     if (o == null) {
       return -1;
     }
     return priority - o.getPriority();
   }
 
+  /**
+   * @return the root operators belonging to this query partition.
+   * */
   public final RootOperator[] getOperators() {
     return operators;
   }
@@ -87,6 +95,11 @@ public class WorkerQueryPartition implements QueryPartition {
     return Arrays.toString(operators) + ", priority:" + priority;
   }
 
+  /**
+   * set my execution tasks.
+   * 
+   * @param tasks my tasks.
+   * */
   public final void setTasks(final ArrayList<QuerySubTreeTask> tasks) {
     for (QuerySubTreeTask t : tasks) {
       this.tasks.put(t, new Boolean(false));
@@ -99,17 +112,21 @@ public class WorkerQueryPartition implements QueryPartition {
       LOGGER.info("Query : " + this + " start processing.");
     }
     for (QuerySubTreeTask t : tasks.keySet()) {
-      t.init(ImmutableMap.copyOf(ownerWorker.execEnvVars));
+      t.init(ImmutableMap.copyOf(ownerWorker.getExecEnvVars()));
       t.nonBlockingExecute();
     }
   }
 
+  /**
+   * start blocking execution.
+   */
+  @Deprecated
   public final void startBlockingExecution() {
     if (LOGGER.isInfoEnabled()) {
       LOGGER.info("Query : " + this + " start processing.");
     }
     for (QuerySubTreeTask t : tasks.keySet()) {
-      t.init(ImmutableMap.copyOf(ownerWorker.execEnvVars));
+      t.init(ImmutableMap.copyOf(ownerWorker.getExecEnvVars()));
       t.blockingExecute();
     }
   }

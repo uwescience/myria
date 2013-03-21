@@ -21,41 +21,53 @@ public class ShuffleProducer extends Producer {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
+  /**
+   * the partition function.
+   * */
   private final PartitionFunction<?, ?> partitionFunction;
 
+  /**
+   * @param child the child who provides data for this producer to distribute.
+   * @param operatorID destination operators the data goes
+   * @param workerIDs destination workers the data goes.
+   * @param pf the partition function
+   * */
   public ShuffleProducer(final Operator child, final ExchangePairID operatorID, final int[] workerIDs,
       final PartitionFunction<?, ?> pf) {
     super(child, operatorID, workerIDs);
     partitionFunction = pf;
   }
 
+  /**
+   * @return the partition function I'm using.
+   * */
   public final PartitionFunction<?, ?> getPartitionFunction() {
     return partitionFunction;
   }
 
   @Override
-  protected void consumeTuples(final TupleBatch tup) throws DbException {
+  protected final void consumeTuples(final TupleBatch tup) throws DbException {
     TupleBatchBuffer[] buffers = getBuffers();
     Channel[] ioChannels = getChannels();
     tup.partition(partitionFunction, buffers);
     TransportMessage dm = null;
     for (int p = 0; p < ioChannels.length; p++) {
       final TupleBatchBuffer etb = buffers[p];
-      while ((dm = etb.popFilledAsTM(super.outputSeq[p])) != null) {
-        super.outputSeq[p]++;
+      while ((dm = etb.popFilledAsTM(super.getOutputSeqNum()[p])) != null) {
+        super.getOutputSeqNum()[p]++;
         ioChannels[p].write(dm);
       }
     }
   }
 
   @Override
-  protected void childEOS() throws DbException {
+  protected final void childEOS() throws DbException {
     TransportMessage dm = null;
     TupleBatchBuffer[] buffers = getBuffers();
     Channel[] ioChannels = getChannels();
     for (int i = 0; i < ioChannels.length; i++) {
-      while ((dm = buffers[i].popAnyAsTM(super.outputSeq[i])) != null) {
-        super.outputSeq[i]++;
+      while ((dm = buffers[i].popAnyAsTM(super.getOutputSeqNum()[i])) != null) {
+        super.getOutputSeqNum()[i]++;
         ioChannels[i].write(dm);
       }
     }
@@ -66,13 +78,13 @@ public class ShuffleProducer extends Producer {
   }
 
   @Override
-  protected void childEOI() throws DbException {
+  protected final void childEOI() throws DbException {
     TransportMessage dm = null;
     TupleBatchBuffer[] buffers = getBuffers();
     Channel[] ioChannels = getChannels();
     for (int i = 0; i < ioChannels.length; i++) {
-      while ((dm = buffers[i].popAnyAsTM(super.outputSeq[i])) != null) {
-        super.outputSeq[i]++;
+      while ((dm = buffers[i].popAnyAsTM(super.getOutputSeqNum()[i])) != null) {
+        super.getOutputSeqNum()[i]++;
         ioChannels[i].write(dm);
       }
     }

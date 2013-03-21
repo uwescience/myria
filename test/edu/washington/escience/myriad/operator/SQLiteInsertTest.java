@@ -16,6 +16,7 @@ import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
+import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatchBuffer;
@@ -72,7 +73,8 @@ public class SQLiteInsertTest {
       final SQLiteConnection sqliteConnection = new SQLiteConnection(tempFile);
       sqliteConnection.open(false);
       final SQLiteStatement statement =
-          sqliteConnection.prepare("SELECT COUNT(*) FROM " + tuplesKey.toString("sqlite") + ";");
+          sqliteConnection.prepare("SELECT COUNT(*) FROM " + tuplesKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE)
+              + ";");
       assertTrue(statement.step());
       final int inserted = statement.columnInt(0);
       assertTrue(inserted == NUM_TUPLES);

@@ -12,16 +12,19 @@ import edu.washington.escience.myriad.column.Column;
  * 
  */
 public class ExchangeTupleBatch extends TupleBatch {
-  /** The hard-coded number of tuples in a batch. */
-  public static final int BATCH_SIZE = 10 * 1000;
-
   /**
    * The seq num of the first tuple in this TB.
    * */
   private final long startingSeqNum;
 
+  /**
+   * Log seq num. For fault tolerance.
+   * */
   private final long lsn;
 
+  /**
+   * source worker.
+   * */
   private final int sourceWorkerID;
 
   /**
@@ -66,11 +69,28 @@ public class ExchangeTupleBatch extends TupleBatch {
   }
 
   @Override
-  protected TupleBatch shallowCopy(final Schema schema, final List<Column<?>> columns, final BitSet validTuples,
+  protected final TupleBatch shallowCopy(final Schema schema, final List<Column<?>> columns, final BitSet validTuples,
       final ImmutableList<Integer> validIndices) {
     return new ExchangeTupleBatch(schema, columns, validTuples, validIndices, startingSeqNum, lsn, sourceWorkerID);
   }
 
+  /**
+   * @return my LSN.
+   * */
+  public final long getLSN() {
+    return lsn;
+  }
+
+  /**
+   * @return the sequence number of the first tuple in this TB.
+   * */
+  public final long getStartingSeqNum() {
+    return startingSeqNum;
+  }
+
+  /**
+   * @return get source worker.
+   * */
   public final int getSourceWorkerID() {
     return sourceWorkerID;
   }

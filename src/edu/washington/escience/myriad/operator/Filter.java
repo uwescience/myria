@@ -16,19 +16,34 @@ public final class Filter extends Operator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
+  /**
+   * The operator.
+   * */
   private final Predicate.Op op;
+  /**
+   * the operand constant.
+   * */
   private final Object operand;
-  private final int fieldIdx;
+  /**
+   * the index of the column to do the filtering.
+   * */
+  private final int columnIndex;
+  /**
+   * the child.
+   * */
   private Operator child;
 
   /**
    * Constructor accepts a predicate to apply and a child operator to read tuples to filter from.
    * 
+   * @param op the operation.
+   * @param operand the operand constant.
+   * @param fieldIdx the index of the column to do the filtering.
    * @param child The child operator
    */
   public Filter(final Predicate.Op op, final int fieldIdx, final Object operand, final Operator child) {
     this.op = op;
-    this.fieldIdx = fieldIdx;
+    columnIndex = fieldIdx;
     this.operand = operand;
     this.child = child;
   }
@@ -44,7 +59,7 @@ public final class Filter extends Operator {
 
     while ((tmp = child.next()) != null) {
       if (tmp.numTuples() > 0) {
-        tmp = tmp.filter(fieldIdx, op, operand);
+        tmp = tmp.filter(columnIndex, op, operand);
         if (tmp.numTuples() > 0) {
           return tmp;
         }
@@ -56,16 +71,15 @@ public final class Filter extends Operator {
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
     TupleBatch tmp = null;
-    while (!child.eos() && (tmp = child.nextReady()) != null) {
+    tmp = child.nextReady();
+    while (tmp != null) {
       // tmp = child.next();
-      tmp = tmp.filter(fieldIdx, op, operand);
+      tmp = tmp.filter(columnIndex, op, operand);
       if (tmp.numTuples() > 0) {
         return tmp;
       }
+      tmp = child.nextReady();
     }
-    // if (child.eos()) {
-    // setEOS();
-    // }
     return null;
   }
 

@@ -30,9 +30,21 @@ public final class FlowControlHandler extends SimpleChannelHandler {
   /** The logger for this class. */
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(FlowControlHandler.class.getName());
 
+  /**
+   * Producer channel mapping. The mapping is created at {@link Worker} or at {@link Server}. Here the mapping is only
+   * used for look up.
+   * */
   private final ConcurrentHashMap<ExchangeChannelID, ProducerChannel> producerChannelMap;
+  /**
+   * Consumer channel mapping. The mapping is created at {@link Worker} or at {@link Server}. Here the mapping is only
+   * used for look up.
+   * */
   private final ConcurrentHashMap<ExchangeChannelID, ConsumerChannel> consumerChannelMap;
 
+  /**
+   * @param producerChannelMap {@link FlowControlHandler#producerChannelMap}
+   * @param consumerChannelMap {@link FlowControlHandler#consumerChannelMap}
+   * */
   public FlowControlHandler(final ConcurrentHashMap<ExchangeChannelID, ConsumerChannel> consumerChannelMap,
       final ConcurrentHashMap<ExchangeChannelID, ProducerChannel> producerChannelMap) {
     this.consumerChannelMap = consumerChannelMap;
@@ -98,7 +110,7 @@ public final class FlowControlHandler extends SimpleChannelHandler {
    * */
   public ChannelGroupFuture resumeRead(final Consumer consumerOp) {
 
-    ConsumerChannel[] ec = consumerOp.exchangeChannels;
+    ConsumerChannel[] ec = consumerOp.getExchangeChannels();
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("Resume read for operator {}, IO Channels are {", consumerOp.getOperatorID());
       for (ConsumerChannel e : ec) {
@@ -148,7 +160,7 @@ public final class FlowControlHandler extends SimpleChannelHandler {
    * @return ChannelGroupFuture denotes the future of the pause read action.
    * */
   public ChannelGroupFuture pauseRead(final Consumer consumerOp) {
-    ConsumerChannel[] consumerChannels = consumerOp.exchangeChannels;
+    ConsumerChannel[] consumerChannels = consumerOp.getExchangeChannels();
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("Pause read for operator {}, IO Channels are {", consumerOp.getOperatorID());
       for (ConsumerChannel ec : consumerChannels) {
@@ -231,7 +243,8 @@ public final class FlowControlHandler extends SimpleChannelHandler {
           isEOS = true;
           break;
       }
-      if (!ioChannel.isWritable()) {// this io channel is already full of write requests
+      if (!ioChannel.isWritable()) {
+        // this io channel is already full of write requests
         if (LOGGER.isDebugEnabled()) {
           LOGGER.debug("Input buffer full for Channel {}, to remote {}", ioChannel, remoteID);
         }

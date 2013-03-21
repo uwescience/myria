@@ -78,6 +78,7 @@ public final class WorkerDataHandler extends SimpleChannelUpstreamHandler implem
         switch (data.getType()) {
           case NORMAL:
             ConsumerChannel cc = ecp.getInputChannel();
+            Consumer op = cc.getOwnerConsumer();
             final List<ColumnMessage> columnMessages = data.getColumnsList();
             final Column<?>[] columnArray = new Column[columnMessages.size()];
             int idx = 0;
@@ -87,14 +88,16 @@ public final class WorkerDataHandler extends SimpleChannelUpstreamHandler implem
             final List<Column<?>> columns = Arrays.asList(columnArray);
 
             pushToBufferSucceed =
-                cc.op.inputBuffer.offer(new ExchangeData(cc.op.getOperatorID(), remoteID, columns, cc.op.getSchema(),
-                    data.getNumTuples(), message.getSeq()));
-            cc.ownerTask.notifyNewInput();
+                op.getInputBuffer().offer(
+                    new ExchangeData(op.getOperatorID(), remoteID, columns, op.getSchema(), data.getNumTuples(),
+                        message.getSeq()));
+            cc.getOwnerTask().notifyNewInput();
             break;
           case EOI:
             cc = ecp.getInputChannel();
-            if (cc.op.inputBuffer == null) {
-              if (cc.ownerTask.isFinished()) {
+            op = cc.getOwnerConsumer();
+            if (op.getInputBuffer() == null) {
+              if (cc.getOwnerTask().isFinished()) {
                 if (LOGGER.isDebugEnabled()) {
                   LOGGER.debug("Iteration EOI input for iteration input of IDBInput. Drop directly.");
                 }
@@ -106,9 +109,9 @@ public final class WorkerDataHandler extends SimpleChannelUpstreamHandler implem
               }
             } else {
               pushToBufferSucceed =
-                  cc.op.inputBuffer.offer(new ExchangeData(cc.op.getOperatorID(), remoteID, cc.op.getSchema(),
-                      MetaMessage.EOI));
-              cc.ownerTask.notifyNewInput();
+                  op.getInputBuffer().offer(
+                      new ExchangeData(op.getOperatorID(), remoteID, op.getSchema(), MetaMessage.EOI));
+              cc.getOwnerTask().notifyNewInput();
             }
             break;
           case BOS:
@@ -126,18 +129,19 @@ public final class WorkerDataHandler extends SimpleChannelUpstreamHandler implem
             // }
 
             if (LOGGER.isDebugEnabled()) {
-              LOGGER.debug("EOS message @ WorkerDataHandler; worker[" + remoteID + "]; opID[" + cc.op.getOperatorID()
-                  + "]");
+              LOGGER.debug("EOS message @ WorkerDataHandler; worker[" + remoteID + "]; opID["
+                  + cc.getOwnerConsumer().getOperatorID() + "]");
             }
 
-            if (cc.op.inputBuffer == null) {
+            op = cc.getOwnerConsumer();
+            if (op.getInputBuffer() == null) {
               // This happens at the iteration input child, because IDBInput emits EOS without EOS input from the
               // iteration
               // child. The driving task of IDBInput will terminate and cleanup before the iteration input child
               // receives
               // an EOS from the final EOS iteration. It doesn't affect working but logically incorrect.
               // TODO refactoring of the operator interface may solve this.
-              if (cc.ownerTask.isFinished()) {
+              if (cc.getOwnerTask().isFinished()) {
                 if (LOGGER.isDebugEnabled()) {
                   LOGGER.debug("Iteration EOS input for iteration input of IDBInput. Drop directly.");
                 }
@@ -149,9 +153,9 @@ public final class WorkerDataHandler extends SimpleChannelUpstreamHandler implem
               }
             } else {
               pushToBufferSucceed =
-                  cc.op.inputBuffer.offer(new ExchangeData(cc.op.getOperatorID(), remoteID, cc.op.getSchema(),
-                      MetaMessage.EOS));
-              cc.ownerTask.notifyNewInput();
+                  op.getInputBuffer().offer(
+                      new ExchangeData(op.getOperatorID(), remoteID, op.getSchema(), MetaMessage.EOS));
+              cc.getOwnerTask().notifyNewInput();
             }
             break;
         }
@@ -164,7 +168,7 @@ public final class WorkerDataHandler extends SimpleChannelUpstreamHandler implem
           osis = new ObjectInputStream(new ByteArrayInputStream(message.getQuery().getQuery().toByteArray()));
           final RootOperator[] operators = (RootOperator[]) (osis.readObject());
           WorkerQueryPartition q = new WorkerQueryPartition(operators, id, ownerWorker);
-          ownerWorker.queryQueue.offer(q);
+          ownerWorker.getQueryQueue().offer(q);
           if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Query received from: " + remoteID + ". " + q);
           }
@@ -179,7 +183,7 @@ public final class WorkerDataHandler extends SimpleChannelUpstreamHandler implem
         if (LOGGER.isDebugEnabled()) {
           LOGGER.debug("Control message received: " + controlM);
         }
-        ownerWorker.controlMessageQueue.offer(controlM);
+        ownerWorker.getControlMessageQueue().offer(controlM);
         break;
     }
     return pushToBufferSucceed;

@@ -17,42 +17,44 @@ import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType;
 import edu.washington.escience.myriad.util.IPCUtils;
 
+/**
+ * Dealing with IPC session management at the server side.
+ * */
 @Sharable
 public class IPCSessionManagerServer extends SimpleChannelHandler {
 
   /** The logger for this class. */
   private static final Logger LOGGER = Logger.getLogger(IPCSessionManagerServer.class.getName());
 
+  /**
+   * the IPC connection pool, this session manager serves to.
+   * */
   private final IPCConnectionPool connectionPool;
 
   /**
    * Help the session management for ipc connection pool at IPC server.
+   * 
+   * @param connectionPool the IPC connection pool, this session manager serves to.
    * */
   public IPCSessionManagerServer(final IPCConnectionPool connectionPool) {
     this.connectionPool = connectionPool;
   }
 
-  /**
-   * Invoked when a {@link Channel} is open, bound to a local address, and connected to a remote address.
-   */
   @Override
-  public void channelConnected(final ChannelHandlerContext ctx, final ChannelStateEvent e) throws Exception {
+  public final void channelConnected(final ChannelHandlerContext ctx, final ChannelStateEvent e) throws Exception {
     final ChannelContext cs = ChannelContext.getChannelContext(e.getChannel());
     cs.connected();
     ctx.sendUpstream(e);
   }
 
-  /**
-   * Invoked when a child {@link Channel} was open. (e.g. a server channel accepted a connection)
-   */
   @Override
-  public void channelOpen(final ChannelHandlerContext ctx, final ChannelStateEvent e) throws Exception {
+  public final void channelOpen(final ChannelHandlerContext ctx, final ChannelStateEvent e) throws Exception {
     connectionPool.newAcceptedRemoteChannel(e.getChannel());
     ctx.sendUpstream(e);
   }
 
   @Override
-  public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e) throws Exception {
+  public final void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e) throws Exception {
     final Channel ch = e.getChannel();
     final TransportMessage tm = (TransportMessage) e.getMessage();
     final ChannelContext att = ChannelContext.getChannelContext(ch);
@@ -81,14 +83,14 @@ public class IPCSessionManagerServer extends SimpleChannelHandler {
   }
 
   @Override
-  public void writeComplete(final ChannelHandlerContext ctx, final WriteCompletionEvent e) throws Exception {
+  public final void writeComplete(final ChannelHandlerContext ctx, final WriteCompletionEvent e) throws Exception {
     final ChannelContext cs = ChannelContext.getChannelContext(e.getChannel());
     cs.updateLastIOTimestamp();
     ctx.sendUpstream(e);
   }
 
   @Override
-  public void writeRequested(final ChannelHandlerContext ctx, final MessageEvent e) throws Exception {
+  public final void writeRequested(final ChannelHandlerContext ctx, final MessageEvent e) throws Exception {
     ChannelContext.getChannelContext(e.getChannel()).recordWriteFuture(e);
     ctx.sendDownstream(e);
   }

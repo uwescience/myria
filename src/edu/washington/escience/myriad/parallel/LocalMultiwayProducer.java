@@ -20,6 +20,10 @@ public final class LocalMultiwayProducer extends Producer {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
+  /**
+   * @param child the child who provides data for this producer to distribute.
+   * @param operatorIDs destination operators the data goes
+   * */
   public LocalMultiwayProducer(final Operator child, final ExchangePairID[] operatorIDs) {
     super(child, operatorIDs);
   }
@@ -30,8 +34,8 @@ public final class LocalMultiwayProducer extends Producer {
     Channel[] ioChannels = getChannels();
     TransportMessage dm = null;
     tup.compactInto(buffers[0]);
-    while ((dm = buffers[0].popFilledAsTM(super.outputSeq[0])) != null) {
-      super.outputSeq[0]++;
+    while ((dm = buffers[0].popFilledAsTM(super.getOutputSeqNum()[0])) != null) {
+      super.getOutputSeqNum()[0]++;
       for (Channel ch : ioChannels) {
         ch.write(dm);
       }
@@ -43,8 +47,8 @@ public final class LocalMultiwayProducer extends Producer {
     TransportMessage dm = null;
     TupleBatchBuffer[] buffers = getBuffers();
     Channel[] ioChannels = getChannels();
-    while ((dm = buffers[0].popAnyAsTM(super.outputSeq[0])) != null) {
-      super.outputSeq[0]++;
+    while ((dm = buffers[0].popAnyAsTM(super.getOutputSeqNum()[0])) != null) {
+      super.getOutputSeqNum()[0]++;
       for (Channel ch : ioChannels) {
         ch.write(dm);
       }
@@ -59,8 +63,8 @@ public final class LocalMultiwayProducer extends Producer {
     TransportMessage dm = null;
     TupleBatchBuffer[] buffers = getBuffers();
     Channel[] ioChannels = getChannels();
-    while ((dm = buffers[0].popAnyAsTM(super.outputSeq[0])) != null) {
-      super.outputSeq[0]++;
+    while ((dm = buffers[0].popAnyAsTM(super.getOutputSeqNum()[0])) != null) {
+      super.getOutputSeqNum()[0]++;
       for (Channel ch : ioChannels) {
         ch.write(dm);
       }

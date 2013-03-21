@@ -23,8 +23,14 @@ public final class IPCPipelineFactories {
    * */
   public static final class MasterInJVMPipelineFactory implements ChannelPipelineFactory {
 
+    /**
+     * The master who will be the owner of the pipeline factory.
+     * */
     private final Server theMaster;
 
+    /**
+     * @param theMaster the master who will be the owner of the pipeline factory.
+     * */
     public MasterInJVMPipelineFactory(final Server theMaster) {
       this.theMaster = theMaster;
     }
@@ -33,8 +39,8 @@ public final class IPCPipelineFactories {
     public ChannelPipeline getPipeline() throws Exception {
       final ChannelPipeline p = Channels.pipeline();
       p.addLast("inputVerifier", IPC_INPUT_GUARD); // upstream 4
-      p.addLast("flowControl", theMaster.flowController);
-      p.addLast("dataHandler", theMaster.masterDataHandler); // upstream 6
+      p.addLast("flowControl", theMaster.getFlowControlHandler());
+      p.addLast("dataHandler", theMaster.getDataHandler()); // upstream 6
       return p;
     }
   }
@@ -44,8 +50,14 @@ public final class IPCPipelineFactories {
    * */
   public static final class WorkerInJVMPipelineFactory implements ChannelPipelineFactory {
 
+    /**
+     * The worker who will be the owner of the pipeline factory.
+     * */
     private final Worker ownerWorker;
 
+    /**
+     * @param ownerWorker the worker who will be the owner of the pipeline factory.
+     * */
     public WorkerInJVMPipelineFactory(final Worker ownerWorker) {
       this.ownerWorker = ownerWorker;
     }
@@ -54,18 +66,29 @@ public final class IPCPipelineFactories {
     public ChannelPipeline getPipeline() throws Exception {
       final ChannelPipeline p = Channels.pipeline();
       p.addLast("inputVerifier", IPC_INPUT_GUARD); // upstream 4
-      p.addLast("flowControl", ownerWorker.flowController);
-      p.addLast("dataHandler", ownerWorker.workerDataHandler); // upstream 6
+      p.addLast("flowControl", ownerWorker.getFlowControlHandler());
+      p.addLast("dataHandler", ownerWorker.getWorkerDataHandler()); // upstream 6
       return p;
     }
   }
 
+  /**
+   * Client side pipeline factory for the master.
+   * */
   public static final class MasterClientPipelineFactory implements ChannelPipelineFactory {
-
+    /**
+     * IPC session management.
+     * */
     private final IPCSessionManagerClient ipcSessionManagerClient;
 
+    /**
+     * pipe line executor. A dedicated executor service who executes the handlers in a the pipeline.
+     * */
     private final ExecutionHandler pipelineExecutionHandler;
 
+    /**
+     * The master who will be the owner of the pipeline factory.
+     * */
     private final Server ownerMaster;
 
     /**
@@ -74,8 +97,8 @@ public final class IPCPipelineFactories {
     MasterClientPipelineFactory(final Server theMaster) {
       ownerMaster = theMaster;
       ipcSessionManagerClient = new IPCSessionManagerClient();
-      if (theMaster.ipcPipelineExecutor != null) {
-        pipelineExecutionHandler = new ExecutionHandler(theMaster.ipcPipelineExecutor);
+      if (theMaster.getPipelineExecutor() != null) {
+        pipelineExecutionHandler = new ExecutionHandler(theMaster.getPipelineExecutor());
       } else {
         pipelineExecutionHandler = null;
       }
@@ -96,31 +119,41 @@ public final class IPCPipelineFactories {
       }
       p.addLast("inputVerifier", IPC_INPUT_GUARD); // upstream 4
       p.addLast("ipcSessionManager", ipcSessionManagerClient); // upstream 5
-      p.addLast("flowControl", ownerMaster.flowController);
-      p.addLast("dataHandler", ownerMaster.masterDataHandler); // upstream 6
+      p.addLast("flowControl", ownerMaster.getFlowControlHandler());
+      p.addLast("dataHandler", ownerMaster.getDataHandler()); // upstream 6
       return p;
     }
 
   }
-
+  /**
+   * Server side pipeline factory for the master.
+   * */
   public static final class MasterServerPipelineFactory implements ChannelPipelineFactory {
     /**
      * master control handler.
      * */
     private final IPCSessionManagerServer ipcSessionManagerServer;
 
+    /**
+     * pipe line executor.
+     * */
     private final ExecutionHandler pipelineExecutionHandler;
 
+    /**
+     * The master who will be the owner of the pipeline factory.
+     * */
     private final Server ownerMaster;
 
     /**
      * constructor.
+     * 
+     * @param theMaster the master who will be the owner of the pipeline factory.
      * */
     MasterServerPipelineFactory(final Server theMaster) {
       ownerMaster = theMaster;
-      ipcSessionManagerServer = new IPCSessionManagerServer(theMaster.connectionPool);
-      if (theMaster.ipcPipelineExecutor != null) {
-        pipelineExecutionHandler = new ExecutionHandler(theMaster.ipcPipelineExecutor);
+      ipcSessionManagerServer = new IPCSessionManagerServer(theMaster.getIPCConnectionPool());
+      if (theMaster.getPipelineExecutor() != null) {
+        pipelineExecutionHandler = new ExecutionHandler(theMaster.getPipelineExecutor());
       } else {
         pipelineExecutionHandler = null;
       }
@@ -139,29 +172,42 @@ public final class IPCPipelineFactories {
       }
       p.addLast("inputVerifier", IPC_INPUT_GUARD); // upstream 4
       p.addLast("ipcSessionManager", ipcSessionManagerServer); // upstream 5
-      p.addLast("flowControl", ownerMaster.flowController);
-      p.addLast("dataHandler", ownerMaster.masterDataHandler); // upstream 6
+      p.addLast("flowControl", ownerMaster.getFlowControlHandler());
+      p.addLast("dataHandler", ownerMaster.getDataHandler()); // upstream 6
 
       return p;
     }
   }
 
+  /**
+   * Client side pipeline factory for workers.
+   * */
   public static final class WorkerClientPipelineFactory implements ChannelPipelineFactory {
-
+    /**
+     * IPC session management.
+     * */
     private final IPCSessionManagerClient ipcSessionManagerClient;
 
+    /**
+     * The worker who will be the owner of the pipeline factory.
+     * */
     private final Worker ownerWorker;
 
+    /**
+     * pipe line executor.
+     * */
     private final ExecutionHandler pipelineExecutionHandler;
 
     /**
      * constructor.
+     * 
+     * @param ownerWorker the worker who will be the owner of the pipeline factory.
      * */
     public WorkerClientPipelineFactory(final Worker ownerWorker) {
       this.ownerWorker = ownerWorker;
       ipcSessionManagerClient = new IPCSessionManagerClient();
-      if (ownerWorker.pipelineExecutor != null) {
-        pipelineExecutionHandler = new ExecutionHandler(ownerWorker.pipelineExecutor);
+      if (ownerWorker.getPipelineExecutor() != null) {
+        pipelineExecutionHandler = new ExecutionHandler(ownerWorker.getPipelineExecutor());
       } else {
         pipelineExecutionHandler = null;
       }
@@ -181,19 +227,31 @@ public final class IPCPipelineFactories {
 
       p.addLast("inputVerifier", IPC_INPUT_GUARD); // upstream 4
       p.addLast("ipcSessionManager", ipcSessionManagerClient); // upstream 5
-      p.addLast("flowControl", ownerWorker.flowController);
-      p.addLast("dataHandler", ownerWorker.workerDataHandler); // upstream 6
+      p.addLast("flowControl", ownerWorker.getFlowControlHandler());
+      p.addLast("dataHandler", ownerWorker.getWorkerDataHandler()); // upstream 6
 
       return p;
     }
   }
 
+  /**
+   * Server side pipeline factory for workers.
+   * */
   public static final class WorkerServerPipelineFactory implements ChannelPipelineFactory {
 
+    /**
+     * IPC session management.
+     * */
     private final IPCSessionManagerServer ipcSessionManagerServer;
 
+    /**
+     * pipe line executor.
+     * */
     private final ExecutionHandler pipelineExecutionHandler;
 
+    /**
+     * The worker who will be the owner of the pipeline factory.
+     * */
     private final Worker ownerWorker;
 
     /**
@@ -203,9 +261,9 @@ public final class IPCPipelineFactories {
      * */
     public WorkerServerPipelineFactory(final Worker ownerWorker) {
       this.ownerWorker = ownerWorker;
-      ipcSessionManagerServer = new IPCSessionManagerServer(ownerWorker.connectionPool);
-      if (ownerWorker.pipelineExecutor != null) {
-        pipelineExecutionHandler = new ExecutionHandler(ownerWorker.pipelineExecutor);
+      ipcSessionManagerServer = new IPCSessionManagerServer(ownerWorker.getIPCConnectionPool());
+      if (ownerWorker.getPipelineExecutor() != null) {
+        pipelineExecutionHandler = new ExecutionHandler(ownerWorker.getPipelineExecutor());
       } else {
         pipelineExecutionHandler = null;
       }
@@ -227,8 +285,8 @@ public final class IPCPipelineFactories {
       }
       p.addLast("inputVerifier", IPC_INPUT_GUARD); // upstream 4
       p.addLast("ipcSessionManager", ipcSessionManagerServer); // upstream 5
-      p.addLast("flowControl", ownerWorker.flowController);
-      p.addLast("dataHandler", ownerWorker.workerDataHandler); // upstream 6
+      p.addLast("flowControl", ownerWorker.getFlowControlHandler());
+      p.addLast("dataHandler", ownerWorker.getWorkerDataHandler()); // upstream 6
 
       return p;
     }

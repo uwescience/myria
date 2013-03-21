@@ -15,6 +15,9 @@ import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType;
 import edu.washington.escience.myriad.util.IPCUtils;
 
+/**
+ * Dealing with IPC session management at the client side.
+ * */
 @Sharable
 public final class IPCSessionManagerClient extends SimpleChannelHandler {
 

@@ -16,6 +16,11 @@ public final class ReadOnlyBitSet extends BitSet {
    */
   private static final long serialVersionUID = 1L;
 
+  /**
+   * Wrap a BitSet so the the BitSet is readonly.
+   * 
+   * @param contents the BitSet to be wrapped
+   * */
   public ReadOnlyBitSet(final BitSet contents) {
     super(0);
     this.contents = contents;
@@ -57,6 +62,11 @@ public final class ReadOnlyBitSet extends BitSet {
     return new ReadOnlyBitSet((BitSet) contents.clone());
   }
 
+  /**
+   * Clone as an ordinary BitSet.
+   * 
+   * @return the cloned BitSet.
+   * */
   public BitSet cloneAsBitSet() {
     return (BitSet) contents.clone();
   }

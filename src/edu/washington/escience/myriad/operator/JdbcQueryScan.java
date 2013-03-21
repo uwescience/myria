@@ -10,29 +10,48 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.accessmethod.JdbcAccessMethod;
 import edu.washington.escience.myriad.accessmethod.JdbcInfo;
 
+/**
+ * Push a select query down into a JDBC based database and scan over the query result.
+ * */
 public class JdbcQueryScan extends LeafOperator {
 
+  /**
+   * Iterate over data from the JDBC database.
+   * */
   private transient Iterator<TupleBatch> tuples;
-  private final Schema schema;
+  /**
+   * The result schema.
+   * */
+  private final Schema outputSchema;
+
+  /** The information for the JDBC connection. */
   private final JdbcInfo jdbcInfo;
+  /**
+   * The SQL template.
+   * */
   private final String baseSQL;
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
+  /**
+   * @param jdbcInfo see the corresponding field.
+   * @param baseSQL see the corresponding field.
+   * @param outputSchema see the corresponding field.
+   * */
   public JdbcQueryScan(final JdbcInfo jdbcInfo, final String baseSQL, final Schema outputSchema) {
     this.jdbcInfo = jdbcInfo;
     this.baseSQL = baseSQL;
-    schema = outputSchema;
+    this.outputSchema = outputSchema;
   }
 
   @Override
-  public void cleanup() {
+  public final void cleanup() {
     tuples = null;
   }
 
   @Override
-  protected TupleBatch fetchNext() throws DbException, InterruptedException {
+  protected final TupleBatch fetchNext() throws DbException, InterruptedException {
     if (tuples.hasNext()) {
       final TupleBatch tb = tuples.next();
       return tb;
@@ -42,7 +61,7 @@ public class JdbcQueryScan extends LeafOperator {
   }
 
   @Override
-  protected TupleBatch fetchNextReady() throws DbException {
+  protected final TupleBatch fetchNextReady() throws DbException {
     try {
       TupleBatch tb = fetchNext();
       if (tb == null) {
@@ -56,12 +75,12 @@ public class JdbcQueryScan extends LeafOperator {
   }
 
   @Override
-  public Schema getSchema() {
-    return schema;
+  public final Schema getSchema() {
+    return outputSchema;
   }
 
   @Override
-  protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+  protected final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     tuples = JdbcAccessMethod.tupleBatchIteratorFromQuery(jdbcInfo, baseSQL);
   }
 

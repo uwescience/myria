@@ -17,6 +17,11 @@ public final class CollectProducer extends Producer {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
+  /**
+   * @param child the child who provides data for this producer to distribute.
+   * @param operatorID destination operator the data goes
+   * @param collectConsumerWorkerID destination worker the data goes.
+   * */
   public CollectProducer(final Operator child, final ExchangePairID operatorID, final int collectConsumerWorkerID) {
     super(child, operatorID, collectConsumerWorkerID);
   }
@@ -26,8 +31,8 @@ public final class CollectProducer extends Producer {
     TransportMessage dm = null;
     tb.compactInto(getBuffers()[0]);
 
-    while ((dm = getBuffers()[0].popFilledAsTM(super.outputSeq[0])) != null) {
-      super.outputSeq[0]++;
+    while ((dm = getBuffers()[0].popFilledAsTM(super.getOutputSeqNum()[0])) != null) {
+      super.getOutputSeqNum()[0]++;
       getChannels()[0].write(dm);
     }
   }
@@ -35,8 +40,8 @@ public final class CollectProducer extends Producer {
   @Override
   protected void childEOS() throws DbException {
     TransportMessage dm = null;
-    while ((dm = getBuffers()[0].popAnyAsTM(super.outputSeq[0])) != null) {
-      super.outputSeq[0]++;
+    while ((dm = getBuffers()[0].popAnyAsTM(super.getOutputSeqNum()[0])) != null) {
+      super.getOutputSeqNum()[0]++;
       getChannels()[0].write(dm);
     }
     getChannels()[0].write(IPCUtils.EOS);
@@ -45,8 +50,8 @@ public final class CollectProducer extends Producer {
   @Override
   protected void childEOI() throws DbException {
     TransportMessage dm = null;
-    while ((dm = getBuffers()[0].popAnyAsTM(super.outputSeq[0])) != null) {
-      super.outputSeq[0]++;
+    while ((dm = getBuffers()[0].popAnyAsTM(super.getOutputSeqNum()[0])) != null) {
+      super.getOutputSeqNum()[0]++;
       getChannels()[0].write(dm);
     }
     getChannels()[0].write(IPCUtils.EOI);

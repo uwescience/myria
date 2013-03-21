@@ -39,13 +39,19 @@ public class ExchangeChannelPair {
    * */
   private ProducerChannel outputChannel;
 
-  public ConsumerChannel getInputChannel() {
+  /**
+   * @return the input channel in the pair.
+   * */
+  public final ConsumerChannel getInputChannel() {
     synchronized (inputFlowControlLock) {
       return inputChannel;
     }
   }
 
-  public ProducerChannel getOutputChannel() {
+  /**
+   * @return the output channel in the pair.
+   * */
+  public final ProducerChannel getOutputChannel() {
     synchronized (outputFlowControlLock) {
       return outputChannel;
     }

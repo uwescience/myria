@@ -23,18 +23,21 @@ public class SinkRoot extends RootOperator {
   private long cnt;
 
   /**
-   * get count.
+   * @return count.
    * */
-  public long getCount() {
+  public final long getCount() {
     return cnt;
   }
 
+  /**
+   * @param child the child.
+   * */
   public SinkRoot(final Operator child) {
     super(child);
   }
 
   @Override
-  protected void consumeTuples(final TupleBatch tuples) throws DbException {
+  protected final void consumeTuples(final TupleBatch tuples) throws DbException {
     cnt += tuples.numTuples();
   }
 
@@ -47,7 +50,7 @@ public class SinkRoot extends RootOperator {
   }
 
   @Override
-  protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+  protected final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     cnt = 0;
   }
 

@@ -93,6 +93,15 @@ public class TupleBatch {
     this.validIndices = validIndices;
   }
 
+  /**
+   * Call this method instead of the copy constructor for a new TupleBatch copy.
+   * 
+   * @param schema schema of the tuples in this batch. Must match columns.
+   * @param columns contains the column-stored data. Must match schema.
+   * @param validTuples BitSet determines which tuples are valid tuples in this batch.
+   * @param validIndices valid tuple indices.
+   * @return shallow copy
+   */
   protected TupleBatch shallowCopy(final Schema schema, final List<Column<?>> columns, final BitSet validTuples,
       final ImmutableList<Integer> validIndices) {
     return new TupleBatch(schema, columns, validTuples, validIndices);
@@ -194,7 +203,6 @@ public class TupleBatch {
   public final TupleBatch filter(final int column, final Predicate.Op op, final Object operand) {
     Objects.requireNonNull(op);
     Objects.requireNonNull(operand);
-    // final TupleBatch ret = new TupleBatch(this);
     return applyFilter(column, op, operand);
   }
 
@@ -305,6 +313,14 @@ public class TupleBatch {
     return ((StringColumn) columns.get(column)).getString(getValidIndices().get(row));
   }
 
+  /**
+   * Do groupby on this TupleBatch and return the set of (GroupByKey, TupleBatchBuffer) pairs which have filled
+   * TupleBatches.
+   * 
+   * @return the set of (GroupByKey, TupleBatchBuffer).
+   * @param groupByColumn the column index for doing group by.
+   * @param buffers the data buffers for holding the groupby results.
+   * */
   public final Set<Pair<Object, TupleBatchBuffer>> groupby(final int groupByColumn,
       final Map<Object, Pair<Object, TupleBatchBuffer>> buffers) {
     Set<Pair<Object, TupleBatchBuffer>> ready = null;
@@ -368,6 +384,18 @@ public class TupleBatch {
       hb.append(columns.get(i).get(mappedRow));
     }
     return hb.toHashCode();
+  }
+
+  /**
+   * Returns the hash code for a single cell.
+   * 
+   * @param row row of tuple to hash.
+   * @param hashColumn the key column for the hash.
+   * @return the hash code value for the specified tuple using the specified key columns.
+   */
+  public final int hashCode(final int row, final int hashColumn) {
+    final int mappedRow = getValidIndices().get(row);
+    return columns.get(hashColumn).get(mappedRow).hashCode();
   }
 
   /**
@@ -485,7 +513,8 @@ public class TupleBatch {
   }
 
   /**
-   * @param
+   * @param tupleIndicesToRemove the indices to remove
+   * @return a new TB.
    * */
   public final TupleBatch remove(final BitSet tupleIndicesToRemove) {
     final List<Integer> mapping = getValidIndices();

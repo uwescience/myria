@@ -10,6 +10,7 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 
+import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.MyriaSystemConfigKeys;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
@@ -148,8 +149,10 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     final HashMap<Tuple, Integer> expectedResult = TestUtils.tupleBatchToTupleBag(expectedTBB);
 
     // parallel query generation, duplicate db files
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan("select * from " + testtableKey.toString("sqlite"), tableSchema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan("select * from " + testtableKey.toString("sqlite"), tableSchema);
+    final SQLiteQueryScan scan1 =
+        new SQLiteQueryScan("select * from " + testtableKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), tableSchema);
+    final SQLiteQueryScan scan2 =
+        new SQLiteQueryScan("select * from " + testtableKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), tableSchema);
 
     final int numPartition = 2;
     final PartitionFunction<String, Integer> pf0 = new SingleFieldHashPartitionFunction(numPartition);
@@ -202,7 +205,7 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     final CollectProducer cp_worker1 = new CollectProducer(send2server_worker1, serverReceiveID, MASTER_ID);
     final CollectProducer cp_worker2 = new CollectProducer(send2server_worker2, serverReceiveID, MASTER_ID);
 
-    final Consumer eoiReceiver = new Consumer(IDBInput.eoiReportSchema, eoiReceiverOpID, WORKER_ID);
+    final Consumer eoiReceiver = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID, WORKER_ID);
     final EOSController eosController =
         new EOSController(new Consumer[] { eoiReceiver }, new ExchangePairID[] { eosReceiverOpID }, WORKER_ID);
 
@@ -271,8 +274,10 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     final HashMap<Tuple, Integer> expectedResult = TestUtils.tupleBatchToTupleBag(expectedTBB);
 
     // parallel query generation, duplicate db files
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan("select * from " + testtableKey.toString("sqlite"), tableSchema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan("select * from " + seedKey.toString("sqlite"), tableSchema);
+    final SQLiteQueryScan scan1 =
+        new SQLiteQueryScan("select * from " + testtableKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), tableSchema);
+    final SQLiteQueryScan scan2 =
+        new SQLiteQueryScan("select * from " + seedKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), tableSchema);
     final ExchangePairID consumerID1 = ExchangePairID.newID();
     final ExchangePairID consumerID2 = ExchangePairID.newID();
     final ExchangePairID eoiReceiverOpID = ExchangePairID.newID();
@@ -283,7 +288,7 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
 
     final IDBInput idbinput = new IDBInput(0, eoiReceiverOpID, WORKER_ID[0], scan2, sendBack, eosReceiver);
 
-    final Consumer eoiReceiver = new Consumer(IDBInput.eoiReportSchema, eoiReceiverOpID, new int[] { WORKER_ID[0] });
+    final Consumer eoiReceiver = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID, new int[] { WORKER_ID[0] });
     final EOSController eosController =
         new EOSController(new Consumer[] { eoiReceiver }, new ExchangePairID[] { eosReceiverOpID },
             new int[] { WORKER_ID[0] });

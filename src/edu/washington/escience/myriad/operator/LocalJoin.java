@@ -14,19 +14,50 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 
+/**
+ * This is an implementation of hash equal join. The same as in DupElim, this implementation does not keep the
+ * references to the incoming TupleBatches in order to get better memory performance.
+ * */
 public final class LocalJoin extends Operator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
+  /**
+   * The two children.
+   * */
   private Operator child1, child2;
 
+  /**
+   * The result schema.
+   * */
   private final Schema outputSchema;
+  /**
+   * The column indices for comparing of child 1.
+   * */
   private final int[] compareIndx1;
+  /**
+   * The column indices for comparing of child 2.
+   * */
   private final int[] compareIndx2;
+  /**
+   * A hash table for tuples from child 1. {Hashcode -> List of tuple indices with the same hash code}
+   * */
   private transient HashMap<Integer, List<Integer>> hashTable1Indices;
+  /**
+   * A hash table for tuples from child 2. {Hashcode -> List of tuple indices with the same hash code}
+   * */
   private transient HashMap<Integer, List<Integer>> hashTable2Indices;
+  /**
+   * The buffer holding the valid tuples from child1.
+   * */
   private transient TupleBatchBuffer hashTable1;
+  /**
+   * The buffer holding the valid tuples from child2.
+   * */
   private transient TupleBatchBuffer hashTable2;
+  /**
+   * The buffer holding the results.
+   * */
   private transient TupleBatchBuffer ans;
   /** Which columns in the left child are to be output. */
   private final int[] answerColumns1;
@@ -148,6 +179,12 @@ public final class LocalJoin extends Operator {
     return new Schema(types, names);
   }
 
+  /**
+   * @param cntTuple a list representation of a tuple
+   * @param hashTable the buffer holding the tuples to join against
+   * @param index the index of hashTable, which the cntTuple is to join with
+   * @param fromChild1 if the tuple is from child 1
+   */
   protected void addToAns(final List<Object> cntTuple, final TupleBatchBuffer hashTable, final int index,
       final boolean fromChild1) {
     if (fromChild1) {
@@ -179,21 +216,20 @@ public final class LocalJoin extends Operator {
     TupleBatch nexttb = ans.popFilled();
     while (nexttb == null) {
       boolean hasNewTuple = false;
-      TupleBatch tb = null;
-      if ((tb = child1.next()) != null) {
+      TupleBatch tb = child1.next();
+      if (tb != null) {
         hasNewTuple = true;
-        processChildTB(tb, hashTable1, hashTable2, hashTable1Indices, hashTable2Indices, compareIndx1, compareIndx2,
-            true);
+        processChildTB(tb, true);
       } else {
         if (child1.eoi()) {
           child1.setEOI(false);
           childrenEOI[0] = true;
         }
       }
-      if ((tb = child2.next()) != null) {
+      tb = child2.next();
+      if (tb != null) {
         hasNewTuple = true;
-        processChildTB(tb, hashTable2, hashTable1, hashTable2Indices, hashTable1Indices, compareIndx2, compareIndx1,
-            false);
+        processChildTB(tb, false);
       } else {
         if (child2.eoi()) {
           child2.setEOI(false);
@@ -232,6 +268,9 @@ public final class LocalJoin extends Operator {
     }
   }
 
+  /**
+   * Recording the EOI status of the children.
+   * */
   private final boolean[] childrenEOI = new boolean[2];
 
   @Override
@@ -248,8 +287,13 @@ public final class LocalJoin extends Operator {
     TupleBatch child1TB = null;
     TupleBatch child2TB = null;
 
-    int numEOS = child1.eos() ? 1 : 0;
-    numEOS += child2.eos() ? 1 : 0;
+    int numEOS = 0;
+    if (child1.eos()) {
+      numEOS = 1;
+    }
+    if (child2.eos()) {
+      numEOS += 1;
+    }
     int numNoData = numEOS;
 
     while (numEOS < 2 && numNoData < 2) {
@@ -258,8 +302,7 @@ public final class LocalJoin extends Operator {
       if (!child1.eos()) {
         child1TB = child1.nextReady();
         if (child1TB != null) { // data
-          processChildTB(child1TB, hashTable1, hashTable2, hashTable1Indices, hashTable2Indices, compareIndx1,
-              compareIndx2, true);
+          processChildTB(child1TB, true);
           nexttb = ans.popFilled();
           if (nexttb != null) {
             return nexttb;
@@ -283,8 +326,7 @@ public final class LocalJoin extends Operator {
       if (!child2.eos()) {
         child2TB = child2.nextReady();
         if (child2TB != null) {
-          processChildTB(child2TB, hashTable2, hashTable1, hashTable2Indices, hashTable1Indices, compareIndx2,
-              compareIndx1, false);
+          processChildTB(child2TB, false);
           nexttb = ans.popFilled();
           if (nexttb != null) {
             return nexttb;
@@ -332,7 +374,17 @@ public final class LocalJoin extends Operator {
     ans = new TupleBatchBuffer(outputSchema);
   }
 
-  private boolean compareTuple(final List<Object> cntTuple, final TupleBatchBuffer hashTable, final int index,
+  /**
+   * Check if a tuple in uniqueTuples equals to the comparing tuple (cntTuple).
+   * 
+   * @param hashTable the TupleBatchBuffer holding the tuples to compare against
+   * @param index the index in the hashTable
+   * @param cntTuple a list representation of a tuple
+   * @param compareIndx1 the comparing list of columns of cntTuple
+   * @param compareIndx2 the comparing list of columns of hashTable
+   * @return true if equals.
+   * */
+  private boolean tupleEquals(final List<Object> cntTuple, final TupleBatchBuffer hashTable, final int index,
       final int[] compareIndx1, final int[] compareIndx2) {
     if (compareIndx1.length != compareIndx2.length) {
       return false;
@@ -345,32 +397,48 @@ public final class LocalJoin extends Operator {
     return true;
   }
 
-  protected void processChildTB(final TupleBatch tb, final TupleBatchBuffer hashTable1,
-      final TupleBatchBuffer hashTable2, final HashMap<Integer, List<Integer>> hashTable1Indices,
-      final HashMap<Integer, List<Integer>> hashTable2Indices, final int[] compareIndx1, final int[] compareIndx2,
-      final boolean fromChild1) {
+  /**
+   * @param tb the incoming TupleBatch for processing join.
+   * @param fromChild1 if the tb is from child1.
+   * */
+  protected void processChildTB(final TupleBatch tb, final boolean fromChild1) {
+
+    TupleBatchBuffer hashTable1Local = hashTable1;
+    TupleBatchBuffer hashTable2Local = hashTable2;
+    HashMap<Integer, List<Integer>> hashTable1IndicesLocal = hashTable1Indices;
+    HashMap<Integer, List<Integer>> hashTable2IndicesLocal = hashTable2Indices;
+    int[] compareIndx1Local = compareIndx1;
+    int[] compareIndx2Local = compareIndx2;
+    if (!fromChild1) {
+      hashTable1Local = hashTable2;
+      hashTable2Local = hashTable1;
+      hashTable1IndicesLocal = hashTable2Indices;
+      hashTable2IndicesLocal = hashTable1Indices;
+      compareIndx1Local = compareIndx2;
+      compareIndx2Local = compareIndx1;
+    }
 
     for (int i = 0; i < tb.numTuples(); ++i) {
       final List<Object> cntTuple = new ArrayList<Object>();
       for (int j = 0; j < tb.numColumns(); ++j) {
         cntTuple.add(tb.getObject(j, i));
       }
-      final int nextIndex = hashTable1.numTuples();
-      final int cntHashCode = tb.hashCode(i, compareIndx1);
-      List<Integer> indexList = hashTable2Indices.get(cntHashCode);
+      final int nextIndex = hashTable1Local.numTuples();
+      final int cntHashCode = tb.hashCode(i, compareIndx1Local);
+      List<Integer> indexList = hashTable2IndicesLocal.get(cntHashCode);
       if (indexList != null) {
         for (final int index : indexList) {
-          if (compareTuple(cntTuple, hashTable2, index, compareIndx1, compareIndx2)) {
-            addToAns(cntTuple, hashTable2, index, fromChild1);
+          if (tupleEquals(cntTuple, hashTable2Local, index, compareIndx1Local, compareIndx2Local)) {
+            addToAns(cntTuple, hashTable2Local, index, fromChild1);
           }
         }
       }
-      if (hashTable1Indices.get(cntHashCode) == null) {
-        hashTable1Indices.put(cntHashCode, new ArrayList<Integer>());
+      if (hashTable1IndicesLocal.get(cntHashCode) == null) {
+        hashTable1IndicesLocal.put(cntHashCode, new ArrayList<Integer>());
       }
-      hashTable1Indices.get(cntHashCode).add(nextIndex);
+      hashTable1IndicesLocal.get(cntHashCode).add(nextIndex);
       for (int j = 0; j < tb.numColumns(); ++j) {
-        hashTable1.put(j, cntTuple.get(j));
+        hashTable1Local.put(j, cntTuple.get(j));
       }
     }
   }

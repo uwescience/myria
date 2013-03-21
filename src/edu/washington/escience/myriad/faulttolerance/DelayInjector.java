@@ -14,10 +14,22 @@ import edu.washington.escience.myriad.operator.Operator;
  * */
 public class DelayInjector extends Operator {
 
+  /**
+   * child.
+   * */
   private Operator child;
+
+  /**
+   * Delay in milliseconds.
+   * */
   private final long delayInMS;
 
-  public DelayInjector(long delay, TimeUnit unit, Operator child) {
+  /**
+   * @param delay the delay
+   * @param unit time unit of the delay
+   * @param child the child.
+   * */
+  public DelayInjector(final long delay, final TimeUnit unit, final Operator child) {
     this.child = child;
     delayInMS = unit.toMillis(delay);
   }
@@ -28,27 +40,27 @@ public class DelayInjector extends Operator {
   private static final long serialVersionUID = 1L;
 
   @Override
-  protected TupleBatch fetchNext() throws DbException, InterruptedException {
+  protected final TupleBatch fetchNext() throws DbException, InterruptedException {
     TupleBatch tb = child.next();
     Thread.sleep(delayInMS);
     return tb;
   }
 
   @Override
-  public Operator[] getChildren() {
+  public final Operator[] getChildren() {
     return new Operator[] { child };
   }
 
   @Override
-  protected void init(final ImmutableMap<String, Object> initProperties) throws DbException {
+  protected final void init(final ImmutableMap<String, Object> initProperties) throws DbException {
   }
 
   @Override
-  protected void cleanup() throws DbException {
+  protected final void cleanup() throws DbException {
   }
 
   @Override
-  protected TupleBatch fetchNextReady() throws DbException {
+  protected final TupleBatch fetchNextReady() throws DbException {
     TupleBatch tb = child.nextReady();
     try {
       Thread.sleep(delayInMS);
@@ -59,12 +71,12 @@ public class DelayInjector extends Operator {
   }
 
   @Override
-  public Schema getSchema() {
+  public final Schema getSchema() {
     return child.getSchema();
   }
 
   @Override
-  public void setChildren(Operator[] children) {
+  public final void setChildren(final Operator[] children) {
     child = children[0];
   }
 

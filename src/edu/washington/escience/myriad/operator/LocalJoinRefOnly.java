@@ -13,18 +13,42 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 
-public final class LocalJoin_RefOnly extends Operator {
+/**
+ * Join and keep the references to the source TupleBatches.
+ * */
+public final class LocalJoinRefOnly extends Operator {
 
+  /**
+   * Pointer data structure for pointing to a tuple in a TupleBatch.
+   * */
   private class IndexedTuple {
+    /**
+     * The row index.
+     * */
     private final int index;
+    /**
+     * The source data TB.
+     * */
     private final TupleBatch tb;
 
+    /**
+     * @param tb the source data TB.
+     * @param index the row index.
+     * */
     public IndexedTuple(final TupleBatch tb, final int index) {
       this.tb = tb;
       this.index = index;
     }
 
-    public boolean compareField(final IndexedTuple another, final int colIndx1, final int colIndx2) {
+    /**
+     * compare the equality of a column of the indexed tuple and another tuple.
+     * 
+     * @return true if equal.
+     * @param another another indexed tuple
+     * @param colIndx1 column index of this indexed tuple
+     * @param colIndx2 column index of another indexed tuple
+     * */
+    public boolean columnEquals(final IndexedTuple another, final int colIndx1, final int colIndx2) {
       final Type type1 = tb.getSchema().getColumnType(colIndx1);
       // type check in query plan?
       final int rowIndx1 = index;
@@ -59,7 +83,7 @@ public final class LocalJoin_RefOnly extends Operator {
         return false;
       }
       for (int i = 0; i < tb.getSchema().numColumns(); ++i) {
-        if (!compareField(another, i, i)) {
+        if (!columnEquals(another, i, i)) {
           return false;
         }
       }
@@ -71,10 +95,22 @@ public final class LocalJoin_RefOnly extends Operator {
       return tb.hashCode(index);
     }
 
+    /**
+     * compute a hash code for all the columns indexed by colIndx.
+     * 
+     * @param colIndx the columns to compute hash code.
+     * @return the hash code of the columns
+     * */
     public int hashCode4Keys(final int[] colIndx) {
       return tb.hashCode(index, colIndx);
     }
 
+    /**
+     * @return if this index tuple can be equi-joined with another index tuple
+     * @param o another indexed tuple
+     * @param compareIndx1 column indices of this indexed tuple to compare with
+     * @param compareIndx2 column indices of another indexed tuple to compare with
+     * */
     public boolean joinEquals(final Object o, final int[] compareIndx1, final int[] compareIndx2) {
       if (!(o instanceof IndexedTuple)) {
         return false;
@@ -84,7 +120,7 @@ public final class LocalJoin_RefOnly extends Operator {
       }
       final IndexedTuple another = (IndexedTuple) o;
       for (int i = 0; i < compareIndx1.length; ++i) {
-        if (!compareField(another, compareIndx1[i], compareIndx2[i])) {
+        if (!columnEquals(another, compareIndx1[i], compareIndx2[i])) {
           return false;
         }
       }
@@ -95,21 +131,51 @@ public final class LocalJoin_RefOnly extends Operator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
+  /**
+   * The two children.
+   * */
   private Operator child1, child2;
+  /**
+   * The result schema.
+   * */
   private Schema outputSchema;
+  /**
+   * Comparing column indices of child1.
+   * */
   private int[] compareIndx1;
+  /**
+   * Comparing column indices of child2.
+   * */
   private int[] compareIndx2;
+
+  /**
+   * Hash table for child1 tuples. { hash code -> list of indexed tuples}.
+   * */
   private HashMap<Integer, List<IndexedTuple>> hashTable1;
+
+  /**
+   * Hash table for child2 tuples. { hash code -> list of indexed tuples}.
+   * */
   private HashMap<Integer, List<IndexedTuple>> hashTable2;
+  /**
+   * Buffer holding the result.
+   * */
   private TupleBatchBuffer ans;
 
   /**
    * For Java serialization.
    */
-  public LocalJoin_RefOnly() {
+  public LocalJoinRefOnly() {
   }
 
-  public LocalJoin_RefOnly(final Schema outputSchema, final Operator child1, final Operator child2,
+  /**
+   * @param outputSchema output schema.
+   * @param child1 .
+   * @param child2 .
+   * @param compareIndx1 comparing column indices for child1
+   * @param compareIndx2 comparing column indices for child2
+   * */
+  public LocalJoinRefOnly(final Schema outputSchema, final Operator child1, final Operator child2,
       final int[] compareIndx1, final int[] compareIndx2) {
     this.outputSchema = outputSchema;
     this.child1 = child1;
@@ -121,6 +187,10 @@ public final class LocalJoin_RefOnly extends Operator {
     ans = new TupleBatchBuffer(outputSchema);
   }
 
+  /**
+   * @param tuple1 join source tuple 1
+   * @param tuple2 join source tuple 2
+   * */
   protected void addToAns(final IndexedTuple tuple1, final IndexedTuple tuple2) {
     final int num1 = tuple1.tb.getSchema().numColumns();
     final int num2 = tuple2.tb.getSchema().numColumns();
@@ -154,6 +224,9 @@ public final class LocalJoin_RefOnly extends Operator {
     }
   }
 
+  /**
+   * recording the status of children EOI.
+   * */
   private final boolean[] childrenEOI = new boolean[2];
 
   @Override
@@ -161,8 +234,8 @@ public final class LocalJoin_RefOnly extends Operator {
     TupleBatch nexttb = ans.popFilled();
     while (nexttb == null) {
       boolean hasNewTuple = false;
-      TupleBatch tb = null;
-      if ((tb = child1.next()) != null) {
+      TupleBatch tb = child1.next();
+      if (tb != null) {
         hasNewTuple = true;
         processChildTB(tb, true);
       } else {
@@ -171,7 +244,8 @@ public final class LocalJoin_RefOnly extends Operator {
           childrenEOI[0] = true;
         }
       }
-      if ((tb = child2.next()) != null) {
+      tb = child2.next();
+      if (tb != null) {
         hasNewTuple = true;
         processChildTB(tb, false);
       } else {
@@ -211,8 +285,13 @@ public final class LocalJoin_RefOnly extends Operator {
     TupleBatch child1TB = null;
     TupleBatch child2TB = null;
 
-    int numEOS = child1.eos() ? 1 : 0;
-    numEOS += child2.eos() ? 1 : 0;
+    int numEOS = 0;
+    if (child1.eos()) {
+      numEOS += 1;
+    }
+    if (child2.eos()) {
+      numEOS += 1;
+    }
     int numNoData = numEOS;
 
     while (numEOS < 2 && numNoData < 2) {
@@ -284,6 +363,10 @@ public final class LocalJoin_RefOnly extends Operator {
     return outputSchema;
   }
 
+  /**
+   * @param tb the source tb for processing.
+   * @param tbFromChild1 if the TB is from child1.
+   * */
   protected void processChildTB(final TupleBatch tb, final boolean tbFromChild1) {
     List<IndexedTuple> tupleList = null;
     int[] compareIndx2Add = compareIndx1;

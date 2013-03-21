@@ -17,6 +17,10 @@ import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 
+/**
+ * This class monitors all the input/output IPC data. It makes sure that all input data are of {@link TransportMessage}
+ * type. And it does all IPC exception catching and recording.
+ * */
 @Sharable
 public class IPCInputGuard extends SimpleChannelHandler {
 
@@ -30,7 +34,7 @@ public class IPCInputGuard extends SimpleChannelHandler {
   }
 
   @Override
-  public void exceptionCaught(final ChannelHandlerContext ctx, final ExceptionEvent e) {
+  public final void exceptionCaught(final ChannelHandlerContext ctx, final ExceptionEvent e) {
     final Channel c = e.getChannel();
     final Throwable cause = e.getCause();
     String errorMessage = cause.getMessage();
@@ -54,7 +58,7 @@ public class IPCInputGuard extends SimpleChannelHandler {
   }
 
   @Override
-  public void handleDownstream(final ChannelHandlerContext ctx, final ChannelEvent e) throws Exception {
+  public final void handleDownstream(final ChannelHandlerContext ctx, final ChannelEvent e) throws Exception {
     if (e instanceof DownstreamChannelStateEvent) {
       final DownstreamChannelStateEvent ee = (DownstreamChannelStateEvent) e;
       switch (ee.getState()) {
@@ -85,7 +89,7 @@ public class IPCInputGuard extends SimpleChannelHandler {
   }
 
   @Override
-  public void handleUpstream(final ChannelHandlerContext ctx, final ChannelEvent e) throws Exception {
+  public final void handleUpstream(final ChannelHandlerContext ctx, final ChannelEvent e) throws Exception {
     if (e instanceof UpstreamChannelStateEvent) {
       final UpstreamChannelStateEvent ee = (UpstreamChannelStateEvent) e;
       switch (ee.getState()) {
@@ -104,7 +108,7 @@ public class IPCInputGuard extends SimpleChannelHandler {
   }
 
   @Override
-  public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e) {
+  public final void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e) {
     final Object message = e.getMessage();
     if (!(message instanceof TransportMessage)) {
       throw new RuntimeException("Non-TransportMessage received: \n" + "\tfrom " + e.getRemoteAddress() + "\n"

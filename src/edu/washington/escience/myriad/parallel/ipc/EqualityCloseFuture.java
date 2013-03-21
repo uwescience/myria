@@ -14,12 +14,21 @@ public class EqualityCloseFuture<T> extends ConditionCloseFuture {
    * */
   private final T expected;
 
+  /**
+   * @param channel the channel who owns the future
+   * @param expected the expected value
+   * */
   EqualityCloseFuture(final Channel channel, final T expected) {
     super(channel);
     this.expected = expected;
   }
 
-  public void setActual(final T actual) {
+  /**
+   * Set the actual value.
+   * 
+   * @param actual the actual value
+   * */
+  public final void setActual(final T actual) {
     if (expected == null) {
       setCondition(actual == null);
     } else {

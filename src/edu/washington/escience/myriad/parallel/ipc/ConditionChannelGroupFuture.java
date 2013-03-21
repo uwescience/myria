@@ -16,24 +16,53 @@ import org.jboss.netty.channel.group.ChannelGroupFuture;
 import org.jboss.netty.channel.group.ChannelGroupFutureListener;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 
+/**
+ * A {@link ChannelGroupFuture} that waits for a condition to be satisfied before actually do the channel group event
+ * checking.
+ * */
 public class ConditionChannelGroupFuture implements ChannelGroupFuture {
-  private static final Logger logger = Logger.getLogger(ConditionChannelGroupFuture.class.getName());
+  /**
+   * logger.
+   * */
+  private static final Logger LOGGER = Logger.getLogger(ConditionChannelGroupFuture.class.getName());
 
+  /**
+   * the actual channel group future that monitors the channel group event.
+   * */
   private volatile ChannelGroupFuture backedChannelGroupFuture;
+  /**
+   * if the condition is set.
+   * */
   private volatile boolean conditionSetFlag = false;
+  /**
+   * if the condition is satisfied.
+   * */
   private volatile boolean condition = false;
+  /**
+   * protect the condition .
+   * */
   private final Object conditionSetLock = new Object();
-  private static final ChannelGroup EMPTY_GROUP = new DefaultChannelGroup();
 
+  /**
+   * empty channel group.
+   * */
+  public static final ChannelGroup EMPTY_GROUP = new DefaultChannelGroup();
+
+  /**
+   * listeners which will be called back if the action is done.
+   * */
   private final ConcurrentHashMap<ChannelGroupFutureListener, ChannelGroupFutureListener> listeners =
       new ConcurrentHashMap<ChannelGroupFutureListener, ChannelGroupFutureListener>();
 
-  public void setBackedChannelGroupFuture(ChannelGroupFuture wrappedCGF) {
+  /**
+   * @param wrappedCGF the wrapped ChannelGroupFuture
+   * */
+  public final void setBackedChannelGroupFuture(final ChannelGroupFuture wrappedCGF) {
     backedChannelGroupFuture = wrappedCGF;
   }
 
   @Override
-  public void addListener(final ChannelGroupFutureListener listener) {
+  public final void addListener(final ChannelGroupFutureListener listener) {
     synchronized (conditionSetLock) {
       if (!conditionSetFlag) {
         listeners.put(listener, listener);
@@ -46,11 +75,14 @@ public class ConditionChannelGroupFuture implements ChannelGroupFuture {
       try {
         listener.operationComplete(this);
       } catch (final Throwable t) {
-        logger.log(Level.WARNING, "Exception occured when executing ChannelGroupFutureListener", t);
+        LOGGER.log(Level.WARNING, "Exception occured when executing ChannelGroupFutureListener", t);
       }
     }
   }
 
+  /**
+   * Make sure that the condition variable is set before trying to use its value.
+   * */
   private void ensureConditionSet() {
     if (!conditionSetFlag) {
       throw new IllegalStateException("Condition not set yet");
@@ -58,7 +90,7 @@ public class ConditionChannelGroupFuture implements ChannelGroupFuture {
   }
 
   @Override
-  public ChannelGroup getGroup() {
+  public final ChannelGroup getGroup() {
     ensureConditionSet();
     if (condition) {
       return backedChannelGroupFuture.getGroup();
@@ -69,7 +101,7 @@ public class ConditionChannelGroupFuture implements ChannelGroupFuture {
   }
 
   @Override
-  public ChannelFuture find(final Integer channelId) {
+  public final ChannelFuture find(final Integer channelId) {
     ensureConditionSet();
     if (condition) {
       return backedChannelGroupFuture.find(channelId);
@@ -79,7 +111,7 @@ public class ConditionChannelGroupFuture implements ChannelGroupFuture {
   }
 
   @Override
-  public ChannelFuture find(final Channel channel) {
+  public final ChannelFuture find(final Channel channel) {
     if (channel == null) {
       return null;
     }
@@ -87,7 +119,7 @@ public class ConditionChannelGroupFuture implements ChannelGroupFuture {
   }
 
   @Override
-  public boolean isCompleteSuccess() {
+  public final boolean isCompleteSuccess() {
     ensureConditionSet();
     if (condition) {
       return backedChannelGroupFuture.isCompleteSuccess();
@@ -96,7 +128,7 @@ public class ConditionChannelGroupFuture implements ChannelGroupFuture {
   }
 
   @Override
-  public boolean isPartialSuccess() {
+  public final boolean isPartialSuccess() {
     ensureConditionSet();
     if (condition) {
       return backedChannelGroupFuture.isPartialSuccess();
@@ -105,7 +137,7 @@ public class ConditionChannelGroupFuture implements ChannelGroupFuture {
   }
 
   @Override
-  public boolean isCompleteFailure() {
+  public final boolean isCompleteFailure() {
     ensureConditionSet();
     if (condition) {
       return backedChannelGroupFuture.isCompleteFailure();
@@ -114,7 +146,7 @@ public class ConditionChannelGroupFuture implements ChannelGroupFuture {
   }
 
   @Override
-  public boolean isPartialFailure() {
+  public final boolean isPartialFailure() {
     ensureConditionSet();
     if (condition) {
       return backedChannelGroupFuture.isPartialFailure();
@@ -123,7 +155,7 @@ public class ConditionChannelGroupFuture implements ChannelGroupFuture {
   }
 
   @Override
-  public Iterator<ChannelFuture> iterator() {
+  public final Iterator<ChannelFuture> iterator() {
     ensureConditionSet();
     if (condition) {
       return backedChannelGroupFuture.iterator();
@@ -133,7 +165,7 @@ public class ConditionChannelGroupFuture implements ChannelGroupFuture {
   }
 
   @Override
-  public ChannelGroupFuture await() throws InterruptedException {
+  public final ChannelGroupFuture await() throws InterruptedException {
     if (Thread.interrupted()) {
       throw new InterruptedException();
     }
@@ -145,12 +177,12 @@ public class ConditionChannelGroupFuture implements ChannelGroupFuture {
   }
 
   @Override
-  public boolean await(final long timeoutMillis) throws InterruptedException {
+  public final boolean await(final long timeoutMillis) throws InterruptedException {
     return this.await(timeoutMillis, MILLISECONDS);
   }
 
   @Override
-  public boolean await(final long timeout, final TimeUnit unit) throws InterruptedException {
+  public final boolean await(final long timeout, final TimeUnit unit) throws InterruptedException {
 
     final long nano = unit.toNanos(timeout);
     final long milli = NANOSECONDS.toMillis(nano);
@@ -169,7 +201,7 @@ public class ConditionChannelGroupFuture implements ChannelGroupFuture {
   }
 
   @Override
-  public ChannelGroupFuture awaitUninterruptibly() {
+  public final ChannelGroupFuture awaitUninterruptibly() {
     waitForConditionSetUninterruptibly(-1, -1);
     if (condition) {
       backedChannelGroupFuture.awaitUninterruptibly();
@@ -178,12 +210,12 @@ public class ConditionChannelGroupFuture implements ChannelGroupFuture {
   }
 
   @Override
-  public boolean awaitUninterruptibly(final long timeoutMillis) {
+  public final boolean awaitUninterruptibly(final long timeoutMillis) {
     return this.awaitUninterruptibly(timeoutMillis, MILLISECONDS);
   }
 
   @Override
-  public boolean awaitUninterruptibly(final long timeout, final TimeUnit unit) {
+  public final boolean awaitUninterruptibly(final long timeout, final TimeUnit unit) {
     final long nano = unit.toNanos(timeout);
     final long milli = NANOSECONDS.toMillis(nano);
     final int nanoRemain = (int) (nano - MILLISECONDS.toNanos(milli));
@@ -201,7 +233,7 @@ public class ConditionChannelGroupFuture implements ChannelGroupFuture {
   }
 
   @Override
-  public boolean isDone() {
+  public final boolean isDone() {
     if (!conditionSetFlag) {
       return false;
     } else {
@@ -214,7 +246,7 @@ public class ConditionChannelGroupFuture implements ChannelGroupFuture {
   }
 
   @Override
-  public void removeListener(final ChannelGroupFutureListener listener) {
+  public final void removeListener(final ChannelGroupFutureListener listener) {
     synchronized (conditionSetLock) {
       if (!conditionSetFlag) {
         listeners.remove(listener);
@@ -227,7 +259,12 @@ public class ConditionChannelGroupFuture implements ChannelGroupFuture {
     }
   }
 
-  public void setCondition(final boolean conditionSatisfied) {
+  /**
+   * Set the condition value.
+   * 
+   * @param conditionSatisfied if the condition is satisfied.
+   * */
+  public final void setCondition(final boolean conditionSatisfied) {
     synchronized (conditionSetLock) {
       condition = conditionSatisfied;
       conditionSetFlag = true;
@@ -241,7 +278,7 @@ public class ConditionChannelGroupFuture implements ChannelGroupFuture {
           try {
             l.operationComplete(this);
           } catch (final Throwable t) {
-            logger.log(Level.WARNING, "Exception occured when executing ChannelGroupFutureListener", t);
+            LOGGER.log(Level.WARNING, "Exception occured when executing ChannelGroupFutureListener", t);
           }
         }
       }
@@ -251,6 +288,9 @@ public class ConditionChannelGroupFuture implements ChannelGroupFuture {
 
   /**
    * @return the time elapse in nano seconds in this method.
+   * @param timeoutMS timeout in milliseconds
+   * @param nanos remaining nanos.
+   * @throws InterruptedException if interrupted.
    * */
   private long waitForConditionSet(final long timeoutMS, final int nanos) throws InterruptedException {
     final long start = System.nanoTime();
@@ -268,6 +308,8 @@ public class ConditionChannelGroupFuture implements ChannelGroupFuture {
 
   /**
    * @return the time elapse in nano seconds in this method.
+   * @param timeoutMS timeout in milliseconds
+   * @param nanos remaining nanos.
    * */
   private long waitForConditionSetUninterruptibly(final long timeoutMS, final int nanos) {
     boolean interrupted = false;

@@ -116,14 +116,16 @@ public class TupleBatchBuffer {
   /**
    * Return all tuples in this buffer. The data do not get removed.
    * 
+   * @param startingSeqNum for fault tolerance.
    * @return a List<TupleBatch> containing all complete tuples that have been inserted into this buffer.
    * @param oId destination exchange operator id.
    */
-  public final List<TransportMessage> getAllAsTM(final ExchangePairID oId, long startingSeqNum) {
+  public final List<TransportMessage> getAllAsTM(final ExchangePairID oId, final long startingSeqNum) {
+    long startingSeqNumLocal = 0; // currently 0 for all.
     final List<TransportMessage> output = new ArrayList<TransportMessage>();
     if (numTuples() > 0) {
       for (final List<Column<?>> columns : readyTuples) {
-        output.add(IPCUtils.normalDataMessage(columns, TupleBatch.BATCH_SIZE, startingSeqNum++));
+        output.add(IPCUtils.normalDataMessage(columns, TupleBatch.BATCH_SIZE, startingSeqNumLocal++));
       }
       if (currentInProgressTuples > 0) {
         output.add(IPCUtils.normalDataMessage(currentColumns, currentInProgressTuples, startingSeqNum));
@@ -169,6 +171,12 @@ public class TupleBatchBuffer {
     return readyTuples.size() * TupleBatch.BATCH_SIZE + currentInProgressTuples;
   }
 
+  /**
+   * @param colIndex column index
+   * @param rowIndex row index
+   * @return the element at ( rowIndex, colIndex)
+   * @throws IndexOutOfBoundsException if indices are out of bounds.
+   * */
   public final Object get(final int colIndex, final int rowIndex) throws IndexOutOfBoundsException {
     int tupleBatchIndex = rowIndex / TupleBatch.BATCH_SIZE;
     int tupleIndex = rowIndex % TupleBatch.BATCH_SIZE;
@@ -183,6 +191,9 @@ public class TupleBatchBuffer {
 
   }
 
+  /**
+   * @return num columns.
+   * */
   public final int numColumns() {
     return numColumns;
   }
@@ -214,7 +225,6 @@ public class TupleBatchBuffer {
       return rc;
     } else {
       if (currentInProgressTuples > 0) {
-        int size = currentInProgressTuples;
         finishBatch();
         return readyTuples.remove(0);
       } else {
@@ -224,11 +234,13 @@ public class TupleBatchBuffer {
   }
 
   /**
-   * @param oID destination ExchangePairID
+   * @param seqNum for fault tolerance.
    * @return pop filled and non-filled TransportMessage
    * */
   public final TransportMessage popAnyAsTM(final long seqNum) {
-    final TransportMessage ans = popFilledAsTM(seqNum);
+    long seqNumLocal = seqNum; // currently use 0 for all.
+    seqNumLocal = 0;
+    final TransportMessage ans = popFilledAsTM(seqNumLocal);
     if (ans != null) {
       return ans;
     } else {
@@ -236,7 +248,7 @@ public class TupleBatchBuffer {
         int numTuples = currentInProgressTuples;
         finishBatch();
         final List<Column<?>> columns = readyTuples.remove(0);
-        return IPCUtils.normalDataMessage(columns, numTuples, seqNum);
+        return IPCUtils.normalDataMessage(columns, numTuples, seqNumLocal);
       } else {
         return null;
       }
@@ -271,13 +283,14 @@ public class TupleBatchBuffer {
    * Pop filled as TransportMessage. Avoid the overhead of creating TupleBatch instances if the data in this TBB are to
    * be sent to other workers.
    * 
-   * @param oId Destination exchangePairID.
+   * @param seqNum for fault tolerance
    * @return TransportMessage popped or null if no filled tuples ready yet.
    * */
   public final TransportMessage popFilledAsTM(final long seqNum) {
+    long seqNumLocal = seqNum;
     if (readyTuples.size() > 0) {
       final List<Column<?>> columns = readyTuples.remove(0);
-      return IPCUtils.normalDataMessage(columns, TupleBatch.BATCH_SIZE, seqNum);
+      return IPCUtils.normalDataMessage(columns, TupleBatch.BATCH_SIZE, seqNumLocal);
     }
     return null;
   }

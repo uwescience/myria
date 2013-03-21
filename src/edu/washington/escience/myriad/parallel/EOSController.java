@@ -4,6 +4,7 @@ import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.ExchangeTupleBatch;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
+import edu.washington.escience.myriad.operator.IDBInput;
 import edu.washington.escience.myriad.operator.Merge;
 import edu.washington.escience.myriad.util.IPCUtils;
 import gnu.trove.impl.unmodifiable.TUnmodifiableIntIntMap;
@@ -29,10 +30,26 @@ public class EOSController extends Producer {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
+  /**
+   * Recording the number of EOI received from each controlled {@link IDBInput}.
+   * */
   private final int[][] numEOI;
+  /**
+   * 
+   * */
   private final ArrayList<Integer> zeroCol;
+
+  /**
+   * If the number of empty reports at a time stamp is the same as this value, the iteration is done.
+   * */
   private final int eosZeroColValue;
+  /**
+   * Mapping from workerID to index.
+   * */
   private final TIntIntMap workerIdToIndex;
+  /**
+   * Mapping from EOSReceiver ID to index.
+   * */
   private final TLongIntMap idbEOSReceiverIDToIndex;
 
   /**
@@ -97,9 +114,15 @@ public class EOSController extends Producer {
     }
   }
 
-  public static final Schema eosReportSchema = Schema.EMPTY_SCHEMA;
+  /**
+   * EOS report schema.
+   * */
+  public static final Schema EOS_REPORT_SCHEMA = Schema.EMPTY_SCHEMA;
 
   // TODO add Root operator init and cleanup.
+  /**
+   * If the EOS messages are sent.
+   * */
   private volatile boolean isEOSSent = false;
 
   @Override

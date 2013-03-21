@@ -17,6 +17,10 @@ import gnu.trove.impl.unmodifiable.TUnmodifiableIntIntMap;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;
 
+/**
+ * A Consumer is the counterpart of a producer. It collects data from Producers through IPC. A Consumer can have a
+ * single Producer data source or multiple Producer data sources.
+ * */
 public class Consumer extends LeafOperator {
 
   /** The logger for this class. Defaults to myriad level, but could be set to a finer granularity if needed. */
@@ -28,22 +32,68 @@ public class Consumer extends LeafOperator {
    * The buffer for receiving ExchangeMessages. This buffer should be assigned by the Worker. Basically, buffer =
    * Worker.inBuffer.get(this.getOperatorID())
    */
-  transient volatile InputBuffer<TupleBatch, ExchangeData> inputBuffer;
+  private transient volatile InputBuffer<TupleBatch, ExchangeData> inputBuffer;
 
+  /**
+   * The operatorID of this Consumer.
+   * */
   private final ExchangePairID operatorID;
+
+  /**
+   * The output schema.
+   * */
   private final Schema schema;
+  /**
+   * Recording the worker EOS status.
+   * */
   private transient BitSet workerEOS;
+  /**
+   * Recording the worker EOI status.
+   * */
   private transient BitSet workerEOI;
+  /**
+   * workerID to index.
+   * */
   private transient TIntIntMap workerIdToIndex;
+  /**
+   * From which workers to receive data.
+   * */
   private final int[] sourceWorkers;
-  public transient long[] recentSeqNum;
-  public transient LinkedList<Integer> inputGlobalOrder; // recording data message only, list of worker IDs, for fault
-                                                         // tolerance
-  public transient boolean inRewinding;
-  public transient ConsumerChannel[] exchangeChannels;
+  /**
+   * recent seq num, will be used in fault tolerance.
+   * */
+  private transient long[] recentSeqNum;
+  /**
+   * input global order. will be used in fault tolerance.
+   * */
+  private transient LinkedList<Integer> inputGlobalOrder; // recording data message only, list of worker IDs, for fault
+                                                          // tolerance
+  /**
+   * if the operator is in rewinding.
+   * */
+  private transient boolean inRewinding;
+
+  /**
+   * the consumer channels, for recording the mapping between ExchangeChannelIDs to a Consumer instances.
+   * */
+  private transient ConsumerChannel[] exchangeChannels;
+
+  /**
+   * @return my exchange channels.
+   */
+  public final ConsumerChannel[] getExchangeChannels() {
+    return exchangeChannels;
+  }
+
+  /**
+   * @param exchangeChannels my exchange channels.
+   */
+  public final void setExchangeChannels(final ConsumerChannel[] exchangeChannels) {
+    this.exchangeChannels = exchangeChannels;
+  }
 
   @Override
-  public void rewind(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+  public final void rewind(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     inRewinding = true;
     for (int i = 0; i < sourceWorkers.length; i++) {
       recentSeqNum[i] = -1;
@@ -52,6 +102,11 @@ public class Consumer extends LeafOperator {
     workerEOI = new BitSet(sourceWorkers.length);
   }
 
+  /**
+   * @param schema output schema.
+   * @param operatorID {@link Consumer#operatorID}
+   * @param workerIDs {@link Consumer#sourceWorkers}
+   * */
   public Consumer(final Schema schema, final ExchangePairID operatorID, final int[] workerIDs) {
     this.operatorID = operatorID;
     this.schema = schema;
@@ -60,14 +115,14 @@ public class Consumer extends LeafOperator {
   }
 
   @Override
-  public void cleanup() {
+  public final void cleanup() {
     setInputBuffer(null);
     workerEOS.clear();
     workerEOI.clear();
   }
 
   @Override
-  protected void init(final ImmutableMap<String, Object> execUnitEnv) throws DbException {
+  protected final void init(final ImmutableMap<String, Object> execUnitEnv) throws DbException {
     workerEOS = new BitSet(sourceWorkers.length);
     workerEOI = new BitSet(sourceWorkers.length);
 
@@ -86,7 +141,7 @@ public class Consumer extends LeafOperator {
   }
 
   @Override
-  protected TupleBatch fetchNext() throws DbException, InterruptedException {
+  protected final TupleBatch fetchNext() throws DbException, InterruptedException {
     return getTuplesNormal(true);
   }
 
@@ -102,7 +157,7 @@ public class Consumer extends LeafOperator {
    * 
    * @throws InterruptedException a
    */
-  TupleBatch getTuplesNormal(final boolean blocking) throws InterruptedException {
+  final TupleBatch getTuplesNormal(final boolean blocking) throws InterruptedException {
     int timeToWait = -1;
     if (!blocking) {
       timeToWait = 0;
@@ -114,11 +169,11 @@ public class Consumer extends LeafOperator {
       int sourceWorkerIdx = workerIdToIndex.get(tb.getSourceIPCID());
 
       if (tb.getData() != null) {
-        if (tb.seqNum <= recentSeqNum[sourceWorkerIdx]) {
+        if (tb.getSeqNum() <= recentSeqNum[sourceWorkerIdx]) {
           if (LOGGER.isInfoEnabled()) {
             LOGGER.info(
                 "Duplicate TupleBatch, received from worker:{} to Operator:{}. seqNum:{}, expected:{} Drop directly.",
-                tb.getSourceIPCID(), tb.getOperatorID(), tb.seqNum, recentSeqNum[sourceWorkerIdx] + 1);
+                tb.getSourceIPCID(), tb.getOperatorID(), tb.getSeqNum(), recentSeqNum[sourceWorkerIdx] + 1);
           }
 
           continue;
@@ -145,8 +200,13 @@ public class Consumer extends LeafOperator {
     return result;
   }
 
-  // only for non-blocking
-  TupleBatch getTuplesRewind() throws InterruptedException {
+  /**
+   * Only for non-blocking.
+   * 
+   * @return get a TB in rewind mode.
+   * @throws InterruptedException if interrupted.
+   */
+  final TupleBatch getTuplesRewind() throws InterruptedException {
 
     while (!inputGlobalOrder.isEmpty()) {
       Integer expectedRemote = inputGlobalOrder.getFirst();
@@ -155,12 +215,13 @@ public class Consumer extends LeafOperator {
         int sourceWorkerIdx = workerIdToIndex.get(actual.getSourceIPCID());
         if (actual.getData() != null) {
           // data message
-          if (actual.seqNum <= recentSeqNum[sourceWorkerIdx]) {
+          if (actual.getSeqNum() <= recentSeqNum[sourceWorkerIdx]) {
             if (LOGGER.isInfoEnabled()) {
               LOGGER
                   .info(
                       "Duplicate TupleBatch, received from worker:{} to Operator:{}. seqNum:{}, expected:{} Drop directly.",
-                      actual.getSourceIPCID(), actual.getOperatorID(), actual.seqNum, recentSeqNum[sourceWorkerIdx] + 1);
+                      actual.getSourceIPCID(), actual.getOperatorID(), actual.getSeqNum(),
+                      recentSeqNum[sourceWorkerIdx] + 1);
             }
             continue;
           }
@@ -184,7 +245,7 @@ public class Consumer extends LeafOperator {
   }
 
   @Override
-  public void checkEOSAndEOI() {
+  public final void checkEOSAndEOI() {
 
     if (workerEOS.nextClearBit(0) >= sourceWorkers.length) {
       setEOS();
@@ -199,12 +260,16 @@ public class Consumer extends LeafOperator {
     }
   }
 
+  /**
+   * @return my IPC operatorID.
+   * */
   public final ExchangePairID getOperatorID() {
     return operatorID;
   }
 
   /**
    * @param myWorkerID for parsing self-references.
+   * @return source worker IDs with self-reference parsed.
    * */
   public final int[] getSourceWorkers(final int myWorkerID) {
     int[] result = new int[sourceWorkers.length];
@@ -220,14 +285,28 @@ public class Consumer extends LeafOperator {
     return result;
   }
 
+  /**
+   * set the input buffer.
+   * 
+   * @param buffer my input buffer.
+   * */
   public final void setInputBuffer(final InputBuffer<TupleBatch, ExchangeData> buffer) {
     inputBuffer = buffer;
+  }
+
+  /**
+   * @return my input buffer.
+   * */
+  public final InputBuffer<TupleBatch, ExchangeData> getInputBuffer() {
+    return inputBuffer;
   }
 
   /**
    * Read a single ExchangeMessage from the queue that buffers incoming ExchangeMessages.
    * 
    * @param timeout Wait for at most timeout milliseconds. If the timeout is negative, wait until an element arrives.
+   * @return received data.
+   * @throws InterruptedException if interrupted.
    */
   private ExchangeData take(final int timeout) throws InterruptedException {
     ExchangeData result = null;

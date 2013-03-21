@@ -68,6 +68,9 @@ public final class Server {
   /** A short amount of time to sleep waiting for network events. */
   public static final int SHORT_SLEEP_MILLIS = 100;
 
+  /**
+   * Master message processor.
+   * */
   private final class MessageProcessor implements Runnable {
 
     /** Constructor, set the thread name. */
@@ -86,8 +89,8 @@ public final class Server {
           break TERMINATE_MESSAGE_PROCESSING;
         }
 
-        final TransportMessage m = mw.message;
-        final int senderID = mw.senderID;
+        final TransportMessage m = mw.getMessage();
+        final int senderID = mw.getSenderID();
 
         switch (m.getType()) {
           case DATA:
@@ -95,16 +98,16 @@ public final class Server {
             final long exchangePairIDLong = data.getOperatorID();
             final ExchangePairID exchangePairID = ExchangePairID.fromExisting(exchangePairIDLong);
             ConsumerChannel cc = consumerChannelMap.get(new ExchangeChannelID(exchangePairIDLong, senderID));
-            final Schema operatorSchema = cc.op.getSchema();
+            final Schema operatorSchema = cc.getOwnerConsumer().getSchema();
             switch (data.getType()) {
               case EOS:
                 LOGGER.info("EOS from: " + senderID + "," + workers.get(senderID));
                 receiveData(new ExchangeData(exchangePairID, senderID, operatorSchema, MetaMessage.EOS));
-                cc.ownerTask.notifyNewInput();
+                cc.getOwnerTask().notifyNewInput();
                 break;
               case EOI:
                 receiveData(new ExchangeData(exchangePairID, senderID, operatorSchema, MetaMessage.EOI));
-                cc.ownerTask.notifyNewInput();
+                cc.getOwnerTask().notifyNewInput();
 
                 break;
               case NORMAL:
@@ -117,7 +120,7 @@ public final class Server {
                 final List<Column<?>> columns = Arrays.asList(columnArray);
                 receiveData((new ExchangeData(exchangePairID, senderID, columns, operatorSchema, data.getNumTuples(), m
                     .getSeq())));
-                cc.ownerTask.notifyNewInput();
+                cc.getOwnerTask().notifyNewInput();
                 break;
             }
             break;
@@ -152,11 +155,17 @@ public final class Server {
     }
   }
 
-  static final String usage = "Usage: Server catalogFile [-explain] [-f queryFile]";
+  /**
+   * Usage string.
+   * */
+  static final String USAGE = "Usage: Server catalogFile [-explain] [-f queryFile]";
 
   /** The logger for this class. */
   private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(Server.class.getName());
 
+  /**
+   * Initial worker list.
+   * */
   private final ConcurrentHashMap<Integer, SocketInfo> workers;
 
   /**
@@ -164,41 +173,56 @@ public final class Server {
    * */
   private final ConcurrentHashMap<Long, MasterQueryPartition> activeQueries;
 
+  /**
+   * Current alive worker set.
+   * */
   private final Set<Integer> aliveWorkers;
 
   /**
    * Execution environment variables for operators.
    * */
-  final ConcurrentHashMap<String, Object> execEnvVars;
+  private final ConcurrentHashMap<String, Object> execEnvVars;
 
   /**
    * The I/O buffer, all the ExchangeMessages sent to the server are buffered here.
    */
-  final ConcurrentHashMap<ExchangePairID, InputBuffer<TupleBatch, ExchangeData>> dataBuffer;
+  private final ConcurrentHashMap<ExchangePairID, InputBuffer<TupleBatch, ExchangeData>> dataBuffer;
 
   /**
    * All message queue.
    * 
    * @TODO remove this queue as in {@link Worker}s.
    * */
-  final LinkedBlockingQueue<MasterDataHandler.MessageWrapper> messageQueue;
+  private final LinkedBlockingQueue<MasterDataHandler.MessageWrapper> messageQueue;
 
   /**
    * The IPC Connection Pool.
    * */
-  final IPCConnectionPool connectionPool;
+  private final IPCConnectionPool connectionPool;
 
   /**
    * {@link ExecutorService} for message processing.
    * */
-  volatile ExecutorService messageProcessingExecutor;
-
-  volatile boolean interactive = true;
+  private volatile ExecutorService messageProcessingExecutor;
 
   /**
    * for testing.
    * */
-  public static volatile Server runningInstance = null;
+  private static volatile Server runningInstance = null;
+
+  /**
+   * @return currently running instance of the master.
+   * */
+  public static Server getRunningInstance() {
+    return runningInstance;
+  }
+
+  /**
+   * reset current running instance.
+   * */
+  public static void resetRunningInstance() {
+    runningInstance = null;
+  }
 
   /** The Catalog stores the metadata about the Myria instance. */
   private final Catalog catalog;
@@ -206,28 +230,28 @@ public final class Server {
   /**
    * IPC flow controller.
    * */
-  final FlowControlHandler flowController;
+  private final FlowControlHandler flowController;
 
   /**
    * IPC message handler.
    * */
-  final MasterDataHandler masterDataHandler;
+  private final MasterDataHandler masterDataHandler;
 
   /**
    * Default input buffer capacity for {@link Consumer} input buffers.
    * */
-  final int inputBufferCapacity;
+  private final int inputBufferCapacity;
 
   /**
    * The {@link OrderedMemoryAwareThreadPoolExecutor} who gets messages from {@link workerExecutor} and further process
    * them using application specific message handlers, e.g. {@link MasterDataHandler}.
    * */
-  volatile OrderedMemoryAwareThreadPoolExecutor ipcPipelineExecutor;
+  private volatile OrderedMemoryAwareThreadPoolExecutor ipcPipelineExecutor;
 
   /**
    * The {@link ExecutorService} who executes the master-side query partitions.
    * */
-  volatile ExecutorService serverQueryExecutor;
+  private volatile ExecutorService serverQueryExecutor;
 
   /**
    * Producer channel mapping of current active queries.
@@ -239,6 +263,17 @@ public final class Server {
    * */
   private final ConcurrentHashMap<ExchangeChannelID, ConsumerChannel> consumerChannelMap;
 
+  /**
+   * max number of seconds for elegant cleanup.
+   * */
+  public static final int NUM_SECONDS_FOR_ELEGANT_CLEANUP = 10;
+
+  /**
+   * Entry point for the Master.
+   * 
+   * @param args the command line arguments.
+   * @throws IOException if there's any error in reading catalog file.
+   * */
   public static void main(final String[] args) throws IOException {
     try {
 
@@ -247,7 +282,7 @@ public final class Server {
 
       if (args.length < 1) {
         if (LOGGER.isErrorEnabled()) {
-          LOGGER.error(usage);
+          LOGGER.error(USAGE);
         }
         System.exit(-1);
       }
@@ -277,15 +312,16 @@ public final class Server {
             @Override
             public void run() {
               if (LOGGER.isInfoEnabled()) {
-                LOGGER.info("Wait for 10 seconds for graceful cleaning-up.");
+                LOGGER
+                    .info("Wait for " + Server.NUM_SECONDS_FOR_ELEGANT_CLEANUP + " seconds for graceful cleaning-up.");
               }
               int i;
-              for (i = 10; i > 0; i--) {
+              for (i = Server.NUM_SECONDS_FOR_ELEGANT_CLEANUP; i > 0; i--) {
                 try {
                   if (LOGGER.isInfoEnabled()) {
                     LOGGER.info(i + "");
                   }
-                  Thread.sleep(1000);
+                  Thread.sleep(MyriaConstants.WAITING_INTERVAL_1_SECOND_IN_MS);
                   if (!cleaner.isAlive()) {
                     break;
                   }
@@ -322,6 +358,41 @@ public final class Server {
         LOGGER.error("Unknown error occurs at Master. Quit directly.", e);
       }
     }
+  }
+
+  /**
+   * @return my flow controller.
+   * */
+  FlowControlHandler getFlowControlHandler() {
+    return flowController;
+  }
+
+  /**
+   * @return my message processor.
+   * */
+  MasterDataHandler getDataHandler() {
+    return masterDataHandler;
+  }
+
+  /**
+   * @return my connection pool for IPC.
+   * */
+  IPCConnectionPool getIPCConnectionPool() {
+    return connectionPool;
+  }
+
+  /**
+   * @return my pipeline executor.
+   * */
+  OrderedMemoryAwareThreadPoolExecutor getPipelineExecutor() {
+    return ipcPipelineExecutor;
+  }
+
+  /**
+   * @return my execution environment variables for init of operators.
+   * */
+  ConcurrentHashMap<String, Object> getExecEnvVars() {
+    return execEnvVars;
   }
 
   /**
@@ -384,8 +455,25 @@ public final class Server {
   /**
    * This class presents only for the purpose of debugging. No other usage.
    * */
-  private class DebugHelper extends TimerTask {
-    int i = 0;
+  public class DebugHelper extends TimerTask {
+
+    /**
+     * Interval of execution.
+     * */
+    public static final int INTERVAL = MyriaConstants.WAITING_INTERVAL_1_SECOND_IN_MS;
+    /**
+     * No use. only for debugging.
+     * */
+    private int i;
+
+    /**
+     * for removing the damn check style warning.
+     * 
+     * @return meaningless integer.
+     * */
+    public final int getI() {
+      return i;
+    }
 
     @Override
     public final synchronized void run() {
@@ -456,10 +544,11 @@ public final class Server {
   /**
    * @param mqp the master query
    * @return the query dispatch {@link QueryFuture}.
+   * @throws DbException if any error occurs.
    * */
   private QueryFuture dispatchWorkerQueryPlans(final MasterQueryPartition mqp) throws DbException {
 
-    for (final Map.Entry<Integer, RootOperator[]> e : mqp.workerPlans.entrySet()) {
+    for (final Map.Entry<Integer, RootOperator[]> e : mqp.getWorkerPlans().entrySet()) {
       final Integer workerID = e.getKey();
       while (!aliveWorkers.contains(workerID)) {
         try {
@@ -474,7 +563,7 @@ public final class Server {
         throw new DbException(ee);
       }
     }
-    return mqp.workerReceiveFuture;
+    return mqp.getWorkerReceiveFuture();
   }
 
   /**
@@ -514,8 +603,8 @@ public final class Server {
    */
   public void start() throws Exception {
 
-    scheduledTaskExecutor.scheduleAtFixedRate(new DebugHelper(), (long) (Math.random() * 300) + 500, (long) (Math
-        .random() * 200) + 100, TimeUnit.MILLISECONDS);
+    scheduledTaskExecutor.scheduleAtFixedRate(new DebugHelper(), DebugHelper.INTERVAL, DebugHelper.INTERVAL,
+        TimeUnit.MILLISECONDS);
 
     messageProcessingExecutor = Executors.newCachedThreadPool(new RenamingThreadFactory("Master message processor"));
     serverQueryExecutor = Executors.newCachedThreadPool(new RenamingThreadFactory("Master query executor"));
@@ -530,8 +619,9 @@ public final class Server {
     ExecutorService ipcWorkerExecutor = Executors.newCachedThreadPool(new RenamingThreadFactory("Master IPC worker"));
 
     ipcPipelineExecutor =
-        new OrderedMemoryAwareThreadPoolExecutor(Runtime.getRuntime().availableProcessors() * 2 + 1, 0, 0, 600,
-            TimeUnit.SECONDS, new RenamingThreadFactory("Master Pipeline executor"));
+        new OrderedMemoryAwareThreadPoolExecutor(Runtime.getRuntime().availableProcessors() * 2 + 1, 0, 0,
+            MyriaConstants.THREAD_POOL_KEEP_ALIVE_TIME_IN_MS, TimeUnit.MILLISECONDS, new RenamingThreadFactory(
+                "Master Pipeline executor"));
 
     /**
      * The {@link ChannelFactory} for creating client side connections.
@@ -553,8 +643,7 @@ public final class Server {
     ChannelPipelineFactory masterInJVMPipelineFactory = new IPCPipelineFactories.MasterInJVMPipelineFactory(this);
 
     connectionPool.start(serverChannelFactory, serverPipelineFactory, clientChannelFactory, clientPipelineFactory,
-        masterInJVMPipelineFactory, new InJVMLoopbackChannelSink<TransportMessage>(masterDataHandler,
-            MyriaConstants.MASTER_ID));
+        masterInJVMPipelineFactory, new InJVMLoopbackChannelSink());
 
     messageProcessingExecutor.submit(new MessageProcessor());
   }
@@ -562,9 +651,12 @@ public final class Server {
   /**
    * Find out the consumers and producers and register them in the {@link Server}'s data structures
    * {@link Server#producerChannelMapping} and {@link Server#consumerChannelMapping}.
+   * 
+   * @param query the query on which to do the setup.
+   * @throws DbException if any error occurs.
    */
   private void setupExchangeChannels(final MasterQueryPartition query) throws DbException {
-    RootOperator root = query.root;
+    RootOperator root = query.getRootOperator();
 
     QuerySubTreeTask drivingTask =
         new QuerySubTreeTask(MyriaConstants.MASTER_ID, query, root, serverQueryExecutor,
@@ -586,6 +678,11 @@ public final class Server {
     setupConsumerChannels(root, drivingTask);
   }
 
+  /**
+   * @param currentOperator current operator in considering.
+   * @param drivingTask the task current operator belongs to.
+   * @throws DbException if any error occurs.
+   * */
   private void setupConsumerChannels(final Operator currentOperator, final QuerySubTreeTask drivingTask)
       throws DbException {
 
@@ -618,7 +715,7 @@ public final class Server {
         operator.setInputBuffer(inputBuffer);
 
         dataBuffer.put(((Consumer) currentOperator).getOperatorID(), inputBuffer);
-        operator.exchangeChannels = new ConsumerChannel[operator.getSourceWorkers(MyriaConstants.MASTER_ID).length];
+        operator.setExchangeChannels(new ConsumerChannel[operator.getSourceWorkers(MyriaConstants.MASTER_ID).length]);
         ExchangePairID oID = operator.getOperatorID();
         int[] sourceWorkers = operator.getSourceWorkers(MyriaConstants.MASTER_ID);
         int idx = 0;
@@ -626,7 +723,7 @@ public final class Server {
           ExchangeChannelID ecID = new ExchangeChannelID(oID.getLong(), workerID);
           ConsumerChannel cc = new ConsumerChannel(drivingTask, operator, ecID);
           consumerChannelMap.put(ecID, cc);
-          operator.exchangeChannels[idx++] = cc;
+          operator.getExchangeChannels()[idx++] = cc;
         }
 
         break QUERY_PLAN_TYPE_SWITCH;
@@ -669,6 +766,13 @@ public final class Server {
   /**
    * Submit a query for execution. The plans may be removed in the future if the query compiler and schedulers are ready
    * such that the plan can be generated from either the rawQuery or the logicalRa.
+   * 
+   * @param rawQuery the raw user-defined query. E.g., the source Datalog program.
+   * @param logicalRa the logical relational algebra of the compiled plan.
+   * @param plans the physical parallel plan fragments for each worker and the master.
+   * @throws DbException if any error in non-catalog data processing
+   * @throws CatalogException if any error in processing catalog
+   * @return the query future from which the query status can be looked up.
    * */
   public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final Map<Integer, RootOperator[]> plans)
       throws DbException, CatalogException {
@@ -681,6 +785,14 @@ public final class Server {
   /**
    * Submit a query for execution. The workerPlans may be removed in the future if the query compiler and schedulers are
    * ready.
+   * 
+   * @param rawQuery the raw user-defined query. E.g., the source Datalog program.
+   * @param logicalRa the logical relational algebra of the compiled plan.
+   * @param workerPlans the physical parallel plan fragments for each worker.
+   * @param masterPlan the physical parallel plan fragment for the master.
+   * @throws DbException if any error in non-catalog data processing
+   * @throws CatalogException if any error in processing catalog
+   * @return the query future from which the query status can be looked up.
    * */
   public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final RootOperator masterPlan,
       final Map<Integer, RootOperator[]> workerPlans) throws DbException, CatalogException {
@@ -696,7 +808,7 @@ public final class Server {
       }
 
     });
-    mqp.queryExecutionFuture.addListener(new QueryFutureListener() {
+    mqp.getQueryExecutionFuture().addListener(new QueryFutureListener() {
 
       @Override
       public void operationComplete(final QueryFuture future) throws Exception {
@@ -704,7 +816,7 @@ public final class Server {
       }
 
     });
-    return mqp.queryExecutionFuture;
+    return mqp.getQueryExecutionFuture();
   }
 
   /**
@@ -714,8 +826,8 @@ public final class Server {
    */
   private void startWorkerQuery(final long queryId) {
     final MasterQueryPartition mqp = activeQueries.get(queryId);
-    for (final Entry<Integer, Integer> entry : mqp.workersAssigned.entrySet()) {
-      connectionPool.sendShortMessage(entry.getKey(), IPCUtils.startQueryTM(queryId));
+    for (final Integer workerID : mqp.getWorkerAssigned()) {
+      connectionPool.sendShortMessage(workerID, IPCUtils.startQueryTM(queryId));
     }
   }
 

@@ -12,7 +12,7 @@ import org.jboss.netty.channel.ChannelFuture;
 import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myriad.column.Column;
-import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.parallel.ExchangePairID;
 import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myriad.proto.ControlProto.ControlMessage.ControlMessageType;
@@ -33,7 +33,7 @@ public final class IPCUtils {
    * pause the sending from the remote.
    * 
    * @param ch the Channel.
-   * @return the future instance of the pauseing read action
+   * @return the future instance of the pausing read action
    * */
   public static ChannelFuture pauseRead(final Channel ch) {
     return ch.setReadable(false);
@@ -127,12 +127,21 @@ public final class IPCUtils {
         }
       };
 
+  /**
+   * EOS TM.
+   * */
   public static final TransportMessage EOS = TransportMessage.newBuilder().setType(TransportMessageType.DATA).setData(
       DataMessage.newBuilder().setType(DataMessageType.EOS)).build();
 
+  /**
+   * EOI TM.
+   * */
   public static final TransportMessage EOI = TransportMessage.newBuilder().setType(TransportMessageType.DATA).setData(
       DataMessage.newBuilder().setType(DataMessageType.EOI)).build();
 
+  /**
+   * EOI builder.
+   * */
   protected static final ThreadLocal<DataMessage.Builder> EOI_DATAMESSAGE_BUILDER =
       new ThreadLocal<DataMessage.Builder>() {
         @Override
@@ -141,14 +150,16 @@ public final class IPCUtils {
         }
       };
 
-  // public static final TransportMessage CONTROL_QUERY_READY = TransportMessage.newBuilder().setType(
-  // TransportMessageType.CONTROL).setControl(
-  // ControlMessage.newBuilder().setType(ControlMessageType.QUERY_READY_TO_EXECUTE).build()).build();
-
+  /**
+   * shutdown TM.
+   * */
   public static final TransportMessage CONTROL_SHUTDOWN = TransportMessage.newBuilder().setType(
       TransportMessageType.CONTROL).setControl(ControlMessage.newBuilder().setType(ControlMessageType.SHUTDOWN))
       .build();
 
+  /**
+   * disconnect TM.
+   * */
   public static final TransportMessage CONTROL_DISCONNECT = TransportMessage.newBuilder().setType(
       TransportMessageType.CONTROL).setControl(ControlMessage.newBuilder().setType(ControlMessageType.DISCONNECT))
       .build();
@@ -158,10 +169,12 @@ public final class IPCUtils {
       TransportMessageType.CONTROL).setControl(ControlMessage.newBuilder().setType(ControlMessageType.WORKER_ALIVE))
       .build();
 
-  public static TransportMessage asTM(final Object m) {
-    return (TransportMessage) m;
-  }
-
+  /**
+   * Check if the message is a CONNECT message.
+   * 
+   * @return null if it's not, or the remoteID if it is.
+   * @param message the message to check
+   * */
   public static Integer checkConnectTM(final TransportMessage message) {
     if (message == null) {
       return null;
@@ -175,39 +188,43 @@ public final class IPCUtils {
 
   /**
    * Only connectTm needs the RemoteID field.
+   * 
+   * @param myID my IPC ID.
+   * @return a connect TM.
    * */
-  public static TransportMessage connectTM(final Integer myID) {
+  public static TransportMessage connectTM(final int myID) {
     return CONTROL_TM_BUILDER.get().setControl(
         ControlMessage.newBuilder().setType(ControlMessage.ControlMessageType.CONNECT).setRemoteId(myID)).build();
   }
 
+  /**
+   * @param queryId .
+   * @return a query ready TM.
+   * */
   public static TransportMessage queryReadyTM(final Long queryId) {
     return CONTROL_TM_BUILDER.get().setControl(
         ControlMessage.newBuilder().setType(ControlMessage.ControlMessageType.QUERY_READY_TO_EXECUTE).setQueryId(
             queryId)).build();
   }
 
-  public static TransportMessage queryCompleteTM(final Long queryId) {
+  /**
+   * @param queryId the completed query id.
+   * @return a query complete TM.
+   * */
+  public static TransportMessage queryCompleteTM(final long queryId) {
     return CONTROL_TM_BUILDER.get().setControl(
         ControlMessage.newBuilder().setType(ControlMessage.ControlMessageType.QUERY_COMPLETE).setQueryId(queryId))
         .build();
   }
 
-  public static TransportMessage startQueryTM(final Long queryId) {
+  /**
+   * @param queryId the id of the query to be started.
+   * @return the query start TM.
+   * */
+  public static TransportMessage startQueryTM(final long queryId) {
     return CONTROL_TM_BUILDER.get().setControl(
         ControlMessage.newBuilder().setType(ControlMessage.ControlMessageType.START_QUERY).setQueryId(queryId)).build();
   }
-
-  // /**
-  // * create an EOS data message.
-  // * */
-  // public static TransportMessage eosTM(final ExchangePairID epID) {
-  // return DATA_TM_BUILDER.get().setData(EOS_DATAMESSAGE_BUILDER.get().setOperatorID(epID.getLong())).build();
-  // }
-  //
-  // public static TransportMessage eoiTM(final ExchangePairID epID) {
-  // return DATA_TM_BUILDER.get().setData(EOI_DATAMESSAGE_BUILDER.get().setOperatorID(epID.getLong())).build();
-  // }
 
   /**
    * Check if the remote side of the channel is still connected.
@@ -218,17 +235,8 @@ public final class IPCUtils {
   public static boolean isRemoteConnected(final Channel channel) {
     if (channel != null) {
       if (!channel.isReadable()) {
-        ChannelFuture cf = channel.setInterestOps(Channel.OP_READ);
-        if (cf == null) {
-          return false;
-        } else {
-          cf.awaitUninterruptibly();
-          if (!cf.isSuccess() || !channel.isReadable()) {
-            return false;
-          } else {
-            return true;
-          }
-        }
+        channel.setInterestOps(Channel.OP_READ).awaitUninterruptibly();
+        return channel.isReadable();
       } else {
         return true;
       }
@@ -238,12 +246,19 @@ public final class IPCUtils {
   }
 
   /**
-   * create an EOS data message.
+   * @return create an BOS data message.
+   * @param epID BOS for this operator ID.
    * */
   public static TransportMessage bosTM(final ExchangePairID epID) {
     return DATA_TM_BUILDER.get().setData(BOS_DATAMESSAGE_BUILDER.get().setOperatorID(epID.getLong())).build();
   }
 
+  /**
+   * @param dataColumns data columns
+   * @param numTuples number of tuples in the columns.
+   * @param seqNum for fault tolerance.
+   * @return a data TM encoding the data columns.
+   * */
   public static TransportMessage normalDataMessage(final List<Column<?>> dataColumns, final int numTuples,
       final long seqNum) {
     final ColumnMessage[] columnProtos = new ColumnMessage[dataColumns.size()];
@@ -258,7 +273,13 @@ public final class IPCUtils {
             numTuples)).setSeq(seqNum).build();
   }
 
-  public static TransportMessage queryMessage(final Long queryId, final Operator[] query) throws IOException {
+  /**
+   * @param queryId .
+   * @param query the query to encode.
+   * @throws IOException if error occurs in encoding the query.
+   * @return an encoded query TM
+   */
+  public static TransportMessage queryMessage(final long queryId, final RootOperator[] query) throws IOException {
     final ByteArrayOutputStream inMemBuffer = new ByteArrayOutputStream();
     final ObjectOutputStream oos = new ObjectOutputStream(inMemBuffer);
     oos.writeObject(query);

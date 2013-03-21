@@ -33,7 +33,11 @@ public final class FileScan extends LeafOperator {
   /** Whether a comma is a delimiter in this file. */
   private final boolean commaIsDelimiter;
 
+  /**
+   * The source filename.
+   * */
   private String filename;
+
   /** Holds the tuples that are ready for release. */
   private transient TupleBatchBuffer buffer;
 

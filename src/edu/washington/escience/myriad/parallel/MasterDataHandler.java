@@ -18,16 +18,44 @@ import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage.Builder;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType;
 
+/**
+ * Message processor for the master.
+ * */
 @Sharable
 public class MasterDataHandler extends SimpleChannelUpstreamHandler implements MessageChannelHandler<TransportMessage> {
 
   /**
    * A simple message wrapper for use in current queue-based master message processing.
    * */
-  public static class MessageWrapper {
-    public int senderID;
-    public TransportMessage message;
+  public static final class MessageWrapper {
+    /**
+     * the source worker ID.
+     * */
+    private final int senderID;
 
+    /**
+     * the message data.
+     * */
+    private final TransportMessage message;
+
+    /**
+     * @return the source worker ID.
+     * */
+    public int getSenderID() {
+      return senderID;
+    }
+
+    /**
+     * @return the message data.
+     * */
+    public TransportMessage getMessage() {
+      return message;
+    }
+
+    /**
+     * @param senderID source worker ID.
+     * @param message the message data.
+     * */
     public MessageWrapper(final int senderID, final TransportMessage message) {
       this.senderID = senderID;
       this.message = message;
@@ -44,16 +72,21 @@ public class MasterDataHandler extends SimpleChannelUpstreamHandler implements M
 
   /**
    * constructor.
+   * 
+   * @param messageQueue the queue for storing messages.
    * */
   MasterDataHandler(final LinkedBlockingQueue<MessageWrapper> messageQueue) {
     this.messageQueue = messageQueue;
     channel2OperatorID = new ConcurrentHashMap<Integer, Long>();
   }
 
+  /**
+   * Channel ID 2 operatorID mapping.
+   * */
   private final ConcurrentHashMap<Integer, Long> channel2OperatorID;
 
   @Override
-  public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e) {
+  public final void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e) {
     ChannelContext cs = null;
     ChannelContext.RegisteredChannelContext ecc = null;
     final Channel channel = e.getChannel();
@@ -113,7 +146,7 @@ public class MasterDataHandler extends SimpleChannelUpstreamHandler implements M
   }
 
   @Override
-  public boolean processMessage(final Channel channel, final int remoteID, final TransportMessage message) {
+  public final boolean processMessage(final Channel channel, final int remoteID, final TransportMessage message) {
     final MessageWrapper mw = new MessageWrapper(remoteID, message);
     return messageQueue.offer(mw);
   }

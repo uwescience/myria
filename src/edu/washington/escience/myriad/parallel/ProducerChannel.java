@@ -11,6 +11,10 @@ import org.jboss.netty.channel.Channel;
  * */
 public class ProducerChannel {
 
+  /**
+   * @param ownerTask the task who owns the output channel.
+   * @param ecID exchange channel ID.
+   * */
   public ProducerChannel(final QuerySubTreeTask ownerTask, final ExchangeChannelID ecID) {
     id = ecID;
     ownerQuerySubTreeTask = ownerTask;
@@ -48,19 +52,33 @@ public class ProducerChannel {
    * */
   private final QuerySubTreeTask ownerQuerySubTreeTask;
 
-  public Channel getIOChannel() {
+  /**
+   * @return the associated io channel.
+   * */
+  public final Channel getIOChannel() {
     return ioChannel;
   }
 
-  public void attachIOChannel(final Channel ioChannel) {
+  /**
+   * Attach an IO channel.
+   * 
+   * @param ioChannel the IO channel to associate.
+   * */
+  public final void attachIOChannel(final Channel ioChannel) {
     this.ioChannel = ioChannel;
   }
 
-  public void dettachIOChannel() {
+  /**
+   * Detach IO channel.
+   * */
+  public final void dettachIOChannel() {
     ioChannel = null;
   }
 
-  public ExchangeChannelID getExchangeChannelID() {
+  /**
+   * @return my logical exchange channel ID.
+   * */
+  public final ExchangeChannelID getExchangeChannelID() {
     return id;
   }
 }

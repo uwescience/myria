@@ -65,6 +65,7 @@ public class TBQueueExporter extends Operator {
   @Override
   protected final TupleBatch fetchNextReady() throws DbException {
     TupleBatch tb = child.nextReady();
+
     if (tb != null) {
       queueStore.add(tb);
     }

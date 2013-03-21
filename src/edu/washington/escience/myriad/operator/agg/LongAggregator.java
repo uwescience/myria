@@ -15,16 +15,45 @@ public final class LongAggregator implements Aggregator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
+  /**
+   * aggregate column.
+   * */
   private final int afield;
+
+  /**
+   * Aggregate operations. An binary-or of all the applicable aggregate operations, i.e. those in
+   * {@link LongAggregator#AVAILABLE_AGG}.
+   * */
   private final int aggOps;
 
+  /**
+   * min, max and sum, keeps the same data type as the aggregating column.
+   * */
   private long min, max, sum;
+
+  /**
+   * Count, always of long type.
+   * */
   private long count;
+
+  /**
+   * Result schema. It's automatically generated according to the {@link LongAggregator#aggOps}.
+   * */
   private final Schema resultSchema;
 
+  /**
+   * Aggregate operations applicable for long columns.
+   * */
   public static final int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT | Aggregator.AGG_OP_SUM | Aggregator.AGG_OP_MAX
       | Aggregator.AGG_OP_MIN | Aggregator.AGG_OP_AVG;
 
+  /**
+   * This serves as the copy constructor.
+   * 
+   * @param afield the aggregate column.
+   * @param aggOps the aggregate operation to simultaneously compute.
+   * @param resultSchema the result schema.
+   * */
   private LongAggregator(final int afield, final int aggOps, final Schema resultSchema) {
     this.resultSchema = resultSchema;
     this.afield = afield;
@@ -35,6 +64,11 @@ public final class LongAggregator implements Aggregator {
     max = Long.MIN_VALUE;
   }
 
+  /**
+   * @param afield the aggregate column.
+   * @param aFieldName aggregate field name for use in output schema.
+   * @param aggOps the aggregate operation to simultaneously compute.
+   * */
   public LongAggregator(final int afield, final String aFieldName, final int aggOps) {
     if (aggOps <= 0) {
       throw new IllegalArgumentException("No aggregation operations are selected");

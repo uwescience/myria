@@ -198,13 +198,35 @@ public final class Worker {
    * still alive. If the server got killed because of any reason, the workers will be terminated. 2) it detects whether
    * a shutdown message is received.
    */
-  private class Reporter extends TimerTask {
+  static final class Reporter extends TimerTask {
+
+    /**
+     * Delay of the first check. 3 seconds to 5 seconds.
+     * */
+    public static final int INITIAL_DELAY_IN_MS = (3000 + (int) (2000 * Math.random()));
+
+    /**
+     * Time interval between two checks. 2.4 seconds to 2.9 seconds.
+     * */
+    public static final int INTERVAL = (2400 + (int) (500 * Math.random()));
+
+    /**
+     * the owner worker.
+     * */
+    private final Worker owner;
+
+    /**
+     * @param owner the owner worker.
+     * */
+    Reporter(final Worker owner) {
+      this.owner = owner;
+    }
 
     @Override
-    public final synchronized void run() {
+    public synchronized void run() {
       Channel serverChannel = null;
       try {
-        serverChannel = connectionPool.reserveLongTermConnection(MyriaConstants.MASTER_ID);
+        serverChannel = owner.connectionPool.reserveLongTermConnection(MyriaConstants.MASTER_ID);
         if (IPCUtils.isRemoteConnected(serverChannel)) {
           return;
         }
@@ -214,14 +236,14 @@ public final class Worker {
         }
       } finally {
         if (serverChannel != null) {
-          connectionPool.releaseLongTermConnection(serverChannel);
+          owner.connectionPool.releaseLongTermConnection(serverChannel);
         }
       }
       if (LOGGER.isInfoEnabled()) {
         LOGGER.info("The Master has shutdown, I'll shutdown now.");
       }
-      toShutdown = true;
-      abruptShutdown = true;
+      owner.toShutdown = true;
+      owner.abruptShutdown = true;
       cancel();
     }
   }
@@ -245,7 +267,10 @@ public final class Worker {
     }
   }
 
-  static final String usage = "Usage: worker [--conf <conf_dir>]";
+  /**
+   * usage.
+   * */
+  static final String USAGE = "Usage: worker [--conf <conf_dir>]";
 
   /**
    * {@link ExecutorService} for query executions.
@@ -265,29 +290,32 @@ public final class Worker {
   /**
    * My message handler.
    * */
-  final WorkerDataHandler workerDataHandler;
+  private final WorkerDataHandler workerDataHandler;
 
   /**
    * IPC flow controller.
    * */
-  final FlowControlHandler flowController;
+  private final FlowControlHandler flowController;
 
   /**
    * timer task executor.
    * */
   private ScheduledExecutorService scheduledTaskExecutor;
 
+  /**
+   * database handle.
+   * */
   private final Properties databaseHandle;
 
   /**
    * The ID of this worker.
    */
-  final int myID;
+  private final int myID;
 
   /**
    * connectionPool[0] is always the master.
    */
-  final IPCConnectionPool connectionPool;
+  private final IPCConnectionPool connectionPool;
 
   /**
    * A indicator of shutting down the worker.
@@ -302,59 +330,77 @@ public final class Worker {
   /**
    * Message queue for control messages.
    * */
-  final LinkedBlockingQueue<ControlMessage> controlMessageQueue;
+  private final LinkedBlockingQueue<ControlMessage> controlMessageQueue;
 
   /**
    * Message queue for queries.
    * */
-  final PriorityBlockingQueue<WorkerQueryPartition> queryQueue;
+  private final PriorityBlockingQueue<WorkerQueryPartition> queryQueue;
 
-  final WorkerCatalog catalog;
+  /**
+   * My catalog.
+   * */
+  private final WorkerCatalog catalog;
 
-  final SocketInfo masterSocketInfo;
+  /**
+   * master IPC address.
+   * */
+  private final SocketInfo masterSocketInfo;
 
-  final SocketInfo mySocketInfo;
+  // /**
+  // * my IPC address.
+  // * */
+  // private final SocketInfo mySocketInfo;
 
   /**
    * Query execution mode. May remove
    * */
   @Deprecated
-  final QueryExecutionMode queryExecutionMode;
+  private final QueryExecutionMode queryExecutionMode;
 
   /**
    * Producer channel mapping of current active queries.
    * */
-  final ConcurrentHashMap<ExchangeChannelID, ProducerChannel> producerChannelMapping;
+  private final ConcurrentHashMap<ExchangeChannelID, ProducerChannel> producerChannelMapping;
 
   /**
    * Consumer channel mapping of current active queries.
    * */
-  final ConcurrentHashMap<ExchangeChannelID, ConsumerChannel> consumerChannelMapping;
+  private final ConcurrentHashMap<ExchangeChannelID, ConsumerChannel> consumerChannelMapping;
 
   /**
    * {@link ExecutorService} for Netty pipelines.
    * */
-  volatile OrderedMemoryAwareThreadPoolExecutor pipelineExecutor;
+  private volatile OrderedMemoryAwareThreadPoolExecutor pipelineExecutor;
 
   /**
    * The default input buffer capacity for each {@link Consumer} input buffer.
    * */
-  final int inputBufferCapacity;
+  private final int inputBufferCapacity;
 
-  public final String workingDirectory;
+  /**
+   * Current working directory. It's the logical root of the worker. All the data the worker and the operators running
+   * on the worker can access should be put under this directory.
+   * */
+  private final String workingDirectory;
 
   /**
    * Execution environment variables for operators.
    * */
-  final ConcurrentHashMap<String, Object> execEnvVars;
+  private final ConcurrentHashMap<String, Object> execEnvVars;
 
-  public static void main(String[] args) {
+  /**
+   * Worker process entry point.
+   * 
+   * @param args command line arguments.
+   * */
+  public static void main(final String[] args) {
     try {
       java.util.logging.Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
       java.util.logging.Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
 
       if (args.length > 2) {
-        LOGGER.warn("Invalid number of arguments.\n" + usage);
+        LOGGER.warn("Invalid number of arguments.\n" + USAGE);
         JVMUtils.shutdownVM();
       }
 
@@ -364,7 +410,7 @@ public final class Worker {
           workingDir = args[1];
         } else {
           if (LOGGER.isErrorEnabled()) {
-            LOGGER.error("Invalid arguments.\n" + usage);
+            LOGGER.error("Invalid arguments.\n" + USAGE);
           }
           JVMUtils.shutdownVM();
         }
@@ -393,6 +439,68 @@ public final class Worker {
 
   }
 
+  /**
+   * @return my control message queue.
+   * */
+  LinkedBlockingQueue<ControlMessage> getControlMessageQueue() {
+    return controlMessageQueue;
+  }
+
+  /**
+   * @return my query queue.
+   * */
+  PriorityBlockingQueue<WorkerQueryPartition> getQueryQueue() {
+    return queryQueue;
+  }
+
+  /**
+   * @return my flow controller.
+   * */
+  FlowControlHandler getFlowControlHandler() {
+    return flowController;
+  }
+
+  /**
+   * @return my message processor.
+   * */
+  WorkerDataHandler getWorkerDataHandler() {
+    return workerDataHandler;
+  }
+
+  /**
+   * @return my connection pool for IPC.
+   * */
+  IPCConnectionPool getIPCConnectionPool() {
+    return connectionPool;
+  }
+
+  /**
+   * @return my pipeline executor.
+   * */
+  OrderedMemoryAwareThreadPoolExecutor getPipelineExecutor() {
+    return pipelineExecutor;
+  }
+
+  /**
+   * @return my execution environment variables for init of operators.
+   * */
+  ConcurrentHashMap<String, Object> getExecEnvVars() {
+    return execEnvVars;
+  }
+
+  /**
+   * @return the working directory of the worker.
+   * */
+  String getWorkingDirectory() {
+    return workingDirectory;
+  }
+
+  /**
+   * @param workingDirectory my working directory.
+   * @param mode my execution mode.
+   * @throws CatalogException if there's any catalog operation errors.
+   * @throws FileNotFoundException if catalog files are not found.
+   * */
   public Worker(final String workingDirectory, final QueryExecutionMode mode) throws CatalogException,
       FileNotFoundException {
     queryExecutionMode = mode;
@@ -402,7 +510,7 @@ public final class Worker {
     myID = Integer.parseInt(catalog.getConfigurationValue(MyriaSystemConfigKeys.WORKER_IDENTIFIER));
     databaseHandle = new Properties();
 
-    mySocketInfo = catalog.getWorkers().get(myID);
+    // mySocketInfo = catalog.getWorkers().get(myID);
 
     controlMessageQueue = new LinkedBlockingQueue<ControlMessage>();
     queryQueue = new PriorityBlockingQueue<WorkerQueryPartition>();
@@ -432,12 +540,12 @@ public final class Worker {
     }
     final String databaseType = catalog.getConfigurationValue(MyriaSystemConfigKeys.WORKER_STORAGE_SYSTEM_TYPE);
     switch (databaseType) {
-      case "sqlite":
+      case MyriaConstants.STORAGE_SYSTEM_SQLITE:
         String sqliteFilePath = catalog.getConfigurationValue(MyriaSystemConfigKeys.WORKER_DATA_SQLITE_DB);
         databaseHandle.setProperty("sqliteFile", sqliteFilePath);
         execEnvVars.put("sqliteFile", sqliteFilePath);
         break;
-      case "mysql":
+      case MyriaConstants.STORAGE_SYSTEM_MYSQL:
         /* TODO fill this in. */
         break;
       default:
@@ -490,8 +598,12 @@ public final class Worker {
   }
 
   /**
+   * 
    * Find out the consumers and producers and register them in the {@link Worker}'s data structures
    * {@link Worker#producerChannelMapping} and {@link Worker#consumerChannelMapping}.
+   * 
+   * @param query the query on which to do the setup.
+   * @throws DbException if any error occurs.
    * 
    */
   public void setupExchangeChannels(final WorkerQueryPartition query) throws DbException {
@@ -519,7 +631,12 @@ public final class Worker {
 
   }
 
-  public void setupConsumerChannels(final Operator currentOperator, final QuerySubTreeTask drivingTask)
+  /**
+   * @param currentOperator current operator in considering.
+   * @param drivingTask the task current operator belongs to.
+   * @throws DbException if any error occurs.
+   * */
+  private void setupConsumerChannels(final Operator currentOperator, final QuerySubTreeTask drivingTask)
       throws DbException {
 
     if (currentOperator == null) {
@@ -548,7 +665,7 @@ public final class Worker {
       });
       operator.setInputBuffer(inputBuffer);
 
-      operator.exchangeChannels = new ConsumerChannel[operator.getSourceWorkers(myID).length];
+      operator.setExchangeChannels(new ConsumerChannel[operator.getSourceWorkers(myID).length]);
       ExchangePairID oID = operator.getOperatorID();
       int[] sourceWorkers = operator.getSourceWorkers(myID);
       int idx = 0;
@@ -556,7 +673,7 @@ public final class Worker {
         ExchangeChannelID ecID = new ExchangeChannelID(oID.getLong(), workerID);
         ConsumerChannel cc = new ConsumerChannel(drivingTask, operator, ecID);
         consumerChannelMapping.put(ecID, cc);
-        operator.exchangeChannels[idx++] = cc;
+        operator.getExchangeChannels()[idx++] = cc;
       }
     }
 
@@ -632,8 +749,8 @@ public final class Worker {
     ExecutorService bossExecutor = Executors.newCachedThreadPool(new RenamingThreadFactory("IPC boss"));
     ExecutorService workerExecutor = Executors.newCachedThreadPool(new RenamingThreadFactory("IPC worker"));
     pipelineExecutor =
-        new OrderedMemoryAwareThreadPoolExecutor(3, 0, 0, 600, TimeUnit.SECONDS, new RenamingThreadFactory(
-            "Pipeline executor"));
+        new OrderedMemoryAwareThreadPoolExecutor(3, 0, 0, MyriaConstants.THREAD_POOL_KEEP_ALIVE_TIME_IN_MS,
+            TimeUnit.MILLISECONDS, new RenamingThreadFactory("Pipeline executor"));
 
     ChannelFactory clientChannelFactory =
         new NioClientSocketChannelFactory(bossExecutor, workerExecutor,
@@ -649,14 +766,15 @@ public final class Worker {
     ChannelPipelineFactory workerInJVMPipelineFactory = new IPCPipelineFactories.WorkerInJVMPipelineFactory(this);
 
     connectionPool.start(serverChannelFactory, serverPipelineFactory, clientChannelFactory, clientPipelineFactory,
-        workerInJVMPipelineFactory, new InJVMLoopbackChannelSink<TransportMessage>(workerDataHandler, myID));
+        workerInJVMPipelineFactory, new InJVMLoopbackChannelSink());
 
     if (queryExecutionMode == QueryExecutionMode.NON_BLOCKING) {
       int numCPU = Runtime.getRuntime().availableProcessors();
       queryExecutor =
           new ThreadPoolExecutor(numCPU, numCPU, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(),
               new RenamingThreadFactory("Nonblocking query executor"));
-    } else {// blocking query execution
+    } else {
+      // blocking query execution
       queryExecutor =
           (ThreadPoolExecutor) Executors.newCachedThreadPool(new RenamingThreadFactory("Blocking query executor"));
     }
@@ -668,12 +786,18 @@ public final class Worker {
     // worker will stop itself
     scheduledTaskExecutor =
         Executors.newSingleThreadScheduledExecutor(new RenamingThreadFactory("Worker global timer"));
-    scheduledTaskExecutor.scheduleAtFixedRate(new ShutdownChecker(), 500, 500, TimeUnit.MILLISECONDS);
-    scheduledTaskExecutor.scheduleAtFixedRate(new Reporter(), (long) (Math.random() * 3000) + 5000, (long) (Math
-        .random() * 2000) + 1000, TimeUnit.MILLISECONDS);
+    scheduledTaskExecutor.scheduleAtFixedRate(new ShutdownChecker(), SHUTDOWN_CHECKER_INTERVAL_MS,
+        SHUTDOWN_CHECKER_INTERVAL_MS, TimeUnit.MILLISECONDS);
+    scheduledTaskExecutor.scheduleAtFixedRate(new Reporter(this), Reporter.INITIAL_DELAY_IN_MS, Reporter.INTERVAL,
+        TimeUnit.MILLISECONDS);
     /* Tell the master we're alive. */
     sendMessageToMaster(IPCUtils.CONTROL_WORKER_ALIVE).awaitUninterruptibly();
   }
+
+  /**
+   * The time interval in milliseconds for check if the worker should be shutdown.
+   * */
+  static final int SHUTDOWN_CHECKER_INTERVAL_MS = 500;
 
   /**
    * @param configKey config key.

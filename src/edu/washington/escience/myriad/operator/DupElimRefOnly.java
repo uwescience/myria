@@ -12,22 +12,49 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
 
-public final class DupElim_RefOnly extends Operator {
+/**
+ * A simple implementation of duplicate eliminate. It keeps the references to all the TupleBatches which contain unique
+ * tuples.
+ * */
+public final class DupElimRefOnly extends Operator {
 
+  /**
+   * Pointer data structure for pointing to a tuple in a TupleBatch.
+   * */
   private class IndexedTuple {
+    /**
+     * The row index.
+     * */
     private int index;
+    /**
+     * The source data TB.
+     * */
     private final TupleBatch tb;
 
+    /**
+     * @param tb the source data TB.
+     * */
     public IndexedTuple(final TupleBatch tb) {
       this.tb = tb;
     }
 
+    /**
+     * @param tb the source data TB.
+     * @param index the row index.
+     * */
     public IndexedTuple(final TupleBatch tb, final int index) {
       this.tb = tb;
       this.index = index;
     }
 
-    public boolean compareField(final IndexedTuple another, final int colIndx) {
+    /**
+     * compare the equality of a column of two tuples.
+     * 
+     * @return true if equal.
+     * @param another another source data TB.
+     * @param colIndx columnIndex to compare
+     * */
+    public boolean columnEquals(final IndexedTuple another, final int colIndx) {
       final Type type = tb.getSchema().getColumnType(colIndx);
       final int rowIndx1 = index;
       final int rowIndx2 = another.index;
@@ -61,7 +88,7 @@ public final class DupElim_RefOnly extends Operator {
         return false;
       }
       for (int i = 0; i < tb.getSchema().numColumns(); ++i) {
-        if (!compareField(another, i)) {
+        if (!columnEquals(another, i)) {
           return false;
         }
       }
@@ -77,10 +104,20 @@ public final class DupElim_RefOnly extends Operator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
+  /**
+   * the child.
+   * */
   private Operator child;
+
+  /**
+   * Storing the unique tuples.
+   * */
   private transient HashMap<Integer, List<IndexedTuple>> uniqueTuples;
 
-  public DupElim_RefOnly(final Operator child) {
+  /**
+   * @param child the child
+   * */
+  public DupElimRefOnly(final Operator child) {
     this.child = child;
   }
 
@@ -88,6 +125,12 @@ public final class DupElim_RefOnly extends Operator {
   protected void cleanup() throws DbException {
   }
 
+  /**
+   * Do duplicate elimination for the tb.
+   * 
+   * @param tb the TB.
+   * @return a new TB with duplicates removed.
+   * */
   protected TupleBatch doDupElim(final TupleBatch tb) {
     final int numTuples = tb.numTuples();
     if (numTuples <= 0) {
@@ -138,13 +181,13 @@ public final class DupElim_RefOnly extends Operator {
   public TupleBatch fetchNextReady() throws DbException {
 
     TupleBatch tb = null;
-    while (!child.eos() && (tb = child.nextReady()) != null) {
+    tb = child.nextReady();
+    while (tb != null) {
       tb = doDupElim(tb);
       if (tb.numTuples() > 0) {
         return tb;
-      } else {
-        continue;
       }
+      tb = child.nextReady();
     }
     return null;
   }
@@ -165,7 +208,7 @@ public final class DupElim_RefOnly extends Operator {
   }
 
   @Override
-  protected void init(ImmutableMap<String, Object> execEnvVars) throws DbException {
+  protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     uniqueTuples = new HashMap<Integer, List<IndexedTuple>>();
   }
 }

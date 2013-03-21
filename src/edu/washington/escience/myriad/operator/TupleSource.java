@@ -21,6 +21,10 @@ public final class TupleSource extends LeafOperator {
   private static final long serialVersionUID = 1L;
   /** The tuples that this operator serves, exactly once. */
   private final List<TupleBatch> data;
+  /**
+   * the current TupleBatch index of this TupleSource. Does not remove the TupleBatches in execution so that it can
+   * rewinded.
+   * */
   private int index;
   /** The Schema of the tuples that this operator serves. */
   private final Schema schema;

@@ -5,22 +5,51 @@ import java.util.Iterator;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.accessmethod.SQLiteAccessMethod;
 
+/**
+ * Wait the children to finish and retrieve data from SQLite.
+ * */
 public class SQLiteSQLProcessor extends Operator {
 
+  /**
+   * the children.
+   * */
   private Operator[] children;
+  /**
+   * If all children have meet EOS.
+   * */
   private boolean allChildrenEOS = false;
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
+  /**
+   * Iterate over data from the JDBC database.
+   * */
   private Iterator<TupleBatch> tuples;
+  /**
+   * The output schema.
+   * */
   private final Schema schema;
+  /**
+   * SQL template.
+   * */
   private final String baseSQL;
+  /**
+   * The SQLite DB filepath.
+   * */
   private String databaseFilename;
 
+  /**
+   * Construct a new SQLiteQueryScan object.
+   * 
+   * @param baseSQL the selection query.
+   * @param schema the Schema of the returned tuples.
+   * @param children to wait.
+   */
   public SQLiteSQLProcessor(final String baseSQL, final Schema schema, final Operator[] children) {
     this.baseSQL = baseSQL;
     this.schema = schema;
@@ -28,10 +57,16 @@ public class SQLiteSQLProcessor extends Operator {
   }
 
   @Override
-  public Operator[] getChildren() {
+  public final Operator[] getChildren() {
     return children;
   }
 
+  /**
+   * Wait children to finish.
+   * 
+   * @throws InterruptedException if interrupted.
+   * @throws DbException if any operator processing error occurs
+   * */
   private void waitChildren() throws DbException, InterruptedException {
     if (allChildrenEOS) {
       return;
@@ -44,9 +79,20 @@ public class SQLiteSQLProcessor extends Operator {
     allChildrenEOS = true;
   }
 
+  /**
+   * Wait children to finish.
+   * 
+   * @throws DbException if any operator processing error occurs
+   * */
   private void waitChildrenReady() throws DbException {
     for (final Operator child : children) {
       while (!child.eos() && (child.nextReady() != null)) {
+        try {
+          Thread.sleep(MyriaConstants.SHORT_WAITING_INTERVAL_MS);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          return;
+        }
       }
     }
     boolean tmpAllChildrenEOS = true;
@@ -60,12 +106,12 @@ public class SQLiteSQLProcessor extends Operator {
   }
 
   @Override
-  public void cleanup() {
+  public final void cleanup() {
     tuples = null;
   }
 
   @Override
-  protected TupleBatch fetchNext() throws DbException, InterruptedException {
+  protected final TupleBatch fetchNext() throws DbException, InterruptedException {
     waitChildren();
     if (tuples == null) {
       tuples = SQLiteAccessMethod.tupleBatchIteratorFromQuery(databaseFilename, baseSQL, schema);
@@ -78,10 +124,11 @@ public class SQLiteSQLProcessor extends Operator {
   }
 
   @Override
-  protected TupleBatch fetchNextReady() throws DbException {
+  protected final TupleBatch fetchNextReady() throws DbException {
     try {
       if (allChildrenEOS) {
-        return fetchNext();// use super.fetchNext instead of super.fetchNextReady to avoid direct setEOS call
+        return fetchNext();
+        // use super.fetchNext instead of super.fetchNextReady to avoid direct setEOS call
       } else {
         waitChildrenReady();
         if (allChildrenEOS) {
@@ -96,12 +143,12 @@ public class SQLiteSQLProcessor extends Operator {
   }
 
   @Override
-  public Schema getSchema() {
+  public final Schema getSchema() {
     return schema;
   }
 
   @Override
-  public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+  public final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     final String sqliteDatabaseFilename = (String) execEnvVars.get("sqliteFile");
     if (sqliteDatabaseFilename == null) {
       throw new DbException("Unable to instantiate SQLiteQueryScan on non-sqlite worker");
@@ -111,7 +158,7 @@ public class SQLiteSQLProcessor extends Operator {
   }
 
   @Override
-  public void setChildren(final Operator[] children) {
+  public final void setChildren(final Operator[] children) {
     this.children = children;
   }
 

@@ -17,18 +17,42 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 
-public final class LocalProjectingJoin_RefOnly extends Operator implements Externalizable {
+/**
+ * Join and project.
+ * */
+public final class LocalProjectingJoinRefOnly extends Operator implements Externalizable {
 
+  /**
+   * Pointer data structure for pointing to a tuple in a TupleBatch.
+   * */
   private class IndexedTuple {
+    /**
+     * The row index.
+     * */
     private final int index;
+    /**
+     * The source data TB.
+     * */
     private final TupleBatch tb;
 
+    /**
+     * @param tb the source data TB.
+     * @param index the row index.
+     * */
     public IndexedTuple(final TupleBatch tb, final int index) {
       this.tb = tb;
       this.index = index;
     }
 
-    public boolean compareField(final IndexedTuple another, final int colIndx1, final int colIndx2) {
+    /**
+     * compare the equality of a column of the indexed tuple and another tuple.
+     * 
+     * @return true if equal.
+     * @param another another indexed tuple
+     * @param colIndx1 column index of this indexed tuple
+     * @param colIndx2 column index of another indexed tuple
+     * */
+    public boolean columnEquals(final IndexedTuple another, final int colIndx1, final int colIndx2) {
       final Type type1 = tb.getSchema().getColumnType(colIndx1);
       // type check in query plan?
       final int rowIndx1 = index;
@@ -63,7 +87,7 @@ public final class LocalProjectingJoin_RefOnly extends Operator implements Exter
         return false;
       }
       for (int i = 0; i < tb.getSchema().numColumns(); ++i) {
-        if (!compareField(another, i, i)) {
+        if (!columnEquals(another, i, i)) {
           return false;
         }
       }
@@ -75,10 +99,22 @@ public final class LocalProjectingJoin_RefOnly extends Operator implements Exter
       return tb.hashCode(index);
     }
 
+    /**
+     * compute a hash code for all the columns indexed by colIndx.
+     * 
+     * @param colIndx the columns to compute hash code.
+     * @return the hash code of the columns
+     * */
     public int hashCode4Keys(final int[] colIndx) {
       return tb.hashCode(index, colIndx);
     }
 
+    /**
+     * @return if this index tuple can be equi-joined with another index tuple
+     * @param o another indexed tuple
+     * @param compareIndx1 column indices of this indexed tuple to compare with
+     * @param compareIndx2 column indices of another indexed tuple to compare with
+     * */
     public boolean joinEquals(final Object o, final int[] compareIndx1, final int[] compareIndx2) {
       if (!(o instanceof IndexedTuple)) {
         return false;
@@ -88,7 +124,7 @@ public final class LocalProjectingJoin_RefOnly extends Operator implements Exter
       }
       final IndexedTuple another = (IndexedTuple) o;
       for (int i = 0; i < compareIndx1.length; ++i) {
-        if (!compareField(another, compareIndx1[i], compareIndx2[i])) {
+        if (!columnEquals(another, compareIndx1[i], compareIndx2[i])) {
           return false;
         }
       }
@@ -99,23 +135,63 @@ public final class LocalProjectingJoin_RefOnly extends Operator implements Exter
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
+  /**
+   * The two children.
+   * */
   private Operator child1, child2;
+
+  /**
+   * The result schema.
+   * */
   private Schema outputSchema;
+
+  /**
+   * Comparing column indices of child1.
+   * */
   private int[] compareIndx1;
+  /**
+   * Comparing column indices of child2.
+   * */
   private int[] compareIndx2;
-  private int[] answerColumns1;
-  private int[] answerColumns2;
+
+  /**
+   * Hash table for child1 tuples. { hash code -> list of indexed tuples}.
+   * */
   private HashMap<Integer, List<IndexedTuple>> hashTable1;
+
+  /**
+   * Hash table for child2 tuples. { hash code -> list of indexed tuples}.
+   * */
   private HashMap<Integer, List<IndexedTuple>> hashTable2;
+  /**
+   * Buffer holding the result.
+   * */
   private TupleBatchBuffer ans;
+
+  /**
+   * Projecting columns for child1.
+   * */
+  private int[] answerColumns1;
+  /**
+   * Projecting columns for child2.
+   * */
+  private int[] answerColumns2;
 
   /**
    * For Java serialization.
    */
-  public LocalProjectingJoin_RefOnly() {
+  public LocalProjectingJoinRefOnly() {
   }
 
-  public LocalProjectingJoin_RefOnly(final Operator child1, final int[] compareIndx1, final int[] answerColumns1,
+  /**
+   * @param child1 see field.
+   * @param child2 see field.
+   * @param compareIndx1 comparing column indices for child1
+   * @param compareIndx2 comparing column indices for child2
+   * @param answerColumns1 see field.
+   * @param answerColumns2 see field.
+   * */
+  public LocalProjectingJoinRefOnly(final Operator child1, final int[] compareIndx1, final int[] answerColumns1,
       final Operator child2, final int[] compareIndx2, final int[] answerColumns2) {
     final List<Type> types = new LinkedList<Type>();
     final List<String> names = new LinkedList<String>();
@@ -140,6 +216,10 @@ public final class LocalProjectingJoin_RefOnly extends Operator implements Exter
     ans = new TupleBatchBuffer(outputSchema);
   }
 
+  /**
+   * @param tuple1 join source tuple 1
+   * @param tuple2 join source tuple 2
+   * */
   protected void addToAns(final IndexedTuple tuple1, final IndexedTuple tuple2) {
     int curColumn = 0;
     for (final int i : answerColumns1) {
@@ -161,13 +241,14 @@ public final class LocalProjectingJoin_RefOnly extends Operator implements Exter
     TupleBatch nexttb = ans.popFilled();
     while (nexttb == null) {
       boolean hasNewTuple = false; // might change to EOS instead of hasNext()
-      TupleBatch tb = null;
-      if ((tb = child1.next()) != null) {
+      TupleBatch tb = child1.next();
+      if (tb != null) {
         hasNewTuple = true;
         processChild1TB(tb);
       }
       // child2
-      if ((tb = child2.next()) != null) {
+      tb = child2.next();
+      if (tb != null) {
         hasNewTuple = true;
         processChild2TB(tb);
       }
@@ -203,6 +284,9 @@ public final class LocalProjectingJoin_RefOnly extends Operator implements Exter
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
   }
 
+  /**
+   * @param tbFromChild1 the source tb for processing.
+   * */
   protected void processChild1TB(final TupleBatch tbFromChild1) {
     for (int i = 0; i < tbFromChild1.numTuples(); ++i) { // outputTuples?
       final IndexedTuple tuple1 = new IndexedTuple(tbFromChild1, i);
@@ -226,6 +310,9 @@ public final class LocalProjectingJoin_RefOnly extends Operator implements Exter
     }
   }
 
+  /**
+   * @param tbFromChild2 the source tb for processing.
+   * */
   protected void processChild2TB(final TupleBatch tbFromChild2) {
     for (int i = 0; i < tbFromChild2.numTuples(); ++i) { // outputTuples?
       final IndexedTuple tuple2 = new IndexedTuple(tbFromChild2, i);

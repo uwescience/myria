@@ -12,7 +12,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.group.ChannelGroup;
 
-
 /**
  * A set of channels. Ordered by a comparator.
  * */
@@ -27,6 +26,9 @@ public final class ChannelPrioritySet {
     /** Index of next element to return. */
     private int cursor;
 
+    /**
+     * @param array the data array.
+     * */
     Itr(final Object[] array) {
       this.array = array;
     }
@@ -110,6 +112,9 @@ public final class ChannelPrioritySet {
     }
   }
 
+  /**
+   * @return a read-only collection of all channels within this set.
+   * */
   public Collection<Channel> allChannels() {
     return Collections.unmodifiableCollection(orderedChannels);
   }
@@ -200,6 +205,9 @@ public final class ChannelPrioritySet {
     }
   }
 
+  /**
+   * @return an array representation of all the channels in this set.
+   * */
   public Object[] toArray() {
     synchronized (updateLock) {
       return orderedChannels.toArray();
@@ -236,6 +244,7 @@ public final class ChannelPrioritySet {
    * @throws ArrayStoreException if the runtime type of the specified array is not a supertype of the runtime type of
    *           every element in this queue
    * @throws NullPointerException if the specified array is null
+   * @param <T> the type of the array.
    */
   public <T> T[] toArray(final T[] a) {
     synchronized (updateLock) {

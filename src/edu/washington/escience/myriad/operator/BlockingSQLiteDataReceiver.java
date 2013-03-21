@@ -15,11 +15,24 @@ public final class BlockingSQLiteDataReceiver extends Operator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
-
+  /**
+   * the child.
+   * */
   private Operator child;
+  /**
+   * Path to Sqlite db file.
+   * */
   private String pathToSQLiteDb;
+
+  /**
+   * the relation for querying data from.
+   * */
   private final RelationKey relationKey;
 
+  /**
+   * @param relationKey the source relation.
+   * @param child the child.
+   * */
   public BlockingSQLiteDataReceiver(final RelationKey relationKey, final Operator child) {
     this.child = child;
     this.relationKey = relationKey;
@@ -43,9 +56,10 @@ public final class BlockingSQLiteDataReceiver extends Operator {
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
     TupleBatch tb = null;
-    while (!child.eos() && (tb = child.nextReady()) != null) {
-      // tb = child.next();
+    tb = child.nextReady();
+    while (tb != null) {
       SQLiteUtils.insertIntoSQLite(child.getSchema(), relationKey, pathToSQLiteDb, tb);
+      tb = child.nextReady();
     }
     return null;
   }

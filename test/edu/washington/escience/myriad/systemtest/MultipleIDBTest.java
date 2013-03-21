@@ -13,6 +13,7 @@ import org.junit.Test;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -166,7 +167,8 @@ public class MultipleIDBTest extends SystemTestBase {
     if (isHead) {
       ExchangePairID joinArrayID = ExchangePairID.newID();
       final SQLiteQueryScan scan1 =
-          new SQLiteQueryScan("select * from " + RelationKey.of("test", "test", "r").toString("sqlite"), tableSchema);
+          new SQLiteQueryScan("select * from "
+              + RelationKey.of("test", "test", "r").toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), tableSchema);
       final ShuffleProducer sp1 = new ShuffleProducer(scan1, joinArrayID, WORKER_ID, pf1);
       sc1 = new ShuffleConsumer(tableSchema, joinArrayID, WORKER_ID);
       workerPlan.get(0).add(sp1);
@@ -175,7 +177,8 @@ public class MultipleIDBTest extends SystemTestBase {
       sc1 = new ShuffleConsumer(tableSchema, receivingOpID, WORKER_ID);
     }
     final SQLiteQueryScan scan2 =
-        new SQLiteQueryScan("select * from " + RelationKey.of("test", "test", initName).toString("sqlite"), tableSchema);
+        new SQLiteQueryScan("select * from "
+            + RelationKey.of("test", "test", initName).toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), tableSchema);
     final ExchangePairID beforeIngress1 = ExchangePairID.newID();
     final ShuffleProducer sp2 = new ShuffleProducer(scan2, beforeIngress1, WORKER_ID, pf0);
     final ShuffleConsumer sc2 = new ShuffleConsumer(tableSchema, beforeIngress1, WORKER_ID);
@@ -288,9 +291,9 @@ public class MultipleIDBTest extends SystemTestBase {
     generateJoinPlan(workerPlan, tableSchema, "c0", eoiReceiverOpID3, false, null, receivingBonC, eosReceiverOpID_idb3,
         serverReceiveID, 2);
 
-    final Consumer eoiReceiver1 = new Consumer(IDBInput.eoiReportSchema, eoiReceiverOpID1, WORKER_ID);
-    final Consumer eoiReceiver2 = new Consumer(IDBInput.eoiReportSchema, eoiReceiverOpID2, WORKER_ID);
-    final Consumer eoiReceiver3 = new Consumer(IDBInput.eoiReportSchema, eoiReceiverOpID3, WORKER_ID);
+    final Consumer eoiReceiver1 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID1, WORKER_ID);
+    final Consumer eoiReceiver2 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID2, WORKER_ID);
+    final Consumer eoiReceiver3 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID3, WORKER_ID);
     final EOSController eosController =
         new EOSController(new Consumer[] { eoiReceiver1, eoiReceiver2, eoiReceiver3 }, new ExchangePairID[] {
             eosReceiverOpID_idb1, eosReceiverOpID_idb2, eosReceiverOpID_idb3 }, WORKER_ID);
@@ -449,9 +452,9 @@ public class MultipleIDBTest extends SystemTestBase {
     generateJoinPlan(workerPlan, tableSchema, "c0", eoiReceiverOpID3, false, receivingConA, receivingBonC,
         eosReceiverOpID_idb3, serverReceiveID, 2);
 
-    final Consumer eoiReceiver1 = new Consumer(IDBInput.eoiReportSchema, eoiReceiverOpID1, WORKER_ID);
-    final Consumer eoiReceiver2 = new Consumer(IDBInput.eoiReportSchema, eoiReceiverOpID2, WORKER_ID);
-    final Consumer eoiReceiver3 = new Consumer(IDBInput.eoiReportSchema, eoiReceiverOpID3, WORKER_ID);
+    final Consumer eoiReceiver1 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID1, WORKER_ID);
+    final Consumer eoiReceiver2 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID2, WORKER_ID);
+    final Consumer eoiReceiver3 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID3, WORKER_ID);
     final EOSController eosController =
         new EOSController(new Consumer[] { eoiReceiver1, eoiReceiver2, eoiReceiver3 }, new ExchangePairID[] {
             eosReceiverOpID_idb1, eosReceiverOpID_idb2, eosReceiverOpID_idb3 }, WORKER_ID);

@@ -21,15 +21,50 @@ import edu.washington.escience.myriad.operator.Operator;
  */
 public class SingleGroupByAggregate extends Operator {
 
+  /**
+   * default serialization ID.
+   * */
   private static final long serialVersionUID = 1L;
 
+  /**
+   * result schema.
+   * */
   private final Schema schema;
+  /**
+   * the child.
+   * */
   private Operator child;
+
+  /**
+   * compute multiple aggregates in the same time. The columns to compute the aggregates are
+   * {@link SingleGroupByAggregate#afields}.
+   * */
   private final Aggregator[] agg;
-  private final int[] afields; // Compute aggregate on each of the afields
-  private final int gfield; // group by fields
-  private final HashMap<Object, Aggregator[]> groupAggs;
-  private final Map<Object, Pair<Object, TupleBatchBuffer>> groupedTupleBatches;
+
+  /**
+   * Compute aggregate on each of the {@link SingleGroupByAggregate#afields}, with the corresponding {@link Aggregator}
+   * in @link SingleGroupByAggregate#agg}.
+   * */
+  private final int[] afields;
+
+  /**
+   * The group by column.
+   * */
+  private final int gColumn;
+
+  /**
+   * The buffer storing in-progress group by results. {groupby-column-value -> Aggregator Array}
+   * */
+  private transient HashMap<Object, Aggregator[]> groupAggs;
+
+  /**
+   * {groupby-column-value -> }.
+   * */
+  private transient Map<Object, Pair<Object, TupleBatchBuffer>> groupedTupleBatches;
+
+  /**
+   * storing results after group by is done.
+   * */
   private transient TupleBatchBuffer resultBuffer;
 
   /**
@@ -59,10 +94,8 @@ public class SingleGroupByAggregate extends Operator {
 
     this.child = child;
     this.afields = afields;
-    this.gfield = gfield;
+    this.gColumn = gfield;
     agg = new Aggregator[aggOps.length];
-    groupAggs = new HashMap<Object, Aggregator[]>();
-    groupedTupleBatches = new HashMap<Object, Pair<Object, TupleBatchBuffer>>();
 
     int idx = 0;
     for (final int afield : afields) {
@@ -106,12 +139,16 @@ public class SingleGroupByAggregate extends Operator {
 
   @Override
   protected final void cleanup() throws DbException {
-    groupAggs.clear();
+    groupAggs = new HashMap<Object, Aggregator[]>();
+    groupedTupleBatches = new HashMap<Object, Pair<Object, TupleBatchBuffer>>();
     resultBuffer = null;
   }
 
-  private void processTupleBatch(TupleBatch tb) {
-    final Set<Pair<Object, TupleBatchBuffer>> readyTBB = tb.groupby(gfield, groupedTupleBatches);
+  /**
+   * @param tb the TupleBatch to be processed.
+   * */
+  private void processTupleBatch(final TupleBatch tb) {
+    final Set<Pair<Object, TupleBatchBuffer>> readyTBB = tb.groupby(gColumn, groupedTupleBatches);
     if (readyTBB != null) {
       for (final Pair<Object, TupleBatchBuffer> p : readyTBB) {
         final Object groupColumnValue = p.getKey();
@@ -135,6 +172,9 @@ public class SingleGroupByAggregate extends Operator {
     }
   }
 
+  /**
+   * Finish processing, drain the buffers.
+   * */
   private void processEnd() {
     for (final Pair<Object, TupleBatchBuffer> p : groupedTupleBatches.values()) {
       final Object groupColumnValue = p.getKey();
@@ -156,14 +196,17 @@ public class SingleGroupByAggregate extends Operator {
     }
   }
 
+  /**
+   * @param resultBuffer where the results are stored.
+   * */
   private void generateResult(final TupleBatchBuffer resultBuffer) {
 
     for (final Map.Entry<Object, Aggregator[]> e : groupAggs.entrySet()) {
       final Object groupByValue = e.getKey();
-      final Aggregator[] agg = e.getValue();
+      final Aggregator[] aggLocal = e.getValue();
       resultBuffer.put(0, groupByValue);
       int fromIndex = 1;
-      for (final Aggregator element : agg) {
+      for (final Aggregator element : aggLocal) {
         element.getResult(resultBuffer, fromIndex);
         fromIndex += element.getResultSchema().numColumns();
       }
@@ -174,20 +217,24 @@ public class SingleGroupByAggregate extends Operator {
    * Returns the next tuple. If there is a group by field, then the first field is the field by which we are grouping,
    * and the second field is the result of computing the aggregate, If there is no group by field, then the result tuple
    * should contain one field representing the result of the aggregate. Should return null if there are no more tuples.
+   * 
+   * @throws DbException if processing error occurs.
+   * @throws InterruptedException if interrupted.
+   * @return next TB.
    */
   @Override
   protected final TupleBatch fetchNext() throws DbException, InterruptedException {
     if (child.eos()) {
-      return null;
+      return resultBuffer.popAny();
     }
+
     TupleBatch tb = null;
     while ((tb = child.next()) != null) {
       processTupleBatch(tb);
     }
     processEnd();
-    TupleBatchBuffer resultBuffer = new TupleBatchBuffer(schema);
+    resultBuffer = new TupleBatchBuffer(schema);
     generateResult(resultBuffer);
-    // setEOS();
     return resultBuffer.popAny();
   }
 
@@ -223,12 +270,17 @@ public class SingleGroupByAggregate extends Operator {
     return schema;
   }
 
-  public final int groupByField() {
-    return gfield;
+  /**
+   * @return the group by column.
+   * */
+  public final int getGroupByColumn() {
+    return gColumn;
   }
 
   @Override
-  protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+  protected final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+    groupAggs = new HashMap<Object, Aggregator[]>();
+    groupedTupleBatches = new HashMap<Object, Pair<Object, TupleBatchBuffer>>();
     resultBuffer = new TupleBatchBuffer(schema);
   }
 

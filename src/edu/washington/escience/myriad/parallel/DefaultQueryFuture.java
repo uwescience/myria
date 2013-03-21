@@ -29,17 +29,45 @@ import edu.washington.escience.myriad.DbException;
  */
 public class DefaultQueryFuture implements QueryFuture {
 
-  private static final Logger logger = LoggerFactory.getLogger(DefaultQueryFuture.class);
+  /**
+   * logger.
+   * */
+  private static final Logger LOGGER = LoggerFactory.getLogger(DefaultQueryFuture.class);
 
+  /**
+   * The cancelled cause.
+   * */
   private static final Throwable CANCELLED = new Throwable();
 
+  /**
+   * The owner query of this future, i.e. the future is for an operation on the query.
+   * */
   private final QueryPartition query;
+
+  /**
+   * if the future is cancellable.
+   * */
   private final boolean cancellable;
 
+  /**
+   * The first listener of all the list of listeners.
+   * */
   private QueryFutureListener firstListener;
+  /**
+   * All other listeners.
+   * */
   private List<QueryFutureListener> otherListeners;
+  /**
+   * Listeners for progress events.
+   * */
   private List<QueryFutureProgressListener> progressListeners;
+  /**
+   * If the action is done.
+   * */
   private boolean done;
+  /**
+   * If the action failes, what's the cause.
+   * */
   private Throwable cause;
 
   /**
@@ -168,20 +196,20 @@ public class DefaultQueryFuture implements QueryFuture {
    * @throws DbException any error will be wrapped into a DbException
    * */
   private void rethrowIfFailed0() throws DbException {
-    Throwable cause = getCause();
-    if (cause == null) {
+    Throwable causeLocal = getCause();
+    if (causeLocal == null) {
       return;
     }
 
-    if (cause instanceof RuntimeException) {
-      throw (RuntimeException) cause;
+    if (causeLocal instanceof RuntimeException) {
+      throw (RuntimeException) causeLocal;
     }
 
-    if (cause instanceof Error) {
-      throw (Error) cause;
+    if (causeLocal instanceof Error) {
+      throw (Error) causeLocal;
     }
 
-    throw new DbException(cause);
+    throw new DbException(causeLocal);
   }
 
   @Override
@@ -240,12 +268,23 @@ public class DefaultQueryFuture implements QueryFuture {
     }
   }
 
+  /**
+   * Wait the action to be done for at most timeoutNanos nanoseconds.
+   * 
+   * @param timeoutNanos timeout in nanoseconds
+   * @param interruptable true to throw the InterruptedException if interrupted, otherwise just set the interrupted bit.
+   * @throws InterruptedException if interrupted and is interruptable.
+   * @return if the action is done within timeout.
+   */
   private boolean await0(final long timeoutNanos, final boolean interruptable) throws InterruptedException {
     if (interruptable && Thread.interrupted()) {
       throw new InterruptedException();
     }
 
-    long startTime = timeoutNanos <= 0 ? 0 : System.nanoTime();
+    long startTime = 0;
+    if (timeoutNanos > 0) {
+      startTime = System.nanoTime();
+    }
     long waitTime = timeoutNanos;
     boolean interrupted = false;
 
@@ -349,7 +388,10 @@ public class DefaultQueryFuture implements QueryFuture {
     return true;
   }
 
-  private final void notifyListeners() {
+  /**
+   * notify the listeners.
+   * */
+  private void notifyListeners() {
     // This method doesn't need synchronization because:
     // 1) This method is always called after synchronized (this) block.
     // Hence any listener list modification happens-before this method.
@@ -368,12 +410,17 @@ public class DefaultQueryFuture implements QueryFuture {
     }
   }
 
-  private final void notifyListener(final QueryFutureListener l) {
+  /**
+   * Notify a single listener.
+   * 
+   * @param l the listener to be notified.
+   * */
+  private void notifyListener(final QueryFutureListener l) {
     try {
       l.operationComplete(this);
     } catch (Throwable t) {
-      if (logger.isWarnEnabled()) {
-        logger.warn("An exception was thrown by " + QueryFutureListener.class.getSimpleName() + '.', t);
+      if (LOGGER.isWarnEnabled()) {
+        LOGGER.warn("An exception was thrown by " + QueryFutureListener.class.getSimpleName() + '.', t);
       }
     }
   }
@@ -387,13 +434,13 @@ public class DefaultQueryFuture implements QueryFuture {
         return false;
       }
 
-      Collection<QueryFutureProgressListener> progressListeners = this.progressListeners;
-      if (progressListeners == null || progressListeners.isEmpty()) {
+      Collection<QueryFutureProgressListener> progressListenersLocal = progressListeners;
+      if (progressListenersLocal == null || progressListenersLocal.isEmpty()) {
         // Nothing to notify - no need to create an empty array.
         return true;
       }
 
-      plisteners = progressListeners.toArray(new QueryFutureProgressListener[progressListeners.size()]);
+      plisteners = progressListenersLocal.toArray(new QueryFutureProgressListener[progressListenersLocal.size()]);
     }
 
     for (QueryFutureProgressListener pl : plisteners) {
@@ -405,6 +452,12 @@ public class DefaultQueryFuture implements QueryFuture {
 
   /**
    * Notify progress listeners.
+   * 
+   * @param l the listener
+   * @param amount the amount of progress finished in the most recent operation
+   * @param current the current finished amount
+   * @param total the total amount to finish
+   * 
    * */
   private void notifyProgressListener(final QueryFutureProgressListener l, final long amount, final long current,
       final long total) {
@@ -412,8 +465,8 @@ public class DefaultQueryFuture implements QueryFuture {
     try {
       l.operationProgressed(this, amount, current, total);
     } catch (Throwable t) {
-      if (logger.isWarnEnabled()) {
-        logger.warn("An exception was thrown by " + QueryFutureProgressListener.class.getSimpleName() + '.', t);
+      if (LOGGER.isWarnEnabled()) {
+        LOGGER.warn("An exception was thrown by " + QueryFutureProgressListener.class.getSimpleName() + '.', t);
       }
     }
   }

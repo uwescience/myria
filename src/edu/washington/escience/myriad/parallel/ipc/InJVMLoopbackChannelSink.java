@@ -14,24 +14,20 @@ import org.slf4j.LoggerFactory;
 /**
  * ChannelSink implementation for InJVM channels. <br>
  * All the messages reaching the sink will automatically be pushed into the associated @{link MessageChannelHandler}.
+ * 
  * */
-public class InJVMLoopbackChannelSink<M> extends AbstractChannelSink {
+public class InJVMLoopbackChannelSink extends AbstractChannelSink {
 
   /** The logger for this class. */
   protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(InJVMLoopbackChannelSink.class.getName());
 
-  private final MessageChannelHandler<M> messageProcessor;
-  private final int myIPCID;
-  private final LocalAddress pseudoServerAddress = new LocalAddress(LocalAddress.EPHEMERAL);
+  /**
+   * A pseudo server address for use as the server address of all {@link InJVMChannel}s.
+   * */
+  private static final LocalAddress PSEUDO_SERVER_ADDRESS = new LocalAddress(LocalAddress.EPHEMERAL);
 
-  public InJVMLoopbackChannelSink(final MessageChannelHandler<M> processor, final int myIPCID) {
-    this.messageProcessor = processor;
-    this.myIPCID = myIPCID;
-  }
-
-  @SuppressWarnings("unchecked")
   @Override
-  public void eventSunk(final ChannelPipeline pipeline, final ChannelEvent e) throws Exception {
+  public final void eventSunk(final ChannelPipeline pipeline, final ChannelEvent e) throws Exception {
     InJVMChannel channel = (InJVMChannel) e.getChannel();
     ChannelFuture future = e.getFuture();
 
@@ -59,7 +55,7 @@ public class InJVMLoopbackChannelSink<M> extends AbstractChannelSink {
             break;
           case CONNECTED:
             if (value != null) {
-              Channels.fireChannelConnected(channel, this.pseudoServerAddress);
+              Channels.fireChannelConnected(channel, PSEUDO_SERVER_ADDRESS);
               future.setSuccess();
             } else {
               channel.closeNow(future);

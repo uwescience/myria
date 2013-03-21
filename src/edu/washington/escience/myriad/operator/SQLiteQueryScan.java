@@ -10,13 +10,29 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.accessmethod.SQLiteAccessMethod;
 
+/**
+ * Push a select query down into SQLite and scan over the query result.
+ * */
 public class SQLiteQueryScan extends LeafOperator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
+  /**
+   * Iterate over data from the SQLite database.
+   * */
   private transient Iterator<TupleBatch> tuples;
+  /**
+   * The result schema.
+   * */
   private final Schema schema;
+  /**
+   * the SQL template.
+   * */
   private final String baseSQL;
+
+  /**
+   * The SQLite DB filepath.
+   * */
   private transient String databaseFilename;
 
   /**
@@ -33,12 +49,12 @@ public class SQLiteQueryScan extends LeafOperator {
   }
 
   @Override
-  public void cleanup() {
+  public final void cleanup() {
     tuples = null;
   }
 
   @Override
-  protected TupleBatch fetchNext() throws DbException, InterruptedException {
+  protected final TupleBatch fetchNext() throws DbException, InterruptedException {
     if (tuples == null) {
       tuples = SQLiteAccessMethod.tupleBatchIteratorFromQuery(databaseFilename, baseSQL, schema);
     }
@@ -50,7 +66,7 @@ public class SQLiteQueryScan extends LeafOperator {
   }
 
   @Override
-  protected TupleBatch fetchNextReady() throws DbException {
+  protected final TupleBatch fetchNextReady() throws DbException {
     try {
       TupleBatch tb = fetchNext();
       if (tb == null) {
@@ -64,12 +80,12 @@ public class SQLiteQueryScan extends LeafOperator {
   }
 
   @Override
-  public Schema getSchema() {
+  public final Schema getSchema() {
     return schema;
   }
 
   @Override
-  public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+  public final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     final String sqliteDatabaseFilename = (String) execEnvVars.get("sqliteFile");
     if (sqliteDatabaseFilename == null) {
       throw new DbException("Unable to instantiate SQLiteQueryScan on non-sqlite worker");
@@ -79,7 +95,7 @@ public class SQLiteQueryScan extends LeafOperator {
   }
 
   @Override
-  public String toString() {
+  public final String toString() {
     return "SQLiteQueryScan, baseSQL: " + baseSQL;
   }
 }

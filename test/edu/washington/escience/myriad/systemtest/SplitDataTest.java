@@ -9,6 +9,7 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 
+import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -69,7 +70,8 @@ public class SplitDataTest extends SystemTestBase {
     /* Create the worker plan: QueryScan with count, then send it to master. */
     Schema countResultSchema = new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("localCount"));
     final SQLiteQueryScan scanCount =
-        new SQLiteQueryScan("SELECT COUNT(*) FROM " + tuplesRRKey.toString("sqlite"), countResultSchema);
+        new SQLiteQueryScan("SELECT COUNT(*) FROM " + tuplesRRKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE),
+            countResultSchema);
 
     final ExchangePairID collectId = ExchangePairID.newID();
     final CollectProducer send = new CollectProducer(scanCount, collectId, 0);

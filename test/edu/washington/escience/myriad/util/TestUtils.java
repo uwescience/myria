@@ -297,7 +297,7 @@ public final class TestUtils {
     ChannelPipelineFactory inJVMPipelineFactory = new TestIPCPipelineFactories.InJVMPipelineFactory(h);
 
     connectionPool.start(serverChannelFactory, serverPipelineFactory, clientChannelFactory, clientPipelineFactory,
-        inJVMPipelineFactory, new InJVMLoopbackChannelSink<TransportMessage>(h, myID));
+        inJVMPipelineFactory, new InJVMLoopbackChannelSink());
     return connectionPool;
   }
 

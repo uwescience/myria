@@ -156,7 +156,12 @@ public final class QueryResource {
     return ret;
   }
 
-  private static RootOperator[] deserializeJsonLocalPlans(Object jsonLocalPlanList) throws Exception {
+  /**
+   * @return the deserialized query plan.
+   * @param jsonLocalPlanList the json representation of a query plan.
+   * @throws Exception if any error occurs.
+   * */
+  private static RootOperator[] deserializeJsonLocalPlans(final Object jsonLocalPlanList) throws Exception {
     /* Better be a List */
     if (!(jsonLocalPlanList instanceof List)) {
       throw new ClassCastException("argument is not a List of Operator definitions.");
@@ -170,6 +175,11 @@ public final class QueryResource {
     return ret;
   }
 
+  /**
+   * @param jsonLocalPlan the json representation of a RootOperator-rooted operator tree.
+   * @return the deserialized operator tree.
+   * @throws Exception if any error occurs.
+   * */
   private static RootOperator deserializeJsonLocalPlan(final Object jsonLocalPlan) throws Exception {
     /* Better be a List */
     if (!(jsonLocalPlan instanceof List)) {
@@ -194,6 +204,12 @@ public final class QueryResource {
     return (RootOperator) op;
   }
 
+  /**
+   * @param jsonOperator the JSON representation of an operator.
+   * @param operators a dictionary for re-linking the operators to form the operator tree.
+   * @return the deserialized operator (sub tree).
+   * @throws Exception if any error occurs.
+   * */
   private static Operator deserializeJsonOperator(final Map<String, Object> jsonOperator,
       final Map<String, Operator> operators) throws Exception {
     /* Better have an operator type */
@@ -265,9 +281,11 @@ public final class QueryResource {
           throw new WebApplicationException(Response.status(Status.INTERNAL_SERVER_ERROR).build());
         }
         if (schema == null) {
-          throw new IOException("Specified relation " + relationKey + " does not exist.");
+          throw new IOException("Specified relation " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE)
+              + " does not exist.");
         }
-        return new SQLiteQueryScan("SELECT * from " + relationKey.toString("sqlite"), schema);
+        return new SQLiteQueryScan("SELECT * from " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE),
+            schema);
       }
 
       case "Consumer": {
@@ -293,7 +311,7 @@ public final class QueryResource {
 
       case "LocalMultiwayConsumer": {
         Schema schema = deserializeSchema(jsonOperator, "arg_schema");
-        int workerID = deserializeInt(jsonOperator, "arg_workerID");
+        // int workerID = deserializeInt(jsonOperator, "arg_workerID");
         ExchangePairID operatorID = ExchangePairID.fromExisting(deserializeLong(jsonOperator, "arg_operatorID"));
         return new LocalMultiwayConsumer(schema, operatorID);
       }
@@ -331,8 +349,8 @@ public final class QueryResource {
       }
 
       case "IDBInput": {
-        Schema schema = deserializeSchema(jsonOperator, "arg_schema");
-        int selfWorkerID = deserializeInt(jsonOperator, "arg_workerID");
+        // Schema schema = deserializeSchema(jsonOperator, "arg_schema");
+        // int selfWorkerID = deserializeInt(jsonOperator, "arg_workerID");
         int selfIDBID = deserializeInt(jsonOperator, "arg_idbID");
         ExchangePairID operatorID = ExchangePairID.fromExisting(deserializeLong(jsonOperator, "arg_operatorID"));
         int controllerWorkerID = deserializeInt(jsonOperator, "arg_controllerWorkerID");
@@ -352,7 +370,7 @@ public final class QueryResource {
         String childName = deserializeString(jsonOperator, "arg_child");
         Consumer child = (Consumer) operators.get(childName);
         Objects.requireNonNull(child, "IDBInput child Operator " + childName + " not previously defined");
-        ExchangePairID operatorID = ExchangePairID.fromExisting(deserializeLong(jsonOperator, "arg_operatorID"));
+        // ExchangePairID operatorID = ExchangePairID.fromExisting(deserializeLong(jsonOperator, "arg_operatorID"));
         long[] tmpOpIDs = deserializeLongArray(jsonOperator, "arg_idbOpIDs", false);
         ExchangePairID[] idbOpIDs = new ExchangePairID[tmpOpIDs.length];
         for (int i = 0; i < tmpOpIDs.length; ++i) {
@@ -370,7 +388,7 @@ public final class QueryResource {
       }
 
       case "Merge": {
-        Schema schema = deserializeSchema(jsonOperator, "arg_schema");
+        // Schema schema = deserializeSchema(jsonOperator, "arg_schema");
         String child1Name = deserializeString(jsonOperator, "arg_child1");
         Operator child1 = operators.get(child1Name);
         Objects.requireNonNull(child1, "Merge child1 Operator " + child1Name + " not previously defined");
@@ -550,6 +568,7 @@ public final class QueryResource {
    * 
    * @param map the JSON map.
    * @param field the field containing the list.
+   * @param numWorker number of workers.
    * @return the schema, or null if the field is missing and optional is true.
    */
   private static PartitionFunction<?, ?> deserializePF(final Map<String, Object> map, final String field,

@@ -62,7 +62,7 @@ public class SQLiteAccessMethodTest {
         public void run() {
           final Iterator<TupleBatch> it =
               SQLiteAccessMethod.tupleBatchIteratorFromQuery(dbFile.getAbsolutePath(), "select * from "
-                  + testtableKey.toString("sqlite"), schema);
+                  + testtableKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), schema);
           while (it.hasNext()) {
             it.next();
           }
@@ -128,7 +128,7 @@ public class SQLiteAccessMethodTest {
         public void run() {
           final Iterator<TupleBatch> it =
               SQLiteAccessMethod.tupleBatchIteratorFromQuery(dbFile.getAbsolutePath(), "select * from "
-                  + testtableKeys.get(j % 2).toString("sqlite"), schema);
+                  + testtableKeys.get(j % 2).toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), schema);
 
           while (it.hasNext()) {
             it.next();

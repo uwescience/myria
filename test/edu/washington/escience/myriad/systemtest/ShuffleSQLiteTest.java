@@ -7,6 +7,7 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 
+import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -63,8 +64,10 @@ public class ShuffleSQLiteTest extends SystemTestBase {
     final PartitionFunction<String, Integer> pf = new SingleFieldHashPartitionFunction(numPartition);
     pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1); // partition by name
 
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan("select * from " + testtable1Key.toString("sqlite"), schema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan("select * from " + testtable2Key.toString("sqlite"), schema);
+    final SQLiteQueryScan scan1 =
+        new SQLiteQueryScan("select * from " + testtable1Key.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), schema);
+    final SQLiteQueryScan scan2 =
+        new SQLiteQueryScan("select * from " + testtable2Key.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), schema);
     final ShuffleProducer sp1 = new ShuffleProducer(scan1, shuffle1ID, WORKER_ID, pf);
 
     final ShuffleProducer sp2 = new ShuffleProducer(scan2, shuffle2ID, WORKER_ID, pf);
@@ -76,9 +79,11 @@ public class ShuffleSQLiteTest extends SystemTestBase {
     final BlockingSQLiteDataReceiver buffer2 = new BlockingSQLiteDataReceiver(temptable2Key, sc2);
 
     final SQLiteSQLProcessor ssp =
-        new SQLiteSQLProcessor("select * from " + temptable1Key.toString("sqlite") + " inner join "
-            + temptable2Key.toString("sqlite") + " on " + temptable1Key.toString("sqlite") + ".name="
-            + temptable2Key.toString("sqlite") + ".name", outputSchema, new Operator[] { buffer1, buffer2 });
+        new SQLiteSQLProcessor("select * from " + temptable1Key.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE)
+            + " inner join " + temptable2Key.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE) + " on "
+            + temptable1Key.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE) + ".name="
+            + temptable2Key.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE) + ".name", outputSchema, new Operator[] {
+            buffer1, buffer2 });
     final CollectProducer cp = new CollectProducer(ssp, serverReceiveID, MASTER_ID);
 
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();

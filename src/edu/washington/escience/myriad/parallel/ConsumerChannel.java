@@ -11,17 +11,30 @@ import org.jboss.netty.channel.Channel;
  * */
 public class ConsumerChannel {
 
+  /**
+   * @param ownerTask the task who owns the output channel.
+   * @param consumer the owner consumer operator.
+   * @param remoteID from which worker the input data comes.
+   * */
   public ConsumerChannel(final QuerySubTreeTask ownerTask, final Consumer consumer, final int remoteID) {
     this(ownerTask, consumer, new ExchangeChannelID(consumer.getOperatorID().getLong(), remoteID));
   }
 
+  /**
+   * @param ownerTask the task who owns the output channel.
+   * @param consumer the owner consumer operator.
+   * @param ecID exchange channel ID.
+   * */
   public ConsumerChannel(final QuerySubTreeTask ownerTask, final Consumer consumer, final ExchangeChannelID ecID) {
     id = ecID;
     this.ownerTask = ownerTask;
     op = consumer;
   }
 
-  final Consumer op;
+  /**
+   * the operator to whom this channel serves as an input.
+   * */
+  private final Consumer op;
 
   /**
    * Physical channel for IO.
@@ -36,21 +49,49 @@ public class ConsumerChannel {
   /**
    * owner task.
    * */
-  final QuerySubTreeTask ownerTask;
+  private final QuerySubTreeTask ownerTask;
 
-  public Channel getIOChannel() {
+  /**
+   * @return the owner task
+   * */
+  public final QuerySubTreeTask getOwnerTask() {
+    return ownerTask;
+  }
+
+  /**
+   * @return the owner task
+   * */
+  public final Consumer getOwnerConsumer() {
+    return op;
+  }
+
+  /**
+   * @return the associated io channel.
+   * */
+  public final Channel getIOChannel() {
     return ioChannel;
   }
 
-  public void attachIOChannel(final Channel ioChannel) {
+  /**
+   * Attach an IO channel.
+   * 
+   * @param ioChannel the IO channel to associate.
+   * */
+  public final void attachIOChannel(final Channel ioChannel) {
     this.ioChannel = ioChannel;
   }
 
-  public void dettachIOChannel() {
+  /**
+   * Detach IO channel.
+   * */
+  public final void dettachIOChannel() {
     ioChannel = null;
   }
 
-  public ExchangeChannelID getExchangeChannelID() {
+  /**
+   * @return my logical exchange channel ID.
+   * */
+  public final ExchangeChannelID getExchangeChannelID() {
     return id;
   }
 }

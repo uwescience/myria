@@ -10,6 +10,7 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 
+import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.MyriaSystemConfigKeys;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
@@ -70,7 +71,8 @@ public class FlowControlTest extends SystemTestBase {
     final ExchangePairID worker1ReceiveID = ExchangePairID.newID();
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
 
-    final SQLiteQueryScan scanTable = new SQLiteQueryScan("select * from " + testtableKey.toString("sqlite"), schema);
+    final SQLiteQueryScan scanTable =
+        new SQLiteQueryScan("select * from " + testtableKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), schema);
 
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
     final CollectProducer cp1 = new CollectProducer(scanTable, worker1ReceiveID, WORKER_ID[1]);

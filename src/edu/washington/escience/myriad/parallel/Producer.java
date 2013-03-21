@@ -14,6 +14,10 @@ import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myriad.util.IPCUtils;
 
+/**
+ * A Producer is the counterpart of a consumer. It dispatch data using IPC channels to Consumers. Like network socket,
+ * Each (workerID, operatorID) pair is a logical destination.
+ * */
 public abstract class Producer extends RootOperator {
 
   /** Required for Java serialization. */
@@ -24,42 +28,76 @@ public abstract class Producer extends RootOperator {
    * 
    */
   private transient IPCConnectionPool connectionPool;
+  /**
+   * the netty channels doing the true IPC IO.
+   * */
   private transient Channel[] ioChannels;
-  protected transient volatile long[] outputSeq;
+
+  /**
+   * output seq num. For fault tolerance.
+   * */
+  private transient volatile long[] outputSeq;
+
+  /**
+   * output buffers.
+   * */
   private transient TupleBatchBuffer[] buffers;
 
+  /**
+   * IPC Operator IDs.
+   * */
   private final ExchangePairID[] operatorIDs;
+
+  /**
+   * Destination workers.
+   * */
   private final int[] destinationWorkerIDs;
 
   @Override
-  public void rewind(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+  public final void rewind(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     buffers = new TupleBatchBuffer[operatorIDs.length];
   }
 
   /**
    * no worker means to the owner worker.
+   * 
+   * @param child the child providing data.
+   * @param oIDs operator IDs.
    * */
   public Producer(final Operator child, final ExchangePairID[] oIDs) {
-    this(child, oIDs, expandArray(new int[oIDs.length], -1), true);
+    this(child, oIDs, arrayFillAndReturn(new int[oIDs.length], -1), true);
   }
 
   /**
    * the same oID to different workers (shuffle or copy).
+   * 
+   * @param oID the operator ID.
+   * @param child the child providing data.
+   * @param destinationWorkerIDs worker IDs.
+   * 
    * */
   public Producer(final Operator child, final ExchangePairID oID, final int[] destinationWorkerIDs) {
-    this(child, (ExchangePairID[]) expandArray(new ExchangePairID[destinationWorkerIDs.length], oID),
+    this(child, (ExchangePairID[]) arrayFillAndReturn(new ExchangePairID[destinationWorkerIDs.length], oID),
         destinationWorkerIDs, true);
   }
 
   /**
    * same worker with different oIDs (multiway copy).
+   * 
+   * @param oIDs the operator IDs.
+   * @param child the child providing data.
+   * @param destinationWorkerID the worker ID.
    * */
   public Producer(final Operator child, final ExchangePairID[] oIDs, final int destinationWorkerID) {
-    this(child, oIDs, expandArray(new int[oIDs.length], Integer.valueOf(destinationWorkerID)), true);
+    this(child, oIDs, arrayFillAndReturn(new int[oIDs.length], Integer.valueOf(destinationWorkerID)), true);
   }
 
   /**
    * A single oID to a single worker (collect).
+   * 
+   * @param oID the operator ID.
+   * @param child the child providing data.
+   * @param destinationWorkerID the worker ID.
    * */
   public Producer(final Operator child, final ExchangePairID oID, final int destinationWorkerID) {
     this(child, new ExchangePairID[] { oID }, new int[] { destinationWorkerID }, true);
@@ -78,6 +116,12 @@ public abstract class Producer extends RootOperator {
    *    Each combination of oID and workerID is a producer channel.
    *    The number of producer channels is oID.length*destinationWorkerIDs.length
    * </pre>
+   * 
+   * 
+   * @param oIDs the operator IDs.
+   * @param child the child providing data.
+   * @param destinationWorkerIDs the worker IDs.
+   * @param isOne2OneMapping choosing the mode.
    * 
    * */
   public Producer(final Operator child, final ExchangePairID[] oIDs, final int[] destinationWorkerIDs,
@@ -127,16 +171,30 @@ public abstract class Producer extends RootOperator {
     outputSeq = null;
   }
 
-  protected IPCConnectionPool getConnectionPool() {
+  /**
+   * @return output seq num of all the output channels.
+   * */
+  public final long[] getOutputSeqNum() {
+    return outputSeq;
+  }
+
+  /**
+   * @return my connection pool.
+   * */
+  protected final IPCConnectionPool getConnectionPool() {
     return connectionPool;
   }
 
+  /**
+   * @return destination operatorIds.
+   * */
   public final ExchangePairID[] operatorIDs() {
     return operatorIDs;
   }
 
   /**
    * @param myWorkerID for parsing self-references.
+   * @return destination worker IDs.
    * */
   public final int[] getDestinationWorkerIDs(final int myWorkerID) {
     int[] result = new int[destinationWorkerIDs.length];
@@ -152,24 +210,47 @@ public abstract class Producer extends RootOperator {
     return result;
   }
 
-  private final static Object[] expandArray(Object[] arr, Object e) {
+  /**
+   * Fill object array.
+   * 
+   * @return the filled array.
+   * @param arr the array to fill
+   * @param e the element to fill.
+   * */
+  private static Object[] arrayFillAndReturn(final Object[] arr, final Object e) {
     Arrays.fill(arr, e);
     return arr;
   }
 
-  private final static int[] expandArray(int[] arr, int e) {
+  /**
+   * Fill int array.
+   * 
+   * @return the filled array.
+   * @param arr the array to fill
+   * @param e the element to fill.
+   * */
+  private static int[] arrayFillAndReturn(final int[] arr, final int e) {
     Arrays.fill(arr, e);
     return arr;
   }
 
+  /**
+   * @return the IO channels.
+   * */
   protected final Channel[] getChannels() {
     return ioChannels;
   }
 
+  /**
+   * @return the buffers.
+   * */
   protected final TupleBatchBuffer[] getBuffers() {
     return buffers;
   }
 
+  /**
+   * @return the destination operator IDs.
+   * */
   protected final ExchangePairID[] getOperatorIDs() {
     return operatorIDs;
   }

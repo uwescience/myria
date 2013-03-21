@@ -24,23 +24,70 @@ import edu.washington.escience.myriad.parallel.ExchangePairID;
 import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myriad.util.IPCUtils;
 
+/**
+ * Together with the EOSController, the IDBInput controls what to serve into an iteration and when to stop an iteration.
+ * */
 public class IDBInput extends Operator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
-  private Operator initialIDBInput, iterationInput;
+  /**
+   * Initial IDB input.
+   * */
+  private Operator initialIDBInput;
+
+  /**
+   * input from iteration.
+   * */
+  private Operator iterationInput;
+
+  /**
+   * the Consumer who is responsible for receiving EOS notification from the EOSController.
+   * */
   private Consumer eosControllerInput;
 
+  /**
+   * The workerID where the EOSController is running.
+   * */
   private final int controllerWorkerID;
+
+  /**
+   * The operator ID to which the EOI report should be sent.
+   * */
   private final ExchangePairID controllerOpID;
+
+  /**
+   * The index of this IDBInput. This is to differentiate the IDBInput operators in the same worker. Note that this
+   * number is the index, it must start from 0 and to (The number of IDBInput operators in a worker -1)
+   * */
   private final int selfIDBIdx;
 
-  private transient boolean child1Ended;
+  /**
+   * Indicating if the initial input is ended.
+   * */
+  private transient boolean initialInputEnded;
+
+  /**
+   * Indicating if the number of tuples received from either the initialInput child or the iteration input child is 0
+   * since last EOI.
+   * */
   private transient boolean emptyDelta;
+  /**
+   * For IPC communication. Specifically, for doing EOI report.
+   * */
   private transient IPCConnectionPool connectionPool;
+  /**
+   * The same as in DupElim.
+   * */
   private transient HashMap<Integer, List<Integer>> uniqueTupleIndices;
+  /**
+   * The same as in DupElim.
+   * */
   private transient TupleBatchBuffer uniqueTuples;
+  /**
+   * The IPC channel for EOI report.
+   * */
   private transient Channel eoiReportChannel;
 
   /**
@@ -48,6 +95,14 @@ public class IDBInput extends Operator {
    * */
   private static final Logger LOGGER = LoggerFactory.getLogger(IDBInput.class.getName());
 
+  /**
+   * @param selfIDBIdx see the corresponding field comment.
+   * @param controllerOpID see the corresponding field comment.
+   * @param controllerWorkerID see the corresponding field comment.
+   * @param initialIDBInput see the corresponding field comment.
+   * @param iterationInput see the corresponding field comment.
+   * @param eosControllerInput see the corresponding field comment.
+   * */
   public IDBInput(final int selfIDBIdx, final ExchangePairID controllerOpID, final int controllerWorkerID,
       final Operator initialIDBInput, final Operator iterationInput, final Consumer eosControllerInput) {
 
@@ -66,7 +121,14 @@ public class IDBInput extends Operator {
     this.selfIDBIdx = selfIDBIdx;
   }
 
-  private boolean compareTuple(final int index, final List<Object> cntTuple) {
+  /**
+   * Check if a tuple in uniqueTuples equals to the comparing tuple (cntTuple).
+   * 
+   * @param index the index in uniqueTuples
+   * @param cntTuple a list representation of a tuple to compare
+   * @return true if equals.
+   * */
+  private boolean tupleEquals(final int index, final List<Object> cntTuple) {
     for (int i = 0; i < cntTuple.size(); ++i) {
       if (!(uniqueTuples.get(i, index).equals(cntTuple.get(i)))) {
         return false;
@@ -75,7 +137,13 @@ public class IDBInput extends Operator {
     return true;
   }
 
-  protected TupleBatch doDupElim(final TupleBatch tb) {
+  /**
+   * Do duplicate elimination for tb.
+   * 
+   * @param tb the TupleBatch for performing dupelim.
+   * @return the duplicate eliminated TB.
+   * */
+  protected final TupleBatch doDupElim(final TupleBatch tb) {
     final int numTuples = tb.numTuples();
     if (numTuples <= 0) {
       return tb;
@@ -101,7 +169,7 @@ public class IDBInput extends Operator {
       }
       boolean unique = true;
       for (final int oldTupleIndex : tupleIndexList) {
-        if (compareTuple(oldTupleIndex, cntTuple)) {
+        if (tupleEquals(oldTupleIndex, cntTuple)) {
           unique = false;
           break;
         }
@@ -119,9 +187,9 @@ public class IDBInput extends Operator {
   }
 
   @Override
-  public TupleBatch fetchNextReady() throws DbException {
+  public final TupleBatch fetchNextReady() throws DbException {
     TupleBatch tb;
-    if (!child1Ended) {
+    if (!initialInputEnded) {
       while ((tb = initialIDBInput.nextReady()) != null) {
         tb = doDupElim(tb);
         if (tb.numTuples() > 0) {
@@ -144,7 +212,7 @@ public class IDBInput extends Operator {
   }
 
   @Override
-  protected TupleBatch fetchNext() throws DbException, InterruptedException {
+  protected final TupleBatch fetchNext() throws DbException, InterruptedException {
     TupleBatch tb;
     while ((tb = initialIDBInput.next()) != null) {
       tb = doDupElim(tb);
@@ -153,7 +221,7 @@ public class IDBInput extends Operator {
         return tb;
       }
     }
-    if (!child1Ended) {
+    if (!initialInputEnded) {
       return null;
     }
 
@@ -169,22 +237,23 @@ public class IDBInput extends Operator {
 
   @Override
   public final void checkEOSAndEOI() {
-    if (!child1Ended) {
+    if (!initialInputEnded) {
       if (initialIDBInput.eos()) {
         setEOI(true);
         emptyDelta = true;
-        child1Ended = true;
+        initialInputEnded = true;
       }
     } else {
       try {
         eosControllerInput.nextReady();
         if (eosControllerInput.eos()) {
           setEOS();
-          eoiReportChannel.write(IPCUtils.EOS);// notify the EOSController to end.
+          eoiReportChannel.write(IPCUtils.EOS);
+          // notify the EOSController to end.
         } else if (iterationInput.eoi()) {
           iterationInput.setEOI(false);
           setEOI(true);
-          final TupleBatchBuffer buffer = new TupleBatchBuffer(eoiReportSchema);
+          final TupleBatchBuffer buffer = new TupleBatchBuffer(EOI_REPORT_SCHEMA);
           // buffer.put(0, eosControllerInput.getOperatorID().getLong());
           buffer.put(0, selfIDBIdx);
           buffer.put(1, emptyDelta);
@@ -200,27 +269,30 @@ public class IDBInput extends Operator {
   }
 
   @Override
-  public Operator[] getChildren() {
+  public final Operator[] getChildren() {
     return new Operator[] { initialIDBInput, iterationInput, eosControllerInput };
   }
 
   @Override
-  public Schema getSchema() {
+  public final Schema getSchema() {
     return initialIDBInput.getSchema();
   }
 
-  public static final Schema eoiReportSchema;
+  /**
+   * the schema of EOI report.
+   * */
+  public static final Schema EOI_REPORT_SCHEMA;
 
   static {
     final ImmutableList<Type> types = ImmutableList.of(Type.INT_TYPE, Type.BOOLEAN_TYPE);
     final ImmutableList<String> columnNames = ImmutableList.of("idbID", "isDeltaEmpty");
     final Schema schema = new Schema(types, columnNames);
-    eoiReportSchema = schema;
+    EOI_REPORT_SCHEMA = schema;
   }
 
   @Override
-  public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    child1Ended = false;
+  public final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+    initialInputEnded = false;
     emptyDelta = true;
     uniqueTupleIndices = new HashMap<Integer, List<Integer>>();
     uniqueTuples = new TupleBatchBuffer(getSchema());
@@ -230,14 +302,14 @@ public class IDBInput extends Operator {
   }
 
   @Override
-  public void setChildren(final Operator[] children) {
+  public final void setChildren(final Operator[] children) {
     initialIDBInput = children[0];
     iterationInput = children[1];
     eosControllerInput = (Consumer) children[2];
   }
 
   @Override
-  protected void cleanup() throws DbException {
+  protected final void cleanup() throws DbException {
     uniqueTupleIndices = null;
     uniqueTuples = null;
     if (eoiReportChannel != null) {
@@ -247,11 +319,17 @@ public class IDBInput extends Operator {
     connectionPool = null;
   }
 
-  public ExchangePairID getControllerOperatorID() {
+  /**
+   * @return the operator ID of the EOI receiving Consumer of the EOSController.
+   * */
+  public final ExchangePairID getControllerOperatorID() {
     return controllerOpID;
   }
 
-  public int getControllerWorkerID() {
+  /**
+   * @return the workerID where the EOSController is running.
+   * */
+  public final int getControllerWorkerID() {
     return controllerWorkerID;
   }
 

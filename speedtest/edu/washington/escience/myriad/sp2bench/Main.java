@@ -80,7 +80,7 @@ public class Main {
 
     System.out.println("Begin start master");
     startMaster();
-    while (Server.runningInstance == null) {
+    while (Server.getRunningInstance() == null) {
       Thread.sleep(100);
     }
     System.out.println("End start master");
@@ -106,7 +106,7 @@ public class Main {
     long start = System.nanoTime();
 
     QueryFuture qf =
-        Server.runningInstance.submitQueryPlan(masterPlan, workerPlans).addListener(new QueryFutureListener() {
+        Server.getRunningInstance().submitQueryPlan(masterPlan, workerPlans).addListener(new QueryFutureListener() {
           @Override
           public void operationComplete(final QueryFuture future) throws Exception {
             TupleBatch tb = null;
@@ -129,7 +129,7 @@ public class Main {
     System.out.println("Total " + numResult + " tuples.");
 
     qf.awaitUninterruptibly();
-    Server.runningInstance.shutdown();
+    Server.getRunningInstance().shutdown();
 
   }
 
@@ -144,7 +144,7 @@ public class Main {
         }
       }
     }.start();
-    return Server.runningInstance;
+    return Server.getRunningInstance();
   }
 
 }

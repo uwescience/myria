@@ -94,6 +94,13 @@ final class QuerySubTreeTask {
    * */
   private final int ipcEntityID;
 
+  /**
+   * @param ipcEntityID the IPC ID of the owner worker/master.
+   * @param ownerQuery the owner query of this task.
+   * @param root the root operator this task will run.
+   * @param executor the executor who provides the execution service for the task to run on
+   * @param executionMode blocking/nonblocking mode.
+   * */
   QuerySubTreeTask(final int ipcEntityID, final QueryPartition ownerQuery, final RootOperator root,
       final ExecutorService executor, final QueryExecutionMode executionMode) {
     this.ipcEntityID = ipcEntityID;
@@ -131,6 +138,12 @@ final class QuerySubTreeTask {
     };
   }
 
+  /**
+   * gather all output (Producer or IDBInput's EOI report) channel IDs.
+   * 
+   * @param currentOperator current operator to check.
+   * @param outputExchangeChannels the current collected output channel IDs.
+   * */
   private void collectDownChannels(final Operator currentOperator,
       final HashSet<ExchangeChannelID> outputExchangeChannels) {
 
@@ -159,10 +172,19 @@ final class QuerySubTreeTask {
     }
   }
 
+  /**
+   * @return if the task is finished
+   * */
   public boolean isFinished() {
     return root.eos();
   }
 
+  /**
+   * gather all input (consumer) channel IDs.
+   * 
+   * @param currentOperator current operator to check.
+   * @param inputExchangeChannels the current collected input channels.
+   * */
   private void collectUpChannels(final Operator currentOperator, final HashSet<ExchangeChannelID> inputExchangeChannels) {
 
     if (currentOperator instanceof Consumer) {
@@ -195,6 +217,8 @@ final class QuerySubTreeTask {
 
   /**
    * Called by Netty downstream IO worker threads.
+   * 
+   * @param outputChannelID the logical output channel ID.
    * */
   public void notifyOutputDisabled(final ExchangeChannelID outputChannelID) {
     if (LOGGER.isDebugEnabled()) {
@@ -292,6 +316,9 @@ final class QuerySubTreeTask {
     return initialized && outputAvailable && executionMode == QueryExecutionMode.NON_BLOCKING && numInputTBs.get() > 0;
   }
 
+  /**
+   * @return if blocking execution is ready.
+   * */
   boolean readyForBlockingExecution() {
     return initialized && !inBlockingExecution && executionMode == QueryExecutionMode.BLOCKING;
   }
@@ -334,6 +361,9 @@ final class QuerySubTreeTask {
     return true;
   }
 
+  /**
+   * clean up the task, release resources, etc.
+   * */
   public void cleanup() {
     try {
       root.close();
@@ -364,6 +394,11 @@ final class QuerySubTreeTask {
     }
   }
 
+  /**
+   * Initialize the task.
+   * 
+   * @param execUnitEnv execution environment variable.s
+   * */
   public void init(final ImmutableMap<String, Object> execUnitEnv) {
     try {
       root.open(execUnitEnv);

@@ -23,6 +23,9 @@ public final class LocalMultiwayConsumer extends Consumer {
 
   /**
    * If there's no child operator, a Schema is needed.
+   * 
+   * @param schema the input/output data schema
+   * @param operatorID my operatorID
    */
   public LocalMultiwayConsumer(final Schema schema, final ExchangePairID operatorID) {
     super(schema, operatorID, new int[] { -1 });

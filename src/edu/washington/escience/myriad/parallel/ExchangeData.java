@@ -8,18 +8,50 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.column.Column;
 
+/**
+ * A simple wrapper of a TupleBatch from remote for storing into operator input buffers.
+ * */
 public final class ExchangeData implements ExchangeMessage<TupleBatch> {
 
+  /**
+   * the owner operator of this data.
+   * */
   private final ExchangePairID operatorID;
+  /**
+   * From which worker is this data message.
+   * */
   private final int fromWorkerID;
+  /**
+   * the true data.
+   * */
   private final TupleBatch dataHolder;
-  public final long seqNum;
+  /**
+   * seq num, for use in fault tolerance.
+   * */
+  private final long seqNum;
 
+  /**
+   * Indicate if it's an EOS message.
+   * */
   private boolean eos;
+
+  /**
+   * Indicate if it's an EOI message.
+   * */
   private boolean eoi;
 
+  /**
+   * Non-data message type.
+   * */
   public static enum MetaMessage {
-    EOS, EOI;
+    /**
+     * end of stream.
+     * */
+    EOS,
+    /**
+     * end of iteration.
+     * */
+    EOI;
   }
 
   /**
@@ -28,6 +60,7 @@ public final class ExchangeData implements ExchangeMessage<TupleBatch> {
    * @param columns columns.
    * @param inputSchema inputSchema.
    * @param numTuples numTuples.
+   * @param seqNum for use in fault tolerance.
    */
   public ExchangeData(final ExchangePairID oID, final int workerID, final List<Column<?>> columns,
       final Schema inputSchema, final int numTuples, final long seqNum) {
@@ -39,8 +72,19 @@ public final class ExchangeData implements ExchangeMessage<TupleBatch> {
   }
 
   /**
+   * @return my seq num.
+   * */
+  public long getSeqNum() {
+    return seqNum;
+  }
+
+  /**
+   * Constructing a non-data instance.
+   * 
    * @param oID the operator to which this TB should be feed
    * @param workerID the source worker where the TB is generated
+   * @param schema the schema of the data message
+   * @param msg the MetaMessage type.
    */
   public ExchangeData(final ExchangePairID oID, final int workerID, final Schema schema, final MetaMessage msg) {
     dataHolder = null;
@@ -52,16 +96,22 @@ public final class ExchangeData implements ExchangeMessage<TupleBatch> {
   }
 
   /**
-   * Get the ParallelOperatorID, to which this message is targeted.
+   * @return the {@link ExchangePairID}, to which this message is targeted.
    */
   public ExchangePairID getOperatorID() {
     return operatorID;
   }
 
+  /**
+   * @return if it's an EOS.
+   * */
   public boolean isEos() {
     return eos;
   }
 
+  /**
+   * @return if it's an EOI.
+   * */
   public boolean isEoi() {
     return eoi;
   }

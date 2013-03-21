@@ -534,6 +534,10 @@ public final class Catalog {
     }
   }
 
+  /**
+   * @return all the configurations.
+   * @throws CatalogException if error occurs in catalog parsing.
+   */
   public ImmutableMap<String, String> getAllConfigurations() throws CatalogException {
     if (isClosed) {
       throw new CatalogException("WorkerCatalog is closed.");
