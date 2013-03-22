@@ -65,9 +65,6 @@ import edu.washington.escience.myriad.util.IPCUtils;
  * */
 public final class Server {
 
-  /** A short amount of time to sleep waiting for network events. */
-  public static final int SHORT_SLEEP_MILLIS = 100;
-
   /**
    * Master message processor.
    * */
@@ -552,7 +549,7 @@ public final class Server {
       final Integer workerID = e.getKey();
       while (!aliveWorkers.contains(workerID)) {
         try {
-          Thread.sleep(SHORT_SLEEP_MILLIS);
+          Thread.sleep(MyriaConstants.SHORT_WAITING_INTERVAL_MS);
         } catch (InterruptedException e1) {
           Thread.currentThread().interrupt();
         }
@@ -751,6 +748,7 @@ public final class Server {
   }
 
   /**
+   * 
    * @return true if the query plan is accepted and scheduled for execution.
    * @param masterPlan the master part of the plan
    * @param workerPlans the worker part of the plan, {workerID -> RootOperator[]}
@@ -796,6 +794,7 @@ public final class Server {
    * */
   public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final RootOperator masterPlan,
       final Map<Integer, RootOperator[]> workerPlans) throws DbException, CatalogException {
+    workerPlans.remove(MyriaConstants.MASTER_ID);
     final long queryID = catalog.newQuery(rawQuery, logicalRa);
     final MasterQueryPartition mqp = new MasterQueryPartition(masterPlan, workerPlans, queryID, this);
     setupExchangeChannels(mqp);
@@ -806,17 +805,29 @@ public final class Server {
         mqp.startNonBlockingExecution();
         Server.this.startWorkerQuery(future.getQuery().getQueryID());
       }
-
     });
     mqp.getQueryExecutionFuture().addListener(new QueryFutureListener() {
 
       @Override
       public void operationComplete(final QueryFuture future) throws Exception {
-        MasterQueryPartition mqp = activeQueries.remove(queryID);
+        Server.this.cleanupQuery(future.getQuery().getQueryID());
       }
 
     });
     return mqp.getQueryExecutionFuture();
+  }
+
+  /**
+   * @param queryID the query to get cleaned up.
+   * */
+  private void cleanupQuery(final long queryID) {
+    MasterQueryPartition mqp = activeQueries.remove(queryID);
+    for (ExchangeChannelID ecID : mqp.getInputChannels()) {
+      consumerChannelMap.remove(ecID);
+    }
+    for (ExchangeChannelID ecID : mqp.getOutputChannels()) {
+      consumerChannelMap.remove(ecID);
+    }
   }
 
   /**
@@ -843,27 +854,6 @@ public final class Server {
    */
   public Map<Integer, SocketInfo> getWorkers() {
     return ImmutableMap.copyOf(workers);
-  }
-
-  /**
-   * Insert the given query into the Catalog, dispatch the query to the workers, and return its query ID. This is useful
-   * for receiving queries from an external interface (e.g., the REST API).
-   * <p>
-   * Deprecated. Use either {@link Server#submitQuery(String, String, RootOperator, Map)} or
-   * {@link Server#submitQueryPlan(RootOperator, Map)}.
-   * <p>
-   * 
-   * @param rawQuery the raw user-defined query. E.g., the source Datalog program.
-   * @param logicalRa the logical relational algebra of the compiled plan.
-   * @param plans the physical parallel plan fragments for each worker.
-   * @return the query ID assigned to this query.
-   * @throws CatalogException if there is an error in the Catalog.
-   * @throws DbException if there is any error in non-Catalog
-   */
-  @Deprecated
-  public long startQuery(final String rawQuery, final String logicalRa, final Map<Integer, RootOperator[]> plans)
-      throws CatalogException, DbException {
-    return catalog.newQuery(rawQuery, logicalRa);
   }
 
   /**

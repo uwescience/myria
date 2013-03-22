@@ -250,6 +250,20 @@ public class MasterQueryPartition implements QueryPartition {
     queryFinish();
   }
 
+  /**
+   * @return all input channels belonging to this task.
+   * */
+  final ExchangeChannelID[] getInputChannels() {
+    return rootTask.getInputChannels();
+  }
+
+  /**
+   * @return all output channels belonging to this task.
+   * */
+  final ExchangeChannelID[] getOutputChannels() {
+    return rootTask.getOutputChannels();
+  }
+
   @Override
   public final int getPriority() {
     return priority;

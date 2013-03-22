@@ -139,6 +139,20 @@ final class QuerySubTreeTask {
   }
 
   /**
+   * @return all input channels belonging to this task.
+   * */
+  ExchangeChannelID[] getInputChannels() {
+    return inputChannels;
+  }
+
+  /**
+   * @return all output channels belonging to this task.
+   * */
+  ExchangeChannelID[] getOutputChannels() {
+    return outputChannels;
+  }
+
+  /**
    * gather all output (Producer or IDBInput's EOI report) channel IDs.
    * 
    * @param currentOperator current operator to check.
