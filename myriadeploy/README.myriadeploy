@@ -19,25 +19,26 @@ install ssh-copy-id if you don't have it on your machine.
 
 
 
-launch the cluster:
+0) setup the cluster
+./setup_cluster.py <description> <path_to_working_dir> <node_list>
 
-0) if you are lazy:
+Use this script if you want to start a new myria cluster configuration.
+This will: create a directory called <description> with all the catalog files, then dispatch them to
+corresponding machines in <node_list> under <path_to_working_dir>.
+Notice, no ingested relations in previous myria instances will be inherited by this new one.
+
+
+launch the cluster:
+1) if you are lazy:
 ./launch_cluster <description> <path_to_working_dir> <node_list>
 e.g.
 ./launch_cluster.sh fourNodes /tmp/jwang workers.txt
 
-This script will run the following 3 scripts in order: setup_cluster, start_mater, start_workers.
+This script will run the following 2 scripts in order: start_mater, start_workers.
 You can run this script on any machine where ssh to node_list is possible, like your laptop, hereinafter the same.
-
 Then you are done.
 
-If you want to know what happened:
-
-1) setup the cluster
-./setup_cluster.py <description> <path_to_working_dir> <node_list>
-
-This will: create a directory called <description> with all the catalog files, then dispatch them to
-corresponding machines in <node_list> under <path_to_working_dir>.
+If you want to do it separately:
 
 2) start master
 ./start_master.py <description> <path_to_working_dir> <node_list>

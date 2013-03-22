@@ -39,9 +39,9 @@ public class FileScanTest {
    * @param schema the schema of the relation in the file.
    * @param commaIsDelimiter true if commas should be considered delimiting characters.
    * @return the number of rows in the file.
-   * @throws DbException if the file does not match the given Schema. <<<<<<<
-   * @throws FileNotFoundException if the specified file does not exist. =======
-   * @throws InterruptedException >>>>>>>
+   * @throws DbException if the file does not match the given Schema.
+   * @throws FileNotFoundException if the specified file does not exist.
+   * @throws InterruptedException
    */
   private static int getRowCount(final String filename, final Schema schema, final boolean commaIsDelimiter)
       throws DbException, InterruptedException {
@@ -118,7 +118,14 @@ public class FileScanTest {
   }
 
   @Test
-  public void testBigFile() throws DbException, InterruptedException {
+  public void testSimpleTwoColumnFloat() throws Exception {
+    final String filename = "simple_two_col_float.txt";
+    final Schema schema = new Schema(ImmutableList.of(Type.FLOAT_TYPE, Type.FLOAT_TYPE));
+    assertTrue(getRowCount(filename, schema) == 7);
+  }
+
+  @Test
+  public void testBigFile() throws Exception {
     ByteArrayOutputStream bytes = new ByteArrayOutputStream();
     PrintStream printedBytes = new PrintStream(bytes);
     /* Print 2*TupleBatch.BATCH_SIZE lines */
