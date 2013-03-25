@@ -115,6 +115,13 @@ public class FileScanTest {
   }
 
   @Test
+  public void testSimpleTwoColumnFloat() throws DbException {
+    final String filename = "simple_two_col_float.txt";
+    final Schema schema = new Schema(ImmutableList.of(Type.FLOAT_TYPE, Type.FLOAT_TYPE));
+    assertTrue(getRowCount(filename, schema) == 7);
+  }
+
+  @Test
   public void testBigFile() throws DbException {
     ByteArrayOutputStream bytes = new ByteArrayOutputStream();
     PrintStream printedBytes = new PrintStream(bytes);
