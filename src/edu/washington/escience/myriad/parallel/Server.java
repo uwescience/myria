@@ -118,7 +118,11 @@ public final class Server {
                       + queryId);
                   return;
                 }
+                printOutElapsedTime(new Date(), "worker " + senderID + " completed");
                 workersAssigned.remove(senderID);
+                if (workersAssigned.size() == 0) {
+                  LOGGER.info("all workers have finished query " + queryId);
+                }
                 break;
               case DISCONNECT:
                 /* TODO */
@@ -143,12 +147,31 @@ public final class Server {
     }
   }
 
+  /**
+   * print out the elapsed time since queryStaringTime to end.
+   * 
+   * @param end the ending time
+   * @param msg the message to help distinguish outputs in the log
+   */
+  private void printOutElapsedTime(final Date end, final String msg) {
+    int elapse = (int) (end.getTime() - queryStartingTime.getTime());
+    final int hour = elapse / ONE_HR_IN_MILLIS;
+    elapse -= hour * ONE_HR_IN_MILLIS;
+    final int minute = elapse / ONE_MIN_IN_MILLIS;
+    elapse -= minute * ONE_MIN_IN_MILLIS;
+    final int second = elapse / ONE_SEC_IN_MILLIS;
+    elapse -= second * ONE_SEC_IN_MILLIS;
+    LOGGER.info(msg + " " + String.format("Time elapsed: %1$dh%2$dm%3$ds.%4$03d", hour, minute, second, elapse));
+  }
+
   /** Time constant. */
   private static final int ONE_SEC_IN_MILLIS = 1000;
   /** Time constant. */
   private static final int ONE_MIN_IN_MILLIS = 60 * ONE_SEC_IN_MILLIS;
   /** Time constant. */
   private static final int ONE_HR_IN_MILLIS = 60 * ONE_MIN_IN_MILLIS;
+  /** query staring time, should be set before starting each query. */
+  private Date queryStartingTime;
 
   /** The usage message for this server. */
   static final String USAGE = "Usage: Server catalogFile [-explain] [-f queryFile]";
@@ -355,7 +378,7 @@ public final class Server {
       LOGGER.debug(sb.toString());
     }
 
-    final Date start = new Date();
+    queryStartingTime = new Date();
     serverPlan.open();
 
     startWorkerQuery(queryId);
@@ -379,7 +402,7 @@ public final class Server {
 
     serverPlan.close();
     dataBuffer.remove(serverPlan.getOperatorID());
-    final Date end = new Date();
+
     LOGGER.info("Number of results: " + cnt);
     if (expectedResultSize != null) {
       if (Integer.parseInt(expectedResultSize) != cnt) {
@@ -388,15 +411,6 @@ public final class Server {
         LOGGER.info("Correct size!");
       }
     }
-    int elapse = (int) (end.getTime() - start.getTime());
-    final int hour = elapse / ONE_HR_IN_MILLIS;
-    elapse -= hour * ONE_HR_IN_MILLIS;
-    final int minute = elapse / ONE_MIN_IN_MILLIS;
-    elapse -= minute * ONE_MIN_IN_MILLIS;
-    final int second = elapse / ONE_SEC_IN_MILLIS;
-    elapse -= second * ONE_SEC_IN_MILLIS;
-
-    LOGGER.info(String.format("Time elapsed: %1$dh%2$dm%3$ds.%4$03d", hour, minute, second, elapse));
     return outBufferForTesting;
   }
 
@@ -428,8 +442,7 @@ public final class Server {
       }
     }
 
-    final Date start = new Date();
-
+    queryStartingTime = new Date();
     serverPlan.open();
 
     startWorkerQuery(queryId);
@@ -439,17 +452,6 @@ public final class Server {
     }
 
     serverPlan.close();
-
-    final Date end = new Date();
-    int elapse = (int) (end.getTime() - start.getTime());
-    final int hour = elapse / ONE_HR_IN_MILLIS;
-    elapse -= hour * ONE_HR_IN_MILLIS;
-    final int minute = elapse / ONE_MIN_IN_MILLIS;
-    elapse -= minute * ONE_MIN_IN_MILLIS;
-    final int second = elapse / ONE_SEC_IN_MILLIS;
-    elapse -= second * ONE_SEC_IN_MILLIS;
-
-    LOGGER.debug(String.format("Time elapsed: %1$dh%2$dm%3$ds.%4$03d", hour, minute, second, elapse));
   }
 
   /**
@@ -504,6 +506,7 @@ public final class Server {
       plans.remove(0);
     }
     dispatchWorkerQueryPlans(queryId, plans);
+    queryStartingTime = new Date();
     if (serverPlan != null) {
       startServerQuery(queryId, (CollectConsumer) serverPlan[0], expectedResultSize);
     }
