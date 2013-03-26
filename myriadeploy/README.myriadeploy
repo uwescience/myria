@@ -35,7 +35,7 @@ e.g.
 ./launch_cluster.sh fourNodes /tmp/jwang workers.txt -Xmx1g
 will pass max_heap_size to jvm if it's specified. 
 
-This script will run the following 2 scripts in order: start_mater, start_workers.
+This script will run the following 2 scripts in order: start_master, start_workers.
 You can run this script on any machine where ssh to node_list is possible, like your laptop, hereinafter the same.
 Then you are done.
 

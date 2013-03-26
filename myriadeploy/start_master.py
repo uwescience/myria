@@ -58,7 +58,7 @@ def main(argv):
         print >> sys.stderr, "       expt_root: where the files should be stored locally, e.g., /scratch."
         print >> sys.stderr, "       workers.txt: a list of host:port strings;"
         print >> sys.stderr, "                    the first entry is the master."
-	print >> sys.stderr, "       max_heap_size(optiona;): -Xmx assigend to each jvm."
+	print >> sys.stderr, "       max_heap_size(optional): a string -Xmx[val] which will be passed to each jvm. Example: \"-Xmx2g\" (without quote)"
         sys.exit(1)
 
     # Command-line arguments

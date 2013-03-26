@@ -147,7 +147,13 @@ public final class Server {
     }
   }
 
-  private void printOutElapsedTime(Date end, String msg) {
+  /**
+   * print out the elapsed time since queryStaringTime to end.
+   * 
+   * @param end the ending time
+   * @param msg the message to help distinguish outputs in the log
+   */
+  private void printOutElapsedTime(final Date end, final String msg) {
     int elapse = (int) (end.getTime() - queryStartingTime.getTime());
     final int hour = elapse / ONE_HR_IN_MILLIS;
     elapse -= hour * ONE_HR_IN_MILLIS;
@@ -164,6 +170,7 @@ public final class Server {
   private static final int ONE_MIN_IN_MILLIS = 60 * ONE_SEC_IN_MILLIS;
   /** Time constant. */
   private static final int ONE_HR_IN_MILLIS = 60 * ONE_MIN_IN_MILLIS;
+  /** query staring time, should be set before starting each query. */
   private Date queryStartingTime;
 
   /** The usage message for this server. */
