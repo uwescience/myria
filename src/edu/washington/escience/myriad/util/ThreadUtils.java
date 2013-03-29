@@ -20,12 +20,19 @@ public final class ThreadUtils {
   private static final Logger LOGGER = LoggerFactory.getLogger(ThreadUtils.class.getName());
 
   /**
+   * @return the currently-live threads.
+   */
+  public static Set<Thread> getCurrentThreads() {
+    return Thread.getAllStackTraces().keySet();
+  }
+
+  /**
    * Print out the list of currently active threads.
    * 
    * @param tag a string printed before the message. For identifying calls to this function.
    */
   public static void printCurrentThreads(final String tag) {
-    final Set<Thread> threadSet = Thread.getAllStackTraces().keySet();
+    final Set<Thread> threadSet = getCurrentThreads();
     StringBuilder sb = new StringBuilder();
     sb.append(tag + ":" + threadSet.size() + " threads currently active.\n");
     sb.append('\t');
