@@ -12,6 +12,7 @@ import com.google.common.base.Preconditions;
 import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myriad.TupleBatch;
+import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType;
 import edu.washington.escience.myriad.proto.DataProto.StringColumnMessage;
@@ -127,6 +128,11 @@ public final class StringColumn implements Column<String> {
     endIndices.put(data.length());
     numStrings++;
     return this;
+  }
+
+  @Override
+  public Type getType() {
+    return Type.STRING_TYPE;
   }
 
   @Override

@@ -11,13 +11,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.tuple.Pair;
 
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hasher;
+import com.google.common.hash.Hashing;
 import com.google.common.primitives.Ints;
 
 import edu.washington.escience.myriad.column.BooleanColumn;
@@ -30,6 +32,7 @@ import edu.washington.escience.myriad.column.LongColumn;
 import edu.washington.escience.myriad.column.StringColumn;
 import edu.washington.escience.myriad.parallel.PartitionFunction;
 import edu.washington.escience.myriad.util.ReadOnlyBitSet;
+import edu.washington.escience.myriad.util.TypeFunnel;
 
 /**
  * Container class for a batch of tuples. The goal is to amortize memory management overhead.
@@ -41,9 +44,9 @@ public class TupleBatch {
   /** The hard-coded number of tuples in a batch. */
   public static final int BATCH_SIZE = 10 * 1000;
   /** Class-specific magic number used to generate the hash code. */
-  private static final int MAGIC_HASHCODE1 = 243;
-  /** Class-specific magic number used to generate the hash code. */
-  private static final int MAGIC_HASHCODE2 = 67;
+  private static final int MAGIC_HASHCODE = 243;
+  /** The hash function for this class. */
+  private static final HashFunction HASH_FUNCTION = Hashing.murmur3_32(MAGIC_HASHCODE);
 
   /** Schema of tuples in this batch. */
   private final Schema schema;
@@ -335,12 +338,12 @@ public class TupleBatch {
    * @return the hash of the tuples in the specified row.
    */
   public final int hashCode(final int row) {
-    final HashCodeBuilder hb = new HashCodeBuilder(MAGIC_HASHCODE1, MAGIC_HASHCODE2);
+    Hasher hasher = HASH_FUNCTION.newHasher();
     final int mappedRow = getValidIndices().get(row);
-    for (final Column<?> c : columns) {
-      hb.append(c.get(mappedRow));
+    for (Column<?> c : columns) {
+      hasher.putObject(c.get(mappedRow), TypeFunnel.INSTANCE);
     }
-    return hb.toHashCode();
+    return hasher.hash().asInt();
   }
 
   /**
@@ -352,17 +355,13 @@ public class TupleBatch {
    */
   public final int hashCode(final int row, final int[] hashColumns) {
     Objects.requireNonNull(hashColumns);
-    /*
-     * From http://commons.apache.org/lang/api-2.4/org/apache/commons/lang/builder/HashCodeBuilder.html:
-     * 
-     * You pick a hard-coded, randomly chosen, non-zero, odd number ideally different for each class.
-     */
-    final HashCodeBuilder hb = new HashCodeBuilder(MAGIC_HASHCODE1, MAGIC_HASHCODE2);
+    Hasher hasher = HASH_FUNCTION.newHasher();
     final int mappedRow = getValidIndices().get(row);
     for (final int i : hashColumns) {
-      hb.append(columns.get(i).get(mappedRow));
+      Column<?> c = columns.get(i);
+      hasher.putObject(c.get(mappedRow), TypeFunnel.INSTANCE);
     }
-    return hb.toHashCode();
+    return hasher.hash().asInt();
   }
 
   /**
