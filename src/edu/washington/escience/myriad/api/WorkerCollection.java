@@ -30,7 +30,7 @@ public final class WorkerCollection {
   @Path("/alive")
   @Produces(MediaType.APPLICATION_JSON)
   public Set<Integer> getAliveWorkers() {
-    return MasterApiServer.getMyriaServer().getAliveWorkers();
+    return MyriaApiUtils.getServer().getAliveWorkers();
   }
 
   /**
@@ -43,7 +43,7 @@ public final class WorkerCollection {
   public String getWorker(@PathParam("workerId") final String workerId) {
     SocketInfo workerInfo;
     try {
-      workerInfo = MasterApiServer.getMyriaServer().getWorkers().get(Integer.parseInt(workerId));
+      workerInfo = MyriaApiUtils.getServer().getWorkers().get(Integer.parseInt(workerId));
     } catch (final NumberFormatException e) {
       /* Parsing failed, throw a 400 (Bad Request) */
       throw new WebApplicationException(Response.status(Status.BAD_REQUEST).build());
@@ -63,7 +63,7 @@ public final class WorkerCollection {
   @Produces(MediaType.APPLICATION_JSON)
   public Map<Integer, String> getWorkers() {
     Map<Integer, SocketInfo> workers;
-    workers = MasterApiServer.getMyriaServer().getWorkers();
+    workers = MyriaApiUtils.getServer().getWorkers();
     final Map<Integer, String> ret = new HashMap<Integer, String>();
     for (final Entry<Integer, SocketInfo> workerInfo : workers.entrySet()) {
       ret.put(workerInfo.getKey(), workerInfo.getValue().toString());

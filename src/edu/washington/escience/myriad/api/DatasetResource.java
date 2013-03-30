@@ -43,7 +43,7 @@ public final class DatasetResource {
   public Schema getDataset(@PathParam("userName") final String userName,
       @PathParam("programName") final String programName, @PathParam("relationName") final String relationName) {
     try {
-      Schema schema = MasterApiServer.getMyriaServer().getSchema(RelationKey.of(userName, programName, relationName));
+      Schema schema = MyriaApiUtils.getServer().getSchema(RelationKey.of(userName, programName, relationName));
       if (schema == null) {
         /* Not found, throw a 404 (Not Found) */
         throw new WebApplicationException(Response.status(Status.NOT_FOUND).build());
@@ -80,7 +80,7 @@ public final class DatasetResource {
 
     /* If we already have a dataset by this name, tell the user there's a conflict. */
     try {
-      if (MasterApiServer.getMyriaServer().getSchema(dataset.relationKey) != null) {
+      if (MyriaApiUtils.getServer().getSchema(dataset.relationKey) != null) {
         /* Found, throw a 409 (Conflict) */
         throw new WebApplicationException(Response.status(Status.CONFLICT).build());
       }
@@ -90,7 +90,7 @@ public final class DatasetResource {
     }
 
     /* If we don't have any workers alive right now, tell the user we're busy. */
-    Set<Integer> workers = MasterApiServer.getMyriaServer().getAliveWorkers();
+    Set<Integer> workers = MyriaApiUtils.getServer().getAliveWorkers();
     if (workers.size() == 0) {
       /* Throw a 503 (Service Unavailable) */
       throw new WebApplicationException(Response.status(Status.SERVICE_UNAVAILABLE).build());
@@ -98,7 +98,7 @@ public final class DatasetResource {
 
     /* Do the work. */
     try {
-      MasterApiServer.getMyriaServer().ingestDataset(dataset.relationKey, dataset.schema, dataset.data);
+      MyriaApiUtils.getServer().ingestDataset(dataset.relationKey, dataset.schema, dataset.data);
     } catch (CatalogException e) {
       throw new WebApplicationException(Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
     }
@@ -115,7 +115,7 @@ public final class DatasetResource {
    * A JSON-able wrapper for the expected wire message for a new dataset.
    * 
    */
-  public static class DatasetEncoding {
+  class DatasetEncoding {
     /** The name of the dataset. */
     @JsonProperty("relation_key")
     public RelationKey relationKey;
