@@ -17,7 +17,7 @@ import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 public class MasterDataHandler extends SimpleChannelUpstreamHandler {
 
   /** The logger for this class. */
-  private static final Logger LOGGER = LoggerFactory.getLogger(MasterDataHandler.class.getName());
+  private static final Logger LOGGER = LoggerFactory.getLogger(MasterDataHandler.class);
 
   /**
    * messageQueue.

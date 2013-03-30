@@ -20,7 +20,7 @@ import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 public class WorkerDataHandler extends SimpleChannelUpstreamHandler {
 
   /** The logger for this class. */
-  private static final Logger LOGGER = LoggerFactory.getLogger(WorkerDataHandler.class.getName());
+  private static final Logger LOGGER = LoggerFactory.getLogger(WorkerDataHandler.class);
 
   LinkedBlockingQueue<MessageWrapper> messageQueue;
 

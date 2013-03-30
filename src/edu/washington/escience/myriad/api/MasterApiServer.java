@@ -70,9 +70,9 @@ public final class MasterApiServer {
    * @throws Exception if there is an error starting the server.
    */
   public void start() throws Exception {
-    System.out.println("Starting API server");
+    LOGGER.info("Starting API server");
     component.start();
-    System.out.println("API server started on port " + restletServer.getPort());
+    LOGGER.info("API server started on port " + restletServer.getPort());
   }
 
   /**

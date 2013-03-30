@@ -59,7 +59,7 @@ import edu.washington.escience.myriad.parallel.SingleFieldHashPartitionFunction;
 @Path("/query")
 public final class QueryResource {
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(QueryResource.class.getName());
+  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(QueryResource.class);
 
   /**
    * For now, simply echoes back its input.
@@ -96,8 +96,7 @@ public final class QueryResource {
       }
 
       /* Start the query, and get its Server-assigned Query ID */
-      final Long queryId =
-          MyriaApiUtils.getServer().startQuery(rawQuery, logicalRa, queryPlan, expectedResultSize);
+      final Long queryId = MyriaApiUtils.getServer().startQuery(rawQuery, logicalRa, queryPlan, expectedResultSize);
       /* In the response, tell the client what ID this query was assigned. */
       UriBuilder queryUri = uriInfo.getAbsolutePathBuilder();
       return Response.created(queryUri.path("query-" + queryId.toString()).build()).build();

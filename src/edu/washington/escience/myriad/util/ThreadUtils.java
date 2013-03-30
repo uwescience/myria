@@ -17,7 +17,7 @@ public final class ThreadUtils {
   }
 
   /** The logger for this class. */
-  private static final Logger LOGGER = LoggerFactory.getLogger(ThreadUtils.class.getName());
+  private static final Logger LOGGER = LoggerFactory.getLogger(ThreadUtils.class);
 
   /**
    * @return the currently-live threads.
