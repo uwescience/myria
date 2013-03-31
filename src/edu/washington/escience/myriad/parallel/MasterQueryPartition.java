@@ -277,4 +277,25 @@ public class MasterQueryPartition implements QueryPartition {
     return 0;
   }
 
+  /**
+   * Pause the master query partition.
+   * */
+  @Override
+  public final void pause() {
+  }
+
+  /**
+   * Resume the master query partition.
+   * */
+  @Override
+  public final void resume() {
+  }
+
+  /**
+   * Kill the master query partition.
+   * */
+  @Override
+  public final void kill() {
+  }
+
 }

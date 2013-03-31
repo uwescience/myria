@@ -36,4 +36,19 @@ public interface QueryPartition extends Comparable<QueryPartition> {
    * @param task the finished task.
    * */
   void taskFinish(final QuerySubTreeTask task);
+
+  /**
+   * Pause the query.
+   * */
+  void pause();
+
+  /**
+   * Resume the query.
+   * */
+  void resume();
+
+  /**
+   * Kill the query.
+   * */
+  void kill();
 }

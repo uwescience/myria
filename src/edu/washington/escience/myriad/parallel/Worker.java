@@ -112,25 +112,36 @@ public final class Worker {
                   }
                   break;
                 case QUERY_START:
+                case QUERY_PAUSE:
+                case QUERY_RESUME:
+                case QUERY_KILL:
                   long queryId = cm.getQueryId();
                   WorkerQueryPartition q = activeQueries.get(queryId);
                   if (q == null) {
                     if (LOGGER.isErrorEnabled()) {
-                      LOGGER.error("Unknown query id: {}, current active queries are: {}", queryId, activeQueries);
+                      LOGGER.error("Unknown query id: {}, current active queries are: {}", queryId, activeQueries
+                          .keySet());
                     }
-                    continue;
-                  }
-                  if (queryExecutionMode == QueryExecutionMode.NON_BLOCKING) {
-                    q.startNonBlockingExecution();
                   } else {
-                    q.startBlockingExecution();
+                    switch (cm.getType()) {
+                      case QUERY_START:
+                        if (queryExecutionMode == QueryExecutionMode.NON_BLOCKING) {
+                          q.startNonBlockingExecution();
+                        } else {
+                          q.startBlockingExecution();
+                        }
+                        break;
+                      case QUERY_PAUSE:
+                        q.pause();
+                        break;
+                      case QUERY_RESUME:
+                        q.resume();
+                        break;
+                      case QUERY_KILL:
+                        q.kill();
+                        break;
+                    }
                   }
-                  break;
-                case QUERY_PAUSE:
-                  break;
-                case QUERY_RESUME:
-                  break;
-                case QUERY_KILL:
                   break;
                 case SHUTDOWN:
                   if (LOGGER.isInfoEnabled()) {

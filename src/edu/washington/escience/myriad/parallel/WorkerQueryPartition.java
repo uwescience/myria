@@ -170,4 +170,25 @@ public class WorkerQueryPartition implements QueryPartition {
     return priority;
   }
 
+  /**
+   * Pause the worker query partition.
+   * */
+  @Override
+  public final void pause() {
+  }
+
+  /**
+   * Resume the worker query partition.
+   * */
+  @Override
+  public final void resume() {
+  }
+
+  /**
+   * Kill the worker query partition.
+   * */
+  @Override
+  public final void kill() {
+  }
+
 }
