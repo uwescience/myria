@@ -139,14 +139,17 @@ public final class Server {
               case DISCONNECT:
                 /* TODO */
                 break;
-              case CONNECT:
-              case SHUTDOWN:
-              case QUERY_START:
-                throw new RuntimeException("Unexpected control message received at server: " + controlM.toString());
+              default:
+                if (LOGGER.isErrorEnabled()) {
+                  LOGGER.error("Unexpected control message received at master: " + controlM);
+                }
             }
             break;
           case QUERY:
-            throw new RuntimeException("Unexpected query message received at server");
+            if (LOGGER.isErrorEnabled()) {
+              LOGGER.error("Unexpected query message received at master: " + m.getQuery());
+            }
+            break;
         }
       }
     }

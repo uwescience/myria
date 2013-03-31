@@ -102,14 +102,14 @@ public final class Worker {
           try {
             while ((cm = controlMessageQueue.take()) != null) {
               switch (cm.getType()) {
-                case SHUTDOWN:
-                  if (LOGGER.isInfoEnabled()) {
-                    if (LOGGER.isInfoEnabled()) {
-                      LOGGER.info("shutdown requested");
-                    }
+
+                case DISCONNECT:
+                case CONNECT:
+                  // DISCONNECT and CONNECT are used exclusively in IPC connection pool. They should not arrive here.
+                  if (LOGGER.isErrorEnabled()) {
+                    LOGGER
+                        .error("DISCONNECT and CONNECT are used exclusively in IPC connection pool. They should not arrive here.");
                   }
-                  toShutdown = true;
-                  abruptShutdown = false;
                   break;
                 case QUERY_START:
                   long queryId = cm.getQueryId();
@@ -126,23 +126,22 @@ public final class Worker {
                     q.startBlockingExecution();
                   }
                   break;
-                case DISCONNECT:
-                case CONNECT:
-                  // DISCONNECT and CONNECT are used exclusively in IPC connection pool. They should not arrive here.
-                  if (LOGGER.isErrorEnabled()) {
-                    LOGGER
-                        .error("DISCONNECT and CONNECT are used exclusively in IPC connection pool. They should not arrive here.");
-                  }
-                  break;
                 case QUERY_PAUSE:
                   break;
                 case QUERY_RESUME:
                   break;
                 case QUERY_KILL:
                   break;
-                case QUERY_COMPLETE:
-                case QUERY_READY_TO_EXECUTE:
-                case WORKER_ALIVE:
+                case SHUTDOWN:
+                  if (LOGGER.isInfoEnabled()) {
+                    if (LOGGER.isInfoEnabled()) {
+                      LOGGER.info("shutdown requested");
+                    }
+                  }
+                  toShutdown = true;
+                  abruptShutdown = false;
+                  break;
+                default:
                   if (LOGGER.isErrorEnabled()) {
                     LOGGER.error("Unexpected control message received at worker: " + cm.getType());
                   }
