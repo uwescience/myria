@@ -14,6 +14,8 @@ import edu.washington.escience.myriad.parallel.Server;
  */
 public final class MasterApiServer {
 
+  /* max time for waiting a server query to complete before throwing a timeout exception */
+  private static final String MAX_WAITING_TIME = "86400000";
   /** The instance. */
   public static final MasterApiServer INSTANCE = new MasterApiServer();
 
@@ -64,6 +66,7 @@ public final class MasterApiServer {
    * Constructor for the Master API Server.
    */
   private MasterApiServer() {
+    System.setProperty("org.restlet.engine.io.timeoutMs", MAX_WAITING_TIME);
     /* create Component (as ever for Restlet) */
     component = new Component();
 

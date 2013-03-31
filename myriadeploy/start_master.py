@@ -38,9 +38,9 @@ def read_workers(filename):
         ret.append((hostname, port, username))
     return ret
 
-def start_master(description, root, workers):
+def start_master(description, root, workers, MAX_MEM):
     for (hostname, port, username) in workers:
-    	cmd = "cd %s/%s-files; nohup java -cp myriad-0.1.jar:conf -Djava.library.path=sqlite4java-282 edu.washington.escience.myriad.daemon.MasterDaemon %s 0</dev/null 1>master_stdout 2>master_stderr &" % (root, description, description)
+    	cmd = "cd %s/%s-files; nohup java -cp myriad-0.1.jar:conf -Djava.library.path=sqlite4java-282 " % (root, description) + MAX_MEM + " edu.washington.escience.myriad.daemon.MasterDaemon %s 0</dev/null 1>master_stdout 2>master_stderr &" % (description);
     	args = ["ssh", "%s@%s" % (username, hostname), cmd];
    	#print args
     	if subprocess.call(args):
@@ -52,23 +52,27 @@ def start_master(description, root, workers):
 
 def main(argv):
     # Usage
-    if len(argv) != 4:
-        print >> sys.stderr, "Usage: %s <description> <expt_root> <workers.txt>" % (argv[0])
+    if len(argv) < 4:
+        print >> sys.stderr, "Usage: %s <description> <expt_root> <workers.txt> <max_heap_size(optional)>" % (argv[0])
         print >> sys.stderr, "       description: any alphanumeric plus '-_' string."
         print >> sys.stderr, "       expt_root: where the files should be stored locally, e.g., /scratch."
         print >> sys.stderr, "       workers.txt: a list of host:port strings;"
         print >> sys.stderr, "                    the first entry is the master."
+	print >> sys.stderr, "       max_heap_size(optional): a string -Xmx[val] which will be passed to each jvm. Example: \"-Xmx2g\" (without quote)"
         sys.exit(1)
 
     # Command-line arguments
     DESCRIPTION = argv[1]
     EXPT_ROOT = argv[2]
     WORKERS_FILE = argv[3]
+    MAX_MEM = ""
+    if len(argv) > 4:
+        MAX_MEM = argv[4]
 
     # Figure out the master and workers
     workers = read_workers(WORKERS_FILE)
 
-    start_master(DESCRIPTION, EXPT_ROOT, workers)
+    start_master(DESCRIPTION, EXPT_ROOT, workers, MAX_MEM)
 
 if __name__ == "__main__":
     main(sys.argv)
