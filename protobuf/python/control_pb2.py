@@ -11,7 +11,7 @@ from google.protobuf import descriptor_pb2
 DESCRIPTOR = descriptor.FileDescriptor(
   name='control.proto',
   package='',
-  serialized_pb='\n\rcontrol.proto\"\xaf\x02\n\x0e\x43ontrolMessage\x12\x30\n\x04type\x18\x01 \x02(\x0e\x32\".ControlMessage.ControlMessageType\x12\x11\n\tremote_id\x18\x02 \x01(\x05\x12\x10\n\x08query_id\x18\x03 \x01(\x03\"\xc5\x01\n\x12\x43ontrolMessageType\x12\x0b\n\x07\x43ONNECT\x10\x00\x12\x0f\n\x0bSTART_QUERY\x10\x01\x12\x1a\n\x16QUERY_READY_TO_EXECUTE\x10\x02\x12\x0c\n\x08SHUTDOWN\x10\x03\x12\x0e\n\nDISCONNECT\x10\x04\x12\x10\n\x0cWORKER_ALIVE\x10\x05\x12\x12\n\x0eQUERY_COMPLETE\x10\x06\x12\x0f\n\x0bQUERY_PAUSE\x10\x07\x12\x10\n\x0cQUERY_RESUME\x10\x08\x12\x0e\n\nQUERY_KILL\x10\tB4\n$edu.washington.escience.myriad.protoB\x0c\x43ontrolProto')
+  serialized_pb='\n\rcontrol.proto\"\xaf\x02\n\x0e\x43ontrolMessage\x12\x30\n\x04type\x18\x01 \x02(\x0e\x32\".ControlMessage.ControlMessageType\x12\x11\n\tremote_id\x18\x02 \x01(\x05\x12\x10\n\x08query_id\x18\x03 \x01(\x03\"\xc5\x01\n\x12\x43ontrolMessageType\x12\x0b\n\x07\x43ONNECT\x10\x00\x12\x0e\n\nDISCONNECT\x10\x04\x12\x0f\n\x0bQUERY_START\x10\x01\x12\x0f\n\x0bQUERY_PAUSE\x10\x07\x12\x10\n\x0cQUERY_RESUME\x10\x08\x12\x0e\n\nQUERY_KILL\x10\t\x12\x1a\n\x16QUERY_READY_TO_EXECUTE\x10\x02\x12\x12\n\x0eQUERY_COMPLETE\x10\x06\x12\x0c\n\x08SHUTDOWN\x10\x03\x12\x10\n\x0cWORKER_ALIVE\x10\x05\x42\x34\n$edu.washington.escience.myriad.protoB\x0c\x43ontrolProto')
 
 
 
@@ -26,39 +26,39 @@ _CONTROLMESSAGE_CONTROLMESSAGETYPE = descriptor.EnumDescriptor(
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='START_QUERY', index=1, number=1,
+      name='DISCONNECT', index=1, number=4,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='QUERY_READY_TO_EXECUTE', index=2, number=2,
+      name='QUERY_START', index=2, number=1,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='SHUTDOWN', index=3, number=3,
+      name='QUERY_PAUSE', index=3, number=7,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='DISCONNECT', index=4, number=4,
+      name='QUERY_RESUME', index=4, number=8,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='WORKER_ALIVE', index=5, number=5,
+      name='QUERY_KILL', index=5, number=9,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='QUERY_COMPLETE', index=6, number=6,
+      name='QUERY_READY_TO_EXECUTE', index=6, number=2,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='QUERY_PAUSE', index=7, number=7,
+      name='QUERY_COMPLETE', index=7, number=6,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='QUERY_RESUME', index=8, number=8,
+      name='SHUTDOWN', index=8, number=3,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='QUERY_KILL', index=9, number=9,
+      name='WORKER_ALIVE', index=9, number=5,
       options=None,
       type=None),
   ],

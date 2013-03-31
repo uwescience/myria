@@ -141,7 +141,7 @@ public final class Server {
                 break;
               case CONNECT:
               case SHUTDOWN:
-              case START_QUERY:
+              case QUERY_START:
                 throw new RuntimeException("Unexpected control message received at server: " + controlM.toString());
             }
             break;

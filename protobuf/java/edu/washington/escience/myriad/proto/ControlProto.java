@@ -54,27 +54,27 @@ public final class ControlProto {
     public enum ControlMessageType
         implements com.google.protobuf.ProtocolMessageEnum {
       CONNECT(0, 0),
-      START_QUERY(1, 1),
-      QUERY_READY_TO_EXECUTE(2, 2),
-      SHUTDOWN(3, 3),
-      DISCONNECT(4, 4),
-      WORKER_ALIVE(5, 5),
-      QUERY_COMPLETE(6, 6),
-      QUERY_PAUSE(7, 7),
-      QUERY_RESUME(8, 8),
-      QUERY_KILL(9, 9),
+      DISCONNECT(1, 4),
+      QUERY_START(2, 1),
+      QUERY_PAUSE(3, 7),
+      QUERY_RESUME(4, 8),
+      QUERY_KILL(5, 9),
+      QUERY_READY_TO_EXECUTE(6, 2),
+      QUERY_COMPLETE(7, 6),
+      SHUTDOWN(8, 3),
+      WORKER_ALIVE(9, 5),
       ;
       
       public static final int CONNECT_VALUE = 0;
-      public static final int START_QUERY_VALUE = 1;
-      public static final int QUERY_READY_TO_EXECUTE_VALUE = 2;
-      public static final int SHUTDOWN_VALUE = 3;
       public static final int DISCONNECT_VALUE = 4;
-      public static final int WORKER_ALIVE_VALUE = 5;
-      public static final int QUERY_COMPLETE_VALUE = 6;
+      public static final int QUERY_START_VALUE = 1;
       public static final int QUERY_PAUSE_VALUE = 7;
       public static final int QUERY_RESUME_VALUE = 8;
       public static final int QUERY_KILL_VALUE = 9;
+      public static final int QUERY_READY_TO_EXECUTE_VALUE = 2;
+      public static final int QUERY_COMPLETE_VALUE = 6;
+      public static final int SHUTDOWN_VALUE = 3;
+      public static final int WORKER_ALIVE_VALUE = 5;
       
       
       public final int getNumber() { return value; }
@@ -82,15 +82,15 @@ public final class ControlProto {
       public static ControlMessageType valueOf(int value) {
         switch (value) {
           case 0: return CONNECT;
-          case 1: return START_QUERY;
-          case 2: return QUERY_READY_TO_EXECUTE;
-          case 3: return SHUTDOWN;
           case 4: return DISCONNECT;
-          case 5: return WORKER_ALIVE;
-          case 6: return QUERY_COMPLETE;
+          case 1: return QUERY_START;
           case 7: return QUERY_PAUSE;
           case 8: return QUERY_RESUME;
           case 9: return QUERY_KILL;
+          case 2: return QUERY_READY_TO_EXECUTE;
+          case 6: return QUERY_COMPLETE;
+          case 3: return SHUTDOWN;
+          case 5: return WORKER_ALIVE;
           default: return null;
         }
       }
@@ -121,7 +121,7 @@ public final class ControlProto {
       }
       
       private static final ControlMessageType[] VALUES = {
-        CONNECT, START_QUERY, QUERY_READY_TO_EXECUTE, SHUTDOWN, DISCONNECT, WORKER_ALIVE, QUERY_COMPLETE, QUERY_PAUSE, QUERY_RESUME, QUERY_KILL, 
+        CONNECT, DISCONNECT, QUERY_START, QUERY_PAUSE, QUERY_RESUME, QUERY_KILL, QUERY_READY_TO_EXECUTE, QUERY_COMPLETE, SHUTDOWN, WORKER_ALIVE, 
       };
       
       public static ControlMessageType valueOf(
@@ -587,12 +587,12 @@ public final class ControlProto {
       "\n\rcontrol.proto\"\257\002\n\016ControlMessage\0220\n\004ty" +
       "pe\030\001 \002(\0162\".ControlMessage.ControlMessage" +
       "Type\022\021\n\tremote_id\030\002 \001(\005\022\020\n\010query_id\030\003 \001(" +
-      "\003\"\305\001\n\022ControlMessageType\022\013\n\007CONNECT\020\000\022\017\n" +
-      "\013START_QUERY\020\001\022\032\n\026QUERY_READY_TO_EXECUTE" +
-      "\020\002\022\014\n\010SHUTDOWN\020\003\022\016\n\nDISCONNECT\020\004\022\020\n\014WORK" +
-      "ER_ALIVE\020\005\022\022\n\016QUERY_COMPLETE\020\006\022\017\n\013QUERY_" +
+      "\003\"\305\001\n\022ControlMessageType\022\013\n\007CONNECT\020\000\022\016\n" +
+      "\nDISCONNECT\020\004\022\017\n\013QUERY_START\020\001\022\017\n\013QUERY_" +
       "PAUSE\020\007\022\020\n\014QUERY_RESUME\020\010\022\016\n\nQUERY_KILL\020" +
-      "\tB4\n$edu.washington.escience.myriad.prot" +
+      "\t\022\032\n\026QUERY_READY_TO_EXECUTE\020\002\022\022\n\016QUERY_C" +
+      "OMPLETE\020\006\022\014\n\010SHUTDOWN\020\003\022\020\n\014WORKER_ALIVE\020" +
+      "\005B4\n$edu.washington.escience.myriad.prot" +
       "oB\014ControlProto"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =

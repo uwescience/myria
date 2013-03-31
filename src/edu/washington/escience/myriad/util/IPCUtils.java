@@ -223,7 +223,7 @@ public final class IPCUtils {
    * */
   public static TransportMessage startQueryTM(final long queryId) {
     return CONTROL_TM_BUILDER.get().setControl(
-        ControlMessage.newBuilder().setType(ControlMessage.ControlMessageType.START_QUERY).setQueryId(queryId)).build();
+        ControlMessage.newBuilder().setType(ControlMessage.ControlMessageType.QUERY_START).setQueryId(queryId)).build();
   }
 
   /**

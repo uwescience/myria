@@ -111,7 +111,7 @@ public final class Worker {
                   toShutdown = true;
                   abruptShutdown = false;
                   break;
-                case START_QUERY:
+                case QUERY_START:
                   long queryId = cm.getQueryId();
                   WorkerQueryPartition q = activeQueries.get(queryId);
                   if (q == null) {
@@ -133,6 +133,12 @@ public final class Worker {
                     LOGGER
                         .error("DISCONNECT and CONNECT are used exclusively in IPC connection pool. They should not arrive here.");
                   }
+                  break;
+                case QUERY_PAUSE:
+                  break;
+                case QUERY_RESUME:
+                  break;
+                case QUERY_KILL:
                   break;
                 case QUERY_COMPLETE:
                 case QUERY_READY_TO_EXECUTE:
