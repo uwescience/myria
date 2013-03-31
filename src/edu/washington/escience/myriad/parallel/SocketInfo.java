@@ -11,7 +11,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  */
 public final class SocketInfo implements Serializable {
   /** Class-specific magic number used to generate the hash code. */
-  private static final int MAGIC_HASHCODE1 = 365;
+  private static final int MAGIC_HASHCODE1 = 947;
   /** Class-specific magic number used to generate the hash code. */
   private static final int MAGIC_HASHCODE2 = 91;
 

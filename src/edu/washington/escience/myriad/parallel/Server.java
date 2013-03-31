@@ -152,9 +152,7 @@ public final class Server {
     }
   }
 
-  /**
-   * Usage string.
-   * */
+  /** The usage message for this server. */
   static final String USAGE = "Usage: Server catalogFile [-explain] [-f queryFile]";
 
   /** The logger for this class. */

@@ -12,6 +12,7 @@ import com.google.common.base.Preconditions;
 import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myriad.TupleBatch;
+import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType;
 import edu.washington.escience.myriad.proto.DataProto.DoubleColumnMessage;
@@ -77,6 +78,11 @@ public final class DoubleColumn implements Column<Double> {
   public void getIntoSQLite(final int row, final SQLiteStatement statement, final int sqliteIndex)
       throws SQLiteException {
     statement.bind(sqliteIndex, getDouble(row));
+  }
+
+  @Override
+  public Type getType() {
+    return Type.DOUBLE_TYPE;
   }
 
   /**

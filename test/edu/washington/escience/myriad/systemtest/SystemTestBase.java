@@ -467,7 +467,7 @@ public class SystemTestBase {
   }
 
   /** The Server being run for the system test. */
-  protected static Server server;
+  protected volatile static Server server;
 
   static Server startMaster() throws InterruptedException {
     new Thread("Master main thread") {
@@ -484,7 +484,7 @@ public class SystemTestBase {
         }
       }
     }.start();
-    while (Server.getRunningInstance() == null) {
+    while (server == null) {
       // Wait the Server to finish starting.
       Thread.sleep(100);
       server = Server.getRunningInstance();
