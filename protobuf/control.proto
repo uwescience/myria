@@ -10,6 +10,9 @@ message ControlMessage {
     DISCONNECT = 4; //disconnect an IPC connection, used only in he IPC module. Do not process it elsewhere.
     WORKER_ALIVE = 5; // worker -> master
     QUERY_COMPLETE = 6; // worker -> master
+    QUERY_PAUSE = 7; // master -> worker
+    QUERY_RESUME = 8; // master -> worker
+    QUERY_KILL = 9; // master -> worker
   }
 
   required ControlMessageType type = 1;		// See enum above

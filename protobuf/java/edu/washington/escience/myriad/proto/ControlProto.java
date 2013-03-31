@@ -60,6 +60,9 @@ public final class ControlProto {
       DISCONNECT(4, 4),
       WORKER_ALIVE(5, 5),
       QUERY_COMPLETE(6, 6),
+      QUERY_PAUSE(7, 7),
+      QUERY_RESUME(8, 8),
+      QUERY_KILL(9, 9),
       ;
       
       public static final int CONNECT_VALUE = 0;
@@ -69,6 +72,9 @@ public final class ControlProto {
       public static final int DISCONNECT_VALUE = 4;
       public static final int WORKER_ALIVE_VALUE = 5;
       public static final int QUERY_COMPLETE_VALUE = 6;
+      public static final int QUERY_PAUSE_VALUE = 7;
+      public static final int QUERY_RESUME_VALUE = 8;
+      public static final int QUERY_KILL_VALUE = 9;
       
       
       public final int getNumber() { return value; }
@@ -82,6 +88,9 @@ public final class ControlProto {
           case 4: return DISCONNECT;
           case 5: return WORKER_ALIVE;
           case 6: return QUERY_COMPLETE;
+          case 7: return QUERY_PAUSE;
+          case 8: return QUERY_RESUME;
+          case 9: return QUERY_KILL;
           default: return null;
         }
       }
@@ -112,7 +121,7 @@ public final class ControlProto {
       }
       
       private static final ControlMessageType[] VALUES = {
-        CONNECT, START_QUERY, QUERY_READY_TO_EXECUTE, SHUTDOWN, DISCONNECT, WORKER_ALIVE, QUERY_COMPLETE, 
+        CONNECT, START_QUERY, QUERY_READY_TO_EXECUTE, SHUTDOWN, DISCONNECT, WORKER_ALIVE, QUERY_COMPLETE, QUERY_PAUSE, QUERY_RESUME, QUERY_KILL, 
       };
       
       public static ControlMessageType valueOf(
@@ -575,15 +584,16 @@ public final class ControlProto {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\rcontrol.proto\"\374\001\n\016ControlMessage\0220\n\004ty" +
+      "\n\rcontrol.proto\"\257\002\n\016ControlMessage\0220\n\004ty" +
       "pe\030\001 \002(\0162\".ControlMessage.ControlMessage" +
       "Type\022\021\n\tremote_id\030\002 \001(\005\022\020\n\010query_id\030\003 \001(" +
-      "\003\"\222\001\n\022ControlMessageType\022\013\n\007CONNECT\020\000\022\017\n" +
+      "\003\"\305\001\n\022ControlMessageType\022\013\n\007CONNECT\020\000\022\017\n" +
       "\013START_QUERY\020\001\022\032\n\026QUERY_READY_TO_EXECUTE" +
       "\020\002\022\014\n\010SHUTDOWN\020\003\022\016\n\nDISCONNECT\020\004\022\020\n\014WORK" +
-      "ER_ALIVE\020\005\022\022\n\016QUERY_COMPLETE\020\006B4\n$edu.wa" +
-      "shington.escience.myriad.protoB\014ControlP" +
-      "roto"
+      "ER_ALIVE\020\005\022\022\n\016QUERY_COMPLETE\020\006\022\017\n\013QUERY_" +
+      "PAUSE\020\007\022\020\n\014QUERY_RESUME\020\010\022\016\n\nQUERY_KILL\020" +
+      "\tB4\n$edu.washington.escience.myriad.prot" +
+      "oB\014ControlProto"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
