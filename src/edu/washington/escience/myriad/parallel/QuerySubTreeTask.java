@@ -16,6 +16,7 @@ import edu.washington.escience.myriad.operator.IDBInput;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.parallel.Worker.QueryExecutionMode;
+import edu.washington.escience.myriad.util.ReentrantSpinLock;
 
 /**
  * Non-blocking driving code of a sub-query.
@@ -33,6 +34,11 @@ final class QuerySubTreeTask {
    * Num input TupleBatch from consumer operators.
    * */
   private final AtomicLong numInputTBs;
+
+  /**
+   * The spin lock which makes non-blocking execution condition checking atomic.
+   * */
+  private final ReentrantSpinLock nonBlockingExecutionCheckingSpinLock = new ReentrantSpinLock();
 
   /**
    * The executor who is responsible for executing the task.
@@ -225,8 +231,10 @@ final class QuerySubTreeTask {
    * called by Netty Upstream IO worker threads.
    * */
   public void notifyNewInput() {
+    nonBlockingExecutionCheckingSpinLock.lock();
     numInputTBs.incrementAndGet();
     nonBlockingExecute();
+    nonBlockingExecutionCheckingSpinLock.unlock();
   }
 
   /**
@@ -240,7 +248,9 @@ final class QuerySubTreeTask {
     }
     int idx = Arrays.binarySearch(outputChannels, outputChannelID);
     outputChannelAvailable.clear(idx);
+    nonBlockingExecutionCheckingSpinLock.lock();
     outputAvailable = false; // output not available if any of the output channels is not available
+    nonBlockingExecutionCheckingSpinLock.unlock();
   }
 
   /**
@@ -257,8 +267,10 @@ final class QuerySubTreeTask {
       if (!outputChannelAvailable.get(idx)) {
         outputChannelAvailable.set(idx);
         if (outputChannelAvailable.nextClearBit(0) >= outputChannels.length) {
+          nonBlockingExecutionCheckingSpinLock.lock();
           outputAvailable = true;
           nonBlockingExecute();
+          nonBlockingExecutionCheckingSpinLock.unlock();
         }
       }
     }
@@ -299,9 +311,14 @@ final class QuerySubTreeTask {
           break;
         }
 
-        if (numInputTBs.compareAndSet(atStart, 0)) {
-          // no new input TB.
-          break;
+        try {
+          nonBlockingExecutionCheckingSpinLock.lock();
+          if (numInputTBs.compareAndSet(atStart, 0)) {
+            // no new input TB.
+            break;
+          }
+        } finally {
+          nonBlockingExecutionCheckingSpinLock.unlock();
         }
       }
       if (root.eos()) {
@@ -326,14 +343,14 @@ final class QuerySubTreeTask {
    * 
    * @return if the nonblocking task is ready for execution.
    * */
-  public boolean readyForNonBlockingExecution() {
+  private boolean readyForNonBlockingExecution() {
     return initialized && outputAvailable && executionMode == QueryExecutionMode.NON_BLOCKING && numInputTBs.get() > 0;
   }
 
   /**
    * @return if blocking execution is ready.
    * */
-  boolean readyForBlockingExecution() {
+  private boolean readyForBlockingExecution() {
     return initialized && !inBlockingExecution && executionMode == QueryExecutionMode.BLOCKING;
   }
 
@@ -381,7 +398,9 @@ final class QuerySubTreeTask {
   public void cleanup() {
     try {
       root.close();
+      nonBlockingExecutionCheckingSpinLock.lock();
       initialized = false;
+      nonBlockingExecutionCheckingSpinLock.unlock();
     } catch (DbException ee) {
       if (LOGGER.isErrorEnabled()) {
         LOGGER.error("Unknown exception at operator close. Root operator: " + root + ".", ee);
@@ -402,7 +421,7 @@ final class QuerySubTreeTask {
    * Execute this task in blocking mode.
    * */
   public void blockingExecute() {
-    if (readyForNonBlockingExecution()) {
+    if (readyForBlockingExecution()) {
       inBlockingExecution = true;
       myExecutor.submit(blockingExecutionTask);
     }
@@ -416,7 +435,9 @@ final class QuerySubTreeTask {
   public void init(final ImmutableMap<String, Object> execUnitEnv) {
     try {
       root.open(execUnitEnv);
+      nonBlockingExecutionCheckingSpinLock.lock();
       initialized = true;
+      nonBlockingExecutionCheckingSpinLock.unlock();
     } catch (DbException e) {
       if (LOGGER.isErrorEnabled()) {
         LOGGER.error("Query failed to open. Close the query directly.", e);
