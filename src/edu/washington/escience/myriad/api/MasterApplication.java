@@ -6,7 +6,7 @@ import java.util.Set;
 import javax.ws.rs.core.Application;
 
 /**
- * This object simply contains the list of resources that can be requested via the RESTlet server.
+ * This object simply contains the list of resources that can be requested via the Restlet server.
  * 
  * @author dhalperi, jwang
  */

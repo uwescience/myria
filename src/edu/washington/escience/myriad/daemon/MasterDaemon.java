@@ -29,13 +29,12 @@ public final class MasterDaemon {
   public static void main(final String[] args) throws Exception {
     final MasterDaemon md = new MasterDaemon(args);
     md.start();
-    // System.out.println("Press enter to stop");
-    // System.in.read();
-    // md.stop();
   }
 
-  /** The Myriad server. */
+  /** The Myria server. */
   private final Server server;
+  /** The Master API server. */
+  private final MasterApiServer apiServer;
 
   /**
    * Instantiates a MasterDaemon object. Includes the API server and the Myriad server.
@@ -46,7 +45,7 @@ public final class MasterDaemon {
   public MasterDaemon(final String[] args) throws Exception {
     processArguments(args);
     server = new Server(FilenameUtils.concat(args[0], "master.catalog"));
-    MasterApiServer.setUp(server);
+    apiServer = new MasterApiServer(server, this);
   }
 
   /**
@@ -68,7 +67,7 @@ public final class MasterDaemon {
    * @throws Exception if there is an issue starting either server.
    */
   public void start() throws Exception {
-    MasterApiServer.INSTANCE.start();
+    apiServer.start();
     server.start();
   }
 
@@ -78,7 +77,7 @@ public final class MasterDaemon {
    * @throws Exception if there is an issue stopping either server.
    */
   public void stop() throws Exception {
-    MasterApiServer.INSTANCE.stop();
+    apiServer.stop();
     server.shutdown();
   }
 

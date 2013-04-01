@@ -11,6 +11,7 @@ import org.jboss.netty.channel.ExceptionEvent;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.SimpleChannelHandler;
 import org.jboss.netty.channel.UpstreamChannelStateEvent;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
@@ -19,7 +20,7 @@ import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 public class IPCInputGuard extends SimpleChannelHandler {
 
   /** The logger for this class. */
-  protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(IPCInputGuard.class.getName());
+  protected static final Logger LOGGER = LoggerFactory.getLogger(IPCInputGuard.class);
 
   /**
    * constructor.

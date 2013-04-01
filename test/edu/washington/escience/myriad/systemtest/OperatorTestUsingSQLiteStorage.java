@@ -32,8 +32,7 @@ import edu.washington.escience.myriad.util.TestUtils;
 
 public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = LoggerFactory
-      .getLogger(OperatorTestUsingSQLiteStorage.class.getName());
+  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(OperatorTestUsingSQLiteStorage.class);
 
   @Test
   public void dupElimTest() throws DbException, IOException, CatalogException {

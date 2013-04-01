@@ -30,6 +30,7 @@ import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroupFuture;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.util.ExternalResourceReleasable;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myriad.parallel.Worker.MessageWrapper;
@@ -227,7 +228,7 @@ public class IPCConnectionPool {
   }
 
   /** The logger for this class. */
-  protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(IPCConnectionPool.class.getName());
+  protected static final Logger LOGGER = LoggerFactory.getLogger(IPCConnectionPool.class);
 
   /**
    * upper bound of the number of connections between this JVM and a remote IPC entity. Should be moved to the system
