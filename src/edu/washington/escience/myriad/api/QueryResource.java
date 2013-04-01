@@ -170,7 +170,12 @@ public final class QueryResource {
     RootOperator[] ret = new RootOperator[localPlanList.size()];
     int i = 0;
     for (Object o : localPlanList) {
-      ret[i++] = deserializeJsonLocalPlan(o);
+      Operator op = deserializeJsonLocalPlan(o);
+      if (op instanceof CollectConsumer) {
+        // old server plan, by default add a SinkRoot as tht root operator.
+        op = new SinkRoot(op);
+      }
+      ret[i++] = (RootOperator) op;
     }
     return ret;
   }
@@ -180,7 +185,7 @@ public final class QueryResource {
    * @return the deserialized operator tree.
    * @throws Exception if any error occurs.
    * */
-  private static RootOperator deserializeJsonLocalPlan(final Object jsonLocalPlan) throws Exception {
+  private static Operator deserializeJsonLocalPlan(final Object jsonLocalPlan) throws Exception {
     /* Better be a List */
     if (!(jsonLocalPlan instanceof List)) {
       throw new ClassCastException("argument is not a List of Operator definitions.");
@@ -201,7 +206,7 @@ public final class QueryResource {
       operators.put(opName, op);
     }
     // The root must be a RootOperator
-    return (RootOperator) op;
+    return op;
   }
 
   /**
