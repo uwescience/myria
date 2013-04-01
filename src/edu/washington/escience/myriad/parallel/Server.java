@@ -898,7 +898,8 @@ public final class Server {
 
     try {
       /* Start the workers */
-      submitQuery("ingest " + relationKey, "ingest " + relationKey, scatter, workerPlans).sync();
+      submitQuery("ingest " + relationKey.toString("sqlite"), "ingest " + relationKey.toString("sqlite"), scatter,
+          workerPlans).sync();
     } catch (CatalogException | DbException e) {
       throw new WebApplicationException(e);
     }

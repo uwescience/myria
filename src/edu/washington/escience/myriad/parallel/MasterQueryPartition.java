@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.operator.RootOperator;
+import edu.washington.escience.myriad.util.DateTimeUtils;
 
 /**
  * A {@link MasterQueryPartition} is the partition of a query plan at the Master side. Currently, a master query
@@ -84,6 +85,9 @@ public class MasterQueryPartition implements QueryPartition {
    * */
   private final QueryFuture queryExecutionFuture = new DefaultQueryFuture(this, true);
 
+  private volatile long startAtInNano;
+  private volatile long endAtInNano;
+
   /**
    * Callback when a query plan is received by a worker.
    * 
@@ -147,6 +151,12 @@ public class MasterQueryPartition implements QueryPartition {
     workersCompleteQuery.set(workerIdx);
     queryExecutionFuture.setProgress(1, workersCompleteQuery.cardinality(), workersAssigned.size());
     if (workersCompleteQuery.cardinality() >= workersAssigned.size() && rootTaskEOS) {
+      endAtInNano = System.nanoTime();
+      if (LOGGER.isInfoEnabled()) {
+        LOGGER.info("Query #" + queryID + " finished at " + endAtInNano);
+        LOGGER.info("Query #" + queryID + " executed for "
+            + DateTimeUtils.nanoElapseToHumanReadable(endAtInNano - startAtInNano));
+      }
       queryExecutionFuture.setSuccess();
     }
   }
@@ -208,8 +218,9 @@ public class MasterQueryPartition implements QueryPartition {
 
   @Override
   public final void startNonBlockingExecution() {
+    startAtInNano = System.nanoTime();
     if (LOGGER.isInfoEnabled()) {
-      LOGGER.info("Query : " + this + " start processing.");
+      LOGGER.info("Query : " + this + " start processing at " + startAtInNano);
     }
     rootTask.init(ImmutableMap.copyOf(master.getExecEnvVars()));
     rootTask.nonBlockingExecute();
