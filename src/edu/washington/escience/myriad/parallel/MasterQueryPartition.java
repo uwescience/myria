@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.operator.RootOperator;
+import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.util.DateTimeUtils;
 
 /**
@@ -148,6 +149,9 @@ public class MasterQueryPartition implements QueryPartition {
       LOGGER.warn("Got a QUERY_COMPLETE message from worker " + workerID + " who is not assigned to query" + queryID);
       return;
     }
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug("Received query complete message from worker: {}", workerID);
+    }
     workersCompleteQuery.set(workerIdx);
     queryExecutionFuture.setProgress(1, workersCompleteQuery.cardinality(), workersAssigned.size());
     if (workersCompleteQuery.cardinality() >= workersAssigned.size() && rootTaskEOS) {
@@ -248,6 +252,12 @@ public class MasterQueryPartition implements QueryPartition {
     }
     rootTaskEOS = true;
     if (workersCompleteQuery.cardinality() >= workersAssigned.size()) {
+      endAtInNano = System.nanoTime();
+      if (LOGGER.isInfoEnabled()) {
+        LOGGER.info("Query #" + queryID + " finished at " + endAtInNano);
+        LOGGER.info("Query #" + queryID + " executed for "
+            + DateTimeUtils.nanoElapseToHumanReadable(endAtInNano - startAtInNano));
+      }
       queryExecutionFuture.setSuccess();
     }
   }
@@ -257,6 +267,11 @@ public class MasterQueryPartition implements QueryPartition {
     if (rootTaskEOS) {
       LOGGER.error("Duplicate task eos: {} ", task);
       return;
+    }
+    if (root instanceof SinkRoot) {
+      if (LOGGER.isInfoEnabled()) {
+        LOGGER.info(" Query #{} num output tuple: {}", queryID, ((SinkRoot) root).getCount());
+      }
     }
     queryFinish();
   }
