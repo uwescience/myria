@@ -32,7 +32,7 @@ import edu.washington.escience.myriad.util.TestUtils;
 
 public class SQLiteTest {
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(SQLiteTest.class.getName());
+  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(SQLiteTest.class);
 
   @Test
   public void sqliteTest() throws DbException, IOException, CatalogException, InterruptedException {

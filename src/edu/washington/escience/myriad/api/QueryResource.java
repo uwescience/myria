@@ -65,7 +65,7 @@ import edu.washington.escience.myriad.parallel.SingleFieldHashPartitionFunction;
 @Path("/query")
 public final class QueryResource {
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(QueryResource.class.getName());
+  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(QueryResource.class);
 
   /**
    * For now, simply echoes back its input.
@@ -96,7 +96,7 @@ public final class QueryResource {
       /* Remove the server plan if present */
       usingWorkers.remove(MyriaConstants.MASTER_ID);
       /* Make sure that the requested workers are alive. */
-      if (!MasterApiServer.getMyriaServer().getAliveWorkers().containsAll(usingWorkers)) {
+      if (!MyriaApiUtils.getServer().getAliveWorkers().containsAll(usingWorkers)) {
         /* Throw a 503 (Service Unavailable) */
         throw new WebApplicationException(Response.status(Status.SERVICE_UNAVAILABLE).build());
       }
@@ -109,7 +109,7 @@ public final class QueryResource {
       final RootOperator masterRoot = masterPlan[0];
 
       /* Start the query, and get its Server-assigned Query ID */
-      QueryFuture qf = MasterApiServer.getMyriaServer().submitQuery(rawQuery, logicalRa, queryPlan);
+      QueryFuture qf = MyriaApiUtils.getServer().submitQuery(rawQuery, logicalRa, queryPlan);
       long queryId = qf.getQuery().getQueryID();
       qf.addListener(new QueryFutureListener() {
 
@@ -280,7 +280,7 @@ public final class QueryResource {
         RelationKey relationKey = RelationKey.of(userName, programName, relationName);
         Schema schema;
         try {
-          schema = MasterApiServer.getMyriaServer().getSchema(relationKey);
+          schema = MyriaApiUtils.getServer().getSchema(relationKey);
         } catch (final CatalogException e) {
           /* Throw a 500 (Internal Server Error) */
           throw new WebApplicationException(Response.status(Status.INTERNAL_SERVER_ERROR).build());

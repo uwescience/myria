@@ -20,7 +20,7 @@ import edu.washington.escience.myriad.parallel.SocketInfo;
 
 public class CatalogTest {
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(CatalogTest.class.getName());
+  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(CatalogTest.class);
 
   @Rule
   public TestRule watcher = new TestWatcher() {

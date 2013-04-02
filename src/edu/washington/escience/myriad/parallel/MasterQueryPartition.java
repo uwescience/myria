@@ -90,6 +90,16 @@ public class MasterQueryPartition implements QueryPartition {
   private volatile long endAtInNano;
 
   /**
+   * Start timestamp of the whole query, not only the master partition.
+   * */
+  private volatile long startAtInNano;
+
+  /**
+   * End timestamp of the whole query, not only the master partition.
+   * */
+  private volatile long endAtInNano;
+
+  /**
    * Callback when a query plan is received by a worker.
    * 
    * @param workerID the workerID
