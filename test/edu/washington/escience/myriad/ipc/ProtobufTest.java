@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.netty.channel.Channel;
@@ -182,7 +183,12 @@ public class ProtobufTest {
     final TupleBatchBuffer actualTBB = new TupleBatchBuffer(tbb.getSchema());
     int numEOS = 0;
     TestMessageWrapper m = null;
-    while ((m = messageQueue.poll()) != null) {
+    final int timeoutInSeconds = 10;
+    while (numEOS < numThreads) {
+      m = messageQueue.poll(timeoutInSeconds, TimeUnit.SECONDS);
+      if (m == null) {
+        throw new Exception("Timeout in retrieving data from receive buffer.");
+      }
       final TransportMessage tm = m.message;
       if (tm.getType() == TransportMessage.TransportMessageType.DATA) {
         final DataMessage data = tm.getData();
@@ -210,8 +216,6 @@ public class ProtobufTest {
         }
       }
     }
-    assertEquals(numThreads, numEOS);
-    assertEquals(numSent.get(), numReceived);
     final HashMap<Tuple, Integer> actual = TestUtils.tupleBatchToTupleBag(actualTBB);
     TestUtils.assertTupleBagEqual(expected, actual);
     LOGGER.info("Received: " + numReceived + " TupleBatches");
@@ -265,13 +269,17 @@ public class ProtobufTest {
     connectionPool.releaseExternalResources();
     int numReceived = 0;
     TestMessageWrapper tmw = null;
-    while ((tmw = messageQueue.poll()) != null) {
+    final int timeoutInSeconds = 10;
+    while (numSent.get() > numReceived) {
+      tmw = messageQueue.poll(timeoutInSeconds, TimeUnit.SECONDS);
+      if (tmw == null) {
+        throw new Exception("Timeout in retrieving data from receive buffer.");
+      }
       if (tmw.message.getType() == TransportMessage.TransportMessageType.CONTROL
           && tmw.message.getControl().getType() == ControlMessage.ControlMessageType.SHUTDOWN) {
         numReceived++;
       }
     }
-    assertEquals(numSent.get(), numReceived);
     LOGGER.info("Received: " + numReceived + " messages");
 
   }
@@ -377,7 +385,12 @@ public class ProtobufTest {
     final TupleBatchBuffer actualTBB = new TupleBatchBuffer(tbb.getSchema());
     int numEOS = 0;
     TestMessageWrapper m = null;
-    while ((m = serverMessageQueue.poll()) != null) {
+    final int timeoutInSeconds = 10;
+    while (numEOS < numThreads) {
+      m = serverMessageQueue.poll(timeoutInSeconds, TimeUnit.SECONDS);
+      if (m == null) {
+        throw new Exception("Timeout in retrieving data from receive buffer.");
+      }
       final TransportMessage tm = m.message;
       if (tm.getType() == TransportMessage.TransportMessageType.DATA) {
         final DataMessage data = tm.getData();
@@ -405,8 +418,6 @@ public class ProtobufTest {
         }
       }
     }
-    assertEquals(numThreads, numEOS);
-    assertEquals(numSent.get(), numReceived);
     final HashMap<Tuple, Integer> actual = TestUtils.tupleBatchToTupleBag(actualTBB);
     TestUtils.assertTupleBagEqual(expected, actual);
     LOGGER.info("Received: " + numReceived + " TupleBatches");
@@ -505,7 +516,12 @@ public class ProtobufTest {
     final TupleBatchBuffer actualTBB = new TupleBatchBuffer(tbb.getSchema());
     int numEOS = 0;
     TestMessageWrapper m = null;
-    while ((m = messageQueue.poll()) != null) {
+    final int timeoutInSeconds = 10;
+    while (numEOS < numThreads) {
+      m = messageQueue.poll(timeoutInSeconds, TimeUnit.SECONDS);
+      if (m == null) {
+        throw new Exception("Timeout in retrieving data from receive buffer.");
+      }
       final TransportMessage tm = m.message;
       if (tm.getType() == TransportMessage.TransportMessageType.DATA) {
         final DataMessage data = tm.getData();
@@ -533,7 +549,6 @@ public class ProtobufTest {
         }
       }
     }
-    assertEquals(numThreads, numEOS);
     assertEquals(numSent.get(), numReceived);
     final HashMap<Tuple, Integer> actual = TestUtils.tupleBatchToTupleBag(actualTBB);
     TestUtils.assertTupleBagEqual(expected, actual);
@@ -595,7 +610,12 @@ public class ProtobufTest {
     final TupleBatchBuffer actualTBB = new TupleBatchBuffer(tbb.getSchema());
     int numEOS = 0;
     TestMessageWrapper m = null;
-    while ((m = messageQueue.poll()) != null) {
+    final int timeoutInSeconds = 10;
+    while (numEOS < 1) {
+      m = messageQueue.poll(timeoutInSeconds, TimeUnit.SECONDS);
+      if (m == null) {
+        throw new Exception("Timeout in retrieving data from receive buffer.");
+      }
       final TransportMessage tm = m.message;
       if (tm.getType() == TransportMessage.TransportMessageType.DATA) {
         final DataMessage data = tm.getData();
@@ -623,8 +643,6 @@ public class ProtobufTest {
         }
       }
     }
-    assertEquals(1, numEOS);
-    assertEquals(numSent.get(), numReceived);
     final HashMap<Tuple, Integer> actual = TestUtils.tupleBatchToTupleBag(actualTBB);
     TestUtils.assertTupleBagEqual(expected, actual);
     LOGGER.info("Received: " + numReceived + " TupleBatches");
@@ -661,14 +679,18 @@ public class ProtobufTest {
     int numReceived = 0;
 
     TestMessageWrapper tmw = null;
-    while ((tmw = messageQueue.poll()) != null) {
+    final int timeoutInSeconds = 10;
+    while (numSent.get() > numReceived) {
+      tmw = messageQueue.poll(timeoutInSeconds, TimeUnit.SECONDS);
+      if (tmw == null) {
+        throw new Exception("Timeout in retrieving data from receive buffer.");
+      }
       if (tmw.message.getType() == TransportMessage.TransportMessageType.CONTROL
           && tmw.message.getControl().getType() == ControlMessage.ControlMessageType.WORKER_ALIVE) {
         numReceived++;
       }
     }
 
-    assertEquals(numSent.get(), numReceived);
     LOGGER.info("Received: " + numReceived + " messages");
 
   }
@@ -744,7 +766,12 @@ public class ProtobufTest {
     final TupleBatchBuffer actualTBB = new TupleBatchBuffer(tbb.getSchema());
     int numEOS = 0;
     TestMessageWrapper m = null;
-    while ((m = serverMessageQueue.poll()) != null) {
+    final int timeoutInSeconds = 10;
+    while (numEOS < 1) {
+      m = serverMessageQueue.poll(timeoutInSeconds, TimeUnit.SECONDS);
+      if (m == null) {
+        throw new Exception("Timeout in retrieving data from receive buffer.");
+      }
       final TransportMessage tm = m.message;
       if (tm.getType() == TransportMessage.TransportMessageType.DATA) {
         final DataMessage data = tm.getData();
@@ -772,8 +799,6 @@ public class ProtobufTest {
         }
       }
     }
-    assertEquals(1, numEOS);
-    assertEquals(numSent.get(), numReceived);
     final HashMap<Tuple, Integer> actual = TestUtils.tupleBatchToTupleBag(actualTBB);
     TestUtils.assertTupleBagEqual(expected, actual);
     LOGGER.info("Received: " + numReceived + " TupleBatches");
@@ -840,7 +865,12 @@ public class ProtobufTest {
     final TupleBatchBuffer actualTBB = new TupleBatchBuffer(tbb.getSchema());
     int numEOS = 0;
     TestMessageWrapper m = null;
-    while ((m = messageQueue.poll()) != null) {
+    final int timeoutInSeconds = 10;
+    while (numEOS < 1) {
+      m = messageQueue.poll(timeoutInSeconds, TimeUnit.SECONDS);
+      if (m == null) {
+        throw new Exception("Timeout in retrieving data from receive buffer.");
+      }
       final TransportMessage tm = m.message;
       if (tm.getType() == TransportMessage.TransportMessageType.DATA) {
         final DataMessage data = tm.getData();
@@ -868,8 +898,6 @@ public class ProtobufTest {
         }
       }
     }
-    assertEquals(1, numEOS);
-    assertEquals(numSent.get(), numReceived);
     final HashMap<Tuple, Integer> actual = TestUtils.tupleBatchToTupleBag(actualTBB);
     TestUtils.assertTupleBagEqual(expected, actual);
     LOGGER.info("Received: " + numReceived + " TupleBatches");
