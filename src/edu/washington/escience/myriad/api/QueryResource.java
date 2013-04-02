@@ -59,7 +59,7 @@ import edu.washington.escience.myriad.parallel.SingleFieldHashPartitionFunction;
 @Path("/query")
 public final class QueryResource {
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(QueryResource.class.getName());
+  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(QueryResource.class);
 
   /**
    * For now, simply echoes back its input.
@@ -90,14 +90,13 @@ public final class QueryResource {
       /* Remove the server plan if present */
       usingWorkers.remove(0);
       /* Make sure that the requested workers are alive. */
-      if (!MasterApiServer.getMyriaServer().getAliveWorkers().containsAll(usingWorkers)) {
+      if (!MyriaApiUtils.getServer().getAliveWorkers().containsAll(usingWorkers)) {
         /* Throw a 503 (Service Unavailable) */
         throw new WebApplicationException(Response.status(Status.SERVICE_UNAVAILABLE).build());
       }
 
       /* Start the query, and get its Server-assigned Query ID */
-      final Long queryId =
-          MasterApiServer.getMyriaServer().startQuery(rawQuery, logicalRa, queryPlan, expectedResultSize);
+      final Long queryId = MyriaApiUtils.getServer().startQuery(rawQuery, logicalRa, queryPlan, expectedResultSize);
       /* In the response, tell the client what ID this query was assigned. */
       UriBuilder queryUri = uriInfo.getAbsolutePathBuilder();
       return Response.created(queryUri.path("query-" + queryId.toString()).build()).build();
@@ -234,7 +233,7 @@ public final class QueryResource {
         RelationKey relationKey = RelationKey.of(userName, programName, relationName);
         Schema schema;
         try {
-          schema = MasterApiServer.getMyriaServer().getSchema(relationKey);
+          schema = MyriaApiUtils.getServer().getSchema(relationKey);
         } catch (final CatalogException e) {
           /* Throw a 500 (Internal Server Error) */
           throw new WebApplicationException(Response.status(Status.INTERNAL_SERVER_ERROR).build());
