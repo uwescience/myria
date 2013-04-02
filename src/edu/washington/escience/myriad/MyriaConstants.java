@@ -49,8 +49,19 @@ public final class MyriaConstants {
    * */
   public static final int TB = 1024 * 1024 * 1024 * 1024;
 
+  /**
+   * Sqlite storage.
+   * */
   public static final String STORAGE_SYSTEM_SQLITE = "sqlite";
+
+  /**
+   * Mysql storage.
+   * */
   public static final String STORAGE_SYSTEM_MYSQL = "mysql";
+
+  /**
+   * Monetdb storage.
+   * */
   public static final String STORAGE_SYSTEM_MONETDB = "monetdb";
 
   /**

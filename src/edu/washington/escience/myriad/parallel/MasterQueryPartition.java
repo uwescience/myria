@@ -86,7 +86,14 @@ public class MasterQueryPartition implements QueryPartition {
    * */
   private final QueryFuture queryExecutionFuture = new DefaultQueryFuture(this, true);
 
+  /**
+   * Start timestamp of the whole query, not only the master partition.
+   * */
   private volatile long startAtInNano;
+
+  /**
+   * End timestamp of the whole query, not only the master partition.
+   * */
   private volatile long endAtInNano;
 
   /**
