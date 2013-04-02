@@ -35,7 +35,7 @@ public final class WorkerDataHandler extends SimpleChannelUpstreamHandler implem
   /**
    * The logger for this class.
    * */
-  private static final Logger LOGGER = LoggerFactory.getLogger(WorkerDataHandler.class.getName());
+  private static final Logger LOGGER = LoggerFactory.getLogger(WorkerDataHandler.class);
 
   /**
    * * The worker who owns this handler. *

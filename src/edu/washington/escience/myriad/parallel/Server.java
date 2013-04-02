@@ -159,7 +159,7 @@ public final class Server {
   static final String USAGE = "Usage: Server catalogFile [-explain] [-f queryFile]";
 
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(Server.class.getName());
+  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(Server.class);
 
   /**
    * Initial worker list.

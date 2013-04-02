@@ -21,6 +21,7 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
@@ -55,7 +56,7 @@ public class ProtobufTest {
   };
 
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(ProtobufTest.class.getName());
+  private static final Logger LOGGER = LoggerFactory.getLogger(ProtobufTest.class);
 
   // @Test
   public void protobufExhaustNoWaitTest() throws Exception {

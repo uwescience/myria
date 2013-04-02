@@ -11,6 +11,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myriad.DbException;
@@ -30,7 +31,7 @@ import edu.washington.escience.myriad.util.JdbcUtils;
 public final class JdbcAccessMethod {
 
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(JdbcAccessMethod.class.getName());
+  private static final Logger LOGGER = LoggerFactory.getLogger(JdbcAccessMethod.class);
 
   /**
    * Get a JDBC Connection object for the given parameters.
@@ -176,7 +177,7 @@ public final class JdbcAccessMethod {
  */
 class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
   /** The logger for this class, uses JdbcAccessMethod settings. */
-  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(JdbcAccessMethod.class.getName());
+  private static final Logger LOGGER = LoggerFactory.getLogger(JdbcAccessMethod.class);
   /** The results from a JDBC query that will be returned in TupleBatches by this Iterator. */
   private final ResultSet resultSet;
   /** The Schema of the TupleBatches returned by this Iterator. */

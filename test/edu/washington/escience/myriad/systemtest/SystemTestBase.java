@@ -130,7 +130,7 @@ public class SystemTestBase {
   }
 
   /** The logger for this class. */
-  protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(SystemTestBase.class.getName());
+  protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(SystemTestBase.class);
 
   public static final Schema JOIN_INPUT_SCHEMA = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE),
       ImmutableList.of("id", "name"));

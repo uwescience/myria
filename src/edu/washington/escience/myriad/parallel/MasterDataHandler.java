@@ -63,7 +63,7 @@ public class MasterDataHandler extends SimpleChannelUpstreamHandler implements M
   }
 
   /** The logger for this class. */
-  private static final Logger LOGGER = LoggerFactory.getLogger(MasterDataHandler.class.getName());
+  private static final Logger LOGGER = LoggerFactory.getLogger(MasterDataHandler.class);
 
   /**
    * messageQueue.

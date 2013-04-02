@@ -12,6 +12,7 @@ import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.MessageEvent;
 import org.jboss.netty.channel.group.ChannelGroup;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myriad.util.IPCUtils;
@@ -335,7 +336,7 @@ public class ChannelContext {
   }
 
   /** The logger for this class. */
-  protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(ChannelContext.class.getName());
+  protected static final Logger LOGGER = LoggerFactory.getLogger(ChannelContext.class);
 
   /**
    * @return the channel context data structure of the given channel.

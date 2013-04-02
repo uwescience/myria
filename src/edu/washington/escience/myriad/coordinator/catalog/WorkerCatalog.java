@@ -28,7 +28,7 @@ import edu.washington.escience.myriad.parallel.SocketInfo;
  */
 public final class WorkerCatalog {
   /** The logger for this class. */
-  private static final Logger LOGGER = LoggerFactory.getLogger(WorkerCatalog.class.getName());
+  private static final Logger LOGGER = LoggerFactory.getLogger(WorkerCatalog.class);
 
   /**
    * @param filename the path to the SQLite database storing the worker catalog.

@@ -17,7 +17,8 @@ import edu.washington.escience.myriad.Schema;
 public final class LocalMultiwayConsumer extends Consumer {
 
   /** The logger for this class. */
-  private static final Logger LOGGER = LoggerFactory.getLogger(LocalMultiwayConsumer.class.getName());
+  private static final Logger LOGGER = LoggerFactory.getLogger(LocalMultiwayConsumer.class);
+
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
