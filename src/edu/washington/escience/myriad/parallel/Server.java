@@ -749,6 +749,36 @@ public final class Server {
   }
 
   /**
+   * Pause a query with queryID.
+   * 
+   * @param queryID the queryID.
+   * @return the future instance of the pause action.
+   * */
+  public QueryFuture pauseQuery(final long queryID) {
+    return activeQueries.get(queryID).pause();
+  }
+
+  /**
+   * Pause a query with queryID.
+   * 
+   * @param queryID the queryID.
+   * @return the future instance of the kill action.
+   * */
+  public QueryFuture killQuery(final long queryID) {
+    return activeQueries.get(queryID).kill();
+  }
+
+  /**
+   * Pause a query with queryID.
+   * 
+   * @param queryID the queryID.
+   * @return the future instance of the resume action.
+   * */
+  public QueryFuture resumeQuery(final long queryID) {
+    return activeQueries.get(queryID).resume();
+  }
+
+  /**
    * 
    * @return true if the query plan is accepted and scheduled for execution.
    * @param masterPlan the master part of the plan

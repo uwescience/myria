@@ -39,16 +39,22 @@ public interface QueryPartition extends Comparable<QueryPartition> {
 
   /**
    * Pause the query.
+   * 
+   * @return the future instance of the pause action.
    * */
-  void pause();
+  QueryFuture pause();
 
   /**
    * Resume the query.
+   * 
+   * @return the future instance of the resume action.
    * */
-  void resume();
+  QueryFuture resume();
 
   /**
    * Kill the query.
+   * 
+   * @return the future instance of the kill action.
    * */
-  void kill();
+  QueryFuture kill();
 }

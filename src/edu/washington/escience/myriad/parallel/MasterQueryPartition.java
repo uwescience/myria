@@ -86,8 +86,10 @@ public class MasterQueryPartition implements QueryPartition {
    * */
   private final QueryFuture queryExecutionFuture = new DefaultQueryFuture(this, true);
 
-  private volatile long startAtInNano;
-  private volatile long endAtInNano;
+  /**
+   * The future object denoting the query execution progress.
+   * */
+  private final QueryFuture queryKillFuture = new DefaultQueryFuture(this, true);
 
   /**
    * Start timestamp of the whole query, not only the master partition.
@@ -315,23 +317,32 @@ public class MasterQueryPartition implements QueryPartition {
 
   /**
    * Pause the master query partition.
+   * 
+   * @return the future instance of the pause action.
    * */
   @Override
-  public final void pause() {
+  public final QueryFuture pause() {
+    return null;
   }
 
   /**
    * Resume the master query partition.
+   * 
+   * @return the future instance of the resume action.
    * */
   @Override
-  public final void resume() {
+  public final QueryFuture resume() {
+    return null;
   }
 
   /**
    * Kill the master query partition.
+   * 
+   * @return the future instance of the kill action.
    * */
   @Override
-  public final void kill() {
+  public final QueryFuture kill() {
+    return null;
   }
 
 }

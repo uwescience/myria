@@ -172,23 +172,32 @@ public class WorkerQueryPartition implements QueryPartition {
 
   /**
    * Pause the worker query partition.
+   * 
+   * @return the future instance of the pause action.
    * */
   @Override
-  public final void pause() {
+  public final QueryFuture pause() {
+    return null;
   }
 
   /**
    * Resume the worker query partition.
+   * 
+   * @return the future instance of the resume action.
    * */
   @Override
-  public final void resume() {
+  public final QueryFuture resume() {
+    return null;
   }
 
   /**
    * Kill the worker query partition.
+   * 
+   * @return the future instance of the kill action.
    * */
   @Override
-  public final void kill() {
+  public final QueryFuture kill() {
+    return null;
   }
 
 }
