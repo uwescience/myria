@@ -77,6 +77,10 @@ public final class FloatAggregator implements Aggregator {
       types.add(Type.DOUBLE_TYPE);
       names.add("avg(" + aFieldName + ")");
     }
+    if ((aggOps & Aggregator.AGG_OP_STDEV) != 0) {
+      types.add(Type.DOUBLE_TYPE);
+      names.add("stdev(" + aFieldName + ")");
+    }
     resultSchema = new Schema(types, names);
   }
 
