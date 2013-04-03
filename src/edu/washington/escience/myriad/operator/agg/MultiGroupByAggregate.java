@@ -104,8 +104,8 @@ public class MultiGroupByAggregate extends Operator {
 
     final Schema childSchema = child.getSchema();
     for (final int i : gfields) {
-      gTypes.add(childSchema.getFieldType(i));
-      gNames.add(childSchema.getFieldName(i));
+      gTypes.add(childSchema.getColumnType(i));
+      gNames.add(childSchema.getColumnName(i));
     }
 
     // Generates the output schema
@@ -118,35 +118,35 @@ public class MultiGroupByAggregate extends Operator {
 
     int idx = 0;
     for (final int afield : afields) {
-      switch (childSchema.getFieldType(afield)) {
+      switch (childSchema.getColumnType(afield)) {
       case BOOLEAN_TYPE:
         agg[idx] = new BooleanAggregator(afield,
-            childSchema.getFieldName(afield), aggOps[idx]);
+            childSchema.getColumnName(afield), aggOps[idx]);
         outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
         break;
       case INT_TYPE:
         agg[idx] = new IntegerAggregator(afield,
-            childSchema.getFieldName(afield), aggOps[idx]);
+            childSchema.getColumnName(afield), aggOps[idx]);
         outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
         break;
       case LONG_TYPE:
-        agg[idx] = new LongAggregator(afield, childSchema.getFieldName(afield),
-            aggOps[idx]);
+        agg[idx] = new LongAggregator(afield,
+            childSchema.getColumnName(afield), aggOps[idx]);
         outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
         break;
       case FLOAT_TYPE:
         agg[idx] = new FloatAggregator(afield,
-            childSchema.getFieldName(afield), aggOps[idx]);
+            childSchema.getColumnName(afield), aggOps[idx]);
         outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
         break;
       case DOUBLE_TYPE:
         agg[idx] = new DoubleAggregator(afield,
-            childSchema.getFieldName(afield), aggOps[idx]);
+            childSchema.getColumnName(afield), aggOps[idx]);
         outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
         break;
       case STRING_TYPE:
         agg[idx] = new StringAggregator(afield,
-            childSchema.getFieldName(afield), aggOps[idx]);
+            childSchema.getColumnName(afield), aggOps[idx]);
         outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
         break;
       }
@@ -176,7 +176,8 @@ public class MultiGroupByAggregate extends Operator {
    */
   @Override
   protected TupleBatch fetchNext() throws DbException {
-    if (resultBuffer == null) {
+    resultBuffer = new TupleBatchBuffer(schema);
+    if (resultBuffer.numTuples() == 0) {
       // Actually perform the aggregation
       TupleBatch tb = null;
       while ((tb = child.next()) != null) {
@@ -189,12 +190,14 @@ public class MultiGroupByAggregate extends Operator {
           // we want to get the value for each key.
           HashMap<SimpleArrayWrapper, TupleBatchBuffer> tmpMap = new HashMap<SimpleArrayWrapper, TupleBatchBuffer>();
           for (int i = 0; i < tb.numTuples(); i++) {
+            // generate the SimpleArrayWrapper
             Object[] groupFields = new Object[gfields.length];
             for (int j = 0; j < gfields.length; j++) {
               Object val = tb.getObject(gfields[j], i);
               groupFields[j] = val;
             }
             SimpleArrayWrapper grpFields = new SimpleArrayWrapper(groupFields);
+
             // for each tuple try pulling a value from it
             if (!groupAggs.containsKey(grpFields)) {
               // if the aggregator for the key doesn't exists,
@@ -213,7 +216,7 @@ public class MultiGroupByAggregate extends Operator {
               groupedTupleBatch = new TupleBatchBuffer(child.getSchema());
               tmpMap.put(grpFields, groupedTupleBatch);
             }
-            for (int j = 0; j < child.getSchema().numFields(); j++) {
+            for (int j = 0; j < child.getSchema().numColumns(); j++) {
               groupedTupleBatch.put(j, tb.getObject(j, i));
             }
           }
@@ -228,17 +231,16 @@ public class MultiGroupByAggregate extends Operator {
               }
             }
           }
-          resultBuffer = new TupleBatchBuffer(schema);
-          for (SimpleArrayWrapper groupByFields : groupAggs.keySet()) {
-            // populate the result tuple batch buffer
-            for (int i = 0; i < gfields.length; i++) {
-              resultBuffer.put(i, groupByFields.groupFields[i]);
-            }
-            Aggregator[] value = groupAggs.get(groupByFields);
-            for (int i = gfields.length; i < schema.numFields(); i++) {
-              value[i - gfields.length].getResult(resultBuffer, i);
-            }
-          }
+        }
+      }
+      for (SimpleArrayWrapper groupByFields : groupAggs.keySet()) {
+        // populate the result tuple batch buffer
+        for (int i = 0; i < gfields.length; i++) {
+          resultBuffer.put(i, groupByFields.groupFields[i]);
+        }
+        Aggregator[] value = groupAggs.get(groupByFields);
+        for (int i = gfields.length; i < schema.numColumns(); i++) {
+          value[i - gfields.length].getResult(resultBuffer, i);
         }
       }
     }
