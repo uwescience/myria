@@ -1,6 +1,7 @@
 package edu.washington.escience.myriad.operator;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.HashMap;
@@ -470,27 +471,36 @@ public class AggregateTest {
         "b", "c", "d"));
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
-    long expected = 0;
+    long expectedFirst = 0;
     for (long i = 0; i < numTuples; i++) {
+      long value = i / 2;
       tbb.put(0, 0L);
       tbb.put(1, 1L);
       if (i % 2 == 0) {
         tbb.put(2, 2L);
-        expected += i / 2;
       } else {
         tbb.put(2, 4L);
       }
-      tbb.put(3, i / 2);
+      tbb.put(3, value);
+      expectedFirst += value;
     }
     MultiGroupByAggregate mga = new MultiGroupByAggregate(new TupleSource(tbb),
-        new int[] { 3 }, new int[] { 0, 1, 2 },
+        new int[] { 3 }, new int[] { 0, 1 },
         new int[] { Aggregator.AGG_OP_SUM });
     mga.open();
     TupleBatch result = mga.next();
-    assertEquals(2, result.numTuples());
-    assertEquals(expected, result.getLong(result.numColumns() - 1, 0));
-    // assertEquals(expected, result.getLong(result.numColumns() - 1, 1));
+    assertEquals(1, result.numTuples());
+    assertEquals(expectedFirst, result.getLong(result.numColumns() - 1, 0));
     mga.close();
+
+    MultiGroupByAggregate mgaTwo = new MultiGroupByAggregate(new TupleSource(
+        tbb), new int[] { 3 }, new int[] { 0, 1, 2 },
+        new int[] { Aggregator.AGG_OP_SUM });
+    mgaTwo.open();
+    TupleBatch resultTwo = mgaTwo.next();
+    assertEquals(2, resultTwo.numTuples());
+    assertEquals(expectedFirst, result.getLong(result.numColumns() - 1, 0));
+    mgaTwo.close();
   }
 
   @Test
@@ -593,8 +603,10 @@ public class AggregateTest {
         "b", "c", "d"));
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
-    long expected = numTuples - 1;
-    for (long i = 0; i < numTuples; i++) {
+
+    long expectedMin = 0;
+    long expectedMax = numTuples - 1 + expectedMin;
+    for (long i = expectedMin; i < numTuples; i++) {
       tbb.put(0, 0L);
       tbb.put(1, 1L);
       if (i % 2 == 0) {
@@ -610,9 +622,9 @@ public class AggregateTest {
     mga.open();
     TupleBatch result = mga.next();
     assertEquals(1, result.numTuples());
-    assertEquals(4, result.getSchema().numFields());
-    assertEquals(expected, result.getLong(result.numColumns() - 1, 0));
-    assertEquals(expected, result.getLong(result.numColumns() - 2, 0));
+    assertEquals(4, result.getSchema().numColumns());
+    assertEquals(expectedMin, result.getLong(result.numColumns() - 1, 0));
+    assertEquals(expectedMax, result.getLong(result.numColumns() - 2, 0));
     mga.close();
   }
 
@@ -624,7 +636,6 @@ public class AggregateTest {
         "b", "c", "d"));
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
-    long expected = numTuples - 1;
     for (long i = 0; i < numTuples; i++) {
       tbb.put(0, 0L);
       tbb.put(1, 1L);
@@ -641,8 +652,24 @@ public class AggregateTest {
     mga.open();
     TupleBatch result = mga.next();
     assertEquals(1, result.numTuples());
-    assertEquals(3, result.getSchema().numFields());
+    assertEquals(3, result.getSchema().numColumns());
     assertEquals(numTuples, result.getLong(result.numColumns() - 1, 0));
+    mga.close();
+  }
+
+  @Test
+  public void testMultiGroupCountMultiColumnEmpty() throws DbException {
+    final Schema schema = new Schema(ImmutableList.of(Type.LONG_TYPE,
+        Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("a",
+        "b", "c", "d"));
+
+    final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
+    MultiGroupByAggregate mga = new MultiGroupByAggregate(new TupleSource(tbb),
+        new int[] { 0 }, new int[] { 0, 1 },
+        new int[] { Aggregator.AGG_OP_COUNT });
+    mga.open();
+    TupleBatch result = mga.next();
+    assertNull(result);
     mga.close();
   }
 
