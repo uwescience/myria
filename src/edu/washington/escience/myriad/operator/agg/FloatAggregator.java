@@ -23,12 +23,10 @@ public final class FloatAggregator implements Aggregator {
   private long count;
   private final Schema resultSchema;
 
-  public static final int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT
-      | Aggregator.AGG_OP_SUM | Aggregator.AGG_OP_MAX | Aggregator.AGG_OP_MIN
-      | Aggregator.AGG_OP_AVG | Aggregator.AGG_OP_STDEV;
+  public static final int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT | Aggregator.AGG_OP_SUM | Aggregator.AGG_OP_MAX
+      | Aggregator.AGG_OP_MIN | Aggregator.AGG_OP_AVG | Aggregator.AGG_OP_STDEV;
 
-  private FloatAggregator(final int afield, final int aggOps,
-      final Schema resultSchema) {
+  private FloatAggregator(final int afield, final int aggOps, final Schema resultSchema) {
     this.resultSchema = resultSchema;
     this.afield = afield;
     this.aggOps = aggOps;
@@ -38,16 +36,13 @@ public final class FloatAggregator implements Aggregator {
     max = Float.MIN_VALUE;
   }
 
-  public FloatAggregator(final int afield, final String aFieldName,
-      final int aggOps) {
+  public FloatAggregator(final int afield, final String aFieldName, final int aggOps) {
     if (aggOps <= 0) {
-      throw new IllegalArgumentException(
-          "No aggregation operations are selected");
+      throw new IllegalArgumentException("No aggregation operations are selected");
     }
 
     if ((aggOps | AVAILABLE_AGG) != AVAILABLE_AGG) {
-      throw new IllegalArgumentException(
-          "Unsupported aggregation on float column.");
+      throw new IllegalArgumentException("Unsupported aggregation on float column.");
     }
     this.afield = afield;
     this.aggOps = aggOps;
@@ -146,11 +141,6 @@ public final class FloatAggregator implements Aggregator {
       buffer.put(idx, stdev);
       idx++;
     }
-    // buffer.put(0, count);
-    // buffer.put(1, sum);
-    // buffer.put(2, sum / count);
-    // buffer.put(3, min);
-    // buffer.put(4, min);
   }
 
   @Override
