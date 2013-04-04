@@ -2,8 +2,10 @@ package edu.washington.escience.myriad.parallel;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +53,18 @@ public class WorkerQueryPartition implements QueryPartition {
    * priority, currently no use.
    * */
   private volatile int priority;
+
+  /**
+   * Store the current pause future if the query is in pause, otherwise null.
+   * */
+  private final AtomicReference<QueryFuture> pauseFuture = new AtomicReference<QueryFuture>(null);
+
+  /**
+   * The future object denoting the query execution progress.
+   * */
+  private final QueryFuture queryKillFuture = new DefaultQueryFuture(this, false);
+
+  // private final QueryFuture executionFuture = new DefaultQueryFuture(this, true);
 
   /**
    * @param operators the operators belonging to this query partition.
@@ -146,12 +160,17 @@ public class WorkerQueryPartition implements QueryPartition {
 
   @Override
   public final void taskFinish(final QuerySubTreeTask task) {
-    if (tasks.get(task)) {
+    if (!tasks.containsKey(task)) {
+      LOGGER.error("Unknown task finish: {} ", task);
+      return;
+    }
+
+    if (!tasks.replace(task, false, true)) {
       LOGGER.error("Duplicate task eos: {} ", task);
       return;
     }
+
     int currentNumEOS = numTaskEOS.incrementAndGet();
-    tasks.put(task, true);
 
     LOGGER.debug("new EOS from task: {}. {} remain.", task, (tasks.size() - currentNumEOS));
     if (currentNumEOS >= tasks.size()) {
@@ -171,13 +190,24 @@ public class WorkerQueryPartition implements QueryPartition {
   }
 
   /**
-   * Pause the worker query partition.
+   * Pause the worker query partition. If the query is currently paused, do nothing.
    * 
-   * @return the future instance of the pause action.
+   * @return the future instance of the pause action. The future will be set as done if and only if all the tasks in
+   *         this query have stopped execution. During a pause of the query, all call to this method returns the same
+   *         future instance. Two pause calls when the query is not paused at either of the calls return two different
+   *         instances.
    * */
   @Override
   public final QueryFuture pause() {
-    return null;
+    final QueryFuture pauseF = new DefaultQueryFuture(this, true);
+    while (!pauseFuture.compareAndSet(null, pauseF)) {
+      QueryFuture current = pauseFuture.get();
+      if (current != null) {
+        // already paused by some other threads, do not do the actual pause
+        return current;
+      }
+    }
+    return pauseF;
   }
 
   /**
@@ -187,7 +217,16 @@ public class WorkerQueryPartition implements QueryPartition {
    * */
   @Override
   public final QueryFuture resume() {
-    return null;
+    QueryFuture pf = pauseFuture.getAndSet(null);
+    QueryFuture rf = new DefaultQueryFuture(this, true);
+
+    if (pf == null) {
+      // query is not in pause, return success directly.
+      rf.setSuccess();
+      return rf;
+    }
+    // TODO do the resume stuff
+    return rf;
   }
 
   /**
@@ -197,7 +236,21 @@ public class WorkerQueryPartition implements QueryPartition {
    * */
   @Override
   public final QueryFuture kill() {
-    return null;
+    for (Map.Entry<QuerySubTreeTask, Boolean> e : tasks.entrySet()) {
+      QuerySubTreeTask t = e.getKey();
+      t.kill();
+    }
+    return queryKillFuture;
+  }
+
+  @Override
+  public final boolean isPaused() {
+    return pauseFuture.get() != null;
+  }
+
+  @Override
+  public final boolean isKilled() {
+    return false;
   }
 
 }

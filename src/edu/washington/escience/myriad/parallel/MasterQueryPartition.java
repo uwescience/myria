@@ -4,6 +4,7 @@ import java.util.BitSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,17 +80,17 @@ public class MasterQueryPartition implements QueryPartition {
   /**
    * The future object denoting the worker receive query plan operation.
    * */
-  private final QueryFuture workerReceiveFuture = new DefaultQueryFuture(this, true);
+  private final QueryFuture workerReceiveFuture = new DefaultQueryFuture(this, false);
 
   /**
    * The future object denoting the query execution progress.
    * */
-  private final QueryFuture queryExecutionFuture = new DefaultQueryFuture(this, true);
+  private final QueryFuture queryExecutionFuture = new DefaultQueryFuture(this, false);
 
   /**
    * The future object denoting the query execution progress.
    * */
-  private final QueryFuture queryKillFuture = new DefaultQueryFuture(this, true);
+  private final QueryFuture queryKillFuture = new DefaultQueryFuture(this, false);
 
   /**
    * Start timestamp of the whole query, not only the master partition.
@@ -100,6 +101,13 @@ public class MasterQueryPartition implements QueryPartition {
    * End timestamp of the whole query, not only the master partition.
    * */
   private volatile long endAtInNano;
+
+  /**
+   * Store the current pause future if the query is in pause, otherwise null.
+   * */
+  private final AtomicReference<QueryFuture> pauseFuture = new AtomicReference<QueryFuture>(null);
+
+  private volatile boolean isKilled;
 
   /**
    * Callback when a query plan is received by a worker.
@@ -318,11 +326,22 @@ public class MasterQueryPartition implements QueryPartition {
   /**
    * Pause the master query partition.
    * 
-   * @return the future instance of the pause action.
-   * */
+   * @return the future instance of the pause action. The future will be set as done if and only if all the tasks in
+   *         this query have stopped execution. During a pause of the query, all call to this method returns the same
+   *         future instance. Two pause calls when the query is not paused at either of the calls return two different
+   *         instances.
+   */
   @Override
   public final QueryFuture pause() {
-    return null;
+    final QueryFuture pauseF = new DefaultQueryFuture(this, true);
+    while (!pauseFuture.compareAndSet(null, pauseF)) {
+      QueryFuture current = pauseFuture.get();
+      if (current != null) {
+        // already paused by some other threads, do not do the actual pause
+        return current;
+      }
+    }
+    return pauseF;
   }
 
   /**
@@ -332,7 +351,16 @@ public class MasterQueryPartition implements QueryPartition {
    * */
   @Override
   public final QueryFuture resume() {
-    return null;
+    QueryFuture pf = pauseFuture.getAndSet(null);
+    QueryFuture rf = new DefaultQueryFuture(this, true);
+
+    if (pf == null) {
+      rf.setSuccess();
+      return rf;
+    }
+
+    // TODO do the resume stuff
+    return rf;
   }
 
   /**
@@ -342,7 +370,19 @@ public class MasterQueryPartition implements QueryPartition {
    * */
   @Override
   public final QueryFuture kill() {
-    return null;
+    // TODO do the actual kill stuff
+    isKilled = true;
+    return queryKillFuture;
+  }
+
+  @Override
+  public final boolean isPaused() {
+    return pauseFuture.get() != null;
+  }
+
+  @Override
+  public final boolean isKilled() {
+    return isKilled;
   }
 
 }

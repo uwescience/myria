@@ -5,6 +5,7 @@ import java.util.BitSet;
 import java.util.HashSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
@@ -20,6 +21,12 @@ import edu.washington.escience.myriad.util.ReentrantSpinLock;
 
 /**
  * Non-blocking driving code of a sub-query.
+ * 
+ * Task state could be:<br>
+ * 1) In execution.<br>
+ * 2) In dormant.<br>
+ * 3) Already finished.<br>
+ * 4) Has not started.
  * */
 final class QuerySubTreeTask {
   /** The logger for this class. */
@@ -54,6 +61,8 @@ final class QuerySubTreeTask {
    * if the task is initialized.
    * */
   private volatile boolean initialized;
+
+  private volatile boolean isKilled = false;
 
   /**
    * There are available output slots.
@@ -101,6 +110,13 @@ final class QuerySubTreeTask {
   private final int ipcEntityID;
 
   /**
+   * The handle for managing the execution of the task.
+   * */
+  private volatile Future<Boolean> executionHandle;
+
+  private volatile boolean killed = false;
+
+  /**
    * @param ipcEntityID the IPC ID of the owner worker/master.
    * @param ownerQuery the owner query of this task.
    * @param root the root operator this task will run.
@@ -133,7 +149,11 @@ final class QuerySubTreeTask {
       @Override
       public synchronized Boolean call() throws Exception {
         // synchronized to keep memory consistency
-        return QuerySubTreeTask.this.executeNonBlocking();
+        try {
+          return QuerySubTreeTask.this.executeNonBlocking();
+        } finally {
+          executionHandle = null;
+        }
       }
     };
     blockingExecutionTask = new Callable<Boolean>() {
@@ -196,7 +216,7 @@ final class QuerySubTreeTask {
    * @return if the task is finished
    * */
   public boolean isFinished() {
-    return root.eos();
+    return root.eos() || killed;
   }
 
   /**
@@ -300,9 +320,20 @@ final class QuerySubTreeTask {
           if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Operator task execution interrupted. Root operator: " + root + ". Close directly.");
           }
+          // Normally they should be killed tasks
+          ownerQuery.taskFinish(this);
           cleanup();
           break;
         }
+
+        if (ownerQuery.isPaused()) {
+          // the owner query is paused, exit execution.
+          if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Operator task execution paused because the query is paused. Root operator: {}.", root);
+          }
+          break;
+        }
+
         long atStart = numInputTBs.get();
 
         root.nextReady();
@@ -344,14 +375,16 @@ final class QuerySubTreeTask {
    * @return if the nonblocking task is ready for execution.
    * */
   private boolean readyForNonBlockingExecution() {
-    return initialized && outputAvailable && executionMode == QueryExecutionMode.NON_BLOCKING && numInputTBs.get() > 0;
+    return initialized && outputAvailable && executionMode == QueryExecutionMode.NON_BLOCKING && numInputTBs.get() > 0
+        && !ownerQuery.isPaused() && !ownerQuery.isKilled();
   }
 
   /**
    * @return if blocking execution is ready.
    * */
   private boolean readyForBlockingExecution() {
-    return initialized && !inBlockingExecution && executionMode == QueryExecutionMode.BLOCKING;
+    return initialized && !inBlockingExecution && executionMode == QueryExecutionMode.BLOCKING
+        && !ownerQuery.isPaused() && !ownerQuery.isKilled();
   }
 
   /**
@@ -409,11 +442,29 @@ final class QuerySubTreeTask {
   }
 
   /**
+   * Kill this task.
+   * 
+   * 
+   * 
+   * */
+  void kill() {
+    if (killed) {
+      return;
+    }
+    killed = true;
+    final Future<Boolean> executionHandleLocal = executionHandle;
+    if (executionHandleLocal != null) {
+      executionHandleLocal.cancel(true);
+    }
+    cleanup();
+  }
+
+  /**
    * Execute this task in non-blocking mode.
    * */
   public void nonBlockingExecute() {
     if (readyForNonBlockingExecution()) {
-      myExecutor.submit(nonBlockingExecutionTask);
+      executionHandle = myExecutor.submit(nonBlockingExecutionTask);
     }
   }
 

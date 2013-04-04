@@ -31,7 +31,16 @@ public interface QueryPartition extends Comparable<QueryPartition> {
   void startNonBlockingExecution();
 
   /**
-   * Call back if a task finishes.
+   * Call back if a task : <br>
+   * <ul>
+   * <li>
+   * finishes normally.</li>
+   * <li>gets killed by:
+   * <ul>
+   * <li>kill query command &nbsp;</li>
+   * <li>any exceptions</li></li>
+   * </ul>
+   * </ul>
    * 
    * @param task the finished task.
    * */
@@ -57,4 +66,14 @@ public interface QueryPartition extends Comparable<QueryPartition> {
    * @return the future instance of the kill action.
    * */
   QueryFuture kill();
+
+  /**
+   * @return if the query is paused.
+   * */
+  boolean isPaused();
+
+  /**
+   * @return if the query is killed.
+   * */
+  boolean isKilled();
 }
