@@ -86,7 +86,7 @@ public class JdbcInsertSpeedTest {
 
       try {
         validateScan.open(null);
-        final TupleBatch vtb = validateScan.next();
+        final TupleBatch vtb = validateScan.nextReady();
         if (vtb != null) {
           return vtb.getLong(0, 0);
         } else {

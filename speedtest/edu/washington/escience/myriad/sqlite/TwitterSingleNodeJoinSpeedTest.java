@@ -66,7 +66,7 @@ public class TwitterSingleNodeJoinSpeedTest {
     dupelim.open(null);
     long result = 0;
     while (!dupelim.eos()) {
-      final TupleBatch next = dupelim.next();
+      final TupleBatch next = dupelim.nextReady();
       if (next != null) {
         result += next.numTuples();
       }
@@ -97,7 +97,7 @@ public class TwitterSingleNodeJoinSpeedTest {
     dupelim.open(null);
     long result = 0;
     while (!dupelim.eos()) {
-      final TupleBatch next = dupelim.next();
+      final TupleBatch next = dupelim.nextReady();
       if (next != null) {
         result += next.numTuples();
       }

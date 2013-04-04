@@ -62,7 +62,7 @@ public class MonetDbJdbcAccessMethodTest {
     JdbcInsert insert = new JdbcInsert(source, relationKey, jdbcInfo);
     insert.open(null);
     while (!insert.eos()) {
-      insert.next();
+      insert.nextReady();
     }
     insert.close();
 
@@ -71,10 +71,10 @@ public class MonetDbJdbcAccessMethodTest {
         new JdbcQueryScan(jdbcInfo, "SELECT COUNT(*) FROM " + relationKey.toString(jdbcInfo.getDbms()), Schema.of(
             ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("count")));
     count.open(null);
-    TupleBatch result = count.next();
+    TupleBatch result = count.nextReady();
     assertTrue(result != null);
     assertTrue(result.getLong(0, 0) == NUM_TUPLES);
-    result = count.next();
+    result = count.nextReady();
     assertTrue(result == null);
     assertTrue(count.eos());
     count.close();

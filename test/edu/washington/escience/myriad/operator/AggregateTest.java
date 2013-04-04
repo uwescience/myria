@@ -250,8 +250,11 @@ public class AggregateTest {
         new Aggregate(new TupleSource(testBase), new int[] { 0 }, new int[] { Aggregator.AGG_OP_AVG });
     agg.open(null);
     TupleBatch tb = null;
-    while ((tb = agg.next()) != null) {
-      assertTrue(Double.compare(sumID * 1.0 / numTuples, tb.getDouble(0, 0)) == 0);
+    while (!agg.eos()) {
+      tb = agg.nextReady();
+      if (tb != null) {
+        assertTrue(Double.compare(sumID * 1.0 / numTuples, tb.getDouble(0, 0)) == 0);
+      }
     }
     agg.close();
   }
@@ -285,8 +288,11 @@ public class AggregateTest {
         new Aggregate(new TupleSource(testBase), new int[] { 0 }, new int[] { Aggregator.AGG_OP_COUNT });
     agg.open(null);
     TupleBatch tb = null;
-    while ((tb = agg.next()) != null) {
-      assertEquals(numTuples, tb.getLong(0, 0));
+    while (!agg.eos()) {
+      tb = agg.nextReady();
+      if (tb != null) {
+        assertEquals(numTuples, tb.getLong(0, 0));
+      }
     }
   }
 
@@ -318,16 +324,22 @@ public class AggregateTest {
     Aggregate agg = new Aggregate(new TupleSource(testBase), new int[] { 0 }, new int[] { Aggregator.AGG_OP_MAX });
     agg.open(null);
     TupleBatch tb = null;
-    while ((tb = agg.next()) != null) {
-      assertEquals(maxID, tb.getObject(0, 0));
+    while (!agg.eos()) {
+      tb = agg.nextReady();
+      if (tb != null) {
+        assertEquals(maxID, tb.getObject(0, 0));
+      }
     }
     agg.close();
 
     agg = new Aggregate(new TupleSource(testBase), new int[] { 1 }, new int[] { Aggregator.AGG_OP_MAX });
     agg.open(null);
     tb = null;
-    while ((tb = agg.next()) != null) {
-      assertEquals(maxName, tb.getString(0, 0));
+    while (!agg.eos()) {
+      tb = agg.nextReady();
+      if (tb != null) {
+        assertEquals(maxName, tb.getString(0, 0));
+      }
     }
   }
 
@@ -372,16 +384,22 @@ public class AggregateTest {
     Aggregate agg = new Aggregate(new TupleSource(testBase), new int[] { 0 }, new int[] { Aggregator.AGG_OP_MIN });
     agg.open(null);
     TupleBatch tb = null;
-    while ((tb = agg.next()) != null) {
-      assertEquals(minID, tb.getObject(0, 0));
+    while (!agg.eos()) {
+      tb = agg.nextReady();
+      if (tb != null) {
+        assertEquals(minID, tb.getObject(0, 0));
+      }
     }
     agg.close();
 
     agg = new Aggregate(new TupleSource(testBase), new int[] { 1 }, new int[] { Aggregator.AGG_OP_MIN });
     agg.open(null);
     tb = null;
-    while ((tb = agg.next()) != null) {
-      assertEquals(minName, tb.getString(0, 0));
+    while (!agg.eos()) {
+      tb = agg.nextReady();
+      if (tb != null) {
+        assertEquals(minName, tb.getString(0, 0));
+      }
     }
   }
 
@@ -426,8 +444,11 @@ public class AggregateTest {
         new Aggregate(new TupleSource(testBase), new int[] { 0 }, new int[] { Aggregator.AGG_OP_SUM });
     agg.open(null);
     TupleBatch tb = null;
-    while ((tb = agg.next()) != null) {
-      assertEquals(sumID, tb.getObject(0, 0));
+    while (!agg.eos()) {
+      tb = agg.nextReady();
+      if (tb != null) {
+        assertEquals(sumID, tb.getObject(0, 0));
+      }
     }
     agg.close();
   }
@@ -463,8 +484,11 @@ public class AggregateTest {
     agg.open(null);
     TupleBatch tb = null;
     final TupleBatchBuffer result = new TupleBatchBuffer(agg.getSchema());
-    while ((tb = agg.next()) != null) {
-      tb.compactInto(result);
+    while (!agg.eos()) {
+      tb = agg.nextReady();
+      if (tb != null) {
+        tb.compactInto(result);
+      }
     }
     agg.close();
     final HashMap<SystemTestBase.Tuple, Integer> actualResult = TestUtils.tupleBatchToTupleBag(result);
@@ -505,8 +529,11 @@ public class AggregateTest {
     agg.open(null);
     TupleBatch tb = null;
     TupleBatchBuffer result = new TupleBatchBuffer(agg.getSchema());
-    while ((tb = agg.next()) != null) {
-      tb.compactInto(result);
+    while (!agg.eos()) {
+      tb = agg.nextReady();
+      if (tb != null) {
+        tb.compactInto(result);
+      }
     }
     agg.close();
     HashMap<SystemTestBase.Tuple, Integer> actualResult = TestUtils.tupleBatchToTupleBag(result);
@@ -517,8 +544,11 @@ public class AggregateTest {
     agg.open(null);
     tb = null;
     result = new TupleBatchBuffer(agg.getSchema());
-    while ((tb = agg.next()) != null) {
-      tb.compactInto(result);
+    while (!agg.eos()) {
+      tb = agg.nextReady();
+      if (tb != null) {
+        tb.compactInto(result);
+      }
     }
     agg.close();
     actualResult = TestUtils.tupleBatchToTupleBag(result);
@@ -573,8 +603,11 @@ public class AggregateTest {
     agg.open(null);
     TupleBatch tb = null;
     TupleBatchBuffer result = new TupleBatchBuffer(agg.getSchema());
-    while ((tb = agg.next()) != null) {
-      tb.compactInto(result);
+    while (!agg.eos()) {
+      tb = agg.nextReady();
+      if (tb != null) {
+        tb.compactInto(result);
+      }
     }
     agg.close();
     HashMap<SystemTestBase.Tuple, Integer> actualResult = TestUtils.tupleBatchToTupleBag(result);
@@ -585,8 +618,11 @@ public class AggregateTest {
     agg.open(null);
     tb = null;
     result = new TupleBatchBuffer(agg.getSchema());
-    while ((tb = agg.next()) != null) {
-      tb.compactInto(result);
+    while (!agg.eos()) {
+      tb = agg.nextReady();
+      if (tb != null) {
+        tb.compactInto(result);
+      }
     }
     agg.close();
     actualResult = TestUtils.tupleBatchToTupleBag(result);
@@ -641,8 +677,11 @@ public class AggregateTest {
     agg.open(null);
     TupleBatch tb = null;
     final TupleBatchBuffer result = new TupleBatchBuffer(agg.getSchema());
-    while ((tb = agg.next()) != null) {
-      tb.compactInto(result);
+    while (!agg.eos()) {
+      tb = agg.nextReady();
+      if (tb != null) {
+        tb.compactInto(result);
+      }
     }
     agg.close();
     final HashMap<SystemTestBase.Tuple, Integer> actualResult = TestUtils.tupleBatchToTupleBag(result);

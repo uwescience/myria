@@ -101,8 +101,11 @@ public class SQLiteTest {
 
     TupleBatch tb = null;
     final TupleBatchBuffer result = new TupleBatchBuffer(outputSchema);
-    while ((tb = root.next()) != null) {
-      tb.compactInto(result);
+    while (!root.eos()) {
+      tb = root.nextReady();
+      if (tb != null) {
+        tb.compactInto(result);
+      }
     }
 
     /* Cleanup */
