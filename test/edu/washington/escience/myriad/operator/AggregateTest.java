@@ -452,18 +452,25 @@ public class AggregateTest {
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     long expectedFirst = 0;
+    long expectedSecond = 0;
+    // The idea of the tests is to generate altering data in the following scheme:
+    // inserting { 0, 1, 2, i / 2 } on even rows, { 0, 1, 4, i / 2 } on odd rows
     for (long i = 0; i < numTuples; i++) {
       long value = i / 2;
       tbb.put(0, 0L);
       tbb.put(1, 1L);
       if (i % 2 == 0) {
         tbb.put(2, 2L);
+        expectedSecond += value;
       } else {
         tbb.put(2, 4L);
       }
       tbb.put(3, value);
       expectedFirst += value;
     }
+
+    // test for grouping at the first and second column
+    // expected all the i / 2 to be sum up
     MultiGroupByAggregate mga =
         new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 3 }, new int[] { 0, 1 },
             new int[] { Aggregator.AGG_OP_SUM });
@@ -473,13 +480,16 @@ public class AggregateTest {
     assertEquals(expectedFirst, result.getLong(result.numColumns() - 1, 0));
     mga.close();
 
+    // test for grouping at the first, second and third column
+    // expecting half of i / 2 to be sum up on each group
     MultiGroupByAggregate mgaTwo =
         new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 3 }, new int[] { 0, 1, 2 },
             new int[] { Aggregator.AGG_OP_SUM });
     mgaTwo.open();
     TupleBatch resultTwo = mgaTwo.next();
     assertEquals(2, resultTwo.numTuples());
-    assertEquals(expectedFirst, result.getLong(result.numColumns() - 1, 0));
+    assertEquals(expectedSecond, resultTwo.getLong(resultTwo.numColumns() - 1, 0));
+    assertEquals(expectedSecond, resultTwo.getLong(resultTwo.numColumns() - 1, 1));
     mgaTwo.close();
   }
 
@@ -511,7 +521,6 @@ public class AggregateTest {
     TupleBatch result = mga.next();
     assertEquals(2, result.numTuples());
     assertEquals(expected, result.getDouble(result.numColumns() - 1, 0), 0.000001);
-    // assertEquals(expected, result.getLong(result.numColumns() - 1, 1));
     mga.close();
   }
 
@@ -541,7 +550,6 @@ public class AggregateTest {
     TupleBatch result = mga.next();
     assertEquals(1, result.numTuples());
     assertEquals(expected, result.getLong(result.numColumns() - 1, 0));
-    // assertEquals(expected, result.getLong(result.numColumns() - 1, 1));
     mga.close();
   }
 
