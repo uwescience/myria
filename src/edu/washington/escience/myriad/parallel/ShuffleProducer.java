@@ -53,8 +53,7 @@ public class ShuffleProducer extends Producer {
     TransportMessage dm = null;
     for (int p = 0; p < ioChannels.length; p++) {
       final TupleBatchBuffer etb = buffers[p];
-      while ((dm = etb.popFilledAsTM(super.getOutputSeqNum()[p])) != null) {
-        super.getOutputSeqNum()[p]++;
+      while ((dm = etb.popFilledAsTM()) != null) {
         ioChannels[p].write(dm);
       }
     }
@@ -66,8 +65,7 @@ public class ShuffleProducer extends Producer {
     TupleBatchBuffer[] buffers = getBuffers();
     Channel[] ioChannels = getChannels();
     for (int i = 0; i < ioChannels.length; i++) {
-      while ((dm = buffers[i].popAnyAsTM(super.getOutputSeqNum()[i])) != null) {
-        super.getOutputSeqNum()[i]++;
+      while ((dm = buffers[i].popAnyAsTM()) != null) {
         ioChannels[i].write(dm);
       }
     }
@@ -83,8 +81,7 @@ public class ShuffleProducer extends Producer {
     TupleBatchBuffer[] buffers = getBuffers();
     Channel[] ioChannels = getChannels();
     for (int i = 0; i < ioChannels.length; i++) {
-      while ((dm = buffers[i].popAnyAsTM(super.getOutputSeqNum()[i])) != null) {
-        super.getOutputSeqNum()[i]++;
+      while ((dm = buffers[i].popAnyAsTM()) != null) {
         ioChannels[i].write(dm);
       }
     }

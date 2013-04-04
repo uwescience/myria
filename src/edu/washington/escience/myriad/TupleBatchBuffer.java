@@ -116,19 +116,17 @@ public class TupleBatchBuffer {
   /**
    * Return all tuples in this buffer. The data do not get removed.
    * 
-   * @param startingSeqNum for fault tolerance.
    * @return a List<TupleBatch> containing all complete tuples that have been inserted into this buffer.
    * @param oId destination exchange operator id.
    */
-  public final List<TransportMessage> getAllAsTM(final ExchangePairID oId, final long startingSeqNum) {
-    long startingSeqNumLocal = 0; // currently 0 for all.
+  public final List<TransportMessage> getAllAsTM(final ExchangePairID oId) {
     final List<TransportMessage> output = new ArrayList<TransportMessage>();
     if (numTuples() > 0) {
       for (final List<Column<?>> columns : readyTuples) {
-        output.add(IPCUtils.normalDataMessage(columns, TupleBatch.BATCH_SIZE, startingSeqNumLocal++));
+        output.add(IPCUtils.normalDataMessage(columns, TupleBatch.BATCH_SIZE));
       }
       if (currentInProgressTuples > 0) {
-        output.add(IPCUtils.normalDataMessage(currentColumns, currentInProgressTuples, startingSeqNum));
+        output.add(IPCUtils.normalDataMessage(currentColumns, currentInProgressTuples));
       }
     }
     return output;
@@ -234,13 +232,10 @@ public class TupleBatchBuffer {
   }
 
   /**
-   * @param seqNum for fault tolerance.
    * @return pop filled and non-filled TransportMessage
    * */
-  public final TransportMessage popAnyAsTM(final long seqNum) {
-    long seqNumLocal = seqNum; // currently use 0 for all.
-    seqNumLocal = 0;
-    final TransportMessage ans = popFilledAsTM(seqNumLocal);
+  public final TransportMessage popAnyAsTM() {
+    final TransportMessage ans = popFilledAsTM();
     if (ans != null) {
       return ans;
     } else {
@@ -248,7 +243,7 @@ public class TupleBatchBuffer {
         int numTuples = currentInProgressTuples;
         finishBatch();
         final List<Column<?>> columns = readyTuples.remove(0);
-        return IPCUtils.normalDataMessage(columns, numTuples, seqNumLocal);
+        return IPCUtils.normalDataMessage(columns, numTuples);
       } else {
         return null;
       }
@@ -283,14 +278,12 @@ public class TupleBatchBuffer {
    * Pop filled as TransportMessage. Avoid the overhead of creating TupleBatch instances if the data in this TBB are to
    * be sent to other workers.
    * 
-   * @param seqNum for fault tolerance
    * @return TransportMessage popped or null if no filled tuples ready yet.
    * */
-  public final TransportMessage popFilledAsTM(final long seqNum) {
-    long seqNumLocal = seqNum;
+  public final TransportMessage popFilledAsTM() {
     if (readyTuples.size() > 0) {
       final List<Column<?>> columns = readyTuples.remove(0);
-      return IPCUtils.normalDataMessage(columns, TupleBatch.BATCH_SIZE, seqNumLocal);
+      return IPCUtils.normalDataMessage(columns, TupleBatch.BATCH_SIZE);
     }
     return null;
   }

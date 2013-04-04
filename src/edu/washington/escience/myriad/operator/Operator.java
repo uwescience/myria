@@ -90,17 +90,6 @@ public abstract class Operator implements Serializable {
   }
 
   /**
-   * rewind the operator. It will be used in fault-tolerance.
-   * 
-   * @param execEnvVars the environment variables of the execution unit.
-   * @throws DbException if any processing error occurs
-   */
-  public void rewind(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    cleanup();
-    init(execEnvVars);
-  }
-
-  /**
    * Returns the next output TupleBatch, or null if EOS is meet.
    * 
    * This method is blocking.

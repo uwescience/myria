@@ -34,11 +34,6 @@ public abstract class Producer extends RootOperator {
   private transient Channel[] ioChannels;
 
   /**
-   * output seq num. For fault tolerance.
-   * */
-  private transient volatile long[] outputSeq;
-
-  /**
    * output buffers.
    * */
   private transient TupleBatchBuffer[] buffers;
@@ -52,11 +47,6 @@ public abstract class Producer extends RootOperator {
    * Destination workers.
    * */
   private final int[] destinationWorkerIDs;
-
-  @Override
-  public final void rewind(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    buffers = new TupleBatchBuffer[operatorIDs.length];
-  }
 
   /**
    * no worker means to the owner worker.
@@ -150,12 +140,10 @@ public abstract class Producer extends RootOperator {
   public final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     connectionPool = (IPCConnectionPool) execEnvVars.get("ipcConnectionPool");
     ioChannels = new Channel[operatorIDs.length];
-    outputSeq = new long[operatorIDs.length];
     buffers = new TupleBatchBuffer[operatorIDs.length];
     for (int i = 0; i < operatorIDs.length; i++) {
       ioChannels[i] = connectionPool.reserveLongTermConnection(destinationWorkerIDs[i]);
       ioChannels[i].write(IPCUtils.bosTM(operatorIDs[i]));
-      outputSeq[i] = 0;
       buffers[i] = new TupleBatchBuffer(getSchema());
     }
   }
@@ -168,14 +156,6 @@ public abstract class Producer extends RootOperator {
     }
     buffers = null;
     ioChannels = null;
-    outputSeq = null;
-  }
-
-  /**
-   * @return output seq num of all the output channels.
-   * */
-  public final long[] getOutputSeqNum() {
-    return outputSeq;
   }
 
   /**

@@ -1,7 +1,6 @@
 package edu.washington.escience.myriad.parallel;
 
 import java.util.BitSet;
-import java.util.LinkedList;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -59,19 +58,6 @@ public class Consumer extends LeafOperator {
    * From which workers to receive data.
    * */
   private final int[] sourceWorkers;
-  /**
-   * recent seq num, will be used in fault tolerance.
-   * */
-  private transient long[] recentSeqNum;
-  /**
-   * input global order. will be used in fault tolerance.
-   * */
-  private transient LinkedList<Integer> inputGlobalOrder; // recording data message only, list of worker IDs, for fault
-                                                          // tolerance
-  /**
-   * if the operator is in rewinding.
-   * */
-  private transient boolean inRewinding;
 
   /**
    * the consumer channels, for recording the mapping between ExchangeChannelIDs to a Consumer instances.
@@ -90,16 +76,6 @@ public class Consumer extends LeafOperator {
    */
   public final void setExchangeChannels(final ConsumerChannel[] exchangeChannels) {
     this.exchangeChannels = exchangeChannels;
-  }
-
-  @Override
-  public final void rewind(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    inRewinding = true;
-    for (int i = 0; i < sourceWorkers.length; i++) {
-      recentSeqNum[i] = -1;
-    }
-    workerEOS = new BitSet(sourceWorkers.length);
-    workerEOI = new BitSet(sourceWorkers.length);
   }
 
   /**
@@ -126,16 +102,10 @@ public class Consumer extends LeafOperator {
     workerEOS = new BitSet(sourceWorkers.length);
     workerEOI = new BitSet(sourceWorkers.length);
 
-    recentSeqNum = new long[sourceWorkers.length];
-
-    inRewinding = false;
-    inputGlobalOrder = new LinkedList<Integer>();
-
     TIntIntMap tmp = new TIntIntHashMap();
     int idx = 0;
-    for (int i = 0; i < sourceWorkers.length; i++) {
-      tmp.put(sourceWorkers[i], idx++);
-      recentSeqNum[i] = -1;
+    for (int sourceWorker : sourceWorkers) {
+      tmp.put(sourceWorker, idx++);
     }
     workerIdToIndex = new TUnmodifiableIntIntMap(tmp);
   }
@@ -168,17 +138,6 @@ public class Consumer extends LeafOperator {
     while ((tb = take(timeToWait)) != null) {
       int sourceWorkerIdx = workerIdToIndex.get(tb.getSourceIPCID());
 
-      if (tb.getData() != null) {
-        if (tb.getSeqNum() <= recentSeqNum[sourceWorkerIdx]) {
-          if (LOGGER.isInfoEnabled()) {
-            LOGGER.info(
-                "Duplicate TupleBatch, received from worker:{} to Operator:{}. seqNum:{}, expected:{} Drop directly.",
-                tb.getSourceIPCID(), tb.getOperatorID(), tb.getSeqNum(), recentSeqNum[sourceWorkerIdx] + 1);
-          }
-
-          continue;
-        }
-      }
       if (tb.isEos()) {
         workerEOS.set(sourceWorkerIdx);
         checkEOSAndEOI();
@@ -198,50 +157,6 @@ public class Consumer extends LeafOperator {
     }
 
     return result;
-  }
-
-  /**
-   * Only for non-blocking.
-   * 
-   * @return get a TB in rewind mode.
-   * @throws InterruptedException if interrupted.
-   */
-  final TupleBatch getTuplesRewind() throws InterruptedException {
-
-    while (!inputGlobalOrder.isEmpty()) {
-      Integer expectedRemote = inputGlobalOrder.getFirst();
-      ExchangeData actual = inputBuffer.pickFirst(expectedRemote);
-      if (actual != null) {
-        int sourceWorkerIdx = workerIdToIndex.get(actual.getSourceIPCID());
-        if (actual.getData() != null) {
-          // data message
-          if (actual.getSeqNum() <= recentSeqNum[sourceWorkerIdx]) {
-            if (LOGGER.isInfoEnabled()) {
-              LOGGER
-                  .info(
-                      "Duplicate TupleBatch, received from worker:{} to Operator:{}. seqNum:{}, expected:{} Drop directly.",
-                      actual.getSourceIPCID(), actual.getOperatorID(), actual.getSeqNum(),
-                      recentSeqNum[sourceWorkerIdx] + 1);
-            }
-            continue;
-          }
-        }
-        inputGlobalOrder.remove(); // a legal input
-
-        if (actual.isEos()) {
-          workerEOS.set(sourceWorkerIdx);
-          checkEOSAndEOI();
-          if (eos() || eoi()) {
-            break;
-          }
-        }
-        return actual.getData();
-      }
-      return null;
-    }
-
-    inRewinding = false;
-    return getTuplesNormal(false);
   }
 
   @Override
@@ -324,11 +239,7 @@ public class Consumer extends LeafOperator {
   @Override
   protected final TupleBatch fetchNextReady() throws DbException {
     try {
-      if (inRewinding) {
-        return getTuplesRewind();
-      } else {
-        return getTuplesNormal(false);
-      }
+      return getTuplesNormal(false);
     } catch (final InterruptedException e) {
       Thread.currentThread().interrupt();
     }

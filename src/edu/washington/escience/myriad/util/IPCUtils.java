@@ -256,11 +256,9 @@ public final class IPCUtils {
   /**
    * @param dataColumns data columns
    * @param numTuples number of tuples in the columns.
-   * @param seqNum for fault tolerance.
    * @return a data TM encoding the data columns.
    * */
-  public static TransportMessage normalDataMessage(final List<Column<?>> dataColumns, final int numTuples,
-      final long seqNum) {
+  public static TransportMessage normalDataMessage(final List<Column<?>> dataColumns, final int numTuples) {
     final ColumnMessage[] columnProtos = new ColumnMessage[dataColumns.size()];
 
     int i = 0;
@@ -270,7 +268,7 @@ public final class IPCUtils {
     }
     return DATA_TM_BUILDER.get().setData(
         NORMAL_DATAMESSAGE_BUILDER.get().clearColumns().addAllColumns(Arrays.asList(columnProtos)).setNumTuples(
-            numTuples)).setSeq(seqNum).build();
+            numTuples)).build();
   }
 
   /**

@@ -50,7 +50,7 @@ public class TenGBTupleBatchSenderUsingConnectionPool {
     start = System.currentTimeMillis();
     System.out.println("Start at " + start);
 
-    final TransportMessage tm = dataToSend.popAnyAsTM(0);
+    final TransportMessage tm = dataToSend.popAnyAsTM();
     final long serializedSize = tm.getSerializedSize();
     System.out.println("TupleBatch payload size: " + ((Long.SIZE / 8) + tupleSize * TupleBatch.BATCH_SIZE));
     System.out.println("TupleBatch serialized size: " + serializedSize);

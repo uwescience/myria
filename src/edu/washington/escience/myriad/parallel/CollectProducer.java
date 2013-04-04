@@ -31,8 +31,7 @@ public final class CollectProducer extends Producer {
     TransportMessage dm = null;
     tb.compactInto(getBuffers()[0]);
 
-    while ((dm = getBuffers()[0].popFilledAsTM(super.getOutputSeqNum()[0])) != null) {
-      super.getOutputSeqNum()[0]++;
+    while ((dm = getBuffers()[0].popFilledAsTM()) != null) {
       getChannels()[0].write(dm);
     }
   }
@@ -40,8 +39,7 @@ public final class CollectProducer extends Producer {
   @Override
   protected void childEOS() throws DbException {
     TransportMessage dm = null;
-    while ((dm = getBuffers()[0].popAnyAsTM(super.getOutputSeqNum()[0])) != null) {
-      super.getOutputSeqNum()[0]++;
+    while ((dm = getBuffers()[0].popAnyAsTM()) != null) {
       getChannels()[0].write(dm);
     }
     getChannels()[0].write(IPCUtils.EOS);
@@ -50,8 +48,7 @@ public final class CollectProducer extends Producer {
   @Override
   protected void childEOI() throws DbException {
     TransportMessage dm = null;
-    while ((dm = getBuffers()[0].popAnyAsTM(super.getOutputSeqNum()[0])) != null) {
-      super.getOutputSeqNum()[0]++;
+    while ((dm = getBuffers()[0].popAnyAsTM()) != null) {
       getChannels()[0].write(dm);
     }
     getChannels()[0].write(IPCUtils.EOI);

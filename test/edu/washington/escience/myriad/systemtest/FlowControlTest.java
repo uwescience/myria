@@ -17,7 +17,7 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.faulttolerance.DelayInjector;
+import edu.washington.escience.myriad.operator.DelayInjector;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.operator.SinkRoot;

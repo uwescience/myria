@@ -34,8 +34,7 @@ public final class LocalMultiwayProducer extends Producer {
     Channel[] ioChannels = getChannels();
     TransportMessage dm = null;
     tup.compactInto(buffers[0]);
-    while ((dm = buffers[0].popFilledAsTM(super.getOutputSeqNum()[0])) != null) {
-      super.getOutputSeqNum()[0]++;
+    while ((dm = buffers[0].popFilledAsTM()) != null) {
       for (Channel ch : ioChannels) {
         ch.write(dm);
       }
@@ -47,8 +46,7 @@ public final class LocalMultiwayProducer extends Producer {
     TransportMessage dm = null;
     TupleBatchBuffer[] buffers = getBuffers();
     Channel[] ioChannels = getChannels();
-    while ((dm = buffers[0].popAnyAsTM(super.getOutputSeqNum()[0])) != null) {
-      super.getOutputSeqNum()[0]++;
+    while ((dm = buffers[0].popAnyAsTM()) != null) {
       for (Channel ch : ioChannels) {
         ch.write(dm);
       }
@@ -63,8 +61,7 @@ public final class LocalMultiwayProducer extends Producer {
     TransportMessage dm = null;
     TupleBatchBuffer[] buffers = getBuffers();
     Channel[] ioChannels = getChannels();
-    while ((dm = buffers[0].popAnyAsTM(super.getOutputSeqNum()[0])) != null) {
-      super.getOutputSeqNum()[0]++;
+    while ((dm = buffers[0].popAnyAsTM()) != null) {
       for (Channel ch : ioChannels) {
         ch.write(dm);
       }
