@@ -14,18 +14,23 @@ import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.operator.Operator;
 
 /**
- * The Aggregation operator that computes an aggregate (e.g., sum, avg, max,
- * min). Note that we only support aggregates over a single column, grouped by a
- * single column.
+ * The Aggregation operator that computes an aggregate (e.g., sum, avg, max, min). Note that we only support aggregates
+ * over a single column, grouped by a single column.
  */
 public class MultiGroupByAggregate extends Operator {
 
   /**
-   * A simple implementation of multiple-field group key
+   * A simple implementation of multiple-field group key.
    * */
-  protected static class SimpleArrayWrapper {
-    public final Object[] groupFields;
+  private static class SimpleArrayWrapper {
+    /** the group fields. **/
+    private final Object[] groupFields;
 
+    /**
+     * Constructs a new group representation.
+     * 
+     * @param groupFields the group fields
+     */
     public SimpleArrayWrapper(final Object[] groupFields) {
       this.groupFields = groupFields;
     }
@@ -35,8 +40,7 @@ public class MultiGroupByAggregate extends Operator {
       if (another == null || !(another instanceof SimpleArrayWrapper)) {
         return false;
       }
-      return Arrays.equals(groupFields,
-          ((SimpleArrayWrapper) another).groupFields);
+      return Arrays.equals(groupFields, ((SimpleArrayWrapper) another).groupFields);
     }
 
     @Override
@@ -50,37 +54,38 @@ public class MultiGroupByAggregate extends Operator {
     }
   }
 
+  /** Java requires this. **/
   private static final long serialVersionUID = 1L;
+  /** The schema after the aggregate is done. **/
   private final Schema schema;
+  /** The child operator that will feed tuples in. **/
   private Operator child;
+  /** The aggregators being used. **/
   private final Aggregator[] agg;
-  private final int[] afields; // Compute aggregate on each of the afields
-  private final int[] gfields; // group by fields
+  /** Aggregate fields. **/
+  private final int[] afields;
+  /** Group fields. **/
+  private int[] gfields;
+  /** Should the aggregator do group by or not. **/
   private final boolean groupBy;
+  /** The resulting buffer to return. **/
   private TupleBatchBuffer resultBuffer = null;
-
+  /** Mapping between the group to the aggregators being used. **/
   private final HashMap<SimpleArrayWrapper, Aggregator[]> groupAggs;
 
   /**
    * Constructor.
    * 
-   * Implementation hint: depending on the type of afield, you will want to
-   * construct an {@link IntAggregator} or {@link StringAggregator} to help you
-   * with your implementation of readNext().
+   * Implementation hint: depending on the type of afield, you will want to construct an {@link IntAggregator} or
+   * {@link StringAggregator} to help you with your implementation of readNext().
    * 
    * 
-   * @param child
-   *          The Operator that is feeding us tuples.
-   * @param afields
-   *          The columns over which we are computing an aggregate.
-   * @param gfields
-   *          The columns over which we are grouping the result, or -1 if there
-   *          is no grouping
-   * @param aggOps
-   *          The aggregation operator to use
+   * @param child The Operator that is feeding us tuples.
+   * @param afields The columns over which we are computing an aggregate.
+   * @param gfields The columns over which we are grouping the result, or -1 if there is no grouping
+   * @param aggOps The aggregation operator to use
    */
-  public MultiGroupByAggregate(final Operator child, final int[] afields,
-      int[] gfields, final int[] aggOps) {
+  public MultiGroupByAggregate(final Operator child, final int[] afields, final int[] gfields, final int[] aggOps) {
     Objects.requireNonNull(afields);
     if (afields.length == 0) {
       throw new IllegalArgumentException("aggregation fields must not be empty");
@@ -88,7 +93,7 @@ public class MultiGroupByAggregate extends Operator {
 
     Schema outputSchema = null;
     if (gfields == null) {
-      gfields = new int[0];
+      this.gfields = new int[0];
       groupBy = false;
       groupAggs = null;
     } else if (gfields.length == 0) {
@@ -119,36 +124,30 @@ public class MultiGroupByAggregate extends Operator {
     int idx = 0;
     for (final int afield : afields) {
       switch (childSchema.getColumnType(afield)) {
-      case BOOLEAN_TYPE:
-        agg[idx] = new BooleanAggregator(afield,
-            childSchema.getColumnName(afield), aggOps[idx]);
-        outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
-        break;
-      case INT_TYPE:
-        agg[idx] = new IntegerAggregator(afield,
-            childSchema.getColumnName(afield), aggOps[idx]);
-        outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
-        break;
-      case LONG_TYPE:
-        agg[idx] = new LongAggregator(afield,
-            childSchema.getColumnName(afield), aggOps[idx]);
-        outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
-        break;
-      case FLOAT_TYPE:
-        agg[idx] = new FloatAggregator(afield,
-            childSchema.getColumnName(afield), aggOps[idx]);
-        outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
-        break;
-      case DOUBLE_TYPE:
-        agg[idx] = new DoubleAggregator(afield,
-            childSchema.getColumnName(afield), aggOps[idx]);
-        outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
-        break;
-      case STRING_TYPE:
-        agg[idx] = new StringAggregator(afield,
-            childSchema.getColumnName(afield), aggOps[idx]);
-        outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
-        break;
+        case BOOLEAN_TYPE:
+          agg[idx] = new BooleanAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
+          outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
+          break;
+        case INT_TYPE:
+          agg[idx] = new IntegerAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
+          outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
+          break;
+        case LONG_TYPE:
+          agg[idx] = new LongAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
+          outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
+          break;
+        case FLOAT_TYPE:
+          agg[idx] = new FloatAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
+          outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
+          break;
+        case DOUBLE_TYPE:
+          agg[idx] = new DoubleAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
+          outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
+          break;
+        case STRING_TYPE:
+          agg[idx] = new StringAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
+          outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
+          break;
       }
       idx++;
     }
@@ -158,7 +157,7 @@ public class MultiGroupByAggregate extends Operator {
   /**
    * @return the aggregate field
    * */
-  public int[] aggregateFields() {
+  public final int[] aggregateFields() {
     return afields;
   }
 
@@ -168,11 +167,11 @@ public class MultiGroupByAggregate extends Operator {
   }
 
   /**
-   * Returns the next tuple. If there is a group by field, then the first field
-   * is the field by which we are grouping, and the second field is the result
-   * of computing the aggregate, If there is no group by field, then the result
-   * tuple should contain one field representing the result of the aggregate.
-   * Should return null if there are no more tuples.
+   * Returns the next tuple. If there is a group by field, then the first field is the field by which we are grouping,
+   * and the second field is the result of computing the aggregate, If there is no group by field, then the result tuple
+   * should contain one field representing the result of the aggregate. Should return null if there are no more tuples.
+   * 
+   * @throws DbException
    */
   @Override
   protected TupleBatch fetchNext() throws DbException {
@@ -259,16 +258,20 @@ public class MultiGroupByAggregate extends Operator {
   }
 
   /**
-   * The schema of the aggregate output. Grouping fields first and then
-   * aggregate fields. The aggregate
+   * The schema of the aggregate output. Grouping fields first and then aggregate fields. The aggregate
+   * 
+   * @return the resulting schema
    */
   @Override
   public Schema getSchema() {
     return schema;
   }
 
-  public int[] groupFields() {
-    return gfields;
+  /**
+   * @return the group fields
+   */
+  public final int[] groupFields() {
+    return Arrays.copyOf(gfields, gfields.length);
   }
 
   @Override
