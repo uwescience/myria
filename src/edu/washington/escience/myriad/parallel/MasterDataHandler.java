@@ -117,9 +117,8 @@ public class MasterDataHandler extends SimpleChannelUpstreamHandler implements M
           break;
         case EOS:
           tmB = tm.toBuilder();
-          tmB.getDataBuilder().setOperatorID(channel2OperatorID.get(channel.getId()));
+          tmB.getDataBuilder().setOperatorID(channel2OperatorID.remove(channel.getId()));
           tm = tmB.build();
-          channel2OperatorID.remove(channel.getId());
           while (!processMessage(channel, senderID, tm)) {
             if (LOGGER.isErrorEnabled()) {
               LOGGER
