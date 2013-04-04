@@ -6,7 +6,7 @@ import java.util.List;
  * Constant multiplication Function for use in Apply.
  */
 
-public class ConstantMultiplicationIFunction extends IFunction {
+public final class ConstantMultiplicationIFunction extends IFunction {
 
   /**
    * creates the Constant Multiplication function with the desired power value.

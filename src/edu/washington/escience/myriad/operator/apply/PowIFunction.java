@@ -5,7 +5,7 @@ import java.util.List;
 /**
  * Power Function for use in Apply.
  */
-public class PowIFunction extends IFunction {
+public final class PowIFunction extends IFunction {
 
   /**
    * Accepts only powers of whole numbers {@inheritDoc}.

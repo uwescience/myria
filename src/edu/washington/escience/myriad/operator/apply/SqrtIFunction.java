@@ -7,7 +7,7 @@ import edu.washington.escience.myriad.Type;
 /**
  * SQRT Function sqrt(x).
  */
-public class SqrtIFunction extends IFunction {
+public final class SqrtIFunction extends IFunction {
 
   /**
    * {@inheritDoc}

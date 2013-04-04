@@ -19,7 +19,7 @@ import edu.washington.escience.myriad.operator.Operator;
  * The column type will be the same as that of the attribute specified
  * 
  */
-public class Apply extends Operator {
+public final class Apply extends Operator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;

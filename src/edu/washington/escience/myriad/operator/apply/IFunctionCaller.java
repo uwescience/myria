@@ -14,7 +14,7 @@ import edu.washington.escience.myriad.Type;
  * @author vaspol
  * 
  */
-public class IFunctionCaller implements Serializable {
+public final class IFunctionCaller implements Serializable {
 
   /** Required by java. */
   private static final long serialVersionUID = 1L;
