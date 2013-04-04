@@ -3,19 +3,13 @@ package edu.washington.escience.myriad.operator.apply;
 import java.util.List;
 
 /**
- * Constant multiplication Function for use in Apply
- * 
- * @param <Tin>
- *          Type of the data being fed and output
+ * Constant multiplication Function for use in Apply.
  */
 
 public class ConstantMultiplicationIFunction extends IFunction {
 
   /**
-   * creates the Constant Multiplication function with the desired power value
-   * 
-   * @param constant
-   *          the constant to multiply through
+   * creates the Constant Multiplication function with the desired power value.
    */
   public ConstantMultiplicationIFunction() {
   }
@@ -23,11 +17,10 @@ public class ConstantMultiplicationIFunction extends IFunction {
   /**
    * {@inheritDoc}
    * 
-   * @throws IllegalArgumentException
-   *           , the wrong argument was passed
+   * @throws IllegalArgumentException , the wrong argument was passed
    */
   @Override
-  public Number execute(List<Number> source, List<Number> arguments) {
+  public Number execute(final List<Number> source, final List<Number> arguments) {
     checkPreconditions(source, numApplyFields());
     checkPreconditions(arguments, numExtraArgument());
     Number src = source.get(0);
@@ -42,7 +35,7 @@ public class ConstantMultiplicationIFunction extends IFunction {
   }
 
   @Override
-  public String toString(List<String> names, List<Number> arguments) {
+  public String toString(final List<String> names, final List<Number> arguments) {
     checkPreconditions(arguments, numExtraArgument());
     checkPreconditions(names, numApplyFields());
     return arguments.get(0) + " * " + names.get(0);

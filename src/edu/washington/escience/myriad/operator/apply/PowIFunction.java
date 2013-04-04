@@ -3,26 +3,15 @@ package edu.washington.escience.myriad.operator.apply;
 import java.util.List;
 
 /**
- * Power Function for use in Apply
- * 
- * @param <Tin>
- *          Type of the data being fed and output
+ * Power Function for use in Apply.
  */
 public class PowIFunction extends IFunction {
 
   /**
-   * creates the Power function with the desired power value
-   * 
-   */
-  public PowIFunction() {
-
-  }
-
-  /**
-   * Accepts only powers of whole numbers {@inheritDoc}
+   * Accepts only powers of whole numbers {@inheritDoc}.
    */
   @Override
-  public Number execute(List<Number> source, List<Number> arguments) {
+  public Number execute(final List<Number> source, final List<Number> arguments) {
     checkPreconditions(source, numApplyFields());
     checkPreconditions(arguments, numExtraArgument());
     Number src = source.get(0);
@@ -37,7 +26,7 @@ public class PowIFunction extends IFunction {
   }
 
   @Override
-  public String toString(List<String> names, List<Number> arguments) {
+  public String toString(final List<String> names, final List<Number> arguments) {
     checkPreconditions(names, numApplyFields());
     checkPreconditions(arguments, numExtraArgument());
     return "POW(" + names.get(0) + "," + arguments.get(0) + ")";

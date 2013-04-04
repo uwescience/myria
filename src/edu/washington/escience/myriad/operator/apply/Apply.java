@@ -14,8 +14,7 @@ import edu.washington.escience.myriad.operator.Operator;
 /**
  * Apply operator that will apply a math function on attributes as specified.
  * 
- * The returning schema will be the child operator's schema with all the
- * attributes after being applied
+ * The returning schema will be the child operator's schema with all the attributes after being applied
  * 
  * The column type will be the same as that of the attribute specified
  * 
@@ -25,20 +24,20 @@ public class Apply extends Operator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
+  /** The child operator feeding the tuples. */
   private Operator child;
-  /** the field we want to apply the function on */
+  /** the field we want to apply the function on. */
   private final List<IFunctionCaller> callers;
+  /** the resulting schema. */
   private final Schema schema;
 
   /**
-   * Constructor
+   * Constructor.
    * 
-   * @param child
-   *          TupleBatch that will feed us with tuples
-   * @param applyField
-   *          the fields we want to apply the operation on
+   * @param child TupleBatch that will feed us with tuples
+   * @param callers the fields we want to apply the operation on
    */
-  public Apply(final Operator child, List<IFunctionCaller> callers) {
+  public Apply(final Operator child, final List<IFunctionCaller> callers) {
     this.child = child;
     this.callers = callers;
 
@@ -47,16 +46,16 @@ public class Apply extends Operator {
     final ImmutableList.Builder<Type> schemaTypes = ImmutableList.builder();
     final ImmutableList.Builder<String> schemaNames = ImmutableList.builder();
 
-    schemaTypes.addAll(childSchema.getTypes());
-    schemaNames.addAll(childSchema.getFieldNames());
+    schemaTypes.addAll(childSchema.getColumnTypes());
+    schemaNames.addAll(childSchema.getColumnNames());
 
     for (IFunctionCaller caller : callers) {
       List<Integer> applyFields = caller.getApplyField();
       final ImmutableList.Builder<String> names = ImmutableList.builder();
       final ImmutableList.Builder<Type> typesList = ImmutableList.builder();
       for (Integer i : applyFields) {
-        names.add(child.getSchema().getFieldName(i));
-        typesList.add(child.getSchema().getFieldType(i));
+        names.add(child.getSchema().getColumnName(i));
+        typesList.add(child.getSchema().getColumnType(i));
       }
       schemaNames.add(caller.toString(names.build()));
       schemaTypes.add(caller.getResultType(typesList.build()));
@@ -83,7 +82,7 @@ public class Apply extends Operator {
         final ImmutableList.Builder<Number> srcNums = ImmutableList.builder();
         Number value = null;
         for (Integer index : callers.get(j).getApplyField()) {
-          Type applyFieldType = schema.getFieldType(index);
+          Type applyFieldType = schema.getColumnType(index);
           if (applyFieldType == Type.INT_TYPE) {
             srcNums.add(tb.getInt(index, i));
           } else if (applyFieldType == Type.LONG_TYPE) {
@@ -127,7 +126,7 @@ public class Apply extends Operator {
   }
 
   @Override
-  public void setChildren(Operator[] children) {
+  public void setChildren(final Operator[] children) {
     child = children[0];
   }
 
