@@ -601,6 +601,7 @@ public class AggregateTest {
     mga.open();
     TupleBatch result = mga.next();
     assertEquals(1, result.numTuples());
+
     assertEquals(4, result.getSchema().numColumns());
     assertEquals(expectedMin, result.getLong(result.numColumns() - 1, 0));
     assertEquals(expectedMax, result.getLong(result.numColumns() - 2, 0));
