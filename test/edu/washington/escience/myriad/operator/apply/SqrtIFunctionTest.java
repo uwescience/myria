@@ -27,23 +27,18 @@ public class SqrtIFunctionTest {
     }
     ImmutableList<Integer> list = values.build();
     for (int i = 0; i < list.size(); i++) {
-      ImmutableList.Builder<Number> sourceListBuilder = TestUtils
-          .generateListBuilderWithElement(list.get(i));
-      ImmutableList.Builder<Number> argumentListBuilder = ImmutableList
-          .builder();
-      Number result = sqrt.execute(sourceListBuilder.build(),
-          argumentListBuilder.build());
+      ImmutableList.Builder<Number> sourceListBuilder = TestUtils.generateListBuilderWithElement(list.get(i));
+      ImmutableList.Builder<Number> argumentListBuilder = ImmutableList.builder();
+      Number result = sqrt.execute(sourceListBuilder.build(), argumentListBuilder.build());
       assertEquals(1.0 * i, result);
     }
   }
 
   @Test
   public void testNegativeNumber() {
-    ImmutableList.Builder<Number> sourceListBuilder = TestUtils
-        .generateListBuilderWithElement(-1);
+    ImmutableList.Builder<Number> sourceListBuilder = TestUtils.generateListBuilderWithElement(-1);
     ImmutableList.Builder<Number> argumentListBuilder = ImmutableList.builder();
-    Number result = sqrt.execute(sourceListBuilder.build(),
-        argumentListBuilder.build());
+    Number result = sqrt.execute(sourceListBuilder.build(), argumentListBuilder.build());
     assertTrue(Double.isNaN(result.doubleValue()));
   }
 
