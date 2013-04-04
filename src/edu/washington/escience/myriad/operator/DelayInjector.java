@@ -1,4 +1,4 @@
-package edu.washington.escience.myriad.faulttolerance;
+package edu.washington.escience.myriad.operator;
 
 import java.util.concurrent.TimeUnit;
 
@@ -7,7 +7,6 @@ import com.google.common.collect.ImmutableMap;
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
-import edu.washington.escience.myriad.operator.Operator;
 
 /**
  * Inject delay in processing each TupleBatch.
