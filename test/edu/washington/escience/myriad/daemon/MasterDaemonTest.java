@@ -28,7 +28,7 @@ public class MasterDaemonTest {
       mc.put(MyriaSystemConfigKeys.IPC_SERVER_PORT, "8001");
       HashMap<String, String> wc = new HashMap<String, String>();
       wc.put(MyriaSystemConfigKeys.IPC_SERVER_PORT, "9001");
-      CatalogMaker.makeNNodesLocalParallelCatalog(tmpFolder.getAbsolutePath(), 0, mc, wc);
+      CatalogMaker.makeNNodesLocalParallelCatalog(tmpFolder.getAbsolutePath(), 2, mc, wc);
 
       /* Remember which threads were there when the test starts. */
       Set<Thread> startThreads = ThreadUtils.getCurrentThreads();
@@ -64,7 +64,7 @@ public class MasterDaemonTest {
       mc.put(MyriaSystemConfigKeys.IPC_SERVER_PORT, "8001");
       HashMap<String, String> wc = new HashMap<String, String>();
       wc.put(MyriaSystemConfigKeys.IPC_SERVER_PORT, "9001");
-      CatalogMaker.makeNNodesLocalParallelCatalog(tmpFolder.getAbsolutePath(), 0, mc, wc);
+      CatalogMaker.makeNNodesLocalParallelCatalog(tmpFolder.getAbsolutePath(), 2, mc, wc);
 
       /* Remember which threads were there when the test starts. */
       Set<Thread> startThreads = ThreadUtils.getCurrentThreads();
