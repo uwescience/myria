@@ -24,7 +24,7 @@ public class MasterDaemonTest {
     try {
       final int baseMasterPort = 8001;
       final int baseWorkerPort = 9001;
-      final int n = 0;
+      final int n = 2;
       final String[] args = new String[n + 3];
       args[0] = tmpFolder.getAbsolutePath();
       args[1] = Integer.toString(n);
@@ -66,7 +66,7 @@ public class MasterDaemonTest {
     try {
       final int baseMasterPort = 8001;
       final int baseWorkerPort = 9001;
-      final int n = 0;
+      final int n = 2;
       final String[] args = new String[n + 3];
       args[0] = tmpFolder.getAbsolutePath();
       args[1] = Integer.toString(n);
