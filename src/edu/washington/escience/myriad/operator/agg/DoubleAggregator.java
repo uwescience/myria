@@ -18,15 +18,17 @@ public final class DoubleAggregator implements Aggregator {
   private final int afield;
   private final int aggOps;
 
-  private double min, max, sum;
+  private double min, max, sum, stdev;
   private long count;
 
   private final Schema resultSchema;
 
-  public static final int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT | Aggregator.AGG_OP_SUM | Aggregator.AGG_OP_MAX
-      | Aggregator.AGG_OP_MIN | Aggregator.AGG_OP_AVG;
+  public static final int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT
+      | Aggregator.AGG_OP_SUM | Aggregator.AGG_OP_MAX | Aggregator.AGG_OP_MIN
+      | Aggregator.AGG_OP_AVG | Aggregator.AGG_OP_STDEV;
 
-  private DoubleAggregator(final int afield, final int aggOps, final Schema resultSchema) {
+  private DoubleAggregator(final int afield, final int aggOps,
+      final Schema resultSchema) {
     this.resultSchema = resultSchema;
     this.afield = afield;
     this.aggOps = aggOps;
@@ -36,13 +38,16 @@ public final class DoubleAggregator implements Aggregator {
     sum = 0;
   }
 
-  public DoubleAggregator(final int afield, final String aFieldName, final int aggOps) {
+  public DoubleAggregator(final int afield, final String aFieldName,
+      final int aggOps) {
     if (aggOps <= 0) {
-      throw new IllegalArgumentException("No aggregation operations are selected");
+      throw new IllegalArgumentException(
+          "No aggregation operations are selected");
     }
 
     if ((aggOps | AVAILABLE_AGG) != AVAILABLE_AGG) {
-      throw new IllegalArgumentException("Unsupported aggregation on double column.");
+      throw new IllegalArgumentException(
+          "Unsupported aggregation on double column.");
     }
 
     this.afield = afield;
@@ -73,6 +78,10 @@ public final class DoubleAggregator implements Aggregator {
       types.add(Type.DOUBLE_TYPE);
       names.add("avg(" + aFieldName + ")");
     }
+    if ((aggOps & Aggregator.AGG_OP_STDEV) != 0) {
+      types.add(Type.DOUBLE_TYPE);
+      names.add("stdev(" + aFieldName + ")");
+    }
     resultSchema = new Schema(types, names);
   }
 
@@ -82,6 +91,8 @@ public final class DoubleAggregator implements Aggregator {
     final int numTuples = tup.numTuples();
     if (numTuples > 0) {
       count += numTuples;
+      // temp variables for stdev streaming computation
+      double m = 0.0, s = 0.0;
       for (int i = 0; i < numTuples; i++) {
         final double x = tup.getDouble(afield, i);
         sum += x;
@@ -91,7 +102,12 @@ public final class DoubleAggregator implements Aggregator {
         if (Double.compare(x, max) > 0) {
           max = x;
         }
+        // computing the standard deviation
+        double tempM = m;
+        m += (x - tempM) / (i + 1);
+        s += (x - tempM) * (x - m);
       }
+      stdev = Math.sqrt(s / numTuples - 1);
     }
   }
 
@@ -126,6 +142,10 @@ public final class DoubleAggregator implements Aggregator {
     }
     if ((aggOps & AGG_OP_AVG) != 0) {
       buffer.put(idx, sum * 1.0 / count);
+      idx++;
+    }
+    if ((aggOps & AGG_OP_STDEV) != 0) {
+      buffer.put(idx, stdev);
       idx++;
     }
   }
