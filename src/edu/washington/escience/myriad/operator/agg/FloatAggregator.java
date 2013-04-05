@@ -31,8 +31,11 @@ public final class FloatAggregator implements Aggregator {
    * */
   private float min, max, sum;
 
+  /**
+   * stdev, always of double type.
+   * */
   private double stdev;
-  
+
   /**
    * Count, always of long type.
    * */

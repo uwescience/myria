@@ -337,7 +337,7 @@ public final class MultiGroupByAggregate extends Operator {
   }
 
   @Override
-  protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+  protected final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     resultBuffer = new TupleBatchBuffer(schema);
   }
 

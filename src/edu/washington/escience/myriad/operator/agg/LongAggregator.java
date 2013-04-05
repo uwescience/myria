@@ -31,7 +31,11 @@ public final class LongAggregator implements Aggregator {
    * */
   private long min, max, sum;
 
+  /**
+   * stdev, always of double type.
+   * */
   private double stdev;
+
   /**
    * Count, always of long type.
    * */
@@ -45,10 +49,8 @@ public final class LongAggregator implements Aggregator {
   /**
    * Aggregate operations applicable for long columns.
    * */
-  public static final int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT
-      | Aggregator.AGG_OP_SUM | Aggregator.AGG_OP_MAX | Aggregator.AGG_OP_MIN
-      | Aggregator.AGG_OP_AVG | Aggregator.AGG_OP_STDEV;
-
+  public static final int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT | Aggregator.AGG_OP_SUM | Aggregator.AGG_OP_MAX
+      | Aggregator.AGG_OP_MIN | Aggregator.AGG_OP_AVG | Aggregator.AGG_OP_STDEV;
 
   /**
    * This serves as the copy constructor.
@@ -74,13 +76,11 @@ public final class LongAggregator implements Aggregator {
    * */
   public LongAggregator(final int afield, final String aFieldName, final int aggOps) {
     if (aggOps <= 0) {
-      throw new IllegalArgumentException(
-          "No aggregation operations are selected");
+      throw new IllegalArgumentException("No aggregation operations are selected");
     }
 
     if ((aggOps | AVAILABLE_AGG) != AVAILABLE_AGG) {
-      throw new IllegalArgumentException(
-          "Unsupported aggregation on long column.");
+      throw new IllegalArgumentException("Unsupported aggregation on long column.");
     }
     this.afield = afield;
     this.aggOps = aggOps;

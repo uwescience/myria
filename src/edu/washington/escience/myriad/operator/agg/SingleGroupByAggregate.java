@@ -94,7 +94,7 @@ public class SingleGroupByAggregate extends Operator {
 
     this.child = child;
     this.afields = afields;
-    this.gColumn = gfield;
+    gColumn = gfield;
     agg = new Aggregator[aggOps.length];
 
     int idx = 0;
@@ -242,22 +242,23 @@ public class SingleGroupByAggregate extends Operator {
   protected final TupleBatch fetchNextReady() throws DbException {
     TupleBatch tb = null;
 
-    if (child.eos()) {
+    if (resultBuffer.numTuples() > 0) {
       return resultBuffer.popAny();
+    }
+
+    if (child.eos() || child.eoi()) {
+      return null;
     }
 
     while ((tb = child.nextReady()) != null) {
       processTupleBatch(tb);
     }
 
-    if (child.eos()) {
+    if (child.eos() || child.eoi()) {
       processEnd();
-      resultBuffer = new TupleBatchBuffer(schema);
       generateResult(resultBuffer);
-      // setEOS();
-      return resultBuffer.popAny();
     }
-    return null;
+    return resultBuffer.popAny();
   }
 
   @Override
@@ -282,6 +283,7 @@ public class SingleGroupByAggregate extends Operator {
     groupAggs = new HashMap<Object, Aggregator[]>();
     groupedTupleBatches = new HashMap<Object, Pair<Object, TupleBatchBuffer>>();
     resultBuffer = new TupleBatchBuffer(schema);
+
   }
 
   @Override
