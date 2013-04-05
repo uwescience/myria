@@ -27,7 +27,7 @@ public final class MasterApiServer {
   private static final long MAX_WAITING_TIME_MS = TimeUnit.MILLISECONDS.convert(1, TimeUnit.DAYS);
 
   /** The default port for the server. */
-  private static final int PORT = 8753;
+  public static final int PORT = 8753;
 
   /** The Restlet Component is the main class that holds multiple servers/hosts for this application. */
   private final Component component;
