@@ -17,7 +17,7 @@ import edu.washington.escience.myriad.operator.Operator;
  * The Aggregation operator that computes an aggregate (e.g., sum, avg, max, min). Note that we only support aggregates
  * over a single column, grouped by a single column.
  */
-public class MultiGroupByAggregate extends Operator {
+public final class MultiGroupByAggregate extends Operator {
 
   /**
    * A simple implementation of multiple-field group key.
@@ -92,14 +92,12 @@ public class MultiGroupByAggregate extends Operator {
     }
 
     Schema outputSchema = null;
-    if (gfields == null) {
+    if (gfields == null || gfields.length == 0) {
       this.gfields = new int[0];
       groupBy = false;
       groupAggs = null;
-    } else if (gfields.length == 0) {
-      groupBy = false;
-      groupAggs = null;
     } else {
+      this.gfields = gfields;
       groupBy = true;
       groupAggs = new HashMap<SimpleArrayWrapper, Aggregator[]>();
     }
@@ -108,7 +106,7 @@ public class MultiGroupByAggregate extends Operator {
     final ImmutableList.Builder<String> gNames = ImmutableList.builder();
 
     final Schema childSchema = child.getSchema();
-    for (final int i : gfields) {
+    for (final int i : this.gfields) {
       gTypes.add(childSchema.getColumnType(i));
       gNames.add(childSchema.getColumnName(i));
     }
@@ -118,7 +116,6 @@ public class MultiGroupByAggregate extends Operator {
 
     this.child = child;
     this.afields = afields;
-    this.gfields = gfields;
     agg = new Aggregator[aggOps.length];
 
     int idx = 0;
@@ -157,7 +154,7 @@ public class MultiGroupByAggregate extends Operator {
   /**
    * @return the aggregate field
    * */
-  public final int[] aggregateFields() {
+  public int[] aggregateFields() {
     return afields;
   }
 
@@ -166,13 +163,6 @@ public class MultiGroupByAggregate extends Operator {
     groupAggs.clear();
   }
 
-  /**
-   * Returns the next tuple. If there is a group by field, then the first field is the field by which we are grouping,
-   * and the second field is the result of computing the aggregate, If there is no group by field, then the result tuple
-   * should contain one field representing the result of the aggregate. Should return null if there are no more tuples.
-   * 
-   * @throws DbException
-   */
   @Override
   protected TupleBatch fetchNext() throws DbException {
     resultBuffer = new TupleBatchBuffer(schema);
@@ -225,8 +215,8 @@ public class MultiGroupByAggregate extends Operator {
             TupleBatchBuffer tbb = tmpMap.get(saw);
             TupleBatch filledTb = null;
             while ((filledTb = tbb.popAny()) != null) {
-              for (Aggregator agg : aggs) {
-                agg.add(filledTb);
+              for (Aggregator aggregator : aggs) {
+                aggregator.add(filledTb);
               }
             }
           }
@@ -270,7 +260,7 @@ public class MultiGroupByAggregate extends Operator {
   /**
    * @return the group fields
    */
-  public final int[] groupFields() {
+  public int[] groupFields() {
     return Arrays.copyOf(gfields, gfields.length);
   }
 
