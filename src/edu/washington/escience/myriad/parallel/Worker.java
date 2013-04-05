@@ -104,9 +104,7 @@ public final class Worker {
               switch (cm.getType()) {
                 case SHUTDOWN:
                   if (LOGGER.isInfoEnabled()) {
-                    if (LOGGER.isInfoEnabled()) {
-                      LOGGER.info("shutdown requested");
-                    }
+                    LOGGER.info("shutdown requested");
                   }
                   toShutdown = true;
                   abruptShutdown = false;
