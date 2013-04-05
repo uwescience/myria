@@ -19,7 +19,7 @@ import edu.washington.escience.myriad.operator.Operator;
  * The Aggregation operator that computes an aggregate (e.g., sum, avg, max, min). We support aggregates over multiple
  * columns, group by multiple columns.
  */
-public class MultiGroupByAggregate extends Operator {
+public final class MultiGroupByAggregate extends Operator {
 
   /**
    * A simple implementation of multiple-field group key.
@@ -95,12 +95,13 @@ public class MultiGroupByAggregate extends Operator {
     Schema outputSchema = null;
 
     groupAggs = new HashMap<SimpleArrayWrapper, Aggregator[]>();
+    this.gfields = gfields;
 
     final ImmutableList.Builder<Type> gTypes = ImmutableList.builder();
     final ImmutableList.Builder<String> gNames = ImmutableList.builder();
 
     final Schema childSchema = child.getSchema();
-    for (final int i : gfields) {
+    for (final int i : this.gfields) {
       gTypes.add(childSchema.getColumnType(i));
       gNames.add(childSchema.getColumnName(i));
     }
@@ -110,7 +111,6 @@ public class MultiGroupByAggregate extends Operator {
 
     this.child = child;
     this.afields = afields;
-    this.gfields = gfields;
     agg = new Aggregator[aggOps.length];
 
     int idx = 0;
@@ -149,7 +149,7 @@ public class MultiGroupByAggregate extends Operator {
   /**
    * @return the aggregate field
    * */
-  public final int[] aggregateFields() {
+  public int[] aggregateFields() {
     return afields;
   }
 
@@ -327,7 +327,7 @@ public class MultiGroupByAggregate extends Operator {
   /**
    * @return the group fields
    */
-  public final int[] groupFields() {
+  public int[] groupFields() {
     return Arrays.copyOf(gfields, gfields.length);
   }
 
