@@ -49,6 +49,9 @@ public final class LocalJoin_RefOnly extends Operator implements Externalizable 
 
     @Override
     public boolean equals(final Object o) {
+      if (this == o) {
+        return true;
+      }
       if (!(o instanceof IndexedTuple)) {
         return false;
       }

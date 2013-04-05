@@ -23,13 +23,19 @@ public final class CollectProducer extends Producer {
    * The working thread, which executes the child operator and send the tuples to the paired CollectConsumer operator.
    */
   class WorkingThread extends Thread {
+    /** Constructor, set the thread name. */
+    public WorkingThread() {
+      super();
+      setName("CollectProducer-WorkingThread-" + getId());
+    }
+
     @Override
     public void run() {
 
       final IPCConnectionPool connectionPool = getConnectionPool();
       final Channel channel = connectionPool.reserveLongTermConnection(collectConsumerWorkerID);
 
-      final ExchangePairID operatorID = operatorIDs[0];
+      final ExchangePairID operatorID = getOperatorIDs()[0];
 
       try {
 

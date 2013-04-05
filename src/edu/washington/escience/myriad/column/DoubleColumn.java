@@ -12,6 +12,7 @@ import com.google.common.base.Preconditions;
 import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myriad.TupleBatch;
+import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType;
 import edu.washington.escience.myriad.proto.DataProto.DoubleColumnMessage;
@@ -78,6 +79,11 @@ public final class DoubleColumn implements Column<Double> {
     statement.bind(sqliteIndex, getDouble(row));
   }
 
+  @Override
+  public Type getType() {
+    return Type.DOUBLE_TYPE;
+  }
+
   /**
    * Inserts the specified element at end of this column.
    * 
@@ -128,7 +134,7 @@ public final class DoubleColumn implements Column<Double> {
       }
       sb.append(data.get(i));
     }
-    sb.append("]");
+    sb.append(']');
     return sb.toString();
   }
 }

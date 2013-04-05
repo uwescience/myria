@@ -80,6 +80,12 @@ public class SystemTestBase {
 
     @Override
     public boolean equals(final Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (!(o instanceof Tuple)) {
+        return false;
+      }
       return compareTo((Tuple) o) == 0;
     }
 
@@ -121,7 +127,7 @@ public class SystemTestBase {
   }
 
   /** The logger for this class. */
-  protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(SystemTestBase.class.getName());
+  protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(SystemTestBase.class);
 
   public static final Schema JOIN_INPUT_SCHEMA = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE),
       ImmutableList.of("id", "name"));
@@ -420,6 +426,7 @@ public class SystemTestBase {
         }
       };
 
+      workerStdoutReader[wc].setName("WorkerStdoutReader-" + wc);
       workerStdoutReader[wc].start();
 
       ++workerCount;

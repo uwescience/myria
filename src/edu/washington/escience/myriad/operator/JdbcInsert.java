@@ -40,7 +40,9 @@ public final class JdbcInsert extends RootOperator {
    * 
    * @param child the source of tuples to be inserted.
    * @param relationKey the key of the table the tuples should be inserted into.
-   * @throws DbException
+   * @param jdbcInfo the parameters of the JDBC connection.
+   * @param executor the ExecutorService for this process.
+   * @throws DbException if there is a problem inserting the tuples.
    */
   public JdbcInsert(final Operator child, final RelationKey relationKey, final JdbcInfo jdbcInfo,
       final ExecutorService executor) throws DbException {
@@ -55,6 +57,7 @@ public final class JdbcInsert extends RootOperator {
    * 
    * @param child the source of tuples to be inserted.
    * @param relationKey the key of the table the tuples should be inserted into.
+   * @param jdbcInfo the parameters of the JDBC connection.
    * @param executor the ExecutorService for this process.
    * @param overwriteTable whether to overwrite a table that already exists.
    * @throws DbException if there is an error opening the Jdbc Connection.

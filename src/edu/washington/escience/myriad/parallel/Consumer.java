@@ -18,7 +18,7 @@ import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 public class Consumer extends LeafOperator {
 
   /** The logger for this class. Defaults to myriad level, but could be set to a finer granularity if needed. */
-  private static final Logger LOGGER = LoggerFactory.getLogger("edu.washington.escience.myriad");
+  private static final Logger LOGGER = LoggerFactory.getLogger(Consumer.class);
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -28,7 +28,7 @@ public class Consumer extends LeafOperator {
    */
   private transient volatile LinkedBlockingQueue<ExchangeData> inputBuffer;
 
-  protected ExchangePairID operatorID;
+  private final ExchangePairID operatorID;
   private final Schema schema;
   private final BitSet workerEOS;
   private final BitSet workerEOI;

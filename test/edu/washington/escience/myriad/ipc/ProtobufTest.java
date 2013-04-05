@@ -21,6 +21,7 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
@@ -54,7 +55,7 @@ public class ProtobufTest {
   };
 
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(ProtobufTest.class.getName());
+  private static final Logger LOGGER = LoggerFactory.getLogger(ProtobufTest.class);
 
   // @Test
   public void protobufExhaustNoWaitTest() throws IOException, InterruptedException {
@@ -143,7 +144,7 @@ public class ProtobufTest {
     // Channel server = acceptor.bind(serverAddress);
     connectionPool.start();
 
-    final ExchangePairID epID = ExchangePairID.fromExisting(0l);
+    final ExchangePairID epID = ExchangePairID.fromExisting(0L);
     final List<TransportMessage> tbs = tbb.getAllAsTM(epID);
 
     final Thread[] threads = new Thread[numThreads];
@@ -166,6 +167,7 @@ public class ProtobufTest {
         }
       };
       threads[i] = tt;
+      tt.setName("protobufMultiThreadNoWaitTest-" + i);
       tt.setDaemon(false);
       tt.start();
     }
@@ -193,7 +195,7 @@ public class ProtobufTest {
             break;
           case NORMAL:
             final List<ColumnMessage> columnMessages = data.getColumnsList();
-            final Column<?>[] columnArray = new Column[columnMessages.size()];
+            final Column<?>[] columnArray = new Column<?>[columnMessages.size()];
             int idx = 0;
             for (final ColumnMessage cm : columnMessages) {
               columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm);
@@ -257,7 +259,7 @@ public class ProtobufTest {
     // Channel server = acceptor.bind(serverAddress);
     connectionPool.start();
 
-    final ExchangePairID epID = ExchangePairID.fromExisting(0l);
+    final ExchangePairID epID = ExchangePairID.fromExisting(0L);
     final List<TransportMessage> tbs = tbb.getAllAsTM(epID);
 
     final Thread[] threads = new Thread[numThreads];
@@ -278,6 +280,7 @@ public class ProtobufTest {
         }
       };
       threads[i] = tt;
+      tt.setName("protobufMultiThreadSendMessageTest-" + i);
       tt.setDaemon(false);
       tt.start();
     }
@@ -305,7 +308,7 @@ public class ProtobufTest {
             break;
           case NORMAL:
             final List<ColumnMessage> columnMessages = data.getColumnsList();
-            final Column<?>[] columnArray = new Column[columnMessages.size()];
+            final Column<?>[] columnArray = new Column<?>[columnMessages.size()];
             int idx = 0;
             for (final ColumnMessage cm : columnMessages) {
               columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm);
@@ -374,7 +377,7 @@ public class ProtobufTest {
     clientConnectionPool.start();
     serverConnectionPool.start();
 
-    final ExchangePairID epID = ExchangePairID.fromExisting(0l);
+    final ExchangePairID epID = ExchangePairID.fromExisting(0L);
     final List<TransportMessage> tbs = tbb.getAllAsTM(epID);
 
     final Thread[] threads = new Thread[numThreads];
@@ -406,6 +409,7 @@ public class ProtobufTest {
         }
       };
       threads[i] = tt;
+      tt.setName("protobufMultiThreadSeparatePoolTest-" + i);
       tt.setDaemon(false);
       tt.start();
     }
@@ -441,7 +445,7 @@ public class ProtobufTest {
             break;
           case NORMAL:
             final List<ColumnMessage> columnMessages = data.getColumnsList();
-            final Column<?>[] columnArray = new Column[columnMessages.size()];
+            final Column<?>[] columnArray = new Column<?>[columnMessages.size()];
             int idx = 0;
             for (final ColumnMessage cm : columnMessages) {
               columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm);
@@ -505,7 +509,7 @@ public class ProtobufTest {
     // Channel server = acceptor.bind(serverAddress);
     connectionPool.start();
 
-    final ExchangePairID epID = ExchangePairID.fromExisting(0l);
+    final ExchangePairID epID = ExchangePairID.fromExisting(0L);
     final List<TransportMessage> tbs = tbb.getAllAsTM(epID);
 
     final Thread[] threads = new Thread[numThreads];
@@ -537,6 +541,7 @@ public class ProtobufTest {
         }
       };
       threads[i] = tt;
+      tt.setName("protobufMultiThreadTest-" + i);
       tt.setDaemon(false);
       tt.start();
     }
@@ -569,7 +574,7 @@ public class ProtobufTest {
             break;
           case NORMAL:
             final List<ColumnMessage> columnMessages = data.getColumnsList();
-            final Column<?>[] columnArray = new Column[columnMessages.size()];
+            final Column<?>[] columnArray = new Column<?>[columnMessages.size()];
             int idx = 0;
             for (final ColumnMessage cm : columnMessages) {
               columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm);
@@ -619,7 +624,7 @@ public class ProtobufTest {
     final IPCConnectionPool connectionPool = new IPCConnectionPool(0, computingUnits, messageQueue);
     connectionPool.start();
 
-    final ExchangePairID epID = ExchangePairID.fromExisting(0l);
+    final ExchangePairID epID = ExchangePairID.fromExisting(0L);
     final List<TransportMessage> tbs = tbb.getAllAsTM(epID);
 
     final AtomicInteger numSent = new AtomicInteger();
@@ -656,7 +661,7 @@ public class ProtobufTest {
             break;
           case NORMAL:
             final List<ColumnMessage> columnMessages = data.getColumnsList();
-            final Column<?>[] columnArray = new Column[columnMessages.size()];
+            final Column<?>[] columnArray = new Column<?>[columnMessages.size()];
             int idx = 0;
             for (final ColumnMessage cm : columnMessages) {
               columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm);
@@ -710,7 +715,7 @@ public class ProtobufTest {
     // ServerBootstrap acceptor = ParallelUtility.createMasterIPCServer(messageQueue, connectionPool);
     // Channel server = acceptor.bind(serverAddress);
 
-    final ExchangePairID epID = ExchangePairID.fromExisting(0l);
+    final ExchangePairID epID = ExchangePairID.fromExisting(0L);
     final List<TransportMessage> tbs = tbb.getAllAsTM(epID);
 
     final AtomicInteger numSent = new AtomicInteger();
@@ -745,7 +750,7 @@ public class ProtobufTest {
             break;
           case NORMAL:
             final List<ColumnMessage> columnMessages = data.getColumnsList();
-            final Column<?>[] columnArray = new Column[columnMessages.size()];
+            final Column<?>[] columnArray = new Column<?>[columnMessages.size()];
             int idx = 0;
             for (final ColumnMessage cm : columnMessages) {
               columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm);
@@ -803,7 +808,7 @@ public class ProtobufTest {
                                   // connectionPool);
     // Channel server = acceptor.bind(serverAddress);
 
-    final ExchangePairID epID = ExchangePairID.fromExisting(0l);
+    final ExchangePairID epID = ExchangePairID.fromExisting(0L);
     final List<TransportMessage> tbs = tbb.getAllAsTM(epID);
 
     final AtomicInteger numSent = new AtomicInteger();
@@ -849,7 +854,7 @@ public class ProtobufTest {
             break;
           case NORMAL:
             final List<ColumnMessage> columnMessages = data.getColumnsList();
-            final Column<?>[] columnArray = new Column[columnMessages.size()];
+            final Column<?>[] columnArray = new Column<?>[columnMessages.size()];
             int idx = 0;
             for (final ColumnMessage cm : columnMessages) {
               columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm);
@@ -903,7 +908,7 @@ public class ProtobufTest {
     // ServerBootstrap acceptor = ParallelUtility.createMasterIPCServer(messageQueue, connectionPool);
     // Channel server = acceptor.bind(serverAddress);
 
-    final ExchangePairID epID = ExchangePairID.fromExisting(0l);
+    final ExchangePairID epID = ExchangePairID.fromExisting(0L);
     final List<TransportMessage> tbs = tbb.getAllAsTM(epID);
 
     final AtomicInteger numSent = new AtomicInteger();
@@ -946,7 +951,7 @@ public class ProtobufTest {
             break;
           case NORMAL:
             final List<ColumnMessage> columnMessages = data.getColumnsList();
-            final Column<?>[] columnArray = new Column[columnMessages.size()];
+            final Column<?>[] columnArray = new Column<?>[columnMessages.size()];
             int idx = 0;
             for (final ColumnMessage cm : columnMessages) {
               columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm);

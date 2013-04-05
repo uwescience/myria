@@ -12,6 +12,7 @@ import com.google.common.base.Preconditions;
 import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myriad.TupleBatch;
+import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType;
 import edu.washington.escience.myriad.proto.DataProto.StringColumnMessage;
@@ -130,6 +131,11 @@ public final class StringColumn implements Column<String> {
   }
 
   @Override
+  public Type getType() {
+    return Type.STRING_TYPE;
+  }
+
+  @Override
   public Column<String> putFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException {
     return put(resultSet.getString(jdbcIndex));
   }
@@ -170,7 +176,7 @@ public final class StringColumn implements Column<String> {
       }
       sb.append(getString(i));
     }
-    sb.append("]");
+    sb.append(']');
     return sb.toString();
   }
 }

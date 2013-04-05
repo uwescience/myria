@@ -11,6 +11,7 @@ import com.google.common.base.Preconditions;
 import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myriad.TupleBatch;
+import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.proto.DataProto.BooleanColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType;
@@ -76,6 +77,11 @@ public final class BooleanColumn implements Column<Boolean> {
     throw new UnsupportedOperationException("SQLite does not support Boolean columns.");
   }
 
+  @Override
+  public Type getType() {
+    return Type.BOOLEAN_TYPE;
+  }
+
   /**
    * Inserts the specified element at end of this column.
    * 
@@ -128,7 +134,7 @@ public final class BooleanColumn implements Column<Boolean> {
       }
       sb.append(data.get(i));
     }
-    sb.append("]");
+    sb.append(']');
     return sb.toString();
   }
 }

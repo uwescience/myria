@@ -11,6 +11,7 @@ import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myriad.TupleBatch;
+import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType;
 import edu.washington.escience.myriad.proto.DataProto.LongColumnMessage;
@@ -76,6 +77,11 @@ public final class LongColumn implements Column<Long> {
     return data.get(row);
   }
 
+  @Override
+  public Type getType() {
+    return Type.LONG_TYPE;
+  }
+
   /**
    * Inserts the specified element at end of this column.
    * 
@@ -124,7 +130,7 @@ public final class LongColumn implements Column<Long> {
       }
       sb.append(data.get(i));
     }
-    sb.append("]");
+    sb.append(']');
     return sb.toString();
   }
 }

@@ -18,7 +18,7 @@ import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 public final class CollectConsumer extends Consumer {
 
   /** The logger for this class. */
-  private static final Logger LOGGER = LoggerFactory.getLogger(CollectConsumer.class.getName());
+  private static final Logger LOGGER = LoggerFactory.getLogger(CollectConsumer.class);
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;

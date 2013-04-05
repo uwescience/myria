@@ -15,8 +15,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javax.ws.rs.WebApplicationException;
 
@@ -57,6 +55,12 @@ public final class Server {
     /** Whether the server has been stopped. */
     private volatile boolean stopped = false;
 
+    /** Constructor, set the thread name. */
+    public MessageProcessor() {
+      super();
+      setName("Server-MessageProcessor-" + getId());
+    }
+
     @Override
     public void run() {
 
@@ -86,7 +90,7 @@ public final class Server {
               receiveData(new ExchangeData(exchangePairID, senderID, operatorSchema, 1));
             } else {
               final List<ColumnMessage> columnMessages = data.getColumnsList();
-              final Column<?>[] columnArray = new Column[columnMessages.size()];
+              final Column<?>[] columnArray = new Column<?>[columnMessages.size()];
               int idx = 0;
               for (final ColumnMessage cm : columnMessages) {
                 columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm);
@@ -114,7 +118,11 @@ public final class Server {
                       + queryId);
                   return;
                 }
+                printOutElapsedTime(new Date(), "worker " + senderID + " completed");
                 workersAssigned.remove(senderID);
+                if (workersAssigned.size() == 0) {
+                  LOGGER.info("all workers have finished query " + queryId);
+                }
                 break;
               case DISCONNECT:
                 /* TODO */
@@ -139,42 +147,36 @@ public final class Server {
     }
   }
 
+  /**
+   * print out the elapsed time since queryStaringTime to end.
+   * 
+   * @param end the ending time
+   * @param msg the message to help distinguish outputs in the log
+   */
+  private void printOutElapsedTime(final Date end, final String msg) {
+    int elapse = (int) (end.getTime() - queryStartingTime.getTime());
+    final int hour = elapse / ONE_HR_IN_MILLIS;
+    elapse -= hour * ONE_HR_IN_MILLIS;
+    final int minute = elapse / ONE_MIN_IN_MILLIS;
+    elapse -= minute * ONE_MIN_IN_MILLIS;
+    final int second = elapse / ONE_SEC_IN_MILLIS;
+    elapse -= second * ONE_SEC_IN_MILLIS;
+    LOGGER.info(msg + " " + String.format("Time elapsed: %1$dh%2$dm%3$ds.%4$03d", hour, minute, second, elapse));
+  }
+
   /** Time constant. */
   private static final int ONE_SEC_IN_MILLIS = 1000;
   /** Time constant. */
   private static final int ONE_MIN_IN_MILLIS = 60 * ONE_SEC_IN_MILLIS;
   /** Time constant. */
   private static final int ONE_HR_IN_MILLIS = 60 * ONE_MIN_IN_MILLIS;
+  /** query staring time, should be set before starting each query. */
+  private Date queryStartingTime;
 
-  static final String usage = "Usage: Server catalogFile [-explain] [-f queryFile]";
+  /** The usage message for this server. */
+  static final String USAGE = "Usage: Server catalogFile [-explain] [-f queryFile]";
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(Server.class.getName());
-
-  public static void main(final String[] args) throws IOException {
-    Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
-    Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
-
-    if (args.length < 1) {
-      LOGGER.error(usage);
-      System.exit(-1);
-    }
-
-    final String catalogName = args[0];
-    final Server server;
-    try {
-      server = new Server(catalogName);
-    } catch (CatalogException e) {
-      throw new IOException(e);
-    }
-
-    LOGGER.debug("Workers are: ");
-    for (final Entry<Integer, SocketInfo> w : server.workers.entrySet()) {
-      LOGGER.debug(w.getKey() + ":  " + w.getValue().getHost() + ":" + w.getValue().getPort());
-    }
-
-    server.start();
-    LOGGER.debug("Server started.");
-  }
+  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(Server.class);
 
   private final ConcurrentHashMap<Integer, SocketInfo> workers;
   private final ConcurrentHashMap<Long, HashMap<Integer, Integer>> workersAssignedToQuery;
@@ -184,19 +186,17 @@ public final class Server {
   /**
    * The I/O buffer, all the ExchangeMessages sent to the server are buffered here.
    */
-  protected final ConcurrentHashMap<ExchangePairID, LinkedBlockingQueue<ExchangeData>> dataBuffer;
+  private final ConcurrentHashMap<ExchangePairID, LinkedBlockingQueue<ExchangeData>> dataBuffer;
 
-  protected final LinkedBlockingQueue<MessageWrapper> messageQueue;
+  private final LinkedBlockingQueue<MessageWrapper> messageQueue;
 
-  protected final ConcurrentHashMap<ExchangePairID, Schema> exchangeSchema;
+  private final ConcurrentHashMap<ExchangePairID, Schema> exchangeSchema;
 
   private final IPCConnectionPool connectionPool;
 
-  protected final MessageProcessor messageProcessor;
+  private final MessageProcessor messageProcessor;
 
-  protected boolean interactive = true;
-
-  public static final String SYSTEM_NAME = "Myriad";
+  public static final String SYSTEM_NAME = "Myria";
 
   /** The Catalog stores the metadata about the Myria instance. */
   private final Catalog catalog;
@@ -277,12 +277,10 @@ public final class Server {
 
     LinkedBlockingQueue<ExchangeData> q = null;
     q = dataBuffer.get(data.getOperatorID());
-    if (data instanceof ExchangeData) {
-      if (q != null) {
-        q.offer(data);
-      } else {
-        LOGGER.warn("weird: got ExchangeData (" + data + ") on null q");
-      }
+    if (q != null) {
+      q.offer(data);
+    } else {
+      LOGGER.warn("weird: got ExchangeData (" + data + ") on null q");
     }
   }
 
@@ -368,20 +366,19 @@ public final class Server {
 
     String names = "";
     for (int i = 0; i < schema.numColumns(); i++) {
-      names += schema.getColumnName(i) + "\t";
+      names += schema.getColumnName(i) + '\t';
     }
 
     if (LOGGER.isDebugEnabled()) {
       final StringBuilder sb = new StringBuilder();
       sb.append(names).append('\n');
       for (int i = 0; i < names.length() + schema.numColumns() * 4; i++) {
-        sb.append("-");
+        sb.append('-');
       }
-      sb.append("");
       LOGGER.debug(sb.toString());
     }
 
-    final Date start = new Date();
+    queryStartingTime = new Date();
     serverPlan.open();
 
     startWorkerQuery(queryId);
@@ -405,7 +402,7 @@ public final class Server {
 
     serverPlan.close();
     dataBuffer.remove(serverPlan.getOperatorID());
-    final Date end = new Date();
+
     LOGGER.info("Number of results: " + cnt);
     if (expectedResultSize != null) {
       if (Integer.parseInt(expectedResultSize) != cnt) {
@@ -414,15 +411,6 @@ public final class Server {
         LOGGER.info("Correct size!");
       }
     }
-    int elapse = (int) (end.getTime() - start.getTime());
-    final int hour = elapse / ONE_HR_IN_MILLIS;
-    elapse -= hour * ONE_HR_IN_MILLIS;
-    final int minute = elapse / ONE_MIN_IN_MILLIS;
-    elapse -= minute * ONE_MIN_IN_MILLIS;
-    final int second = elapse / ONE_SEC_IN_MILLIS;
-    elapse -= second * ONE_SEC_IN_MILLIS;
-
-    LOGGER.info(String.format("Time elapsed: %1$dh%2$dm%3$ds.%4$03d", hour, minute, second, elapse));
     return outBufferForTesting;
   }
 
@@ -454,8 +442,7 @@ public final class Server {
       }
     }
 
-    final Date start = new Date();
-
+    queryStartingTime = new Date();
     serverPlan.open();
 
     startWorkerQuery(queryId);
@@ -465,17 +452,6 @@ public final class Server {
     }
 
     serverPlan.close();
-
-    final Date end = new Date();
-    int elapse = (int) (end.getTime() - start.getTime());
-    final int hour = elapse / ONE_HR_IN_MILLIS;
-    elapse -= hour * ONE_HR_IN_MILLIS;
-    final int minute = elapse / ONE_MIN_IN_MILLIS;
-    elapse -= minute * ONE_MIN_IN_MILLIS;
-    final int second = elapse / ONE_SEC_IN_MILLIS;
-    elapse -= second * ONE_SEC_IN_MILLIS;
-
-    LOGGER.debug(String.format("Time elapsed: %1$dh%2$dm%3$ds.%4$03d", hour, minute, second, elapse));
   }
 
   /**
@@ -522,7 +498,7 @@ public final class Server {
    * @throws DbException if there are any error when running server plan
    */
   public Long startQuery(final String rawQuery, final String logicalRa, final Map<Integer, Operator[]> plans,
-      String expectedResultSize) throws CatalogException, IOException, DbException {
+      final String expectedResultSize) throws CatalogException, IOException, DbException {
     final Long queryId = catalog.newQuery(rawQuery, logicalRa);
     Operator[] serverPlan = null;
     if (plans.containsKey(0)) {
@@ -530,6 +506,7 @@ public final class Server {
       plans.remove(0);
     }
     dispatchWorkerQueryPlans(queryId, plans);
+    queryStartingTime = new Date();
     if (serverPlan != null) {
       startServerQuery(queryId, (CollectConsumer) serverPlan[0], expectedResultSize);
     }
@@ -572,7 +549,9 @@ public final class Server {
 
     try {
       /* Start the workers */
-      Long queryId = startQuery("ingest " + relationKey, "ingest " + relationKey, workerPlans);
+      Long queryId =
+          startQuery("ingest " + relationKey.toString("sqlite"), "ingest " + relationKey.toString("sqlite"),
+              workerPlans);
 
       /* Do it! */
       scatter.open();

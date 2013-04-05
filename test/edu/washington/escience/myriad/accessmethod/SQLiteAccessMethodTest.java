@@ -64,13 +64,14 @@ public class SQLiteAccessMethodTest extends SystemTestBase {
         @Override
         public void run() {
           final Iterator<TupleBatch> it =
-              SQLiteAccessMethod.tupleBatchIteratorFromQuery(dbFile.getAbsolutePath(), "select * from " + testtableKey,
-                  schema);
+              SQLiteAccessMethod.tupleBatchIteratorFromQuery(dbFile.getAbsolutePath(), "select * from "
+                  + testtableKey.toString("sqlite"), schema);
           while (it.hasNext()) {
             it.next();
           }
         }
       };
+      threads[i].setName("SQLiteAccessMethodTest-" + i);
     }
 
     for (final Thread t : threads) {
@@ -130,13 +131,14 @@ public class SQLiteAccessMethodTest extends SystemTestBase {
         public void run() {
           final Iterator<TupleBatch> it =
               SQLiteAccessMethod.tupleBatchIteratorFromQuery(dbFile.getAbsolutePath(), "select * from "
-                  + testtableKeys.get(j % 2), schema);
+                  + testtableKeys.get(j % 2).toString("sqlite"), schema);
 
           while (it.hasNext()) {
             it.next();
           }
         }
       };
+      threads[i].setName("SQLiteAccessMethodTest-" + i);
     }
 
     for (final Thread t : threads) {

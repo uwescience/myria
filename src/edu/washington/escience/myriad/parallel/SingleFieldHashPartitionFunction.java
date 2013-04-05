@@ -20,21 +20,6 @@ public final class SingleFieldHashPartitionFunction extends PartitionFunction<St
     super(numPartition);
   }
 
-  // @Override
-  // public int[] partition(final List<Column<?>> columns, final BitSet validTuples, final Schema schema) {
-  // final int[] result = new int[validTuples.cardinality()];
-  // int j = 0;
-  // final Column<?> partitionColumn = columns.get(fieldIndex);
-  // for (int i = validTuples.nextSetBit(0); i >= 0; i = validTuples.nextSetBit(i + 1)) {
-  // int p = partitionColumn.get(i).hashCode() % numPartition;
-  // if (p < 0) {
-  // p = p + numPartition;
-  // }
-  // result[j++] = p;
-  // }
-  // return result;
-  // }
-
   /**
    * @param tb data.
    * @return partitions.

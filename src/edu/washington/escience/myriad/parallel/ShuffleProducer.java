@@ -21,6 +21,12 @@ import edu.washington.escience.myriad.util.IPCUtils;
 public class ShuffleProducer extends Producer {
 
   final class WorkingThread extends Thread {
+    /** Constructor, set the thread name. */
+    public WorkingThread() {
+      super();
+      setName("ShuffleProducer-WorkingThread-" + getId());
+    }
+
     @Override
     public void run() {
 
@@ -35,7 +41,7 @@ public class ShuffleProducer extends Producer {
       Schema thisSchema = null;
       thisSchema = getSchema();
 
-      final ExchangePairID operatorID = operatorIDs[0];
+      final ExchangePairID operatorID = getOperatorIDs()[0];
 
       try {
         final TupleBatchBuffer[] buffers = new TupleBatchBuffer[numWorker];

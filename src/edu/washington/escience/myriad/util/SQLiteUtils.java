@@ -28,7 +28,7 @@ public final class SQLiteUtils {
       if (i > 0) {
         sb.append(", ");
       }
-      sb.append(schema.getColumnName(i)).append(" ").append(typeToSQLiteType(schema.getColumnType(i)));
+      sb.append(schema.getColumnName(i)).append(' ').append(typeToSQLiteType(schema.getColumnType(i)));
     }
     sb.append(");");
     return sb.toString();
@@ -48,7 +48,7 @@ public final class SQLiteUtils {
       if (i > 0) {
         sb.append(",\n");
       }
-      sb.append("    ").append(schema.getColumnName(i)).append(" ").append(typeToSQLiteType(schema.getColumnType(i)));
+      sb.append("    ").append(schema.getColumnName(i)).append(' ').append(typeToSQLiteType(schema.getColumnType(i)));
     }
     sb.append(");");
     return sb.toString();

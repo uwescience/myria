@@ -17,7 +17,14 @@ public final class ThreadUtils {
   }
 
   /** The logger for this class. */
-  private static final Logger LOGGER = LoggerFactory.getLogger(ThreadUtils.class.getName());
+  private static final Logger LOGGER = LoggerFactory.getLogger(ThreadUtils.class);
+
+  /**
+   * @return the currently-live threads.
+   */
+  public static Set<Thread> getCurrentThreads() {
+    return Thread.getAllStackTraces().keySet();
+  }
 
   /**
    * Print out the list of currently active threads.
@@ -25,12 +32,12 @@ public final class ThreadUtils {
    * @param tag a string printed before the message. For identifying calls to this function.
    */
   public static void printCurrentThreads(final String tag) {
-    final Set<Thread> threadSet = Thread.getAllStackTraces().keySet();
+    final Set<Thread> threadSet = getCurrentThreads();
     StringBuilder sb = new StringBuilder();
     sb.append(tag + ":" + threadSet.size() + " threads currently active.\n");
-    sb.append("\t");
+    sb.append('\t');
     for (final Thread t : threadSet) {
-      sb.append(t.getId() + "[" + t.getName() + "], ");
+      sb.append(t.getId() + '[' + t.getName() + "], ");
     }
     sb.append('\n');
     LOGGER.warn(sb.toString());

@@ -59,7 +59,7 @@ import edu.washington.escience.myriad.parallel.SingleFieldHashPartitionFunction;
 @Path("/query")
 public final class QueryResource {
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(QueryResource.class.getName());
+  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(QueryResource.class);
 
   /**
    * For now, simply echoes back its input.
@@ -90,14 +90,13 @@ public final class QueryResource {
       /* Remove the server plan if present */
       usingWorkers.remove(0);
       /* Make sure that the requested workers are alive. */
-      if (!MasterApiServer.getMyriaServer().getAliveWorkers().containsAll(usingWorkers)) {
+      if (!MyriaApiUtils.getServer().getAliveWorkers().containsAll(usingWorkers)) {
         /* Throw a 503 (Service Unavailable) */
         throw new WebApplicationException(Response.status(Status.SERVICE_UNAVAILABLE).build());
       }
 
       /* Start the query, and get its Server-assigned Query ID */
-      final Long queryId =
-          MasterApiServer.getMyriaServer().startQuery(rawQuery, logicalRa, queryPlan, expectedResultSize);
+      final Long queryId = MyriaApiUtils.getServer().startQuery(rawQuery, logicalRa, queryPlan, expectedResultSize);
       /* In the response, tell the client what ID this query was assigned. */
       UriBuilder queryUri = uriInfo.getAbsolutePathBuilder();
       return Response.created(queryUri.path("query-" + queryId.toString()).build()).build();
@@ -131,7 +130,7 @@ public final class QueryResource {
     return ret;
   }
 
-  private static Operator[] deserializeJsonLocalPlans(Object jsonLocalPlanList) throws Exception {
+  private static Operator[] deserializeJsonLocalPlans(final Object jsonLocalPlanList) throws Exception {
     /* Better be a List */
     if (!(jsonLocalPlanList instanceof List)) {
       throw new ClassCastException("argument is not a List of Operator definitions.");
@@ -145,7 +144,7 @@ public final class QueryResource {
     return ret;
   }
 
-  private static Operator deserializeJsonLocalPlan(Object jsonLocalPlan) throws Exception {
+  private static Operator deserializeJsonLocalPlan(final Object jsonLocalPlan) throws Exception {
     /* Better be a List */
     if (!(jsonLocalPlan instanceof List)) {
       throw new ClassCastException("argument is not a List of Operator definitions.");
@@ -234,15 +233,15 @@ public final class QueryResource {
         RelationKey relationKey = RelationKey.of(userName, programName, relationName);
         Schema schema;
         try {
-          schema = MasterApiServer.getMyriaServer().getSchema(relationKey);
+          schema = MyriaApiUtils.getServer().getSchema(relationKey);
         } catch (final CatalogException e) {
           /* Throw a 500 (Internal Server Error) */
           throw new WebApplicationException(Response.status(Status.INTERNAL_SERVER_ERROR).build());
         }
         if (schema == null) {
-          throw new IOException("Specified relation " + relationKey + " does not exist.");
+          throw new IOException("Specified relation " + relationKey.toString("sqlite") + " does not exist.");
         }
-        return new SQLiteQueryScan(null, "SELECT * from " + relationKey, schema);
+        return new SQLiteQueryScan(null, "SELECT * from " + relationKey.toString("sqlite"), schema);
       }
 
       case "Consumer": {
@@ -479,12 +478,12 @@ public final class QueryResource {
    * 
    * @param map the JSON map.
    * @param field the field containing the list.
-   * @param optional whether the field is optional, or an IllegalArgumentException should be thrown.
    * @return the schema, or null if the field is missing and optional is true.
    */
   private static Schema deserializeSchema(final Map<String, Object> map, final String field) {
     Schema schema;
     LinkedHashMap<?, ?> tmp = (LinkedHashMap<?, ?>) map.get(field);
+    @SuppressWarnings("unchecked")
     List<String> tmpTypes = (List<String>) tmp.get("column_types");
     List<Type> types = new ArrayList<Type>();
 
@@ -510,6 +509,7 @@ public final class QueryResource {
           break;
       }
     }
+    @SuppressWarnings("unchecked")
     List<String> names = (List<String>) tmp.get("column_names");
     schema = Schema.of(types, names);
     // schema = objectMapper.readValue((String) (map.get(field)), Schema.class);
@@ -524,7 +524,6 @@ public final class QueryResource {
    * 
    * @param map the JSON map.
    * @param field the field containing the list.
-   * @param optional whether the field is optional, or an IllegalArgumentException should be thrown.
    * @return the schema, or null if the field is missing and optional is true.
    */
   private static PartitionFunction<?, ?> deserializePF(final Map<String, Object> map, final String field,

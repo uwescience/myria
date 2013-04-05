@@ -11,9 +11,10 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
  */
 public final class SocketInfo implements Serializable {
   /** Class-specific magic number used to generate the hash code. */
-  private static final int MAGIC_HASHCODE1 = 365;
+  private static final int MAGIC_HASHCODE1 = 947;
   /** Class-specific magic number used to generate the hash code. */
   private static final int MAGIC_HASHCODE2 = 91;
+
   /**
    * Create a SocketInfo object from a string in the format host:port.
    * 
@@ -57,6 +58,9 @@ public final class SocketInfo implements Serializable {
 
   @Override
   public boolean equals(final Object other) {
+    if (this == other) {
+      return true;
+    }
     if (!(other instanceof SocketInfo)) {
       return false;
     }

@@ -38,12 +38,6 @@ public final class Project extends Operator {
   public void cleanup() {
   }
 
-  /**
-   * Operator.fetchNext implementation. Iterates over tuples from the child operator, projecting out the fields from the
-   * tuple
-   * 
-   * @return The next tuple, or null if there are no more tuples
-   */
   @Override
   protected TupleBatch fetchNext() throws NoSuchElementException, DbException {
     final TupleBatch tmp = child.next();

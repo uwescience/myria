@@ -12,6 +12,7 @@ import com.google.common.base.Preconditions;
 import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myriad.TupleBatch;
+import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType;
 import edu.washington.escience.myriad.proto.DataProto.IntColumnMessage;
@@ -78,6 +79,11 @@ public final class IntColumn implements Column<Integer> {
     statement.bind(sqliteIndex, getInt(row));
   }
 
+  @Override
+  public Type getType() {
+    return Type.INT_TYPE;
+  }
+
   /**
    * Inserts the specified element at end of this column.
    * 
@@ -126,7 +132,7 @@ public final class IntColumn implements Column<Integer> {
       }
       sb.append(data.get(i));
     }
-    sb.append("]");
+    sb.append(']');
     return sb.toString();
   }
 }

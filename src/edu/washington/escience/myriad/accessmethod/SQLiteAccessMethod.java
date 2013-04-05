@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.Iterator;
 import java.util.List;
 
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.almworks.sqlite4java.SQLiteConnection;
@@ -26,7 +27,7 @@ public final class SQLiteAccessMethod {
   /** Default busy timeout is one second. */
   private static final long DEFAULT_BUSY_TIMEOUT = 1000;
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(SQLiteAccessMethod.class.getName());
+  private static final Logger LOGGER = LoggerFactory.getLogger(SQLiteAccessMethod.class);
 
   /**
    * Wrap boolean values as int values since SQLite does not support boolean natively. This function converts true to 1
@@ -133,7 +134,7 @@ public final class SQLiteAccessMethod {
  */
 class SQLiteTupleBatchIterator implements Iterator<TupleBatch> {
   /** The logger for this class. Uses SQLiteAccessMethod settings. */
-  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(SQLiteAccessMethod.class.getName());
+  private static final Logger LOGGER = LoggerFactory.getLogger(SQLiteAccessMethod.class);
   /** The results from a SQLite query that will be returned in TupleBatches by this Iterator. */
   private final SQLiteStatement statement;
   /** The connection to the SQLite database. */

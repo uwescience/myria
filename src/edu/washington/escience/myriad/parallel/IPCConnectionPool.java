@@ -30,6 +30,7 @@ import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroupFuture;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.util.ExternalResourceReleasable;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myriad.parallel.Worker.MessageWrapper;
@@ -150,27 +151,27 @@ public class IPCConnectionPool {
     /**
      * All the registered connected connections to a remote IPC entity.
      * */
-    final ChannelPrioritySet registeredChannels;
+    private final ChannelPrioritySet registeredChannels;
 
     /**
      * remote IPC entity ID.
      * */
-    final Integer id;
+    private final Integer id;
 
     /**
      * remote address.
      * */
-    final SocketInfo address;
+    private final SocketInfo address;
 
     /**
      * Connection bootstrap.
      * */
-    final ClientBootstrap bootstrap;
+    private final ClientBootstrap bootstrap;
 
     /**
      * Set of all unregistered channels at the time when this remote entity gets removed.
      * */
-    volatile HashSet<Channel> unregisteredChannelsAtRemove = null;
+    private volatile HashSet<Channel> unregisteredChannelsAtRemove = null;
 
     IPCRemote(final Integer id, final SocketInfo remoteAddress) {
       this.id = id;
@@ -227,7 +228,7 @@ public class IPCConnectionPool {
   }
 
   /** The logger for this class. */
-  protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(IPCConnectionPool.class.getName());
+  protected static final Logger LOGGER = LoggerFactory.getLogger(IPCConnectionPool.class);
 
   /**
    * upper bound of the number of connections between this JVM and a remote IPC entity. Should be moved to the system
@@ -764,12 +765,14 @@ public class IPCConnectionPool {
       cgf.addListener(new ChannelGroupFutureListener() {
         @Override
         public void operationComplete(final ChannelGroupFuture future) throws Exception {
-          new Thread() {
+          Thread removeRemoteThread = new Thread() {
             @Override
             public void run() {
               channelPool.remove(remoteID);
             }
-          }.start();
+          };
+          removeRemoteThread.setName("removeRemote-" + remoteID);
+          removeRemoteThread.start();
         }
       });
       return cgf;
@@ -873,7 +876,7 @@ public class IPCConnectionPool {
           for (final Channel ch : allPossibleChannels) {
             allConnectionCloseFutures.add(ch.getCloseFuture());
           }
-          new Thread() {
+          Thread shutdownThread = new Thread() {
             @Override
             public void run() {
               while (allPossibleChannels.size() > 0) {
@@ -888,7 +891,9 @@ public class IPCConnectionPool {
                 }
               }
             }
-          }.start();
+          };
+          shutdownThread.setName("IPCConnectionPool-Shutdown");
+          shutdownThread.start();
 
           final DefaultChannelGroupFuture closeAll =
               new DefaultChannelGroupFuture(allPossibleChannels, allConnectionCloseFutures);
@@ -905,6 +910,7 @@ public class IPCConnectionPool {
                   LOGGER.debug("post release resources");
                 }
               };
+              resourceReleaser.setName("IPCConnectionPool-operationComplete-" + resourceReleaser.getId());
               resourceReleaser.start();
             }
           });

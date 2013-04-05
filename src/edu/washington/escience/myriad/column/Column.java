@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 
+import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 
 /**
@@ -46,6 +47,11 @@ public interface Column<T extends Comparable<T>> {
    * @throws SQLiteException if there are SQLite errors.
    */
   void getIntoSQLite(int row, SQLiteStatement statement, int sqliteIndex) throws SQLiteException;
+
+  /**
+   * @return a Myria {@link Type} object explaining what type of data is in this column.
+   */
+  Type getType();
 
   /**
    * Extracts the appropriate value from a JDBC ResultSet object and appends it to this column.
