@@ -33,6 +33,11 @@ public final class Apply extends Operator {
   private final Schema schema;
 
   /**
+   * output buffer.
+   * */
+  private transient TupleBatchBuffer resultBuffer;
+
+  /**
    * Constructor.
    * 
    * @param child TupleBatch that will feed us with tuples
@@ -109,42 +114,51 @@ public final class Apply extends Operator {
   @Override
   protected void cleanup() throws DbException {
     // nothing to clean
+    resultBuffer.clear();
   }
 
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
     TupleBatch tb = null;
-    tb = child.nextReady();
-    if (tb == null) {
-      return null;
+    if (child.eoi() || child.eos()) {
+      return resultBuffer.popAny();
     }
-    final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
-    for (int i = 0; i < tb.numTuples(); i++) {
-      // put the content from the child operator first
-      for (int j = 0; j < tb.numColumns(); j++) {
-        tbb.put(j, tb.getObject(j, i));
-      }
-      // put the result into the tbb
-      for (int j = 0; j < callers.size(); j++) {
-        final ImmutableList.Builder<Number> srcNums = ImmutableList.builder();
-        Number value = null;
-        for (Integer index : callers.get(j).getApplyField()) {
-          Type applyFieldType = schema.getColumnType(index);
-          if (applyFieldType == Type.INT_TYPE) {
-            srcNums.add(tb.getInt(index, i));
-          } else if (applyFieldType == Type.LONG_TYPE) {
-            srcNums.add(tb.getLong(index, i));
-          } else if (applyFieldType == Type.FLOAT_TYPE) {
-            srcNums.add(tb.getFloat(index, i));
-          } else if (applyFieldType == Type.DOUBLE_TYPE) {
-            srcNums.add(tb.getDouble(index, i));
-          }
+
+    while ((tb = child.nextReady()) != null) {
+      for (int i = 0; i < tb.numTuples(); i++) {
+        // put the content from the child operator first
+        for (int j = 0; j < tb.numColumns(); j++) {
+          resultBuffer.put(j, tb.getObject(j, i));
         }
-        value = callers.get(j).execute(srcNums.build());
-        tbb.put(j + tb.numColumns(), value);
+        // put the result into the tbb
+        for (int j = 0; j < callers.size(); j++) {
+          final ImmutableList.Builder<Number> srcNums = ImmutableList.builder();
+          Number value = null;
+          for (Integer index : callers.get(j).getApplyField()) {
+            Type applyFieldType = schema.getColumnType(index);
+            if (applyFieldType == Type.INT_TYPE) {
+              srcNums.add(tb.getInt(index, i));
+            } else if (applyFieldType == Type.LONG_TYPE) {
+              srcNums.add(tb.getLong(index, i));
+            } else if (applyFieldType == Type.FLOAT_TYPE) {
+              srcNums.add(tb.getFloat(index, i));
+            } else if (applyFieldType == Type.DOUBLE_TYPE) {
+              srcNums.add(tb.getDouble(index, i));
+            }
+          }
+          value = callers.get(j).execute(srcNums.build());
+          resultBuffer.put(j + tb.numColumns(), value);
+        }
+      }
+      if (resultBuffer.hasFilledTB()) {
+        resultBuffer.popFilled();
       }
     }
-    return tbb.popAny();
+    if (child.eoi() || child.eos()) {
+      return resultBuffer.popAny();
+    } else {
+      return resultBuffer.popFilled();
+    }
   }
 
   @Override
@@ -158,8 +172,8 @@ public final class Apply extends Operator {
   }
 
   @Override
-  protected final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-
+  protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+    resultBuffer = new TupleBatchBuffer(schema);
   }
 
 }
