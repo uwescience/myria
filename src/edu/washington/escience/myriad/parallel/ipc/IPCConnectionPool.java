@@ -585,7 +585,10 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
     } else {
       if (c != null) {
         closeUnregisteredChannel(c.getChannel());
-        c.syncUninterruptibly();
+        Throwable t = c.getCause();
+        if (t != null) {
+          LOGGER.error("Unable to connect to remote. Cause is: ", t);
+        }
       }
       return null;
     }

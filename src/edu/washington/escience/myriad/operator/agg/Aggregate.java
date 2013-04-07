@@ -162,7 +162,7 @@ public final class Aggregate extends Operator {
   protected TupleBatch fetchNextReady() throws DbException {
     TupleBatch tb = null;
 
-    if (child.eos()) {
+    if (child.eos() || child.eoi()) {
       return aggBuffer.popAny();
     }
 
@@ -172,7 +172,7 @@ public final class Aggregate extends Operator {
       }
     }
 
-    if (child.eos()) {
+    if (child.eos() || child.eoi()) {
       int fromIndex = 0;
       for (final Aggregator element : agg) {
         element.getResult(aggBuffer, fromIndex);

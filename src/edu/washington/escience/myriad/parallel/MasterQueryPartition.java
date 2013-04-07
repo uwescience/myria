@@ -107,6 +107,9 @@ public class MasterQueryPartition implements QueryPartition {
    * */
   private final AtomicReference<QueryFuture> pauseFuture = new AtomicReference<QueryFuture>(null);
 
+  /**
+   * is the query killed.
+   * */
   private volatile boolean isKilled;
 
   /**

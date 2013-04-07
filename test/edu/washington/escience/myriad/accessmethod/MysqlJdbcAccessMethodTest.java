@@ -47,8 +47,11 @@ public class MysqlJdbcAccessMethodTest {
     /* Count up the results and assert they match expectations */
     int count = 0;
     TupleBatch tb = null;
-    while ((tb = scan.next()) != null) {
-      count += tb.numTuples();
+    while (!scan.eos()) {
+      tb = scan.nextReady();
+      if (tb != null) {
+        count += tb.numTuples();
+      }
     }
     assertTrue(count == expectedNumResults);
 

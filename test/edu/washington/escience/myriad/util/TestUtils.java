@@ -20,6 +20,8 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.junit.Assert;
 
+import com.google.common.collect.ImmutableList;
+
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.parallel.SocketInfo;
@@ -299,6 +301,12 @@ public final class TestUtils {
     connectionPool.start(serverChannelFactory, serverPipelineFactory, clientChannelFactory, clientPipelineFactory,
         inJVMPipelineFactory, new InJVMLoopbackChannelSink());
     return connectionPool;
+  }
+
+  public static ImmutableList.Builder<Number> generateListBuilderWithElement(long element) {
+    ImmutableList.Builder<Number> sourceListBuilder = ImmutableList.builder();
+    sourceListBuilder.add(element);
+    return sourceListBuilder;
   }
 
 }

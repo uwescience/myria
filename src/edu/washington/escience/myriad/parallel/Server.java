@@ -494,15 +494,16 @@ public final class Server {
     messageProcessingExecutor.shutdownNow();
     scheduledTaskExecutor.shutdownNow();
     if (!connectionPool.isShutdown()) {
-      for (final Entry<Integer, SocketInfo> worker : workers.entrySet()) {
+      for (final Integer workerId : aliveWorkers) {
+        SocketInfo workerAddr = workers.get(workerId);
         if (LOGGER.isInfoEnabled()) {
-          LOGGER.info("Shutting down #" + worker.getKey() + " : " + worker.getValue());
+          LOGGER.info("Shutting down #{} : {}", workerId, workerAddr);
         }
 
-        final ChannelFuture cf = connectionPool.sendShortMessage(worker.getKey(), IPCUtils.CONTROL_SHUTDOWN);
+        final ChannelFuture cf = connectionPool.sendShortMessage(workerId, IPCUtils.CONTROL_SHUTDOWN);
         if (cf == null) {
           if (LOGGER.isErrorEnabled()) {
-            LOGGER.error("Fail to connect the worker: " + worker + ". Continue cleaning");
+            LOGGER.error("Fail to connect the worker{ id:{},address:{} }. Continue cleaning", workerId, workerAddr);
           }
         } else {
           try {
@@ -511,7 +512,7 @@ public final class Server {
             Thread.currentThread().interrupt();
           }
           if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("Done for worker #" + worker.getKey());
+            LOGGER.info("Done for worker #{}", workerId);
           }
         }
       }

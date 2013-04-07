@@ -15,9 +15,18 @@ import edu.washington.escience.myriad.systemtest.ParallelDistinctUsingSQLiteTest
 import edu.washington.escience.myriad.systemtest.ParallelJDBCTest;
 import edu.washington.escience.myriad.systemtest.ShuffleSQLiteTest;
 import edu.washington.escience.myriad.systemtest.SplitDataTest;
+import edu.washington.escience.myriad.operator.ApplyTest;
+import edu.washington.escience.myriad.operator.apply.ConstantMultiplicationIFunctionTest;
+import edu.washington.escience.myriad.operator.apply.PowIFunctionTest ;
+import edu.washington.escience.myriad.operator.apply.SqrtIFunctionTest ;
+
 
 @RunWith(Suite.class)
-@SuiteClasses({ CollectTest.class,//
+@SuiteClasses({ ConstantMultiplicationIFunctionTest.class,//
+    PowIFunctionTest.class,//
+    SqrtIFunctionTest.class,//
+    ApplyTest.class,//
+    CollectTest.class,//
     FlowControlTest.class, //
     IterativeSelfJoinTest.class, //
     LocalMultiwayProducerTest.class, //

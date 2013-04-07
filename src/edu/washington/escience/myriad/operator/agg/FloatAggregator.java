@@ -32,6 +32,11 @@ public final class FloatAggregator implements Aggregator {
   private float min, max, sum;
 
   /**
+   * stdev, always of double type.
+   * */
+  private double stdev;
+
+  /**
    * Count, always of long type.
    * */
   private long count;
@@ -44,7 +49,7 @@ public final class FloatAggregator implements Aggregator {
    * Aggregate operations applicable for float columns.
    * */
   public static final int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT | Aggregator.AGG_OP_SUM | Aggregator.AGG_OP_MAX
-      | Aggregator.AGG_OP_MIN | Aggregator.AGG_OP_AVG;
+      | Aggregator.AGG_OP_MIN | Aggregator.AGG_OP_AVG | Aggregator.AGG_OP_STDEV;
 
   /**
    * This serves as the copy constructor.
@@ -104,6 +109,10 @@ public final class FloatAggregator implements Aggregator {
       types.add(Type.DOUBLE_TYPE);
       names.add("avg(" + aFieldName + ")");
     }
+    if ((aggOps & Aggregator.AGG_OP_STDEV) != 0) {
+      types.add(Type.DOUBLE_TYPE);
+      names.add("stdev(" + aFieldName + ")");
+    }
     resultSchema = new Schema(types, names);
   }
 
@@ -113,6 +122,7 @@ public final class FloatAggregator implements Aggregator {
     final int numTuples = tup.numTuples();
     if (numTuples > 0) {
       count += numTuples;
+      double m = 0.0, s = 0.0;
       for (int i = 0; i < numTuples; i++) {
         final float x = tup.getFloat(aColumn, i);
         sum += x;
@@ -122,7 +132,12 @@ public final class FloatAggregator implements Aggregator {
         if (Float.compare(x, max) > 0) {
           max = x;
         }
+        // computing the standard deviation
+        double tempM = m;
+        m += (x - tempM) / (i + 1);
+        s += (x - tempM) * (x - m);
       }
+      stdev = Math.sqrt(s / numTuples - 1);
     }
   }
 
@@ -159,11 +174,10 @@ public final class FloatAggregator implements Aggregator {
       buffer.put(idx, sum * 1.0 / count);
       idx++;
     }
-    buffer.put(0, count);
-    buffer.put(1, sum);
-    buffer.put(2, sum / count);
-    buffer.put(3, min);
-    buffer.put(4, min);
+    if ((aggOps & AGG_OP_STDEV) != 0) {
+      buffer.put(idx, stdev);
+      idx++;
+    }
   }
 
   @Override

@@ -62,6 +62,9 @@ final class QuerySubTreeTask {
    * */
   private volatile boolean initialized;
 
+  /**
+   * Is the task killed.
+   * */
   private volatile boolean isKilled = false;
 
   /**
@@ -113,8 +116,6 @@ final class QuerySubTreeTask {
    * The handle for managing the execution of the task.
    * */
   private volatile Future<Boolean> executionHandle;
-
-  private volatile boolean killed = false;
 
   /**
    * @param ipcEntityID the IPC ID of the owner worker/master.
@@ -216,7 +217,7 @@ final class QuerySubTreeTask {
    * @return if the task is finished
    * */
   public boolean isFinished() {
-    return root.eos() || killed;
+    return root.eos() || isKilled;
   }
 
   /**
@@ -448,10 +449,10 @@ final class QuerySubTreeTask {
    * 
    * */
   void kill() {
-    if (killed) {
+    if (isKilled) {
       return;
     }
-    killed = true;
+    isKilled = true;
     final Future<Boolean> executionHandleLocal = executionHandle;
     if (executionHandleLocal != null) {
       executionHandleLocal.cancel(true);

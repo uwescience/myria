@@ -66,7 +66,8 @@ public class SQLiteInsertTest {
       final ImmutableMap<String, Object> execEnvVars = ImmutableMap.copyOf(sqliteFile);
       final SQLiteInsert insert = new SQLiteInsert(source, tuplesKey, true);
       insert.open(execEnvVars);
-      while (insert.next() != null) {
+      while (!insert.eos()) {
+        insert.nextReady();
       }
       insert.close();
 
