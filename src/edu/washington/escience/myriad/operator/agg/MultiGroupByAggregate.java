@@ -154,7 +154,7 @@ public final class MultiGroupByAggregate extends Operator {
   }
 
   @Override
-  protected final void cleanup() throws DbException {
+  protected void cleanup() throws DbException {
     resultBuffer.clear();
     groupAggs.clear();
   }
@@ -169,7 +169,7 @@ public final class MultiGroupByAggregate extends Operator {
    * @return result TB.
    */
   @Override
-  protected final TupleBatch fetchNext() throws DbException, InterruptedException {
+  protected TupleBatch fetchNext() throws DbException, InterruptedException {
     if (resultBuffer.numTuples() == 0) {
       // Actually perform the aggregation
       TupleBatch tb = null;
@@ -235,7 +235,7 @@ public final class MultiGroupByAggregate extends Operator {
   }
 
   @Override
-  protected final TupleBatch fetchNextReady() throws DbException {
+  protected TupleBatch fetchNextReady() throws DbException {
     if (resultBuffer.numTuples() > 0) {
       return resultBuffer.popAny();
     }
@@ -310,7 +310,7 @@ public final class MultiGroupByAggregate extends Operator {
   }
 
   @Override
-  public final Operator[] getChildren() {
+  public Operator[] getChildren() {
     return new Operator[] { child };
   }
 
@@ -320,7 +320,7 @@ public final class MultiGroupByAggregate extends Operator {
    * @return the resulting schema
    */
   @Override
-  public final Schema getSchema() {
+  public Schema getSchema() {
     return schema;
   }
 
@@ -332,12 +332,12 @@ public final class MultiGroupByAggregate extends Operator {
   }
 
   @Override
-  public final void setChildren(final Operator[] children) {
+  public void setChildren(final Operator[] children) {
     child = children[0];
   }
 
   @Override
-  protected final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+  protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     resultBuffer = new TupleBatchBuffer(schema);
   }
 

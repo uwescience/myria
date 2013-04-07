@@ -1,5 +1,9 @@
 package edu.washington.escience.myriad.parallel;
 
+import java.util.ArrayList;
+
+import org.jboss.netty.channel.Channel;
+
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.ExchangeTupleBatch;
 import edu.washington.escience.myriad.Schema;
@@ -8,15 +12,8 @@ import edu.washington.escience.myriad.operator.IDBInput;
 import edu.washington.escience.myriad.operator.Merge;
 import edu.washington.escience.myriad.util.IPCUtils;
 import gnu.trove.impl.unmodifiable.TUnmodifiableIntIntMap;
-import gnu.trove.impl.unmodifiable.TUnmodifiableLongIntMap;
 import gnu.trove.map.TIntIntMap;
-import gnu.trove.map.TLongIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;
-import gnu.trove.map.hash.TLongIntHashMap;
-
-import java.util.ArrayList;
-
-import org.jboss.netty.channel.Channel;
 
 /**
  * The producer part of the Shuffle Exchange operator.
@@ -47,10 +44,11 @@ public class EOSController extends Producer {
    * Mapping from workerID to index.
    * */
   private final TIntIntMap workerIdToIndex;
-  /**
-   * Mapping from EOSReceiver ID to index.
-   * */
-  private final TLongIntMap idbEOSReceiverIDToIndex;
+
+  // /**
+  // * Mapping from EOSReceiver ID to index.
+  // * */
+  // private final TLongIntMap idbEOSReceiverIDToIndex;
 
   /**
    * Each worker in workerIDs has the whole array of idbOpIDS. So the total number of IDBInput operators are
@@ -73,12 +71,12 @@ public class EOSController extends Producer {
     }
     workerIdToIndex = new TUnmodifiableIntIntMap(tmp);
 
-    TLongIntMap tmp2 = new TLongIntHashMap();
-    idx = 0;
-    for (ExchangePairID idbID : idbOpIDs) {
-      tmp2.put(idbID.getLong(), idx++);
-    }
-    idbEOSReceiverIDToIndex = new TUnmodifiableLongIntMap(tmp2);
+    // TLongIntMap tmp2 = new TLongIntHashMap();
+    // idx = 0;
+    // for (ExchangePairID idbID : idbOpIDs) {
+    // tmp2.put(idbID.getLong(), idx++);
+    // }
+    // idbEOSReceiverIDToIndex = new TUnmodifiableLongIntMap(tmp2);
   }
 
   @Override
