@@ -101,11 +101,15 @@ public final class Aggregate extends Operator {
 
   @Override
   protected TupleBatch fetchNext() throws DbException {
-
     TupleBatch tb = null;
-    while ((tb = child.next()) != null) {
-      for (final Aggregator ag : agg) {
-        ag.add(tb);
+    while (!child.eos()) {
+      while ((tb = child.next()) != null) {
+        for (final Aggregator ag : agg) {
+          ag.add(tb);
+        }
+      }
+      if (child.eoi()) {
+        child.setEOI(false);
       }
     }
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
