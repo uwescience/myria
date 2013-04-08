@@ -40,15 +40,14 @@ def read_workers(filename):
 
 def start_master(description, root, workers, MAX_MEM):
     for (hostname, port, username) in workers:
-    	cmd = "cd %s/%s-files; nohup java -cp myriad-0.1.jar:conf -Djava.library.path=sqlite4java-282 " % (root, description) + MAX_MEM + " edu.washington.escience.myriad.daemon.MasterDaemon %s 0</dev/null 1>master_stdout 2>master_stderr &" % (description);
-    	args = ["ssh", "%s@%s" % (username, hostname), cmd];
-   	#print args
+    	cmd = "cd %s/%s-files && nohup java -cp myriad-0.1.jar:conf -Djava.library.path=sqlite4java-282 " % (root, description) + MAX_MEM + " edu.washington.escience.myriad.daemon.MasterDaemon %s 0</dev/null 1>master_stdout 2>master_stderr &" % (description)
+    	args = ["ssh", "%s@%s" % (username, hostname), cmd]
     	if subprocess.call(args):
         	print >> sys.stderr, "error starting master %s" % (hostname)
         print hostname
 	# don't start workers too quickly before master is ready
 	time.sleep(0.5)
-    	break;
+    	break
 
 def main(argv):
     # Usage
