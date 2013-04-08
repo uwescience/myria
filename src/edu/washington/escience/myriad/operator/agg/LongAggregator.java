@@ -53,23 +53,23 @@ public final class LongAggregator implements Aggregator {
     final ImmutableList.Builder<String> names = ImmutableList.builder();
     if ((aggOps & Aggregator.AGG_OP_COUNT) != 0) {
       types.add(Type.LONG_TYPE);
-      names.add("count(" + aFieldName + ")");
+      names.add("count_" + aFieldName);
     }
     if ((aggOps & Aggregator.AGG_OP_MIN) != 0) {
       types.add(Type.LONG_TYPE);
-      names.add("min(" + aFieldName + ")");
+      names.add("min_" + aFieldName);
     }
     if ((aggOps & Aggregator.AGG_OP_MAX) != 0) {
       types.add(Type.LONG_TYPE);
-      names.add("max(" + aFieldName + ")");
+      names.add("max_" + aFieldName);
     }
     if ((aggOps & Aggregator.AGG_OP_SUM) != 0) {
       types.add(Type.LONG_TYPE);
-      names.add("sum(" + aFieldName + ")");
+      names.add("sum_" + aFieldName);
     }
     if ((aggOps & Aggregator.AGG_OP_AVG) != 0) {
       types.add(Type.DOUBLE_TYPE);
-      names.add("avg(" + aFieldName + ")");
+      names.add("avg_" + aFieldName);
     }
     resultSchema = new Schema(types, names);
   }

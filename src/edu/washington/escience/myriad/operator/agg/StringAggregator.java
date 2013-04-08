@@ -54,18 +54,18 @@ public final class StringAggregator implements Aggregator {
     final ImmutableList.Builder<String> names = ImmutableList.builder();
     if ((aggOps & Aggregator.AGG_OP_COUNT) != 0) {
       types.add(Type.LONG_TYPE);
-      names.add("count(" + aFieldName + ")");
+      names.add("count_" + aFieldName);
     }
     if ((aggOps & Aggregator.AGG_OP_MIN) != 0) {
       computeMin = true;
       types.add(Type.STRING_TYPE);
-      names.add("min(" + aFieldName + ")");
+      names.add("min_" + aFieldName);
     } else {
       computeMin = false;
     }
     if ((aggOps & Aggregator.AGG_OP_MAX) != 0) {
       types.add(Type.STRING_TYPE);
-      names.add("max(" + aFieldName + ")");
+      names.add("max_" + aFieldName);
       computeMax = true;
     } else {
       computeMax = false;
