@@ -36,7 +36,7 @@ public final class SQLiteInsert extends RootOperator {
   private SQLiteQueue queue;
   /** The statement used to insert tuples into the database. */
   private String insertString;
-  private boolean WAL;
+  private boolean WAL = false;
 
   /**
    * Constructs an insertion operator to store the tuples from the specified child in a SQLite database in the specified
@@ -144,6 +144,9 @@ public final class SQLiteInsert extends RootOperator {
         @Override
         protected Integer job(final SQLiteConnection connection) throws SQLiteException {
           /* If we should overwrite, drop the existing table. */
+          if (WAL) {
+            connection.exec("PRAGMA journal_mode=WAL;");
+          }
           if (overwriteTable) {
             connection.exec(SQLiteUtils.dropTableIfExistsStatement(relationKey));
           }

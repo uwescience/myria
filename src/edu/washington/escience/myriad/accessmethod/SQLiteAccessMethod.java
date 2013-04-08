@@ -43,6 +43,11 @@ public final class SQLiteAccessMethod {
     return 0;
   }
 
+  public static synchronized void tupleBatchInsert(final String pathToSQLiteDb, final String insertString,
+      final TupleBatch tupleBatch) {
+    tupleBatchInsert(pathToSQLiteDb, insertString, tupleBatch, false);
+  }
+
   /**
    * Inserts a TupleBatch into the SQLite database.
    * 
@@ -51,7 +56,7 @@ public final class SQLiteAccessMethod {
    * @param tupleBatch TupleBatch that contains the data to be inserted
    */
   public static synchronized void tupleBatchInsert(final String pathToSQLiteDb, final String insertString,
-      final TupleBatch tupleBatch) {
+      final TupleBatch tupleBatch, final boolean WAL) {
     SQLiteConnection sqliteConnection = null;
     SQLiteStatement statement = null;
     try {
@@ -62,6 +67,9 @@ public final class SQLiteAccessMethod {
       sqliteConnection.setBusyTimeout(SQLiteAccessMethod.DEFAULT_BUSY_TIMEOUT);
 
       /* BEGIN TRANSACTION */
+      if (WAL) {
+        sqliteConnection.exec("PRAGMA journal_mode=WAL;");
+      }
       sqliteConnection.exec("BEGIN TRANSACTION");
 
       /* Set up and execute the query */
