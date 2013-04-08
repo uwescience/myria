@@ -115,7 +115,7 @@ public final class DatasetResource {
    * A JSON-able wrapper for the expected wire message for a new dataset.
    * 
    */
-  static class DatasetEncoding {
+  public static class DatasetEncoding {
     /** The name of the dataset. */
     @JsonProperty("relation_key")
     public RelationKey relationKey;
