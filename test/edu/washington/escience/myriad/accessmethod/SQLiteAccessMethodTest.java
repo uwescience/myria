@@ -177,10 +177,8 @@ public class SQLiteAccessMethodTest extends SystemTestBase {
     final SQLiteQueryScan scan =
         new SQLiteQueryScan(getAbsoluteDBFile(WORKER_ID[0]).getAbsolutePath(), "select * from "
             + inputKey.toString("sqlite"), tableSchema);
-    scan.setWAL(true);
     final SQLiteInsert insert =
         new SQLiteInsert(scan, outputKey, getAbsoluteDBFile(WORKER_ID[0]).getAbsolutePath(), null, true);
-    // insert.setWAL(true);
 
     insert.open();
     while (!insert.eos()) {

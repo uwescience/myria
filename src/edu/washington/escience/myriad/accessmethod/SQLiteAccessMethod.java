@@ -43,11 +43,6 @@ public final class SQLiteAccessMethod {
     return 0;
   }
 
-  public static synchronized void tupleBatchInsert(final String pathToSQLiteDb, final String insertString,
-      final TupleBatch tupleBatch) {
-    tupleBatchInsert(pathToSQLiteDb, insertString, tupleBatch, false);
-  }
-
   /**
    * Inserts a TupleBatch into the SQLite database.
    * 
@@ -56,7 +51,7 @@ public final class SQLiteAccessMethod {
    * @param tupleBatch TupleBatch that contains the data to be inserted
    */
   public static synchronized void tupleBatchInsert(final String pathToSQLiteDb, final String insertString,
-      final TupleBatch tupleBatch, final boolean WAL) {
+      final TupleBatch tupleBatch) {
     SQLiteConnection sqliteConnection = null;
     SQLiteStatement statement = null;
     try {
@@ -67,15 +62,13 @@ public final class SQLiteAccessMethod {
       sqliteConnection.setBusyTimeout(SQLiteAccessMethod.DEFAULT_BUSY_TIMEOUT);
 
       /* BEGIN TRANSACTION */
-      if (WAL) {
-        sqliteConnection.exec("PRAGMA journal_mode=WAL;");
-      }
       sqliteConnection.exec("BEGIN TRANSACTION");
 
       /* Set up and execute the query */
       statement = sqliteConnection.prepare(insertString);
       tupleBatch.getIntoSQLite(statement);
 
+      /* COMMIT TRANSACTION */
       sqliteConnection.exec("COMMIT TRANSACTION");
 
     } catch (final SQLiteException e) {
@@ -101,18 +94,10 @@ public final class SQLiteAccessMethod {
    */
   public static Iterator<TupleBatch> tupleBatchIteratorFromQuery(final String pathToSQLiteDb, final String queryString,
       final Schema schema) {
-    return tupleBatchIteratorFromQuery(pathToSQLiteDb, queryString, schema, false);
-  }
-
-  public static Iterator<TupleBatch> tupleBatchIteratorFromQuery(final String pathToSQLiteDb, final String queryString,
-      final Schema schema, final boolean WAL) {
     try {
       /* Connect to the database */
       final SQLiteConnection sqliteConnection = new SQLiteConnection(new File(pathToSQLiteDb));
       sqliteConnection.open(false);
-      if (WAL) {
-        sqliteConnection.exec("PRAGMA journal_mode=WAL;");
-      }
 
       /* Set up and execute the query */
       final SQLiteStatement statement = sqliteConnection.prepare(queryString);
@@ -178,7 +163,6 @@ class SQLiteTupleBatchIterator implements Iterator<TupleBatch> {
       if (!statement.hasStepped()) {
         statement.step();
       }
-      // this.schema = Schema.fromSQLiteStatement(statement);
       this.schema = schema;
     } catch (final SQLiteException e) {
       throw new RuntimeException(e.getMessage());

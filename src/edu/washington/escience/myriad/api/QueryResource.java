@@ -194,15 +194,7 @@ public final class QueryResource {
         if (overwriteString != null) {
           overwrite = Boolean.parseBoolean(overwriteString);
         }
-        String useWALString = deserializeString(jsonOperator, "arg_useWAL");
-        boolean useWAL = false;
-        if (useWALString != null) {
-          useWAL = Boolean.parseBoolean(useWALString);
-        }
-        SQLiteInsert tmp =
-            new SQLiteInsert(child, RelationKey.of(userName, programName, relationName), null, null, overwrite);
-        tmp.setWAL(useWAL);
-        return tmp;
+        return new SQLiteInsert(child, RelationKey.of(userName, programName, relationName), null, null, overwrite);
       }
 
       case "LocalJoin": {
@@ -250,14 +242,7 @@ public final class QueryResource {
         if (schema == null) {
           throw new IOException("Specified relation " + relationKey.toString("sqlite") + " does not exist.");
         }
-        String useWALString = deserializeString(jsonOperator, "arg_useWAL");
-        boolean useWAL = false;
-        if (useWALString != null) {
-          useWAL = Boolean.parseBoolean(useWALString);
-        }
-        SQLiteQueryScan tmp = new SQLiteQueryScan(null, "SELECT * from " + relationKey.toString("sqlite"), schema);
-        tmp.setWAL(useWAL);
-        return tmp;
+        return new SQLiteQueryScan(null, "SELECT * from " + relationKey.toString("sqlite"), schema);
       }
 
       case "Consumer": {

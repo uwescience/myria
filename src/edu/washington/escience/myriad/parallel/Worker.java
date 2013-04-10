@@ -1,6 +1,7 @@
 package edu.washington.escience.myriad.parallel;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -13,6 +14,7 @@ import java.util.Properties;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -22,6 +24,11 @@ import org.apache.commons.io.FilenameUtils;
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
+
+import com.almworks.sqlite4java.SQLiteConnection;
+import com.almworks.sqlite4java.SQLiteException;
+import com.almworks.sqlite4java.SQLiteJob;
+import com.almworks.sqlite4java.SQLiteQueue;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
@@ -435,7 +442,7 @@ public class Worker {
   private final WorkerCatalog catalog;
   private final SocketInfo masterSocketInfo;
 
-  public Worker(final String workingDirectory) throws CatalogException, FileNotFoundException {
+  public Worker(final String workingDirectory) throws CatalogException, FileNotFoundException, DbException {
     catalog = WorkerCatalog.open(FilenameUtils.concat(workingDirectory, "worker.catalog"));
     myID = Integer.parseInt(catalog.getConfigurationValue("worker.identifier"));
     startedQueryId = -1;
@@ -443,7 +450,23 @@ public class Worker {
     final String databaseType = catalog.getConfigurationValue("worker.data.type");
     switch (databaseType) {
       case "sqlite":
-        databaseHandle.setProperty("sqliteFile", catalog.getConfigurationValue("worker.data.sqlite.db"));
+        String sqliteFile = catalog.getConfigurationValue("worker.data.sqlite.db");
+        databaseHandle.setProperty("sqliteFile", sqliteFile);
+        final File dbFile = new File(sqliteFile);
+        /* Open a connection to that SQLite database. */
+        SQLiteQueue queue = new SQLiteQueue(dbFile);
+        queue.start();
+        try {
+          queue.execute(new SQLiteJob<Integer>() {
+            @Override
+            protected Integer job(final SQLiteConnection connection) throws SQLiteException {
+              connection.exec("PRAGMA journal_mode=WAL;");
+              return null;
+            }
+          }).get();
+        } catch (InterruptedException | ExecutionException e) {
+          throw new DbException(e);
+        }
         break;
       case "mysql":
         /* TODO fill this in. */
