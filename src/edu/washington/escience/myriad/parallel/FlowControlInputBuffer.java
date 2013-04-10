@@ -27,7 +27,7 @@ public class FlowControlInputBuffer<M extends ExchangeMessage<TupleBatch>> imple
   /**
    * the owner of this input buffer.
    * */
-  private final ExchangePairID ownerOperator;
+  private volatile ExchangePairID ownerOperator = null;
 
   /**
    * soft capacity, if the capacity is meet, a capacity full event is triggered, but the message will still be pushed
@@ -42,14 +42,21 @@ public class FlowControlInputBuffer<M extends ExchangeMessage<TupleBatch>> imple
 
   /**
    * @param softCapacity soft upper bound of the buffer size.
-   * @param ownerOperator the id of the owner operator.
    * */
-  public FlowControlInputBuffer(final int softCapacity, final ExchangePairID ownerOperator) {
+  public FlowControlInputBuffer(final int softCapacity) {
     this.storage = new LinkedBlockingQueue<M>();
     this.softCapacity = softCapacity;
     bufferEmptyListeners = new ConcurrentLinkedQueue<IPCEventListener<FlowControlInputBuffer<M>>>();
     bufferFullListeners = new ConcurrentLinkedQueue<IPCEventListener<FlowControlInputBuffer<M>>>();
     bufferRecoverListeners = new ConcurrentLinkedQueue<IPCEventListener<FlowControlInputBuffer<M>>>();
+  }
+
+  /**
+   * @param ownerOperator the id of the owner operator.
+   * 
+   * */
+  @Override
+  public final void attach(final ExchangePairID ownerOperator) {
     this.ownerOperator = ownerOperator;
   }
 
@@ -87,10 +94,16 @@ public class FlowControlInputBuffer<M extends ExchangeMessage<TupleBatch>> imple
   @Override
   public final void clear() {
     this.storage.clear();
+    synchronized (this.eventSerializeLock) {
+      fireBufferEmpty();
+    }
   }
 
   @Override
   public final boolean offer(final M e) {
+    if (this.ownerOperator == null) {
+      return false;
+    }
     synchronized (this.eventSerializeLock) {
       if (!this.storage.offer(e)) {
         return false;
@@ -104,6 +117,9 @@ public class FlowControlInputBuffer<M extends ExchangeMessage<TupleBatch>> imple
 
   @Override
   public final M poll() {
+    if (this.ownerOperator == null) {
+      return null;
+    }
     synchronized (this.eventSerializeLock) {
       M m = this.storage.poll();
       if (this.isEmpty()) {
@@ -119,6 +135,9 @@ public class FlowControlInputBuffer<M extends ExchangeMessage<TupleBatch>> imple
 
   @Override
   public final M poll(final long time, final TimeUnit unit) throws InterruptedException {
+    if (this.ownerOperator == null) {
+      return null;
+    }
     synchronized (this.eventSerializeLock) {
       M m = this.storage.poll(time, unit);
       if (this.isEmpty()) {
@@ -133,6 +152,9 @@ public class FlowControlInputBuffer<M extends ExchangeMessage<TupleBatch>> imple
 
   @Override
   public final M take() throws InterruptedException {
+    if (this.ownerOperator == null) {
+      return null;
+    }
     synchronized (this.eventSerializeLock) {
       M m = this.storage.take();
       if (this.isEmpty()) {
@@ -147,6 +169,9 @@ public class FlowControlInputBuffer<M extends ExchangeMessage<TupleBatch>> imple
 
   @Override
   public final M peek() {
+    if (this.ownerOperator == null) {
+      return null;
+    }
     return this.storage.peek();
   }
 
@@ -204,8 +229,10 @@ public class FlowControlInputBuffer<M extends ExchangeMessage<TupleBatch>> imple
    * @param e an IOEventListener.
    * */
   public final void addBufferEmptyListener(final IPCEventListener<FlowControlInputBuffer<M>> e) {
-    if (this.isEmpty()) {
-      e.triggered(bufferEmptyEvent);
+    if (this.ownerOperator != null) {
+      if (this.isEmpty()) {
+        e.triggered(bufferEmptyEvent);
+      }
     }
     bufferEmptyListeners.add(e);
   }
@@ -216,8 +243,10 @@ public class FlowControlInputBuffer<M extends ExchangeMessage<TupleBatch>> imple
    * @param e an IOEventListener.
    * */
   public final void addBufferFullListener(final IPCEventListener<FlowControlInputBuffer<M>> e) {
-    if (this.remainingCapacity() <= 0) {
-      e.triggered(bufferFullEvent);
+    if (this.ownerOperator != null) {
+      if (this.remainingCapacity() <= 0) {
+        e.triggered(bufferFullEvent);
+      }
     }
     bufferFullListeners.add(e);
   }
@@ -260,6 +289,9 @@ public class FlowControlInputBuffer<M extends ExchangeMessage<TupleBatch>> imple
 
   @Override
   public final M pickFirst(final int sourceID) {
+    if (this.ownerOperator == null) {
+      return null;
+    }
     Iterator<M> it = this.storage.iterator();
     while (it.hasNext()) {
       M ed = it.next();
@@ -269,5 +301,13 @@ public class FlowControlInputBuffer<M extends ExchangeMessage<TupleBatch>> imple
       }
     }
     return null;
+  }
+
+  @Override
+  public final void detached() {
+    if (this.ownerOperator != null) {
+      this.ownerOperator = null;
+      this.clear();
+    }
   }
 }

@@ -661,8 +661,20 @@ public final class Worker {
 
     if (currentOperator instanceof Consumer) {
       final Consumer operator = (Consumer) currentOperator;
-      FlowControlInputBuffer<ExchangeData> inputBuffer =
-          new FlowControlInputBuffer<ExchangeData>(inputBufferCapacity, operator.getOperatorID());
+
+      operator.setExchangeChannels(new ConsumerChannel[operator.getSourceWorkers(myID).length]);
+      ExchangePairID oID = operator.getOperatorID();
+      int[] sourceWorkers = operator.getSourceWorkers(myID);
+      int idx = 0;
+      for (int workerID : sourceWorkers) {
+        ExchangeChannelID ecID = new ExchangeChannelID(oID.getLong(), workerID);
+        ConsumerChannel cc = new ConsumerChannel(drivingTask, operator, ecID);
+        consumerChannelMapping.put(ecID, cc);
+        operator.getExchangeChannels()[idx++] = cc;
+      }
+
+      FlowControlInputBuffer<ExchangeData> inputBuffer = new FlowControlInputBuffer<ExchangeData>(inputBufferCapacity);
+      inputBuffer.attach(operator.getOperatorID());
       inputBuffer.addBufferFullListener(new IPCEventListener<FlowControlInputBuffer<ExchangeData>>() {
         @Override
         public void triggered(final IPCEvent<FlowControlInputBuffer<ExchangeData>> e) {
@@ -679,18 +691,16 @@ public final class Worker {
           }
         }
       });
+      inputBuffer.addBufferEmptyListener(new IPCEventListener<FlowControlInputBuffer<ExchangeData>>() {
+        @Override
+        public void triggered(final IPCEvent<FlowControlInputBuffer<ExchangeData>> e) {
+          if (e.getAttachment().remainingCapacity() > 0) {
+            flowController.resumeRead(operator).awaitUninterruptibly();
+          }
+        }
+      });
       operator.setInputBuffer(inputBuffer);
 
-      operator.setExchangeChannels(new ConsumerChannel[operator.getSourceWorkers(myID).length]);
-      ExchangePairID oID = operator.getOperatorID();
-      int[] sourceWorkers = operator.getSourceWorkers(myID);
-      int idx = 0;
-      for (int workerID : sourceWorkers) {
-        ExchangeChannelID ecID = new ExchangeChannelID(oID.getLong(), workerID);
-        ConsumerChannel cc = new ConsumerChannel(drivingTask, operator, ecID);
-        consumerChannelMapping.put(ecID, cc);
-        operator.getExchangeChannels()[idx++] = cc;
-      }
     }
 
     if (currentOperator instanceof IDBInput) {

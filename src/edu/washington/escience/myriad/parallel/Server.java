@@ -693,8 +693,20 @@ public final class Server {
 
       if (currentOperator instanceof Consumer) {
         final Consumer operator = (Consumer) currentOperator;
+
+        operator.setExchangeChannels(new ConsumerChannel[operator.getSourceWorkers(MyriaConstants.MASTER_ID).length]);
+        ExchangePairID oID = operator.getOperatorID();
+        int[] sourceWorkers = operator.getSourceWorkers(MyriaConstants.MASTER_ID);
+        int idx = 0;
+        for (int workerID : sourceWorkers) {
+          ExchangeChannelID ecID = new ExchangeChannelID(oID.getLong(), workerID);
+          ConsumerChannel cc = new ConsumerChannel(drivingTask, operator, ecID);
+          consumerChannelMap.put(ecID, cc);
+          operator.getExchangeChannels()[idx++] = cc;
+        }
         FlowControlInputBuffer<ExchangeData> inputBuffer =
-            new FlowControlInputBuffer<ExchangeData>(inputBufferCapacity, operator.getOperatorID());
+            new FlowControlInputBuffer<ExchangeData>(inputBufferCapacity);
+        inputBuffer.attach(operator.getOperatorID());
         inputBuffer.addBufferFullListener(new IPCEventListener<FlowControlInputBuffer<ExchangeData>>() {
           @Override
           public void triggered(final IPCEvent<FlowControlInputBuffer<ExchangeData>> e) {
@@ -711,19 +723,16 @@ public final class Server {
             }
           }
         });
+        inputBuffer.addBufferEmptyListener(new IPCEventListener<FlowControlInputBuffer<ExchangeData>>() {
+          @Override
+          public void triggered(final IPCEvent<FlowControlInputBuffer<ExchangeData>> e) {
+            if (e.getAttachment().remainingCapacity() > 0) {
+              flowController.resumeRead(operator).awaitUninterruptibly();
+            }
+          }
+        });
         operator.setInputBuffer(inputBuffer);
-
         dataBuffer.put(((Consumer) currentOperator).getOperatorID(), inputBuffer);
-        operator.setExchangeChannels(new ConsumerChannel[operator.getSourceWorkers(MyriaConstants.MASTER_ID).length]);
-        ExchangePairID oID = operator.getOperatorID();
-        int[] sourceWorkers = operator.getSourceWorkers(MyriaConstants.MASTER_ID);
-        int idx = 0;
-        for (int workerID : sourceWorkers) {
-          ExchangeChannelID ecID = new ExchangeChannelID(oID.getLong(), workerID);
-          ConsumerChannel cc = new ConsumerChannel(drivingTask, operator, ecID);
-          consumerChannelMap.put(ecID, cc);
-          operator.getExchangeChannels()[idx++] = cc;
-        }
 
         break QUERY_PLAN_TYPE_SWITCH;
       }

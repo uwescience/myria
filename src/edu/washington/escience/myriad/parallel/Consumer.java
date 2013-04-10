@@ -206,7 +206,14 @@ public class Consumer extends LeafOperator {
    * @param buffer my input buffer.
    * */
   public final void setInputBuffer(final InputBuffer<TupleBatch, ExchangeData> buffer) {
-    inputBuffer = buffer;
+    if (inputBuffer != null) {
+      inputBuffer.detached();
+      inputBuffer = null;
+    }
+    if (buffer != null) {
+      buffer.attach(operatorID);
+      inputBuffer = buffer;
+    }
   }
 
   /**
