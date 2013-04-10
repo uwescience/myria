@@ -20,10 +20,10 @@ def read_workers(filename):
         # Extract the username@host:port string
         wholeline = line.split('@')
         if len(wholeline) == 2:
-	    username = wholeline[0]
-	    line = wholeline[1]
-	else:
-	    username = getpass.getuser()
+            username = wholeline[0]
+            line = wholeline[1]
+        else:
+            username = getpass.getuser()
 
         # Extract the host:port string
         hostline = line.split(':')
@@ -44,7 +44,7 @@ def read_workers(filename):
 def make_catalog(description, master, workers):
     nodes = [master] + workers
     args = ["rm", "-rf", description]
-    subprocess.call(args);
+    subprocess.call(args)
     args = ["./run_catalog_maker.sh", \
             description, \
             str(len(nodes))]
@@ -118,7 +118,7 @@ def main(argv):
     try:
         USER = config.get('deployment', 'username')
     except:
-	    USER = getpass.getuser()
+        USER = getpass.getuser()
     def hostPortKeyToTuple(x):
         return tuple(x[0].split(','))
     MASTER = hostPortKeyToTuple(config.items('master')[0])

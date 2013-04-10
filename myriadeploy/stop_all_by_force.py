@@ -42,13 +42,13 @@ def read_workers(filename):
 def stop_all(master, workers, username):
     # Stop the Master
     (hostname, port) = master
-    cmd = "ssh %s@%s $'ps aux | grep edu.washington.escience.myriad.daemon.MasterDaemon | grep %s | grep -v grep | awk \\'{print $2}\\''" % (username, hostname, username);
-    pids = subprocess.check_output(cmd, shell=True).split('\n');
+    cmd = "ssh %s@%s $'ps aux | grep edu.washington.escience.myriad.daemon.MasterDaemon | grep %s | grep -v grep | awk \\'{print $2}\\''" % (username, hostname, username)
+    pids = subprocess.check_output(cmd, shell=True).split('\n')
     for pid in pids:
         if pid != "":
             print  "killing %s on %s" % (pid, hostname)
-            cmd = "ssh %s@%s kill %s" % (username, hostname, pid);
-            subprocess.call(cmd, shell=True);
+            cmd = "ssh %s@%s kill %s" % (username, hostname, pid)
+            subprocess.call(cmd, shell=True)
 
     # Workers
     done = set()
@@ -56,13 +56,13 @@ def stop_all(master, workers, username):
         if hostname in done:
             continue
         done.add(hostname)
-        cmd = "ssh %s@%s $'ps aux | grep edu.washington.escience.myriad.parallel.Worker | grep %s | grep -v grep | awk \\'{print $2}\\''" % (username, hostname, username);
-        pids = subprocess.check_output(cmd, shell=True).split('\n');
+        cmd = "ssh %s@%s $'ps aux | grep edu.washington.escience.myriad.parallel.Worker | grep %s | grep -v grep | awk \\'{print $2}\\''" % (username, hostname, username)
+        pids = subprocess.check_output(cmd, shell=True).split('\n')
         for pid in pids:
             if pid != "":
                 print  "killing %s on %s" % (pid, hostname)
-                cmd = "ssh %s@%s kill %s" % (username, hostname, pid);
-                subprocess.call(cmd, shell=True);
+                cmd = "ssh %s@%s kill %s" % (username, hostname, pid)
+                subprocess.call(cmd, shell=True)
 
 def main(argv):
     # Usage

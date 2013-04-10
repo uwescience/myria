@@ -42,7 +42,7 @@ def read_workers(filename):
 def start_master(description, root, master, username, MAX_MEM):
     (hostname, port) = master
     cmd = "cd %s/%s-files; nohup java -cp myriad-0.1.jar:conf -Djava.library.path=sqlite4java-282 " % (root, description) + MAX_MEM + " edu.washington.escience.myriad.daemon.MasterDaemon %s 0</dev/null 1>master_stdout 2>master_stderr &" % (description,)
-    args = ["ssh", "%s@%s" % (username, hostname), cmd];
+    args = ["ssh", "%s@%s" % (username, hostname), cmd]
     if subprocess.call(args):
         print >> sys.stderr, "error starting master %s" % (hostname)
     print hostname
