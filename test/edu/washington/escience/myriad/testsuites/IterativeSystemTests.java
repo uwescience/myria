@@ -4,12 +4,13 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
+import edu.washington.escience.myriad.systemtest.IterativeFlowControlTest;
 import edu.washington.escience.myriad.systemtest.MultipleIDBTest;
 import edu.washington.escience.myriad.systemtest.TransitiveClosureWithEOITest;
 
 @RunWith(Suite.class)
 @SuiteClasses({ MultipleIDBTest.class,//
-    TransitiveClosureWithEOITest.class })
+    TransitiveClosureWithEOITest.class, IterativeFlowControlTest.class })
 public class IterativeSystemTests {
 
 }

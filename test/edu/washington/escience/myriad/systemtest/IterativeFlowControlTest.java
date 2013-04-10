@@ -260,7 +260,7 @@ public class IterativeFlowControlTest extends SystemTestBase {
   }
 
   @Test
-  public void joinChain() throws Exception {
+  public void joinChainFlowControl() throws Exception {
     // EDB: R, A0, B0, C0
     // A := A0
     // A := R join A
@@ -423,7 +423,7 @@ public class IterativeFlowControlTest extends SystemTestBase {
   }
 
   @Test
-  public void joinCircle() throws Exception {
+  public void joinCircleFlowControl() throws Exception {
     // EDB: A0, B0, C0
     // A := A0
     // B := B0
