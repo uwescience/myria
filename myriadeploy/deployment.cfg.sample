@@ -9,10 +9,10 @@ name = testMyriadeploy
 
 # Compute nodes configuration
 [master]
-orlando.cs.washington.edu:11001
+orlando.cs.washington.edu,9001
 
 [workers]
-berlin.cs.washington.edu:11002
-dallas.cs.washington.edu:11002
-seoul.cs.washington.edu:11002
-newyork.cs.washington.edu:11002
+berlin.cs.washington.edu,9002
+dallas.cs.washington.edu,9002
+seoul.cs.washington.edu,9002
+newyork.cs.washington.edu,9002

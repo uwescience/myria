@@ -9,8 +9,8 @@ name = twoNodeLocalParallel
 
 # Compute nodes configuration
 [master]
-localhost:8001
+localhost,8001
 
 [workers]
-localhost:9001
-localhost:9002
+localhost,9001
+localhost,9002

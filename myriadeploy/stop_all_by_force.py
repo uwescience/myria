@@ -51,7 +51,11 @@ def stop_all(master, workers, username):
             subprocess.call(cmd, shell=True);
 
     # Workers
+    done = set()
     for (hostname, port) in workers:
+        if hostname in done:
+            continue
+        done.add(hostname)
         cmd = "ssh %s@%s $'ps aux | grep edu.washington.escience.myriad.parallel.Worker | grep %s | grep -v grep | awk \\'{print $2}\\''" % (username, hostname, username);
         pids = subprocess.check_output(cmd, shell=True).split('\n');
         for pid in pids:
@@ -77,8 +81,10 @@ def main(argv):
         USER = config.get('deployment', 'username')
     except:
         USER = getpass.getuser()
-    MASTER = config.items('master')[0]
-    WORKERS = config.items('workers')
+    def hostPortKeyToTuple(x):
+        return tuple(x[0].split(','))
+    MASTER = hostPortKeyToTuple(config.items('master')[0])
+    WORKERS = map(hostPortKeyToTuple, config.items('workers'))
 
     stop_all(MASTER, WORKERS, USER)
 

@@ -65,8 +65,10 @@ def main(argv):
         USER = config.get('deployment', 'username')
     except:
         USER = getpass.getuser()
-    MASTER = config.items('master')[0]
-    WORKERS = config.items('workers')
+    def hostPortKeyToTuple(x):
+        return tuple(x[0].split(','))
+    MASTER = hostPortKeyToTuple(config.items('master')[0])
+    WORKERS = map(hostPortKeyToTuple, config.items('workers'))
     try:
         MAX_MEM = config.get('deployment', 'max_heap_size')
     except:
