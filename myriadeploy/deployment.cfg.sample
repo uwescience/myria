@@ -1,0 +1,18 @@
+# Deployment configuration
+[deployment]
+path = /disk2/dhalperi
+name = testMyriadeploy
+# Uncomment if need to set a specific username
+#username = dhalperi
+# Uncomment to set the maximum heap size of the Java processes
+#max_heap_size=-Xmx2g
+
+# Compute nodes configuration
+[master]
+orlando.cs.washington.edu:11001
+
+[workers]
+berlin.cs.washington.edu:11002
+dallas.cs.washington.edu:11002
+seoul.cs.washington.edu:11002
+newyork.cs.washington.edu:11002

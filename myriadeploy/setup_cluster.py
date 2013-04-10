@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 
+import ConfigParser
 import socket
 import subprocess
 import sys
 import getpass
 
 def host_port_list(workers):
-    return map(lambda (x,y,z) : str(x)+':'+str(y), workers)
+    return map(lambda (x,y) : str(x)+':'+str(y), workers)
 
 def read_workers(filename):
     ret = []
@@ -40,13 +41,14 @@ def read_workers(filename):
         ret.append((hostname, port, username))
     return ret
 
-def make_catalog(description, workers):
-    args = ["rm", "-r", description]
+def make_catalog(description, master, workers):
+    nodes = [master] + workers
+    args = ["rm", "-rf", description]
     subprocess.call(args);
     args = ["./run_catalog_maker.sh", \
             description, \
-            str(len(workers))]
-    args += host_port_list(workers)
+            str(len(nodes))]
+    args += host_port_list(nodes)
     if subprocess.call(args):
         print >> sys.stderr, "error making the Catalog"
         sys.exit(1)
@@ -67,23 +69,32 @@ def copy_worker_catalog(hostname, dirname, remote_root, i, username):
     args = ["scp", "-r", local_path, remote_path]
     return subprocess.call(args)
 
-def copy_catalogs(description, remote_root, workers):
-    for (i,(hostname,port,username)) in enumerate(workers):
+def copy_catalogs(description, remote_root, master, workers, username):
+    # Make directories on master
+    (hostname,port) = master
+    if remote_mkdir(hostname, "%s/%s-files/%s" \
+            % (remote_root, description, description), username):
+        raise Exception("Error making directory on master %s" \
+                % (hostname,))
+    # Copy files to master
+    if copy_master_catalog(hostname, description, remote_root, username):
+        raise Exception("Error copying master.catalog to %s" % (hostname,))
+
+    for (i,(hostname,port)) in enumerate(workers):
+        # Workers are numbered from 1, not 0
+        worker_id = i + 1
+
+        # Try and make the directory on the worker
         if remote_mkdir(hostname, "%s/%s-files/%s" \
                 % (remote_root, description, description), username):
-            raise Exception("Error making directory on master %s" \
-                    % (hostname,))
-        # Master
-        if i == 0:
-            if copy_master_catalog(hostname, description, remote_root, username):
-                raise Exception("Error copying master.catalog to %s" % (hostname,))
-        # Workers
-        else:
-            if copy_worker_catalog(hostname, description, remote_root, i, username):
-                raise Exception("Error copying worker.catalog to %s " % (hostname,))
+            raise Exception("Error making directory on worker %d %s" \
+                    % (worker_id, hostname))
+        # Try and copy the files to the worker
+        if copy_worker_catalog(hostname, description, remote_root, worker_id, username):
+            raise Exception("Error copying worker.catalog to %s " % (hostname,))
 
-def copy_distribution(workers, dirname, remote_root):
-    for (hostname, port, username) in workers:
+def copy_distribution(nodes, dirname, remote_root, username):
+    for (hostname, port) in nodes:
         remote_path = "%s@%s:%s/%s-files" % (username, hostname, remote_root, dirname)
         to_copy = ["myriad-0.1.jar", "sqlite4java-282", "conf"]
         args = ["scp", "-r"] + to_copy + [remote_path]
@@ -92,30 +103,33 @@ def copy_distribution(workers, dirname, remote_root):
 
 def main(argv):
     # Usage
-    if len(argv) != 4:
-        print >> sys.stderr, "Usage: %s <description> <expt_root> <workers.txt>" % (argv[0])
-        print >> sys.stderr, "       description: any alphanumeric plus '-_' string."
-        print >> sys.stderr, "       expt_root: where the files should be stored locally, e.g., /scratch."
-        print >> sys.stderr, "       workers.txt: a list of host:port strings;"
-        print >> sys.stderr, "                    the first entry is the master."
+    if len(argv) != 2:
+        print >> sys.stderr, "Usage: %s <deployment.cfg>" % (argv[0])
+        print >> sys.stderr, "       deployment.cfg: a configuration file modeled after deployment.cfg.sample"
         sys.exit(1)
 
-    # Command-line arguments
-    DESCRIPTION = argv[1]
-    EXPT_ROOT = argv[2]
-    WORKERS_FILE = argv[3]
+    # Parse the configuration
+    CONFIG_FILE = argv[1]
+    config = ConfigParser.RawConfigParser(allow_no_value=True)
+    config.read([CONFIG_FILE])
 
-    # Figure out the master and workers
-    workers = read_workers(WORKERS_FILE)
+    DESCRIPTION = config.get('deployment', 'name')
+    EXPT_ROOT = config.get('deployment', 'path')
+    try:
+        USER = config.get('deployment', 'username')
+    except:
+	    USER = getpass.getuser()
+    MASTER = config.items('master')[0]
+    WORKERS = config.items('workers')
 
     # Step 1: make the Catalog
-    make_catalog(DESCRIPTION, workers)
+    make_catalog(DESCRIPTION, MASTER, WORKERS)
 
     # Step 2: Copy each catalog over
-    copy_catalogs(DESCRIPTION, EXPT_ROOT, workers)
+    copy_catalogs(DESCRIPTION, EXPT_ROOT, MASTER, WORKERS, USER)
 
     # Step 3: Copy over java, libs, myriad
-    copy_distribution(workers, DESCRIPTION, EXPT_ROOT)
+    copy_distribution([MASTER] + WORKERS, DESCRIPTION, EXPT_ROOT, USER)
 
 if __name__ == "__main__":
     main(sys.argv)

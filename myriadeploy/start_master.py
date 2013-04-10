@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import ConfigParser
 import socket
 import subprocess
 import sys
@@ -38,41 +39,40 @@ def read_workers(filename):
         ret.append((hostname, port, username))
     return ret
 
-def start_master(description, root, workers, MAX_MEM):
-    for (hostname, port, username) in workers:
-    	cmd = "cd %s/%s-files; nohup java -cp myriad-0.1.jar:conf -Djava.library.path=sqlite4java-282 " % (root, description) + MAX_MEM + " edu.washington.escience.myriad.daemon.MasterDaemon %s 0</dev/null 1>master_stdout 2>master_stderr &" % (description);
-    	args = ["ssh", "%s@%s" % (username, hostname), cmd];
-   	#print args
-    	if subprocess.call(args):
-        	print >> sys.stderr, "error starting master %s" % (hostname)
-        print hostname
-	# don't start workers too quickly before master is ready
-	time.sleep(0.5)
-    	break;
+def start_master(description, root, master, username, MAX_MEM):
+    (hostname, port) = master
+    cmd = "cd %s/%s-files; nohup java -cp myriad-0.1.jar:conf -Djava.library.path=sqlite4java-282 " % (root, description) + MAX_MEM + " edu.washington.escience.myriad.daemon.MasterDaemon %s 0</dev/null 1>master_stdout 2>master_stderr &" % (description,)
+    args = ["ssh", "%s@%s" % (username, hostname), cmd];
+    if subprocess.call(args):
+        print >> sys.stderr, "error starting master %s" % (hostname)
+    print hostname
 
 def main(argv):
     # Usage
-    if len(argv) < 4:
-        print >> sys.stderr, "Usage: %s <description> <expt_root> <workers.txt> <max_heap_size(optional)>" % (argv[0])
-        print >> sys.stderr, "       description: any alphanumeric plus '-_' string."
-        print >> sys.stderr, "       expt_root: where the files should be stored locally, e.g., /scratch."
-        print >> sys.stderr, "       workers.txt: a list of host:port strings;"
-        print >> sys.stderr, "                    the first entry is the master."
-	print >> sys.stderr, "       max_heap_size(optional): a string -Xmx[val] which will be passed to each jvm. Example: \"-Xmx2g\" (without quote)"
+    if len(argv) < 2 or len(argv) > 3:
+        print >> sys.stderr, "Usage: %s <deployment.cfg>" % (argv[0])
+        print >> sys.stderr, "       deployment.cfg: a configuration file modeled after deployment.cfg.sample"
         sys.exit(1)
 
-    # Command-line arguments
-    DESCRIPTION = argv[1]
-    EXPT_ROOT = argv[2]
-    WORKERS_FILE = argv[3]
-    MAX_MEM = ""
-    if len(argv) > 4:
-        MAX_MEM = argv[4]
+    # Parse the configuration
+    CONFIG_FILE = argv[1]
+    config = ConfigParser.RawConfigParser(allow_no_value=True)
+    config.read([CONFIG_FILE])
 
-    # Figure out the master and workers
-    workers = read_workers(WORKERS_FILE)
+    DESCRIPTION = config.get('deployment', 'name')
+    EXPT_ROOT = config.get('deployment', 'path')
+    try:
+        USER = config.get('deployment', 'username')
+    except:
+        USER = getpass.getuser()
+    MASTER = config.items('master')[0]
+    WORKERS = config.items('workers')
+    try:
+        MAX_MEM = config.get('deployment', 'max_heap_size')
+    except:
+        MAX_MEM = ""
 
-    start_master(DESCRIPTION, EXPT_ROOT, workers, MAX_MEM)
+    start_master(DESCRIPTION, EXPT_ROOT, MASTER, USER, MAX_MEM)
 
 if __name__ == "__main__":
     main(sys.argv)

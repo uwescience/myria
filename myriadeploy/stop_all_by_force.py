@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import ConfigParser
 import socket
 import subprocess
 import sys
@@ -38,36 +39,48 @@ def read_workers(filename):
         ret.append((hostname, port, username))
     return ret
 
-def stop_all(workers):
-    id = 0
-    for (hostname, port, username) in workers:
-	if id == 0:
-  	    cmd = "ssh %s@%s $'ps aux | grep edu.washington.escience.myriad.daemon.MasterDaemon | grep %s | grep -v grep | awk \\'{print $2}\\''" % (username, hostname, username);
-	else:
-  	    cmd = "ssh %s@%s $'ps aux | grep edu.washington.escience.myriad.parallel.Worker | grep %s | grep -v grep | awk \\'{print $2}\\''" % (username, hostname, username);
-	pids = subprocess.check_output(cmd, shell=True).split('\n');
-	for pid in pids:
-	    if pid != "":
-	        print  "killing %s on %s" % (pid, hostname)
-	        cmd = "ssh %s@%s kill %s" % (username, hostname, pid);
-	        subprocess.call(cmd, shell=True);
-        id = id + 1
+def stop_all(master, workers, username):
+    # Stop the Master
+    (hostname, port) = master
+    cmd = "ssh %s@%s $'ps aux | grep edu.washington.escience.myriad.daemon.MasterDaemon | grep %s | grep -v grep | awk \\'{print $2}\\''" % (username, hostname, username);
+    pids = subprocess.check_output(cmd, shell=True).split('\n');
+    for pid in pids:
+        if pid != "":
+            print  "killing %s on %s" % (pid, hostname)
+            cmd = "ssh %s@%s kill %s" % (username, hostname, pid);
+            subprocess.call(cmd, shell=True);
+
+    # Workers
+    for (hostname, port) in workers:
+        cmd = "ssh %s@%s $'ps aux | grep edu.washington.escience.myriad.parallel.Worker | grep %s | grep -v grep | awk \\'{print $2}\\''" % (username, hostname, username);
+        pids = subprocess.check_output(cmd, shell=True).split('\n');
+        for pid in pids:
+            if pid != "":
+                print  "killing %s on %s" % (pid, hostname)
+                cmd = "ssh %s@%s kill %s" % (username, hostname, pid);
+                subprocess.call(cmd, shell=True);
 
 def main(argv):
     # Usage
     if len(argv) != 2:
-        print >> sys.stderr, "Usage: %s <workers.txt> " % (argv[0])
-        print >> sys.stderr, "       workers.txt: a list of host:port strings;"
-        print >> sys.stderr, "                    the first entry is the master."
+        print >> sys.stderr, "Usage: %s <deployment.cfg>" % (argv[0])
+        print >> sys.stderr, "       deployment.cfg: a configuration file modeled after deployment.cfg.sample"
         sys.exit(1)
 
-    # Command-line arguments
-    WORKERS_FILE = argv[1]
+    # Parse the configuration
+    CONFIG_FILE = argv[1]
+    config = ConfigParser.RawConfigParser(allow_no_value=True)
+    config.read([CONFIG_FILE])
 
-    # Figure out the master and workers
-    workers = read_workers(WORKERS_FILE)
+    # Extract the parameters
+    try:
+        USER = config.get('deployment', 'username')
+    except:
+        USER = getpass.getuser()
+    MASTER = config.items('master')[0]
+    WORKERS = config.items('workers')
 
-    stop_all(workers)
+    stop_all(MASTER, WORKERS, USER)
 
 if __name__ == "__main__":
     main(sys.argv)
