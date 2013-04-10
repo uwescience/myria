@@ -14,7 +14,6 @@ import java.util.Properties;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -27,8 +26,6 @@ import org.jboss.netty.channel.ChannelFutureListener;
 
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
-import com.almworks.sqlite4java.SQLiteJob;
-import com.almworks.sqlite4java.SQLiteQueue;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
@@ -452,21 +449,15 @@ public class Worker {
       case "sqlite":
         String sqliteFile = catalog.getConfigurationValue("worker.data.sqlite.db");
         databaseHandle.setProperty("sqliteFile", sqliteFile);
-        final File dbFile = new File(sqliteFile);
-        /* Open a connection to that SQLite database. */
-        SQLiteQueue queue = new SQLiteQueue(dbFile);
-        queue.start();
+        SQLiteConnection conn = new SQLiteConnection(new File(sqliteFile));
         try {
-          queue.execute(new SQLiteJob<Integer>() {
-            @Override
-            protected Integer job(final SQLiteConnection connection) throws SQLiteException {
-              connection.exec("PRAGMA journal_mode=WAL;");
-              return null;
-            }
-          }).get();
-        } catch (InterruptedException | ExecutionException e) {
-          throw new DbException(e);
+          conn.open(true);
+          /* By default, use WAL */
+          conn.exec("PRAGMA journal_mode=WAL;");
+        } catch (SQLiteException e) {
+          e.printStackTrace();
         }
+        conn.dispose();
         break;
       case "mysql":
         /* TODO fill this in. */
