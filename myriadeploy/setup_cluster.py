@@ -7,7 +7,7 @@ import sys
 import getpass
 
 def host_port_list(workers):
-    return map(lambda (x,y) : str(x)+':'+str(y), workers)
+    return [str(x) + ':' + str(y) for (x, y) in workers]
 
 def read_workers(filename):
     ret = []
@@ -71,7 +71,7 @@ def copy_worker_catalog(hostname, dirname, remote_root, i, username):
 
 def copy_catalogs(description, remote_root, master, workers, username):
     # Make directories on master
-    (hostname,port) = master
+    (hostname, _) = master
     if remote_mkdir(hostname, "%s/%s-files/%s" \
             % (remote_root, description, description), username):
         raise Exception("Error making directory on master %s" \
@@ -80,7 +80,7 @@ def copy_catalogs(description, remote_root, master, workers, username):
     if copy_master_catalog(hostname, description, remote_root, username):
         raise Exception("Error copying master.catalog to %s" % (hostname,))
 
-    for (i,(hostname,port)) in enumerate(workers):
+    for (i, (hostname, _)) in enumerate(workers):
         # Workers are numbered from 1, not 0
         worker_id = i + 1
 
@@ -94,7 +94,7 @@ def copy_catalogs(description, remote_root, master, workers, username):
             raise Exception("Error copying worker.catalog to %s " % (hostname,))
 
 def copy_distribution(nodes, dirname, remote_root, username):
-    for (hostname, port) in nodes:
+    for (hostname, _) in nodes:
         remote_path = "%s@%s:%s/%s-files" % (username, hostname, remote_root, dirname)
         to_copy = ["myriad-0.1.jar", "sqlite4java-282", "conf"]
         args = ["scp", "-r"] + to_copy + [remote_path]
@@ -117,12 +117,12 @@ def main(argv):
     EXPT_ROOT = config.get('deployment', 'path')
     try:
         USER = config.get('deployment', 'username')
-    except:
+    except ConfigParser.NoOptionError:
         USER = getpass.getuser()
     def hostPortKeyToTuple(x):
         return tuple(x[0].split(','))
     MASTER = hostPortKeyToTuple(config.items('master')[0])
-    WORKERS = map(hostPortKeyToTuple, config.items('workers'))
+    WORKERS = [hostPortKeyToTuple(w) for w in config.items('workers')]
 
     # Step 1: make the Catalog
     make_catalog(DESCRIPTION, MASTER, WORKERS)
