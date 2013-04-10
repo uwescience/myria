@@ -62,7 +62,11 @@ public class InJVMLoopbackChannelSink extends AbstractChannelSink {
             }
             break;
           case INTEREST_OPS:
-            Channels.fireChannelInterestChanged(channel);
+            int newInterest = (Integer) event.getValue();
+            if (channel.getInterestOps() != newInterest) {
+              channel.setInterestOpsNow(newInterest);
+              Channels.fireChannelInterestChanged(channel);
+            }
             future.setSuccess();
             break;
         }

@@ -61,14 +61,18 @@ public class InJVMChannel extends AbstractChannel {
   @Override
   public final ChannelFuture setInterestOps(final int interestOps) {
     int newIOPS = interestOps;
-    if ((interestOps & OP_READ) == 0) {
+    if ((interestOps & OP_READ) != OP_READ) {
       // server side stop read => client side stop write.
       newIOPS = interestOps | Channel.OP_WRITE;
     } else {
       newIOPS = interestOps & ~Channel.OP_WRITE;
     }
-    setInterestOpsNow(newIOPS);
     return super.setInterestOps(newIOPS);
+  }
+
+  @Override
+  protected final void setInterestOpsNow(final int interestOps) {
+    super.setInterestOpsNow(interestOps);
   }
 
   @Override
