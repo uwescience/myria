@@ -6,3 +6,5 @@ build
 .classpath
 *nocommit*
 *NodeLocalParallel
+*catalog-journal
+englink-log4j.log
