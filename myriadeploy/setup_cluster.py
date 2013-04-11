@@ -35,13 +35,13 @@ def remote_mkdir(hostname, dirname, username):
 def copy_master_catalog(hostname, dirname, path, username):
     local_path = "%s/%s" % (dirname, "master.catalog")
     remote_path = "%s@%s:%s/%s-files/%s" % (username, hostname, path, dirname, dirname)
-    args = ["scp", local_path, remote_path]
+    args = ["rsync", "-avz", local_path, remote_path]
     return subprocess.call(args)
 
 def copy_worker_catalog(hostname, dirname, path, i, username):
     local_path = "%s/worker_%d" % (dirname, i)
     remote_path = "%s@%s:%s/%s-files/%s" % (username, hostname, path, dirname, dirname)
-    args = ["scp", "-r", local_path, remote_path]
+    args = ["rsync", "-avz", local_path, remote_path]
     return subprocess.call(args)
 
 def copy_catalogs(config):
@@ -85,7 +85,7 @@ def copy_distribution(config):
     for (hostname, _) in nodes:
         remote_path = "%s@%s:%s/%s-files" % (username, hostname, path, description)
         to_copy = ["myriad-0.1.jar", "sqlite4java-282", "conf"]
-        args = ["scp", "-r"] + to_copy + [remote_path]
+        args = ["rsync", "-avz"] + to_copy + [remote_path]
         if subprocess.call(args):
             raise Exception("Error copying distribution to %s" % (hostname,))
 
