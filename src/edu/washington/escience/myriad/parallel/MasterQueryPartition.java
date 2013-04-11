@@ -11,8 +11,12 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableMap;
 
+import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SinkRoot;
+import edu.washington.escience.myriad.parallel.Worker.QueryExecutionMode;
+import edu.washington.escience.myriad.parallel.ipc.IPCEvent;
+import edu.washington.escience.myriad.parallel.ipc.IPCEventListener;
 import edu.washington.escience.myriad.util.DateTimeUtils;
 
 /**
@@ -113,6 +117,16 @@ public class MasterQueryPartition implements QueryPartition {
   private volatile boolean isKilled;
 
   /**
+   * Producer channel mapping of current active queries.
+   * */
+  final ConcurrentHashMap<ExchangeChannelID, ProducerChannel> producerChannelMapping;
+
+  /**
+   * Consumer channel mapping of current active queries.
+   * */
+  final ConcurrentHashMap<ExchangeChannelID, ConsumerChannel> consumerChannelMapping;
+
+  /**
    * Callback when a query plan is received by a worker.
    * 
    * @param workerID the workerID
@@ -209,6 +223,57 @@ public class MasterQueryPartition implements QueryPartition {
     }
     workersCompleteQuery = new BitSet(workerPlans.size());
     this.workerPlans = new ConcurrentHashMap<Integer, RootOperator[]>(workerPlans);
+    producerChannelMapping = new ConcurrentHashMap<ExchangeChannelID, ProducerChannel>();
+    consumerChannelMapping = new ConcurrentHashMap<ExchangeChannelID, ConsumerChannel>();
+    rootTask =
+        new QuerySubTreeTask(MyriaConstants.MASTER_ID, this, root, master.serverQueryExecutor,
+            QueryExecutionMode.NON_BLOCKING);
+
+    for (Consumer c : rootTask.getInputChannels().values()) {
+      for (ConsumerChannel cc : c.getExchangeChannels()) {
+        consumerChannelMapping.putIfAbsent(cc.getExchangeChannelID(), cc);
+      }
+    }
+
+    for (ExchangeChannelID producerID : rootTask.getOutputChannels()) {
+      producerChannelMapping.put(producerID, new ProducerChannel(rootTask, producerID));
+    }
+
+    final FlowControlHandler fch = master.getFlowControlHandler();
+    for (ConsumerChannel cChannel : consumerChannelMapping.values()) {
+      final Consumer operator = cChannel.getOwnerConsumer();
+
+      FlowControlInputBuffer<ExchangeData> inputBuffer =
+          new FlowControlInputBuffer<ExchangeData>(master.getInputBufferCapacity());
+      inputBuffer.attach(operator.getOperatorID());
+      inputBuffer.addBufferFullListener(new IPCEventListener<FlowControlInputBuffer<ExchangeData>>() {
+        @Override
+        public void triggered(final IPCEvent<FlowControlInputBuffer<ExchangeData>> e) {
+          if (e.getAttachment().remainingCapacity() <= 0) {
+            fch.pauseRead(operator).awaitUninterruptibly();
+          }
+        }
+      });
+      inputBuffer.addBufferRecoverListener(new IPCEventListener<FlowControlInputBuffer<ExchangeData>>() {
+        @Override
+        public void triggered(final IPCEvent<FlowControlInputBuffer<ExchangeData>> e) {
+          if (e.getAttachment().remainingCapacity() > 0) {
+            fch.resumeRead(operator).awaitUninterruptibly();
+          }
+        }
+      });
+      inputBuffer.addBufferEmptyListener(new IPCEventListener<FlowControlInputBuffer<ExchangeData>>() {
+        @Override
+        public void triggered(final IPCEvent<FlowControlInputBuffer<ExchangeData>> e) {
+          if (e.getAttachment().remainingCapacity() > 0) {
+            fch.resumeRead(operator).awaitUninterruptibly();
+          }
+        }
+      });
+      operator.setInputBuffer(inputBuffer);
+      master.dataBuffer.put(operator.getOperatorID(), inputBuffer);
+    }
+
   }
 
   @Override
@@ -234,22 +299,12 @@ public class MasterQueryPartition implements QueryPartition {
     return rootTask + ", priority:" + priority;
   }
 
-  /**
-   * set my execution task.
-   * 
-   * @param rootTask my task.
-   * */
-  public final void setRootTask(final QuerySubTreeTask rootTask) {
-    this.rootTask = rootTask;
-  }
-
   @Override
   public final void startNonBlockingExecution() {
     startAtInNano = System.nanoTime();
     if (LOGGER.isInfoEnabled()) {
       LOGGER.info("Query : " + this + " start processing at " + startAtInNano);
     }
-    rootTask.init(ImmutableMap.copyOf(master.getExecEnvVars()));
     rootTask.nonBlockingExecute();
   }
 
@@ -261,7 +316,6 @@ public class MasterQueryPartition implements QueryPartition {
     if (LOGGER.isInfoEnabled()) {
       LOGGER.info("Query : " + this + " start processing.");
     }
-    rootTask.init(ImmutableMap.copyOf(master.getExecEnvVars()));
     rootTask.blockingExecute();
   }
 
@@ -302,8 +356,8 @@ public class MasterQueryPartition implements QueryPartition {
   /**
    * @return all input channels belonging to this task.
    * */
-  final ExchangeChannelID[] getInputChannels() {
-    return rootTask.getInputChannels();
+  final Set<ExchangeChannelID> getInputChannels() {
+    return rootTask.getInputChannels().keySet();
   }
 
   /**
@@ -386,6 +440,11 @@ public class MasterQueryPartition implements QueryPartition {
   @Override
   public final boolean isKilled() {
     return isKilled;
+  }
+
+  @Override
+  public final void init() {
+    rootTask.init(ImmutableMap.copyOf(master.getExecEnvVars()));
   }
 
 }

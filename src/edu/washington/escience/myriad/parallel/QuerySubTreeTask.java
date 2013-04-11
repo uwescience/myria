@@ -2,7 +2,10 @@ package edu.washington.escience.myriad.parallel;
 
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -81,7 +84,12 @@ final class QuerySubTreeTask {
   /**
    * The output channels belonging to this task.
    * */
-  private final ExchangeChannelID[] inputChannels;
+  private final Map<ExchangeChannelID, Consumer> inputChannels;
+
+  /**
+   * The IDBInput operators in this task.
+   * */
+  private final Set<IDBInput> idbInputSet;
 
   /**
    * IPC ID of the owner {@link Worker} or {@link Server}.
@@ -95,7 +103,7 @@ final class QuerySubTreeTask {
 
   /**
    * Protect the output channel status.
-   * */
+   */
   private final ReentrantSpinLock outputLock = new ReentrantSpinLock();
 
   /**
@@ -104,7 +112,7 @@ final class QuerySubTreeTask {
    * @param root the root operator this task will run.
    * @param executor the executor who provides the execution service for the task to run on
    * @param executionMode blocking/nonblocking mode.
-   * */
+   */
   QuerySubTreeTask(final int ipcEntityID, final QueryPartition ownerQuery, final RootOperator root,
       final ExecutorService executor, final QueryExecutionMode executionMode) {
     this.ipcEntityID = ipcEntityID;
@@ -120,18 +128,18 @@ final class QuerySubTreeTask {
     this.root = root;
     myExecutor = executor;
     this.ownerQuery = ownerQuery;
+    idbInputSet = new HashSet<IDBInput>();
     HashSet<ExchangeChannelID> outputChannelSet = new HashSet<ExchangeChannelID>();
     collectDownChannels(root, outputChannelSet);
     outputChannels = outputChannelSet.toArray(new ExchangeChannelID[] {});
-    HashSet<ExchangeChannelID> inputChannelSet = new HashSet<ExchangeChannelID>();
-    collectUpChannels(root, inputChannelSet);
-    inputChannels = inputChannelSet.toArray(new ExchangeChannelID[] {});
+    HashMap<ExchangeChannelID, Consumer> inputChannelMap = new HashMap<ExchangeChannelID, Consumer>();
+    collectUpChannels(root, inputChannelMap);
+    inputChannels = inputChannelMap;
     Arrays.sort(outputChannels);
     outputChannelAvailable = new BitSet(outputChannels.length);
     for (int i = 0; i < outputChannels.length; i++) {
       outputChannelAvailable.set(i);
     }
-    // numInputTBs = new AtomicLong(1); // Set 1 to cheat the Worker to execute each newly created task.
     inBlockingExecution = false;
     nonBlockingExecutionTask = new Callable<Boolean>() {
       @Override
@@ -144,6 +152,7 @@ final class QuerySubTreeTask {
         }
       }
     };
+
     blockingExecutionTask = new Callable<Boolean>() {
       @Override
       public Boolean call() throws Exception {
@@ -155,15 +164,19 @@ final class QuerySubTreeTask {
   /**
    * @return all input channels belonging to this task.
    * */
-  ExchangeChannelID[] getInputChannels() {
+  Map<ExchangeChannelID, Consumer> getInputChannels() {
     return inputChannels;
   }
 
   /**
    * @return all output channels belonging to this task.
-   * */
+   */
   ExchangeChannelID[] getOutputChannels() {
     return outputChannels;
+  }
+
+  Set<IDBInput> getIDBInputs() {
+    return idbInputSet;
   }
 
   /**
@@ -188,6 +201,7 @@ final class QuerySubTreeTask {
       ExchangePairID oID = p.getControllerOperatorID();
       int wID = p.getControllerWorkerID();
       outputExchangeChannels.add(new ExchangeChannelID(oID.getLong(), wID));
+      idbInputSet.add(p);
     }
 
     final Operator[] children = currentOperator.getChildren();
@@ -213,15 +227,20 @@ final class QuerySubTreeTask {
    * @param currentOperator current operator to check.
    * @param inputExchangeChannels the current collected input channels.
    * */
-  private void collectUpChannels(final Operator currentOperator, final HashSet<ExchangeChannelID> inputExchangeChannels) {
+  private void collectUpChannels(final Operator currentOperator,
+      final Map<ExchangeChannelID, Consumer> inputExchangeChannels) {
 
     if (currentOperator instanceof Consumer) {
       Consumer c = (Consumer) currentOperator;
       int[] sourceWorkers = c.getSourceWorkers(ipcEntityID);
       ExchangePairID oID = c.getOperatorID();
+      ConsumerChannel[] ccs = new ConsumerChannel[sourceWorkers.length];
+      int i = 0;
       for (int sourceWorker : sourceWorkers) {
-        inputExchangeChannels.add(new ExchangeChannelID(oID.getLong(), sourceWorker));
+        inputExchangeChannels.put(new ExchangeChannelID(oID.getLong(), sourceWorker), c);
+        ccs[i++] = new ConsumerChannel(this, c, sourceWorker);
       }
+      c.setExchangeChannels(ccs);
     }
 
     final Operator[] children = currentOperator.getChildren();
@@ -237,7 +256,7 @@ final class QuerySubTreeTask {
   /**
    * call this method if a new TupleBatch arrived at a Consumer operator belonging to this task. This method is always
    * called by Netty Upstream IO worker threads.
-   * */
+   */
   public void notifyNewInput() {
     setInputAvailable();
     nonBlockingExecute();
@@ -247,7 +266,7 @@ final class QuerySubTreeTask {
    * Called by Netty downstream IO worker threads.
    * 
    * @param outputChannelID the logical output channel ID.
-   * */
+   */
   public void notifyOutputDisabled(final ExchangeChannelID outputChannelID) {
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("Output disabled: " + outputChannelID);

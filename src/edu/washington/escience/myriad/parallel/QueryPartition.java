@@ -31,6 +31,11 @@ public interface QueryPartition extends Comparable<QueryPartition> {
   void startNonBlockingExecution();
 
   /**
+   * Prepare to execute, reserve resources, allocate data structures to be used in execution, etc.
+   * */
+  void init();
+
+  /**
    * Call back if a task : <br>
    * <ul>
    * <li>

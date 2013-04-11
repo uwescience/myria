@@ -1,11 +1,9 @@
 package edu.washington.escience.myriad.parallel;
 
 import java.io.FileNotFoundException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Properties;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -32,12 +30,7 @@ import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.MyriaSystemConfigKeys;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.coordinator.catalog.WorkerCatalog;
-import edu.washington.escience.myriad.operator.IDBInput;
-import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
-import edu.washington.escience.myriad.parallel.ipc.IPCEvent;
-import edu.washington.escience.myriad.parallel.ipc.IPCEventListener;
 import edu.washington.escience.myriad.parallel.ipc.InJVMLoopbackChannelSink;
 import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
@@ -125,6 +118,7 @@ public final class Worker {
                   } else {
                     switch (cm.getType()) {
                       case QUERY_START:
+                        q.init();
                         if (queryExecutionMode == QueryExecutionMode.NON_BLOCKING) {
                           q.startNonBlockingExecution();
                         } else {
@@ -291,7 +285,7 @@ public final class Worker {
   /**
    * {@link ExecutorService} for query executions.
    * */
-  private volatile ThreadPoolExecutor queryExecutor;
+  volatile ThreadPoolExecutor queryExecutor;
 
   /**
    * {@link ExecutorService} for non-query message processing.
@@ -317,11 +311,6 @@ public final class Worker {
    * timer task executor.
    * */
   private ScheduledExecutorService scheduledTaskExecutor;
-
-  /**
-   * database handle.
-   * */
-  private final Properties databaseHandle;
 
   /**
    * The ID of this worker.
@@ -497,6 +486,10 @@ public final class Worker {
     return pipelineExecutor;
   }
 
+  int getInputBufferCapacity() {
+    return inputBufferCapacity;
+  }
+
   /**
    * @return my execution environment variables for init of operators.
    * */
@@ -524,7 +517,6 @@ public final class Worker {
 
     this.workingDirectory = workingDirectory;
     myID = Integer.parseInt(catalog.getConfigurationValue(MyriaSystemConfigKeys.WORKER_IDENTIFIER));
-    databaseHandle = new Properties();
 
     // mySocketInfo = catalog.getWorkers().get(myID);
 
@@ -558,8 +550,7 @@ public final class Worker {
     switch (databaseType) {
       case MyriaConstants.STORAGE_SYSTEM_SQLITE:
         String sqliteFilePath = catalog.getConfigurationValue(MyriaSystemConfigKeys.WORKER_DATA_SQLITE_DB);
-        databaseHandle.setProperty("sqliteFile", sqliteFilePath);
-        execEnvVars.put("sqliteFile", sqliteFilePath);
+        execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_SQLITE_FILE, sqliteFilePath);
         break;
       case MyriaConstants.STORAGE_SYSTEM_MYSQL:
         /* TODO fill this in. */
@@ -609,118 +600,11 @@ public final class Worker {
     if (LOGGER.isInfoEnabled()) {
       LOGGER.info("Query received" + query);
     }
-    setupExchangeChannels(query);
+    consumerChannelMapping.putAll(query.consumerChannelMapping);
+    producerChannelMapping.putAll(query.producerChannelMapping);
+
     activeQueries.put(query.getQueryID(), query);
-  }
 
-  /**
-   * 
-   * Find out the consumers and producers and register them in the {@link Worker}'s data structures
-   * {@link Worker#producerChannelMapping} and {@link Worker#consumerChannelMapping}.
-   * 
-   * @param query the query on which to do the setup.
-   * @throws DbException if any error occurs.
-   * 
-   */
-  public void setupExchangeChannels(final WorkerQueryPartition query) throws DbException {
-    final ArrayList<QuerySubTreeTask> tasks = new ArrayList<QuerySubTreeTask>();
-
-    for (final RootOperator task : query.getOperators()) {
-      QuerySubTreeTask drivingTask = new QuerySubTreeTask(myID, query, task, queryExecutor, queryExecutionMode);
-      tasks.add(drivingTask);
-
-      if (task instanceof Producer) {
-        // Setup producer channels.
-        Producer p = (Producer) task;
-        ExchangePairID[] oIDs = p.operatorIDs();
-        int[] destWorkers = p.getDestinationWorkerIDs(myID);
-        for (int i = 0; i < destWorkers.length; i++) {
-          ExchangeChannelID ecID = new ExchangeChannelID(oIDs[i].getLong(), destWorkers[i]);
-          // producerChannelMapping.put(ecID, new ProducerChannel(drivingTask, p, ecID));
-          producerChannelMapping.put(ecID, new ProducerChannel(drivingTask, ecID));
-        }
-      }
-      setupConsumerChannels(task, drivingTask);
-    }
-
-    query.setTasks(tasks);
-
-  }
-
-  /**
-   * @param currentOperator current operator in considering.
-   * @param drivingTask the task current operator belongs to.
-   * @throws DbException if any error occurs.
-   * */
-  private void setupConsumerChannels(final Operator currentOperator, final QuerySubTreeTask drivingTask)
-      throws DbException {
-
-    if (currentOperator == null) {
-      return;
-    }
-
-    if (currentOperator instanceof Consumer) {
-      final Consumer operator = (Consumer) currentOperator;
-
-      operator.setExchangeChannels(new ConsumerChannel[operator.getSourceWorkers(myID).length]);
-      ExchangePairID oID = operator.getOperatorID();
-      int[] sourceWorkers = operator.getSourceWorkers(myID);
-      int idx = 0;
-      for (int workerID : sourceWorkers) {
-        ExchangeChannelID ecID = new ExchangeChannelID(oID.getLong(), workerID);
-        ConsumerChannel cc = new ConsumerChannel(drivingTask, operator, ecID);
-        consumerChannelMapping.put(ecID, cc);
-        operator.getExchangeChannels()[idx++] = cc;
-      }
-
-      FlowControlInputBuffer<ExchangeData> inputBuffer = new FlowControlInputBuffer<ExchangeData>(inputBufferCapacity);
-      inputBuffer.attach(operator.getOperatorID());
-      inputBuffer.addBufferFullListener(new IPCEventListener<FlowControlInputBuffer<ExchangeData>>() {
-        @Override
-        public void triggered(final IPCEvent<FlowControlInputBuffer<ExchangeData>> e) {
-          if (e.getAttachment().remainingCapacity() <= 0) {
-            flowController.pauseRead(operator).awaitUninterruptibly();
-          }
-        }
-      });
-      inputBuffer.addBufferRecoverListener(new IPCEventListener<FlowControlInputBuffer<ExchangeData>>() {
-        @Override
-        public void triggered(final IPCEvent<FlowControlInputBuffer<ExchangeData>> e) {
-          if (e.getAttachment().remainingCapacity() > 0) {
-            flowController.resumeRead(operator).awaitUninterruptibly();
-          }
-        }
-      });
-      inputBuffer.addBufferEmptyListener(new IPCEventListener<FlowControlInputBuffer<ExchangeData>>() {
-        @Override
-        public void triggered(final IPCEvent<FlowControlInputBuffer<ExchangeData>> e) {
-          if (e.getAttachment().remainingCapacity() > 0) {
-            flowController.resumeRead(operator).awaitUninterruptibly();
-          }
-        }
-      });
-      operator.setInputBuffer(inputBuffer);
-
-    }
-
-    if (currentOperator instanceof IDBInput) {
-      IDBInput p = (IDBInput) currentOperator;
-      ExchangePairID oID = p.getControllerOperatorID();
-      int wID = p.getControllerWorkerID();
-      ExchangeChannelID ecID = new ExchangeChannelID(oID.getLong(), wID);
-      ProducerChannel pc = new ProducerChannel(drivingTask, ecID);
-      producerChannelMapping.putIfAbsent(ecID, pc);
-    }
-
-    final Operator[] children = currentOperator.getChildren();
-
-    if (children != null) {
-      for (final Operator child : children) {
-        if (child != null) {
-          setupConsumerChannels(child, drivingTask);
-        }
-      }
-    }
   }
 
   /**

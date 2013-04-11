@@ -59,6 +59,8 @@ public final class MyriaConstants {
    * */
   public static final String STORAGE_SYSTEM_MYSQL = "mysql";
 
+  public static final String EXEC_ENV_VAR_SQLITE_FILE = "sqliteFile";
+
   /**
    * Monetdb storage.
    * */

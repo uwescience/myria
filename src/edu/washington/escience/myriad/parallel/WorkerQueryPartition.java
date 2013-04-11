@@ -1,6 +1,5 @@
 package edu.washington.escience.myriad.parallel;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -13,6 +12,9 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.operator.RootOperator;
+import edu.washington.escience.myriad.parallel.Worker.QueryExecutionMode;
+import edu.washington.escience.myriad.parallel.ipc.IPCEvent;
+import edu.washington.escience.myriad.parallel.ipc.IPCEventListener;
 
 /**
  * A {@link WorkerQueryPartition} is a partition of a query plan at a single worker.
@@ -67,6 +69,16 @@ public class WorkerQueryPartition implements QueryPartition {
   // private final QueryFuture executionFuture = new DefaultQueryFuture(this, true);
 
   /**
+   * Producer channel mapping of current active queries.
+   * */
+  final ConcurrentHashMap<ExchangeChannelID, ProducerChannel> producerChannelMapping;
+
+  /**
+   * Consumer channel mapping of current active queries.
+   * */
+  final ConcurrentHashMap<ExchangeChannelID, ConsumerChannel> consumerChannelMapping;
+
+  /**
    * @param operators the operators belonging to this query partition.
    * @param queryID the id of the query.
    * @param ownerWorker the worker on which this query partition is going to run
@@ -77,6 +89,69 @@ public class WorkerQueryPartition implements QueryPartition {
     tasks = new ConcurrentHashMap<QuerySubTreeTask, Boolean>(operators.length);
     numTaskEOS = new AtomicInteger(0);
     this.ownerWorker = ownerWorker;
+    producerChannelMapping = new ConcurrentHashMap<ExchangeChannelID, ProducerChannel>();
+    consumerChannelMapping = new ConcurrentHashMap<ExchangeChannelID, ConsumerChannel>();
+    for (final RootOperator taskRootOp : this.operators) {
+      QuerySubTreeTask drivingTask =
+          new QuerySubTreeTask(ownerWorker.getIPCConnectionPool().getMyIPCID(), this, taskRootOp,
+              ownerWorker.queryExecutor, QueryExecutionMode.NON_BLOCKING);
+      tasks.put(drivingTask, new Boolean(false));
+
+      for (Consumer c : drivingTask.getInputChannels().values()) {
+        for (ConsumerChannel cc : c.getExchangeChannels()) {
+          consumerChannelMapping.putIfAbsent(cc.getExchangeChannelID(), cc);
+        }
+      }
+
+      for (ExchangeChannelID producerID : drivingTask.getOutputChannels()) {
+        producerChannelMapping.put(producerID, new ProducerChannel(drivingTask, producerID));
+      }
+
+    }
+
+    final FlowControlHandler fch = ownerWorker.getFlowControlHandler();
+    for (ConsumerChannel cChannel : consumerChannelMapping.values()) {
+      // setup input buffers.
+      final Consumer operator = cChannel.getOwnerConsumer();
+
+      FlowControlInputBuffer<ExchangeData> inputBuffer =
+          new FlowControlInputBuffer<ExchangeData>(ownerWorker.getInputBufferCapacity());
+      inputBuffer.attach(operator.getOperatorID());
+      inputBuffer.addBufferFullListener(new IPCEventListener<FlowControlInputBuffer<ExchangeData>>() {
+        @Override
+        public void triggered(final IPCEvent<FlowControlInputBuffer<ExchangeData>> e) {
+          if (e.getAttachment().remainingCapacity() <= 0) {
+            fch.pauseRead(operator).awaitUninterruptibly();
+          }
+        }
+      });
+      inputBuffer.addBufferRecoverListener(new IPCEventListener<FlowControlInputBuffer<ExchangeData>>() {
+        @Override
+        public void triggered(final IPCEvent<FlowControlInputBuffer<ExchangeData>> e) {
+          if (e.getAttachment().remainingCapacity() > 0) {
+            fch.resumeRead(operator).awaitUninterruptibly();
+          }
+        }
+      });
+      inputBuffer.addBufferEmptyListener(new IPCEventListener<FlowControlInputBuffer<ExchangeData>>() {
+        @Override
+        public void triggered(final IPCEvent<FlowControlInputBuffer<ExchangeData>> e) {
+          if (e.getAttachment().remainingCapacity() > 0) {
+            fch.resumeRead(operator).awaitUninterruptibly();
+          }
+        }
+      });
+      operator.setInputBuffer(inputBuffer);
+    }
+  }
+
+  @Override
+  public final void init() {
+
+    for (QuerySubTreeTask t : tasks.keySet()) {
+      t.init(ImmutableMap.copyOf(ownerWorker.getExecEnvVars()));
+    }
+
   }
 
   @Override
@@ -109,24 +184,12 @@ public class WorkerQueryPartition implements QueryPartition {
     return Arrays.toString(operators) + ", priority:" + priority;
   }
 
-  /**
-   * set my execution tasks.
-   * 
-   * @param tasks my tasks.
-   * */
-  public final void setTasks(final ArrayList<QuerySubTreeTask> tasks) {
-    for (QuerySubTreeTask t : tasks) {
-      this.tasks.put(t, new Boolean(false));
-    }
-  }
-
   @Override
   public final void startNonBlockingExecution() {
     if (LOGGER.isInfoEnabled()) {
       LOGGER.info("Query : " + this + " start processing.");
     }
     for (QuerySubTreeTask t : tasks.keySet()) {
-      t.init(ImmutableMap.copyOf(ownerWorker.getExecEnvVars()));
       t.nonBlockingExecute();
     }
   }
@@ -140,7 +203,6 @@ public class WorkerQueryPartition implements QueryPartition {
       LOGGER.info("Query : " + this + " start processing.");
     }
     for (QuerySubTreeTask t : tasks.keySet()) {
-      t.init(ImmutableMap.copyOf(ownerWorker.getExecEnvVars()));
       t.blockingExecute();
     }
   }
