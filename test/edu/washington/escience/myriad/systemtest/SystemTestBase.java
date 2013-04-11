@@ -256,6 +256,11 @@ public class SystemTestBase {
 
     startMaster();
     startWorkers();
+    /*
+     * Since WAL is set when starting a worker, we need to pause to make sure WAL is indeed set before going into any
+     * tests. Some tests start with inserting data into the db file, before starting a query.
+     */
+    Thread.sleep(500);
   }
 
   public static void insert(final int workerID, final RelationKey relationKey, final Schema schema,
