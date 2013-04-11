@@ -18,7 +18,6 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelException;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
@@ -888,7 +887,6 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
    * @param ipcID IPC ID.
    * @param message the message to send.
    * @throws IllegalStateException if the connection pool is already shutdown
-   * @throws ChannelException if any problem occurs at getting connection to the remote
    * */
   public ChannelFuture sendShortMessage(final int ipcID, final TransportMessage message) {
     checkShutdown();
