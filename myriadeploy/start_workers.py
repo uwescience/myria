@@ -1,21 +1,31 @@
 #!/usr/bin/env python
 
-import ConfigParser
+"Start all Myria workers in the specified deployment."
+
+import myriadeploy
+
 import subprocess
 import sys
-import getpass
 
-def start_workers(description, root, workers, username, MAX_MEM):
+def start_workers(config):
+    "Start all Myria workers in the specified deployment."
+    description = config['description']
+    path = config['path']
+    workers = config['workers']
+    username = config['username']
+    max_heap_size = config['max_heap_size']
+
     worker_id = 0
     for (hostname, _) in workers:
         worker_id = worker_id + 1
-        cmd = "cd %s/%s-files; nohup java -cp myriad-0.1.jar:conf -Djava.library.path=sqlite4java-282 " % (root, description) + MAX_MEM + " edu.washington.escience.myriad.parallel.Worker --workingDir %s/worker_%d 0</dev/null 1>worker_%d_stdout 2>worker_%d_stderr &" % (description, worker_id, worker_id, worker_id)
+        cmd = "cd %s/%s-files; nohup java -cp myriad-0.1.jar:conf -Djava.library.path=sqlite4java-282 " % (path, description) + max_heap_size + " edu.washington.escience.myriad.parallel.Worker --workingDir %s/worker_%d 0</dev/null 1>worker_%d_stdout 2>worker_%d_stderr &" % (description, worker_id, worker_id, worker_id)
         args = ["ssh", "%s@%s" % (username, hostname), cmd]
         if subprocess.call(args):
             print >> sys.stderr, "error starting worker %s" % (hostname)
         print hostname
 
 def main(argv):
+    "Start all Myria workers in the specified deployment."
     # Usage
     if len(argv) != 2:
         print >> sys.stderr, "Usage: %s <deployment.cfg>" % (argv[0])
@@ -23,27 +33,10 @@ def main(argv):
         sys.exit(1)
 
     # Parse the configuration
-    CONFIG_FILE = argv[1]
-    config = ConfigParser.RawConfigParser(allow_no_value=True)
-    config.read([CONFIG_FILE])
-
-    # Extract the parameters
-    DESCRIPTION = config.get('deployment', 'name')
-    EXPT_ROOT = config.get('deployment', 'path')
-    try:
-        USER = config.get('deployment', 'username')
-    except ConfigParser.NoOptionError:
-        USER = getpass.getuser()
-    def hostPortKeyToTuple(x):
-        return tuple(x[0].split(','))
-    WORKERS = [hostPortKeyToTuple(w) for w in config.items('workers')]
-    try:
-        MAX_MEM = config.get('deployment', 'max_heap_size')
-    except ConfigParser.NoOptionError:
-        MAX_MEM = ""
+    config = myriadeploy.read_config_file(argv[1])
 
     # Start the workers
-    start_workers(DESCRIPTION, EXPT_ROOT, WORKERS, USER, MAX_MEM)
+    start_workers(config)
 
 if __name__ == "__main__":
     main(sys.argv)
