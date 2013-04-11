@@ -77,6 +77,7 @@ public class IPCSessionManagerServer extends SimpleChannelHandler {
       } else if (tm.getType() == TransportMessageType.CONTROL
           && tm.getControl().getType() == ControlMessage.ControlMessageType.DISCONNECT) {
         connectionPool.closeChannelRequested(ch);
+        return;
       }
       ctx.sendUpstream(e);
     }
