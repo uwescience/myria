@@ -1,11 +1,18 @@
 #!/usr/bin/env python
 
-import ConfigParser
+"Kill all Myria processes on the nodes in this cluster."
+
+import myriadeploy
+
 import subprocess
 import sys
-import getpass
 
-def stop_all(master, workers, username):
+def stop_all(config):
+    "Kill all Myria processes on the nodes in this cluster."
+    master = config['master']
+    workers = config['workers']
+    username = config['username']
+
     # Stop the Master
     (hostname, _) = master
     cmd = "ssh %s@%s $'ps aux | grep edu.washington.escience.myriad.daemon.MasterDaemon | grep %s | grep -v grep | awk \\'{print $2}\\''" % (username, hostname, username)
@@ -31,28 +38,16 @@ def stop_all(master, workers, username):
                 subprocess.call(cmd, shell=True)
 
 def main(argv):
+    "Kill all Myria processes on the nodes in this cluster."
     # Usage
     if len(argv) != 2:
         print >> sys.stderr, "Usage: %s <deployment.cfg>" % (argv[0])
         print >> sys.stderr, "       deployment.cfg: a configuration file modeled after deployment.cfg.sample"
         sys.exit(1)
 
-    # Parse the configuration
-    CONFIG_FILE = argv[1]
-    config = ConfigParser.RawConfigParser(allow_no_value=True)
-    config.read([CONFIG_FILE])
+    config = myriadeploy.read_config_file(argv[1])
 
-    # Extract the parameters
-    try:
-        USER = config.get('deployment', 'username')
-    except ConfigParser.NoOptionError:
-        USER = getpass.getuser()
-    def hostPortKeyToTuple(x):
-        return tuple(x[0].split(','))
-    MASTER = hostPortKeyToTuple(config.items('master')[0])
-    WORKERS = [hostPortKeyToTuple(w) for w in config.items('workers')]
-
-    stop_all(MASTER, WORKERS, USER)
+    stop_all(config)
 
 if __name__ == "__main__":
     main(sys.argv)
