@@ -574,7 +574,7 @@ public final class Worker {
 
       });
       if (LOGGER.isInfoEnabled()) {
-        LOGGER.info("My part of query " + query + " finished");
+        LOGGER.info("My part of query " + query.getQueryID() + " finished");
       }
     }
   }
@@ -589,7 +589,7 @@ public final class Worker {
    */
   public void receiveQuery(final WorkerQueryPartition query) throws DbException {
     if (LOGGER.isInfoEnabled()) {
-      LOGGER.info("Query received" + query);
+      LOGGER.info("Query received" + query.getQueryID());
     }
     setupExchangeChannels(query);
     activeQueries.put(query.getQueryID(), query);

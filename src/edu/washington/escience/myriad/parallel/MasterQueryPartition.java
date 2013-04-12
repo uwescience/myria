@@ -231,7 +231,7 @@ public class MasterQueryPartition implements QueryPartition {
   public final void startNonBlockingExecution() {
     startAtInNano = System.nanoTime();
     if (LOGGER.isInfoEnabled()) {
-      LOGGER.info("Query : " + this + " start processing at " + startAtInNano);
+      LOGGER.info("Query : " + getQueryID() + " start processing at " + startAtInNano);
     }
     rootTask.init(ImmutableMap.copyOf(master.getExecEnvVars()));
     rootTask.nonBlockingExecute();
@@ -242,8 +242,9 @@ public class MasterQueryPartition implements QueryPartition {
    */
   @Deprecated
   public final void startBlockingExecution() {
+    startAtInNano = System.nanoTime();
     if (LOGGER.isInfoEnabled()) {
-      LOGGER.info("Query : " + this + " start processing.");
+      LOGGER.info("Query : " + getQueryID() + " start processing at " + startAtInNano);
     }
     rootTask.init(ImmutableMap.copyOf(master.getExecEnvVars()));
     rootTask.blockingExecute();
@@ -255,7 +256,7 @@ public class MasterQueryPartition implements QueryPartition {
   private void queryFinish() {
     rootTask.cleanup();
     if (LOGGER.isInfoEnabled()) {
-      LOGGER.info("query: " + this + " finished");
+      LOGGER.info("query: " + getQueryID() + " finished");
     }
     rootTaskEOS = true;
     if (workersCompleteQuery.cardinality() >= workersAssigned.size()) {
