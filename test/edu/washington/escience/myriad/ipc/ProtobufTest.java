@@ -199,6 +199,7 @@ public class ProtobufTest {
             numReceived++;
             break;
           case EOI:
+          case BOS:
             // nothing to do
             break;
           case NORMAL:
@@ -401,6 +402,7 @@ public class ProtobufTest {
             numReceived++;
             break;
           case EOI:
+          case BOS:
             // nothing to do
             break;
           case NORMAL:
@@ -532,6 +534,7 @@ public class ProtobufTest {
             numReceived++;
             break;
           case EOI:
+          case BOS:
             // nothing to do
             break;
           case NORMAL:
@@ -626,6 +629,7 @@ public class ProtobufTest {
             numReceived++;
             break;
           case EOI:
+          case BOS:
             // nothing to do
             break;
           case NORMAL:
@@ -782,6 +786,7 @@ public class ProtobufTest {
             numReceived++;
             break;
           case EOI:
+          case BOS:
             // nothing to do
             break;
           case NORMAL:
@@ -881,6 +886,7 @@ public class ProtobufTest {
             numEOS += 1;
             break;
           case EOI:
+          case BOS:
             // nothing to do
             break;
           case NORMAL:
