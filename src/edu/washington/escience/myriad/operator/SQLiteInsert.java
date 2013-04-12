@@ -3,13 +3,13 @@ package edu.washington.escience.myriad.operator;
 import java.io.File;
 import java.util.Objects;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteJob;
 import com.almworks.sqlite4java.SQLiteQueue;
 import com.almworks.sqlite4java.SQLiteStatement;
+import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.RelationKey;
@@ -44,15 +44,11 @@ public final class SQLiteInsert extends RootOperator {
    * 
    * @param child the source of tuples to be inserted.
    * @param relationKey the key of the table the tuples should be inserted into.
-   * @param pathToSQLiteDb the path to the database.
-   * @param executor the ExecutorService for this process.
    */
-  public SQLiteInsert(final Operator child, final RelationKey relationKey, final String pathToSQLiteDb,
-      final ExecutorService executor) {
-    super(child, executor);
+  public SQLiteInsert(final Operator child, final RelationKey relationKey) {
+    super(child);
     Objects.requireNonNull(child);
     Objects.requireNonNull(relationKey);
-    this.pathToSQLiteDb = pathToSQLiteDb;
     this.relationKey = relationKey;
     overwriteTable = false;
   }
@@ -65,16 +61,12 @@ public final class SQLiteInsert extends RootOperator {
    * 
    * @param child the source of tuples to be inserted.
    * @param relationKey the key of the table the tuples should be inserted into.
-   * @param pathToSQLiteDb the path to the database.
-   * @param executor the ExecutorService for this process.
    * @param overwriteTable whether to overwrite a table that already exists.
    */
-  public SQLiteInsert(final Operator child, final RelationKey relationKey, final String pathToSQLiteDb,
-      final ExecutorService executor, final boolean overwriteTable) {
-    super(child, executor);
+  public SQLiteInsert(final Operator child, final RelationKey relationKey, final boolean overwriteTable) {
+    super(child);
     Objects.requireNonNull(child);
     Objects.requireNonNull(relationKey);
-    this.pathToSQLiteDb = pathToSQLiteDb;
     this.relationKey = relationKey;
     this.overwriteTable = overwriteTable;
   }
@@ -123,7 +115,13 @@ public final class SQLiteInsert extends RootOperator {
   }
 
   @Override
-  public void init() throws DbException {
+  public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+    final String sqliteDatabaseFilename = (String) execEnvVars.get("sqliteFile");
+    if (sqliteDatabaseFilename == null) {
+      throw new DbException("Unable to instantiate SQLiteQueryScan on non-sqlite worker");
+    }
+    pathToSQLiteDb = sqliteDatabaseFilename;
+
     final File dbFile = new File(pathToSQLiteDb);
 
     /* Open a connection to that SQLite database. */
@@ -152,13 +150,12 @@ public final class SQLiteInsert extends RootOperator {
     insertString = SQLiteUtils.insertStatementFromSchema(getSchema(), relationKey);
   }
 
-  /**
-   * Needed for Worker.localizeQueryPlan.
-   * 
-   * @param pathToSQLiteDb the path to the database.
-   */
-  public void setPathToSQLiteDb(final String pathToSQLiteDb) {
-    this.pathToSQLiteDb = pathToSQLiteDb;
+  @Override
+  protected void childEOS() throws DbException {
+  }
+
+  @Override
+  protected void childEOI() throws DbException {
   }
 
 }

@@ -13,7 +13,7 @@ public class IntColumnTest {
     final IntColumn original = new IntColumn();
     original.put(1).put(2).put(5).put(11);
     final ColumnMessage serialized = original.serializeToProto();
-    final IntColumn deserialized = new IntColumn(serialized);
+    final IntColumn deserialized = new IntColumn(serialized, original.size());
     assertTrue(original.toString().equals(deserialized.toString()));
   }
 

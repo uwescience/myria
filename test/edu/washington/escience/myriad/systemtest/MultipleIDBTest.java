@@ -6,12 +6,14 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -22,12 +24,15 @@ import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.IDBInput;
 import edu.washington.escience.myriad.operator.LocalJoin;
 import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
+import edu.washington.escience.myriad.operator.SinkRoot;
+import edu.washington.escience.myriad.operator.TBQueueExporter;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
 import edu.washington.escience.myriad.parallel.Consumer;
 import edu.washington.escience.myriad.parallel.EOSController;
-import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
+import edu.washington.escience.myriad.parallel.ExchangePairID;
 import edu.washington.escience.myriad.parallel.LocalMultiwayConsumer;
 import edu.washington.escience.myriad.parallel.LocalMultiwayProducer;
 import edu.washington.escience.myriad.parallel.PartitionFunction;
@@ -98,6 +103,23 @@ public class MultipleIDBTest extends SystemTestBase {
     return result;
   }
 
+  public static ExchangePairID[] removeNull(final ExchangePairID[] old) {
+    int size = 0;
+    for (ExchangePairID id : old) {
+      if (id != null) {
+        size++;
+      }
+    }
+    ExchangePairID[] result = new ExchangePairID[size];
+    int idx = 0;
+    for (ExchangePairID id : old) {
+      if (id != null) {
+        result[idx++] = id;
+      }
+    }
+    return result;
+  }
+
   public TupleBatchBuffer generateAMatrix(final RelationKey tableKey, final Schema tableSchema) throws IOException,
       CatalogException {
     long[] tblAID1Worker1 = TestUtils.randomLong(1, MaxID - 1, numTbl1Worker1);
@@ -130,7 +152,7 @@ public class MultipleIDBTest extends SystemTestBase {
     return table1;
   }
 
-  public void generateJoinPlan(final ArrayList<ArrayList<Operator>> workerPlan, final Schema tableSchema,
+  public void generateJoinPlan(final ArrayList<ArrayList<RootOperator>> workerPlan, final Schema tableSchema,
       final String initName, final ExchangePairID eoiReceiverOpID, final boolean isHead,
       final ExchangePairID sendingOpID, final ExchangePairID receivingOpID, final ExchangePairID eosReceiverOpID,
       final ExchangePairID serverReceivingOpID, final int selfIDBID) throws DbException {
@@ -145,8 +167,8 @@ public class MultipleIDBTest extends SystemTestBase {
     if (isHead) {
       ExchangePairID joinArrayID = ExchangePairID.newID();
       final SQLiteQueryScan scan1 =
-          new SQLiteQueryScan(null, "select * from " + RelationKey.of("test", "test", "r").toString("sqlite"),
-              tableSchema);
+          new SQLiteQueryScan("select * from "
+              + RelationKey.of("test", "test", "r").toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), tableSchema);
       final ShuffleProducer sp1 = new ShuffleProducer(scan1, joinArrayID, WORKER_ID, pf1);
       sc1 = new ShuffleConsumer(tableSchema, joinArrayID, WORKER_ID);
       workerPlan.get(0).add(sp1);
@@ -155,8 +177,8 @@ public class MultipleIDBTest extends SystemTestBase {
       sc1 = new ShuffleConsumer(tableSchema, receivingOpID, WORKER_ID);
     }
     final SQLiteQueryScan scan2 =
-        new SQLiteQueryScan(null, "select * from " + RelationKey.of("test", "test", initName).toString("sqlite"),
-            tableSchema);
+        new SQLiteQueryScan("select * from "
+            + RelationKey.of("test", "test", initName).toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), tableSchema);
     final ExchangePairID beforeIngress1 = ExchangePairID.newID();
     final ShuffleProducer sp2 = new ShuffleProducer(scan2, beforeIngress1, WORKER_ID, pf0);
     final ShuffleConsumer sc2 = new ShuffleConsumer(tableSchema, beforeIngress1, WORKER_ID);
@@ -165,11 +187,12 @@ public class MultipleIDBTest extends SystemTestBase {
     final ShuffleProducer sp3_worker2 = new ShuffleProducer(null, beforeIngress2, WORKER_ID, pf0);
     final ShuffleConsumer sc3_worker1 = new ShuffleConsumer(tableSchema, beforeIngress2, WORKER_ID);
     final ShuffleConsumer sc3_worker2 = new ShuffleConsumer(tableSchema, beforeIngress2, WORKER_ID);
-    final Consumer eosReceiver = new Consumer(getEOSReportSchema(), eosReceiverOpID, new int[] { WORKER_ID[0] });
+    final Consumer eosReceiver = new Consumer(Schema.EMPTY_SCHEMA, eosReceiverOpID, new int[] { WORKER_ID[0] });
+
     final IDBInput idbinput_worker1 =
-        new IDBInput(tableSchema, WORKER_ID[0], selfIDBID, eoiReceiverOpID, WORKER_ID[0], sc2, sc3_worker1, eosReceiver);
+        new IDBInput(selfIDBID, eoiReceiverOpID, WORKER_ID[0], sc2, sc3_worker1, eosReceiver);
     final IDBInput idbinput_worker2 =
-        new IDBInput(tableSchema, WORKER_ID[1], selfIDBID, eoiReceiverOpID, WORKER_ID[0], sc2, sc3_worker2, eosReceiver);
+        new IDBInput(selfIDBID, eoiReceiverOpID, WORKER_ID[0], sc2, sc3_worker2, eosReceiver);
 
     final ExchangePairID[] consumerIDs = new ExchangePairID[] { ExchangePairID.newID(), null, null };
     if (sendingOpID != null) {
@@ -179,24 +202,22 @@ public class MultipleIDBTest extends SystemTestBase {
       consumerIDs[2] = ExchangePairID.newID();
     }
     final LocalMultiwayProducer multiProducer_worker1 =
-        new LocalMultiwayProducer(idbinput_worker1, consumerIDs, WORKER_ID[0]);
+        new LocalMultiwayProducer(idbinput_worker1, removeNull(consumerIDs));
     final LocalMultiwayProducer multiProducer_worker2 =
-        new LocalMultiwayProducer(idbinput_worker2, consumerIDs, WORKER_ID[1]);
-    final LocalMultiwayConsumer send2join_worker1 =
-        new LocalMultiwayConsumer(tableSchema, consumerIDs[0], WORKER_ID[0]);
-    final LocalMultiwayConsumer send2join_worker2 =
-        new LocalMultiwayConsumer(tableSchema, consumerIDs[0], WORKER_ID[1]);
+        new LocalMultiwayProducer(idbinput_worker2, removeNull(consumerIDs));
+    final LocalMultiwayConsumer send2join_worker1 = new LocalMultiwayConsumer(tableSchema, consumerIDs[0]);
+    final LocalMultiwayConsumer send2join_worker2 = new LocalMultiwayConsumer(tableSchema, consumerIDs[0]);
     LocalMultiwayConsumer send2others_worker1 = null;
     LocalMultiwayConsumer send2others_worker2 = null;
     if (sendingOpID != null) {
-      send2others_worker1 = new LocalMultiwayConsumer(tableSchema, consumerIDs[1], WORKER_ID[0]);
-      send2others_worker2 = new LocalMultiwayConsumer(tableSchema, consumerIDs[1], WORKER_ID[1]);
+      send2others_worker1 = new LocalMultiwayConsumer(tableSchema, consumerIDs[1]);
+      send2others_worker2 = new LocalMultiwayConsumer(tableSchema, consumerIDs[1]);
     }
     LocalMultiwayConsumer send2server_worker1 = null;
     LocalMultiwayConsumer send2server_worker2 = null;
     if (serverReceivingOpID != null) {
-      send2server_worker1 = new LocalMultiwayConsumer(tableSchema, consumerIDs[2], WORKER_ID[0]);
-      send2server_worker2 = new LocalMultiwayConsumer(tableSchema, consumerIDs[2], WORKER_ID[1]);
+      send2server_worker1 = new LocalMultiwayConsumer(tableSchema, consumerIDs[2]);
+      send2server_worker2 = new LocalMultiwayConsumer(tableSchema, consumerIDs[2]);
     }
     final LocalJoin join_worker1 =
         new LocalJoin(sc1, send2join_worker1, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
@@ -205,8 +226,8 @@ public class MultipleIDBTest extends SystemTestBase {
     sp3_worker1.setChildren(new Operator[] { join_worker1 });
     sp3_worker2.setChildren(new Operator[] { join_worker2 });
 
-    workerPlan.get(0).addAll(Arrays.asList(new Operator[] { multiProducer_worker1, sp2, sp3_worker1 }));
-    workerPlan.get(1).addAll(Arrays.asList(new Operator[] { multiProducer_worker2, sp2, sp3_worker2 }));
+    workerPlan.get(0).addAll(Arrays.asList(new RootOperator[] { multiProducer_worker1, sp2, sp3_worker1 }));
+    workerPlan.get(1).addAll(Arrays.asList(new RootOperator[] { multiProducer_worker2, sp2, sp3_worker2 }));
 
     if (serverReceivingOpID != null) {
       final CollectProducer cp_worker1 = new CollectProducer(send2server_worker1, serverReceivingOpID, MASTER_ID);
@@ -223,7 +244,7 @@ public class MultipleIDBTest extends SystemTestBase {
   }
 
   @Test
-  public void joinChain() throws DbException, CatalogException, IOException {
+  public void joinChain() throws Exception {
     // EDB: R, A0, B0, C0
     // A := A0
     // A := R join A
@@ -251,33 +272,37 @@ public class MultipleIDBTest extends SystemTestBase {
     HashMap<Tuple, Integer> expectedResult = TestUtils.tupleBatchToTupleBag(c);
 
     // the query plan
-    final ArrayList<ArrayList<Operator>> workerPlan = new ArrayList<ArrayList<Operator>>();
-    workerPlan.add(new ArrayList<Operator>());
-    workerPlan.add(new ArrayList<Operator>());
-    final ExchangePairID eoiReceiverOpID = ExchangePairID.newID();
+    final ArrayList<ArrayList<RootOperator>> workerPlan = new ArrayList<ArrayList<RootOperator>>();
+    workerPlan.add(new ArrayList<RootOperator>());
+    workerPlan.add(new ArrayList<RootOperator>());
+    final ExchangePairID eoiReceiverOpID1 = ExchangePairID.newID();
+    final ExchangePairID eoiReceiverOpID2 = ExchangePairID.newID();
+    final ExchangePairID eoiReceiverOpID3 = ExchangePairID.newID();
     final ExchangePairID eosReceiverOpID_idb1 = ExchangePairID.newID();
     final ExchangePairID eosReceiverOpID_idb2 = ExchangePairID.newID();
     final ExchangePairID eosReceiverOpID_idb3 = ExchangePairID.newID();
     final ExchangePairID receivingAonB = ExchangePairID.newID();
     final ExchangePairID receivingBonC = ExchangePairID.newID();
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
-    generateJoinPlan(workerPlan, tableSchema, "a0", eoiReceiverOpID, true, receivingAonB, null, eosReceiverOpID_idb1,
+    generateJoinPlan(workerPlan, tableSchema, "a0", eoiReceiverOpID1, true, receivingAonB, null, eosReceiverOpID_idb1,
         null, 0);
-    generateJoinPlan(workerPlan, tableSchema, "b0", eoiReceiverOpID, false, receivingBonC, receivingAonB,
+    generateJoinPlan(workerPlan, tableSchema, "b0", eoiReceiverOpID2, false, receivingBonC, receivingAonB,
         eosReceiverOpID_idb2, null, 1);
-    generateJoinPlan(workerPlan, tableSchema, "c0", eoiReceiverOpID, false, null, receivingBonC, eosReceiverOpID_idb3,
+    generateJoinPlan(workerPlan, tableSchema, "c0", eoiReceiverOpID3, false, null, receivingBonC, eosReceiverOpID_idb3,
         serverReceiveID, 2);
 
-    final Consumer eoiReceiver = new Consumer(getEOIReportSchema(), eoiReceiverOpID, WORKER_ID);
+    final Consumer eoiReceiver1 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID1, WORKER_ID);
+    final Consumer eoiReceiver2 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID2, WORKER_ID);
+    final Consumer eoiReceiver3 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID3, WORKER_ID);
     final EOSController eosController =
-        new EOSController(eoiReceiver, eoiReceiverOpID, new ExchangePairID[] {
+        new EOSController(new Consumer[] { eoiReceiver1, eoiReceiver2, eoiReceiver3 }, new ExchangePairID[] {
             eosReceiverOpID_idb1, eosReceiverOpID_idb2, eosReceiverOpID_idb3 }, WORKER_ID);
     workerPlan.get(0).add(eosController);
 
-    HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
+    HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
 
-    workerPlans.put(WORKER_ID[0], new Operator[workerPlan.get(0).size()]);
-    workerPlans.put(WORKER_ID[1], new Operator[workerPlan.get(1).size()]);
+    workerPlans.put(WORKER_ID[0], new RootOperator[workerPlan.get(0).size()]);
+    workerPlans.put(WORKER_ID[1], new RootOperator[workerPlan.get(1).size()]);
     for (int i = 0; i < workerPlan.get(0).size(); ++i) {
       workerPlans.get(WORKER_ID[0])[i] = workerPlan.get(0).get(i);
     }
@@ -285,13 +310,24 @@ public class MultipleIDBTest extends SystemTestBase {
       workerPlans.get(WORKER_ID[1])[i] = workerPlan.get(1).get(i);
     }
 
-    final Long queryId = 0L;
-    server.dispatchWorkerQueryPlans(queryId, workerPlans);
-    LOGGER.debug("Query dispatched to the workers");
-    final CollectConsumer serverPlan = new CollectConsumer(tableSchema, serverReceiveID, WORKER_ID);
-    TupleBatchBuffer result = server.startServerQuery(queryId, serverPlan);
-    final HashMap<Tuple, Integer> actual = TestUtils.tupleBatchToTupleBag(result);
-    TestUtils.assertTupleBagEqual(expectedResult, actual);
+    final CollectConsumer serverCollect = new CollectConsumer(tableSchema, serverReceiveID, WORKER_ID);
+    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
+    final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
+    SinkRoot serverPlan = new SinkRoot(queueStore);
+
+    server.submitQueryPlan(serverPlan, workerPlans).sync();
+
+    TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
+    TupleBatch tb = null;
+    while (!receivedTupleBatches.isEmpty()) {
+      tb = receivedTupleBatches.poll();
+      if (tb != null) {
+        tb.compactInto(actualResult);
+      }
+    }
+    final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
+    TestUtils.assertTupleBagEqual(expectedResult, resultBag);
+
   }
 
   public TupleBatchBuffer getCircularJoinResult(TupleBatchBuffer a, TupleBatchBuffer b, TupleBatchBuffer c,
@@ -371,7 +407,7 @@ public class MultipleIDBTest extends SystemTestBase {
   }
 
   @Test
-  public void joinCircle() throws DbException, CatalogException, IOException {
+  public void joinCircle() throws Exception {
     // EDB: A0, B0, C0
     // A := A0
     // B := B0
@@ -396,10 +432,12 @@ public class MultipleIDBTest extends SystemTestBase {
     HashMap<Tuple, Integer> expectedResult = TestUtils.tupleBatchToTupleBag(tmp);
 
     // the query plan
-    final ArrayList<ArrayList<Operator>> workerPlan = new ArrayList<ArrayList<Operator>>();
-    workerPlan.add(new ArrayList<Operator>());
-    workerPlan.add(new ArrayList<Operator>());
-    final ExchangePairID eoiReceiverOpID = ExchangePairID.newID();
+    final ArrayList<ArrayList<RootOperator>> workerPlan = new ArrayList<ArrayList<RootOperator>>();
+    workerPlan.add(new ArrayList<RootOperator>());
+    workerPlan.add(new ArrayList<RootOperator>());
+    final ExchangePairID eoiReceiverOpID1 = ExchangePairID.newID();
+    final ExchangePairID eoiReceiverOpID2 = ExchangePairID.newID();
+    final ExchangePairID eoiReceiverOpID3 = ExchangePairID.newID();
     final ExchangePairID eosReceiverOpID_idb1 = ExchangePairID.newID();
     final ExchangePairID eosReceiverOpID_idb2 = ExchangePairID.newID();
     final ExchangePairID eosReceiverOpID_idb3 = ExchangePairID.newID();
@@ -407,22 +445,24 @@ public class MultipleIDBTest extends SystemTestBase {
     final ExchangePairID receivingBonC = ExchangePairID.newID();
     final ExchangePairID receivingConA = ExchangePairID.newID();
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
-    generateJoinPlan(workerPlan, tableSchema, "a0", eoiReceiverOpID, false, receivingAonB, receivingConA,
+    generateJoinPlan(workerPlan, tableSchema, "a0", eoiReceiverOpID1, false, receivingAonB, receivingConA,
         eosReceiverOpID_idb1, null, 0);
-    generateJoinPlan(workerPlan, tableSchema, "b0", eoiReceiverOpID, false, receivingBonC, receivingAonB,
+    generateJoinPlan(workerPlan, tableSchema, "b0", eoiReceiverOpID2, false, receivingBonC, receivingAonB,
         eosReceiverOpID_idb2, null, 1);
-    generateJoinPlan(workerPlan, tableSchema, "c0", eoiReceiverOpID, false, receivingConA, receivingBonC,
+    generateJoinPlan(workerPlan, tableSchema, "c0", eoiReceiverOpID3, false, receivingConA, receivingBonC,
         eosReceiverOpID_idb3, serverReceiveID, 2);
 
-    final Consumer eoiReceiver = new Consumer(getEOIReportSchema(), eoiReceiverOpID, WORKER_ID);
+    final Consumer eoiReceiver1 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID1, WORKER_ID);
+    final Consumer eoiReceiver2 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID2, WORKER_ID);
+    final Consumer eoiReceiver3 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID3, WORKER_ID);
     final EOSController eosController =
-        new EOSController(eoiReceiver, eoiReceiverOpID, new ExchangePairID[] {
+        new EOSController(new Consumer[] { eoiReceiver1, eoiReceiver2, eoiReceiver3 }, new ExchangePairID[] {
             eosReceiverOpID_idb1, eosReceiverOpID_idb2, eosReceiverOpID_idb3 }, WORKER_ID);
     workerPlan.get(0).add(eosController);
 
-    HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
-    workerPlans.put(WORKER_ID[0], new Operator[workerPlan.get(0).size()]);
-    workerPlans.put(WORKER_ID[1], new Operator[workerPlan.get(1).size()]);
+    HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
+    workerPlans.put(WORKER_ID[0], new RootOperator[workerPlan.get(0).size()]);
+    workerPlans.put(WORKER_ID[1], new RootOperator[workerPlan.get(1).size()]);
     for (int i = 0; i < workerPlan.get(0).size(); ++i) {
       workerPlans.get(WORKER_ID[0])[i] = workerPlan.get(0).get(i);
     }
@@ -430,26 +470,24 @@ public class MultipleIDBTest extends SystemTestBase {
       workerPlans.get(WORKER_ID[1])[i] = workerPlan.get(1).get(i);
     }
 
-    final Long queryId = 1L;
-    server.dispatchWorkerQueryPlans(queryId, workerPlans);
-    LOGGER.debug("Query dispatched to the workers");
-    final CollectConsumer serverPlan = new CollectConsumer(tableSchema, serverReceiveID, WORKER_ID);
-    TupleBatchBuffer result = server.startServerQuery(queryId, serverPlan);
-    final HashMap<Tuple, Integer> actual = TestUtils.tupleBatchToTupleBag(result);
-    TestUtils.assertTupleBagEqual(expectedResult, actual);
+    final CollectConsumer serverCollect = new CollectConsumer(tableSchema, serverReceiveID, WORKER_ID);
+    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
+    final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
+    SinkRoot serverPlan = new SinkRoot(queueStore);
+
+    server.submitQueryPlan(serverPlan, workerPlans).sync();
+
+    TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
+    TupleBatch tb = null;
+    while (!receivedTupleBatches.isEmpty()) {
+      tb = receivedTupleBatches.poll();
+      if (tb != null) {
+        tb.compactInto(actualResult);
+      }
+    }
+    final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
+    TestUtils.assertTupleBagEqual(expectedResult, resultBag);
+
   }
 
-  public Schema getEOIReportSchema() {
-    final ImmutableList<Type> types = ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE, Type.INT_TYPE);
-    final ImmutableList<String> columnNames = ImmutableList.of("idbID", "workerID", "numNewTuples");
-    final Schema schema = new Schema(types, columnNames);
-    return schema;
-  }
-
-  public Schema getEOSReportSchema() {
-    final ImmutableList<Type> types = ImmutableList.of(Type.BOOLEAN_TYPE);
-    final ImmutableList<String> columnNames = ImmutableList.of("EOS");
-    final Schema schema = new Schema(types, columnNames);
-    return schema;
-  }
 }

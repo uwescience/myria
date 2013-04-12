@@ -1,0 +1,9 @@
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?ee
+WHERE {
+  ?publication rdfs:seeAlso ?ee
+}
+ORDER BY ?ee
+LIMIT 10
+OFFSET 50

@@ -15,7 +15,16 @@ import edu.washington.escience.myriad.column.StringColumn;
  * private.
  */
 public enum Type implements Serializable {
+  /**
+   * int type.
+   * */
   INT_TYPE() {
+    /**
+     * @return true if valueInTuple op operand.
+     * @param op the operation
+     * @param valueInTuple the value to be compared in a tuple
+     * @param operand the operand
+     * */
     public boolean compare(final Predicate.Op op, final int valueInTuple, final int operand) {
       switch (op) {
         case EQUALS:
@@ -54,7 +63,16 @@ public enum Type implements Serializable {
     }
 
   },
+  /**
+   * float type.
+   * */
   FLOAT_TYPE() {
+    /**
+     * @return true if valueInTuple op operand.
+     * @param op the operation
+     * @param valueInTuple the value to be compared in a tuple
+     * @param operand the operand
+     * */
     public boolean compare(final Predicate.Op op, final float valueInTuple, final float operand) {
       switch (op) {
         case EQUALS:
@@ -93,7 +111,16 @@ public enum Type implements Serializable {
     }
 
   },
+  /**
+   * Double type.
+   * */
   DOUBLE_TYPE() {
+    /**
+     * @return true if valueInTuple op operand.
+     * @param op the operation
+     * @param valueInTuple the value to be compared in a tuple
+     * @param operand the operand
+     * */
     public boolean compare(final Predicate.Op op, final double valueInTuple, final double operand) {
       switch (op) {
         case EQUALS:
@@ -133,7 +160,16 @@ public enum Type implements Serializable {
     }
 
   },
+  /**
+   * Boolean type.
+   * */
   BOOLEAN_TYPE() {
+    /**
+     * @return true if valueInTuple op operand.
+     * @param op the operation
+     * @param valueInTuple the value to be compared in a tuple
+     * @param operand the operand
+     * */
     public boolean compare(final Predicate.Op op, final boolean valueInTuple, final boolean operand) {
       switch (op) {
         case EQUALS:
@@ -165,7 +201,17 @@ public enum Type implements Serializable {
       return ((BooleanColumn) column).getBoolean(tupleIndex) + "";
     }
   },
+
+  /**
+   * String type.
+   * */
   STRING_TYPE() {
+    /**
+     * @return true if valueInTuple op operand.
+     * @param op the operation
+     * @param valInTuple the value to be compared in a tuple
+     * @param operand the operand
+     * */
     public boolean compare(final Predicate.Op op, final String valInTuple, final String operand) {
 
       final int cmpVal = valInTuple.compareTo(operand);
@@ -208,7 +254,16 @@ public enum Type implements Serializable {
       return ((StringColumn) column).getString(tupleIndex);
     }
   },
+  /**
+   * Long type.
+   * */
   LONG_TYPE() {
+    /**
+     * @return true if valueInTuple op operand.
+     * @param op the operation
+     * @param valueInTuple the value to be compared in a tuple
+     * @param operand the operand
+     * */
     public boolean compare(final Predicate.Op op, final long valueInTuple, final long operand) {
       switch (op) {
         case EQUALS:
@@ -249,9 +304,18 @@ public enum Type implements Serializable {
   };
 
   /**
+   * @param op the operation.
+   * @param column the data column.
+   * @param tupleIndex the index.
+   * @param operand the operand constant.
    * @return true if the #tupleIndex tuple in column satisfy the predicate, else false.
    * */
   public abstract boolean filter(Predicate.Op op, Column<?> column, int tupleIndex, Object operand);
 
-  public abstract String toString(Column<?> column, int tupleIndex);
+  /**
+   * @return A string representation of the #tupleIndex value in column.
+   * @param column the columns
+   * @param tupleIndex the index
+   * */
+  public abstract String toString(final Column<?> column, final int tupleIndex);
 }

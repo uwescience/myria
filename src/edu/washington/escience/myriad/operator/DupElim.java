@@ -5,25 +5,57 @@ import java.util.BitSet;
 import java.util.HashMap;
 import java.util.List;
 
+import com.google.common.collect.ImmutableMap;
+
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 
+/**
+ * Duplicate elimination. It adds newly meet unique tuples into a buffer so that the source TupleBatches are not
+ * referenced. This implementation reduces memory consumption.
+ * */
 public final class DupElim extends Operator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
+  /**
+   * the child.
+   * */
   private Operator child;
 
+  /**
+   * Indices to unique tuples.
+   * */
   private transient HashMap<Integer, List<Integer>> uniqueTupleIndices;
+
+  /**
+   * The buffer for stroing unique tuples.
+   * */
   private transient TupleBatchBuffer uniqueTuples = null;
 
+  /**
+   * @param child the child.
+   * */
   public DupElim(final Operator child) {
     this.child = child;
   }
 
-  private boolean compareTuple(final int index, final List<Object> cntTuple) {
+  @Override
+  protected void cleanup() throws DbException {
+    uniqueTuples = null;
+    uniqueTupleIndices = null;
+  }
+
+  /**
+   * Check if a tuple in uniqueTuples equals to the comparing tuple (cntTuple).
+   * 
+   * @param index the index in uniqueTuples
+   * @param cntTuple a list representation of a tuple to compare
+   * @return true if equals.
+   * */
+  private boolean tupleEquals(final int index, final List<Object> cntTuple) {
     for (int i = 0; i < cntTuple.size(); ++i) {
       if (!(uniqueTuples.get(i, index)).equals(cntTuple.get(i))) {
         return false;
@@ -32,6 +64,12 @@ public final class DupElim extends Operator {
     return true;
   }
 
+  /**
+   * Do duplicate elimination for tb.
+   * 
+   * @param tb the TupleBatch for performing DupElim.
+   * @return the duplicate eliminated TB.
+   * */
   protected TupleBatch doDupElim(final TupleBatch tb) {
     final int numTuples = tb.numTuples();
     if (numTuples <= 0) {
@@ -58,7 +96,7 @@ public final class DupElim extends Operator {
       }
       boolean unique = true;
       for (final int oldTupleIndex : tupleIndexList) {
-        if (compareTuple(oldTupleIndex, cntTuple)) {
+        if (tupleEquals(oldTupleIndex, cntTuple)) {
           unique = false;
           break;
         }
@@ -76,7 +114,7 @@ public final class DupElim extends Operator {
   }
 
   @Override
-  protected TupleBatch fetchNext() throws DbException {
+  protected TupleBatch fetchNext() throws DbException, InterruptedException {
     TupleBatch tb = null;
     while ((tb = child.next()) != null) {
       tb = doDupElim(tb);
@@ -88,16 +126,15 @@ public final class DupElim extends Operator {
   }
 
   @Override
-  public TupleBatch fetchNextReady() throws DbException {
+  protected TupleBatch fetchNextReady() throws DbException {
     TupleBatch tb = null;
-    while (!eos() && child.nextReady()) {
-      tb = child.next();
+    tb = child.nextReady();
+    while (tb != null) {
       tb = doDupElim(tb);
       if (tb.numTuples() > 0) {
         return tb;
-      } else {
-        return null;
       }
+      tb = child.nextReady();
     }
     return null;
   }
@@ -113,13 +150,9 @@ public final class DupElim extends Operator {
   }
 
   @Override
-  public void init() throws DbException {
+  public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     uniqueTupleIndices = new HashMap<Integer, List<Integer>>();
     uniqueTuples = new TupleBatchBuffer(getSchema());
-  }
-
-  @Override
-  protected void cleanup() throws DbException {
   }
 
   @Override

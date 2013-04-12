@@ -14,7 +14,7 @@ public class BooleanColumnTest {
     original.put(true).put(false).put(true).put(false).put(false).put(false).put(false).put(false).put(true).put(false)
         .put(false).put(false).put(false).put(false);
     final ColumnMessage serialized = original.serializeToProto();
-    final BooleanColumn deserialized = new BooleanColumn(serialized);
+    final BooleanColumn deserialized = new BooleanColumn(serialized, original.size());
     assertTrue(original.toString().equals(deserialized.toString()));
   }
 

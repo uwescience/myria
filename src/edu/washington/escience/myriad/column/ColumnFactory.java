@@ -69,22 +69,23 @@ public final class ColumnFactory {
    * Deserializes a ColumnMessage into the appropriate Column.
    * 
    * @param message the ColumnMessage to be deserialized.
+   * @param numTuples num tuples in the column message
    * @return a Column of the appropriate type and contents.
    */
-  public static Column<?> columnFromColumnMessage(final ColumnMessage message) {
+  public static Column<?> columnFromColumnMessage(final ColumnMessage message, final int numTuples) {
     switch (message.getType()) {
       case BOOLEAN:
-        return new BooleanColumn(message);
+        return new BooleanColumn(message, numTuples);
       case DOUBLE:
-        return new DoubleColumn(message);
+        return new DoubleColumn(message, numTuples);
       case FLOAT:
-        return new FloatColumn(message);
+        return new FloatColumn(message, numTuples);
       case INT:
-        return new IntColumn(message);
+        return new IntColumn(message, numTuples);
       case LONG:
-        return new LongColumn(message);
+        return new LongColumn(message, numTuples);
       case STRING:
-        return new StringColumn(message);
+        return new StringColumn(message, numTuples);
     }
     return null;
   }

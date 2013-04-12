@@ -12,23 +12,23 @@ import edu.washington.escience.myriad.TupleBatchBuffer;
 public interface Aggregator extends Serializable {
 
   /**
-   * count.
+   * count. Count result is always of type {@link Type#LONG_TYPE}.
    * */
   int AGG_OP_COUNT = 0x01;
   /**
-   * min.
+   * min. Min result is always of the same type as the computed column.
    * */
   int AGG_OP_MIN = 0x02;
   /**
-   * max.
+   * max. Max result is always of the same type as the computed column.
    * */
   int AGG_OP_MAX = 0x04;
   /**
-   * sum.
+   * sum. Sum result is always of the same type as the computed column.
    * */
   int AGG_OP_SUM = 0x08;
   /**
-   * avg. All avg aggregates are of double type.
+   * avg. All avg aggregates are of {@link Type#DOUBLE_TYPE} type.
    * */
   int AGG_OP_AVG = 0x10;
   /**

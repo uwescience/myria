@@ -78,6 +78,7 @@ public final class RelationKey implements Serializable {
 
   @SuppressWarnings("unused")
   @Override
+  @Deprecated
   public String toString() {
     if (true) {
       throw new UnsupportedOperationException("Use toString(dbms)!");
@@ -116,10 +117,10 @@ public final class RelationKey implements Serializable {
    */
   public String toString(final String dbms) {
     switch (dbms) {
-      case "sqlite":
-      case "mysql":
+      case MyriaConstants.STORAGE_SYSTEM_SQLITE:
+      case MyriaConstants.STORAGE_SYSTEM_MYSQL:
         return toString('[', '#', ']');
-      case "monetdb":
+      case MyriaConstants.STORAGE_SYSTEM_MONETDB:
         return toString('\"', ' ', '\"');
       default:
         throw new IllegalArgumentException("Unsupported dbms " + dbms);

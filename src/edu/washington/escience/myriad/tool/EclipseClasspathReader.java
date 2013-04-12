@@ -13,9 +13,21 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+/**
+ * Read from the eclipse .classpath file and generate a java classpath string and library string.
+ * */
 public final class EclipseClasspathReader {
+  /**
+   * usage.
+   * */
   public static final String USAGE = "java EclipseClasspathReader [eclipse CP file path]";
 
+  /**
+   * entry point.
+   * 
+   * @param args commandline args.
+   * @throws IOException if file system error occurs.
+   * */
   public static void main(final String[] args) throws IOException {
     if (args.length < 1) {
       System.out.println(USAGE);
@@ -41,7 +53,7 @@ public final class EclipseClasspathReader {
       System.out.print(" -Djava.library.path=" + cp[1] + " ");
       // if another classpath is provided, use it instead of eclipse classpath
       if (args.length > 2) {
-        cp[0] = args[2] + ":" + cp[0].substring(cp[0].indexOf("build/eclipse") + 14);
+        cp[0] = args[2] + System.getProperty("path.separator") + cp[0].substring(cp[0].indexOf("build/eclipse") + 14);
       }
     } else if (needLibpath == 0) {
       cp[0] = cp[0].substring(cp[0].indexOf("build/eclipse") + 14);
@@ -49,6 +61,11 @@ public final class EclipseClasspathReader {
     System.out.print(" -classpath " + cp[0] + " ");
   }
 
+  /**
+   * @param eclipseClasspathXMLFile the eclipse .classpath file.
+   * @return [0] is the classpath and [1] is the lib path.
+   * @throws IOException if any IO errors.
+   * */
   public static String[] readEclipseClasspath(final File eclipseClasspathXMLFile) throws IOException {
 
     final DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
@@ -92,17 +109,20 @@ public final class EclipseClasspathReader {
     final StringBuilder libPathSB = new StringBuilder();
     for (int i = 0; i < attributeList.getLength(); i++) {
       final Node node = attributeList.item(i);
-      String value = null;
+
       if (node.getNodeType() == Node.ELEMENT_NODE
           && ("org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY".equals(((Element) node)
-              .getAttribute("name"))) && ((value = ((Element) node).getAttribute("value")) != null)) {
-        File f = new File(value);
-        while (value != null && value.length() > 0 && !f.exists()) {
-          value = value.substring(value.indexOf(File.separator) + 1);
-          f = new File(value);
-        }
-        if (f.exists()) {
-          libPathSB.append(f.getAbsolutePath() + separator);
+              .getAttribute("name")))) {
+        String value = ((Element) node).getAttribute("value");
+        if (value != null) {
+          File f = new File(value);
+          while (value != null && value.length() > 0 && !f.exists()) {
+            value = value.substring(value.indexOf(File.separator) + 1);
+            f = new File(value);
+          }
+          if (f.exists()) {
+            libPathSB.append(f.getAbsolutePath() + separator);
+          }
         }
       }
     }

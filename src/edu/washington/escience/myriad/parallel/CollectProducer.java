@@ -1,13 +1,8 @@
 package edu.washington.escience.myriad.parallel;
 
-import org.jboss.netty.channel.Channel;
-
 import edu.washington.escience.myriad.DbException;
-import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
-import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.util.IPCUtils;
 
@@ -19,117 +14,44 @@ import edu.washington.escience.myriad.util.IPCUtils;
  */
 public final class CollectProducer extends Producer {
 
-  /**
-   * The working thread, which executes the child operator and send the tuples to the paired CollectConsumer operator.
-   */
-  class WorkingThread extends Thread {
-    /** Constructor, set the thread name. */
-    public WorkingThread() {
-      super();
-      setName("CollectProducer-WorkingThread-" + getId());
-    }
-
-    @Override
-    public void run() {
-
-      final IPCConnectionPool connectionPool = getConnectionPool();
-      final Channel channel = connectionPool.reserveLongTermConnection(collectConsumerWorkerID);
-
-      final ExchangePairID operatorID = getOperatorIDs()[0];
-
-      try {
-
-        final TupleBatchBuffer buffer = new TupleBatchBuffer(getSchema());
-
-        TupleBatch tup = null;
-        TransportMessage dm = null;
-
-        while (!child.eos()) {
-          while ((tup = child.next()) != null) {
-            tup.compactInto(buffer);
-
-            while ((dm = buffer.popFilledAsTM(operatorID)) != null) {
-              channel.write(dm);
-            }
-          }
-
-          while ((dm = buffer.popAnyAsTM(operatorID)) != null) {
-            channel.write(dm);
-          }
-          if (child.eoi()) {
-            channel.write(IPCUtils.eoiTM(operatorID));
-            child.setEOI(false);
-          }
-        }
-
-        channel.write(IPCUtils.eosTM(operatorID));
-
-      } catch (final DbException e) {
-        e.printStackTrace();
-      } finally {
-        connectionPool.releaseLongTermConnection(channel);
-      }
-    }
-  }
-
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
-  private transient WorkingThread runningThread;
-
   /**
-   * The paired collect consumer address.
-   */
-  private final int collectConsumerWorkerID;
-
-  private Operator child;
-
+   * @param child the child who provides data for this producer to distribute.
+   * @param operatorID destination operator the data goes
+   * @param collectConsumerWorkerID destination worker the data goes.
+   * */
   public CollectProducer(final Operator child, final ExchangePairID operatorID, final int collectConsumerWorkerID) {
-    super(operatorID);
-    this.child = child;
-    this.collectConsumerWorkerID = collectConsumerWorkerID;
+    super(child, operatorID, collectConsumerWorkerID);
   }
 
   @Override
-  public void cleanup() {
-  }
+  protected void consumeTuples(final TupleBatch tb) throws DbException {
+    TransportMessage dm = null;
+    tb.compactInto(getBuffers()[0]);
 
-  @Override
-  protected TupleBatch fetchNext() throws DbException {
-    try {
-      // wait until the working thread terminate and return an empty tuple set
-      runningThread.join();
-    } catch (final InterruptedException e) {
-      e.printStackTrace();
+    while ((dm = getBuffers()[0].popFilledAsTM()) != null) {
+      getChannels()[0].write(dm);
     }
-
-    return null;
   }
 
   @Override
-  public TupleBatch fetchNextReady() throws DbException {
-    return fetchNext();
+  protected void childEOS() throws DbException {
+    TransportMessage dm = null;
+    while ((dm = getBuffers()[0].popAnyAsTM()) != null) {
+      getChannels()[0].write(dm);
+    }
+    getChannels()[0].write(IPCUtils.EOS);
   }
 
   @Override
-  public Operator[] getChildren() {
-    return new Operator[] { child };
-  }
-
-  @Override
-  public Schema getSchema() {
-    return child.getSchema();
-  }
-
-  @Override
-  public void init() throws DbException {
-    runningThread = new WorkingThread();
-    runningThread.start();
-  }
-
-  @Override
-  public void setChildren(final Operator[] children) {
-    child = children[0];
+  protected void childEOI() throws DbException {
+    TransportMessage dm = null;
+    while ((dm = getBuffers()[0].popAnyAsTM()) != null) {
+      getChannels()[0].write(dm);
+    }
+    getChannels()[0].write(IPCUtils.EOI);
   }
 
 }

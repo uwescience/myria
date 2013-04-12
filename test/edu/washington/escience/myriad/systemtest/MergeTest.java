@@ -2,26 +2,26 @@ package edu.washington.escience.myriad.systemtest;
 
 import static org.junit.Assert.assertTrue;
 
-import java.io.IOException;
 import java.util.HashMap;
 
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.Merge;
 import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
+import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
-import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
+import edu.washington.escience.myriad.parallel.ExchangePairID;
 import edu.washington.escience.myriad.util.TestUtils;
 
 public class MergeTest extends SystemTestBase {
@@ -32,7 +32,7 @@ public class MergeTest extends SystemTestBase {
   private final int numTbl2 = 82;
 
   @Test
-  public void mergeTest() throws DbException, CatalogException, IOException {
+  public void mergeTest() throws Exception {
 
     final ImmutableList<Type> table1Types = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
     final ImmutableList<String> table1ColumnNames = ImmutableList.of("follower", "followee");
@@ -67,23 +67,24 @@ public class MergeTest extends SystemTestBase {
     }
 
     final SQLiteQueryScan scan1 =
-        new SQLiteQueryScan(null, "select * from " + testtable0Key.toString("sqlite"), tableSchema);
+        new SQLiteQueryScan("select * from " + testtable0Key.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE),
+            tableSchema);
     final SQLiteQueryScan scan2 =
-        new SQLiteQueryScan(null, "select * from " + testtable1Key.toString("sqlite"), tableSchema);
-    final Merge merge = new Merge(tableSchema, scan1, scan2);
+        new SQLiteQueryScan("select * from " + testtable1Key.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE),
+            tableSchema);
+    final Merge merge = new Merge(new Operator[] { scan1, scan2 });
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final CollectProducer cp = new CollectProducer(merge, serverReceiveID, MASTER_ID);
 
-    final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
-    workerPlans.put(WORKER_ID[0], new Operator[] { cp });
+    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
+    workerPlans.put(WORKER_ID[0], new RootOperator[] { cp });
 
-    final Long queryId = 0L;
+    final CollectConsumer serverCollect = new CollectConsumer(tableSchema, serverReceiveID, new int[] { WORKER_ID[0] });
 
-    final CollectConsumer serverPlan = new CollectConsumer(tableSchema, serverReceiveID, new int[] { WORKER_ID[0] });
-    server.dispatchWorkerQueryPlans(queryId, workerPlans);
-    LOGGER.debug("Query dispatched to the workers");
-    TupleBatchBuffer result = server.startServerQuery(queryId, serverPlan);
+    final SinkRoot serverPlan = new SinkRoot(serverCollect);
 
-    assertTrue(result.numTuples() == (numTbl1 + numTbl2));
+    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    assertTrue(serverPlan.getCount() == (numTbl1 + numTbl2));
+
   }
 }

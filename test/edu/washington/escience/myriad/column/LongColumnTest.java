@@ -14,7 +14,7 @@ public class LongColumnTest {
     original.put("First").put("Second").put("Third").put("NextIsEmptyString").put("").put(
         "VeryVeryVeryVeryVeryVeryVeryVeryLongLast");
     final ColumnMessage serialized = original.serializeToProto();
-    final StringColumn deserialized = new StringColumn(serialized);
+    final StringColumn deserialized = new StringColumn(serialized, original.size());
     assertTrue(original.toString().equals(deserialized.toString()));
   }
 

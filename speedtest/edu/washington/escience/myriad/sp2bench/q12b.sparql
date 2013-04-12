@@ -1,0 +1,25 @@
+PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#> 
+PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+PREFIX dc:   <http://purl.org/dc/elements/1.1/>
+
+ASK {
+  ?erdoes rdf:type foaf:Person .
+  ?erdoes foaf:name "Paul Erdoes"^^xsd:string .
+  {
+    ?document dc:creator ?erdoes .
+    ?document dc:creator ?author .
+    ?document2 dc:creator ?author .
+    ?document2 dc:creator ?author2 .
+    ?author2 foaf:name ?name
+    FILTER (?author!=?erdoes &&
+            ?document2!=?document &&
+            ?author2!=?erdoes &&
+            ?author2!=?author)
+  } UNION {
+    ?document dc:creator ?erdoes .
+    ?document dc:creator ?author .
+    ?author foaf:name ?name 
+    FILTER (?author!=?erdoes)
+  }
+}

@@ -1,30 +1,31 @@
 package edu.washington.escience.myriad.systemtest;
 
-import java.io.IOException;
 import java.util.HashMap;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
-import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
+import edu.washington.escience.myriad.operator.SinkRoot;
+import edu.washington.escience.myriad.operator.TBQueueExporter;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
-import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
+import edu.washington.escience.myriad.parallel.ExchangePairID;
 import edu.washington.escience.myriad.util.TestUtils;
 
 public class CollectTest extends SystemTestBase {
 
   @Test
-  public void collectTest() throws DbException, IOException, CatalogException {
+  public void collectTest() throws Exception {
     final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
     createTable(WORKER_ID[0], testtableKey, "id long, name varchar(20)");
     createTable(WORKER_ID[1], testtableKey, "id long, name varchar(20)");
@@ -55,23 +56,29 @@ public class CollectTest extends SystemTestBase {
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
 
     final SQLiteQueryScan scanTable =
-        new SQLiteQueryScan(null, "select * from " + testtableKey.toString("sqlite"), schema);
+        new SQLiteQueryScan("select * from " + testtableKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), schema);
 
-    final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
+    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
     final CollectProducer cp1 = new CollectProducer(scanTable, serverReceiveID, MASTER_ID);
-    workerPlans.put(WORKER_ID[0], new Operator[] { cp1 });
-    workerPlans.put(WORKER_ID[1], new Operator[] { cp1 });
+    workerPlans.put(WORKER_ID[0], new RootOperator[] { cp1 });
+    workerPlans.put(WORKER_ID[1], new RootOperator[] { cp1 });
 
-    final Long queryId = 0L;
+    final CollectConsumer serverCollect = new CollectConsumer(schema, serverReceiveID, WORKER_ID);
+    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
+    final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
+    SinkRoot serverPlan = new SinkRoot(queueStore);
 
-    final CollectConsumer serverPlan = new CollectConsumer(schema, serverReceiveID, WORKER_ID);
-    server.dispatchWorkerQueryPlans(queryId, workerPlans);
-    LOGGER.debug("Query dispatched to the workers");
-    TupleBatchBuffer result = server.startServerQuery(queryId, serverPlan);
+    server.submitQueryPlan(serverPlan, workerPlans).sync();
 
-    final HashMap<Tuple, Integer> resultSet = TestUtils.tupleBatchToTupleBag(result);
-
-    TestUtils.assertTupleBagEqual(expectedResults, resultSet);
+    TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
+    while (!receivedTupleBatches.isEmpty()) {
+      tb = receivedTupleBatches.poll();
+      if (tb != null) {
+        tb.compactInto(actualResult);
+      }
+    }
+    final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
+    TestUtils.assertTupleBagEqual(expectedResults, resultBag);
 
   }
 }

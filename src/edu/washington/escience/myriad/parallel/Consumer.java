@@ -1,20 +1,25 @@
 package edu.washington.escience.myriad.parallel;
 
 import java.util.BitSet;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ImmutableMap;
+
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.operator.LeafOperator;
-import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
+import gnu.trove.impl.unmodifiable.TUnmodifiableIntIntMap;
+import gnu.trove.map.TIntIntMap;
+import gnu.trove.map.hash.TIntIntHashMap;
 
+/**
+ * A Consumer is the counterpart of a producer. It collects data from Producers through IPC. A Consumer can have a
+ * single Producer data source or multiple Producer data sources.
+ * */
 public class Consumer extends LeafOperator {
 
   /** The logger for this class. Defaults to myriad level, but could be set to a finer granularity if needed. */
@@ -26,66 +31,88 @@ public class Consumer extends LeafOperator {
    * The buffer for receiving ExchangeMessages. This buffer should be assigned by the Worker. Basically, buffer =
    * Worker.inBuffer.get(this.getOperatorID())
    */
-  private transient volatile LinkedBlockingQueue<ExchangeData> inputBuffer;
+  private transient volatile InputBuffer<TupleBatch, ExchangeData> inputBuffer;
 
+  /**
+   * The operatorID of this Consumer.
+   * */
   private final ExchangePairID operatorID;
-  private final Schema schema;
-  private final BitSet workerEOS;
-  private final BitSet workerEOI;
-  private final Map<Integer, Integer> workerIdToIndex;
 
+  /**
+   * The output schema.
+   * */
+  private final Schema schema;
+  /**
+   * Recording the worker EOS status.
+   * */
+  private transient BitSet workerEOS;
+  /**
+   * Recording the worker EOI status.
+   * */
+  private transient BitSet workerEOI;
+  /**
+   * workerID to index.
+   * */
+  private transient TIntIntMap workerIdToIndex;
+  /**
+   * From which workers to receive data.
+   * */
+  private final int[] sourceWorkers;
+
+  /**
+   * the consumer channels, for recording the mapping between ExchangeChannelIDs to a Consumer instances.
+   * */
+  private transient ConsumerChannel[] exchangeChannels;
+
+  /**
+   * @return my exchange channels.
+   */
+  public final ConsumerChannel[] getExchangeChannels() {
+    return exchangeChannels;
+  }
+
+  /**
+   * @param exchangeChannels my exchange channels.
+   */
+  public final void setExchangeChannels(final ConsumerChannel[] exchangeChannels) {
+    this.exchangeChannels = exchangeChannels;
+  }
+
+  /**
+   * @param schema output schema.
+   * @param operatorID {@link Consumer#operatorID}
+   * @param workerIDs {@link Consumer#sourceWorkers}
+   * */
   public Consumer(final Schema schema, final ExchangePairID operatorID, final int[] workerIDs) {
     this.operatorID = operatorID;
     this.schema = schema;
-    workerIdToIndex = new HashMap<Integer, Integer>();
-    int idx = 0;
-    for (final int w : workerIDs) {
-      workerIdToIndex.put(w, idx++);
-    }
-    workerEOS = new BitSet(workerIDs.length);
-    workerEOI = new BitSet(workerIDs.length);
+    sourceWorkers = workerIDs;
     LOGGER.trace("created Consumer for ExchangePairId=" + operatorID);
   }
 
   @Override
-  public void cleanup() {
+  public final void cleanup() {
     setInputBuffer(null);
     workerEOS.clear();
     workerEOI.clear();
   }
 
   @Override
-  protected TupleBatch fetchNext() throws DbException {
-    try {
-      return getTuples(true);
-    } catch (final InterruptedException e) {
-      e.printStackTrace();
-      Thread.currentThread().interrupt();
-      throw new DbException(e);
+  protected final void init(final ImmutableMap<String, Object> execUnitEnv) throws DbException {
+    workerEOS = new BitSet(sourceWorkers.length);
+    workerEOI = new BitSet(sourceWorkers.length);
+
+    TIntIntMap tmp = new TIntIntHashMap();
+    int idx = 0;
+    for (int sourceWorker : sourceWorkers) {
+      tmp.put(sourceWorker, idx++);
     }
+    workerIdToIndex = new TUnmodifiableIntIntMap(tmp);
   }
 
   @Override
-  public final Schema getSchema() {
-    return schema;
-  }
-
-  @Override
-  public void init() throws DbException {
-  }
-
-  @Override
-  public TupleBatch fetchNextReady() throws DbException {
-    if (!eos()) {
-      try {
-        return getTuples(false);
-      } catch (final InterruptedException e) {
-        e.printStackTrace();
-        Thread.currentThread().interrupt();
-        throw new DbException(e.getLocalizedMessage());
-      }
-    }
-    return null;
+  protected final TupleBatch fetchNext() throws DbException, InterruptedException {
+    return getTuplesNormal(true);
   }
 
   /**
@@ -100,63 +127,128 @@ public class Consumer extends LeafOperator {
    * 
    * @throws InterruptedException a
    */
-  TupleBatch getTuples(final boolean blocking) throws InterruptedException {
+  final TupleBatch getTuplesNormal(final boolean blocking) throws InterruptedException {
     int timeToWait = -1;
     if (!blocking) {
       timeToWait = 0;
     }
 
     ExchangeData tb = null;
-    tb = take(timeToWait);
-    if (tb != null) {
+    TupleBatch result = null;
+    while ((tb = take(timeToWait)) != null) {
+      int sourceWorkerIdx = workerIdToIndex.get(tb.getSourceIPCID());
+
       if (tb.isEos()) {
-        workerEOS.set(workerIdToIndex.get(tb.getWorkerID()));
-        return null;
+        workerEOS.set(sourceWorkerIdx);
+        checkEOSAndEOI();
+        if (eos() || eoi()) {
+          break;
+        }
       } else if (tb.isEoi()) {
-        workerEOI.set(workerIdToIndex.get(tb.getWorkerID()));
-        return null;
+        workerEOI.set(sourceWorkerIdx);
+        checkEOSAndEOI();
+        if (eoi()) {
+          break;
+        }
       } else {
-        return tb.getRealData();
+        result = tb.getData();
+        break;
       }
-    } else {
-      // i.e. blocking = false. if blocking = true then tb is either a TupleBatch or a message
-      return null;
     }
+
+    return result;
   }
 
   @Override
-  public void checkEOSAndEOI() {
-    if (workerEOS.nextClearBit(0) == workerIdToIndex.size()) {
-      setEOS(true);
+  public final void checkEOSAndEOI() {
+
+    if (workerEOS.nextClearBit(0) >= sourceWorkers.length) {
+      setEOS();
       return;
     }
     BitSet tmp = (BitSet) workerEOI.clone();
     tmp.or(workerEOS);
     // EOS could be used as an EOI
-    if (tmp.nextClearBit(0) == workerIdToIndex.size()) {
+    if (tmp.nextClearBit(0) >= sourceWorkers.length) {
       setEOI(true);
       workerEOI.clear();
     }
   }
 
-  public ExchangePairID getOperatorID() {
+  /**
+   * @return my IPC operatorID.
+   * */
+  public final ExchangePairID getOperatorID() {
     return operatorID;
   }
 
-  public void setInputBuffer(final LinkedBlockingQueue<ExchangeData> buffer) {
+  /**
+   * @param myWorkerID for parsing self-references.
+   * @return source worker IDs with self-reference parsed.
+   * */
+  public final int[] getSourceWorkers(final int myWorkerID) {
+    int[] result = new int[sourceWorkers.length];
+    int idx = 0;
+    for (int workerID : sourceWorkers) {
+      if (workerID >= 0) {
+        result[idx++] = workerID;
+      } else {
+        result[idx++] = myWorkerID;
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * set the input buffer.
+   * 
+   * @param buffer my input buffer.
+   * */
+  public final void setInputBuffer(final InputBuffer<TupleBatch, ExchangeData> buffer) {
     inputBuffer = buffer;
+  }
+
+  /**
+   * @return my input buffer.
+   * */
+  public final InputBuffer<TupleBatch, ExchangeData> getInputBuffer() {
+    return inputBuffer;
   }
 
   /**
    * Read a single ExchangeMessage from the queue that buffers incoming ExchangeMessages.
    * 
    * @param timeout Wait for at most timeout milliseconds. If the timeout is negative, wait until an element arrives.
+   * @return received data.
+   * @throws InterruptedException if interrupted.
    */
-  public ExchangeData take(final int timeout) throws InterruptedException {
-    if (timeout >= 0) {
-      return inputBuffer.poll(timeout, TimeUnit.MILLISECONDS);
+  private ExchangeData take(final int timeout) throws InterruptedException {
+    ExchangeData result = null;
+    if (timeout == 0) {
+      result = inputBuffer.poll();
+    } else if (timeout > 0) {
+      result = inputBuffer.poll(timeout, TimeUnit.MILLISECONDS);
     } else {
-      return inputBuffer.take();
+      result = inputBuffer.take();
     }
+
+    return result;
   }
+
+  @Override
+  protected final TupleBatch fetchNextReady() throws DbException {
+    try {
+      return getTuplesNormal(false);
+    } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
+    return null;
+  }
+
+  @Override
+  public final Schema getSchema() {
+    return schema;
+  }
+
 }

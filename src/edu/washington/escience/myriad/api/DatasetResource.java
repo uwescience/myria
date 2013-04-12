@@ -101,6 +101,9 @@ public final class DatasetResource {
       MyriaApiUtils.getServer().ingestDataset(dataset.relationKey, dataset.schema, dataset.data);
     } catch (CatalogException e) {
       throw new WebApplicationException(Response.status(Status.INTERNAL_SERVER_ERROR).entity(e.getMessage()).build());
+    } catch (InterruptedException ee) {
+      Thread.currentThread().interrupt();
+      ee.printStackTrace();
     }
 
     /* In the response, tell the client the path to the relation. */

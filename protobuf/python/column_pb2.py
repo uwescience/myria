@@ -11,7 +11,7 @@ from google.protobuf import descriptor_pb2
 DESCRIPTOR = descriptor.FileDescriptor(
   name='column.proto',
   package='',
-  serialized_pb='\n\x0c\x63olumn.proto\"\x9f\x01\n\x0b\x44\x61taMessage\x12*\n\x04type\x18\x01 \x02(\x0e\x32\x1c.DataMessage.DataMessageType\x12\x12\n\noperatorID\x18\x02 \x02(\x03\x12\x1f\n\x07\x63olumns\x18\x03 \x03(\x0b\x32\x0e.ColumnMessage\"/\n\x0f\x44\x61taMessageType\x12\x07\n\x03\x45OS\x10\x00\x12\n\n\x06NORMAL\x10\x01\x12\x07\n\x03\x45OI\x10\x02\"\xaf\x03\n\rColumnMessage\x12.\n\x04type\x18\x01 \x02(\x0e\x32 .ColumnMessage.ColumnMessageType\x12\x12\n\nnum_tuples\x18\x02 \x02(\r\x12%\n\nint_column\x18\x03 \x01(\x0b\x32\x11.IntColumnMessage\x12\'\n\x0blong_column\x18\x04 \x01(\x0b\x32\x12.LongColumnMessage\x12)\n\x0c\x66loat_column\x18\x05 \x01(\x0b\x32\x13.FloatColumnMessage\x12+\n\rdouble_column\x18\x06 \x01(\x0b\x32\x14.DoubleColumnMessage\x12+\n\rstring_column\x18\x07 \x01(\x0b\x32\x14.StringColumnMessage\x12-\n\x0e\x62oolean_column\x18\x08 \x01(\x0b\x32\x15.BooleanColumnMessage\"V\n\x11\x43olumnMessageType\x12\x07\n\x03INT\x10\x00\x12\x08\n\x04LONG\x10\x01\x12\t\n\x05\x46LOAT\x10\x02\x12\n\n\x06\x44OUBLE\x10\x03\x12\n\n\x06STRING\x10\x04\x12\x0b\n\x07\x42OOLEAN\x10\x05\" \n\x10IntColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\"!\n\x11LongColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\"\"\n\x12\x46loatColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\"#\n\x13\x44oubleColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\"O\n\x13StringColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\x12\x15\n\rstart_indices\x18\x02 \x02(\x0c\x12\x13\n\x0b\x65nd_indices\x18\x03 \x02(\x0c\"$\n\x14\x42ooleanColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\x42\x31\n$edu.washington.escience.myriad.protoB\tDataProto')
+  serialized_pb='\n\x0c\x63olumn.proto\"\xbc\x01\n\x0b\x44\x61taMessage\x12*\n\x04type\x18\x01 \x02(\x0e\x32\x1c.DataMessage.DataMessageType\x12\x12\n\noperatorID\x18\x02 \x01(\x04\x12\x1f\n\x07\x63olumns\x18\x03 \x03(\x0b\x32\x0e.ColumnMessage\x12\x12\n\nnum_tuples\x18\x04 \x01(\r\"8\n\x0f\x44\x61taMessageType\x12\x07\n\x03\x45OS\x10\x00\x12\n\n\x06NORMAL\x10\x01\x12\x07\n\x03\x45OI\x10\x02\x12\x07\n\x03\x42OS\x10\x03\"\x9b\x03\n\rColumnMessage\x12.\n\x04type\x18\x01 \x02(\x0e\x32 .ColumnMessage.ColumnMessageType\x12%\n\nint_column\x18\x03 \x01(\x0b\x32\x11.IntColumnMessage\x12\'\n\x0blong_column\x18\x04 \x01(\x0b\x32\x12.LongColumnMessage\x12)\n\x0c\x66loat_column\x18\x05 \x01(\x0b\x32\x13.FloatColumnMessage\x12+\n\rdouble_column\x18\x06 \x01(\x0b\x32\x14.DoubleColumnMessage\x12+\n\rstring_column\x18\x07 \x01(\x0b\x32\x14.StringColumnMessage\x12-\n\x0e\x62oolean_column\x18\x08 \x01(\x0b\x32\x15.BooleanColumnMessage\"V\n\x11\x43olumnMessageType\x12\x07\n\x03INT\x10\x00\x12\x08\n\x04LONG\x10\x01\x12\t\n\x05\x46LOAT\x10\x02\x12\n\n\x06\x44OUBLE\x10\x03\x12\n\n\x06STRING\x10\x04\x12\x0b\n\x07\x42OOLEAN\x10\x05\" \n\x10IntColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\"!\n\x11LongColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\"\"\n\x12\x46loatColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\"#\n\x13\x44oubleColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\"O\n\x13StringColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\x12\x15\n\rstart_indices\x18\x02 \x02(\x0c\x12\x13\n\x0b\x65nd_indices\x18\x03 \x02(\x0c\"$\n\x14\x42ooleanColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\x42\x31\n$edu.washington.escience.myriad.protoB\tDataProto')
 
 
 
@@ -33,11 +33,15 @@ _DATAMESSAGE_DATAMESSAGETYPE = descriptor.EnumDescriptor(
       name='EOI', index=2, number=2,
       options=None,
       type=None),
+    descriptor.EnumValueDescriptor(
+      name='BOS', index=3, number=3,
+      options=None,
+      type=None),
   ],
   containing_type=None,
   options=None,
-  serialized_start=129,
-  serialized_end=176,
+  serialized_start=149,
+  serialized_end=205,
 )
 
 _COLUMNMESSAGE_COLUMNMESSAGETYPE = descriptor.EnumDescriptor(
@@ -73,8 +77,8 @@ _COLUMNMESSAGE_COLUMNMESSAGETYPE = descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=524,
-  serialized_end=610,
+  serialized_start=533,
+  serialized_end=619,
 )
 
 
@@ -94,7 +98,7 @@ _DATAMESSAGE = descriptor.Descriptor(
       options=None),
     descriptor.FieldDescriptor(
       name='operatorID', full_name='DataMessage.operatorID', index=1,
-      number=2, type=3, cpp_type=2, label=2,
+      number=2, type=4, cpp_type=4, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -103,6 +107,13 @@ _DATAMESSAGE = descriptor.Descriptor(
       name='columns', full_name='DataMessage.columns', index=2,
       number=3, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    descriptor.FieldDescriptor(
+      name='num_tuples', full_name='DataMessage.num_tuples', index=3,
+      number=4, type=13, cpp_type=3, label=1,
+      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
@@ -117,7 +128,7 @@ _DATAMESSAGE = descriptor.Descriptor(
   is_extendable=False,
   extension_ranges=[],
   serialized_start=17,
-  serialized_end=176,
+  serialized_end=205,
 )
 
 
@@ -136,49 +147,42 @@ _COLUMNMESSAGE = descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
-      name='num_tuples', full_name='ColumnMessage.num_tuples', index=1,
-      number=2, type=13, cpp_type=3, label=2,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    descriptor.FieldDescriptor(
-      name='int_column', full_name='ColumnMessage.int_column', index=2,
+      name='int_column', full_name='ColumnMessage.int_column', index=1,
       number=3, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
-      name='long_column', full_name='ColumnMessage.long_column', index=3,
+      name='long_column', full_name='ColumnMessage.long_column', index=2,
       number=4, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
-      name='float_column', full_name='ColumnMessage.float_column', index=4,
+      name='float_column', full_name='ColumnMessage.float_column', index=3,
       number=5, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
-      name='double_column', full_name='ColumnMessage.double_column', index=5,
+      name='double_column', full_name='ColumnMessage.double_column', index=4,
       number=6, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
-      name='string_column', full_name='ColumnMessage.string_column', index=6,
+      name='string_column', full_name='ColumnMessage.string_column', index=5,
       number=7, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
-      name='boolean_column', full_name='ColumnMessage.boolean_column', index=7,
+      name='boolean_column', full_name='ColumnMessage.boolean_column', index=6,
       number=8, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
@@ -194,8 +198,8 @@ _COLUMNMESSAGE = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=179,
-  serialized_end=610,
+  serialized_start=208,
+  serialized_end=619,
 )
 
 
@@ -222,8 +226,8 @@ _INTCOLUMNMESSAGE = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=612,
-  serialized_end=644,
+  serialized_start=621,
+  serialized_end=653,
 )
 
 
@@ -250,8 +254,8 @@ _LONGCOLUMNMESSAGE = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=646,
-  serialized_end=679,
+  serialized_start=655,
+  serialized_end=688,
 )
 
 
@@ -278,8 +282,8 @@ _FLOATCOLUMNMESSAGE = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=681,
-  serialized_end=715,
+  serialized_start=690,
+  serialized_end=724,
 )
 
 
@@ -306,8 +310,8 @@ _DOUBLECOLUMNMESSAGE = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=717,
-  serialized_end=752,
+  serialized_start=726,
+  serialized_end=761,
 )
 
 
@@ -348,8 +352,8 @@ _STRINGCOLUMNMESSAGE = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=754,
-  serialized_end=833,
+  serialized_start=763,
+  serialized_end=842,
 )
 
 
@@ -376,8 +380,8 @@ _BOOLEANCOLUMNMESSAGE = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=835,
-  serialized_end=871,
+  serialized_start=844,
+  serialized_end=880,
 )
 
 _DATAMESSAGE.fields_by_name['type'].enum_type = _DATAMESSAGE_DATAMESSAGETYPE
