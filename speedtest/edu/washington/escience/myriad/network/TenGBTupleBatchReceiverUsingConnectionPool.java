@@ -1,6 +1,5 @@
 package edu.washington.escience.myriad.network;
 
-import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -11,32 +10,31 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnFactory;
-import edu.washington.escience.myriad.parallel.IPCConnectionPool;
 import edu.washington.escience.myriad.parallel.SocketInfo;
-import edu.washington.escience.myriad.parallel.Worker.MessageWrapper;
+import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
+import edu.washington.escience.myriad.util.QueueBasedMessageHandler.TestMessageWrapper;
+import edu.washington.escience.myriad.util.TestUtils;
 
 public class TenGBTupleBatchReceiverUsingConnectionPool {
 
   public static final int PORT = 19901;
 
-  public static void main(final String[] args) throws IOException, InterruptedException {
+  public static void main(final String[] args) throws Exception {
 
     final String senderHostName = args[0];
 
-    final LinkedBlockingQueue<MessageWrapper> messageQueue = new LinkedBlockingQueue<MessageWrapper>();
+    final LinkedBlockingQueue<TestMessageWrapper> messageQueue = new LinkedBlockingQueue<TestMessageWrapper>();
     final HashMap<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
     computingUnits.put(0, new SocketInfo(InetAddress.getLocalHost().getHostName(), PORT));
     computingUnits.put(1, new SocketInfo(senderHostName, TenGBTupleBatchSenderUsingConnectionPool.PORT));
 
-    final IPCConnectionPool connectionPool = new IPCConnectionPool(0, computingUnits, messageQueue);
-
-    connectionPool.start();
+    final IPCConnectionPool connectionPool = TestUtils.startIPCConnectionPool(0, computingUnits, messageQueue);
 
     long numReceived = 0;
-    MessageWrapper m = null;
+    TestMessageWrapper m = null;
 
     long start = 0;
     long end = 0;
@@ -67,7 +65,7 @@ public class TenGBTupleBatchReceiverUsingConnectionPool {
             final Column<?>[] columnArray = new Column[columnMessages.size()];
             int idx = 0;
             for (final ColumnMessage cm : columnMessages) {
-              columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm);
+              columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm, data.getNumTuples());
             }
             final TupleBatch tb =
                 new TupleBatch(TenGBTupleBatchSenderUsingConnectionPool.schema, Arrays.asList(columnArray),
@@ -87,6 +85,6 @@ public class TenGBTupleBatchReceiverUsingConnectionPool {
     if (tbb.numTuples() > 1000) {
       System.out.println("Just to make use of tbb so that java won't do smart optimizations");
     }
-    connectionPool.shutdown().awaitUninterruptibly();
+    connectionPool.shutdown().await();
   }
 }

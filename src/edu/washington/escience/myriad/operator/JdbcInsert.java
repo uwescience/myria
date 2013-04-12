@@ -3,7 +3,8 @@ package edu.washington.escience.myriad.operator;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Objects;
-import java.util.concurrent.ExecutorService;
+
+import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.RelationKey;
@@ -41,12 +42,10 @@ public final class JdbcInsert extends RootOperator {
    * @param child the source of tuples to be inserted.
    * @param relationKey the key of the table the tuples should be inserted into.
    * @param jdbcInfo the parameters of the JDBC connection.
-   * @param executor the ExecutorService for this process.
    * @throws DbException if there is a problem inserting the tuples.
    */
-  public JdbcInsert(final Operator child, final RelationKey relationKey, final JdbcInfo jdbcInfo,
-      final ExecutorService executor) throws DbException {
-    this(child, relationKey, jdbcInfo, executor, false);
+  public JdbcInsert(final Operator child, final RelationKey relationKey, final JdbcInfo jdbcInfo) throws DbException {
+    this(child, relationKey, jdbcInfo, false);
   }
 
   /**
@@ -58,13 +57,12 @@ public final class JdbcInsert extends RootOperator {
    * @param child the source of tuples to be inserted.
    * @param relationKey the key of the table the tuples should be inserted into.
    * @param jdbcInfo the parameters of the JDBC connection.
-   * @param executor the ExecutorService for this process.
    * @param overwriteTable whether to overwrite a table that already exists.
    * @throws DbException if there is an error opening the Jdbc Connection.
    */
   public JdbcInsert(final Operator child, final RelationKey relationKey, final JdbcInfo jdbcInfo,
-      final ExecutorService executor, final boolean overwriteTable) throws DbException {
-    super(child, executor);
+      final boolean overwriteTable) throws DbException {
+    super(child);
     Objects.requireNonNull(child);
     Objects.requireNonNull(relationKey);
     Objects.requireNonNull(jdbcInfo);
@@ -88,7 +86,7 @@ public final class JdbcInsert extends RootOperator {
   }
 
   @Override
-  public void init() throws DbException {
+  protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     /* Set up the insert statement. */
     insertString = JdbcUtils.insertStatementFromSchema(getSchema(), relationKey, jdbcInfo.getDbms());
     /* open the JDBC Connection */
@@ -96,4 +94,13 @@ public final class JdbcInsert extends RootOperator {
     /* create the table */
     JdbcAccessMethod.createTable(connection, relationKey, getSchema(), jdbcInfo.getDbms(), overwriteTable);
   }
+
+  @Override
+  protected void childEOS() throws DbException {
+  }
+
+  @Override
+  protected void childEOI() throws DbException {
+  }
+
 }

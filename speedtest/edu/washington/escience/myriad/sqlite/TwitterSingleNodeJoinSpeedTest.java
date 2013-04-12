@@ -41,7 +41,7 @@ public class TwitterSingleNodeJoinSpeedTest {
   }
 
   @Test
-  public void twitterSubsetJoinTest() throws DbException, CatalogException, IOException {
+  public void twitterSubsetJoinTest() throws DbException, CatalogException, IOException, InterruptedException {
     assertTrue(successfulSetup);
 
     /* The Schema for the table we read from file. */
@@ -50,8 +50,8 @@ public class TwitterSingleNodeJoinSpeedTest {
     final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
 
     /* Read the data from the file. */
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan(DATASET_PATH, "select * from twitter_subset", tableSchema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan(DATASET_PATH, "select * from twitter_subset", tableSchema);
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan("select * from twitter_subset", tableSchema);
+    final SQLiteQueryScan scan2 = new SQLiteQueryScan("select * from twitter_subset", tableSchema);
 
     // Join on SC1.followee=SC2.follower
     final LocalJoin localJoin =
@@ -63,10 +63,10 @@ public class TwitterSingleNodeJoinSpeedTest {
     /* Now Dupelim */
     final DupElim dupelim = new DupElim(proj);
 
-    dupelim.open();
+    dupelim.open(null);
     long result = 0;
     while (!dupelim.eos()) {
-      final TupleBatch next = dupelim.next();
+      final TupleBatch next = dupelim.nextReady();
       if (next != null) {
         result += next.numTuples();
       }
@@ -77,7 +77,7 @@ public class TwitterSingleNodeJoinSpeedTest {
   }
 
   @Test
-  public void twitterSubsetProjectingJoinTest() throws DbException, CatalogException, IOException {
+  public void twitterSubsetProjectingJoinTest() throws DbException, CatalogException, IOException, InterruptedException {
     assertTrue(successfulSetup);
 
     final ImmutableList<Type> table1Types = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
@@ -85,8 +85,8 @@ public class TwitterSingleNodeJoinSpeedTest {
     final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
 
     /* Read the data from the file. */
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan(DATASET_PATH, "select * from twitter_subset", tableSchema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan(DATASET_PATH, "select * from twitter_subset", tableSchema);
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan("select * from twitter_subset", tableSchema);
+    final SQLiteQueryScan scan2 = new SQLiteQueryScan("select * from twitter_subset", tableSchema);
 
     // Join on SC1.followee=SC2.follower
     final LocalJoin localProjJoin =
@@ -94,10 +94,10 @@ public class TwitterSingleNodeJoinSpeedTest {
     /* Now Dupelim */
     final DupElim dupelim = new DupElim(localProjJoin);
 
-    dupelim.open();
+    dupelim.open(null);
     long result = 0;
     while (!dupelim.eos()) {
-      final TupleBatch next = dupelim.next();
+      final TupleBatch next = dupelim.nextReady();
       if (next != null) {
         result += next.numTuples();
       }

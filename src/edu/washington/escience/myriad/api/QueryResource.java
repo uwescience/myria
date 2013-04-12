@@ -26,26 +26,32 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 
+import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.DupElim;
+import edu.washington.escience.myriad.operator.EOSSource;
 import edu.washington.escience.myriad.operator.IDBInput;
 import edu.washington.escience.myriad.operator.LocalJoin;
 import edu.washington.escience.myriad.operator.Merge;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.Project;
+import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SQLiteInsert;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
+import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
 import edu.washington.escience.myriad.parallel.Consumer;
 import edu.washington.escience.myriad.parallel.EOSController;
-import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
+import edu.washington.escience.myriad.parallel.ExchangePairID;
 import edu.washington.escience.myriad.parallel.LocalMultiwayConsumer;
 import edu.washington.escience.myriad.parallel.LocalMultiwayProducer;
 import edu.washington.escience.myriad.parallel.PartitionFunction;
+import edu.washington.escience.myriad.parallel.QueryFuture;
+import edu.washington.escience.myriad.parallel.QueryFutureListener;
 import edu.washington.escience.myriad.parallel.RoundRobinPartitionFunction;
 import edu.washington.escience.myriad.parallel.ShuffleConsumer;
 import edu.washington.escience.myriad.parallel.ShuffleProducer;
@@ -83,23 +89,43 @@ public final class QueryResource {
       final String rawQuery = (String) userData.get("raw_datalog");
       final String logicalRa = (String) userData.get("logical_ra");
       final String expectedResultSize = (String) userData.get("expected_result_size");
-      Map<Integer, Operator[]> queryPlan = deserializeJsonQueryPlan(userData.get("query_plan"));
+      Map<Integer, RootOperator[]> queryPlan = deserializeJsonQueryPlan(userData.get("query_plan"));
 
       Set<Integer> usingWorkers = new HashSet<Integer>();
       usingWorkers.addAll(queryPlan.keySet());
       /* Remove the server plan if present */
-      usingWorkers.remove(0);
+      usingWorkers.remove(MyriaConstants.MASTER_ID);
       /* Make sure that the requested workers are alive. */
       if (!MyriaApiUtils.getServer().getAliveWorkers().containsAll(usingWorkers)) {
         /* Throw a 503 (Service Unavailable) */
         throw new WebApplicationException(Response.status(Status.SERVICE_UNAVAILABLE).build());
       }
 
+      RootOperator[] masterPlan = queryPlan.get(MyriaConstants.MASTER_ID);
+      if (masterPlan == null) {
+        masterPlan = new RootOperator[] { new SinkRoot(new EOSSource()) };
+        queryPlan.put(MyriaConstants.MASTER_ID, masterPlan);
+      }
+      final RootOperator masterRoot = masterPlan[0];
+
       /* Start the query, and get its Server-assigned Query ID */
-      final Long queryId = MyriaApiUtils.getServer().startQuery(rawQuery, logicalRa, queryPlan, expectedResultSize);
+      QueryFuture qf = MyriaApiUtils.getServer().submitQuery(rawQuery, logicalRa, queryPlan);
+      long queryId = qf.getQuery().getQueryID();
+      qf.addListener(new QueryFutureListener() {
+
+        @Override
+        public void operationComplete(final QueryFuture future) throws Exception {
+          if (masterRoot instanceof SinkRoot && expectedResultSize != null) {
+            if (LOGGER.isInfoEnabled()) {
+              LOGGER.info("Expected num tuples: " + expectedResultSize + "; but actually: "
+                  + ((SinkRoot) masterRoot).getCount());
+            }
+          }
+        }
+      });
       /* In the response, tell the client what ID this query was assigned. */
       UriBuilder queryUri = uriInfo.getAbsolutePathBuilder();
-      return Response.created(queryUri.path("query-" + queryId.toString()).build()).build();
+      return Response.created(queryUri.path("query-" + queryId).build()).build();
     } catch (WebApplicationException e) {
       throw e;
     } catch (Exception e) {
@@ -115,35 +141,50 @@ public final class QueryResource {
    * @return the query plan.
    * @throws Exception in the event of a bad plan.
    */
-  private static Map<Integer, Operator[]> deserializeJsonQueryPlan(final Object jsonQuery) throws Exception {
+  private static Map<Integer, RootOperator[]> deserializeJsonQueryPlan(final Object jsonQuery) throws Exception {
     /* Better be a map */
     if (!(jsonQuery instanceof Map)) {
       throw new ClassCastException("argument is not a Map");
     }
     Map<?, ?> jsonQueryPlan = (Map<?, ?>) jsonQuery;
-    Map<Integer, Operator[]> ret = new HashMap<Integer, Operator[]>();
+    Map<Integer, RootOperator[]> ret = new HashMap<Integer, RootOperator[]>();
     for (Entry<?, ?> entry : jsonQueryPlan.entrySet()) {
       Integer workerId = Integer.parseInt((String) entry.getKey());
-      Operator[] workerPlan = deserializeJsonLocalPlans(entry.getValue());
+      RootOperator[] workerPlan = deserializeJsonLocalPlans(entry.getValue());
       ret.put(workerId, workerPlan);
     }
     return ret;
   }
 
-  private static Operator[] deserializeJsonLocalPlans(final Object jsonLocalPlanList) throws Exception {
+  /**
+   * @return the deserialized query plan.
+   * @param jsonLocalPlanList the json representation of a query plan.
+   * @throws Exception if any error occurs.
+   * */
+  private static RootOperator[] deserializeJsonLocalPlans(final Object jsonLocalPlanList) throws Exception {
     /* Better be a List */
     if (!(jsonLocalPlanList instanceof List)) {
       throw new ClassCastException("argument is not a List of Operator definitions.");
     }
     List<?> localPlanList = (List<?>) jsonLocalPlanList;
-    Operator[] ret = new Operator[localPlanList.size()];
+    RootOperator[] ret = new RootOperator[localPlanList.size()];
     int i = 0;
     for (Object o : localPlanList) {
-      ret[i++] = deserializeJsonLocalPlan(o);
+      Operator op = deserializeJsonLocalPlan(o);
+      if (op instanceof CollectConsumer) {
+        // old server plan, by default add a SinkRoot as tht root operator.
+        op = new SinkRoot(op);
+      }
+      ret[i++] = (RootOperator) op;
     }
     return ret;
   }
 
+  /**
+   * @param jsonLocalPlan the json representation of a RootOperator-rooted operator tree.
+   * @return the deserialized operator tree.
+   * @throws Exception if any error occurs.
+   * */
   private static Operator deserializeJsonLocalPlan(final Object jsonLocalPlan) throws Exception {
     /* Better be a List */
     if (!(jsonLocalPlan instanceof List)) {
@@ -164,9 +205,16 @@ public final class QueryResource {
       op = deserializeJsonOperator(jsonOperator, operators);
       operators.put(opName, op);
     }
+    // The root must be a RootOperator
     return op;
   }
 
+  /**
+   * @param jsonOperator the JSON representation of an operator.
+   * @param operators a dictionary for re-linking the operators to form the operator tree.
+   * @return the deserialized operator (sub tree).
+   * @throws Exception if any error occurs.
+   * */
   private static Operator deserializeJsonOperator(final Map<String, Object> jsonOperator,
       final Map<String, Operator> operators) throws Exception {
     /* Better have an operator type */
@@ -193,9 +241,8 @@ public final class QueryResource {
         if (overwriteString != null) {
           overwrite = Boolean.parseBoolean(overwriteString);
         }
-        return new SQLiteInsert(child, RelationKey.of(userName, programName, relationName), null, null, overwrite);
+        return new SQLiteInsert(child, RelationKey.of(userName, programName, relationName), overwrite);
       }
-
       case "LocalJoin": {
         /* Child 1 */
         String childName = deserializeString(jsonOperator, "arg_child1");
@@ -239,9 +286,11 @@ public final class QueryResource {
           throw new WebApplicationException(Response.status(Status.INTERNAL_SERVER_ERROR).build());
         }
         if (schema == null) {
-          throw new IOException("Specified relation " + relationKey.toString("sqlite") + " does not exist.");
+          throw new IOException("Specified relation " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE)
+              + " does not exist.");
         }
-        return new SQLiteQueryScan(null, "SELECT * from " + relationKey.toString("sqlite"), schema);
+        return new SQLiteQueryScan("SELECT * from " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE),
+            schema);
       }
 
       case "Consumer": {
@@ -267,9 +316,9 @@ public final class QueryResource {
 
       case "LocalMultiwayConsumer": {
         Schema schema = deserializeSchema(jsonOperator, "arg_schema");
-        int workerID = deserializeInt(jsonOperator, "arg_workerID");
+        // int workerID = deserializeInt(jsonOperator, "arg_workerID");
         ExchangePairID operatorID = ExchangePairID.fromExisting(deserializeLong(jsonOperator, "arg_operatorID"));
-        return new LocalMultiwayConsumer(schema, operatorID, workerID);
+        return new LocalMultiwayConsumer(schema, operatorID);
       }
 
       case "ShuffleProducer": {
@@ -301,12 +350,12 @@ public final class QueryResource {
         String childName = deserializeString(jsonOperator, "arg_child");
         Operator child = operators.get(childName);
         Objects.requireNonNull(child, "CollectProducer child Operator " + childName + " not previously defined");
-        return new LocalMultiwayProducer(child, operatorIDs, workerID);
+        return new LocalMultiwayProducer(child, operatorIDs);
       }
 
       case "IDBInput": {
-        Schema schema = deserializeSchema(jsonOperator, "arg_schema");
-        int selfWorkerID = deserializeInt(jsonOperator, "arg_workerID");
+        // Schema schema = deserializeSchema(jsonOperator, "arg_schema");
+        // int selfWorkerID = deserializeInt(jsonOperator, "arg_workerID");
         int selfIDBID = deserializeInt(jsonOperator, "arg_idbID");
         ExchangePairID operatorID = ExchangePairID.fromExisting(deserializeLong(jsonOperator, "arg_operatorID"));
         int controllerWorkerID = deserializeInt(jsonOperator, "arg_controllerWorkerID");
@@ -315,25 +364,25 @@ public final class QueryResource {
         String child3Name = deserializeString(jsonOperator, "arg_child3");
         Operator child1 = operators.get(child1Name);
         Operator child2 = operators.get(child2Name);
-        Operator child3 = operators.get(child3Name);
+        Consumer child3 = (Consumer) operators.get(child3Name);
         Objects.requireNonNull(child1, "IDBInput child1 Operator " + child1Name + " not previously defined");
         Objects.requireNonNull(child2, "IDBInput child2 Operator " + child2Name + " not previously defined");
         Objects.requireNonNull(child3, "IDBInput child3 Operator " + child3Name + " not previously defined");
-        return new IDBInput(schema, selfWorkerID, selfIDBID, operatorID, controllerWorkerID, child1, child2, child3);
+        return new IDBInput(selfIDBID, operatorID, controllerWorkerID, child1, child2, child3);
       }
 
       case "EOSController": {
         String childName = deserializeString(jsonOperator, "arg_child");
-        Operator child = operators.get(childName);
+        Consumer child = (Consumer) operators.get(childName);
         Objects.requireNonNull(child, "IDBInput child Operator " + childName + " not previously defined");
-        ExchangePairID operatorID = ExchangePairID.fromExisting(deserializeLong(jsonOperator, "arg_operatorID"));
+        // ExchangePairID operatorID = ExchangePairID.fromExisting(deserializeLong(jsonOperator, "arg_operatorID"));
         long[] tmpOpIDs = deserializeLongArray(jsonOperator, "arg_idbOpIDs", false);
         ExchangePairID[] idbOpIDs = new ExchangePairID[tmpOpIDs.length];
         for (int i = 0; i < tmpOpIDs.length; ++i) {
           idbOpIDs[i] = ExchangePairID.fromExisting(tmpOpIDs[i]);
         }
         int[] workerIDs = deserializeIntArray(jsonOperator, "arg_workerIDs", false);
-        return new EOSController(child, operatorID, idbOpIDs, workerIDs);
+        return new EOSController(new Consumer[] { child }, idbOpIDs, workerIDs);
       }
 
       case "DupElim": {
@@ -344,14 +393,14 @@ public final class QueryResource {
       }
 
       case "Merge": {
-        Schema schema = deserializeSchema(jsonOperator, "arg_schema");
+        // Schema schema = deserializeSchema(jsonOperator, "arg_schema");
         String child1Name = deserializeString(jsonOperator, "arg_child1");
         Operator child1 = operators.get(child1Name);
         Objects.requireNonNull(child1, "Merge child1 Operator " + child1Name + " not previously defined");
         String child2Name = deserializeString(jsonOperator, "arg_child2");
         Operator child2 = operators.get(child2Name);
         Objects.requireNonNull(child2, "Merge child2 Operator " + child2Name + " not previously defined");
-        return new Merge(schema, child1, child2);
+        return new Merge(new Operator[] { child1, child2 });
       }
 
       case "Project": {
@@ -524,6 +573,7 @@ public final class QueryResource {
    * 
    * @param map the JSON map.
    * @param field the field containing the list.
+   * @param numWorker number of workers.
    * @return the schema, or null if the field is missing and optional is true.
    */
   private static PartitionFunction<?, ?> deserializePF(final Map<String, Object> map, final String field,

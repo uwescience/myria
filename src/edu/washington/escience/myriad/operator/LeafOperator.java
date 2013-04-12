@@ -12,7 +12,7 @@ public abstract class LeafOperator extends Operator {
 
   @Override
   public final Operator[] getChildren() {
-    return null;
+    return NO_CHILDREN;
   }
 
   @Override
@@ -21,8 +21,8 @@ public abstract class LeafOperator extends Operator {
   }
 
   @Override
-  public void checkEOSAndEOI() {
+  protected void checkEOSAndEOI() {
     // for reading static files, e.g. scan, there is no EOI
-    setEOS(true);
+    setEOS();
   }
 }

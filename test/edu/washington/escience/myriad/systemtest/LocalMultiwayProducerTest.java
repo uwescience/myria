@@ -1,25 +1,27 @@
 package edu.washington.escience.myriad.systemtest;
 
-import java.io.IOException;
 import java.util.HashMap;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.Merge;
 import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
+import edu.washington.escience.myriad.operator.SinkRoot;
+import edu.washington.escience.myriad.operator.TBQueueExporter;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
-import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
+import edu.washington.escience.myriad.parallel.ExchangePairID;
 import edu.washington.escience.myriad.parallel.LocalMultiwayConsumer;
 import edu.washington.escience.myriad.parallel.LocalMultiwayProducer;
 import edu.washington.escience.myriad.util.TestUtils;
@@ -32,7 +34,7 @@ public class LocalMultiwayProducerTest extends SystemTestBase {
   private final int numTbl2 = 6000;
 
   @Test
-  public void localMultiwayProducerTest() throws DbException, CatalogException, IOException {
+  public void localMultiwayProducerTest() throws Exception {
 
     final ImmutableList<Type> table1Types = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
     final ImmutableList<String> table1ColumnNames = ImmutableList.of("follower", "followee");
@@ -76,42 +78,45 @@ public class LocalMultiwayProducerTest extends SystemTestBase {
     }
 
     final SQLiteQueryScan scan1 =
-        new SQLiteQueryScan(null, "select * from " + testtableKey.toString("sqlite"), tableSchema);
+        new SQLiteQueryScan("select * from " + testtableKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), tableSchema);
     final ExchangePairID consumerID1 = ExchangePairID.newID();
     final ExchangePairID consumerID2 = ExchangePairID.newID();
     final LocalMultiwayProducer multiProducer1 =
-        new LocalMultiwayProducer(scan1, new ExchangePairID[] { consumerID1, consumerID2 }, WORKER_ID[0]);
-    final LocalMultiwayConsumer multiConsumer1_1 =
-        new LocalMultiwayConsumer(multiProducer1.getSchema(), consumerID1, WORKER_ID[0]);
-    final LocalMultiwayConsumer multiConsumer1_2 =
-        new LocalMultiwayConsumer(multiProducer1.getSchema(), consumerID2, WORKER_ID[0]);
+        new LocalMultiwayProducer(scan1, new ExchangePairID[] { consumerID1, consumerID2 });
+    final LocalMultiwayConsumer multiConsumer1_1 = new LocalMultiwayConsumer(multiProducer1.getSchema(), consumerID1);
+    final LocalMultiwayConsumer multiConsumer1_2 = new LocalMultiwayConsumer(multiProducer1.getSchema(), consumerID2);
     final LocalMultiwayProducer multiProducer2 =
-        new LocalMultiwayProducer(scan1, new ExchangePairID[] { consumerID1, consumerID2 }, WORKER_ID[1]);
-    final LocalMultiwayConsumer multiConsumer2_1 =
-        new LocalMultiwayConsumer(multiProducer2.getSchema(), consumerID1, WORKER_ID[1]);
-    final LocalMultiwayConsumer multiConsumer2_2 =
-        new LocalMultiwayConsumer(multiProducer2.getSchema(), consumerID2, WORKER_ID[1]);
+        new LocalMultiwayProducer(scan1, new ExchangePairID[] { consumerID1, consumerID2 });
+    final LocalMultiwayConsumer multiConsumer2_1 = new LocalMultiwayConsumer(multiProducer2.getSchema(), consumerID1);
+    final LocalMultiwayConsumer multiConsumer2_2 = new LocalMultiwayConsumer(multiProducer2.getSchema(), consumerID2);
 
-    final Merge merge1 = new Merge(tableSchema, multiConsumer1_1, multiConsumer1_2);
-    final Merge merge2 = new Merge(tableSchema, multiConsumer2_1, multiConsumer2_2);
+    final Merge merge1 = new Merge(new Operator[] { multiConsumer1_1, multiConsumer1_2 });
+    final Merge merge2 = new Merge(new Operator[] { multiConsumer2_1, multiConsumer2_2 });
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final CollectProducer cp1 = new CollectProducer(merge1, serverReceiveID, MASTER_ID);
     final CollectProducer cp2 = new CollectProducer(merge2, serverReceiveID, MASTER_ID);
 
-    final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
-    workerPlans.put(WORKER_ID[0], new Operator[] { multiProducer1, cp1 });
-    workerPlans.put(WORKER_ID[1], new Operator[] { multiProducer2, cp2 });
+    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
+    workerPlans.put(WORKER_ID[0], new RootOperator[] { multiProducer1, cp1 });
+    workerPlans.put(WORKER_ID[1], new RootOperator[] { multiProducer2, cp2 });
 
-    final Long queryId = 0L;
-
-    final CollectConsumer serverPlan =
+    final CollectConsumer serverCollect =
         new CollectConsumer(tableSchema, serverReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
-    server.dispatchWorkerQueryPlans(queryId, workerPlans);
-    TupleBatchBuffer result = server.startServerQuery(queryId, serverPlan);
+    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
+    final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
+    SinkRoot serverPlan = new SinkRoot(queueStore);
 
-    final HashMap<Tuple, Integer> tbag0 = TestUtils.tupleBatchToTupleBag(expected);
-    final HashMap<Tuple, Integer> tbag1 = TestUtils.tupleBatchToTupleBag(result);
-    TestUtils.assertTupleBagEqual(tbag0, tbag1);
+    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
+    while (!receivedTupleBatches.isEmpty()) {
+      tb = receivedTupleBatches.poll();
+      if (tb != null) {
+        tb.compactInto(actualResult);
+      }
+    }
+    final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
+    TestUtils.assertTupleBagEqual(TestUtils.tupleBatchToTupleBag(expected), resultBag);
+
   }
 }

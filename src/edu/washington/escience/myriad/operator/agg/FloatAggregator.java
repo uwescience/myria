@@ -15,20 +15,52 @@ public final class FloatAggregator implements Aggregator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
-  private final int afield;
+  /**
+   * aggregate column.
+   * */
+  private final int aColumn;
+
+  /**
+   * Aggregate operations. An binary-or of all the applicable aggregate operations, i.e. those in
+   * {@link FloatAggregator#AVAILABLE_AGG}.
+   * */
   private final int aggOps;
 
+  /**
+   * min, max and sum, keeps the same data type as the aggregating column.
+   * */
   private float min, max, sum;
+
+  /**
+   * stdev, always of double type.
+   * */
   private double stdev;
+
+  /**
+   * Count, always of long type.
+   * */
   private long count;
+  /**
+   * Result schema. It's automatically generated according to the {@link FloatAggregator#aggOps}.
+   * */
   private final Schema resultSchema;
 
+  /**
+   * Aggregate operations applicable for float columns.
+   * */
   public static final int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT | Aggregator.AGG_OP_SUM | Aggregator.AGG_OP_MAX
       | Aggregator.AGG_OP_MIN | Aggregator.AGG_OP_AVG | Aggregator.AGG_OP_STDEV;
 
+  /**
+   * This serves as the copy constructor.
+   * 
+   * @param afield the aggregate column.
+   * @param aggOps the aggregate operation to simultaneously compute.
+   * @param resultSchema the result schema.
+   * */
   private FloatAggregator(final int afield, final int aggOps, final Schema resultSchema) {
     this.resultSchema = resultSchema;
-    this.afield = afield;
+    aColumn = afield;
     this.aggOps = aggOps;
     sum = 0;
     count = 0;
@@ -36,6 +68,11 @@ public final class FloatAggregator implements Aggregator {
     max = Float.MIN_VALUE;
   }
 
+  /**
+   * @param afield the aggregate column.
+   * @param aFieldName aggregate field name for use in output schema.
+   * @param aggOps the aggregate operation to simultaneously compute.
+   * */
   public FloatAggregator(final int afield, final String aFieldName, final int aggOps) {
     if (aggOps <= 0) {
       throw new IllegalArgumentException("No aggregation operations are selected");
@@ -44,7 +81,7 @@ public final class FloatAggregator implements Aggregator {
     if ((aggOps | AVAILABLE_AGG) != AVAILABLE_AGG) {
       throw new IllegalArgumentException("Unsupported aggregation on float column.");
     }
-    this.afield = afield;
+    aColumn = afield;
     this.aggOps = aggOps;
     min = Float.MAX_VALUE;
     max = Float.MIN_VALUE;
@@ -87,7 +124,7 @@ public final class FloatAggregator implements Aggregator {
       count += numTuples;
       double m = 0.0, s = 0.0;
       for (int i = 0; i < numTuples; i++) {
-        final float x = tup.getFloat(afield, i);
+        final float x = tup.getFloat(aColumn, i);
         sum += x;
         if (Float.compare(x, min) < 0) {
           min = x;
@@ -111,7 +148,7 @@ public final class FloatAggregator implements Aggregator {
 
   @Override
   public FloatAggregator freshCopyYourself() {
-    return new FloatAggregator(afield, aggOps, resultSchema);
+    return new FloatAggregator(aColumn, aggOps, resultSchema);
   }
 
   @Override

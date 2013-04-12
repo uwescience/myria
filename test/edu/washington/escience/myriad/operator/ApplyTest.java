@@ -43,16 +43,20 @@ public class ApplyTest {
     ImmutableList.Builder<IFunctionCaller> callers = ImmutableList.builder();
     callers.add(new IFunctionCaller(new SqrtIFunction(), arguments.build()));
     Apply apply = new Apply(new TupleSource(tbb), callers.build());
-    apply.open();
+    apply.open(null);
     TupleBatch result;
     int resultSize = 0;
-    while ((result = apply.next()) != null) {
-      assertEquals(2, result.getSchema().numColumns());
-      assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(1));
-      for (int i = 0; i < result.numTuples(); i++) {
-        assertEquals(i + resultSize, result.getDouble(1, i), 0.0000001);
+    while (!apply.eos()) {
+      result = apply.nextReady();
+      if (result!=null)
+      {
+        assertEquals(2, result.getSchema().numColumns());
+        assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(1));
+        for (int i = 0; i < result.numTuples(); i++) {
+          assertEquals(i + resultSize, result.getDouble(1, i), 0.0000001);
+        }
+        resultSize += result.numTuples();
       }
-      resultSize += result.numTuples();
     }
     assertEquals(numTuples, resultSize);
     apply.close();
@@ -75,18 +79,22 @@ public class ApplyTest {
     callers.add(new IFunctionCaller(new SqrtIFunction(), argumentsOne.build()));
     callers.add(new IFunctionCaller(new ConstantMultiplicationIFunction(), argumentsTwo.build()));
     Apply apply = new Apply(new TupleSource(tbb), callers.build());
-    apply.open();
+    apply.open(null);
     TupleBatch result;
     int resultSize = 0;
-    while ((result = apply.next()) != null) {
-      assertEquals(3, result.getSchema().numColumns());
-      assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(1));
-      assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(2));
-      for (int i = 0; i < result.numTuples(); i++) {
-        assertEquals(i + resultSize, result.getDouble(1, i), 0.0000001);
-        assertEquals((long) Math.pow(i + resultSize, 2) * multiplicationFactor, result.getLong(2, i));
+    while (!apply.eos()) {
+      result = apply.nextReady();
+      if (result!=null)
+      {
+        assertEquals(3, result.getSchema().numColumns());
+        assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(1));
+        assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(2));
+        for (int i = 0; i < result.numTuples(); i++) {
+          assertEquals(i + resultSize, result.getDouble(1, i), 0.0000001);
+          assertEquals((long) Math.pow(i + resultSize, 2) * multiplicationFactor, result.getLong(2, i));
+        }
+        resultSize += result.numTuples();
       }
-      resultSize += result.numTuples();
     }
     assertEquals(numTuples, resultSize);
     apply.close();

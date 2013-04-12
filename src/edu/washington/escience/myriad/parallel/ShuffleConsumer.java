@@ -1,7 +1,6 @@
 package edu.washington.escience.myriad.parallel;
 
 import edu.washington.escience.myriad.Schema;
-import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
 
 /**
  * The consumer part of the Shuffle Exchange operator.
@@ -16,7 +15,13 @@ public final class ShuffleConsumer extends Consumer {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
+  /**
+   * @param schema input/output data schema
+   * @param operatorID my operatorID
+   * @param workerIDs from which workers the data will come.
+   * */
   public ShuffleConsumer(final Schema schema, final ExchangePairID operatorID, final int[] workerIDs) {
     super(schema, operatorID, workerIDs);
   }
+
 }

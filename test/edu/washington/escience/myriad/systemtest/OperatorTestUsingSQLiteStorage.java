@@ -1,7 +1,7 @@
 package edu.washington.escience.myriad.systemtest;
 
-import java.io.IOException;
 import java.util.HashMap;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -10,20 +10,21 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.DupElim;
 import edu.washington.escience.myriad.operator.LocalJoin;
-import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
+import edu.washington.escience.myriad.operator.SinkRoot;
+import edu.washington.escience.myriad.operator.TBQueueExporter;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
-import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
+import edu.washington.escience.myriad.parallel.ExchangePairID;
 import edu.washington.escience.myriad.parallel.PartitionFunction;
 import edu.washington.escience.myriad.parallel.ShuffleConsumer;
 import edu.washington.escience.myriad.parallel.ShuffleProducer;
@@ -35,7 +36,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
   private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(OperatorTestUsingSQLiteStorage.class);
 
   @Test
-  public void dupElimTest() throws DbException, IOException, CatalogException {
+  public void dupElimTest() throws Exception {
     final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
     createTable(WORKER_ID[0], testtableKey, "id long, name varchar(20)");
     createTable(WORKER_ID[1], testtableKey, "id long, name varchar(20)");
@@ -69,31 +70,37 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1); // partition by id
 
     final SQLiteQueryScan scanTable =
-        new SQLiteQueryScan(null, "select * from " + testtableKey.toString("sqlite"), schema);
+        new SQLiteQueryScan("select * from " + testtableKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), schema);
 
     final DupElim dupElimOnScan = new DupElim(scanTable);
-    final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
+    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
     final CollectProducer cp1 = new CollectProducer(dupElimOnScan, collectID, WORKER_ID[0]);
     final CollectConsumer cc1 = new CollectConsumer(cp1.getSchema(), collectID, WORKER_ID);
     final DupElim dumElim3 = new DupElim(cc1);
-    workerPlans.put(WORKER_ID[0], new Operator[] { cp1, new CollectProducer(dumElim3, serverReceiveID, MASTER_ID) });
-    workerPlans.put(WORKER_ID[1], new Operator[] { cp1 });
+    workerPlans
+        .put(WORKER_ID[0], new RootOperator[] { cp1, new CollectProducer(dumElim3, serverReceiveID, MASTER_ID) });
+    workerPlans.put(WORKER_ID[1], new RootOperator[] { cp1 });
 
-    final long queryId = 2;
+    final CollectConsumer serverCollect = new CollectConsumer(schema, serverReceiveID, new int[] { WORKER_ID[0] });
+    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
+    final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
+    SinkRoot serverPlan = new SinkRoot(queueStore);
 
-    final CollectConsumer serverPlan = new CollectConsumer(schema, serverReceiveID, new int[] { WORKER_ID[0] });
-    server.dispatchWorkerQueryPlans(queryId, workerPlans);
-    LOGGER.debug("Query dispatched to the workers");
-    TupleBatchBuffer result = server.startServerQuery(queryId, serverPlan);
-
-    final HashMap<Tuple, Integer> resultSet = TestUtils.tupleBatchToTupleSet(result);
-
-    TestUtils.assertTupleBagEqual(expectedResults, resultSet);
+    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
+    while (!receivedTupleBatches.isEmpty()) {
+      tb = receivedTupleBatches.poll();
+      if (tb != null) {
+        tb.compactInto(actualResult);
+      }
+    }
+    final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
+    TestUtils.assertTupleBagEqual(expectedResults, resultBag);
 
   }
 
   @Test
-  public void dupElimTestSingleWorker() throws DbException, IOException, CatalogException {
+  public void dupElimTestSingleWorker() throws Exception {
     final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
     createTable(WORKER_ID[0], testtableKey, "id long, name varchar(20)");
 
@@ -123,29 +130,34 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1); // partition by id
 
     final SQLiteQueryScan scanTable =
-        new SQLiteQueryScan(null, "select * from " + testtableKey.toString("sqlite"), schema);
+        new SQLiteQueryScan("select * from " + testtableKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), schema);
 
     final DupElim dupElimOnScan = new DupElim(scanTable);
-    final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
+    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
 
     final CollectProducer cp1 = new CollectProducer(dupElimOnScan, serverReceiveID, MASTER_ID);
-    workerPlans.put(WORKER_ID[0], new Operator[] { cp1 });
+    workerPlans.put(WORKER_ID[0], new RootOperator[] { cp1 });
 
-    final long queryId = 0;
+    final CollectConsumer serverCollect = new CollectConsumer(schema, serverReceiveID, new int[] { WORKER_ID[0] });
+    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
+    final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
+    SinkRoot serverPlan = new SinkRoot(queueStore);
 
-    final CollectConsumer serverPlan = new CollectConsumer(schema, serverReceiveID, new int[] { WORKER_ID[0] });
-    server.dispatchWorkerQueryPlans(queryId, workerPlans);
-    LOGGER.debug("Query dispatched to the workers");
-    TupleBatchBuffer result = server.startServerQuery(queryId, serverPlan);
-
-    final HashMap<Tuple, Integer> resultSet = TestUtils.tupleBatchToTupleSet(result);
-
-    TestUtils.assertTupleBagEqual(expectedResults, resultSet);
+    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
+    while (!receivedTupleBatches.isEmpty()) {
+      tb = receivedTupleBatches.poll();
+      if (tb != null) {
+        tb.compactInto(actualResult);
+      }
+    }
+    final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
+    TestUtils.assertTupleBagEqual(expectedResults, resultBag);
 
   }
 
   @Test
-  public void joinTest() throws DbException, IOException, CatalogException {
+  public void joinTest() throws Exception {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
     Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
 
@@ -163,9 +175,11 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final Schema outputSchema = new Schema(outputTypes, outputColumnNames);
 
     final SQLiteQueryScan scan1 =
-        new SQLiteQueryScan(null, "select * from " + JOIN_TEST_TABLE_1.toString("sqlite"), JOIN_INPUT_SCHEMA);
+        new SQLiteQueryScan("select * from " + JOIN_TEST_TABLE_1.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE),
+            JOIN_INPUT_SCHEMA);
     final SQLiteQueryScan scan2 =
-        new SQLiteQueryScan(null, "select * from " + JOIN_TEST_TABLE_2.toString("sqlite"), JOIN_INPUT_SCHEMA);
+        new SQLiteQueryScan("select * from " + JOIN_TEST_TABLE_2.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE),
+            JOIN_INPUT_SCHEMA);
 
     final ShuffleProducer sp1 =
         new ShuffleProducer(scan1, table1ShuffleID, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf);
@@ -180,21 +194,84 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final LocalJoin localjoin = new LocalJoin(sc1, sc2, new int[] { 0 }, new int[] { 0 });
 
     final CollectProducer cp1 = new CollectProducer(localjoin, serverReceiveID, MASTER_ID);
-    final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
-    workerPlans.put(WORKER_ID[0], new Operator[] { sp1, sp2, cp1 });
-    workerPlans.put(WORKER_ID[1], new Operator[] { sp1, sp2, cp1 });
+    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
+    workerPlans.put(WORKER_ID[0], new RootOperator[] { sp1, sp2, cp1 });
+    workerPlans.put(WORKER_ID[1], new RootOperator[] { sp1, sp2, cp1 });
 
-    final long queryId = 1;
-    final CollectConsumer serverPlan =
+    final CollectConsumer serverCollect =
         new CollectConsumer(outputSchema, serverReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
-    server.dispatchWorkerQueryPlans(queryId, workerPlans);
-    LOGGER.debug("Query dispatched to the workers");
-    TupleBatchBuffer result = server.startServerQuery(queryId, serverPlan);
+    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
+    final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
+    SinkRoot serverPlan = new SinkRoot(queueStore);
 
-    final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(result);
-
+    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
+    TupleBatch tb = null;
+    while (!receivedTupleBatches.isEmpty()) {
+      tb = receivedTupleBatches.poll();
+      if (tb != null) {
+        tb.compactInto(actualResult);
+      }
+    }
+    final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
     TestUtils.assertTupleBagEqual(expectedResult, resultBag);
 
   }
 
+  @Test
+  public void simpleJoinTest() throws Exception {
+    Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
+    Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
+
+    final HashMap<Tuple, Integer> expectedResult = simpleFixedJoinTestBase();
+
+    final ExchangePairID serverReceiveID = ExchangePairID.newID();
+    final ExchangePairID table1ShuffleID = ExchangePairID.newID();
+    final ExchangePairID table2ShuffleID = ExchangePairID.newID();
+    final SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(2);
+    pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
+
+    final SQLiteQueryScan scan1 =
+        new SQLiteQueryScan("select * from " + JOIN_TEST_TABLE_1.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE),
+            JOIN_INPUT_SCHEMA);
+    final SQLiteQueryScan scan2 =
+        new SQLiteQueryScan("select * from " + JOIN_TEST_TABLE_2.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE),
+            JOIN_INPUT_SCHEMA);
+
+    final ShuffleProducer sp1 =
+        new ShuffleProducer(scan1, table1ShuffleID, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf);
+    final ShuffleConsumer sc1 =
+        new ShuffleConsumer(sp1.getSchema(), table1ShuffleID, new int[] { WORKER_ID[0], WORKER_ID[1] });
+
+    final ShuffleProducer sp2 =
+        new ShuffleProducer(scan2, table2ShuffleID, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf);
+    final ShuffleConsumer sc2 =
+        new ShuffleConsumer(sp2.getSchema(), table2ShuffleID, new int[] { WORKER_ID[0], WORKER_ID[1] });
+
+    final LocalJoin localjoin = new LocalJoin(sc1, sc2, new int[] { 0 }, new int[] { 0 });
+
+    final CollectProducer cp1 = new CollectProducer(localjoin, serverReceiveID, MASTER_ID);
+    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
+    workerPlans.put(WORKER_ID[0], new RootOperator[] { sp1, sp2, cp1 });
+    workerPlans.put(WORKER_ID[1], new RootOperator[] { sp1, sp2, cp1 });
+
+    final CollectConsumer serverCollect =
+        new CollectConsumer(cp1.getSchema(), serverReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
+    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
+    final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
+    SinkRoot serverPlan = new SinkRoot(queueStore);
+
+    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
+    TupleBatch tb = null;
+    while (!receivedTupleBatches.isEmpty()) {
+      tb = receivedTupleBatches.poll();
+      if (tb != null) {
+        tb.compactInto(actualResult);
+      }
+    }
+    final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
+    TestUtils.assertTupleBagEqual(expectedResult, resultBag);
+
+  }
 }

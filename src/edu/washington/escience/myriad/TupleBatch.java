@@ -79,7 +79,7 @@ public class TupleBatch {
    * @param validTuples BitSet determines which tuples are valid tuples in this batch.
    * @param validIndices valid tuple indices.
    */
-  private TupleBatch(final Schema schema, final List<Column<?>> columns, final BitSet validTuples,
+  protected TupleBatch(final Schema schema, final List<Column<?>> columns, final BitSet validTuples,
       final ImmutableList<Integer> validIndices) {
     /** For a private copy constructor, no data checks are needed. Checks are only needed in the public constructor. */
     this.schema = schema;
@@ -94,6 +94,20 @@ public class TupleBatch {
     }
 
     this.validIndices = validIndices;
+  }
+
+  /**
+   * Call this method instead of the copy constructor for a new TupleBatch copy.
+   * 
+   * @param schema schema of the tuples in this batch. Must match columns.
+   * @param columns contains the column-stored data. Must match schema.
+   * @param validTuples BitSet determines which tuples are valid tuples in this batch.
+   * @param validIndices valid tuple indices.
+   * @return shallow copy
+   */
+  protected TupleBatch shallowCopy(final Schema schema, final List<Column<?>> columns, final BitSet validTuples,
+      final ImmutableList<Integer> validIndices) {
+    return new TupleBatch(schema, columns, validTuples, validIndices);
   }
 
   /**
@@ -157,7 +171,7 @@ public class TupleBatch {
     }
 
     if (newValidTuples != null) {
-      return new TupleBatch(schema, columns, newValidTuples, null);
+      return shallowCopy(schema, columns, newValidTuples, null);
     }
 
     /* If no tuples are filtered, new TupleBatch instance is not needed */
@@ -192,7 +206,6 @@ public class TupleBatch {
   public final TupleBatch filter(final int column, final Predicate.Op op, final Object operand) {
     Objects.requireNonNull(op);
     Objects.requireNonNull(operand);
-    // final TupleBatch ret = new TupleBatch(this);
     return applyFilter(column, op, operand);
   }
 
@@ -303,7 +316,15 @@ public class TupleBatch {
     return ((StringColumn) columns.get(column)).getString(getValidIndices().get(row));
   }
 
-  public Set<Pair<Object, TupleBatchBuffer>> groupby(final int groupByColumn,
+  /**
+   * Do groupby on this TupleBatch and return the set of (GroupByKey, TupleBatchBuffer) pairs which have filled
+   * TupleBatches.
+   * 
+   * @return the set of (GroupByKey, TupleBatchBuffer).
+   * @param groupByColumn the column index for doing group by.
+   * @param buffers the data buffers for holding the groupby results.
+   * */
+  public final Set<Pair<Object, TupleBatchBuffer>> groupby(final int groupByColumn,
       final Map<Object, Pair<Object, TupleBatchBuffer>> buffers) {
     Set<Pair<Object, TupleBatchBuffer>> ready = null;
     final Column<?> gC = columns.get(groupByColumn);
@@ -361,6 +382,21 @@ public class TupleBatch {
       Column<?> c = columns.get(i);
       hasher.putObject(c.get(mappedRow), TypeFunnel.INSTANCE);
     }
+    return hasher.hash().asInt();
+  }
+
+  /**
+   * Returns the hash code for a single cell.
+   * 
+   * @param row row of tuple to hash.
+   * @param hashColumn the key column for the hash.
+   * @return the hash code value for the specified tuple using the specified key columns.
+   */
+  public final int hashCode(final int row, final int hashColumn) {
+    Hasher hasher = HASH_FUNCTION.newHasher();
+    final int mappedRow = getValidIndices().get(row);
+    Column<?> c = columns.get(hashColumn);
+    hasher.putObject(c.get(mappedRow), TypeFunnel.INSTANCE);
     return hasher.hash().asInt();
   }
 
@@ -462,7 +498,7 @@ public class TupleBatch {
       newTypes.add(schema.getColumnType(i));
       newNames.add(schema.getColumnName(i));
     }
-    return new TupleBatch(new Schema(newTypes, newNames), newColumns, validTuples, validIndices);
+    return shallowCopy(new Schema(newTypes, newNames), newColumns, validTuples, validIndices);
   }
 
   /**
@@ -479,7 +515,8 @@ public class TupleBatch {
   }
 
   /**
-   * @param
+   * @param tupleIndicesToRemove the indices to remove
+   * @return a new TB.
    * */
   public final TupleBatch remove(final BitSet tupleIndicesToRemove) {
     final List<Integer> mapping = getValidIndices();
@@ -488,7 +525,7 @@ public class TupleBatch {
       newValidTuples.clear(mapping.get(i));
     }
     if (newValidTuples.cardinality() != numValidTuples) {
-      return new TupleBatch(schema, columns, newValidTuples, null);
+      return shallowCopy(schema, columns, newValidTuples, null);
     } else {
       return this;
     }

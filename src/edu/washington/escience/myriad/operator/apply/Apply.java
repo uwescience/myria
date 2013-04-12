@@ -3,6 +3,7 @@ package edu.washington.escience.myriad.operator.apply;
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
@@ -30,6 +31,11 @@ public final class Apply extends Operator {
   private final List<IFunctionCaller> callers;
   /** the resulting schema. */
   private final Schema schema;
+
+  /**
+   * output buffer.
+   * */
+  private transient TupleBatchBuffer resultBuffer;
 
   /**
    * Constructor.
@@ -65,7 +71,7 @@ public final class Apply extends Operator {
   }
 
   @Override
-  protected TupleBatch fetchNext() throws DbException {
+  protected TupleBatch fetchNext() throws DbException, InterruptedException {
     TupleBatch tb = null;
     tb = child.next();
     if (tb == null) {
@@ -106,18 +112,53 @@ public final class Apply extends Operator {
   }
 
   @Override
-  protected void init() throws DbException {
-    // nothing to init
-  }
-
-  @Override
   protected void cleanup() throws DbException {
     // nothing to clean
+    resultBuffer.clear();
   }
 
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
-    return fetchNext();
+    TupleBatch tb = null;
+    if (child.eoi() || child.eos()) {
+      return resultBuffer.popAny();
+    }
+
+    while ((tb = child.nextReady()) != null) {
+      for (int i = 0; i < tb.numTuples(); i++) {
+        // put the content from the child operator first
+        for (int j = 0; j < tb.numColumns(); j++) {
+          resultBuffer.put(j, tb.getObject(j, i));
+        }
+        // put the result into the tbb
+        for (int j = 0; j < callers.size(); j++) {
+          final ImmutableList.Builder<Number> srcNums = ImmutableList.builder();
+          Number value = null;
+          for (Integer index : callers.get(j).getApplyField()) {
+            Type applyFieldType = schema.getColumnType(index);
+            if (applyFieldType == Type.INT_TYPE) {
+              srcNums.add(tb.getInt(index, i));
+            } else if (applyFieldType == Type.LONG_TYPE) {
+              srcNums.add(tb.getLong(index, i));
+            } else if (applyFieldType == Type.FLOAT_TYPE) {
+              srcNums.add(tb.getFloat(index, i));
+            } else if (applyFieldType == Type.DOUBLE_TYPE) {
+              srcNums.add(tb.getDouble(index, i));
+            }
+          }
+          value = callers.get(j).execute(srcNums.build());
+          resultBuffer.put(j + tb.numColumns(), value);
+        }
+      }
+      if (resultBuffer.hasFilledTB()) {
+        resultBuffer.popFilled();
+      }
+    }
+    if (child.eoi() || child.eos()) {
+      return resultBuffer.popAny();
+    } else {
+      return resultBuffer.popFilled();
+    }
   }
 
   @Override
@@ -128,6 +169,11 @@ public final class Apply extends Operator {
   @Override
   public void setChildren(final Operator[] children) {
     child = children[0];
+  }
+
+  @Override
+  protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+    resultBuffer = new TupleBatchBuffer(schema);
   }
 
 }

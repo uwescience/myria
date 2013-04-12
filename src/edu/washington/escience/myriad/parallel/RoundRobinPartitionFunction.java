@@ -51,7 +51,7 @@ public class RoundRobinPartitionFunction extends PartitionFunction<String, Integ
     final int[] result = new int[tb.numTuples()];
     for (int i = 0; i < result.length; i++) {
       result[i] = partition;
-      partition = (partition + 1) % numPartition;
+      partition = (partition + 1) % numPartition();
     }
     return result;
   }

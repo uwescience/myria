@@ -10,6 +10,7 @@ import java.util.Objects;
 import java.util.Scanner;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
@@ -31,8 +32,10 @@ public final class FileScan extends LeafOperator {
   private transient Scanner scanner = null;
   /** Whether a comma is a delimiter in this file. */
   private final boolean commaIsDelimiter;
+
   /** The filename of the input, if any. */
   private String filename = null;
+
   /** Holds the tuples that are ready for release. */
   private transient TupleBatchBuffer buffer;
   /** Which line of the file the scanner is currently on. */
@@ -163,7 +166,7 @@ public final class FileScan extends LeafOperator {
   }
 
   @Override
-  public void init() throws DbException {
+  protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     buffer = new TupleBatchBuffer(getSchema());
     if (filename != null) {
       try {

@@ -3,42 +3,58 @@ package edu.washington.escience.myriad.operator;
 import java.util.Iterator;
 import java.util.Objects;
 
+import com.google.common.collect.ImmutableMap;
+
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.accessmethod.SQLiteAccessMethod;
 
+/**
+ * Push a select query down into SQLite and scan over the query result.
+ * */
 public class SQLiteQueryScan extends LeafOperator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
-  private Iterator<TupleBatch> tuples;
+  /**
+   * Iterate over data from the SQLite database.
+   * */
+  private transient Iterator<TupleBatch> tuples;
+  /**
+   * The result schema.
+   * */
   private final Schema schema;
+  /**
+   * the SQL template.
+   * */
   private final String baseSQL;
-  private String databaseFilename;
+
+  /**
+   * The SQLite DB filepath.
+   * */
+  private transient String databaseFilename;
 
   /**
    * Construct a new SQLiteQueryScan object.
    * 
-   * @param databaseFilename the full path to the SQLite database storing the data.
    * @param baseSQL the selection query.
    * @param outputSchema the Schema of the returned tuples.
    */
-  public SQLiteQueryScan(final String databaseFilename, final String baseSQL, final Schema outputSchema) {
+  public SQLiteQueryScan(final String baseSQL, final Schema outputSchema) {
     Objects.requireNonNull(baseSQL);
     Objects.requireNonNull(outputSchema);
     this.baseSQL = baseSQL;
     schema = outputSchema;
-    this.databaseFilename = databaseFilename;
   }
 
   @Override
-  public void cleanup() {
+  public final void cleanup() {
     tuples = null;
   }
 
   @Override
-  protected TupleBatch fetchNext() throws DbException {
+  protected final TupleBatch fetchNext() throws DbException, InterruptedException {
     if (tuples == null) {
       tuples = SQLiteAccessMethod.tupleBatchIteratorFromQuery(databaseFilename, baseSQL, schema);
     }
@@ -50,24 +66,36 @@ public class SQLiteQueryScan extends LeafOperator {
   }
 
   @Override
-  public Schema getSchema() {
+  protected final TupleBatch fetchNextReady() throws DbException {
+    try {
+      TupleBatch tb = fetchNext();
+      if (tb == null) {
+        setEOS();
+      }
+      return tb;
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      return null;
+    }
+  }
+
+  @Override
+  public final Schema getSchema() {
     return schema;
   }
 
   @Override
-  public void init() throws DbException {
+  public final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+    final String sqliteDatabaseFilename = (String) execEnvVars.get("sqliteFile");
+    if (sqliteDatabaseFilename == null) {
+      throw new DbException("Unable to instantiate SQLiteQueryScan on non-sqlite worker");
+    }
+    databaseFilename = sqliteDatabaseFilename;
+    tuples = null;
   }
 
   @Override
-  public TupleBatch fetchNextReady() throws DbException {
-    return fetchNext();
+  public final String toString() {
+    return "SQLiteQueryScan, baseSQL: " + baseSQL;
   }
-
-  public void setPathToSQLiteDb(final String databaseFilename) throws DbException {
-    if (isOpen()) {
-      throw new DbException("Can't change the state of an opened operator.");
-    }
-    this.databaseFilename = databaseFilename;
-  }
-
 }

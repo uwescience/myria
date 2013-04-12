@@ -12,10 +12,19 @@ public final class SingleFieldHashPartitionFunction extends PartitionFunction<St
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
+  /**
+   * The field index attribute name.
+   * */
   public static final String FIELD_INDEX = "field_index";
 
-  private int[] fieldIndex;
+  /**
+   * The index of the partition field.
+   * */
+  private int fieldIndex;
 
+  /**
+   * @param numPartition number of partitions.
+   * */
   public SingleFieldHashPartitionFunction(final int numPartition) {
     super(numPartition);
   }
@@ -28,9 +37,9 @@ public final class SingleFieldHashPartitionFunction extends PartitionFunction<St
   public int[] partition(final TupleBatch tb) {
     final int[] result = new int[tb.numTuples()];
     for (int i = 0; i < result.length; i++) {
-      int p = tb.hashCode(i, fieldIndex) % numPartition;
+      int p = tb.hashCode(i, fieldIndex) % numPartition();
       if (p < 0) {
-        p = p + numPartition;
+        p = p + numPartition();
       }
       result[i] = p;
     }
@@ -41,8 +50,7 @@ public final class SingleFieldHashPartitionFunction extends PartitionFunction<St
   public void setAttribute(final String attribute, final Integer value) {
     super.setAttribute(attribute, value);
     if (attribute.equals(FIELD_INDEX)) {
-      fieldIndex = new int[1];
-      fieldIndex[0] = value;
+      fieldIndex = value;
     }
   }
 

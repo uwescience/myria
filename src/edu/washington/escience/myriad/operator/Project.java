@@ -1,8 +1,7 @@
 package edu.washington.escience.myriad.operator;
 
-import java.util.NoSuchElementException;
-
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
@@ -16,13 +15,27 @@ public final class Project extends Operator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
+  /**
+   * the child.
+   * */
   private Operator child;
+  /**
+   * The result schema.
+   * */
   private final Schema schema;
-  private final int[] outFieldIds; // why not using int[]?
+  /**
+   * The column indices to remain.
+   * */
+  private final int[] outColumnIndices;
 
+  /**
+   * @param fieldList The column indices to remain.
+   * @param child the child
+   * @throws DbException if any error occurs.
+   * */
   public Project(final int[] fieldList, final Operator child) throws DbException {
     this.child = child;
-    outFieldIds = fieldList;
+    outColumnIndices = fieldList;
     final Schema childSchema = child.getSchema();
 
     final ImmutableList.Builder<Type> types = ImmutableList.builder();
@@ -39,18 +52,20 @@ public final class Project extends Operator {
   }
 
   @Override
-  protected TupleBatch fetchNext() throws NoSuchElementException, DbException {
+  protected TupleBatch fetchNext() throws DbException, InterruptedException {
     final TupleBatch tmp = child.next();
     if (tmp != null) {
-      return tmp.project(outFieldIds);
+      return tmp.project(outColumnIndices);
     }
     return null;
   }
 
   @Override
-  public TupleBatch fetchNextReady() throws DbException {
-    if (child.nextReady()) {
-      return child.next().project(outFieldIds);
+  protected TupleBatch fetchNextReady() throws DbException {
+
+    TupleBatch tb = child.nextReady();
+    if (tb != null) {
+      return tb.project(outColumnIndices);
     }
     return null;
   }
@@ -66,7 +81,7 @@ public final class Project extends Operator {
   }
 
   @Override
-  public void init() throws DbException {
+  public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
   }
 
   @Override

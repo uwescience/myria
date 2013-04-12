@@ -1,5 +1,6 @@
 package edu.washington.escience.myriad;
 
+import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -9,7 +10,7 @@ import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnFactory;
-import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
+import edu.washington.escience.myriad.parallel.ExchangePairID;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.util.IPCUtils;
 
@@ -86,7 +87,7 @@ public class TupleBatchBuffer {
    * @return a List<TupleBatch> containing all complete tuples that have been inserted into this buffer.
    */
   public final List<TupleBatch> getAll() {
-    final List<TupleBatch> output = new LinkedList<TupleBatch>();
+    final List<TupleBatch> output = new ArrayList<TupleBatch>();
     for (final List<Column<?>> columns : readyTuples) {
       output.add(new TupleBatch(schema, columns, TupleBatch.BATCH_SIZE));
     }
@@ -102,7 +103,7 @@ public class TupleBatchBuffer {
    * @return a List<TupleBatch> containing all complete tuples that have been inserted into this buffer.
    */
   public final List<List<Column<?>>> getAllAsRawColumn() {
-    final List<List<Column<?>>> output = new LinkedList<List<Column<?>>>();
+    final List<List<Column<?>>> output = new ArrayList<List<Column<?>>>();
     for (final List<Column<?>> columns : readyTuples) {
       output.add(columns);
     }
@@ -119,13 +120,13 @@ public class TupleBatchBuffer {
    * @param oId destination exchange operator id.
    */
   public final List<TransportMessage> getAllAsTM(final ExchangePairID oId) {
-    final List<TransportMessage> output = new LinkedList<TransportMessage>();
+    final List<TransportMessage> output = new ArrayList<TransportMessage>();
     if (numTuples() > 0) {
       for (final List<Column<?>> columns : readyTuples) {
-        output.add(IPCUtils.normalDataMessage(columns, oId));
+        output.add(IPCUtils.normalDataMessage(columns, TupleBatch.BATCH_SIZE));
       }
       if (currentInProgressTuples > 0) {
-        output.add(IPCUtils.normalDataMessage(currentColumns, oId));
+        output.add(IPCUtils.normalDataMessage(currentColumns, currentInProgressTuples));
       }
     }
     return output;
@@ -168,6 +169,12 @@ public class TupleBatchBuffer {
     return readyTuples.size() * TupleBatch.BATCH_SIZE + currentInProgressTuples;
   }
 
+  /**
+   * @param colIndex column index
+   * @param rowIndex row index
+   * @return the element at ( rowIndex, colIndex)
+   * @throws IndexOutOfBoundsException if indices are out of bounds.
+   * */
   public final Object get(final int colIndex, final int rowIndex) throws IndexOutOfBoundsException {
     int tupleBatchIndex = rowIndex / TupleBatch.BATCH_SIZE;
     int tupleIndex = rowIndex % TupleBatch.BATCH_SIZE;
@@ -182,6 +189,9 @@ public class TupleBatchBuffer {
 
   }
 
+  /**
+   * @return num columns.
+   * */
   public final int numColumns() {
     return numColumns;
   }
@@ -214,7 +224,7 @@ public class TupleBatchBuffer {
     } else {
       if (currentInProgressTuples > 0) {
         finishBatch();
-        return popFilledAsRawColumn();
+        return readyTuples.remove(0);
       } else {
         return null;
       }
@@ -222,25 +232,18 @@ public class TupleBatchBuffer {
   }
 
   /**
-   * @param oID destination ExchangePairID
    * @return pop filled and non-filled TransportMessage
    * */
-  public final TransportMessage popAnyAsTM(final ExchangePairID oID) {
-    final TransportMessage[] ans = popAnyAsTM(new ExchangePairID[] { oID });
-    if (ans == null) {
-      return null;
-    }
-    return ans[0];
-  }
-
-  public final TransportMessage[] popAnyAsTM(final ExchangePairID[] oIDs) {
-    final TransportMessage[] dm = popFilledAsTM(oIDs);
-    if (dm != null) {
-      return dm;
+  public final TransportMessage popAnyAsTM() {
+    final TransportMessage ans = popFilledAsTM();
+    if (ans != null) {
+      return ans;
     } else {
       if (currentInProgressTuples > 0) {
+        int numTuples = currentInProgressTuples;
         finishBatch();
-        return popFilledAsTM(oIDs);
+        final List<Column<?>> columns = readyTuples.remove(0);
+        return IPCUtils.normalDataMessage(columns, numTuples);
       } else {
         return null;
       }
@@ -275,21 +278,12 @@ public class TupleBatchBuffer {
    * Pop filled as TransportMessage. Avoid the overhead of creating TupleBatch instances if the data in this TBB are to
    * be sent to other workers.
    * 
-   * @param oId Destination exchangePairID.
    * @return TransportMessage popped or null if no filled tuples ready yet.
    * */
-  public final TransportMessage popFilledAsTM(final ExchangePairID oId) {
-    final TransportMessage[] ans = popFilledAsTM(new ExchangePairID[] { oId });
-    if (ans == null) {
-      return null;
-    }
-    return ans[0];
-  }
-
-  public final TransportMessage[] popFilledAsTM(final ExchangePairID[] oIds) {
+  public final TransportMessage popFilledAsTM() {
     if (readyTuples.size() > 0) {
       final List<Column<?>> columns = readyTuples.remove(0);
-      return IPCUtils.normalDataMessageMultiCopy(columns, oIds);
+      return IPCUtils.normalDataMessage(columns, TupleBatch.BATCH_SIZE);
     }
     return null;
   }

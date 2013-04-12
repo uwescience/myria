@@ -1,30 +1,32 @@
 package edu.washington.escience.myriad.systemtest;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.column.Column;
-import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.DupElim;
 import edu.washington.escience.myriad.operator.LocalJoin;
 import edu.washington.escience.myriad.operator.Merge;
 import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
+import edu.washington.escience.myriad.operator.SinkRoot;
+import edu.washington.escience.myriad.operator.TBQueueExporter;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
-import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
+import edu.washington.escience.myriad.parallel.ExchangePairID;
 import edu.washington.escience.myriad.parallel.PartitionFunction;
 import edu.washington.escience.myriad.parallel.ShuffleConsumer;
 import edu.washington.escience.myriad.parallel.ShuffleProducer;
@@ -91,7 +93,7 @@ public class MultithreadScanTest extends SystemTestBase {
   }
 
   @Test
-  public void OneThreadTwoConnectionsTest() throws DbException, CatalogException, IOException {
+  public void OneThreadTwoConnectionsTest() throws Exception {
 
     // data generation
     final ImmutableList<Type> table1Types = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
@@ -121,9 +123,9 @@ public class MultithreadScanTest extends SystemTestBase {
     }
 
     final SQLiteQueryScan scan1 =
-        new SQLiteQueryScan(null, "select * from " + testtableKey.toString("sqlite"), tableSchema);
+        new SQLiteQueryScan("select * from " + testtableKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), tableSchema);
     final SQLiteQueryScan scan2 =
-        new SQLiteQueryScan(null, "select * from " + testtableKey.toString("sqlite"), tableSchema);
+        new SQLiteQueryScan("select * from " + testtableKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), tableSchema);
     final LocalJoin localjoin =
         new LocalJoin(scan1, scan2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
     final DupElim de = new DupElim(localjoin);
@@ -131,25 +133,32 @@ public class MultithreadScanTest extends SystemTestBase {
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final CollectProducer cp = new CollectProducer(de, serverReceiveID, MASTER_ID);
 
-    final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
-    workerPlans.put(WORKER_ID[0], new Operator[] { cp });
-    workerPlans.put(WORKER_ID[1], new Operator[] { cp });
+    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
+    workerPlans.put(WORKER_ID[0], new RootOperator[] { cp });
+    workerPlans.put(WORKER_ID[1], new RootOperator[] { cp });
 
-    final long queryId = 1L;
-
-    final CollectConsumer serverPlan =
+    final CollectConsumer serverCollect =
         new CollectConsumer(tableSchema, serverReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
+    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
+    final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
+    final SinkRoot serverPlan = new SinkRoot(queueStore);
 
-    server.dispatchWorkerQueryPlans(queryId, workerPlans);
-    LOGGER.debug("Query dispatched to the workers");
-    TupleBatchBuffer result = server.startServerQuery(queryId, serverPlan);
-
+    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
+    while (!receivedTupleBatches.isEmpty()) {
+      tb = receivedTupleBatches.poll();
+      if (tb != null) {
+        tb.compactInto(actualResult);
+      }
+    }
+    final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
     expectedTBB.merge(expectedTBBCopy);
-    TestUtils.assertTupleBagEqual(TestUtils.tupleBatchToTupleBag(expectedTBB), TestUtils.tupleBatchToTupleBag(result));
+    TestUtils.assertTupleBagEqual(TestUtils.tupleBatchToTupleBag(expectedTBB), resultBag);
+
   }
 
   @Test
-  public void TwoThreadsTwoConnectionsSameDBFileTest() throws DbException, CatalogException, IOException {
+  public void TwoThreadsTwoConnectionsSameDBFileTest() throws Exception {
 
     // data generation
     final ImmutableList<Type> table1Types = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
@@ -180,16 +189,16 @@ public class MultithreadScanTest extends SystemTestBase {
     }
 
     final SQLiteQueryScan scan1 =
-        new SQLiteQueryScan(null, "select * from " + testtableKey.toString("sqlite"), tableSchema);
+        new SQLiteQueryScan("select * from " + testtableKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), tableSchema);
     final SQLiteQueryScan scan2 =
-        new SQLiteQueryScan(null, "select * from " + testtableKey.toString("sqlite"), tableSchema);
+        new SQLiteQueryScan("select * from " + testtableKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), tableSchema);
     final LocalJoin localjoin1 =
         new LocalJoin(scan1, scan2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
     final DupElim de1 = new DupElim(localjoin1);
     final SQLiteQueryScan scan3 =
-        new SQLiteQueryScan(null, "select * from " + testtableKey.toString("sqlite"), tableSchema);
+        new SQLiteQueryScan("select * from " + testtableKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), tableSchema);
     final SQLiteQueryScan scan4 =
-        new SQLiteQueryScan(null, "select * from " + testtableKey.toString("sqlite"), tableSchema);
+        new SQLiteQueryScan("select * from " + testtableKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), tableSchema);
     final LocalJoin localjoin2 =
         new LocalJoin(scan3, scan4, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
     final DupElim de2 = new DupElim(localjoin2);
@@ -207,26 +216,34 @@ public class MultithreadScanTest extends SystemTestBase {
         new ShuffleConsumer(sp1.getSchema(), arrayID1, new int[] { WORKER_ID[0], WORKER_ID[1] });
     final ShuffleConsumer sc2 =
         new ShuffleConsumer(sp2.getSchema(), arrayID2, new int[] { WORKER_ID[0], WORKER_ID[1] });
-    final Merge merge = new Merge(tableSchema, sc1, sc2);
+    final Merge merge = new Merge(new Operator[] { sc1, sc2 });
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final CollectProducer cp = new CollectProducer(merge, serverReceiveID, MASTER_ID);
-    final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
-    workerPlans.put(WORKER_ID[0], new Operator[] { cp, sp1, sp2 });
-    workerPlans.put(WORKER_ID[1], new Operator[] { cp, sp1, sp2 });
+    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
+    workerPlans.put(WORKER_ID[0], new RootOperator[] { cp, sp1, sp2 });
+    workerPlans.put(WORKER_ID[1], new RootOperator[] { cp, sp1, sp2 });
 
-    final long queryId = 0L;
-
-    final CollectConsumer serverPlan =
+    final CollectConsumer serverCollect =
         new CollectConsumer(tableSchema, serverReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
-    server.dispatchWorkerQueryPlans(queryId, workerPlans);
-    LOGGER.debug("Query dispatched to the workers");
-    TupleBatchBuffer result = server.startServerQuery(queryId, serverPlan);
+    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
+    final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
+    final SinkRoot serverPlan = new SinkRoot(queueStore);
+
+    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
+    while (!receivedTupleBatches.isEmpty()) {
+      tb = receivedTupleBatches.poll();
+      if (tb != null) {
+        tb.compactInto(actualResult);
+      }
+    }
+    final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
 
     expectedTBB.merge(expectedTBBCopy);
     expectedTBB.merge(expectedTBBCopy);
     expectedTBB.merge(expectedTBBCopy);
+    TestUtils.assertTupleBagEqual(TestUtils.tupleBatchToTupleBag(expectedTBB), resultBag);
 
-    TestUtils.assertTupleBagEqual(TestUtils.tupleBatchToTupleBag(expectedTBB), TestUtils.tupleBatchToTupleBag(result));
   }
 }

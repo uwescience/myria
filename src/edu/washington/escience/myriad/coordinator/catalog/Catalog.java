@@ -22,6 +22,7 @@ import com.almworks.sqlite4java.SQLiteJob;
 import com.almworks.sqlite4java.SQLiteQueue;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
@@ -125,7 +126,9 @@ public final class Catalog {
             sqliteConnection.exec("CREATE TABLE queries (\n" + "    query_id INTEGER NOT NULL PRIMARY KEY ASC,\n"
                 + "    raw_query TEXT NOT NULL,\n" + "    logical_ra TEXT NOT NULL);");
           } catch (final SQLiteException e) {
-            LOGGER.error(e.toString());
+            if (LOGGER.isErrorEnabled()) {
+              LOGGER.error(e.toString());
+            }
             throw new CatalogException("SQLiteException while creating new Catalog tables", e);
           }
 
@@ -138,7 +141,9 @@ public final class Catalog {
             statement.step();
             statement.dispose();
           } catch (final SQLiteException e) {
-            LOGGER.error(e.toString());
+            if (LOGGER.isErrorEnabled()) {
+              LOGGER.error(e.toString());
+            }
             throw new CatalogException("SQLiteException while populating new Catalog tables", e);
           }
           return null;
@@ -463,7 +468,9 @@ public final class Catalog {
             statement.step();
             statement.dispose();
           } catch (final SQLiteException e) {
-            LOGGER.error(e.toString());
+            if (LOGGER.isErrorEnabled()) {
+              LOGGER.error(e.toString());
+            }
             throw new CatalogException(e);
           }
           return null;
@@ -513,7 +520,9 @@ public final class Catalog {
             }
             statement.dispose();
           } catch (final SQLiteException e) {
-            LOGGER.error(e.toString());
+            if (LOGGER.isErrorEnabled()) {
+              LOGGER.error(e.toString());
+            }
             throw new CatalogException(e);
           }
 
@@ -523,6 +532,42 @@ public final class Catalog {
     } catch (InterruptedException | ExecutionException e) {
       throw new CatalogException(e);
     }
+  }
+
+  /**
+   * @return all the configurations.
+   * @throws CatalogException if error occurs in catalog parsing.
+   */
+  public ImmutableMap<String, String> getAllConfigurations() throws CatalogException {
+    if (isClosed) {
+      throw new CatalogException("WorkerCatalog is closed.");
+    }
+    try {
+      return queue.execute(new SQLiteJob<ImmutableMap<String, String>>() {
+        @Override
+        protected ImmutableMap<String, String> job(final SQLiteConnection sqliteConnection) throws CatalogException,
+            SQLiteException {
+          HashMap<String, String> configurations = new HashMap<String, String>();
+          try {
+
+            final SQLiteStatement statement = sqliteConnection.prepare("SELECT * FROM configuration;", false);
+            while (statement.step()) {
+              configurations.put(statement.columnString(0), statement.columnString(1));
+            }
+            statement.dispose();
+            return ImmutableMap.copyOf(configurations);
+          } catch (final SQLiteException e) {
+            if (LOGGER.isErrorEnabled()) {
+              LOGGER.error(e.toString());
+            }
+            throw new CatalogException(e);
+          }
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+
   }
 
   /**
@@ -555,7 +600,49 @@ public final class Catalog {
             statement.dispose();
             return ret;
           } catch (final SQLiteException e) {
-            LOGGER.error(e.toString());
+            if (LOGGER.isErrorEnabled()) {
+              LOGGER.error(e.toString());
+            }
+            throw new CatalogException(e);
+          }
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  /**
+   * Extract the value of a particular configuration parameter from the database. Returns null if the parameter is not
+   * configured.
+   * 
+   * @param key the name of the configuration parameter.
+   * @param value the value of the configuration parameter.
+   * @throws CatalogException if there is an error in the backing database.
+   */
+  public void setConfigurationValue(final String key, final String value) throws CatalogException {
+    Objects.requireNonNull(key);
+    if (isClosed) {
+      throw new CatalogException("WorkerCatalog is closed.");
+    }
+    try {
+      queue.execute(new SQLiteJob<String>() {
+        @Override
+        protected String job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+          try {
+            /* Getting this out is a simple query, which does not need to be cached. */
+            final SQLiteStatement statement =
+                sqliteConnection.prepare("INSERT INTO configuration VALUES(?,?);", false).bind(1, key).bind(2, value);
+            if (!statement.step()) {
+              /* If step() returns false, there's no data. Return null. */
+              return null;
+            }
+            statement.dispose();
+            return null;
+          } catch (final SQLiteException e) {
+            if (LOGGER.isErrorEnabled()) {
+              LOGGER.error(e.toString());
+            }
             throw new CatalogException(e);
           }
         }
@@ -604,7 +691,9 @@ public final class Catalog {
             }
             statement.dispose();
           } catch (final SQLiteException e) {
-            LOGGER.error(e.toString());
+            if (LOGGER.isErrorEnabled()) {
+              LOGGER.error(e.toString());
+            }
             throw new CatalogException(e);
           }
 
@@ -639,7 +728,9 @@ public final class Catalog {
             }
             statement.dispose();
           } catch (final SQLiteException e) {
-            LOGGER.error(e.toString());
+            if (LOGGER.isErrorEnabled()) {
+              LOGGER.error(e.toString());
+            }
             throw new CatalogException(e);
           }
 

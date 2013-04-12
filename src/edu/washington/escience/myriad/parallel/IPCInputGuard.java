@@ -4,6 +4,8 @@ import java.nio.channels.ClosedChannelException;
 
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelEvent;
+import org.jboss.netty.channel.ChannelFuture;
+import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.ChannelHandler.Sharable;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.DownstreamChannelStateEvent;
@@ -16,6 +18,10 @@ import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 
+/**
+ * This class monitors all the input/output IPC data. It makes sure that all input data are of {@link TransportMessage}
+ * type. And it does all IPC exception catching and recording.
+ * */
 @Sharable
 public class IPCInputGuard extends SimpleChannelHandler {
 
@@ -25,11 +31,11 @@ public class IPCInputGuard extends SimpleChannelHandler {
   /**
    * constructor.
    * */
-  IPCInputGuard() {
+  public IPCInputGuard() {
   }
 
   @Override
-  public void exceptionCaught(final ChannelHandlerContext ctx, final ExceptionEvent e) {
+  public final void exceptionCaught(final ChannelHandlerContext ctx, final ExceptionEvent e) {
     final Channel c = e.getChannel();
     final Throwable cause = e.getCause();
     String errorMessage = cause.getMessage();
@@ -53,7 +59,7 @@ public class IPCInputGuard extends SimpleChannelHandler {
   }
 
   @Override
-  public void handleDownstream(final ChannelHandlerContext ctx, final ChannelEvent e) throws Exception {
+  public final void handleDownstream(final ChannelHandlerContext ctx, final ChannelEvent e) throws Exception {
     if (e instanceof DownstreamChannelStateEvent) {
       final DownstreamChannelStateEvent ee = (DownstreamChannelStateEvent) e;
       switch (ee.getState()) {
@@ -62,15 +68,29 @@ public class IPCInputGuard extends SimpleChannelHandler {
         case INTEREST_OPS:
           break;
         case CONNECTED:
-          LOGGER.debug("Connection to remote. " + e.toString());
+          if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Connection to remote. " + e.toString());
+          }
           break;
       }
     }
+
+    e.getFuture().addListener(new ChannelFutureListener() {
+
+      @Override
+      public void operationComplete(final ChannelFuture future) throws Exception {
+        if (!future.isSuccess()) {
+          if (LOGGER.isWarnEnabled()) {
+            LOGGER.warn("Unknown downstream operation error: ChannelEvent: " + e + "; Cause: {}", future.getCause());
+          }
+        }
+      }
+    });
     super.handleDownstream(ctx, e);
   }
 
   @Override
-  public void handleUpstream(final ChannelHandlerContext ctx, final ChannelEvent e) throws Exception {
+  public final void handleUpstream(final ChannelHandlerContext ctx, final ChannelEvent e) throws Exception {
     if (e instanceof UpstreamChannelStateEvent) {
       final UpstreamChannelStateEvent ee = (UpstreamChannelStateEvent) e;
       switch (ee.getState()) {
@@ -79,7 +99,9 @@ public class IPCInputGuard extends SimpleChannelHandler {
         case INTEREST_OPS:
           break;
         case CONNECTED:
-          LOGGER.debug("Connection from remote. " + e.toString());
+          if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Connection from remote. " + e.toString());
+          }
           break;
       }
     }
@@ -87,7 +109,7 @@ public class IPCInputGuard extends SimpleChannelHandler {
   }
 
   @Override
-  public void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e) {
+  public final void messageReceived(final ChannelHandlerContext ctx, final MessageEvent e) {
     final Object message = e.getMessage();
     if (!(message instanceof TransportMessage)) {
       throw new RuntimeException("Non-TransportMessage received: \n" + "\tfrom " + e.getRemoteAddress() + "\n"

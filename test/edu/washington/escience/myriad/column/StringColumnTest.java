@@ -13,7 +13,7 @@ public class StringColumnTest {
     final LongColumn original = new LongColumn();
     original.put(1).put(2).put(5).put(11);
     final ColumnMessage serialized = original.serializeToProto();
-    final LongColumn deserialized = new LongColumn(serialized);
+    final LongColumn deserialized = new LongColumn(serialized, original.size());
     assertTrue(original.toString().equals(deserialized.toString()));
   }
 

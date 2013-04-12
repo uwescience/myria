@@ -39,8 +39,9 @@ public final class FloatColumn implements Column<Float> {
    * Constructs a FloatColumn by deserializing the given ColumnMessage.
    * 
    * @param message a ColumnMessage containing the contents of this column.
+   * @param numTuples num tuples in the column message
    */
-  public FloatColumn(final ColumnMessage message) {
+  public FloatColumn(final ColumnMessage message, final int numTuples) {
     if (message.getType().ordinal() != ColumnMessageType.FLOAT_VALUE) {
       throw new IllegalArgumentException("Trying to construct FloatColumn from non-FLOAT ColumnMessage");
     }
@@ -49,7 +50,7 @@ public final class FloatColumn implements Column<Float> {
     }
     dataBytes = message.getFloatColumn().getData().asReadOnlyByteBuffer();
     data = dataBytes.asFloatBuffer();
-    data.position(message.getNumTuples());
+    data.position(numTuples);
   }
 
   @Override
@@ -115,8 +116,7 @@ public final class FloatColumn implements Column<Float> {
   public ColumnMessage serializeToProto() {
     /* Note that we do *not* build the inner class. We pass its builder instead. */
     final FloatColumnMessage.Builder inner = FloatColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
-    return ColumnMessage.newBuilder().setType(ColumnMessageType.FLOAT).setNumTuples(size()).setFloatColumn(inner)
-        .build();
+    return ColumnMessage.newBuilder().setType(ColumnMessageType.FLOAT).setFloatColumn(inner).build();
   }
 
   @Override
