@@ -212,7 +212,6 @@ public class SystemTestBase {
   public void globalCleanup() throws IOException {
     server.shutdown();
     server = null;
-    Server.resetRunningInstance();
 
     for (final Thread t : workerStdoutReader) {
       try {
@@ -264,7 +263,7 @@ public class SystemTestBase {
   }
 
   @Before
-  public void globalInit() throws IOException, InterruptedException {
+  public void globalInit() throws Exception {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
     Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
 
@@ -469,26 +468,20 @@ public class SystemTestBase {
   /** The Server being run for the system test. */
   protected volatile static Server server;
 
-  static Server startMaster() throws InterruptedException {
-    new Thread("Master main thread") {
-      @Override
-      public void run() {
-        try {
-          final String catalogFileName = FilenameUtils.concat(workerTestBaseFolder, "master.catalog");
-          // server = new Server(catalogFileName);
-          // server.start();
-          Server.main(new String[] { catalogFileName });
-        } catch (final Exception e) {
-          e.printStackTrace();
-          throw new RuntimeException(e);
-        }
-      }
-    }.start();
-    while (server == null) {
-      // Wait the Server to finish starting.
-      Thread.sleep(100);
-      server = Server.getRunningInstance();
-    }
+  static Server startMaster() throws Exception {
+    final String catalogFileName = FilenameUtils.concat(workerTestBaseFolder, "master.catalog");
+    server = new Server(catalogFileName);
+    server.start();
+    // new Thread("Master main thread") {
+    // @Override
+    // public void run() {
+    // try {
+    // } catch (final Exception e) {
+    // e.printStackTrace();
+    // throw new RuntimeException(e);
+    // }
+    // }
+    // }.start();
     return server;
   }
 
