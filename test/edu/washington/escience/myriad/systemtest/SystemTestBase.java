@@ -10,7 +10,9 @@ import java.lang.ProcessBuilder.Redirect;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -299,6 +301,16 @@ public class SystemTestBase {
 
     startMaster();
     startWorkers();
+
+    /* Wait until all the workers have connected to the master. */
+    Set<Integer> targetWorkers = new HashSet<Integer>();
+    for (int i : WORKER_ID) {
+      targetWorkers.add(i);
+    }
+    while (!server.getAliveWorkers().containsAll(targetWorkers)) {
+      Thread.sleep(10);
+    }
+
     // for setting breakpoint
     if (System.currentTimeMillis() < 0) {
       System.out.println("Only for setting breakpoint. Never reach here");
