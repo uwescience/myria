@@ -122,6 +122,9 @@ public final class Server {
                     .getSeq())));
                 cc.getOwnerTask().notifyNewInput();
                 break;
+              case BOS:
+                /* ignored */
+                break;
             }
             break;
           case CONTROL:
@@ -790,7 +793,8 @@ public final class Server {
 
       @Override
       public void operationComplete(final QueryFuture future) throws Exception {
-        MasterQueryPartition mqp = activeQueries.remove(queryID);
+        // MasterQueryPartition mqp = activeQueries.remove(queryID);
+        activeQueries.remove(queryID);
       }
 
     });
