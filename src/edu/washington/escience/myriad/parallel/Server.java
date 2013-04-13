@@ -101,7 +101,7 @@ public final class Server {
             final Schema operatorSchema = cc.getOwnerConsumer().getSchema();
             switch (data.getType()) {
               case EOS:
-                LOGGER.info("EOS from: " + senderID + "," + workers.get(senderID));
+                LOGGER.debug("EOS from: " + senderID + "," + workers.get(senderID));
                 receiveData(new ExchangeData(exchangePairID, senderID, operatorSchema, MetaMessage.EOS));
                 cc.getOwnerTask().notifyNewInput();
                 break;
