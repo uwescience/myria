@@ -18,12 +18,14 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.jboss.netty.bootstrap.ClientBootstrap;
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelException;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.ChannelSink;
+import org.jboss.netty.channel.DefaultChannelFuture;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.ChannelGroupFuture;
 import org.jboss.netty.channel.group.ChannelGroupFutureListener;
@@ -584,10 +586,9 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
     } else {
       if (c != null) {
         closeUnregisteredChannel(c.getChannel());
-        Throwable t = c.getCause();
-        if (t != null) {
-          LOGGER.error("Unable to connect to remote. Cause is: ", t);
-        }
+
+        c.syncUninterruptibly();
+
       }
       return null;
     }
@@ -877,7 +878,12 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
    */
   public Channel reserveLongTermConnection(final int id) {
     checkShutdown();
-    return getAConnection(id);
+    try {
+      return getAConnection(id);
+    } catch (ChannelException e) {
+      LOGGER.error("Unable to connect to remote. Cause is: ", e);
+      return null;
+    }
   }
 
   /**
@@ -893,10 +899,16 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
     if (ipcID == myID || ipcID < 0) {
       return inJVMShortMessageChannel.write(message);
     }
-    final Channel ch = getAConnection(ipcID);
-    if (ch == null || !ch.isConnected()) {
-      return null;
+    Channel ch;
+    try {
+      ch = getAConnection(ipcID);
+    } catch (ChannelException e) {
+      LOGGER.error("Unable to connect to remote. Cause is: ", e);
+      DefaultChannelFuture r = new DefaultChannelFuture(null, false);
+      r.setFailure(e);
+      return r;
     }
+
     final ChannelFuture cf = ch.write(message);
     cf.addListener(new ChannelFutureListener() {
 
