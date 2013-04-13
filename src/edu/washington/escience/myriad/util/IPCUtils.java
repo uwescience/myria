@@ -289,6 +289,15 @@ public final class IPCUtils {
   }
 
   /**
+   * @param queryId .
+   * @return a query ready TM.
+   * */
+  public static TransportMessage killQueryTM(final long queryId) {
+    return CONTROL_TM_BUILDER.get().setControl(
+        ControlMessage.newBuilder().setType(ControlMessage.ControlMessageType.QUERY_KILL).setQueryId(queryId)).build();
+  }
+
+  /**
    * util classes are not instantiable.
    * */
   private IPCUtils() {
