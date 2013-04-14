@@ -18,10 +18,12 @@ import edu.washington.escience.myriad.parallel.Worker.QueryExecutionMode;
 import edu.washington.escience.myriad.parallel.ipc.IPCEvent;
 import edu.washington.escience.myriad.parallel.ipc.IPCEventListener;
 import edu.washington.escience.myriad.util.DateTimeUtils;
+import edu.washington.escience.myriad.util.ReentrantSpinLock;
 
 /**
  * A {@link MasterQueryPartition} is the partition of a query plan at the Master side. Currently, a master query
  * partition can only have a single task.
+ * 
  * 
  * */
 public class MasterQueryPartition implements QueryPartition {
@@ -72,9 +74,19 @@ public class MasterQueryPartition implements QueryPartition {
   private final BitSet workersReceivedQuery;
 
   /**
+   * BitSet is not thread safe. Protect {@code workersReceivedQuery}.
+   * */
+  private final ReentrantSpinLock workersReceivedQueryLock = new ReentrantSpinLock();
+
+  /**
    * The workers who have completed their part of the query plan.
    * */
   private final BitSet workersCompleteQuery;
+
+  /**
+   * BitSet is not thread safe. Protect {@code workersCompleteQuery}.
+   * */
+  private final ReentrantSpinLock workersCompleteQueryLock = new ReentrantSpinLock();
 
   /**
    * The workers get assigned to compute the query. WorkerID -> Worker Index.
@@ -159,9 +171,17 @@ public class MasterQueryPartition implements QueryPartition {
    * */
   final void queryReceivedByWorker(final int workerID) {
     final int workerIdx = workersAssigned.get(workerID);
-    workersReceivedQuery.set(workerIdx);
-    workerReceiveFuture.setProgress(1, workersReceivedQuery.cardinality(), workersAssigned.size());
-    if (workersReceivedQuery.cardinality() >= workersAssigned.size()) {
+    int nowCardinality = -1;
+
+    workersReceivedQueryLock.lock();
+    try {
+      workersReceivedQuery.set(workerIdx);
+      nowCardinality = workersReceivedQuery.cardinality();
+    } finally {
+      workersReceivedQueryLock.unlock();
+    }
+    workerReceiveFuture.setProgress(1, nowCardinality, workersAssigned.size());
+    if (nowCardinality >= workersAssigned.size()) {
       workerReceiveFuture.setSuccess();
     }
   }
@@ -215,9 +235,16 @@ public class MasterQueryPartition implements QueryPartition {
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("Received query complete message from worker: {}", workerID);
     }
-    workersCompleteQuery.set(workerIdx);
-    queryExecutionFuture.setProgress(1, workersCompleteQuery.cardinality(), workersAssigned.size());
-    if (workersCompleteQuery.cardinality() >= workersAssigned.size() && rootTaskEOS) {
+    int nowCardinality = -1;
+    workersCompleteQueryLock.lock();
+    try {
+      workersCompleteQuery.set(workerIdx);
+      nowCardinality = workersCompleteQuery.cardinality();
+    } finally {
+      workersCompleteQueryLock.unlock();
+    }
+    queryExecutionFuture.setProgress(1, nowCardinality, workersAssigned.size());
+    if (nowCardinality >= workersAssigned.size() && rootTaskEOS) {
       endAtInNano = System.nanoTime();
       if (LOGGER.isInfoEnabled()) {
         LOGGER.info("Query #" + queryID + " finished at " + endAtInNano);
@@ -255,7 +282,6 @@ public class MasterQueryPartition implements QueryPartition {
         new QuerySubTreeTask(MyriaConstants.MASTER_ID, this, root, master.serverQueryExecutor,
             QueryExecutionMode.NON_BLOCKING);
     rootTask.getExecutionFuture().addListener(taskExecutionListener);
-
     for (Consumer c : rootTask.getInputChannels().values()) {
       for (ConsumerChannel cc : c.getExchangeChannels()) {
         consumerChannelMapping.putIfAbsent(cc.getExchangeChannelID(), cc);
@@ -355,7 +381,14 @@ public class MasterQueryPartition implements QueryPartition {
       LOGGER.info("query: " + this + " finished");
     }
     rootTaskEOS = true;
-    if (workersCompleteQuery.cardinality() >= workersAssigned.size()) {
+    int nowCardinality = -1;
+    workersCompleteQueryLock.lock();
+    try {
+      nowCardinality = workersCompleteQuery.cardinality();
+    } finally {
+      workersCompleteQueryLock.unlock();
+    }
+    if (nowCardinality >= workersAssigned.size()) {
       endAtInNano = System.nanoTime();
       if (LOGGER.isInfoEnabled()) {
         LOGGER.info("Query #" + queryID + " finished at " + endAtInNano);
