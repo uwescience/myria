@@ -12,6 +12,7 @@ import org.junit.Test;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -20,7 +21,6 @@ import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.SQLiteInsert;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
-import edu.washington.escience.myriad.parallel.Server;
 import edu.washington.escience.myriad.systemtest.SystemTestBase;
 import edu.washington.escience.myriad.util.SQLiteUtils;
 import edu.washington.escience.myriad.util.TestUtils;
@@ -49,7 +49,7 @@ public class SQLiteAccessMethodTest extends SystemTestBase {
       tbb.put(1, names[i]);
     }
 
-    final File dbFile = File.createTempFile(Server.SYSTEM_NAME + "_sqlite_access_method_test", ".db");
+    final File dbFile = File.createTempFile(MyriaConstants.SYSTEM_NAME + "_sqlite_access_method_test", ".db");
     SystemTestBase.createTable(dbFile.getAbsolutePath(), testtableKey, "id long, name varchar(20)");
 
     TupleBatch tb = null;
@@ -65,7 +65,7 @@ public class SQLiteAccessMethodTest extends SystemTestBase {
         public void run() {
           final Iterator<TupleBatch> it =
               SQLiteAccessMethod.tupleBatchIteratorFromQuery(dbFile.getAbsolutePath(), "select * from "
-                  + testtableKey.toString("sqlite"), schema);
+                  + testtableKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), schema);
           while (it.hasNext()) {
             it.next();
           }
@@ -111,7 +111,7 @@ public class SQLiteAccessMethodTest extends SystemTestBase {
       tbb.put(1, names[i]);
     }
 
-    final File dbFile = File.createTempFile(Server.SYSTEM_NAME + "_sqlite_access_method_test", ".db");
+    final File dbFile = File.createTempFile(MyriaConstants.SYSTEM_NAME + "_sqlite_access_method_test", ".db");
     SystemTestBase.createTable(dbFile.getAbsolutePath(), testtable0Key, "id long, name varchar(20)");
     SystemTestBase.createTable(dbFile.getAbsolutePath(), testtable1Key, "id long, name varchar(20)");
 
@@ -131,7 +131,7 @@ public class SQLiteAccessMethodTest extends SystemTestBase {
         public void run() {
           final Iterator<TupleBatch> it =
               SQLiteAccessMethod.tupleBatchIteratorFromQuery(dbFile.getAbsolutePath(), "select * from "
-                  + testtableKeys.get(j % 2).toString("sqlite"), schema);
+                  + testtableKeys.get(j % 2).toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), schema);
 
           while (it.hasNext()) {
             it.next();
@@ -174,15 +174,16 @@ public class SQLiteAccessMethodTest extends SystemTestBase {
     while ((tb = tbl1.popAny()) != null) {
       insert(WORKER_ID[0], inputKey, tableSchema, tb);
     }
-    final SQLiteQueryScan scan =
-        new SQLiteQueryScan(getAbsoluteDBFile(WORKER_ID[0]).getAbsolutePath(), "select * from "
-            + inputKey.toString("sqlite"), tableSchema);
-    final SQLiteInsert insert =
-        new SQLiteInsert(scan, outputKey, getAbsoluteDBFile(WORKER_ID[0]).getAbsolutePath(), null, true);
+    final SQLiteQueryScan scan = new SQLiteQueryScan("select * from " + inputKey.toString("sqlite"), tableSchema);
+    final SQLiteInsert insert = new SQLiteInsert(scan, outputKey, true);
 
-    insert.open();
+    insert.open(null);
     while (!insert.eos()) {
-      insert.next();
+      try {
+        insert.next();
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
     }
   }
 }

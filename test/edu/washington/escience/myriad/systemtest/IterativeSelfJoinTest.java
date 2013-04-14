@@ -1,30 +1,31 @@
 package edu.washington.escience.myriad.systemtest;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.column.Column;
-import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.DupElim;
 import edu.washington.escience.myriad.operator.LocalJoin;
-import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
+import edu.washington.escience.myriad.operator.SinkRoot;
+import edu.washington.escience.myriad.operator.TBQueueExporter;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
-import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
+import edu.washington.escience.myriad.parallel.ExchangePairID;
 import edu.washington.escience.myriad.parallel.PartitionFunction;
 import edu.washington.escience.myriad.parallel.ShuffleConsumer;
 import edu.washington.escience.myriad.parallel.ShuffleProducer;
@@ -35,8 +36,8 @@ public class IterativeSelfJoinTest extends SystemTestBase {
   // change configuration here
   private final int MaxID = 400;
   private final int numIteration = 4;
-  private final int numTbl1Worker1 = 500;
-  private final int numTbl1Worker2 = 600;
+  private final int numTbl1Worker1 = 2000;
+  private final int numTbl1Worker2 = 2000;
 
   public TupleBatchBuffer getResultInMemory(final TupleBatchBuffer table1, final Schema schema, final int numIteration) {
     // a brute force check
@@ -93,7 +94,7 @@ public class IterativeSelfJoinTest extends SystemTestBase {
   }
 
   @Test
-  public void iterativeSelfJoinTest() throws DbException, CatalogException, IOException {
+  public void iterativeSelfJoinTest() throws Exception {
     final ImmutableList<Type> table1Types = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
     final ImmutableList<String> table1ColumnNames = ImmutableList.of("follower", "followee");
     final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
@@ -143,9 +144,11 @@ public class IterativeSelfJoinTest extends SystemTestBase {
 
     // parallel query generation, duplicate db files
     final SQLiteQueryScan scan1 =
-        new SQLiteQueryScan(null, "select * from " + testtableKeys.get(0).toString("sqlite"), tableSchema);
+        new SQLiteQueryScan("select * from " + testtableKeys.get(0).toString(MyriaConstants.STORAGE_SYSTEM_SQLITE),
+            tableSchema);
     final SQLiteQueryScan scan2 =
-        new SQLiteQueryScan(null, "select * from " + testtableKeys.get(0).toString("sqlite"), tableSchema);
+        new SQLiteQueryScan("select * from " + testtableKeys.get(0).toString(MyriaConstants.STORAGE_SYSTEM_SQLITE),
+            tableSchema);
 
     final int numPartition = 2;
     final PartitionFunction<String, Integer> pf0 = new SingleFieldHashPartitionFunction(numPartition); // 2 workers
@@ -153,7 +156,7 @@ public class IterativeSelfJoinTest extends SystemTestBase {
     final PartitionFunction<String, Integer> pf1 = new SingleFieldHashPartitionFunction(numPartition); // 2 workers
     pf1.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1); // partition by 2nd column
 
-    ArrayList<Operator> subqueries = new ArrayList<Operator>();
+    ArrayList<RootOperator> subqueries = new ArrayList<RootOperator>();
     final ShuffleProducer sp0[] = new ShuffleProducer[numIteration];
     final ShuffleProducer sp1[] = new ShuffleProducer[numIteration];
     final ShuffleProducer sp2[] = new ShuffleProducer[numIteration];
@@ -183,7 +186,9 @@ public class IterativeSelfJoinTest extends SystemTestBase {
       if (i == numIteration - 1) {
         break;
       }
-      scan[i] = new SQLiteQueryScan(null, "select * from " + testtableKeys.get(i).toString("sqlite"), tableSchema);
+      scan[i] =
+          new SQLiteQueryScan("select * from " + testtableKeys.get(i).toString(MyriaConstants.STORAGE_SYSTEM_SQLITE),
+              tableSchema);
       arrayID1 = ExchangePairID.newID();
       arrayID2 = ExchangePairID.newID();
       sp1[i] = new ShuffleProducer(scan[i], arrayID1, WORKER_ID, pf1);
@@ -195,18 +200,26 @@ public class IterativeSelfJoinTest extends SystemTestBase {
     final CollectProducer cp = new CollectProducer(dupelim[numIteration - 1], serverReceiveID, MASTER_ID);
     subqueries.add(cp);
 
-    final HashMap<Integer, Operator[]> workerPlans = new HashMap<Integer, Operator[]>();
-    workerPlans.put(WORKER_ID[0], subqueries.toArray(new Operator[subqueries.size()]));
-    workerPlans.put(WORKER_ID[1], subqueries.toArray(new Operator[subqueries.size()]));
+    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
+    workerPlans.put(WORKER_ID[0], subqueries.toArray(new RootOperator[subqueries.size()]));
+    workerPlans.put(WORKER_ID[1], subqueries.toArray(new RootOperator[subqueries.size()]));
 
-    final Long queryId = 0L;
+    final CollectConsumer serverCollect =
+        new CollectConsumer(tableSchema, serverReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
+    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
+    final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
+    SinkRoot serverPlan = new SinkRoot(queueStore);
 
-    final CollectConsumer serverPlan = new CollectConsumer(tableSchema, serverReceiveID, WORKER_ID);
-    server.dispatchWorkerQueryPlans(queryId, workerPlans);
-    LOGGER.debug("Query dispatched to the workers");
-    TupleBatchBuffer result = server.startServerQuery(queryId, serverPlan);
+    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
+    while (!receivedTupleBatches.isEmpty()) {
+      tb = receivedTupleBatches.poll();
+      if (tb != null) {
+        tb.compactInto(actualResult);
+      }
+    }
+    final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
+    TestUtils.assertTupleBagEqual(expectedResult, resultBag);
 
-    final HashMap<Tuple, Integer> actual = TestUtils.tupleBatchToTupleBag(result);
-    TestUtils.assertTupleBagEqual(expectedResult, actual);
   }
 }

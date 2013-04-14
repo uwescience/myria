@@ -15,17 +15,55 @@ public final class StringAggregator implements Aggregator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
+  /**
+   * aggregate field.
+   * */
   private final int afield;
+
+  /**
+   * Aggregate operations. An binary-or of all the applicable aggregate operations, i.e. those in
+   * {@link StringAggregator#AVAILABLE_AGG}.
+   * */
   private final int aggOps;
-  private int count;
-  private String min;
+
+  /**
+   * Count, always of long type.
+   * */
+  private long count;
+
+  /**
+   * min and max keeps the same data type as the aggregating column.
+   * */
+  private String min, max;
+
+  /**
+   * avoid compute min if not required.
+   * */
   private final boolean computeMin;
-  private String max;
+  /**
+   * avoid compute max if not required.
+   * */
   private final boolean computeMax;
+
+  /**
+   * Result schema. It's automatically generated according to the {@link StringAggregator#aggOps}.
+   * */
   private final Schema resultSchema;
 
+  /**
+   * Aggregate operations applicable for string columns.
+   * */
   public static final int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT | Aggregator.AGG_OP_MAX | Aggregator.AGG_OP_MIN;
 
+  /**
+   * This serves as the copy constructor.
+   * 
+   * @param afield the aggregate column.
+   * @param aggOps the aggregate operation to simultaneously compute.
+   * @param resultSchema the result schema.
+   * @param computeMin if min is required
+   * @param computeMax if max is required
+   * */
   private StringAggregator(final int afield, final int aggOps, final boolean computeMin, final boolean computeMax,
       final Schema resultSchema) {
     this.afield = afield;
@@ -38,6 +76,11 @@ public final class StringAggregator implements Aggregator {
     count = 0;
   }
 
+  /**
+   * @param afield the aggregate column.
+   * @param aFieldName aggregate field name for use in output schema.
+   * @param aggOps the aggregate operation to simultaneously compute.
+   * */
   public StringAggregator(final int afield, final String aFieldName, final int aggOps) {
     if (aggOps <= 0) {
       throw new IllegalArgumentException("No aggregation operations are selected");

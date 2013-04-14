@@ -1,47 +1,45 @@
 package edu.washington.escience.myriad.parallel;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.ObjectInputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
-import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.apache.commons.io.FilenameUtils;
 import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
-
-import com.almworks.sqlite4java.SQLiteConnection;
-import com.almworks.sqlite4java.SQLiteException;
+import org.jboss.netty.channel.ChannelPipelineFactory;
+import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
+import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
+import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
 
 import edu.washington.escience.myriad.DbException;
-import edu.washington.escience.myriad.Schema;
-import edu.washington.escience.myriad.column.Column;
-import edu.washington.escience.myriad.column.ColumnFactory;
+import edu.washington.escience.myriad.MyriaConstants;
+import edu.washington.escience.myriad.MyriaSystemConfigKeys;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.coordinator.catalog.WorkerCatalog;
-import edu.washington.escience.myriad.operator.BlockingSQLiteDataReceiver;
+import edu.washington.escience.myriad.operator.IDBInput;
 import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.operator.SQLiteInsert;
-import edu.washington.escience.myriad.operator.SQLiteQueryScan;
-import edu.washington.escience.myriad.operator.SQLiteSQLProcessor;
-import edu.washington.escience.myriad.parallel.Exchange.ExchangePairID;
+import edu.washington.escience.myriad.operator.RootOperator;
+import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
+import edu.washington.escience.myriad.parallel.ipc.IPCEvent;
+import edu.washington.escience.myriad.parallel.ipc.IPCEventListener;
+import edu.washington.escience.myriad.parallel.ipc.InJVMLoopbackChannelSink;
 import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
-import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
-import edu.washington.escience.myriad.proto.DataProto.DataMessage;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.util.IPCUtils;
 import edu.washington.escience.myriad.util.JVMUtils;
@@ -64,188 +62,133 @@ import edu.washington.escience.myriad.util.JVMUtils;
  * next query plan
  * 
  */
-public class Worker {
-  /** A short amount of time to sleep waiting for network events. */
-  public static final int SHORT_SLEEP_MILLIS = 100;
+public final class Worker {
 
-  protected final class MessageProcessor extends Thread {
+  /** The logger for this class. */
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Worker.class.getName());
 
-    /** Constructor, set the thread name. */
-    public MessageProcessor() {
-      super();
-      setName("Worker-MessageProcessor-" + getId());
-    }
+  /**
+   * query execution mode, blocking or non-blocking. Always use the NON_BLOCKING mode. The BLOCKING mode may not work
+   * and may get abandoned.
+   * */
+  @Deprecated
+  static enum QueryExecutionMode {
+    /**
+     * blocking execution, call next() and fetchNext().
+     * */
+    BLOCKING,
 
-    /** Whether this thread should stop. */
-    private volatile boolean stopped = false;
-
-    @Override
-    public void run() {
-
-      TERMINATE_MESSAGE_PROCESSING : while (!stopped) {
-        MessageWrapper mw = null;
-        try {
-          final int pollDelay = 100;
-          mw = messageQueue.poll(pollDelay, TimeUnit.MILLISECONDS);
-          if (mw == null) {
-            continue;
-          }
-        } catch (final InterruptedException e) {
-          e.printStackTrace();
-          break TERMINATE_MESSAGE_PROCESSING;
-        }
-        final TransportMessage m = mw.message;
-        final Integer senderID = mw.senderID;
-
-        switch (m.getType()) {
-          case QUERY:
-            try {
-              final long queryId = m.getQuery().getQueryId();
-              final ObjectInputStream osis =
-                  new ObjectInputStream(new ByteArrayInputStream(m.getQuery().getQuery().toByteArray()));
-              final Operator[] query = (Operator[]) (osis.readObject());
-              try {
-                receiveQuery(queryId, query);
-              } catch (final DbException e) {
-                e.printStackTrace();
-                throw new RuntimeException(e);
-              }
-              sendMessageToMaster(IPCUtils.queryReadyTM(myID, queryId), null);
-            } catch (IOException | ClassNotFoundException e) {
-              e.printStackTrace();
-            }
-            break;
-          case DATA:
-            final DataMessage data = m.getData();
-            final ExchangePairID exchangePairID = ExchangePairID.fromExisting(data.getOperatorID());
-            final Schema operatorSchema = exchangeSchema.get(exchangePairID);
-
-            switch (data.getType()) {
-              case EOS:
-                receiveData(new ExchangeData(exchangePairID, senderID, operatorSchema, 0));
-                break;
-              case EOI:
-                receiveData(new ExchangeData(exchangePairID, senderID, operatorSchema, 1));
-                break;
-              case NORMAL:
-                final List<ColumnMessage> columnMessages = data.getColumnsList();
-                final Column<?>[] columnArray = new Column<?>[columnMessages.size()];
-                int idx = 0;
-                for (final ColumnMessage cm : columnMessages) {
-                  columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm);
-                }
-                final List<Column<?>> columns = Arrays.asList(columnArray);
-                receiveData(new ExchangeData(exchangePairID, senderID, columns, operatorSchema, columnMessages.get(0)
-                    .getNumTuples()));
-
-                break;
-            }
-            break;
-          case CONTROL:
-            final ControlMessage controlM = m.getControl();
-            switch (controlM.getType()) {
-              case SHUTDOWN:
-                LOGGER.info("shutdown requested");
-                toShutdown = true;
-                break;
-              case START_QUERY:
-                Long queryId = controlM.getQueryId();
-                executeQuery(queryId);
-                break;
-              case DISCONNECT:
-                /* TODO */
-                break;
-              case CONNECT:
-              case QUERY_COMPLETE:
-              case QUERY_READY_TO_EXECUTE:
-              case WORKER_ALIVE:
-                throw new RuntimeException("Unexpected control message received at worker: " + controlM.getType());
-            }
-            break;
-        }
-
-      }
-
-    }
-
-    /** Stop this thread. */
-    public void setStopped() {
-      stopped = true;
-    }
+    /**
+     * non-blocking execution, call nextReady() and fetchNextReady().
+     * */
+    NON_BLOCKING;
   }
 
-  public static class MessageWrapper {
-    public int senderID;
+  /**
+   * Control message processor.
+   * */
+  private final class ControlMessageProcessor implements Runnable {
+    @Override
+    public void run() {
+      try {
 
-    public TransportMessage message;
+        TERMINATE_MESSAGE_PROCESSING : while (true) {
+          if (Thread.currentThread().isInterrupted()) {
+            Thread.currentThread().interrupt();
+            break TERMINATE_MESSAGE_PROCESSING;
+          }
 
-    public MessageWrapper(final int senderID, final TransportMessage message) {
-      this.senderID = senderID;
-      this.message = message;
+          ControlMessage cm = null;
+          try {
+            while ((cm = controlMessageQueue.take()) != null) {
+              switch (cm.getType()) {
+                case SHUTDOWN:
+                  if (LOGGER.isInfoEnabled()) {
+                    LOGGER.info("shutdown requested");
+                  }
+                  toShutdown = true;
+                  abruptShutdown = false;
+                  break;
+                case START_QUERY:
+                  long queryId = cm.getQueryId();
+                  WorkerQueryPartition q = activeQueries.get(queryId);
+                  if (q == null) {
+                    if (LOGGER.isErrorEnabled()) {
+                      LOGGER.error("Unknown query id: {}, current active queries are: {}", queryId, activeQueries);
+                    }
+                    continue;
+                  }
+                  if (queryExecutionMode == QueryExecutionMode.NON_BLOCKING) {
+                    q.startNonBlockingExecution();
+                  } else {
+                    q.startBlockingExecution();
+                  }
+                  break;
+                case DISCONNECT:
+                case CONNECT:
+                  // DISCONNECT and CONNECT are used exclusively in IPC connection pool. They should not arrive here.
+                  if (LOGGER.isErrorEnabled()) {
+                    LOGGER
+                        .error("DISCONNECT and CONNECT are used exclusively in IPC connection pool. They should not arrive here.");
+                  }
+                  break;
+                case QUERY_COMPLETE:
+                case QUERY_READY_TO_EXECUTE:
+                case WORKER_ALIVE:
+                  if (LOGGER.isErrorEnabled()) {
+                    LOGGER.error("Unexpected control message received at worker: " + cm.getType());
+                  }
+              }
+            }
+          } catch (InterruptedException e) {
+            Thread.interrupted();
+            break;
+          }
+        }
+      } catch (Throwable ee) {
+        if (LOGGER.isErrorEnabled()) {
+          LOGGER.error("Unknown exception caught at control message processing.", ee);
+        }
+      }
     }
   }
 
   /**
-   * The working thread, which executes the query plan.
+   * The non-blocking query driver. It calls root.nextReady() to start a qurey.
    */
-  protected class QueryExecutor extends Thread {
-    /** Constructor, set the thread name. */
-    public QueryExecutor() {
-      super();
-      setName("Worker-QueryExecutor-" + getId());
-    }
-
-    /** Whether this worker has been stopped. */
-    private volatile boolean stopped = false;
+  private class QueryMessageProcessor implements Runnable {
 
     @Override
     public final void run() {
-      while (!stopped) {
-        Operator[] queries = queryPlan;
-        long queryId = myQueryId;
-        if (queries != null && startedQueryId >= myQueryId) {
-          LOGGER.info("Worker start processing query " + queryId);
-          for (final Operator query : queries) {
-            try {
-              query.open();
-            } catch (final DbException e) {
-              throw new RuntimeException(e);
-            }
-          }
-          int endCount = 0;
-          while (true) {
-            for (final Operator query : queries) {
-              try {
-                if (query.isOpen() && query.next() == null) {
-                  endCount++;
-                  query.close();
-                }
-              } catch (final DbException e) {
-                throw new RuntimeException(e);
-              }
-            }
-            if (endCount == queries.length) {
-              break;
-            }
-          }
-          finishQuery(queryId);
-        }
-
-        synchronized (queryExecutor) {
+      try {
+        WorkerQueryPartition q = null;
+        while (true) {
           try {
-            // wait until a query plan is received
-            queryExecutor.wait(SHORT_SLEEP_MILLIS);
-          } catch (final InterruptedException e) {
+            q = queryQueue.take();
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             break;
           }
+
+          if (q != null) {
+            try {
+              receiveQuery(q);
+              sendMessageToMaster(IPCUtils.queryReadyTM(q.getQueryID()));
+            } catch (DbException e) {
+              if (LOGGER.isErrorEnabled()) {
+                LOGGER.error("Unexpected exception at preparing query. Drop the query.", e);
+              }
+              q = null;
+            }
+          }
+        }
+      } catch (Throwable ee) {
+        if (LOGGER.isErrorEnabled()) {
+          LOGGER.error("Unknown exception caught at query nonblocking driver.", ee);
         }
       }
     }
 
-    /** Stop this queryExecutor after the query finishes. */
-    public final void setStopped() {
-      stopped = true;
-    }
   }
 
   /**
@@ -253,139 +196,113 @@ public class Worker {
    * still alive. If the server got killed because of any reason, the workers will be terminated. 2) it detects whether
    * a shutdown message is received.
    */
-  protected class WorkerLivenessController {
-    protected class Reporter extends TimerTask {
-      private volatile boolean inRun = false;
+  static final class Reporter extends TimerTask {
 
-      @Override
-      public final void run() {
-        if (inRun) {
-          return;
-        }
-        inRun = true;
-        Channel serverChannel = null;
-        try {
-          serverChannel = connectionPool.reserveLongTermConnection(0);
-        } catch (final RuntimeException e) {
-          e.printStackTrace();
-        } catch (final Exception e) {
-          e.printStackTrace();
-        } finally {
-          if (serverChannel == null) {
-            LOGGER.info("Cannot connect the server: " + masterSocketInfo
-                + " Maybe the server is down. I'll shutdown now.");
-            LOGGER.info("Bye!");
-            timer.cancel();
-            JVMUtils.shutdownVM();
-          } else {
-            connectionPool.releaseLongTermConnection(serverChannel);
-          }
-        }
-        inRun = false;
-      }
+    /**
+     * Delay of the first check. 3 seconds to 5 seconds.
+     * */
+    public static final int INITIAL_DELAY_IN_MS = (3000 + (int) (2000 * Math.random()));
+
+    /**
+     * Time interval between two checks. 2.4 seconds to 2.9 seconds.
+     * */
+    public static final int INTERVAL = (2400 + (int) (500 * Math.random()));
+
+    /**
+     * the owner worker.
+     * */
+    private final Worker owner;
+
+    /**
+     * @param owner the owner worker.
+     * */
+    Reporter(final Worker owner) {
+      this.owner = owner;
     }
 
-    protected class ShutdownChecker extends TimerTask {
-      @Override
-      public final void run() {
-        if (toShutdown) {
-          shutdown();
-          timer.cancel();
-          // JVMUtils.shutdownVM();
-        }
-
-      }
-
-    }
-
-    private final Timer timer = new Timer();
-
-    public final void start() {
+    @Override
+    public synchronized void run() {
+      Channel serverChannel = null;
       try {
-        timer.schedule(new ShutdownChecker(), 100, SHORT_SLEEP_MILLIS);
-        timer.schedule(new Reporter(), (long) (Math.random() * 3000) + 5000, (long) (Math.random() * 2000) + 1000);
-      } catch (final IllegalStateException e) {
-        /* already got canceled, ignore. */
-        assert true; /* Do nothing. */
-      }
-    }
-  }
-
-  /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Worker.class);
-
-  static final String USAGE = "Usage: worker [--conf <conf_dir>]";
-
-  public static final String DEFAULT_DATA_DIR = "data";
-
-  public static void collectConsumerOperatorIDs(final Operator root, final ArrayList<ExchangePairID> oIds) {
-    if (root instanceof Consumer) {
-      oIds.add(((Consumer) root).getOperatorID());
-    }
-    final Operator[] ops = root.getChildren();
-    if (ops != null) {
-      for (final Operator c : ops) {
-        if (c != null) {
-          collectConsumerOperatorIDs(c, oIds);
-        } else {
+        serverChannel = owner.connectionPool.reserveLongTermConnection(MyriaConstants.MASTER_ID);
+        if (IPCUtils.isRemoteConnected(serverChannel)) {
           return;
         }
+      } catch (Throwable ee) {
+        if (LOGGER.isErrorEnabled()) {
+          LOGGER.error("Unknown exception caught at reporter.", ee);
+        }
+      } finally {
+        if (serverChannel != null) {
+          owner.connectionPool.releaseLongTermConnection(serverChannel);
+        }
       }
+      if (LOGGER.isInfoEnabled()) {
+        LOGGER.info("The Master has shutdown, I'll shutdown now.");
+      }
+      owner.toShutdown = true;
+      owner.abruptShutdown = true;
+      cancel();
     }
   }
 
   /**
-   * Find out all the ParallelOperatorIDs of all consuming operators: ShuffleConsumer, CollectConsumer, and
-   * BloomFilterConsumer running at this worker. The inBuffer needs the IDs to distribute the ExchangeMessages received.
-   */
-  public static void collectConsumerOperatorIDs(final Operator[] roots, final ArrayList<ExchangePairID> oIds) {
-    for (final Operator root : roots) {
-      collectConsumerOperatorIDs(root, oIds);
-    }
-  }
-
-  public static void main(String[] args) throws Throwable {
-    Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
-    Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
-
-    if (args.length > 2) {
-      LOGGER.warn("Invalid number of arguments.\n" + USAGE);
-      JVMUtils.shutdownVM();
-    }
-
-    String workingDir = null;
-    if (args.length >= 2) {
-      if (args[0].equals("--workingDir")) {
-        workingDir = args[1];
-        args = ParallelUtility.removeArg(args, 0);
-        ParallelUtility.removeArg(args, 0);
-      } else {
-        LOGGER.warn("Invalid arguments.\n" + USAGE);
-        JVMUtils.shutdownVM();
+   * Periodically detect whether the {@link Worker} should be shutdown.
+   * */
+  private class ShutdownChecker extends TimerTask {
+    @Override
+    public final synchronized void run() {
+      try {
+        if (toShutdown) {
+          shutdown();
+        }
+      } catch (Throwable ee) {
+        if (LOGGER.isErrorEnabled()) {
+          LOGGER.error("Unknown exception caught at shutdown checker.", ee);
+        }
       }
+
     }
-
-    LOGGER.debug("workingDir: " + workingDir);
-    // Instantiate a new worker
-    final Worker w = new Worker(workingDir);
-    // int port = w.port;
-
-    // Prepare to receive messages over the network
-    w.init();
-    // Start the actual message handler by binding
-    // the acceptor to a network socket
-    // Now the worker can accept messages
-    w.start();
-
-    LOGGER.info("Worker started at:" + w.catalog.getWorkers().get(w.myID));
-
-    // From now on, the worker will listen for
-    // messages to arrive on the network. These messages
-    // will be handled by the WorkerHandler (see class WorkerHandler below,
-    // in particular method messageReceived).
-
   }
 
+  /**
+   * usage.
+   * */
+  static final String USAGE = "Usage: worker [--conf <conf_dir>]";
+
+  /**
+   * {@link ExecutorService} for query executions.
+   * */
+  private volatile ThreadPoolExecutor queryExecutor;
+
+  /**
+   * {@link ExecutorService} for non-query message processing.
+   * */
+  private volatile ExecutorService messageProcessingExecutor;
+
+  /**
+   * current active queries. queryID -> QueryPartition
+   * */
+  private final ConcurrentHashMap<Long, WorkerQueryPartition> activeQueries;
+
+  /**
+   * My message handler.
+   * */
+  private final WorkerDataHandler workerDataHandler;
+
+  /**
+   * IPC flow controller.
+   * */
+  private final FlowControlHandler flowController;
+
+  /**
+   * timer task executor.
+   * */
+  private ScheduledExecutorService scheduledTaskExecutor;
+
+  /**
+   * database handle.
+   * */
   private final Properties databaseHandle;
 
   /**
@@ -393,220 +310,272 @@ public class Worker {
    */
   private final int myID;
 
-  /** The ID of the currently running query. */
-  private volatile long myQueryId;
-
-  /** The ID of the highest started query. */
-  private volatile long startedQueryId;
-
   /**
    * connectionPool[0] is always the master.
    */
   private final IPCConnectionPool connectionPool;
 
   /**
-   * The acceptor, which binds to a TCP socket and waits for connections
-   * 
-   * The Server sends messages, including query plans and control messages, to the worker through this acceptor.
-   * 
-   * Other workers send tuples during query execution to this worker also through this acceptor.
-   */
-  // final ServerBootstrap ipcServer;
-  // private Channel ipcServerChannel;
-
-  /**
-   * The current query plan.
-   */
-  private volatile Operator[] queryPlan = null;
-
-  /**
    * A indicator of shutting down the worker.
    */
   private volatile boolean toShutdown = false;
 
-  private final QueryExecutor queryExecutor;
-
-  private final MessageProcessor messageProcessor;
+  /**
+   * abrupt shutdown.
+   * */
+  private volatile boolean abruptShutdown = false;
 
   /**
-   * The I/O buffer, all the ExchangeMessages sent to this worker are buffered here.
-   */
-  private final HashMap<ExchangePairID, LinkedBlockingQueue<ExchangeData>> dataBuffer;
-  private final ConcurrentHashMap<ExchangePairID, Schema> exchangeSchema;
+   * Message queue for control messages.
+   * */
+  private final LinkedBlockingQueue<ControlMessage> controlMessageQueue;
 
-  private final LinkedBlockingQueue<MessageWrapper> messageQueue;
+  /**
+   * Message queue for queries.
+   * */
+  private final PriorityBlockingQueue<WorkerQueryPartition> queryQueue;
 
+  /**
+   * My catalog.
+   * */
   private final WorkerCatalog catalog;
+
+  /**
+   * master IPC address.
+   * */
   private final SocketInfo masterSocketInfo;
 
-  public Worker(final String workingDirectory) throws CatalogException, FileNotFoundException, DbException {
-    catalog = WorkerCatalog.open(FilenameUtils.concat(workingDirectory, "worker.catalog"));
-    myID = Integer.parseInt(catalog.getConfigurationValue("worker.identifier"));
-    startedQueryId = -1;
-    databaseHandle = new Properties();
-    final String databaseType = catalog.getConfigurationValue("worker.data.type");
-    switch (databaseType) {
-      case "sqlite":
-        String sqliteFile = catalog.getConfigurationValue("worker.data.sqlite.db");
-        databaseHandle.setProperty("sqliteFile", sqliteFile);
-        SQLiteConnection conn = new SQLiteConnection(new File(sqliteFile));
-        try {
-          conn.open(true);
-          /* By default, use WAL */
-          conn.exec("PRAGMA journal_mode=WAL;");
-        } catch (SQLiteException e) {
-          e.printStackTrace();
+  // /**
+  // * my IPC address.
+  // * */
+  // private final SocketInfo mySocketInfo;
+
+  /**
+   * Query execution mode. May remove
+   * */
+  @Deprecated
+  private final QueryExecutionMode queryExecutionMode;
+
+  /**
+   * Producer channel mapping of current active queries.
+   * */
+  private final ConcurrentHashMap<ExchangeChannelID, ProducerChannel> producerChannelMapping;
+
+  /**
+   * Consumer channel mapping of current active queries.
+   * */
+  private final ConcurrentHashMap<ExchangeChannelID, ConsumerChannel> consumerChannelMapping;
+
+  /**
+   * {@link ExecutorService} for Netty pipelines.
+   * */
+  private volatile OrderedMemoryAwareThreadPoolExecutor pipelineExecutor;
+
+  /**
+   * The default input buffer capacity for each {@link Consumer} input buffer.
+   * */
+  private final int inputBufferCapacity;
+
+  /**
+   * Current working directory. It's the logical root of the worker. All the data the worker and the operators running
+   * on the worker can access should be put under this directory.
+   * */
+  private final String workingDirectory;
+
+  /**
+   * Execution environment variables for operators.
+   * */
+  private final ConcurrentHashMap<String, Object> execEnvVars;
+
+  /**
+   * Worker process entry point.
+   * 
+   * @param args command line arguments.
+   * */
+  public static void main(final String[] args) {
+    try {
+      java.util.logging.Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
+      java.util.logging.Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
+
+      if (args.length > 2) {
+        LOGGER.warn("Invalid number of arguments.\n" + USAGE);
+        JVMUtils.shutdownVM();
+      }
+
+      String workingDir = null;
+      if (args.length >= 2) {
+        if (args[0].equals("--workingDir")) {
+          workingDir = args[1];
+        } else {
+          if (LOGGER.isErrorEnabled()) {
+            LOGGER.error("Invalid arguments.\n" + USAGE);
+          }
+          JVMUtils.shutdownVM();
         }
-        conn.dispose();
+      }
+
+      if (LOGGER.isInfoEnabled()) {
+        LOGGER.info("workingDir: " + workingDir);
+      }
+      // Instantiate a new worker
+      final Worker w = new Worker(workingDir, QueryExecutionMode.NON_BLOCKING);
+      // int port = w.port;
+
+      // Start the actual message handler by binding
+      // the acceptor to a network socket
+      // Now the worker can accept messages
+      w.start();
+
+      if (LOGGER.isInfoEnabled()) {
+        LOGGER.info("Worker started at:" + w.catalog.getWorkers().get(w.myID));
+      }
+    } catch (Throwable e) {
+      if (LOGGER.isErrorEnabled()) {
+        LOGGER.error("Unknown error occurs at Worker. Quit directly.", e);
+      }
+    }
+
+  }
+
+  /**
+   * @return my control message queue.
+   * */
+  LinkedBlockingQueue<ControlMessage> getControlMessageQueue() {
+    return controlMessageQueue;
+  }
+
+  /**
+   * @return my query queue.
+   * */
+  PriorityBlockingQueue<WorkerQueryPartition> getQueryQueue() {
+    return queryQueue;
+  }
+
+  /**
+   * @return my flow controller.
+   * */
+  FlowControlHandler getFlowControlHandler() {
+    return flowController;
+  }
+
+  /**
+   * @return my message processor.
+   * */
+  WorkerDataHandler getWorkerDataHandler() {
+    return workerDataHandler;
+  }
+
+  /**
+   * @return my connection pool for IPC.
+   * */
+  IPCConnectionPool getIPCConnectionPool() {
+    return connectionPool;
+  }
+
+  /**
+   * @return my pipeline executor.
+   * */
+  OrderedMemoryAwareThreadPoolExecutor getPipelineExecutor() {
+    return pipelineExecutor;
+  }
+
+  /**
+   * @return my execution environment variables for init of operators.
+   * */
+  ConcurrentHashMap<String, Object> getExecEnvVars() {
+    return execEnvVars;
+  }
+
+  /**
+   * @return the working directory of the worker.
+   * */
+  String getWorkingDirectory() {
+    return workingDirectory;
+  }
+
+  /**
+   * @param workingDirectory my working directory.
+   * @param mode my execution mode.
+   * @throws CatalogException if there's any catalog operation errors.
+   * @throws FileNotFoundException if catalog files are not found.
+   * */
+  public Worker(final String workingDirectory, final QueryExecutionMode mode) throws CatalogException,
+      FileNotFoundException {
+    queryExecutionMode = mode;
+    catalog = WorkerCatalog.open(FilenameUtils.concat(workingDirectory, "worker.catalog"));
+
+    this.workingDirectory = workingDirectory;
+    myID = Integer.parseInt(catalog.getConfigurationValue(MyriaSystemConfigKeys.WORKER_IDENTIFIER));
+    databaseHandle = new Properties();
+
+    // mySocketInfo = catalog.getWorkers().get(myID);
+
+    controlMessageQueue = new LinkedBlockingQueue<ControlMessage>();
+    queryQueue = new PriorityBlockingQueue<WorkerQueryPartition>();
+
+    masterSocketInfo = catalog.getMasters().get(0);
+    workerDataHandler = new WorkerDataHandler(this);
+
+    final Map<Integer, SocketInfo> workers = catalog.getWorkers();
+    final Map<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
+    computingUnits.putAll(workers);
+    computingUnits.put(MyriaConstants.MASTER_ID, masterSocketInfo);
+
+    connectionPool =
+        new IPCConnectionPool(myID, computingUnits, IPCConfigurations.createWorkerIPCServerBootstrap(this),
+            IPCConfigurations.createWorkerIPCClientBootstrap(this));
+    activeQueries = new ConcurrentHashMap<Long, WorkerQueryPartition>();
+    producerChannelMapping = new ConcurrentHashMap<ExchangeChannelID, ProducerChannel>();
+    consumerChannelMapping = new ConcurrentHashMap<ExchangeChannelID, ConsumerChannel>();
+    flowController = new FlowControlHandler(consumerChannelMapping, producerChannelMapping);
+
+    inputBufferCapacity =
+        Integer.valueOf(catalog.getConfigurationValue(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY));
+    execEnvVars = new ConcurrentHashMap<String, Object>();
+
+    for (Entry<String, String> cE : catalog.getAllConfigurations().entrySet()) {
+      execEnvVars.put(cE.getKey(), cE.getValue());
+    }
+    final String databaseType = catalog.getConfigurationValue(MyriaSystemConfigKeys.WORKER_STORAGE_SYSTEM_TYPE);
+    switch (databaseType) {
+      case MyriaConstants.STORAGE_SYSTEM_SQLITE:
+        String sqliteFilePath = catalog.getConfigurationValue(MyriaSystemConfigKeys.WORKER_DATA_SQLITE_DB);
+        databaseHandle.setProperty("sqliteFile", sqliteFilePath);
+        execEnvVars.put("sqliteFile", sqliteFilePath);
         break;
-      case "mysql":
+      case MyriaConstants.STORAGE_SYSTEM_MYSQL:
         /* TODO fill this in. */
         break;
       default:
         throw new CatalogException("Unknown worker type: " + databaseType);
     }
 
-    dataBuffer = new HashMap<ExchangePairID, LinkedBlockingQueue<ExchangeData>>();
-    messageQueue = new LinkedBlockingQueue<MessageWrapper>();
-    exchangeSchema = new ConcurrentHashMap<ExchangePairID, Schema>();
-
-    queryExecutor = new QueryExecutor();
-    queryExecutor.setDaemon(true);
-    messageProcessor = new MessageProcessor();
-    messageProcessor.setDaemon(false);
-    masterSocketInfo = catalog.getMasters().get(0);
-
-    final Map<Integer, SocketInfo> workers = catalog.getWorkers();
-    final Map<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
-    computingUnits.putAll(workers);
-    computingUnits.put(0, masterSocketInfo);
-
-    connectionPool = new IPCConnectionPool(myID, computingUnits, messageQueue);
-    // ipcServer = ParallelUtility.createWorkerIPCServer(messageQueue, connectionPool);
-  }
-
-  /**
-   * execute the current query, note that this method is invoked by the Mina IOHandler thread. Typically, IOHandlers
-   * should focus on accepting/routing IO requests, rather than do heavily loaded work.
-   * 
-   * @param queryId the query being started.
-   */
-  public final void executeQuery(final Long queryId) {
-    LOGGER.info("Query " + queryId + " started");
-    startedQueryId = queryId;
-    synchronized (queryExecutor) {
-      queryExecutor.notifyAll();
-    }
+    execEnvVars.put("ipcConnectionPool", connectionPool);
   }
 
   /**
    * This method should be called when a query is finished.
    * 
-   * @param queryId the ID of the query that just finished.
+   * @param query the query that just finished.
    */
-  public final void finishQuery(final long queryId) {
-    if (queryPlan != null) {
-      dataBuffer.clear();
-      queryPlan = null;
-    }
-    sendMessageToMaster(IPCUtils.queryCompleteTM(myID, queryId), null);
-    LOGGER.info("My part of query " + queryId + " finished");
-  }
+  public void finishQuery(final WorkerQueryPartition query) {
+    if (query != null) {
+      activeQueries.remove(query.getQueryID());
+      sendMessageToMaster(IPCUtils.queryCompleteTM(query.getQueryID())).addListener(new ChannelFutureListener() {
 
-  /**
-   * Initialize.
-   */
-  public final void init() throws IOException {
-  }
-
-  /**
-   * Return true if the worker is now executing a query.
-   */
-  public final boolean isRunning() {
-    return queryPlan != null;
-  }
-
-  public final void localizeQueryPlan(final Operator queryPlan) throws DbException {
-    if (queryPlan == null) {
-      return;
-    }
-    if (queryPlan instanceof SQLiteQueryScan) {
-      final String sqliteDatabaseFilename = databaseHandle.getProperty("sqliteFile");
-      if (sqliteDatabaseFilename == null) {
-        throw new DbException("Unable to instantiate SQLiteQueryScan on non-sqlite worker");
-      }
-      final SQLiteQueryScan ss = ((SQLiteQueryScan) queryPlan);
-      ss.setPathToSQLiteDb(sqliteDatabaseFilename);
-    } else if (queryPlan instanceof SQLiteSQLProcessor) {
-      final String sqliteDatabaseFilename = databaseHandle.getProperty("sqliteFile");
-      if (sqliteDatabaseFilename == null) {
-        throw new DbException("Unable to instantiate SQLiteSQLProcessor on non-sqlite worker");
-      }
-      final SQLiteSQLProcessor ss = ((SQLiteSQLProcessor) queryPlan);
-      ss.setPathToSQLiteDb(sqliteDatabaseFilename);
-    } else if (queryPlan instanceof SQLiteInsert) {
-      final String sqliteDatabaseFilename = databaseHandle.getProperty("sqliteFile");
-      if (sqliteDatabaseFilename == null) {
-        throw new DbException("Unable to instantiate SQLiteInsert on non-sqlite worker");
-      }
-      final SQLiteInsert insert = ((SQLiteInsert) queryPlan);
-      insert.setPathToSQLiteDb(sqliteDatabaseFilename);
-    } else if (queryPlan instanceof Producer) {
-      ((Producer) queryPlan).setConnectionPool(connectionPool);
-    } else if (queryPlan instanceof Consumer) {
-      final Consumer c = (Consumer) queryPlan;
-
-      LinkedBlockingQueue<ExchangeData> buf = null;
-      buf = Worker.this.dataBuffer.get(((Consumer) queryPlan).getOperatorID());
-      c.setInputBuffer(buf);
-      exchangeSchema.put(c.getOperatorID(), c.getSchema());
-
-    } else if (queryPlan instanceof BlockingSQLiteDataReceiver) {
-      final String sqliteDatabaseFilename = databaseHandle.getProperty("sqliteFile");
-      if (sqliteDatabaseFilename == null) {
-        throw new DbException("Unable to instantiate BlockingSQLiteDataReceiver on non-sqlite worker");
-      }
-      final BlockingSQLiteDataReceiver bdr = (BlockingSQLiteDataReceiver) queryPlan;
-      bdr.setPathToSQLiteDb(sqliteDatabaseFilename);
-    }
-
-    final Operator[] children = queryPlan.getChildren();
-
-    if (children != null) {
-      for (final Operator child : children) {
-        if (child != null) {
-          localizeQueryPlan(child);
+        @Override
+        public void operationComplete(final ChannelFuture future) throws Exception {
+          if (future.isSuccess()) {
+            if (LOGGER.isDebugEnabled()) {
+              LOGGER.debug("The query complete message is sent to the master for sure ");
+            }
+          }
         }
+
+      });
+      if (LOGGER.isInfoEnabled()) {
+        LOGGER.info("My part of query " + query + " finished");
       }
-    }
-  }
-
-  /**
-   * localize the received query plan. Some information that are required to get the query plan executed need to be
-   * replaced by local versions. For example, the table in the SeqScan operator need to be replaced by the local table.
-   * Note that Producers and Consumers also needs local information.
-   * 
-   * @throws DbException
-   */
-  public final void localizeQueryPlan(final Operator[] queryPlans) throws DbException {
-    if (queryPlans == null) {
-      return;
-    }
-    for (final Operator queryPlan : queryPlans) {
-      localizeQueryPlan(queryPlan);
-    }
-  }
-
-  /**
-   * This method should be called when a data item is received.
-   */
-  public final void receiveData(final ExchangeData data) {
-    LOGGER.debug("TupleBag received from " + data.getWorkerID() + " to Operator: " + data.getOperatorID());
-    LinkedBlockingQueue<ExchangeData> q = null;
-    q = Worker.this.dataBuffer.get(data.getOperatorID());
-    if (q != null) {
-      // if q == null it means dataBuffer has been cleaned by finishQuery()
-      q.offer(data);
     }
   }
 
@@ -615,55 +584,231 @@ public class Worker {
    * 
    * It does the initialization and preparation for the execution of the query.
    * 
-   * @throws DbException
+   * @param query the received query.
+   * @throws DbException if any error occurs.
    */
-  public final void receiveQuery(final Long queryId, final Operator[] queries) throws DbException {
-    LOGGER.info("Query " + queryId + " received");
-    if (queryPlan != null) {
-      LOGGER.info("Error: Worker is still processing " + myQueryId + ". New query " + queryId + " refused");
+  public void receiveQuery(final WorkerQueryPartition query) throws DbException {
+    if (LOGGER.isInfoEnabled()) {
+      LOGGER.info("Query received" + query);
+    }
+    setupExchangeChannels(query);
+    activeQueries.put(query.getQueryID(), query);
+  }
+
+  /**
+   * 
+   * Find out the consumers and producers and register them in the {@link Worker}'s data structures
+   * {@link Worker#producerChannelMapping} and {@link Worker#consumerChannelMapping}.
+   * 
+   * @param query the query on which to do the setup.
+   * @throws DbException if any error occurs.
+   * 
+   */
+  public void setupExchangeChannels(final WorkerQueryPartition query) throws DbException {
+    final ArrayList<QuerySubTreeTask> tasks = new ArrayList<QuerySubTreeTask>();
+
+    for (final RootOperator task : query.getOperators()) {
+      QuerySubTreeTask drivingTask = new QuerySubTreeTask(myID, query, task, queryExecutor, queryExecutionMode);
+      tasks.add(drivingTask);
+
+      if (task instanceof Producer) {
+        // Setup producer channels.
+        Producer p = (Producer) task;
+        ExchangePairID[] oIDs = p.operatorIDs();
+        int[] destWorkers = p.getDestinationWorkerIDs(myID);
+        for (int i = 0; i < destWorkers.length; i++) {
+          ExchangeChannelID ecID = new ExchangeChannelID(oIDs[i].getLong(), destWorkers[i]);
+          // producerChannelMapping.put(ecID, new ProducerChannel(drivingTask, p, ecID));
+          producerChannelMapping.put(ecID, new ProducerChannel(drivingTask, ecID));
+        }
+      }
+      setupConsumerChannels(task, drivingTask);
+    }
+
+    query.setTasks(tasks);
+
+  }
+
+  /**
+   * @param currentOperator current operator in considering.
+   * @param drivingTask the task current operator belongs to.
+   * @throws DbException if any error occurs.
+   * */
+  private void setupConsumerChannels(final Operator currentOperator, final QuerySubTreeTask drivingTask)
+      throws DbException {
+
+    if (currentOperator == null) {
       return;
     }
 
-    final ArrayList<ExchangePairID> ids = new ArrayList<ExchangePairID>();
-    collectConsumerOperatorIDs(queries, ids);
-    dataBuffer.clear();
-    exchangeSchema.clear();
-    for (final ExchangePairID id : ids) {
-      dataBuffer.put(id, new LinkedBlockingQueue<ExchangeData>());
-    }
-    localizeQueryPlan(queries);
-    queryPlan = queries;
-    myQueryId = queryId;
-  }
+    if (currentOperator instanceof Consumer) {
+      final Consumer operator = (Consumer) currentOperator;
+      FlowControlInputBuffer<ExchangeData> inputBuffer =
+          new FlowControlInputBuffer<ExchangeData>(inputBufferCapacity, operator.getOperatorID());
+      inputBuffer.addBufferFullListener(new IPCEventListener<FlowControlInputBuffer<ExchangeData>>() {
+        @Override
+        public void triggered(final IPCEvent<FlowControlInputBuffer<ExchangeData>> e) {
+          if (e.getAttachment().remainingCapacity() <= 0) {
+            flowController.pauseRead(operator).awaitUninterruptibly();
+          }
+        }
+      });
+      inputBuffer.addBufferRecoverListener(new IPCEventListener<FlowControlInputBuffer<ExchangeData>>() {
+        @Override
+        public void triggered(final IPCEvent<FlowControlInputBuffer<ExchangeData>> e) {
+          if (e.getAttachment().remainingCapacity() > 0) {
+            flowController.resumeRead(operator).awaitUninterruptibly();
+          }
+        }
+      });
+      operator.setInputBuffer(inputBuffer);
 
-  protected final void sendMessageToMaster(final TransportMessage message, final ChannelFutureListener callback) {
-    final ChannelFuture cf = Worker.this.connectionPool.sendShortMessage(0, message);
-    if (callback != null) {
-      cf.addListener(callback);
+      operator.setExchangeChannels(new ConsumerChannel[operator.getSourceWorkers(myID).length]);
+      ExchangePairID oID = operator.getOperatorID();
+      int[] sourceWorkers = operator.getSourceWorkers(myID);
+      int idx = 0;
+      for (int workerID : sourceWorkers) {
+        ExchangeChannelID ecID = new ExchangeChannelID(oID.getLong(), workerID);
+        ConsumerChannel cc = new ConsumerChannel(drivingTask, operator, ecID);
+        consumerChannelMapping.put(ecID, cc);
+        operator.getExchangeChannels()[idx++] = cc;
+      }
+    }
+
+    if (currentOperator instanceof IDBInput) {
+      IDBInput p = (IDBInput) currentOperator;
+      ExchangePairID oID = p.getControllerOperatorID();
+      int wID = p.getControllerWorkerID();
+      ExchangeChannelID ecID = new ExchangeChannelID(oID.getLong(), wID);
+      ProducerChannel pc = new ProducerChannel(drivingTask, ecID);
+      producerChannelMapping.putIfAbsent(ecID, pc);
+    }
+
+    final Operator[] children = currentOperator.getChildren();
+
+    if (children != null) {
+      for (final Operator child : children) {
+        if (child != null) {
+          setupConsumerChannels(child, drivingTask);
+        }
+      }
     }
   }
 
   /**
-   * This method should be called whenever the system is going to shutdown.
-   */
-  public final void shutdown() {
-    LOGGER.info("Shutdown requested. Please wait when cleaning up...");
-    connectionPool.shutdown().awaitUninterruptibly();
-    queryExecutor.setStopped();
-    messageProcessor.setStopped();
-    LOGGER.info("shutdown IPC completed");
-    toShutdown = false;
+   * @param message the message to get sent to the master
+   * @return the future of this sending action.
+   * */
+  ChannelFuture sendMessageToMaster(final TransportMessage message) {
+    return Worker.this.connectionPool.sendShortMessage(MyriaConstants.MASTER_ID, message);
   }
 
-  public final void start() throws IOException {
-    connectionPool.start();
-    queryExecutor.start();
-    messageProcessor.start();
+  /**
+   * This method should be called whenever the system is going to shutdown.
+   * 
+   * @throws InterruptedException if the shutdown process is interrupted.
+   */
+  public void shutdown() throws InterruptedException {
+    if (LOGGER.isInfoEnabled()) {
+      LOGGER.info("Shutdown requested. Please wait when cleaning up...");
+    }
+    if (!connectionPool.isShutdown()) {
+      if (!abruptShutdown) {
+        connectionPool.shutdown().await();
+      } else {
+        connectionPool.shutdownNow().await();
+      }
+    }
+    connectionPool.releaseExternalResources();
+
+    if (pipelineExecutor != null && !pipelineExecutor.isShutdown()) {
+      pipelineExecutor.shutdown();
+    }
+
+    if (LOGGER.isInfoEnabled()) {
+      LOGGER.info("shutdown IPC completed");
+    }
+    // must use shutdownNow here because the query queue processor and the control message processor are both blocking.
+    // We have to interrupt them at shutdown.
+    messageProcessingExecutor.shutdownNow();
+    queryExecutor.shutdown();
+    scheduledTaskExecutor.shutdown();
+    if (LOGGER.isInfoEnabled()) {
+      LOGGER.info("Worker #" + myID + " shutdown completed");
+    }
+  }
+
+  /**
+   * Start the worker service.
+   * 
+   * @throws Exception if any error meets.
+   * */
+  public void start() throws Exception {
+    ExecutorService bossExecutor = Executors.newCachedThreadPool(new RenamingThreadFactory("IPC boss"));
+    ExecutorService workerExecutor = Executors.newCachedThreadPool(new RenamingThreadFactory("IPC worker"));
+    pipelineExecutor =
+        new OrderedMemoryAwareThreadPoolExecutor(3, 0, 0, MyriaConstants.THREAD_POOL_KEEP_ALIVE_TIME_IN_MS,
+            TimeUnit.MILLISECONDS, new RenamingThreadFactory("Pipeline executor"));
+
+    ChannelFactory clientChannelFactory =
+        new NioClientSocketChannelFactory(bossExecutor, workerExecutor,
+            Runtime.getRuntime().availableProcessors() * 2 + 1);
+
+    // Start server with Nb of active threads = 2*NB CPU + 1 as maximum.
+    ChannelFactory serverChannelFactory =
+        new NioServerSocketChannelFactory(bossExecutor, workerExecutor,
+            Runtime.getRuntime().availableProcessors() * 2 + 1);
+
+    ChannelPipelineFactory serverPipelineFactory = new IPCPipelineFactories.WorkerServerPipelineFactory(this);
+    ChannelPipelineFactory clientPipelineFactory = new IPCPipelineFactories.WorkerClientPipelineFactory(this);
+    ChannelPipelineFactory workerInJVMPipelineFactory = new IPCPipelineFactories.WorkerInJVMPipelineFactory(this);
+
+    connectionPool.start(serverChannelFactory, serverPipelineFactory, clientChannelFactory, clientPipelineFactory,
+        workerInJVMPipelineFactory, new InJVMLoopbackChannelSink());
+
+    if (queryExecutionMode == QueryExecutionMode.NON_BLOCKING) {
+      int numCPU = Runtime.getRuntime().availableProcessors();
+      queryExecutor =
+          new ThreadPoolExecutor(numCPU, numCPU, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(),
+              new RenamingThreadFactory("Nonblocking query executor"));
+    } else {
+      // blocking query execution
+      queryExecutor =
+          (ThreadPoolExecutor) Executors.newCachedThreadPool(new RenamingThreadFactory("Blocking query executor"));
+    }
+    messageProcessingExecutor = Executors.newCachedThreadPool(new RenamingThreadFactory("Control message processor"));
+    messageProcessingExecutor.submit(new QueryMessageProcessor());
+    messageProcessingExecutor.submit(new ControlMessageProcessor());
     // Periodically detect if the server (i.e., coordinator)
     // is still running. IF the server goes down, the
     // worker will stop itself
-    new WorkerLivenessController().start();
+    scheduledTaskExecutor =
+        Executors.newSingleThreadScheduledExecutor(new RenamingThreadFactory("Worker global timer"));
+    scheduledTaskExecutor.scheduleAtFixedRate(new ShutdownChecker(), SHUTDOWN_CHECKER_INTERVAL_MS,
+        SHUTDOWN_CHECKER_INTERVAL_MS, TimeUnit.MILLISECONDS);
+    scheduledTaskExecutor.scheduleAtFixedRate(new Reporter(this), Reporter.INITIAL_DELAY_IN_MS, Reporter.INTERVAL,
+        TimeUnit.MILLISECONDS);
     /* Tell the master we're alive. */
-    sendMessageToMaster(IPCUtils.CONTROL_WORKER_ALIVE, null);
+    sendMessageToMaster(IPCUtils.CONTROL_WORKER_ALIVE).awaitUninterruptibly();
+  }
+
+  /**
+   * The time interval in milliseconds for check if the worker should be shutdown.
+   * */
+  static final int SHUTDOWN_CHECKER_INTERVAL_MS = 500;
+
+  /**
+   * @param configKey config key.
+   * @return a worker configuration.
+   * */
+  public String getConfiguration(final String configKey) {
+    try {
+      return catalog.getConfigurationValue(configKey);
+    } catch (CatalogException e) {
+      if (LOGGER.isWarnEnabled()) {
+        LOGGER.warn("Configuration retrieval error", e);
+      }
+      return null;
+    }
   }
 }

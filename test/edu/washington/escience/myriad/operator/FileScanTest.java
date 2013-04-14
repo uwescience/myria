@@ -26,8 +26,9 @@ public class FileScanTest {
    * @param schema the schema of the relation in the file.
    * @return the number of rows in the file.
    * @throws DbException if the file does not match the given Schema.
+   * @throws InterruptedException
    */
-  private static int getRowCount(final String filename, final Schema schema) throws DbException {
+  private static int getRowCount(final String filename, final Schema schema) throws DbException, InterruptedException {
     return getRowCount(filename, schema, false);
   }
 
@@ -40,9 +41,10 @@ public class FileScanTest {
    * @return the number of rows in the file.
    * @throws DbException if the file does not match the given Schema.
    * @throws FileNotFoundException if the specified file does not exist.
+   * @throws InterruptedException
    */
   private static int getRowCount(final String filename, final Schema schema, final boolean commaIsDelimiter)
-      throws DbException {
+      throws DbException, InterruptedException {
     final String realFilename = "testdata" + File.separatorChar + "filescan" + File.separatorChar + filename;
     FileScan fileScan;
     try {
@@ -59,70 +61,74 @@ public class FileScanTest {
    * @param fileScan the FileScan object to be tested.
    * @return the number of rows in the file.
    * @throws DbException if the file does not match the given Schema.
+   * @throws InterruptedException
    */
-  private static int getRowCount(FileScan fileScan) throws DbException {
-    fileScan.open();
+  private static int getRowCount(FileScan fileScan) throws DbException, InterruptedException {
+    fileScan.open(null);
 
     int count = 0;
     TupleBatch tb = null;
-    while ((tb = fileScan.next()) != null) {
-      count += tb.numTuples();
+    while (!fileScan.eos()) {
+      tb = fileScan.nextReady();
+      if (tb != null) {
+        count += tb.numTuples();
+      }
     }
 
     return count;
   }
 
   @Test(expected = DbException.class)
-  public void testBadCommaTwoColumnInt() throws DbException {
+  public void testBadCommaTwoColumnInt() throws DbException, InterruptedException {
     final String filename = "comma_two_col_int.txt";
     final Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE));
     assertTrue(getRowCount(filename, schema) == 7);
   }
 
   @Test(expected = DbException.class)
-  public void testBadTwoColumnInt() throws DbException {
+  public void testBadTwoColumnInt() throws DbException, InterruptedException {
     final String filename = "bad_two_col_int.txt";
     final Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE));
     assertTrue(getRowCount(filename, schema) == 7);
   }
 
   @Test(expected = DbException.class)
-  public void testBadTwoColumnInt2() throws DbException {
+  public void testBadTwoColumnInt2() throws DbException, InterruptedException {
     final String filename = "bad_two_col_int_2.txt";
     final Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE));
     assertTrue(getRowCount(filename, schema) == 7);
   }
 
   @Test(expected = DbException.class)
-  public void testBadTwoColumnInt3() throws DbException {
+  public void testBadTwoColumnInt3() throws DbException, InterruptedException {
     final String filename = "bad_two_col_int_3.txt";
     final Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE));
     assertTrue(getRowCount(filename, schema) == 7);
   }
 
   @Test
-  public void testCommaTwoColumnInt() throws DbException {
+  public void testCommaTwoColumnInt() throws DbException, InterruptedException {
     final String filename = "comma_two_col_int.txt";
     final Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE));
     assertTrue(getRowCount(filename, schema, true) == 7);
   }
 
   @Test
-  public void testSimpleTwoColumnInt() throws DbException {
+  public void testSimpleTwoColumnInt() throws DbException, InterruptedException {
     final String filename = "simple_two_col_int.txt";
     final Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE));
     assertTrue(getRowCount(filename, schema) == 7);
   }
 
   @Test
-  public void testSimpleTwoColumnFloat() throws DbException {
+  public void testSimpleTwoColumnFloat() throws Exception {
     final String filename = "simple_two_col_float.txt";
     final Schema schema = new Schema(ImmutableList.of(Type.FLOAT_TYPE, Type.FLOAT_TYPE));
     assertTrue(getRowCount(filename, schema) == 7);
   }
 
   @Test
-  public void testBigFile() throws DbException {
+  public void testBigFile() throws Exception {
     ByteArrayOutputStream bytes = new ByteArrayOutputStream();
     PrintStream printedBytes = new PrintStream(bytes);
     /* Print 2*TupleBatch.BATCH_SIZE lines */

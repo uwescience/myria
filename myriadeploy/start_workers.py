@@ -42,8 +42,8 @@ def start_workers(description, root, workers, MAX_MEM):
     id = 0
     for (hostname, port, username) in workers:
 	if id != 0:
-  	    cmd = "cd %s/%s-files && nohup java -cp myriad-0.1.jar:conf -Djava.library.path=sqlite4java-282 " % (root, description) + MAX_MEM + " edu.washington.escience.myriad.parallel.Worker --workingDir %s/worker_%d 0</dev/null 1>worker_%d_stdout 2>worker_%d_stderr &" % (description, id, id, id)
-    	    args = ["ssh", "%s@%s" % (username, hostname), cmd]
+  	    cmd = "cd %s/%s-files; nohup java -cp myriad-0.1.jar:conf -Djava.library.path=sqlite4java-282 " % (root, description) + MAX_MEM + " edu.washington.escience.myriad.parallel.Worker --workingDir %s/worker_%d 0</dev/null 1>worker_%d_stdout 2>worker_%d_stderr &" % (description, id, id, id);
+    	    args = ["ssh", "%s@%s" % (username, hostname), cmd];
 	    #print args
 	    if subprocess.call(args):
 	        print >> sys.stderr, "error starting worker %s" % (hostname)
@@ -65,9 +65,9 @@ def main(argv):
     DESCRIPTION = argv[1]
     EXPT_ROOT = argv[2]
     WORKERS_FILE = argv[3]
-    MAX_MEM = ""
+    MAX_MEM = "";
     if len(argv) > 4:
-        MAX_MEM = argv[4]
+        MAX_MEM = argv[4];
 
     # Figure out the master and workers
     workers = read_workers(WORKERS_FILE)

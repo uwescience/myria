@@ -18,21 +18,37 @@ public abstract class PartitionFunction<K, V> implements Serializable {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
-  HashMap<K, V> attributes = new HashMap<K, V>();
-  int numPartition;
+  /**
+   * attributes of this partition function.
+   * */
+  private final HashMap<K, V> attributes = new HashMap<K, V>();
+
+  /**
+   * number of partitions.
+   * */
+  private final int numPartition;
 
   /**
    * Each partition function implementation must has a Class(int) style constructor.
+   * 
+   * @param numPartition number of partitions.
    */
   public PartitionFunction(final int numPartition) {
     this.numPartition = numPartition;
   }
 
-  public V getAttribute(final K attribute) {
+  /**
+   * @return attribute value.
+   * @param attribute attribute key.
+   * */
+  public final V getAttribute(final K attribute) {
     return attributes.get(attribute);
   }
 
-  public int numPartition() {
+  /**
+   * @return the number of partitions.
+   * */
+  public final int numPartition() {
     return this.numPartition;
   }
 

@@ -22,7 +22,7 @@ import edu.washington.escience.myriad.operator.JdbcQueryScan;
 public class MysqlJdbcAccessMethodTest {
 
   @Test
-  public void testNumberResultsAndMultipleBatches() throws DbException {
+  public void testNumberResultsAndMultipleBatches() throws DbException, InterruptedException {
     /* Connection information */
     final String host = "54.245.108.198";
     final int port = 3306;
@@ -42,13 +42,16 @@ public class MysqlJdbcAccessMethodTest {
     /* Build up the QueryScan parameters and open the scan */
     final JdbcQueryScan scan = new JdbcQueryScan(jdbcInfo, query, schema);
 
-    scan.open();
+    scan.open(null);
 
     /* Count up the results and assert they match expectations */
     int count = 0;
     TupleBatch tb = null;
-    while ((tb = scan.next()) != null) {
-      count += tb.numTuples();
+    while (!scan.eos()) {
+      tb = scan.nextReady();
+      if (tb != null) {
+        count += tb.numTuples();
+      }
     }
     assertTrue(count == expectedNumResults);
 

@@ -2,6 +2,8 @@ package edu.washington.escience.myriad.operator;
 
 import java.util.List;
 
+import com.google.common.collect.ImmutableMap;
+
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -19,6 +21,11 @@ public final class TupleSource extends LeafOperator {
   private static final long serialVersionUID = 1L;
   /** The tuples that this operator serves, exactly once. */
   private final List<TupleBatch> data;
+  /**
+   * the current TupleBatch index of this TupleSource. Does not remove the TupleBatches in execution so that it can
+   * rewinded.
+   * */
+  private int index;
   /** The Schema of the tuples that this operator serves. */
   private final Schema schema;
 
@@ -34,19 +41,26 @@ public final class TupleSource extends LeafOperator {
 
   @Override
   protected void cleanup() throws DbException {
+    index = 0;
+    data.clear();
   }
 
   @Override
   protected TupleBatch fetchNext() throws DbException {
-    if (data.isEmpty()) {
+    if (index >= data.size()) {
+      setEOS();
       return null;
     }
-    return data.remove(0);
+    return data.get(index++);
   }
 
   @Override
-  public TupleBatch fetchNextReady() throws DbException {
-    return fetchNext();
+  protected TupleBatch fetchNextReady() throws DbException {
+    TupleBatch tb = fetchNext();
+    if (tb == null) {
+      setEOS();
+    }
+    return tb;
   }
 
   @Override
@@ -55,7 +69,8 @@ public final class TupleSource extends LeafOperator {
   }
 
   @Override
-  protected void init() throws DbException {
+  protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+    index = 0;
   }
 
 }

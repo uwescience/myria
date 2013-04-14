@@ -14,7 +14,7 @@ import query_pb2
 DESCRIPTOR = descriptor.FileDescriptor(
   name='main.proto',
   package='',
-  serialized_pb='\n\nmain.proto\x1a\x0c\x63olumn.proto\x1a\rcontrol.proto\x1a\x0bquery.proto\"\xd7\x01\n\x10TransportMessage\x12\x34\n\x04type\x18\x01 \x02(\x0e\x32&.TransportMessage.TransportMessageType\x12\x1a\n\x04\x64\x61ta\x18\x02 \x01(\x0b\x32\x0c.DataMessage\x12\x15\n\x05query\x18\x04 \x01(\x0b\x32\x06.Query\x12 \n\x07\x63ontrol\x18\x05 \x01(\x0b\x32\x0f.ControlMessage\"8\n\x14TransportMessageType\x12\x08\n\x04\x44\x41TA\x10\x00\x12\t\n\x05QUERY\x10\x01\x12\x0b\n\x07\x43ONTROL\x10\x02\x42\x36\n$edu.washington.escience.myriad.protoB\x0eTransportProto')
+  serialized_pb='\n\nmain.proto\x1a\x0c\x63olumn.proto\x1a\rcontrol.proto\x1a\x0bquery.proto\"\xe4\x01\n\x10TransportMessage\x12\x34\n\x04type\x18\x01 \x02(\x0e\x32&.TransportMessage.TransportMessageType\x12\x1a\n\x04\x64\x61ta\x18\x02 \x01(\x0b\x32\x0c.DataMessage\x12\x15\n\x05query\x18\x04 \x01(\x0b\x32\x06.Query\x12 \n\x07\x63ontrol\x18\x05 \x01(\x0b\x32\x0f.ControlMessage\x12\x0b\n\x03seq\x18\x06 \x01(\x03\"8\n\x14TransportMessageType\x12\x08\n\x04\x44\x41TA\x10\x00\x12\t\n\x05QUERY\x10\x01\x12\x0b\n\x07\x43ONTROL\x10\x02\x42\x36\n$edu.washington.escience.myriad.protoB\x0eTransportProto')
 
 
 
@@ -39,8 +39,8 @@ _TRANSPORTMESSAGE_TRANSPORTMESSAGETYPE = descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=216,
-  serialized_end=272,
+  serialized_start=229,
+  serialized_end=285,
 )
 
 
@@ -79,6 +79,13 @@ _TRANSPORTMESSAGE = descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    descriptor.FieldDescriptor(
+      name='seq', full_name='TransportMessage.seq', index=4,
+      number=6, type=3, cpp_type=2, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -90,7 +97,7 @@ _TRANSPORTMESSAGE = descriptor.Descriptor(
   is_extendable=False,
   extension_ranges=[],
   serialized_start=57,
-  serialized_end=272,
+  serialized_end=285,
 )
 
 _TRANSPORTMESSAGE.fields_by_name['type'].enum_type = _TRANSPORTMESSAGE_TRANSPORTMESSAGETYPE

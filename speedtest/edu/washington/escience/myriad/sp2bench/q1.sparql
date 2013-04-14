@@ -1,0 +1,12 @@
+PREFIX rdf:     <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX dc:      <http://purl.org/dc/elements/1.1/>
+PREFIX dcterms: <http://purl.org/dc/terms/>
+PREFIX bench:   <http://localhost/vocabulary/bench/>
+PREFIX xsd:     <http://www.w3.org/2001/XMLSchema#> 
+
+SELECT ?yr
+WHERE {
+  ?journal rdf:type bench:Journal .
+  ?journal dc:title "Journal 1 (1940)"^^xsd:string .
+  ?journal dcterms:issued ?yr 
+}

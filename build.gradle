@@ -63,9 +63,11 @@ dependencies {
   compile "com.google.protobuf:protobuf-java:2.4.1"
 
   compile "io.netty:netty:3.6.1.Final"
+  compile "net.sf.trove4j:trove4j:3.0.3"
 
   compile "commons-io:commons-io:2.4"
   compile "org.apache.commons:commons-lang3:3.1"
+  compile "commons-cli:commons-cli:1.2"
 
   compile "org.restlet.jse:org.restlet:${restletVersion}"
   compile "org.restlet.jse:org.restlet.ext.jackson:${restletVersion}"
@@ -73,7 +75,8 @@ dependencies {
   compile "org.restlet.jse:org.restlet.ext.jetty:${restletVersion}"
 
   compile "org.slf4j:slf4j-api:${slf4jVersion}"
-  runtime "org.slf4j:slf4j-log4j12:${slf4jVersion}"
+  runtime "org.slf4j:slf4j-simple:${slf4jVersion}"
+  //runtime "org.slf4j:slf4j-log4j12:${slf4jVersion}"
 
   runtime "monetdb:monetdb-jdbc:2.8"
   runtime "mysql:mysql-connector-java:5.1.22"

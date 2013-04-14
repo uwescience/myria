@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 
+import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -23,7 +24,7 @@ public final class SQLiteUtils {
    */
   public static String createStatementFromSchema(final Schema schema, final RelationKey relationKey) {
     final StringBuilder sb = new StringBuilder();
-    sb.append("CREATE TABLE ").append(relationKey.toString("sqlite")).append(" (");
+    sb.append("CREATE TABLE ").append(relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE)).append(" (");
     for (int i = 0; i < schema.numColumns(); ++i) {
       if (i > 0) {
         sb.append(", ");
@@ -43,7 +44,8 @@ public final class SQLiteUtils {
    */
   public static String createIfNotExistsStatementFromSchema(final Schema schema, final RelationKey relationKey) {
     final StringBuilder sb = new StringBuilder();
-    sb.append("CREATE TABLE IF NOT EXISTS ").append(relationKey.toString("sqlite")).append(" (\n");
+    sb.append("CREATE TABLE IF NOT EXISTS ").append(relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE)).append(
+        " (\n");
     for (int i = 0; i < schema.numColumns(); ++i) {
       if (i > 0) {
         sb.append(",\n");
@@ -54,6 +56,14 @@ public final class SQLiteUtils {
     return sb.toString();
   }
 
+  /**
+   * insert a TupleBatch into SQLite.
+   * 
+   * @param inputSchema the schema of the input TupleBatch
+   * @param relationKey the relation to insert into
+   * @param dbFilePath the location of the SQLite DB file
+   * @param data the data.
+   * */
   public static void insertIntoSQLite(final Schema inputSchema, final RelationKey relationKey, final String dbFilePath,
       final TupleBatch data) {
 
@@ -63,8 +73,9 @@ public final class SQLiteUtils {
       placeHolders[i] = "?";
     }
 
-    SQLiteAccessMethod.tupleBatchInsert(dbFilePath, "insert into " + relationKey.toString("sqlite") + " ( "
-        + StringUtils.join(fieldNames, ',') + " ) values ( " + StringUtils.join(placeHolders, ',') + " )", data);
+    SQLiteAccessMethod.tupleBatchInsert(dbFilePath, "insert into "
+        + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE) + " ( " + StringUtils.join(fieldNames, ',')
+        + " ) values ( " + StringUtils.join(placeHolders, ',') + " )", data);
   }
 
   /**
@@ -76,7 +87,7 @@ public final class SQLiteUtils {
    */
   public static String insertStatementFromSchema(final Schema schema, final RelationKey relationKey) {
     final StringBuilder sb = new StringBuilder();
-    sb.append("INSERT INTO ").append(relationKey.toString("sqlite")).append(" (");
+    sb.append("INSERT INTO ").append(relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE)).append(" (");
     sb.append(StringUtils.join(schema.getColumnNames(), ','));
     sb.append(") VALUES (");
     for (int i = 0; i < schema.numColumns(); ++i) {
@@ -127,6 +138,6 @@ public final class SQLiteUtils {
    * @return "DROP TABLE IF EXISTS <tt>relationKey.getCanonicalName()</tt>;"
    */
   public static String dropTableIfExistsStatement(final RelationKey relationKey) {
-    return "DROP TABLE IF EXISTS " + relationKey.toString("sqlite") + ";";
+    return "DROP TABLE IF EXISTS " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE) + ";";
   }
 }

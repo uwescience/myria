@@ -3,6 +3,7 @@ package edu.washington.escience.myriad.coordinator.catalog;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -14,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
+import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.parallel.SocketInfo;
@@ -74,7 +76,9 @@ public final class WorkerCatalog {
     try {
       sqliteConnection.open();
     } catch (final SQLiteException e) {
-      LOGGER.error(e.toString());
+      if (LOGGER.isErrorEnabled()) {
+        LOGGER.error(e.toString());
+      }
       throw new CatalogException("SQLiteException while creating the new WorkerCatalog", e);
     }
 
@@ -111,13 +115,17 @@ public final class WorkerCatalog {
       /* @formatter:on*/
     } catch (final SQLiteException e) {
       LOGGER.error(e.toString());
-      throw new CatalogException("SQLiteException while creating new WorkerCatalog tables", e);
+      if (LOGGER.isErrorEnabled()) {
+        throw new CatalogException("SQLiteException while creating new WorkerCatalog tables", e);
+      }
     }
 
     try {
       return new WorkerCatalog(sqliteConnection);
     } catch (final SQLiteException e) {
-      LOGGER.error(e.toString());
+      if (LOGGER.isErrorEnabled()) {
+        LOGGER.error(e.toString());
+      }
       throw new CatalogException("SQLiteException while creating WorkerCatalog from SQLiteConnection", e);
     }
   }
@@ -158,7 +166,9 @@ public final class WorkerCatalog {
 
       return new WorkerCatalog(sqliteConnection);
     } catch (final SQLiteException e) {
-      LOGGER.error(e.toString());
+      if (LOGGER.isErrorEnabled()) {
+        LOGGER.error(e.toString());
+      }
       throw new CatalogException(e);
     }
   }
@@ -203,7 +213,9 @@ public final class WorkerCatalog {
       statement.step();
       statement.dispose();
     } catch (final SQLiteException e) {
-      LOGGER.error(e.toString());
+      if (LOGGER.isErrorEnabled()) {
+        LOGGER.error(e.toString());
+      }
       throw new CatalogException(e);
     }
     return this;
@@ -287,7 +299,9 @@ public final class WorkerCatalog {
       statement.step();
       statement.dispose();
     } catch (final SQLiteException e) {
-      LOGGER.error(e.toString());
+      if (LOGGER.isErrorEnabled()) {
+        LOGGER.error(e.toString());
+      }
       throw new CatalogException(e);
     }
     return this;
@@ -330,7 +344,34 @@ public final class WorkerCatalog {
       statement.dispose();
       return ret;
     } catch (final SQLiteException e) {
-      LOGGER.error(e.toString());
+      if (LOGGER.isErrorEnabled()) {
+        LOGGER.error(e.toString());
+      }
+      throw new CatalogException(e);
+    }
+  }
+
+  /**
+   * @return all the configurations.
+   * @throws CatalogException if error occurs in catalog parsing.
+   */
+  public ImmutableMap<String, String> getAllConfigurations() throws CatalogException {
+    if (isClosed) {
+      throw new CatalogException("WorkerCatalog is closed.");
+    }
+    HashMap<String, String> configurations = new HashMap<String, String>();
+    try {
+      /* Getting this out is a simple query, which does not need to be cached. */
+      final SQLiteStatement statement = sqliteConnection.prepare("SELECT * FROM configuration;", false);
+      while (statement.step()) {
+        configurations.put(statement.columnString(0), statement.columnString(1));
+      }
+      statement.dispose();
+      return ImmutableMap.copyOf(configurations);
+    } catch (final SQLiteException e) {
+      if (LOGGER.isErrorEnabled()) {
+        LOGGER.error(e.toString());
+      }
       throw new CatalogException(e);
     }
   }
@@ -352,7 +393,9 @@ public final class WorkerCatalog {
       }
       statement.dispose();
     } catch (final SQLiteException e) {
-      LOGGER.error(e.toString());
+      if (LOGGER.isErrorEnabled()) {
+        LOGGER.error(e.toString());
+      }
       throw new CatalogException(e);
     }
 
@@ -377,7 +420,9 @@ public final class WorkerCatalog {
       }
       statement.dispose();
     } catch (final SQLiteException e) {
-      LOGGER.error(e.toString());
+      if (LOGGER.isErrorEnabled()) {
+        LOGGER.error(e.toString());
+      }
       throw new CatalogException(e);
     }
 
@@ -404,7 +449,9 @@ public final class WorkerCatalog {
       statement.step();
       statement.dispose();
     } catch (final SQLiteException e) {
-      LOGGER.error(e.toString());
+      if (LOGGER.isErrorEnabled()) {
+        LOGGER.error(e.toString());
+      }
       throw new CatalogException(e);
     }
   }

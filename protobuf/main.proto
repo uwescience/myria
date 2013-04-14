@@ -16,5 +16,6 @@ message TransportMessage {
   optional DataMessage data = 2;
   optional Query query = 4;
   optional ControlMessage control = 5;
+  optional int64 seq = 6;
 }
 
