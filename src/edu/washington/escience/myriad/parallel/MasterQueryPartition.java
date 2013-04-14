@@ -13,7 +13,6 @@ import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.operator.RootOperator;
-import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.parallel.Worker.QueryExecutionMode;
 import edu.washington.escience.myriad.parallel.ipc.IPCEvent;
 import edu.washington.escience.myriad.parallel.ipc.IPCEventListener;
@@ -332,20 +331,6 @@ public class MasterQueryPartition implements QueryPartition {
       }
       queryExecutionFuture.setSuccess();
     }
-  }
-
-  @Override
-  public final void taskFinish(final QuerySubTreeTask task) {
-    if (rootTaskEOS) {
-      LOGGER.error("Duplicate task eos: {} ", task);
-      return;
-    }
-    if (root instanceof SinkRoot) {
-      if (LOGGER.isInfoEnabled()) {
-        LOGGER.info(" Query #{} num output tuple: {}", queryID, ((SinkRoot) root).getCount());
-      }
-    }
-    queryFinish();
   }
 
   /**

@@ -667,10 +667,9 @@ public final class Server {
    * Pause a query with queryID.
    * 
    * @param queryID the queryID.
-   * @return the future instance of the kill action.
    * */
-  public QueryFuture killQuery(final long queryID) {
-    return activeQueries.get(queryID).kill();
+  public void killQuery(final long queryID) {
+    activeQueries.get(queryID).kill();
   }
 
   /**

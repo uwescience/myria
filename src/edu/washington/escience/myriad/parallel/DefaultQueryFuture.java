@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +44,8 @@ public class DefaultQueryFuture implements QueryFuture {
    * The owner query of this future, i.e. the future is for an operation on the query.
    * */
   private final QueryPartition query;
+
+  private final AtomicReference<Object> attachment;
 
   /**
    * if the future is cancellable.
@@ -84,6 +87,35 @@ public class DefaultQueryFuture implements QueryFuture {
   public DefaultQueryFuture(final QueryPartition query, final boolean cancellable) {
     this.query = query;
     this.cancellable = cancellable;
+    attachment = new AtomicReference<Object>();
+  }
+
+  /**
+   * @return attachment.
+   * */
+  @Override
+  public final Object getAttachment() {
+    return attachment.get();
+  }
+
+  /**
+   * Set attachment to the new value and return old value.
+   * 
+   * @return the old value.
+   * @param attachment the new attachment
+   * */
+  public final Object setAttachment(final Object attachment) {
+    return this.attachment.getAndSet(attachment);
+  }
+
+  /**
+   * Set attachment to the value only if currently no attachment is set.
+   * 
+   * @return if the attachment is already set, return false, otherwise true.
+   * @param attachment the attachment to set
+   * */
+  public final boolean setAttachmentIfAbsent(final Object attachment) {
+    return this.attachment.compareAndSet(null, attachment);
   }
 
   @Override

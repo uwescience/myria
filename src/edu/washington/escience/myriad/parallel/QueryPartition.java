@@ -36,22 +36,6 @@ public interface QueryPartition extends Comparable<QueryPartition> {
   void init();
 
   /**
-   * Call back if a task : <br>
-   * <ul>
-   * <li>
-   * finishes normally.</li>
-   * <li>gets killed by:
-   * <ul>
-   * <li>kill query command &nbsp;</li>
-   * <li>any exceptions</li></li>
-   * </ul>
-   * </ul>
-   * 
-   * @param task the finished task.
-   * */
-  void taskFinish(final QuerySubTreeTask task);
-
-  /**
    * Pause the query.
    * 
    * @return the future instance of the pause action.

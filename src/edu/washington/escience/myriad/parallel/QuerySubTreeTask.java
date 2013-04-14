@@ -106,6 +106,12 @@ final class QuerySubTreeTask {
    */
   private final ReentrantSpinLock outputLock = new ReentrantSpinLock();
 
+  private final QueryFuture taskExecutionFuture;
+
+  QueryFuture getExecutionFuture() {
+    return taskExecutionFuture;
+  }
+
   /**
    * @param ipcEntityID the IPC ID of the owner worker/master.
    * @param ownerQuery the owner query of this task.
@@ -128,6 +134,8 @@ final class QuerySubTreeTask {
     this.root = root;
     myExecutor = executor;
     this.ownerQuery = ownerQuery;
+    taskExecutionFuture = new DefaultQueryFuture(this.ownerQuery, true);
+    ((DefaultQueryFuture) taskExecutionFuture).setAttachment(this);
     idbInputSet = new HashSet<IDBInput>();
     HashSet<ExchangeChannelID> outputChannelSet = new HashSet<ExchangeChannelID>();
     collectDownChannels(root, outputChannelSet);
@@ -332,8 +340,7 @@ final class QuerySubTreeTask {
             LOGGER.debug("Operator task execution interrupted. Root operator: " + root + ". Close directly.");
           }
           // Normally they should be killed tasks
-          ownerQuery.taskFinish(this);
-          cleanup();
+          taskExecutionFuture.setFailure(new InterruptedException("Task gets interrupted"));
           break;
         }
 
@@ -351,7 +358,7 @@ final class QuerySubTreeTask {
 
         if (root.eos()) {
           setEOS();
-          ownerQuery.taskFinish(this);
+          taskExecutionFuture.setSuccess();
         }
 
         int oldV = nonBlockingExecutionCondition.get();
@@ -369,7 +376,7 @@ final class QuerySubTreeTask {
       if (LOGGER.isErrorEnabled()) {
         LOGGER.error("Unexpected exception occur at operator excution, close directly. Operator: " + root, e);
       }
-      cleanup();
+      taskExecutionFuture.setFailure(e);
     }
     return true;
   }
@@ -503,26 +510,26 @@ final class QuerySubTreeTask {
           if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Operator task execution interrupted. Root operator: " + root + ". Close directly.");
           }
-          cleanup();
+          taskExecutionFuture.setFailure(new InterruptedException("Task interrupted."));
           break;
         }
         root.next();
       }
 
-      ownerQuery.taskFinish(this);
+      taskExecutionFuture.setSuccess();
 
       return true;
     } catch (InterruptedException ee) {
       if (LOGGER.isErrorEnabled()) {
         LOGGER.error("Execution interrupted. Exit directly. ");
       }
-      cleanup();
+      taskExecutionFuture.setFailure(ee);
       return false;
     } catch (Throwable e) {
       if (LOGGER.isErrorEnabled()) {
         LOGGER.error("Unexpected exception occur at operator excution, close directly. Operator: " + root, e);
       }
-      cleanup();
+      taskExecutionFuture.setFailure(e);
     } finally {
       inBlockingExecution = false;
     }
@@ -558,7 +565,7 @@ final class QuerySubTreeTask {
     if (executionHandleLocal != null) {
       executionHandleLocal.cancel(true);
     }
-    cleanup();
+    taskExecutionFuture.setFailure(new InterruptedException("Task gets killed"));
   }
 
   /**
@@ -597,7 +604,7 @@ final class QuerySubTreeTask {
       if (LOGGER.isErrorEnabled()) {
         LOGGER.error("Query failed to open. Close the query directly.", e);
       }
-      cleanup();
+      taskExecutionFuture.setFailure(e);
     }
   }
 

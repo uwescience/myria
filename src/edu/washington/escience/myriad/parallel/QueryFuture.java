@@ -82,6 +82,11 @@ public interface QueryFuture {
   QueryPartition getQuery();
 
   /**
+   * @return the attachment of this future.
+   * */
+  Object getAttachment();
+
+  /**
    * @return {@code true} if and only if this future is complete, regardless of whether the operation was successful,
    *         failed, or cancelled.
    */
