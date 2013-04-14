@@ -65,7 +65,7 @@ public final class BooleanAggregator implements Aggregator {
     final ImmutableList.Builder<String> names = ImmutableList.builder();
     if ((aggOps & Aggregator.AGG_OP_COUNT) != 0) {
       types.add(Type.LONG_TYPE);
-      names.add("count(" + aFieldName + ")");
+      names.add("count_" + aFieldName);
     }
     resultSchema = new Schema(types.build(), names.build());
   }

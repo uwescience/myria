@@ -1,5 +1,6 @@
 package edu.washington.escience.myriad.parallel;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,6 +27,9 @@ import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
+
+import com.almworks.sqlite4java.SQLiteConnection;
+import com.almworks.sqlite4java.SQLiteException;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.MyriaConstants;
@@ -542,6 +546,16 @@ public final class Worker {
         String sqliteFilePath = catalog.getConfigurationValue(MyriaSystemConfigKeys.WORKER_DATA_SQLITE_DB);
         databaseHandle.setProperty("sqliteFile", sqliteFilePath);
         execEnvVars.put("sqliteFile", sqliteFilePath);
+        SQLiteConnection conn = new SQLiteConnection(new File(sqliteFilePath));
+        try {
+          conn.open(true);
+          /* By default, use WAL */
+          conn.exec("PRAGMA journal_mode=WAL;");
+        } catch (SQLiteException e) {
+          e.printStackTrace();
+        }
+        conn.dispose();
+
         break;
       case MyriaConstants.STORAGE_SYSTEM_MYSQL:
         /* TODO fill this in. */
