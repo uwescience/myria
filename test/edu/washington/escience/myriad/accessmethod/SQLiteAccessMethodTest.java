@@ -3,13 +3,17 @@ package edu.washington.escience.myriad.accessmethod;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
 import org.junit.Test;
 
+import com.almworks.sqlite4java.SQLiteConnection;
+import com.almworks.sqlite4java.SQLiteException;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.MyriaConstants;
@@ -25,7 +29,7 @@ import edu.washington.escience.myriad.systemtest.SystemTestBase;
 import edu.washington.escience.myriad.util.SQLiteUtils;
 import edu.washington.escience.myriad.util.TestUtils;
 
-public class SQLiteAccessMethodTest extends SystemTestBase {
+public class SQLiteAccessMethodTest {
   @Test
   public void testConcurrentReadingATable() throws IOException, CatalogException, InterruptedException {
 
@@ -167,23 +171,40 @@ public class SQLiteAccessMethodTest extends SystemTestBase {
       tbl1.put(1, tbl1ID2[i]);
     }
 
+    final File dbFile = File.createTempFile(MyriaConstants.SYSTEM_NAME + "_sqlite_access_method_test", ".db");
+    /* Set WAL in the beginning. */
+
+    SQLiteConnection conn = new SQLiteConnection(dbFile);
+    try {
+      conn.open(true);
+      conn.exec("PRAGMA journal_mode=WAL;");
+    } catch (SQLiteException e) {
+      e.printStackTrace();
+    }
+    conn.dispose();
+
     final RelationKey inputKey = RelationKey.of("test", "testWrite", "input");
-    final RelationKey outputKey = RelationKey.of("test", "testWrite", "output");
-    createTable(WORKER_ID[0], inputKey, "follower long, followee long");
+    SystemTestBase.createTable(dbFile.getAbsolutePath(), inputKey, "follower long, followee long");
+
+    final String insertString = SQLiteUtils.insertStatementFromSchema(tableSchema, inputKey);
     TupleBatch tb = null;
     while ((tb = tbl1.popAny()) != null) {
-      insert(WORKER_ID[0], inputKey, tableSchema, tb);
+      SQLiteAccessMethod.tupleBatchInsert(dbFile.getAbsolutePath(), insertString, tb);
     }
+
+    final RelationKey outputKey = RelationKey.of("test", "testWrite", "output");
     final SQLiteQueryScan scan = new SQLiteQueryScan("select * from " + inputKey.toString("sqlite"), tableSchema);
     final SQLiteInsert insert = new SQLiteInsert(scan, outputKey, true);
 
-    insert.open(null);
+    HashMap<String, Object> sqliteFilename = new HashMap<String, Object>();
+    sqliteFilename.put("sqliteFile", dbFile.getAbsolutePath());
+    final ImmutableMap<String, Object> execEnvVars = ImmutableMap.copyOf(sqliteFilename);
+
+    insert.open(execEnvVars);
     while (!insert.eos()) {
-      try {
-        insert.next();
-      } catch (InterruptedException e) {
-        e.printStackTrace();
-      }
+      insert.nextReady();
     }
+
+    dbFile.deleteOnExit();
   }
 }
