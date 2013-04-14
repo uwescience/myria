@@ -61,11 +61,6 @@ public class WorkerQueryPartition implements QueryPartition {
    * */
   private final AtomicReference<QueryFuture> pauseFuture = new AtomicReference<QueryFuture>(null);
 
-  /**
-   * The future object denoting the query execution progress.
-   * */
-  private final QueryFuture queryKillFuture = new DefaultQueryFuture(this, false);
-
   // private final QueryFuture executionFuture = new DefaultQueryFuture(this, true);
 
   /**
@@ -294,15 +289,13 @@ public class WorkerQueryPartition implements QueryPartition {
   /**
    * Kill the worker query partition.
    * 
-   * @return the future instance of the kill action.
    * */
   @Override
-  public final QueryFuture kill() {
+  public final void kill() {
     for (Map.Entry<QuerySubTreeTask, Boolean> e : tasks.entrySet()) {
       QuerySubTreeTask t = e.getKey();
       t.kill();
     }
-    return queryKillFuture;
   }
 
   @Override
