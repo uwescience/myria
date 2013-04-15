@@ -145,9 +145,14 @@ public final class Aggregate extends Operator {
     }
 
     TupleBatch tb = null;
-    while ((tb = child.next()) != null) {
-      for (final Aggregator ag : agg) {
-        ag.add(tb);
+    while (!child.eos()) {
+      while ((tb = child.next()) != null) {
+        for (final Aggregator ag : agg) {
+          ag.add(tb);
+        }
+      }
+      if (child.eoi()) {
+        child.setEOI(false);
       }
     }
     int fromIndex = 0;

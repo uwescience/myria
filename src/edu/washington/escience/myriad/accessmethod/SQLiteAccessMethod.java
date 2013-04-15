@@ -58,6 +58,7 @@ public final class SQLiteAccessMethod {
       /* Connect to the database */
       sqliteConnection = new SQLiteConnection(new File(pathToSQLiteDb));
       sqliteConnection.open(false);
+
       sqliteConnection.setBusyTimeout(SQLiteAccessMethod.DEFAULT_BUSY_TIMEOUT);
 
       /* BEGIN TRANSACTION */
@@ -65,15 +66,8 @@ public final class SQLiteAccessMethod {
 
       /* Set up and execute the query */
       statement = sqliteConnection.prepare(insertString);
-
       tupleBatch.getIntoSQLite(statement);
-      // for (int row = 0, totalTuples = tupleBatch.numTuples(); row < totalTuples; row++) {
-      // for (int column = 0; column < tupleBatch.numColumns(); ++column) {
-      // tupleBatch.getColumn(column).getIntoSQLite(row, statement, column + 1);
-      // }
-      // statement.step();
-      // statement.reset();
-      // }
+
       /* COMMIT TRANSACTION */
       sqliteConnection.exec("COMMIT TRANSACTION");
 
@@ -106,8 +100,29 @@ public final class SQLiteAccessMethod {
       sqliteConnection.open(false);
 
       /* Set up and execute the query */
-      final SQLiteStatement statement = sqliteConnection.prepare(queryString);
-
+      SQLiteStatement statement = null;
+      /*
+       * prepare() might throw an exception. My understanding is, when a connection starts in WAL mode, it will first
+       * acquire an exclusive lock to check if there is -wal file to recover from. Usually the file is empty so the lock
+       * is released pretty fast. However if another connection comes during the exclusive lock period, a
+       * "database is locked" exception will still be thrown. The following code simply tries to call prepare again.
+       * Usually, in the test cases I have observed, prepare() is called at most twice.
+       */
+      boolean conflict = true;
+      int count = 0;
+      while (conflict) {
+        conflict = false;
+        try {
+          statement = sqliteConnection.prepare(queryString);
+        } catch (final SQLiteException e) {
+          conflict = true;
+          ++count;
+          /* Should not occur too many time */
+          if (count == 5) {
+            throw new RuntimeException(e);
+          }
+        }
+      }
       /* Step the statement once so we can figure out the Schema */
       statement.step();
 
@@ -169,7 +184,6 @@ class SQLiteTupleBatchIterator implements Iterator<TupleBatch> {
       if (!statement.hasStepped()) {
         statement.step();
       }
-      // this.schema = Schema.fromSQLiteStatement(statement);
       this.schema = schema;
     } catch (final SQLiteException e) {
       throw new RuntimeException(e.getMessage());
