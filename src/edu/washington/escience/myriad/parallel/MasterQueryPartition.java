@@ -474,6 +474,8 @@ public class MasterQueryPartition implements QueryPartition {
   public final void kill() {
     // TODO do the actual kill stuff
     isKilled = true;
+    rootTask.kill();
+    master.sendKillMessage(this).awaitUninterruptibly();
   }
 
   @Override

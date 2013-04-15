@@ -327,12 +327,6 @@ final class QuerySubTreeTask {
    * */
   private Boolean executeNonBlocking() {
     try {
-      if (isEOS()) {
-        if (LOGGER.isDebugEnabled()) {
-          LOGGER.debug("Root operator already EOS. Root operator: " + root + ". Quit directly.");
-        }
-        return true;
-      }
 
       NON_BLOCKING_EXECUTE : while (true) {
         if (Thread.interrupted()) {
@@ -353,7 +347,7 @@ final class QuerySubTreeTask {
           break;
         }
 
-        setInputDisabled(); // clear input at beginning.
+        clearInput(); // clear input at beginning.
 
         root.nextReady();
 
@@ -397,10 +391,6 @@ final class QuerySubTreeTask {
     AtomicUtils.bitwiseOrAndGet(nonBlockingExecutionCondition, INITIALIZED);
   }
 
-  private void unsetInitialized() {
-    AtomicUtils.bitwiseAndAndGet(nonBlockingExecutionCondition, ~INITIALIZED);
-  }
-
   /**
    * All output of the task are available.
    */
@@ -432,12 +422,8 @@ final class QuerySubTreeTask {
     AtomicUtils.bitwiseOrAndGet(nonBlockingExecutionCondition, INPUT_AVAILABLE);
   }
 
-  private void setInputDisabled() {
+  private void clearInput() {
     AtomicUtils.bitwiseAndAndGet(nonBlockingExecutionCondition, ~INPUT_AVAILABLE);
-  }
-
-  private boolean isInputAvailable() {
-    return (nonBlockingExecutionCondition.get() & INPUT_AVAILABLE) == INPUT_AVAILABLE;
   }
 
   /**
@@ -456,6 +442,10 @@ final class QuerySubTreeTask {
 
   private boolean isKilled() {
     return (nonBlockingExecutionCondition.get() & NOT_KILLED) == 0;
+  }
+
+  private boolean isInExecution() {
+    return (nonBlockingExecutionCondition.get() & NOT_IN_EXECUTION) == 0;
   }
 
   /**
@@ -505,6 +495,7 @@ final class QuerySubTreeTask {
     try {
       while (!root.eos()) {
         if (Thread.interrupted()) {
+          Thread.currentThread().interrupt();
           if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Operator task execution interrupted. Root operator: " + root + ". Close directly.");
           }
@@ -538,20 +529,20 @@ final class QuerySubTreeTask {
    * clean up the task, release resources, etc.
    * */
   public void cleanup() {
-    try {
-      root.close();
-      unsetInitialized();
-    } catch (DbException ee) {
-      if (LOGGER.isErrorEnabled()) {
-        LOGGER.error("Unknown exception at operator close. Root operator: " + root + ".", ee);
+    if (AtomicUtils.unsetBitIfSet(nonBlockingExecutionCondition, Integer.numberOfTrailingZeros(INITIALIZED))) {
+      // Only cleanup if initialized.
+      try {
+        root.close();
+      } catch (DbException ee) {
+        if (LOGGER.isErrorEnabled()) {
+          LOGGER.error("Unknown exception at operator close. Root operator: " + root + ".", ee);
+        }
       }
     }
   }
 
   /**
    * Kill this task.
-   * 
-   * 
    * 
    * */
   void kill() {
@@ -561,6 +552,7 @@ final class QuerySubTreeTask {
     setKilled();
     final Future<Boolean> executionHandleLocal = executionHandle;
     if (executionHandleLocal != null) {
+      // Abruptly cancel the execution
       executionHandleLocal.cancel(true);
     }
     taskExecutionFuture.setFailure(new InterruptedException("Task gets killed"));
@@ -575,6 +567,11 @@ final class QuerySubTreeTask {
       if (nonBlockingExecutionCondition.compareAndSet(oldV, oldV & ~NOT_IN_EXECUTION)) {
         // set in execution.
         executionHandle = myExecutor.submit(nonBlockingExecutionTask);
+        if (isKilled()) {
+          // check if killed because the kill may happen right between the NON_IN_EXECUTION bit is unset and the
+          // executionHandle is set.
+          executionHandle.cancel(true);
+        }
       }
     }
   }

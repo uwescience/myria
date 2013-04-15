@@ -49,4 +49,42 @@ public final class AtomicUtils {
     return newValue;
   }
 
+  /**
+   * @return true if operation is conducted, false if the bit is already unset.
+   * @param ai the AtomicInteger to operate on
+   * @param n the nth bit from the least significant bit to compare, the least significant bit is 0
+   * */
+  public static boolean unsetBitIfSet(final AtomicInteger ai, final int n) {
+    if (n >= Integer.SIZE) {
+      throw new IllegalArgumentException("Out of int bit index boundary (31)");
+    }
+    int bitInt = 1 << n;
+    int oldValue = ai.get();
+    int newValue = oldValue & ~bitInt;
+    while (newValue != oldValue && !ai.compareAndSet(oldValue, newValue)) {
+      oldValue = ai.get();
+      newValue = oldValue & ~bitInt;
+    }
+    return newValue != oldValue;
+  }
+
+  /**
+   * @return true if operation is conducted, false if the bit is already set.
+   * @param ai the AtomicInteger to operate on
+   * @param n the nth bit from the least significant bit to compare
+   * */
+  public static boolean setBitIfUnset(final AtomicInteger ai, final int n) {
+    if (n >= Integer.SIZE) {
+      throw new IllegalArgumentException("Out of int bit index boundary (31)");
+    }
+    int bitInt = 1 << n;
+    int oldValue = ai.get();
+    int newValue = oldValue | bitInt;
+    while (newValue != oldValue && !ai.compareAndSet(oldValue, newValue)) {
+      oldValue = ai.get();
+      newValue = oldValue & ~bitInt;
+    }
+    return newValue != oldValue;
+  }
+
 }

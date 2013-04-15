@@ -25,6 +25,8 @@ import javax.ws.rs.WebApplicationException;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelPipelineFactory;
+import org.jboss.netty.channel.group.ChannelGroupFuture;
+import org.jboss.netty.channel.group.DefaultChannelGroupFuture;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
@@ -565,6 +567,20 @@ public final class Server {
       }
     }
     return mqp.getWorkerReceiveFuture();
+  }
+
+  /**
+   * @param mqp the master query
+   * @return the query dispatch {@link QueryFuture}.
+   * */
+  ChannelGroupFuture sendKillMessage(final MasterQueryPartition mqp) {
+
+    ChannelFuture[] cfs = new ChannelFuture[mqp.getWorkerAssigned().size()];
+    int i = 0;
+    for (Integer workerID : mqp.getWorkerAssigned()) {
+      cfs[i++] = connectionPool.sendShortMessage(workerID, IPCUtils.killQueryTM(mqp.getQueryID()));
+    }
+    return new DefaultChannelGroupFuture(null, Arrays.asList(cfs));
   }
 
   /**
