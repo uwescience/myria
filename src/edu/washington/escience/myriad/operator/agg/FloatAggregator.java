@@ -38,6 +38,7 @@ public final class FloatAggregator implements Aggregator {
    * Count, always of long type.
    * */
   private long count;
+
   /**
    * Result schema. It's automatically generated according to the {@link FloatAggregator#aggOps}.
    * */

@@ -37,8 +37,9 @@ public class IntegerAggregator implements Aggregator {
    * Count, always of long type.
    * */
   private long count;
+
   /**
-   * Result schema. It's automatically generated according to the {@link FloatAggregator#aggOps}.
+   * Result schema. It's automatically generated according to the {@link IntegerAggregator#aggOps}.
    * */
   private final Schema resultSchema;
 
