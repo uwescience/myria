@@ -26,6 +26,7 @@ import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.group.ChannelGroupFuture;
+import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroupFuture;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
@@ -591,10 +592,13 @@ public final class Server {
 
     ChannelFuture[] cfs = new ChannelFuture[mqp.getWorkerAssigned().size()];
     int i = 0;
+    DefaultChannelGroup cg = new DefaultChannelGroup();
     for (Integer workerID : mqp.getWorkerAssigned()) {
-      cfs[i++] = connectionPool.sendShortMessage(workerID, IPCUtils.killQueryTM(mqp.getQueryID()));
+      cfs[i] = connectionPool.sendShortMessage(workerID, IPCUtils.killQueryTM(mqp.getQueryID()));
+      cg.add(cfs[i].getChannel());
+      i++;
     }
-    return new DefaultChannelGroupFuture(null, Arrays.asList(cfs));
+    return new DefaultChannelGroupFuture(cg, Arrays.asList(cfs));
   }
 
   /**
@@ -799,28 +803,8 @@ public final class Server {
         Server.this.startWorkerQuery(future.getQuery().getQueryID());
       }
     });
-    mqp.getQueryExecutionFuture().addListener(new QueryFutureListener() {
 
-      @Override
-      public void operationComplete(final QueryFuture future) throws Exception {
-        Server.this.cleanupQuery(future.getQuery().getQueryID());
-      }
-
-    });
     return mqp.getQueryExecutionFuture();
-  }
-
-  /**
-   * @param queryID the query to get cleaned up.
-   * */
-  private void cleanupQuery(final long queryID) {
-    MasterQueryPartition mqp = activeQueries.remove(queryID);
-    for (ExchangeChannelID ecID : mqp.getInputChannels()) {
-      consumerChannelMap.remove(ecID);
-    }
-    for (ExchangeChannelID ecID : mqp.getOutputChannels()) {
-      consumerChannelMap.remove(ecID);
-    }
   }
 
   /**
