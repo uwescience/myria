@@ -182,7 +182,14 @@ public final class Server {
   /**
    * The I/O buffer, all the ExchangeMessages sent to the server are buffered here.
    */
-  final ConcurrentHashMap<ExchangePairID, InputBuffer<TupleBatch, ExchangeData>> dataBuffer;
+  private final ConcurrentHashMap<ExchangePairID, InputBuffer<TupleBatch, ExchangeData>> dataBuffer;
+
+  /**
+   * @return all input buffers currently in use.
+   * */
+  ConcurrentHashMap<ExchangePairID, InputBuffer<TupleBatch, ExchangeData>> getDataBuffer() {
+    return dataBuffer;
+  }
 
   /**
    * All message queue.
@@ -247,7 +254,14 @@ public final class Server {
   /**
    * The {@link ExecutorService} who executes the master-side query partitions.
    * */
-  volatile ExecutorService serverQueryExecutor;
+  private volatile ExecutorService serverQueryExecutor;
+
+  /**
+   * @return the query executor used in this worker.
+   * */
+  ExecutorService getQueryExecutor() {
+    return serverQueryExecutor;
+  }
 
   /**
    * Producer channel mapping of current active queries.
@@ -665,6 +679,9 @@ public final class Server {
     messageProcessingExecutor.submit(new MessageProcessor());
   }
 
+  /**
+   * @return the input capacity.
+   * */
   int getInputBufferCapacity() {
     return inputBufferCapacity;
   }
@@ -748,8 +765,8 @@ public final class Server {
     workerPlans.remove(MyriaConstants.MASTER_ID);
     final long queryID = catalog.newQuery(rawQuery, logicalRa);
     final MasterQueryPartition mqp = new MasterQueryPartition(masterPlan, workerPlans, queryID, this);
-    consumerChannelMap.putAll(mqp.consumerChannelMapping);
-    producerChannelMap.putAll(mqp.producerChannelMapping);
+    consumerChannelMap.putAll(mqp.getConsumerChannelMapping());
+    producerChannelMap.putAll(mqp.getProducerChannelMapping());
 
     activeQueries.put(queryID, mqp);
 
@@ -758,12 +775,12 @@ public final class Server {
       public void operationComplete(final QueryFuture future) throws Exception {
 
         activeQueries.remove(mqp.getQueryID());
-        for (ExchangeChannelID consumerChannelID : mqp.consumerChannelMapping.keySet()) {
+        for (ExchangeChannelID consumerChannelID : mqp.getConsumerChannelMapping().keySet()) {
           consumerChannelMap.remove(consumerChannelID);
         }
 
-        for (ExchangeChannelID producerChannelID : mqp.producerChannelMapping.keySet()) {
-          consumerChannelMap.remove(producerChannelID);
+        for (ExchangeChannelID producerChannelID : mqp.getProducerChannelMapping().keySet()) {
+          producerChannelMap.remove(producerChannelID);
         }
 
         if (future.isSuccess()) {

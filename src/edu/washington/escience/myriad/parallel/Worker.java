@@ -285,7 +285,14 @@ public final class Worker {
   /**
    * {@link ExecutorService} for query executions.
    * */
-  volatile ThreadPoolExecutor queryExecutor;
+  private volatile ThreadPoolExecutor queryExecutor;
+
+  /**
+   * @return the query executor used in this worker.
+   * */
+  ExecutorService getQueryExecutor() {
+    return queryExecutor;
+  }
 
   /**
    * {@link ExecutorService} for non-query message processing.
@@ -486,6 +493,9 @@ public final class Worker {
     return pipelineExecutor;
   }
 
+  /**
+   * @return the system wide default inuput buffer capacity.
+   * */
   int getInputBufferCapacity() {
     return inputBufferCapacity;
   }
@@ -574,8 +584,8 @@ public final class Worker {
     if (LOGGER.isInfoEnabled()) {
       LOGGER.info("Query received" + query);
     }
-    consumerChannelMapping.putAll(query.consumerChannelMapping);
-    producerChannelMapping.putAll(query.producerChannelMapping);
+    consumerChannelMapping.putAll(query.getConsumerChannelMapping());
+    producerChannelMapping.putAll(query.getProducerChannelMapping());
 
     activeQueries.put(query.getQueryID(), query);
     query.getExecutionFuture().addListener(new QueryFutureListener() {
@@ -583,12 +593,12 @@ public final class Worker {
       @Override
       public void operationComplete(final QueryFuture future) throws Exception {
         activeQueries.remove(query.getQueryID());
-        for (ExchangeChannelID consumerChannelID : query.consumerChannelMapping.keySet()) {
+        for (ExchangeChannelID consumerChannelID : query.getConsumerChannelMapping().keySet()) {
           consumerChannelMapping.remove(consumerChannelID);
         }
 
-        for (ExchangeChannelID producerChannelID : query.producerChannelMapping.keySet()) {
-          consumerChannelMapping.remove(producerChannelID);
+        for (ExchangeChannelID producerChannelID : query.getProducerChannelMapping().keySet()) {
+          producerChannelMapping.remove(producerChannelID);
         }
 
         if (future.isSuccess()) {

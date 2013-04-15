@@ -67,6 +67,9 @@ public class WorkerQueryPartition implements QueryPartition {
    * */
   private final AtomicReference<QueryFuture> pauseFuture = new AtomicReference<QueryFuture>(null);
 
+  /**
+   * the future for the query's execution.
+   * */
   private final QueryFuture executionFuture = new DefaultQueryFuture(this, true);
 
   /**
@@ -79,6 +82,9 @@ public class WorkerQueryPartition implements QueryPartition {
    * */
   private volatile long endAtInNano;
 
+  /**
+   * The future listener for processing the complete events of the execution of all the query's tasks.
+   * */
   private final QueryFutureListener taskExecutionListener = new QueryFutureListener() {
 
     @Override
@@ -135,12 +141,26 @@ public class WorkerQueryPartition implements QueryPartition {
   /**
    * Producer channel mapping of current active queries.
    * */
-  final ConcurrentHashMap<ExchangeChannelID, ProducerChannel> producerChannelMapping;
+  private final ConcurrentHashMap<ExchangeChannelID, ProducerChannel> producerChannelMapping;
+
+  /**
+   * @return all producer channel mapping in this query partition.
+   * */
+  final Map<ExchangeChannelID, ProducerChannel> getProducerChannelMapping() {
+    return producerChannelMapping;
+  }
 
   /**
    * Consumer channel mapping of current active queries.
    * */
-  final ConcurrentHashMap<ExchangeChannelID, ConsumerChannel> consumerChannelMapping;
+  private final ConcurrentHashMap<ExchangeChannelID, ConsumerChannel> consumerChannelMapping;
+
+  /**
+   * @return all consumer channel mapping in this query partition.
+   * */
+  final Map<ExchangeChannelID, ConsumerChannel> getConsumerChannelMapping() {
+    return consumerChannelMapping;
+  }
 
   /**
    * @param operators the operators belonging to this query partition.
@@ -158,8 +178,8 @@ public class WorkerQueryPartition implements QueryPartition {
     consumerChannelMapping = new ConcurrentHashMap<ExchangeChannelID, ConsumerChannel>();
     for (final RootOperator taskRootOp : this.operators) {
       final QuerySubTreeTask drivingTask =
-          new QuerySubTreeTask(ownerWorker.getIPCConnectionPool().getMyIPCID(), this, taskRootOp,
-              ownerWorker.queryExecutor, QueryExecutionMode.NON_BLOCKING);
+          new QuerySubTreeTask(ownerWorker.getIPCConnectionPool().getMyIPCID(), this, taskRootOp, ownerWorker
+              .getQueryExecutor(), QueryExecutionMode.NON_BLOCKING);
       QueryFuture taskExecutionFuture = drivingTask.getExecutionFuture();
       taskExecutionFuture.addListener(taskExecutionListener);
 

@@ -126,13 +126,30 @@ public class MasterQueryPartition implements QueryPartition {
   /**
    * Producer channel mapping of current active queries.
    * */
-  final ConcurrentHashMap<ExchangeChannelID, ProducerChannel> producerChannelMapping;
+  private final ConcurrentHashMap<ExchangeChannelID, ProducerChannel> producerChannelMapping;
+
+  /**
+   * @return all producer channel mapping in this query partition.
+   * */
+  final Map<ExchangeChannelID, ProducerChannel> getProducerChannelMapping() {
+    return producerChannelMapping;
+  }
 
   /**
    * Consumer channel mapping of current active queries.
    * */
-  final ConcurrentHashMap<ExchangeChannelID, ConsumerChannel> consumerChannelMapping;
+  private final ConcurrentHashMap<ExchangeChannelID, ConsumerChannel> consumerChannelMapping;
 
+  /**
+   * @return all consumer channel mapping in this query partition.
+   * */
+  final Map<ExchangeChannelID, ConsumerChannel> getConsumerChannelMapping() {
+    return consumerChannelMapping;
+  }
+
+  /**
+   * The future listener for processing the complete events of the execution of all the query's tasks.
+   * */
   private final QueryFutureListener taskExecutionListener = new QueryFutureListener() {
 
     @Override
@@ -279,7 +296,7 @@ public class MasterQueryPartition implements QueryPartition {
     producerChannelMapping = new ConcurrentHashMap<ExchangeChannelID, ProducerChannel>();
     consumerChannelMapping = new ConcurrentHashMap<ExchangeChannelID, ConsumerChannel>();
     rootTask =
-        new QuerySubTreeTask(MyriaConstants.MASTER_ID, this, root, master.serverQueryExecutor,
+        new QuerySubTreeTask(MyriaConstants.MASTER_ID, this, root, master.getQueryExecutor(),
             QueryExecutionMode.NON_BLOCKING);
     rootTask.getExecutionFuture().addListener(taskExecutionListener);
     for (Consumer c : rootTask.getInputChannels().values()) {
@@ -324,7 +341,7 @@ public class MasterQueryPartition implements QueryPartition {
         }
       });
       operator.setInputBuffer(inputBuffer);
-      master.dataBuffer.put(operator.getOperatorID(), inputBuffer);
+      master.getDataBuffer().put(operator.getOperatorID(), inputBuffer);
     }
 
   }

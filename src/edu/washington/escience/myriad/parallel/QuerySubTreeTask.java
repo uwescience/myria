@@ -106,8 +106,14 @@ final class QuerySubTreeTask {
    */
   private final ReentrantSpinLock outputLock = new ReentrantSpinLock();
 
+  /**
+   * Future for the task execution.
+   * */
   private final QueryFuture taskExecutionFuture;
 
+  /**
+   * @return the task execution future.
+   */
   QueryFuture getExecutionFuture() {
     return taskExecutionFuture;
   }
@@ -183,6 +189,9 @@ final class QuerySubTreeTask {
     return outputChannels;
   }
 
+  /**
+   * @return all the IDBInput operators in this task.
+   * */
   Set<IDBInput> getIDBInputs() {
     return idbInputSet;
   }
@@ -387,6 +396,9 @@ final class QuerySubTreeTask {
    */
   private static final int INITIALIZED = 0x01;
 
+  /**
+   * Mark the task state as initialized.
+   * */
   private void setInitialized() {
     AtomicUtils.bitwiseOrAndGet(nonBlockingExecutionCondition, INITIALIZED);
   }
@@ -396,14 +408,23 @@ final class QuerySubTreeTask {
    */
   private static final int OUTPUT_AVAILABLE = 0x02;
 
+  /**
+   * Mark the output is available.
+   * */
   private void setOutputAvailable() {
     AtomicUtils.bitwiseOrAndGet(nonBlockingExecutionCondition, OUTPUT_AVAILABLE);
   }
 
+  /**
+   * Mark the output is disabled.
+   * */
   private void setOutputDisabled() {
     AtomicUtils.bitwiseAndAndGet(nonBlockingExecutionCondition, ~OUTPUT_AVAILABLE);
   }
 
+  /**
+   * @return if the output channels are available for writing.
+   * */
   private boolean isOutputAvailable() {
     return (nonBlockingExecutionCondition.get() & OUTPUT_AVAILABLE) == OUTPUT_AVAILABLE;
   }
@@ -418,10 +439,16 @@ final class QuerySubTreeTask {
    */
   private static final int INPUT_AVAILABLE = 0x08;
 
+  /**
+   * Mark input available.
+   * */
   private void setInputAvailable() {
     AtomicUtils.bitwiseOrAndGet(nonBlockingExecutionCondition, INPUT_AVAILABLE);
   }
 
+  /**
+   * Clear the input available bit.
+   * */
   private void clearInput() {
     AtomicUtils.bitwiseAndAndGet(nonBlockingExecutionCondition, ~INPUT_AVAILABLE);
   }
@@ -436,16 +463,18 @@ final class QuerySubTreeTask {
    */
   private static final int NOT_KILLED = 0x20;
 
+  /**
+   * Change the task's state to be killed.
+   * */
   private void setKilled() {
     AtomicUtils.bitwiseAndAndGet(nonBlockingExecutionCondition, ~NOT_KILLED);
   }
 
+  /**
+   * @return if the task is already get killed.
+   * */
   private boolean isKilled() {
     return (nonBlockingExecutionCondition.get() & NOT_KILLED) == 0;
-  }
-
-  private boolean isInExecution() {
-    return (nonBlockingExecutionCondition.get() & NOT_IN_EXECUTION) == 0;
   }
 
   /**
@@ -453,10 +482,16 @@ final class QuerySubTreeTask {
    * */
   private static final int NOT_EOS = 0x40;
 
+  /**
+   * Change the task's state to be EOS.
+   * */
   private void setEOS() {
     AtomicUtils.bitwiseAndAndGet(nonBlockingExecutionCondition, ~NOT_EOS);
   }
 
+  /**
+   * @return if the task is already EOS.
+   * */
   private boolean isEOS() {
     return (nonBlockingExecutionCondition.get() & NOT_EOS) == 0;
   }

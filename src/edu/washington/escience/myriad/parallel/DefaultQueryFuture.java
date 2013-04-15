@@ -45,6 +45,9 @@ public class DefaultQueryFuture implements QueryFuture {
    * */
   private final QueryPartition query;
 
+  /**
+   * the attachment, make it atomic for thread safe.
+   * */
   private final AtomicReference<Object> attachment;
 
   /**
