@@ -336,6 +336,7 @@ final class QuerySubTreeTask {
 
       NON_BLOCKING_EXECUTE : while (true) {
         if (Thread.interrupted()) {
+          Thread.currentThread().interrupt();
           if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Operator task execution interrupted. Root operator: " + root + ". Close directly.");
           }
@@ -361,6 +362,7 @@ final class QuerySubTreeTask {
           taskExecutionFuture.setSuccess();
         }
 
+        // Check if another round of execution is needed.
         int oldV = nonBlockingExecutionCondition.get();
         while ((oldV & NON_BLOCKING_EXECUTION_CONTINUE) != NON_BLOCKING_EXECUTION_CONTINUE) {
           if (nonBlockingExecutionCondition.compareAndSet(oldV, oldV | NOT_IN_EXECUTION)) {
@@ -442,10 +444,6 @@ final class QuerySubTreeTask {
    * The task is paused.
    */
   private static final int NOT_PAUSED = 0x10;
-
-  private void setPaused() {
-    AtomicUtils.bitwiseAndAndGet(nonBlockingExecutionCondition, ~NOT_PAUSED);
-  }
 
   /**
    * The task is killed.

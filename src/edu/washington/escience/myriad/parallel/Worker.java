@@ -153,7 +153,7 @@ public final class Worker {
               }
             }
           } catch (InterruptedException e) {
-            Thread.interrupted();
+            Thread.currentThread().interrupt();
             break;
           }
         }
@@ -563,32 +563,6 @@ public final class Worker {
   }
 
   /**
-   * This method should be called when a query is finished.
-   * 
-   * @param query the query that just finished.
-   */
-  public void finishQuery(final WorkerQueryPartition query) {
-    if (query != null) {
-      activeQueries.remove(query.getQueryID());
-      sendMessageToMaster(IPCUtils.queryCompleteTM(query.getQueryID())).addListener(new ChannelFutureListener() {
-
-        @Override
-        public void operationComplete(final ChannelFuture future) throws Exception {
-          if (future.isSuccess()) {
-            if (LOGGER.isDebugEnabled()) {
-              LOGGER.debug("The query complete message is sent to the master for sure ");
-            }
-          }
-        }
-
-      });
-      if (LOGGER.isInfoEnabled()) {
-        LOGGER.info("My part of query " + query + " finished");
-      }
-    }
-  }
-
-  /**
    * this method should be called when a query is received from the server.
    * 
    * It does the initialization and preparation for the execution of the query.
@@ -604,7 +578,59 @@ public final class Worker {
     producerChannelMapping.putAll(query.producerChannelMapping);
 
     activeQueries.put(query.getQueryID(), query);
+    query.getExecutionFuture().addListener(new QueryFutureListener() {
 
+      @Override
+      public void operationComplete(final QueryFuture future) throws Exception {
+        activeQueries.remove(query.getQueryID());
+        for (ExchangeChannelID consumerChannelID : query.consumerChannelMapping.keySet()) {
+          consumerChannelMapping.remove(consumerChannelID);
+        }
+
+        for (ExchangeChannelID producerChannelID : query.producerChannelMapping.keySet()) {
+          consumerChannelMapping.remove(producerChannelID);
+        }
+
+        if (future.isSuccess()) {
+
+          sendMessageToMaster(IPCUtils.queryCompleteTM(query.getQueryID())).addListener(new ChannelFutureListener() {
+
+            @Override
+            public void operationComplete(final ChannelFuture future) throws Exception {
+              if (future.isSuccess()) {
+                if (LOGGER.isDebugEnabled()) {
+                  LOGGER.debug("The query complete message is sent to the master for sure ");
+                }
+              }
+            }
+
+          });
+          if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("My part of query " + query + " finished");
+          }
+
+        } else {
+          if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Query failed because of {}", future.getCause());
+          }
+
+          // TODO replace the normal query complete message with an error report message.
+          sendMessageToMaster(IPCUtils.queryCompleteTM(query.getQueryID())).addListener(new ChannelFutureListener() {
+
+            @Override
+            public void operationComplete(final ChannelFuture future) throws Exception {
+              if (future.isSuccess()) {
+                if (LOGGER.isDebugEnabled()) {
+                  LOGGER.debug("The query complete message is sent to the master for sure ");
+                }
+              }
+            }
+
+          });
+
+        }
+      }
+    });
   }
 
   /**

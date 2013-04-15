@@ -13,6 +13,7 @@ import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.operator.RootOperator;
+import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.parallel.Worker.QueryExecutionMode;
 import edu.washington.escience.myriad.parallel.ipc.IPCEvent;
 import edu.washington.escience.myriad.parallel.ipc.IPCEventListener;
@@ -120,6 +121,37 @@ public class MasterQueryPartition implements QueryPartition {
    * */
   final ConcurrentHashMap<ExchangeChannelID, ConsumerChannel> consumerChannelMapping;
 
+  private final QueryFutureListener taskExecutionListener = new QueryFutureListener() {
+
+    @Override
+    public void operationComplete(final QueryFuture future) throws Exception {
+      QuerySubTreeTask drivingTask = (QuerySubTreeTask) (future.getAttachment());
+      drivingTask.cleanup();
+      if (future.isSuccess()) {
+        if (rootTaskEOS) {
+          LOGGER.error("Duplicate task eos: {} ", drivingTask);
+          return;
+        }
+        if (root instanceof SinkRoot) {
+          if (LOGGER.isInfoEnabled()) {
+            LOGGER.info(" Query #{} num output tuple: {}", queryID, ((SinkRoot) root).getCount());
+          }
+        }
+        queryFinish();
+      } else {
+        if (rootTaskEOS) {
+          // task already EOS;
+          return;
+        }
+        queryExecutionFuture.setFailure(drivingTask.getExecutionFuture().getCause());
+        if (LOGGER.isInfoEnabled()) {
+          LOGGER.info("Query: " + this + " failed because of " + queryExecutionFuture.getCause());
+        }
+      }
+    }
+
+  };
+
   /**
    * Callback when a query plan is received by a worker.
    * 
@@ -222,6 +254,7 @@ public class MasterQueryPartition implements QueryPartition {
     rootTask =
         new QuerySubTreeTask(MyriaConstants.MASTER_ID, this, root, master.serverQueryExecutor,
             QueryExecutionMode.NON_BLOCKING);
+    rootTask.getExecutionFuture().addListener(taskExecutionListener);
 
     for (Consumer c : rootTask.getInputChannels().values()) {
       for (ConsumerChannel cc : c.getExchangeChannels()) {

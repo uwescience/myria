@@ -737,6 +737,27 @@ public final class Server {
 
     activeQueries.put(queryID, mqp);
 
+    mqp.getQueryExecutionFuture().addListener(new QueryFutureListener() {
+      @Override
+      public void operationComplete(final QueryFuture future) throws Exception {
+
+        activeQueries.remove(mqp.getQueryID());
+        for (ExchangeChannelID consumerChannelID : mqp.consumerChannelMapping.keySet()) {
+          consumerChannelMap.remove(consumerChannelID);
+        }
+
+        for (ExchangeChannelID producerChannelID : mqp.producerChannelMapping.keySet()) {
+          consumerChannelMap.remove(producerChannelID);
+        }
+
+        if (future.isSuccess()) {
+          // TODO success management.
+        } else {
+          // TODO failure management.
+        }
+      }
+    });
+
     dispatchWorkerQueryPlans(mqp).addListener(new QueryFutureListener() {
       @Override
       public void operationComplete(final QueryFuture future) throws Exception {

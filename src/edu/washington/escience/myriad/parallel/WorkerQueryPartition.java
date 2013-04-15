@@ -157,7 +157,7 @@ public class WorkerQueryPartition implements QueryPartition {
     producerChannelMapping = new ConcurrentHashMap<ExchangeChannelID, ProducerChannel>();
     consumerChannelMapping = new ConcurrentHashMap<ExchangeChannelID, ConsumerChannel>();
     for (final RootOperator taskRootOp : this.operators) {
-      QuerySubTreeTask drivingTask =
+      final QuerySubTreeTask drivingTask =
           new QuerySubTreeTask(ownerWorker.getIPCConnectionPool().getMyIPCID(), this, taskRootOp,
               ownerWorker.queryExecutor, QueryExecutionMode.NON_BLOCKING);
       QueryFuture taskExecutionFuture = drivingTask.getExecutionFuture();
@@ -211,6 +211,13 @@ public class WorkerQueryPartition implements QueryPartition {
       });
       operator.setInputBuffer(inputBuffer);
     }
+  }
+
+  /**
+   * @return the future for the query's execution.
+   * */
+  QueryFuture getExecutionFuture() {
+    return executionFuture;
   }
 
   @Override
@@ -331,6 +338,7 @@ public class WorkerQueryPartition implements QueryPartition {
    * */
   @Override
   public final void kill() {
+    executionFuture.setFailure(new InterruptedException("Query gets killed"));
     for (Map.Entry<QuerySubTreeTask, Boolean> e : tasks.entrySet()) {
       QuerySubTreeTask t = e.getKey();
       t.kill();
