@@ -3,6 +3,7 @@ package edu.washington.escience.myriad.operator;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.util.HashMap;
 import java.util.List;
@@ -930,4 +931,31 @@ public class AggregateTest {
     mga.close();
   }
 
+  @Test
+  public void testSingleGroupStd() throws Exception {
+    /* The source tuples -- integers 2 through 5 */
+    final TupleBatchBuffer testBase =
+        new TupleBatchBuffer(Schema.of(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE), ImmutableList.of("group",
+            "value")));
+    for (int i = 2; i <= 5; ++i) {
+      testBase.put(0, Integer.valueOf(0));
+      testBase.put(1, Integer.valueOf(i));
+    }
+    /* Group by group, aggregate on value */
+    final SingleGroupByAggregate agg =
+        new SingleGroupByAggregate(new TupleSource(testBase), new int[] { 1 }, 0, new int[] { Aggregator.AGG_OP_STDEV });
+    agg.open(null);
+    TupleBatch tb = null;
+    final TupleBatchBuffer result = new TupleBatchBuffer(agg.getSchema());
+    while (!agg.eos()) {
+      tb = agg.nextReady();
+      if (tb != null) {
+        tb.compactInto(result);
+      }
+    }
+    agg.close();
+    System.out.println("Result has " + result.numColumns() + " columns " + result.getSchema());
+    System.out.println("\t" + result.get(0, 0) + '\t' + result.get(1, 0));
+    fail();
+  }
 }
