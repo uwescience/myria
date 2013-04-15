@@ -11,11 +11,6 @@ public interface QueryPartition extends Comparable<QueryPartition> {
   long getQueryID();
 
   /**
-   * @return the number of tasks which are already EOS.
-   * */
-  int getNumTaskEOS();
-
-  /**
    * @return the query priority.
    * */
   int getPriority();

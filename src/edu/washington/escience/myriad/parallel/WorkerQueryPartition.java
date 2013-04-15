@@ -3,6 +3,7 @@ package edu.washington.escience.myriad.parallel;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -48,9 +49,9 @@ public class WorkerQueryPartition implements QueryPartition {
   private final int totalNumTasks;
 
   /**
-   * Number of EOSed tasks.
+   * Number of finished tasks.
    * */
-  private final AtomicInteger numTaskEOS;
+  private final AtomicInteger numFinishedTasks;
 
   /**
    * The owner {@link Worker}.
@@ -83,6 +84,11 @@ public class WorkerQueryPartition implements QueryPartition {
   private volatile long endAtInNano;
 
   /**
+   * record all failed tasks.
+   * */
+  private final ConcurrentLinkedQueue<QuerySubTreeTask> failTasks = new ConcurrentLinkedQueue<QuerySubTreeTask>();
+
+  /**
    * The future listener for processing the complete events of the execution of all the query's tasks.
    * */
   private final QueryFutureListener taskExecutionListener = new QueryFutureListener() {
@@ -90,49 +96,36 @@ public class WorkerQueryPartition implements QueryPartition {
     @Override
     public void operationComplete(final QueryFuture future) throws Exception {
       QuerySubTreeTask drivingTask = (QuerySubTreeTask) (future.getAttachment());
+      if (!tasks.replace(drivingTask, false, true)) {
+        LOGGER.error("Duplicate task finish report: {} ", drivingTask);
+        return;
+      }
+      int currentNumFinished = numFinishedTasks.incrementAndGet();
+
+      executionFuture.setProgress(1, currentNumFinished, totalNumTasks);
+
       drivingTask.cleanup();
-      if (future.isSuccess()) {
+      if (!future.isSuccess()) {
+        failTasks.add(drivingTask);
+      }
 
-        if (!tasks.replace(drivingTask, false, true)) {
-          LOGGER.error("Duplicate task eos: {} ", drivingTask);
-          return;
+      if (currentNumFinished >= totalNumTasks) {
+        endAtInNano = System.nanoTime();
+        if (LOGGER.isInfoEnabled()) {
+          LOGGER.info("Query #" + queryID + " finished at " + endAtInNano);
+          LOGGER.info("Query #" + queryID + " executed for "
+              + DateTimeUtils.nanoElapseToHumanReadable(endAtInNano - startAtInNano));
         }
-
-        int currentNumEOS = numTaskEOS.incrementAndGet();
-
-        executionFuture.setProgress(1, currentNumEOS, totalNumTasks);
-        if (currentNumEOS >= totalNumTasks) {
-          endAtInNano = System.nanoTime();
-          if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("Query #" + queryID + " finished at " + endAtInNano);
-            LOGGER.info("Query #" + queryID + " executed for "
-                + DateTimeUtils.nanoElapseToHumanReadable(endAtInNano - startAtInNano));
-          }
+        if (failTasks.isEmpty()) {
           executionFuture.setSuccess();
         } else {
-          if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("new EOS from task: {}. {} remain.", drivingTask, (tasks.size() - currentNumEOS));
-          }
+          // TODO currently use the cause of the first failed task as the case of the failure of the whole query.
+          executionFuture.setFailure(failTasks.peek().getExecutionFuture().getCause());
         }
-
       } else {
-
-        if (tasks.get(drivingTask)) {
-          // task already EOS;
-          return;
+        if (LOGGER.isDebugEnabled()) {
+          LOGGER.debug("New finished task: {}. {} remain.", drivingTask, (tasks.size() - currentNumFinished));
         }
-
-        for (final QuerySubTreeTask t : tasks.keySet()) {
-          // kill all other tasks
-          if (t != drivingTask) {
-            t.kill();
-          }
-        }
-        executionFuture.setFailure(drivingTask.getExecutionFuture().getCause());
-        if (LOGGER.isInfoEnabled()) {
-          LOGGER.info("query: " + this + " failed because of " + executionFuture.getCause());
-        }
-
       }
     }
 
@@ -172,7 +165,7 @@ public class WorkerQueryPartition implements QueryPartition {
     this.operators = operators;
     tasks = new ConcurrentHashMap<QuerySubTreeTask, Boolean>(operators.length);
     totalNumTasks = tasks.size();
-    numTaskEOS = new AtomicInteger(0);
+    numFinishedTasks = new AtomicInteger(0);
     this.ownerWorker = ownerWorker;
     producerChannelMapping = new ConcurrentHashMap<ExchangeChannelID, ProducerChannel>();
     consumerChannelMapping = new ConcurrentHashMap<ExchangeChannelID, ConsumerChannel>();
@@ -236,7 +229,7 @@ public class WorkerQueryPartition implements QueryPartition {
   /**
    * @return the future for the query's execution.
    * */
-  QueryFuture getExecutionFuture() {
+  final QueryFuture getExecutionFuture() {
     return executionFuture;
   }
 
@@ -284,6 +277,7 @@ public class WorkerQueryPartition implements QueryPartition {
     if (LOGGER.isInfoEnabled()) {
       LOGGER.info("Query : " + this + " start processing.");
     }
+    startAtInNano = System.nanoTime();
     for (QuerySubTreeTask t : tasks.keySet()) {
       t.nonBlockingExecute();
     }
@@ -300,11 +294,6 @@ public class WorkerQueryPartition implements QueryPartition {
     for (QuerySubTreeTask t : tasks.keySet()) {
       t.blockingExecute();
     }
-  }
-
-  @Override
-  public final int getNumTaskEOS() {
-    return numTaskEOS.get();
   }
 
   @Override
@@ -358,7 +347,6 @@ public class WorkerQueryPartition implements QueryPartition {
    * */
   @Override
   public final void kill() {
-    executionFuture.setFailure(new InterruptedException("Query gets killed"));
     for (Map.Entry<QuerySubTreeTask, Boolean> e : tasks.entrySet()) {
       QuerySubTreeTask t = e.getKey();
       t.kill();

@@ -163,6 +163,9 @@ final class QuerySubTreeTask {
           return QuerySubTreeTask.this.executeNonBlocking();
         } finally {
           executionHandle = null;
+          if (isKilled()) {
+            taskExecutionFuture.setFailure(new InterruptedException("Task gets killed"));
+          }
         }
       }
     };
@@ -589,8 +592,9 @@ final class QuerySubTreeTask {
     if (executionHandleLocal != null) {
       // Abruptly cancel the execution
       executionHandleLocal.cancel(true);
+    } else {
+      taskExecutionFuture.setFailure(new InterruptedException("Task gets killed"));
     }
-    taskExecutionFuture.setFailure(new InterruptedException("Task gets killed"));
   }
 
   /**

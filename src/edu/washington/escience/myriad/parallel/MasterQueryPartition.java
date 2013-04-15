@@ -54,11 +54,6 @@ public class MasterQueryPartition implements QueryPartition {
   private final ConcurrentHashMap<Integer, RootOperator[]> workerPlans;
 
   /**
-   * If the root is EOS.
-   * */
-  private volatile boolean rootTaskEOS = false;
-
-  /**
    * The owner master.
    * */
   private final Server master;
@@ -148,7 +143,7 @@ public class MasterQueryPartition implements QueryPartition {
   }
 
   /**
-   * The future listener for processing the complete events of the execution of all the query's tasks.
+   * The future listener for processing the complete events of the execution of the master task.
    * */
   private final QueryFutureListener taskExecutionListener = new QueryFutureListener() {
 
@@ -157,26 +152,13 @@ public class MasterQueryPartition implements QueryPartition {
       QuerySubTreeTask drivingTask = (QuerySubTreeTask) (future.getAttachment());
       drivingTask.cleanup();
       if (future.isSuccess()) {
-        if (rootTaskEOS) {
-          LOGGER.error("Duplicate task eos: {} ", drivingTask);
-          return;
-        }
         if (root instanceof SinkRoot) {
           if (LOGGER.isInfoEnabled()) {
-            LOGGER.info(" Query #{} num output tuple: {}", queryID, ((SinkRoot) root).getCount());
+            LOGGER.info(" Root task {} EOS. Num output tuple: {}", rootTask, ((SinkRoot) root).getCount());
           }
         }
-        queryFinish();
-      } else {
-        if (rootTaskEOS) {
-          // task already EOS;
-          return;
-        }
-        queryExecutionFuture.setFailure(drivingTask.getExecutionFuture().getCause());
-        if (LOGGER.isInfoEnabled()) {
-          LOGGER.info("Query: " + this + " failed because of " + queryExecutionFuture.getCause());
-        }
       }
+      taskOrWorkerComplete();
     }
 
   };
@@ -252,23 +234,41 @@ public class MasterQueryPartition implements QueryPartition {
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("Received query complete message from worker: {}", workerID);
     }
-    int nowCardinality = -1;
     workersCompleteQueryLock.lock();
     try {
       workersCompleteQuery.set(workerIdx);
+    } finally {
+      workersCompleteQueryLock.unlock();
+    }
+    taskOrWorkerComplete();
+  }
+
+  /**
+   * Call if either any worker completes or the root task completes.
+   * */
+  private void taskOrWorkerComplete() {
+    int nowCardinality = -1;
+    workersCompleteQueryLock.lock();
+    try {
       nowCardinality = workersCompleteQuery.cardinality();
     } finally {
       workersCompleteQueryLock.unlock();
     }
     queryExecutionFuture.setProgress(1, nowCardinality, workersAssigned.size());
-    if (nowCardinality >= workersAssigned.size() && rootTaskEOS) {
+    if (nowCardinality >= workersAssigned.size() && rootTask.getExecutionFuture().isDone()) {
       endAtInNano = System.nanoTime();
       if (LOGGER.isInfoEnabled()) {
         LOGGER.info("Query #" + queryID + " finished at " + endAtInNano);
         LOGGER.info("Query #" + queryID + " executed for "
             + DateTimeUtils.nanoElapseToHumanReadable(endAtInNano - startAtInNano));
       }
-      queryExecutionFuture.setSuccess();
+      // TODO currently only use roottask's success or fail to set the whole query's success or fail.
+      // next step: consider the workers' reports also.
+      if (rootTask.getExecutionFuture().isSuccess()) {
+        queryExecutionFuture.setSuccess();
+      } else {
+        queryExecutionFuture.setFailure(rootTask.getExecutionFuture().getCause());
+      }
     }
   }
 
@@ -389,58 +389,9 @@ public class MasterQueryPartition implements QueryPartition {
     rootTask.blockingExecute();
   }
 
-  /**
-   * Callback when all tasks have finished.
-   * */
-  private void queryFinish() {
-    rootTask.cleanup();
-    if (LOGGER.isInfoEnabled()) {
-      LOGGER.info("query: " + this + " finished");
-    }
-    rootTaskEOS = true;
-    int nowCardinality = -1;
-    workersCompleteQueryLock.lock();
-    try {
-      nowCardinality = workersCompleteQuery.cardinality();
-    } finally {
-      workersCompleteQueryLock.unlock();
-    }
-    if (nowCardinality >= workersAssigned.size()) {
-      endAtInNano = System.nanoTime();
-      if (LOGGER.isInfoEnabled()) {
-        LOGGER.info("Query #" + queryID + " finished at " + endAtInNano);
-        LOGGER.info("Query #" + queryID + " executed for "
-            + DateTimeUtils.nanoElapseToHumanReadable(endAtInNano - startAtInNano));
-      }
-      queryExecutionFuture.setSuccess();
-    }
-  }
-
-  /**
-   * @return all input channels belonging to this task.
-   * */
-  final Set<ExchangeChannelID> getInputChannels() {
-    return rootTask.getInputChannels().keySet();
-  }
-
-  /**
-   * @return all output channels belonging to this task.
-   * */
-  final ExchangeChannelID[] getOutputChannels() {
-    return rootTask.getOutputChannels();
-  }
-
   @Override
   public final int getPriority() {
     return priority;
-  }
-
-  @Override
-  public final int getNumTaskEOS() {
-    if (rootTaskEOS) {
-      return 1;
-    }
-    return 0;
   }
 
   /**

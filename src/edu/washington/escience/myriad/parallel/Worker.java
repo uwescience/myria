@@ -621,7 +621,7 @@ public final class Worker {
 
         } else {
           if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Query failed because of {}", future.getCause());
+            LOGGER.debug("Query failed because of exception: ", future.getCause());
           }
 
           // TODO replace the normal query complete message with an error report message.
