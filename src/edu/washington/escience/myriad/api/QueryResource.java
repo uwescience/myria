@@ -342,7 +342,6 @@ public final class QueryResource {
       }
 
       case "LocalMultiwayProducer": {
-        int workerID = deserializeInt(jsonOperator, "arg_workerID");
         long[] tmpOpIDs = deserializeLongArray(jsonOperator, "arg_operatorIDs", false);
         ExchangePairID[] operatorIDs = new ExchangePairID[tmpOpIDs.length];
         for (int i = 0; i < tmpOpIDs.length; ++i) {

@@ -79,10 +79,7 @@ public class Main {
     QueryPlanGenerator qpg = (QueryPlanGenerator) (Class.forName(queryClassname).newInstance());
 
     System.out.println("Begin start master");
-    startMaster();
-    while (Server.getRunningInstance() == null) {
-      Thread.sleep(100);
-    }
+    Server server = startMaster();
     System.out.println("End start master");
 
     System.out.println("Begin start workers");
@@ -105,17 +102,16 @@ public class Main {
 
     long start = System.nanoTime();
 
-    QueryFuture qf =
-        Server.getRunningInstance().submitQueryPlan(masterPlan, workerPlans).addListener(new QueryFutureListener() {
-          @Override
-          public void operationComplete(final QueryFuture future) throws Exception {
-            TupleBatch tb = null;
-            while (!resultStore.isEmpty()) {
-              tb = resultStore.poll();
-              System.out.print(tb);
-            }
-          }
-        });
+    QueryFuture qf = server.submitQueryPlan(masterPlan, workerPlans).addListener(new QueryFutureListener() {
+      @Override
+      public void operationComplete(final QueryFuture future) throws Exception {
+        TupleBatch tb = null;
+        while (!resultStore.isEmpty()) {
+          tb = resultStore.poll();
+          System.out.print(tb);
+        }
+      }
+    });
 
     TupleBatch tb = null;
     int numResult = 0;
@@ -129,22 +125,14 @@ public class Main {
     System.out.println("Total " + numResult + " tuples.");
 
     qf.awaitUninterruptibly();
-    Server.getRunningInstance().shutdown();
+    server.shutdown();
 
   }
 
-  static Server startMaster() {
-    new Thread() {
-      @Override
-      public void run() {
-        try {
-          Server.main(new String[] { catalogFileName });
-        } catch (final IOException e) {
-          throw new RuntimeException(e);
-        }
-      }
-    }.start();
-    return Server.getRunningInstance();
+  static Server startMaster() throws Exception {
+    Server server = new Server(catalogFileName);
+    server.start();
+    return server;
   }
 
 }

@@ -25,7 +25,7 @@ public abstract class Operator implements Serializable {
   /**
    * logger.
    * */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Operator.class.getName());
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Operator.class);
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -53,8 +53,8 @@ public abstract class Operator implements Serializable {
   public final void close() throws DbException {
     // Ensures that a future call to next() or nextReady() will fail
     // outputBuffer = null;
-    if (LOGGER.isInfoEnabled()) {
-      LOGGER.info("Operator {} closed, #output TBs: {}, # output tuples: {}", this, numOutputTBs, numOutputTuples);
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug("Operator {} closed, #output TBs: {}, # output tuples: {}", this, numOutputTBs, numOutputTuples);
     }
     open = false;
     eos = true;
@@ -317,8 +317,8 @@ public abstract class Operator implements Serializable {
    * Operators should not be able to unset an already set EOS except reopen it.
    */
   protected final void setEOS() {
-    if (LOGGER.isInfoEnabled()) {
-      LOGGER.info("Operator EOS: " + this);
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug("Operator EOS: " + this);
     }
     eos = true;
   }

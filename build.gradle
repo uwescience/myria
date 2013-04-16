@@ -30,11 +30,17 @@ sourceSets {
     java.srcDir 'speedtest'
     output.classesDir = 'build/speedtest'
   }
+  /* Code for testsuites */
+  testsuites {
+    java.srcDir 'testsuites'
+    output.classesDir = 'build/testsuites'
+  }
 }
 
 
 /* Compile, but don't run the speed tests when building the project. */
 check.dependsOn speedtestClasses
+check.dependsOn testsuitesClasses
 /* Build the Eclipse .classpath file first, because if Gradle's build fails
  * we'll want to use Eclipse to debug it. */
 compileJava.dependsOn eclipseClasspath
@@ -75,8 +81,8 @@ dependencies {
   compile "org.restlet.jse:org.restlet.ext.jetty:${restletVersion}"
 
   compile "org.slf4j:slf4j-api:${slf4jVersion}"
-  runtime "org.slf4j:slf4j-simple:${slf4jVersion}"
-  //runtime "org.slf4j:slf4j-log4j12:${slf4jVersion}"
+  //runtime "org.slf4j:slf4j-simple:${slf4jVersion}"
+  runtime "org.slf4j:slf4j-log4j12:${slf4jVersion}"
 
   runtime "monetdb:monetdb-jdbc:2.8"
   runtime "mysql:mysql-connector-java:5.1.22"
@@ -87,6 +93,11 @@ dependencies {
   speedtestCompile configurations.testCompile
   speedtestCompile sourceSets.test.output
   speedtestRuntime configurations.testRuntime
+
+  testsuitesCompile sourceSets.main.output
+  testsuitesCompile configurations.testCompile
+  testsuitesCompile sourceSets.test.output
+  testsuitesRuntime configurations.testRuntime
 }
 
 /* Tell Java to emit all compiler warnings. */
@@ -99,10 +110,14 @@ tasks.withType(Test) {
   systemProperty "java.library.path", file("lib/sqlite4java-282")
 }
 
-/* Tell gradle where speedtest should look for its classes. */
+/* Tell gradle where speedtest & testsuites should look for its classes. */
 task speedtest(type: Test) {
   testClassesDir = sourceSets.speedtest.output.classesDir
   classpath = sourceSets.speedtest.runtimeClasspath
+}
+task testsuites(type: Test) {
+  testClassesDir = sourceSets.testsuites.output.classesDir
+  classpath = sourceSets.testsuites.runtimeClasspath
 }
 
 /* The eclipseClasspath task will build a local Eclipse .classpath file. */
@@ -142,10 +157,15 @@ eclipse.classpath {
       cp.entries.findAll { it instanceof SourceFolder && it.path.startsWith("third-party-src") }*.output = "build/main"
       cp.entries.findAll { it instanceof SourceFolder && it.path.startsWith("test") }*.output = "build/test"
       cp.entries.findAll { it instanceof SourceFolder && it.path.startsWith("speedtest") }*.output = "build/speedtest"
+      cp.entries.findAll { it instanceof SourceFolder && it.path.startsWith("testsuites") }*.output = "build/testsuites"
     }
 
   }
+}
 
+test {
+    /* Optional: uncomment the next line to print which test is running. Useful for debugging. */
+    // beforeTest { desc -> println "Executing test ${desc.name} [${desc.className}]" }
 }
 
 jar {
