@@ -31,10 +31,8 @@ public final class LongAggregator implements Aggregator {
    * */
   private long min, max, sum;
 
-  /**
-   * stdev, always of double type.
-   * */
-  private double stdev;
+  /** private temp variables for computing stdev. */
+  private double sumSquared;
 
   /**
    * Count, always of long type.
@@ -67,6 +65,7 @@ public final class LongAggregator implements Aggregator {
     count = 0;
     min = Long.MAX_VALUE;
     max = Long.MIN_VALUE;
+    sumSquared = 0.0;
   }
 
   /**
@@ -88,6 +87,7 @@ public final class LongAggregator implements Aggregator {
     max = Long.MIN_VALUE;
     sum = 0L;
     count = 0;
+    sumSquared = 0.0;
     final ImmutableList.Builder<Type> types = ImmutableList.builder();
     final ImmutableList.Builder<String> names = ImmutableList.builder();
     if ((aggOps & Aggregator.AGG_OP_COUNT) != 0) {
@@ -123,22 +123,17 @@ public final class LongAggregator implements Aggregator {
     final int numTuples = tup.numTuples();
     if (numTuples > 0) {
       count += numTuples;
-      double m = 0.0, s = 0.0;
       for (int i = 0; i < numTuples; i++) {
         final long x = tup.getLong(afield, i);
         sum += x;
+        sumSquared += x * x;
         if (min > x) {
           min = x;
         }
         if (max < x) {
           max = x;
         }
-        // computing the standard deviation
-        double tempM = m;
-        m += (x - tempM) / (i + 1);
-        s += (x - tempM) * (x - m);
       }
-      stdev = Math.sqrt(s / numTuples - 1);
     }
   }
 
@@ -176,6 +171,7 @@ public final class LongAggregator implements Aggregator {
       idx++;
     }
     if ((aggOps & AGG_OP_STDEV) != 0) {
+      double stdev = Math.sqrt((sumSquared / count) - ((double) (sum) / count * sum / count));
       buffer.put(idx, stdev);
       idx++;
     }
