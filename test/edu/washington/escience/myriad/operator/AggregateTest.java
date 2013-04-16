@@ -3,7 +3,6 @@ package edu.washington.escience.myriad.operator;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import java.util.HashMap;
 import java.util.List;
@@ -934,13 +933,28 @@ public class AggregateTest {
   @Test
   public void testSingleGroupStd() throws Exception {
     /* The source tuples -- integers 2 through 5 */
+    int from = 2, to = 5;
+    int n = to - from + 1; // we are using a biased version of variance
     final TupleBatchBuffer testBase =
         new TupleBatchBuffer(Schema.of(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE), ImmutableList.of("group",
             "value")));
-    for (int i = 2; i <= 5; ++i) {
+    int sum = 0;
+    for (int i = from; i <= to; ++i) {
       testBase.put(0, Integer.valueOf(0));
       testBase.put(1, Integer.valueOf(i));
+      sum += i;
     }
+
+    /* Generate expected values for stdev */
+
+    double mean = (double) sum / n;
+    double diffSquared = 0.0;
+    for (int i = from; i <= to; ++i) {
+      double diff = i - mean;
+      diffSquared += diff * diff;
+    }
+    double expectedStdev = Math.sqrt(diffSquared / n);
+
     /* Group by group, aggregate on value */
     final SingleGroupByAggregate agg =
         new SingleGroupByAggregate(new TupleSource(testBase), new int[] { 1 }, 0, new int[] { Aggregator.AGG_OP_STDEV });
@@ -956,6 +970,6 @@ public class AggregateTest {
     agg.close();
     System.out.println("Result has " + result.numColumns() + " columns " + result.getSchema());
     System.out.println("\t" + result.get(0, 0) + '\t' + result.get(1, 0));
-    fail();
+    assertEquals(expectedStdev, (double) result.get(1, 0), 0.000001);
   }
 }
