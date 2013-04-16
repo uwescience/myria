@@ -42,6 +42,7 @@ import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SQLiteInsert;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.operator.SinkRoot;
+import edu.washington.escience.myriad.operator.agg.Aggregate;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
 import edu.washington.escience.myriad.parallel.Consumer;
@@ -341,7 +342,6 @@ public final class QueryResource {
       }
 
       case "LocalMultiwayProducer": {
-        int workerID = deserializeInt(jsonOperator, "arg_workerID");
         long[] tmpOpIDs = deserializeLongArray(jsonOperator, "arg_operatorIDs", false);
         ExchangePairID[] operatorIDs = new ExchangePairID[tmpOpIDs.length];
         for (int i = 0; i < tmpOpIDs.length; ++i) {
@@ -407,8 +407,17 @@ public final class QueryResource {
         int[] fieldList = deserializeIntArray(jsonOperator, "arg_fieldList", false);
         String childName = deserializeString(jsonOperator, "arg_child");
         Operator child = operators.get(childName);
-        Objects.requireNonNull(child, "Merge child Operator " + childName + " not previously defined");
+        Objects.requireNonNull(child, "Project child Operator " + childName + " not previously defined");
         return new Project(fieldList, child);
+      }
+
+      case "Aggregate": {
+        String childName = deserializeString(jsonOperator, "arg_child");
+        Operator child = operators.get(childName);
+        int[] fieldList = deserializeIntArray(jsonOperator, "arg_afields", false);
+        int[] opList = deserializeIntArray(jsonOperator, "arg_aggOps", false);
+        Objects.requireNonNull(child, "Aggregate child Operator " + childName + " not previously defined");
+        return new Aggregate(child, fieldList, opList);
       }
 
       default:

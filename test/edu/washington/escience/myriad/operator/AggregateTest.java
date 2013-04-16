@@ -930,4 +930,44 @@ public class AggregateTest {
     mga.close();
   }
 
+  @Test
+  public void testSingleGroupStd() throws Exception {
+    /* The source tuples -- integers 2 through 5 */
+    int from = 2, to = 5;
+    int n = to - from + 1; // we are using a biased version of variance
+    final TupleBatchBuffer testBase =
+        new TupleBatchBuffer(Schema.of(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE), ImmutableList.of("group",
+            "value")));
+    int sum = 0;
+    for (int i = from; i <= to; ++i) {
+      testBase.put(0, Integer.valueOf(0));
+      testBase.put(1, Integer.valueOf(i));
+      sum += i;
+    }
+
+    /* Generate expected values for stdev */
+
+    double mean = (double) sum / n;
+    double diffSquared = 0.0;
+    for (int i = from; i <= to; ++i) {
+      double diff = i - mean;
+      diffSquared += diff * diff;
+    }
+    double expectedStdev = Math.sqrt(diffSquared / n);
+
+    /* Group by group, aggregate on value */
+    final SingleGroupByAggregate agg =
+        new SingleGroupByAggregate(new TupleSource(testBase), new int[] { 1 }, 0, new int[] { Aggregator.AGG_OP_STDEV });
+    agg.open(null);
+    TupleBatch tb = null;
+    final TupleBatchBuffer result = new TupleBatchBuffer(agg.getSchema());
+    while (!agg.eos()) {
+      tb = agg.nextReady();
+      if (tb != null) {
+        tb.compactInto(result);
+      }
+    }
+    agg.close();
+    assertEquals(expectedStdev, (double) result.get(1, 0), 0.000001);
+  }
 }

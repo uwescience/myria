@@ -31,10 +31,8 @@ public final class DoubleAggregator implements Aggregator {
    * */
   private double min, max, sum;
 
-  /**
-   * stdev, always of double type.
-   * */
-  private double stdev;
+  /** private temp variables for computing stdev. */
+  private double sumSquared;
 
   /**
    * Count, always of long type.
@@ -49,9 +47,8 @@ public final class DoubleAggregator implements Aggregator {
   /**
    * Aggregate operations applicable for double columns.
    * */
-  public static final int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT
-      | Aggregator.AGG_OP_SUM | Aggregator.AGG_OP_MAX | Aggregator.AGG_OP_MIN
-      | Aggregator.AGG_OP_AVG | Aggregator.AGG_OP_STDEV;
+  public static final int AVAILABLE_AGG = Aggregator.AGG_OP_COUNT | Aggregator.AGG_OP_SUM | Aggregator.AGG_OP_MAX
+      | Aggregator.AGG_OP_MIN | Aggregator.AGG_OP_AVG | Aggregator.AGG_OP_STDEV;
 
   /**
    * This serves as the copy constructor.
@@ -68,6 +65,7 @@ public final class DoubleAggregator implements Aggregator {
     max = Double.MIN_VALUE;
     min = Double.MAX_VALUE;
     sum = 0;
+    sumSquared = 0.0;
   }
 
   /**
@@ -77,13 +75,11 @@ public final class DoubleAggregator implements Aggregator {
    * */
   public DoubleAggregator(final int afield, final String aFieldName, final int aggOps) {
     if (aggOps <= 0) {
-      throw new IllegalArgumentException(
-          "No aggregation operations are selected");
+      throw new IllegalArgumentException("No aggregation operations are selected");
     }
 
     if ((aggOps | AVAILABLE_AGG) != AVAILABLE_AGG) {
-      throw new IllegalArgumentException(
-          "Unsupported aggregation on double column.");
+      throw new IllegalArgumentException("Unsupported aggregation on double column.");
     }
 
     aColumn = afield;
@@ -92,27 +88,28 @@ public final class DoubleAggregator implements Aggregator {
     max = Double.MIN_VALUE;
     sum = 0.0;
     count = 0;
+    sumSquared = 0.0;
     final ImmutableList.Builder<Type> types = ImmutableList.builder();
     final ImmutableList.Builder<String> names = ImmutableList.builder();
     if ((aggOps & Aggregator.AGG_OP_COUNT) != 0) {
       types.add(Type.LONG_TYPE);
-      names.add("count(" + aFieldName + ")");
+      names.add("count_" + aFieldName);
     }
     if ((aggOps & Aggregator.AGG_OP_MIN) != 0) {
       types.add(Type.DOUBLE_TYPE);
-      names.add("min(" + aFieldName + ")");
+      names.add("min_" + aFieldName);
     }
     if ((aggOps & Aggregator.AGG_OP_MAX) != 0) {
       types.add(Type.DOUBLE_TYPE);
-      names.add("max(" + aFieldName + ")");
+      names.add("max_" + aFieldName);
     }
     if ((aggOps & Aggregator.AGG_OP_SUM) != 0) {
       types.add(Type.DOUBLE_TYPE);
-      names.add("sum(" + aFieldName + ")");
+      names.add("sum_" + aFieldName);
     }
     if ((aggOps & Aggregator.AGG_OP_AVG) != 0) {
       types.add(Type.DOUBLE_TYPE);
-      names.add("avg(" + aFieldName + ")");
+      names.add("avg_" + aFieldName);
     }
     if ((aggOps & Aggregator.AGG_OP_STDEV) != 0) {
       types.add(Type.DOUBLE_TYPE);
@@ -128,22 +125,17 @@ public final class DoubleAggregator implements Aggregator {
     if (numTuples > 0) {
       count += numTuples;
       // temp variables for stdev streaming computation
-      double m = 0.0, s = 0.0;
       for (int i = 0; i < numTuples; i++) {
         final double x = tup.getDouble(aColumn, i);
         sum += x;
+        sumSquared += x * x;
         if (Double.compare(x, min) < 0) {
           min = x;
         }
         if (Double.compare(x, max) > 0) {
           max = x;
         }
-        // computing the standard deviation
-        double tempM = m;
-        m += (x - tempM) / (i + 1);
-        s += (x - tempM) * (x - m);
       }
-      stdev = Math.sqrt(s / numTuples - 1);
     }
   }
 
@@ -181,6 +173,7 @@ public final class DoubleAggregator implements Aggregator {
       idx++;
     }
     if ((aggOps & AGG_OP_STDEV) != 0) {
+      double stdev = Math.sqrt((sumSquared / count) - ((sum) / count * sum / count));
       buffer.put(idx, stdev);
       idx++;
     }

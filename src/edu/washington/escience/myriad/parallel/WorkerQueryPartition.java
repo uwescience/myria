@@ -275,7 +275,7 @@ public class WorkerQueryPartition implements QueryPartition {
   @Override
   public final void startNonBlockingExecution() {
     if (LOGGER.isInfoEnabled()) {
-      LOGGER.info("Query : " + this + " start processing.");
+      LOGGER.info("Query : " + getQueryID() + " start processing.");
     }
     startAtInNano = System.nanoTime();
     for (QuerySubTreeTask t : tasks.keySet()) {
@@ -289,7 +289,7 @@ public class WorkerQueryPartition implements QueryPartition {
   @Deprecated
   public final void startBlockingExecution() {
     if (LOGGER.isInfoEnabled()) {
-      LOGGER.info("Query : " + this + " start processing.");
+      LOGGER.info("Query : " + getQueryID() + " start processing.");
     }
     for (QuerySubTreeTask t : tasks.keySet()) {
       t.blockingExecute();

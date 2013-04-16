@@ -80,7 +80,7 @@ public final class WorkerDataHandler extends SimpleChannelUpstreamHandler implem
             ConsumerChannel cc = ecp.getInputChannel();
             Consumer op = cc.getOwnerConsumer();
             final List<ColumnMessage> columnMessages = data.getColumnsList();
-            final Column<?>[] columnArray = new Column[columnMessages.size()];
+            final Column<?>[] columnArray = new Column<?>[columnMessages.size()];
             int idx = 0;
             for (final ColumnMessage cm : columnMessages) {
               columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm, data.getNumTuples());

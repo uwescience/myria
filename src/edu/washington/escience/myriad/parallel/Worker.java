@@ -1,5 +1,6 @@
 package edu.washington.escience.myriad.parallel;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.HashMap;
 import java.util.Map;
@@ -24,6 +25,9 @@ import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
+
+import com.almworks.sqlite4java.SQLiteConnection;
+import com.almworks.sqlite4java.SQLiteException;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.MyriaConstants;
@@ -561,6 +565,15 @@ public final class Worker {
       case MyriaConstants.STORAGE_SYSTEM_SQLITE:
         String sqliteFilePath = catalog.getConfigurationValue(MyriaSystemConfigKeys.WORKER_DATA_SQLITE_DB);
         execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_SQLITE_FILE, sqliteFilePath);
+        SQLiteConnection conn = new SQLiteConnection(new File(sqliteFilePath));
+        try {
+          conn.open(true);
+          /* By default, use WAL */
+          conn.exec("PRAGMA journal_mode=WAL;");
+        } catch (SQLiteException e) {
+          e.printStackTrace();
+        }
+        conn.dispose();
         break;
       case MyriaConstants.STORAGE_SYSTEM_MYSQL:
         /* TODO fill this in. */
@@ -573,8 +586,6 @@ public final class Worker {
   }
 
   /**
-   * this method should be called when a query is received from the server.
-   * 
    * It does the initialization and preparation for the execution of the query.
    * 
    * @param query the received query.
@@ -582,7 +593,7 @@ public final class Worker {
    */
   public void receiveQuery(final WorkerQueryPartition query) throws DbException {
     if (LOGGER.isInfoEnabled()) {
-      LOGGER.info("Query received" + query);
+      LOGGER.info("Query received" + query.getQueryID());
     }
     consumerChannelMapping.putAll(query.getConsumerChannelMapping());
     producerChannelMapping.putAll(query.getProducerChannelMapping());

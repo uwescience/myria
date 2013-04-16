@@ -17,9 +17,11 @@ import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 
-public class SQLiteInsertSpeedTest {
+public class SQLiteReadWriteSpeedTest {
   private static File tempFile = null;
+  private static File tempFile_wal = null;
   private static SQLiteConnection fileConnection;
+  private static SQLiteConnection fileConnection_wal;
   private static SQLiteConnection memoryConnection;
   private static int[] ints;
   private static String[] strings;
@@ -38,11 +40,16 @@ public class SQLiteInsertSpeedTest {
     /* Make a temporary file for the database and create a new SQLite database there. */
     tempFile = File.createTempFile("SQLiteInsertSpeedTest", ".db");
     tempFile.deleteOnExit();
+    tempFile_wal = File.createTempFile("SQLiteInsertSpeedTest_wal", ".db");
+    tempFile_wal.deleteOnExit();
     fileConnection = new SQLiteConnection(tempFile).open();
+    fileConnection_wal = new SQLiteConnection(tempFile_wal).open();
     memoryConnection = new SQLiteConnection().open();
 
     /* Create the tables needed for the tests in this file. */
     fileConnection.exec("CREATE TABLE insertTestTable (id INTEGER, name STRING);");
+    fileConnection_wal.exec("PRAGMA journal_mode=WAL;");
+    fileConnection_wal.exec("CREATE TABLE insertTestTable (id INTEGER, name STRING);");
     memoryConnection.exec("CREATE TABLE insertTestTable (id INTEGER, name STRING);");
 
     /* Create the data needed for the tests in this file. */
@@ -64,6 +71,8 @@ public class SQLiteInsertSpeedTest {
   public static void tearDown() throws Exception {
     fileConnection.dispose();
     fileConnection = null;
+    fileConnection_wal.dispose();
+    fileConnection_wal = null;
     memoryConnection.dispose();
     memoryConnection = null;
     /* Nothing for tempFile; it is set to delete on exit. */
@@ -78,7 +87,7 @@ public class SQLiteInsertSpeedTest {
     SQLiteStatement statement = sqliteConnection.prepare("INSERT INTO insertTestTable (id,name) VALUES (?,?);");
 
     /* Take the start time */
-    final Date begin = new Date();
+    Date begin = new Date();
 
     /* Insert all the tuples */
     for (int i = 0; i < numTuples; i++) {
@@ -106,17 +115,30 @@ public class SQLiteInsertSpeedTest {
     statement = null;
 
     /* Take the stop time */
-    final double totalSeconds = (new Date().getTime() - begin.getTime()) * 1.0 / 1000;
+    double totalSeconds = (new Date().getTime() - begin.getTime()) * 1.0 / 1000;
+    System.out.printf("insert\t[%d, %d] %.2f seconds in total, %f tuples per second\n", numTuples, batchSize,
+        totalSeconds, numTuples / totalSeconds);
 
+    begin = new Date();
     /* Make sure all the tuples actually got inserted. */
     statement = sqliteConnection.prepare("SELECT COUNT(*) FROM insertTestTable;");
     statement.step();
     assertTrue(statement.columnInt(0) == numTuples);
     statement.dispose();
     statement = null;
+    totalSeconds = (new Date().getTime() - begin.getTime()) * 1.0 / 1000;
+    System.out.printf("count\t[%d, %d] %.2f seconds in total, %f tuples per second\n", numTuples, batchSize,
+        totalSeconds, numTuples / totalSeconds);
 
-    System.out.printf("\t[%d, %d] %.2f seconds in total, %f tuples per second\n", numTuples, batchSize, totalSeconds,
-        numTuples / totalSeconds);
+    statement = sqliteConnection.prepare("select * from insertTestTable");
+    begin = new Date();
+    while (statement.step()) {
+    }
+    statement.dispose();
+    statement = null;
+    totalSeconds = (new Date().getTime() - begin.getTime()) * 1.0 / 1000;
+    System.out.printf("select\t[%d, %d] %.2f seconds in total, %f tuples per second\n", numTuples, batchSize,
+        totalSeconds, numTuples / totalSeconds);
   }
 
   private void doSpeedTest(final String description, final SQLiteConnection sqliteConnection) throws SQLiteException {
@@ -128,10 +150,10 @@ public class SQLiteInsertSpeedTest {
   }
 
   @Test
-  public void insertToMemory() {
+  public void inMemory() {
     assertTrue(memoryConnection != null);
     try {
-      doSpeedTest("InsertToSQLiteInMemory", memoryConnection);
+      doSpeedTest("InMemory", memoryConnection);
     } catch (final Exception e) {
       e.printStackTrace();
       fail(e.getMessage());
@@ -139,14 +161,24 @@ public class SQLiteInsertSpeedTest {
   }
 
   @Test
-  public void insertToTempFile() {
+  public void inTempFile() {
     assertTrue(fileConnection != null);
     try {
-      doSpeedTest("InsertToSQLiteInTempFile", fileConnection);
+      doSpeedTest("InTempFile", fileConnection);
     } catch (final Exception e) {
       e.printStackTrace();
       fail(e.getMessage());
     }
   }
 
+  @Test
+  public void inTempFileUsingWAL() {
+    assertTrue(fileConnection_wal != null);
+    try {
+      doSpeedTest("inTempFileUsingWAL", fileConnection_wal);
+    } catch (final Exception e) {
+      e.printStackTrace();
+      fail(e.getMessage());
+    }
+  }
 }
