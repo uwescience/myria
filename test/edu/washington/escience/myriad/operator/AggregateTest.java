@@ -968,8 +968,6 @@ public class AggregateTest {
       }
     }
     agg.close();
-    System.out.println("Result has " + result.numColumns() + " columns " + result.getSchema());
-    System.out.println("\t" + result.get(0, 0) + '\t' + result.get(1, 0));
     assertEquals(expectedStdev, (double) result.get(1, 0), 0.000001);
   }
 }
