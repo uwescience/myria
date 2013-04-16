@@ -54,6 +54,7 @@ public class TenGBTupleBatchReceiverUsingConnectionPool {
             System.out.println("Receive end at " + end);
             break RECEIVE_MESSAGE;
           case EOI:
+          case BOS:
             // nothing to do
             break RECEIVE_MESSAGE;
           case NORMAL:

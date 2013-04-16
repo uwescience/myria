@@ -101,7 +101,7 @@ public final class Server {
             final Schema operatorSchema = cc.getOwnerConsumer().getSchema();
             switch (data.getType()) {
               case EOS:
-                LOGGER.info("EOS from: " + senderID + "," + workers.get(senderID));
+                LOGGER.debug("EOS from: " + senderID + "," + workers.get(senderID));
                 receiveData(new ExchangeData(exchangePairID, senderID, operatorSchema, MetaMessage.EOS));
                 cc.getOwnerTask().notifyNewInput();
                 break;
@@ -121,6 +121,9 @@ public final class Server {
                 receiveData((new ExchangeData(exchangePairID, senderID, columns, operatorSchema, data.getNumTuples(), m
                     .getSeq())));
                 cc.getOwnerTask().notifyNewInput();
+                break;
+              case BOS:
+                /* ignored */
                 break;
             }
             break;
@@ -202,25 +205,6 @@ public final class Server {
    * {@link ExecutorService} for message processing.
    * */
   private volatile ExecutorService messageProcessingExecutor;
-
-  /**
-   * for testing.
-   * */
-  private static volatile Server runningInstance = null;
-
-  /**
-   * @return currently running instance of the master.
-   * */
-  public static Server getRunningInstance() {
-    return runningInstance;
-  }
-
-  /**
-   * reset current running instance.
-   * */
-  public static void resetRunningInstance() {
-    runningInstance = null;
-  }
 
   /** The Catalog stores the metadata about the Myria instance. */
   private final Catalog catalog;
@@ -350,7 +334,6 @@ public final class Server {
         }
       });
       server.start();
-      runningInstance = server;
     } catch (Exception e) {
       if (LOGGER.isErrorEnabled()) {
         LOGGER.error("Unknown error occurs at Master. Quit directly.", e);
@@ -810,7 +793,8 @@ public final class Server {
 
       @Override
       public void operationComplete(final QueryFuture future) throws Exception {
-        MasterQueryPartition mqp = activeQueries.remove(queryID);
+        // MasterQueryPartition mqp = activeQueries.remove(queryID);
+        activeQueries.remove(queryID);
       }
 
     });
