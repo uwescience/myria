@@ -171,7 +171,7 @@ public final class LongAggregator implements Aggregator {
       idx++;
     }
     if ((aggOps & AGG_OP_STDEV) != 0) {
-      double stdev = Math.sqrt(sumSquared / count - sum / count * sum / count);
+      double stdev = Math.sqrt((sumSquared / count) - ((double) (sum) / count * sum / count));
       buffer.put(idx, stdev);
       idx++;
     }
