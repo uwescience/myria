@@ -1,52 +1,29 @@
 #!/usr/bin/env python
 
-import socket
+import myriadeploy
+
 import subprocess
 import sys
-import getpass
 
 def host_port_list(workers):
-    return map(lambda (x,y,z) : str(x)+':'+str(y), workers)
+    return [str(x) + ':' + str(y) for (x, y) in workers]
 
-def read_workers(filename):
-    ret = []
-    for line in open(filename,'r'):
-        line = line.strip()
-        # Skip blank lines or comments
-        if len(line) == 0 or line[0] == '#':
-            continue
+def make_catalog(config):
+    """Creates a Myria catalog (running the Java program to do so) from the
+given deployment configuration."""
+    # Extract the needed arguments from config
+    description = config['description']
+    nodes = config['nodes']
 
-        # Extract the username@host:port string
-        wholeline = line.split('@')
-        if len(wholeline) == 2:
-	    username = wholeline[0]
-	    line = wholeline[1]
-	else:
-	    username = getpass.getuser()
+    # Remove the old catalog, if it exists.
+    args = ["rm", "-rf", description]
+    subprocess.call(args)
 
-        # Extract the host:port string
-        hostline = line.split(':')
-        if len(hostline) != 2:
-            raise Exception("expected host:port instead of %s" % (line))
-        hostname = hostline[0]
-        try:
-            socket.gethostbyname(hostname)
-        except socket.error:
-            raise Exception("unable to resolve hostname %s" % (hostname))
-        try:
-            port = int(hostline[1])
-        except:
-            raise Exception("unable to convert %s to an int" % (port))
-        ret.append((hostname, port, username))
-    return ret
-
-def make_catalog(description, workers):
-    args = ["rm", "-r", description]
-    subprocess.call(args);
+    # Create a new one.
     args = ["./run_catalog_maker.sh", \
             description, \
-            str(len(workers))]
-    args += host_port_list(workers)
+            str(len(nodes))]
+    args += host_port_list(nodes)
     if subprocess.call(args):
         print >> sys.stderr, "error making the Catalog"
         sys.exit(1)
@@ -55,67 +32,80 @@ def remote_mkdir(hostname, dirname, username):
     args = ["ssh", "%s@%s" % (username, hostname), "mkdir", "-p", dirname]
     return subprocess.call(args)
 
-def copy_master_catalog(hostname, dirname, remote_root, username):
+def copy_master_catalog(hostname, dirname, path, username):
     local_path = "%s/%s" % (dirname, "master.catalog")
-    remote_path = "%s@%s:%s/%s-files/%s" % (username, hostname, remote_root, dirname, dirname)
-    args = ["scp", local_path, remote_path]
+    remote_path = "%s@%s:%s/%s-files/%s" % (username, hostname, path, dirname, dirname)
+    args = ["rsync", "-avz", local_path, remote_path]
     return subprocess.call(args)
 
-def copy_worker_catalog(hostname, dirname, remote_root, i, username):
+def copy_worker_catalog(hostname, dirname, path, i, username):
     local_path = "%s/worker_%d" % (dirname, i)
-    remote_path = "%s@%s:%s/%s-files/%s" % (username, hostname, remote_root, dirname, dirname)
-    args = ["scp", "-r", local_path, remote_path]
+    remote_path = "%s@%s:%s/%s-files/%s" % (username, hostname, path, dirname, dirname)
+    args = ["rsync", "-avz", local_path, remote_path]
     return subprocess.call(args)
 
-def copy_catalogs(description, remote_root, workers):
-    for (i,(hostname,port,username)) in enumerate(workers):
-        if remote_mkdir(hostname, "%s/%s-files/%s" \
-                % (remote_root, description, description), username):
-            raise Exception("Error making directory on master %s" \
-                    % (hostname,))
-        # Master
-        if i == 0:
-            if copy_master_catalog(hostname, description, remote_root, username):
-                raise Exception("Error copying master.catalog to %s" % (hostname,))
-        # Workers
-        else:
-            if copy_worker_catalog(hostname, description, remote_root, i, username):
-                raise Exception("Error copying worker.catalog to %s " % (hostname,))
+def copy_catalogs(config):
+    """Copies the master and worker catalogs to the remote hosts."""
+    description = config['description']
+    path = config['path']
+    master = config['master']
+    workers = config['workers']
+    username = config['username']
 
-def copy_distribution(workers, dirname, remote_root):
-    for (hostname, port, username) in workers:
-        remote_path = "%s@%s:%s/%s-files" % (username, hostname, remote_root, dirname)
+    # Make directories on master
+    (hostname, _) = master
+    if remote_mkdir(hostname, "%s/%s-files/%s" \
+            % (path, description, description), username):
+        raise Exception("Error making directory on master %s" \
+                % (hostname,))
+    # Copy files to master
+    if copy_master_catalog(hostname, description, path, username):
+        raise Exception("Error copying master.catalog to %s" % (hostname,))
+
+    for (i, (hostname, _)) in enumerate(workers):
+        # Workers are numbered from 1, not 0
+        worker_id = i + 1
+
+        # Make directories on the worker
+        if remote_mkdir(hostname, "%s/%s-files/%s" \
+                % (path, description, description), username):
+            raise Exception("Error making directory on worker %d %s" \
+                    % (worker_id, hostname))
+        # Copy the files to the worker
+        if copy_worker_catalog(hostname, description, path, worker_id, username):
+            raise Exception("Error copying worker.catalog to %s " % (hostname,))
+
+def copy_distribution(config):
+    "Copy the distribution (jar and libs and conf) to compute nodes."
+    nodes = config['nodes']
+    description = config['description']
+    path = config['path']
+    username = config['username']
+
+    for (hostname, _) in nodes:
+        remote_path = "%s@%s:%s/%s-files" % (username, hostname, path, description)
         to_copy = ["myriad-0.1.jar", "sqlite4java-282", "conf"]
-        args = ["scp", "-r"] + to_copy + [remote_path]
+        args = ["rsync", "-avz"] + to_copy + [remote_path]
         if subprocess.call(args):
             raise Exception("Error copying distribution to %s" % (hostname,))
 
 def main(argv):
     # Usage
-    if len(argv) != 4:
-        print >> sys.stderr, "Usage: %s <description> <expt_root> <workers.txt>" % (argv[0])
-        print >> sys.stderr, "       description: any alphanumeric plus '-_' string."
-        print >> sys.stderr, "       expt_root: where the files should be stored locally, e.g., /scratch."
-        print >> sys.stderr, "       workers.txt: a list of host:port strings;"
-        print >> sys.stderr, "                    the first entry is the master."
+    if len(argv) != 2:
+        print >> sys.stderr, "Usage: %s <deployment.cfg>" % (argv[0])
+        print >> sys.stderr, "       deployment.cfg: a configuration file modeled after deployment.cfg.sample"
         sys.exit(1)
 
-    # Command-line arguments
-    DESCRIPTION = argv[1]
-    EXPT_ROOT = argv[2]
-    WORKERS_FILE = argv[3]
-
-    # Figure out the master and workers
-    workers = read_workers(WORKERS_FILE)
+    config = myriadeploy.read_config_file(argv[1])
 
     # Step 1: make the Catalog
-    make_catalog(DESCRIPTION, workers)
+    make_catalog(config)
 
     # Step 2: Copy each catalog over
-    copy_catalogs(DESCRIPTION, EXPT_ROOT, workers)
+    copy_catalogs(config)
 
     # Step 3: Copy over java, libs, myriad
-    copy_distribution(workers, DESCRIPTION, EXPT_ROOT)
+    copy_distribution(config)
 
 if __name__ == "__main__":
     main(sys.argv)
