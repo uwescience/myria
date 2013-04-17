@@ -18,6 +18,7 @@ sourceSets {
     java.srcDir 'src'
     java.srcDir 'protobuf/java'
     java.srcDir 'third-party-src'
+    resources.srcDir 'conf'
     output.classesDir = 'build/main'
   }
   /* Code for tests */
