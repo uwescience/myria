@@ -134,12 +134,6 @@ eclipse.classpath {
 
   file {
 
-    /* add conf folder to classpath */
-    withXml {
-      def node = it.asNode()
-      node.appendNode('classpathentry',[kind: 'lib', path: 'conf'])
-    }
-
   /* Ugly hack to stick the JNI pointer for sqlite into the .classpath file. */
     withXml {
       provider -> 
