@@ -99,6 +99,8 @@ public final class Catalog {
         protected Object job(final SQLiteConnection sqliteConnection) throws SQLiteException, CatalogException {
           /* Create all the tables in the Catalog. */
           try {
+            sqliteConnection.exec("PRAGMA journal_mode = WAL;");
+            sqliteConnection.exec("BEGIN TRANSACTION");
             sqliteConnection.exec("CREATE TABLE configuration (\n" + "    key STRING UNIQUE NOT NULL,\n"
                 + "    value STRING NOT NULL);");
             sqliteConnection.exec("CREATE TABLE workers (\n" + "    worker_id INTEGER PRIMARY KEY ASC,\n"
@@ -125,7 +127,9 @@ public final class Catalog {
                 + "    worker_id INTEGER NOT NULL REFERENCES workers(worker_id));");
             sqliteConnection.exec("CREATE TABLE queries (\n" + "    query_id INTEGER NOT NULL PRIMARY KEY ASC,\n"
                 + "    raw_query TEXT NOT NULL,\n" + "    logical_ra TEXT NOT NULL);");
+            sqliteConnection.exec("END TRANSACTION");
           } catch (final SQLiteException e) {
+            sqliteConnection.exec("ROLLBACK TRANSACTION");
             if (LOGGER.isErrorEnabled()) {
               LOGGER.error(e.toString());
             }
@@ -359,7 +363,7 @@ public final class Catalog {
             sqliteConnection.exec("COMMIT TRANSACTION;");
           } catch (final SQLiteException e) {
             try {
-              sqliteConnection.exec("ABORT TRANSACTION;");
+              sqliteConnection.exec("ROLLBACK TRANSACTION;");
             } catch (final SQLiteException e2) {
               assert true; /* Do nothing. */
             }
@@ -535,19 +539,19 @@ public final class Catalog {
   }
 
   /**
-   * @return all the configurations.
+   * @return All the configuration values.
    * @throws CatalogException if error occurs in catalog parsing.
    */
   public ImmutableMap<String, String> getAllConfigurations() throws CatalogException {
     if (isClosed) {
-      throw new CatalogException("WorkerCatalog is closed.");
+      throw new CatalogException("Catalog is closed.");
     }
     try {
       return queue.execute(new SQLiteJob<ImmutableMap<String, String>>() {
         @Override
         protected ImmutableMap<String, String> job(final SQLiteConnection sqliteConnection) throws CatalogException,
             SQLiteException {
-          HashMap<String, String> configurations = new HashMap<String, String>();
+          ImmutableMap.Builder<String, String> configurations = ImmutableMap.builder();
           try {
 
             final SQLiteStatement statement = sqliteConnection.prepare("SELECT * FROM configuration;", false);
@@ -555,7 +559,7 @@ public final class Catalog {
               configurations.put(statement.columnString(0), statement.columnString(1));
             }
             statement.dispose();
-            return ImmutableMap.copyOf(configurations);
+            return configurations.build();
           } catch (final SQLiteException e) {
             if (LOGGER.isErrorEnabled()) {
               LOGGER.error(e.toString());
@@ -613,6 +617,50 @@ public final class Catalog {
   }
 
   /**
+   * Set all the configuration values in the provided map in a single transaction.
+   * 
+   * @param entries the value of the configuration parameter.
+   * @throws CatalogException if there is an error in the backing database.
+   */
+  public void setAllConfigurationValues(final Map<String, String> entries) throws CatalogException {
+    Objects.requireNonNull(entries);
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+    try {
+      queue.execute(new SQLiteJob<Object>() {
+        @Override
+        protected Object job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+          try {
+            /* Start transaction. */
+            sqliteConnection.exec("BEGIN TRANSACTION");
+            final SQLiteStatement statement = sqliteConnection.prepare("INSERT INTO configuration VALUES(?,?);", false);
+            for (Map.Entry<String, String> entry : entries.entrySet()) {
+              statement.bind(1, entry.getKey());
+              statement.bind(2, entry.getValue());
+              statement.step();
+              statement.reset(false);
+            }
+            /* Commit transaction. */
+            sqliteConnection.exec("COMMIT TRANSACTION");
+            statement.dispose();
+            return null;
+          } catch (final SQLiteException e) {
+            if (LOGGER.isErrorEnabled()) {
+              LOGGER.error(e.toString());
+            }
+            /* Commit transaction. */
+            sqliteConnection.exec("ROLLBACK TRANSACTION");
+            throw new CatalogException(e);
+          }
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  /**
    * Extract the value of a particular configuration parameter from the database. Returns null if the parameter is not
    * configured.
    * 
@@ -623,7 +671,7 @@ public final class Catalog {
   public void setConfigurationValue(final String key, final String value) throws CatalogException {
     Objects.requireNonNull(key);
     if (isClosed) {
-      throw new CatalogException("WorkerCatalog is closed.");
+      throw new CatalogException("Catalog is closed.");
     }
     try {
       queue.execute(new SQLiteJob<String>() {
