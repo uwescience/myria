@@ -145,7 +145,7 @@ public class ProtobufTest {
     final IPCConnectionPool connectionPool = TestUtils.startIPCConnectionPool(0, computingUnits, messageQueue);
 
     final edu.washington.escience.myriad.parallel.ExchangePairID epID = ExchangePairID.fromExisting(0l);
-    final List<TransportMessage> tbs = tbb.getAllAsTM(epID);
+    final List<TransportMessage> tbs = tbb.getAllAsTM();
 
     final Thread[] threads = new Thread[numThreads];
     final AtomicInteger numSent = new AtomicInteger();
@@ -330,7 +330,7 @@ public class ProtobufTest {
         TestUtils.startIPCConnectionPool(1, computingUnits, clientMessageQueue);
 
     final ExchangePairID epID = ExchangePairID.fromExisting(0l);
-    final List<TransportMessage> tbs = tbb.getAllAsTM(epID);
+    final List<TransportMessage> tbs = tbb.getAllAsTM();
 
     final Thread[] threads = new Thread[numThreads];
     final AtomicInteger numSent = new AtomicInteger();
@@ -466,7 +466,7 @@ public class ProtobufTest {
     final IPCConnectionPool connectionPool = TestUtils.startIPCConnectionPool(0, computingUnits, messageQueue);
 
     final ExchangePairID epID = ExchangePairID.fromExisting(0l);
-    final List<TransportMessage> tbs = tbb.getAllAsTM(epID);
+    final List<TransportMessage> tbs = tbb.getAllAsTM();
 
     final Thread[] threads = new Thread[numThreads];
     final AtomicInteger numSent = new AtomicInteger();
@@ -589,7 +589,7 @@ public class ProtobufTest {
     final IPCConnectionPool connectionPool = TestUtils.startIPCConnectionPool(0, computingUnits, messageQueue);
 
     final ExchangePairID epID = ExchangePairID.fromExisting(0l);
-    final List<TransportMessage> tbs = tbb.getAllAsTM(epID);
+    final List<TransportMessage> tbs = tbb.getAllAsTM();
 
     final AtomicInteger numSent = new AtomicInteger();
     final Channel ch = connectionPool.reserveLongTermConnection(0);
@@ -736,7 +736,7 @@ public class ProtobufTest {
         TestUtils.startIPCConnectionPool(1, computingUnits, clientMessageQueue);
 
     final ExchangePairID epID = ExchangePairID.fromExisting(0l);
-    final List<TransportMessage> tbs = tbb.getAllAsTM(epID);
+    final List<TransportMessage> tbs = tbb.getAllAsTM();
 
     final AtomicInteger numSent = new AtomicInteger();
     final ChannelFuture cf;
@@ -840,7 +840,7 @@ public class ProtobufTest {
     final IPCConnectionPool connectionPool = TestUtils.startIPCConnectionPool(0, computingUnits, messageQueue);
 
     final ExchangePairID epID = ExchangePairID.fromExisting(0l);
-    final List<TransportMessage> tbs = tbb.getAllAsTM(epID);
+    final List<TransportMessage> tbs = tbb.getAllAsTM();
 
     final AtomicInteger numSent = new AtomicInteger();
     final ChannelFuture cf;
