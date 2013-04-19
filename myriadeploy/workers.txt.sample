@@ -1,7 +1,0 @@
-# if the user name is not the same as your current one, put it before the host name
-# otherwise hostname:port is enough
-jwang@beijing.cs.washington.edu:9001
-jwang@berlin.cs.washington.edu:9002
-jwang@dallas.cs.washington.edu:9002
-jwang@seoul.cs.washington.edu:9002
-jwang@newyork.cs.washington.edu:9002

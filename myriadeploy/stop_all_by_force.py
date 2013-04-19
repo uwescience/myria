@@ -1,73 +1,53 @@
 #!/usr/bin/env python
 
-import socket
+"Kill all Myria processes on the nodes in this cluster."
+
+import myriadeploy
+
 import subprocess
 import sys
-import time
-import getpass
 
-def read_workers(filename):
-    ret = []
-    for line in open(filename,'r'):
-        line = line.strip()
-        # Skip blank lines or comments
-        if len(line) == 0 or line[0] == '#':
+def stop_all(config):
+    "Kill all Myria processes on the nodes in this cluster."
+    master = config['master']
+    workers = config['workers']
+    username = config['username']
+
+    # Stop the Master
+    (hostname, _) = master
+    cmd = "ssh %s@%s $'ps aux | grep edu.washington.escience.myriad.daemon.MasterDaemon | grep %s | grep -v grep | awk \\'{print $2}\\''" % (username, hostname, username)
+    pids = subprocess.check_output(cmd, shell=True).split('\n')
+    for pid in pids:
+        if pid != "":
+            print  "killing %s on %s" % (pid, hostname)
+            cmd = "ssh %s@%s kill %s" % (username, hostname, pid)
+            subprocess.call(cmd, shell=True)
+
+    # Workers
+    done = set()
+    for (hostname, _) in workers:
+        if hostname in done:
             continue
-
-        # Extract the username@host:port string
-        wholeline = line.split('@')
-        if len(wholeline) == 2:
-            username = wholeline[0]
-            line = wholeline[1]
-        else:
-            username = getpass.getuser()
-
-        # Extract the host:port string
-        hostline = line.split(':')
-        if len(hostline) != 2:
-            raise Exception("expected host:port instead of %s" % (line))
-        hostname = hostline[0]
-        try:
-            socket.gethostbyname(hostname)
-        except socket.error:
-            raise Exception("unable to resolve hostname %s" % (hostname))
-        try:
-            port = int(hostline[1])
-        except:
-            raise Exception("unable to convert %s to an int" % (port))
-        ret.append((hostname, port, username))
-    return ret
-
-def stop_all(workers):
-    id = 0
-    for (hostname, port, username) in workers:
-	if id == 0:
-  	    cmd = "ssh %s@%s $'ps aux | grep edu.washington.escience.myriad.daemon.MasterDaemon | grep %s | grep -v grep | awk \\'{print $2}\\''" % (username, hostname, username);
-	else:
-  	    cmd = "ssh %s@%s $'ps aux | grep edu.washington.escience.myriad.parallel.Worker | grep %s | grep -v grep | awk \\'{print $2}\\''" % (username, hostname, username);
-	pids = subprocess.check_output(cmd, shell=True).split('\n');
-	for pid in pids:
-	    if pid != "":
-	        print  "killing %s on %s" % (pid, hostname)
-	        cmd = "ssh %s@%s kill %s" % (username, hostname, pid);
-	        subprocess.call(cmd, shell=True);
-        id = id + 1
+        done.add(hostname)
+        cmd = "ssh %s@%s $'ps aux | grep edu.washington.escience.myriad.parallel.Worker | grep %s | grep -v grep | awk \\'{print $2}\\''" % (username, hostname, username)
+        pids = subprocess.check_output(cmd, shell=True).split('\n')
+        for pid in pids:
+            if pid != "":
+                print  "killing %s on %s" % (pid, hostname)
+                cmd = "ssh %s@%s kill %s" % (username, hostname, pid)
+                subprocess.call(cmd, shell=True)
 
 def main(argv):
+    "Kill all Myria processes on the nodes in this cluster."
     # Usage
     if len(argv) != 2:
-        print >> sys.stderr, "Usage: %s <workers.txt> " % (argv[0])
-        print >> sys.stderr, "       workers.txt: a list of host:port strings;"
-        print >> sys.stderr, "                    the first entry is the master."
+        print >> sys.stderr, "Usage: %s <deployment.cfg>" % (argv[0])
+        print >> sys.stderr, "       deployment.cfg: a configuration file modeled after deployment.cfg.sample"
         sys.exit(1)
 
-    # Command-line arguments
-    WORKERS_FILE = argv[1]
+    config = myriadeploy.read_config_file(argv[1])
 
-    # Figure out the master and workers
-    workers = read_workers(WORKERS_FILE)
-
-    stop_all(workers)
+    stop_all(config)
 
 if __name__ == "__main__":
     main(sys.argv)
