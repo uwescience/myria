@@ -6,16 +6,15 @@ option java_package = "edu.washington.escience.myriad.proto";
 option java_outer_classname = "TransportProto";
 
 message TransportMessage {
-  enum TransportMessageType {
+  enum Type {
     DATA	= 0;
     QUERY	= 1;
     CONTROL = 2;
   }
   
-  required TransportMessageType type = 1;
-  optional DataMessage data = 2;
-  optional Query query = 4;
-  optional ControlMessage control = 5;
-  optional int64 seq = 6;
+  required TransportMessage.Type type = 1;
+  optional DataMessage dataMessage = 2;
+  optional QueryMessage queryMessage = 3;
+  optional ControlMessage controlMessage = 4;
 }
 

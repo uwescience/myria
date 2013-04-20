@@ -2,20 +2,21 @@ option java_package = "edu.washington.escience.myriad.proto";
 option java_outer_classname = "DataProto";
 
 message DataMessage {
-	enum DataMessageType{
+	enum Type{
 		EOS = 0; // End of Stream
 		NORMAL = 1; // Normal Data
 		EOI = 2; // End of Iteration
     BOS = 3; // Begin of Stream, operatorID should be set for BOS messages
 	}
-	required DataMessageType type=1;
+	required DataMessage.Type type=1;
 	optional uint64 operatorID = 2;
 	repeated ColumnMessage columns = 3;
-  optional uint32 num_tuples = 4;
+    optional uint32 num_tuples = 4;
+    optional uint64 seq = 5;
 }
 
 message ColumnMessage {
-  enum ColumnMessageType {
+  enum Type {
     INT		= 0;
     LONG	= 1;
     FLOAT	= 2;
@@ -24,7 +25,7 @@ message ColumnMessage {
     BOOLEAN	= 5;
   }
 
-  required ColumnMessageType type = 1;		// See enum above
+  required ColumnMessage.Type type = 1;		// See enum above
 
   optional IntColumnMessage int_column = 3; 
   optional LongColumnMessage long_column = 4; 

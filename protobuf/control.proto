@@ -2,22 +2,16 @@ option java_package = "edu.washington.escience.myriad.proto";
 option java_outer_classname = "ControlProto";
 
 message ControlMessage {
-  enum ControlMessageType {
+  enum Type {
+    
     CONNECT = 0; // create an IPC connection between two workers, used only in the IPC module. Do not process it elsewhere.
     DISCONNECT = 4; //disconnect an IPC connection, used only in he IPC module. Do not process it elsewhere.
-
-    QUERY_START = 1; // start the query, master -> worker
-    QUERY_PAUSE = 7; // master -> worker
-    QUERY_RESUME = 8; // master -> worker
-    QUERY_KILL = 9; // master -> worker
-    QUERY_READY_TO_EXECUTE = 2;  // worker -> master
-    QUERY_COMPLETE = 6; // worker -> master
 
     SHUTDOWN = 3; // master -> workers
     WORKER_ALIVE = 5; // worker -> master
   }
 
-  required ControlMessageType type = 1;		// See enum above
+  required ControlMessage.Type type = 1;		// See enum above
   optional int32 remote_id = 2; //Should be set only in CONNECT/DISCONNECT
-  optional int64 query_id = 3; // Should be set only in query control messages
 }
+
