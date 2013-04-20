@@ -108,39 +108,7 @@ public final class Worker {
                         .error("DISCONNECT and CONNECT are used exclusively in IPC connection pool. They should not arrive here.");
                   }
                   break;
-                case QUERY_START:
-                case QUERY_PAUSE:
-                case QUERY_RESUME:
-                case QUERY_KILL:
-                  long queryId = cm.getQueryId();
-                  WorkerQueryPartition q = activeQueries.get(queryId);
-                  if (q == null) {
-                    if (LOGGER.isErrorEnabled()) {
-                      LOGGER.error("Unknown query id: {}, current active queries are: {}", queryId, activeQueries
-                          .keySet());
-                    }
-                  } else {
-                    switch (cm.getType()) {
-                      case QUERY_START:
-                        q.init();
-                        if (queryExecutionMode == QueryExecutionMode.NON_BLOCKING) {
-                          q.startNonBlockingExecution();
-                        } else {
-                          q.startBlockingExecution();
-                        }
-                        break;
-                      case QUERY_PAUSE:
-                        q.pause();
-                        break;
-                      case QUERY_RESUME:
-                        q.resume();
-                        break;
-                      case QUERY_KILL:
-                        q.kill();
-                        break;
-                    }
-                  }
-                  break;
+
                 case SHUTDOWN:
                   if (LOGGER.isInfoEnabled()) {
                     if (LOGGER.isInfoEnabled()) {
@@ -516,6 +484,20 @@ public final class Worker {
    * */
   String getWorkingDirectory() {
     return workingDirectory;
+  }
+
+  /**
+   * @return the current active queries.
+   * */
+  ConcurrentHashMap<Long, WorkerQueryPartition> getActiveQueries() {
+    return activeQueries;
+  }
+
+  /**
+   * @return query execution mode.
+   * */
+  QueryExecutionMode getQueryExecutionMode() {
+    return queryExecutionMode;
   }
 
   /**

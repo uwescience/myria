@@ -11,9 +11,9 @@ public final class DataProto {
   public interface DataMessageOrBuilder
       extends com.google.protobuf.MessageOrBuilder {
     
-    // required .DataMessage.DataMessageType type = 1;
+    // required .DataMessage.Type type = 1;
     boolean hasType();
-    edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageType getType();
+    edu.washington.escience.myriad.proto.DataProto.DataMessage.Type getType();
     
     // optional uint64 operatorID = 2;
     boolean hasOperatorID();
@@ -32,6 +32,10 @@ public final class DataProto {
     // optional uint32 num_tuples = 4;
     boolean hasNumTuples();
     int getNumTuples();
+    
+    // optional uint64 seq = 5;
+    boolean hasSeq();
+    long getSeq();
   }
   public static final class DataMessage extends
       com.google.protobuf.GeneratedMessage
@@ -61,7 +65,7 @@ public final class DataProto {
       return edu.washington.escience.myriad.proto.DataProto.internal_static_DataMessage_fieldAccessorTable;
     }
     
-    public enum DataMessageType
+    public enum Type
         implements com.google.protobuf.ProtocolMessageEnum {
       EOS(0, 0),
       NORMAL(1, 1),
@@ -77,7 +81,7 @@ public final class DataProto {
       
       public final int getNumber() { return value; }
       
-      public static DataMessageType valueOf(int value) {
+      public static Type valueOf(int value) {
         switch (value) {
           case 0: return EOS;
           case 1: return NORMAL;
@@ -87,15 +91,15 @@ public final class DataProto {
         }
       }
       
-      public static com.google.protobuf.Internal.EnumLiteMap<DataMessageType>
+      public static com.google.protobuf.Internal.EnumLiteMap<Type>
           internalGetValueMap() {
         return internalValueMap;
       }
-      private static com.google.protobuf.Internal.EnumLiteMap<DataMessageType>
+      private static com.google.protobuf.Internal.EnumLiteMap<Type>
           internalValueMap =
-            new com.google.protobuf.Internal.EnumLiteMap<DataMessageType>() {
-              public DataMessageType findValueByNumber(int number) {
-                return DataMessageType.valueOf(number);
+            new com.google.protobuf.Internal.EnumLiteMap<Type>() {
+              public Type findValueByNumber(int number) {
+                return Type.valueOf(number);
               }
             };
       
@@ -112,11 +116,11 @@ public final class DataProto {
         return edu.washington.escience.myriad.proto.DataProto.DataMessage.getDescriptor().getEnumTypes().get(0);
       }
       
-      private static final DataMessageType[] VALUES = {
+      private static final Type[] VALUES = {
         EOS, NORMAL, EOI, BOS, 
       };
       
-      public static DataMessageType valueOf(
+      public static Type valueOf(
           com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
         if (desc.getType() != getDescriptor()) {
           throw new java.lang.IllegalArgumentException(
@@ -128,22 +132,22 @@ public final class DataProto {
       private final int index;
       private final int value;
       
-      private DataMessageType(int index, int value) {
+      private Type(int index, int value) {
         this.index = index;
         this.value = value;
       }
       
-      // @@protoc_insertion_point(enum_scope:DataMessage.DataMessageType)
+      // @@protoc_insertion_point(enum_scope:DataMessage.Type)
     }
     
     private int bitField0_;
-    // required .DataMessage.DataMessageType type = 1;
+    // required .DataMessage.Type type = 1;
     public static final int TYPE_FIELD_NUMBER = 1;
-    private edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageType type_;
+    private edu.washington.escience.myriad.proto.DataProto.DataMessage.Type type_;
     public boolean hasType() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
-    public edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageType getType() {
+    public edu.washington.escience.myriad.proto.DataProto.DataMessage.Type getType() {
       return type_;
     }
     
@@ -188,11 +192,22 @@ public final class DataProto {
       return numTuples_;
     }
     
+    // optional uint64 seq = 5;
+    public static final int SEQ_FIELD_NUMBER = 5;
+    private long seq_;
+    public boolean hasSeq() {
+      return ((bitField0_ & 0x00000008) == 0x00000008);
+    }
+    public long getSeq() {
+      return seq_;
+    }
+    
     private void initFields() {
-      type_ = edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageType.EOS;
+      type_ = edu.washington.escience.myriad.proto.DataProto.DataMessage.Type.EOS;
       operatorID_ = 0L;
       columns_ = java.util.Collections.emptyList();
       numTuples_ = 0;
+      seq_ = 0L;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -228,6 +243,9 @@ public final class DataProto {
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         output.writeUInt32(4, numTuples_);
       }
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        output.writeUInt64(5, seq_);
+      }
       getUnknownFields().writeTo(output);
     }
     
@@ -252,6 +270,10 @@ public final class DataProto {
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         size += com.google.protobuf.CodedOutputStream
           .computeUInt32Size(4, numTuples_);
+      }
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeUInt64Size(5, seq_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -378,7 +400,7 @@ public final class DataProto {
       
       public Builder clear() {
         super.clear();
-        type_ = edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageType.EOS;
+        type_ = edu.washington.escience.myriad.proto.DataProto.DataMessage.Type.EOS;
         bitField0_ = (bitField0_ & ~0x00000001);
         operatorID_ = 0L;
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -390,6 +412,8 @@ public final class DataProto {
         }
         numTuples_ = 0;
         bitField0_ = (bitField0_ & ~0x00000008);
+        seq_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00000010);
         return this;
       }
       
@@ -449,6 +473,10 @@ public final class DataProto {
           to_bitField0_ |= 0x00000004;
         }
         result.numTuples_ = numTuples_;
+        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+          to_bitField0_ |= 0x00000008;
+        }
+        result.seq_ = seq_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -500,6 +528,9 @@ public final class DataProto {
         if (other.hasNumTuples()) {
           setNumTuples(other.getNumTuples());
         }
+        if (other.hasSeq()) {
+          setSeq(other.getSeq());
+        }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
@@ -543,7 +574,7 @@ public final class DataProto {
             }
             case 8: {
               int rawValue = input.readEnum();
-              edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageType value = edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageType.valueOf(rawValue);
+              edu.washington.escience.myriad.proto.DataProto.DataMessage.Type value = edu.washington.escience.myriad.proto.DataProto.DataMessage.Type.valueOf(rawValue);
               if (value == null) {
                 unknownFields.mergeVarintField(1, rawValue);
               } else {
@@ -568,21 +599,26 @@ public final class DataProto {
               numTuples_ = input.readUInt32();
               break;
             }
+            case 40: {
+              bitField0_ |= 0x00000010;
+              seq_ = input.readUInt64();
+              break;
+            }
           }
         }
       }
       
       private int bitField0_;
       
-      // required .DataMessage.DataMessageType type = 1;
-      private edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageType type_ = edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageType.EOS;
+      // required .DataMessage.Type type = 1;
+      private edu.washington.escience.myriad.proto.DataProto.DataMessage.Type type_ = edu.washington.escience.myriad.proto.DataProto.DataMessage.Type.EOS;
       public boolean hasType() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
-      public edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageType getType() {
+      public edu.washington.escience.myriad.proto.DataProto.DataMessage.Type getType() {
         return type_;
       }
-      public Builder setType(edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageType value) {
+      public Builder setType(edu.washington.escience.myriad.proto.DataProto.DataMessage.Type value) {
         if (value == null) {
           throw new NullPointerException();
         }
@@ -593,7 +629,7 @@ public final class DataProto {
       }
       public Builder clearType() {
         bitField0_ = (bitField0_ & ~0x00000001);
-        type_ = edu.washington.escience.myriad.proto.DataProto.DataMessage.DataMessageType.EOS;
+        type_ = edu.washington.escience.myriad.proto.DataProto.DataMessage.Type.EOS;
         onChanged();
         return this;
       }
@@ -826,6 +862,27 @@ public final class DataProto {
         return this;
       }
       
+      // optional uint64 seq = 5;
+      private long seq_ ;
+      public boolean hasSeq() {
+        return ((bitField0_ & 0x00000010) == 0x00000010);
+      }
+      public long getSeq() {
+        return seq_;
+      }
+      public Builder setSeq(long value) {
+        bitField0_ |= 0x00000010;
+        seq_ = value;
+        onChanged();
+        return this;
+      }
+      public Builder clearSeq() {
+        bitField0_ = (bitField0_ & ~0x00000010);
+        seq_ = 0L;
+        onChanged();
+        return this;
+      }
+      
       // @@protoc_insertion_point(builder_scope:DataMessage)
     }
     
@@ -840,9 +897,9 @@ public final class DataProto {
   public interface ColumnMessageOrBuilder
       extends com.google.protobuf.MessageOrBuilder {
     
-    // required .ColumnMessage.ColumnMessageType type = 1;
+    // required .ColumnMessage.Type type = 1;
     boolean hasType();
-    edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType getType();
+    edu.washington.escience.myriad.proto.DataProto.ColumnMessage.Type getType();
     
     // optional .IntColumnMessage int_column = 3;
     boolean hasIntColumn();
@@ -902,7 +959,7 @@ public final class DataProto {
       return edu.washington.escience.myriad.proto.DataProto.internal_static_ColumnMessage_fieldAccessorTable;
     }
     
-    public enum ColumnMessageType
+    public enum Type
         implements com.google.protobuf.ProtocolMessageEnum {
       INT(0, 0),
       LONG(1, 1),
@@ -922,7 +979,7 @@ public final class DataProto {
       
       public final int getNumber() { return value; }
       
-      public static ColumnMessageType valueOf(int value) {
+      public static Type valueOf(int value) {
         switch (value) {
           case 0: return INT;
           case 1: return LONG;
@@ -934,15 +991,15 @@ public final class DataProto {
         }
       }
       
-      public static com.google.protobuf.Internal.EnumLiteMap<ColumnMessageType>
+      public static com.google.protobuf.Internal.EnumLiteMap<Type>
           internalGetValueMap() {
         return internalValueMap;
       }
-      private static com.google.protobuf.Internal.EnumLiteMap<ColumnMessageType>
+      private static com.google.protobuf.Internal.EnumLiteMap<Type>
           internalValueMap =
-            new com.google.protobuf.Internal.EnumLiteMap<ColumnMessageType>() {
-              public ColumnMessageType findValueByNumber(int number) {
-                return ColumnMessageType.valueOf(number);
+            new com.google.protobuf.Internal.EnumLiteMap<Type>() {
+              public Type findValueByNumber(int number) {
+                return Type.valueOf(number);
               }
             };
       
@@ -959,11 +1016,11 @@ public final class DataProto {
         return edu.washington.escience.myriad.proto.DataProto.ColumnMessage.getDescriptor().getEnumTypes().get(0);
       }
       
-      private static final ColumnMessageType[] VALUES = {
+      private static final Type[] VALUES = {
         INT, LONG, FLOAT, DOUBLE, STRING, BOOLEAN, 
       };
       
-      public static ColumnMessageType valueOf(
+      public static Type valueOf(
           com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
         if (desc.getType() != getDescriptor()) {
           throw new java.lang.IllegalArgumentException(
@@ -975,22 +1032,22 @@ public final class DataProto {
       private final int index;
       private final int value;
       
-      private ColumnMessageType(int index, int value) {
+      private Type(int index, int value) {
         this.index = index;
         this.value = value;
       }
       
-      // @@protoc_insertion_point(enum_scope:ColumnMessage.ColumnMessageType)
+      // @@protoc_insertion_point(enum_scope:ColumnMessage.Type)
     }
     
     private int bitField0_;
-    // required .ColumnMessage.ColumnMessageType type = 1;
+    // required .ColumnMessage.Type type = 1;
     public static final int TYPE_FIELD_NUMBER = 1;
-    private edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType type_;
+    private edu.washington.escience.myriad.proto.DataProto.ColumnMessage.Type type_;
     public boolean hasType() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
-    public edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType getType() {
+    public edu.washington.escience.myriad.proto.DataProto.ColumnMessage.Type getType() {
       return type_;
     }
     
@@ -1073,7 +1130,7 @@ public final class DataProto {
     }
     
     private void initFields() {
-      type_ = edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType.INT;
+      type_ = edu.washington.escience.myriad.proto.DataProto.ColumnMessage.Type.INT;
       intColumn_ = edu.washington.escience.myriad.proto.DataProto.IntColumnMessage.getDefaultInstance();
       longColumn_ = edu.washington.escience.myriad.proto.DataProto.LongColumnMessage.getDefaultInstance();
       floatColumn_ = edu.washington.escience.myriad.proto.DataProto.FloatColumnMessage.getDefaultInstance();
@@ -1321,7 +1378,7 @@ public final class DataProto {
       
       public Builder clear() {
         super.clear();
-        type_ = edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType.INT;
+        type_ = edu.washington.escience.myriad.proto.DataProto.ColumnMessage.Type.INT;
         bitField0_ = (bitField0_ & ~0x00000001);
         if (intColumnBuilder_ == null) {
           intColumn_ = edu.washington.escience.myriad.proto.DataProto.IntColumnMessage.getDefaultInstance();
@@ -1559,7 +1616,7 @@ public final class DataProto {
             }
             case 8: {
               int rawValue = input.readEnum();
-              edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType value = edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType.valueOf(rawValue);
+              edu.washington.escience.myriad.proto.DataProto.ColumnMessage.Type value = edu.washington.escience.myriad.proto.DataProto.ColumnMessage.Type.valueOf(rawValue);
               if (value == null) {
                 unknownFields.mergeVarintField(1, rawValue);
               } else {
@@ -1628,15 +1685,15 @@ public final class DataProto {
       
       private int bitField0_;
       
-      // required .ColumnMessage.ColumnMessageType type = 1;
-      private edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType type_ = edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType.INT;
+      // required .ColumnMessage.Type type = 1;
+      private edu.washington.escience.myriad.proto.DataProto.ColumnMessage.Type type_ = edu.washington.escience.myriad.proto.DataProto.ColumnMessage.Type.INT;
       public boolean hasType() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
-      public edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType getType() {
+      public edu.washington.escience.myriad.proto.DataProto.ColumnMessage.Type getType() {
         return type_;
       }
-      public Builder setType(edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType value) {
+      public Builder setType(edu.washington.escience.myriad.proto.DataProto.ColumnMessage.Type value) {
         if (value == null) {
           throw new NullPointerException();
         }
@@ -1647,7 +1704,7 @@ public final class DataProto {
       }
       public Builder clearType() {
         bitField0_ = (bitField0_ & ~0x00000001);
-        type_ = edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType.INT;
+        type_ = edu.washington.escience.myriad.proto.DataProto.ColumnMessage.Type.INT;
         onChanged();
         return this;
       }
@@ -4482,30 +4539,29 @@ public final class DataProto {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\014column.proto\"\274\001\n\013DataMessage\022*\n\004type\030\001" +
-      " \002(\0162\034.DataMessage.DataMessageType\022\022\n\nop" +
-      "eratorID\030\002 \001(\004\022\037\n\007columns\030\003 \003(\0132\016.Column" +
-      "Message\022\022\n\nnum_tuples\030\004 \001(\r\"8\n\017DataMessa" +
-      "geType\022\007\n\003EOS\020\000\022\n\n\006NORMAL\020\001\022\007\n\003EOI\020\002\022\007\n\003" +
-      "BOS\020\003\"\233\003\n\rColumnMessage\022.\n\004type\030\001 \002(\0162 ." +
-      "ColumnMessage.ColumnMessageType\022%\n\nint_c" +
-      "olumn\030\003 \001(\0132\021.IntColumnMessage\022\'\n\013long_c" +
-      "olumn\030\004 \001(\0132\022.LongColumnMessage\022)\n\014float" +
-      "_column\030\005 \001(\0132\023.FloatColumnMessage\022+\n\rdo",
-      "uble_column\030\006 \001(\0132\024.DoubleColumnMessage\022" +
-      "+\n\rstring_column\030\007 \001(\0132\024.StringColumnMes" +
-      "sage\022-\n\016boolean_column\030\010 \001(\0132\025.BooleanCo" +
-      "lumnMessage\"V\n\021ColumnMessageType\022\007\n\003INT\020" +
-      "\000\022\010\n\004LONG\020\001\022\t\n\005FLOAT\020\002\022\n\n\006DOUBLE\020\003\022\n\n\006ST" +
-      "RING\020\004\022\013\n\007BOOLEAN\020\005\" \n\020IntColumnMessage\022" +
-      "\014\n\004data\030\001 \002(\014\"!\n\021LongColumnMessage\022\014\n\004da" +
-      "ta\030\001 \002(\014\"\"\n\022FloatColumnMessage\022\014\n\004data\030\001" +
-      " \002(\014\"#\n\023DoubleColumnMessage\022\014\n\004data\030\001 \002(" +
-      "\014\"O\n\023StringColumnMessage\022\014\n\004data\030\001 \002(\014\022\025",
-      "\n\rstart_indices\030\002 \002(\014\022\023\n\013end_indices\030\003 \002" +
-      "(\014\"$\n\024BooleanColumnMessage\022\014\n\004data\030\001 \002(\014" +
-      "B1\n$edu.washington.escience.myriad.proto" +
-      "B\tDataProto"
+      "\n\014column.proto\"\263\001\n\013DataMessage\022\037\n\004type\030\001" +
+      " \002(\0162\021.DataMessage.Type\022\022\n\noperatorID\030\002 " +
+      "\001(\004\022\037\n\007columns\030\003 \003(\0132\016.ColumnMessage\022\022\n\n" +
+      "num_tuples\030\004 \001(\r\022\013\n\003seq\030\005 \001(\004\"-\n\004Type\022\007\n" +
+      "\003EOS\020\000\022\n\n\006NORMAL\020\001\022\007\n\003EOI\020\002\022\007\n\003BOS\020\003\"\201\003\n" +
+      "\rColumnMessage\022!\n\004type\030\001 \002(\0162\023.ColumnMes" +
+      "sage.Type\022%\n\nint_column\030\003 \001(\0132\021.IntColum" +
+      "nMessage\022\'\n\013long_column\030\004 \001(\0132\022.LongColu" +
+      "mnMessage\022)\n\014float_column\030\005 \001(\0132\023.FloatC" +
+      "olumnMessage\022+\n\rdouble_column\030\006 \001(\0132\024.Do",
+      "ubleColumnMessage\022+\n\rstring_column\030\007 \001(\013" +
+      "2\024.StringColumnMessage\022-\n\016boolean_column" +
+      "\030\010 \001(\0132\025.BooleanColumnMessage\"I\n\004Type\022\007\n" +
+      "\003INT\020\000\022\010\n\004LONG\020\001\022\t\n\005FLOAT\020\002\022\n\n\006DOUBLE\020\003\022" +
+      "\n\n\006STRING\020\004\022\013\n\007BOOLEAN\020\005\" \n\020IntColumnMes" +
+      "sage\022\014\n\004data\030\001 \002(\014\"!\n\021LongColumnMessage\022" +
+      "\014\n\004data\030\001 \002(\014\"\"\n\022FloatColumnMessage\022\014\n\004d" +
+      "ata\030\001 \002(\014\"#\n\023DoubleColumnMessage\022\014\n\004data" +
+      "\030\001 \002(\014\"O\n\023StringColumnMessage\022\014\n\004data\030\001 " +
+      "\002(\014\022\025\n\rstart_indices\030\002 \002(\014\022\023\n\013end_indice",
+      "s\030\003 \002(\014\"$\n\024BooleanColumnMessage\022\014\n\004data\030" +
+      "\001 \002(\014B1\n$edu.washington.escience.myriad." +
+      "protoB\tDataProto"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -4517,7 +4573,7 @@ public final class DataProto {
           internal_static_DataMessage_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_DataMessage_descriptor,
-              new java.lang.String[] { "Type", "OperatorID", "Columns", "NumTuples", },
+              new java.lang.String[] { "Type", "OperatorID", "Columns", "NumTuples", "Seq", },
               edu.washington.escience.myriad.proto.DataProto.DataMessage.class,
               edu.washington.escience.myriad.proto.DataProto.DataMessage.Builder.class);
           internal_static_ColumnMessage_descriptor =

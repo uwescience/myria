@@ -19,7 +19,6 @@ import org.jboss.netty.channel.group.DefaultChannelGroupFuture;
 import edu.washington.escience.myriad.parallel.ipc.ChannelContext;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
-import edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType;
 
 /**
  * Flow control for both input and output. This handler should be placed at the downstream of message processors.
@@ -62,7 +61,7 @@ public final class FlowControlHandler extends SimpleChannelHandler {
     boolean isEOS = false;
     switch (tm.getType()) {
       case DATA:
-        final DataMessage data = tm.getData();
+        final DataMessage data = tm.getDataMessage();
         if (LOGGER.isDebugEnabled()) {
           LOGGER.debug("TupleBatch received from " + senderID + " to Operator: " + data.getOperatorID());
         }
@@ -218,8 +217,8 @@ public final class FlowControlHandler extends SimpleChannelHandler {
       }
     });
     boolean isEOS = false;
-    if (tm.getType() == TransportMessageType.DATA) {
-      DataMessage dm = tm.getData();
+    if (tm.getType() == TransportMessage.Type.DATA) {
+      DataMessage dm = tm.getDataMessage();
       int remoteID = cc.getRegisteredChannelContext().getRemoteID();
       ExchangeChannelPair ecp = (ExchangeChannelPair) cc.getAttachment();
       switch (dm.getType()) {
@@ -251,7 +250,7 @@ public final class FlowControlHandler extends SimpleChannelHandler {
 
     ctx.sendDownstream(e);
 
-    if (tm.getType() == TransportMessageType.DATA) {
+    if (tm.getType() == TransportMessage.Type.DATA) {
       ExchangeChannelPair ecp = (ExchangeChannelPair) cc.getAttachment();
       int remoteID = cc.getRegisteredChannelContext().getRemoteID();
       if (!ioChannel.isWritable()) {

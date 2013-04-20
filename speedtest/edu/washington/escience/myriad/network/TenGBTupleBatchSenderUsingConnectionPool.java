@@ -83,8 +83,8 @@ public class TenGBTupleBatchSenderUsingConnectionPool {
     System.out.println("End at " + end);
     System.out.println("Total sent: " + numSent + " TupleBatches");
     System.out.println("Total sent: " + realSentSize / 1024.0 / 1024.0 / 1024.0 + " G-bytes");
-    System.out.println("Total payload: " + numSent * tm.getData().getNumTuples() * tupleSize / 1024.0 / 1024.0 / 1024.0
-        + " G-bytes");
+    System.out.println("Total payload: " + numSent * tm.getDataMessage().getNumTuples() * tupleSize / 1024.0 / 1024.0
+        / 1024.0 + " G-bytes");
     System.out.println("Speed: " + realSentSize * 1.0 / 1024 / 1024 / elapsedInSeconds(start) + "mega-bytes/s");
 
     System.out.println();

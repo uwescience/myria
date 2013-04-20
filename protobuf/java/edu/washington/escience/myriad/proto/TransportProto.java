@@ -11,28 +11,24 @@ public final class TransportProto {
   public interface TransportMessageOrBuilder
       extends com.google.protobuf.MessageOrBuilder {
     
-    // required .TransportMessage.TransportMessageType type = 1;
+    // required .TransportMessage.Type type = 1;
     boolean hasType();
-    edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType getType();
+    edu.washington.escience.myriad.proto.TransportProto.TransportMessage.Type getType();
     
-    // optional .DataMessage data = 2;
-    boolean hasData();
-    edu.washington.escience.myriad.proto.DataProto.DataMessage getData();
-    edu.washington.escience.myriad.proto.DataProto.DataMessageOrBuilder getDataOrBuilder();
+    // optional .DataMessage dataMessage = 2;
+    boolean hasDataMessage();
+    edu.washington.escience.myriad.proto.DataProto.DataMessage getDataMessage();
+    edu.washington.escience.myriad.proto.DataProto.DataMessageOrBuilder getDataMessageOrBuilder();
     
-    // optional .Query query = 4;
-    boolean hasQuery();
-    edu.washington.escience.myriad.proto.QueryProto.Query getQuery();
-    edu.washington.escience.myriad.proto.QueryProto.QueryOrBuilder getQueryOrBuilder();
+    // optional .QueryMessage queryMessage = 3;
+    boolean hasQueryMessage();
+    edu.washington.escience.myriad.proto.QueryProto.QueryMessage getQueryMessage();
+    edu.washington.escience.myriad.proto.QueryProto.QueryMessageOrBuilder getQueryMessageOrBuilder();
     
-    // optional .ControlMessage control = 5;
-    boolean hasControl();
-    edu.washington.escience.myriad.proto.ControlProto.ControlMessage getControl();
-    edu.washington.escience.myriad.proto.ControlProto.ControlMessageOrBuilder getControlOrBuilder();
-    
-    // optional int64 seq = 6;
-    boolean hasSeq();
-    long getSeq();
+    // optional .ControlMessage controlMessage = 4;
+    boolean hasControlMessage();
+    edu.washington.escience.myriad.proto.ControlProto.ControlMessage getControlMessage();
+    edu.washington.escience.myriad.proto.ControlProto.ControlMessageOrBuilder getControlMessageOrBuilder();
   }
   public static final class TransportMessage extends
       com.google.protobuf.GeneratedMessage
@@ -62,7 +58,7 @@ public final class TransportProto {
       return edu.washington.escience.myriad.proto.TransportProto.internal_static_TransportMessage_fieldAccessorTable;
     }
     
-    public enum TransportMessageType
+    public enum Type
         implements com.google.protobuf.ProtocolMessageEnum {
       DATA(0, 0),
       QUERY(1, 1),
@@ -76,7 +72,7 @@ public final class TransportProto {
       
       public final int getNumber() { return value; }
       
-      public static TransportMessageType valueOf(int value) {
+      public static Type valueOf(int value) {
         switch (value) {
           case 0: return DATA;
           case 1: return QUERY;
@@ -85,15 +81,15 @@ public final class TransportProto {
         }
       }
       
-      public static com.google.protobuf.Internal.EnumLiteMap<TransportMessageType>
+      public static com.google.protobuf.Internal.EnumLiteMap<Type>
           internalGetValueMap() {
         return internalValueMap;
       }
-      private static com.google.protobuf.Internal.EnumLiteMap<TransportMessageType>
+      private static com.google.protobuf.Internal.EnumLiteMap<Type>
           internalValueMap =
-            new com.google.protobuf.Internal.EnumLiteMap<TransportMessageType>() {
-              public TransportMessageType findValueByNumber(int number) {
-                return TransportMessageType.valueOf(number);
+            new com.google.protobuf.Internal.EnumLiteMap<Type>() {
+              public Type findValueByNumber(int number) {
+                return Type.valueOf(number);
               }
             };
       
@@ -110,11 +106,11 @@ public final class TransportProto {
         return edu.washington.escience.myriad.proto.TransportProto.TransportMessage.getDescriptor().getEnumTypes().get(0);
       }
       
-      private static final TransportMessageType[] VALUES = {
+      private static final Type[] VALUES = {
         DATA, QUERY, CONTROL, 
       };
       
-      public static TransportMessageType valueOf(
+      public static Type valueOf(
           com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
         if (desc.getType() != getDescriptor()) {
           throw new java.lang.IllegalArgumentException(
@@ -126,80 +122,69 @@ public final class TransportProto {
       private final int index;
       private final int value;
       
-      private TransportMessageType(int index, int value) {
+      private Type(int index, int value) {
         this.index = index;
         this.value = value;
       }
       
-      // @@protoc_insertion_point(enum_scope:TransportMessage.TransportMessageType)
+      // @@protoc_insertion_point(enum_scope:TransportMessage.Type)
     }
     
     private int bitField0_;
-    // required .TransportMessage.TransportMessageType type = 1;
+    // required .TransportMessage.Type type = 1;
     public static final int TYPE_FIELD_NUMBER = 1;
-    private edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType type_;
+    private edu.washington.escience.myriad.proto.TransportProto.TransportMessage.Type type_;
     public boolean hasType() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
-    public edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType getType() {
+    public edu.washington.escience.myriad.proto.TransportProto.TransportMessage.Type getType() {
       return type_;
     }
     
-    // optional .DataMessage data = 2;
-    public static final int DATA_FIELD_NUMBER = 2;
-    private edu.washington.escience.myriad.proto.DataProto.DataMessage data_;
-    public boolean hasData() {
+    // optional .DataMessage dataMessage = 2;
+    public static final int DATAMESSAGE_FIELD_NUMBER = 2;
+    private edu.washington.escience.myriad.proto.DataProto.DataMessage dataMessage_;
+    public boolean hasDataMessage() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
-    public edu.washington.escience.myriad.proto.DataProto.DataMessage getData() {
-      return data_;
+    public edu.washington.escience.myriad.proto.DataProto.DataMessage getDataMessage() {
+      return dataMessage_;
     }
-    public edu.washington.escience.myriad.proto.DataProto.DataMessageOrBuilder getDataOrBuilder() {
-      return data_;
+    public edu.washington.escience.myriad.proto.DataProto.DataMessageOrBuilder getDataMessageOrBuilder() {
+      return dataMessage_;
     }
     
-    // optional .Query query = 4;
-    public static final int QUERY_FIELD_NUMBER = 4;
-    private edu.washington.escience.myriad.proto.QueryProto.Query query_;
-    public boolean hasQuery() {
+    // optional .QueryMessage queryMessage = 3;
+    public static final int QUERYMESSAGE_FIELD_NUMBER = 3;
+    private edu.washington.escience.myriad.proto.QueryProto.QueryMessage queryMessage_;
+    public boolean hasQueryMessage() {
       return ((bitField0_ & 0x00000004) == 0x00000004);
     }
-    public edu.washington.escience.myriad.proto.QueryProto.Query getQuery() {
-      return query_;
+    public edu.washington.escience.myriad.proto.QueryProto.QueryMessage getQueryMessage() {
+      return queryMessage_;
     }
-    public edu.washington.escience.myriad.proto.QueryProto.QueryOrBuilder getQueryOrBuilder() {
-      return query_;
+    public edu.washington.escience.myriad.proto.QueryProto.QueryMessageOrBuilder getQueryMessageOrBuilder() {
+      return queryMessage_;
     }
     
-    // optional .ControlMessage control = 5;
-    public static final int CONTROL_FIELD_NUMBER = 5;
-    private edu.washington.escience.myriad.proto.ControlProto.ControlMessage control_;
-    public boolean hasControl() {
+    // optional .ControlMessage controlMessage = 4;
+    public static final int CONTROLMESSAGE_FIELD_NUMBER = 4;
+    private edu.washington.escience.myriad.proto.ControlProto.ControlMessage controlMessage_;
+    public boolean hasControlMessage() {
       return ((bitField0_ & 0x00000008) == 0x00000008);
     }
-    public edu.washington.escience.myriad.proto.ControlProto.ControlMessage getControl() {
-      return control_;
+    public edu.washington.escience.myriad.proto.ControlProto.ControlMessage getControlMessage() {
+      return controlMessage_;
     }
-    public edu.washington.escience.myriad.proto.ControlProto.ControlMessageOrBuilder getControlOrBuilder() {
-      return control_;
-    }
-    
-    // optional int64 seq = 6;
-    public static final int SEQ_FIELD_NUMBER = 6;
-    private long seq_;
-    public boolean hasSeq() {
-      return ((bitField0_ & 0x00000010) == 0x00000010);
-    }
-    public long getSeq() {
-      return seq_;
+    public edu.washington.escience.myriad.proto.ControlProto.ControlMessageOrBuilder getControlMessageOrBuilder() {
+      return controlMessage_;
     }
     
     private void initFields() {
-      type_ = edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType.DATA;
-      data_ = edu.washington.escience.myriad.proto.DataProto.DataMessage.getDefaultInstance();
-      query_ = edu.washington.escience.myriad.proto.QueryProto.Query.getDefaultInstance();
-      control_ = edu.washington.escience.myriad.proto.ControlProto.ControlMessage.getDefaultInstance();
-      seq_ = 0L;
+      type_ = edu.washington.escience.myriad.proto.TransportProto.TransportMessage.Type.DATA;
+      dataMessage_ = edu.washington.escience.myriad.proto.DataProto.DataMessage.getDefaultInstance();
+      queryMessage_ = edu.washington.escience.myriad.proto.QueryProto.QueryMessage.getDefaultInstance();
+      controlMessage_ = edu.washington.escience.myriad.proto.ControlProto.ControlMessage.getDefaultInstance();
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -210,20 +195,20 @@ public final class TransportProto {
         memoizedIsInitialized = 0;
         return false;
       }
-      if (hasData()) {
-        if (!getData().isInitialized()) {
+      if (hasDataMessage()) {
+        if (!getDataMessage().isInitialized()) {
           memoizedIsInitialized = 0;
           return false;
         }
       }
-      if (hasQuery()) {
-        if (!getQuery().isInitialized()) {
+      if (hasQueryMessage()) {
+        if (!getQueryMessage().isInitialized()) {
           memoizedIsInitialized = 0;
           return false;
         }
       }
-      if (hasControl()) {
-        if (!getControl().isInitialized()) {
+      if (hasControlMessage()) {
+        if (!getControlMessage().isInitialized()) {
           memoizedIsInitialized = 0;
           return false;
         }
@@ -239,16 +224,13 @@ public final class TransportProto {
         output.writeEnum(1, type_.getNumber());
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeMessage(2, data_);
+        output.writeMessage(2, dataMessage_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        output.writeMessage(4, query_);
+        output.writeMessage(3, queryMessage_);
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        output.writeMessage(5, control_);
-      }
-      if (((bitField0_ & 0x00000010) == 0x00000010)) {
-        output.writeInt64(6, seq_);
+        output.writeMessage(4, controlMessage_);
       }
       getUnknownFields().writeTo(output);
     }
@@ -265,19 +247,15 @@ public final class TransportProto {
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(2, data_);
+          .computeMessageSize(2, dataMessage_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(4, query_);
+          .computeMessageSize(3, queryMessage_);
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(5, control_);
-      }
-      if (((bitField0_ & 0x00000010) == 0x00000010)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeInt64Size(6, seq_);
+          .computeMessageSize(4, controlMessage_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -395,9 +373,9 @@ public final class TransportProto {
       }
       private void maybeForceBuilderInitialization() {
         if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
-          getDataFieldBuilder();
-          getQueryFieldBuilder();
-          getControlFieldBuilder();
+          getDataMessageFieldBuilder();
+          getQueryMessageFieldBuilder();
+          getControlMessageFieldBuilder();
         }
       }
       private static Builder create() {
@@ -406,28 +384,26 @@ public final class TransportProto {
       
       public Builder clear() {
         super.clear();
-        type_ = edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType.DATA;
+        type_ = edu.washington.escience.myriad.proto.TransportProto.TransportMessage.Type.DATA;
         bitField0_ = (bitField0_ & ~0x00000001);
-        if (dataBuilder_ == null) {
-          data_ = edu.washington.escience.myriad.proto.DataProto.DataMessage.getDefaultInstance();
+        if (dataMessageBuilder_ == null) {
+          dataMessage_ = edu.washington.escience.myriad.proto.DataProto.DataMessage.getDefaultInstance();
         } else {
-          dataBuilder_.clear();
+          dataMessageBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000002);
-        if (queryBuilder_ == null) {
-          query_ = edu.washington.escience.myriad.proto.QueryProto.Query.getDefaultInstance();
+        if (queryMessageBuilder_ == null) {
+          queryMessage_ = edu.washington.escience.myriad.proto.QueryProto.QueryMessage.getDefaultInstance();
         } else {
-          queryBuilder_.clear();
+          queryMessageBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000004);
-        if (controlBuilder_ == null) {
-          control_ = edu.washington.escience.myriad.proto.ControlProto.ControlMessage.getDefaultInstance();
+        if (controlMessageBuilder_ == null) {
+          controlMessage_ = edu.washington.escience.myriad.proto.ControlProto.ControlMessage.getDefaultInstance();
         } else {
-          controlBuilder_.clear();
+          controlMessageBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000008);
-        seq_ = 0L;
-        bitField0_ = (bitField0_ & ~0x00000010);
         return this;
       }
       
@@ -473,31 +449,27 @@ public final class TransportProto {
         if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
           to_bitField0_ |= 0x00000002;
         }
-        if (dataBuilder_ == null) {
-          result.data_ = data_;
+        if (dataMessageBuilder_ == null) {
+          result.dataMessage_ = dataMessage_;
         } else {
-          result.data_ = dataBuilder_.build();
+          result.dataMessage_ = dataMessageBuilder_.build();
         }
         if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
           to_bitField0_ |= 0x00000004;
         }
-        if (queryBuilder_ == null) {
-          result.query_ = query_;
+        if (queryMessageBuilder_ == null) {
+          result.queryMessage_ = queryMessage_;
         } else {
-          result.query_ = queryBuilder_.build();
+          result.queryMessage_ = queryMessageBuilder_.build();
         }
         if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
           to_bitField0_ |= 0x00000008;
         }
-        if (controlBuilder_ == null) {
-          result.control_ = control_;
+        if (controlMessageBuilder_ == null) {
+          result.controlMessage_ = controlMessage_;
         } else {
-          result.control_ = controlBuilder_.build();
+          result.controlMessage_ = controlMessageBuilder_.build();
         }
-        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
-          to_bitField0_ |= 0x00000010;
-        }
-        result.seq_ = seq_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -517,17 +489,14 @@ public final class TransportProto {
         if (other.hasType()) {
           setType(other.getType());
         }
-        if (other.hasData()) {
-          mergeData(other.getData());
+        if (other.hasDataMessage()) {
+          mergeDataMessage(other.getDataMessage());
         }
-        if (other.hasQuery()) {
-          mergeQuery(other.getQuery());
+        if (other.hasQueryMessage()) {
+          mergeQueryMessage(other.getQueryMessage());
         }
-        if (other.hasControl()) {
-          mergeControl(other.getControl());
-        }
-        if (other.hasSeq()) {
-          setSeq(other.getSeq());
+        if (other.hasControlMessage()) {
+          mergeControlMessage(other.getControlMessage());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -538,20 +507,20 @@ public final class TransportProto {
           
           return false;
         }
-        if (hasData()) {
-          if (!getData().isInitialized()) {
+        if (hasDataMessage()) {
+          if (!getDataMessage().isInitialized()) {
             
             return false;
           }
         }
-        if (hasQuery()) {
-          if (!getQuery().isInitialized()) {
+        if (hasQueryMessage()) {
+          if (!getQueryMessage().isInitialized()) {
             
             return false;
           }
         }
-        if (hasControl()) {
-          if (!getControl().isInitialized()) {
+        if (hasControlMessage()) {
+          if (!getControlMessage().isInitialized()) {
             
             return false;
           }
@@ -584,7 +553,7 @@ public final class TransportProto {
             }
             case 8: {
               int rawValue = input.readEnum();
-              edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType value = edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType.valueOf(rawValue);
+              edu.washington.escience.myriad.proto.TransportProto.TransportMessage.Type value = edu.washington.escience.myriad.proto.TransportProto.TransportMessage.Type.valueOf(rawValue);
               if (value == null) {
                 unknownFields.mergeVarintField(1, rawValue);
               } else {
@@ -595,34 +564,29 @@ public final class TransportProto {
             }
             case 18: {
               edu.washington.escience.myriad.proto.DataProto.DataMessage.Builder subBuilder = edu.washington.escience.myriad.proto.DataProto.DataMessage.newBuilder();
-              if (hasData()) {
-                subBuilder.mergeFrom(getData());
+              if (hasDataMessage()) {
+                subBuilder.mergeFrom(getDataMessage());
               }
               input.readMessage(subBuilder, extensionRegistry);
-              setData(subBuilder.buildPartial());
+              setDataMessage(subBuilder.buildPartial());
+              break;
+            }
+            case 26: {
+              edu.washington.escience.myriad.proto.QueryProto.QueryMessage.Builder subBuilder = edu.washington.escience.myriad.proto.QueryProto.QueryMessage.newBuilder();
+              if (hasQueryMessage()) {
+                subBuilder.mergeFrom(getQueryMessage());
+              }
+              input.readMessage(subBuilder, extensionRegistry);
+              setQueryMessage(subBuilder.buildPartial());
               break;
             }
             case 34: {
-              edu.washington.escience.myriad.proto.QueryProto.Query.Builder subBuilder = edu.washington.escience.myriad.proto.QueryProto.Query.newBuilder();
-              if (hasQuery()) {
-                subBuilder.mergeFrom(getQuery());
-              }
-              input.readMessage(subBuilder, extensionRegistry);
-              setQuery(subBuilder.buildPartial());
-              break;
-            }
-            case 42: {
               edu.washington.escience.myriad.proto.ControlProto.ControlMessage.Builder subBuilder = edu.washington.escience.myriad.proto.ControlProto.ControlMessage.newBuilder();
-              if (hasControl()) {
-                subBuilder.mergeFrom(getControl());
+              if (hasControlMessage()) {
+                subBuilder.mergeFrom(getControlMessage());
               }
               input.readMessage(subBuilder, extensionRegistry);
-              setControl(subBuilder.buildPartial());
-              break;
-            }
-            case 48: {
-              bitField0_ |= 0x00000010;
-              seq_ = input.readInt64();
+              setControlMessage(subBuilder.buildPartial());
               break;
             }
           }
@@ -631,15 +595,15 @@ public final class TransportProto {
       
       private int bitField0_;
       
-      // required .TransportMessage.TransportMessageType type = 1;
-      private edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType type_ = edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType.DATA;
+      // required .TransportMessage.Type type = 1;
+      private edu.washington.escience.myriad.proto.TransportProto.TransportMessage.Type type_ = edu.washington.escience.myriad.proto.TransportProto.TransportMessage.Type.DATA;
       public boolean hasType() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
-      public edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType getType() {
+      public edu.washington.escience.myriad.proto.TransportProto.TransportMessage.Type getType() {
         return type_;
       }
-      public Builder setType(edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType value) {
+      public Builder setType(edu.washington.escience.myriad.proto.TransportProto.TransportMessage.Type value) {
         if (value == null) {
           throw new NullPointerException();
         }
@@ -650,300 +614,279 @@ public final class TransportProto {
       }
       public Builder clearType() {
         bitField0_ = (bitField0_ & ~0x00000001);
-        type_ = edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType.DATA;
+        type_ = edu.washington.escience.myriad.proto.TransportProto.TransportMessage.Type.DATA;
         onChanged();
         return this;
       }
       
-      // optional .DataMessage data = 2;
-      private edu.washington.escience.myriad.proto.DataProto.DataMessage data_ = edu.washington.escience.myriad.proto.DataProto.DataMessage.getDefaultInstance();
+      // optional .DataMessage dataMessage = 2;
+      private edu.washington.escience.myriad.proto.DataProto.DataMessage dataMessage_ = edu.washington.escience.myriad.proto.DataProto.DataMessage.getDefaultInstance();
       private com.google.protobuf.SingleFieldBuilder<
-          edu.washington.escience.myriad.proto.DataProto.DataMessage, edu.washington.escience.myriad.proto.DataProto.DataMessage.Builder, edu.washington.escience.myriad.proto.DataProto.DataMessageOrBuilder> dataBuilder_;
-      public boolean hasData() {
+          edu.washington.escience.myriad.proto.DataProto.DataMessage, edu.washington.escience.myriad.proto.DataProto.DataMessage.Builder, edu.washington.escience.myriad.proto.DataProto.DataMessageOrBuilder> dataMessageBuilder_;
+      public boolean hasDataMessage() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
-      public edu.washington.escience.myriad.proto.DataProto.DataMessage getData() {
-        if (dataBuilder_ == null) {
-          return data_;
+      public edu.washington.escience.myriad.proto.DataProto.DataMessage getDataMessage() {
+        if (dataMessageBuilder_ == null) {
+          return dataMessage_;
         } else {
-          return dataBuilder_.getMessage();
+          return dataMessageBuilder_.getMessage();
         }
       }
-      public Builder setData(edu.washington.escience.myriad.proto.DataProto.DataMessage value) {
-        if (dataBuilder_ == null) {
+      public Builder setDataMessage(edu.washington.escience.myriad.proto.DataProto.DataMessage value) {
+        if (dataMessageBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
           }
-          data_ = value;
+          dataMessage_ = value;
           onChanged();
         } else {
-          dataBuilder_.setMessage(value);
+          dataMessageBuilder_.setMessage(value);
         }
         bitField0_ |= 0x00000002;
         return this;
       }
-      public Builder setData(
+      public Builder setDataMessage(
           edu.washington.escience.myriad.proto.DataProto.DataMessage.Builder builderForValue) {
-        if (dataBuilder_ == null) {
-          data_ = builderForValue.build();
+        if (dataMessageBuilder_ == null) {
+          dataMessage_ = builderForValue.build();
           onChanged();
         } else {
-          dataBuilder_.setMessage(builderForValue.build());
+          dataMessageBuilder_.setMessage(builderForValue.build());
         }
         bitField0_ |= 0x00000002;
         return this;
       }
-      public Builder mergeData(edu.washington.escience.myriad.proto.DataProto.DataMessage value) {
-        if (dataBuilder_ == null) {
+      public Builder mergeDataMessage(edu.washington.escience.myriad.proto.DataProto.DataMessage value) {
+        if (dataMessageBuilder_ == null) {
           if (((bitField0_ & 0x00000002) == 0x00000002) &&
-              data_ != edu.washington.escience.myriad.proto.DataProto.DataMessage.getDefaultInstance()) {
-            data_ =
-              edu.washington.escience.myriad.proto.DataProto.DataMessage.newBuilder(data_).mergeFrom(value).buildPartial();
+              dataMessage_ != edu.washington.escience.myriad.proto.DataProto.DataMessage.getDefaultInstance()) {
+            dataMessage_ =
+              edu.washington.escience.myriad.proto.DataProto.DataMessage.newBuilder(dataMessage_).mergeFrom(value).buildPartial();
           } else {
-            data_ = value;
+            dataMessage_ = value;
           }
           onChanged();
         } else {
-          dataBuilder_.mergeFrom(value);
+          dataMessageBuilder_.mergeFrom(value);
         }
         bitField0_ |= 0x00000002;
         return this;
       }
-      public Builder clearData() {
-        if (dataBuilder_ == null) {
-          data_ = edu.washington.escience.myriad.proto.DataProto.DataMessage.getDefaultInstance();
+      public Builder clearDataMessage() {
+        if (dataMessageBuilder_ == null) {
+          dataMessage_ = edu.washington.escience.myriad.proto.DataProto.DataMessage.getDefaultInstance();
           onChanged();
         } else {
-          dataBuilder_.clear();
+          dataMessageBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000002);
         return this;
       }
-      public edu.washington.escience.myriad.proto.DataProto.DataMessage.Builder getDataBuilder() {
+      public edu.washington.escience.myriad.proto.DataProto.DataMessage.Builder getDataMessageBuilder() {
         bitField0_ |= 0x00000002;
         onChanged();
-        return getDataFieldBuilder().getBuilder();
+        return getDataMessageFieldBuilder().getBuilder();
       }
-      public edu.washington.escience.myriad.proto.DataProto.DataMessageOrBuilder getDataOrBuilder() {
-        if (dataBuilder_ != null) {
-          return dataBuilder_.getMessageOrBuilder();
+      public edu.washington.escience.myriad.proto.DataProto.DataMessageOrBuilder getDataMessageOrBuilder() {
+        if (dataMessageBuilder_ != null) {
+          return dataMessageBuilder_.getMessageOrBuilder();
         } else {
-          return data_;
+          return dataMessage_;
         }
       }
       private com.google.protobuf.SingleFieldBuilder<
           edu.washington.escience.myriad.proto.DataProto.DataMessage, edu.washington.escience.myriad.proto.DataProto.DataMessage.Builder, edu.washington.escience.myriad.proto.DataProto.DataMessageOrBuilder> 
-          getDataFieldBuilder() {
-        if (dataBuilder_ == null) {
-          dataBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+          getDataMessageFieldBuilder() {
+        if (dataMessageBuilder_ == null) {
+          dataMessageBuilder_ = new com.google.protobuf.SingleFieldBuilder<
               edu.washington.escience.myriad.proto.DataProto.DataMessage, edu.washington.escience.myriad.proto.DataProto.DataMessage.Builder, edu.washington.escience.myriad.proto.DataProto.DataMessageOrBuilder>(
-                  data_,
+                  dataMessage_,
                   getParentForChildren(),
                   isClean());
-          data_ = null;
+          dataMessage_ = null;
         }
-        return dataBuilder_;
+        return dataMessageBuilder_;
       }
       
-      // optional .Query query = 4;
-      private edu.washington.escience.myriad.proto.QueryProto.Query query_ = edu.washington.escience.myriad.proto.QueryProto.Query.getDefaultInstance();
+      // optional .QueryMessage queryMessage = 3;
+      private edu.washington.escience.myriad.proto.QueryProto.QueryMessage queryMessage_ = edu.washington.escience.myriad.proto.QueryProto.QueryMessage.getDefaultInstance();
       private com.google.protobuf.SingleFieldBuilder<
-          edu.washington.escience.myriad.proto.QueryProto.Query, edu.washington.escience.myriad.proto.QueryProto.Query.Builder, edu.washington.escience.myriad.proto.QueryProto.QueryOrBuilder> queryBuilder_;
-      public boolean hasQuery() {
+          edu.washington.escience.myriad.proto.QueryProto.QueryMessage, edu.washington.escience.myriad.proto.QueryProto.QueryMessage.Builder, edu.washington.escience.myriad.proto.QueryProto.QueryMessageOrBuilder> queryMessageBuilder_;
+      public boolean hasQueryMessage() {
         return ((bitField0_ & 0x00000004) == 0x00000004);
       }
-      public edu.washington.escience.myriad.proto.QueryProto.Query getQuery() {
-        if (queryBuilder_ == null) {
-          return query_;
+      public edu.washington.escience.myriad.proto.QueryProto.QueryMessage getQueryMessage() {
+        if (queryMessageBuilder_ == null) {
+          return queryMessage_;
         } else {
-          return queryBuilder_.getMessage();
+          return queryMessageBuilder_.getMessage();
         }
       }
-      public Builder setQuery(edu.washington.escience.myriad.proto.QueryProto.Query value) {
-        if (queryBuilder_ == null) {
+      public Builder setQueryMessage(edu.washington.escience.myriad.proto.QueryProto.QueryMessage value) {
+        if (queryMessageBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
           }
-          query_ = value;
+          queryMessage_ = value;
           onChanged();
         } else {
-          queryBuilder_.setMessage(value);
+          queryMessageBuilder_.setMessage(value);
         }
         bitField0_ |= 0x00000004;
         return this;
       }
-      public Builder setQuery(
-          edu.washington.escience.myriad.proto.QueryProto.Query.Builder builderForValue) {
-        if (queryBuilder_ == null) {
-          query_ = builderForValue.build();
+      public Builder setQueryMessage(
+          edu.washington.escience.myriad.proto.QueryProto.QueryMessage.Builder builderForValue) {
+        if (queryMessageBuilder_ == null) {
+          queryMessage_ = builderForValue.build();
           onChanged();
         } else {
-          queryBuilder_.setMessage(builderForValue.build());
+          queryMessageBuilder_.setMessage(builderForValue.build());
         }
         bitField0_ |= 0x00000004;
         return this;
       }
-      public Builder mergeQuery(edu.washington.escience.myriad.proto.QueryProto.Query value) {
-        if (queryBuilder_ == null) {
+      public Builder mergeQueryMessage(edu.washington.escience.myriad.proto.QueryProto.QueryMessage value) {
+        if (queryMessageBuilder_ == null) {
           if (((bitField0_ & 0x00000004) == 0x00000004) &&
-              query_ != edu.washington.escience.myriad.proto.QueryProto.Query.getDefaultInstance()) {
-            query_ =
-              edu.washington.escience.myriad.proto.QueryProto.Query.newBuilder(query_).mergeFrom(value).buildPartial();
+              queryMessage_ != edu.washington.escience.myriad.proto.QueryProto.QueryMessage.getDefaultInstance()) {
+            queryMessage_ =
+              edu.washington.escience.myriad.proto.QueryProto.QueryMessage.newBuilder(queryMessage_).mergeFrom(value).buildPartial();
           } else {
-            query_ = value;
+            queryMessage_ = value;
           }
           onChanged();
         } else {
-          queryBuilder_.mergeFrom(value);
+          queryMessageBuilder_.mergeFrom(value);
         }
         bitField0_ |= 0x00000004;
         return this;
       }
-      public Builder clearQuery() {
-        if (queryBuilder_ == null) {
-          query_ = edu.washington.escience.myriad.proto.QueryProto.Query.getDefaultInstance();
+      public Builder clearQueryMessage() {
+        if (queryMessageBuilder_ == null) {
+          queryMessage_ = edu.washington.escience.myriad.proto.QueryProto.QueryMessage.getDefaultInstance();
           onChanged();
         } else {
-          queryBuilder_.clear();
+          queryMessageBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000004);
         return this;
       }
-      public edu.washington.escience.myriad.proto.QueryProto.Query.Builder getQueryBuilder() {
+      public edu.washington.escience.myriad.proto.QueryProto.QueryMessage.Builder getQueryMessageBuilder() {
         bitField0_ |= 0x00000004;
         onChanged();
-        return getQueryFieldBuilder().getBuilder();
+        return getQueryMessageFieldBuilder().getBuilder();
       }
-      public edu.washington.escience.myriad.proto.QueryProto.QueryOrBuilder getQueryOrBuilder() {
-        if (queryBuilder_ != null) {
-          return queryBuilder_.getMessageOrBuilder();
+      public edu.washington.escience.myriad.proto.QueryProto.QueryMessageOrBuilder getQueryMessageOrBuilder() {
+        if (queryMessageBuilder_ != null) {
+          return queryMessageBuilder_.getMessageOrBuilder();
         } else {
-          return query_;
+          return queryMessage_;
         }
       }
       private com.google.protobuf.SingleFieldBuilder<
-          edu.washington.escience.myriad.proto.QueryProto.Query, edu.washington.escience.myriad.proto.QueryProto.Query.Builder, edu.washington.escience.myriad.proto.QueryProto.QueryOrBuilder> 
-          getQueryFieldBuilder() {
-        if (queryBuilder_ == null) {
-          queryBuilder_ = new com.google.protobuf.SingleFieldBuilder<
-              edu.washington.escience.myriad.proto.QueryProto.Query, edu.washington.escience.myriad.proto.QueryProto.Query.Builder, edu.washington.escience.myriad.proto.QueryProto.QueryOrBuilder>(
-                  query_,
+          edu.washington.escience.myriad.proto.QueryProto.QueryMessage, edu.washington.escience.myriad.proto.QueryProto.QueryMessage.Builder, edu.washington.escience.myriad.proto.QueryProto.QueryMessageOrBuilder> 
+          getQueryMessageFieldBuilder() {
+        if (queryMessageBuilder_ == null) {
+          queryMessageBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              edu.washington.escience.myriad.proto.QueryProto.QueryMessage, edu.washington.escience.myriad.proto.QueryProto.QueryMessage.Builder, edu.washington.escience.myriad.proto.QueryProto.QueryMessageOrBuilder>(
+                  queryMessage_,
                   getParentForChildren(),
                   isClean());
-          query_ = null;
+          queryMessage_ = null;
         }
-        return queryBuilder_;
+        return queryMessageBuilder_;
       }
       
-      // optional .ControlMessage control = 5;
-      private edu.washington.escience.myriad.proto.ControlProto.ControlMessage control_ = edu.washington.escience.myriad.proto.ControlProto.ControlMessage.getDefaultInstance();
+      // optional .ControlMessage controlMessage = 4;
+      private edu.washington.escience.myriad.proto.ControlProto.ControlMessage controlMessage_ = edu.washington.escience.myriad.proto.ControlProto.ControlMessage.getDefaultInstance();
       private com.google.protobuf.SingleFieldBuilder<
-          edu.washington.escience.myriad.proto.ControlProto.ControlMessage, edu.washington.escience.myriad.proto.ControlProto.ControlMessage.Builder, edu.washington.escience.myriad.proto.ControlProto.ControlMessageOrBuilder> controlBuilder_;
-      public boolean hasControl() {
+          edu.washington.escience.myriad.proto.ControlProto.ControlMessage, edu.washington.escience.myriad.proto.ControlProto.ControlMessage.Builder, edu.washington.escience.myriad.proto.ControlProto.ControlMessageOrBuilder> controlMessageBuilder_;
+      public boolean hasControlMessage() {
         return ((bitField0_ & 0x00000008) == 0x00000008);
       }
-      public edu.washington.escience.myriad.proto.ControlProto.ControlMessage getControl() {
-        if (controlBuilder_ == null) {
-          return control_;
+      public edu.washington.escience.myriad.proto.ControlProto.ControlMessage getControlMessage() {
+        if (controlMessageBuilder_ == null) {
+          return controlMessage_;
         } else {
-          return controlBuilder_.getMessage();
+          return controlMessageBuilder_.getMessage();
         }
       }
-      public Builder setControl(edu.washington.escience.myriad.proto.ControlProto.ControlMessage value) {
-        if (controlBuilder_ == null) {
+      public Builder setControlMessage(edu.washington.escience.myriad.proto.ControlProto.ControlMessage value) {
+        if (controlMessageBuilder_ == null) {
           if (value == null) {
             throw new NullPointerException();
           }
-          control_ = value;
+          controlMessage_ = value;
           onChanged();
         } else {
-          controlBuilder_.setMessage(value);
+          controlMessageBuilder_.setMessage(value);
         }
         bitField0_ |= 0x00000008;
         return this;
       }
-      public Builder setControl(
+      public Builder setControlMessage(
           edu.washington.escience.myriad.proto.ControlProto.ControlMessage.Builder builderForValue) {
-        if (controlBuilder_ == null) {
-          control_ = builderForValue.build();
+        if (controlMessageBuilder_ == null) {
+          controlMessage_ = builderForValue.build();
           onChanged();
         } else {
-          controlBuilder_.setMessage(builderForValue.build());
+          controlMessageBuilder_.setMessage(builderForValue.build());
         }
         bitField0_ |= 0x00000008;
         return this;
       }
-      public Builder mergeControl(edu.washington.escience.myriad.proto.ControlProto.ControlMessage value) {
-        if (controlBuilder_ == null) {
+      public Builder mergeControlMessage(edu.washington.escience.myriad.proto.ControlProto.ControlMessage value) {
+        if (controlMessageBuilder_ == null) {
           if (((bitField0_ & 0x00000008) == 0x00000008) &&
-              control_ != edu.washington.escience.myriad.proto.ControlProto.ControlMessage.getDefaultInstance()) {
-            control_ =
-              edu.washington.escience.myriad.proto.ControlProto.ControlMessage.newBuilder(control_).mergeFrom(value).buildPartial();
+              controlMessage_ != edu.washington.escience.myriad.proto.ControlProto.ControlMessage.getDefaultInstance()) {
+            controlMessage_ =
+              edu.washington.escience.myriad.proto.ControlProto.ControlMessage.newBuilder(controlMessage_).mergeFrom(value).buildPartial();
           } else {
-            control_ = value;
+            controlMessage_ = value;
           }
           onChanged();
         } else {
-          controlBuilder_.mergeFrom(value);
+          controlMessageBuilder_.mergeFrom(value);
         }
         bitField0_ |= 0x00000008;
         return this;
       }
-      public Builder clearControl() {
-        if (controlBuilder_ == null) {
-          control_ = edu.washington.escience.myriad.proto.ControlProto.ControlMessage.getDefaultInstance();
+      public Builder clearControlMessage() {
+        if (controlMessageBuilder_ == null) {
+          controlMessage_ = edu.washington.escience.myriad.proto.ControlProto.ControlMessage.getDefaultInstance();
           onChanged();
         } else {
-          controlBuilder_.clear();
+          controlMessageBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000008);
         return this;
       }
-      public edu.washington.escience.myriad.proto.ControlProto.ControlMessage.Builder getControlBuilder() {
+      public edu.washington.escience.myriad.proto.ControlProto.ControlMessage.Builder getControlMessageBuilder() {
         bitField0_ |= 0x00000008;
         onChanged();
-        return getControlFieldBuilder().getBuilder();
+        return getControlMessageFieldBuilder().getBuilder();
       }
-      public edu.washington.escience.myriad.proto.ControlProto.ControlMessageOrBuilder getControlOrBuilder() {
-        if (controlBuilder_ != null) {
-          return controlBuilder_.getMessageOrBuilder();
+      public edu.washington.escience.myriad.proto.ControlProto.ControlMessageOrBuilder getControlMessageOrBuilder() {
+        if (controlMessageBuilder_ != null) {
+          return controlMessageBuilder_.getMessageOrBuilder();
         } else {
-          return control_;
+          return controlMessage_;
         }
       }
       private com.google.protobuf.SingleFieldBuilder<
           edu.washington.escience.myriad.proto.ControlProto.ControlMessage, edu.washington.escience.myriad.proto.ControlProto.ControlMessage.Builder, edu.washington.escience.myriad.proto.ControlProto.ControlMessageOrBuilder> 
-          getControlFieldBuilder() {
-        if (controlBuilder_ == null) {
-          controlBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+          getControlMessageFieldBuilder() {
+        if (controlMessageBuilder_ == null) {
+          controlMessageBuilder_ = new com.google.protobuf.SingleFieldBuilder<
               edu.washington.escience.myriad.proto.ControlProto.ControlMessage, edu.washington.escience.myriad.proto.ControlProto.ControlMessage.Builder, edu.washington.escience.myriad.proto.ControlProto.ControlMessageOrBuilder>(
-                  control_,
+                  controlMessage_,
                   getParentForChildren(),
                   isClean());
-          control_ = null;
+          controlMessage_ = null;
         }
-        return controlBuilder_;
-      }
-      
-      // optional int64 seq = 6;
-      private long seq_ ;
-      public boolean hasSeq() {
-        return ((bitField0_ & 0x00000010) == 0x00000010);
-      }
-      public long getSeq() {
-        return seq_;
-      }
-      public Builder setSeq(long value) {
-        bitField0_ |= 0x00000010;
-        seq_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearSeq() {
-        bitField0_ = (bitField0_ & ~0x00000010);
-        seq_ = 0L;
-        onChanged();
-        return this;
+        return controlMessageBuilder_;
       }
       
       // @@protoc_insertion_point(builder_scope:TransportMessage)
@@ -972,14 +915,14 @@ public final class TransportProto {
   static {
     java.lang.String[] descriptorData = {
       "\n\nmain.proto\032\014column.proto\032\rcontrol.prot" +
-      "o\032\013query.proto\"\344\001\n\020TransportMessage\0224\n\004t" +
-      "ype\030\001 \002(\0162&.TransportMessage.TransportMe" +
-      "ssageType\022\032\n\004data\030\002 \001(\0132\014.DataMessage\022\025\n" +
-      "\005query\030\004 \001(\0132\006.Query\022 \n\007control\030\005 \001(\0132\017." +
-      "ControlMessage\022\013\n\003seq\030\006 \001(\003\"8\n\024Transport" +
-      "MessageType\022\010\n\004DATA\020\000\022\t\n\005QUERY\020\001\022\013\n\007CONT" +
-      "ROL\020\002B6\n$edu.washington.escience.myriad." +
-      "protoB\016TransportProto"
+      "o\032\013query.proto\"\323\001\n\020TransportMessage\022$\n\004t" +
+      "ype\030\001 \002(\0162\026.TransportMessage.Type\022!\n\013dat" +
+      "aMessage\030\002 \001(\0132\014.DataMessage\022#\n\014queryMes" +
+      "sage\030\003 \001(\0132\r.QueryMessage\022\'\n\016controlMess" +
+      "age\030\004 \001(\0132\017.ControlMessage\"(\n\004Type\022\010\n\004DA" +
+      "TA\020\000\022\t\n\005QUERY\020\001\022\013\n\007CONTROL\020\002B6\n$edu.wash" +
+      "ington.escience.myriad.protoB\016TransportP" +
+      "roto"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -991,7 +934,7 @@ public final class TransportProto {
           internal_static_TransportMessage_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_TransportMessage_descriptor,
-              new java.lang.String[] { "Type", "Data", "Query", "Control", "Seq", },
+              new java.lang.String[] { "Type", "DataMessage", "QueryMessage", "ControlMessage", },
               edu.washington.escience.myriad.proto.TransportProto.TransportMessage.class,
               edu.washington.escience.myriad.proto.TransportProto.TransportMessage.Builder.class);
           return null;

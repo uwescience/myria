@@ -56,6 +56,7 @@ import edu.washington.escience.myriad.parallel.ipc.InJVMLoopbackChannelSink;
 import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage;
+import edu.washington.escience.myriad.proto.QueryProto.QueryMessage;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.util.IPCUtils;
 
@@ -90,7 +91,7 @@ public final class Server {
 
         switch (m.getType()) {
           case DATA:
-            final DataMessage data = m.getData();
+            final DataMessage data = m.getDataMessage();
             final long exchangePairIDLong = data.getOperatorID();
             final ExchangePairID exchangePairID = ExchangePairID.fromExisting(exchangePairIDLong);
             ConsumerChannel cc = consumerChannelMap.get(new ExchangeChannelID(exchangePairIDLong, senderID));
@@ -114,8 +115,8 @@ public final class Server {
                   columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm, data.getNumTuples());
                 }
                 final List<Column<?>> columns = Arrays.asList(columnArray);
-                receiveData((new ExchangeData(exchangePairID, senderID, columns, operatorSchema, data.getNumTuples(), m
-                    .getSeq())));
+                receiveData((new ExchangeData(exchangePairID, senderID, columns, operatorSchema, data.getNumTuples(),
+                    data.getSeq())));
                 cc.getOwnerTask().notifyNewInput();
                 break;
               case BOS:
@@ -124,19 +125,10 @@ public final class Server {
             }
             break;
           case CONTROL:
-            final ControlMessage controlM = m.getControl();
-            final long queryId = controlM.getQueryId();
+            final ControlMessage controlM = m.getControlMessage();
             switch (controlM.getType()) {
-              case QUERY_READY_TO_EXECUTE:
-                MasterQueryPartition mqp = activeQueries.get(queryId);
-                mqp.queryReceivedByWorker(senderID);
-                break;
               case WORKER_ALIVE:
                 aliveWorkers.add(senderID);
-                break;
-              case QUERY_COMPLETE:
-                mqp = activeQueries.get(queryId);
-                mqp.workerComplete(senderID);
                 break;
               case DISCONNECT:
                 /* TODO */
@@ -148,9 +140,24 @@ public final class Server {
             }
             break;
           case QUERY:
-            if (LOGGER.isErrorEnabled()) {
-              LOGGER.error("Unexpected query message received at master: " + m.getQuery());
+            final QueryMessage qm = m.getQueryMessage();
+            final long queryId = qm.getQueryId();
+            switch (qm.getType()) {
+              case QUERY_READY_TO_EXECUTE:
+                MasterQueryPartition mqp = activeQueries.get(queryId);
+                mqp.queryReceivedByWorker(senderID);
+                break;
+              case QUERY_COMPLETE:
+                mqp = activeQueries.get(queryId);
+                mqp.workerComplete(senderID);
+                break;
+              default:
+                if (LOGGER.isErrorEnabled()) {
+                  LOGGER.error("Unexpected query message received at master: " + qm);
+                }
+                break;
             }
+
             break;
         }
       }

@@ -112,6 +112,11 @@ final class QuerySubTreeTask {
   private final QueryFuture taskExecutionFuture;
 
   /**
+   * The lock mainly to make operator memory consistency.
+   * */
+  private final Object executionLock = new Object();
+
+  /**
    * @return the task execution future.
    */
   QueryFuture getExecutionFuture() {
@@ -157,14 +162,16 @@ final class QuerySubTreeTask {
     inBlockingExecution = false;
     nonBlockingExecutionTask = new Callable<Boolean>() {
       @Override
-      public synchronized Boolean call() throws Exception {
+      public Boolean call() throws Exception {
         // synchronized to keep memory consistency
-        try {
-          return QuerySubTreeTask.this.executeNonBlocking();
-        } finally {
-          executionHandle = null;
-          if (isKilled()) {
-            taskExecutionFuture.setFailure(new InterruptedException("Task gets killed"));
+        synchronized (executionLock) {
+          try {
+            return QuerySubTreeTask.this.executeNonBlocking();
+          } finally {
+            executionHandle = null;
+            if (isKilled()) {
+              taskExecutionFuture.setFailure(new InterruptedException("Task gets killed"));
+            }
           }
         }
       }
@@ -531,16 +538,19 @@ final class QuerySubTreeTask {
    * */
   private Boolean executeBlocking() {
     try {
-      while (!root.eos()) {
-        if (Thread.interrupted()) {
-          Thread.currentThread().interrupt();
-          if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Operator task execution interrupted. Root operator: " + root + ". Close directly.");
+
+      synchronized (executionLock) {
+        while (!root.eos()) {
+          if (Thread.interrupted()) {
+            Thread.currentThread().interrupt();
+            if (LOGGER.isDebugEnabled()) {
+              LOGGER.debug("Operator task execution interrupted. Root operator: " + root + ". Close directly.");
+            }
+            taskExecutionFuture.setFailure(new InterruptedException("Task interrupted."));
+            break;
           }
-          taskExecutionFuture.setFailure(new InterruptedException("Task interrupted."));
-          break;
+          root.next();
         }
-        root.next();
       }
 
       taskExecutionFuture.setSuccess();
@@ -570,7 +580,9 @@ final class QuerySubTreeTask {
     if (AtomicUtils.unsetBitIfSet(nonBlockingExecutionCondition, Integer.numberOfTrailingZeros(INITIALIZED))) {
       // Only cleanup if initialized.
       try {
-        root.close();
+        synchronized (executionLock) {
+          root.close();
+        }
       } catch (DbException ee) {
         if (LOGGER.isErrorEnabled()) {
           LOGGER.error("Unknown exception at operator close. Root operator: " + root + ".", ee);
@@ -632,7 +644,9 @@ final class QuerySubTreeTask {
    * */
   public void init(final ImmutableMap<String, Object> execUnitEnv) {
     try {
-      root.open(execUnitEnv);
+      synchronized (executionLock) {
+        root.open(execUnitEnv);
+      }
       setInitialized();
     } catch (DbException e) {
       if (LOGGER.isErrorEnabled()) {

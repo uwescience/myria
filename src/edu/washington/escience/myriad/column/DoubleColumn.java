@@ -14,7 +14,6 @@ import com.google.protobuf.ByteString;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
-import edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType;
 import edu.washington.escience.myriad.proto.DataProto.DoubleColumnMessage;
 
 /**
@@ -42,7 +41,7 @@ public final class DoubleColumn implements Column<Double> {
    * @param numTuples num tuples in the column message
    */
   public DoubleColumn(final ColumnMessage message, final int numTuples) {
-    if (message.getType().ordinal() != ColumnMessageType.DOUBLE_VALUE) {
+    if (message.getType().ordinal() != ColumnMessage.Type.DOUBLE_VALUE) {
       throw new IllegalArgumentException("Trying to construct DoubleColumn from non-DOUBLE ColumnMessage");
     }
     if (!message.hasDoubleColumn()) {
@@ -116,7 +115,7 @@ public final class DoubleColumn implements Column<Double> {
   public ColumnMessage serializeToProto() {
     /* Note that we do *not* build the inner class. We pass its builder instead. */
     final DoubleColumnMessage.Builder inner = DoubleColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
-    return ColumnMessage.newBuilder().setType(ColumnMessageType.DOUBLE).setDoubleColumn(inner).build();
+    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.DOUBLE).setDoubleColumn(inner).build();
   }
 
   @Override

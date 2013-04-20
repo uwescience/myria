@@ -11,13 +11,13 @@ from google.protobuf import descriptor_pb2
 DESCRIPTOR = descriptor.FileDescriptor(
   name='control.proto',
   package='',
-  serialized_pb='\n\rcontrol.proto\"\xaf\x02\n\x0e\x43ontrolMessage\x12\x30\n\x04type\x18\x01 \x02(\x0e\x32\".ControlMessage.ControlMessageType\x12\x11\n\tremote_id\x18\x02 \x01(\x05\x12\x10\n\x08query_id\x18\x03 \x01(\x03\"\xc5\x01\n\x12\x43ontrolMessageType\x12\x0b\n\x07\x43ONNECT\x10\x00\x12\x0e\n\nDISCONNECT\x10\x04\x12\x0f\n\x0bQUERY_START\x10\x01\x12\x0f\n\x0bQUERY_PAUSE\x10\x07\x12\x10\n\x0cQUERY_RESUME\x10\x08\x12\x0e\n\nQUERY_KILL\x10\t\x12\x1a\n\x16QUERY_READY_TO_EXECUTE\x10\x02\x12\x12\n\x0eQUERY_COMPLETE\x10\x06\x12\x0c\n\x08SHUTDOWN\x10\x03\x12\x10\n\x0cWORKER_ALIVE\x10\x05\x42\x34\n$edu.washington.escience.myriad.protoB\x0c\x43ontrolProto')
+  serialized_pb='\n\rcontrol.proto\"\x8c\x01\n\x0e\x43ontrolMessage\x12\"\n\x04type\x18\x01 \x02(\x0e\x32\x14.ControlMessage.Type\x12\x11\n\tremote_id\x18\x02 \x01(\x05\"C\n\x04Type\x12\x0b\n\x07\x43ONNECT\x10\x00\x12\x0e\n\nDISCONNECT\x10\x04\x12\x0c\n\x08SHUTDOWN\x10\x03\x12\x10\n\x0cWORKER_ALIVE\x10\x05\x42\x34\n$edu.washington.escience.myriad.protoB\x0c\x43ontrolProto')
 
 
 
-_CONTROLMESSAGE_CONTROLMESSAGETYPE = descriptor.EnumDescriptor(
-  name='ControlMessageType',
-  full_name='ControlMessage.ControlMessageType',
+_CONTROLMESSAGE_TYPE = descriptor.EnumDescriptor(
+  name='Type',
+  full_name='ControlMessage.Type',
   filename=None,
   file=DESCRIPTOR,
   values=[
@@ -30,42 +30,18 @@ _CONTROLMESSAGE_CONTROLMESSAGETYPE = descriptor.EnumDescriptor(
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='QUERY_START', index=2, number=1,
+      name='SHUTDOWN', index=2, number=3,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='QUERY_PAUSE', index=3, number=7,
-      options=None,
-      type=None),
-    descriptor.EnumValueDescriptor(
-      name='QUERY_RESUME', index=4, number=8,
-      options=None,
-      type=None),
-    descriptor.EnumValueDescriptor(
-      name='QUERY_KILL', index=5, number=9,
-      options=None,
-      type=None),
-    descriptor.EnumValueDescriptor(
-      name='QUERY_READY_TO_EXECUTE', index=6, number=2,
-      options=None,
-      type=None),
-    descriptor.EnumValueDescriptor(
-      name='QUERY_COMPLETE', index=7, number=6,
-      options=None,
-      type=None),
-    descriptor.EnumValueDescriptor(
-      name='SHUTDOWN', index=8, number=3,
-      options=None,
-      type=None),
-    descriptor.EnumValueDescriptor(
-      name='WORKER_ALIVE', index=9, number=5,
+      name='WORKER_ALIVE', index=3, number=5,
       options=None,
       type=None),
   ],
   containing_type=None,
   options=None,
-  serialized_start=124,
-  serialized_end=321,
+  serialized_start=91,
+  serialized_end=158,
 )
 
 
@@ -90,29 +66,22 @@ _CONTROLMESSAGE = descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
-    descriptor.FieldDescriptor(
-      name='query_id', full_name='ControlMessage.query_id', index=2,
-      number=3, type=3, cpp_type=2, label=1,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
   ],
   extensions=[
   ],
   nested_types=[],
   enum_types=[
-    _CONTROLMESSAGE_CONTROLMESSAGETYPE,
+    _CONTROLMESSAGE_TYPE,
   ],
   options=None,
   is_extendable=False,
   extension_ranges=[],
   serialized_start=18,
-  serialized_end=321,
+  serialized_end=158,
 )
 
-_CONTROLMESSAGE.fields_by_name['type'].enum_type = _CONTROLMESSAGE_CONTROLMESSAGETYPE
-_CONTROLMESSAGE_CONTROLMESSAGETYPE.containing_type = _CONTROLMESSAGE;
+_CONTROLMESSAGE.fields_by_name['type'].enum_type = _CONTROLMESSAGE_TYPE
+_CONTROLMESSAGE_TYPE.containing_type = _CONTROLMESSAGE;
 DESCRIPTOR.message_types_by_name['ControlMessage'] = _CONTROLMESSAGE
 
 class ControlMessage(message.Message):

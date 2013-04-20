@@ -8,16 +8,826 @@ public final class QueryProto {
   public static void registerAllExtensions(
       com.google.protobuf.ExtensionRegistry registry) {
   }
+  public interface QueryMessageOrBuilder
+      extends com.google.protobuf.MessageOrBuilder {
+    
+    // required uint64 query_id = 1;
+    boolean hasQueryId();
+    long getQueryId();
+    
+    // required .QueryMessage.Type type = 2;
+    boolean hasType();
+    edu.washington.escience.myriad.proto.QueryProto.QueryMessage.Type getType();
+    
+    // optional .QueryReport query_report = 3;
+    boolean hasQueryReport();
+    edu.washington.escience.myriad.proto.QueryProto.QueryReport getQueryReport();
+    edu.washington.escience.myriad.proto.QueryProto.QueryReportOrBuilder getQueryReportOrBuilder();
+    
+    // optional .Query query = 4;
+    boolean hasQuery();
+    edu.washington.escience.myriad.proto.QueryProto.Query getQuery();
+    edu.washington.escience.myriad.proto.QueryProto.QueryOrBuilder getQueryOrBuilder();
+  }
+  public static final class QueryMessage extends
+      com.google.protobuf.GeneratedMessage
+      implements QueryMessageOrBuilder {
+    // Use QueryMessage.newBuilder() to construct.
+    private QueryMessage(Builder builder) {
+      super(builder);
+    }
+    private QueryMessage(boolean noInit) {}
+    
+    private static final QueryMessage defaultInstance;
+    public static QueryMessage getDefaultInstance() {
+      return defaultInstance;
+    }
+    
+    public QueryMessage getDefaultInstanceForType() {
+      return defaultInstance;
+    }
+    
+    public static final com.google.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return edu.washington.escience.myriad.proto.QueryProto.internal_static_QueryMessage_descriptor;
+    }
+    
+    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return edu.washington.escience.myriad.proto.QueryProto.internal_static_QueryMessage_fieldAccessorTable;
+    }
+    
+    public enum Type
+        implements com.google.protobuf.ProtocolMessageEnum {
+      QUERY_DISTRIBUTE(0, 0),
+      QUERY_START(1, 1),
+      QUERY_PAUSE(2, 7),
+      QUERY_RESUME(3, 8),
+      QUERY_KILL(4, 9),
+      QUERY_READY_TO_EXECUTE(5, 2),
+      QUERY_COMPLETE(6, 6),
+      ;
+      
+      public static final int QUERY_DISTRIBUTE_VALUE = 0;
+      public static final int QUERY_START_VALUE = 1;
+      public static final int QUERY_PAUSE_VALUE = 7;
+      public static final int QUERY_RESUME_VALUE = 8;
+      public static final int QUERY_KILL_VALUE = 9;
+      public static final int QUERY_READY_TO_EXECUTE_VALUE = 2;
+      public static final int QUERY_COMPLETE_VALUE = 6;
+      
+      
+      public final int getNumber() { return value; }
+      
+      public static Type valueOf(int value) {
+        switch (value) {
+          case 0: return QUERY_DISTRIBUTE;
+          case 1: return QUERY_START;
+          case 7: return QUERY_PAUSE;
+          case 8: return QUERY_RESUME;
+          case 9: return QUERY_KILL;
+          case 2: return QUERY_READY_TO_EXECUTE;
+          case 6: return QUERY_COMPLETE;
+          default: return null;
+        }
+      }
+      
+      public static com.google.protobuf.Internal.EnumLiteMap<Type>
+          internalGetValueMap() {
+        return internalValueMap;
+      }
+      private static com.google.protobuf.Internal.EnumLiteMap<Type>
+          internalValueMap =
+            new com.google.protobuf.Internal.EnumLiteMap<Type>() {
+              public Type findValueByNumber(int number) {
+                return Type.valueOf(number);
+              }
+            };
+      
+      public final com.google.protobuf.Descriptors.EnumValueDescriptor
+          getValueDescriptor() {
+        return getDescriptor().getValues().get(index);
+      }
+      public final com.google.protobuf.Descriptors.EnumDescriptor
+          getDescriptorForType() {
+        return getDescriptor();
+      }
+      public static final com.google.protobuf.Descriptors.EnumDescriptor
+          getDescriptor() {
+        return edu.washington.escience.myriad.proto.QueryProto.QueryMessage.getDescriptor().getEnumTypes().get(0);
+      }
+      
+      private static final Type[] VALUES = {
+        QUERY_DISTRIBUTE, QUERY_START, QUERY_PAUSE, QUERY_RESUME, QUERY_KILL, QUERY_READY_TO_EXECUTE, QUERY_COMPLETE, 
+      };
+      
+      public static Type valueOf(
+          com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
+        if (desc.getType() != getDescriptor()) {
+          throw new java.lang.IllegalArgumentException(
+            "EnumValueDescriptor is not for this type.");
+        }
+        return VALUES[desc.getIndex()];
+      }
+      
+      private final int index;
+      private final int value;
+      
+      private Type(int index, int value) {
+        this.index = index;
+        this.value = value;
+      }
+      
+      // @@protoc_insertion_point(enum_scope:QueryMessage.Type)
+    }
+    
+    private int bitField0_;
+    // required uint64 query_id = 1;
+    public static final int QUERY_ID_FIELD_NUMBER = 1;
+    private long queryId_;
+    public boolean hasQueryId() {
+      return ((bitField0_ & 0x00000001) == 0x00000001);
+    }
+    public long getQueryId() {
+      return queryId_;
+    }
+    
+    // required .QueryMessage.Type type = 2;
+    public static final int TYPE_FIELD_NUMBER = 2;
+    private edu.washington.escience.myriad.proto.QueryProto.QueryMessage.Type type_;
+    public boolean hasType() {
+      return ((bitField0_ & 0x00000002) == 0x00000002);
+    }
+    public edu.washington.escience.myriad.proto.QueryProto.QueryMessage.Type getType() {
+      return type_;
+    }
+    
+    // optional .QueryReport query_report = 3;
+    public static final int QUERY_REPORT_FIELD_NUMBER = 3;
+    private edu.washington.escience.myriad.proto.QueryProto.QueryReport queryReport_;
+    public boolean hasQueryReport() {
+      return ((bitField0_ & 0x00000004) == 0x00000004);
+    }
+    public edu.washington.escience.myriad.proto.QueryProto.QueryReport getQueryReport() {
+      return queryReport_;
+    }
+    public edu.washington.escience.myriad.proto.QueryProto.QueryReportOrBuilder getQueryReportOrBuilder() {
+      return queryReport_;
+    }
+    
+    // optional .Query query = 4;
+    public static final int QUERY_FIELD_NUMBER = 4;
+    private edu.washington.escience.myriad.proto.QueryProto.Query query_;
+    public boolean hasQuery() {
+      return ((bitField0_ & 0x00000008) == 0x00000008);
+    }
+    public edu.washington.escience.myriad.proto.QueryProto.Query getQuery() {
+      return query_;
+    }
+    public edu.washington.escience.myriad.proto.QueryProto.QueryOrBuilder getQueryOrBuilder() {
+      return query_;
+    }
+    
+    private void initFields() {
+      queryId_ = 0L;
+      type_ = edu.washington.escience.myriad.proto.QueryProto.QueryMessage.Type.QUERY_DISTRIBUTE;
+      queryReport_ = edu.washington.escience.myriad.proto.QueryProto.QueryReport.getDefaultInstance();
+      query_ = edu.washington.escience.myriad.proto.QueryProto.Query.getDefaultInstance();
+    }
+    private byte memoizedIsInitialized = -1;
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized != -1) return isInitialized == 1;
+      
+      if (!hasQueryId()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasType()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (hasQueryReport()) {
+        if (!getQueryReport().isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+      }
+      if (hasQuery()) {
+        if (!getQuery().isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+      }
+      memoizedIsInitialized = 1;
+      return true;
+    }
+    
+    public void writeTo(com.google.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      getSerializedSize();
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        output.writeUInt64(1, queryId_);
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        output.writeEnum(2, type_.getNumber());
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        output.writeMessage(3, queryReport_);
+      }
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        output.writeMessage(4, query_);
+      }
+      getUnknownFields().writeTo(output);
+    }
+    
+    private int memoizedSerializedSize = -1;
+    public int getSerializedSize() {
+      int size = memoizedSerializedSize;
+      if (size != -1) return size;
+    
+      size = 0;
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeUInt64Size(1, queryId_);
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeEnumSize(2, type_.getNumber());
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(3, queryReport_);
+      }
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(4, query_);
+      }
+      size += getUnknownFields().getSerializedSize();
+      memoizedSerializedSize = size;
+      return size;
+    }
+    
+    private static final long serialVersionUID = 0L;
+    @java.lang.Override
+    protected java.lang.Object writeReplace()
+        throws java.io.ObjectStreamException {
+      return super.writeReplace();
+    }
+    
+    public static edu.washington.escience.myriad.proto.QueryProto.QueryMessage parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data).buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.QueryProto.QueryMessage parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data, extensionRegistry)
+               .buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.QueryProto.QueryMessage parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data).buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.QueryProto.QueryMessage parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data, extensionRegistry)
+               .buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.QueryProto.QueryMessage parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input).buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.QueryProto.QueryMessage parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input, extensionRegistry)
+               .buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.QueryProto.QueryMessage parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      Builder builder = newBuilder();
+      if (builder.mergeDelimitedFrom(input)) {
+        return builder.buildParsed();
+      } else {
+        return null;
+      }
+    }
+    public static edu.washington.escience.myriad.proto.QueryProto.QueryMessage parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      Builder builder = newBuilder();
+      if (builder.mergeDelimitedFrom(input, extensionRegistry)) {
+        return builder.buildParsed();
+      } else {
+        return null;
+      }
+    }
+    public static edu.washington.escience.myriad.proto.QueryProto.QueryMessage parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input).buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.QueryProto.QueryMessage parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input, extensionRegistry)
+               .buildParsed();
+    }
+    
+    public static Builder newBuilder() { return Builder.create(); }
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder(edu.washington.escience.myriad.proto.QueryProto.QueryMessage prototype) {
+      return newBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() { return newBuilder(this); }
+    
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessage.Builder<Builder>
+       implements edu.washington.escience.myriad.proto.QueryProto.QueryMessageOrBuilder {
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return edu.washington.escience.myriad.proto.QueryProto.internal_static_QueryMessage_descriptor;
+      }
+      
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return edu.washington.escience.myriad.proto.QueryProto.internal_static_QueryMessage_fieldAccessorTable;
+      }
+      
+      // Construct using edu.washington.escience.myriad.proto.QueryProto.QueryMessage.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+      
+      private Builder(BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          getQueryReportFieldBuilder();
+          getQueryFieldBuilder();
+        }
+      }
+      private static Builder create() {
+        return new Builder();
+      }
+      
+      public Builder clear() {
+        super.clear();
+        queryId_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00000001);
+        type_ = edu.washington.escience.myriad.proto.QueryProto.QueryMessage.Type.QUERY_DISTRIBUTE;
+        bitField0_ = (bitField0_ & ~0x00000002);
+        if (queryReportBuilder_ == null) {
+          queryReport_ = edu.washington.escience.myriad.proto.QueryProto.QueryReport.getDefaultInstance();
+        } else {
+          queryReportBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000004);
+        if (queryBuilder_ == null) {
+          query_ = edu.washington.escience.myriad.proto.QueryProto.Query.getDefaultInstance();
+        } else {
+          queryBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000008);
+        return this;
+      }
+      
+      public Builder clone() {
+        return create().mergeFrom(buildPartial());
+      }
+      
+      public com.google.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return edu.washington.escience.myriad.proto.QueryProto.QueryMessage.getDescriptor();
+      }
+      
+      public edu.washington.escience.myriad.proto.QueryProto.QueryMessage getDefaultInstanceForType() {
+        return edu.washington.escience.myriad.proto.QueryProto.QueryMessage.getDefaultInstance();
+      }
+      
+      public edu.washington.escience.myriad.proto.QueryProto.QueryMessage build() {
+        edu.washington.escience.myriad.proto.QueryProto.QueryMessage result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+      
+      private edu.washington.escience.myriad.proto.QueryProto.QueryMessage buildParsed()
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        edu.washington.escience.myriad.proto.QueryProto.QueryMessage result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(
+            result).asInvalidProtocolBufferException();
+        }
+        return result;
+      }
+      
+      public edu.washington.escience.myriad.proto.QueryProto.QueryMessage buildPartial() {
+        edu.washington.escience.myriad.proto.QueryProto.QueryMessage result = new edu.washington.escience.myriad.proto.QueryProto.QueryMessage(this);
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+          to_bitField0_ |= 0x00000001;
+        }
+        result.queryId_ = queryId_;
+        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+          to_bitField0_ |= 0x00000002;
+        }
+        result.type_ = type_;
+        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+          to_bitField0_ |= 0x00000004;
+        }
+        if (queryReportBuilder_ == null) {
+          result.queryReport_ = queryReport_;
+        } else {
+          result.queryReport_ = queryReportBuilder_.build();
+        }
+        if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
+          to_bitField0_ |= 0x00000008;
+        }
+        if (queryBuilder_ == null) {
+          result.query_ = query_;
+        } else {
+          result.query_ = queryBuilder_.build();
+        }
+        result.bitField0_ = to_bitField0_;
+        onBuilt();
+        return result;
+      }
+      
+      public Builder mergeFrom(com.google.protobuf.Message other) {
+        if (other instanceof edu.washington.escience.myriad.proto.QueryProto.QueryMessage) {
+          return mergeFrom((edu.washington.escience.myriad.proto.QueryProto.QueryMessage)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+      
+      public Builder mergeFrom(edu.washington.escience.myriad.proto.QueryProto.QueryMessage other) {
+        if (other == edu.washington.escience.myriad.proto.QueryProto.QueryMessage.getDefaultInstance()) return this;
+        if (other.hasQueryId()) {
+          setQueryId(other.getQueryId());
+        }
+        if (other.hasType()) {
+          setType(other.getType());
+        }
+        if (other.hasQueryReport()) {
+          mergeQueryReport(other.getQueryReport());
+        }
+        if (other.hasQuery()) {
+          mergeQuery(other.getQuery());
+        }
+        this.mergeUnknownFields(other.getUnknownFields());
+        return this;
+      }
+      
+      public final boolean isInitialized() {
+        if (!hasQueryId()) {
+          
+          return false;
+        }
+        if (!hasType()) {
+          
+          return false;
+        }
+        if (hasQueryReport()) {
+          if (!getQueryReport().isInitialized()) {
+            
+            return false;
+          }
+        }
+        if (hasQuery()) {
+          if (!getQuery().isInitialized()) {
+            
+            return false;
+          }
+        }
+        return true;
+      }
+      
+      public Builder mergeFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+          com.google.protobuf.UnknownFieldSet.newBuilder(
+            this.getUnknownFields());
+        while (true) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              this.setUnknownFields(unknownFields.build());
+              onChanged();
+              return this;
+            default: {
+              if (!parseUnknownField(input, unknownFields,
+                                     extensionRegistry, tag)) {
+                this.setUnknownFields(unknownFields.build());
+                onChanged();
+                return this;
+              }
+              break;
+            }
+            case 8: {
+              bitField0_ |= 0x00000001;
+              queryId_ = input.readUInt64();
+              break;
+            }
+            case 16: {
+              int rawValue = input.readEnum();
+              edu.washington.escience.myriad.proto.QueryProto.QueryMessage.Type value = edu.washington.escience.myriad.proto.QueryProto.QueryMessage.Type.valueOf(rawValue);
+              if (value == null) {
+                unknownFields.mergeVarintField(2, rawValue);
+              } else {
+                bitField0_ |= 0x00000002;
+                type_ = value;
+              }
+              break;
+            }
+            case 26: {
+              edu.washington.escience.myriad.proto.QueryProto.QueryReport.Builder subBuilder = edu.washington.escience.myriad.proto.QueryProto.QueryReport.newBuilder();
+              if (hasQueryReport()) {
+                subBuilder.mergeFrom(getQueryReport());
+              }
+              input.readMessage(subBuilder, extensionRegistry);
+              setQueryReport(subBuilder.buildPartial());
+              break;
+            }
+            case 34: {
+              edu.washington.escience.myriad.proto.QueryProto.Query.Builder subBuilder = edu.washington.escience.myriad.proto.QueryProto.Query.newBuilder();
+              if (hasQuery()) {
+                subBuilder.mergeFrom(getQuery());
+              }
+              input.readMessage(subBuilder, extensionRegistry);
+              setQuery(subBuilder.buildPartial());
+              break;
+            }
+          }
+        }
+      }
+      
+      private int bitField0_;
+      
+      // required uint64 query_id = 1;
+      private long queryId_ ;
+      public boolean hasQueryId() {
+        return ((bitField0_ & 0x00000001) == 0x00000001);
+      }
+      public long getQueryId() {
+        return queryId_;
+      }
+      public Builder setQueryId(long value) {
+        bitField0_ |= 0x00000001;
+        queryId_ = value;
+        onChanged();
+        return this;
+      }
+      public Builder clearQueryId() {
+        bitField0_ = (bitField0_ & ~0x00000001);
+        queryId_ = 0L;
+        onChanged();
+        return this;
+      }
+      
+      // required .QueryMessage.Type type = 2;
+      private edu.washington.escience.myriad.proto.QueryProto.QueryMessage.Type type_ = edu.washington.escience.myriad.proto.QueryProto.QueryMessage.Type.QUERY_DISTRIBUTE;
+      public boolean hasType() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
+      }
+      public edu.washington.escience.myriad.proto.QueryProto.QueryMessage.Type getType() {
+        return type_;
+      }
+      public Builder setType(edu.washington.escience.myriad.proto.QueryProto.QueryMessage.Type value) {
+        if (value == null) {
+          throw new NullPointerException();
+        }
+        bitField0_ |= 0x00000002;
+        type_ = value;
+        onChanged();
+        return this;
+      }
+      public Builder clearType() {
+        bitField0_ = (bitField0_ & ~0x00000002);
+        type_ = edu.washington.escience.myriad.proto.QueryProto.QueryMessage.Type.QUERY_DISTRIBUTE;
+        onChanged();
+        return this;
+      }
+      
+      // optional .QueryReport query_report = 3;
+      private edu.washington.escience.myriad.proto.QueryProto.QueryReport queryReport_ = edu.washington.escience.myriad.proto.QueryProto.QueryReport.getDefaultInstance();
+      private com.google.protobuf.SingleFieldBuilder<
+          edu.washington.escience.myriad.proto.QueryProto.QueryReport, edu.washington.escience.myriad.proto.QueryProto.QueryReport.Builder, edu.washington.escience.myriad.proto.QueryProto.QueryReportOrBuilder> queryReportBuilder_;
+      public boolean hasQueryReport() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+      public edu.washington.escience.myriad.proto.QueryProto.QueryReport getQueryReport() {
+        if (queryReportBuilder_ == null) {
+          return queryReport_;
+        } else {
+          return queryReportBuilder_.getMessage();
+        }
+      }
+      public Builder setQueryReport(edu.washington.escience.myriad.proto.QueryProto.QueryReport value) {
+        if (queryReportBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          queryReport_ = value;
+          onChanged();
+        } else {
+          queryReportBuilder_.setMessage(value);
+        }
+        bitField0_ |= 0x00000004;
+        return this;
+      }
+      public Builder setQueryReport(
+          edu.washington.escience.myriad.proto.QueryProto.QueryReport.Builder builderForValue) {
+        if (queryReportBuilder_ == null) {
+          queryReport_ = builderForValue.build();
+          onChanged();
+        } else {
+          queryReportBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00000004;
+        return this;
+      }
+      public Builder mergeQueryReport(edu.washington.escience.myriad.proto.QueryProto.QueryReport value) {
+        if (queryReportBuilder_ == null) {
+          if (((bitField0_ & 0x00000004) == 0x00000004) &&
+              queryReport_ != edu.washington.escience.myriad.proto.QueryProto.QueryReport.getDefaultInstance()) {
+            queryReport_ =
+              edu.washington.escience.myriad.proto.QueryProto.QueryReport.newBuilder(queryReport_).mergeFrom(value).buildPartial();
+          } else {
+            queryReport_ = value;
+          }
+          onChanged();
+        } else {
+          queryReportBuilder_.mergeFrom(value);
+        }
+        bitField0_ |= 0x00000004;
+        return this;
+      }
+      public Builder clearQueryReport() {
+        if (queryReportBuilder_ == null) {
+          queryReport_ = edu.washington.escience.myriad.proto.QueryProto.QueryReport.getDefaultInstance();
+          onChanged();
+        } else {
+          queryReportBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000004);
+        return this;
+      }
+      public edu.washington.escience.myriad.proto.QueryProto.QueryReport.Builder getQueryReportBuilder() {
+        bitField0_ |= 0x00000004;
+        onChanged();
+        return getQueryReportFieldBuilder().getBuilder();
+      }
+      public edu.washington.escience.myriad.proto.QueryProto.QueryReportOrBuilder getQueryReportOrBuilder() {
+        if (queryReportBuilder_ != null) {
+          return queryReportBuilder_.getMessageOrBuilder();
+        } else {
+          return queryReport_;
+        }
+      }
+      private com.google.protobuf.SingleFieldBuilder<
+          edu.washington.escience.myriad.proto.QueryProto.QueryReport, edu.washington.escience.myriad.proto.QueryProto.QueryReport.Builder, edu.washington.escience.myriad.proto.QueryProto.QueryReportOrBuilder> 
+          getQueryReportFieldBuilder() {
+        if (queryReportBuilder_ == null) {
+          queryReportBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              edu.washington.escience.myriad.proto.QueryProto.QueryReport, edu.washington.escience.myriad.proto.QueryProto.QueryReport.Builder, edu.washington.escience.myriad.proto.QueryProto.QueryReportOrBuilder>(
+                  queryReport_,
+                  getParentForChildren(),
+                  isClean());
+          queryReport_ = null;
+        }
+        return queryReportBuilder_;
+      }
+      
+      // optional .Query query = 4;
+      private edu.washington.escience.myriad.proto.QueryProto.Query query_ = edu.washington.escience.myriad.proto.QueryProto.Query.getDefaultInstance();
+      private com.google.protobuf.SingleFieldBuilder<
+          edu.washington.escience.myriad.proto.QueryProto.Query, edu.washington.escience.myriad.proto.QueryProto.Query.Builder, edu.washington.escience.myriad.proto.QueryProto.QueryOrBuilder> queryBuilder_;
+      public boolean hasQuery() {
+        return ((bitField0_ & 0x00000008) == 0x00000008);
+      }
+      public edu.washington.escience.myriad.proto.QueryProto.Query getQuery() {
+        if (queryBuilder_ == null) {
+          return query_;
+        } else {
+          return queryBuilder_.getMessage();
+        }
+      }
+      public Builder setQuery(edu.washington.escience.myriad.proto.QueryProto.Query value) {
+        if (queryBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          query_ = value;
+          onChanged();
+        } else {
+          queryBuilder_.setMessage(value);
+        }
+        bitField0_ |= 0x00000008;
+        return this;
+      }
+      public Builder setQuery(
+          edu.washington.escience.myriad.proto.QueryProto.Query.Builder builderForValue) {
+        if (queryBuilder_ == null) {
+          query_ = builderForValue.build();
+          onChanged();
+        } else {
+          queryBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00000008;
+        return this;
+      }
+      public Builder mergeQuery(edu.washington.escience.myriad.proto.QueryProto.Query value) {
+        if (queryBuilder_ == null) {
+          if (((bitField0_ & 0x00000008) == 0x00000008) &&
+              query_ != edu.washington.escience.myriad.proto.QueryProto.Query.getDefaultInstance()) {
+            query_ =
+              edu.washington.escience.myriad.proto.QueryProto.Query.newBuilder(query_).mergeFrom(value).buildPartial();
+          } else {
+            query_ = value;
+          }
+          onChanged();
+        } else {
+          queryBuilder_.mergeFrom(value);
+        }
+        bitField0_ |= 0x00000008;
+        return this;
+      }
+      public Builder clearQuery() {
+        if (queryBuilder_ == null) {
+          query_ = edu.washington.escience.myriad.proto.QueryProto.Query.getDefaultInstance();
+          onChanged();
+        } else {
+          queryBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000008);
+        return this;
+      }
+      public edu.washington.escience.myriad.proto.QueryProto.Query.Builder getQueryBuilder() {
+        bitField0_ |= 0x00000008;
+        onChanged();
+        return getQueryFieldBuilder().getBuilder();
+      }
+      public edu.washington.escience.myriad.proto.QueryProto.QueryOrBuilder getQueryOrBuilder() {
+        if (queryBuilder_ != null) {
+          return queryBuilder_.getMessageOrBuilder();
+        } else {
+          return query_;
+        }
+      }
+      private com.google.protobuf.SingleFieldBuilder<
+          edu.washington.escience.myriad.proto.QueryProto.Query, edu.washington.escience.myriad.proto.QueryProto.Query.Builder, edu.washington.escience.myriad.proto.QueryProto.QueryOrBuilder> 
+          getQueryFieldBuilder() {
+        if (queryBuilder_ == null) {
+          queryBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              edu.washington.escience.myriad.proto.QueryProto.Query, edu.washington.escience.myriad.proto.QueryProto.Query.Builder, edu.washington.escience.myriad.proto.QueryProto.QueryOrBuilder>(
+                  query_,
+                  getParentForChildren(),
+                  isClean());
+          query_ = null;
+        }
+        return queryBuilder_;
+      }
+      
+      // @@protoc_insertion_point(builder_scope:QueryMessage)
+    }
+    
+    static {
+      defaultInstance = new QueryMessage(true);
+      defaultInstance.initFields();
+    }
+    
+    // @@protoc_insertion_point(class_scope:QueryMessage)
+  }
+  
   public interface QueryOrBuilder
       extends com.google.protobuf.MessageOrBuilder {
     
     // required bytes query = 1;
     boolean hasQuery();
     com.google.protobuf.ByteString getQuery();
-    
-    // required uint64 query_id = 2;
-    boolean hasQueryId();
-    long getQueryId();
   }
   public static final class Query extends
       com.google.protobuf.GeneratedMessage
@@ -58,19 +868,8 @@ public final class QueryProto {
       return query_;
     }
     
-    // required uint64 query_id = 2;
-    public static final int QUERY_ID_FIELD_NUMBER = 2;
-    private long queryId_;
-    public boolean hasQueryId() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
-    }
-    public long getQueryId() {
-      return queryId_;
-    }
-    
     private void initFields() {
       query_ = com.google.protobuf.ByteString.EMPTY;
-      queryId_ = 0L;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -78,10 +877,6 @@ public final class QueryProto {
       if (isInitialized != -1) return isInitialized == 1;
       
       if (!hasQuery()) {
-        memoizedIsInitialized = 0;
-        return false;
-      }
-      if (!hasQueryId()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -95,9 +890,6 @@ public final class QueryProto {
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeBytes(1, query_);
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeUInt64(2, queryId_);
-      }
       getUnknownFields().writeTo(output);
     }
     
@@ -110,10 +902,6 @@ public final class QueryProto {
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         size += com.google.protobuf.CodedOutputStream
           .computeBytesSize(1, query_);
-      }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeUInt64Size(2, queryId_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -241,8 +1029,6 @@ public final class QueryProto {
         super.clear();
         query_ = com.google.protobuf.ByteString.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000001);
-        queryId_ = 0L;
-        bitField0_ = (bitField0_ & ~0x00000002);
         return this;
       }
       
@@ -285,10 +1071,6 @@ public final class QueryProto {
           to_bitField0_ |= 0x00000001;
         }
         result.query_ = query_;
-        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
-          to_bitField0_ |= 0x00000002;
-        }
-        result.queryId_ = queryId_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -308,19 +1090,12 @@ public final class QueryProto {
         if (other.hasQuery()) {
           setQuery(other.getQuery());
         }
-        if (other.hasQueryId()) {
-          setQueryId(other.getQueryId());
-        }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
       
       public final boolean isInitialized() {
         if (!hasQuery()) {
-          
-          return false;
-        }
-        if (!hasQueryId()) {
           
           return false;
         }
@@ -355,11 +1130,6 @@ public final class QueryProto {
               query_ = input.readBytes();
               break;
             }
-            case 16: {
-              bitField0_ |= 0x00000002;
-              queryId_ = input.readUInt64();
-              break;
-            }
           }
         }
       }
@@ -390,27 +1160,6 @@ public final class QueryProto {
         return this;
       }
       
-      // required uint64 query_id = 2;
-      private long queryId_ ;
-      public boolean hasQueryId() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
-      }
-      public long getQueryId() {
-        return queryId_;
-      }
-      public Builder setQueryId(long value) {
-        bitField0_ |= 0x00000002;
-        queryId_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearQueryId() {
-        bitField0_ = (bitField0_ & ~0x00000002);
-        queryId_ = 0L;
-        onChanged();
-        return this;
-      }
-      
       // @@protoc_insertion_point(builder_scope:Query)
     }
     
@@ -422,11 +1171,492 @@ public final class QueryProto {
     // @@protoc_insertion_point(class_scope:Query)
   }
   
+  public interface QueryReportOrBuilder
+      extends com.google.protobuf.MessageOrBuilder {
+    
+    // required bool success = 1;
+    boolean hasSuccess();
+    boolean getSuccess();
+    
+    // required uint64 elapse = 2;
+    boolean hasElapse();
+    long getElapse();
+    
+    // optional bytes cause = 3;
+    boolean hasCause();
+    com.google.protobuf.ByteString getCause();
+  }
+  public static final class QueryReport extends
+      com.google.protobuf.GeneratedMessage
+      implements QueryReportOrBuilder {
+    // Use QueryReport.newBuilder() to construct.
+    private QueryReport(Builder builder) {
+      super(builder);
+    }
+    private QueryReport(boolean noInit) {}
+    
+    private static final QueryReport defaultInstance;
+    public static QueryReport getDefaultInstance() {
+      return defaultInstance;
+    }
+    
+    public QueryReport getDefaultInstanceForType() {
+      return defaultInstance;
+    }
+    
+    public static final com.google.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return edu.washington.escience.myriad.proto.QueryProto.internal_static_QueryReport_descriptor;
+    }
+    
+    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return edu.washington.escience.myriad.proto.QueryProto.internal_static_QueryReport_fieldAccessorTable;
+    }
+    
+    private int bitField0_;
+    // required bool success = 1;
+    public static final int SUCCESS_FIELD_NUMBER = 1;
+    private boolean success_;
+    public boolean hasSuccess() {
+      return ((bitField0_ & 0x00000001) == 0x00000001);
+    }
+    public boolean getSuccess() {
+      return success_;
+    }
+    
+    // required uint64 elapse = 2;
+    public static final int ELAPSE_FIELD_NUMBER = 2;
+    private long elapse_;
+    public boolean hasElapse() {
+      return ((bitField0_ & 0x00000002) == 0x00000002);
+    }
+    public long getElapse() {
+      return elapse_;
+    }
+    
+    // optional bytes cause = 3;
+    public static final int CAUSE_FIELD_NUMBER = 3;
+    private com.google.protobuf.ByteString cause_;
+    public boolean hasCause() {
+      return ((bitField0_ & 0x00000004) == 0x00000004);
+    }
+    public com.google.protobuf.ByteString getCause() {
+      return cause_;
+    }
+    
+    private void initFields() {
+      success_ = false;
+      elapse_ = 0L;
+      cause_ = com.google.protobuf.ByteString.EMPTY;
+    }
+    private byte memoizedIsInitialized = -1;
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized != -1) return isInitialized == 1;
+      
+      if (!hasSuccess()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasElapse()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      memoizedIsInitialized = 1;
+      return true;
+    }
+    
+    public void writeTo(com.google.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      getSerializedSize();
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        output.writeBool(1, success_);
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        output.writeUInt64(2, elapse_);
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        output.writeBytes(3, cause_);
+      }
+      getUnknownFields().writeTo(output);
+    }
+    
+    private int memoizedSerializedSize = -1;
+    public int getSerializedSize() {
+      int size = memoizedSerializedSize;
+      if (size != -1) return size;
+    
+      size = 0;
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBoolSize(1, success_);
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeUInt64Size(2, elapse_);
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(3, cause_);
+      }
+      size += getUnknownFields().getSerializedSize();
+      memoizedSerializedSize = size;
+      return size;
+    }
+    
+    private static final long serialVersionUID = 0L;
+    @java.lang.Override
+    protected java.lang.Object writeReplace()
+        throws java.io.ObjectStreamException {
+      return super.writeReplace();
+    }
+    
+    public static edu.washington.escience.myriad.proto.QueryProto.QueryReport parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data).buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.QueryProto.QueryReport parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data, extensionRegistry)
+               .buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.QueryProto.QueryReport parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data).buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.QueryProto.QueryReport parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data, extensionRegistry)
+               .buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.QueryProto.QueryReport parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input).buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.QueryProto.QueryReport parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input, extensionRegistry)
+               .buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.QueryProto.QueryReport parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      Builder builder = newBuilder();
+      if (builder.mergeDelimitedFrom(input)) {
+        return builder.buildParsed();
+      } else {
+        return null;
+      }
+    }
+    public static edu.washington.escience.myriad.proto.QueryProto.QueryReport parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      Builder builder = newBuilder();
+      if (builder.mergeDelimitedFrom(input, extensionRegistry)) {
+        return builder.buildParsed();
+      } else {
+        return null;
+      }
+    }
+    public static edu.washington.escience.myriad.proto.QueryProto.QueryReport parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input).buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.QueryProto.QueryReport parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input, extensionRegistry)
+               .buildParsed();
+    }
+    
+    public static Builder newBuilder() { return Builder.create(); }
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder(edu.washington.escience.myriad.proto.QueryProto.QueryReport prototype) {
+      return newBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() { return newBuilder(this); }
+    
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessage.Builder<Builder>
+       implements edu.washington.escience.myriad.proto.QueryProto.QueryReportOrBuilder {
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return edu.washington.escience.myriad.proto.QueryProto.internal_static_QueryReport_descriptor;
+      }
+      
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return edu.washington.escience.myriad.proto.QueryProto.internal_static_QueryReport_fieldAccessorTable;
+      }
+      
+      // Construct using edu.washington.escience.myriad.proto.QueryProto.QueryReport.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+      
+      private Builder(BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        }
+      }
+      private static Builder create() {
+        return new Builder();
+      }
+      
+      public Builder clear() {
+        super.clear();
+        success_ = false;
+        bitField0_ = (bitField0_ & ~0x00000001);
+        elapse_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00000002);
+        cause_ = com.google.protobuf.ByteString.EMPTY;
+        bitField0_ = (bitField0_ & ~0x00000004);
+        return this;
+      }
+      
+      public Builder clone() {
+        return create().mergeFrom(buildPartial());
+      }
+      
+      public com.google.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return edu.washington.escience.myriad.proto.QueryProto.QueryReport.getDescriptor();
+      }
+      
+      public edu.washington.escience.myriad.proto.QueryProto.QueryReport getDefaultInstanceForType() {
+        return edu.washington.escience.myriad.proto.QueryProto.QueryReport.getDefaultInstance();
+      }
+      
+      public edu.washington.escience.myriad.proto.QueryProto.QueryReport build() {
+        edu.washington.escience.myriad.proto.QueryProto.QueryReport result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+      
+      private edu.washington.escience.myriad.proto.QueryProto.QueryReport buildParsed()
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        edu.washington.escience.myriad.proto.QueryProto.QueryReport result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(
+            result).asInvalidProtocolBufferException();
+        }
+        return result;
+      }
+      
+      public edu.washington.escience.myriad.proto.QueryProto.QueryReport buildPartial() {
+        edu.washington.escience.myriad.proto.QueryProto.QueryReport result = new edu.washington.escience.myriad.proto.QueryProto.QueryReport(this);
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+          to_bitField0_ |= 0x00000001;
+        }
+        result.success_ = success_;
+        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+          to_bitField0_ |= 0x00000002;
+        }
+        result.elapse_ = elapse_;
+        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+          to_bitField0_ |= 0x00000004;
+        }
+        result.cause_ = cause_;
+        result.bitField0_ = to_bitField0_;
+        onBuilt();
+        return result;
+      }
+      
+      public Builder mergeFrom(com.google.protobuf.Message other) {
+        if (other instanceof edu.washington.escience.myriad.proto.QueryProto.QueryReport) {
+          return mergeFrom((edu.washington.escience.myriad.proto.QueryProto.QueryReport)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+      
+      public Builder mergeFrom(edu.washington.escience.myriad.proto.QueryProto.QueryReport other) {
+        if (other == edu.washington.escience.myriad.proto.QueryProto.QueryReport.getDefaultInstance()) return this;
+        if (other.hasSuccess()) {
+          setSuccess(other.getSuccess());
+        }
+        if (other.hasElapse()) {
+          setElapse(other.getElapse());
+        }
+        if (other.hasCause()) {
+          setCause(other.getCause());
+        }
+        this.mergeUnknownFields(other.getUnknownFields());
+        return this;
+      }
+      
+      public final boolean isInitialized() {
+        if (!hasSuccess()) {
+          
+          return false;
+        }
+        if (!hasElapse()) {
+          
+          return false;
+        }
+        return true;
+      }
+      
+      public Builder mergeFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+          com.google.protobuf.UnknownFieldSet.newBuilder(
+            this.getUnknownFields());
+        while (true) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              this.setUnknownFields(unknownFields.build());
+              onChanged();
+              return this;
+            default: {
+              if (!parseUnknownField(input, unknownFields,
+                                     extensionRegistry, tag)) {
+                this.setUnknownFields(unknownFields.build());
+                onChanged();
+                return this;
+              }
+              break;
+            }
+            case 8: {
+              bitField0_ |= 0x00000001;
+              success_ = input.readBool();
+              break;
+            }
+            case 16: {
+              bitField0_ |= 0x00000002;
+              elapse_ = input.readUInt64();
+              break;
+            }
+            case 26: {
+              bitField0_ |= 0x00000004;
+              cause_ = input.readBytes();
+              break;
+            }
+          }
+        }
+      }
+      
+      private int bitField0_;
+      
+      // required bool success = 1;
+      private boolean success_ ;
+      public boolean hasSuccess() {
+        return ((bitField0_ & 0x00000001) == 0x00000001);
+      }
+      public boolean getSuccess() {
+        return success_;
+      }
+      public Builder setSuccess(boolean value) {
+        bitField0_ |= 0x00000001;
+        success_ = value;
+        onChanged();
+        return this;
+      }
+      public Builder clearSuccess() {
+        bitField0_ = (bitField0_ & ~0x00000001);
+        success_ = false;
+        onChanged();
+        return this;
+      }
+      
+      // required uint64 elapse = 2;
+      private long elapse_ ;
+      public boolean hasElapse() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
+      }
+      public long getElapse() {
+        return elapse_;
+      }
+      public Builder setElapse(long value) {
+        bitField0_ |= 0x00000002;
+        elapse_ = value;
+        onChanged();
+        return this;
+      }
+      public Builder clearElapse() {
+        bitField0_ = (bitField0_ & ~0x00000002);
+        elapse_ = 0L;
+        onChanged();
+        return this;
+      }
+      
+      // optional bytes cause = 3;
+      private com.google.protobuf.ByteString cause_ = com.google.protobuf.ByteString.EMPTY;
+      public boolean hasCause() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+      public com.google.protobuf.ByteString getCause() {
+        return cause_;
+      }
+      public Builder setCause(com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000004;
+        cause_ = value;
+        onChanged();
+        return this;
+      }
+      public Builder clearCause() {
+        bitField0_ = (bitField0_ & ~0x00000004);
+        cause_ = getDefaultInstance().getCause();
+        onChanged();
+        return this;
+      }
+      
+      // @@protoc_insertion_point(builder_scope:QueryReport)
+    }
+    
+    static {
+      defaultInstance = new QueryReport(true);
+      defaultInstance.initFields();
+    }
+    
+    // @@protoc_insertion_point(class_scope:QueryReport)
+  }
+  
+  private static com.google.protobuf.Descriptors.Descriptor
+    internal_static_QueryMessage_descriptor;
+  private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_QueryMessage_fieldAccessorTable;
   private static com.google.protobuf.Descriptors.Descriptor
     internal_static_Query_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_Query_fieldAccessorTable;
+  private static com.google.protobuf.Descriptors.Descriptor
+    internal_static_QueryReport_descriptor;
+  private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_QueryReport_fieldAccessorTable;
   
   public static com.google.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
@@ -436,8 +1666,16 @@ public final class QueryProto {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\013query.proto\"(\n\005Query\022\r\n\005query\030\001 \002(\014\022\020\n" +
-      "\010query_id\030\002 \002(\004B2\n$edu.washington.escien" +
+      "\n\013query.proto\"\220\002\n\014QueryMessage\022\020\n\010query_" +
+      "id\030\001 \002(\004\022 \n\004type\030\002 \002(\0162\022.QueryMessage.Ty" +
+      "pe\022\"\n\014query_report\030\003 \001(\0132\014.QueryReport\022\025" +
+      "\n\005query\030\004 \001(\0132\006.Query\"\220\001\n\004Type\022\024\n\020QUERY_" +
+      "DISTRIBUTE\020\000\022\017\n\013QUERY_START\020\001\022\017\n\013QUERY_P" +
+      "AUSE\020\007\022\020\n\014QUERY_RESUME\020\010\022\016\n\nQUERY_KILL\020\t" +
+      "\022\032\n\026QUERY_READY_TO_EXECUTE\020\002\022\022\n\016QUERY_CO" +
+      "MPLETE\020\006\"\026\n\005Query\022\r\n\005query\030\001 \002(\014\"=\n\013Quer" +
+      "yReport\022\017\n\007success\030\001 \002(\010\022\016\n\006elapse\030\002 \002(\004" +
+      "\022\r\n\005cause\030\003 \001(\014B2\n$edu.washington.escien",
       "ce.myriad.protoB\nQueryProto"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
@@ -445,14 +1683,30 @@ public final class QueryProto {
         public com.google.protobuf.ExtensionRegistry assignDescriptors(
             com.google.protobuf.Descriptors.FileDescriptor root) {
           descriptor = root;
-          internal_static_Query_descriptor =
+          internal_static_QueryMessage_descriptor =
             getDescriptor().getMessageTypes().get(0);
+          internal_static_QueryMessage_fieldAccessorTable = new
+            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_QueryMessage_descriptor,
+              new java.lang.String[] { "QueryId", "Type", "QueryReport", "Query", },
+              edu.washington.escience.myriad.proto.QueryProto.QueryMessage.class,
+              edu.washington.escience.myriad.proto.QueryProto.QueryMessage.Builder.class);
+          internal_static_Query_descriptor =
+            getDescriptor().getMessageTypes().get(1);
           internal_static_Query_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_Query_descriptor,
-              new java.lang.String[] { "Query", "QueryId", },
+              new java.lang.String[] { "Query", },
               edu.washington.escience.myriad.proto.QueryProto.Query.class,
               edu.washington.escience.myriad.proto.QueryProto.Query.Builder.class);
+          internal_static_QueryReport_descriptor =
+            getDescriptor().getMessageTypes().get(2);
+          internal_static_QueryReport_fieldAccessorTable = new
+            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_QueryReport_descriptor,
+              new java.lang.String[] { "Success", "Elapse", "Cause", },
+              edu.washington.escience.myriad.proto.QueryProto.QueryReport.class,
+              edu.washington.escience.myriad.proto.QueryProto.QueryReport.Builder.class);
           return null;
         }
       };

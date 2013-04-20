@@ -14,7 +14,6 @@ import com.google.protobuf.ByteString;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
-import edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType;
 import edu.washington.escience.myriad.proto.DataProto.FloatColumnMessage;
 
 /**
@@ -42,7 +41,7 @@ public final class FloatColumn implements Column<Float> {
    * @param numTuples num tuples in the column message
    */
   public FloatColumn(final ColumnMessage message, final int numTuples) {
-    if (message.getType().ordinal() != ColumnMessageType.FLOAT_VALUE) {
+    if (message.getType().ordinal() != ColumnMessage.Type.FLOAT_VALUE) {
       throw new IllegalArgumentException("Trying to construct FloatColumn from non-FLOAT ColumnMessage");
     }
     if (!message.hasFloatColumn()) {
@@ -116,7 +115,7 @@ public final class FloatColumn implements Column<Float> {
   public ColumnMessage serializeToProto() {
     /* Note that we do *not* build the inner class. We pass its builder instead. */
     final FloatColumnMessage.Builder inner = FloatColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
-    return ColumnMessage.newBuilder().setType(ColumnMessageType.FLOAT).setFloatColumn(inner).build();
+    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.FLOAT).setFloatColumn(inner).build();
   }
 
   @Override
