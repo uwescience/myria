@@ -1,6 +1,8 @@
 package edu.washington.escience.myriad.parallel;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -8,6 +10,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.jboss.netty.channel.ChannelFuture;
+import org.jboss.netty.channel.group.DefaultChannelGroup;
+import org.jboss.netty.channel.group.DefaultChannelGroupFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,11 +26,11 @@ import edu.washington.escience.myriad.parallel.Worker.QueryExecutionMode;
 import edu.washington.escience.myriad.parallel.ipc.IPCEvent;
 import edu.washington.escience.myriad.parallel.ipc.IPCEventListener;
 import edu.washington.escience.myriad.util.DateTimeUtils;
+import edu.washington.escience.myriad.util.IPCUtils;
 
 /**
  * A {@link MasterQueryPartition} is the partition of a query plan at the Master side. Currently, a master query
  * partition can only have a single task.
- * 
  * 
  * */
 public class MasterQueryPartition implements QueryPartition {
@@ -63,7 +68,10 @@ public class MasterQueryPartition implements QueryPartition {
           int current = nowCompleted.incrementAndGet();
           queryExecutionFuture.setProgress(1, current, workerExecutionInfo.size());
           if (!future.isSuccess()) {
-            failedQueryPartitions.put(workerID, future.getCause());
+            if (!(future.getCause() instanceof QueryKilledException)) {
+              // Only record non-killed exceptions
+              failedQueryPartitions.put(workerID, future.getCause());
+            }
           }
           if (current >= total) {
             queryStatistics.markQueryEnd();
@@ -72,39 +80,47 @@ public class MasterQueryPartition implements QueryPartition {
                   + DateTimeUtils.nanoElapseToHumanReadable(queryStatistics.getQueryExecutionElapse()));
             }
 
-            if (failedQueryPartitions.isEmpty()) {
+            if (!killed && failedQueryPartitions.isEmpty()) {
               queryExecutionFuture.setSuccess();
             } else {
-              StringBuilder errorMessage = new StringBuilder();
-              int numStackTraceElements = 0;
-              for (Entry<Integer, Throwable> workerIDCause : failedQueryPartitions.entrySet()) {
-                numStackTraceElements += workerIDCause.getValue().getStackTrace().length;
+              if (failedQueryPartitions.isEmpty()) {
+                // query gets killed.
+                queryExecutionFuture.setFailure(new QueryKilledException());
+              } else {
+                StringBuilder errorMessage = new StringBuilder();
+                int numStackTraceElements = 0;
+                for (Entry<Integer, Throwable> workerIDCause : failedQueryPartitions.entrySet()) {
+                  numStackTraceElements += workerIDCause.getValue().getStackTrace().length;
+                }
+                DbException currentStackTrace =
+                    new DbException("Query #" + future.getQuery().getQueryID() + " failed.\n");
+                StackTraceElement[] newStackTrace =
+                    new StackTraceElement[currentStackTrace.getStackTrace().length + numStackTraceElements];
+                System.arraycopy(currentStackTrace.getStackTrace(), 0, newStackTrace, 0, currentStackTrace
+                    .getStackTrace().length);
+                int stackTraceShift = currentStackTrace.getStackTrace().length;
+                errorMessage.append(currentStackTrace.getMessage());
+                for (Entry<Integer, Throwable> workerIDCause : failedQueryPartitions.entrySet()) {
+                  int failedWorkerID = workerIDCause.getKey();
+                  Throwable cause = workerIDCause.getValue();
+                  if (!(cause instanceof QueryKilledException)) {
+                    // Only record non-killed exceptoins
+                    StackTraceElement[] e = cause.getStackTrace();
+                    System.arraycopy(e, 0, newStackTrace, stackTraceShift, e.length);
+                    stackTraceShift += e.length;
+                    errorMessage.append("\t" + cause.getClass().getName());
+                    errorMessage.append(" in worker #");
+                    errorMessage.append(failedWorkerID);
+                    errorMessage.append(", with message: [");
+                    errorMessage.append(cause.getMessage());
+                    errorMessage.append("].\n");
+                  }
+                }
+                currentStackTrace.setStackTrace(newStackTrace);
+                DbException composedException = new DbException(errorMessage.toString());
+                composedException.setStackTrace(newStackTrace);
+                queryExecutionFuture.setFailure(composedException);
               }
-              DbException currentStackTrace =
-                  new DbException("Query #" + future.getQuery().getQueryID() + " failed.\n");
-              StackTraceElement[] newStackTrace =
-                  new StackTraceElement[currentStackTrace.getStackTrace().length + numStackTraceElements];
-              System.arraycopy(currentStackTrace.getStackTrace(), 0, newStackTrace, 0, currentStackTrace
-                  .getStackTrace().length);
-              int stackTraceShift = currentStackTrace.getStackTrace().length;
-              errorMessage.append(currentStackTrace.getMessage());
-              for (Entry<Integer, Throwable> workerIDCause : failedQueryPartitions.entrySet()) {
-                int failedWorkerID = workerIDCause.getKey();
-                Throwable cause = workerIDCause.getValue();
-                StackTraceElement[] e = cause.getStackTrace();
-                System.arraycopy(e, 0, newStackTrace, stackTraceShift, e.length);
-                stackTraceShift += e.length;
-                errorMessage.append("\t" + cause.getClass().getName());
-                errorMessage.append(" in worker #");
-                errorMessage.append(failedWorkerID);
-                errorMessage.append(", with message: [");
-                errorMessage.append(cause.getMessage());
-                errorMessage.append("].\n");
-              }
-              currentStackTrace.setStackTrace(newStackTrace);
-              DbException composedException = new DbException(errorMessage.toString());
-              composedException.setStackTrace(newStackTrace);
-              queryExecutionFuture.setFailure(composedException);
             }
           }
         }
@@ -272,6 +288,20 @@ public class MasterQueryPartition implements QueryPartition {
    * */
   final Set<Integer> getWorkerAssigned() {
     return workerExecutionInfo.keySet();
+  }
+
+  /**
+   * @return the set of workers who havn't finished their execution of the query.
+   * */
+  final Set<Integer> getWorkersUnfinished() {
+    Set<Integer> result = new HashSet<Integer>();
+    for (Entry<Integer, WorkerExecutionInfo> e : workerExecutionInfo.entrySet()) {
+      QueryFuture workerExecutionFuture = e.getValue().workerCompleteQuery;
+      if (!workerExecutionFuture.isDone()) {
+        result.add(e.getKey());
+      }
+    }
+    return result;
   }
 
   /**
@@ -475,8 +505,27 @@ public class MasterQueryPartition implements QueryPartition {
    * */
   @Override
   public final void kill() {
+    if (killed) {
+      return;
+    }
+    killed = true;
     rootTask.kill();
-    master.sendKillMessage(this).awaitUninterruptibly();
+    Set<Integer> workers = getWorkersUnfinished();
+    ChannelFuture[] cfs = new ChannelFuture[workers.size()];
+    int i = 0;
+    DefaultChannelGroup cg = new DefaultChannelGroup();
+    for (Integer workerID : workers) {
+      cfs[i] = master.getIPCConnectionPool().sendShortMessage(workerID, IPCUtils.killQueryTM(getQueryID()));
+      cg.add(cfs[i].getChannel());
+      i++;
+    }
+    DefaultChannelGroupFuture f = new DefaultChannelGroupFuture(cg, Arrays.asList(cfs));
+    f.awaitUninterruptibly();
+    if (!f.isCompleteSuccess()) {
+      if (LOGGER.isErrorEnabled()) {
+        LOGGER.error("Send kill query message to workers failed.");
+      }
+    }
   }
 
   @Override
@@ -492,6 +541,12 @@ public class MasterQueryPartition implements QueryPartition {
   @Override
   public final QueryExecutionStatistics getExecutionStatistics() {
     return queryStatistics;
+  }
+
+  private volatile boolean killed = false;
+
+  public final boolean isKilled() {
+    return killed;
   }
 
 }

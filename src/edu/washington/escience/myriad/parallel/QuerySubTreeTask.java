@@ -170,7 +170,13 @@ final class QuerySubTreeTask {
           } finally {
             executionHandle = null;
             if (isKilled()) {
-              taskExecutionFuture.setFailure(new InterruptedException("Task gets killed"));
+              taskExecutionFuture.setFailure(new QueryKilledException("Task gets killed"));
+            } else {
+              if (Thread.interrupted()) {
+                Thread.currentThread().interrupt();
+                // Normally they should be killed tasks
+                taskExecutionFuture.setFailure(new InterruptedException("Task gets interrupted"));
+              }
             }
           }
         }
@@ -353,8 +359,7 @@ final class QuerySubTreeTask {
           if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Operator task execution interrupted. Root operator: " + root + ". Close directly.");
           }
-          // Normally they should be killed tasks
-          taskExecutionFuture.setFailure(new InterruptedException("Task gets interrupted"));
+
           break;
         }
 
@@ -605,7 +610,7 @@ final class QuerySubTreeTask {
       // Abruptly cancel the execution
       executionHandleLocal.cancel(true);
     } else {
-      taskExecutionFuture.setFailure(new InterruptedException("Task gets killed"));
+      taskExecutionFuture.setFailure(new QueryKilledException("Task gets killed"));
     }
   }
 

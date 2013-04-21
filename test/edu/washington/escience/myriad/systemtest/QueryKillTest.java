@@ -22,11 +22,12 @@ import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
 import edu.washington.escience.myriad.parallel.ExchangePairID;
 import edu.washington.escience.myriad.parallel.QueryFuture;
+import edu.washington.escience.myriad.parallel.QueryKilledException;
 import edu.washington.escience.myriad.util.TestUtils;
 
 public class QueryKillTest extends SystemTestBase {
 
-  @Test(expected = InterruptedException.class)
+  @Test(expected = QueryKilledException.class)
   public void killQueryTest() throws Throwable {
     final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
     createTable(WORKER_ID[0], testtableKey, "id long, name varchar(20)");

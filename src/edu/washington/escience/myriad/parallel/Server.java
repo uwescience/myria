@@ -26,9 +26,6 @@ import javax.ws.rs.WebApplicationException;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.channel.group.ChannelGroupFuture;
-import org.jboss.netty.channel.group.DefaultChannelGroup;
-import org.jboss.netty.channel.group.DefaultChannelGroupFuture;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
@@ -169,6 +166,11 @@ public final class Server {
 
                   if (LOGGER.isErrorEnabled()) {
                     LOGGER.error("Worker #{} failed in executing query #{}.", senderID, queryId, cause);
+                  }
+
+                  if (!(cause instanceof QueryKilledException)) {
+                    // if any worker fails because of some exception, kill the query.
+                    mqp.kill();
                   }
 
                 }
@@ -594,23 +596,6 @@ public final class Server {
       }
     }
     return mqp.getWorkerReceiveFuture();
-  }
-
-  /**
-   * @param mqp the master query
-   * @return the query dispatch {@link QueryFuture}.
-   * */
-  ChannelGroupFuture sendKillMessage(final MasterQueryPartition mqp) {
-
-    ChannelFuture[] cfs = new ChannelFuture[mqp.getWorkerAssigned().size()];
-    int i = 0;
-    DefaultChannelGroup cg = new DefaultChannelGroup();
-    for (Integer workerID : mqp.getWorkerAssigned()) {
-      cfs[i] = connectionPool.sendShortMessage(workerID, IPCUtils.killQueryTM(mqp.getQueryID()));
-      cg.add(cfs[i].getChannel());
-      i++;
-    }
-    return new DefaultChannelGroupFuture(cg, Arrays.asList(cfs));
   }
 
   /**
