@@ -3,6 +3,7 @@ package edu.washington.escience.myriad.parallel;
 import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -57,6 +58,7 @@ import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage;
 import edu.washington.escience.myriad.proto.QueryProto.QueryMessage;
+import edu.washington.escience.myriad.proto.QueryProto.QueryReport;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.util.IPCUtils;
 
@@ -149,7 +151,27 @@ public final class Server {
                 break;
               case QUERY_COMPLETE:
                 mqp = activeQueries.get(queryId);
-                mqp.workerComplete(senderID);
+                QueryReport qr = qm.getQueryReport();
+                if (qr.getSuccess()) {
+                  mqp.workerComplete(senderID);
+                } else {
+                  ObjectInputStream osis = null;
+                  Throwable cause = null;
+                  try {
+                    osis = new ObjectInputStream(new ByteArrayInputStream(qr.getCause().toByteArray()));
+                    cause = (Throwable) (osis.readObject());
+                  } catch (IOException | ClassNotFoundException e) {
+                    if (LOGGER.isErrorEnabled()) {
+                      LOGGER.error("Error decoding failure cause", e);
+                    }
+                  }
+                  mqp.workerFail(senderID, cause);
+
+                  if (LOGGER.isErrorEnabled()) {
+                    LOGGER.error("Worker #{} failed in executing query #{}.", senderID, queryId, cause);
+                  }
+
+                }
                 break;
               default:
                 if (LOGGER.isErrorEnabled()) {

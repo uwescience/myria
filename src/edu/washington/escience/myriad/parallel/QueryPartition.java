@@ -59,5 +59,4 @@ public interface QueryPartition extends Comparable<QueryPartition> {
    * @return the query execution statistics.
    * */
   QueryExecutionStatistics getExecutionStatistics();
-
 }
