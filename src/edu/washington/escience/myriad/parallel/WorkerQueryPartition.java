@@ -74,16 +74,6 @@ public class WorkerQueryPartition implements QueryPartition {
   private final QueryFuture executionFuture = new DefaultQueryFuture(this, true);
 
   /**
-   * Start timestamp of the whole query, not only the master partition.
-   * */
-  private volatile long startAtInNano;
-
-  /**
-   * End timestamp of the whole query, not only the master partition.
-   * */
-  private volatile long endAtInNano;
-
-  /**
    * record all failed tasks.
    * */
   private final ConcurrentLinkedQueue<QuerySubTreeTask> failTasks = new ConcurrentLinkedQueue<QuerySubTreeTask>();
@@ -110,11 +100,10 @@ public class WorkerQueryPartition implements QueryPartition {
       }
 
       if (currentNumFinished >= totalNumTasks) {
-        endAtInNano = System.nanoTime();
+        queryStatistics.markQueryEnd();
         if (LOGGER.isInfoEnabled()) {
-          LOGGER.info("Query #" + queryID + " finished at " + endAtInNano);
           LOGGER.info("Query #" + queryID + " executed for "
-              + DateTimeUtils.nanoElapseToHumanReadable(endAtInNano - startAtInNano));
+              + DateTimeUtils.nanoElapseToHumanReadable(queryStatistics.getQueryExecutionElapse()));
         }
         if (failTasks.isEmpty()) {
           executionFuture.setSuccess();
@@ -131,6 +120,7 @@ public class WorkerQueryPartition implements QueryPartition {
 
   };
 
+  private final QueryExecutionStatistics queryStatistics = new QueryExecutionStatistics();
   /**
    * Producer channel mapping of current active queries.
    * */
@@ -277,7 +267,7 @@ public class WorkerQueryPartition implements QueryPartition {
     if (LOGGER.isInfoEnabled()) {
       LOGGER.info("Query : " + getQueryID() + " start processing.");
     }
-    startAtInNano = System.nanoTime();
+    queryStatistics.markQueryStart();
     for (QuerySubTreeTask t : tasks.keySet()) {
       t.nonBlockingExecute();
     }
@@ -361,6 +351,11 @@ public class WorkerQueryPartition implements QueryPartition {
   @Override
   public final boolean isKilled() {
     return false;
+  }
+
+  @Override
+  public final QueryExecutionStatistics getExecutionStatistics() {
+    return queryStatistics;
   }
 
 }

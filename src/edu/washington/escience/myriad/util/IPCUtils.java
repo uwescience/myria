@@ -14,11 +14,13 @@ import com.google.protobuf.ByteString;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.parallel.ExchangePairID;
+import edu.washington.escience.myriad.parallel.QueryExecutionStatistics;
 import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage;
 import edu.washington.escience.myriad.proto.QueryProto;
 import edu.washington.escience.myriad.proto.QueryProto.QueryMessage;
+import edu.washington.escience.myriad.proto.QueryProto.QueryReport;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 
 /**
@@ -207,10 +209,32 @@ public final class IPCUtils {
   /**
    * @param queryId the completed query id.
    * @return a query complete TM.
+   * @param statistics query execution statistics
    * */
-  public static TransportMessage queryCompleteTM(final long queryId) {
+  public static TransportMessage queryCompleteTM(final long queryId, final QueryExecutionStatistics statistics) {
     return QUERY_TM_BUILDER.get().setQueryMessage(
-        QueryMessage.newBuilder().setType(QueryMessage.Type.QUERY_COMPLETE).setQueryId(queryId)).build();
+        QueryMessage.newBuilder().setQueryId(queryId).setType(QueryMessage.Type.QUERY_COMPLETE).setQueryReport(
+            QueryReport.newBuilder().setSuccess(true).setExecutionStatistics(statistics.toProtobuf()))).build();
+  }
+
+  /**
+   * @param queryId the completed query id.
+   * @return a query complete TM.
+   * @param cause the cause of the failure
+   * @throws IOException if any IO error occurs.
+   * @param statistics query execution statistics
+   * */
+  public static TransportMessage queryFailureTM(final long queryId, final Throwable cause,
+      final QueryExecutionStatistics statistics) throws IOException {
+    final ByteArrayOutputStream inMemBuffer = new ByteArrayOutputStream();
+    final ObjectOutputStream oos = new ObjectOutputStream(inMemBuffer);
+    oos.writeObject(cause);
+    oos.flush();
+    inMemBuffer.flush();
+    return QUERY_TM_BUILDER.get().setQueryMessage(
+        QueryMessage.newBuilder().setQueryId(queryId).setType(QueryMessage.Type.QUERY_COMPLETE).setQueryReport(
+            QueryReport.newBuilder().setSuccess(false).setExecutionStatistics(statistics.toProtobuf()).setCause(
+                ByteString.copyFrom(inMemBuffer.toByteArray())))).build();
   }
 
   /**

@@ -1178,9 +1178,10 @@ public final class QueryProto {
     boolean hasSuccess();
     boolean getSuccess();
     
-    // required uint64 elapse = 2;
-    boolean hasElapse();
-    long getElapse();
+    // required .ExecutionStatistics execution_statistics = 2;
+    boolean hasExecutionStatistics();
+    edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics getExecutionStatistics();
+    edu.washington.escience.myriad.proto.QueryProto.ExecutionStatisticsOrBuilder getExecutionStatisticsOrBuilder();
     
     // optional bytes cause = 3;
     boolean hasCause();
@@ -1225,14 +1226,17 @@ public final class QueryProto {
       return success_;
     }
     
-    // required uint64 elapse = 2;
-    public static final int ELAPSE_FIELD_NUMBER = 2;
-    private long elapse_;
-    public boolean hasElapse() {
+    // required .ExecutionStatistics execution_statistics = 2;
+    public static final int EXECUTION_STATISTICS_FIELD_NUMBER = 2;
+    private edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics executionStatistics_;
+    public boolean hasExecutionStatistics() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
-    public long getElapse() {
-      return elapse_;
+    public edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics getExecutionStatistics() {
+      return executionStatistics_;
+    }
+    public edu.washington.escience.myriad.proto.QueryProto.ExecutionStatisticsOrBuilder getExecutionStatisticsOrBuilder() {
+      return executionStatistics_;
     }
     
     // optional bytes cause = 3;
@@ -1247,7 +1251,7 @@ public final class QueryProto {
     
     private void initFields() {
       success_ = false;
-      elapse_ = 0L;
+      executionStatistics_ = edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics.getDefaultInstance();
       cause_ = com.google.protobuf.ByteString.EMPTY;
     }
     private byte memoizedIsInitialized = -1;
@@ -1259,7 +1263,11 @@ public final class QueryProto {
         memoizedIsInitialized = 0;
         return false;
       }
-      if (!hasElapse()) {
+      if (!hasExecutionStatistics()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!getExecutionStatistics().isInitialized()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -1274,7 +1282,7 @@ public final class QueryProto {
         output.writeBool(1, success_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeUInt64(2, elapse_);
+        output.writeMessage(2, executionStatistics_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         output.writeBytes(3, cause_);
@@ -1294,7 +1302,7 @@ public final class QueryProto {
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeUInt64Size(2, elapse_);
+          .computeMessageSize(2, executionStatistics_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         size += com.google.protobuf.CodedOutputStream
@@ -1416,6 +1424,7 @@ public final class QueryProto {
       }
       private void maybeForceBuilderInitialization() {
         if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          getExecutionStatisticsFieldBuilder();
         }
       }
       private static Builder create() {
@@ -1426,7 +1435,11 @@ public final class QueryProto {
         super.clear();
         success_ = false;
         bitField0_ = (bitField0_ & ~0x00000001);
-        elapse_ = 0L;
+        if (executionStatisticsBuilder_ == null) {
+          executionStatistics_ = edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics.getDefaultInstance();
+        } else {
+          executionStatisticsBuilder_.clear();
+        }
         bitField0_ = (bitField0_ & ~0x00000002);
         cause_ = com.google.protobuf.ByteString.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -1475,7 +1488,11 @@ public final class QueryProto {
         if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
           to_bitField0_ |= 0x00000002;
         }
-        result.elapse_ = elapse_;
+        if (executionStatisticsBuilder_ == null) {
+          result.executionStatistics_ = executionStatistics_;
+        } else {
+          result.executionStatistics_ = executionStatisticsBuilder_.build();
+        }
         if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
           to_bitField0_ |= 0x00000004;
         }
@@ -1499,8 +1516,8 @@ public final class QueryProto {
         if (other.hasSuccess()) {
           setSuccess(other.getSuccess());
         }
-        if (other.hasElapse()) {
-          setElapse(other.getElapse());
+        if (other.hasExecutionStatistics()) {
+          mergeExecutionStatistics(other.getExecutionStatistics());
         }
         if (other.hasCause()) {
           setCause(other.getCause());
@@ -1514,7 +1531,11 @@ public final class QueryProto {
           
           return false;
         }
-        if (!hasElapse()) {
+        if (!hasExecutionStatistics()) {
+          
+          return false;
+        }
+        if (!getExecutionStatistics().isInitialized()) {
           
           return false;
         }
@@ -1549,9 +1570,13 @@ public final class QueryProto {
               success_ = input.readBool();
               break;
             }
-            case 16: {
-              bitField0_ |= 0x00000002;
-              elapse_ = input.readUInt64();
+            case 18: {
+              edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics.Builder subBuilder = edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics.newBuilder();
+              if (hasExecutionStatistics()) {
+                subBuilder.mergeFrom(getExecutionStatistics());
+              }
+              input.readMessage(subBuilder, extensionRegistry);
+              setExecutionStatistics(subBuilder.buildPartial());
               break;
             }
             case 26: {
@@ -1586,25 +1611,94 @@ public final class QueryProto {
         return this;
       }
       
-      // required uint64 elapse = 2;
-      private long elapse_ ;
-      public boolean hasElapse() {
+      // required .ExecutionStatistics execution_statistics = 2;
+      private edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics executionStatistics_ = edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics.getDefaultInstance();
+      private com.google.protobuf.SingleFieldBuilder<
+          edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics, edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics.Builder, edu.washington.escience.myriad.proto.QueryProto.ExecutionStatisticsOrBuilder> executionStatisticsBuilder_;
+      public boolean hasExecutionStatistics() {
         return ((bitField0_ & 0x00000002) == 0x00000002);
       }
-      public long getElapse() {
-        return elapse_;
+      public edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics getExecutionStatistics() {
+        if (executionStatisticsBuilder_ == null) {
+          return executionStatistics_;
+        } else {
+          return executionStatisticsBuilder_.getMessage();
+        }
       }
-      public Builder setElapse(long value) {
+      public Builder setExecutionStatistics(edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics value) {
+        if (executionStatisticsBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          executionStatistics_ = value;
+          onChanged();
+        } else {
+          executionStatisticsBuilder_.setMessage(value);
+        }
         bitField0_ |= 0x00000002;
-        elapse_ = value;
-        onChanged();
         return this;
       }
-      public Builder clearElapse() {
-        bitField0_ = (bitField0_ & ~0x00000002);
-        elapse_ = 0L;
-        onChanged();
+      public Builder setExecutionStatistics(
+          edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics.Builder builderForValue) {
+        if (executionStatisticsBuilder_ == null) {
+          executionStatistics_ = builderForValue.build();
+          onChanged();
+        } else {
+          executionStatisticsBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00000002;
         return this;
+      }
+      public Builder mergeExecutionStatistics(edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics value) {
+        if (executionStatisticsBuilder_ == null) {
+          if (((bitField0_ & 0x00000002) == 0x00000002) &&
+              executionStatistics_ != edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics.getDefaultInstance()) {
+            executionStatistics_ =
+              edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics.newBuilder(executionStatistics_).mergeFrom(value).buildPartial();
+          } else {
+            executionStatistics_ = value;
+          }
+          onChanged();
+        } else {
+          executionStatisticsBuilder_.mergeFrom(value);
+        }
+        bitField0_ |= 0x00000002;
+        return this;
+      }
+      public Builder clearExecutionStatistics() {
+        if (executionStatisticsBuilder_ == null) {
+          executionStatistics_ = edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics.getDefaultInstance();
+          onChanged();
+        } else {
+          executionStatisticsBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000002);
+        return this;
+      }
+      public edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics.Builder getExecutionStatisticsBuilder() {
+        bitField0_ |= 0x00000002;
+        onChanged();
+        return getExecutionStatisticsFieldBuilder().getBuilder();
+      }
+      public edu.washington.escience.myriad.proto.QueryProto.ExecutionStatisticsOrBuilder getExecutionStatisticsOrBuilder() {
+        if (executionStatisticsBuilder_ != null) {
+          return executionStatisticsBuilder_.getMessageOrBuilder();
+        } else {
+          return executionStatistics_;
+        }
+      }
+      private com.google.protobuf.SingleFieldBuilder<
+          edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics, edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics.Builder, edu.washington.escience.myriad.proto.QueryProto.ExecutionStatisticsOrBuilder> 
+          getExecutionStatisticsFieldBuilder() {
+        if (executionStatisticsBuilder_ == null) {
+          executionStatisticsBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics, edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics.Builder, edu.washington.escience.myriad.proto.QueryProto.ExecutionStatisticsOrBuilder>(
+                  executionStatistics_,
+                  getParentForChildren(),
+                  isClean());
+          executionStatistics_ = null;
+        }
+        return executionStatisticsBuilder_;
       }
       
       // optional bytes cause = 3;
@@ -1642,6 +1736,352 @@ public final class QueryProto {
     // @@protoc_insertion_point(class_scope:QueryReport)
   }
   
+  public interface ExecutionStatisticsOrBuilder
+      extends com.google.protobuf.MessageOrBuilder {
+    
+    // required uint64 elapse = 2;
+    boolean hasElapse();
+    long getElapse();
+  }
+  public static final class ExecutionStatistics extends
+      com.google.protobuf.GeneratedMessage
+      implements ExecutionStatisticsOrBuilder {
+    // Use ExecutionStatistics.newBuilder() to construct.
+    private ExecutionStatistics(Builder builder) {
+      super(builder);
+    }
+    private ExecutionStatistics(boolean noInit) {}
+    
+    private static final ExecutionStatistics defaultInstance;
+    public static ExecutionStatistics getDefaultInstance() {
+      return defaultInstance;
+    }
+    
+    public ExecutionStatistics getDefaultInstanceForType() {
+      return defaultInstance;
+    }
+    
+    public static final com.google.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return edu.washington.escience.myriad.proto.QueryProto.internal_static_ExecutionStatistics_descriptor;
+    }
+    
+    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return edu.washington.escience.myriad.proto.QueryProto.internal_static_ExecutionStatistics_fieldAccessorTable;
+    }
+    
+    private int bitField0_;
+    // required uint64 elapse = 2;
+    public static final int ELAPSE_FIELD_NUMBER = 2;
+    private long elapse_;
+    public boolean hasElapse() {
+      return ((bitField0_ & 0x00000001) == 0x00000001);
+    }
+    public long getElapse() {
+      return elapse_;
+    }
+    
+    private void initFields() {
+      elapse_ = 0L;
+    }
+    private byte memoizedIsInitialized = -1;
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized != -1) return isInitialized == 1;
+      
+      if (!hasElapse()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      memoizedIsInitialized = 1;
+      return true;
+    }
+    
+    public void writeTo(com.google.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      getSerializedSize();
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        output.writeUInt64(2, elapse_);
+      }
+      getUnknownFields().writeTo(output);
+    }
+    
+    private int memoizedSerializedSize = -1;
+    public int getSerializedSize() {
+      int size = memoizedSerializedSize;
+      if (size != -1) return size;
+    
+      size = 0;
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeUInt64Size(2, elapse_);
+      }
+      size += getUnknownFields().getSerializedSize();
+      memoizedSerializedSize = size;
+      return size;
+    }
+    
+    private static final long serialVersionUID = 0L;
+    @java.lang.Override
+    protected java.lang.Object writeReplace()
+        throws java.io.ObjectStreamException {
+      return super.writeReplace();
+    }
+    
+    public static edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data).buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data, extensionRegistry)
+               .buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data).buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data, extensionRegistry)
+               .buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input).buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input, extensionRegistry)
+               .buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      Builder builder = newBuilder();
+      if (builder.mergeDelimitedFrom(input)) {
+        return builder.buildParsed();
+      } else {
+        return null;
+      }
+    }
+    public static edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      Builder builder = newBuilder();
+      if (builder.mergeDelimitedFrom(input, extensionRegistry)) {
+        return builder.buildParsed();
+      } else {
+        return null;
+      }
+    }
+    public static edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input).buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input, extensionRegistry)
+               .buildParsed();
+    }
+    
+    public static Builder newBuilder() { return Builder.create(); }
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder(edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics prototype) {
+      return newBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() { return newBuilder(this); }
+    
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessage.Builder<Builder>
+       implements edu.washington.escience.myriad.proto.QueryProto.ExecutionStatisticsOrBuilder {
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return edu.washington.escience.myriad.proto.QueryProto.internal_static_ExecutionStatistics_descriptor;
+      }
+      
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return edu.washington.escience.myriad.proto.QueryProto.internal_static_ExecutionStatistics_fieldAccessorTable;
+      }
+      
+      // Construct using edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+      
+      private Builder(BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        }
+      }
+      private static Builder create() {
+        return new Builder();
+      }
+      
+      public Builder clear() {
+        super.clear();
+        elapse_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00000001);
+        return this;
+      }
+      
+      public Builder clone() {
+        return create().mergeFrom(buildPartial());
+      }
+      
+      public com.google.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics.getDescriptor();
+      }
+      
+      public edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics getDefaultInstanceForType() {
+        return edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics.getDefaultInstance();
+      }
+      
+      public edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics build() {
+        edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+      
+      private edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics buildParsed()
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(
+            result).asInvalidProtocolBufferException();
+        }
+        return result;
+      }
+      
+      public edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics buildPartial() {
+        edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics result = new edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics(this);
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+          to_bitField0_ |= 0x00000001;
+        }
+        result.elapse_ = elapse_;
+        result.bitField0_ = to_bitField0_;
+        onBuilt();
+        return result;
+      }
+      
+      public Builder mergeFrom(com.google.protobuf.Message other) {
+        if (other instanceof edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics) {
+          return mergeFrom((edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+      
+      public Builder mergeFrom(edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics other) {
+        if (other == edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics.getDefaultInstance()) return this;
+        if (other.hasElapse()) {
+          setElapse(other.getElapse());
+        }
+        this.mergeUnknownFields(other.getUnknownFields());
+        return this;
+      }
+      
+      public final boolean isInitialized() {
+        if (!hasElapse()) {
+          
+          return false;
+        }
+        return true;
+      }
+      
+      public Builder mergeFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+          com.google.protobuf.UnknownFieldSet.newBuilder(
+            this.getUnknownFields());
+        while (true) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              this.setUnknownFields(unknownFields.build());
+              onChanged();
+              return this;
+            default: {
+              if (!parseUnknownField(input, unknownFields,
+                                     extensionRegistry, tag)) {
+                this.setUnknownFields(unknownFields.build());
+                onChanged();
+                return this;
+              }
+              break;
+            }
+            case 16: {
+              bitField0_ |= 0x00000001;
+              elapse_ = input.readUInt64();
+              break;
+            }
+          }
+        }
+      }
+      
+      private int bitField0_;
+      
+      // required uint64 elapse = 2;
+      private long elapse_ ;
+      public boolean hasElapse() {
+        return ((bitField0_ & 0x00000001) == 0x00000001);
+      }
+      public long getElapse() {
+        return elapse_;
+      }
+      public Builder setElapse(long value) {
+        bitField0_ |= 0x00000001;
+        elapse_ = value;
+        onChanged();
+        return this;
+      }
+      public Builder clearElapse() {
+        bitField0_ = (bitField0_ & ~0x00000001);
+        elapse_ = 0L;
+        onChanged();
+        return this;
+      }
+      
+      // @@protoc_insertion_point(builder_scope:ExecutionStatistics)
+    }
+    
+    static {
+      defaultInstance = new ExecutionStatistics(true);
+      defaultInstance.initFields();
+    }
+    
+    // @@protoc_insertion_point(class_scope:ExecutionStatistics)
+  }
+  
   private static com.google.protobuf.Descriptors.Descriptor
     internal_static_QueryMessage_descriptor;
   private static
@@ -1657,6 +2097,11 @@ public final class QueryProto {
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_QueryReport_fieldAccessorTable;
+  private static com.google.protobuf.Descriptors.Descriptor
+    internal_static_ExecutionStatistics_descriptor;
+  private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_ExecutionStatistics_fieldAccessorTable;
   
   public static com.google.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
@@ -1673,10 +2118,12 @@ public final class QueryProto {
       "DISTRIBUTE\020\000\022\017\n\013QUERY_START\020\001\022\017\n\013QUERY_P" +
       "AUSE\020\007\022\020\n\014QUERY_RESUME\020\010\022\016\n\nQUERY_KILL\020\t" +
       "\022\032\n\026QUERY_READY_TO_EXECUTE\020\002\022\022\n\016QUERY_CO" +
-      "MPLETE\020\006\"\026\n\005Query\022\r\n\005query\030\001 \002(\014\"=\n\013Quer" +
-      "yReport\022\017\n\007success\030\001 \002(\010\022\016\n\006elapse\030\002 \002(\004" +
-      "\022\r\n\005cause\030\003 \001(\014B2\n$edu.washington.escien",
-      "ce.myriad.protoB\nQueryProto"
+      "MPLETE\020\006\"\026\n\005Query\022\r\n\005query\030\001 \002(\014\"a\n\013Quer" +
+      "yReport\022\017\n\007success\030\001 \002(\010\0222\n\024execution_st" +
+      "atistics\030\002 \002(\0132\024.ExecutionStatistics\022\r\n\005",
+      "cause\030\003 \001(\014\"%\n\023ExecutionStatistics\022\016\n\006el" +
+      "apse\030\002 \002(\004B2\n$edu.washington.escience.my" +
+      "riad.protoB\nQueryProto"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -1704,9 +2151,17 @@ public final class QueryProto {
           internal_static_QueryReport_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_QueryReport_descriptor,
-              new java.lang.String[] { "Success", "Elapse", "Cause", },
+              new java.lang.String[] { "Success", "ExecutionStatistics", "Cause", },
               edu.washington.escience.myriad.proto.QueryProto.QueryReport.class,
               edu.washington.escience.myriad.proto.QueryProto.QueryReport.Builder.class);
+          internal_static_ExecutionStatistics_descriptor =
+            getDescriptor().getMessageTypes().get(3);
+          internal_static_ExecutionStatistics_fieldAccessorTable = new
+            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_ExecutionStatistics_descriptor,
+              new java.lang.String[] { "Elapse", },
+              edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics.class,
+              edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics.Builder.class);
           return null;
         }
       };

@@ -43,6 +43,8 @@ public class MasterQueryPartition implements QueryPartition {
    * */
   private volatile QuerySubTreeTask rootTask;
 
+  private final QueryExecutionStatistics queryStatistics = new QueryExecutionStatistics();
+
   /**
    * The root operator of the master query partition.
    * */
@@ -97,16 +99,6 @@ public class MasterQueryPartition implements QueryPartition {
    * The future object denoting the query execution progress.
    * */
   private final QueryFuture queryExecutionFuture = new DefaultQueryFuture(this, false);
-
-  /**
-   * Start timestamp of the whole query, not only the master partition.
-   * */
-  private volatile long startAtInNano;
-
-  /**
-   * End timestamp of the whole query, not only the master partition.
-   * */
-  private volatile long endAtInNano;
 
   /**
    * Store the current pause future if the query is in pause, otherwise null.
@@ -256,11 +248,10 @@ public class MasterQueryPartition implements QueryPartition {
     }
     queryExecutionFuture.setProgress(1, nowCardinality, workersAssigned.size());
     if (nowCardinality >= workersAssigned.size() && rootTask.getExecutionFuture().isDone()) {
-      endAtInNano = System.nanoTime();
+      queryStatistics.markQueryEnd();
       if (LOGGER.isInfoEnabled()) {
-        LOGGER.info("Query #" + queryID + " finished at " + endAtInNano);
         LOGGER.info("Query #" + queryID + " executed for "
-            + DateTimeUtils.nanoElapseToHumanReadable(endAtInNano - startAtInNano));
+            + DateTimeUtils.nanoElapseToHumanReadable(queryStatistics.getQueryExecutionElapse()));
       }
       // TODO currently only use roottask's success or fail to set the whole query's success or fail.
       // next step: consider the workers' reports also.
@@ -371,10 +362,7 @@ public class MasterQueryPartition implements QueryPartition {
 
   @Override
   public final void startNonBlockingExecution() {
-    startAtInNano = System.nanoTime();
-    if (LOGGER.isInfoEnabled()) {
-      LOGGER.info("Query : " + getQueryID() + " start processing at " + startAtInNano);
-    }
+    queryStatistics.markQueryStart();
     rootTask.nonBlockingExecute();
   }
 
@@ -383,10 +371,7 @@ public class MasterQueryPartition implements QueryPartition {
    */
   @Deprecated
   public final void startBlockingExecution() {
-    startAtInNano = System.nanoTime();
-    if (LOGGER.isInfoEnabled()) {
-      LOGGER.info("Query : " + getQueryID() + " start processing at " + startAtInNano);
-    }
+    queryStatistics.markQueryStart();
     rootTask.blockingExecute();
   }
 
@@ -460,6 +445,11 @@ public class MasterQueryPartition implements QueryPartition {
   @Override
   public final void init() {
     rootTask.init(ImmutableMap.copyOf(master.getExecEnvVars()));
+  }
+
+  @Override
+  public final QueryExecutionStatistics getExecutionStatistics() {
+    return queryStatistics;
   }
 
 }

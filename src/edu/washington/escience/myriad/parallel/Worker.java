@@ -596,18 +596,19 @@ public final class Worker {
 
         if (future.isSuccess()) {
 
-          sendMessageToMaster(IPCUtils.queryCompleteTM(query.getQueryID())).addListener(new ChannelFutureListener() {
+          sendMessageToMaster(IPCUtils.queryCompleteTM(query.getQueryID(), query.getExecutionStatistics()))
+              .addListener(new ChannelFutureListener() {
 
-            @Override
-            public void operationComplete(final ChannelFuture future) throws Exception {
-              if (future.isSuccess()) {
-                if (LOGGER.isDebugEnabled()) {
-                  LOGGER.debug("The query complete message is sent to the master for sure ");
+                @Override
+                public void operationComplete(final ChannelFuture future) throws Exception {
+                  if (future.isSuccess()) {
+                    if (LOGGER.isDebugEnabled()) {
+                      LOGGER.debug("The query complete message is sent to the master for sure ");
+                    }
+                  }
                 }
-              }
-            }
 
-          });
+              });
           if (LOGGER.isInfoEnabled()) {
             LOGGER.info("My part of query " + query + " finished");
           }
@@ -617,19 +618,20 @@ public final class Worker {
             LOGGER.debug("Query failed because of exception: ", future.getCause());
           }
 
-          // TODO replace the normal query complete message with an error report message.
-          sendMessageToMaster(IPCUtils.queryCompleteTM(query.getQueryID())).addListener(new ChannelFutureListener() {
+          sendMessageToMaster(
+              IPCUtils.queryFailureTM(query.getQueryID(), future.getCause(), query.getExecutionStatistics()))
+              .addListener(new ChannelFutureListener() {
 
-            @Override
-            public void operationComplete(final ChannelFuture future) throws Exception {
-              if (future.isSuccess()) {
-                if (LOGGER.isDebugEnabled()) {
-                  LOGGER.debug("The query complete message is sent to the master for sure ");
+                @Override
+                public void operationComplete(final ChannelFuture future) throws Exception {
+                  if (future.isSuccess()) {
+                    if (LOGGER.isDebugEnabled()) {
+                      LOGGER.debug("The query complete message is sent to the master for sure ");
+                    }
+                  }
                 }
-              }
-            }
 
-          });
+              });
 
         }
       }
