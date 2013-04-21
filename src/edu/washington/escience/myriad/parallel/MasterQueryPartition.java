@@ -246,6 +246,9 @@ public class MasterQueryPartition implements QueryPartition {
    * */
   final void queryReceivedByWorker(final int workerID) {
     WorkerExecutionInfo wei = workerExecutionInfo.get(workerID);
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug("Worker #{} received query#{}", workerID, queryID);
+    }
     wei.workerReceiveQuery.setSuccess();
   }
 
@@ -287,7 +290,9 @@ public class MasterQueryPartition implements QueryPartition {
    * @return the set of workers get assigned to run the query.
    * */
   final Set<Integer> getWorkerAssigned() {
-    return workerExecutionInfo.keySet();
+    Set<Integer> s = new HashSet<Integer>(workerExecutionInfo.keySet());
+    s.remove(MyriaConstants.MASTER_ID);
+    return s;
   }
 
   /**
@@ -296,6 +301,9 @@ public class MasterQueryPartition implements QueryPartition {
   final Set<Integer> getWorkersUnfinished() {
     Set<Integer> result = new HashSet<Integer>();
     for (Entry<Integer, WorkerExecutionInfo> e : workerExecutionInfo.entrySet()) {
+      if (e.getKey() == MyriaConstants.MASTER_ID) {
+        continue;
+      }
       QueryFuture workerExecutionFuture = e.getValue().workerCompleteQuery;
       if (!workerExecutionFuture.isDone()) {
         result.add(e.getKey());
@@ -360,7 +368,6 @@ public class MasterQueryPartition implements QueryPartition {
       workerExecutionInfo.put(workerInfo.getKey(), new WorkerExecutionInfo(workerInfo.getKey(), workerInfo.getValue()));
     }
     WorkerExecutionInfo masterPart = new WorkerExecutionInfo(MyriaConstants.MASTER_ID, new RootOperator[] { rootOp });
-    masterPart.workerReceiveQuery.setSuccess();
     workerExecutionInfo.put(MyriaConstants.MASTER_ID, masterPart);
 
     producerChannelMapping = new ConcurrentHashMap<ExchangeChannelID, ProducerChannel>();

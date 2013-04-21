@@ -719,7 +719,8 @@ public final class Worker {
       queryExecutor =
           (ThreadPoolExecutor) Executors.newCachedThreadPool(new RenamingThreadFactory("Blocking query executor"));
     }
-    messageProcessingExecutor = Executors.newCachedThreadPool(new RenamingThreadFactory("Control message processor"));
+    messageProcessingExecutor =
+        Executors.newCachedThreadPool(new RenamingThreadFactory("Control/Query message processor"));
     messageProcessingExecutor.submit(new QueryMessageProcessor());
     messageProcessingExecutor.submit(new ControlMessageProcessor());
     // Periodically detect if the server (i.e., coordinator)

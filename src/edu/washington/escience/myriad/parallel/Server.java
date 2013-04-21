@@ -579,7 +579,8 @@ public final class Server {
    * @throws DbException if any error occurs.
    * */
   private QueryFuture dispatchWorkerQueryPlans(final MasterQueryPartition mqp) throws DbException {
-
+    // directly set the master part as already received.
+    mqp.queryReceivedByWorker(MyriaConstants.MASTER_ID);
     for (final Map.Entry<Integer, RootOperator[]> e : mqp.getWorkerPlans().entrySet()) {
       final Integer workerID = e.getKey();
       while (!aliveWorkers.contains(workerID)) {

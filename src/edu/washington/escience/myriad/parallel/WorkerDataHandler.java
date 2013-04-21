@@ -196,8 +196,9 @@ public final class WorkerDataHandler extends SimpleChannelUpstreamHandler implem
         q = ownerWorker.getActiveQueries().get(queryId);
         if (q == null) {
           if (LOGGER.isErrorEnabled()) {
-            LOGGER.error("Unknown query id: {}, current active queries are: {}", queryId, ownerWorker
-                .getActiveQueries().keySet());
+            LOGGER.error(
+                "In receiving message {}, unknown query id: {}, current active queries are: {}, query contained? {}",
+                qm, queryId, ownerWorker.getActiveQueries().keySet(), ownerWorker.getActiveQueries().get(queryId));
           }
         } else {
           switch (qm.getType()) {
