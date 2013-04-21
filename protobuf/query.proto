@@ -26,7 +26,10 @@ message Query {
 
 message QueryReport {
   required bool success = 1; // if the query execution succeeds.
-  required uint64 elapse = 2; //elapse of query execution.
+  required ExecutionStatistics execution_statistics = 2;
   optional bytes cause = 3; // the cause of a failed execution. It should be a serialized java exception Object.
 }
 
+message ExecutionStatistics {
+  required uint64 elapse = 2; //elapse of query execution.
+}
