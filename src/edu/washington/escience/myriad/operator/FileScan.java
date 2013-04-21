@@ -179,7 +179,7 @@ public final class FileScan extends LeafOperator {
     Preconditions.checkArgument(inputStream != null, "FileScan input stream has not been set!");
     scanner = new Scanner(new BufferedReader(new InputStreamReader(inputStream)));
     if (commaIsDelimiter) {
-      scanner.useDelimiter("[\\n,]");
+      scanner.useDelimiter("[(\\r\\n)\\n,]");
     }
     lineNumber = 0;
   }
