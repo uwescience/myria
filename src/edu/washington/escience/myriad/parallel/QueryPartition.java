@@ -56,11 +56,6 @@ public interface QueryPartition extends Comparable<QueryPartition> {
   boolean isPaused();
 
   /**
-   * @return if the query is killed.
-   * */
-  boolean isKilled();
-
-  /**
    * @return the query execution statistics.
    * */
   QueryExecutionStatistics getExecutionStatistics();

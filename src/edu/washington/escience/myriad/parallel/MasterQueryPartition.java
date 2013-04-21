@@ -438,11 +438,6 @@ public class MasterQueryPartition implements QueryPartition {
   }
 
   @Override
-  public final boolean isKilled() {
-    return isKilled;
-  }
-
-  @Override
   public final void init() {
     rootTask.init(ImmutableMap.copyOf(master.getExecEnvVars()));
   }

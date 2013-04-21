@@ -349,11 +349,6 @@ public class WorkerQueryPartition implements QueryPartition {
   }
 
   @Override
-  public final boolean isKilled() {
-    return false;
-  }
-
-  @Override
   public final QueryExecutionStatistics getExecutionStatistics() {
     return queryStatistics;
   }
