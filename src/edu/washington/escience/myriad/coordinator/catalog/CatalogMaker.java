@@ -12,6 +12,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.commons.io.FilenameUtils;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -31,6 +32,8 @@ import edu.washington.escience.myriad.parallel.SocketInfo;
  * 
  */
 public final class CatalogMaker {
+  /** The logger for this class. */
+  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(CatalogMaker.class);
 
   /**
    * Used in Catalog creation.
@@ -327,6 +330,7 @@ public final class CatalogMaker {
       case 9:
         return "nine";
       default:
+        LOGGER.warn("no english for n={}", n);
         return n + "_";
     }
   }
