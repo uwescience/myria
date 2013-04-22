@@ -57,6 +57,7 @@ import edu.washington.escience.myriad.proto.DataProto.DataMessage;
 import edu.washington.escience.myriad.proto.QueryProto.QueryMessage;
 import edu.washington.escience.myriad.proto.QueryProto.QueryReport;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
+import edu.washington.escience.myriad.util.DateTimeUtils;
 import edu.washington.escience.myriad.util.IPCUtils;
 
 /**
@@ -786,8 +787,16 @@ public final class Server {
         }
 
         if (future.isSuccess()) {
+          if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("The query #{} succeeds. Time elapse: {}.", queryID, DateTimeUtils
+                .nanoElapseToHumanReadable(mqp.getExecutionStatistics().getQueryExecutionElapse()));
+          }
           // TODO success management.
         } else {
+          if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("The query #{} failes. Time elapse: {}. Failure cause is {}.", queryID, DateTimeUtils
+                .nanoElapseToHumanReadable(mqp.getExecutionStatistics().getQueryExecutionElapse()), future.getCause());
+          }
           // TODO failure management.
         }
       }

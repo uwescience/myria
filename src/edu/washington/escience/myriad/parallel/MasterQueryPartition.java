@@ -127,10 +127,25 @@ public class MasterQueryPartition implements QueryPartition {
       });
     }
 
-    final int workerID;
-    final RootOperator[] workerPlan;
-    final QueryFuture workerReceiveQuery;
-    final QueryFuture workerCompleteQuery;
+    /**
+     * The worker (maybe the master) who is executing the query partition.
+     * */
+    private final int workerID;
+
+    /**
+     * The query plan that's assigned to the worker.
+     * */
+    private final RootOperator[] workerPlan;
+
+    /**
+     * The future denoting the status of query partition dispatching to the worker event.
+     * */
+    private final QueryFuture workerReceiveQuery;
+
+    /**
+     * The future denoting the status of query partition execution on the worker.
+     * */
+    private final QueryFuture workerCompleteQuery;
   }
 
   /**
@@ -148,6 +163,9 @@ public class MasterQueryPartition implements QueryPartition {
    * */
   private volatile QuerySubTreeTask rootTask;
 
+  /***
+   * Statistics of this query partition.
+   */
   private final QueryExecutionStatistics queryStatistics = new QueryExecutionStatistics();
 
   /**
@@ -165,9 +183,19 @@ public class MasterQueryPartition implements QueryPartition {
    * */
   private volatile int priority;
 
+  /**
+   * The data structure denoting the query dispatching/execution status of each worker.
+   * */
   private final ConcurrentHashMap<Integer, WorkerExecutionInfo> workerExecutionInfo;
 
+  /**
+   * the number of workers currently received the query.
+   * */
   private final AtomicInteger nowReceived = new AtomicInteger();
+
+  /**
+   * The number of workers currently completed the query.
+   * */
   private final AtomicInteger nowCompleted = new AtomicInteger();
 
   /**
@@ -550,8 +578,14 @@ public class MasterQueryPartition implements QueryPartition {
     return queryStatistics;
   }
 
+  /**
+   * If the query has been asked to get killed (the kill event may not have completed).
+   * */
   private volatile boolean killed = false;
 
+  /**
+   * @return If the query has been asked to get killed (the kill event may not have completed).
+   * */
   public final boolean isKilled() {
     return killed;
   }

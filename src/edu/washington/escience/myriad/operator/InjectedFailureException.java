@@ -2,6 +2,9 @@ package edu.washington.escience.myriad.operator;
 
 import edu.washington.escience.myriad.DbException;
 
+/**
+ * Exception denoting a injected failure.
+ * */
 public class InjectedFailureException extends DbException {
 
   /**
@@ -9,14 +12,18 @@ public class InjectedFailureException extends DbException {
    */
   private static final long serialVersionUID = 1L;
 
-  public InjectedFailureException(String s) {
-    super(s);
-    // TODO Auto-generated constructor stub
+  /**
+   * @param message the message describing the exception.
+   * */
+  public InjectedFailureException(final String message) {
+    super(message);
   }
 
-  public InjectedFailureException(Throwable e) {
+  /**
+   * @param e the cause of this Exception.
+   * */
+  public InjectedFailureException(final Throwable e) {
     super(e);
-    // TODO Auto-generated constructor stub
   }
 
 }

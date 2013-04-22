@@ -107,7 +107,11 @@ public class WorkerQueryPartition implements QueryPartition {
 
   };
 
+  /***
+   * Statistics of this query partition.
+   */
   private final QueryExecutionStatistics queryStatistics = new QueryExecutionStatistics();
+
   /**
    * Producer channel mapping of current active queries.
    * */

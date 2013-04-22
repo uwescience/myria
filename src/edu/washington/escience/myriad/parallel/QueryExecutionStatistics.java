@@ -2,6 +2,9 @@ package edu.washington.escience.myriad.parallel;
 
 import edu.washington.escience.myriad.proto.QueryProto.ExecutionStatistics;
 
+/**
+ * This datastructure recording the various statistics of the execution of a query partition.
+ * */
 public class QueryExecutionStatistics {
 
   /**
@@ -29,7 +32,7 @@ public class QueryExecutionStatistics {
   }
 
   /**
-   * @return query execution elapse in nano.
+   * @return query execution elapse in nano seconds.
    * */
   public final long getQueryExecutionElapse() {
     return endAtInNano - startAtInNano;

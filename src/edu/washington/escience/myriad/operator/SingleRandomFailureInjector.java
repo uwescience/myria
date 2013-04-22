@@ -10,20 +10,58 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 
 /**
- * Inject a random failure in .
+ * Inject a random failure. The injection is conducted as the following:<br/>
+ * <ul>
+ * <li>At the time the operator is opened, the delay starts to count.</li>
+ * <li>Do nothing before delay expires.</li>
+ * <li>After delay expires, for each second, randomly decide if a failure should be injected, i.e. throw an
+ * {@link InjectedFailureException}, according to the failure probability.</li>
+ * </ul>
  * */
 public class SingleRandomFailureInjector extends Operator {
 
+  /**
+   * Logger.
+   * */
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(SingleRandomFailureInjector.class
       .getName());
 
+  /**
+   * Child.
+   * */
   private Operator child;
+
+  /**
+   * failure probability per second.
+   * */
   private final double failureProbabilityPerSecond;
+
+  /**
+   * Record if a failure is already injected. The class injects only a single failure.
+   * */
   private volatile boolean hasFailed;
+
+  /**
+   * Denoting if the next tuple retrieval event should trigger a failure.
+   * */
   private volatile boolean toFail;
+
+  /**
+   * failure inject thread. This thread decides if a failure should be injected.
+   * */
   private volatile Thread failureInjectThread;
+
+  /**
+   * delay in milliseconds.
+   * */
   private final long delayInMS;
 
+  /**
+   * @param delay the delay
+   * @param delayUnit the timeunit of the delay
+   * @param failureProbabilityPerSecond per second failure probability.
+   * @param child the child operator.
+   * */
   public SingleRandomFailureInjector(final long delay, final TimeUnit delayUnit,
       final double failureProbabilityPerSecond, final Operator child) {
     this.child = child;
@@ -70,7 +108,7 @@ public class SingleRandomFailureInjector extends Operator {
           }
           while (true) {
             try {
-              Thread.sleep(1000);
+              Thread.sleep(TimeUnit.SECONDS.toMillis(1));
             } catch (InterruptedException e) {
               if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug(SingleRandomFailureInjector.this + " exit during 1 second sleep.");
