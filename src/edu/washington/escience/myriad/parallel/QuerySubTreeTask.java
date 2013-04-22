@@ -394,7 +394,7 @@ final class QuerySubTreeTask {
       return root.eos();
     } catch (Throwable e) {
       if (LOGGER.isErrorEnabled()) {
-        LOGGER.error("Unexpected exception occur at operator excution, close directly. Operator: " + root, e);
+        LOGGER.error("Unexpected exception occur at operator excution. Operator: " + root, e);
       }
       taskExecutionFuture.setFailure(e);
     }

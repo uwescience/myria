@@ -1,7 +1,8 @@
 package edu.washington.escience.myriad.parallel;
 
-import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -34,19 +35,9 @@ public class WorkerQueryPartition implements QueryPartition {
   private final long queryID;
 
   /**
-   * The operators.
-   * */
-  private final RootOperator[] operators;
-
-  /**
    * All tasks.
    * */
-  private final ConcurrentHashMap<QuerySubTreeTask, Boolean> tasks;
-
-  /**
-   * Total number of tasks in this partition.
-   * */
-  private final int totalNumTasks;
+  private final Set<QuerySubTreeTask> tasks;
 
   /**
    * Number of finished tasks.
@@ -86,20 +77,16 @@ public class WorkerQueryPartition implements QueryPartition {
     @Override
     public void operationComplete(final QueryFuture future) throws Exception {
       QuerySubTreeTask drivingTask = (QuerySubTreeTask) (future.getAttachment());
-      if (!tasks.replace(drivingTask, false, true)) {
-        LOGGER.error("Duplicate task finish report: {} ", drivingTask);
-        return;
-      }
       int currentNumFinished = numFinishedTasks.incrementAndGet();
 
-      executionFuture.setProgress(1, currentNumFinished, totalNumTasks);
+      executionFuture.setProgress(1, currentNumFinished, tasks.size());
 
       drivingTask.cleanup();
       if (!future.isSuccess()) {
         failTasks.add(drivingTask);
       }
 
-      if (currentNumFinished >= totalNumTasks) {
+      if (currentNumFinished >= tasks.size()) {
         queryStatistics.markQueryEnd();
         if (LOGGER.isInfoEnabled()) {
           LOGGER.info("Query #" + queryID + " executed for "
@@ -152,21 +139,19 @@ public class WorkerQueryPartition implements QueryPartition {
    * */
   public WorkerQueryPartition(final RootOperator[] operators, final long queryID, final Worker ownerWorker) {
     this.queryID = queryID;
-    this.operators = operators;
-    tasks = new ConcurrentHashMap<QuerySubTreeTask, Boolean>(operators.length);
-    totalNumTasks = tasks.size();
+    tasks = new HashSet<QuerySubTreeTask>(operators.length);
     numFinishedTasks = new AtomicInteger(0);
     this.ownerWorker = ownerWorker;
     producerChannelMapping = new ConcurrentHashMap<ExchangeChannelID, ProducerChannel>();
     consumerChannelMapping = new ConcurrentHashMap<ExchangeChannelID, ConsumerChannel>();
-    for (final RootOperator taskRootOp : this.operators) {
+    for (final RootOperator taskRootOp : operators) {
       final QuerySubTreeTask drivingTask =
           new QuerySubTreeTask(ownerWorker.getIPCConnectionPool().getMyIPCID(), this, taskRootOp, ownerWorker
               .getQueryExecutor(), QueryExecutionMode.NON_BLOCKING);
       QueryFuture taskExecutionFuture = drivingTask.getExecutionFuture();
       taskExecutionFuture.addListener(taskExecutionListener);
 
-      tasks.put(drivingTask, new Boolean(false));
+      tasks.add(drivingTask);
 
       for (Consumer c : drivingTask.getInputChannels().values()) {
         for (ConsumerChannel cc : c.getExchangeChannels()) {
@@ -226,7 +211,7 @@ public class WorkerQueryPartition implements QueryPartition {
   @Override
   public final void init() {
 
-    for (QuerySubTreeTask t : tasks.keySet()) {
+    for (QuerySubTreeTask t : tasks) {
       t.init(ImmutableMap.copyOf(ownerWorker.getExecEnvVars()));
     }
 
@@ -245,13 +230,6 @@ public class WorkerQueryPartition implements QueryPartition {
     return priority - o.getPriority();
   }
 
-  /**
-   * @return the root operators belonging to this query partition.
-   * */
-  public final RootOperator[] getOperators() {
-    return operators;
-  }
-
   @Override
   public final void setPriority(final int priority) {
     this.priority = priority;
@@ -259,7 +237,7 @@ public class WorkerQueryPartition implements QueryPartition {
 
   @Override
   public final String toString() {
-    return Arrays.toString(operators) + ", priority:" + priority;
+    return tasks + ", priority:" + priority;
   }
 
   @Override
@@ -268,7 +246,7 @@ public class WorkerQueryPartition implements QueryPartition {
       LOGGER.info("Query : " + getQueryID() + " start processing.");
     }
     queryStatistics.markQueryStart();
-    for (QuerySubTreeTask t : tasks.keySet()) {
+    for (QuerySubTreeTask t : tasks) {
       t.nonBlockingExecute();
     }
   }
@@ -281,7 +259,7 @@ public class WorkerQueryPartition implements QueryPartition {
     if (LOGGER.isInfoEnabled()) {
       LOGGER.info("Query : " + getQueryID() + " start processing.");
     }
-    for (QuerySubTreeTask t : tasks.keySet()) {
+    for (QuerySubTreeTask t : tasks) {
       t.blockingExecute();
     }
   }
@@ -337,9 +315,8 @@ public class WorkerQueryPartition implements QueryPartition {
    * */
   @Override
   public final void kill() {
-    for (Map.Entry<QuerySubTreeTask, Boolean> e : tasks.entrySet()) {
-      QuerySubTreeTask t = e.getKey();
-      t.kill();
+    for (QuerySubTreeTask task : tasks) {
+      task.kill();
     }
   }
 
