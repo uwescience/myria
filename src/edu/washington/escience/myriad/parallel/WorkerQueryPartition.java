@@ -80,10 +80,17 @@ public class WorkerQueryPartition implements QueryPartition {
       int currentNumFinished = numFinishedTasks.incrementAndGet();
 
       executionFuture.setProgress(1, currentNumFinished, tasks.size());
-
+      Throwable failureReason = future.getCause();
       drivingTask.cleanup();
       if (!future.isSuccess()) {
         failTasks.add(drivingTask);
+        if (!(failureReason instanceof QueryKilledException)) {
+          // The task is a failure, not killed.
+          for (QuerySubTreeTask t : tasks) {
+            // kill other tasks
+            t.kill();
+          }
+        }
       }
 
       if (currentNumFinished >= tasks.size()) {

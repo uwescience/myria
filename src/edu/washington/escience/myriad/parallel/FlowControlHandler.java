@@ -71,6 +71,7 @@ public final class FlowControlHandler extends SimpleChannelHandler {
           case EOI:
             break;
           case BOS:
+            // TODO how about operator fails already
             // At the beginning of a stream, record the operator id.
             final long operatorID = data.getOperatorID();
             if (ecp == null) {
