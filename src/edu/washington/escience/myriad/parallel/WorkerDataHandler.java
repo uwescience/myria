@@ -14,6 +14,8 @@ import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnFactory;
 import edu.washington.escience.myriad.operator.RootOperator;
@@ -92,87 +94,73 @@ public final class WorkerDataHandler extends SimpleChannelUpstreamHandler implem
     }
     final ChannelContext cs = (ChannelContext) ch.getAttachment();
     ExchangeChannelPair ecp = (ExchangeChannelPair) cs.getAttachment();
-    switch (dm.getType()) {
+    DATAMESSAGE_PROCESSING : switch (dm.getType()) {
       case NORMAL:
-        ConsumerChannel cc = ecp.getInputChannel();
-        Consumer op = cc.getOwnerConsumer();
-        final List<ColumnMessage> columnMessages = dm.getColumnsList();
-        final Column<?>[] columnArray = new Column<?>[columnMessages.size()];
-        int idx = 0;
-        for (final ColumnMessage cm : columnMessages) {
-          columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm, dm.getNumTuples());
-        }
-        final List<Column<?>> columns = Arrays.asList(columnArray);
-
-        pushToBufferSucceed =
-            op.getInputBuffer()
-                .offer(
-                    new ExchangeData(op.getOperatorID(), remoteID, columns, op.getSchema(), dm.getNumTuples(), dm
-                        .getSeq()));
-        cc.getOwnerTask().notifyNewInput();
-        break;
       case EOI:
-        cc = ecp.getInputChannel();
-        op = cc.getOwnerConsumer();
-        if (op.getInputBuffer() == null) {
-          if (cc.getOwnerTask().isFinished()) {
-            if (LOGGER.isDebugEnabled()) {
-              LOGGER.debug("Iteration EOI input for iteration input of IDBInput. Drop directly.");
-            }
-          } else {
-            if (LOGGER.isErrorEnabled()) {
-              LOGGER.error("Operator inputbuffer is null.", new NullPointerException("Operator inputbuffer is null"));
-            }
-          }
-        } else {
-          pushToBufferSucceed =
-              op.getInputBuffer()
-                  .offer(new ExchangeData(op.getOperatorID(), remoteID, op.getSchema(), MetaMessage.EOI));
-          cc.getOwnerTask().notifyNewInput();
-        }
-        break;
-      case BOS:
-        break;
       case EOS:
-        cc = ecp.getInputChannel();
-        // if (cc != null) {
-        // eosReceived.put(ch.getId(), cc.op);
-        // }
-        // if (cc == null) {
-        // Consumer supposed = eosReceived.get(ch.getId());
-        // LOGGER.debug("" + supposed);
-        // } else if (cc.op == null) {
-        // LOGGER.debug("");
-        // }
+        ConsumerChannel cc = ecp.getInputChannel();
+        Consumer msgOwnerOp = cc.getOwnerConsumer();
+        ExchangePairID msgOwnerOpID = msgOwnerOp.getOperatorID();
+        Schema msgOwnerOpSchema = msgOwnerOp.getSchema();
+        QuerySubTreeTask msgOwnerTask = cc.getOwnerTask();
+        InputBuffer<TupleBatch, ExchangeData> msgDestIB = msgOwnerOp.getInputBuffer();
 
-        if (LOGGER.isDebugEnabled()) {
-          LOGGER.debug("EOS message @ WorkerDataHandler; worker[" + remoteID + "]; opID["
-              + cc.getOwnerConsumer().getOperatorID() + "]");
-        }
-
-        op = cc.getOwnerConsumer();
-        if (op.getInputBuffer() == null) {
+        if (msgDestIB == null) {
           // This happens at the iteration input child, because IDBInput emits EOS without EOS input from the
           // iteration
           // child. The driving task of IDBInput will terminate and cleanup before the iteration input child
           // receives
           // an EOS from the final EOS iteration. It doesn't affect working but logically incorrect.
-          // TODO refactoring of the operator interface may solve this.
+          // And if the destination task failed or got killed.
           if (cc.getOwnerTask().isFinished()) {
+            // The processing query already ends, drop the messages.
             if (LOGGER.isDebugEnabled()) {
-              LOGGER.debug("Iteration EOS input for iteration input of IDBInput. Drop directly.");
+              LOGGER.debug("Drop Data messge because the destination operator already ends.: {}", dm);
             }
           } else {
             if (LOGGER.isErrorEnabled()) {
-              LOGGER.error("Operator inputbuffer is null.", new NullPointerException("Operator inputbuffer is null"));
+              LOGGER.error("Operator inputbuffer is null when receiving message " + dm
+                  + ". The destination operator is : " + msgOwnerOp + ".", new NullPointerException(
+                  "Operator inputbuffer is null"));
             }
           }
-        } else {
-          pushToBufferSucceed =
-              op.getInputBuffer()
-                  .offer(new ExchangeData(op.getOperatorID(), remoteID, op.getSchema(), MetaMessage.EOS));
-          cc.getOwnerTask().notifyNewInput();
+          pushToBufferSucceed = true;
+          break DATAMESSAGE_PROCESSING;
         }
+
+        ExchangeData ed = null;
+        switch (dm.getType()) {
+          case NORMAL:
+
+            final List<ColumnMessage> columnMessages = dm.getColumnsList();
+            final Column<?>[] columnArray = new Column<?>[columnMessages.size()];
+            int idx = 0;
+            for (final ColumnMessage cm : columnMessages) {
+              columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm, dm.getNumTuples());
+            }
+            final List<Column<?>> columns = Arrays.asList(columnArray);
+
+            ed = new ExchangeData(msgOwnerOpID, remoteID, columns, msgOwnerOpSchema, dm.getNumTuples(), dm.getSeq());
+            msgOwnerTask.notifyNewInput();
+            break;
+          case EOI:
+            ed = new ExchangeData(msgOwnerOpID, remoteID, msgOwnerOpSchema, MetaMessage.EOI);
+            break;
+
+          case EOS:
+
+            if (LOGGER.isDebugEnabled()) {
+              LOGGER.debug("EOS message @ WorkerDataHandler; worker[" + remoteID + "]; opID["
+                  + cc.getOwnerConsumer().getOperatorID() + "]");
+            }
+
+            ed = new ExchangeData(msgOwnerOpID, remoteID, msgOwnerOpSchema, MetaMessage.EOS);
+            break;
+        }
+        pushToBufferSucceed = msgDestIB.offer(ed);
+        msgOwnerTask.notifyNewInput();
+        break;
+      case BOS:
         break;
     }
     return pushToBufferSucceed;
