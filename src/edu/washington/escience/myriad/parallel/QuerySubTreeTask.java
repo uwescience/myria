@@ -11,8 +11,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.commons.lang3.builder.ToStringBuilder;
-
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.DbException;
@@ -64,12 +62,12 @@ final class QuerySubTreeTask {
   /**
    * Non-blocking execution task.
    * */
-  private final Callable<Boolean> nonBlockingExecutionTask;
+  private final Callable<Object> nonBlockingExecutionTask;
 
   /**
    * Blocking execution task.
    * */
-  private final Callable<Boolean> blockingExecutionTask;
+  private final Callable<Object> blockingExecutionTask;
 
   /**
    * Current execution mode.
@@ -99,7 +97,7 @@ final class QuerySubTreeTask {
   /**
    * The handle for managing the execution of the task.
    * */
-  private volatile Future<Boolean> executionHandle;
+  private volatile Future<Object> executionHandle;
 
   /**
    * Protect the output channel status.
@@ -136,11 +134,12 @@ final class QuerySubTreeTask {
     this.executionMode = executionMode;
     if (this.executionMode == QueryExecutionMode.NON_BLOCKING) {
       nonBlockingExecutionCondition =
-          new AtomicInteger(OUTPUT_AVAILABLE | INPUT_AVAILABLE | NOT_PAUSED | NOT_KILLED | NOT_EOS | NOT_IN_EXECUTION
-              | EXECUTION_MODE_NON_BLOCKING);
+          new AtomicInteger(STATE_OUTPUT_AVAILABLE | STATE_INPUT_AVAILABLE | STATE_NOT_PAUSED | STATE_NOT_KILLED
+              | STATE_NOT_EOS | STATE_NOT_IN_EXECUTION | STATE_EXECUTION_MODE_NON_BLOCKING);
     } else {
       nonBlockingExecutionCondition =
-          new AtomicInteger(OUTPUT_AVAILABLE | INPUT_AVAILABLE | NOT_PAUSED | NOT_KILLED | NOT_EOS | NOT_IN_EXECUTION);
+          new AtomicInteger(STATE_OUTPUT_AVAILABLE | STATE_INPUT_AVAILABLE | STATE_NOT_PAUSED | STATE_NOT_KILLED
+              | STATE_NOT_EOS | STATE_NOT_IN_EXECUTION);
     }
     this.root = root;
     myExecutor = executor;
@@ -160,33 +159,36 @@ final class QuerySubTreeTask {
       outputChannelAvailable.set(i);
     }
     inBlockingExecution = false;
-    nonBlockingExecutionTask = new Callable<Boolean>() {
+    // The return result means nothing here, just to make the Callable generic happy.
+    nonBlockingExecutionTask = new Callable<Object>() {
       @Override
-      public Boolean call() throws Exception {
+      public Object call() throws Exception {
         // synchronized to keep memory consistency
         synchronized (executionLock) {
           try {
-            return QuerySubTreeTask.this.executeNonBlocking();
+            QuerySubTreeTask.this.executeNonBlocking();
           } finally {
             executionHandle = null;
-            if (isKilled()) {
-              taskExecutionFuture.setFailure(new QueryKilledException("Task gets killed"));
-            } else {
-              if (Thread.interrupted()) {
-                Thread.currentThread().interrupt();
-                // Normally they should be killed tasks
-                taskExecutionFuture.setFailure(new InterruptedException("Task gets interrupted"));
-              }
-            }
+            // if (isKilled()) {
+            // taskExecutionFuture.setFailure(new QueryKilledException("Task gets killed"));
+            // } else {
+            // if (Thread.interrupted()) {
+            // Thread.currentThread().interrupt();
+            // Normally they should be killed tasks
+            // taskExecutionFuture.setFailure(new InterruptedException("Task gets interrupted"));
+            // }
+            // }
           }
+          return null;
         }
       }
     };
 
-    blockingExecutionTask = new Callable<Boolean>() {
+    blockingExecutionTask = new Callable<Object>() {
       @Override
-      public Boolean call() throws Exception {
-        return QuerySubTreeTask.this.executeBlocking();
+      public Object call() throws Exception {
+        QuerySubTreeTask.this.executeBlocking();
+        return null;
       }
     };
   }
@@ -251,7 +253,7 @@ final class QuerySubTreeTask {
    * @return if the task is finished
    * */
   public boolean isFinished() {
-    return isEOS() || isKilled();
+    return taskExecutionFuture.isDone();
   }
 
   /**
@@ -342,7 +344,45 @@ final class QuerySubTreeTask {
 
   @Override
   public String toString() {
-    return ToStringBuilder.reflectionToString(this);
+    long queryID = ownerQuery.getQueryID();
+    Operator rootOp = root;
+
+    StringBuilder stateS = new StringBuilder();
+    int state = nonBlockingExecutionCondition.get();
+    String splitter = "";
+    if ((state & STATE_EXECUTION_MODE_NON_BLOCKING) != 0) {
+      stateS.append(splitter + "Non_Blocking");
+      splitter = " | ";
+    }
+    if ((state & QuerySubTreeTask.STATE_INITIALIZED) != 0) {
+      stateS.append(splitter + "Initialized");
+      splitter = " | ";
+    }
+    if ((state & QuerySubTreeTask.STATE_INPUT_AVAILABLE) != 0) {
+      stateS.append(splitter + "Input_Available");
+      splitter = " | ";
+    }
+    if ((state & QuerySubTreeTask.STATE_NOT_EOS) == 0) {
+      stateS.append(splitter + "EOS");
+      splitter = " | ";
+    }
+    if ((state & QuerySubTreeTask.STATE_NOT_IN_EXECUTION) == 0) {
+      stateS.append(splitter + "In_Execution");
+      splitter = " | ";
+    }
+    if ((state & QuerySubTreeTask.STATE_NOT_KILLED) == 0) {
+      stateS.append(splitter + "Killed");
+      splitter = " | ";
+    }
+    if ((state & QuerySubTreeTask.STATE_NOT_PAUSED) == 0) {
+      stateS.append(splitter + "Paused");
+      splitter = " | ";
+    }
+    if ((state & QuerySubTreeTask.STATE_OUTPUT_AVAILABLE) != 0) {
+      stateS.append(splitter + "Output_Available");
+      splitter = " | ";
+    }
+    return String.format("Task: { Owner QID: %d, Root Op: %s, State: %s }", queryID, rootOp, stateS.toString());
   }
 
   /**
@@ -350,55 +390,67 @@ final class QuerySubTreeTask {
    * 
    * @return if the task is EOS.
    * */
-  private Boolean executeNonBlocking() {
-    try {
+  private Object executeNonBlocking() {
 
-      NON_BLOCKING_EXECUTE : while (true) {
-        if (Thread.interrupted()) {
-          Thread.currentThread().interrupt();
-          if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Operator task execution interrupted. Root operator: " + root + ". Close directly.");
-          }
-
-          break;
+    Throwable failureCause = null;
+    NON_BLOCKING_EXECUTE : while (true) {
+      if (Thread.interrupted()) {
+        Thread.currentThread().interrupt();
+        if (LOGGER.isDebugEnabled()) {
+          LOGGER.debug("Operator task execution interrupted. Root operator: " + root + ". Close directly.");
         }
+        AtomicUtils.bitwiseOrAndGet(nonBlockingExecutionCondition, STATE_INTERRUPTED);
 
-        if (ownerQuery.isPaused()) {
-          // the owner query is paused, exit execution.
-          if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Operator task execution paused because the query is paused. Root operator: {}.", root);
-          }
-          break;
+        // TODO clean up task state
+      } else if (ownerQuery.isPaused()) {
+        // the owner query is paused, exit execution.
+        if (LOGGER.isDebugEnabled()) {
+          LOGGER.debug("Operator task execution paused because the query is paused. Root operator: {}.", root);
         }
+      } else {
+        // do the execution
 
         clearInput(); // clear input at beginning.
 
-        root.nextReady();
-
-        if (root.eos()) {
-          setEOS();
-          taskExecutionFuture.setSuccess();
-        }
-
-        // Check if another round of execution is needed.
-        int oldV = nonBlockingExecutionCondition.get();
-        while ((oldV & NON_BLOCKING_EXECUTION_CONTINUE) != NON_BLOCKING_EXECUTION_CONTINUE) {
-          if (nonBlockingExecutionCondition.compareAndSet(oldV, oldV | NOT_IN_EXECUTION)) {
-            // exit execution.
-            break NON_BLOCKING_EXECUTE;
+        try {
+          root.nextReady();
+        } catch (final Throwable e) {
+          if (LOGGER.isErrorEnabled()) {
+            LOGGER.error("Unexpected exception occur at operator excution. Operator: " + root, e);
           }
-          oldV = nonBlockingExecutionCondition.get();
+          failureCause = e;
+          AtomicUtils.bitwiseOrAndGet(nonBlockingExecutionCondition, STATE_FAIL);
         }
+
       }
 
-      return root.eos();
-    } catch (Throwable e) {
-      if (LOGGER.isErrorEnabled()) {
-        LOGGER.error("Unexpected exception occur at operator excution. Operator: " + root, e);
+      // Check if another round of execution is needed.
+      int oldV = nonBlockingExecutionCondition.get();
+      while (oldV != NON_BLOCKING_EXECUTION_CONTINUE) {
+        if (nonBlockingExecutionCondition.compareAndSet(oldV, oldV | STATE_NOT_IN_EXECUTION)) {
+          // exit execution.
+          break NON_BLOCKING_EXECUTE;
+        }
+        oldV = nonBlockingExecutionCondition.get();
       }
-      taskExecutionFuture.setFailure(e);
+
     }
-    return true;
+
+    // clear interrupted
+    AtomicUtils.bitwiseAndAndGet(nonBlockingExecutionCondition, ~STATE_INTERRUPTED);
+
+    if ((nonBlockingExecutionCondition.get() & STATE_FAIL) == STATE_FAIL) {
+      // failed
+      taskExecutionFuture.setFailure(failureCause);
+    } else if (root.eos()) {
+      setEOS();
+      taskExecutionFuture.setSuccess();
+    } else if ((nonBlockingExecutionCondition.get() & STATE_NOT_KILLED) != STATE_NOT_KILLED) {
+      // killed
+      taskExecutionFuture.setFailure(new QueryKilledException("Task gets killed"));
+    }
+
+    return null;
   }
 
   /**
@@ -409,123 +461,134 @@ final class QuerySubTreeTask {
   /**
    * The task is initialized.
    */
-  private static final int INITIALIZED = 0x01;
+  private static final int STATE_INITIALIZED = 0x01;
 
   /**
    * Mark the task state as initialized.
    * */
   private void setInitialized() {
-    AtomicUtils.bitwiseOrAndGet(nonBlockingExecutionCondition, INITIALIZED);
+    AtomicUtils.bitwiseOrAndGet(nonBlockingExecutionCondition, STATE_INITIALIZED);
   }
 
   /**
    * All output of the task are available.
    */
-  private static final int OUTPUT_AVAILABLE = 0x02;
+  private static final int STATE_OUTPUT_AVAILABLE = 0x02;
 
   /**
    * Mark the output is available.
    * */
   private void setOutputAvailable() {
-    AtomicUtils.bitwiseOrAndGet(nonBlockingExecutionCondition, OUTPUT_AVAILABLE);
+    AtomicUtils.bitwiseOrAndGet(nonBlockingExecutionCondition, STATE_OUTPUT_AVAILABLE);
   }
 
   /**
    * Mark the output is disabled.
    * */
   private void setOutputDisabled() {
-    AtomicUtils.bitwiseAndAndGet(nonBlockingExecutionCondition, ~OUTPUT_AVAILABLE);
+    AtomicUtils.bitwiseAndAndGet(nonBlockingExecutionCondition, ~STATE_OUTPUT_AVAILABLE);
   }
 
   /**
    * @return if the output channels are available for writing.
    * */
   private boolean isOutputAvailable() {
-    return (nonBlockingExecutionCondition.get() & OUTPUT_AVAILABLE) == OUTPUT_AVAILABLE;
+    return (nonBlockingExecutionCondition.get() & STATE_OUTPUT_AVAILABLE) == STATE_OUTPUT_AVAILABLE;
   }
 
   /**
    * The current execution mode is non-blocking.
    */
-  private static final int EXECUTION_MODE_NON_BLOCKING = 0x04;
+  private static final int STATE_EXECUTION_MODE_NON_BLOCKING = 0x04;
 
   /**
    * Any input of the task is available.
    */
-  private static final int INPUT_AVAILABLE = 0x08;
+  private static final int STATE_INPUT_AVAILABLE = 0x08;
 
   /**
    * Mark input available.
    * */
   private void setInputAvailable() {
-    AtomicUtils.bitwiseOrAndGet(nonBlockingExecutionCondition, INPUT_AVAILABLE);
+    AtomicUtils.bitwiseOrAndGet(nonBlockingExecutionCondition, STATE_INPUT_AVAILABLE);
   }
 
   /**
    * Clear the input available bit.
    * */
   private void clearInput() {
-    AtomicUtils.bitwiseAndAndGet(nonBlockingExecutionCondition, ~INPUT_AVAILABLE);
+    AtomicUtils.bitwiseAndAndGet(nonBlockingExecutionCondition, ~STATE_INPUT_AVAILABLE);
   }
 
   /**
    * The task is paused.
    */
-  private static final int NOT_PAUSED = 0x10;
+  private static final int STATE_NOT_PAUSED = 0x10;
 
   /**
    * The task is killed.
    */
-  private static final int NOT_KILLED = 0x20;
+  private static final int STATE_NOT_KILLED = 0x20;
 
   /**
    * Change the task's state to be killed.
    * */
   private void setKilled() {
-    AtomicUtils.bitwiseAndAndGet(nonBlockingExecutionCondition, ~NOT_KILLED);
+    AtomicUtils.bitwiseAndAndGet(nonBlockingExecutionCondition, ~STATE_NOT_KILLED);
   }
 
   /**
    * @return if the task is already get killed.
    * */
   private boolean isKilled() {
-    return (nonBlockingExecutionCondition.get() & NOT_KILLED) == 0;
+    return (nonBlockingExecutionCondition.get() & STATE_NOT_KILLED) == 0;
   }
 
   /**
    * The task is not EOS.
    * */
-  private static final int NOT_EOS = 0x40;
+  private static final int STATE_NOT_EOS = 0x40;
 
   /**
    * Change the task's state to be EOS.
    * */
   private void setEOS() {
-    AtomicUtils.bitwiseAndAndGet(nonBlockingExecutionCondition, ~NOT_EOS);
+    AtomicUtils.bitwiseAndAndGet(nonBlockingExecutionCondition, ~STATE_NOT_EOS);
   }
 
   /**
    * @return if the task is already EOS.
    * */
   private boolean isEOS() {
-    return (nonBlockingExecutionCondition.get() & NOT_EOS) == 0;
+    return (nonBlockingExecutionCondition.get() & STATE_NOT_EOS) == 0;
   }
 
   /**
    * The task is currently not in execution.
    * */
-  private static final int NOT_IN_EXECUTION = 0x80;
+  private static final int STATE_NOT_IN_EXECUTION = 0x80;
+
+  /**
+   * The task fails because of uncaught exception.
+   * */
+  private static final int STATE_FAIL = 0x100;
+
+  /**
+   * The task execution thread is interrupted.
+   * */
+  private static final int STATE_INTERRUPTED = 0x200;
 
   /**
    * Non-blocking ready condition.
    */
-  public static final int NON_BLOCKING_EXECUTION_READY = INITIALIZED | OUTPUT_AVAILABLE | EXECUTION_MODE_NON_BLOCKING
-      | INPUT_AVAILABLE | NOT_PAUSED | NOT_KILLED | NOT_EOS | NOT_IN_EXECUTION;
+  public static final int NON_BLOCKING_EXECUTION_READY = STATE_INITIALIZED | STATE_OUTPUT_AVAILABLE
+      | STATE_EXECUTION_MODE_NON_BLOCKING | STATE_INPUT_AVAILABLE | STATE_NOT_PAUSED | STATE_NOT_KILLED | STATE_NOT_EOS
+      | STATE_NOT_IN_EXECUTION;
 
   /**
    * Non-blocking continue.
    */
-  public static final int NON_BLOCKING_EXECUTION_CONTINUE = NON_BLOCKING_EXECUTION_READY & ~NOT_IN_EXECUTION;
+  public static final int NON_BLOCKING_EXECUTION_CONTINUE = NON_BLOCKING_EXECUTION_READY & ~STATE_NOT_IN_EXECUTION;
 
   /**
    * @return if blocking execution is ready.
@@ -541,7 +604,7 @@ final class QuerySubTreeTask {
    * 
    * @return true if successfully executed and the root is EOS.
    * */
-  private Boolean executeBlocking() {
+  private Object executeBlocking() {
     try {
 
       synchronized (executionLock) {
@@ -575,14 +638,14 @@ final class QuerySubTreeTask {
     } finally {
       inBlockingExecution = false;
     }
-    return true;
+    return null;
   }
 
   /**
    * clean up the task, release resources, etc.
    * */
   public void cleanup() {
-    if (AtomicUtils.unsetBitIfSet(nonBlockingExecutionCondition, Integer.numberOfTrailingZeros(INITIALIZED))) {
+    if (AtomicUtils.unsetBitIfSet(nonBlockingExecutionCondition, Integer.numberOfTrailingZeros(STATE_INITIALIZED))) {
       // Only cleanup if initialized.
       try {
         synchronized (executionLock) {
@@ -604,31 +667,68 @@ final class QuerySubTreeTask {
     if (isKilled()) {
       return;
     }
-    setKilled();
-    final Future<Boolean> executionHandleLocal = executionHandle;
-    if (executionHandleLocal != null) {
-      // Abruptly cancel the execution
-      executionHandleLocal.cancel(true);
-    } else {
-      taskExecutionFuture.setFailure(new QueryKilledException("Task gets killed"));
+    while (!isKilled()) {
+
+      int oldV = nonBlockingExecutionCondition.get();
+      int notKilledInExec = (oldV | STATE_NOT_KILLED) & (~STATE_NOT_IN_EXECUTION);
+      int killed = oldV & (~STATE_NOT_KILLED);
+      if (nonBlockingExecutionCondition.compareAndSet(notKilledInExec, killed)) {
+        // in execution, try to interrupt the execution thread, and let the execution thread to take care of the killing
+        while ((nonBlockingExecutionCondition.get() & STATE_NOT_IN_EXECUTION) != STATE_NOT_IN_EXECUTION
+            && executionHandle == null) {
+          Thread.yield();
+        }
+
+        final Future<Object> executionHandleLocal = executionHandle;
+        if (executionHandleLocal != null) {
+          // Abruptly cancel the execution
+          executionHandleLocal.cancel(true);
+        }
+      }
+      oldV = nonBlockingExecutionCondition.get();
+      int notKilledNotInExec = oldV | STATE_NOT_KILLED | STATE_NOT_IN_EXECUTION;
+      killed = oldV & (~STATE_NOT_KILLED);
+      if (nonBlockingExecutionCondition.compareAndSet(notKilledNotInExec, killed)) {
+        // not in execution, kill the query here
+        taskExecutionFuture.setFailure(new QueryKilledException("Task gets killed"));
+      }
     }
+
+    // int oldV = nonBlockingExecutionCondition.get();
+    // while ((oldV & NON_BLOCKING_EXECUTION_CONTINUE) != NON_BLOCKING_EXECUTION_CONTINUE) {
+    // if (nonBlockingExecutionCondition.compareAndSet(NON_BLOCKING_EXECUTION_CONTINUE, NON_BLOCKING_EXECUTION_CONTINUE
+    // | STATE_NOT_IN_EXECUTION)) {
+    // // exit execution.
+    // break NON_BLOCKING_EXECUTE;
+    // }
+    // // oldV = nonBlockingExecutionCondition.get();
+    //
+    // }
+
+    // final Future<Object> executionHandleLocal = executionHandle;
+    // if (executionHandleLocal != null) {
+    // // Abruptly cancel the execution
+    // executionHandleLocal.cancel(true);
+    // }
+    // else {
+    // taskExecutionFuture.setFailure(new QueryKilledException("Task gets killed"));
+    // }
   }
 
   /**
    * Execute this task in non-blocking mode.
    * */
   public void nonBlockingExecute() {
-    int oldV = nonBlockingExecutionCondition.get();
-    if ((oldV & NON_BLOCKING_EXECUTION_READY) == NON_BLOCKING_EXECUTION_READY) {
-      if (nonBlockingExecutionCondition.compareAndSet(oldV, oldV & ~NOT_IN_EXECUTION)) {
-        // set in execution.
-        executionHandle = myExecutor.submit(nonBlockingExecutionTask);
-        if (isKilled()) {
-          // check if killed because the kill may happen right between the NON_IN_EXECUTION bit is unset and the
-          // executionHandle is set.
-          executionHandle.cancel(true);
-        }
-      }
+
+    if (nonBlockingExecutionCondition.compareAndSet(NON_BLOCKING_EXECUTION_READY, NON_BLOCKING_EXECUTION_READY
+        & ~STATE_NOT_IN_EXECUTION)) {
+      // set in execution.
+      executionHandle = myExecutor.submit(nonBlockingExecutionTask);
+      // if (isKilled()) {
+      // // check if killed because the kill may happen right between the NON_IN_EXECUTION bit is unset and the
+      // // executionHandle is set.
+      // executionHandle.cancel(true);
+      // }
     }
   }
 

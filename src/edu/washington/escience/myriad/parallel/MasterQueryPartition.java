@@ -130,6 +130,7 @@ public class MasterQueryPartition implements QueryPartition {
     /**
      * The worker (maybe the master) who is executing the query partition.
      * */
+    @SuppressWarnings("unused")
     private final int workerID;
 
     /**
