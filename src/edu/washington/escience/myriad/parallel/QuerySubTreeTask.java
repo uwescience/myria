@@ -135,11 +135,11 @@ final class QuerySubTreeTask {
     if (this.executionMode == QueryExecutionMode.NON_BLOCKING) {
       nonBlockingExecutionCondition =
           new AtomicInteger(STATE_OUTPUT_AVAILABLE | STATE_INPUT_AVAILABLE | STATE_NOT_PAUSED | STATE_NOT_KILLED
-              | STATE_NOT_EOS | STATE_NOT_IN_EXECUTION | STATE_EXECUTION_MODE_NON_BLOCKING);
+              | STATE_NOT_EOS | STATE_EXECUTION_MODE_NON_BLOCKING);
     } else {
       nonBlockingExecutionCondition =
           new AtomicInteger(STATE_OUTPUT_AVAILABLE | STATE_INPUT_AVAILABLE | STATE_NOT_PAUSED | STATE_NOT_KILLED
-              | STATE_NOT_EOS | STATE_NOT_IN_EXECUTION);
+              | STATE_NOT_EOS);
     }
     this.root = root;
     myExecutor = executor;
@@ -169,15 +169,6 @@ final class QuerySubTreeTask {
             QuerySubTreeTask.this.executeNonBlocking();
           } finally {
             executionHandle = null;
-            // if (isKilled()) {
-            // taskExecutionFuture.setFailure(new QueryKilledException("Task gets killed"));
-            // } else {
-            // if (Thread.interrupted()) {
-            // Thread.currentThread().interrupt();
-            // Normally they should be killed tasks
-            // taskExecutionFuture.setFailure(new InterruptedException("Task gets interrupted"));
-            // }
-            // }
           }
           return null;
         }
@@ -350,35 +341,40 @@ final class QuerySubTreeTask {
     StringBuilder stateS = new StringBuilder();
     int state = nonBlockingExecutionCondition.get();
     String splitter = "";
-    if ((state & STATE_EXECUTION_MODE_NON_BLOCKING) != 0) {
+    if ((state & STATE_EXECUTION_MODE_NON_BLOCKING) == STATE_EXECUTION_MODE_NON_BLOCKING) {
       stateS.append(splitter + "Non_Blocking");
       splitter = " | ";
     }
-    if ((state & QuerySubTreeTask.STATE_INITIALIZED) != 0) {
+    if ((state & QuerySubTreeTask.STATE_INITIALIZED) == STATE_INITIALIZED) {
       stateS.append(splitter + "Initialized");
       splitter = " | ";
     }
-    if ((state & QuerySubTreeTask.STATE_INPUT_AVAILABLE) != 0) {
+    if ((state & QuerySubTreeTask.STATE_INPUT_AVAILABLE) == STATE_INPUT_AVAILABLE) {
       stateS.append(splitter + "Input_Available");
       splitter = " | ";
     }
-    if ((state & QuerySubTreeTask.STATE_NOT_EOS) == 0) {
+    if ((state & QuerySubTreeTask.STATE_NOT_EOS) != STATE_NOT_EOS) {
       stateS.append(splitter + "EOS");
       splitter = " | ";
     }
-    if ((state & QuerySubTreeTask.STATE_NOT_IN_EXECUTION) == 0) {
+    if ((state & QuerySubTreeTask.STATE_EXECUTION_REQUESTED) == STATE_EXECUTION_REQUESTED) {
+      stateS.append(splitter + "Execution_Requested");
+      splitter = " | ";
+    }
+
+    if ((state & QuerySubTreeTask.STATE_IN_EXECUTION) == STATE_IN_EXECUTION) {
       stateS.append(splitter + "In_Execution");
       splitter = " | ";
     }
-    if ((state & QuerySubTreeTask.STATE_NOT_KILLED) == 0) {
+    if ((state & QuerySubTreeTask.STATE_NOT_KILLED) != STATE_NOT_KILLED) {
       stateS.append(splitter + "Killed");
       splitter = " | ";
     }
-    if ((state & QuerySubTreeTask.STATE_NOT_PAUSED) == 0) {
+    if ((state & QuerySubTreeTask.STATE_NOT_PAUSED) != STATE_NOT_PAUSED) {
       stateS.append(splitter + "Paused");
       splitter = " | ";
     }
-    if ((state & QuerySubTreeTask.STATE_OUTPUT_AVAILABLE) != 0) {
+    if ((state & QuerySubTreeTask.STATE_OUTPUT_AVAILABLE) == STATE_OUTPUT_AVAILABLE) {
       stateS.append(splitter + "Output_Available");
       splitter = " | ";
     }
@@ -392,64 +388,68 @@ final class QuerySubTreeTask {
    * */
   private Object executeNonBlocking() {
 
-    Throwable failureCause = null;
-    NON_BLOCKING_EXECUTE : while (true) {
-      if (Thread.interrupted()) {
-        Thread.currentThread().interrupt();
-        if (LOGGER.isDebugEnabled()) {
-          LOGGER.debug("Operator task execution interrupted. Root operator: " + root + ". Close directly.");
-        }
-        AtomicUtils.bitwiseOrAndGet(nonBlockingExecutionCondition, STATE_INTERRUPTED);
-
-        // TODO clean up task state
-      } else if (ownerQuery.isPaused()) {
-        // the owner query is paused, exit execution.
-        if (LOGGER.isDebugEnabled()) {
-          LOGGER.debug("Operator task execution paused because the query is paused. Root operator: {}.", root);
-        }
-      } else {
-        // do the execution
-
-        clearInput(); // clear input at beginning.
-
-        try {
-          root.nextReady();
-        } catch (final Throwable e) {
-          if (LOGGER.isErrorEnabled()) {
-            LOGGER.error("Unexpected exception occur at operator excution. Operator: " + root, e);
+    if (nonBlockingExecutionCondition.compareAndSet(NON_BLOCKING_EXECUTION_READY | STATE_EXECUTION_REQUESTED,
+        NON_BLOCKING_EXECUTION_READY | STATE_EXECUTION_REQUESTED | STATE_IN_EXECUTION)) {
+      Throwable failureCause = null;
+      NON_BLOCKING_EXECUTE : while (true) {
+        if (Thread.interrupted()) {
+          Thread.currentThread().interrupt();
+          if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Operator task execution interrupted. Root operator: " + root + ". Close directly.");
           }
-          failureCause = e;
-          AtomicUtils.bitwiseOrAndGet(nonBlockingExecutionCondition, STATE_FAIL);
+          AtomicUtils.bitwiseOrAndGet(nonBlockingExecutionCondition, STATE_INTERRUPTED);
+
+          // TODO clean up task state
+        } else if (ownerQuery.isPaused()) {
+          // the owner query is paused, exit execution.
+          if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Operator task execution paused because the query is paused. Root operator: {}.", root);
+          }
+        } else {
+          // do the execution
+
+          clearInput(); // clear input at beginning.
+
+          try {
+            root.nextReady();
+          } catch (final Throwable e) {
+            if (LOGGER.isErrorEnabled()) {
+              LOGGER.error("Unexpected exception occur at operator excution. Operator: " + root, e);
+            }
+            failureCause = e;
+            AtomicUtils.bitwiseOrAndGet(nonBlockingExecutionCondition, STATE_FAIL);
+          }
+
+        }
+
+        // Check if another round of execution is needed.
+        int oldV = nonBlockingExecutionCondition.get();
+        while (oldV != NON_BLOCKING_EXECUTION_CONTINUE) {
+          // try clear the STATE_EXECUTION_REQUESTED and STATE_IN_EXECUTION bit
+          if (nonBlockingExecutionCondition.compareAndSet(oldV, oldV
+              & ~(STATE_EXECUTION_REQUESTED | STATE_IN_EXECUTION))) {
+            // exit execution.
+            break NON_BLOCKING_EXECUTE;
+          }
+          oldV = nonBlockingExecutionCondition.get();
         }
 
       }
 
-      // Check if another round of execution is needed.
-      int oldV = nonBlockingExecutionCondition.get();
-      while (oldV != NON_BLOCKING_EXECUTION_CONTINUE) {
-        if (nonBlockingExecutionCondition.compareAndSet(oldV, oldV | STATE_NOT_IN_EXECUTION)) {
-          // exit execution.
-          break NON_BLOCKING_EXECUTE;
-        }
-        oldV = nonBlockingExecutionCondition.get();
+      // clear interrupted
+      AtomicUtils.bitwiseAndAndGet(nonBlockingExecutionCondition, ~STATE_INTERRUPTED);
+
+      if ((nonBlockingExecutionCondition.get() & STATE_FAIL) == STATE_FAIL) {
+        // failed
+        taskExecutionFuture.setFailure(failureCause);
+      } else if (root.eos()) {
+        setEOS();
+        taskExecutionFuture.setSuccess();
+      } else if ((nonBlockingExecutionCondition.get() & STATE_NOT_KILLED) != STATE_NOT_KILLED) {
+        // killed
+        taskExecutionFuture.setFailure(new QueryKilledException("Task gets killed"));
       }
-
     }
-
-    // clear interrupted
-    AtomicUtils.bitwiseAndAndGet(nonBlockingExecutionCondition, ~STATE_INTERRUPTED);
-
-    if ((nonBlockingExecutionCondition.get() & STATE_FAIL) == STATE_FAIL) {
-      // failed
-      taskExecutionFuture.setFailure(failureCause);
-    } else if (root.eos()) {
-      setEOS();
-      taskExecutionFuture.setSuccess();
-    } else if ((nonBlockingExecutionCondition.get() & STATE_NOT_KILLED) != STATE_NOT_KILLED) {
-      // killed
-      taskExecutionFuture.setFailure(new QueryKilledException("Task gets killed"));
-    }
-
     return null;
   }
 
@@ -566,7 +566,7 @@ final class QuerySubTreeTask {
   /**
    * The task is currently not in execution.
    * */
-  private static final int STATE_NOT_IN_EXECUTION = 0x80;
+  private static final int STATE_EXECUTION_REQUESTED = 0x80;
 
   /**
    * The task fails because of uncaught exception.
@@ -579,16 +579,21 @@ final class QuerySubTreeTask {
   private static final int STATE_INTERRUPTED = 0x200;
 
   /**
+   * The task is in execution.
+   * */
+  private static final int STATE_IN_EXECUTION = 0x400;
+
+  /**
    * Non-blocking ready condition.
    */
   public static final int NON_BLOCKING_EXECUTION_READY = STATE_INITIALIZED | STATE_OUTPUT_AVAILABLE
-      | STATE_EXECUTION_MODE_NON_BLOCKING | STATE_INPUT_AVAILABLE | STATE_NOT_PAUSED | STATE_NOT_KILLED | STATE_NOT_EOS
-      | STATE_NOT_IN_EXECUTION;
+      | STATE_EXECUTION_MODE_NON_BLOCKING | STATE_INPUT_AVAILABLE | STATE_NOT_PAUSED | STATE_NOT_KILLED | STATE_NOT_EOS;
 
   /**
    * Non-blocking continue.
    */
-  public static final int NON_BLOCKING_EXECUTION_CONTINUE = NON_BLOCKING_EXECUTION_READY & ~STATE_NOT_IN_EXECUTION;
+  public static final int NON_BLOCKING_EXECUTION_CONTINUE = NON_BLOCKING_EXECUTION_READY | STATE_EXECUTION_REQUESTED
+      | STATE_IN_EXECUTION;
 
   /**
    * @return if blocking execution is ready.
@@ -670,14 +675,10 @@ final class QuerySubTreeTask {
     while (!isKilled()) {
 
       int oldV = nonBlockingExecutionCondition.get();
-      int notKilledInExec = (oldV | STATE_NOT_KILLED) & (~STATE_NOT_IN_EXECUTION);
+      int notKilledInExec = oldV | STATE_NOT_KILLED | STATE_IN_EXECUTION;
       int killed = oldV & (~STATE_NOT_KILLED);
       if (nonBlockingExecutionCondition.compareAndSet(notKilledInExec, killed)) {
         // in execution, try to interrupt the execution thread, and let the execution thread to take care of the killing
-        while ((nonBlockingExecutionCondition.get() & STATE_NOT_IN_EXECUTION) != STATE_NOT_IN_EXECUTION
-            && executionHandle == null) {
-          Thread.yield();
-        }
 
         final Future<Object> executionHandleLocal = executionHandle;
         if (executionHandleLocal != null) {
@@ -686,7 +687,7 @@ final class QuerySubTreeTask {
         }
       }
       oldV = nonBlockingExecutionCondition.get();
-      int notKilledNotInExec = oldV | STATE_NOT_KILLED | STATE_NOT_IN_EXECUTION;
+      int notKilledNotInExec = oldV | STATE_NOT_KILLED & ~STATE_IN_EXECUTION;
       killed = oldV & (~STATE_NOT_KILLED);
       if (nonBlockingExecutionCondition.compareAndSet(notKilledNotInExec, killed)) {
         // not in execution, kill the query here
@@ -694,25 +695,6 @@ final class QuerySubTreeTask {
       }
     }
 
-    // int oldV = nonBlockingExecutionCondition.get();
-    // while ((oldV & NON_BLOCKING_EXECUTION_CONTINUE) != NON_BLOCKING_EXECUTION_CONTINUE) {
-    // if (nonBlockingExecutionCondition.compareAndSet(NON_BLOCKING_EXECUTION_CONTINUE, NON_BLOCKING_EXECUTION_CONTINUE
-    // | STATE_NOT_IN_EXECUTION)) {
-    // // exit execution.
-    // break NON_BLOCKING_EXECUTE;
-    // }
-    // // oldV = nonBlockingExecutionCondition.get();
-    //
-    // }
-
-    // final Future<Object> executionHandleLocal = executionHandle;
-    // if (executionHandleLocal != null) {
-    // // Abruptly cancel the execution
-    // executionHandleLocal.cancel(true);
-    // }
-    // else {
-    // taskExecutionFuture.setFailure(new QueryKilledException("Task gets killed"));
-    // }
   }
 
   /**
@@ -721,14 +703,9 @@ final class QuerySubTreeTask {
   public void nonBlockingExecute() {
 
     if (nonBlockingExecutionCondition.compareAndSet(NON_BLOCKING_EXECUTION_READY, NON_BLOCKING_EXECUTION_READY
-        & ~STATE_NOT_IN_EXECUTION)) {
+        | STATE_EXECUTION_REQUESTED)) {
       // set in execution.
       executionHandle = myExecutor.submit(nonBlockingExecutionTask);
-      // if (isKilled()) {
-      // // check if killed because the kill may happen right between the NON_IN_EXECUTION bit is unset and the
-      // // executionHandle is set.
-      // executionHandle.cancel(true);
-      // }
     }
   }
 
