@@ -80,7 +80,7 @@ public class FileScanTest {
 
   @Test(expected = DbException.class)
   public void testBadCommaTwoColumnInt() throws DbException, InterruptedException {
-    final String filename = "comma_two_col_int.txt";
+    final String filename = "comma_two_col_int_unix.txt";
     final Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE));
     assertTrue(getRowCount(filename, schema) == 7);
   }
@@ -107,8 +107,15 @@ public class FileScanTest {
   }
 
   @Test
-  public void testCommaTwoColumnInt() throws DbException, InterruptedException {
-    final String filename = "comma_two_col_int.txt";
+  public void testCommaTwoColumnIntUnix() throws DbException, InterruptedException {
+    final String filename = "comma_two_col_int_unix.txt";
+    final Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE));
+    assertTrue(getRowCount(filename, schema, true) == 7);
+  }
+
+  @Test
+  public void testCommaTwoColumnIntDos() throws DbException, InterruptedException {
+    final String filename = "comma_two_col_int_dos.txt";
     final Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE));
     assertTrue(getRowCount(filename, schema, true) == 7);
   }

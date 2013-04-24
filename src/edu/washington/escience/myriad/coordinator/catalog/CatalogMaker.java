@@ -12,6 +12,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.commons.io.FilenameUtils;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -31,6 +32,8 @@ import edu.washington.escience.myriad.parallel.SocketInfo;
  * 
  */
 public final class CatalogMaker {
+  /** The logger for this class. */
+  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(CatalogMaker.class);
 
   /**
    * Used in Catalog creation.
@@ -143,41 +146,34 @@ public final class CatalogMaker {
       c.addRelationMetadata(RelationKey.of("test", "test", "testRelation"), new Schema(ImmutableList.of(Type.LONG_TYPE,
           Type.LONG_TYPE), ImmutableList.of("x", "y")));
 
-      String val = masterConfigurations.get(MyriaSystemConfigKeys.FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES);
-      if (val == null) {
-        val = MyriaConstants.FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES_DEFAULT_VALUE + "";
-      }
-      c.setConfigurationValue(MyriaSystemConfigKeys.FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES, val);
+      HashMap<String, String> configurationValues = new HashMap<String, String>(masterConfigurations);
 
-      val = masterConfigurations.get(MyriaSystemConfigKeys.FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES);
-      if (val == null) {
-        val = MyriaConstants.FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES_DEFAULT_VALUE + "";
+      /* Add all missing configuration values to the map. */
+      if (!masterConfigurations.containsKey(MyriaSystemConfigKeys.FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES)) {
+        configurationValues.put(MyriaSystemConfigKeys.FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES,
+            MyriaConstants.FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES_DEFAULT_VALUE + "");
       }
-      c.setConfigurationValue(MyriaSystemConfigKeys.FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES, val);
-
-      val = masterConfigurations.get(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY);
-      if (val == null) {
-        val = MyriaConstants.OPERATOR_INPUT_BUFFER_CAPACITY_DEFAULT_VALUE + "";
+      if (!masterConfigurations.containsKey(MyriaSystemConfigKeys.FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES)) {
+        configurationValues.put(MyriaSystemConfigKeys.FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES,
+            MyriaConstants.FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES_DEFAULT_VALUE + "");
       }
-      c.setConfigurationValue(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY, val);
-
-      val = masterConfigurations.get(MyriaSystemConfigKeys.TCP_CONNECTION_TIMEOUT_MILLIS);
-      if (val == null) {
-        val = MyriaConstants.TCP_CONNECTION_TIMEOUT_MILLIS_DEFAULT_VALUE + "";
+      if (!masterConfigurations.containsKey(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY)) {
+        configurationValues.put(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY,
+            MyriaConstants.OPERATOR_INPUT_BUFFER_CAPACITY_DEFAULT_VALUE + "");
       }
-      c.setConfigurationValue(MyriaSystemConfigKeys.TCP_CONNECTION_TIMEOUT_MILLIS, val);
-
-      val = masterConfigurations.get(MyriaSystemConfigKeys.TCP_RECEIVE_BUFFER_SIZE_BYTES);
-      if (val == null) {
-        val = MyriaConstants.TCP_RECEIVE_BUFFER_SIZE_BYTES_DEFAULT_VALUE + "";
+      if (!masterConfigurations.containsKey(MyriaSystemConfigKeys.TCP_CONNECTION_TIMEOUT_MILLIS)) {
+        configurationValues.put(MyriaSystemConfigKeys.TCP_CONNECTION_TIMEOUT_MILLIS,
+            MyriaConstants.TCP_CONNECTION_TIMEOUT_MILLIS_DEFAULT_VALUE + "");
       }
-      c.setConfigurationValue(MyriaSystemConfigKeys.TCP_RECEIVE_BUFFER_SIZE_BYTES, val);
-
-      val = masterConfigurations.get(MyriaSystemConfigKeys.TCP_SEND_BUFFER_SIZE_BYTES);
-      if (val == null) {
-        val = MyriaConstants.TCP_SEND_BUFFER_SIZE_BYTES_DEFAULT_VALUE + "";
+      if (!masterConfigurations.containsKey(MyriaSystemConfigKeys.TCP_RECEIVE_BUFFER_SIZE_BYTES)) {
+        configurationValues.put(MyriaSystemConfigKeys.TCP_RECEIVE_BUFFER_SIZE_BYTES,
+            MyriaConstants.TCP_RECEIVE_BUFFER_SIZE_BYTES_DEFAULT_VALUE + "");
       }
-      c.setConfigurationValue(MyriaSystemConfigKeys.TCP_SEND_BUFFER_SIZE_BYTES, val);
+      if (!masterConfigurations.containsKey(MyriaSystemConfigKeys.TCP_SEND_BUFFER_SIZE_BYTES)) {
+        configurationValues.put(MyriaSystemConfigKeys.TCP_SEND_BUFFER_SIZE_BYTES,
+            MyriaConstants.TCP_SEND_BUFFER_SIZE_BYTES_DEFAULT_VALUE + "");
+      }
+      c.setAllConfigurationValues(configurationValues);
 
       /* Close the master catalog. */
       c.close();
@@ -222,51 +218,42 @@ public final class CatalogMaker {
           wc.addWorker(w.getKey(), w.getValue().toString());
         }
 
-        /* Set up the other three configuration variables it uses. */
-        wc.setConfigurationValue(MyriaSystemConfigKeys.WORKER_IDENTIFIER, "" + workerId);
-        wc.setConfigurationValue(MyriaSystemConfigKeys.WORKER_STORAGE_SYSTEM_TYPE, MyriaConstants.STORAGE_SYSTEM_SQLITE);
-        wc.setConfigurationValue(MyriaSystemConfigKeys.WORKER_DATA_SQLITE_DB, sqliteDbName);
-
-        String val = workerConfigurations.get(MyriaSystemConfigKeys.FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES);
-        if (val == null) {
-          val = MyriaConstants.FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES_DEFAULT_VALUE + "";
+        /* Build up a map of the worker configuration variables. */
+        HashMap<String, String> configurationValues = new HashMap<String, String>(workerConfigurations);
+        /* Three worker-specific values. */
+        configurationValues.put(MyriaSystemConfigKeys.WORKER_IDENTIFIER, "" + workerId);
+        configurationValues.put(MyriaSystemConfigKeys.WORKER_STORAGE_SYSTEM_TYPE, MyriaConstants.STORAGE_SYSTEM_SQLITE);
+        configurationValues.put(MyriaSystemConfigKeys.WORKER_DATA_SQLITE_DB, sqliteDbName);
+        /* All of the missing values from the other configurations. */
+        if (!workerConfigurations.containsKey(MyriaSystemConfigKeys.FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES)) {
+          configurationValues.put(MyriaSystemConfigKeys.FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES, ""
+              + MyriaConstants.FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES_DEFAULT_VALUE);
         }
-        wc.setConfigurationValue(MyriaSystemConfigKeys.FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES, val);
-
-        val = workerConfigurations.get(MyriaSystemConfigKeys.FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES);
-        if (val == null) {
-          val = MyriaConstants.FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES_DEFAULT_VALUE + "";
+        if (!workerConfigurations.containsKey(MyriaSystemConfigKeys.FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES)) {
+          configurationValues.put(MyriaSystemConfigKeys.FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES, ""
+              + MyriaConstants.FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES_DEFAULT_VALUE);
         }
-        wc.setConfigurationValue(MyriaSystemConfigKeys.FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES, val);
-
-        val = workerConfigurations.get(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY);
-        if (val == null) {
-          val = MyriaConstants.OPERATOR_INPUT_BUFFER_CAPACITY_DEFAULT_VALUE + "";
+        if (!workerConfigurations.containsKey(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY)) {
+          configurationValues.put(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY, ""
+              + MyriaConstants.OPERATOR_INPUT_BUFFER_CAPACITY_DEFAULT_VALUE);
         }
-        wc.setConfigurationValue(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY, val);
-
-        val = workerConfigurations.get(MyriaSystemConfigKeys.TCP_CONNECTION_TIMEOUT_MILLIS);
-        if (val == null) {
-          val = MyriaConstants.TCP_CONNECTION_TIMEOUT_MILLIS_DEFAULT_VALUE + "";
+        if (!workerConfigurations.containsKey(MyriaSystemConfigKeys.TCP_CONNECTION_TIMEOUT_MILLIS)) {
+          configurationValues.put(MyriaSystemConfigKeys.TCP_CONNECTION_TIMEOUT_MILLIS, ""
+              + MyriaConstants.TCP_CONNECTION_TIMEOUT_MILLIS_DEFAULT_VALUE);
         }
-        wc.setConfigurationValue(MyriaSystemConfigKeys.TCP_CONNECTION_TIMEOUT_MILLIS, val);
-
-        val = workerConfigurations.get(MyriaSystemConfigKeys.TCP_RECEIVE_BUFFER_SIZE_BYTES);
-        if (val == null) {
-          val = MyriaConstants.TCP_RECEIVE_BUFFER_SIZE_BYTES_DEFAULT_VALUE + "";
+        if (!workerConfigurations.containsKey(MyriaSystemConfigKeys.TCP_RECEIVE_BUFFER_SIZE_BYTES)) {
+          configurationValues.put(MyriaSystemConfigKeys.TCP_RECEIVE_BUFFER_SIZE_BYTES, ""
+              + MyriaConstants.TCP_RECEIVE_BUFFER_SIZE_BYTES_DEFAULT_VALUE);
         }
-        wc.setConfigurationValue(MyriaSystemConfigKeys.TCP_RECEIVE_BUFFER_SIZE_BYTES, val);
-
-        val = workerConfigurations.get(MyriaSystemConfigKeys.TCP_SEND_BUFFER_SIZE_BYTES);
-        if (val == null) {
-          val = MyriaConstants.TCP_SEND_BUFFER_SIZE_BYTES_DEFAULT_VALUE + "";
+        if (!workerConfigurations.containsKey(MyriaSystemConfigKeys.TCP_SEND_BUFFER_SIZE_BYTES)) {
+          configurationValues.put(MyriaSystemConfigKeys.TCP_SEND_BUFFER_SIZE_BYTES, ""
+              + MyriaConstants.TCP_SEND_BUFFER_SIZE_BYTES_DEFAULT_VALUE);
         }
-        wc.setConfigurationValue(MyriaSystemConfigKeys.TCP_SEND_BUFFER_SIZE_BYTES, val);
-
+        /* Set them all in the worker catalog. */
+        wc.setAllConfigurationValues(configurationValues);
       } catch (final CatalogException e) {
         throw new RuntimeException(e);
       }
-
       wc.close();
     }
   }
@@ -343,6 +330,7 @@ public final class CatalogMaker {
       case 9:
         return "nine";
       default:
+        LOGGER.warn("no english for n={}", n);
         return n + "_";
     }
   }

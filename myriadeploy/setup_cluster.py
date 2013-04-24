@@ -29,18 +29,27 @@ given deployment configuration."""
         sys.exit(1)
 
 def remote_mkdir(hostname, dirname, username):
-    args = ["ssh", "%s@%s" % (username, hostname), "mkdir", "-p", dirname]
+    if hostname != 'localhost':
+        args = ["ssh", "%s@%s" % (username, hostname), "mkdir", "-p", dirname]
+    else:
+        args = ["mkdir", "-p", dirname]
     return subprocess.call(args)
 
 def copy_master_catalog(hostname, dirname, path, username):
     local_path = "%s/%s" % (dirname, "master.catalog")
-    remote_path = "%s@%s:%s/%s-files/%s" % (username, hostname, path, dirname, dirname)
+    if hostname != 'localhost':
+        remote_path = "%s@%s:%s/%s-files/%s" % (username, hostname, path, dirname, dirname)
+    else:
+        remote_path = "%s/%s-files/%s" % (path, dirname, dirname)
     args = ["rsync", "-avz", local_path, remote_path]
     return subprocess.call(args)
 
 def copy_worker_catalog(hostname, dirname, path, i, username):
     local_path = "%s/worker_%d" % (dirname, i)
-    remote_path = "%s@%s:%s/%s-files/%s" % (username, hostname, path, dirname, dirname)
+    if hostname != 'localhost':
+        remote_path = "%s@%s:%s/%s-files/%s" % (username, hostname, path, dirname, dirname)
+    else:
+        remote_path = "%s/%s-files/%s" % (path, dirname, dirname)
     args = ["rsync", "-avz", local_path, remote_path]
     return subprocess.call(args)
 
@@ -83,7 +92,10 @@ def copy_distribution(config):
     username = config['username']
 
     for (hostname, _) in nodes:
-        remote_path = "%s@%s:%s/%s-files" % (username, hostname, path, description)
+        if hostname != 'localhost':
+            remote_path = "%s@%s:%s/%s-files" % (username, hostname, path, description)
+        else:
+            remote_path = "%s/%s-files" % (path, description)
         to_copy = ["myriad-0.1.jar", "sqlite4java-282", "conf"]
         args = ["rsync", "-avz"] + to_copy + [remote_path]
         if subprocess.call(args):
