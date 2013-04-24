@@ -85,6 +85,8 @@ public final class WorkerCatalog {
     /* Create all the tables in the WorkerCatalog. */
     try {
       /* @formatter:off */
+      sqliteConnection.exec("PRAGMA journal_mode = WAL;");
+      sqliteConnection.exec("BEGIN TRANSACTION");
       sqliteConnection.exec(
           "CREATE TABLE configuration (\n"
         + "    key STRING UNIQUE NOT NULL,\n"
@@ -112,12 +114,19 @@ public final class WorkerCatalog {
         + "    stored_relation_id INTEGER NOT NULL REFERENCES stored_relations(stored_relation_id),\n"
         + "    shard_index INTEGER NOT NULL,\n"
         + "    location STRING NOT NULL);");
+      sqliteConnection.exec("COMMIT TRANSACTION");
       /* @formatter:on*/
     } catch (final SQLiteException e) {
-      LOGGER.error(e.toString());
       if (LOGGER.isErrorEnabled()) {
-        throw new CatalogException("SQLiteException while creating new WorkerCatalog tables", e);
+        LOGGER.error(e.toString());
       }
+      try {
+        sqliteConnection.exec("ROLLBACK TRANSACTION");
+      } catch (final SQLiteException e1) {
+        assert true;
+        /* Ignore failed rollback, we're throwing an exception anyway. */
+      }
+      throw new CatalogException("SQLiteException while creating new WorkerCatalog tables", e);
     }
 
     try {
@@ -456,4 +465,42 @@ public final class WorkerCatalog {
     }
   }
 
+  /**
+   * Set all the configuration values in the provided map in a single transaction.
+   * 
+   * @param entries the value of the configuration parameter.
+   * @throws CatalogException if there is an error in the backing database.
+   */
+  public void setAllConfigurationValues(final Map<String, String> entries) throws CatalogException {
+    Objects.requireNonNull(entries);
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+    try {
+      /* Start transaction. */
+      sqliteConnection.exec("BEGIN TRANSACTION");
+      final SQLiteStatement statement = sqliteConnection.prepare("INSERT INTO configuration VALUES(?,?);", false);
+      for (Map.Entry<String, String> entry : entries.entrySet()) {
+        statement.bind(1, entry.getKey());
+        statement.bind(2, entry.getValue());
+        statement.step();
+        statement.reset(false);
+      }
+      /* Commit transaction. */
+      sqliteConnection.exec("COMMIT TRANSACTION");
+      statement.dispose();
+    } catch (final SQLiteException e) {
+      if (LOGGER.isErrorEnabled()) {
+        LOGGER.error(e.toString());
+      }
+      try {
+        /* Commit transaction. */
+        sqliteConnection.exec("ROLLBACK TRANSACTION");
+      } catch (SQLiteException e1) {
+        /* Still throw the original exception */
+        throw new CatalogException(e);
+      }
+      throw new CatalogException(e);
+    }
+  }
 }
