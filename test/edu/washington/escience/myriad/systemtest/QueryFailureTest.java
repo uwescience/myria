@@ -66,7 +66,7 @@ public class QueryFailureTest extends SystemTestBase {
     workerPlans.put(WORKER_ID[0], new RootOperator[] { cp1 });
 
     final DelayInjector di = new DelayInjector(1, TimeUnit.SECONDS, scanTable); // totally delay 10 seconds.
-    final SingleRandomFailureInjector srfi = new SingleRandomFailureInjector(2, TimeUnit.SECONDS, 0.9, di);
+    final SingleRandomFailureInjector srfi = new SingleRandomFailureInjector(2, TimeUnit.SECONDS, 1.0, di);
     final CollectProducer cp2 = new CollectProducer(srfi, serverReceiveID, MASTER_ID);
 
     workerPlans.put(WORKER_ID[1], new RootOperator[] { cp2 });
@@ -134,7 +134,7 @@ public class QueryFailureTest extends SystemTestBase {
         new CollectConsumer(schema, serverReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
 
     final DelayInjector di = new DelayInjector(1, TimeUnit.SECONDS, serverCollect); // totally delay 10 seconds.
-    final SingleRandomFailureInjector srfi = new SingleRandomFailureInjector(2, TimeUnit.SECONDS, 0.9, di);
+    final SingleRandomFailureInjector srfi = new SingleRandomFailureInjector(2, TimeUnit.SECONDS, 1.0, di);
 
     final SinkRoot serverPlan = new SinkRoot(srfi);
 
