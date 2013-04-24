@@ -54,7 +54,7 @@ public final class AtomicUtils {
    * @param ai the AtomicInteger to operate on
    * @param n the nth bit from the least significant bit to compare, the least significant bit is 0
    * */
-  public static boolean unsetBitIfSet(final AtomicInteger ai, final int n) {
+  public static boolean unsetBitIfSetByIndex(final AtomicInteger ai, final int n) {
     if (n >= Integer.SIZE) {
       throw new IllegalArgumentException("Out of int bit index boundary (31)");
     }
@@ -71,9 +71,19 @@ public final class AtomicUtils {
   /**
    * @return true if operation is conducted, false if the bit is already set.
    * @param ai the AtomicInteger to operate on
+   * @param value from the value get the index of the set bit from the least significant bit. Do the operation on that
+   *          index.
+   * */
+  public static boolean unsetBitIfSetByValue(final AtomicInteger ai, final int value) {
+    return unsetBitIfSetByIndex(ai, Integer.numberOfTrailingZeros(value));
+  }
+
+  /**
+   * @return true if operation is conducted, false if the bit is already set.
+   * @param ai the AtomicInteger to operate on
    * @param n the nth bit from the least significant bit to compare
    * */
-  public static boolean setBitIfUnset(final AtomicInteger ai, final int n) {
+  public static boolean setBitIfUnsetByIndex(final AtomicInteger ai, final int n) {
     if (n >= Integer.SIZE) {
       throw new IllegalArgumentException("Out of int bit index boundary (31)");
     }
@@ -82,9 +92,53 @@ public final class AtomicUtils {
     int newValue = oldValue | bitInt;
     while (newValue != oldValue && !ai.compareAndSet(oldValue, newValue)) {
       oldValue = ai.get();
-      newValue = oldValue & ~bitInt;
+      newValue = oldValue | bitInt;
     }
     return newValue != oldValue;
+  }
+
+  /**
+   * @return true if operation is conducted, false if the bit is already set.
+   * @param ai the AtomicInteger to operate on
+   * @param value from the value get the index of the set bit from the least significant bit. Do the operation on that
+   *          index.
+   * */
+  public static boolean setBitIfUnsetByValue(final AtomicInteger ai, final int value) {
+    return setBitIfUnsetByIndex(ai, Integer.numberOfTrailingZeros(value));
+  }
+
+  /**
+   * @param ai the AtomicInteger to operate on
+   * @param n the nth bit from the least significant bit to compare
+   * */
+  public static void setBitByIndex(final AtomicInteger ai, final int n) {
+    setBitIfUnsetByIndex(ai, n);
+  }
+
+  /**
+   * @param ai the AtomicInteger to operate on
+   * @param value from the value get the index of the set bit from the least significant bit. Do the operation on that
+   *          index.
+   * */
+  public static void setBitByValue(final AtomicInteger ai, final int value) {
+    setBitByIndex(ai, Integer.numberOfTrailingZeros(value));
+  }
+
+  /**
+   * @param ai the AtomicInteger to operate on
+   * @param n the nth bit from the least significant bit to compare
+   * */
+  public static void unsetBitByIndex(final AtomicInteger ai, final int n) {
+    unsetBitIfSetByIndex(ai, n);
+  }
+
+  /**
+   * @param ai the AtomicInteger to operate on
+   * @param value from the value get the index of the set bit from the least significant bit. Do the operation on that
+   *          index.
+   * */
+  public static void unsetBitByValue(final AtomicInteger ai, final int value) {
+    unsetBitByIndex(ai, Integer.numberOfTrailingZeros(value));
   }
 
 }
