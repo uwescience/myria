@@ -117,10 +117,16 @@ public final class WorkerCatalog {
       sqliteConnection.exec("COMMIT TRANSACTION");
       /* @formatter:on*/
     } catch (final SQLiteException e) {
-      LOGGER.error(e.toString());
       if (LOGGER.isErrorEnabled()) {
-        throw new CatalogException("SQLiteException while creating new WorkerCatalog tables", e);
+        LOGGER.error(e.toString());
       }
+      try {
+        sqliteConnection.exec("ROLLBACK TRANSACTION");
+      } catch (final SQLiteException e1) {
+        assert true;
+        /* Ignore failed rollback, we're throwing an exception anyway. */
+      }
+      throw new CatalogException("SQLiteException while creating new WorkerCatalog tables", e);
     }
 
     try {
