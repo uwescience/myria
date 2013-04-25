@@ -32,7 +32,6 @@ Slightly modified version of Sun Checks that better matches the default code for
     <module name="AvoidStarImport"/>
     <module name="IllegalImport"/>
     <module name="RedundantImport"/>
-    <module name="UnusedImports"/>
     <module name="MethodLength"/>
     <module name="ParameterNumber"/>
     <module name="EmptyForIteratorPad"/>
