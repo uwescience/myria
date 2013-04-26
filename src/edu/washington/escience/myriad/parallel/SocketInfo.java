@@ -38,8 +38,10 @@ public final class SocketInfo implements Serializable {
   private final String host;
   /** The port of the connection. */
   private final int port;
-  /** An Address that holds these info. */
-  private transient InetSocketAddress address;
+  /** A SocketAddress that holds these info (for connection). */
+  private transient InetSocketAddress connectAddress;
+  /** A SocketAddress that holds these info (for binding/listening). */
+  private transient InetSocketAddress bindAddress;
 
   /** A String host:port. */
   private transient String hostPortString;
@@ -69,13 +71,25 @@ public final class SocketInfo implements Serializable {
   }
 
   /**
-   * @return an InetSocketAddress that describes the given host:port address.
+   * @return an InetSocketAddress that describes the given host:port address. Use this when you want a remote address to
+   *         connect to, or for printing.
    */
-  public InetSocketAddress getAddress() {
-    if (address == null) {
-      address = new InetSocketAddress(host, port);
+  public InetSocketAddress getConnectAddress() {
+    if (connectAddress == null) {
+      connectAddress = new InetSocketAddress(host, port);
     }
-    return address;
+    return connectAddress;
+  }
+
+  /**
+   * @return an InetSocketAddress that contains the port, but not the host. Use this when you want to bind a server that
+   *         will listen on all interfaces & hostnames.
+   */
+  public InetSocketAddress getBindAddress() {
+    if (bindAddress == null) {
+      bindAddress = new InetSocketAddress(port);
+    }
+    return bindAddress;
   }
 
   /**

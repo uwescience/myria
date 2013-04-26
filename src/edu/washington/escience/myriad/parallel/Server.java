@@ -369,6 +369,9 @@ public final class Server {
     return ipcPipelineExecutor;
   }
 
+  /** The socket info for the master. */
+  private final SocketInfo masterSocketInfo;
+
   /**
    * @return my execution environment variables for init of operators.
    * */
@@ -391,7 +394,7 @@ public final class Server {
     if (masters.size() != 1) {
       throw new RuntimeException("Unexpected number of masters: expected 1, got " + masters.size());
     }
-    final SocketInfo masterSocketInfo = masters.get(MyriaConstants.MASTER_ID);
+    masterSocketInfo = masters.get(MyriaConstants.MASTER_ID);
 
     workers = new ConcurrentHashMap<Integer, SocketInfo>(catalog.getWorkers());
     final ImmutableMap<String, String> allConfigurations = catalog.getAllConfigurations();
@@ -584,6 +587,7 @@ public final class Server {
    * @throws Exception if any error occurs.
    */
   public void start() throws Exception {
+    LOGGER.info("Server starting on {}", masterSocketInfo.toString());
 
     scheduledTaskExecutor.scheduleAtFixedRate(new DebugHelper(), DebugHelper.INTERVAL, DebugHelper.INTERVAL,
         TimeUnit.MILLISECONDS);
@@ -628,6 +632,7 @@ public final class Server {
         masterInJVMPipelineFactory, new InJVMLoopbackChannelSink());
 
     messageProcessingExecutor.submit(new MessageProcessor());
+    LOGGER.info("Server started on {}", masterSocketInfo.toString());
   }
 
   /**
@@ -918,5 +923,12 @@ public final class Server {
       }
       return null;
     }
+  }
+
+  /**
+   * @return the socket info for the master.
+   */
+  protected final SocketInfo getSocketInfo() {
+    return masterSocketInfo;
   }
 }
