@@ -420,7 +420,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
     myIDTM = IPCUtils.connectTM(myID);
     // inJVMShortMessageChannel = new InJVMChannel(myID, messageHandler);
     // this.messageHandler = messageHandler;
-    myIPCServerAddress = remoteAddresses.get(myID).getAddress();
+    myIPCServerAddress = remoteAddresses.get(myID).getBindAddress();
     this.clientBootstrap = clientBootstrap;
     this.serverBootstrap = serverBootstrap;
 
@@ -528,7 +528,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
     boolean connected = true;
     ChannelFuture c = null;
     try {
-      c = ic.connect(remote.address.getAddress());
+      c = ic.connect(remote.address.getConnectAddress());
     } catch (final Exception e) {
       if (LOGGER.isErrorEnabled()) {
         LOGGER.error("Error creating connection to remote " + remote.id, e);
