@@ -6,6 +6,7 @@ name = twoNodeLocalParallel
 #username = dhalperi
 # Uncomment to set the maximum heap size of the Java processes
 #max_heap_size=-Xmx2g
+rest_port = 8753
 
 # Compute nodes configuration
 [master]

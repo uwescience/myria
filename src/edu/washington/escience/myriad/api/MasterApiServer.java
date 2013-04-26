@@ -26,9 +26,6 @@ public final class MasterApiServer {
   /** Max time for waiting a server query to complete before throwing a timeout exception is 1 day. */
   private static final long MAX_WAITING_TIME_MS = TimeUnit.MILLISECONDS.convert(1, TimeUnit.DAYS);
 
-  /** The default port for the server. */
-  public static final int PORT = 8753;
-
   /** The Restlet Component is the main class that holds multiple servers/hosts for this application. */
   private final Component component;
 
@@ -40,8 +37,9 @@ public final class MasterApiServer {
    * 
    * @param server the Myria server that will handle API requests.
    * @param daemon the Myria master daemon.
+   * @param port the port the Myria API server will listen on.
    */
-  public MasterApiServer(final Server server, final MasterDaemon daemon) {
+  public MasterApiServer(final Server server, final MasterDaemon daemon, final int port) {
     /* Set API requests to time out after MAX_WAITING_TIME_MS milliseconds */
     System.setProperty("org.restlet.engine.io.timeoutMs", Long.toString(MAX_WAITING_TIME_MS));
 
@@ -49,7 +47,7 @@ public final class MasterApiServer {
     component = new Component();
 
     /* Add a server that responds to HTTP on port PORT. */
-    restletServer = component.getServers().add(Protocol.HTTP, PORT);
+    restletServer = component.getServers().add(Protocol.HTTP, port);
 
     /* Setup the context variables that will be available to all Restlets. */
     Context context = component.getContext().createChildContext(); // Child context for security.
