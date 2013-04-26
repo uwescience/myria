@@ -4,6 +4,7 @@ apply plugin: "java"
 apply plugin: "eclipse"
 
 /* Set up group and version info for myriad */
+archivesBaseName = "myriad"
 group = "edu.washington.escience.myriad"
 version = "0.1"
 
