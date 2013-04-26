@@ -57,6 +57,8 @@ public final class MasterApiServer {
     /* Add a JAX-RS runtime environment, using our MasterApplication implementation. */
     final JaxRsApplication application = new JaxRsApplication(context);
     application.add(new MasterApplication());
+    /* The status helper ensures that we get the stack trace when the system throws a 500 error. */
+    application.setStatusService(new MyriaApiStatusService());
 
     /* Attach the application to the component */
     component.getDefaultHost().attach(application);
