@@ -79,6 +79,9 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
           if (ecc.numReferenced() <= 0) {
             // only close the connection if no one is using the connection.
             // And the connections are closed by the server side.
+            if (!cc.isClientChannel() && !c.isReadable()) {
+              IPCUtils.resumeRead(c);
+            }
             if (cc.isClientChannel() || (cc.isCloseRequested())) {
               final ChannelFuture cf = cc.getMostRecentWriteFuture();
               if (cf != null) {
