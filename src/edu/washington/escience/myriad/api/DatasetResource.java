@@ -1,6 +1,5 @@
 package edu.washington.escience.myriad.api;
 
-import java.io.IOException;
 import java.util.Set;
 
 import javax.ws.rs.Consumes;
@@ -16,9 +15,6 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
-
-import org.codehaus.jackson.annotate.JsonProperty;
-import org.codehaus.jackson.map.ObjectMapper;
 
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
@@ -57,8 +53,8 @@ public final class DatasetResource {
   }
 
   /**
-   * @param uriInfo information about the current URL.
    * @param payload the request payload.
+   * @param uriInfo information about the current URL.
    * @return the created dataset resource.
    */
   @POST
@@ -70,13 +66,7 @@ public final class DatasetResource {
     }
 
     /* Attempt to deserialize the object. */
-    DatasetEncoding dataset;
-    try {
-      final ObjectMapper mapper = new ObjectMapper();
-      dataset = mapper.readValue(payload, DatasetEncoding.class);
-    } catch (IOException e) {
-      throw new WebApplicationException(Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build());
-    }
+    DatasetEncoding dataset = MyriaApiUtils.deserialize(payload, DatasetEncoding.class);
 
     /* If we already have a dataset by this name, tell the user there's a conflict. */
     try {
@@ -120,13 +110,10 @@ public final class DatasetResource {
    */
   public static class DatasetEncoding {
     /** The name of the dataset. */
-    @JsonProperty("relation_key")
     public RelationKey relationKey;
     /** The Schema of its tuples. */
-    @JsonProperty("schema")
     public Schema schema;
     /** The data it contains. */
-    @JsonProperty("data")
     public byte[] data;
   }
 }
