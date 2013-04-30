@@ -928,7 +928,7 @@ public final class Server {
   /**
    * @return the socket info for the master.
    */
-  protected final SocketInfo getSocketInfo() {
+  protected SocketInfo getSocketInfo() {
     return masterSocketInfo;
   }
 }
