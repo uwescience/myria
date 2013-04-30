@@ -17,6 +17,7 @@ import javax.ws.rs.core.UriInfo;
 
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.api.encoding.DatasetEncoding;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 
 /**
@@ -91,18 +92,5 @@ public final class DatasetResource {
         queryUri.path("dataset").path("user-" + dataset.relationKey.getUserName()).path(
             "program-" + dataset.relationKey.getProgramName())
             .path("relation-" + dataset.relationKey.getRelationName()).build()).build();
-  }
-
-  /**
-   * A JSON-able wrapper for the expected wire message for a new dataset.
-   * 
-   */
-  public static class DatasetEncoding {
-    /** The name of the dataset. */
-    public RelationKey relationKey;
-    /** The Schema of its tuples. */
-    public Schema schema;
-    /** The data it contains. */
-    public byte[] data;
   }
 }
