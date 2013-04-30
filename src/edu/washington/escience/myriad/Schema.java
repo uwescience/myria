@@ -179,12 +179,10 @@ public final class Schema implements Serializable {
   }
 
   /** The types of the columns in this relation. */
-  @JsonProperty("column_types")
-  private final ImmutableList<Type> columnTypes;
+  private final List<Type> columnTypes;
 
   /** The names of the columns in this relation. */
-  @JsonProperty("column_names")
-  private final ImmutableList<String> columnNames;
+  private final List<String> columnNames;
 
   /**
    * Helper function to build a Schema from builders.

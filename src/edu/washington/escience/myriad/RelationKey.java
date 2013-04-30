@@ -15,13 +15,10 @@ public final class RelationKey implements Serializable {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** The user who owns/creates this relation. */
-  @JsonProperty("user_name")
   private final String userName;
   /** The user's program that owns/creates this relation. */
-  @JsonProperty("program_name")
   private final String programName;
   /** The name of the relation. */
-  @JsonProperty("relation_name")
   private final String relationName;
   /** Canonical table name. Used as a lazy cache for the toString operator. */
   private String canonicalTableName;
