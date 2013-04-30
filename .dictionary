@@ -14,3 +14,7 @@ restlets
 hostname
 timestamp
 deserialize
+jackson
+serializer
+deserializer
+deserialize

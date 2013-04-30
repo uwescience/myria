@@ -1,10 +1,15 @@
 package edu.washington.escience.myriad.api;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.codehaus.jackson.map.PropertyNamingStrategy;
 import org.restlet.Component;
 import org.restlet.Context;
 import org.restlet.data.Protocol;
+import org.restlet.engine.Engine;
+import org.restlet.engine.converter.ConverterHelper;
+import org.restlet.ext.jackson.JacksonConverter;
 import org.restlet.ext.jaxrs.JaxRsApplication;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,9 +64,28 @@ public final class MasterApiServer {
     application.add(new MasterApplication());
     /* The status helper ensures that we get the stack trace when the system throws a 500 error. */
     application.setStatusService(new MyriaApiStatusService());
+    /* Configure the Jackson JSON library options. */
+    setJacksonOptions();
 
     /* Attach the application to the component */
     component.getDefaultHost().attach(application);
+  }
+
+  /**
+   * Set various Jackson configuration options for the JSON deserializer. In particular, this class tells the JSON
+   * serializer/deserializer how to automatically convert JSON property names (like 'json_name') to Java property names
+   * (like 'javaName').
+   */
+  private void setJacksonOptions() {
+    List<ConverterHelper> converters = Engine.getInstance().getRegisteredConverters();
+    for (ConverterHelper c : converters) {
+      LOGGER.debug("Using ConverterHelper {}", c.getClass());
+      if (c.getClass().equals(JacksonConverter.class)) {
+        ((JacksonConverter) c).getObjectMapper().setPropertyNamingStrategy(
+            PropertyNamingStrategy.CAMEL_CASE_TO_LOWER_CASE_WITH_UNDERSCORES);
+      }
+    }
+
   }
 
   /**
