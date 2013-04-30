@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.parallel.SocketInfo;
+import edu.washington.escience.myriad.util.FSUtils;
 
 public class CatalogTest {
   /** The logger for this class. */
@@ -91,5 +92,6 @@ public class CatalogTest {
     Catalog c = Catalog.open(masterCatalogPath);
     assertTrue(c.getWorkers().size() == numWorkers);
     c.close();
+    FSUtils.blockingDeleteDirectory(path.toString());
   }
 }
