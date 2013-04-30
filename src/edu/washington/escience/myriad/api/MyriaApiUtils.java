@@ -3,8 +3,6 @@ package edu.washington.escience.myriad.api;
 import java.io.IOException;
 import java.util.Map;
 
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
 import org.codehaus.jackson.map.ObjectMapper;
@@ -67,10 +65,7 @@ public final class MyriaApiUtils {
     try {
       return getMapper().readValue(payload, target);
     } catch (IOException e) {
-      // StringWriter stringWriter = new StringWriter();
-      // e.printStackTrace(new PrintWriter(stringWriter));
-      // throw new WebApplicationException(Response.status(Status.BAD_REQUEST).entity(stringWriter.toString()).build());
-      throw new WebApplicationException(Response.status(Status.BAD_REQUEST).entity(e.getMessage()).build());
+      throw new MyriaApiException(Status.BAD_REQUEST, e);
     }
   }
 }
