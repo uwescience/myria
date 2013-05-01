@@ -58,10 +58,6 @@ public final class DatasetResource {
   @POST
   @Consumes(MediaType.APPLICATION_JSON)
   public Response newDataset(final byte[] payload, @Context final UriInfo uriInfo) throws CatalogException {
-    if (payload == null || payload.length == 0) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "Payload cannot be empty.\n");
-    }
-
     /* Attempt to deserialize the object. */
     DatasetEncoding dataset = MyriaApiUtils.deserialize(payload, DatasetEncoding.class);
 

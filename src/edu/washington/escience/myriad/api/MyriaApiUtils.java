@@ -63,6 +63,9 @@ public final class MyriaApiUtils {
    * @return the deserialized object.
    */
   public static <T> T deserialize(final byte[] payload, final Class<? extends T> target) {
+    if (payload == null || payload.length == 0) {
+      throw new MyriaApiException(Status.BAD_REQUEST, "payload cannot be empty");
+    }
     try {
       T t = getMapper().readValue(payload, target);
       if (t instanceof MyriaApiEncoding) {
