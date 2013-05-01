@@ -8,18 +8,23 @@
         {
           "op_name" : "SCAN1",
           "op_type" : "SQLiteScan",
-          "arg_user_name" : "jwang",
-          "arg_program_name" : "global_join",
-          "arg_relation_name" : "smallTable"
+          "relation_key" : {
+            "user_name" : "jwang",
+            "program_name" : "global_join",
+            "relation_name" : "smallTable"
+          }
         },
 
         {
           "op_name" : "SP1",
           "op_type" : "ShuffleProducer",
           "arg_child" : "SCAN1",
-          "arg_workerIDs" : ["1","2"],
-          "arg_operatorID" : "0",
-          "arg_pf" : ["SingleFieldHash", "1"]
+          "arg_worker_ids" : ["1","2"],
+          "arg_operator_id" : "0",
+          "arg_pf" : {
+            "type" : "SingleFieldHash",
+            "index" : "1"
+          }
         }
 	],
 
@@ -27,18 +32,23 @@
         {
           "op_name" : "SCAN2",
           "op_type" : "SQLiteScan",
-          "arg_user_name" : "jwang",
-          "arg_program_name" : "global_join",
-          "arg_relation_name" : "smallTable"
+          "relation_key" : {
+            "user_name" : "jwang",
+            "program_name" : "global_join",
+            "relation_name" : "smallTable"
+          }
         },
 
         {
           "op_name" : "SP2",
           "op_type" : "ShuffleProducer",
           "arg_child" : "SCAN2",
-          "arg_workerIDs" : ["1","2"],
-          "arg_operatorID" : "1",
-          "arg_pf" : ["SingleFieldHash", "0"]
+          "arg_worker_ids" : ["1","2"],
+          "arg_operator_id" : "1",
+          "arg_pf" : {
+            "type" : "SingleFieldHash",
+            "index" : "0"
+          }
         }
 	],
 
@@ -47,16 +57,16 @@
           "op_name" : "SC1",
           "op_type" : "ShuffleConsumer",
           "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_workerIDs" : ["1","2"],
-          "arg_operatorID" : "0"
+          "arg_worker_ids" : ["1","2"],
+          "arg_operator_id" : "0"
         },
 
         {
           "op_name" : "SC2",
           "op_type" : "ShuffleConsumer",
           "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_workerIDs" : ["1","2"],
-          "arg_operatorID" : "1"
+          "arg_worker_ids" : ["1","2"],
+          "arg_operator_id" : "1"
         },
 
         {
@@ -74,8 +84,8 @@
           "op_name" : "CP1",
           "op_type" : "CollectProducer",
           "arg_child" : "JOIN",
-          "arg_workerID" : "0",
-          "arg_operatorID" : "2"
+          "arg_worker_id" : "0",
+          "arg_operator_id" : "2"
         }
      	]
 	],
@@ -85,18 +95,23 @@
         {
           "op_name" : "SCAN1",
           "op_type" : "SQLiteScan",
-          "arg_user_name" : "jwang",
-          "arg_program_name" : "global_join",
-          "arg_relation_name" : "smallTable"
+          "relation_key" : {
+            "user_name" : "jwang",
+            "program_name" : "global_join",
+            "relation_name" : "smallTable"
+          }
         },
 
         {
           "op_name" : "SP1",
           "op_type" : "ShuffleProducer",
           "arg_child" : "SCAN1",
-          "arg_workerIDs" : ["1","2"],
-          "arg_operatorID" : "0",
-          "arg_pf" : ["SingleFieldHash", "1"]
+          "arg_worker_ids" : ["1","2"],
+          "arg_operator_id" : "0",
+          "arg_pf" : {
+            "type" : "SingleFieldHash",
+            "index" : "1"
+          }
         }
 	],
 
@@ -104,18 +119,23 @@
         {
           "op_name" : "SCAN2",
           "op_type" : "SQLiteScan",
-          "arg_user_name" : "jwang",
-          "arg_program_name" : "global_join",
-          "arg_relation_name" : "smallTable"
+          "relation_key" : {
+            "user_name" : "jwang",
+            "program_name" : "global_join",
+            "relation_name" : "smallTable"
+          }
         },
 
         {
           "op_name" : "SP2",
           "op_type" : "ShuffleProducer",
           "arg_child" : "SCAN2",
-          "arg_workerIDs" : ["1","2"],
-          "arg_operatorID" : "1",
-          "arg_pf" : ["SingleFieldHash", "0"]
+          "arg_worker_ids" : ["1","2"],
+          "arg_operator_id" : "1",
+          "arg_pf" : {
+            "type" : "SingleFieldHash",
+            "index" : "0"
+          }
         }
 	],
 
@@ -124,16 +144,16 @@
           "op_name" : "SC1",
           "op_type" : "ShuffleConsumer",
           "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_workerIDs" : ["1","2"],
-          "arg_operatorID" : "0"
+          "arg_worker_ids" : ["1","2"],
+          "arg_operator_id" : "0"
         },
 
         {
           "op_name" : "SC2",
           "op_type" : "ShuffleConsumer",
           "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_workerIDs" : ["1","2"],
-          "arg_operatorID" : "1"
+          "arg_worker_ids" : ["1","2"],
+          "arg_operator_id" : "1"
         },
 
         {
@@ -151,8 +171,8 @@
           "op_name" : "CP1",
           "op_type" : "CollectProducer",
           "arg_child" : "JOIN",
-          "arg_workerID" : "0",
-          "arg_operatorID" : "2"
+          "arg_worker_id" : "0",
+          "arg_operator_id" : "2"
         }
      	]
 	],
@@ -162,8 +182,8 @@
           "op_name" : "CC1",
           "op_type" : "CollectConsumer",
           "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_workerIDs" : ["1","2"],
-          "arg_operatorID" : "2"
+          "arg_worker_ids" : ["1","2"],
+          "arg_operator_id" : 2
         }
 	]]
   }

@@ -8,16 +8,9 @@ import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.api.MyriaApiException;
 
-/**
- * A JSON-able wrapper for the expected wire message for a new dataset.
- * 
- */
 public class DatasetEncoding implements MyriaApiEncoding {
-  /** The name of the dataset. */
   public RelationKey relationKey;
-  /** The Schema of its tuples. */
   public Schema schema;
-  /** The data it contains. */
   public byte[] data;
 
   @Override
