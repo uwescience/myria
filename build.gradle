@@ -45,7 +45,7 @@ check.dependsOn speedtestClasses
 check.dependsOn testsuitesClasses
 /* Build the Eclipse .classpath file first, because if Gradle's build fails
  * we'll want to use Eclipse to debug it. */
-compileJava.dependsOn eclipseClasspath
+test.dependsOn eclipseClasspath
 tasks.eclipseClasspath.dependsOn cleanEclipseClasspath
 
 /*

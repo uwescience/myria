@@ -26,6 +26,7 @@ def read_config_file(filename='deployment.cfg'):
         ret['username'] = config.get('deployment', 'username')
     except ConfigParser.NoOptionError:
         ret['username'] = getpass.getuser()
+    ret['rest_port'] = config.get('deployment', 'rest_port')
 
     # Helper function
     def split_hostport_key(hostport):

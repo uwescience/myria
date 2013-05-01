@@ -2,6 +2,8 @@ package edu.washington.escience.myriad.accessmethod;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -26,6 +28,7 @@ import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.SQLiteInsert;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.systemtest.SystemTestBase;
+import edu.washington.escience.myriad.util.FSUtils;
 import edu.washington.escience.myriad.util.SQLiteUtils;
 import edu.washington.escience.myriad.util.TestUtils;
 
@@ -53,7 +56,8 @@ public class SQLiteAccessMethodTest {
       tbb.put(1, names[i]);
     }
 
-    final File dbFile = File.createTempFile(MyriaConstants.SYSTEM_NAME + "_sqlite_access_method_test", ".db");
+    Path tempDir = Files.createTempDirectory(MyriaConstants.SYSTEM_NAME + "_sqlite_access_method_test");
+    final File dbFile = new File(tempDir.toString(), "sqlite.db");
     SystemTestBase.createTable(dbFile.getAbsolutePath(), testtableKey, "id long, name varchar(20)");
 
     TupleBatch tb = null;
@@ -84,7 +88,7 @@ public class SQLiteAccessMethodTest {
     for (final Thread t : threads) {
       t.join();
     }
-    dbFile.deleteOnExit();
+    FSUtils.blockingDeleteDirectory(tempDir.toString());
   }
 
   @Test
@@ -115,7 +119,8 @@ public class SQLiteAccessMethodTest {
       tbb.put(1, names[i]);
     }
 
-    final File dbFile = File.createTempFile(MyriaConstants.SYSTEM_NAME + "_sqlite_access_method_test", ".db");
+    Path tempDir = Files.createTempDirectory(MyriaConstants.SYSTEM_NAME + "_sqlite_access_method_test");
+    final File dbFile = new File(tempDir.toString(), "sqlite.db");
     SystemTestBase.createTable(dbFile.getAbsolutePath(), testtable0Key, "id long, name varchar(20)");
     SystemTestBase.createTable(dbFile.getAbsolutePath(), testtable1Key, "id long, name varchar(20)");
 
@@ -151,7 +156,7 @@ public class SQLiteAccessMethodTest {
     for (final Thread t : threads) {
       t.join();
     }
-    dbFile.deleteOnExit();
+    FSUtils.blockingDeleteDirectory(tempDir.toString());
   }
 
   @Test
@@ -171,7 +176,8 @@ public class SQLiteAccessMethodTest {
       tbl1.put(1, tbl1ID2[i]);
     }
 
-    final File dbFile = File.createTempFile(MyriaConstants.SYSTEM_NAME + "_sqlite_access_method_test", ".db");
+    Path tempDir = Files.createTempDirectory(MyriaConstants.SYSTEM_NAME + "_sqlite_access_method_test");
+    final File dbFile = new File(tempDir.toString(), "sqlite.db");
     /* Set WAL in the beginning. */
 
     SQLiteConnection conn = new SQLiteConnection(dbFile);
@@ -205,6 +211,6 @@ public class SQLiteAccessMethodTest {
       insert.nextReady();
     }
 
-    dbFile.deleteOnExit();
+    FSUtils.blockingDeleteDirectory(tempDir.toString());
   }
 }
