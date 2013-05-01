@@ -106,21 +106,14 @@ public final class SQLiteAccessMethod {
        * acquire an exclusive lock to check if there is -wal file to recover from. Usually the file is empty so the lock
        * is released pretty fast. However if another connection comes during the exclusive lock period, a
        * "database is locked" exception will still be thrown. The following code simply tries to call prepare again.
-       * Usually, in the test cases I have observed, prepare() is called at most twice.
        */
       boolean conflict = true;
-      int count = 0;
       while (conflict) {
         conflict = false;
         try {
           statement = sqliteConnection.prepare(queryString);
         } catch (final SQLiteException e) {
           conflict = true;
-          ++count;
-          /* Should not occur too many time */
-          if (count == 5) {
-            throw new RuntimeException(e);
-          }
         }
       }
       /* Step the statement once so we can figure out the Schema */
