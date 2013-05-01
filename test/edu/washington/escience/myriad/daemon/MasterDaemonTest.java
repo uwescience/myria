@@ -11,7 +11,6 @@ import org.restlet.resource.ClientResource;
 import com.google.common.io.Files;
 
 import edu.washington.escience.myriad.MyriaSystemConfigKeys;
-import edu.washington.escience.myriad.api.MasterApiServer;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogMaker;
 import edu.washington.escience.myriad.util.FSUtils;
 import edu.washington.escience.myriad.util.ThreadUtils;
@@ -19,6 +18,8 @@ import edu.washington.escience.myriad.util.ThreadUtils;
 public class MasterDaemonTest {
   /* Test should timeout after 20 seconds. */
   public static final int TIMEOUT_MS = 20 * 1000;
+  /* Port used for the master daemon */
+  public static final int REST_PORT = 8753;
 
   @Test(timeout = TIMEOUT_MS)
   public void testStartAndShutdown() throws Exception {
@@ -34,7 +35,7 @@ public class MasterDaemonTest {
       Set<Thread> startThreads = ThreadUtils.getCurrentThreads();
 
       /* Start the master. */
-      MasterDaemon md = new MasterDaemon(new String[] { tmpFolder.getAbsolutePath() });
+      MasterDaemon md = new MasterDaemon(new String[] { tmpFolder.getAbsolutePath(), Integer.toString(REST_PORT) });
       md.start();
 
       /* Stop the master. */
@@ -49,7 +50,7 @@ public class MasterDaemonTest {
       }
     } finally {
       FSUtils.deleteFileFolder(tmpFolder);
-      while (!AvailablePortFinder.available(8001) || !AvailablePortFinder.available(MasterApiServer.PORT)) {
+      while (!AvailablePortFinder.available(8001) || !AvailablePortFinder.available(REST_PORT)) {
         Thread.sleep(100);
       }
     }
@@ -70,11 +71,11 @@ public class MasterDaemonTest {
       Set<Thread> startThreads = ThreadUtils.getCurrentThreads();
 
       /* Start the master. */
-      MasterDaemon md = new MasterDaemon(new String[] { tmpFolder.getAbsolutePath() });
+      MasterDaemon md = new MasterDaemon(new String[] { tmpFolder.getAbsolutePath(), Integer.toString(REST_PORT) });
       md.start();
 
       /* Stop the master. */
-      ClientResource shutdownRest = new ClientResource("http://localhost:" + MasterApiServer.PORT + "/server/shutdown");
+      ClientResource shutdownRest = new ClientResource("http://localhost:" + REST_PORT + "/server/shutdown");
       shutdownRest.get();
       shutdownRest.release();
 
@@ -87,7 +88,7 @@ public class MasterDaemonTest {
       }
     } finally {
       FSUtils.deleteFileFolder(tmpFolder);
-      while (!AvailablePortFinder.available(8001) || !AvailablePortFinder.available(MasterApiServer.PORT)) {
+      while (!AvailablePortFinder.available(8001) || !AvailablePortFinder.available(REST_PORT)) {
         Thread.sleep(100);
       }
     }
