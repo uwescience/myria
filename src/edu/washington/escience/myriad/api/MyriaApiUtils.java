@@ -9,6 +9,7 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.PropertyNamingStrategy;
 import org.restlet.Context;
 
+import edu.washington.escience.myriad.api.encoding.MyriaApiEncoding;
 import edu.washington.escience.myriad.parallel.Server;
 
 /**
@@ -63,7 +64,11 @@ public final class MyriaApiUtils {
    */
   public static <T> T deserialize(final byte[] payload, final Class<? extends T> target) {
     try {
-      return getMapper().readValue(payload, target);
+      T t = getMapper().readValue(payload, target);
+      if (t instanceof MyriaApiEncoding) {
+        ((MyriaApiEncoding) t).validate();
+      }
+      return t;
     } catch (IOException e) {
       throw new MyriaApiException(Status.BAD_REQUEST, e);
     }
