@@ -41,6 +41,8 @@ public class BinaryFileScan extends LeafOperator {
   private DataInput dataInput;
   /** FileChannel for fStream. */
   private FileChannel fc;
+  /** Keeps track of the file size. */
+  private long fileLength;
 
   /**
    * Construct a new BinaryFileScan object that reads the given binary file and create tuples from the file data that
@@ -72,23 +74,26 @@ public class BinaryFileScan extends LeafOperator {
   @Override
   protected final TupleBatch fetchNext() throws DbException {
     try {
-      while (fc.size() > 0 && buffer.numTuples() < TupleBatch.BATCH_SIZE) {
+      while (fileLength > 0 && buffer.numTuples() < TupleBatch.BATCH_SIZE) {
         for (int count = 0; count < schema.numColumns(); ++count) {
           switch (schema.getColumnType(count)) {
             case DOUBLE_TYPE:
               buffer.put(count, dataInput.readDouble());
+              fileLength -= 8;
               break;
             case FLOAT_TYPE:
               float readFloat = dataInput.readFloat();
               buffer.put(count, readFloat);
+              fileLength -= 4;
               break;
             case INT_TYPE:
-              int readInt = dataInput.readInt();
-              buffer.put(count, readInt);
+              buffer.put(count, dataInput.readInt());
+              fileLength -= 4;
               break;
             case LONG_TYPE:
               long readLong = dataInput.readLong();
               buffer.put(count, readLong);
+              fileLength -= 8;
               break;
             default:
               throw new UnsupportedOperationException(
@@ -128,7 +133,10 @@ public class BinaryFileScan extends LeafOperator {
       try {
         fStream = new FileInputStream(fileName);
         fc = fStream.getChannel();
+        fileLength = fc.size();
       } catch (FileNotFoundException e) {
+        throw new DbException(e);
+      } catch (IOException e) {
         throw new DbException(e);
       }
       if (isLittleEndian) {
