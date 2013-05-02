@@ -1,7 +1,10 @@
 package edu.washington.escience.myriad.column;
 
-import java.nio.ByteBuffer;
-import java.nio.FloatBuffer;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -25,14 +28,14 @@ import edu.washington.escience.myriad.proto.DataProto.FloatColumnMessage;
  */
 public final class FloatColumn implements Column<Float> {
   /** Internal representation of the column data. */
-  private final ByteBuffer dataBytes;
-  /** View of the column data as floats. */
-  private final FloatBuffer data;
+  private final float[] data;
+  /** The number of existing rows in this column. */
+  private int position;
 
   /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
   public FloatColumn() {
-    dataBytes = ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Float.SIZE / Byte.SIZE));
-    data = dataBytes.asFloatBuffer();
+    data = new float[TupleBatch.BATCH_SIZE];
+    position = 0;
   }
 
   /**
@@ -48,25 +51,24 @@ public final class FloatColumn implements Column<Float> {
     if (!message.hasFloatColumn()) {
       throw new IllegalArgumentException("ColumnMessage has type FLOAT but no FloatColumn");
     }
-    dataBytes = message.getFloatColumn().getData().asReadOnlyByteBuffer();
-    data = dataBytes.asFloatBuffer();
-    data.position(numTuples);
+    data = new float[TupleBatch.BATCH_SIZE];
+    position = 0;
+    try {
+      byte[] dataBytes = message.getFloatColumn().getData().toByteArray();
+      ObjectInputStream input = new ObjectInputStream(new ByteArrayInputStream(dataBytes));
+      for (int i = 0; i < numTuples; ++i) {
+        data[i] = input.readFloat();
+      }
+      input.close();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    position = numTuples;
   }
 
   @Override
   public Float get(final int row) {
     return Float.valueOf(getFloat(row));
-  }
-
-  /**
-   * Returns the element at the specified row in this column.
-   * 
-   * @param row row of element to return.
-   * @return the element at the specified row in this column.
-   */
-  public float getFloat(final int row) {
-    Preconditions.checkElementIndex(row, data.position());
-    return data.get(row);
   }
 
   @Override
@@ -78,6 +80,17 @@ public final class FloatColumn implements Column<Float> {
   public void getIntoSQLite(final int row, final SQLiteStatement statement, final int sqliteIndex)
       throws SQLiteException {
     statement.bind(sqliteIndex, getFloat(row));
+  }
+
+  /**
+   * Returns the element at the specified row in this column.
+   * 
+   * @param row row of element to return.
+   * @return the element at the specified row in this column.
+   */
+  public float getFloat(final int row) {
+    Preconditions.checkElementIndex(row, position);
+    return data[row];
   }
 
   @Override
@@ -92,8 +105,8 @@ public final class FloatColumn implements Column<Float> {
    * @return this column.
    */
   public FloatColumn put(final float value) {
-    Preconditions.checkElementIndex(data.position(), data.capacity());
-    data.put(value);
+    Preconditions.checkElementIndex(position, TupleBatch.BATCH_SIZE);
+    data[position++] = value;
     return this;
   }
 
@@ -114,14 +127,25 @@ public final class FloatColumn implements Column<Float> {
 
   @Override
   public ColumnMessage serializeToProto() {
+    ByteArrayOutputStream byteArray = new ByteArrayOutputStream(position * (Float.SIZE / Byte.SIZE));
+    try {
+      ObjectOutputStream output = new ObjectOutputStream(byteArray);
+      for (int i = 0; i < position; ++i) {
+        output.writeFloat(data[i]);
+      }
+      output.close();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    final FloatColumnMessage.Builder inner =
+        FloatColumnMessage.newBuilder().setData(ByteString.copyFrom(byteArray.toByteArray()));
     /* Note that we do *not* build the inner class. We pass its builder instead. */
-    final FloatColumnMessage.Builder inner = FloatColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
     return ColumnMessage.newBuilder().setType(ColumnMessageType.FLOAT).setFloatColumn(inner).build();
   }
 
   @Override
   public int size() {
-    return data.position();
+    return position;
   }
 
   @Override
@@ -132,7 +156,7 @@ public final class FloatColumn implements Column<Float> {
       if (i > 0) {
         sb.append(", ");
       }
-      sb.append(data.get(i));
+      sb.append(data[i]);
     }
     sb.append(']');
     return sb.toString();
