@@ -1,7 +1,10 @@
 package edu.washington.escience.myriad.column;
 
-import java.nio.ByteBuffer;
-import java.nio.IntBuffer;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -18,25 +21,25 @@ import edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessag
 import edu.washington.escience.myriad.proto.DataProto.IntColumnMessage;
 
 /**
- * A column of Integer values.
+ * A column of Int values.
  * 
  * @author dhalperi
  * 
  */
 public final class IntColumn implements Column<Integer> {
   /** Internal representation of the column data. */
-  private final ByteBuffer dataBytes;
-  /** View of the column data as ints. */
-  private final IntBuffer data;
+  private final int[] data;
+  /** The number of existing rows in this column. */
+  private int position;
 
   /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
   public IntColumn() {
-    dataBytes = ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Integer.SIZE / Byte.SIZE));
-    data = dataBytes.asIntBuffer();
+    data = new int[TupleBatch.BATCH_SIZE];
+    position = 0;
   }
 
   /**
-   * Constructs an IntColumn by deserializing the given ColumnMessage.
+   * Constructs a IntColumn by deserializing the given ColumnMessage.
    * 
    * @param message a ColumnMessage containing the contents of this column.
    * @param numTuples num tuples in the column message
@@ -48,25 +51,24 @@ public final class IntColumn implements Column<Integer> {
     if (!message.hasIntColumn()) {
       throw new IllegalArgumentException("ColumnMessage has type INT but no IntColumn");
     }
-    dataBytes = message.getIntColumn().getData().asReadOnlyByteBuffer();
-    data = dataBytes.asIntBuffer();
-    data.position(numTuples);
+    data = new int[TupleBatch.BATCH_SIZE];
+    position = 0;
+    try {
+      byte[] dataBytes = message.getIntColumn().getData().toByteArray();
+      ObjectInputStream input = new ObjectInputStream(new ByteArrayInputStream(dataBytes));
+      for (int i = 0; i < numTuples; ++i) {
+        data[i] = input.readInt();
+      }
+      input.close();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    position = numTuples;
   }
 
   @Override
   public Integer get(final int row) {
-    Preconditions.checkElementIndex(row, data.position());
-    return Integer.valueOf(data.get(row));
-  }
-
-  /**
-   * Returns the element at the specified row in this column.
-   * 
-   * @param row row of element to return.
-   * @return the element at the specified row in this column.
-   */
-  public int getInt(final int row) {
-    return data.get(row);
+    return Integer.valueOf(getInt(row));
   }
 
   @Override
@@ -78,6 +80,17 @@ public final class IntColumn implements Column<Integer> {
   public void getIntoSQLite(final int row, final SQLiteStatement statement, final int sqliteIndex)
       throws SQLiteException {
     statement.bind(sqliteIndex, getInt(row));
+  }
+
+  /**
+   * Returns the element at the specified row in this column.
+   * 
+   * @param row row of element to return.
+   * @return the element at the specified row in this column.
+   */
+  public int getInt(final int row) {
+    Preconditions.checkElementIndex(row, position);
+    return data[row];
   }
 
   @Override
@@ -92,7 +105,8 @@ public final class IntColumn implements Column<Integer> {
    * @return this column.
    */
   public IntColumn put(final int value) {
-    data.put(value);
+    Preconditions.checkElementIndex(position, TupleBatch.BATCH_SIZE);
+    data[position++] = value;
     return this;
   }
 
@@ -103,7 +117,7 @@ public final class IntColumn implements Column<Integer> {
 
   @Override
   public void putFromSQLite(final SQLiteStatement statement, final int index) throws SQLiteException {
-    throw new UnsupportedOperationException("SQLite does not support Int columns.");
+    put(statement.columnInt(index));
   }
 
   @Override
@@ -113,14 +127,25 @@ public final class IntColumn implements Column<Integer> {
 
   @Override
   public ColumnMessage serializeToProto() {
+    ByteArrayOutputStream byteArray = new ByteArrayOutputStream(position * (Integer.SIZE / Byte.SIZE));
+    try {
+      ObjectOutputStream output = new ObjectOutputStream(byteArray);
+      for (int i = 0; i < position; ++i) {
+        output.writeInt(data[i]);
+      }
+      output.close();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    final IntColumnMessage.Builder inner =
+        IntColumnMessage.newBuilder().setData(ByteString.copyFrom(byteArray.toByteArray()));
     /* Note that we do *not* build the inner class. We pass its builder instead. */
-    final IntColumnMessage.Builder inner = IntColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
     return ColumnMessage.newBuilder().setType(ColumnMessageType.INT).setIntColumn(inner).build();
   }
 
   @Override
   public int size() {
-    return data.position();
+    return position;
   }
 
   @Override
@@ -131,7 +156,7 @@ public final class IntColumn implements Column<Integer> {
       if (i > 0) {
         sb.append(", ");
       }
-      sb.append(data.get(i));
+      sb.append(data[i]);
     }
     sb.append(']');
     return sb.toString();
