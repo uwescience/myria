@@ -18,7 +18,7 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
 
 /**
- * To test BinaryFileScan, and is is based on the code from FileScanTest
+ * To test BinaryFileScan, and it is based on the code from FileScanTest
  * 
  * @author leelee
  * 
@@ -29,17 +29,12 @@ public class BinaryFileScanTest {
   /**
    * Test default BinaryFileScan that reads data bytes in big endian format.
    */
-  public void testSimple() {
+  public void testSimple() throws DbException {
     Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE));
     String filename = "testdata" + File.separatorChar + "binaryfilescan" + File.separatorChar + "testSimple";
     generateSimpleBinaryFile(filename, 2);
     BinaryFileScan bfs = new BinaryFileScan(schema, filename);
-    try {
-      assertEquals(2, getRowCount(bfs));
-    } catch (DbException e) {
-      System.out.println("getRowCount in testSimple throws DbException.");
-      e.printStackTrace();
-    }
+    assertEquals(2, getRowCount(bfs));
   }
 
   @Test
@@ -47,7 +42,7 @@ public class BinaryFileScanTest {
    * Test default BinaryFileScan that reads data bytes in big endian format with the bin file
    * that has the astronomy data schema.
    */
-  public void testWithAstronomySchema() {
+  public void testWithAstronomySchema() throws DbException {
     Type[] typeAr = { Type.LONG_TYPE, // iOrder
         Type.FLOAT_TYPE, // mass
         Type.FLOAT_TYPE, // x
@@ -69,18 +64,14 @@ public class BinaryFileScanTest {
         "testdata" + File.separatorChar + "binaryfilescan" + File.separatorChar + "testWithAstronomySchema";
     generateBinaryFile(filename, typeAr, 8);
     BinaryFileScan bfs = new BinaryFileScan(schema, filename);
-    try {
-      assertEquals(8, getRowCount(bfs));
-    } catch (DbException e) {
-      e.printStackTrace();
-    }
+    assertEquals(8, getRowCount(bfs));
   }
 
   @Test
   /**
    * Test BinaryFileScan with the real cosmo data bin file
    */
-  public void testNumRowsFromCosmo24Star() {
+  public void testNumRowsFromCosmo24Star() throws DbException {
     Type[] typeAr = { Type.LONG_TYPE, // iOrder
         Type.FLOAT_TYPE, // mass
         Type.FLOAT_TYPE, // x
@@ -98,11 +89,7 @@ public class BinaryFileScanTest {
     String filename =
         "testdata" + File.separatorChar + "binaryfilescan" + File.separatorChar + "cosmo50cmb.256g2bwK.00024.star.bin";
     BinaryFileScan bfs = new BinaryFileScan(schema, filename, true);
-    try {
-      assertEquals(1291, getRowCount(bfs));
-    } catch (DbException e) {
-      e.printStackTrace();
-    }
+    assertEquals(1291, getRowCount(bfs));
   }
 
   /**
