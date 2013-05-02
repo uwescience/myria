@@ -5,6 +5,7 @@ import java.io.DataInputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.channels.FileChannel;
 import java.util.Objects;
 
 import com.google.common.collect.ImmutableMap;
@@ -38,6 +39,8 @@ public class BinaryFileScan extends LeafOperator {
   private FileInputStream fStream;
   /** Data input to read data from the bin file. */
   private DataInput dataInput;
+  /** FileChannel for fStream. */
+  private FileChannel fc;
 
   /**
    * Construct a new BinaryFileScan object that reads the given binary file and create tuples from the file data that
@@ -69,7 +72,7 @@ public class BinaryFileScan extends LeafOperator {
   @Override
   protected final TupleBatch fetchNext() throws DbException {
     try {
-      while (fStream.available() > 0 && buffer.numTuples() < TupleBatch.BATCH_SIZE) {
+      while (fc.size() > 0 && buffer.numTuples() < TupleBatch.BATCH_SIZE) {
         for (int count = 0; count < schema.numColumns(); ++count) {
           switch (schema.getColumnType(count)) {
             case DOUBLE_TYPE:
@@ -124,6 +127,7 @@ public class BinaryFileScan extends LeafOperator {
       fStream = null;
       try {
         fStream = new FileInputStream(fileName);
+        fc = fStream.getChannel();
       } catch (FileNotFoundException e) {
         throw new DbException(e);
       }
