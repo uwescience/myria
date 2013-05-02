@@ -2,12 +2,9 @@ package edu.washington.escience.myriad.operator;
 
 import java.io.DataInput;
 import java.io.DataInputStream;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.InputMismatchException;
 import java.util.Objects;
 
 import com.google.common.collect.ImmutableMap;
@@ -19,8 +16,7 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 
 /**
- * Reads data from binary file. This class is written base on the code from
- * FileScan.java
+ * Reads data from binary file. This class is written base on the code from FileScan.java
  * 
  * @author leelee
  * 
@@ -28,158 +24,114 @@ import edu.washington.escience.myriad.TupleBatchBuffer;
 
 public class BinaryFileScan extends LeafOperator {
 
-	/** Required for Java serialization */
-	private static final long serialVersionUID = 1L;
-	/** The schema for the relation stored in this file */
-	private final Schema schema;
-	/** The filename of the input */
-	private final String fileName;
-	/** Holds the tuples that are ready for release */
-	private transient TupleBatchBuffer buffer;
-	/** Which line of the file the scanner is currently on */
-	private int lineNumber;
-	/** Keep tracks of the length left to read */
-	private long lenLeft;
-	private final boolean isLittleEndian;
-	private FileInputStream fStream;
-	private DataInput dataInput;
+  /** Required for Java serialization. */
+  private static final long serialVersionUID = 1L;
+  /** The schema for the relation stored in this file. */
+  private final Schema schema;
+  /** The filename of the input. */
+  private final String fileName;
+  /** Holds the tuples that are ready for release. */
+  private transient TupleBatchBuffer buffer;
+  /** Indicates the endianess of the bin file to read. */
+  private final boolean isLittleEndian;
+  /** FileInputStream for the bin file. */
+  private FileInputStream fStream;
+  /** Data input to read data from the bin file. */
+  private DataInput dataInput;
 
-	public FileOutputStream output;
+  /**
+   * Construct a new BinaryFileScan object that reads the given binary file and create tuples from the file data that
+   * has the given schema. The endianess of the binary file is indicated by the isLittleEndian flag.
+   * 
+   * @param schema The tuple schema to be used for creating tuple from the binary file's data.
+   * @param fileName The binary file name.
+   * @param isLittleEndian The flag that indicates the endianess of the binary file.
+   */
+  public BinaryFileScan(final Schema schema, final String fileName, final boolean isLittleEndian) {
+    Objects.requireNonNull(schema);
+    Objects.requireNonNull(fileName);
+    this.schema = schema;
+    this.fileName = fileName;
+    this.isLittleEndian = isLittleEndian;
+  }
 
-	// add little endian boolean, default false
-	// use DataInput interface, littleendianinputstream else new datainputstream
-	// start with ten records first
+  /**
+   * Construct a new BinaryFileScan object that reads the given binary file and creates tuples from the file data that
+   * has the given schema. The default endianess is big endian.
+   * 
+   * @param schema The tuple schema to be used for creating tuple from the binary file's data.
+   * @param fileName The binary file name.
+   */
+  public BinaryFileScan(final Schema schema, final String fileName) {
+    this(schema, fileName, false);
+  }
 
-	public BinaryFileScan(Schema schema, String fileName, boolean isLittleEndian) {
-		Objects.requireNonNull(schema);
-		Objects.requireNonNull(fileName);
-		this.schema = schema;
-		this.fileName = fileName;
-		try {
-			output = new FileOutputStream(new File("cosmo24star.txt"));
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		this.isLittleEndian = isLittleEndian;
-	}
+  @Override
+  protected final TupleBatch fetchNext() throws DbException {
+    try {
+      while (fStream.available() > 0 && buffer.numTuples() < TupleBatch.BATCH_SIZE) {
+        for (int count = 0; count < schema.numColumns(); ++count) {
+          switch (schema.getColumnType(count)) {
+            case DOUBLE_TYPE:
+              buffer.put(count, dataInput.readDouble());
+              break;
+            case FLOAT_TYPE:
+              float readFloat = dataInput.readFloat();
+              buffer.put(count, readFloat);
+              break;
+            case INT_TYPE:
+              int readInt = dataInput.readInt();
+              buffer.put(count, readInt);
+              break;
+            case LONG_TYPE:
+              long readLong = dataInput.readLong();
+              buffer.put(count, readLong);
+              break;
+            default:
+              throw new UnsupportedOperationException(
+                  "BinaryFileScan only support reading fixed width type from the binary file.");
+          }
+        }
+      }
+    } catch (IOException e) {
+      throw new DbException(e);
+    }
+    TupleBatch tb = buffer.popAny();
+    return tb;
+  }
 
-	public BinaryFileScan(Schema schema, String fileName) {
-		this(schema, fileName, false);
-	}
+  @Override
+  protected final void cleanup() throws DbException {
+    while (buffer.numTuples() > 0) {
+      buffer.popAny();
+    }
+  }
 
-	@Override
-	protected TupleBatch fetchNext() throws DbException {
-		System.out.println("in fecth next");
-		try {
-			while (fStream.available() > 0
-			    && buffer.numTuples() < TupleBatch.BATCH_SIZE) {
-				lineNumber++;
-				for (int count = 0; count < schema.numColumns(); ++count) {
-					/* Make sure the schema matches */
-					try {
-						switch (schema.getColumnType(count)) {
-						case BOOLEAN_TYPE:
-							buffer.put(count, dataInput.readBoolean());
-							lenLeft -= 1;
-							break;
-						case DOUBLE_TYPE:
-							buffer.put(count, dataInput.readDouble());
-							lenLeft -= 8;
-							break;
-						case FLOAT_TYPE:
-							float readFloat = dataInput.readFloat();
-							buffer.put(count, readFloat);
-							lenLeft -= 4;
-							break;
-						case INT_TYPE:
-							int readInt = dataInput.readInt();
-							buffer.put(count, readInt);
-							lenLeft -= 4;
-							break;
-						case LONG_TYPE:
-							long readLong = dataInput.readLong();
-							buffer.put(count, readLong);
-							lenLeft -= 8;
-							break;
-						case STRING_TYPE:
-							// buffer.put(count, raf.read);
-							break;
-						default:
-							break;
-						}
-					} catch (final InputMismatchException e) {
-						throw new DbException("Error parsing column " + count + " of row "
-						    + lineNumber + ": " + e.toString());
-					}
-				}
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-			throw new DbException(e.getMessage());
-		}
-		TupleBatch tb = buffer.popAny();
-		try {
-			if (tb != null) {
-				output.write(tb.toString().getBytes());
-			}
+  @Override
+  protected final TupleBatch fetchNextReady() throws DbException {
+    return fetchNext();
+  }
 
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return tb;
-	}
+  @Override
+  public final Schema getSchema() {
+    return schema;
+  }
 
-	@Override
-	protected void cleanup() throws DbException {
-		while (buffer.numTuples() > 0) {
-			buffer.popAny();
-		}
-	}
-
-	@Override
-	protected TupleBatch fetchNextReady() throws DbException {
-		return fetchNext();
-	}
-
-	@Override
-	public Schema getSchema() {
-		return schema;
-	}
-
-	@Override
-	protected void init(ImmutableMap<String, Object> execEnvVars)
-	    throws DbException {
-		buffer = new TupleBatchBuffer(getSchema());
-		// try {
-		// raf = new RandomAccessFile(fileName, "r");
-		// lenLeft = raf.length();
-		// } catch (FileNotFoundException e) {
-		// e.printStackTrace();
-		// return;
-		// } catch (IOException e) {
-		// e.printStackTrace();
-		// return;
-		// }
-		System.out.println("in init");
-		if (fileName != null) {
-			fStream = null;
-			try {
-				fStream = new FileInputStream(fileName);
-			} catch (FileNotFoundException e) {
-				// TODO Auto-generated catch block
-				System.out.println("problem with creating fileInputStream");
-				e.printStackTrace();
-			}
-			if (isLittleEndian) {
-				dataInput = new LittleEndianDataInputStream(fStream);
-			} else {
-				System.out.println("big endian");
-				dataInput = new DataInputStream(fStream);
-			}
-			// lenLeft = fStream.
-		}
-		lineNumber = 0;
-	}
+  @Override
+  protected final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+    buffer = new TupleBatchBuffer(getSchema());
+    if (fileName != null) {
+      fStream = null;
+      try {
+        fStream = new FileInputStream(fileName);
+      } catch (FileNotFoundException e) {
+        throw new DbException(e);
+      }
+      if (isLittleEndian) {
+        dataInput = new LittleEndianDataInputStream(fStream);
+      } else {
+        dataInput = new DataInputStream(fStream);
+      }
+    }
+  }
 }
