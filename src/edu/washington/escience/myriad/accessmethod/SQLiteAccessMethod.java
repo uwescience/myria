@@ -108,12 +108,22 @@ public final class SQLiteAccessMethod {
        * "database is locked" exception will still be thrown. The following code simply tries to call prepare again.
        */
       boolean conflict = true;
+      int count = 0;
       while (conflict) {
         conflict = false;
         try {
           statement = sqliteConnection.prepare(queryString);
         } catch (final SQLiteException e) {
           conflict = true;
+          count++;
+          if (count >= 1000) {
+            throw new RuntimeException(e);
+          }
+          try {
+            Thread.sleep(10);
+          } catch (InterruptedException e1) {
+            e1.printStackTrace();
+          }
         }
       }
       /* Step the statement once so we can figure out the Schema */
