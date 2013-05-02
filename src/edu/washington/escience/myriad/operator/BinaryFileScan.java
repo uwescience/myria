@@ -36,11 +36,11 @@ public class BinaryFileScan extends LeafOperator {
   /** Indicates the endianess of the bin file to read. */
   private final boolean isLittleEndian;
   /** FileInputStream for the bin file. */
-  private FileInputStream fStream;
+  private transient FileInputStream fStream;
   /** Data input to read data from the bin file. */
-  private DataInput dataInput;
+  private transient DataInput dataInput;
   /** FileChannel for fStream. */
-  private FileChannel fc;
+  private transient FileChannel fc;
   /** Keeps track of the file size. */
   private long fileLength;
 
