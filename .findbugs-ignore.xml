@@ -1,0 +1,6 @@
+<FindBugsFilter>
+	<Match>
+		<Class name="~.*\.*Encoding" />
+		<Bug pattern="NP_UNWRITTEN_PUBLIC_OR_PROTECTED_FIELD" />
+	</Match>
+</FindBugsFilter>

@@ -9,6 +9,7 @@
   </fileset>
   <filter name="FilesFromPackage" enabled="true">
     <filter-data value="protobuf/java"/>
+    <filter-data value="src/edu/washington/escience/myriad/api/encoding"/>
     <filter-data value="third-party-src"/>
     <filter-data value="test"/>
     <filter-data value="speedtest"/>

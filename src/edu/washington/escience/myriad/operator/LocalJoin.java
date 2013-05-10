@@ -30,7 +30,7 @@ public final class LocalJoin extends Operator {
   /**
    * The result schema.
    * */
-  private final Schema outputSchema;
+  private Schema outputSchema;
   /**
    * The column indices for comparing of child 1.
    * */
@@ -93,8 +93,8 @@ public final class LocalJoin extends Operator {
    */
   public LocalJoin(final Operator child1, final Operator child2, final int[] compareIndx1, final int[] compareIndx2,
       final int[] answerColumns1, final int[] answerColumns2) {
-    this(mergeFilter(child1.getSchema(), child2.getSchema(), answerColumns1, answerColumns2), child1, child2,
-        compareIndx1, compareIndx2, answerColumns1, answerColumns2);
+    this(mergeFilter(child1, child2, answerColumns1, answerColumns2), child1, child2, compareIndx1, compareIndx2,
+        answerColumns1, answerColumns2);
   }
 
   /**
@@ -157,23 +157,26 @@ public final class LocalJoin extends Operator {
   /**
    * Helper function to generate the proper output schema merging two parts of two schemas.
    * 
-   * @param schema1 the left schema.
-   * @param schema2 the right schema.
+   * @param child1 the left child.
+   * @param child2 the right child.
    * @param answerColumns1 the selected columns of the left schema.
    * @param answerColumns2 the selected columns of the right schema.
    * @return a schema that contains the chosen columns of the left and right schema.
    */
-  private static Schema mergeFilter(final Schema schema1, final Schema schema2, final int[] answerColumns1,
+  private static Schema mergeFilter(final Operator child1, final Operator child2, final int[] answerColumns1,
       final int[] answerColumns2) {
+    if (child1 == null || child2 == null) {
+      return null;
+    }
     ImmutableList.Builder<Type> types = ImmutableList.builder();
     ImmutableList.Builder<String> names = ImmutableList.builder();
     for (int i : answerColumns1) {
-      types.add(schema1.getColumnType(i));
-      names.add(schema1.getColumnName(i));
+      types.add(child1.getSchema().getColumnType(i));
+      names.add(child1.getSchema().getColumnName(i));
     }
     for (int i : answerColumns2) {
-      types.add(schema2.getColumnType(i));
-      names.add(schema2.getColumnName(i));
+      types.add(child2.getSchema().getColumnType(i));
+      names.add(child2.getSchema().getColumnName(i));
     }
 
     return new Schema(types, names);
@@ -447,5 +450,6 @@ public final class LocalJoin extends Operator {
   public void setChildren(final Operator[] children) {
     child1 = children[0];
     child2 = children[1];
+    outputSchema = mergeFilter(child1, child2, answerColumns1, answerColumns2);
   }
 }
