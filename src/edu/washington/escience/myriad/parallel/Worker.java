@@ -2,11 +2,9 @@ package edu.washington.escience.myriad.parallel;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Properties;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -36,12 +34,7 @@ import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.MyriaSystemConfigKeys;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.coordinator.catalog.WorkerCatalog;
-import edu.washington.escience.myriad.operator.IDBInput;
-import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
-import edu.washington.escience.myriad.parallel.ipc.IPCEvent;
-import edu.washington.escience.myriad.parallel.ipc.IPCEventListener;
 import edu.washington.escience.myriad.parallel.ipc.InJVMLoopbackChannelSink;
 import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
@@ -106,28 +99,7 @@ public final class Worker {
           try {
             while ((cm = controlMessageQueue.take()) != null) {
               switch (cm.getType()) {
-                case SHUTDOWN:
-                  if (LOGGER.isInfoEnabled()) {
-                    LOGGER.info("shutdown requested");
-                  }
-                  toShutdown = true;
-                  abruptShutdown = false;
-                  break;
-                case START_QUERY:
-                  long queryId = cm.getQueryId();
-                  WorkerQueryPartition q = activeQueries.get(queryId);
-                  if (q == null) {
-                    if (LOGGER.isErrorEnabled()) {
-                      LOGGER.error("Unknown query id: {}, current active queries are: {}", queryId, activeQueries);
-                    }
-                    continue;
-                  }
-                  if (queryExecutionMode == QueryExecutionMode.NON_BLOCKING) {
-                    q.startNonBlockingExecution();
-                  } else {
-                    q.startBlockingExecution();
-                  }
-                  break;
+
                 case DISCONNECT:
                 case CONNECT:
                   // DISCONNECT and CONNECT are used exclusively in IPC connection pool. They should not arrive here.
@@ -136,16 +108,24 @@ public final class Worker {
                         .error("DISCONNECT and CONNECT are used exclusively in IPC connection pool. They should not arrive here.");
                   }
                   break;
-                case QUERY_COMPLETE:
-                case QUERY_READY_TO_EXECUTE:
-                case WORKER_ALIVE:
+
+                case SHUTDOWN:
+                  if (LOGGER.isInfoEnabled()) {
+                    if (LOGGER.isInfoEnabled()) {
+                      LOGGER.info("shutdown requested");
+                    }
+                  }
+                  toShutdown = true;
+                  abruptShutdown = false;
+                  break;
+                default:
                   if (LOGGER.isErrorEnabled()) {
                     LOGGER.error("Unexpected control message received at worker: " + cm.getType());
                   }
               }
             }
           } catch (InterruptedException e) {
-            Thread.interrupted();
+            Thread.currentThread().interrupt();
             break;
           }
         }
@@ -280,6 +260,13 @@ public final class Worker {
   private volatile ThreadPoolExecutor queryExecutor;
 
   /**
+   * @return the query executor used in this worker.
+   * */
+  ExecutorService getQueryExecutor() {
+    return queryExecutor;
+  }
+
+  /**
    * {@link ExecutorService} for non-query message processing.
    * */
   private volatile ExecutorService messageProcessingExecutor;
@@ -303,11 +290,6 @@ public final class Worker {
    * timer task executor.
    * */
   private ScheduledExecutorService scheduledTaskExecutor;
-
-  /**
-   * database handle.
-   * */
-  private final Properties databaseHandle;
 
   /**
    * The ID of this worker.
@@ -484,6 +466,13 @@ public final class Worker {
   }
 
   /**
+   * @return the system wide default inuput buffer capacity.
+   * */
+  int getInputBufferCapacity() {
+    return inputBufferCapacity;
+  }
+
+  /**
    * @return my execution environment variables for init of operators.
    * */
   ConcurrentHashMap<String, Object> getExecEnvVars() {
@@ -495,6 +484,20 @@ public final class Worker {
    * */
   String getWorkingDirectory() {
     return workingDirectory;
+  }
+
+  /**
+   * @return the current active queries.
+   * */
+  ConcurrentHashMap<Long, WorkerQueryPartition> getActiveQueries() {
+    return activeQueries;
+  }
+
+  /**
+   * @return query execution mode.
+   * */
+  QueryExecutionMode getQueryExecutionMode() {
+    return queryExecutionMode;
   }
 
   /**
@@ -510,7 +513,6 @@ public final class Worker {
 
     this.workingDirectory = workingDirectory;
     myID = Integer.parseInt(catalog.getConfigurationValue(MyriaSystemConfigKeys.WORKER_IDENTIFIER));
-    databaseHandle = new Properties();
 
     // mySocketInfo = catalog.getWorkers().get(myID);
 
@@ -544,8 +546,7 @@ public final class Worker {
     switch (databaseType) {
       case MyriaConstants.STORAGE_SYSTEM_SQLITE:
         String sqliteFilePath = catalog.getConfigurationValue(MyriaSystemConfigKeys.WORKER_DATA_SQLITE_DB);
-        databaseHandle.setProperty("sqliteFile", sqliteFilePath);
-        execEnvVars.put("sqliteFile", sqliteFilePath);
+        execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_SQLITE_FILE, sqliteFilePath);
         SQLiteConnection conn = new SQLiteConnection(new File(sqliteFilePath));
         try {
           conn.open(true);
@@ -555,7 +556,6 @@ public final class Worker {
           e.printStackTrace();
         }
         conn.dispose();
-
         break;
       case MyriaConstants.STORAGE_SYSTEM_MYSQL:
         /* TODO fill this in. */
@@ -568,34 +568,6 @@ public final class Worker {
   }
 
   /**
-   * This method should be called when a query is finished.
-   * 
-   * @param query the query that just finished.
-   */
-  public void finishQuery(final WorkerQueryPartition query) {
-    if (query != null) {
-      activeQueries.remove(query.getQueryID());
-      sendMessageToMaster(IPCUtils.queryCompleteTM(query.getQueryID())).addListener(new ChannelFutureListener() {
-
-        @Override
-        public void operationComplete(final ChannelFuture future) throws Exception {
-          if (future.isSuccess()) {
-            if (LOGGER.isDebugEnabled()) {
-              LOGGER.debug("The query complete message is sent to the master for sure ");
-            }
-          }
-        }
-
-      });
-      if (LOGGER.isInfoEnabled()) {
-        LOGGER.info("My part of query " + query.getQueryID() + " finished");
-      }
-    }
-  }
-
-  /**
-   * this method should be called when a query is received from the server.
-   * 
    * It does the initialization and preparation for the execution of the query.
    * 
    * @param query the received query.
@@ -605,108 +577,65 @@ public final class Worker {
     if (LOGGER.isInfoEnabled()) {
       LOGGER.info("Query received" + query.getQueryID());
     }
-    setupExchangeChannels(query);
+    consumerChannelMapping.putAll(query.getConsumerChannelMapping());
+    producerChannelMapping.putAll(query.getProducerChannelMapping());
+
     activeQueries.put(query.getQueryID(), query);
-  }
+    query.getExecutionFuture().addListener(new QueryFutureListener() {
 
-  /**
-   * 
-   * Find out the consumers and producers and register them in the {@link Worker}'s data structures
-   * {@link Worker#producerChannelMapping} and {@link Worker#consumerChannelMapping}.
-   * 
-   * @param query the query on which to do the setup.
-   * @throws DbException if any error occurs.
-   * 
-   */
-  public void setupExchangeChannels(final WorkerQueryPartition query) throws DbException {
-    final ArrayList<QuerySubTreeTask> tasks = new ArrayList<QuerySubTreeTask>();
-
-    for (final RootOperator task : query.getOperators()) {
-      QuerySubTreeTask drivingTask = new QuerySubTreeTask(myID, query, task, queryExecutor, queryExecutionMode);
-      tasks.add(drivingTask);
-
-      if (task instanceof Producer) {
-        // Setup producer channels.
-        Producer p = (Producer) task;
-        ExchangePairID[] oIDs = p.operatorIDs();
-        int[] destWorkers = p.getDestinationWorkerIDs(myID);
-        for (int i = 0; i < destWorkers.length; i++) {
-          ExchangeChannelID ecID = new ExchangeChannelID(oIDs[i].getLong(), destWorkers[i]);
-          // producerChannelMapping.put(ecID, new ProducerChannel(drivingTask, p, ecID));
-          producerChannelMapping.put(ecID, new ProducerChannel(drivingTask, ecID));
+      @Override
+      public void operationComplete(final QueryFuture future) throws Exception {
+        activeQueries.remove(query.getQueryID());
+        for (ExchangeChannelID consumerChannelID : query.getConsumerChannelMapping().keySet()) {
+          consumerChannelMapping.remove(consumerChannelID);
         }
-      }
-      setupConsumerChannels(task, drivingTask);
-    }
 
-    query.setTasks(tasks);
+        for (ExchangeChannelID producerChannelID : query.getProducerChannelMapping().keySet()) {
+          producerChannelMapping.remove(producerChannelID);
+        }
 
-  }
+        if (future.isSuccess()) {
 
-  /**
-   * @param currentOperator current operator in considering.
-   * @param drivingTask the task current operator belongs to.
-   * @throws DbException if any error occurs.
-   * */
-  private void setupConsumerChannels(final Operator currentOperator, final QuerySubTreeTask drivingTask)
-      throws DbException {
+          sendMessageToMaster(IPCUtils.queryCompleteTM(query.getQueryID(), query.getExecutionStatistics()))
+              .addListener(new ChannelFutureListener() {
 
-    if (currentOperator == null) {
-      return;
-    }
+                @Override
+                public void operationComplete(final ChannelFuture future) throws Exception {
+                  if (future.isSuccess()) {
+                    if (LOGGER.isDebugEnabled()) {
+                      LOGGER.debug("The query complete message is sent to the master for sure ");
+                    }
+                  }
+                }
 
-    if (currentOperator instanceof Consumer) {
-      final Consumer operator = (Consumer) currentOperator;
-      FlowControlInputBuffer<ExchangeData> inputBuffer =
-          new FlowControlInputBuffer<ExchangeData>(inputBufferCapacity, operator.getOperatorID());
-      inputBuffer.addBufferFullListener(new IPCEventListener<FlowControlInputBuffer<ExchangeData>>() {
-        @Override
-        public void triggered(final IPCEvent<FlowControlInputBuffer<ExchangeData>> e) {
-          if (e.getAttachment().remainingCapacity() <= 0) {
-            flowController.pauseRead(operator).awaitUninterruptibly();
+              });
+          if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("My part of query " + query + " finished");
           }
-        }
-      });
-      inputBuffer.addBufferRecoverListener(new IPCEventListener<FlowControlInputBuffer<ExchangeData>>() {
-        @Override
-        public void triggered(final IPCEvent<FlowControlInputBuffer<ExchangeData>> e) {
-          if (e.getAttachment().remainingCapacity() > 0) {
-            flowController.resumeRead(operator).awaitUninterruptibly();
+
+        } else {
+          if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Query failed because of exception: ", future.getCause());
           }
-        }
-      });
-      operator.setInputBuffer(inputBuffer);
 
-      operator.setExchangeChannels(new ConsumerChannel[operator.getSourceWorkers(myID).length]);
-      ExchangePairID oID = operator.getOperatorID();
-      int[] sourceWorkers = operator.getSourceWorkers(myID);
-      int idx = 0;
-      for (int workerID : sourceWorkers) {
-        ExchangeChannelID ecID = new ExchangeChannelID(oID.getLong(), workerID);
-        ConsumerChannel cc = new ConsumerChannel(drivingTask, operator, ecID);
-        consumerChannelMapping.put(ecID, cc);
-        operator.getExchangeChannels()[idx++] = cc;
-      }
-    }
+          sendMessageToMaster(
+              IPCUtils.queryFailureTM(query.getQueryID(), future.getCause(), query.getExecutionStatistics()))
+              .addListener(new ChannelFutureListener() {
 
-    if (currentOperator instanceof IDBInput) {
-      IDBInput p = (IDBInput) currentOperator;
-      ExchangePairID oID = p.getControllerOperatorID();
-      int wID = p.getControllerWorkerID();
-      ExchangeChannelID ecID = new ExchangeChannelID(oID.getLong(), wID);
-      ProducerChannel pc = new ProducerChannel(drivingTask, ecID);
-      producerChannelMapping.putIfAbsent(ecID, pc);
-    }
+                @Override
+                public void operationComplete(final ChannelFuture future) throws Exception {
+                  if (future.isSuccess()) {
+                    if (LOGGER.isDebugEnabled()) {
+                      LOGGER.debug("The query complete message is sent to the master for sure ");
+                    }
+                  }
+                }
 
-    final Operator[] children = currentOperator.getChildren();
+              });
 
-    if (children != null) {
-      for (final Operator child : children) {
-        if (child != null) {
-          setupConsumerChannels(child, drivingTask);
         }
       }
-    }
+    });
   }
 
   /**
@@ -790,7 +719,8 @@ public final class Worker {
       queryExecutor =
           (ThreadPoolExecutor) Executors.newCachedThreadPool(new RenamingThreadFactory("Blocking query executor"));
     }
-    messageProcessingExecutor = Executors.newCachedThreadPool(new RenamingThreadFactory("Control message processor"));
+    messageProcessingExecutor =
+        Executors.newCachedThreadPool(new RenamingThreadFactory("Control/Query message processor"));
     messageProcessingExecutor.submit(new QueryMessageProcessor());
     messageProcessingExecutor.submit(new ControlMessageProcessor());
     // Periodically detect if the server (i.e., coordinator)

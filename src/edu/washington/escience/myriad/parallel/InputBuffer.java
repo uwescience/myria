@@ -81,4 +81,17 @@ public interface InputBuffer<DATA, M extends ExchangeMessage<DATA>> {
    * */
   M pickFirst(int sourceID);
 
+  /**
+   * Attach the inputbuffer to an operator.
+   * 
+   * @param ownerOperator the id of the owner operator.
+   * */
+  void attach(final ExchangePairID ownerOperator);
+
+  /**
+   * Detach the inputbuffer from an operator. If an InputBuffer is not attached to an operator, the InputBuffer drops
+   * everything it receives.
+   * */
+  void detached();
+
 }

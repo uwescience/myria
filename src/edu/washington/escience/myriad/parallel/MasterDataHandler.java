@@ -16,7 +16,6 @@ import edu.washington.escience.myriad.parallel.ipc.MessageChannelHandler;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage.Builder;
-import edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType;
 
 /**
  * Message processor for the master.
@@ -97,13 +96,13 @@ public class MasterDataHandler extends SimpleChannelUpstreamHandler implements M
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("received a message from " + senderID + ": of type " + tm.getType());
     }
-    if (tm.getType() == TransportMessageType.DATA) {
-      DataMessage dm = tm.getData();
+    if (tm.getType() == TransportMessage.Type.DATA) {
+      DataMessage dm = tm.getDataMessage();
       switch (dm.getType()) {
         case NORMAL:
         case EOI:
           Builder tmB = tm.toBuilder();
-          tmB.getDataBuilder().setOperatorID(channel2OperatorID.get(channel.getId()));
+          tmB.getDataMessageBuilder().setOperatorID(channel2OperatorID.get(channel.getId()));
           tm = tmB.build();
           while (!processMessage(channel, senderID, tm)) {
             if (LOGGER.isErrorEnabled()) {
@@ -113,13 +112,12 @@ public class MasterDataHandler extends SimpleChannelUpstreamHandler implements M
           }
           break;
         case BOS:
-          channel2OperatorID.put(channel.getId(), tm.getData().getOperatorID());
+          channel2OperatorID.put(channel.getId(), tm.getDataMessage().getOperatorID());
           break;
         case EOS:
           tmB = tm.toBuilder();
-          tmB.getDataBuilder().setOperatorID(channel2OperatorID.get(channel.getId()));
+          tmB.getDataMessageBuilder().setOperatorID(channel2OperatorID.remove(channel.getId()));
           tm = tmB.build();
-          channel2OperatorID.remove(channel.getId());
           while (!processMessage(channel, senderID, tm)) {
             if (LOGGER.isErrorEnabled()) {
               LOGGER
@@ -129,10 +127,10 @@ public class MasterDataHandler extends SimpleChannelUpstreamHandler implements M
           break;
       }
     } else {
-      if (tm.getType() == TransportMessageType.CONTROL) {
+      if (tm.getType() == TransportMessage.Type.CONTROL) {
         if (LOGGER.isDebugEnabled()) {
           LOGGER.debug("Received a control message from : " + senderID + " of type: "
-              + tm.getControl().getType().name());
+              + tm.getControlMessage().getType().name());
         }
       }
       while (!processMessage(channel, senderID, tm)) {

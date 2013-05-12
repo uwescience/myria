@@ -42,11 +42,11 @@ public class TenGBTupleBatchReceiverUsingConnectionPool {
 
     RECEIVE_MESSAGE : while ((m = messageQueue.take()) != null) {
       final TransportMessage tm = m.message;
-      if (tm.getType() == TransportMessage.TransportMessageType.DATA) {
+      if (tm.getType() == TransportMessage.Type.DATA) {
         if (numReceived % 100 == 0) {
           System.out.println(numReceived + " received");
         }
-        final DataMessage data = tm.getData();
+        final DataMessage data = tm.getDataMessage();
         switch (data.getType()) {
           case EOS:
             end = System.currentTimeMillis();

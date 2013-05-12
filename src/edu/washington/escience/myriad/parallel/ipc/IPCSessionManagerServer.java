@@ -14,7 +14,6 @@ import org.jboss.netty.channel.WriteCompletionEvent;
 import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
-import edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType;
 import edu.washington.escience.myriad.util.IPCUtils;
 
 /**
@@ -71,12 +70,13 @@ public class IPCSessionManagerServer extends SimpleChannelHandler {
         throw new IllegalStateException("Unknown session. Send me the remote id before data transfer.");
       }
     } else {
-      if (tm.getType() == TransportMessageType.DATA && tm.getData().getType() == DataMessage.DataMessageType.NORMAL) {
+      if (tm.getType() == TransportMessage.Type.DATA && tm.getDataMessage().getType() == DataMessage.Type.NORMAL) {
         // update io timestamp before data processing
         att.updateLastIOTimestamp();
-      } else if (tm.getType() == TransportMessageType.CONTROL
-          && tm.getControl().getType() == ControlMessage.ControlMessageType.DISCONNECT) {
+      } else if (tm.getType() == TransportMessage.Type.CONTROL
+          && tm.getControlMessage().getType() == ControlMessage.Type.DISCONNECT) {
         connectionPool.closeChannelRequested(ch);
+        return;
       }
       ctx.sendUpstream(e);
     }

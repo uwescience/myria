@@ -12,7 +12,6 @@ import org.jboss.netty.channel.WriteCompletionEvent;
 
 import edu.washington.escience.myriad.proto.DataProto.DataMessage;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
-import edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType;
 import edu.washington.escience.myriad.util.IPCUtils;
 
 /**
@@ -50,7 +49,7 @@ public final class IPCSessionManagerClient extends SimpleChannelHandler {
       return;
     }
 
-    if (tm.getType() == TransportMessageType.DATA && tm.getData().getType() == DataMessage.DataMessageType.NORMAL) {
+    if (tm.getType() == TransportMessage.Type.DATA && tm.getDataMessage().getType() == DataMessage.Type.NORMAL) {
       // update io timestamp before data processing
       cc.updateLastIOTimestamp();
     }

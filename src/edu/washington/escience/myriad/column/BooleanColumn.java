@@ -14,7 +14,6 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.proto.DataProto.BooleanColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
-import edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType;
 
 /**
  * A column of Boolean values. To save space, this implementation uses a BitSet as the internal representation.
@@ -41,7 +40,7 @@ public final class BooleanColumn implements Column<Boolean> {
    * @param numTuples num tuples in the column message
    */
   public BooleanColumn(final ColumnMessage message, final int numTuples) {
-    if (message.getType().ordinal() != ColumnMessageType.BOOLEAN_VALUE) {
+    if (message.getType().ordinal() != ColumnMessage.Type.BOOLEAN_VALUE) {
       throw new IllegalArgumentException("Trying to construct BooleanColumn from non-BOOLEAN ColumnMessage");
     }
     if (!message.hasBooleanColumn()) {
@@ -116,7 +115,7 @@ public final class BooleanColumn implements Column<Boolean> {
     /* Note that we do *not* build the inner class. We pass its builder instead. */
     final BooleanColumnMessage.Builder inner =
         BooleanColumnMessage.newBuilder().setData(ByteString.copyFrom(data.toByteArray()));
-    return ColumnMessage.newBuilder().setType(ColumnMessageType.BOOLEAN).setBooleanColumn(inner).build();
+    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.BOOLEAN).setBooleanColumn(inner).build();
   }
 
   @Override

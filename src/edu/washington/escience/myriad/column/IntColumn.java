@@ -17,7 +17,6 @@ import com.google.protobuf.ByteString;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
-import edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType;
 import edu.washington.escience.myriad.proto.DataProto.IntColumnMessage;
 
 /**
@@ -45,7 +44,7 @@ public final class IntColumn implements Column<Integer> {
    * @param numTuples num tuples in the column message
    */
   public IntColumn(final ColumnMessage message, final int numTuples) {
-    if (message.getType().ordinal() != ColumnMessageType.INT_VALUE) {
+    if (message.getType().ordinal() != ColumnMessage.Type.INT_VALUE) {
       throw new IllegalArgumentException("Trying to construct IntColumn from non-INT ColumnMessage");
     }
     if (!message.hasIntColumn()) {
@@ -140,7 +139,7 @@ public final class IntColumn implements Column<Integer> {
     final IntColumnMessage.Builder inner =
         IntColumnMessage.newBuilder().setData(ByteString.copyFrom(byteArray.toByteArray()));
     /* Note that we do *not* build the inner class. We pass its builder instead. */
-    return ColumnMessage.newBuilder().setType(ColumnMessageType.INT).setIntColumn(inner).build();
+    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.INT).setIntColumn(inner).build();
   }
 
   @Override

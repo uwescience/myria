@@ -11,6 +11,9 @@ import org.jboss.netty.channel.Channel;
  * */
 public class ProducerChannel {
 
+  /** The logger for this class. */
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(ProducerChannel.class.getName());
+
   /**
    * @param ownerTask the task who owns the output channel.
    * @param ecID exchange channel ID.
@@ -66,12 +69,18 @@ public class ProducerChannel {
    * */
   public final void attachIOChannel(final Channel ioChannel) {
     this.ioChannel = ioChannel;
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug("ProducerChannel ID: {} attached to output channel: IOChannel: {}, ", id, ioChannel);
+    }
   }
 
   /**
    * Detach IO channel.
    * */
   public final void dettachIOChannel() {
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug("ProducerChannel ID: {} detatch from output channel: IOChannel: {}, ", id, ioChannel);
+    }
     ioChannel = null;
   }
 
@@ -80,5 +89,10 @@ public class ProducerChannel {
    * */
   public final ExchangeChannelID getExchangeChannelID() {
     return id;
+  }
+
+  @Override
+  public final String toString() {
+    return "ProducerChannel{ ID: " + id + ",IOChannel: " + ioChannel + " }";
   }
 }

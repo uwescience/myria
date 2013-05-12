@@ -11,11 +11,6 @@ public interface QueryPartition extends Comparable<QueryPartition> {
   long getQueryID();
 
   /**
-   * @return the number of tasks which are already EOS.
-   * */
-  int getNumTaskEOS();
-
-  /**
    * @return the query priority.
    * */
   int getPriority();
@@ -31,9 +26,37 @@ public interface QueryPartition extends Comparable<QueryPartition> {
   void startNonBlockingExecution();
 
   /**
-   * Call back if a task finishes.
-   * 
-   * @param task the finished task.
+   * Prepare to execute, reserve resources, allocate data structures to be used in execution, etc.
    * */
-  void taskFinish(final QuerySubTreeTask task);
+  void init();
+
+  /**
+   * Pause the query.
+   * 
+   * @return the future instance of the pause action.
+   * */
+  QueryFuture pause();
+
+  /**
+   * Resume the query.
+   * 
+   * @return the future instance of the resume action.
+   * */
+  QueryFuture resume();
+
+  /**
+   * Kill the query.
+   * 
+   * */
+  void kill();
+
+  /**
+   * @return if the query is paused.
+   * */
+  boolean isPaused();
+
+  /**
+   * @return the query execution statistics.
+   * */
+  QueryExecutionStatistics getExecutionStatistics();
 }

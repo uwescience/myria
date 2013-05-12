@@ -14,13 +14,13 @@ import query_pb2
 DESCRIPTOR = descriptor.FileDescriptor(
   name='main.proto',
   package='',
-  serialized_pb='\n\nmain.proto\x1a\x0c\x63olumn.proto\x1a\rcontrol.proto\x1a\x0bquery.proto\"\xe4\x01\n\x10TransportMessage\x12\x34\n\x04type\x18\x01 \x02(\x0e\x32&.TransportMessage.TransportMessageType\x12\x1a\n\x04\x64\x61ta\x18\x02 \x01(\x0b\x32\x0c.DataMessage\x12\x15\n\x05query\x18\x04 \x01(\x0b\x32\x06.Query\x12 \n\x07\x63ontrol\x18\x05 \x01(\x0b\x32\x0f.ControlMessage\x12\x0b\n\x03seq\x18\x06 \x01(\x03\"8\n\x14TransportMessageType\x12\x08\n\x04\x44\x41TA\x10\x00\x12\t\n\x05QUERY\x10\x01\x12\x0b\n\x07\x43ONTROL\x10\x02\x42\x36\n$edu.washington.escience.myriad.protoB\x0eTransportProto')
+  serialized_pb='\n\nmain.proto\x1a\x0c\x63olumn.proto\x1a\rcontrol.proto\x1a\x0bquery.proto\"\xd3\x01\n\x10TransportMessage\x12$\n\x04type\x18\x01 \x02(\x0e\x32\x16.TransportMessage.Type\x12!\n\x0b\x64\x61taMessage\x18\x02 \x01(\x0b\x32\x0c.DataMessage\x12#\n\x0cqueryMessage\x18\x03 \x01(\x0b\x32\r.QueryMessage\x12\'\n\x0e\x63ontrolMessage\x18\x04 \x01(\x0b\x32\x0f.ControlMessage\"(\n\x04Type\x12\x08\n\x04\x44\x41TA\x10\x00\x12\t\n\x05QUERY\x10\x01\x12\x0b\n\x07\x43ONTROL\x10\x02\x42\x36\n$edu.washington.escience.myriad.protoB\x0eTransportProto')
 
 
 
-_TRANSPORTMESSAGE_TRANSPORTMESSAGETYPE = descriptor.EnumDescriptor(
-  name='TransportMessageType',
-  full_name='TransportMessage.TransportMessageType',
+_TRANSPORTMESSAGE_TYPE = descriptor.EnumDescriptor(
+  name='Type',
+  full_name='TransportMessage.Type',
   filename=None,
   file=DESCRIPTOR,
   values=[
@@ -39,8 +39,8 @@ _TRANSPORTMESSAGE_TRANSPORTMESSAGETYPE = descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=229,
-  serialized_end=285,
+  serialized_start=228,
+  serialized_end=268,
 )
 
 
@@ -59,30 +59,23 @@ _TRANSPORTMESSAGE = descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
-      name='data', full_name='TransportMessage.data', index=1,
+      name='dataMessage', full_name='TransportMessage.dataMessage', index=1,
       number=2, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     descriptor.FieldDescriptor(
-      name='query', full_name='TransportMessage.query', index=2,
+      name='queryMessage', full_name='TransportMessage.queryMessage', index=2,
+      number=3, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    descriptor.FieldDescriptor(
+      name='controlMessage', full_name='TransportMessage.controlMessage', index=3,
       number=4, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    descriptor.FieldDescriptor(
-      name='control', full_name='TransportMessage.control', index=3,
-      number=5, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    descriptor.FieldDescriptor(
-      name='seq', full_name='TransportMessage.seq', index=4,
-      number=6, type=3, cpp_type=2, label=1,
-      has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
@@ -91,20 +84,20 @@ _TRANSPORTMESSAGE = descriptor.Descriptor(
   ],
   nested_types=[],
   enum_types=[
-    _TRANSPORTMESSAGE_TRANSPORTMESSAGETYPE,
+    _TRANSPORTMESSAGE_TYPE,
   ],
   options=None,
   is_extendable=False,
   extension_ranges=[],
   serialized_start=57,
-  serialized_end=285,
+  serialized_end=268,
 )
 
-_TRANSPORTMESSAGE.fields_by_name['type'].enum_type = _TRANSPORTMESSAGE_TRANSPORTMESSAGETYPE
-_TRANSPORTMESSAGE.fields_by_name['data'].message_type = column_pb2._DATAMESSAGE
-_TRANSPORTMESSAGE.fields_by_name['query'].message_type = query_pb2._QUERY
-_TRANSPORTMESSAGE.fields_by_name['control'].message_type = control_pb2._CONTROLMESSAGE
-_TRANSPORTMESSAGE_TRANSPORTMESSAGETYPE.containing_type = _TRANSPORTMESSAGE;
+_TRANSPORTMESSAGE.fields_by_name['type'].enum_type = _TRANSPORTMESSAGE_TYPE
+_TRANSPORTMESSAGE.fields_by_name['dataMessage'].message_type = column_pb2._DATAMESSAGE
+_TRANSPORTMESSAGE.fields_by_name['queryMessage'].message_type = query_pb2._QUERYMESSAGE
+_TRANSPORTMESSAGE.fields_by_name['controlMessage'].message_type = control_pb2._CONTROLMESSAGE
+_TRANSPORTMESSAGE_TYPE.containing_type = _TRANSPORTMESSAGE;
 DESCRIPTOR.message_types_by_name['TransportMessage'] = _TRANSPORTMESSAGE
 
 class TransportMessage(message.Message):

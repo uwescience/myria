@@ -44,7 +44,6 @@ import edu.washington.escience.myriad.coordinator.catalog.CatalogMaker;
 import edu.washington.escience.myriad.coordinator.catalog.WorkerCatalog;
 import edu.washington.escience.myriad.parallel.Server;
 import edu.washington.escience.myriad.parallel.Worker;
-import edu.washington.escience.myriad.tool.EclipseClasspathReader;
 import edu.washington.escience.myriad.util.FSUtils;
 import edu.washington.escience.myriad.util.SQLiteUtils;
 import edu.washington.escience.myriad.util.TestUtils;
@@ -507,12 +506,14 @@ public class SystemTestBase {
       final int workerID = WORKER_ID[i];
       final String workingDir = FilenameUtils.concat(workerTestBaseFolder, "worker_" + workerID);
 
-      final String[] workerClasspath = EclipseClasspathReader.readEclipseClasspath(new File(".classpath"));
+      String cp = System.getProperty("java.class.path");
+      String lp = System.getProperty("java.library.path");
+
       final ProcessBuilder pb =
           new ProcessBuilder(
               "java",
               "-ea", // enable assertion
-              "-Djava.library.path=" + workerClasspath[1],
+              "-Djava.library.path=" + lp,
               "-Dorg.jboss.netty.debug",
               "-Xdebug",
               // Now eclipse is able to debug remotely the worker processes following the steps:
@@ -524,7 +525,7 @@ public class SystemTestBase {
               // 4. Now, you are able to debug the worker processes. All the Java debugging methods are supported such
               // as breakpoints.
               "-Xrunjdwp:transport=dt_socket,address=" + (workerPorts[i] + 1000) + ",server=y,suspend=n", "-classpath",
-              workerClasspath[0], Worker.class.getCanonicalName(), "--workingDir", workingDir);
+              cp, Worker.class.getCanonicalName(), "--workingDir", workingDir);
 
       pb.directory(new File(workingDir));
       pb.redirectErrorStream(true);

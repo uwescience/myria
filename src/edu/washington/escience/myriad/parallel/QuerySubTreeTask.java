@@ -2,23 +2,32 @@ package edu.washington.escience.myriad.parallel;
 
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicLong;
-
-import org.apache.commons.lang3.builder.ToStringBuilder;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.collect.ImmutableMap;
 
-import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.operator.IDBInput;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.parallel.Worker.QueryExecutionMode;
+import edu.washington.escience.myriad.util.AtomicUtils;
+import edu.washington.escience.myriad.util.ReentrantSpinLock;
 
 /**
  * Non-blocking driving code of a sub-query.
+ * 
+ * Task state could be:<br>
+ * 1) In execution.<br>
+ * 2) In dormant.<br>
+ * 3) Already finished.<br>
+ * 4) Has not started.
  * */
 final class QuerySubTreeTask {
   /** The logger for this class. */
@@ -30,11 +39,6 @@ final class QuerySubTreeTask {
   private final RootOperator root;
 
   /**
-   * Num input TupleBatch from consumer operators.
-   * */
-  private final AtomicLong numInputTBs;
-
-  /**
    * The executor who is responsible for executing the task.
    * */
   private final ExecutorService myExecutor;
@@ -43,16 +47,6 @@ final class QuerySubTreeTask {
    * Denoting if currently the task is in blocking execution by the executor.
    * */
   private volatile boolean inBlockingExecution;
-
-  /**
-   * if the task is initialized.
-   * */
-  private volatile boolean initialized;
-
-  /**
-   * There are available output slots.
-   * */
-  private volatile boolean outputAvailable;
 
   /**
    * Each bit for each output channel. Currently, if a single output channel is not writable, the whole task stops.
@@ -67,12 +61,12 @@ final class QuerySubTreeTask {
   /**
    * Non-blocking execution task.
    * */
-  private final Callable<Boolean> nonBlockingExecutionTask;
+  private final Callable<Object> nonBlockingExecutionTask;
 
   /**
    * Blocking execution task.
    * */
-  private final Callable<Boolean> blockingExecutionTask;
+  private final Callable<Object> blockingExecutionTask;
 
   /**
    * Current execution mode.
@@ -87,7 +81,12 @@ final class QuerySubTreeTask {
   /**
    * The output channels belonging to this task.
    * */
-  private final ExchangeChannelID[] inputChannels;
+  private final Map<ExchangeChannelID, Consumer> inputChannels;
+
+  /**
+   * The IDBInput operators in this task.
+   * */
+  private final Set<IDBInput> idbInputSet;
 
   /**
    * IPC ID of the owner {@link Worker} or {@link Server}.
@@ -95,47 +94,111 @@ final class QuerySubTreeTask {
   private final int ipcEntityID;
 
   /**
+   * The handle for managing the execution of the task.
+   * */
+  private volatile Future<Object> executionHandle;
+
+  /**
+   * Protect the output channel status.
+   */
+  private final ReentrantSpinLock outputLock = new ReentrantSpinLock();
+
+  /**
+   * Future for the task execution.
+   * */
+  private final QueryFuture taskExecutionFuture;
+
+  /**
+   * The lock mainly to make operator memory consistency.
+   * */
+  private final Object executionLock = new Object();
+
+  /**
+   * @return the task execution future.
+   */
+  QueryFuture getExecutionFuture() {
+    return taskExecutionFuture;
+  }
+
+  /**
    * @param ipcEntityID the IPC ID of the owner worker/master.
    * @param ownerQuery the owner query of this task.
    * @param root the root operator this task will run.
    * @param executor the executor who provides the execution service for the task to run on
    * @param executionMode blocking/nonblocking mode.
-   * */
+   */
   QuerySubTreeTask(final int ipcEntityID, final QueryPartition ownerQuery, final RootOperator root,
       final ExecutorService executor, final QueryExecutionMode executionMode) {
     this.ipcEntityID = ipcEntityID;
     this.executionMode = executionMode;
+    if (this.executionMode == QueryExecutionMode.NON_BLOCKING) {
+      nonBlockingExecutionCondition =
+          new AtomicInteger(STATE_OUTPUT_AVAILABLE | STATE_INPUT_AVAILABLE | STATE_EXECUTION_MODE_NON_BLOCKING);
+    } else {
+      nonBlockingExecutionCondition = new AtomicInteger(STATE_OUTPUT_AVAILABLE | STATE_INPUT_AVAILABLE);
+    }
     this.root = root;
     myExecutor = executor;
     this.ownerQuery = ownerQuery;
-    outputAvailable = true;
+    taskExecutionFuture = new DefaultQueryFuture(this.ownerQuery, true);
+    ((DefaultQueryFuture) taskExecutionFuture).setAttachment(this);
+    idbInputSet = new HashSet<IDBInput>();
     HashSet<ExchangeChannelID> outputChannelSet = new HashSet<ExchangeChannelID>();
     collectDownChannels(root, outputChannelSet);
     outputChannels = outputChannelSet.toArray(new ExchangeChannelID[] {});
-    HashSet<ExchangeChannelID> inputChannelSet = new HashSet<ExchangeChannelID>();
-    collectUpChannels(root, inputChannelSet);
-    inputChannels = inputChannelSet.toArray(new ExchangeChannelID[] {});
+    HashMap<ExchangeChannelID, Consumer> inputChannelMap = new HashMap<ExchangeChannelID, Consumer>();
+    collectUpChannels(root, inputChannelMap);
+    inputChannels = inputChannelMap;
     Arrays.sort(outputChannels);
     outputChannelAvailable = new BitSet(outputChannels.length);
     for (int i = 0; i < outputChannels.length; i++) {
       outputChannelAvailable.set(i);
     }
-    numInputTBs = new AtomicLong(1); // Set 1 to cheat the Worker to execute each newly created task.
     inBlockingExecution = false;
-    initialized = false;
-    nonBlockingExecutionTask = new Callable<Boolean>() {
+    // The return result means nothing here, just to make the Callable generic happy.
+    nonBlockingExecutionTask = new Callable<Object>() {
       @Override
-      public synchronized Boolean call() throws Exception {
+      public Object call() throws Exception {
         // synchronized to keep memory consistency
-        return QuerySubTreeTask.this.executeNonBlocking();
+        synchronized (executionLock) {
+          try {
+            QuerySubTreeTask.this.executeNonBlocking();
+          } finally {
+            executionHandle = null;
+          }
+          return null;
+        }
       }
     };
-    blockingExecutionTask = new Callable<Boolean>() {
+
+    blockingExecutionTask = new Callable<Object>() {
       @Override
-      public Boolean call() throws Exception {
-        return QuerySubTreeTask.this.executeBlocking();
+      public Object call() throws Exception {
+        QuerySubTreeTask.this.executeBlocking();
+        return null;
       }
     };
+  }
+
+  /**
+   * @return all input channels belonging to this task.
+   * */
+  Map<ExchangeChannelID, Consumer> getInputChannels() {
+    return inputChannels;
+  }
+
+  /**
+   * @return all output channels belonging to this task.
+   */
+  ExchangeChannelID[] getOutputChannels() {
+    return outputChannels;
+  }
+
+  /**
+   * @return all the IDBInput operators in this task.
+   * */
+  Set<IDBInput> getIDBInputs() {
+    return idbInputSet;
   }
 
   /**
@@ -160,6 +223,7 @@ final class QuerySubTreeTask {
       ExchangePairID oID = p.getControllerOperatorID();
       int wID = p.getControllerWorkerID();
       outputExchangeChannels.add(new ExchangeChannelID(oID.getLong(), wID));
+      idbInputSet.add(p);
     }
 
     final Operator[] children = currentOperator.getChildren();
@@ -176,7 +240,7 @@ final class QuerySubTreeTask {
    * @return if the task is finished
    * */
   public boolean isFinished() {
-    return root.eos();
+    return taskExecutionFuture.isDone();
   }
 
   /**
@@ -185,15 +249,20 @@ final class QuerySubTreeTask {
    * @param currentOperator current operator to check.
    * @param inputExchangeChannels the current collected input channels.
    * */
-  private void collectUpChannels(final Operator currentOperator, final HashSet<ExchangeChannelID> inputExchangeChannels) {
+  private void collectUpChannels(final Operator currentOperator,
+      final Map<ExchangeChannelID, Consumer> inputExchangeChannels) {
 
     if (currentOperator instanceof Consumer) {
       Consumer c = (Consumer) currentOperator;
       int[] sourceWorkers = c.getSourceWorkers(ipcEntityID);
       ExchangePairID oID = c.getOperatorID();
+      ConsumerChannel[] ccs = new ConsumerChannel[sourceWorkers.length];
+      int i = 0;
       for (int sourceWorker : sourceWorkers) {
-        inputExchangeChannels.add(new ExchangeChannelID(oID.getLong(), sourceWorker));
+        inputExchangeChannels.put(new ExchangeChannelID(oID.getLong(), sourceWorker), c);
+        ccs[i++] = new ConsumerChannel(this, c, sourceWorker);
       }
+      c.setExchangeChannels(ccs);
     }
 
     final Operator[] children = currentOperator.getChildren();
@@ -209,9 +278,9 @@ final class QuerySubTreeTask {
   /**
    * call this method if a new TupleBatch arrived at a Consumer operator belonging to this task. This method is always
    * called by Netty Upstream IO worker threads.
-   * */
+   */
   public void notifyNewInput() {
-    numInputTBs.incrementAndGet();
+    AtomicUtils.setBitByValue(nonBlockingExecutionCondition, STATE_INPUT_AVAILABLE);
     nonBlockingExecute();
   }
 
@@ -219,14 +288,20 @@ final class QuerySubTreeTask {
    * Called by Netty downstream IO worker threads.
    * 
    * @param outputChannelID the logical output channel ID.
-   * */
+   */
   public void notifyOutputDisabled(final ExchangeChannelID outputChannelID) {
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("Output disabled: " + outputChannelID);
     }
     int idx = Arrays.binarySearch(outputChannels, outputChannelID);
-    outputChannelAvailable.clear(idx);
-    outputAvailable = false; // output not available if any of the output channels is not available
+    outputLock.lock();
+    try {
+      outputChannelAvailable.clear(idx);
+    } finally {
+      outputLock.unlock();
+    }
+    // disable output
+    AtomicUtils.unsetBitByValue(nonBlockingExecutionCondition, STATE_OUTPUT_AVAILABLE);
   }
 
   /**
@@ -238,21 +313,69 @@ final class QuerySubTreeTask {
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("Output enabled: " + outputChannelID);
     }
-    if (!outputAvailable) {
+    if (!isOutputAvailable()) {
       int idx = Arrays.binarySearch(outputChannels, outputChannelID);
-      if (!outputChannelAvailable.get(idx)) {
-        outputChannelAvailable.set(idx);
-        if (outputChannelAvailable.nextClearBit(0) >= outputChannels.length) {
-          outputAvailable = true;
-          nonBlockingExecute();
+      outputLock.lock();
+      try {
+        if (!outputChannelAvailable.get(idx)) {
+          outputChannelAvailable.set(idx);
+          if (outputChannelAvailable.nextClearBit(0) >= outputChannels.length) {
+            // enable output
+            AtomicUtils.setBitByValue(nonBlockingExecutionCondition, STATE_OUTPUT_AVAILABLE);
+            nonBlockingExecute();
+          }
         }
+      } finally {
+        outputLock.unlock();
       }
     }
   }
 
   @Override
   public String toString() {
-    return ToStringBuilder.reflectionToString(this);
+    long queryID = ownerQuery.getQueryID();
+    Operator rootOp = root;
+
+    StringBuilder stateS = new StringBuilder();
+    int state = nonBlockingExecutionCondition.get();
+    String splitter = "";
+    if ((state & STATE_EXECUTION_MODE_NON_BLOCKING) == STATE_EXECUTION_MODE_NON_BLOCKING) {
+      stateS.append(splitter + "Non_Blocking");
+      splitter = " | ";
+    }
+    if ((state & QuerySubTreeTask.STATE_INITIALIZED) == STATE_INITIALIZED) {
+      stateS.append(splitter + "Initialized");
+      splitter = " | ";
+    }
+    if ((state & QuerySubTreeTask.STATE_INPUT_AVAILABLE) == STATE_INPUT_AVAILABLE) {
+      stateS.append(splitter + "Input_Available");
+      splitter = " | ";
+    }
+    if ((state & QuerySubTreeTask.STATE_EOS) == STATE_EOS) {
+      stateS.append(splitter + "EOS");
+      splitter = " | ";
+    }
+    if ((state & QuerySubTreeTask.STATE_EXECUTION_REQUESTED) == STATE_EXECUTION_REQUESTED) {
+      stateS.append(splitter + "Execution_Requested");
+      splitter = " | ";
+    }
+    if ((state & QuerySubTreeTask.STATE_IN_EXECUTION) == STATE_IN_EXECUTION) {
+      stateS.append(splitter + "In_Execution");
+      splitter = " | ";
+    }
+    if ((state & QuerySubTreeTask.STATE_KILLED) == STATE_KILLED) {
+      stateS.append(splitter + "Killed");
+      splitter = " | ";
+    }
+    if ((state & QuerySubTreeTask.STATE_PAUSED) == STATE_PAUSED) {
+      stateS.append(splitter + "Paused");
+      splitter = " | ";
+    }
+    if ((state & QuerySubTreeTask.STATE_OUTPUT_AVAILABLE) == STATE_OUTPUT_AVAILABLE) {
+      stateS.append(splitter + "Output_Available");
+      splitter = " | ";
+    }
+    return String.format("Task: { Owner QID: %d, Root Op: %s, State: %s }", queryID, rootOp, stateS.toString());
   }
 
   /**
@@ -260,67 +383,170 @@ final class QuerySubTreeTask {
    * 
    * @return if the task is EOS.
    * */
-  private Boolean executeNonBlocking() {
-    try {
-      if (root.eos()) {
-        if (LOGGER.isDebugEnabled()) {
-          LOGGER.debug("Root operator already EOS. Root operator: " + root + ". Quit directly.");
-        }
-        return true;
-      }
+  private Object executeNonBlocking() {
 
-      while (true) {
+    if (nonBlockingExecutionCondition.compareAndSet(NON_BLOCKING_EXECUTION_READY | STATE_EXECUTION_REQUESTED,
+        NON_BLOCKING_EXECUTION_READY | STATE_EXECUTION_REQUESTED | STATE_IN_EXECUTION)) {
+      Throwable failureCause = null;
+      NON_BLOCKING_EXECUTE : while (true) {
         if (Thread.interrupted()) {
+          Thread.currentThread().interrupt();
           if (LOGGER.isDebugEnabled()) {
             LOGGER.debug("Operator task execution interrupted. Root operator: " + root + ". Close directly.");
           }
-          cleanup();
-          break;
+
+          // set interrupted
+          AtomicUtils.setBitByValue(nonBlockingExecutionCondition, STATE_INTERRUPTED);
+
+          // TODO clean up task state
+        } else if (ownerQuery.isPaused()) {
+          // the owner query is paused, exit execution.
+          if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Operator task execution paused because the query is paused. Root operator: {}.", root);
+          }
+        } else {
+          // do the execution
+
+          // clearInput(); // clear input at beginning.
+          AtomicUtils.unsetBitByValue(nonBlockingExecutionCondition, STATE_INPUT_AVAILABLE);
+
+          try {
+            root.nextReady();
+          } catch (final Throwable e) {
+            if (LOGGER.isErrorEnabled()) {
+              LOGGER.error("Unexpected exception occur at operator excution. Operator: " + root, e);
+            }
+            failureCause = e;
+            AtomicUtils.setBitByValue(nonBlockingExecutionCondition, STATE_FAIL);
+          }
+
         }
-        long atStart = numInputTBs.get();
 
-        root.nextReady();
-
-        if (root.eos()) {
-          break;
+        // Check if another round of execution is needed.
+        int oldV = nonBlockingExecutionCondition.get();
+        while (oldV != NON_BLOCKING_EXECUTION_CONTINUE) {
+          // try clear the STATE_EXECUTION_REQUESTED and STATE_IN_EXECUTION bit
+          if (nonBlockingExecutionCondition.compareAndSet(oldV, oldV
+              & ~(STATE_EXECUTION_REQUESTED | STATE_IN_EXECUTION))) {
+            // exit execution.
+            break NON_BLOCKING_EXECUTE;
+          }
+          oldV = nonBlockingExecutionCondition.get();
         }
 
-        if (numInputTBs.compareAndSet(atStart, 0)) {
-          // no new input TB.
-          break;
-        }
-      }
-      if (root.eos()) {
-        ownerQuery.taskFinish(this);
       }
 
-      return root.eos();
-    } catch (Throwable e) {
-      if (LOGGER.isErrorEnabled()) {
-        LOGGER.error("Unexpected exception occur at operator excution, close directly. Operator: " + root, e);
+      // clear interrupted
+      AtomicUtils.unsetBitByValue(nonBlockingExecutionCondition, STATE_INTERRUPTED);
+
+      if ((nonBlockingExecutionCondition.get() & STATE_FAIL) == STATE_FAIL) {
+        // failed
+        taskExecutionFuture.setFailure(failureCause);
+      } else if (root.eos()) {
+        AtomicUtils.setBitByValue(nonBlockingExecutionCondition, STATE_EOS);
+
+        taskExecutionFuture.setSuccess();
+      } else if ((nonBlockingExecutionCondition.get() & STATE_KILLED) == STATE_KILLED) {
+        // killed
+        taskExecutionFuture.setFailure(new QueryKilledException("Task gets killed"));
       }
-      cleanup();
     }
-    return true;
+    return null;
   }
 
   /**
-   * This method is for nonblocking execution mode only.<br>
-   * 1. There are newly arriving input data queued since last execution. <br>
-   * 2. All the output queues have available slots. <br>
-   * 3. The execution task is currently not in execution.
-   * 
-   * @return if the nonblocking task is ready for execution.
+   * Current non-blocking execution condition.
    * */
-  public boolean readyForNonBlockingExecution() {
-    return initialized && outputAvailable && executionMode == QueryExecutionMode.NON_BLOCKING && numInputTBs.get() > 0;
+  private final AtomicInteger nonBlockingExecutionCondition;
+
+  /**
+   * The task is initialized.
+   */
+  private static final int STATE_INITIALIZED = 0x01;
+
+  /**
+   * All output of the task are available.
+   */
+  private static final int STATE_OUTPUT_AVAILABLE = 0x02;
+
+  /**
+   * @return if the output channels are available for writing.
+   * */
+  private boolean isOutputAvailable() {
+    return (nonBlockingExecutionCondition.get() & STATE_OUTPUT_AVAILABLE) == STATE_OUTPUT_AVAILABLE;
   }
+
+  /**
+   * The current execution mode is non-blocking.
+   */
+  private static final int STATE_EXECUTION_MODE_NON_BLOCKING = 0x04;
+
+  /**
+   * Any input of the task is available.
+   */
+  private static final int STATE_INPUT_AVAILABLE = 0x08;
+
+  /**
+   * The task is paused.
+   */
+  private static final int STATE_PAUSED = 0x10;
+
+  /**
+   * The task is killed.
+   */
+  private static final int STATE_KILLED = 0x20;
+
+  /**
+   * @return if the task is already get killed.
+   * */
+  private boolean isKilled() {
+    return (nonBlockingExecutionCondition.get() & STATE_KILLED) == STATE_KILLED;
+  }
+
+  /**
+   * The task is not EOS.
+   * */
+  private static final int STATE_EOS = 0x40;
+
+  /**
+   * The task is currently not in execution.
+   * */
+  private static final int STATE_EXECUTION_REQUESTED = 0x80;
+
+  /**
+   * The task fails because of uncaught exception.
+   * */
+  private static final int STATE_FAIL = 0x100;
+
+  /**
+   * The task execution thread is interrupted.
+   * */
+  private static final int STATE_INTERRUPTED = 0x200;
+
+  /**
+   * The task is in execution.
+   * */
+  private static final int STATE_IN_EXECUTION = 0x400;
+
+  /**
+   * Non-blocking ready condition.
+   */
+  public static final int NON_BLOCKING_EXECUTION_READY = STATE_INITIALIZED | STATE_OUTPUT_AVAILABLE
+      | STATE_EXECUTION_MODE_NON_BLOCKING | STATE_INPUT_AVAILABLE;
+
+  /**
+   * Non-blocking continue execution condition.
+   */
+  public static final int NON_BLOCKING_EXECUTION_CONTINUE = NON_BLOCKING_EXECUTION_READY | STATE_EXECUTION_REQUESTED
+      | STATE_IN_EXECUTION;
 
   /**
    * @return if blocking execution is ready.
    * */
-  boolean readyForBlockingExecution() {
-    return initialized && !inBlockingExecution && executionMode == QueryExecutionMode.BLOCKING;
+  private boolean readyForBlockingExecution() {
+    // return initialized && !inBlockingExecution && executionMode == QueryExecutionMode.BLOCKING
+    // && !ownerQuery.isPaused() && !ownerQuery.isKilled();
+    return false;
   }
 
   /**
@@ -328,59 +554,103 @@ final class QuerySubTreeTask {
    * 
    * @return true if successfully executed and the root is EOS.
    * */
-  private Boolean executeBlocking() {
+  private Object executeBlocking() {
     try {
-      while (!root.eos()) {
-        if (Thread.interrupted()) {
-          if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Operator task execution interrupted. Root operator: " + root + ". Close directly.");
+
+      synchronized (executionLock) {
+        while (!root.eos()) {
+          if (Thread.interrupted()) {
+            Thread.currentThread().interrupt();
+            if (LOGGER.isDebugEnabled()) {
+              LOGGER.debug("Operator task execution interrupted. Root operator: " + root + ". Close directly.");
+            }
+            taskExecutionFuture.setFailure(new InterruptedException("Task interrupted."));
+            break;
           }
-          cleanup();
-          break;
+          root.next();
         }
-        root.next();
       }
 
-      ownerQuery.taskFinish(this);
+      taskExecutionFuture.setSuccess();
 
       return true;
     } catch (InterruptedException ee) {
       if (LOGGER.isErrorEnabled()) {
         LOGGER.error("Execution interrupted. Exit directly. ");
       }
-      cleanup();
+      taskExecutionFuture.setFailure(ee);
       return false;
     } catch (Throwable e) {
       if (LOGGER.isErrorEnabled()) {
         LOGGER.error("Unexpected exception occur at operator excution, close directly. Operator: " + root, e);
       }
-      cleanup();
+      taskExecutionFuture.setFailure(e);
     } finally {
       inBlockingExecution = false;
     }
-    return true;
+    return null;
   }
 
   /**
    * clean up the task, release resources, etc.
    * */
   public void cleanup() {
-    try {
-      root.close();
-      initialized = false;
-    } catch (DbException ee) {
-      if (LOGGER.isErrorEnabled()) {
-        LOGGER.error("Unknown exception at operator close. Root operator: " + root + ".", ee);
+    if (AtomicUtils.unsetBitIfSetByValue(nonBlockingExecutionCondition, STATE_INITIALIZED)) {
+      // Only cleanup if initialized.
+      try {
+        synchronized (executionLock) {
+          root.close();
+        }
+      } catch (Throwable ee) {
+        if (LOGGER.isErrorEnabled()) {
+          LOGGER.error("Unknown exception at operator close. Root operator: " + root + ".", ee);
+        }
       }
     }
+  }
+
+  /**
+   * Kill this task.
+   * 
+   * */
+  void kill() {
+    if (isKilled()) {
+      return;
+    }
+    while (!isKilled()) {
+
+      int oldV = nonBlockingExecutionCondition.get();
+      int notKilledInExec = (oldV & ~STATE_KILLED) | STATE_IN_EXECUTION;
+      int killed = oldV | STATE_KILLED;
+      if (nonBlockingExecutionCondition.compareAndSet(notKilledInExec, killed)) {
+        // in execution, try to interrupt the execution thread, and let the execution thread to take care of the killing
+
+        final Future<Object> executionHandleLocal = executionHandle;
+        if (executionHandleLocal != null) {
+          // Abruptly cancel the execution
+          executionHandleLocal.cancel(true);
+        }
+      }
+      oldV = nonBlockingExecutionCondition.get();
+      int notKilledNotInExec = oldV & ~(STATE_KILLED | STATE_IN_EXECUTION);
+      killed = oldV | STATE_KILLED;
+      if (nonBlockingExecutionCondition.compareAndSet(notKilledNotInExec, killed)) {
+        // not in execution, kill the query here
+        taskExecutionFuture.setFailure(new QueryKilledException("Task gets killed"));
+      }
+    }
+
   }
 
   /**
    * Execute this task in non-blocking mode.
    * */
   public void nonBlockingExecute() {
-    if (readyForNonBlockingExecution()) {
-      myExecutor.submit(nonBlockingExecutionTask);
+
+    if (nonBlockingExecutionCondition.compareAndSet(NON_BLOCKING_EXECUTION_READY, NON_BLOCKING_EXECUTION_READY
+        | STATE_EXECUTION_REQUESTED)) {
+      // set in execution.
+      executionHandle = myExecutor.submit(nonBlockingExecutionTask);
     }
   }
 
@@ -388,7 +658,7 @@ final class QuerySubTreeTask {
    * Execute this task in blocking mode.
    * */
   public void blockingExecute() {
-    if (readyForNonBlockingExecution()) {
+    if (readyForBlockingExecution()) {
       inBlockingExecution = true;
       myExecutor.submit(blockingExecutionTask);
     }
@@ -401,14 +671,17 @@ final class QuerySubTreeTask {
    * */
   public void init(final ImmutableMap<String, Object> execUnitEnv) {
     try {
-      root.open(execUnitEnv);
-      initialized = true;
-    } catch (DbException e) {
-      if (LOGGER.isErrorEnabled()) {
-        LOGGER.error("Query failed to open. Close the query directly.", e);
+      synchronized (executionLock) {
+        root.open(execUnitEnv);
       }
-      cleanup();
+    } catch (Throwable e) {
+      if (LOGGER.isErrorEnabled()) {
+        LOGGER.error("Task failed to open because of execption. ", e);
+      }
+      AtomicUtils.setBitByValue(nonBlockingExecutionCondition, STATE_FAIL);
+      taskExecutionFuture.setFailure(e);
     }
+    AtomicUtils.setBitByValue(nonBlockingExecutionCondition, STATE_INITIALIZED);
   }
 
 }

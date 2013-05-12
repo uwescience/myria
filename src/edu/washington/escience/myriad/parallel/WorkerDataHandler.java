@@ -14,15 +14,19 @@ import org.jboss.netty.channel.SimpleChannelUpstreamHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnFactory;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.parallel.ExchangeData.MetaMessage;
+import edu.washington.escience.myriad.parallel.Worker.QueryExecutionMode;
 import edu.washington.escience.myriad.parallel.ipc.ChannelContext;
 import edu.washington.escience.myriad.parallel.ipc.MessageChannelHandler;
 import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage;
+import edu.washington.escience.myriad.proto.QueryProto.QueryMessage;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 
 /**
@@ -66,129 +70,181 @@ public final class WorkerDataHandler extends SimpleChannelUpstreamHandler implem
 
   @Override
   public boolean processMessage(final Channel ch, final int remoteID, final TransportMessage message) {
-    boolean pushToBufferSucceed = true;
     switch (message.getType()) {
       case DATA:
-        final DataMessage data = message.getData();
-        if (LOGGER.isDebugEnabled()) {
-          LOGGER.debug("TupleBatch received from " + remoteID + " to Operator: " + data.getOperatorID());
+        return processDataMessage(ch, remoteID, message.getDataMessage());
+      case QUERY:
+        return processQueryMessage(ch, remoteID, message.getQueryMessage());
+      case CONTROL:
+        return processControlMessage(ch, remoteID, message.getControlMessage());
+    }
+    return false;
+  }
+
+  /**
+   * @param ch message channel
+   * @param remoteID message source worker
+   * @param dm the data message
+   * @return if the message is successfully processed.
+   * */
+  private boolean processDataMessage(final Channel ch, final int remoteID, final DataMessage dm) {
+    boolean pushToBufferSucceed = true;
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug("TupleBatch received from " + remoteID + " to Operator: " + dm.getOperatorID());
+    }
+    final ChannelContext cs = (ChannelContext) ch.getAttachment();
+    ExchangeChannelPair ecp = (ExchangeChannelPair) cs.getAttachment();
+    DATAMESSAGE_PROCESSING : switch (dm.getType()) {
+      case NORMAL:
+      case EOI:
+      case EOS:
+        ConsumerChannel cc = ecp.getInputChannel();
+        Consumer msgOwnerOp = cc.getOwnerConsumer();
+        ExchangePairID msgOwnerOpID = msgOwnerOp.getOperatorID();
+        Schema msgOwnerOpSchema = msgOwnerOp.getSchema();
+        QuerySubTreeTask msgOwnerTask = cc.getOwnerTask();
+        InputBuffer<TupleBatch, ExchangeData> msgDestIB = msgOwnerOp.getInputBuffer();
+
+        if (msgDestIB == null) {
+          // This happens at the iteration input child, because IDBInput emits EOS without EOS input from the
+          // iteration
+          // child. The driving task of IDBInput will terminate and cleanup before the iteration input child
+          // receives
+          // an EOS from the final EOS iteration. It doesn't affect working but logically incorrect.
+          // And if the destination task failed or got killed.
+          if (cc.getOwnerTask().isFinished()) {
+            // The processing query already ends, drop the messages.
+            if (LOGGER.isDebugEnabled()) {
+              LOGGER.debug("Drop Data messge because the destination operator already ends.: {}", dm);
+            }
+          } else {
+            if (LOGGER.isErrorEnabled()) {
+              LOGGER.error("Operator inputbuffer is null when receiving message " + dm
+                  + ". The destination operator is : " + msgOwnerOp + ".", new NullPointerException(
+                  "Operator inputbuffer is null"));
+            }
+          }
+          pushToBufferSucceed = true;
+          break DATAMESSAGE_PROCESSING;
         }
-        final ChannelContext cs = (ChannelContext) ch.getAttachment();
-        ExchangeChannelPair ecp = (ExchangeChannelPair) cs.getAttachment();
-        switch (data.getType()) {
+
+        ExchangeData ed = null;
+        switch (dm.getType()) {
           case NORMAL:
-            ConsumerChannel cc = ecp.getInputChannel();
-            Consumer op = cc.getOwnerConsumer();
-            final List<ColumnMessage> columnMessages = data.getColumnsList();
+
+            final List<ColumnMessage> columnMessages = dm.getColumnsList();
             final Column<?>[] columnArray = new Column<?>[columnMessages.size()];
             int idx = 0;
             for (final ColumnMessage cm : columnMessages) {
-              columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm, data.getNumTuples());
+              columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm, dm.getNumTuples());
             }
             final List<Column<?>> columns = Arrays.asList(columnArray);
 
-            pushToBufferSucceed =
-                op.getInputBuffer().offer(
-                    new ExchangeData(op.getOperatorID(), remoteID, columns, op.getSchema(), data.getNumTuples(),
-                        message.getSeq()));
-            cc.getOwnerTask().notifyNewInput();
+            ed = new ExchangeData(msgOwnerOpID, remoteID, columns, msgOwnerOpSchema, dm.getNumTuples(), dm.getSeq());
+            msgOwnerTask.notifyNewInput();
             break;
           case EOI:
-            cc = ecp.getInputChannel();
-            op = cc.getOwnerConsumer();
-            if (op.getInputBuffer() == null) {
-              if (cc.getOwnerTask().isFinished()) {
-                if (LOGGER.isDebugEnabled()) {
-                  LOGGER.debug("Iteration EOI input for iteration input of IDBInput. Drop directly.");
-                }
-              } else {
-                if (LOGGER.isErrorEnabled()) {
-                  LOGGER.error("Operator inputbuffer is null.",
-                      new NullPointerException("Operator inputbuffer is null"));
-                }
-              }
-            } else {
-              pushToBufferSucceed =
-                  op.getInputBuffer().offer(
-                      new ExchangeData(op.getOperatorID(), remoteID, op.getSchema(), MetaMessage.EOI));
-              cc.getOwnerTask().notifyNewInput();
-            }
+            ed = new ExchangeData(msgOwnerOpID, remoteID, msgOwnerOpSchema, MetaMessage.EOI);
             break;
-          case BOS:
-            break;
+
           case EOS:
-            cc = ecp.getInputChannel();
-            // if (cc != null) {
-            // eosReceived.put(ch.getId(), cc.op);
-            // }
-            // if (cc == null) {
-            // Consumer supposed = eosReceived.get(ch.getId());
-            // LOGGER.debug("" + supposed);
-            // } else if (cc.op == null) {
-            // LOGGER.debug("");
-            // }
 
             if (LOGGER.isDebugEnabled()) {
               LOGGER.debug("EOS message @ WorkerDataHandler; worker[" + remoteID + "]; opID["
                   + cc.getOwnerConsumer().getOperatorID() + "]");
             }
 
-            op = cc.getOwnerConsumer();
-            if (op.getInputBuffer() == null) {
-              // This happens at the iteration input child, because IDBInput emits EOS without EOS input from the
-              // iteration
-              // child. The driving task of IDBInput will terminate and cleanup before the iteration input child
-              // receives
-              // an EOS from the final EOS iteration. It doesn't affect working but logically incorrect.
-              // TODO refactoring of the operator interface may solve this.
-              if (cc.getOwnerTask().isFinished()) {
-                if (LOGGER.isDebugEnabled()) {
-                  LOGGER.debug("Iteration EOS input for iteration input of IDBInput. Drop directly.");
-                }
-              } else {
-                if (LOGGER.isErrorEnabled()) {
-                  LOGGER.error("Operator inputbuffer is null.",
-                      new NullPointerException("Operator inputbuffer is null"));
-                }
-              }
-            } else {
-              pushToBufferSucceed =
-                  op.getInputBuffer().offer(
-                      new ExchangeData(op.getOperatorID(), remoteID, op.getSchema(), MetaMessage.EOS));
-              cc.getOwnerTask().notifyNewInput();
-            }
+            ed = new ExchangeData(msgOwnerOpID, remoteID, msgOwnerOpSchema, MetaMessage.EOS);
             break;
         }
+        pushToBufferSucceed = msgDestIB.offer(ed);
+        msgOwnerTask.notifyNewInput();
         break;
-      case QUERY:
-
-        ObjectInputStream osis;
-        try {
-          long id = message.getQuery().getQueryId();
-          osis = new ObjectInputStream(new ByteArrayInputStream(message.getQuery().getQuery().toByteArray()));
-          final RootOperator[] operators = (RootOperator[]) (osis.readObject());
-          WorkerQueryPartition q = new WorkerQueryPartition(operators, id, ownerWorker);
-          ownerWorker.getQueryQueue().offer(q);
-          if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Query received from: " + remoteID + ". " + q);
-          }
-        } catch (IOException | ClassNotFoundException e) {
-          if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Error decoding query", e);
-          }
-        }
-        break;
-      case CONTROL:
-        final ControlMessage controlM = message.getControl();
-        if (LOGGER.isDebugEnabled()) {
-          LOGGER.debug("Control message received: " + controlM);
-        }
-        ownerWorker.getControlMessageQueue().offer(controlM);
+      case BOS:
         break;
     }
     return pushToBufferSucceed;
   }
 
+  /**
+   * @param ch message channel
+   * @param remoteID message source worker
+   * @param qm the query message
+   * @return if the message is successfully processed.
+   * */
+  private boolean processQueryMessage(final Channel ch, final int remoteID, final QueryMessage qm) {
+    long queryId = qm.getQueryId();
+    WorkerQueryPartition q = null;
+    boolean result = true;
+    switch (qm.getType()) {
+      case QUERY_START:
+      case QUERY_PAUSE:
+      case QUERY_RESUME:
+      case QUERY_KILL:
+        q = ownerWorker.getActiveQueries().get(queryId);
+        if (q == null) {
+          if (LOGGER.isErrorEnabled()) {
+            LOGGER.error(
+                "In receiving message {}, unknown query id: {}, current active queries are: {}, query contained? {}",
+                qm, queryId, ownerWorker.getActiveQueries().keySet(), ownerWorker.getActiveQueries().get(queryId));
+          }
+        } else {
+          switch (qm.getType()) {
+            case QUERY_START:
+              q.init();
+              if (ownerWorker.getQueryExecutionMode() == QueryExecutionMode.NON_BLOCKING) {
+                q.startNonBlockingExecution();
+              } else {
+                q.startBlockingExecution();
+              }
+              break;
+            case QUERY_PAUSE:
+              q.pause();
+              break;
+            case QUERY_RESUME:
+              q.resume();
+              break;
+            case QUERY_KILL:
+              q.kill();
+              break;
+          }
+        }
+        break;
+      case QUERY_DISTRIBUTE:
+        ObjectInputStream osis = null;
+        try {
+          osis = new ObjectInputStream(new ByteArrayInputStream(qm.getQuery().getQuery().toByteArray()));
+          final RootOperator[] operators = (RootOperator[]) (osis.readObject());
+          q = new WorkerQueryPartition(operators, queryId, ownerWorker);
+          result = ownerWorker.getQueryQueue().offer(q);
+          if (!result) {
+            break;
+          }
+          if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("Query received from: " + remoteID + ". " + q);
+          }
+        } catch (IOException | ClassNotFoundException e) {
+          if (LOGGER.isErrorEnabled()) {
+            LOGGER.error("Error decoding query", e);
+          }
+        }
+        break;
+    }
+    return result;
+  }
+
+  /**
+   * @param ch message channel
+   * @param remoteID message source worker
+   * @param cm the control message
+   * @return if the message is successfully processed.
+   * */
+  private boolean processControlMessage(final Channel ch, final int remoteID, final ControlMessage cm) {
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug("Control message received: " + cm);
+    }
+    return ownerWorker.getControlMessageQueue().offer(cm);
+  }
   // for debugging
   // public final java.util.concurrent.ConcurrentHashMap<Integer, Consumer> eosReceived =
   // new ConcurrentHashMap<Integer, Consumer>();

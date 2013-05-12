@@ -17,7 +17,6 @@ import com.google.protobuf.ByteString;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
-import edu.washington.escience.myriad.proto.DataProto.ColumnMessage.ColumnMessageType;
 import edu.washington.escience.myriad.proto.DataProto.StringColumnMessage;
 
 /**
@@ -57,7 +56,7 @@ public final class StringColumn implements Column<String> {
    * @param numTuples num tuples in the column message
    */
   public StringColumn(final ColumnMessage message, final int numTuples) {
-    if (message.getType().ordinal() != ColumnMessageType.STRING_VALUE) {
+    if (message.getType().ordinal() != ColumnMessage.Type.STRING_VALUE) {
       throw new IllegalArgumentException("Trying to construct StringColumn from non-STRING ColumnMessage");
     }
     if (!message.hasStringColumn()) {
@@ -185,7 +184,7 @@ public final class StringColumn implements Column<String> {
         StringColumnMessage.newBuilder().setData(ByteString.copyFromUtf8(data.toString()));
     inner.setStartIndices(ByteString.copyFrom(startIndicesBytes.toByteArray()));
     inner.setEndIndices(ByteString.copyFrom(endIndicesBytes.toByteArray()));
-    return ColumnMessage.newBuilder().setType(ColumnMessageType.STRING).setStringColumn(inner).build();
+    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.STRING).setStringColumn(inner).build();
   }
 
   @Override

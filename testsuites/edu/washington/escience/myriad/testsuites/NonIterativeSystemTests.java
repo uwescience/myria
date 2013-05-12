@@ -4,6 +4,10 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
+import edu.washington.escience.myriad.operator.ApplyTest;
+import edu.washington.escience.myriad.operator.apply.ConstantMultiplicationIFunctionTest;
+import edu.washington.escience.myriad.operator.apply.PowIFunctionTest;
+import edu.washington.escience.myriad.operator.apply.SqrtIFunctionTest;
 import edu.washington.escience.myriad.systemtest.CollectTest;
 import edu.washington.escience.myriad.systemtest.FlowControlTest;
 import edu.washington.escience.myriad.systemtest.IterativeSelfJoinTest;
@@ -13,13 +17,10 @@ import edu.washington.escience.myriad.systemtest.MultithreadScanTest;
 import edu.washington.escience.myriad.systemtest.OperatorTestUsingSQLiteStorage;
 import edu.washington.escience.myriad.systemtest.ParallelDistinctUsingSQLiteTest;
 import edu.washington.escience.myriad.systemtest.ParallelJDBCTest;
+import edu.washington.escience.myriad.systemtest.QueryFailureTest;
+import edu.washington.escience.myriad.systemtest.QueryKillTest;
 import edu.washington.escience.myriad.systemtest.ShuffleSQLiteTest;
 import edu.washington.escience.myriad.systemtest.SplitDataTest;
-import edu.washington.escience.myriad.operator.ApplyTest;
-import edu.washington.escience.myriad.operator.apply.ConstantMultiplicationIFunctionTest;
-import edu.washington.escience.myriad.operator.apply.PowIFunctionTest ;
-import edu.washington.escience.myriad.operator.apply.SqrtIFunctionTest ;
-
 
 @RunWith(Suite.class)
 @SuiteClasses({ ConstantMultiplicationIFunctionTest.class,//
@@ -36,8 +37,10 @@ import edu.washington.escience.myriad.operator.apply.SqrtIFunctionTest ;
     ParallelDistinctUsingSQLiteTest.class, //
     ParallelJDBCTest.class, //
     ShuffleSQLiteTest.class, //
-    SplitDataTest.class, })
-// TransitiveClosureWithEOITest.class })
+    SplitDataTest.class, //
+    QueryKillTest.class, //
+    QueryFailureTest.class, //
+})
 public class NonIterativeSystemTests {
 
 }

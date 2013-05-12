@@ -15,7 +15,6 @@ import edu.washington.escience.myriad.parallel.ipc.ChannelContext;
 import edu.washington.escience.myriad.parallel.ipc.MessageChannelHandler;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
-import edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType;
 
 public class QueueBasedMessageHandler implements ChannelUpstreamHandler, MessageChannelHandler<TransportMessage> {
 
@@ -42,9 +41,9 @@ public class QueueBasedMessageHandler implements ChannelUpstreamHandler, Message
 
   @Override
   public boolean processMessage(Channel channel, int remoteID, TransportMessage tm) {
-    if (tm.getType() == TransportMessageType.DATA) {
+    if (tm.getType() == TransportMessage.Type.DATA) {
 
-      DataMessage dm = tm.getData();
+      DataMessage dm = tm.getDataMessage();
       switch (dm.getType()) {
         case NORMAL:
         case EOI:
@@ -54,11 +53,11 @@ public class QueueBasedMessageHandler implements ChannelUpstreamHandler, Message
             return true;
           }
           TransportMessage.Builder tmB = tm.toBuilder();
-          tmB.getDataBuilder().setOperatorID(operatorID);
+          tmB.getDataMessageBuilder().setOperatorID(operatorID);
           tm = tmB.build();
           break;
         case BOS:
-          channel2OperatorID.put(channel, tm.getData().getOperatorID());
+          channel2OperatorID.put(channel, tm.getDataMessage().getOperatorID());
           break;
         case EOS:
           operatorID = channel2OperatorID.get(channel);
