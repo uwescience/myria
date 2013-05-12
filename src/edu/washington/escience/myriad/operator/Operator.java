@@ -212,6 +212,11 @@ public abstract class Operator implements Serializable {
       return null;
     }
 
+    if (Thread.interrupted()) {
+      Thread.currentThread().interrupt();
+      return null;
+    }
+
     TupleBatch result = null;
     result = fetchNextReady();
     while (result != null && result.numTuples() <= 0) {

@@ -19,7 +19,6 @@ import org.jboss.netty.channel.group.DefaultChannelGroupFuture;
 import edu.washington.escience.myriad.parallel.ipc.ChannelContext;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
-import edu.washington.escience.myriad.proto.TransportProto.TransportMessage.TransportMessageType;
 
 /**
  * Flow control for both input and output. This handler should be placed at the downstream of message processors.
@@ -62,7 +61,7 @@ public final class FlowControlHandler extends SimpleChannelHandler {
     boolean isEOS = false;
     switch (tm.getType()) {
       case DATA:
-        final DataMessage data = tm.getData();
+        final DataMessage data = tm.getDataMessage();
         if (LOGGER.isDebugEnabled()) {
           LOGGER.debug("TupleBatch received from " + senderID + " to Operator: " + data.getOperatorID());
         }
@@ -72,6 +71,7 @@ public final class FlowControlHandler extends SimpleChannelHandler {
           case EOI:
             break;
           case BOS:
+            // TODO how about operator fails already
             // At the beginning of a stream, record the operator id.
             final long operatorID = data.getOperatorID();
             if (ecp == null) {
@@ -86,6 +86,8 @@ public final class FlowControlHandler extends SimpleChannelHandler {
             break;
           case EOS:
             isEOS = true;
+            ConsumerChannel cChannel = ecp.getInputChannel();
+            LOGGER.debug("EOS received for: " + cChannel.getExchangeChannelID());
             break;
         }
         break;
@@ -126,14 +128,14 @@ public final class FlowControlHandler extends SimpleChannelHandler {
 
       Channel ch = e.getIOChannel();
       if (ch != null) {
-        if (LOGGER.isDebugEnabled()) {
-          LOGGER.debug("Resume read for channel {}", ch);
-        }
         ChannelContext cc = ((ChannelContext) (ch.getAttachment()));
         ExchangeChannelPair ecp = (ExchangeChannelPair) cc.getAttachment();
         if (ecp != null) {
           ChannelFuture resumeFuture = ecp.resumeRead();
           if (resumeFuture != null) {
+            if (LOGGER.isDebugEnabled()) {
+              LOGGER.debug("Resume read for channel {}. Logical channel is {}", ch, e);
+            }
             cg.add(ch);
             allResumeFutures.add(resumeFuture);
           }
@@ -177,14 +179,15 @@ public final class FlowControlHandler extends SimpleChannelHandler {
     for (ConsumerChannel ec : consumerChannels) {
       Channel ch = ec.getIOChannel();
       if (ch != null) {
-        if (LOGGER.isDebugEnabled()) {
-          LOGGER.debug("Pause read for channel {}", ch);
-        }
+
         ChannelContext cc = ((ChannelContext) (ch.getAttachment()));
         ExchangeChannelPair ecp = (ExchangeChannelPair) cc.getAttachment();
         if (ecp != null) {
           ChannelFuture pauseFuture = ecp.pauseRead();
           if (pauseFuture != null) {
+            if (LOGGER.isDebugEnabled()) {
+              LOGGER.debug("Pause read for channel {}, Logical channel is {}", ch, ec);
+            }
             cg.add(ch);
             allPauseFutures.add(pauseFuture);
           }
@@ -215,8 +218,8 @@ public final class FlowControlHandler extends SimpleChannelHandler {
       }
     });
     boolean isEOS = false;
-    if (tm.getType() == TransportMessageType.DATA) {
-      DataMessage dm = tm.getData();
+    if (tm.getType() == TransportMessage.Type.DATA) {
+      DataMessage dm = tm.getDataMessage();
       int remoteID = cc.getRegisteredChannelContext().getRemoteID();
       ExchangeChannelPair ecp = (ExchangeChannelPair) cc.getAttachment();
       switch (dm.getType()) {
@@ -243,6 +246,14 @@ public final class FlowControlHandler extends SimpleChannelHandler {
           isEOS = true;
           break;
       }
+
+    }
+
+    ctx.sendDownstream(e);
+
+    if (tm.getType() == TransportMessage.Type.DATA) {
+      ExchangeChannelPair ecp = (ExchangeChannelPair) cc.getAttachment();
+      int remoteID = cc.getRegisteredChannelContext().getRemoteID();
       if (!ioChannel.isWritable()) {
         // this io channel is already full of write requests
         if (LOGGER.isDebugEnabled()) {
@@ -250,16 +261,13 @@ public final class FlowControlHandler extends SimpleChannelHandler {
         }
         ecp.getOutputChannel().notifyOutputDisabled();
       }
-    }
 
-    ctx.sendDownstream(e);
-
-    if (isEOS) {
-      if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug("EOS, remove flow control context.");
+      if (isEOS) {
+        if (LOGGER.isDebugEnabled()) {
+          LOGGER.debug("EOS, remove flow control context.");
+        }
+        ecp.deMapOutputChannel();
       }
-      ExchangeChannelPair ecp = (ExchangeChannelPair) cc.getAttachment();
-      ecp.deMapOutputChannel();
     }
   }
 
@@ -278,7 +286,7 @@ public final class FlowControlHandler extends SimpleChannelHandler {
         if (producerChannel != null) {
           int remoteID = cc.getRegisteredChannelContext().getRemoteID();
           if (LOGGER.isDebugEnabled()) {
-            LOGGER.debug("Input buffer recovered for Channel {}, to remote {}", ioChannel, remoteID);
+            LOGGER.debug("Output buffer recovered for Channel {}, to remote {}", ioChannel, remoteID);
           }
           producerChannel.notifyOutputEnabled();
         }

@@ -11,17 +11,13 @@ public final class ControlProto {
   public interface ControlMessageOrBuilder
       extends com.google.protobuf.MessageOrBuilder {
     
-    // required .ControlMessage.ControlMessageType type = 1;
+    // required .ControlMessage.Type type = 1;
     boolean hasType();
-    edu.washington.escience.myriad.proto.ControlProto.ControlMessage.ControlMessageType getType();
+    edu.washington.escience.myriad.proto.ControlProto.ControlMessage.Type getType();
     
     // optional int32 remote_id = 2;
     boolean hasRemoteId();
     int getRemoteId();
-    
-    // optional int64 query_id = 3;
-    boolean hasQueryId();
-    long getQueryId();
   }
   public static final class ControlMessage extends
       com.google.protobuf.GeneratedMessage
@@ -51,50 +47,41 @@ public final class ControlProto {
       return edu.washington.escience.myriad.proto.ControlProto.internal_static_ControlMessage_fieldAccessorTable;
     }
     
-    public enum ControlMessageType
+    public enum Type
         implements com.google.protobuf.ProtocolMessageEnum {
       CONNECT(0, 0),
-      START_QUERY(1, 1),
-      QUERY_READY_TO_EXECUTE(2, 2),
-      SHUTDOWN(3, 3),
-      DISCONNECT(4, 4),
-      WORKER_ALIVE(5, 5),
-      QUERY_COMPLETE(6, 6),
+      DISCONNECT(1, 4),
+      SHUTDOWN(2, 3),
+      WORKER_ALIVE(3, 5),
       ;
       
       public static final int CONNECT_VALUE = 0;
-      public static final int START_QUERY_VALUE = 1;
-      public static final int QUERY_READY_TO_EXECUTE_VALUE = 2;
-      public static final int SHUTDOWN_VALUE = 3;
       public static final int DISCONNECT_VALUE = 4;
+      public static final int SHUTDOWN_VALUE = 3;
       public static final int WORKER_ALIVE_VALUE = 5;
-      public static final int QUERY_COMPLETE_VALUE = 6;
       
       
       public final int getNumber() { return value; }
       
-      public static ControlMessageType valueOf(int value) {
+      public static Type valueOf(int value) {
         switch (value) {
           case 0: return CONNECT;
-          case 1: return START_QUERY;
-          case 2: return QUERY_READY_TO_EXECUTE;
-          case 3: return SHUTDOWN;
           case 4: return DISCONNECT;
+          case 3: return SHUTDOWN;
           case 5: return WORKER_ALIVE;
-          case 6: return QUERY_COMPLETE;
           default: return null;
         }
       }
       
-      public static com.google.protobuf.Internal.EnumLiteMap<ControlMessageType>
+      public static com.google.protobuf.Internal.EnumLiteMap<Type>
           internalGetValueMap() {
         return internalValueMap;
       }
-      private static com.google.protobuf.Internal.EnumLiteMap<ControlMessageType>
+      private static com.google.protobuf.Internal.EnumLiteMap<Type>
           internalValueMap =
-            new com.google.protobuf.Internal.EnumLiteMap<ControlMessageType>() {
-              public ControlMessageType findValueByNumber(int number) {
-                return ControlMessageType.valueOf(number);
+            new com.google.protobuf.Internal.EnumLiteMap<Type>() {
+              public Type findValueByNumber(int number) {
+                return Type.valueOf(number);
               }
             };
       
@@ -111,11 +98,11 @@ public final class ControlProto {
         return edu.washington.escience.myriad.proto.ControlProto.ControlMessage.getDescriptor().getEnumTypes().get(0);
       }
       
-      private static final ControlMessageType[] VALUES = {
-        CONNECT, START_QUERY, QUERY_READY_TO_EXECUTE, SHUTDOWN, DISCONNECT, WORKER_ALIVE, QUERY_COMPLETE, 
+      private static final Type[] VALUES = {
+        CONNECT, DISCONNECT, SHUTDOWN, WORKER_ALIVE, 
       };
       
-      public static ControlMessageType valueOf(
+      public static Type valueOf(
           com.google.protobuf.Descriptors.EnumValueDescriptor desc) {
         if (desc.getType() != getDescriptor()) {
           throw new java.lang.IllegalArgumentException(
@@ -127,22 +114,22 @@ public final class ControlProto {
       private final int index;
       private final int value;
       
-      private ControlMessageType(int index, int value) {
+      private Type(int index, int value) {
         this.index = index;
         this.value = value;
       }
       
-      // @@protoc_insertion_point(enum_scope:ControlMessage.ControlMessageType)
+      // @@protoc_insertion_point(enum_scope:ControlMessage.Type)
     }
     
     private int bitField0_;
-    // required .ControlMessage.ControlMessageType type = 1;
+    // required .ControlMessage.Type type = 1;
     public static final int TYPE_FIELD_NUMBER = 1;
-    private edu.washington.escience.myriad.proto.ControlProto.ControlMessage.ControlMessageType type_;
+    private edu.washington.escience.myriad.proto.ControlProto.ControlMessage.Type type_;
     public boolean hasType() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
-    public edu.washington.escience.myriad.proto.ControlProto.ControlMessage.ControlMessageType getType() {
+    public edu.washington.escience.myriad.proto.ControlProto.ControlMessage.Type getType() {
       return type_;
     }
     
@@ -156,20 +143,9 @@ public final class ControlProto {
       return remoteId_;
     }
     
-    // optional int64 query_id = 3;
-    public static final int QUERY_ID_FIELD_NUMBER = 3;
-    private long queryId_;
-    public boolean hasQueryId() {
-      return ((bitField0_ & 0x00000004) == 0x00000004);
-    }
-    public long getQueryId() {
-      return queryId_;
-    }
-    
     private void initFields() {
-      type_ = edu.washington.escience.myriad.proto.ControlProto.ControlMessage.ControlMessageType.CONNECT;
+      type_ = edu.washington.escience.myriad.proto.ControlProto.ControlMessage.Type.CONNECT;
       remoteId_ = 0;
-      queryId_ = 0L;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -193,9 +169,6 @@ public final class ControlProto {
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         output.writeInt32(2, remoteId_);
       }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        output.writeInt64(3, queryId_);
-      }
       getUnknownFields().writeTo(output);
     }
     
@@ -212,10 +185,6 @@ public final class ControlProto {
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
           .computeInt32Size(2, remoteId_);
-      }
-      if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeInt64Size(3, queryId_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -341,12 +310,10 @@ public final class ControlProto {
       
       public Builder clear() {
         super.clear();
-        type_ = edu.washington.escience.myriad.proto.ControlProto.ControlMessage.ControlMessageType.CONNECT;
+        type_ = edu.washington.escience.myriad.proto.ControlProto.ControlMessage.Type.CONNECT;
         bitField0_ = (bitField0_ & ~0x00000001);
         remoteId_ = 0;
         bitField0_ = (bitField0_ & ~0x00000002);
-        queryId_ = 0L;
-        bitField0_ = (bitField0_ & ~0x00000004);
         return this;
       }
       
@@ -393,10 +360,6 @@ public final class ControlProto {
           to_bitField0_ |= 0x00000002;
         }
         result.remoteId_ = remoteId_;
-        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
-          to_bitField0_ |= 0x00000004;
-        }
-        result.queryId_ = queryId_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -418,9 +381,6 @@ public final class ControlProto {
         }
         if (other.hasRemoteId()) {
           setRemoteId(other.getRemoteId());
-        }
-        if (other.hasQueryId()) {
-          setQueryId(other.getQueryId());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -459,7 +419,7 @@ public final class ControlProto {
             }
             case 8: {
               int rawValue = input.readEnum();
-              edu.washington.escience.myriad.proto.ControlProto.ControlMessage.ControlMessageType value = edu.washington.escience.myriad.proto.ControlProto.ControlMessage.ControlMessageType.valueOf(rawValue);
+              edu.washington.escience.myriad.proto.ControlProto.ControlMessage.Type value = edu.washington.escience.myriad.proto.ControlProto.ControlMessage.Type.valueOf(rawValue);
               if (value == null) {
                 unknownFields.mergeVarintField(1, rawValue);
               } else {
@@ -473,26 +433,21 @@ public final class ControlProto {
               remoteId_ = input.readInt32();
               break;
             }
-            case 24: {
-              bitField0_ |= 0x00000004;
-              queryId_ = input.readInt64();
-              break;
-            }
           }
         }
       }
       
       private int bitField0_;
       
-      // required .ControlMessage.ControlMessageType type = 1;
-      private edu.washington.escience.myriad.proto.ControlProto.ControlMessage.ControlMessageType type_ = edu.washington.escience.myriad.proto.ControlProto.ControlMessage.ControlMessageType.CONNECT;
+      // required .ControlMessage.Type type = 1;
+      private edu.washington.escience.myriad.proto.ControlProto.ControlMessage.Type type_ = edu.washington.escience.myriad.proto.ControlProto.ControlMessage.Type.CONNECT;
       public boolean hasType() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
-      public edu.washington.escience.myriad.proto.ControlProto.ControlMessage.ControlMessageType getType() {
+      public edu.washington.escience.myriad.proto.ControlProto.ControlMessage.Type getType() {
         return type_;
       }
-      public Builder setType(edu.washington.escience.myriad.proto.ControlProto.ControlMessage.ControlMessageType value) {
+      public Builder setType(edu.washington.escience.myriad.proto.ControlProto.ControlMessage.Type value) {
         if (value == null) {
           throw new NullPointerException();
         }
@@ -503,7 +458,7 @@ public final class ControlProto {
       }
       public Builder clearType() {
         bitField0_ = (bitField0_ & ~0x00000001);
-        type_ = edu.washington.escience.myriad.proto.ControlProto.ControlMessage.ControlMessageType.CONNECT;
+        type_ = edu.washington.escience.myriad.proto.ControlProto.ControlMessage.Type.CONNECT;
         onChanged();
         return this;
       }
@@ -525,27 +480,6 @@ public final class ControlProto {
       public Builder clearRemoteId() {
         bitField0_ = (bitField0_ & ~0x00000002);
         remoteId_ = 0;
-        onChanged();
-        return this;
-      }
-      
-      // optional int64 query_id = 3;
-      private long queryId_ ;
-      public boolean hasQueryId() {
-        return ((bitField0_ & 0x00000004) == 0x00000004);
-      }
-      public long getQueryId() {
-        return queryId_;
-      }
-      public Builder setQueryId(long value) {
-        bitField0_ |= 0x00000004;
-        queryId_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearQueryId() {
-        bitField0_ = (bitField0_ & ~0x00000004);
-        queryId_ = 0L;
         onChanged();
         return this;
       }
@@ -575,15 +509,12 @@ public final class ControlProto {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\rcontrol.proto\"\374\001\n\016ControlMessage\0220\n\004ty" +
-      "pe\030\001 \002(\0162\".ControlMessage.ControlMessage" +
-      "Type\022\021\n\tremote_id\030\002 \001(\005\022\020\n\010query_id\030\003 \001(" +
-      "\003\"\222\001\n\022ControlMessageType\022\013\n\007CONNECT\020\000\022\017\n" +
-      "\013START_QUERY\020\001\022\032\n\026QUERY_READY_TO_EXECUTE" +
-      "\020\002\022\014\n\010SHUTDOWN\020\003\022\016\n\nDISCONNECT\020\004\022\020\n\014WORK" +
-      "ER_ALIVE\020\005\022\022\n\016QUERY_COMPLETE\020\006B4\n$edu.wa" +
-      "shington.escience.myriad.protoB\014ControlP" +
-      "roto"
+      "\n\rcontrol.proto\"\214\001\n\016ControlMessage\022\"\n\004ty" +
+      "pe\030\001 \002(\0162\024.ControlMessage.Type\022\021\n\tremote" +
+      "_id\030\002 \001(\005\"C\n\004Type\022\013\n\007CONNECT\020\000\022\016\n\nDISCON" +
+      "NECT\020\004\022\014\n\010SHUTDOWN\020\003\022\020\n\014WORKER_ALIVE\020\005B4" +
+      "\n$edu.washington.escience.myriad.protoB\014" +
+      "ControlProto"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -595,7 +526,7 @@ public final class ControlProto {
           internal_static_ControlMessage_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_ControlMessage_descriptor,
-              new java.lang.String[] { "Type", "RemoteId", "QueryId", },
+              new java.lang.String[] { "Type", "RemoteId", },
               edu.washington.escience.myriad.proto.ControlProto.ControlMessage.class,
               edu.washington.escience.myriad.proto.ControlProto.ControlMessage.Builder.class);
           return null;

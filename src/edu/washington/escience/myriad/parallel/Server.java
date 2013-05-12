@@ -3,6 +3,7 @@ package edu.washington.escience.myriad.parallel;
 import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -44,29 +45,25 @@ import edu.washington.escience.myriad.column.ColumnFactory;
 import edu.washington.escience.myriad.coordinator.catalog.Catalog;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.FileScan;
-import edu.washington.escience.myriad.operator.IDBInput;
-import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SQLiteInsert;
 import edu.washington.escience.myriad.parallel.ExchangeData.MetaMessage;
 import edu.washington.escience.myriad.parallel.MasterDataHandler.MessageWrapper;
 import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
-import edu.washington.escience.myriad.parallel.ipc.IPCEvent;
-import edu.washington.escience.myriad.parallel.ipc.IPCEventListener;
 import edu.washington.escience.myriad.parallel.ipc.InJVMLoopbackChannelSink;
 import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage;
+import edu.washington.escience.myriad.proto.QueryProto.QueryMessage;
+import edu.washington.escience.myriad.proto.QueryProto.QueryReport;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
+import edu.washington.escience.myriad.util.DateTimeUtils;
 import edu.washington.escience.myriad.util.IPCUtils;
 
 /**
  * The master entrance.
  * */
 public final class Server {
-
-  /** A short amount of time to sleep waiting for network events. */
-  public static final int SHORT_SLEEP_MILLIS = 100;
 
   /**
    * Master message processor.
@@ -94,7 +91,7 @@ public final class Server {
 
         switch (m.getType()) {
           case DATA:
-            final DataMessage data = m.getData();
+            final DataMessage data = m.getDataMessage();
             final long exchangePairIDLong = data.getOperatorID();
             final ExchangePairID exchangePairID = ExchangePairID.fromExisting(exchangePairIDLong);
             ConsumerChannel cc = consumerChannelMap.get(new ExchangeChannelID(exchangePairIDLong, senderID));
@@ -118,8 +115,8 @@ public final class Server {
                   columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm, data.getNumTuples());
                 }
                 final List<Column<?>> columns = Arrays.asList(columnArray);
-                receiveData((new ExchangeData(exchangePairID, senderID, columns, operatorSchema, data.getNumTuples(), m
-                    .getSeq())));
+                receiveData((new ExchangeData(exchangePairID, senderID, columns, operatorSchema, data.getNumTuples(),
+                    data.getSeq())));
                 cc.getOwnerTask().notifyNewInput();
                 break;
               case BOS:
@@ -128,31 +125,65 @@ public final class Server {
             }
             break;
           case CONTROL:
-            final ControlMessage controlM = m.getControl();
-            final long queryId = controlM.getQueryId();
+            final ControlMessage controlM = m.getControlMessage();
             switch (controlM.getType()) {
-              case QUERY_READY_TO_EXECUTE:
-                MasterQueryPartition mqp = activeQueries.get(queryId);
-                mqp.queryReceivedByWorker(senderID);
-                break;
               case WORKER_ALIVE:
                 aliveWorkers.add(senderID);
-                break;
-              case QUERY_COMPLETE:
-                mqp = activeQueries.get(queryId);
-                mqp.workerComplete(senderID);
                 break;
               case DISCONNECT:
                 /* TODO */
                 break;
-              case CONNECT:
-              case SHUTDOWN:
-              case START_QUERY:
-                throw new RuntimeException("Unexpected control message received at server: " + controlM.toString());
+              default:
+                if (LOGGER.isErrorEnabled()) {
+                  LOGGER.error("Unexpected control message received at master: " + controlM);
+                }
             }
             break;
           case QUERY:
-            throw new RuntimeException("Unexpected query message received at server");
+            final QueryMessage qm = m.getQueryMessage();
+            final long queryId = qm.getQueryId();
+            switch (qm.getType()) {
+              case QUERY_READY_TO_EXECUTE:
+                MasterQueryPartition mqp = activeQueries.get(queryId);
+                mqp.queryReceivedByWorker(senderID);
+                break;
+              case QUERY_COMPLETE:
+                mqp = activeQueries.get(queryId);
+                QueryReport qr = qm.getQueryReport();
+                if (qr.getSuccess()) {
+                  mqp.workerComplete(senderID);
+                } else {
+                  ObjectInputStream osis = null;
+                  Throwable cause = null;
+                  try {
+                    osis = new ObjectInputStream(new ByteArrayInputStream(qr.getCause().toByteArray()));
+                    cause = (Throwable) (osis.readObject());
+                  } catch (IOException | ClassNotFoundException e) {
+                    if (LOGGER.isErrorEnabled()) {
+                      LOGGER.error("Error decoding failure cause", e);
+                    }
+                  }
+                  mqp.workerFail(senderID, cause);
+
+                  if (LOGGER.isErrorEnabled()) {
+                    LOGGER.error("Worker #{} failed in executing query #{}.", senderID, queryId, cause);
+                  }
+
+                  if (!(cause instanceof QueryKilledException)) {
+                    // if any worker fails because of some exception, kill the query.
+                    mqp.kill();
+                  }
+
+                }
+                break;
+              default:
+                if (LOGGER.isErrorEnabled()) {
+                  LOGGER.error("Unexpected query message received at master: " + qm);
+                }
+                break;
+            }
+
+            break;
         }
       }
     }
@@ -188,6 +219,13 @@ public final class Server {
    * The I/O buffer, all the ExchangeMessages sent to the server are buffered here.
    */
   private final ConcurrentHashMap<ExchangePairID, InputBuffer<TupleBatch, ExchangeData>> dataBuffer;
+
+  /**
+   * @return all input buffers currently in use.
+   * */
+  ConcurrentHashMap<ExchangePairID, InputBuffer<TupleBatch, ExchangeData>> getDataBuffer() {
+    return dataBuffer;
+  }
 
   /**
    * All message queue.
@@ -234,6 +272,13 @@ public final class Server {
    * The {@link ExecutorService} who executes the master-side query partitions.
    * */
   private volatile ExecutorService serverQueryExecutor;
+
+  /**
+   * @return the query executor used in this worker.
+   * */
+  ExecutorService getQueryExecutor() {
+    return serverQueryExecutor;
+  }
 
   /**
    * Producer channel mapping of current active queries.
@@ -486,7 +531,13 @@ public final class Server {
           LOGGER.info("Shutting down #{} : {}", workerId, workerAddr);
         }
 
-        final ChannelFuture cf = connectionPool.sendShortMessage(workerId, IPCUtils.CONTROL_SHUTDOWN);
+        ChannelFuture cf = null;
+        try {
+          cf = connectionPool.sendShortMessage(workerId, IPCUtils.CONTROL_SHUTDOWN);
+        } catch (IllegalStateException e) {
+          // connection pool is already shutdown.
+          cf = null;
+        }
         if (cf == null) {
           if (LOGGER.isErrorEnabled()) {
             LOGGER.error("Fail to connect the worker{ id:{},address:{} }. Continue cleaning", workerId, workerAddr);
@@ -532,12 +583,13 @@ public final class Server {
    * @throws DbException if any error occurs.
    * */
   private QueryFuture dispatchWorkerQueryPlans(final MasterQueryPartition mqp) throws DbException {
-
+    // directly set the master part as already received.
+    mqp.queryReceivedByWorker(MyriaConstants.MASTER_ID);
     for (final Map.Entry<Integer, RootOperator[]> e : mqp.getWorkerPlans().entrySet()) {
       final Integer workerID = e.getKey();
       while (!aliveWorkers.contains(workerID)) {
         try {
-          Thread.sleep(SHORT_SLEEP_MILLIS);
+          Thread.sleep(MyriaConstants.SHORT_WAITING_INTERVAL_MS);
         } catch (InterruptedException e1) {
           Thread.currentThread().interrupt();
         }
@@ -636,108 +688,43 @@ public final class Server {
   }
 
   /**
-   * Find out the consumers and producers and register them in the {@link Server}'s data structures
-   * {@link Server#producerChannelMapping} and {@link Server#consumerChannelMapping}.
-   * 
-   * @param query the query on which to do the setup.
-   * @throws DbException if any error occurs.
-   */
-  private void setupExchangeChannels(final MasterQueryPartition query) throws DbException {
-    RootOperator root = query.getRootOperator();
-
-    QuerySubTreeTask drivingTask =
-        new QuerySubTreeTask(MyriaConstants.MASTER_ID, query, root, serverQueryExecutor,
-            Worker.QueryExecutionMode.NON_BLOCKING);
-
-    query.setRootTask(drivingTask);
-    if (root instanceof Producer) {
-      Producer p = (Producer) root;
-      ExchangePairID[] oIDs = p.operatorIDs();
-      int[] destWorkers = p.getDestinationWorkerIDs(MyriaConstants.MASTER_ID);
-      for (int i = 0; i < destWorkers.length; i++) {
-        ExchangeChannelID ecID = new ExchangeChannelID(oIDs[i].getLong(), destWorkers[i]);
-        // ProducerChannel pc = new ProducerChannel(drivingTask, p, ecID);
-        ProducerChannel pc = new ProducerChannel(drivingTask, ecID);
-        producerChannelMap.put(ecID, pc);
-      }
-    }
-
-    setupConsumerChannels(root, drivingTask);
-  }
-
-  /**
-   * @param currentOperator current operator in considering.
-   * @param drivingTask the task current operator belongs to.
-   * @throws DbException if any error occurs.
+   * @return the input capacity.
    * */
-  private void setupConsumerChannels(final Operator currentOperator, final QuerySubTreeTask drivingTask)
-      throws DbException {
-
-    if (currentOperator == null) {
-      return;
-    }
-
-    QUERY_PLAN_TYPE_SWITCH : {
-
-      if (currentOperator instanceof Consumer) {
-        final Consumer operator = (Consumer) currentOperator;
-        FlowControlInputBuffer<ExchangeData> inputBuffer =
-            new FlowControlInputBuffer<ExchangeData>(inputBufferCapacity, operator.getOperatorID());
-        inputBuffer.addBufferFullListener(new IPCEventListener<FlowControlInputBuffer<ExchangeData>>() {
-          @Override
-          public void triggered(final IPCEvent<FlowControlInputBuffer<ExchangeData>> e) {
-            if (e.getAttachment().remainingCapacity() <= 0) {
-              flowController.pauseRead(operator).awaitUninterruptibly();
-            }
-          }
-        });
-        inputBuffer.addBufferRecoverListener(new IPCEventListener<FlowControlInputBuffer<ExchangeData>>() {
-          @Override
-          public void triggered(final IPCEvent<FlowControlInputBuffer<ExchangeData>> e) {
-            if (e.getAttachment().remainingCapacity() > 0) {
-              flowController.resumeRead(operator).awaitUninterruptibly();
-            }
-          }
-        });
-        operator.setInputBuffer(inputBuffer);
-
-        dataBuffer.put(((Consumer) currentOperator).getOperatorID(), inputBuffer);
-        operator.setExchangeChannels(new ConsumerChannel[operator.getSourceWorkers(MyriaConstants.MASTER_ID).length]);
-        ExchangePairID oID = operator.getOperatorID();
-        int[] sourceWorkers = operator.getSourceWorkers(MyriaConstants.MASTER_ID);
-        int idx = 0;
-        for (int workerID : sourceWorkers) {
-          ExchangeChannelID ecID = new ExchangeChannelID(oID.getLong(), workerID);
-          ConsumerChannel cc = new ConsumerChannel(drivingTask, operator, ecID);
-          consumerChannelMap.put(ecID, cc);
-          operator.getExchangeChannels()[idx++] = cc;
-        }
-
-        break QUERY_PLAN_TYPE_SWITCH;
-      }
-
-      if (currentOperator instanceof IDBInput) {
-        IDBInput p = (IDBInput) currentOperator;
-        ExchangePairID oID = p.getControllerOperatorID();
-        int wID = p.getControllerWorkerID();
-        ExchangeChannelID ecID = new ExchangeChannelID(oID.getLong(), wID);
-        ProducerChannel pc = new ProducerChannel(drivingTask, ecID);
-        producerChannelMap.putIfAbsent(ecID, pc);
-      }
-    }
-
-    final Operator[] children = currentOperator.getChildren();
-
-    if (children != null) {
-      for (final Operator child : children) {
-        if (child != null) {
-          setupConsumerChannels(child, drivingTask);
-        }
-      }
-    }
+  int getInputBufferCapacity() {
+    return inputBufferCapacity;
   }
 
   /**
+   * Pause a query with queryID.
+   * 
+   * @param queryID the queryID.
+   * @return the future instance of the pause action.
+   * */
+  public QueryFuture pauseQuery(final long queryID) {
+    return activeQueries.get(queryID).pause();
+  }
+
+  /**
+   * Pause a query with queryID.
+   * 
+   * @param queryID the queryID.
+   * */
+  public void killQuery(final long queryID) {
+    activeQueries.get(queryID).kill();
+  }
+
+  /**
+   * Pause a query with queryID.
+   * 
+   * @param queryID the queryID.
+   * @return the future instance of the resume action.
+   * */
+  public QueryFuture resumeQuery(final long queryID) {
+    return activeQueries.get(queryID).resume();
+  }
+
+  /**
+   * 
    * @return true if the query plan is accepted and scheduled for execution.
    * @param masterPlan the master part of the plan
    * @param workerPlans the worker part of the plan, {workerID -> RootOperator[]}
@@ -783,26 +770,52 @@ public final class Server {
    * */
   public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final RootOperator masterPlan,
       final Map<Integer, RootOperator[]> workerPlans) throws DbException, CatalogException {
+    workerPlans.remove(MyriaConstants.MASTER_ID);
     final long queryID = catalog.newQuery(rawQuery, logicalRa);
     final MasterQueryPartition mqp = new MasterQueryPartition(masterPlan, workerPlans, queryID, this);
-    setupExchangeChannels(mqp);
+    consumerChannelMap.putAll(mqp.getConsumerChannelMapping());
+    producerChannelMap.putAll(mqp.getProducerChannelMapping());
+
     activeQueries.put(queryID, mqp);
+
+    mqp.getQueryExecutionFuture().addListener(new QueryFutureListener() {
+      @Override
+      public void operationComplete(final QueryFuture future) throws Exception {
+
+        activeQueries.remove(mqp.getQueryID());
+        for (ExchangeChannelID consumerChannelID : mqp.getConsumerChannelMapping().keySet()) {
+          consumerChannelMap.remove(consumerChannelID);
+        }
+
+        for (ExchangeChannelID producerChannelID : mqp.getProducerChannelMapping().keySet()) {
+          producerChannelMap.remove(producerChannelID);
+        }
+
+        if (future.isSuccess()) {
+          if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("The query #{} succeeds. Time elapse: {}.", queryID, DateTimeUtils
+                .nanoElapseToHumanReadable(mqp.getExecutionStatistics().getQueryExecutionElapse()));
+          }
+          // TODO success management.
+        } else {
+          if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("The query #{} failes. Time elapse: {}. Failure cause is {}.", queryID, DateTimeUtils
+                .nanoElapseToHumanReadable(mqp.getExecutionStatistics().getQueryExecutionElapse()), future.getCause());
+          }
+          // TODO failure management.
+        }
+      }
+    });
+
     dispatchWorkerQueryPlans(mqp).addListener(new QueryFutureListener() {
       @Override
       public void operationComplete(final QueryFuture future) throws Exception {
+        mqp.init();
         mqp.startNonBlockingExecution();
         Server.this.startWorkerQuery(future.getQuery().getQueryID());
       }
     });
-    mqp.getQueryExecutionFuture().addListener(new QueryFutureListener() {
 
-      @Override
-      public void operationComplete(final QueryFuture future) throws Exception {
-        // MasterQueryPartition mqp = activeQueries.remove(queryID);
-        activeQueries.remove(queryID);
-      }
-
-    });
     return mqp.getQueryExecutionFuture();
   }
 
@@ -830,27 +843,6 @@ public final class Server {
    */
   public Map<Integer, SocketInfo> getWorkers() {
     return ImmutableMap.copyOf(workers);
-  }
-
-  /**
-   * Insert the given query into the Catalog, dispatch the query to the workers, and return its query ID. This is useful
-   * for receiving queries from an external interface (e.g., the REST API).
-   * <p>
-   * Deprecated. Use either {@link Server#submitQuery(String, String, RootOperator, Map)} or
-   * {@link Server#submitQueryPlan(RootOperator, Map)}.
-   * <p>
-   * 
-   * @param rawQuery the raw user-defined query. E.g., the source Datalog program.
-   * @param logicalRa the logical relational algebra of the compiled plan.
-   * @param plans the physical parallel plan fragments for each worker.
-   * @return the query ID assigned to this query.
-   * @throws CatalogException if there is an error in the Catalog.
-   * @throws DbException if there is any error in non-Catalog
-   */
-  @Deprecated
-  public long startQuery(final String rawQuery, final String logicalRa, final Map<Integer, RootOperator[]> plans)
-      throws CatalogException, DbException {
-    return catalog.newQuery(rawQuery, logicalRa);
   }
 
   /**

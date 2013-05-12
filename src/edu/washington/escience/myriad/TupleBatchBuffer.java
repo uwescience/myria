@@ -10,7 +10,6 @@ import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnFactory;
-import edu.washington.escience.myriad.parallel.ExchangePairID;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.util.IPCUtils;
 
@@ -117,9 +116,8 @@ public class TupleBatchBuffer {
    * Return all tuples in this buffer. The data do not get removed.
    * 
    * @return a List<TupleBatch> containing all complete tuples that have been inserted into this buffer.
-   * @param oId destination exchange operator id.
    */
-  public final List<TransportMessage> getAllAsTM(final ExchangePairID oId) {
+  public final List<TransportMessage> getAllAsTM() {
     final List<TransportMessage> output = new ArrayList<TransportMessage>();
     if (numTuples() > 0) {
       for (final List<Column<?>> columns : readyTuples) {
