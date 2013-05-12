@@ -3,11 +3,14 @@ package edu.washington.escience.myriad.operator;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -21,9 +24,11 @@ import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
+import edu.washington.escience.myriad.util.FSUtils;
 
 public class SQLiteInsertTest {
 
+  private static Path tempDir;
   private static File tempFile;
   private static final int NUM_TUPLES = 1000;
   private static Schema schema;
@@ -40,8 +45,8 @@ public class SQLiteInsertTest {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.WARNING);
 
     /* Make a temporary file for the database and create a new SQLite database there. */
-    tempFile = File.createTempFile("SQLiteInsertTest", ".db");
-    tempFile.deleteOnExit();
+    tempDir = Files.createTempDirectory(MyriaConstants.SYSTEM_NAME + "_SQLiteInsertTest");
+    tempFile = new File(tempDir.toString(), "SQLiteInsertTest.db");
 
     /* Create the data needed for the tests in this file. */
     schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.STRING_TYPE));
@@ -56,33 +61,39 @@ public class SQLiteInsertTest {
 
   @Test
   public void test() throws Exception {
-    try {
-      Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
-      final RelationKey tuplesKey = RelationKey.of("test", "test", "my_tuples");
+    Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
+    final RelationKey tuplesKey = RelationKey.of("test", "test", "my_tuples");
 
-      final TupleSource source = new TupleSource(data);
-      HashMap<String, Object> sqliteFile = new HashMap<String, Object>();
-      sqliteFile.put("sqliteFile", tempFile.getAbsolutePath());
-      final ImmutableMap<String, Object> execEnvVars = ImmutableMap.copyOf(sqliteFile);
-      final SQLiteInsert insert = new SQLiteInsert(source, tuplesKey, true);
-      insert.open(execEnvVars);
-      while (!insert.eos()) {
-        insert.nextReady();
-      }
-      insert.close();
-
-      final SQLiteConnection sqliteConnection = new SQLiteConnection(tempFile);
-      sqliteConnection.open(false);
-      final SQLiteStatement statement =
-          sqliteConnection.prepare("SELECT COUNT(*) FROM " + tuplesKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE)
-              + ";");
-      assertTrue(statement.step());
-      final int inserted = statement.columnInt(0);
-      assertTrue(inserted == NUM_TUPLES);
-    } finally {
-      if (tempFile != null && tempFile.exists()) {
-        tempFile.deleteOnExit();
-      }
+    final TupleSource source = new TupleSource(data);
+    HashMap<String, Object> sqliteFile = new HashMap<String, Object>();
+    sqliteFile.put("sqliteFile", tempFile.getAbsolutePath());
+    final ImmutableMap<String, Object> execEnvVars = ImmutableMap.copyOf(sqliteFile);
+    final SQLiteInsert insert = new SQLiteInsert(source, tuplesKey, true);
+    insert.open(execEnvVars);
+    while (!insert.eos()) {
+      insert.nextReady();
     }
+    insert.close();
+
+    final SQLiteConnection sqliteConnection = new SQLiteConnection(tempFile);
+    sqliteConnection.open(false);
+    final SQLiteStatement statement =
+        sqliteConnection.prepare("SELECT COUNT(*) FROM " + tuplesKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE)
+            + ";");
+    assertTrue(statement.step());
+    final int inserted = statement.columnInt(0);
+    assertTrue(inserted == NUM_TUPLES);
+    sqliteConnection.dispose();
   }
+
+  /**
+   * Cleanup what we created.
+   * 
+   * @throws Exception if setUp fails.
+   */
+  @AfterClass
+  public static void cleanUp() throws Exception {
+    FSUtils.blockingDeleteDirectory(tempDir.toString());
+  }
+
 }

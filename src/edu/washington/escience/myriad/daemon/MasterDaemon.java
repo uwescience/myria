@@ -20,7 +20,7 @@ import edu.washington.escience.myriad.parallel.Server;
 public final class MasterDaemon {
 
   /** The usage string. */
-  private static final String USAGE_STRING = "Usage: MasterDaemon <catalogFilename>";
+  private static final String USAGE_STRING = "Usage: MasterDaemon <catalogFilename> <restPort>";
 
   /**
    * @param args the command-line arguments to start the daemon.
@@ -45,7 +45,7 @@ public final class MasterDaemon {
   public MasterDaemon(final String[] args) throws Exception {
     processArguments(args);
     server = new Server(FilenameUtils.concat(args[0], "master.catalog"));
-    apiServer = new MasterApiServer(server, this);
+    apiServer = new MasterApiServer(server, this, Integer.parseInt(args[1]));
   }
 
   /**
@@ -54,9 +54,23 @@ public final class MasterDaemon {
    * @throws FileNotFoundException if the catalogFile does not exist.
    */
   private void processArguments(final String[] args) throws FileNotFoundException, CatalogException {
-    if (args.length != 1) {
+    /* Check length. */
+    if (args.length != 2) {
       throw new IllegalArgumentException(USAGE_STRING);
     }
+
+    /* Check port. */
+    try {
+      int port = Integer.parseInt(args[1]);
+      final int portMin = 1;
+      final int portMax = 65535;
+      if ((port < portMin) || (port > portMax)) {
+        throw new IllegalArgumentException("port must be between " + portMin + " and " + portMax);
+      }
+    } catch (NumberFormatException e) {
+      throw new IllegalArgumentException(e);
+    }
+
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
     Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
   }

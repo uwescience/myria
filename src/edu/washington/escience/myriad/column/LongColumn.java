@@ -1,13 +1,17 @@
 package edu.washington.escience.myriad.column;
 
-import java.nio.ByteBuffer;
-import java.nio.LongBuffer;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
+import com.google.common.base.Preconditions;
 import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myriad.TupleBatch;
@@ -23,14 +27,14 @@ import edu.washington.escience.myriad.proto.DataProto.LongColumnMessage;
  */
 public final class LongColumn implements Column<Long> {
   /** Internal representation of the column data. */
-  private final ByteBuffer dataBytes;
-  /** View of the column data as longs. */
-  private final LongBuffer data;
+  private final long[] data;
+  /** The number of existing rows in this column. */
+  private int position;
 
   /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
   public LongColumn() {
-    dataBytes = ByteBuffer.allocate(TupleBatch.BATCH_SIZE * (Long.SIZE / Byte.SIZE));
-    data = dataBytes.asLongBuffer();
+    data = new long[TupleBatch.BATCH_SIZE];
+    position = 0;
   }
 
   /**
@@ -46,9 +50,19 @@ public final class LongColumn implements Column<Long> {
     if (!message.hasLongColumn()) {
       throw new IllegalArgumentException("ColumnMessage has type LONG but no LongColumn");
     }
-    dataBytes = message.getLongColumn().getData().asReadOnlyByteBuffer();
-    data = dataBytes.asLongBuffer();
-    data.position(numTuples);
+    data = new long[TupleBatch.BATCH_SIZE];
+    position = 0;
+    try {
+      byte[] dataBytes = message.getLongColumn().getData().toByteArray();
+      ObjectInputStream input = new ObjectInputStream(new ByteArrayInputStream(dataBytes));
+      for (int i = 0; i < numTuples; ++i) {
+        data[i] = input.readLong();
+      }
+      input.close();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    position = numTuples;
   }
 
   @Override
@@ -74,7 +88,8 @@ public final class LongColumn implements Column<Long> {
    * @return the element at the specified row in this column.
    */
   public long getLong(final int row) {
-    return data.get(row);
+    Preconditions.checkElementIndex(row, position);
+    return data[row];
   }
 
   @Override
@@ -89,7 +104,8 @@ public final class LongColumn implements Column<Long> {
    * @return this column.
    */
   public LongColumn put(final long value) {
-    data.put(value);
+    Preconditions.checkElementIndex(position, TupleBatch.BATCH_SIZE);
+    data[position++] = value;
     return this;
   }
 
@@ -110,14 +126,25 @@ public final class LongColumn implements Column<Long> {
 
   @Override
   public ColumnMessage serializeToProto() {
+    ByteArrayOutputStream byteArray = new ByteArrayOutputStream(position * (Long.SIZE / Byte.SIZE));
+    try {
+      ObjectOutputStream output = new ObjectOutputStream(byteArray);
+      for (int i = 0; i < position; ++i) {
+        output.writeLong(data[i]);
+      }
+      output.close();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    final LongColumnMessage.Builder inner =
+        LongColumnMessage.newBuilder().setData(ByteString.copyFrom(byteArray.toByteArray()));
     /* Note that we do *not* build the inner class. We pass its builder instead. */
-    final LongColumnMessage.Builder inner = LongColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
     return ColumnMessage.newBuilder().setType(ColumnMessage.Type.LONG).setLongColumn(inner).build();
   }
 
   @Override
   public int size() {
-    return data.position();
+    return position;
   }
 
   @Override
@@ -128,7 +155,7 @@ public final class LongColumn implements Column<Long> {
       if (i > 0) {
         sb.append(", ");
       }
-      sb.append(data.get(i));
+      sb.append(data[i]);
     }
     sb.append(']');
     return sb.toString();
