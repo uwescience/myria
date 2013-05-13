@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
@@ -77,6 +78,8 @@ public final class LocalCountingJoin extends Operator {
     if (outputSchema == null) {
       this.outputSchema = getSchema();
     } else {
+      Preconditions.checkArgument(outputSchema.numColumns() == 1);
+      Preconditions.checkArgument(outputSchema.getColumnType(0) == Type.INT_TYPE);
       this.outputSchema = outputSchema;
     }
     this.child1 = child1;
@@ -293,6 +296,10 @@ public final class LocalCountingJoin extends Operator {
 
   @Override
   public void setChildren(final Operator[] children) {
+    Preconditions.checkNotNull(children);
+    Preconditions.checkArgument(children.length == 2);
+    Preconditions.checkNotNull(children[0]);
+    Preconditions.checkNotNull(children[1]);
     child1 = children[0];
     child2 = children[1];
   }
