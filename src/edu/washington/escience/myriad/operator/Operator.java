@@ -230,7 +230,6 @@ public abstract class Operator implements Serializable {
       numOutputTBs++;
       numOutputTuples += result.numTuples();
     }
-
     return result;
   }
 
