@@ -47,7 +47,6 @@ public final class SQLiteInsert extends RootOperator {
    */
   public SQLiteInsert(final Operator child, final RelationKey relationKey) {
     super(child);
-    Objects.requireNonNull(child);
     Objects.requireNonNull(relationKey);
     this.relationKey = relationKey;
     overwriteTable = false;
@@ -65,7 +64,6 @@ public final class SQLiteInsert extends RootOperator {
    */
   public SQLiteInsert(final Operator child, final RelationKey relationKey, final boolean overwriteTable) {
     super(child);
-    Objects.requireNonNull(child);
     Objects.requireNonNull(relationKey);
     this.relationKey = relationKey;
     this.overwriteTable = overwriteTable;
