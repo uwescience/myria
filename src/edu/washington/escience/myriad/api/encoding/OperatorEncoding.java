@@ -26,8 +26,10 @@ import edu.washington.escience.myriad.operator.Operator;
     @Type(name = "CollectConsumer", value = CollectConsumerEncoding.class),
     @Type(name = "CollectProducer", value = CollectProducerEncoding.class),
     @Type(name = "LocalJoin", value = LocalJoinEncoding.class),
+    @Type(name = "LocalCountingJoin", value = LocalCountingJoinEncoding.class),
     @Type(name = "ShuffleConsumer", value = ShuffleConsumerEncoding.class),
     @Type(name = "ShuffleProducer", value = ShuffleProducerEncoding.class),
+    @Type(name = "SQLiteInsert", value = SQLiteInsertEncoding.class),
     @Type(name = "SQLiteScan", value = SQLiteScanEncoding.class) })
 public abstract class OperatorEncoding<T extends Operator> implements MyriaApiEncoding {
 
