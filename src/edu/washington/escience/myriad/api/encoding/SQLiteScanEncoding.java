@@ -15,12 +15,8 @@ import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 
-/**
- * A JSON-able wrapper for the expected wire message for a new dataset.
- * 
- */
 public class SQLiteScanEncoding extends OperatorEncoding<SQLiteQueryScan> {
-  /** The name of the dataset to be scanned. */
+  /** The name of the relation to be scanned. */
   public RelationKey relationKey;
 
   @Override
@@ -45,7 +41,7 @@ public class SQLiteScanEncoding extends OperatorEncoding<SQLiteQueryScan> {
       throw new MyriaApiException(Status.BAD_REQUEST, "Specified relation "
           + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE) + " does not exist.");
     }
-    return new SQLiteQueryScan("SELECT * from " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), schema);
+    return new SQLiteQueryScan(relationKey, schema);
   }
 
   @Override
