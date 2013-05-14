@@ -10,7 +10,6 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.MyriaSystemConfigKeys;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
@@ -149,10 +148,8 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     final HashMap<Tuple, Integer> expectedResult = TestUtils.tupleBatchToTupleBag(expectedTBB);
 
     // parallel query generation, duplicate db files
-    final SQLiteQueryScan scan1 =
-        new SQLiteQueryScan("select * from " + testtableKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), tableSchema);
-    final SQLiteQueryScan scan2 =
-        new SQLiteQueryScan("select * from " + testtableKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), tableSchema);
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan(testtableKey, tableSchema);
+    final SQLiteQueryScan scan2 = new SQLiteQueryScan(testtableKey, tableSchema);
 
     final int numPartition = 2;
     final PartitionFunction<String, Integer> pf0 = new SingleFieldHashPartitionFunction(numPartition);
@@ -274,10 +271,8 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     final HashMap<Tuple, Integer> expectedResult = TestUtils.tupleBatchToTupleBag(expectedTBB);
 
     // parallel query generation, duplicate db files
-    final SQLiteQueryScan scan1 =
-        new SQLiteQueryScan("select * from " + testtableKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), tableSchema);
-    final SQLiteQueryScan scan2 =
-        new SQLiteQueryScan("select * from " + seedKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), tableSchema);
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan(testtableKey, tableSchema);
+    final SQLiteQueryScan scan2 = new SQLiteQueryScan(seedKey, tableSchema);
     final ExchangePairID consumerID1 = ExchangePairID.newID();
     final ExchangePairID consumerID2 = ExchangePairID.newID();
     final ExchangePairID eoiReceiverOpID = ExchangePairID.newID();

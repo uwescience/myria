@@ -8,7 +8,6 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -66,12 +65,8 @@ public class MergeTest extends SystemTestBase {
       insert(WORKER_ID[0], testtable1Key, tableSchema, tb);
     }
 
-    final SQLiteQueryScan scan1 =
-        new SQLiteQueryScan("select * from " + testtable0Key.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE),
-            tableSchema);
-    final SQLiteQueryScan scan2 =
-        new SQLiteQueryScan("select * from " + testtable1Key.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE),
-            tableSchema);
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan(testtable0Key, tableSchema);
+    final SQLiteQueryScan scan2 = new SQLiteQueryScan(testtable1Key, tableSchema);
     final Merge merge = new Merge(new Operator[] { scan1, scan2 });
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final CollectProducer cp = new CollectProducer(merge, serverReceiveID, MASTER_ID);

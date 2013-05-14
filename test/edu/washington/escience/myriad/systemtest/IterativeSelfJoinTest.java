@@ -10,7 +10,6 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -143,12 +142,8 @@ public class IterativeSelfJoinTest extends SystemTestBase {
     }
 
     // parallel query generation, duplicate db files
-    final SQLiteQueryScan scan1 =
-        new SQLiteQueryScan("select * from " + testtableKeys.get(0).toString(MyriaConstants.STORAGE_SYSTEM_SQLITE),
-            tableSchema);
-    final SQLiteQueryScan scan2 =
-        new SQLiteQueryScan("select * from " + testtableKeys.get(0).toString(MyriaConstants.STORAGE_SYSTEM_SQLITE),
-            tableSchema);
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan(testtableKeys.get(0), tableSchema);
+    final SQLiteQueryScan scan2 = new SQLiteQueryScan(testtableKeys.get(0), tableSchema);
 
     final int numPartition = 2;
     final PartitionFunction<String, Integer> pf0 = new SingleFieldHashPartitionFunction(numPartition); // 2 workers
@@ -186,9 +181,7 @@ public class IterativeSelfJoinTest extends SystemTestBase {
       if (i == numIteration - 1) {
         break;
       }
-      scan[i] =
-          new SQLiteQueryScan("select * from " + testtableKeys.get(i).toString(MyriaConstants.STORAGE_SYSTEM_SQLITE),
-              tableSchema);
+      scan[i] = new SQLiteQueryScan(testtableKeys.get(i), tableSchema);
       arrayID1 = ExchangePairID.newID();
       arrayID2 = ExchangePairID.newID();
       sp1[i] = new ShuffleProducer(scan[i], arrayID1, WORKER_ID, pf1);

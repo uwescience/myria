@@ -12,7 +12,6 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -72,8 +71,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final PartitionFunction<String, Integer> pf = new SingleFieldHashPartitionFunction(numPartition);
     pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1); // partition by id
 
-    final SQLiteQueryScan scanTable =
-        new SQLiteQueryScan("select * from " + testtableKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), schema);
+    final SQLiteQueryScan scanTable = new SQLiteQueryScan(testtableKey, schema);
 
     final DupElim dupElimOnScan = new DupElim(scanTable);
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
@@ -132,8 +130,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final PartitionFunction<String, Integer> pf = new SingleFieldHashPartitionFunction(numPartition);
     pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1); // partition by id
 
-    final SQLiteQueryScan scanTable =
-        new SQLiteQueryScan("select * from " + testtableKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), schema);
+    final SQLiteQueryScan scanTable = new SQLiteQueryScan(testtableKey, schema);
 
     final DupElim dupElimOnScan = new DupElim(scanTable);
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
@@ -177,12 +174,8 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final ImmutableList<String> outputColumnNames = ImmutableList.of("id1", "name1", "id2", "name2");
     final Schema outputSchema = new Schema(outputTypes, outputColumnNames);
 
-    final SQLiteQueryScan scan1 =
-        new SQLiteQueryScan("select * from " + JOIN_TEST_TABLE_1.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE),
-            JOIN_INPUT_SCHEMA);
-    final SQLiteQueryScan scan2 =
-        new SQLiteQueryScan("select * from " + JOIN_TEST_TABLE_2.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE),
-            JOIN_INPUT_SCHEMA);
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA);
+    final SQLiteQueryScan scan2 = new SQLiteQueryScan(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA);
 
     final ShuffleProducer sp1 =
         new ShuffleProducer(scan1, table1ShuffleID, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf);
@@ -234,12 +227,8 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(2);
     pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
 
-    final SQLiteQueryScan scan1 =
-        new SQLiteQueryScan("select * from " + JOIN_TEST_TABLE_1.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE),
-            JOIN_INPUT_SCHEMA);
-    final SQLiteQueryScan scan2 =
-        new SQLiteQueryScan("select * from " + JOIN_TEST_TABLE_2.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE),
-            JOIN_INPUT_SCHEMA);
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA);
+    final SQLiteQueryScan scan2 = new SQLiteQueryScan(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA);
 
     final ShuffleProducer sp1 =
         new ShuffleProducer(scan1, table1ShuffleID, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf);
@@ -295,12 +284,8 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(2);
     pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
 
-    final SQLiteQueryScan scan1 =
-        new SQLiteQueryScan("select * from " + JOIN_TEST_TABLE_1.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE),
-            JOIN_INPUT_SCHEMA);
-    final SQLiteQueryScan scan2 =
-        new SQLiteQueryScan("select * from " + JOIN_TEST_TABLE_2.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE),
-            JOIN_INPUT_SCHEMA);
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA);
+    final SQLiteQueryScan scan2 = new SQLiteQueryScan(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA);
 
     final ShuffleProducer sp1 =
         new ShuffleProducer(scan1, table1ShuffleID, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf);

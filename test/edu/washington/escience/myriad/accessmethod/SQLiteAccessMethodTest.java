@@ -199,7 +199,7 @@ public class SQLiteAccessMethodTest {
     }
 
     final RelationKey outputKey = RelationKey.of("test", "testWrite", "output");
-    final SQLiteQueryScan scan = new SQLiteQueryScan("select * from " + inputKey.toString("sqlite"), tableSchema);
+    final SQLiteQueryScan scan = new SQLiteQueryScan(inputKey, tableSchema);
     final SQLiteInsert insert = new SQLiteInsert(scan, outputKey, true);
 
     HashMap<String, Object> sqliteFilename = new HashMap<String, Object>();
