@@ -11,6 +11,7 @@ import edu.washington.escience.myriad.api.MyriaApiException;
 public class DatasetEncoding implements MyriaApiEncoding {
   public RelationKey relationKey;
   public Schema schema;
+  public String fileName;
   public byte[] data;
 
   @Override
@@ -18,9 +19,9 @@ public class DatasetEncoding implements MyriaApiEncoding {
     try {
       Preconditions.checkNotNull(relationKey);
       Preconditions.checkNotNull(schema);
-      Preconditions.checkNotNull(data);
+      Preconditions.checkArgument(fileName != null || data != null);
     } catch (Exception e) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "required fields: relation_key, schema, data");
+      throw new MyriaApiException(Status.BAD_REQUEST, "required fields: relation_key, schema, file_name | data");
     }
   }
 }
