@@ -9,7 +9,10 @@ import sys
 children = defaultdict(list)
 # Populate the list for all operators that do have children
 children['CollectProducer'] = ['arg_child']
+children['EOSController'] = ['arg_child']
+children['IDBInput'] = ['arg_child1', 'arg_child2', 'arg_child3']
 children['LocalJoin'] = ['arg_child1', 'arg_child2']
+children['LocalMultiwayProducer'] = ['arg_child']
 children['ShuffleProducer'] = ['arg_child']
 
 def read_json(filename):
@@ -54,14 +57,25 @@ def operator_get_out_pipes(op):
     pipe_fields = defaultdict(list)
     # Populate the list for all operators that do have children
     pipe_fields['CollectProducer'] = ['arg_operator_id']
+    pipe_fields['EOSController'] = ['arg_operator_id']
+    pipe_fields['LocalMultiwayProducer'] = ['arg_operator_ids']
     pipe_fields['ShuffleProducer'] = ['arg_operator_id']
-    return [str(op[x]) for x in pipe_fields[op['op_type']]]
+    ret = []
+    for x in pipe_fields[op['op_type']]:
+        if isinstance(op[x],list):
+            ret.extend([str(y) for y in op[x]])
+        else:
+            ret.append(str(op[x]))
+    return ret
 
 def operator_get_in_pipes(op):
-    # By default, all operators have no out pipes
+    # By default, all operators have no in pipes
     pipe_fields = defaultdict(list)
     # Populate the list for all operators that do have children
     pipe_fields['CollectConsumer'] = ['arg_operator_id']
+    pipe_fields['Consumer'] = ['arg_operator_id']
+    pipe_fields['IDBInput'] = ['arg_operator_id']
+    pipe_fields['LocalMultiwayConsumer'] = ['arg_operator_id']
     pipe_fields['ShuffleConsumer'] = ['arg_operator_id']
     return [str(op[x]) for x in pipe_fields[op['op_type']]]
 
@@ -86,18 +100,21 @@ def get_graph(unified_plan):
         pipe_edges.extend([(x,y) for x in out_pipes[pipe_id] for y in in_pipes[pipe_id]])
     return (nodes, local_edges, pipe_edges)
 
-def export_dot(nodes, edges, pipe_edges):
-    print """digraph GlobalJoin {
-  ratio = 1.333 ;
+def export_dot(nodes, edges, pipe_edges, filename=""):
+    print """digraph MyriaPlan {
+  ratio = 1.3333 ;
   mincross = 2.0 ;
-  label = "Myria Global Join" ;
-"""
+  label = "Myria Plan for %s" ;
+  rankdir = "BT" ;
+  ranksep = 0.25 ;
+  node [fontname="Helvetica", fontsize=10, shape=oval, style=filled, fillcolor=white ] ;
+""" % (filename,)
     for n in nodes:
-       print "\"%s\" [shape=box , regular=1, style=filled, fillcolor=white ] ;" % (n,)
+       print "\"%s\" ;" % (n,)
     for (x,y) in edges:
-        print "\"%s\" -> \"%s\" [weight=3, dir=back]" % (y, x)
+        print "\"%s\" -> \"%s\" [color=black]" % (x, y)
     for (x,y) in pipe_edges:
-        print "\"%s\" -> \"%s\" [weight=1, dir=back, penwidth=3]" % (y, x)
+        print "\"%s\" -> \"%s\" [penwidth=5, color=red]" % (x, y)
     print "}"
 
 def main(filename):
@@ -106,7 +123,7 @@ def main(filename):
     unique_fragments = uniquify_fragments(query_plan)
     unified_plan = unify_plan(unique_fragments)
     [nodes, edges, pipe_edges] = get_graph(unified_plan)
-    export_dot(nodes, edges, pipe_edges)
+    export_dot(nodes, edges, pipe_edges, filename)
 
 if __name__ == "__main__":
     main(sys.argv[1])
