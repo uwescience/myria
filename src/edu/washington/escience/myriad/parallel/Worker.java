@@ -68,11 +68,12 @@ public final class Worker {
    * query execution mode, blocking or non-blocking. Always use the NON_BLOCKING mode. The BLOCKING mode may not work
    * and may get abandoned.
    * */
-  @Deprecated
+
   static enum QueryExecutionMode {
     /**
      * blocking execution, call next() and fetchNext().
      * */
+    @Deprecated
     BLOCKING,
 
     /**
