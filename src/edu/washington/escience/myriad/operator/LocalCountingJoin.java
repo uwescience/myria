@@ -44,7 +44,7 @@ public final class LocalCountingJoin extends Operator {
   /** How many times each key occurred from child2. */
   private transient List<Integer> occurredTimes2;
   /** The number of join output tuples so far. */
-  private int ans;
+  private long ans;
   /** The buffer for storing and returning answer. */
   private transient TupleBatchBuffer ansTBB;
 
@@ -79,7 +79,7 @@ public final class LocalCountingJoin extends Operator {
       this.outputSchema = getSchema();
     } else {
       Preconditions.checkArgument(outputSchema.numColumns() == 1);
-      Preconditions.checkArgument(outputSchema.getColumnType(0) == Type.INT_TYPE);
+      Preconditions.checkArgument(outputSchema.getColumnType(0) == Type.LONG_TYPE);
       this.outputSchema = outputSchema;
     }
     this.child1 = child1;
@@ -188,7 +188,7 @@ public final class LocalCountingJoin extends Operator {
   public Schema getSchema() {
     final ImmutableList.Builder<Type> types = ImmutableList.builder();
     final ImmutableList.Builder<String> names = ImmutableList.builder();
-    types.add(Type.INT_TYPE);
+    types.add(Type.LONG_TYPE);
     names.add("count");
     return new Schema(types, names);
   }
