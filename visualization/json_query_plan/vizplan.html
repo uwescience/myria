@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Myria Plan Viz</title>
+	</head>
+	<body>
+		<form id="fileform">
+			<input type="file" id="dotfile" />
+		</form>
+		<output id="viz" width="800" height="600"></output>
+
+		<script src="http://mdaines.github.io/viz.js/viz.js"></script>
+		<script>
+			function handleFileSelect(evt) {
+				// See what they selected and make sure at least one file.
+				var f = evt.target.files;
+				if (!f.length) {
+					alert('please select a file');
+				}
+				// f is the file
+				f = f[0];
+
+				// The FileReader will load f into memory and call this function when done.
+				var reader = new FileReader();
+				reader.onload = (function(theFile) {
+					return function(e) {
+						var dot = e.target.result;
+						var result = Viz(dot, "svg");
+						document.getElementById('viz').innerHTML = result;
+						document.getElementById('fileform').reset();
+					}
+				})(f);
+
+				// Read the file as text.
+				reader.readAsText(f);
+			}
+			document.getElementById('dotfile').addEventListener('change', handleFileSelect, false);
+		</script>
+		
+	</body>
+</html>
