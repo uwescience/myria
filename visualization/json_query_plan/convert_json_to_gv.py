@@ -13,6 +13,7 @@ children['EOSController'] = ['arg_child']
 children['IDBInput'] = ['arg_child1', 'arg_child2', 'arg_child3']
 children['LocalJoin'] = ['arg_child1', 'arg_child2']
 children['LocalMultiwayProducer'] = ['arg_child']
+children['MultiGroupByAggregate'] = ['arg_child']
 children['ShuffleProducer'] = ['arg_child']
 
 def read_json(filename):
