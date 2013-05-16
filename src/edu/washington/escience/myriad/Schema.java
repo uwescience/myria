@@ -308,6 +308,22 @@ public final class Schema implements Serializable {
   }
 
   /**
+   * Return a subset of the current schema.
+   * 
+   * @param index indices to be selected.
+   * @return the subschema.
+   */
+  public Schema getSubSchema(final int[] index) {
+    final ImmutableList.Builder<Type> types = ImmutableList.builder();
+    final ImmutableList.Builder<String> names = ImmutableList.builder();
+    for (int i = 0; i < index.length; ++i) {
+      types.add(getColumnType(i));
+      names.add(getColumnName(i));
+    }
+    return new Schema(types, names);
+  }
+
+  /**
    * Gets the (possibly null) column name of the ith column of this Schema.
    * 
    * @param index index of the column name to return. It must be a valid index.
