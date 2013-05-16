@@ -1,5 +1,6 @@
 package edu.washington.escience.myriad.api;
 
+import java.io.FileNotFoundException;
 import java.util.Set;
 
 import javax.ws.rs.Consumes;
@@ -76,10 +77,16 @@ public final class DatasetResource {
 
     /* Do the work. */
     try {
-      MyriaApiUtils.getServer().ingestDataset(dataset.relationKey, dataset.schema, dataset.data);
+      if (dataset.data != null) {
+        MyriaApiUtils.getServer().ingestDataset(dataset.relationKey, dataset.schema, dataset.data);
+      } else {
+        MyriaApiUtils.getServer().ingestDataset(dataset.relationKey, dataset.schema, dataset.fileName);
+      }
     } catch (InterruptedException ee) {
       Thread.currentThread().interrupt();
       ee.printStackTrace();
+    } catch (FileNotFoundException e) {
+      throw new MyriaApiException(Status.NOT_FOUND, "The data file was not found.");
     }
 
     /* In the response, tell the client the path to the relation. */

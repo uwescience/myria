@@ -327,11 +327,11 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     server.submitQueryPlan(serverPlan, workerPlans).sync();
 
     TupleBatch tb = null;
-    int actual = 0;
+    long actual = 0;
     while (!receivedTupleBatches.isEmpty()) {
       tb = receivedTupleBatches.poll();
       if (tb != null) {
-        actual += tb.getInt(0, 0);
+        actual += tb.getLong(0, 0);
       }
     }
     assertTrue(actual == expectedCount);

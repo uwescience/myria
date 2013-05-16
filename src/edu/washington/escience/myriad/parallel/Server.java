@@ -859,6 +859,37 @@ public final class Server {
     /* The Master plan: scan the data and scatter it to all the workers. */
     FileScan fileScan = new FileScan(schema);
     fileScan.setInputStream(new ByteArrayInputStream(data));
+    doIngest(relationKey, schema, fileScan);
+  }
+
+  /**
+   * Adds the data for the specified dataset to all alive workers.
+   * 
+   * @param relationKey the name of the dataset.
+   * @param schema the format of the tuples.
+   * @param fileName the file name.
+   * @throws CatalogException if there is an error.
+   * @throws InterruptedException interrupted
+   * @throws FileNotFoundException if the file doesn't exist
+   */
+  public void ingestDataset(final RelationKey relationKey, final Schema schema, final String fileName)
+      throws CatalogException, InterruptedException, FileNotFoundException {
+    /* The Master plan: scan the data and scatter it to all the workers. */
+    FileScan fileScan = new FileScan(fileName, schema);
+    doIngest(relationKey, schema, fileScan);
+  }
+
+  /**
+   * Do the real ingest.
+   * 
+   * @param relationKey the name of the dataset.
+   * @param schema the format of the tuples.
+   * @param fileScan the FileScan operator, constructed by either a filename or a byte[].
+   * @throws InterruptedException interrupted
+   * @throws CatalogException if there is an error
+   */
+  private void doIngest(final RelationKey relationKey, final Schema schema, final FileScan fileScan)
+      throws InterruptedException, CatalogException {
     ExchangePairID scatterId = ExchangePairID.newID();
     int[] workersArray = new int[workers.size()];
     int count = 0;
