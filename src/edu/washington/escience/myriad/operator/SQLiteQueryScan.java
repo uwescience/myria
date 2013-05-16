@@ -6,6 +6,8 @@ import java.util.Objects;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.MyriaConstants;
+import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.accessmethod.SQLiteAccessMethod;
@@ -34,6 +36,19 @@ public class SQLiteQueryScan extends LeafOperator {
    * The SQLite DB filepath.
    * */
   private transient String databaseFilename;
+
+  /**
+   * Construct a new SQLiteQueryScan object that simply runs <code>SELECT * FROM relationKey</code>.
+   * 
+   * @param relationKey the relation to be scanned.
+   * @param outputSchema the Schema of the returned tuples.
+   */
+  public SQLiteQueryScan(final RelationKey relationKey, final Schema outputSchema) {
+    Objects.requireNonNull(relationKey);
+    Objects.requireNonNull(outputSchema);
+    baseSQL = "SELECT * FROM " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE);
+    schema = outputSchema;
+  }
 
   /**
    * Construct a new SQLiteQueryScan object.
