@@ -1,12 +1,10 @@
 package edu.washington.escience.myriad.operator;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
-import edu.washington.escience.myriad.Type;
 
 /**
  * Project is an operator that implements a relational projection.
@@ -36,15 +34,7 @@ public final class Project extends Operator {
   public Project(final int[] fieldList, final Operator child) throws DbException {
     this.child = child;
     outColumnIndices = fieldList;
-    final Schema childSchema = child.getSchema();
-
-    final ImmutableList.Builder<Type> types = ImmutableList.builder();
-    final ImmutableList.Builder<String> names = ImmutableList.builder();
-    for (final int i : fieldList) {
-      types.add(childSchema.getColumnType(i));
-      names.add(childSchema.getColumnName(i));
-    }
-    schema = new Schema(types, names);
+    schema = child.getSchema().getSubSchema(fieldList);
   }
 
   @Override
