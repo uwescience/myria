@@ -3,6 +3,7 @@ package edu.washington.escience.myriad.accessmethod;
 import java.io.File;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,6 +12,7 @@ import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 
+import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.column.Column;
@@ -22,16 +24,24 @@ import edu.washington.escience.myriad.column.ColumnFactory;
  * @author dhalperi
  * 
  */
-public final class SQLiteAccessMethod {
+public final class SQLiteAccessMethod implements AccessMethod {
 
   /** Default busy timeout is one second. */
   private static final long DEFAULT_BUSY_TIMEOUT = 1000;
   /** The logger for this class. */
   private static final Logger LOGGER = LoggerFactory.getLogger(SQLiteAccessMethod.class);
+  /** The database connection **/
+  private SQLiteConnection sqliteConnection;
+  /** The database schema **/
+  private Schema schema;
+  /** The connection information **/
+  private SQLiteInfo sqliteInfo;
+  /** Flag that identifies the connection type (read-only or not) **/
+  private Boolean readOnly;
 
   /**
-   * Wrap boolean values as int values since SQLite does not support boolean natively. This function converts true to 1
-   * and false to 0.
+   * Wrap boolean values as int values since SQLite does not support boolean natively. 
+   * This function converts true to 1 and false to 0.
    * 
    * @param b boolean to be converted to SQLite int
    * @return 1 if b is true; 0 if b is false
@@ -44,23 +54,80 @@ public final class SQLiteAccessMethod {
   }
 
   /**
-   * Inserts a TupleBatch into the SQLite database.
+   * The constructor. Creates an object and connects with the database
    * 
-   * @param pathToSQLiteDb filename of the SQLite database
-   * @param insertString parameterized string used to insert tuples
-   * @param tupleBatch TupleBatch that contains the data to be inserted
+   * @param sqliteInfo connection information
+   * @param schema the database schema
+   * @param readOnly whether read-only connection or not
+   * @throws DbException if there is an error making the connection.
    */
-  public static synchronized void tupleBatchInsert(final String pathToSQLiteDb, final String insertString,
-      final TupleBatch tupleBatch) {
-    SQLiteConnection sqliteConnection = null;
+  public SQLiteAccessMethod(final SQLiteInfo sqliteInfo, final Schema schema, final Boolean readOnly)
+      throws DbException {
+    Objects.requireNonNull(sqliteInfo);
+
+    this.sqliteInfo = sqliteInfo;
+    this.schema = schema;
+    this.readOnly = readOnly;
+    connect(sqliteInfo, readOnly);
+  }
+
+  /**
+   * Connects with the database
+   * 
+   * @param connectionInfo connection information
+   * @param readOnly whether read-only connection or not
+   * @throws DbException if there is an error making the connection.
+   */
+  @Override
+  public void connect(final ConnectionInfo connectionInfo, final Boolean readOnly) throws DbException {
+    Objects.requireNonNull(connectionInfo);
+
+    this.readOnly = readOnly;
+    sqliteInfo = (SQLiteInfo) connectionInfo;
+    sqliteConnection = null;
+    try {
+      sqliteConnection = new SQLiteConnection(new File(connectionInfo.getDatabase()));
+      if (readOnly) {
+        sqliteConnection.openReadonly();
+      } else {
+        sqliteConnection.open(false);
+      }
+      sqliteConnection.setBusyTimeout(SQLiteAccessMethod.DEFAULT_BUSY_TIMEOUT);
+    } catch (final SQLiteException e) {
+      LOGGER.error(e.getMessage());
+      throw new DbException(e.getMessage());
+    }
+  }
+
+  /**
+   * Sets the connection to be read-only or writable
+   * 
+   * @param readOnly whether read-only connection or not
+   * @throws DbException if there is an error making the connection.
+   */
+  @Override
+  public void setReadOnly(final Boolean readOnly) throws DbException {
+    Objects.requireNonNull(sqliteConnection);
+    Objects.requireNonNull(sqliteInfo);
+
+    if (this.readOnly != readOnly) {
+      close();
+      connect(sqliteInfo, readOnly);
+    }
+  }
+
+  /**
+   * Insert the tuples in this TupleBatch into the database. 
+   * 
+   * @param insertString the insert statement. 
+   * @param tupleBatch the tupleBatch to be inserted
+   */
+  @Override
+  public void tupleBatchInsert(final String insertString, final TupleBatch tupleBatch) throws DbException {
+    Objects.requireNonNull(sqliteConnection);
+
     SQLiteStatement statement = null;
     try {
-      /* Connect to the database */
-      sqliteConnection = new SQLiteConnection(new File(pathToSQLiteDb));
-      sqliteConnection.open(false);
-
-      sqliteConnection.setBusyTimeout(SQLiteAccessMethod.DEFAULT_BUSY_TIMEOUT);
-
       /* BEGIN TRANSACTION */
       sqliteConnection.exec("BEGIN TRANSACTION");
 
@@ -73,13 +140,118 @@ public final class SQLiteAccessMethod {
 
     } catch (final SQLiteException e) {
       LOGGER.error(e.getMessage());
-      throw new RuntimeException(e.getMessage());
+      throw new DbException(e.getMessage());
     } finally {
       if (statement != null && !statement.isDisposed()) {
         statement.dispose();
       }
-      if (sqliteConnection != null && !sqliteConnection.isDisposed()) {
-        sqliteConnection.dispose();
+    }
+  }
+
+  /**
+   * Runs a query and expose the results as an Iterator<TupleBatch>.
+   * 
+   * @param queryString the query
+   * @return an Iterator<TupleBatch> containing the results.
+   * @throws DbException if there is an error getting tuples.
+   */
+  @Override
+  public Iterator<TupleBatch> tupleBatchIteratorFromQuery(final String queryString) throws DbException {
+    Objects.requireNonNull(sqliteConnection);
+    Objects.requireNonNull(schema);
+
+    /* Set up and execute the query */
+    SQLiteStatement statement = null;
+    /*
+     * prepare() might throw an exception. My understanding is, when a
+     * connection starts in WAL mode, it will first acquire an exclusive lock to
+     * check if there is -wal file to recover from. Usually the file is empty so
+     * the lock is released pretty fast. However if another connection comes
+     * during the exclusive lock period, a "database is locked" exception will
+     * still be thrown. The following code simply tries to call prepare again.
+     */
+    boolean conflict = true;
+    int count = 0;
+    while (conflict) {
+      conflict = false;
+      try {
+        statement = sqliteConnection.prepare(queryString);
+      } catch (final SQLiteException e) {
+        conflict = true;
+        count++;
+        if (count >= 1000) {
+          LOGGER.error(e.getMessage());
+          throw new DbException(e);
+        }
+        try {
+          Thread.sleep(10);
+        } catch (InterruptedException e1) {
+          e1.printStackTrace();
+        }
+      }
+    }
+
+    try {
+      /* Step the statement once so we can figure out the Schema */
+      statement.step();
+    } catch (final SQLiteException e) {
+      LOGGER.error(e.getMessage());
+      throw new DbException(e);
+    }
+
+    return new SQLiteTupleBatchIterator(statement, schema, sqliteConnection);
+  }
+
+  /**
+   * Executes a DDL command. 
+   * 
+   * @param ddlCommand the DDL command
+   * @throws DbException if there is an error in the database.
+   */
+  @Override
+  public void execute(final String ddlCommand) throws DbException {
+    Objects.requireNonNull(sqliteConnection);
+
+    try {
+      sqliteConnection.exec(ddlCommand);
+    } catch (final SQLiteException e) {
+      LOGGER.error(e.getMessage());
+      throw new DbException(e.getMessage());
+    }
+  }
+
+  /**
+   * Closes the database connection.
+   * 
+   */
+  @Override
+  public void close() throws DbException {
+    if (sqliteConnection != null) {
+      sqliteConnection.dispose();
+    }
+  }
+
+  /**
+   * Inserts a TupleBatch into the SQLite database.
+   * 
+   * @param pathToSQLiteDb filename of the SQLite database
+   * @param insertString parameterized string used to insert tuples
+   * @param tupleBatch TupleBatch that contains the data to be inserted
+   */
+  public static synchronized void tupleBatchInsert(final String pathToSQLiteDb, final String insertString,
+      final TupleBatch tupleBatch) throws DbException {
+
+    SQLiteAccessMethod sqliteAccessMethod = null;
+    try {
+      sqliteAccessMethod = new SQLiteAccessMethod(SQLiteInfo.of(pathToSQLiteDb), null, false);
+      // sqliteAccessMethod.execute("BEGIN TRANSACTION");
+      sqliteAccessMethod.tupleBatchInsert(insertString, tupleBatch);
+      // sqliteAccessMethod.execute("COMMIT TRANSACTION");
+    } catch (DbException e) {
+      throw e;
+    } finally {
+      if (sqliteAccessMethod != null) {
+        sqliteAccessMethod.close();
       }
     }
   }
@@ -93,46 +265,17 @@ public final class SQLiteAccessMethod {
    * @return an Iterator<TupleBatch> containing the results of the query
    */
   public static Iterator<TupleBatch> tupleBatchIteratorFromQuery(final String pathToSQLiteDb, final String queryString,
-      final Schema schema) {
+      final Schema schema) throws DbException {
+
+    SQLiteAccessMethod sqliteAccessMethod = null;
     try {
-      /* Connect to the database */
-      final SQLiteConnection sqliteConnection = new SQLiteConnection(new File(pathToSQLiteDb));
-      sqliteConnection.open(false);
-
-      /* Set up and execute the query */
-      SQLiteStatement statement = null;
-      /*
-       * prepare() might throw an exception. My understanding is, when a connection starts in WAL mode, it will first
-       * acquire an exclusive lock to check if there is -wal file to recover from. Usually the file is empty so the lock
-       * is released pretty fast. However if another connection comes during the exclusive lock period, a
-       * "database is locked" exception will still be thrown. The following code simply tries to call prepare again.
-       */
-      boolean conflict = true;
-      int count = 0;
-      while (conflict) {
-        conflict = false;
-        try {
-          statement = sqliteConnection.prepare(queryString);
-        } catch (final SQLiteException e) {
-          conflict = true;
-          count++;
-          if (count >= 1000) {
-            throw new RuntimeException(e);
-          }
-          try {
-            Thread.sleep(10);
-          } catch (InterruptedException e1) {
-            e1.printStackTrace();
-          }
-        }
+      sqliteAccessMethod = new SQLiteAccessMethod(SQLiteInfo.of(pathToSQLiteDb), schema, true);
+      return sqliteAccessMethod.tupleBatchIteratorFromQuery(queryString);
+    } catch (DbException e) {
+      if (sqliteAccessMethod != null) {
+        sqliteAccessMethod.close();
       }
-      /* Step the statement once so we can figure out the Schema */
-      statement.step();
-
-      return new SQLiteTupleBatchIterator(statement, schema, sqliteConnection);
-    } catch (final SQLiteException e) {
-      e.printStackTrace();
-      throw new RuntimeException(e);
+      throw e;
     }
   }
 

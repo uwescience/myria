@@ -28,10 +28,69 @@ import edu.washington.escience.myriad.util.JdbcUtils;
  * @author dhalperi
  * 
  */
-public final class JdbcAccessMethod {
+public final class JdbcAccessMethod implements AccessMethod {
 
   /** The logger for this class. */
   private static final Logger LOGGER = LoggerFactory.getLogger(JdbcAccessMethod.class);
+
+  /** The database connection */
+  private Connection jdbcConnection;
+
+  /**
+   * The constructor. Creates an object and connects with the database
+   * 
+   * @param jdbcInfo connection information
+   * @param readOnly whether read-only connection or not
+   * @throws DbException if there is an error making the connection.
+   */
+  public JdbcAccessMethod(final JdbcInfo jdbcInfo, final Boolean readOnly) throws DbException {
+    Objects.requireNonNull(jdbcInfo);
+    connect(jdbcInfo, readOnly);
+  }
+
+  /**
+   * Connects with the database
+   * 
+   * @param connectionInfo connection information
+   * @param readOnly whether read-only connection or not
+   * @throws DbException if there is an error making the connection.
+   */
+  @Override
+  public void connect(final ConnectionInfo connectionInfo, final Boolean readOnly) throws DbException {
+    Objects.requireNonNull(connectionInfo);
+
+    jdbcConnection = null;
+    JdbcInfo jdbcInfo = (JdbcInfo) connectionInfo;
+    try {
+      DriverManager.setLoginTimeout(5);
+      /* Make sure JDBC driver is loaded */
+      Class.forName(jdbcInfo.getDriverClass());
+      jdbcConnection = DriverManager.getConnection(jdbcInfo.getConnectionString(), jdbcInfo.getProperties());
+    } catch (ClassNotFoundException | SQLException e) {
+      LOGGER.error(e.getMessage());
+      throw new DbException(e);
+    }
+  }
+
+  /**
+   * Sets the connection to be read-only or writable
+   * 
+   * @param readOnly whether read-only connection or not
+   * @throws DbException if there is an error making the connection.
+   */
+  @Override
+  public void setReadOnly(final Boolean readOnly) throws DbException {
+    Objects.requireNonNull(jdbcConnection);
+
+    try {
+      if (jdbcConnection.isReadOnly() != readOnly) {
+        jdbcConnection.setReadOnly(readOnly);
+      }
+    } catch (SQLException e) {
+      LOGGER.error(e.getMessage());
+      throw new DbException(e);
+    }
+  }
 
   /**
    * Get a JDBC Connection object for the given parameters.
@@ -40,41 +99,106 @@ public final class JdbcAccessMethod {
    * @return the connection.
    * @throws DbException if there is an error making the connection.
    */
-  public static Connection getConnection(final JdbcInfo jdbcInfo) throws DbException {
-    Objects.requireNonNull(jdbcInfo);
-
-    try {
-      DriverManager.setLoginTimeout(5);
-      /* Make sure JDBC driver is loaded */
-      Class.forName(jdbcInfo.getDriverClass());
-      return DriverManager.getConnection(jdbcInfo.getConnectionString(), jdbcInfo.getProperties());
-    } catch (ClassNotFoundException | SQLException e) {
-      throw new DbException(e);
-    }
-  }
+  // public static Connection getConnection(final JdbcInfo jdbcInfo) throws
+  // DbException {
+  // Objects.requireNonNull(jdbcInfo);
+  //
+  // try {
+  // DriverManager.setLoginTimeout(5);
+  // /* Make sure JDBC driver is loaded */
+  // Class.forName(jdbcInfo.getDriverClass());
+  // return DriverManager.getConnection(jdbcInfo.getConnectionString(),
+  // jdbcInfo.getProperties());
+  // } catch (ClassNotFoundException | SQLException e) {
+  // throw new DbException(e);
+  // }
+  // }
 
   /**
-   * Insert the Tuples in this TupleBatch into the database. Unlike the other tupleBatchInsert method, this does not
-   * open a connection to the database but uses the one it is passed.
+   * Insert the Tuples in this TupleBatch into the database. Assumes that the database 
+   * is already connected.
    * 
-   * @param jdbcConnection the connection to the database
-   * @param insertString the insert statement. TODO no sanity checks at all right now
-   * @param tupleBatch the tupleBatch to be inserted
+   * @param insertString the insert statement. TODO No sanity checks at all right now.
+   * @param tupleBatch the tupleBatch to be inserted.
+   * @throws DbException if there is an error inserting these tuples.
    */
-  public static void tupleBatchInsert(final Connection jdbcConnection, final String insertString,
-      final TupleBatch tupleBatch) {
+  @Override
+  public void tupleBatchInsert(final String insertString, final TupleBatch tupleBatch) throws DbException {
     Objects.requireNonNull(jdbcConnection);
-
     try {
       /* Set up and execute the query */
       final PreparedStatement statement = jdbcConnection.prepareStatement(insertString);
-
       tupleBatch.getIntoJdbc(statement);
+      // TODO make it also independent. should be getIntoJdbc(statement,
+      // tupleBatch)
       statement.executeBatch();
       statement.close();
     } catch (final SQLException e) {
       LOGGER.error(e.getMessage());
       throw new RuntimeException(e.getMessage());
+    }
+  }
+
+  /**
+   * Runs a query and expose the results as an Iterator<TupleBatch>. Assumes that the database 
+   * is already connected.
+   * 
+   * @param queryString the query
+   * @return an Iterator<TupleBatch> containing the results.
+   * @throws DbException if there is an error getting tuples.
+   */
+  @Override
+  public Iterator<TupleBatch> tupleBatchIteratorFromQuery(final String queryString) throws DbException {
+    Objects.requireNonNull(jdbcConnection);
+    try {
+      /* Set up and execute the query */
+      final Statement statement = jdbcConnection.createStatement();
+      final ResultSet resultSet = statement.executeQuery(queryString);
+      final ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
+
+      return new JdbcTupleBatchIterator(resultSet, Schema.fromResultSetMetaData(resultSetMetaData));
+    } catch (final SQLException e) {
+      LOGGER.error(e.getMessage());
+      throw new DbException(e);
+    }
+  }
+
+  /**
+   * Closes the database connection.
+   * 
+   */
+  @Override
+  public void close() throws DbException {
+    /* Close the db connection. */
+    try {
+      jdbcConnection.close();
+    } catch (SQLException e) {
+      LOGGER.error(e.getMessage());
+      throw new DbException(e);
+    }
+  }
+
+  /**
+   * Create a table with the given name and schema in the database. If dropExisting 
+   * is true, drops an existing table if it exists.
+   * 
+   * @param connection the JDBC connection to the database.
+   * @param relationKey the name of the relation.
+   * @param schema the schema of the relation.
+   * @param dbms the DBMS, e.g., "mysql".
+   * @param dropExisting if true, an existing relation will be dropped.
+   * @throws DbException if there is an error in the database.
+   */
+  @Override
+  public void execute(final String ddlCommand) throws DbException {
+    Objects.requireNonNull(jdbcConnection);
+    Statement statement;
+    try {
+      statement = jdbcConnection.createStatement();
+      statement.execute(ddlCommand);
+    } catch (SQLException e) {
+      LOGGER.error(e.getMessage());
+      throw new DbException(e);
     }
   }
 
@@ -88,16 +212,9 @@ public final class JdbcAccessMethod {
    */
   public static void tupleBatchInsert(final JdbcInfo jdbcInfo, final String insertString, final TupleBatch tupleBatch)
       throws DbException {
-    /* Connect to the database. */
-    final Connection jdbcConnection = getConnection(jdbcInfo);
-    /* Insert the tuples. */
-    tupleBatchInsert(jdbcConnection, insertString, tupleBatch);
-    /* Close the db connection. */
-    try {
-      jdbcConnection.close();
-    } catch (SQLException e) {
-      throw new DbException(e);
-    }
+    JdbcAccessMethod jdbcAccessMethod = new JdbcAccessMethod(jdbcInfo, false);
+    jdbcAccessMethod.tupleBatchInsert(insertString, tupleBatch);
+    jdbcAccessMethod.close();
   }
 
   /**
@@ -110,21 +227,8 @@ public final class JdbcAccessMethod {
    */
   public static Iterator<TupleBatch> tupleBatchIteratorFromQuery(final JdbcInfo jdbcInfo, final String queryString)
       throws DbException {
-    try {
-      /* Connect to the database */
-      final Connection jdbcConnection = getConnection(jdbcInfo);
-      /* Set read only on the connection */
-      jdbcConnection.setReadOnly(true);
-
-      /* Set up and execute the query */
-      final Statement statement = jdbcConnection.createStatement();
-      final ResultSet resultSet = statement.executeQuery(queryString);
-      final ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-
-      return new JdbcTupleBatchIterator(resultSet, Schema.fromResultSetMetaData(resultSetMetaData));
-    } catch (final SQLException e) {
-      throw new DbException(e);
-    }
+    JdbcAccessMethod jdbcAccessMethod = new JdbcAccessMethod(jdbcInfo, true);
+    return jdbcAccessMethod.tupleBatchIteratorFromQuery(queryString);
   }
 
   /** Inaccessible. */
@@ -133,8 +237,32 @@ public final class JdbcAccessMethod {
   }
 
   /**
-   * Create a table with the given name and schema in the database. If dropExisting is true, drops an existing table if
-   * it exists.
+   * Create a table with the given name and schema in the database. If dropExisting 
+   * is true, drops an existing table if it exists.
+   * 
+   * @param relationKey the name of the relation.
+   * @param schema the schema of the relation.
+   * @param dbms the DBMS, e.g., "mysql".
+   * @param dropExisting if true, an existing relation will be dropped.
+   * @throws DbException if there is an error in the database.
+   */
+  public void createTable(final RelationKey relationKey, final Schema schema, final String dbms,
+      final boolean dropExisting) throws DbException {
+    Objects.requireNonNull(jdbcConnection);
+    Objects.requireNonNull(relationKey);
+    Objects.requireNonNull(schema);
+
+    try {
+      execute("DROP TABLE " + relationKey.toString(dbms) + ";");
+    } catch (DbException e) {
+      ; /* Skip. this is okay. */
+    }
+    execute(JdbcUtils.createStatementFromSchema(schema, relationKey, dbms));
+  }
+
+  /**
+   * Create a table with the given name and schema in the database. If dropExisting 
+   * is true, drops an existing table if it exists.
    * 
    * @param connection the JDBC connection to the database.
    * @param relationKey the name of the relation.
@@ -143,34 +271,28 @@ public final class JdbcAccessMethod {
    * @param dropExisting if true, an existing relation will be dropped.
    * @throws DbException if there is an error in the database.
    */
-  public static void createTable(final Connection connection, final RelationKey relationKey, final Schema schema,
+  public static void createTable(final JdbcInfo jdbcInfo, final RelationKey relationKey, final Schema schema,
       final String dbms, final boolean dropExisting) throws DbException {
-    Objects.requireNonNull(connection);
+    Objects.requireNonNull(jdbcInfo);
     Objects.requireNonNull(relationKey);
     Objects.requireNonNull(schema);
-    Statement statement;
+
+    JdbcAccessMethod jdbcAccessMethod = new JdbcAccessMethod(jdbcInfo, false);
     try {
-      statement = connection.createStatement();
-    } catch (SQLException e) {
-      throw new DbException(e);
-    }
-    try {
-      statement.execute("DROP TABLE " + relationKey.toString(dbms) + ";");
-    } catch (SQLException e) {
+      jdbcAccessMethod.execute("DROP TABLE " + relationKey.toString(dbms) + ";");
+    } catch (DbException e) {
       ; /* Skip. this is okay. */
     }
-    try {
-      statement.execute(JdbcUtils.createStatementFromSchema(schema, relationKey, dbms));
-    } catch (SQLException e) {
-      throw new DbException(e);
-    }
+    jdbcAccessMethod.execute(JdbcUtils.createStatementFromSchema(schema, relationKey, dbms));
+    jdbcAccessMethod.close();
   }
 }
 
 /**
  * Wraps a JDBC ResultSet in a Iterator<TupleBatch>.
  * 
- * Implementation based on org.apache.commons.dbutils.ResultSetIterator. Requires ResultSet.isLast() to be implemented.
+ * Implementation based on org.apache.commons.dbutils.ResultSetIterator. Requires 
+ * ResultSet.isLast() to be implemented.
  * 
  * @author dhalperi
  * 
@@ -186,8 +308,10 @@ class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
   /**
    * Constructs a JdbcTupleBatchIterator from the given ResultSet and Schema objects.
    * 
-   * @param resultSet the JDBC ResultSet containing the results.
-   * @param schema the Schema of the generated TupleBatch objects.
+   * @param resultSet
+   *          the JDBC ResultSet containing the results.
+   * @param schema
+   *          the Schema of the generated TupleBatch objects.
    */
   JdbcTupleBatchIterator(final ResultSet resultSet, final Schema schema) {
     this.resultSet = resultSet;
@@ -211,8 +335,8 @@ class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
     final List<Column<?>> columns = ColumnFactory.allocateColumns(schema);
 
     /**
-     * Loop through resultSet, adding one row at a time. Stop when numTuples hits BATCH_SIZE or there are no more
-     * results.
+     * Loop through resultSet, adding one row at a time. Stop when numTuples hits 
+     * BATCH_SIZE or there are no more results.
      */
     int numTuples;
     try {
