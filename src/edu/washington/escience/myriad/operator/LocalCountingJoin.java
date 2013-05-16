@@ -186,6 +186,9 @@ public final class LocalCountingJoin extends Operator {
 
   @Override
   public Schema getSchema() {
+    if (outputSchema != null) {
+      return outputSchema;
+    }
     final ImmutableList.Builder<Type> types = ImmutableList.builder();
     final ImmutableList.Builder<String> names = ImmutableList.builder();
     types.add(Type.LONG_TYPE);
@@ -200,29 +203,28 @@ public final class LocalCountingJoin extends Operator {
     occurredTimes1 = new ArrayList<Integer>();
     occurredTimes2 = new ArrayList<Integer>();
     hashTable2Indices = new HashMap<Integer, List<Integer>>();
-    hashTable1 = new TupleBatchBuffer(child1.getSchema());
-    hashTable2 = new TupleBatchBuffer(child2.getSchema());
+    hashTable1 = new TupleBatchBuffer(child1.getSchema().getSubSchema(compareIndx1));
+    hashTable2 = new TupleBatchBuffer(child2.getSchema().getSubSchema(compareIndx2));
     ans = 0;
-    ansTBB = new TupleBatchBuffer(getSchema());
+    ansTBB = new TupleBatchBuffer(outputSchema);
   }
 
   /**
    * Check if a tuple in uniqueTuples equals to the comparing tuple (cntTuple).
    * 
    * @param hashTable the TupleBatchBuffer holding the tuples to compare against
-   * @param index the index in the hashTable
+   * @param rowIndex the row index in the hashTable
    * @param cntTuple a list representation of a tuple
-   * @param compareIndx1 the comparing list of columns of cntTuple
-   * @param compareIndx2 the comparing list of columns of hashTable
+   * @param compareIndx the comparing list of columns of cntTuple
    * @return true if equals.
    * */
-  private boolean tupleEquals(final List<Object> cntTuple, final TupleBatchBuffer hashTable, final int index,
-      final int[] compareIndx1, final int[] compareIndx2) {
-    if (compareIndx1.length != compareIndx2.length) {
+  private boolean tupleEquals(final List<Object> cntTuple, final TupleBatchBuffer hashTable, final int rowIndex,
+      final int[] compareIndx) {
+    if (compareIndx.length != hashTable.getSchema().numColumns()) {
       return false;
     }
-    for (int i = 0; i < compareIndx1.length; ++i) {
-      if (!cntTuple.get(compareIndx1[i]).equals(hashTable.get(compareIndx2[i], index))) {
+    for (int i = 0; i < compareIndx.length; ++i) {
+      if (!cntTuple.get(compareIndx[i]).equals(hashTable.get(i, rowIndex))) {
         return false;
       }
     }
@@ -242,14 +244,12 @@ public final class LocalCountingJoin extends Operator {
     List<Integer> occurredTimes1Local = occurredTimes1;
     List<Integer> occurredTimes2Local = occurredTimes2;
     int[] compareIndx1Local = compareIndx1;
-    int[] compareIndx2Local = compareIndx2;
     if (!fromChild1) {
       hashTable1Local = hashTable2;
       hashTable2Local = hashTable1;
       hashTable1IndicesLocal = hashTable2Indices;
       hashTable2IndicesLocal = hashTable1Indices;
       compareIndx1Local = compareIndx2;
-      compareIndx2Local = compareIndx1;
       occurredTimes1Local = occurredTimes2;
       occurredTimes2Local = occurredTimes1;
     }
@@ -264,7 +264,7 @@ public final class LocalCountingJoin extends Operator {
       List<Integer> indexList = hashTable2IndicesLocal.get(cntHashCode);
       if (indexList != null) {
         for (final int index : indexList) {
-          if (tupleEquals(cntTuple, hashTable2Local, index, compareIndx1Local, compareIndx2Local)) {
+          if (tupleEquals(cntTuple, hashTable2Local, index, compareIndx1Local)) {
             ans += occurredTimes2Local.get(index);
           }
         }
@@ -274,7 +274,7 @@ public final class LocalCountingJoin extends Operator {
       indexList = hashTable1IndicesLocal.get(cntHashCode);
       if (indexList != null) {
         for (final int index : indexList) {
-          if (tupleEquals(cntTuple, hashTable1Local, index, compareIndx1Local, compareIndx1Local)) {
+          if (tupleEquals(cntTuple, hashTable1Local, index, compareIndx1Local)) {
             occurredTimes1Local.set(index, occurredTimes1Local.get(index) + 1);
             found = true;
             break;
@@ -286,8 +286,8 @@ public final class LocalCountingJoin extends Operator {
           hashTable1IndicesLocal.put(cntHashCode, new ArrayList<Integer>());
         }
         hashTable1IndicesLocal.get(cntHashCode).add(nextIndex);
-        for (int j = 0; j < tb.numColumns(); ++j) {
-          hashTable1Local.put(j, cntTuple.get(j));
+        for (int j = 0; j < compareIndx1Local.length; ++j) {
+          hashTable1Local.put(j, cntTuple.get(compareIndx1Local[j]));
         }
         occurredTimes1Local.add(1);
       }
