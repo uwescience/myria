@@ -15,6 +15,7 @@ children['LocalJoin'] = ['arg_child1', 'arg_child2']
 children['LocalMultiwayProducer'] = ['arg_child']
 children['MultiGroupByAggregate'] = ['arg_child']
 children['ShuffleProducer'] = ['arg_child']
+children['SQLiteInsert'] = ['arg_child']
 
 def read_json(filename):
     with open(filename, 'r') as f:
