@@ -63,7 +63,7 @@ public class TenGBTupleBatchReceiverUsingConnectionPool {
               System.out.println("Receive start at new " + start);
             }
             final List<ColumnMessage> columnMessages = data.getColumnsList();
-            final Column<?>[] columnArray = new Column[columnMessages.size()];
+            final Column<?>[] columnArray = new Column<?>[columnMessages.size()];
             int idx = 0;
             for (final ColumnMessage cm : columnMessages) {
               columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm, data.getNumTuples());
