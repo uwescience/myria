@@ -1,7 +1,5 @@
 package edu.washington.escience.myriad.operator;
 
-import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.Objects;
 
 import com.google.common.collect.ImmutableMap;
@@ -24,7 +22,7 @@ public final class JdbcInsert extends RootOperator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** The connection to the JDBC database. */
-  private Connection connection;
+  private JdbcAccessMethod jdbcAccessMethod;
   /** The information for the JDBC connection. */
   private final JdbcInfo jdbcInfo;
   /** The name of the table the tuples should be inserted into. */
@@ -74,15 +72,15 @@ public final class JdbcInsert extends RootOperator {
   @Override
   public void cleanup() {
     try {
-      connection.close();
-    } catch (SQLException e) {
+      jdbcAccessMethod.close();
+    } catch (DbException e) {
       throw new RuntimeException(e);
     }
   }
 
   @Override
-  protected void consumeTuples(final TupleBatch tupleBatch) {
-    JdbcAccessMethod.tupleBatchInsert(connection, insertString, tupleBatch);
+  protected void consumeTuples(final TupleBatch tupleBatch) throws DbException {
+    jdbcAccessMethod.tupleBatchInsert(insertString, tupleBatch);
   }
 
   @Override
@@ -90,9 +88,9 @@ public final class JdbcInsert extends RootOperator {
     /* Set up the insert statement. */
     insertString = JdbcUtils.insertStatementFromSchema(getSchema(), relationKey, jdbcInfo.getDbms());
     /* open the JDBC Connection */
-    connection = JdbcAccessMethod.getConnection(jdbcInfo);
+    jdbcAccessMethod = new JdbcAccessMethod(jdbcInfo, false);
     /* create the table */
-    JdbcAccessMethod.createTable(connection, relationKey, getSchema(), jdbcInfo.getDbms(), overwriteTable);
+    jdbcAccessMethod.createTable(relationKey, getSchema(), jdbcInfo.getDbms(), overwriteTable);
   }
 
   @Override

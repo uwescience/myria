@@ -5,16 +5,14 @@ import java.util.Objects;
 import java.util.Properties;
 
 /**
- * Holds the info for a JDBC Connection.
+ * Holds the info for a SQLite Connection.
  * 
  * @author dhalperi
  * 
  */
-public final class JdbcInfo implements Serializable, ConnectionInfo {
+public final class SQLiteInfo implements Serializable, ConnectionInfo {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
-  /** The classname of the JDBC driver. */
-  private final String driverClass;
   /** The DBMS, e.g., "mysql". */
   private final String dbms;
   /** The hostname/IP. */
@@ -27,62 +25,67 @@ public final class JdbcInfo implements Serializable, ConnectionInfo {
   private final Properties properties;
 
   /**
-   * Creates a new JdbcInfo object.
+   * Creates a new SQLiteInfo object.
    * 
-   * @param driverClass the classname of the JDBC driver.
-   * @param dbms the DBMS, e.g., "mysql".
-   * @param host the hostname/IP.
-   * @param port the port.
    * @param database the database to connect to
-   * @param username the username.
-   * @param password the password.
-   * @return a new JdbcInfo containing this information.
+   * @return a new SQLiteInfo containing this information.
    */
-  public static JdbcInfo of(final String driverClass, final String dbms, final String host, final int port,
-      final String database, final String username, final String password) {
-    return new JdbcInfo(driverClass, dbms, host, port, database, username, password, null);
+  public static SQLiteInfo of(final String database) {
+    return new SQLiteInfo("sqlite", "", 0, database, "", "", null);
   }
 
   /**
-   * Creates a new JdbcInfo object.
+   * Creates a new SQLiteInfo object.
    * 
-   * @param driverClass the classname of the JDBC driver.
    * @param dbms the DBMS, e.g., "mysql".
    * @param host the hostname/IP.
    * @param port the port.
    * @param database the database to connect to
    * @param username the username.
    * @param password the password.
-   * @param properties extra properties for the JDBC connection. May be null.
-   * @return a new JdbcInfo containing this information.
+   * @return a new SQLiteInfo containing this information.
    */
-  public static JdbcInfo of(final String driverClass, final String dbms, final String host, final int port,
-      final String database, final String username, final String password, final Properties properties) {
-    return new JdbcInfo(driverClass, dbms, host, port, database, username, password, properties);
+  public static SQLiteInfo of(final String dbms, final String host, final int port, final String database,
+      final String username, final String password) {
+    return new SQLiteInfo(dbms, host, port, database, username, password, null);
   }
 
   /**
-   * Creates a new JdbcInfo object.
+   * Creates a new SQLiteInfo object.
    * 
-   * @param driverClass the classname of the JDBC driver.
    * @param dbms the DBMS, e.g., "mysql".
    * @param host the hostname/IP.
    * @param port the port.
    * @param database the database to connect to
    * @param username the username.
    * @param password the password.
-   * @param properties extra properties for the JDBC connection.
+   * @param properties extra properties for the SQLite connection. May be null.
+   * @return a new SQLiteInfo containing this information.
    */
-  private JdbcInfo(final String driverClass, final String dbms, final String host, final int port,
-      final String database, final String username, final String password, final Properties properties) {
-    Objects.requireNonNull(driverClass);
+  public static SQLiteInfo of(final String dbms, final String host, final int port, final String database,
+      final String username, final String password, final Properties properties) {
+    return new SQLiteInfo(dbms, host, port, database, username, password, properties);
+  }
+
+  /**
+   * Creates a new SQLiteInfo object.
+   * 
+   * @param dbms the DBMS, e.g., "mysql".
+   * @param host the hostname/IP.
+   * @param port the port.
+   * @param database the database to connect to
+   * @param username the username.
+   * @param password the password.
+   * @param properties extra properties for the SQLite connection.
+   */
+  private SQLiteInfo(final String dbms, final String host, final int port, final String database,
+      final String username, final String password, final Properties properties) {
     Objects.requireNonNull(dbms);
     Objects.requireNonNull(host);
     Objects.requireNonNull(port);
     Objects.requireNonNull(database);
     Objects.requireNonNull(username);
     Objects.requireNonNull(password);
-    this.driverClass = driverClass;
     this.dbms = dbms;
     this.host = host;
     this.port = port;
@@ -94,13 +97,6 @@ public final class JdbcInfo implements Serializable, ConnectionInfo {
     }
     this.properties.setProperty("user", username);
     this.properties.setProperty("password", password);
-  }
-
-  /**
-   * @return the classname of the JDBC driver.
-   */
-  public String getDriverClass() {
-    return driverClass;
   }
 
   /**
@@ -164,6 +160,6 @@ public final class JdbcInfo implements Serializable, ConnectionInfo {
    */
   @Override
   public String getConnectionString() {
-    return "jdbc:" + dbms + "://" + host + ":" + port + "/" + database;
+    return "sqlite:" + dbms + "://" + host + ":" + port + "/" + database;
   }
 }

@@ -1,8 +1,5 @@
 package edu.washington.escience.myriad.jdbc;
 
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -108,19 +105,23 @@ public class JdbcInsertSpeedTest {
       final String insertQuery = "INSERT INTO " + table + " VALUES(?, ?)";
       final String countQuery = "SELECT COUNT(*) FROM " + table;
 
-      // Create the connection
+      JdbcAccessMethod jdbcAccessMethod;
       try {
-        final Connection jdbcConnection = JdbcAccessMethod.getConnection(jdbcInfo);
+        jdbcAccessMethod = new JdbcAccessMethod(jdbcInfo, false);
+      } catch (final DbException e) {
+        error = true;
+        errorMessage = e.getMessage();
+        return;
+      }
 
-        try {
-          Statement statement = jdbcConnection.createStatement();
-          statement.execute(dropQuery);
-        } catch (SQLException e) {
-          /* Okay, pass. */
-        }
+      try {
+        jdbcAccessMethod.execute(dropQuery);
+      } catch (DbException e) {
+        /* Okay, pass. */
+      }
 
-        Statement statement = jdbcConnection.createStatement();
-        statement.execute(createQuery);
+      try {
+        jdbcAccessMethod.execute(createQuery);
 
         // Loop through N trials and insert the tuples
         for (int i = 0; i < NTRIALS; i++) {
@@ -136,7 +137,7 @@ public class JdbcInsertSpeedTest {
           // Time the write operation
           final long startTime = System.nanoTime();
           for (final TupleBatch batch : batches) {
-            JdbcAccessMethod.tupleBatchInsert(jdbcConnection, insertQuery, batch);
+            jdbcAccessMethod.tupleBatchInsert(insertQuery, batch);
           }
           final long endTime = System.nanoTime();
 
@@ -161,11 +162,11 @@ public class JdbcInsertSpeedTest {
         }
 
         // Close the database connection
-        jdbcConnection.close();
+        jdbcAccessMethod.close();
 
-      } catch (final SQLException e) {
+      } catch (final DbException e) {
         error = true;
-        errorMessage = "Unable to connect to database : " + jdbcInfo.getHost();
+        errorMessage = e.getMessage();
       } catch (final Exception e) {
         error = true;
         errorMessage = e.getMessage();
@@ -264,7 +265,7 @@ public class JdbcInsertSpeedTest {
     password = "nays26[shark";
     dbms = "monetdb";
     databaseName = "myria-test";
-    jdbcDriverName = "nl.cwi.monetdb.jdbc.MonetDriver";;
+    jdbcDriverName = "nl.cwi.monetdb.jdbc.MonetDriver";
     jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, databaseName, user, password);
     table = "speedtesttable";
     tests.add(new SpeedTestData(jdbcInfo, table));
@@ -290,7 +291,9 @@ public class JdbcInsertSpeedTest {
     jdbcDriverName = "com.mysql.jdbc.Driver";
     jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, databaseName, user, password);
     table = "speedtesttable";
-    /* connectionString = "jdbc:" + dbms + "://" + host + "/" + databaseName + "?rewriteBatchedStatements=true"; */
+    /*
+     * connectionString = "jdbc:" + dbms + "://" + host + "/" + databaseName + "?rewriteBatchedStatements=true";
+     */
     tests.add(new SpeedTestData(jdbcInfo, table));
   }
 }

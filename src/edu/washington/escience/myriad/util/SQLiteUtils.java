@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 
+import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
@@ -63,9 +64,10 @@ public final class SQLiteUtils {
    * @param relationKey the relation to insert into
    * @param dbFilePath the location of the SQLite DB file
    * @param data the data.
+   * @throws DbException if there is an error in the database.
    * */
   public static void insertIntoSQLite(final Schema inputSchema, final RelationKey relationKey, final String dbFilePath,
-      final TupleBatch data) {
+      final TupleBatch data) throws DbException {
 
     final List<String> fieldNames = inputSchema.getColumnNames();
     final String[] placeHolders = new String[inputSchema.numColumns()];
