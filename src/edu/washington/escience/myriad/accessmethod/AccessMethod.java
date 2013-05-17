@@ -9,7 +9,7 @@ import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.TupleBatch;
 
 /**
- * . Interface for Database Access Methods
+ * Interface for Database Access Methods.
  * 
  * @author valmeida
  * 
@@ -17,7 +17,7 @@ import edu.washington.escience.myriad.TupleBatch;
 public interface AccessMethod {
 
   /**
-   * . Connects with the database
+   * Connects with the database.
    * 
    * @param connectionInfo connection information
    * @param readOnly whether read-only connection or not
