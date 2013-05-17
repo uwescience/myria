@@ -34,7 +34,7 @@ import edu.washington.escience.myriad.util.TestUtils;
 
 public class SQLiteAccessMethodTest {
   @Test
-  public void testConcurrentReadingATable() throws IOException, CatalogException, InterruptedException {
+  public void testConcurrentReadingATable() throws IOException, CatalogException, InterruptedException, DbException {
 
     final Random r = new Random();
 
@@ -47,8 +47,7 @@ public class SQLiteAccessMethodTest {
     final String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, numTuplesEach, 20);
     final long[] ids = TestUtils.randomLong(1000, 1005, names.length);
 
-    final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+    final Schema schema = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
@@ -71,11 +70,14 @@ public class SQLiteAccessMethodTest {
       threads[i] = new Thread() {
         @Override
         public void run() {
-          final Iterator<TupleBatch> it =
-              SQLiteAccessMethod.tupleBatchIteratorFromQuery(dbFile.getAbsolutePath(), "select * from "
-                  + testtableKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), schema);
-          while (it.hasNext()) {
-            it.next();
+          try {
+            final Iterator<TupleBatch> it = SQLiteAccessMethod.tupleBatchIteratorFromQuery(dbFile.getAbsolutePath(),
+                "select * from " + testtableKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), schema);
+            while (it.hasNext()) {
+              it.next();
+            }
+          } catch (DbException e) {
+            // TODO Do some error condition here. Talk to dhalperi
           }
         }
       };
@@ -92,7 +94,8 @@ public class SQLiteAccessMethodTest {
   }
 
   @Test
-  public void testConcurrentReadingTwoTablesInSameDBFile() throws IOException, CatalogException, InterruptedException {
+  public void testConcurrentReadingTwoTablesInSameDBFile() throws IOException, CatalogException, InterruptedException,
+      DbException {
 
     final Random r = new Random();
 
@@ -110,8 +113,7 @@ public class SQLiteAccessMethodTest {
     final String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, numTuplesEach, 20);
     final long[] ids = TestUtils.randomLong(1000, 1005, names.length);
 
-    final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+    final Schema schema = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
@@ -138,12 +140,15 @@ public class SQLiteAccessMethodTest {
       threads[i] = new Thread() {
         @Override
         public void run() {
-          final Iterator<TupleBatch> it =
-              SQLiteAccessMethod.tupleBatchIteratorFromQuery(dbFile.getAbsolutePath(), "select * from "
-                  + testtableKeys.get(j % 2).toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), schema);
+          try {
+            final Iterator<TupleBatch> it = SQLiteAccessMethod.tupleBatchIteratorFromQuery(dbFile.getAbsolutePath(),
+                "select * from " + testtableKeys.get(j % 2).toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), schema);
 
-          while (it.hasNext()) {
-            it.next();
+            while (it.hasNext()) {
+              it.next();
+            }
+          } catch (DbException e) {
+            // TODO Do some error condition here. Talk to dhalperi
           }
         }
       };

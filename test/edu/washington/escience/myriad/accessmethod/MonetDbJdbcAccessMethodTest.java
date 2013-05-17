@@ -67,9 +67,9 @@ public class MonetDbJdbcAccessMethodTest {
     insert.close();
 
     /* Count them and make sure we got the right count. */
-    JdbcQueryScan count =
-        new JdbcQueryScan(jdbcInfo, "SELECT COUNT(*) FROM " + relationKey.toString(jdbcInfo.getDbms()), Schema.of(
-            ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("count")));
+    JdbcQueryScan count = new JdbcQueryScan(jdbcInfo, "SELECT COUNT(*) FROM "
+        + relationKey.toString(jdbcInfo.getDbms()), Schema.of(ImmutableList.of(Type.LONG_TYPE),
+        ImmutableList.of("count")));
     count.open(null);
     TupleBatch result = count.nextReady();
     assertTrue(result != null);

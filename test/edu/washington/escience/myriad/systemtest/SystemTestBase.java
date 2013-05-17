@@ -31,6 +31,7 @@ import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.collect.ImmutableList;
 
+import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.MyriaSystemConfigKeys;
 import edu.washington.escience.myriad.RelationKey;
@@ -177,9 +178,8 @@ public class SystemTestBase {
       sqliteConnection.open(true);
 
       /* Create the table if not exist */
-      statement =
-          sqliteConnection.prepare("create table if not exists "
-              + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE) + " (" + sqlSchemaString + ");");
+      statement = sqliteConnection.prepare("create table if not exists "
+          + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE) + " (" + sqlSchemaString + ");");
 
       statement.step();
       statement.reset();
@@ -316,12 +316,12 @@ public class SystemTestBase {
   }
 
   public static void insert(final int workerID, final RelationKey relationKey, final Schema schema,
-      final TupleBatch data) throws CatalogException, FileNotFoundException {
+      final TupleBatch data) throws CatalogException, FileNotFoundException, DbException {
     final String insertTemplate = SQLiteUtils.insertStatementFromSchema(schema, relationKey);
     SQLiteAccessMethod.tupleBatchInsert(getAbsoluteDBFile(workerID).getAbsolutePath(), insertTemplate, data);
   }
 
-  public static HashMap<Tuple, Integer> simpleRandomJoinTestBase() throws CatalogException, IOException {
+  public static HashMap<Tuple, Integer> simpleRandomJoinTestBase() throws CatalogException, IOException, DbException {
     /* worker 1 partition of table1 */
     createTable(WORKER_ID[0], JOIN_TEST_TABLE_1, "id long, name varchar(20)");
     /* worker 1 partition of table2 */
@@ -401,17 +401,25 @@ public class SystemTestBase {
 
   }
 
-  public static HashMap<Tuple, Integer> simpleFixedJoinTestBase() throws CatalogException, IOException {
-    createTable(WORKER_ID[0], JOIN_TEST_TABLE_1, "id long, name varchar(20)"); // worker 1 partition
+  public static HashMap<Tuple, Integer> simpleFixedJoinTestBase() throws CatalogException, IOException, DbException {
+    createTable(WORKER_ID[0], JOIN_TEST_TABLE_1, "id long, name varchar(20)"); // worker
+                                                                               // 1
+                                                                               // partition
                                                                                // of
     // table1
-    createTable(WORKER_ID[0], JOIN_TEST_TABLE_2, "id long, name varchar(20)"); // worker 1 partition
+    createTable(WORKER_ID[0], JOIN_TEST_TABLE_2, "id long, name varchar(20)"); // worker
+                                                                               // 1
+                                                                               // partition
                                                                                // of
     // table2
-    createTable(WORKER_ID[1], JOIN_TEST_TABLE_1, "id long, name varchar(20)");// worker 2 partition
+    createTable(WORKER_ID[1], JOIN_TEST_TABLE_1, "id long, name varchar(20)");// worker
+                                                                              // 2
+                                                                              // partition
                                                                               // of
     // table1
-    createTable(WORKER_ID[1], JOIN_TEST_TABLE_2, "id long, name varchar(20)");// worker 2 partition
+    createTable(WORKER_ID[1], JOIN_TEST_TABLE_2, "id long, name varchar(20)");// worker
+                                                                              // 2
+                                                                              // partition
                                                                               // of
     // table2
 
@@ -509,23 +517,26 @@ public class SystemTestBase {
       String cp = System.getProperty("java.class.path");
       String lp = System.getProperty("java.library.path");
 
-      final ProcessBuilder pb =
-          new ProcessBuilder(
-              "java",
-              "-ea", // enable assertion
-              "-Djava.library.path=" + lp,
-              "-Dorg.jboss.netty.debug",
-              "-Xdebug",
-              // Now eclipse is able to debug remotely the worker processes following the steps:
-              // 1. Set a breakpoint at the beginning of a JUnit test method.
-              // 2. start debug the JUnit test method. The test method should stop at the preset breakpoint.
-              // But now, the worker processes are already started.
-              // 3. Create an Eclipse remote debugger and set to attach to localhost 10001 for worker1 and localhost
-              // 10002 for worker2
-              // 4. Now, you are able to debug the worker processes. All the Java debugging methods are supported such
-              // as breakpoints.
-              "-Xrunjdwp:transport=dt_socket,address=" + (workerPorts[i] + 1000) + ",server=y,suspend=n", "-classpath",
-              cp, Worker.class.getCanonicalName(), "--workingDir", workingDir);
+      final ProcessBuilder pb = new ProcessBuilder(
+          "java",
+          "-ea", // enable assertion
+          "-Djava.library.path=" + lp,
+          "-Dorg.jboss.netty.debug",
+          "-Xdebug",
+          // Now eclipse is able to debug remotely the worker processes
+          // following the steps:
+          // 1. Set a breakpoint at the beginning of a JUnit test method.
+          // 2. start debug the JUnit test method. The test method should stop
+          // at the preset breakpoint.
+          // But now, the worker processes are already started.
+          // 3. Create an Eclipse remote debugger and set to attach to localhost
+          // 10001 for worker1 and localhost
+          // 10002 for worker2
+          // 4. Now, you are able to debug the worker processes. All the Java
+          // debugging methods are supported such
+          // as breakpoints.
+          "-Xrunjdwp:transport=dt_socket,address=" + (workerPorts[i] + 1000) + ",server=y,suspend=n", "-classpath", cp,
+          Worker.class.getCanonicalName(), "--workingDir", workingDir);
 
       pb.directory(new File(workingDir));
       pb.redirectErrorStream(true);
