@@ -45,9 +45,8 @@ public final class SQLiteInfo implements Serializable, ConnectionInfo {
    * @param password the password.
    * @return a new SQLiteInfo containing this information.
    */
-  public static SQLiteInfo of(final String dbms, final String host,
-      final int port, final String database, final String username,
-      final String password) {
+  public static SQLiteInfo of(final String dbms, final String host, final int port, final String database,
+      final String username, final String password) {
     return new SQLiteInfo(dbms, host, port, database, username, password, null);
   }
 
@@ -63,11 +62,9 @@ public final class SQLiteInfo implements Serializable, ConnectionInfo {
    * @param properties extra properties for the SQLite connection. May be null.
    * @return a new SQLiteInfo containing this information.
    */
-  public static SQLiteInfo of(final String driverClass, final String dbms,
-      final String host, final int port, final String database,
+  public static SQLiteInfo of(final String dbms, final String host, final int port, final String database,
       final String username, final String password, final Properties properties) {
-    return new SQLiteInfo(dbms, host, port, database, username, password,
-        properties);
+    return new SQLiteInfo(dbms, host, port, database, username, password, properties);
   }
 
   /**
@@ -81,9 +78,8 @@ public final class SQLiteInfo implements Serializable, ConnectionInfo {
    * @param password the password.
    * @param properties extra properties for the SQLite connection.
    */
-  private SQLiteInfo(final String dbms, final String host, final int port,
-      final String database, final String username, final String password,
-      final Properties properties) {
+  private SQLiteInfo(final String dbms, final String host, final int port, final String database,
+      final String username, final String password, final Properties properties) {
     Objects.requireNonNull(dbms);
     Objects.requireNonNull(host);
     Objects.requireNonNull(port);

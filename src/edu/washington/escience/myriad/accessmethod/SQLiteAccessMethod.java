@@ -30,28 +30,14 @@ public final class SQLiteAccessMethod implements AccessMethod {
   private static final long DEFAULT_BUSY_TIMEOUT = 1000;
   /** The logger for this class. */
   private static final Logger LOGGER = LoggerFactory.getLogger(SQLiteAccessMethod.class);
-  /** The database connection **/
+  /** The database connection. **/
   private SQLiteConnection sqliteConnection;
-  /** The database schema **/
+  /** The database schema. **/
   private Schema schema;
-  /** The connection information **/
+  /** The connection information. **/
   private SQLiteInfo sqliteInfo;
-  /** Flag that identifies the connection type (read-only or not) **/
+  /** Flag that identifies the connection type (read-only or not). **/
   private Boolean readOnly;
-
-  /**
-   * Wrap boolean values as int values since SQLite does not support boolean natively. 
-   * This function converts true to 1 and false to 0.
-   * 
-   * @param b boolean to be converted to SQLite int
-   * @return 1 if b is true; 0 if b is false
-   */
-  static int sqliteBooleanToInt(final boolean b) {
-    if (b) {
-      return 1;
-    }
-    return 0;
-  }
 
   /**
    * The constructor. Creates an object and connects with the database
@@ -71,13 +57,6 @@ public final class SQLiteAccessMethod implements AccessMethod {
     connect(sqliteInfo, readOnly);
   }
 
-  /**
-   * Connects with the database
-   * 
-   * @param connectionInfo connection information
-   * @param readOnly whether read-only connection or not
-   * @throws DbException if there is an error making the connection.
-   */
   @Override
   public void connect(final ConnectionInfo connectionInfo, final Boolean readOnly) throws DbException {
     Objects.requireNonNull(connectionInfo);
@@ -99,12 +78,6 @@ public final class SQLiteAccessMethod implements AccessMethod {
     }
   }
 
-  /**
-   * Sets the connection to be read-only or writable
-   * 
-   * @param readOnly whether read-only connection or not
-   * @throws DbException if there is an error making the connection.
-   */
   @Override
   public void setReadOnly(final Boolean readOnly) throws DbException {
     Objects.requireNonNull(sqliteConnection);
@@ -116,12 +89,6 @@ public final class SQLiteAccessMethod implements AccessMethod {
     }
   }
 
-  /**
-   * Insert the tuples in this TupleBatch into the database. 
-   * 
-   * @param insertString the insert statement. 
-   * @param tupleBatch the tupleBatch to be inserted
-   */
   @Override
   public void tupleBatchInsert(final String insertString, final TupleBatch tupleBatch) throws DbException {
     Objects.requireNonNull(sqliteConnection);
@@ -148,13 +115,6 @@ public final class SQLiteAccessMethod implements AccessMethod {
     }
   }
 
-  /**
-   * Runs a query and expose the results as an Iterator<TupleBatch>.
-   * 
-   * @param queryString the query
-   * @return an Iterator<TupleBatch> containing the results.
-   * @throws DbException if there is an error getting tuples.
-   */
   @Override
   public Iterator<TupleBatch> tupleBatchIteratorFromQuery(final String queryString) throws DbException {
     Objects.requireNonNull(sqliteConnection);
@@ -163,12 +123,10 @@ public final class SQLiteAccessMethod implements AccessMethod {
     /* Set up and execute the query */
     SQLiteStatement statement = null;
     /*
-     * prepare() might throw an exception. My understanding is, when a
-     * connection starts in WAL mode, it will first acquire an exclusive lock to
-     * check if there is -wal file to recover from. Usually the file is empty so
-     * the lock is released pretty fast. However if another connection comes
-     * during the exclusive lock period, a "database is locked" exception will
-     * still be thrown. The following code simply tries to call prepare again.
+     * prepare() might throw an exception. My understanding is, when a connection starts in WAL mode, it will first
+     * acquire an exclusive lock to check if there is -wal file to recover from. Usually the file is empty so the lock
+     * is released pretty fast. However if another connection comes during the exclusive lock period, a
+     * "database is locked" exception will still be thrown. The following code simply tries to call prepare again.
      */
     boolean conflict = true;
     int count = 0;
@@ -202,12 +160,6 @@ public final class SQLiteAccessMethod implements AccessMethod {
     return new SQLiteTupleBatchIterator(statement, schema, sqliteConnection);
   }
 
-  /**
-   * Executes a DDL command. 
-   * 
-   * @param ddlCommand the DDL command
-   * @throws DbException if there is an error in the database.
-   */
   @Override
   public void execute(final String ddlCommand) throws DbException {
     Objects.requireNonNull(sqliteConnection);
@@ -220,10 +172,6 @@ public final class SQLiteAccessMethod implements AccessMethod {
     }
   }
 
-  /**
-   * Closes the database connection.
-   * 
-   */
   @Override
   public void close() throws DbException {
     if (sqliteConnection != null) {
@@ -237,6 +185,7 @@ public final class SQLiteAccessMethod implements AccessMethod {
    * @param pathToSQLiteDb filename of the SQLite database
    * @param insertString parameterized string used to insert tuples
    * @param tupleBatch TupleBatch that contains the data to be inserted
+   * @throws DbException if there is an error in the database.
    */
   public static synchronized void tupleBatchInsert(final String pathToSQLiteDb, final String insertString,
       final TupleBatch tupleBatch) throws DbException {
@@ -263,6 +212,7 @@ public final class SQLiteAccessMethod implements AccessMethod {
    * @param queryString string containing the SQLite query to be executed
    * @param schema the Schema describing the format of the TupleBatch containing these results.
    * @return an Iterator<TupleBatch> containing the results of the query
+   * @throws DbException if there is an error in the database.
    */
   public static Iterator<TupleBatch> tupleBatchIteratorFromQuery(final String pathToSQLiteDb, final String queryString,
       final Schema schema) throws DbException {

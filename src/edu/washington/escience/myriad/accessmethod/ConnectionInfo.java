@@ -7,48 +7,48 @@ import java.util.Properties;
 
 /**
  * @author valmeida
- *
+ * 
  */
 public interface ConnectionInfo {
 
   /**
    * @return the DBMS, e.g., "mysql" or "monetdb.
    */
-  public String getDbms();
+  String getDbms();
 
   /**
    * @return the hostname/IP.
    */
-  public String getHost();
+  String getHost();
 
   /**
    * @return the port.
    */
-  public int getPort();
+  int getPort();
 
   /**
    * @return the database name
    */
-  public String getDatabase();
+  String getDatabase();
 
   /**
    * @return the username.
    */
-  public String getUsername();
+  String getUsername();
 
   /**
    * @return the password.
    */
-  public String getPassword();
+  String getPassword();
 
   /**
    * @return additional properties.
    */
-  public Properties getProperties();
+  Properties getProperties();
 
   /**
    * @return the connection string.
    */
-  public String getConnectionString();
-	
+  String getConnectionString();
+
 }
