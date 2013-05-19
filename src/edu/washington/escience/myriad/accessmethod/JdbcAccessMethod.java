@@ -165,11 +165,6 @@ public final class JdbcAccessMethod implements AccessMethod {
     return jdbcAccessMethod.tupleBatchIteratorFromQuery(queryString);
   }
 
-  /** Inaccessible. */
-  private JdbcAccessMethod() {
-    throw new AssertionError();
-  }
-
   /**
    * Create a table with the given name and schema in the database. If dropExisting is true, drops an existing table if
    * it exists.
