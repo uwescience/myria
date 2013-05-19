@@ -24,7 +24,6 @@ import com.google.common.primitives.Ints;
 
 import edu.washington.escience.myriad.column.BooleanColumn;
 import edu.washington.escience.myriad.column.Column;
-import edu.washington.escience.myriad.column.ColumnFactory;
 import edu.washington.escience.myriad.column.DoubleColumn;
 import edu.washington.escience.myriad.column.FloatColumn;
 import edu.washington.escience.myriad.column.IntColumn;
@@ -416,27 +415,6 @@ public class TupleBatch {
    */
   public final int numTuples() {
     return numValidTuples;
-  }
-
-  /**
-   * Get a COPY of valid tuples held by this TupleBatch.
-   * 
-   * DO NOT use this method if not necessary.
-   * 
-   * Call get** methods if single cell values are requested. And call {#link compactInto} if the valid tuples are to be
-   * output to somewhere using a {#link TupleBatchBuffer}.
-   * 
-   * @return a copy of valid tuples
-   * */
-  public final List<Column<?>> outputRawData() {
-    final List<Column<?>> output = ColumnFactory.allocateColumns(schema);
-    for (int row : getValidIndices()) {
-      int i = 0;
-      for (final Column<?> c : columns) {
-        output.get(i++).putObject(c.get(row));
-      }
-    }
-    return output;
   }
 
   /**
