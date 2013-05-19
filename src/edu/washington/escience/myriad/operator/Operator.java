@@ -208,7 +208,7 @@ public abstract class Operator implements Serializable {
     if (!open) {
       throw new DbException("Operator not yet open");
     }
-    if (eos()) {
+    if (eos() || eoi()) {
       return null;
     }
 
