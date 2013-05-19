@@ -9,7 +9,6 @@ import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
 import com.google.protobuf.ByteString;
 
-import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.proto.DataProto.BooleanColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
@@ -25,7 +24,7 @@ public final class BooleanColumn implements Column<Boolean> {
   /** Internal representation of the column data. */
   private final BitSet data;
   /** Number of valid elements. */
-  private int numBits;
+  private final int numBits;
 
   /**
    * @param data the data
@@ -66,19 +65,6 @@ public final class BooleanColumn implements Column<Boolean> {
   @Override
   public Type getType() {
     return Type.BOOLEAN_TYPE;
-  }
-
-  /**
-   * Inserts the specified element at end of this column.
-   * 
-   * @param value element to be inserted.
-   * @return this column.
-   */
-  public BooleanColumn put(final boolean value) {
-    Preconditions.checkElementIndex(numBits, TupleBatch.BATCH_SIZE);
-    data.set(numBits, value);
-    numBits++;
-    return this;
   }
 
   @Override
