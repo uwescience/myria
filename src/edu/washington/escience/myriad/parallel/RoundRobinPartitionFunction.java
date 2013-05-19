@@ -22,30 +22,10 @@ public class RoundRobinPartitionFunction extends PartitionFunction<String, Integ
     super(numPartitions);
   }
 
-  // @Override
-  // public final int[] partition(final List<Column<?>> columns, final BitSet validTuples, final Schema schema) {
-  // final int[] result = new int[validTuples.cardinality()];
-  // int j = 0;
-  // for (int i = validTuples.nextSetBit(0); i >= 0; i = validTuples.nextSetBit(i + 1)) {
-  // result[j++] = partition;
-  // partition = (partition + 1) % numPartition;
-  // }
-  // return result;
-  // // final int numTuples = columns.get(0).size();
-  // // final int[] result = new int[numTuples];
-  // //
-  // // for (int i = 0; i < numTuples; i++) {
-  // // result[i] = partition;
-  // // partition = (partition + 1) % numPartition;
-  // // }
-  // // return result;
-  // }
-  //
-
   /**
    * @param tb data.
    * @return partitions.
-   * */
+   */
   @Override
   public final int[] partition(final TupleBatch tb) {
     final int[] result = new int[tb.numTuples()];

@@ -64,10 +64,8 @@ public class ShuffleSQLiteTest extends SystemTestBase {
     final PartitionFunction<String, Integer> pf = new SingleFieldHashPartitionFunction(numPartition);
     pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1); // partition by name
 
-    final SQLiteQueryScan scan1 =
-        new SQLiteQueryScan("select * from " + testtable1Key.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), schema);
-    final SQLiteQueryScan scan2 =
-        new SQLiteQueryScan("select * from " + testtable2Key.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), schema);
+    final SQLiteQueryScan scan1 = new SQLiteQueryScan(testtable1Key, schema);
+    final SQLiteQueryScan scan2 = new SQLiteQueryScan(testtable2Key, schema);
     final ShuffleProducer sp1 = new ShuffleProducer(scan1, shuffle1ID, WORKER_ID, pf);
 
     final ShuffleProducer sp2 = new ShuffleProducer(scan2, shuffle2ID, WORKER_ID, pf);
