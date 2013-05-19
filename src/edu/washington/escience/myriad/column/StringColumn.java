@@ -1,13 +1,9 @@
 package edu.washington.escience.myriad.column;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
 
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
@@ -26,26 +22,16 @@ import edu.washington.escience.myriad.proto.DataProto.StringColumnMessage;
  * 
  */
 public final class StringColumn implements Column<String> {
-  /**
-   * The positions of the starts of each String in this column. Used to pack variable-length Strings and yet still have
-   * fast lookup.
-   */
-  private final int[] startIndices;
-  /**
-   * The positions of the ends of each String in this column. Used to pack variable-length Strings and yet still have
-   * fast lookup.
-   */
-  private final int[] endIndices;
   /** Contains the packed character data. */
-  private final StringBuilder data;
+  private final String[] data;
   /** Number of elements in this column. */
   private int numStrings;
 
-  /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
+  /**
+   * Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements.
+   * */
   public StringColumn() {
-    startIndices = new int[TupleBatch.BATCH_SIZE];
-    endIndices = new int[TupleBatch.BATCH_SIZE];
-    data = new StringBuilder();
+    data = new String[TupleBatch.BATCH_SIZE];
     numStrings = 0;
   }
 
@@ -62,40 +48,16 @@ public final class StringColumn implements Column<String> {
     if (!message.hasStringColumn()) {
       throw new IllegalArgumentException("ColumnMessage has type STRING but no StringColumn");
     }
-    startIndices = new int[TupleBatch.BATCH_SIZE];
-    endIndices = new int[TupleBatch.BATCH_SIZE];
     final StringColumnMessage stringColumn = message.getStringColumn();
-    try {
-      byte[] dataBytes = stringColumn.getStartIndices().toByteArray();
-      ObjectInputStream input = new ObjectInputStream(new ByteArrayInputStream(dataBytes));
-      for (int i = 0; i < numTuples; ++i) {
-        startIndices[i] = input.readInt();
-      }
-      input.close();
-      dataBytes = stringColumn.getEndIndices().toByteArray();
-      input = new ObjectInputStream(new ByteArrayInputStream(dataBytes));
-      for (int i = 0; i < numTuples; ++i) {
-        endIndices[i] = input.readInt();
-      }
-      input.close();
-    } catch (IOException e) {
-      throw new RuntimeException(e);
+    List<Integer> startIndices = stringColumn.getStartIndicesList();
+    List<Integer> endIndices = stringColumn.getEndIndicesList();
+    String[] newData = new String[numTuples];
+    String allStrings = stringColumn.getData().toStringUtf8();
+    for (int i = 0; i < numTuples; i++) {
+      newData[i] = allStrings.substring(startIndices.get(i), endIndices.get(i));
     }
-    data = new StringBuilder(stringColumn.getData().toStringUtf8());
+    data = newData;
     numStrings = numTuples;
-  }
-
-  /**
-   * Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements, but uses the averageStringSize to
-   * seed the initial size of the internal buffer that stores the variable-length Strings.
-   * 
-   * @param averageStringSize expected average size of the Strings that will be stored in this column.
-   */
-  public StringColumn(final int averageStringSize) {
-    startIndices = new int[TupleBatch.BATCH_SIZE];
-    endIndices = new int[TupleBatch.BATCH_SIZE];
-    data = new StringBuilder(averageStringSize * TupleBatch.BATCH_SIZE);
-    numStrings = 0;
   }
 
   @Override
@@ -122,7 +84,7 @@ public final class StringColumn implements Column<String> {
    */
   public String getString(final int row) {
     Preconditions.checkElementIndex(row, numStrings);
-    return data.substring(startIndices[row], endIndices[row]);
+    return data[row];
   }
 
   /**
@@ -132,10 +94,7 @@ public final class StringColumn implements Column<String> {
    * @return this column.
    */
   public StringColumn put(final String value) {
-    Preconditions.checkElementIndex(numStrings, TupleBatch.BATCH_SIZE);
-    startIndices[numStrings] = data.length();
-    data.append(value);
-    endIndices[numStrings] = data.length();
+    data[numStrings] = value;
     numStrings++;
     return this;
   }
@@ -162,28 +121,19 @@ public final class StringColumn implements Column<String> {
 
   @Override
   public ColumnMessage serializeToProto() {
-    ByteArrayOutputStream startIndicesBytes = new ByteArrayOutputStream(numStrings * (Integer.SIZE / Byte.SIZE));
-    ByteArrayOutputStream endIndicesBytes = new ByteArrayOutputStream(numStrings * (Integer.SIZE / Byte.SIZE));
-    try {
-      ObjectOutputStream startIndicesOutput = new ObjectOutputStream(startIndicesBytes);
-      for (int i = 0; i < numStrings; ++i) {
-        startIndicesOutput.writeInt(startIndices[i]);
-      }
-      startIndicesOutput.close();
-      ObjectOutputStream endIndicesOutput = new ObjectOutputStream(endIndicesBytes);
-      for (int i = 0; i < numStrings; ++i) {
-        endIndicesOutput.writeInt(endIndices[i]);
-      }
-      endIndicesOutput.close();
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-
     /* Note that we do *not* build the inner class. We pass its builder instead. */
-    final StringColumnMessage.Builder inner =
-        StringColumnMessage.newBuilder().setData(ByteString.copyFromUtf8(data.toString()));
-    inner.setStartIndices(ByteString.copyFrom(startIndicesBytes.toByteArray()));
-    inner.setEndIndices(ByteString.copyFrom(endIndicesBytes.toByteArray()));
+    final StringColumnMessage.Builder inner = StringColumnMessage.newBuilder();
+    StringBuilder sb = new StringBuilder();
+    int startP = 0, endP = 0;
+    for (int i = 0; i < numStrings; i++) {
+      endP = startP + data[i].length();
+      inner.addStartIndices(startP);
+      inner.addEndIndices(endP);
+      sb.append(data[i]);
+      startP = endP;
+    }
+    inner.setData(ByteString.copyFromUtf8(sb.toString()));
+
     return ColumnMessage.newBuilder().setType(ColumnMessage.Type.STRING).setStringColumn(inner).build();
   }
 
