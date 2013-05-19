@@ -1,7 +1,6 @@
 package edu.washington.escience.myriad.column;
 
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.BitSet;
 
@@ -14,6 +13,7 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.proto.DataProto.BooleanColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
+import edu.washington.escience.myriad.util.ReadOnlyBitSet;
 
 /**
  * A column of Boolean values. To save space, this implementation uses a BitSet as the internal representation.
@@ -27,27 +27,13 @@ public final class BooleanColumn implements Column<Boolean> {
   /** Number of valid elements. */
   private int numBits;
 
-  /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
-  public BooleanColumn() {
-    data = new BitSet(TupleBatch.BATCH_SIZE);
-    numBits = 0;
-  }
-
   /**
-   * Constructs a BooleanColumn by deserializing the given ColumnMessage.
-   * 
-   * @param message a ColumnMessage containing the contents of this column.
-   * @param numTuples num tuples in the column message
-   */
-  public BooleanColumn(final ColumnMessage message, final int numTuples) {
-    if (message.getType().ordinal() != ColumnMessage.Type.BOOLEAN_VALUE) {
-      throw new IllegalArgumentException("Trying to construct BooleanColumn from non-BOOLEAN ColumnMessage");
-    }
-    if (!message.hasBooleanColumn()) {
-      throw new IllegalArgumentException("ColumnMessage has type BOOLEAN but no BooleanColumn");
-    }
-    data = BitSet.valueOf(message.getBooleanColumn().getData().asReadOnlyByteBuffer());
-    numBits = numTuples;
+   * @param data the data
+   * @param size the size of this column;
+   * */
+  BooleanColumn(final BitSet data, final int size) {
+    this.data = new ReadOnlyBitSet(data);
+    numBits = size;
   }
 
   @Override
@@ -93,21 +79,6 @@ public final class BooleanColumn implements Column<Boolean> {
     data.set(numBits, value);
     numBits++;
     return this;
-  }
-
-  @Override
-  public Column<Boolean> putFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException {
-    return put(resultSet.getBoolean(jdbcIndex));
-  }
-
-  @Override
-  public void putFromSQLite(final SQLiteStatement statement, final int index) throws SQLiteException {
-    throw new UnsupportedOperationException("SQLite does not support Boolean columns.");
-  }
-
-  @Override
-  public Column<Boolean> putObject(final Object value) {
-    return put((Boolean) value);
   }
 
   @Override

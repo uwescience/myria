@@ -1,16 +1,13 @@
 package edu.washington.escience.myriad.column;
 
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.List;
 
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
 import com.google.protobuf.ByteString;
 
-import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.StringColumnMessage;
@@ -25,39 +22,17 @@ public final class StringColumn implements Column<String> {
   /** Contains the packed character data. */
   private final String[] data;
   /** Number of elements in this column. */
-  private int numStrings;
+  private final int numStrings;
 
   /**
-   * Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements.
-   * */
-  public StringColumn() {
-    data = new String[TupleBatch.BATCH_SIZE];
-    numStrings = 0;
-  }
-
-  /**
-   * Constructs a StringColumn by deserializing the given ColumnMessage.
+   * Constructs a new column.
    * 
-   * @param message a ColumnMessage containing the contents of this column.
-   * @param numTuples num tuples in the column message
-   */
-  public StringColumn(final ColumnMessage message, final int numTuples) {
-    if (message.getType().ordinal() != ColumnMessage.Type.STRING_VALUE) {
-      throw new IllegalArgumentException("Trying to construct StringColumn from non-STRING ColumnMessage");
-    }
-    if (!message.hasStringColumn()) {
-      throw new IllegalArgumentException("ColumnMessage has type STRING but no StringColumn");
-    }
-    final StringColumnMessage stringColumn = message.getStringColumn();
-    List<Integer> startIndices = stringColumn.getStartIndicesList();
-    List<Integer> endIndices = stringColumn.getEndIndicesList();
-    String[] newData = new String[numTuples];
-    String allStrings = stringColumn.getData().toStringUtf8();
-    for (int i = 0; i < numTuples; i++) {
-      newData[i] = allStrings.substring(startIndices.get(i), endIndices.get(i));
-    }
-    data = newData;
-    numStrings = numTuples;
+   * @param data the data
+   * @param numStrings number of tuples.
+   * */
+  StringColumn(final String[] data, final int numStrings) {
+    this.data = data;
+    this.numStrings = numStrings;
   }
 
   @Override
@@ -87,36 +62,9 @@ public final class StringColumn implements Column<String> {
     return data[row];
   }
 
-  /**
-   * Inserts the specified element at end of this column.
-   * 
-   * @param value element to be inserted.
-   * @return this column.
-   */
-  public StringColumn put(final String value) {
-    data[numStrings] = value;
-    numStrings++;
-    return this;
-  }
-
   @Override
   public Type getType() {
     return Type.STRING_TYPE;
-  }
-
-  @Override
-  public Column<String> putFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException {
-    return put(resultSet.getString(jdbcIndex));
-  }
-
-  @Override
-  public void putFromSQLite(final SQLiteStatement statement, final int index) throws SQLiteException {
-    put(statement.columnString(index));
-  }
-
-  @Override
-  public Column<String> putObject(final Object value) {
-    return put((String) value);
   }
 
   @Override

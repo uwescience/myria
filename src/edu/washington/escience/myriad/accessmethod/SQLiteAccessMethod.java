@@ -1,6 +1,7 @@
 package edu.washington.escience.myriad.accessmethod;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -16,6 +17,7 @@ import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.column.Column;
+import edu.washington.escience.myriad.column.ColumnBuilder;
 import edu.washington.escience.myriad.column.ColumnFactory;
 
 /**
@@ -300,7 +302,7 @@ class SQLiteTupleBatchIterator implements Iterator<TupleBatch> {
   public TupleBatch next() {
     /* Allocate TupleBatch parameters */
     final int numFields = schema.numColumns();
-    final List<Column<?>> columns = ColumnFactory.allocateColumns(schema);
+    final List<ColumnBuilder<?>> columnBuilders = ColumnFactory.allocateColumns(schema);
 
     /**
      * Loop through resultSet, adding one row at a time. Stop when numTuples hits BATCH_SIZE or there are no more
@@ -310,13 +312,18 @@ class SQLiteTupleBatchIterator implements Iterator<TupleBatch> {
     try {
       for (numTuples = 0; numTuples < TupleBatch.BATCH_SIZE && statement.hasRow(); ++numTuples) {
         for (int column = 0; column < numFields; ++column) {
-          columns.get(column).putFromSQLite(statement, column);
+          columnBuilders.get(column).appendFromSQLite(statement, column);
         }
         statement.step();
       }
     } catch (final SQLiteException e) {
       LOGGER.error("Got SQLiteException:" + e + "in TupleBatchIterator.next()");
       throw new RuntimeException(e.getMessage());
+    }
+
+    List<Column<?>> columns = new ArrayList<Column<?>>(columnBuilders.size());
+    for (ColumnBuilder<?> cb : columnBuilders) {
+      columns.add(cb.build());
     }
 
     return new TupleBatch(schema, columns, numTuples);
