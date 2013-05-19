@@ -69,24 +69,15 @@ public abstract class RootOperator extends Operator {
   @Override
   protected final TupleBatch fetchNextReady() throws DbException {
     TupleBatch tb = null;
-    boolean hasData = true;
-    while (hasData) {
-      hasData = false;
-      while ((tb = child.nextReady()) != null) {
-        hasData = true;
-        consumeTuples(tb);
-      }
-      if (child.eoi()) {
-        hasData = true;
-        childEOI();
-        child.setEOI(false);
-      }
-      if (child.eos()) {
-        hasData = false;
-        childEOS();
-      }
+    tb = child.nextReady();
+    if (tb != null) {
+      consumeTuples(tb);
+    } else if (child.eoi()) {
+      childEOI();
+    } else if (child.eos()) {
+      childEOS();
     }
-    return null;
+    return tb;
   }
 
   /**
@@ -112,5 +103,18 @@ public abstract class RootOperator extends Operator {
   @Override
   public final Schema getSchema() {
     return child.getSchema();
+  }
+
+  /**
+   * process EOS and EOI logic.
+   * */
+  @Override
+  protected final void checkEOSAndEOI() {
+    if (child.eos()) {
+      setEOS();
+    } else if (child.eoi()) {
+      setEOI(true);
+      child.setEOI(false);
+    }
   }
 }
