@@ -62,6 +62,11 @@ public class TupleBatchBuffer {
     readyTuples.clear();
   }
 
+  /**
+   * Build the in progress columns. The builders' states are untouched. They can keep building.
+   * 
+   * @return the built in progress columns.
+   * */
   private List<Column<?>> getInProgressColumns() {
     List<Column<?>> newColumns = new ArrayList<Column<?>>(currentBuildingColumns.size());
     for (ColumnBuilder<?> cb : currentBuildingColumns) {
