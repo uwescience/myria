@@ -1,12 +1,7 @@
 package edu.washington.escience.myriad.column;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.nio.ByteBuffer;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import com.almworks.sqlite4java.SQLiteException;
@@ -14,7 +9,6 @@ import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
 import com.google.protobuf.ByteString;
 
-import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.LongColumnMessage;
@@ -29,40 +23,17 @@ public final class LongColumn implements Column<Long> {
   /** Internal representation of the column data. */
   private final long[] data;
   /** The number of existing rows in this column. */
-  private int position;
-
-  /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
-  public LongColumn() {
-    data = new long[TupleBatch.BATCH_SIZE];
-    position = 0;
-  }
+  private final int position;
 
   /**
-   * Constructs a LongColumn by deserializing the given ColumnMessage.
+   * Constructs a new column.
    * 
-   * @param message a ColumnMessage containing the contents of this column.
-   * @param numTuples num tuples in the column message
-   */
-  public LongColumn(final ColumnMessage message, final int numTuples) {
-    if (message.getType().ordinal() != ColumnMessage.Type.LONG_VALUE) {
-      throw new IllegalArgumentException("Trying to construct LongColumn from non-LONG ColumnMessage");
-    }
-    if (!message.hasLongColumn()) {
-      throw new IllegalArgumentException("ColumnMessage has type LONG but no LongColumn");
-    }
-    data = new long[TupleBatch.BATCH_SIZE];
-    position = 0;
-    try {
-      byte[] dataBytes = message.getLongColumn().getData().toByteArray();
-      ObjectInputStream input = new ObjectInputStream(new ByteArrayInputStream(dataBytes));
-      for (int i = 0; i < numTuples; ++i) {
-        data[i] = input.readLong();
-      }
-      input.close();
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-    position = numTuples;
+   * @param data the data
+   * @param numData number of tuples.
+   * */
+  public LongColumn(final long[] data, final int numData) {
+    this.data = data;
+    position = numData;
   }
 
   @Override
@@ -97,48 +68,16 @@ public final class LongColumn implements Column<Long> {
     return Type.LONG_TYPE;
   }
 
-  /**
-   * Inserts the specified element at end of this column.
-   * 
-   * @param value element to be inserted.
-   * @return this column.
-   */
-  public LongColumn put(final long value) {
-    Preconditions.checkElementIndex(position, TupleBatch.BATCH_SIZE);
-    data[position++] = value;
-    return this;
-  }
-
-  @Override
-  public Column<Long> putFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException {
-    return put(resultSet.getLong(jdbcIndex));
-  }
-
-  @Override
-  public void putFromSQLite(final SQLiteStatement statement, final int index) throws SQLiteException {
-    put(statement.columnLong(index));
-  }
-
-  @Override
-  public Column<Long> putObject(final Object value) {
-    return put((Long) value);
-  }
-
   @Override
   public ColumnMessage serializeToProto() {
-    ByteArrayOutputStream byteArray = new ByteArrayOutputStream(position * (Long.SIZE / Byte.SIZE));
-    try {
-      ObjectOutputStream output = new ObjectOutputStream(byteArray);
-      for (int i = 0; i < position; ++i) {
-        output.writeLong(data[i]);
-      }
-      output.close();
-    } catch (IOException e) {
-      throw new RuntimeException(e);
+    ByteBuffer dataBytes = ByteBuffer.allocate(position * Long.SIZE / Byte.SIZE);
+    for (int i = 0; i < position; i++) {
+      dataBytes.putLong(data[i]);
     }
-    final LongColumnMessage.Builder inner =
-        LongColumnMessage.newBuilder().setData(ByteString.copyFrom(byteArray.toByteArray()));
-    /* Note that we do *not* build the inner class. We pass its builder instead. */
+
+    dataBytes.flip();
+    final LongColumnMessage.Builder inner = LongColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
+
     return ColumnMessage.newBuilder().setType(ColumnMessage.Type.LONG).setLongColumn(inner).build();
   }
 
