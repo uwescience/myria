@@ -21,7 +21,7 @@ public final class ColumnFactory {
    * @param schema the Schema
    * @return the list of Columns
    */
-  public static List<Column<?>> allocateColumns(final Schema schema) {
+  public static List<ColumnBuilder<?>> allocateColumns(final Schema schema) {
     final int numColumns = schema.numColumns();
     final Type[] columnTypes = new Type[numColumns];
     for (int columnIndex = 0; columnIndex < numColumns; ++columnIndex) {
@@ -36,29 +36,29 @@ public final class ColumnFactory {
    * @param columnTypes the Types of the columns
    * @return the allocated Columns
    */
-  public static List<Column<?>> allocateColumns(final Type[] columnTypes) {
+  public static List<ColumnBuilder<?>> allocateColumns(final Type[] columnTypes) {
     final int numColumns = columnTypes.length;
-    final ArrayList<Column<?>> columns = new ArrayList<Column<?>>(numColumns);
+    final ArrayList<ColumnBuilder<?>> columns = new ArrayList<ColumnBuilder<?>>(numColumns);
 
     for (int columnIndex = 0; columnIndex < numColumns; ++columnIndex) {
       switch (columnTypes[columnIndex]) {
         case BOOLEAN_TYPE:
-          columns.add(new BooleanColumn());
+          columns.add(new BooleanColumnBuilder());
           break;
         case DOUBLE_TYPE:
-          columns.add(new DoubleColumn());
+          columns.add(new DoubleColumnBuilder());
           break;
         case FLOAT_TYPE:
-          columns.add(new FloatColumn());
+          columns.add(new FloatColumnBuilder());
           break;
         case INT_TYPE:
-          columns.add(new IntColumn());
+          columns.add(new IntColumnBuilder());
           break;
         case LONG_TYPE:
-          columns.add(new LongColumn());
+          columns.add(new LongColumnBuilder());
           break;
         case STRING_TYPE:
-          columns.add(new StringColumn());
+          columns.add(new StringColumnBuilder());
           break;
       }
     }
@@ -75,17 +75,17 @@ public final class ColumnFactory {
   public static Column<?> columnFromColumnMessage(final ColumnMessage message, final int numTuples) {
     switch (message.getType()) {
       case BOOLEAN:
-        return new BooleanColumn(message, numTuples);
+        return BooleanColumnBuilder.buildFromProtobuf(message, numTuples);
       case DOUBLE:
-        return new DoubleColumn(message, numTuples);
+        return DoubleColumnBuilder.buildFromProtobuf(message, numTuples);
       case FLOAT:
-        return new FloatColumn(message, numTuples);
+        return FloatColumnBuilder.buildFromProtobuf(message, numTuples);
       case INT:
-        return new IntColumn(message, numTuples);
+        return IntColumnBuilder.buildFromProtobuf(message, numTuples);
       case LONG:
-        return new LongColumn(message, numTuples);
+        return LongColumnBuilder.buildFromProtobuf(message, numTuples);
       case STRING:
-        return new StringColumn(message, numTuples);
+        return StringColumnBuilder.buildFromProtobuf(message, numTuples);
     }
     return null;
   }

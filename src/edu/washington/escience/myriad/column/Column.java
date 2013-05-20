@@ -1,7 +1,6 @@
 package edu.washington.escience.myriad.column;
 
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import com.almworks.sqlite4java.SQLiteException;
@@ -52,33 +51,6 @@ public interface Column<T extends Comparable<T>> {
    * @return a Myria {@link Type} object explaining what type of data is in this column.
    */
   Type getType();
-
-  /**
-   * Extracts the appropriate value from a JDBC ResultSet object and appends it to this column.
-   * 
-   * @param resultSet contains the results
-   * @param jdbcIndex the position of the element to extract. 1-indexed.
-   * @return this column.
-   * @throws SQLException if there are JDBC errors.
-   */
-  Column<T> putFromJdbc(ResultSet resultSet, int jdbcIndex) throws SQLException;
-
-  /**
-   * Extracts the appropriate value from a SQLiteStatement object and appends it to this column.
-   * 
-   * @param statement contains the results
-   * @param index the position of the element to extract. 0-indexed.
-   * @throws SQLiteException if there are SQLite errors.
-   */
-  void putFromSQLite(SQLiteStatement statement, int index) throws SQLiteException;
-
-  /**
-   * Inserts the specified element at end of this column.
-   * 
-   * @param value element to be inserted.
-   * @return this column.
-   */
-  Column<T> putObject(Object value);
 
   /**
    * Serializes this column as a protobuf message into the specified output stream.

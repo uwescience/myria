@@ -1,12 +1,7 @@
 package edu.washington.escience.myriad.column;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.nio.ByteBuffer;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import com.almworks.sqlite4java.SQLiteException;
@@ -29,40 +24,19 @@ public final class DoubleColumn implements Column<Double> {
   /** Internal representation of the column data. */
   private final double[] data;
   /** The number of existing rows in this column. */
-  private int position;
-
-  /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
-  public DoubleColumn() {
-    data = new double[TupleBatch.BATCH_SIZE];
-    position = 0;
-  }
+  private final int position;
 
   /**
-   * Constructs a DoubleColumn by deserializing the given ColumnMessage.
+   * Constructs a new column.
    * 
-   * @param message a ColumnMessage containing the contents of this column.
-   * @param numTuples num tuples in the column message
-   */
-  public DoubleColumn(final ColumnMessage message, final int numTuples) {
-    if (message.getType().ordinal() != ColumnMessage.Type.DOUBLE_VALUE) {
-      throw new IllegalArgumentException("Trying to construct DoubleColumn from non-DOUBLE ColumnMessage");
-    }
-    if (!message.hasDoubleColumn()) {
-      throw new IllegalArgumentException("ColumnMessage has type DOUBLE but no DoubleColumn");
-    }
-    data = new double[TupleBatch.BATCH_SIZE];
-    position = 0;
-    try {
-      byte[] dataBytes = message.getDoubleColumn().getData().toByteArray();
-      ObjectInputStream input = new ObjectInputStream(new ByteArrayInputStream(dataBytes));
-      for (int i = 0; i < numTuples; ++i) {
-        data[i] = input.readDouble();
-      }
-      input.close();
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-    position = numTuples;
+   * @param data the data
+   * @param numData number of tuples.
+   * */
+  DoubleColumn(final double[] data, final int numData) {
+    Preconditions.checkNotNull(data);
+    Preconditions.checkArgument(numData <= TupleBatch.BATCH_SIZE);
+    this.data = data;
+    position = numData;
   }
 
   @Override
@@ -97,48 +71,15 @@ public final class DoubleColumn implements Column<Double> {
     return Type.DOUBLE_TYPE;
   }
 
-  /**
-   * Inserts the specified element at end of this column.
-   * 
-   * @param value element to be inserted.
-   * @return this column.
-   */
-  public DoubleColumn put(final double value) {
-    Preconditions.checkElementIndex(position, TupleBatch.BATCH_SIZE);
-    data[position++] = value;
-    return this;
-  }
-
-  @Override
-  public Column<Double> putFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException {
-    return put(resultSet.getDouble(jdbcIndex));
-  }
-
-  @Override
-  public void putFromSQLite(final SQLiteStatement statement, final int index) throws SQLiteException {
-    put(statement.columnDouble(index));
-  }
-
-  @Override
-  public Column<Double> putObject(final Object value) {
-    return put((Double) value);
-  }
-
   @Override
   public ColumnMessage serializeToProto() {
-    ByteArrayOutputStream byteArray = new ByteArrayOutputStream(position * (Double.SIZE / Byte.SIZE));
-    try {
-      ObjectOutputStream output = new ObjectOutputStream(byteArray);
-      for (int i = 0; i < position; ++i) {
-        output.writeDouble(data[i]);
-      }
-      output.close();
-    } catch (IOException e) {
-      throw new RuntimeException(e);
+    ByteBuffer dataBytes = ByteBuffer.allocate(position * Double.SIZE / Byte.SIZE);
+    for (int i = 0; i < position; i++) {
+      dataBytes.putDouble(data[i]);
     }
-    final DoubleColumnMessage.Builder inner =
-        DoubleColumnMessage.newBuilder().setData(ByteString.copyFrom(byteArray.toByteArray()));
-    /* Note that we do *not* build the inner class. We pass its builder instead. */
+    dataBytes.flip();
+    final DoubleColumnMessage.Builder inner = DoubleColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
+
     return ColumnMessage.newBuilder().setType(ColumnMessage.Type.DOUBLE).setDoubleColumn(inner).build();
   }
 

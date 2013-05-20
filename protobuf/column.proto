@@ -53,8 +53,8 @@ message DoubleColumnMessage {
 
 message StringColumnMessage {
   required bytes data = 1;
-  required bytes start_indices = 2;
-  required bytes end_indices = 3;
+  repeated int32 start_indices = 2;
+  repeated int32 end_indices = 3;
 }
 
 message BooleanColumnMessage {
