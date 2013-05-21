@@ -1,5 +1,6 @@
 package edu.washington.escience.myriad.api;
 
+import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.util.Set;
 
@@ -16,10 +17,13 @@ import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
+import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.api.encoding.DatasetEncoding;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
+import edu.washington.escience.myriad.operator.FileScan;
+import edu.washington.escience.myriad.operator.Operator;
 
 /**
  * This is the class that handles API calls that return relation schemas.
@@ -54,18 +58,22 @@ public final class DatasetResource {
    * @param payload the request payload.
    * @param uriInfo information about the current URL.
    * @return the created dataset resource.
-   * @throws CatalogException if there is an error in the database.
+   * @throws DbException if there is an error in the database.
    */
   @POST
   @Consumes(MediaType.APPLICATION_JSON)
-  public Response newDataset(final byte[] payload, @Context final UriInfo uriInfo) throws CatalogException {
+  public Response newDataset(final byte[] payload, @Context final UriInfo uriInfo) throws DbException {
     /* Attempt to deserialize the object. */
     DatasetEncoding dataset = MyriaApiUtils.deserialize(payload, DatasetEncoding.class);
 
     /* If we already have a dataset by this name, tell the user there's a conflict. */
-    if (MyriaApiUtils.getServer().getSchema(dataset.relationKey) != null) {
-      /* Found, throw a 409 (Conflict) */
-      throw new MyriaApiException(Status.CONFLICT, "That dataset already exists.");
+    try {
+      if (MyriaApiUtils.getServer().getSchema(dataset.relationKey) != null) {
+        /* Found, throw a 409 (Conflict) */
+        throw new MyriaApiException(Status.CONFLICT, "That dataset already exists.");
+      }
+    } catch (CatalogException e) {
+      throw new DbException(e);
     }
 
     /* If we don't have any workers alive right now, tell the user we're busy. */
@@ -82,17 +90,21 @@ public final class DatasetResource {
     }
 
     /* Do the work. */
-    try {
-      if (dataset.data != null) {
-        MyriaApiUtils.getServer().ingestDataset(dataset.relationKey, dataset.schema, dataset.workers, dataset.data);
-      } else {
-        MyriaApiUtils.getServer().ingestDataset(dataset.relationKey, dataset.schema, dataset.workers, dataset.fileName);
+    Operator source;
+    if (dataset.data != null) {
+      source = new FileScan(dataset.schema);
+      ((FileScan) source).setInputStream(new ByteArrayInputStream(dataset.data));
+    } else {
+      try {
+        source = new FileScan(dataset.fileName, dataset.schema);
+      } catch (FileNotFoundException e) {
+        throw new MyriaApiException(Status.NOT_FOUND, e);
       }
-    } catch (InterruptedException ee) {
+    }
+    try {
+      MyriaApiUtils.getServer().ingestDataset(dataset.relationKey, dataset.workers, source);
+    } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
-      ee.printStackTrace();
-    } catch (FileNotFoundException e) {
-      throw new MyriaApiException(Status.NOT_FOUND, "The data file was not found.");
     }
 
     /* In the response, tell the client the path to the relation. */
