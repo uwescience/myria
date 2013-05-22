@@ -410,14 +410,37 @@ final class QuerySubTreeTask {
           // clearInput(); // clear input at beginning.
           AtomicUtils.unsetBitByValue(nonBlockingExecutionCondition, STATE_INPUT_AVAILABLE);
 
+          boolean breakByOutputUnavailable = false;
           try {
-            root.nextReady();
+            boolean hasData = true;
+            while (hasData && !breakByOutputUnavailable) {
+              hasData = false;
+              if (root.nextReady() != null) {
+                hasData = true;
+                breakByOutputUnavailable = !isOutputAvailable();
+              } else {
+                // check output
+                if (root.eoi()) {
+                  root.setEOI(false);
+                  hasData = true;
+                }
+              }
+              if (Thread.interrupted()) {
+                Thread.currentThread().interrupt();
+                break;
+              }
+            }
           } catch (final Throwable e) {
             if (LOGGER.isErrorEnabled()) {
               LOGGER.error("Unexpected exception occur at operator excution. Operator: " + root, e);
             }
             failureCause = e;
             AtomicUtils.setBitByValue(nonBlockingExecutionCondition, STATE_FAIL);
+          }
+
+          if (breakByOutputUnavailable) {
+            // we do not know whether all the inputs have been consumed, recover the input available bit
+            AtomicUtils.setBitByValue(nonBlockingExecutionCondition, STATE_INPUT_AVAILABLE);
           }
 
         }
