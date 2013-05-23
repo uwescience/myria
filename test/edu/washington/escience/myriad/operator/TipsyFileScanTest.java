@@ -15,7 +15,7 @@ import org.junit.Test;
 import com.google.common.io.LittleEndianDataOutputStream;
 
 import edu.washington.escience.myriad.DbException;
-import edu.washington.escience.myriad.Predicate.Op;
+import edu.washington.escience.myriad.SimplePredicate;
 import edu.washington.escience.myriad.TupleBatch;
 
 /**
@@ -72,7 +72,7 @@ public class TipsyFileScanTest {
     String iOrderFilename = "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "iOrder3.iord";
     String grpFilename = "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "grp3.amiga.grp";
     TipsyFileScan filescan = new TipsyFileScan(binFilename, iOrderFilename, grpFilename, true);
-    Filter filter = new Filter(Op.EQUALS, 16, "star", filescan);
+    Filter filter = new Filter(new SimplePredicate(16, SimplePredicate.Op.EQUALS, "star"), filescan);
     assertEquals(3, getRowCount(filter));
   }
 
@@ -82,7 +82,7 @@ public class TipsyFileScanTest {
     String iOrderFilename = "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "iOrder3.iord";
     String grpFilename = "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "grp3.amiga.grp";
     TipsyFileScan filescan = new TipsyFileScan(binFilename, iOrderFilename, grpFilename, true);
-    Filter filter = new Filter(Op.EQUALS, 16, "dark", filescan);
+    Filter filter = new Filter(new SimplePredicate(16, SimplePredicate.Op.EQUALS, "dark"), filescan);
     assertEquals(2, getRowCount(filter));
   }
 
@@ -92,7 +92,7 @@ public class TipsyFileScanTest {
     String iOrderFilename = "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "iOrder3.iord";
     String grpFilename = "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "grp3.amiga.grp";
     TipsyFileScan filescan = new TipsyFileScan(binFilename, iOrderFilename, grpFilename, true);
-    Filter filter = new Filter(Op.EQUALS, 16, "gas", filescan);
+    Filter filter = new Filter(new SimplePredicate(16, SimplePredicate.Op.EQUALS, "gas"), filescan);
     assertEquals(4, getRowCount(filter));
   }
 
@@ -107,7 +107,7 @@ public class TipsyFileScanTest {
     String grpFileName =
         "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "cosmo50cmb.256g2MbwK.00512.amiga.grp";
     TipsyFileScan tfScan = new TipsyFileScan(binFileName, iOrderFileName, grpFileName);
-    Filter filter = new Filter(Op.EQUALS, 16, "star", tfScan);
+    Filter filter = new Filter(new SimplePredicate(16, SimplePredicate.Op.EQUALS, "star"), tfScan);
 
     assertEquals(6949401, getRowCount(filter));
   }

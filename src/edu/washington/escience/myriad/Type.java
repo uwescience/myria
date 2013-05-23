@@ -25,7 +25,7 @@ public enum Type implements Serializable {
      * @param valueInTuple the value to be compared in a tuple
      * @param operand the operand
      * */
-    public boolean compare(final Predicate.Op op, final int valueInTuple, final int operand) {
+    public boolean compare(final SimplePredicate.Op op, final int valueInTuple, final int operand) {
       switch (op) {
         case EQUALS:
           return valueInTuple == operand;
@@ -52,7 +52,8 @@ public enum Type implements Serializable {
     }
 
     @Override
-    public boolean filter(final Predicate.Op op, final Column<?> intColumn, final int tupleIndex, final Object operand) {
+    public boolean filter(final SimplePredicate.Op op, final Column<?> intColumn, final int tupleIndex,
+        final Object operand) {
       final int v = ((IntColumn) intColumn).getInt(tupleIndex);
       return compare(op, v, (Integer) operand);
     }
@@ -73,7 +74,7 @@ public enum Type implements Serializable {
      * @param valueInTuple the value to be compared in a tuple
      * @param operand the operand
      * */
-    public boolean compare(final Predicate.Op op, final float valueInTuple, final float operand) {
+    public boolean compare(final SimplePredicate.Op op, final float valueInTuple, final float operand) {
       switch (op) {
         case EQUALS:
           return valueInTuple == operand;
@@ -100,7 +101,8 @@ public enum Type implements Serializable {
     }
 
     @Override
-    public boolean filter(final Predicate.Op op, final Column<?> floatColumn, final int tupleIndex, final Object operand) {
+    public boolean filter(final SimplePredicate.Op op, final Column<?> floatColumn, final int tupleIndex,
+        final Object operand) {
       final float v = ((FloatColumn) floatColumn).getFloat(tupleIndex);
       return compare(op, v, (Float) operand);
     }
@@ -121,7 +123,7 @@ public enum Type implements Serializable {
      * @param valueInTuple the value to be compared in a tuple
      * @param operand the operand
      * */
-    public boolean compare(final Predicate.Op op, final double valueInTuple, final double operand) {
+    public boolean compare(final SimplePredicate.Op op, final double valueInTuple, final double operand) {
       switch (op) {
         case EQUALS:
           return valueInTuple == operand;
@@ -148,7 +150,7 @@ public enum Type implements Serializable {
     }
 
     @Override
-    public boolean filter(final Predicate.Op op, final Column<?> doubleColumn, final int tupleIndex,
+    public boolean filter(final SimplePredicate.Op op, final Column<?> doubleColumn, final int tupleIndex,
         final Object operand) {
       final double v = ((DoubleColumn) doubleColumn).getDouble(tupleIndex);
       return compare(op, v, (Double) operand);
@@ -170,7 +172,7 @@ public enum Type implements Serializable {
      * @param valueInTuple the value to be compared in a tuple
      * @param operand the operand
      * */
-    public boolean compare(final Predicate.Op op, final boolean valueInTuple, final boolean operand) {
+    public boolean compare(final SimplePredicate.Op op, final boolean valueInTuple, final boolean operand) {
       switch (op) {
         case EQUALS:
           return valueInTuple == operand;
@@ -190,7 +192,7 @@ public enum Type implements Serializable {
     }
 
     @Override
-    public boolean filter(final Predicate.Op op, final Column<?> booleanColumn, final int tupleIndex,
+    public boolean filter(final SimplePredicate.Op op, final Column<?> booleanColumn, final int tupleIndex,
         final Object operand) {
       final boolean v = ((BooleanColumn) booleanColumn).getBoolean(tupleIndex);
       return compare(op, v, (Boolean) operand);
@@ -212,7 +214,7 @@ public enum Type implements Serializable {
      * @param valInTuple the value to be compared in a tuple
      * @param operand the operand
      * */
-    public boolean compare(final Predicate.Op op, final String valInTuple, final String operand) {
+    public boolean compare(final SimplePredicate.Op op, final String valInTuple, final String operand) {
 
       final int cmpVal = valInTuple.compareTo(operand);
 
@@ -243,7 +245,7 @@ public enum Type implements Serializable {
     }
 
     @Override
-    public boolean filter(final Predicate.Op op, final Column<?> stringColumn, final int tupleIndex,
+    public boolean filter(final SimplePredicate.Op op, final Column<?> stringColumn, final int tupleIndex,
         final Object operand) {
       final String string = ((StringColumn) stringColumn).getString(tupleIndex);
       return compare(op, string, (String) operand);
@@ -264,7 +266,7 @@ public enum Type implements Serializable {
      * @param valueInTuple the value to be compared in a tuple
      * @param operand the operand
      * */
-    public boolean compare(final Predicate.Op op, final long valueInTuple, final long operand) {
+    public boolean compare(final SimplePredicate.Op op, final long valueInTuple, final long operand) {
       switch (op) {
         case EQUALS:
           return valueInTuple == operand;
@@ -291,7 +293,8 @@ public enum Type implements Serializable {
     }
 
     @Override
-    public boolean filter(final Predicate.Op op, final Column<?> longColumn, final int tupleIndex, final Object operand) {
+    public boolean filter(final SimplePredicate.Op op, final Column<?> longColumn, final int tupleIndex,
+        final Object operand) {
       final long v = ((LongColumn) longColumn).getLong(tupleIndex);
       return compare(op, v, (Long) operand);
     }
@@ -310,7 +313,7 @@ public enum Type implements Serializable {
    * @param operand the operand constant.
    * @return true if the #tupleIndex tuple in column satisfy the predicate, else false.
    * */
-  public abstract boolean filter(Predicate.Op op, Column<?> column, int tupleIndex, Object operand);
+  public abstract boolean filter(SimplePredicate.Op op, Column<?> column, int tupleIndex, Object operand);
 
   /**
    * @return A string representation of the #tupleIndex value in column.

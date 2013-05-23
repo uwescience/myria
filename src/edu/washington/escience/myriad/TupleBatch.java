@@ -146,38 +146,6 @@ public class TupleBatch {
   }
 
   /**
-   * Helper function that mutates this TupleBatch to remove all rows that do not match the specified predicate. WARNING:
-   * do not use! Use the non-mutating version.
-   * 
-   * @param column column on which the predicate operates.
-   * @param op predicate by which to test rows.
-   * @param operand operand to the predicate.
-   * @return a new TupleBatch where all rows that do not match the specified predicate have been removed.
-   */
-  private TupleBatch applyFilter(final int column, final Predicate.Op op, final Object operand) {
-    BitSet newValidTuples = null;
-    if (numValidTuples > 0) {
-      final Column<?> columnValues = columns.get(column);
-      final Type columnType = schema.getColumnType(column);
-      for (final int validIdx : getValidIndices()) {
-        if (!columnType.filter(op, columnValues, validIdx, operand)) {
-          if (newValidTuples == null) {
-            newValidTuples = validTuples.cloneAsBitSet();
-          }
-          newValidTuples.clear(validIdx);
-        }
-      }
-    }
-
-    if (newValidTuples != null) {
-      return shallowCopy(schema, columns, new ImmutableBitSet(newValidTuples), null);
-    }
-
-    /* If no tuples are filtered, new TupleBatch instance is not needed */
-    return this;
-  }
-
-  /**
    * put the valid tuples into tbb.
    * 
    * @param tbb the TBB buffer.
@@ -197,15 +165,24 @@ public class TupleBatch {
    * 
    * Internal implementation of a SELECT statement.
    * 
-   * @param column column on which the predicate operates.
-   * @param op predicate by which to test rows.
-   * @param operand operand to the predicate.
+   * @param predicate predicate by which to filter rows
    * @return a new TupleBatch where all rows that do not match the specified predicate have been removed.
    */
-  public final TupleBatch filter(final int column, final Predicate.Op op, final Object operand) {
-    Objects.requireNonNull(op);
-    Objects.requireNonNull(operand);
-    return applyFilter(column, op, operand);
+  public final TupleBatch filter(final Predicate predicate) {
+    BitSet newValidTuples = null;
+    if (numValidTuples > 0) {
+      ImmutableBitSet filterResult = predicate.filter(this);
+      newValidTuples = validTuples.cloneAsBitSet();
+      newValidTuples.and(filterResult);
+    }
+
+    if (newValidTuples != null && newValidTuples.cardinality() != validTuples.cardinality()) {
+      return shallowCopy(schema, columns, new ImmutableBitSet(newValidTuples), null);
+    }
+
+    /* If no tuples are filtered, new TupleBatch instance is not needed */
+    return this;
+
   }
 
   /**
