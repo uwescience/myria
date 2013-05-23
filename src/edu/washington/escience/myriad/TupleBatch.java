@@ -30,7 +30,7 @@ import edu.washington.escience.myriad.column.IntColumn;
 import edu.washington.escience.myriad.column.LongColumn;
 import edu.washington.escience.myriad.column.StringColumn;
 import edu.washington.escience.myriad.parallel.PartitionFunction;
-import edu.washington.escience.myriad.util.ReadOnlyBitSet;
+import edu.washington.escience.myriad.util.ImmutableBitSet;
 import edu.washington.escience.myriad.util.TypeFunnel;
 
 /**
@@ -54,7 +54,7 @@ public class TupleBatch {
   /** Number of valid tuples in this TB. */
   private final int numValidTuples;
   /** Which tuples are valid in this batch. */
-  private final ReadOnlyBitSet validTuples;
+  private final ImmutableBitSet validTuples;
   /** An ImmutableList<Integer> view of the indices of validTuples. */
   private ImmutableList<Integer> validIndices;
 
@@ -86,10 +86,10 @@ public class TupleBatch {
 
     numValidTuples = validTuples.cardinality();
 
-    if (validTuples instanceof ReadOnlyBitSet) {
-      this.validTuples = (ReadOnlyBitSet) validTuples.clone();
+    if (validTuples instanceof ImmutableBitSet) {
+      this.validTuples = (ImmutableBitSet) validTuples.clone();
     } else {
-      this.validTuples = new ReadOnlyBitSet((BitSet) validTuples.clone());
+      this.validTuples = new ImmutableBitSet((BitSet) validTuples.clone());
     }
 
     this.validIndices = validIndices;
@@ -129,7 +129,7 @@ public class TupleBatch {
     /* All tuples are valid */
     final BitSet tmp = new BitSet(numTuples);
     tmp.set(0, numTuples);
-    validTuples = new ReadOnlyBitSet(tmp);
+    validTuples = new ImmutableBitSet(tmp);
   }
 
   /**
