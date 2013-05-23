@@ -12,7 +12,7 @@ import com.google.protobuf.ByteString;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.proto.DataProto.BooleanColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
-import edu.washington.escience.myriad.util.ReadOnlyBitSet;
+import edu.washington.escience.myriad.util.ImmutableBitSet;
 
 /**
  * A column of Boolean values. To save space, this implementation uses a BitSet as the internal representation.
@@ -31,7 +31,7 @@ public final class BooleanColumn implements Column<Boolean> {
    * @param size the size of this column;
    * */
   BooleanColumn(final BitSet data, final int size) {
-    this.data = new ReadOnlyBitSet(data);
+    this.data = new ImmutableBitSet(data);
     numBits = size;
   }
 
