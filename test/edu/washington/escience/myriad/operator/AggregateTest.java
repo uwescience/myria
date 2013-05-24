@@ -743,6 +743,7 @@ public class AggregateTest {
     MultiGroupByAggregate mga =
         new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 3 }, new int[] { 0, 1 },
             new int[] { Aggregator.AGG_OP_SUM });
+    mga.setChildren(new Operator[] { new TupleSource(tbb) });
     mga.open(null);
     TupleBatch result = mga.nextReady();
     assertEquals(1, result.numTuples());
@@ -754,6 +755,7 @@ public class AggregateTest {
     MultiGroupByAggregate mgaTwo =
         new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 3 }, new int[] { 0, 1, 2 },
             new int[] { Aggregator.AGG_OP_SUM });
+    mgaTwo.setChildren(new Operator[] { new TupleSource(tbb) });
     mgaTwo.open(null);
     TupleBatch resultTwo = mgaTwo.nextReady();
     assertEquals(2, resultTwo.numTuples());
@@ -786,6 +788,7 @@ public class AggregateTest {
     MultiGroupByAggregate mga =
         new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 3 }, new int[] { 0, 1, 2 },
             new int[] { Aggregator.AGG_OP_AVG });
+    mga.setChildren(new Operator[] { new TupleSource(tbb) });
     mga.open(null);
     TupleBatch result = mga.nextReady();
     assertEquals(2, result.numTuples());
@@ -815,6 +818,7 @@ public class AggregateTest {
     MultiGroupByAggregate mga =
         new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 3 }, new int[] { 0, 1 },
             new int[] { Aggregator.AGG_OP_MIN });
+    mga.setChildren(new Operator[] { new TupleSource(tbb) });
     mga.open(null);
     TupleBatch result = mga.nextReady();
     assertEquals(1, result.numTuples());
@@ -844,6 +848,7 @@ public class AggregateTest {
     MultiGroupByAggregate mga =
         new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 3 }, new int[] { 0, 1 },
             new int[] { Aggregator.AGG_OP_MAX });
+    mga.setChildren(new Operator[] { new TupleSource(tbb) });
     mga.open(null);
     TupleBatch result = mga.nextReady();
     assertEquals(1, result.numTuples());
@@ -873,8 +878,9 @@ public class AggregateTest {
       tbb.put(3, i);
     }
     MultiGroupByAggregate mga =
-        new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 3, 3 }, new int[] { 0, 1 }, new int[] {
+        new MultiGroupByAggregate(null, new int[] { 3, 3 }, new int[] { 0, 1 }, new int[] {
             Aggregator.AGG_OP_MAX, Aggregator.AGG_OP_MIN });
+    mga.setChildren(new Operator[] { new TupleSource(tbb) });
     mga.open(null);
     TupleBatch result = mga.nextReady();
     assertEquals(1, result.numTuples());
@@ -906,6 +912,7 @@ public class AggregateTest {
     MultiGroupByAggregate mga =
         new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 0 }, new int[] { 0, 1 },
             new int[] { Aggregator.AGG_OP_COUNT });
+    mga.setChildren(new Operator[] { new TupleSource(tbb) });
     mga.open(null);
     TupleBatch result = mga.nextReady();
     assertEquals(1, result.numTuples());
@@ -924,6 +931,7 @@ public class AggregateTest {
     MultiGroupByAggregate mga =
         new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 0 }, new int[] { 0, 1 },
             new int[] { Aggregator.AGG_OP_COUNT });
+    mga.setChildren(new Operator[] { new TupleSource(tbb) });
     mga.open(null);
     TupleBatch result = mga.nextReady();
     assertNull(result);
