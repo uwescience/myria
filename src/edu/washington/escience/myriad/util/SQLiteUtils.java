@@ -30,9 +30,10 @@ public final class SQLiteUtils {
       if (i > 0) {
         sb.append(", ");
       }
-      sb.append(schema.getColumnName(i)).append(' ').append(typeToSQLiteType(schema.getColumnType(i)));
+      sb.append('[').append(schema.getColumnName(i)).append("] ").append(typeToSQLiteType(schema.getColumnType(i)));
     }
     sb.append(");");
+    System.out.println(sb.toString());
     return sb.toString();
   }
 
@@ -51,9 +52,10 @@ public final class SQLiteUtils {
       if (i > 0) {
         sb.append(",\n");
       }
-      sb.append("    ").append(schema.getColumnName(i)).append(' ').append(typeToSQLiteType(schema.getColumnType(i)));
+      sb.append("    [").append(schema.getColumnName(i)).append("] ").append(typeToSQLiteType(schema.getColumnType(i)));
     }
     sb.append(");");
+    System.out.println(sb.toString());
     return sb.toString();
   }
 
@@ -76,8 +78,8 @@ public final class SQLiteUtils {
     }
 
     SQLiteAccessMethod.tupleBatchInsert(dbFilePath, "insert into "
-        + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE) + " ( " + StringUtils.join(fieldNames, ',')
-        + " ) values ( " + StringUtils.join(placeHolders, ',') + " )", data);
+        + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE) + " ([" + StringUtils.join(fieldNames, "],[")
+        + "] ) values ( " + StringUtils.join(placeHolders, ',') + " )", data);
   }
 
   /**
@@ -89,9 +91,9 @@ public final class SQLiteUtils {
    */
   public static String insertStatementFromSchema(final Schema schema, final RelationKey relationKey) {
     final StringBuilder sb = new StringBuilder();
-    sb.append("INSERT INTO ").append(relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE)).append(" (");
-    sb.append(StringUtils.join(schema.getColumnNames(), ','));
-    sb.append(") VALUES (");
+    sb.append("INSERT INTO ").append(relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE)).append(" ([");
+    sb.append(StringUtils.join(schema.getColumnNames(), "],["));
+    sb.append("]) VALUES (");
     for (int i = 0; i < schema.numColumns(); ++i) {
       if (i > 0) {
         sb.append(',');
