@@ -27,6 +27,7 @@ import edu.washington.escience.myriad.operator.Operator;
     @Type(name = "CollectProducer", value = CollectProducerEncoding.class),
     @Type(name = "LocalJoin", value = LocalJoinEncoding.class),
     @Type(name = "LocalCountingJoin", value = LocalCountingJoinEncoding.class),
+    @Type(name = "MultiGroupByAggregate", value = MultiGroupByAggregateEncoding.class),
     @Type(name = "ShuffleConsumer", value = ShuffleConsumerEncoding.class),
     @Type(name = "ShuffleProducer", value = ShuffleProducerEncoding.class),
     @Type(name = "SQLiteInsert", value = SQLiteInsertEncoding.class),
