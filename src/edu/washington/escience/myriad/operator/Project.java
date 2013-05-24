@@ -20,7 +20,7 @@ public final class Project extends Operator {
   /**
    * The result schema.
    * */
-  private final Schema schema;
+  private Schema schema;
   /**
    * The column indices to remain.
    * */
@@ -34,7 +34,6 @@ public final class Project extends Operator {
   public Project(final int[] fieldList, final Operator child) throws DbException {
     this.child = child;
     outColumnIndices = fieldList;
-    schema = child.getSchema().getSubSchema(fieldList);
   }
 
   @Override
@@ -72,6 +71,7 @@ public final class Project extends Operator {
 
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+    schema = child.getSchema().getSubSchema(outColumnIndices);
   }
 
   @Override
