@@ -59,20 +59,22 @@ public final class MultiGroupByAggregate extends Operator {
   /** Java requires this. **/
   private static final long serialVersionUID = 1L;
   /** The schema after the aggregate is done. **/
-  private final Schema schema;
+  private Schema schema;
   /** The child operator that will feed tuples in. **/
   private Operator child;
   /** The aggregators being used. **/
-  private final Aggregator[] agg;
+  private Aggregator[] agg;
   /** Aggregate fields. **/
   private final int[] afields;
   /** Group fields. **/
   private final int[] gfields;
+  /** Aggregate operators. */
+  private final int[] aggOps;
 
   /** The resulting buffer to return. **/
   private TupleBatchBuffer resultBuffer = null;
   /** Mapping between the group to the aggregators being used. **/
-  private final HashMap<SimpleArrayWrapper, Aggregator[]> groupAggs;
+  private HashMap<SimpleArrayWrapper, Aggregator[]> groupAggs;
 
   /**
    * Constructor.
@@ -89,61 +91,13 @@ public final class MultiGroupByAggregate extends Operator {
   public MultiGroupByAggregate(final Operator child, final int[] afields, final int[] gfields, final int[] aggOps) {
     Objects.requireNonNull(afields);
     Objects.requireNonNull(gfields);
+    Objects.requireNonNull(aggOps);
     Preconditions.checkArgument(gfields.length > 1);
     Preconditions.checkArgument(afields.length != 0, "aggregation fields must not be empty");
-
-    Schema outputSchema = null;
-
-    groupAggs = new HashMap<SimpleArrayWrapper, Aggregator[]>();
-    this.gfields = gfields;
-
-    final ImmutableList.Builder<Type> gTypes = ImmutableList.builder();
-    final ImmutableList.Builder<String> gNames = ImmutableList.builder();
-
-    final Schema childSchema = child.getSchema();
-    for (final int i : this.gfields) {
-      gTypes.add(childSchema.getColumnType(i));
-      gNames.add(childSchema.getColumnName(i));
-    }
-
-    // Generates the output schema
-    outputSchema = new Schema(gTypes, gNames);
-
-    this.child = child;
     this.afields = afields;
-    agg = new Aggregator[aggOps.length];
-
-    int idx = 0;
-    for (final int afield : afields) {
-      switch (childSchema.getColumnType(afield)) {
-        case BOOLEAN_TYPE:
-          agg[idx] = new BooleanAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
-          break;
-        case INT_TYPE:
-          agg[idx] = new IntegerAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
-          break;
-        case LONG_TYPE:
-          agg[idx] = new LongAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
-          break;
-        case FLOAT_TYPE:
-          agg[idx] = new FloatAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
-          break;
-        case DOUBLE_TYPE:
-          agg[idx] = new DoubleAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
-          break;
-        case STRING_TYPE:
-          agg[idx] = new StringAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
-          break;
-      }
-      idx++;
-    }
-    schema = outputSchema;
+    this.gfields = gfields;
+    this.aggOps = aggOps;
+    schema = null;
   }
 
   /**
@@ -226,8 +180,10 @@ public final class MultiGroupByAggregate extends Operator {
           resultBuffer.put(i, groupByFields.groupFields[i]);
         }
         Aggregator[] value = groupAggs.get(groupByFields);
-        for (int i = gfields.length; i < schema.numColumns(); i++) {
-          value[i - gfields.length].getResult(resultBuffer, i);
+        int currentIndex = gfields.length;
+        for (Aggregator element : value) {
+          element.getResult(resultBuffer, currentIndex);
+          currentIndex += element.getResultSchema().numColumns();
         }
       }
     }
@@ -301,8 +257,10 @@ public final class MultiGroupByAggregate extends Operator {
           resultBuffer.put(i, groupByFields.groupFields[i]);
         }
         Aggregator[] value = groupAggs.get(groupByFields);
-        for (int i = gfields.length; i < schema.numColumns(); i++) {
-          value[i - gfields.length].getResult(resultBuffer, i);
+        int currentIndex = gfields.length;
+        for (Aggregator element : value) {
+          element.getResult(resultBuffer, currentIndex);
+          currentIndex += element.getResultSchema().numColumns();
         }
       }
     }
@@ -338,6 +296,54 @@ public final class MultiGroupByAggregate extends Operator {
 
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+    Schema outputSchema = null;
+
+    groupAggs = new HashMap<SimpleArrayWrapper, Aggregator[]>();
+
+    final ImmutableList.Builder<Type> gTypes = ImmutableList.builder();
+    final ImmutableList.Builder<String> gNames = ImmutableList.builder();
+
+    final Schema childSchema = child.getSchema();
+    for (final int i : gfields) {
+      gTypes.add(childSchema.getColumnType(i));
+      gNames.add(childSchema.getColumnName(i));
+    }
+
+    // Generates the output schema
+    outputSchema = new Schema(gTypes, gNames);
+    agg = new Aggregator[aggOps.length];
+
+    int idx = 0;
+    for (final int afield : afields) {
+      switch (childSchema.getColumnType(afield)) {
+        case BOOLEAN_TYPE:
+          agg[idx] = new BooleanAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
+          outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
+          break;
+        case INT_TYPE:
+          agg[idx] = new IntegerAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
+          outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
+          break;
+        case LONG_TYPE:
+          agg[idx] = new LongAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
+          outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
+          break;
+        case FLOAT_TYPE:
+          agg[idx] = new FloatAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
+          outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
+          break;
+        case DOUBLE_TYPE:
+          agg[idx] = new DoubleAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
+          outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
+          break;
+        case STRING_TYPE:
+          agg[idx] = new StringAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
+          outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
+          break;
+      }
+      idx++;
+    }
+    schema = outputSchema;
     resultBuffer = new TupleBatchBuffer(schema);
   }
 
