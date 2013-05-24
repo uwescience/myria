@@ -2,7 +2,11 @@ package edu.washington.escience.myriad.operator.agg;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -20,6 +24,9 @@ import edu.washington.escience.myriad.operator.Operator;
  * columns, group by multiple columns.
  */
 public final class MultiGroupByAggregate extends Operator {
+
+  /** The logger for this class. */
+  private static final Logger LOGGER = LoggerFactory.getLogger(MultiGroupByAggregate.class);
 
   /**
    * A simple implementation of multiple-field group key.
@@ -63,7 +70,7 @@ public final class MultiGroupByAggregate extends Operator {
   /** The child operator that will feed tuples in. **/
   private Operator child;
   /** The aggregators being used. **/
-  private Aggregator[] agg;
+  private final Aggregator[] agg;
   /** Aggregate fields. **/
   private final int[] afields;
   /** Group fields. **/
@@ -74,7 +81,7 @@ public final class MultiGroupByAggregate extends Operator {
   /** The resulting buffer to return. **/
   private TupleBatchBuffer resultBuffer = null;
   /** Mapping between the group to the aggregators being used. **/
-  private HashMap<SimpleArrayWrapper, Aggregator[]> groupAggs;
+  private final HashMap<SimpleArrayWrapper, Aggregator[]> groupAggs;
 
   /**
    * Constructor.
@@ -98,6 +105,8 @@ public final class MultiGroupByAggregate extends Operator {
     this.gfields = gfields;
     this.aggOps = aggOps;
     schema = null;
+    groupAggs = new HashMap<SimpleArrayWrapper, Aggregator[]>();
+    agg = new Aggregator[aggOps.length];
   }
 
   /**
@@ -124,10 +133,12 @@ public final class MultiGroupByAggregate extends Operator {
    */
   @Override
   protected TupleBatch fetchNext() throws DbException, InterruptedException {
+    long startTime = System.nanoTime();
     if (resultBuffer.numTuples() == 0) {
       // Actually perform the aggregation
       TupleBatch tb = null;
       while ((tb = child.next()) != null) {
+        LOGGER.info(tb.toString());
         // get all the tuple batches from the child operator
         // we want to get the value for each key.
         HashMap<SimpleArrayWrapper, TupleBatchBuffer> tmpMap = new HashMap<SimpleArrayWrapper, TupleBatchBuffer>();
@@ -187,11 +198,14 @@ public final class MultiGroupByAggregate extends Operator {
         }
       }
     }
+    long finishTime = System.nanoTime();
+    LOGGER.info("elasped time: " + (finishTime - startTime) + "ns.");
     return resultBuffer.popAny();
   }
 
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
+    long startTime = System.currentTimeMillis();
     if (resultBuffer.numTuples() > 0) {
       return resultBuffer.popAny();
     }
@@ -203,6 +217,7 @@ public final class MultiGroupByAggregate extends Operator {
     // Actually perform the aggregation
     TupleBatch tb = null;
     while ((tb = child.nextReady()) != null) {
+      LOGGER.info(tb.toString());
       // get all the tuple batches from the child operator
       // we want to get the value for each key.
       HashMap<SimpleArrayWrapper, TupleBatchBuffer> tmpMap = new HashMap<SimpleArrayWrapper, TupleBatchBuffer>();
@@ -264,6 +279,8 @@ public final class MultiGroupByAggregate extends Operator {
         }
       }
     }
+    long finishTime = System.currentTimeMillis();
+    LOGGER.info("elapsed time: " + (finishTime - startTime) + "ms");
     return resultBuffer.popAny();
   }
 
@@ -292,13 +309,20 @@ public final class MultiGroupByAggregate extends Operator {
   @Override
   public void setChildren(final Operator[] children) {
     child = children[0];
+    schema = generateSchema(child, groupAggs, gfields, afields, agg, aggOps);
   }
 
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    Schema outputSchema = null;
+    resultBuffer = new TupleBatchBuffer(schema);
+  }
 
-    groupAggs = new HashMap<SimpleArrayWrapper, Aggregator[]>();
+  /**
+   * Generates the schema for MultiGroupByAggregate.
+   */
+  private static Schema generateSchema(final Operator child, Map<SimpleArrayWrapper, Aggregator[]> groupAggs,
+      final int[] gfields, final int[] afields, Aggregator[] agg, final int[] aggOps) {
+    Schema outputSchema = null;
 
     final ImmutableList.Builder<Type> gTypes = ImmutableList.builder();
     final ImmutableList.Builder<String> gNames = ImmutableList.builder();
@@ -311,7 +335,6 @@ public final class MultiGroupByAggregate extends Operator {
 
     // Generates the output schema
     outputSchema = new Schema(gTypes, gNames);
-    agg = new Aggregator[aggOps.length];
 
     int idx = 0;
     for (final int afield : afields) {
@@ -343,8 +366,6 @@ public final class MultiGroupByAggregate extends Operator {
       }
       idx++;
     }
-    schema = outputSchema;
-    resultBuffer = new TupleBatchBuffer(schema);
+    return outputSchema;
   }
-
 }
