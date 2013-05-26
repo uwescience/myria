@@ -9,21 +9,18 @@ import edu.washington.escience.myriad.operator.Merge;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.parallel.EOSController;
 import edu.washington.escience.myriad.parallel.ExchangePairID;
+import edu.washington.escience.myriad.util.MyriaUtils;
 
-public class EOSControllerEncoding extends OperatorEncoding<EOSController> {
-  public int[] argWorkerIds;
-  public int[] argIdbOperatorIds;
+public class EOSControllerEncoding extends AbstractProducerEncoding<EOSController> {
+  public List<String> argIdbOperatorIds;
   public String[] argChildren;
-  private static final List<String> requiredArguments = ImmutableList.of("argWorkerIds", "argIdbOperatorIds",
-      "argChildren");
+  private static final List<String> requiredArguments = ImmutableList.of("argIdbOperatorIds", "argChildren");
 
   @Override
   public EOSController construct() {
-    ExchangePairID tmp[] = new ExchangePairID[argIdbOperatorIds.length];
-    for (int i = 0; i < tmp.length; ++i) {
-      tmp[i] = ExchangePairID.fromExisting(argIdbOperatorIds[i]);
-    }
-    return new EOSController(null, tmp, argWorkerIds);
+    List<ExchangePairID> ids = getRealOperatorIds();
+    return new EOSController(null, ids.toArray(new ExchangePairID[ids.size()]), MyriaUtils
+        .integerCollectionToIntArray(getRealWorkerIds()));
   }
 
   @Override
@@ -38,5 +35,10 @@ public class EOSControllerEncoding extends OperatorEncoding<EOSController> {
   @Override
   protected List<String> getRequiredArguments() {
     return requiredArguments;
+  }
+
+  @Override
+  protected List<String> getOperatorIds() {
+    return argIdbOperatorIds;
   }
 }

@@ -13,9 +13,9 @@ import edu.washington.escience.myriad.parallel.LocalMultiwayProducer;
  * A JSON-able wrapper for the expected wire message for a new dataset.
  * 
  */
-public class LocalMultiwayProducerEncoding extends OperatorEncoding<LocalMultiwayProducer> {
+public class LocalMultiwayProducerEncoding extends AbstractProducerEncoding<LocalMultiwayProducer> {
   public String argChild;
-  public int[] argOperatorIds;
+  public List<String> argOperatorIds;
   private static final List<String> requiredArguments = ImmutableList.of("argChild", "argOperatorIds");
 
   @Override
@@ -25,15 +25,17 @@ public class LocalMultiwayProducerEncoding extends OperatorEncoding<LocalMultiwa
 
   @Override
   public LocalMultiwayProducer construct() {
-    ExchangePairID[] tmp = new ExchangePairID[argOperatorIds.length];
-    for (int i = 0; i < argOperatorIds.length; ++i) {
-      tmp[i] = ExchangePairID.fromExisting(argOperatorIds[i]);
-    }
-    return new LocalMultiwayProducer(null, tmp);
+    List<ExchangePairID> ids = getRealOperatorIds();
+    return new LocalMultiwayProducer(null, ids.toArray(new ExchangePairID[ids.size()]));
   }
 
   @Override
   protected List<String> getRequiredArguments() {
     return requiredArguments;
+  }
+
+  @Override
+  protected List<String> getOperatorIds() {
+    return argOperatorIds;
   }
 }

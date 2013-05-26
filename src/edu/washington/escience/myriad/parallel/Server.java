@@ -899,6 +899,17 @@ public final class Server {
   }
 
   /**
+   * @param relationKey the key of the desired relation.
+   * @param storedRelationId indicates which copy of the desired relation we want to scan.
+   * @return the list of workers that store the specified relation.
+   * @throws CatalogException if there is an error accessing the catalog.
+   */
+  public List<Integer> getWorkersForRelation(final RelationKey relationKey, final Integer storedRelationId)
+      throws CatalogException {
+    return catalog.getWorkersForRelation(relationKey, storedRelationId);
+  }
+
+  /**
    * @param configKey config key.
    * @return master configuration.
    * */

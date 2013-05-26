@@ -10,19 +10,19 @@ import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.parallel.ExchangePairID;
 
 public class IDBInputEncoding extends OperatorEncoding<IDBInput> {
-  public int argControllerOperatorId;
-  public int argControllerWorkerId;
-  public int argSelfIdbId;
+  public Integer argSelfIdbId;
+  public String argControllerOperatorId;
   public String argInitialInput;
   public String argIterationInput;
   public String argEosControllerInput;
+  public ExchangePairID realControllerOperatorId;
+  public Integer realControllerWorkerId;
   private static final List<String> requiredArguments = ImmutableList.of("argSelfIdbId", "argControllerOperatorId",
-      "argControllerWorkerId", "argInitialInput", "argIterationInput", "argEosControllerInput");
+      "argInitialInput", "argIterationInput", "argEosControllerInput");
 
   @Override
   public IDBInput construct() {
-    return new IDBInput(argSelfIdbId, ExchangePairID.fromExisting(argControllerOperatorId), argControllerWorkerId,
-        null, null, null);
+    return new IDBInput(argSelfIdbId, realControllerOperatorId, realControllerWorkerId, null, null, null);
   }
 
   @Override

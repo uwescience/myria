@@ -19,6 +19,7 @@ import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 public class SQLiteScanEncoding extends OperatorEncoding<SQLiteQueryScan> {
   /** The name of the relation to be scanned. */
   public RelationKey relationKey;
+  public Integer storedRelationId;
   private static final List<String> requiredArguments = ImmutableList.of("relationKey");
 
   @Override

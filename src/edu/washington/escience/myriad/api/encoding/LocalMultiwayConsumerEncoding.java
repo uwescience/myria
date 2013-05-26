@@ -7,31 +7,36 @@ import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.parallel.ExchangePairID;
 import edu.washington.escience.myriad.parallel.LocalMultiwayConsumer;
+import edu.washington.escience.myriad.util.MyriaUtils;
 
 /**
  * A JSON-able wrapper for the expected wire message for a new dataset.
  * 
  */
-public class LocalMultiwayConsumerEncoding extends OperatorEncoding<LocalMultiwayConsumer> {
+public class LocalMultiwayConsumerEncoding extends AbstractConsumerEncoding<LocalMultiwayConsumer> {
   public Schema argSchema;
-  public int[] argWorkerIds;
-  public Integer argOperatorId;
-  private static final List<String> requiredArguments = ImmutableList.of("argSchema", "argWorkerIds", "argOperatorId");
+  public String argOperatorId;
+  private static final List<String> requiredArguments = ImmutableList.of("argSchema", "argOperatorId");
 
   @Override
-  public void connect(Operator current, Map<String, Operator> operators) {
+  public void connect(Operator operator, Map<String, Operator> operators) {
     /* Do nothing; no children. */
   }
 
   @Override
   public LocalMultiwayConsumer construct() {
-    return new LocalMultiwayConsumer(argSchema, ExchangePairID.fromExisting(argOperatorId));
+    return new LocalMultiwayConsumer(argSchema, MyriaUtils.getSingleElement(getRealOperatorIds()));
   }
 
   @Override
   protected List<String> getRequiredArguments() {
     return requiredArguments;
   }
+
+  @Override
+  protected List<String> getOperatorIds() {
+    return ImmutableList.of(argOperatorId);
+  }
+
 }

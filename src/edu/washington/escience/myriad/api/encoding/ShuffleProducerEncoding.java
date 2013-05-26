@@ -6,20 +6,18 @@ import java.util.Map;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.parallel.ExchangePairID;
 import edu.washington.escience.myriad.parallel.ShuffleProducer;
+import edu.washington.escience.myriad.util.MyriaUtils;
 
 /**
  * A JSON-able wrapper for the expected wire message for a new dataset.
  * 
  */
-public class ShuffleProducerEncoding extends OperatorEncoding<ShuffleProducer> {
+public class ShuffleProducerEncoding extends AbstractProducerEncoding<ShuffleProducer> {
   public String argChild;
-  public Integer argOperatorId;
-  public int[] argWorkerIds;
+  public String argOperatorId;
   public PartitionFunctionEncoding<?> argPf;
-  private static final List<String> requiredArguments = ImmutableList.of("argChild", "argWorkerIds", "argOperatorId",
-      "argPf");
+  private static final List<String> requiredArguments = ImmutableList.of("argChild", "argOperatorId", "argPf");
 
   @Override
   public void connect(final Operator current, final Map<String, Operator> operators) {
@@ -28,8 +26,9 @@ public class ShuffleProducerEncoding extends OperatorEncoding<ShuffleProducer> {
 
   @Override
   public ShuffleProducer construct() {
-    return new ShuffleProducer(null, ExchangePairID.fromExisting(argOperatorId), argWorkerIds, argPf
-        .construct(argWorkerIds.length));
+    List<Integer> workerIds = getRealWorkerIds();
+    return new ShuffleProducer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), MyriaUtils
+        .integerCollectionToIntArray(workerIds), argPf.construct(workerIds.size()));
   }
 
   @Override
@@ -40,5 +39,10 @@ public class ShuffleProducerEncoding extends OperatorEncoding<ShuffleProducer> {
   @Override
   protected void validateExtra() {
     argPf.validate();
+  }
+
+  @Override
+  protected List<String> getOperatorIds() {
+    return ImmutableList.of(argOperatorId);
   }
 }

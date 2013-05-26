@@ -7,18 +7,17 @@ import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.parallel.ExchangePairID;
 import edu.washington.escience.myriad.parallel.ShuffleConsumer;
+import edu.washington.escience.myriad.util.MyriaUtils;
 
 /**
  * A JSON-able wrapper for the expected wire message for a new dataset.
  * 
  */
-public class ShuffleConsumerEncoding extends OperatorEncoding<ShuffleConsumer> {
+public class ShuffleConsumerEncoding extends AbstractConsumerEncoding<ShuffleConsumer> {
   public Schema argSchema;
-  public Integer argOperatorId;
-  public int[] argWorkerIds;
-  private static final List<String> requiredArguments = ImmutableList.of("argSchema", "argWorkerIds", "argOperatorId");
+  public String argOperatorId;
+  private static final List<String> requiredArguments = ImmutableList.of("argSchema", "argOperatorId");
 
   @Override
   public void connect(final Operator current, final Map<String, Operator> operators) {
@@ -27,11 +26,17 @@ public class ShuffleConsumerEncoding extends OperatorEncoding<ShuffleConsumer> {
 
   @Override
   public ShuffleConsumer construct() {
-    return new ShuffleConsumer(argSchema, ExchangePairID.fromExisting(argOperatorId), argWorkerIds);
+    return new ShuffleConsumer(argSchema, MyriaUtils.getSingleElement(getRealOperatorIds()), MyriaUtils
+        .integerCollectionToIntArray(getRealWorkerIds()));
   }
 
   @Override
   protected List<String> getRequiredArguments() {
     return requiredArguments;
+  }
+
+  @Override
+  protected List<String> getOperatorIds() {
+    return ImmutableList.of(argOperatorId);
   }
 }
