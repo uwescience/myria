@@ -5,9 +5,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -24,9 +21,6 @@ import edu.washington.escience.myriad.operator.Operator;
  * columns, group by multiple columns.
  */
 public final class MultiGroupByAggregate extends Operator {
-
-  /** The logger for this class. */
-  private static final Logger LOGGER = LoggerFactory.getLogger(MultiGroupByAggregate.class);
 
   /**
    * A simple implementation of multiple-field group key.
@@ -101,12 +95,13 @@ public final class MultiGroupByAggregate extends Operator {
     Objects.requireNonNull(aggOps);
     Preconditions.checkArgument(gfields.length > 1);
     Preconditions.checkArgument(afields.length != 0, "aggregation fields must not be empty");
+    this.child = child;
     this.afields = afields;
     this.gfields = gfields;
     this.aggOps = aggOps;
-    schema = null;
     groupAggs = new HashMap<SimpleArrayWrapper, Aggregator[]>();
     agg = new Aggregator[aggOps.length];
+    schema = generateSchema(child, groupAggs, gfields, afields, agg, aggOps);
   }
 
   /**
@@ -133,12 +128,10 @@ public final class MultiGroupByAggregate extends Operator {
    */
   @Override
   protected TupleBatch fetchNext() throws DbException, InterruptedException {
-    long startTime = System.nanoTime();
     if (resultBuffer.numTuples() == 0) {
       // Actually perform the aggregation
       TupleBatch tb = null;
       while ((tb = child.next()) != null) {
-        LOGGER.info(tb.toString());
         // get all the tuple batches from the child operator
         // we want to get the value for each key.
         HashMap<SimpleArrayWrapper, TupleBatchBuffer> tmpMap = new HashMap<SimpleArrayWrapper, TupleBatchBuffer>();
@@ -198,14 +191,11 @@ public final class MultiGroupByAggregate extends Operator {
         }
       }
     }
-    long finishTime = System.nanoTime();
-    LOGGER.info("elasped time: " + (finishTime - startTime) + "ns.");
     return resultBuffer.popAny();
   }
 
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
-    long startTime = System.currentTimeMillis();
     if (resultBuffer.numTuples() > 0) {
       return resultBuffer.popAny();
     }
@@ -217,7 +207,6 @@ public final class MultiGroupByAggregate extends Operator {
     // Actually perform the aggregation
     TupleBatch tb = null;
     while ((tb = child.nextReady()) != null) {
-      LOGGER.info(tb.toString());
       // get all the tuple batches from the child operator
       // we want to get the value for each key.
       HashMap<SimpleArrayWrapper, TupleBatchBuffer> tmpMap = new HashMap<SimpleArrayWrapper, TupleBatchBuffer>();
@@ -279,8 +268,6 @@ public final class MultiGroupByAggregate extends Operator {
         }
       }
     }
-    long finishTime = System.currentTimeMillis();
-    LOGGER.info("elapsed time: " + (finishTime - startTime) + "ms");
     return resultBuffer.popAny();
   }
 
@@ -319,9 +306,21 @@ public final class MultiGroupByAggregate extends Operator {
 
   /**
    * Generates the schema for MultiGroupByAggregate.
+   * 
+   * @param child the child operator
+   * @param groupAggs the aggregator for each grouping
+   * @param gfields the group fields
+   * @param afields the aggregae fields
+   * @param agg the aggregators to be populated
+   * @param aggOps ints representing the aggregate operations
+   * 
+   * @return the schema based on the aggregate, if the child is null, will return null.
    */
-  private static Schema generateSchema(final Operator child, Map<SimpleArrayWrapper, Aggregator[]> groupAggs,
-      final int[] gfields, final int[] afields, Aggregator[] agg, final int[] aggOps) {
+  private static Schema generateSchema(final Operator child, final Map<SimpleArrayWrapper, Aggregator[]> groupAggs,
+      final int[] gfields, final int[] afields, final Aggregator[] agg, final int[] aggOps) {
+    if (child == null) {
+      return null;
+    }
     Schema outputSchema = null;
 
     final ImmutableList.Builder<Type> gTypes = ImmutableList.builder();
