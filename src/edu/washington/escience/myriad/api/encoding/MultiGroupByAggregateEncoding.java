@@ -23,11 +23,13 @@ public class MultiGroupByAggregateEncoding extends OperatorEncoding<MultiGroupBy
   public void validate() throws MyriaApiException {
     super.validate();
     try {
+      Preconditions.checkNotNull(argChild);
       Preconditions.checkNotNull(argAggFields);
       Preconditions.checkNotNull(argAggOperators);
       Preconditions.checkNotNull(argGroupFields);
     } catch (Exception e) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "required fields: arg_aggFields, arg_groupFields, arg_opFields");
+      throw new MyriaApiException(Status.BAD_REQUEST,
+          "required fields: arg_child arg_aggFields, arg_groupFields, arg_opFields");
     }
   }
 
@@ -45,8 +47,7 @@ public class MultiGroupByAggregateEncoding extends OperatorEncoding<MultiGroupBy
   /**
    * Deserializes Aggregate Operators.
    * 
-   * @param map the map containing all JSON data
-   * @param field the name of the field we should get the data from
+   * @param ops a list of list of aggregate operations
    * @return an array of operations specified.
    */
   private int[] deserializeAggregateOperator(final List<List<String>> ops) {
