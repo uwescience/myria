@@ -23,10 +23,12 @@ import edu.washington.escience.myriad.operator.Operator;
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "op_type")
 @JsonSubTypes({
+    @Type(name = "Apply", value = ApplyEncoding.class),
     @Type(name = "CollectConsumer", value = CollectConsumerEncoding.class),
     @Type(name = "CollectProducer", value = CollectProducerEncoding.class),
     @Type(name = "LocalJoin", value = LocalJoinEncoding.class),
     @Type(name = "LocalCountingJoin", value = LocalCountingJoinEncoding.class),
+    @Type(name = "Project", value = ProjectEncoding.class),
     @Type(name = "ShuffleConsumer", value = ShuffleConsumerEncoding.class),
     @Type(name = "ShuffleProducer", value = ShuffleProducerEncoding.class),
     @Type(name = "SQLiteInsert", value = SQLiteInsertEncoding.class),
