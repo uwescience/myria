@@ -714,7 +714,7 @@ public class AggregateTest {
 
   @Test
   public void testMultiGroupSum() throws DbException {
-    final int numTuples = 1000000;
+    final int numTuples = 1000;
     final Schema schema =
         new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of(
             "a", "b", "c", "d"));
@@ -873,8 +873,9 @@ public class AggregateTest {
       tbb.put(3, i);
     }
     MultiGroupByAggregate mga =
-        new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 3, 3 }, new int[] { 0, 1 }, new int[] {
+        new MultiGroupByAggregate(null, new int[] { 3, 3 }, new int[] { 0, 1 }, new int[] {
             Aggregator.AGG_OP_MAX, Aggregator.AGG_OP_MIN });
+    mga.setChildren(new Operator[] { new TupleSource(tbb) });
     mga.open(null);
     TupleBatch result = mga.nextReady();
     assertEquals(1, result.numTuples());
@@ -924,6 +925,7 @@ public class AggregateTest {
     MultiGroupByAggregate mga =
         new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 0 }, new int[] { 0, 1 },
             new int[] { Aggregator.AGG_OP_COUNT });
+    mga.setChildren(new Operator[] { new TupleSource(tbb) });
     mga.open(null);
     TupleBatch result = mga.nextReady();
     assertNull(result);
