@@ -1,5 +1,6 @@
 package edu.washington.escience.myriad.operator.apply;
 
+import java.io.Serializable;
 import java.util.List;
 
 import edu.washington.escience.myriad.Type;
@@ -8,7 +9,10 @@ import edu.washington.escience.myriad.Type;
  * An interface for Math operations to be used with Apply.
  */
 
-public abstract class IFunction {
+public abstract class IFunction implements Serializable {
+
+  /** Required for Java serialization. */
+  private static final long serialVersionUID = 1L;
 
   /**
    * Determines what should the Type of the resulting field be.
