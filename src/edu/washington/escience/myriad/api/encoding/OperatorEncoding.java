@@ -30,7 +30,10 @@ import edu.washington.escience.myriad.operator.Operator;
     @Type(name = "ShuffleConsumer", value = ShuffleConsumerEncoding.class),
     @Type(name = "ShuffleProducer", value = ShuffleProducerEncoding.class),
     @Type(name = "SQLiteInsert", value = SQLiteInsertEncoding.class),
-    @Type(name = "SQLiteScan", value = SQLiteScanEncoding.class) })
+    @Type(name = "SQLiteScan", value = SQLiteScanEncoding.class), @Type(name = "Filter", value = FilterEncoding.class),
+    @Type(name = "Project", value = ProjectEncoding.class),
+    @Type(name = "MultiGroupByAggregate", value = MultiGroupByAggregateEncoding.class),
+    @Type(name = "Apply", value = ApplyEncoding.class) })
 public abstract class OperatorEncoding<T extends Operator> implements MyriaApiEncoding {
 
   public String opName;
