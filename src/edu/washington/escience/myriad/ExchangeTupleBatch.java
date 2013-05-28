@@ -1,11 +1,11 @@
 package edu.washington.escience.myriad;
 
-import java.util.BitSet;
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.column.Column;
+import edu.washington.escience.myriad.util.ImmutableBitSet;
 
 /**
  * The extended TupleBatch which holds extra meta information for a batch of tuples received from other workers.
@@ -39,9 +39,9 @@ public class ExchangeTupleBatch extends TupleBatch {
    * @param lsn log sequence number, for fault tolerance
    * @param sourceWorkerID which worker the TB from
    */
-  private ExchangeTupleBatch(final Schema schema, final List<Column<?>> columns, final BitSet validTuples,
-      final ImmutableList<Integer> validIndices, final long startingTupleSeqNum, final long lsn,
-      final int sourceWorkerID) {
+  private ExchangeTupleBatch(final Schema schema, final ImmutableList<Column<?>> columns,
+      final ImmutableBitSet validTuples, final ImmutableList<Integer> validIndices, final long startingTupleSeqNum,
+      final long lsn, final int sourceWorkerID) {
     /** For a private copy constructor, no data checks are needed. Checks are only needed in the public constructor. */
     super(schema, columns, validTuples, validIndices);
     startingSeqNum = startingTupleSeqNum;
@@ -69,8 +69,8 @@ public class ExchangeTupleBatch extends TupleBatch {
   }
 
   @Override
-  protected final TupleBatch shallowCopy(final Schema schema, final List<Column<?>> columns, final BitSet validTuples,
-      final ImmutableList<Integer> validIndices) {
+  protected final TupleBatch shallowCopy(final Schema schema, final ImmutableList<Column<?>> columns,
+      final ImmutableBitSet validTuples, final ImmutableList<Integer> validIndices) {
     return new ExchangeTupleBatch(schema, columns, validTuples, validIndices, startingSeqNum, lsn, sourceWorkerID);
   }
 

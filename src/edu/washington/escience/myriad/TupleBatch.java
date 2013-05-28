@@ -2,7 +2,6 @@ package edu.washington.escience.myriad;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashSet;
@@ -30,7 +29,7 @@ import edu.washington.escience.myriad.column.IntColumn;
 import edu.washington.escience.myriad.column.LongColumn;
 import edu.washington.escience.myriad.column.StringColumn;
 import edu.washington.escience.myriad.parallel.PartitionFunction;
-import edu.washington.escience.myriad.util.ReadOnlyBitSet;
+import edu.washington.escience.myriad.util.ImmutableBitSet;
 import edu.washington.escience.myriad.util.TypeFunnel;
 
 /**
@@ -50,11 +49,11 @@ public class TupleBatch {
   /** Schema of tuples in this batch. */
   private final Schema schema;
   /** Tuple data stored as columns in this batch. */
-  private final List<Column<?>> columns;
+  private final ImmutableList<Column<?>> columns;
   /** Number of valid tuples in this TB. */
   private final int numValidTuples;
   /** Which tuples are valid in this batch. */
-  private final ReadOnlyBitSet validTuples;
+  private final ImmutableBitSet validTuples;
   /** An ImmutableList<Integer> view of the indices of validTuples. */
   private ImmutableList<Integer> validIndices;
 
@@ -78,7 +77,7 @@ public class TupleBatch {
    * @param validTuples BitSet determines which tuples are valid tuples in this batch.
    * @param validIndices valid tuple indices.
    */
-  protected TupleBatch(final Schema schema, final List<Column<?>> columns, final BitSet validTuples,
+  protected TupleBatch(final Schema schema, final ImmutableList<Column<?>> columns, final ImmutableBitSet validTuples,
       final ImmutableList<Integer> validIndices) {
     /** For a private copy constructor, no data checks are needed. Checks are only needed in the public constructor. */
     this.schema = schema;
@@ -86,11 +85,7 @@ public class TupleBatch {
 
     numValidTuples = validTuples.cardinality();
 
-    if (validTuples instanceof ReadOnlyBitSet) {
-      this.validTuples = (ReadOnlyBitSet) validTuples.clone();
-    } else {
-      this.validTuples = new ReadOnlyBitSet((BitSet) validTuples.clone());
-    }
+    this.validTuples = validTuples;
 
     this.validIndices = validIndices;
   }
@@ -104,8 +99,8 @@ public class TupleBatch {
    * @param validIndices valid tuple indices.
    * @return shallow copy
    */
-  protected TupleBatch shallowCopy(final Schema schema, final List<Column<?>> columns, final BitSet validTuples,
-      final ImmutableList<Integer> validIndices) {
+  protected TupleBatch shallowCopy(final Schema schema, final ImmutableList<Column<?>> columns,
+      final ImmutableBitSet validTuples, final ImmutableList<Integer> validIndices) {
     return new TupleBatch(schema, columns, validTuples, validIndices);
   }
 
@@ -119,9 +114,14 @@ public class TupleBatch {
   public TupleBatch(final Schema schema, final List<Column<?>> columns, final int numTuples) {
     /* Take the input arguments directly */
     this.schema = Objects.requireNonNull(schema);
-    this.columns = Objects.requireNonNull(columns);
+    Objects.requireNonNull(columns);
     Preconditions.checkArgument(columns.size() == schema.numColumns(),
         "Number of columns in data must equal to the number of fields in schema");
+    if (columns instanceof ImmutableList) {
+      this.columns = (ImmutableList<Column<?>>) columns;
+    } else {
+      this.columns = ImmutableList.copyOf(columns);
+    }
     Preconditions.checkArgument(numTuples >= 0 && numTuples <= BATCH_SIZE,
         "numTuples must be at least 1 and no more than TupleBatch.BATCH_SIZE");
     numValidTuples = numTuples;
@@ -129,7 +129,7 @@ public class TupleBatch {
     /* All tuples are valid */
     final BitSet tmp = new BitSet(numTuples);
     tmp.set(0, numTuples);
-    validTuples = new ReadOnlyBitSet(tmp);
+    validTuples = new ImmutableBitSet(tmp);
   }
 
   /**
@@ -143,38 +143,6 @@ public class TupleBatch {
     for (int i = 0; i < numColumns(); ++i) {
       buffer.put(i, columns.get(i).get(mappedRow));
     }
-  }
-
-  /**
-   * Helper function that mutates this TupleBatch to remove all rows that do not match the specified predicate. WARNING:
-   * do not use! Use the non-mutating version.
-   * 
-   * @param column column on which the predicate operates.
-   * @param op predicate by which to test rows.
-   * @param operand operand to the predicate.
-   * @return a new TupleBatch where all rows that do not match the specified predicate have been removed.
-   */
-  private TupleBatch applyFilter(final int column, final Predicate.Op op, final Object operand) {
-    BitSet newValidTuples = null;
-    if (numValidTuples > 0) {
-      final Column<?> columnValues = columns.get(column);
-      final Type columnType = schema.getColumnType(column);
-      for (final int validIdx : getValidIndices()) {
-        if (!columnType.filter(op, columnValues, validIdx, operand)) {
-          if (newValidTuples == null) {
-            newValidTuples = validTuples.cloneAsBitSet();
-          }
-          newValidTuples.clear(validIdx);
-        }
-      }
-    }
-
-    if (newValidTuples != null) {
-      return shallowCopy(schema, columns, newValidTuples, null);
-    }
-
-    /* If no tuples are filtered, new TupleBatch instance is not needed */
-    return this;
   }
 
   /**
@@ -197,15 +165,24 @@ public class TupleBatch {
    * 
    * Internal implementation of a SELECT statement.
    * 
-   * @param column column on which the predicate operates.
-   * @param op predicate by which to test rows.
-   * @param operand operand to the predicate.
+   * @param predicate predicate by which to filter rows
    * @return a new TupleBatch where all rows that do not match the specified predicate have been removed.
    */
-  public final TupleBatch filter(final int column, final Predicate.Op op, final Object operand) {
-    Objects.requireNonNull(op);
-    Objects.requireNonNull(operand);
-    return applyFilter(column, op, operand);
+  public final TupleBatch filter(final Predicate predicate) {
+    BitSet newValidTuples = null;
+    if (numValidTuples > 0) {
+      ImmutableBitSet filterResult = predicate.filter(this);
+      newValidTuples = validTuples.cloneAsBitSet();
+      newValidTuples.and(filterResult);
+    }
+
+    if (newValidTuples != null && newValidTuples.cardinality() != validTuples.cardinality()) {
+      return shallowCopy(schema, columns, new ImmutableBitSet(newValidTuples), null);
+    }
+
+    /* If no tuples are filtered, new TupleBatch instance is not needed */
+    return this;
+
   }
 
   /**
@@ -470,13 +447,13 @@ public class TupleBatch {
     Objects.requireNonNull(remainingColumns);
     final ImmutableList.Builder<Type> newTypes = new ImmutableList.Builder<Type>();
     final ImmutableList.Builder<String> newNames = new ImmutableList.Builder<String>();
-    final List<Column<?>> newColumns = new ArrayList<Column<?>>();
+    final ImmutableList.Builder<Column<?>> newColumns = new ImmutableList.Builder<Column<?>>();
     for (final int i : remainingColumns) {
       newColumns.add(columns.get(i));
       newTypes.add(schema.getColumnType(i));
       newNames.add(schema.getColumnName(i));
     }
-    return shallowCopy(new Schema(newTypes, newNames), newColumns, validTuples, validIndices);
+    return shallowCopy(new Schema(newTypes, newNames), newColumns.build(), validTuples, validIndices);
   }
 
   /**
@@ -503,7 +480,7 @@ public class TupleBatch {
       newValidTuples.clear(mapping.get(i));
     }
     if (newValidTuples.cardinality() != numValidTuples) {
-      return shallowCopy(schema, columns, newValidTuples, null);
+      return shallowCopy(schema, columns, new ImmutableBitSet(newValidTuples), null);
     } else {
       return this;
     }
@@ -531,9 +508,9 @@ public class TupleBatch {
    * 
    * Since we are now using index mapping, it's unnecessary to expose the filtered/removed tuples
    * 
-   * @return an array containing the indices of all valid rows.
+   * @return a list containing the indices of all valid rows.
    */
-  private ImmutableList<Integer> getValidIndices() {
+  public final ImmutableList<Integer> getValidIndices() {
     if (validIndices != null) {
       return validIndices;
     }
@@ -545,4 +522,12 @@ public class TupleBatch {
     validIndices = tmp.build();
     return validIndices;
   }
+
+  /**
+   * @return the data columns. Work together with the valid indices.
+   * */
+  public final ImmutableList<Column<?>> getDataColumns() {
+    return columns;
+  }
+
 }
