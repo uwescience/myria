@@ -75,26 +75,27 @@ public enum Type implements Serializable {
      * @param operand the operand
      * */
     public boolean compare(final SimplePredicate.Op op, final float valueInTuple, final float operand) {
+      int compVal = Float.compare(valueInTuple, operand);
       switch (op) {
         case EQUALS:
-          return valueInTuple == operand;
+          return compVal == 0;
         case NOT_EQUALS:
-          return valueInTuple != operand;
+          return compVal != 0;
 
         case GREATER_THAN:
-          return valueInTuple > operand;
+          return compVal > 0;
 
         case GREATER_THAN_OR_EQ:
-          return valueInTuple >= operand;
+          return compVal >= 0;
 
         case LESS_THAN:
-          return valueInTuple < operand;
+          return compVal < 0;
 
         case LESS_THAN_OR_EQ:
-          return valueInTuple <= operand;
+          return compVal <= 0;
 
         case LIKE:
-          return valueInTuple == operand;
+          return compVal == 0;
       }
 
       return false;
@@ -124,26 +125,22 @@ public enum Type implements Serializable {
      * @param operand the operand
      * */
     public boolean compare(final SimplePredicate.Op op, final double valueInTuple, final double operand) {
+      int compVal = Double.compare(valueInTuple, operand);
       switch (op) {
         case EQUALS:
-          return valueInTuple == operand;
+          return compVal == 0;
         case NOT_EQUALS:
-          return valueInTuple != operand;
-
+          return compVal != 0;
         case GREATER_THAN:
-          return valueInTuple > operand;
-
+          return compVal > 0;
         case GREATER_THAN_OR_EQ:
-          return valueInTuple >= operand;
-
+          return compVal >= 0;
         case LESS_THAN:
-          return valueInTuple < operand;
-
+          return compVal < 0;
         case LESS_THAN_OR_EQ:
-          return valueInTuple <= operand;
-
+          return compVal <= 0;
         case LIKE:
-          return valueInTuple == operand;
+          return compVal == 0;
       }
 
       return false;
