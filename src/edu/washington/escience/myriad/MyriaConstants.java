@@ -104,4 +104,8 @@ public final class MyriaConstants {
    */
   public static final int THREAD_POOL_KEEP_ALIVE_TIME_IN_MS = 1000 * 60 * 5;
 
+  public static final String EXEC_ENV_VAR_IPC_CONNECTION_POOL = "ipcConnectionPool";
+
+  public static final String EXEC_ENV_VAR_EXECUTION_MODE = "query.execution.mode";
+
 }

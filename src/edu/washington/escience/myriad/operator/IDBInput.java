@@ -15,6 +15,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
@@ -296,7 +297,7 @@ public class IDBInput extends Operator {
     emptyDelta = true;
     uniqueTupleIndices = new HashMap<Integer, List<Integer>>();
     uniqueTuples = new TupleBatchBuffer(getSchema());
-    connectionPool = (IPCConnectionPool) execEnvVars.get("ipcConnectionPool");
+    connectionPool = (IPCConnectionPool) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_IPC_CONNECTION_POOL);
     eoiReportChannel = connectionPool.reserveLongTermConnection(controllerWorkerID);
     eoiReportChannel.write(IPCUtils.bosTM(controllerOpID));
   }

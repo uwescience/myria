@@ -68,12 +68,10 @@ public final class Worker {
    * query execution mode, blocking or non-blocking. Always use the NON_BLOCKING mode. The BLOCKING mode may not work
    * and may get abandoned.
    * */
-
-  static enum QueryExecutionMode {
+  public static enum QueryExecutionMode {
     /**
      * blocking execution, call next() and fetchNext().
      * */
-    @Deprecated
     BLOCKING,
 
     /**
@@ -565,7 +563,9 @@ public final class Worker {
         throw new CatalogException("Unknown worker type: " + databaseType);
     }
 
-    execEnvVars.put("ipcConnectionPool", connectionPool);
+    execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_IPC_CONNECTION_POOL, connectionPool);
+    execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE, queryExecutionMode);
+
   }
 
   /**
