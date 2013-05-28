@@ -35,6 +35,7 @@ import edu.washington.escience.myriad.operator.Operator;
     @Type(name = "SQLiteInsert", value = SQLiteInsertEncoding.class),
     @Type(name = "EOSController", value = EOSControllerEncoding.class),
     @Type(name = "IDBInput", value = IDBInputEncoding.class),
+    @Type(name = "Aggregate", value = AggregateEncoding.class),
     @Type(name = "SQLiteScan", value = SQLiteScanEncoding.class) })
 public abstract class OperatorEncoding<T extends Operator> implements MyriaApiEncoding {
 
