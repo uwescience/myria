@@ -9,6 +9,8 @@ import edu.washington.escience.myriad.ExchangeTupleBatch;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.operator.IDBInput;
+import edu.washington.escience.myriad.operator.Merge;
+import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.util.IPCUtils;
 import gnu.trove.impl.unmodifiable.TUnmodifiableIntIntMap;
 import gnu.trove.map.TIntIntMap;
@@ -59,6 +61,9 @@ public class EOSController extends Producer {
    * */
   public EOSController(final Consumer[] children, final ExchangePairID[] idbOpIDs, final int[] workerIDs) {
     super(null, idbOpIDs, workerIDs, false);
+    if (children != null) {
+      setChildren(new Operator[] { new Merge(children) });
+    }
     numEOI = new int[idbOpIDs.length][workerIDs.length];
     zeroCol = new ArrayList<Integer>();
     eosZeroColValue = idbOpIDs.length * workerIDs.length;
