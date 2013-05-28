@@ -811,7 +811,7 @@ public final class Server {
       @Override
       public void operationComplete(final QueryFuture future) throws Exception {
         mqp.init();
-        mqp.startNonBlockingExecution();
+        mqp.startExecution();
         Server.this.startWorkerQuery(future.getQuery().getQueryID());
       }
     });

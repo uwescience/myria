@@ -22,7 +22,6 @@ import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SinkRoot;
-import edu.washington.escience.myriad.parallel.Worker.QueryExecutionMode;
 import edu.washington.escience.myriad.parallel.ipc.IPCEvent;
 import edu.washington.escience.myriad.parallel.ipc.IPCEventListener;
 import edu.washington.escience.myriad.util.DateTimeUtils;
@@ -401,9 +400,7 @@ public class MasterQueryPartition implements QueryPartition {
 
     producerChannelMapping = new ConcurrentHashMap<ExchangeChannelID, ProducerChannel>();
     consumerChannelMapping = new ConcurrentHashMap<ExchangeChannelID, ConsumerChannel>();
-    rootTask =
-        new QuerySubTreeTask(MyriaConstants.MASTER_ID, this, root, master.getQueryExecutor(),
-            QueryExecutionMode.NON_BLOCKING);
+    rootTask = new QuerySubTreeTask(MyriaConstants.MASTER_ID, this, root, master.getQueryExecutor());
     rootTask.getExecutionFuture().addListener(taskExecutionListener);
     for (Consumer c : rootTask.getInputChannels().values()) {
       for (ConsumerChannel cc : c.getExchangeChannels()) {
@@ -476,18 +473,9 @@ public class MasterQueryPartition implements QueryPartition {
   }
 
   @Override
-  public final void startNonBlockingExecution() {
+  public final void startExecution() {
     queryStatistics.markQueryStart();
-    rootTask.nonBlockingExecute();
-  }
-
-  /**
-   * start blocking execution.
-   */
-  @Deprecated
-  public final void startBlockingExecution() {
-    queryStatistics.markQueryStart();
-    rootTask.blockingExecute();
+    rootTask.execute();
   }
 
   @Override
