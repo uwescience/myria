@@ -3,6 +3,7 @@ package edu.washington.escience.myriad.parallel;
 import java.util.Arrays;
 
 import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelFuture;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
@@ -167,18 +168,17 @@ public abstract class Producer extends RootOperator {
    * @param ch the channel to write
    * @param msg the message.
    * @throws InterruptedException if interrupted
+   * @return write future
    * */
-  protected final void writeMessage(final Channel ch, final Object msg) throws InterruptedException {
+  protected final ChannelFuture writeMessage(final Channel ch, final Object msg) throws InterruptedException {
     if (nonBlockingExecution) {
-      ch.write(msg);
+      return ch.write(msg);
     } else {
-      boolean sent = false;
       int sleepTime = 1;
       int maxSleepTime = 100;
-      while (!sent) {
+      while (true) {
         if (ch.isWritable()) {
-          ch.write(msg);
-          sent = true;
+          return ch.write(msg);
         } else {
           int toSleep = sleepTime - 1;
           if (maxSleepTime < sleepTime) {

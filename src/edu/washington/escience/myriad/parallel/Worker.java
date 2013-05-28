@@ -330,15 +330,9 @@ public final class Worker {
    * */
   private final SocketInfo masterSocketInfo;
 
-  // /**
-  // * my IPC address.
-  // * */
-  // private final SocketInfo mySocketInfo;
-
   /**
    * Query execution mode. May remove
    * */
-  @Deprecated
   private final QueryExecutionMode queryExecutionMode;
 
   /**
