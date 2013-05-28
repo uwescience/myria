@@ -8,6 +8,11 @@ import java.util.List;
 public final class PowIFunction extends IFunction {
 
   /**
+   * For serialization.
+   */
+  private static final long serialVersionUID = 1L;
+
+  /**
    * Accepts only powers of whole numbers {@inheritDoc}.
    */
   @Override

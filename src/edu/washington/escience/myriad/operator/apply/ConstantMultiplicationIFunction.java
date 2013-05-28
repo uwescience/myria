@@ -8,6 +8,9 @@ import java.util.List;
 
 public final class ConstantMultiplicationIFunction extends IFunction {
 
+  /** Required for Java serialization. */
+  private static final long serialVersionUID = 1L;
+
   /**
    * creates the Constant Multiplication function with the desired power value.
    */
