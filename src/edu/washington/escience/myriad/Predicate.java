@@ -2,111 +2,19 @@ package edu.washington.escience.myriad;
 
 import java.io.Serializable;
 
-import com.google.common.base.Preconditions;
+import edu.washington.escience.myriad.util.ImmutableBitSet;
 
 /**
- * Predicate compares tuples to a specified Field value.
- */
-public class Predicate implements Serializable {
-
-  /** Constants used for return codes in Field.compare. */
-  public enum Op implements Serializable {
-    /** = . */
-    EQUALS,
-    /** > . */
-    GREATER_THAN,
-    /** < . */
-    LESS_THAN,
-    /** <= . */
-    LESS_THAN_OR_EQ,
-    /** >= . */
-    GREATER_THAN_OR_EQ,
-    /** == . */
-    LIKE,
-    /** <> . */
-    NOT_EQUALS;
-
-    /**
-     * Interface to access operations by integer value for command-line convenience.
-     * 
-     * @param i a valid integer Op index
-     * @return the operator at the specified index.
-     */
-    public static Op getOp(final int i) {
-      Preconditions.checkElementIndex(i, values().length);
-      return values()[i];
-    }
-
-    @Override
-    public String toString() {
-      switch (this) {
-        case EQUALS:
-          return "=";
-        case GREATER_THAN:
-          return ">";
-        case LESS_THAN:
-          return "<";
-        case GREATER_THAN_OR_EQ:
-          return ">=";
-        case LESS_THAN_OR_EQ:
-          return "<=";
-        case LIKE:
-          return "==";
-        case NOT_EQUALS:
-          return "<>";
-      }
-      throw new IllegalStateException("Shouldn't reach here");
-    }
-
-  }
-
-  /** Required for serialization. */
-  private static final long serialVersionUID = 1L;
-  /** The logical boolean operator this predicate represents. */
-  private final Op op;
-  /** Which column of the tuple this predicate tests. */
-  private final int columnIndex;
-  /** The (often constant) right operand of the operator. E.g., the predicate can be "Is greater than 5". */
-  private final Object operand;
+ * The interface of a general purpose filter. This 
+ * */
+public interface Predicate extends Serializable {
 
   /**
-   * Constructor.
+   * Do the filter. Note that only the valid tuples need to be computed.
    * 
-   * @param field field number of passed in s to compare against.
-   * @param op operation to use for comparison
-   * @param operand field value to compare passed in s to
-   */
-  public Predicate(final int field, final Op op, final Object operand) {
-    this.columnIndex = field;
-    this.op = op;
-    this.operand = operand;
-  }
+   * @param tb the data to get filtered.
+   * @return the filter result, set the bit if a tuple should be kept.
+   * */
+  ImmutableBitSet filter(final TupleBatch tb);
 
-  /**
-   * @return the field number
-   */
-  public final int getField() {
-    return this.columnIndex;
-  }
-
-  /**
-   * @return the operator
-   */
-  public final Op getOp() {
-    return this.op;
-  }
-
-  /**
-   * @return the operand
-   */
-  public final Object getOperand() {
-    return this.operand;
-  }
-
-  @Override
-  public final String toString() {
-    String p = "";
-    p += "f = " + columnIndex + " op = " + op + " operand = " + operand;
-    return p;
-  }
 }
