@@ -3,6 +3,7 @@ package edu.washington.escience.myriad.util;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.MyriaConstants;
@@ -16,6 +17,9 @@ import edu.washington.escience.myriad.accessmethod.SQLiteAccessMethod;
  * Util methods for SQLite.
  * */
 public final class SQLiteUtils {
+  /** The logger for this class. */
+  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(SQLiteUtils.class);
+
   /**
    * Generates a SQLite CREATE TABLE statement for a table of the given Schema and name.
    * 
@@ -30,9 +34,10 @@ public final class SQLiteUtils {
       if (i > 0) {
         sb.append(", ");
       }
-      sb.append(schema.getColumnName(i)).append(' ').append(typeToSQLiteType(schema.getColumnType(i)));
+      sb.append('[').append(schema.getColumnName(i)).append("] ").append(typeToSQLiteType(schema.getColumnType(i)));
     }
     sb.append(");");
+    System.out.println(sb.toString());
     return sb.toString();
   }
 
@@ -51,9 +56,12 @@ public final class SQLiteUtils {
       if (i > 0) {
         sb.append(",\n");
       }
-      sb.append("    ").append(schema.getColumnName(i)).append(' ').append(typeToSQLiteType(schema.getColumnType(i)));
+      sb.append("    [").append(schema.getColumnName(i)).append("] ").append(typeToSQLiteType(schema.getColumnType(i)));
     }
     sb.append(");");
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug("Create if not exists: " + sb.toString());
+    }
     return sb.toString();
   }
 
@@ -76,8 +84,8 @@ public final class SQLiteUtils {
     }
 
     SQLiteAccessMethod.tupleBatchInsert(dbFilePath, "insert into "
-        + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE) + " ( " + StringUtils.join(fieldNames, ',')
-        + " ) values ( " + StringUtils.join(placeHolders, ',') + " )", data);
+        + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE) + " ([" + StringUtils.join(fieldNames, "],[")
+        + "] ) values ( " + StringUtils.join(placeHolders, ',') + " )", data);
   }
 
   /**
@@ -89,9 +97,9 @@ public final class SQLiteUtils {
    */
   public static String insertStatementFromSchema(final Schema schema, final RelationKey relationKey) {
     final StringBuilder sb = new StringBuilder();
-    sb.append("INSERT INTO ").append(relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE)).append(" (");
-    sb.append(StringUtils.join(schema.getColumnNames(), ','));
-    sb.append(") VALUES (");
+    sb.append("INSERT INTO ").append(relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE)).append(" ([");
+    sb.append(StringUtils.join(schema.getColumnNames(), "],["));
+    sb.append("]) VALUES (");
     for (int i = 0; i < schema.numColumns(); ++i) {
       if (i > 0) {
         sb.append(',');
@@ -140,6 +148,11 @@ public final class SQLiteUtils {
    * @return "DROP TABLE IF EXISTS <tt>relationKey.getCanonicalName()</tt>;"
    */
   public static String dropTableIfExistsStatement(final RelationKey relationKey) {
-    return "DROP TABLE IF EXISTS " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE) + ";";
+    StringBuilder sb = new StringBuilder();
+    sb.append("DROP TABLE IF EXISTS ").append(relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE)).append(';');
+    if (LOGGER.isDebugEnabled()) {
+      LOGGER.debug("Drop if exists: " + sb.toString());
+    }
+    return sb.toString();
   }
 }
