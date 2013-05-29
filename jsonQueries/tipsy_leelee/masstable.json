@@ -1,0 +1,69 @@
+{
+    "logical_ra": "expected 11158 rows for cosmo512 masstable",
+    "query_plan": {
+        "1": [
+            [
+                {
+                    "op_name": "Scan",
+                    "op_type": "SQLiteScan",
+                    "relation_key": {
+                        "program_name": "astro",
+                        "relation_name": "cosmo512",
+                        "user_name": "leelee"
+                    }
+                },
+                {
+                    "arg_child": "Scan",
+                    "arg_column_index": "16",
+                    "arg_op": "0",
+                    "arg_operand": "star",
+                    "op_name": "Filter",
+                    "op_type": "Filter"
+                },
+                {
+                    "op_name": "MultiGroupByAggregate",
+                    "op_type": "MultiGroupByAggregate",
+                    "arg_child": "Filter",
+                    "arg_group_fields": [
+                        "15"
+                    ],
+                    "arg_agg_fields": [
+                        "1"
+                    ],
+                    "arg_agg_operators": [
+                        [
+                            "AGG_OP_SUM"
+                        ]
+                    ]
+                },
+                {
+                    "arg_child": "MultiGroupByAggregate",
+                    "arg_const_argument": ["0", "1.84793e16"],
+                    "arg_function": {
+                        "type": "ConstantMultiplicationIFunction"
+                    },
+                    "op_name": "Apply",
+                    "op_type": "Apply"
+                },
+                {
+                    "arg_child": "Apply",
+                    "arg_field_list" : ["0", "17"],
+                    "op_name" : "Project",
+                    "op_type" : "Project"
+                },
+                {
+                    "arg_child": "Project",
+                    "op_name": "Insert",
+                    "op_type": "SQLiteInsert",
+                    "relation_key": {
+                        "program_name": "astro",
+                        "relation_name": "masstable512",
+                        "user_name": "leelee"
+                    }
+                }
+
+            ]
+        ]
+    },
+    "raw_datalog": "blah."
+}
