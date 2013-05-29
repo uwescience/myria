@@ -3,6 +3,7 @@ package edu.washington.escience.myriad.api.encoding;
 import java.util.List;
 import java.util.Map;
 
+import org.codehaus.jackson.annotate.JsonIgnore;
 import org.codehaus.jackson.annotate.JsonSubTypes;
 import org.codehaus.jackson.annotate.JsonSubTypes.Type;
 import org.codehaus.jackson.annotate.JsonTypeInfo;
@@ -55,6 +56,7 @@ public abstract class OperatorEncoding<T extends Operator> extends MyriaApiEncod
   /**
    * @return the list of arguments required for this OperatorEncoding.
    */
+  @JsonIgnore
   protected abstract List<String> getRequiredArguments();
 
   @Override

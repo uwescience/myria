@@ -4,6 +4,7 @@ import java.util.List;
 
 import javax.ws.rs.core.Response.Status;
 
+import org.codehaus.jackson.annotate.JsonIgnore;
 import org.codehaus.jackson.map.PropertyNamingStrategy.LowerCaseWithUnderscoresStrategy;
 
 import com.google.common.base.Preconditions;
@@ -21,6 +22,7 @@ public abstract class MyriaApiEncoding {
   /**
    * @return the list of names of required fields.
    */
+  @JsonIgnore
   protected abstract List<String> getRequiredFields();
 
   /**
