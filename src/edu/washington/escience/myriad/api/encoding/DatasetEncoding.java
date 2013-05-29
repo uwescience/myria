@@ -12,6 +12,7 @@ public class DatasetEncoding implements MyriaApiEncoding {
   public RelationKey relationKey;
   public Schema schema;
   public String fileName;
+  public int[] workers;
   public byte[] data;
 
   @Override

@@ -385,7 +385,7 @@ public final class Catalog {
    * @param howPartitioned how this copy of the relation is partitioned.
    * @throws CatalogException if there is an error in the database.
    */
-  public void addStoredRelation(final RelationKey relation, final Set<Integer> workers, final String howPartitioned)
+  public void addStoredRelation(final RelationKey relation, final int[] workers, final String howPartitioned)
       throws CatalogException {
     Objects.requireNonNull(relation);
     Objects.requireNonNull(workers);
@@ -410,7 +410,7 @@ public final class Catalog {
             statement.bind(1, relation.getUserName());
             statement.bind(2, relation.getProgramName());
             statement.bind(3, relation.getRelationName());
-            statement.bind(4, workers.size());
+            statement.bind(4, workers.length);
             statement.bind(5, howPartitioned);
             statement.stepThrough();
             statement.dispose();
