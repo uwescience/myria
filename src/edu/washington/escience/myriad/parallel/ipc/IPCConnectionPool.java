@@ -580,7 +580,6 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
       }
 
       cc.registerNormal(remote.id, remote.registeredChannels, unregisteredChannels);
-      cc.getRegisteredChannelContext().incReference();
       if (LOGGER.isDebugEnabled()) {
         LOGGER.debug("Created a new registered channel from: " + myID + ", to: " + remote.id + ". Channel: " + channel);
       }
@@ -617,7 +616,6 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
         ch.setAttachment(cc);
         cc.connected();
         cc.registerNormal(myID, remote.registeredChannels, unregisteredChannels);
-        cc.getRegisteredChannelContext().incReference();
         return ch;
       } catch (Exception e) {
         if (LOGGER.isErrorEnabled()) {
@@ -1128,7 +1126,6 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
     inJVMShortMessageChannel.setAttachment(cc);
     cc.connected();
     cc.registerNormal(myID, myself.registeredChannels, unregisteredChannels);
-    cc.getRegisteredChannelContext().incReference();
 
     allPossibleChannels.add(serverChannel);
     scheduledTaskExecutor.scheduleAtFixedRate(recycler,
