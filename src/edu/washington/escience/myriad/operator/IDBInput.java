@@ -246,7 +246,10 @@ public class IDBInput extends Operator {
       }
     } else {
       try {
-        eosControllerInput.nextReady();
+        if (eosControllerInput.hasNext()) {
+          eosControllerInput.nextReady();
+        }
+
         if (eosControllerInput.eos()) {
           setEOS();
           eoiReportChannel.write(IPCUtils.EOS);
