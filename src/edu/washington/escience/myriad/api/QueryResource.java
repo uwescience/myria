@@ -32,6 +32,8 @@ import edu.washington.escience.myriad.parallel.QueryFutureListener;
  * 
  * @author dhalperi
  */
+@Consumes(MediaType.APPLICATION_JSON)
+@Produces(MediaType.APPLICATION_JSON)
 @Path("/query")
 public final class QueryResource {
   /** The logger for this class. */
@@ -45,8 +47,6 @@ public final class QueryResource {
    * @return the URI of the created query.
    */
   @POST
-  @Consumes(MediaType.APPLICATION_JSON)
-  @Produces(MediaType.APPLICATION_JSON)
   public Response postNewQuery(final byte[] payload, @Context final UriInfo uriInfo) {
     final QueryEncoding query = MyriaApiUtils.deserialize(payload, QueryEncoding.class);
 
@@ -57,9 +57,12 @@ public final class QueryResource {
     } catch (CatalogException e) {
       /* CatalogException means something went wrong interfacing with the Catalog. */
       throw new MyriaApiException(Status.INTERNAL_SERVER_ERROR, e);
-    } catch (Exception e1) {
+    } catch (MyriaApiException e) {
+      /* Passthrough MyriaApiException. */
+      throw e;
+    } catch (Exception e) {
       /* Other exceptions mean that the request itself was likely bad. */
-      throw new MyriaApiException(Status.BAD_REQUEST, e1);
+      throw e;
     }
 
     Set<Integer> usingWorkers = new HashSet<Integer>();

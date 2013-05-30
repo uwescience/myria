@@ -9,9 +9,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
 import edu.washington.escience.myriad.parallel.SocketInfo;
@@ -22,13 +20,13 @@ import edu.washington.escience.myriad.parallel.SocketInfo;
  * @author dhalperi
  */
 @Path("/workers")
+@Produces(MediaType.APPLICATION_JSON)
 public final class WorkerCollection {
   /**
    * @return the list of identifiers of workers that are currently alive.
    */
   @GET
   @Path("/alive")
-  @Produces(MediaType.APPLICATION_JSON)
   public Set<Integer> getAliveWorkers() {
     return MyriaApiUtils.getServer().getAliveWorkers();
   }
@@ -39,18 +37,17 @@ public final class WorkerCollection {
    */
   @GET
   @Path("/worker-{workerId}")
-  @Produces(MediaType.APPLICATION_JSON)
   public String getWorker(@PathParam("workerId") final String workerId) {
     SocketInfo workerInfo;
     try {
       workerInfo = MyriaApiUtils.getServer().getWorkers().get(Integer.parseInt(workerId));
     } catch (final NumberFormatException e) {
       /* Parsing failed, throw a 400 (Bad Request) */
-      throw new WebApplicationException(Response.status(Status.BAD_REQUEST).build());
+      throw new MyriaApiException(Status.BAD_REQUEST, e);
     }
     if (workerInfo == null) {
       /* Not found, throw a 404 (Not Found) */
-      throw new WebApplicationException(Response.status(Status.NOT_FOUND).build());
+      throw new MyriaApiException(Status.NOT_FOUND, workerId);
     }
     /* Yay, worked! */
     return workerInfo.toString();
@@ -60,7 +57,6 @@ public final class WorkerCollection {
    * @return the set of workers (identifier : host-port string) known by this server.
    */
   @GET
-  @Produces(MediaType.APPLICATION_JSON)
   public Map<Integer, String> getWorkers() {
     Map<Integer, SocketInfo> workers;
     workers = MyriaApiUtils.getServer().getWorkers();
