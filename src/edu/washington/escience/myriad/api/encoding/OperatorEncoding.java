@@ -40,6 +40,7 @@ import edu.washington.escience.myriad.operator.Operator;
     @Type(name = "IDBInput", value = IDBInputEncoding.class),
     @Type(name = "Aggregate", value = AggregateEncoding.class),
     @Type(name = "SQLiteScan", value = SQLiteScanEncoding.class) })
+>>>>>>> 0689bf1a59524e94dc681fc46cad49301539ecf6
 public abstract class OperatorEncoding<T extends Operator> implements MyriaApiEncoding {
 
   public String opName;
