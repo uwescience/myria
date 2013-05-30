@@ -1,0 +1,17 @@
+{
+  "relation_key" : {
+    "user_name" : "leelee",
+    "program_name" : "scan_cosmo24",
+    "relation_name" : "smallTable2"
+  },
+  "schema" : {
+    "column_types" : ["LONG_TYPE", "DOUBLE_TYPE", "DOUBLE_TYPE", "DOUBLE_TYPE", "DOUBLE_TYPE", "DOUBLE_TYPE", "DOUBLE_TYPE", "DOUBLE_TYPE"
+    , "DOUBLE_TYPE", "DOUBLE_TYPE", "DOUBLE_TYPE", "DOUBLE_TYPE", "DOUBLE_TYPE", "DOUBLE_TYPE", "DOUBLE_TYPE", "INT_TYPE",
+    "STRING_TYPE"],
+    "column_names" : ["iOrder", "mass", "x", "y", "z", "vx", "vy", "vz", "rho", "temp", "hsmooth", "metals", "tform", "eps", "phi", 
+    "grp", "type"]
+  },
+  "binfilename" : "/projects/db8/leelee-testdata/tipsy3",
+  "iorderfilename" : "/projects/db8/leelee-testdata/iOrder3.iord",
+  "grpfilename" : "/projects/db8/leelee-testdata/grp3.amiga.grp"
+}

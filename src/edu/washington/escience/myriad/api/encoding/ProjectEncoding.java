@@ -6,38 +6,40 @@ import javax.ws.rs.core.Response.Status;
 
 import com.google.common.base.Preconditions;
 
-import edu.washington.escience.myriad.RelationKey;
+import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.api.MyriaApiException;
 import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.operator.SQLiteInsert;
+import edu.washington.escience.myriad.operator.Project;
 
 /**
  * A JSON-able wrapper for the expected wire message for a new dataset.
  * 
+ * @author leelee
+ * 
  */
-public class SQLiteInsertEncoding extends OperatorEncoding<SQLiteInsert> {
-  /** The name of the dataset to be scanned. */
-  public RelationKey relationKey;
+public class ProjectEncoding extends OperatorEncoding<Project> {
+
+  public int[] argFieldList;
   public String argChild;
-  public Boolean argOverwriteTable;
 
   @Override
-  public void validate() throws MyriaApiException {
+  public void validate() {
     super.validate();
     try {
-      Preconditions.checkNotNull(relationKey);
+      Preconditions.checkNotNull(argFieldList);
       Preconditions.checkNotNull(argChild);
     } catch (Exception e) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "required fields: relation_key, arg_child");
+      throw new MyriaApiException(Status.BAD_REQUEST, "required fields: arg_field_list, arg_child");
     }
   }
 
   @Override
-  public SQLiteInsert construct() {
-    if (argOverwriteTable != null) {
-      return new SQLiteInsert(null, relationKey, argOverwriteTable);
+  public Project construct() {
+    try {
+      return new Project(argFieldList, null);
+    } catch (DbException e) {
+      throw new RuntimeException(e);
     }
-    return new SQLiteInsert(null, relationKey);
   }
 
   @Override

@@ -19,7 +19,9 @@ import javax.ws.rs.core.UriInfo;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.api.encoding.DatasetEncoding;
+import edu.washington.escience.myriad.api.encoding.TipsyDatasetEncoding;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
+import edu.washington.escience.myriad.operator.TipsyFileScan;
 
 /**
  * This is the class that handles API calls that return relation schemas.
@@ -87,6 +89,49 @@ public final class DatasetResource {
       ee.printStackTrace();
     } catch (FileNotFoundException e) {
       throw new MyriaApiException(Status.NOT_FOUND, "The data file was not found.");
+    }
+
+    /* In the response, tell the client the path to the relation. */
+    UriBuilder queryUri = uriInfo.getBaseUriBuilder();
+    return Response.created(
+        queryUri.path("dataset").path("user-" + dataset.relationKey.getUserName()).path(
+            "program-" + dataset.relationKey.getProgramName())
+            .path("relation-" + dataset.relationKey.getRelationName()).build()).build();
+  }
+
+  /**
+   * @param payload the request payload.
+   * @param uriInfo information about the current URL.
+   * @return the created dataset resource.
+   * @throws CatalogException if there is an error in the database.
+   */
+  @POST
+  @Path("/tipsy")
+  @Consumes(MediaType.APPLICATION_JSON)
+  public Response newTipsyDataset(final byte[] payload, @Context final UriInfo uriInfo) throws CatalogException {
+    /* Attempt to deserialize the object. */
+    TipsyDatasetEncoding dataset = MyriaApiUtils.deserialize(payload, TipsyDatasetEncoding.class);
+
+    /* If we already have a dataset by this name, tell the user there's a conflict. */
+    if (MyriaApiUtils.getServer().getSchema(dataset.relationKey) != null) {
+      /* Found, throw a 409 (Conflict) */
+      throw new MyriaApiException(Status.CONFLICT, "That dataset already exists.");
+    }
+
+    /* If we don't have any workers alive right now, tell the user we're busy. */
+    Set<Integer> workers = MyriaApiUtils.getServer().getAliveWorkers();
+    if (workers.size() == 0) {
+      /* Throw a 503 (Service Unavailable) */
+      throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "There are no alive workers to receive this dataset.");
+    }
+
+    /* Do the work. */
+    try {
+      MyriaApiUtils.getServer().ingestDataset(dataset.relationKey,
+          new TipsyFileScan(dataset.tipsyFilename, dataset.grpFilename, dataset.iorderFilename, true));
+    } catch (InterruptedException ee) {
+      Thread.currentThread().interrupt();
+      ee.printStackTrace();
     }
 
     /* In the response, tell the client the path to the relation. */
