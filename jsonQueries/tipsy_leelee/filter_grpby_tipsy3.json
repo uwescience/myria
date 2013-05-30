@@ -23,6 +23,24 @@
                 {
                     "arg_child": "Filter",
                     "arg_const_argument": ["1", "1.84793e16"],
+                    "op_name": "MultiGroupByAggregate",
+                    "op_type": "MultiGroupByAggregate",
+                    "arg_child": "SCAN",
+                    "arg_groupFields": [
+                        "15"
+                    ],
+                    "arg_aggFields": [
+                        "1"
+                    ],
+                    "arg_aggOperators": [
+                        [
+                            "AGG_OP_SUM"
+                        ]
+                    ]
+                },
+                {
+                    "arg_child": "MultiGroupByAggregate",
+                    "arg_const_argument": ["0", "1.84793e16"],
                     "arg_function": {
                         "type": "ConstantMultiplicationIFunction"
                     },
@@ -31,7 +49,7 @@
                 },
                 {
                     "arg_child": "Apply",
-                    "arg_field_list" : ["0", "16"],
+                    "arg_field_list" : ["0", "17"],
                     "op_name" : "Project",
                     "op_type" : "Project"
                 },
@@ -41,7 +59,7 @@
                     "op_type": "SQLiteInsert",
                     "relation_key": {
                         "program_name": "astro",
-                        "relation_name": "tipsy3_applied_project3",
+                        "relation_name": "tipsy3_applied_project5",
                         "user_name": "leelee"
                     }
                 }
