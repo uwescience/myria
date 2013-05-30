@@ -59,6 +59,7 @@ import edu.washington.escience.myriad.proto.QueryProto.QueryReport;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.util.DateTimeUtils;
 import edu.washington.escience.myriad.util.IPCUtils;
+import edu.washington.escience.myriad.util.MyriaUtils;
 
 /**
  * The master entrance.
@@ -850,16 +851,21 @@ public final class Server {
    * 
    * @param relationKey the name of the dataset.
    * @param schema the format of the tuples.
+   * @param workersToIngest restrict the workers to ingest data (null for all)
    * @param data the data.
    * @throws CatalogException if there is an error.
    * @throws InterruptedException interrupted
    */
-  public void ingestDataset(final RelationKey relationKey, final Schema schema, final byte[] data)
-      throws CatalogException, InterruptedException {
+  public void ingestDataset(final RelationKey relationKey, final Schema schema, final Set<Integer> workersToIngest,
+      final byte[] data) throws CatalogException, InterruptedException {
     /* The Master plan: scan the data and scatter it to all the workers. */
     FileScan fileScan = new FileScan(schema);
     fileScan.setInputStream(new ByteArrayInputStream(data));
-    doIngest(relationKey, schema, fileScan);
+    if (workersToIngest == null) {
+      doIngest(relationKey, schema, getAliveWorkers(), fileScan);
+    } else {
+      doIngest(relationKey, schema, workersToIngest, fileScan);
+    }
   }
 
   /**
@@ -867,16 +873,21 @@ public final class Server {
    * 
    * @param relationKey the name of the dataset.
    * @param schema the format of the tuples.
+   * @param workersToIngest restrict the workers to ingest data (null for all)
    * @param fileName the file name.
    * @throws CatalogException if there is an error.
    * @throws InterruptedException interrupted
    * @throws FileNotFoundException if the file doesn't exist
    */
-  public void ingestDataset(final RelationKey relationKey, final Schema schema, final String fileName)
-      throws CatalogException, InterruptedException, FileNotFoundException {
+  public void ingestDataset(final RelationKey relationKey, final Schema schema, final Set<Integer> workersToIngest,
+      final String fileName) throws CatalogException, InterruptedException, FileNotFoundException {
     /* The Master plan: scan the data and scatter it to all the workers. */
     FileScan fileScan = new FileScan(fileName, schema);
-    doIngest(relationKey, schema, fileScan);
+    if (workersToIngest == null) {
+      doIngest(relationKey, schema, getAliveWorkers(), fileScan);
+    } else {
+      doIngest(relationKey, schema, workersToIngest, fileScan);
+    }
   }
 
   /**
@@ -884,29 +895,25 @@ public final class Server {
    * 
    * @param relationKey the name of the dataset.
    * @param schema the format of the tuples.
+   * @param workersToIngest restrict the workers to ingest data (null for all)
    * @param fileScan the FileScan operator, constructed by either a filename or a byte[].
    * @throws InterruptedException interrupted
    * @throws CatalogException if there is an error
    */
-  private void doIngest(final RelationKey relationKey, final Schema schema, final FileScan fileScan)
-      throws InterruptedException, CatalogException {
+  private void doIngest(final RelationKey relationKey, final Schema schema, final Set<Integer> workersToIngest,
+      final FileScan fileScan) throws InterruptedException, CatalogException {
     ExchangePairID scatterId = ExchangePairID.newID();
-    int[] workersArray = new int[workers.size()];
-    int count = 0;
-    final Set<Integer> ingestWorkers = getAliveWorkers();
-    for (int i : ingestWorkers) {
-      workersArray[count] = i;
-      count++;
-    }
+
+    int[] workersArray = MyriaUtils.integerCollectionToIntArray(workersToIngest);
     ShuffleProducer scatter =
-        new ShuffleProducer(fileScan, scatterId, workersArray, new RoundRobinPartitionFunction(ingestWorkers.size()));
+        new ShuffleProducer(fileScan, scatterId, workersArray, new RoundRobinPartitionFunction(workersToIngest.size()));
 
     /* The workers' plan */
     ShuffleConsumer gather = new ShuffleConsumer(schema, scatterId, new int[] { MyriaConstants.MASTER_ID });
     SQLiteInsert insert = new SQLiteInsert(gather, relationKey, true);
     Map<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
-    for (Integer i : ingestWorkers) {
-      workerPlans.put(i, new RootOperator[] { insert });
+    for (Integer workerId : workersToIngest) {
+      workerPlans.put(workerId, new RootOperator[] { insert });
     }
 
     try {
@@ -921,7 +928,7 @@ public final class Server {
     catalog.addRelationMetadata(relationKey, schema);
 
     /* Add the round robin-partitioned shard. */
-    catalog.addStoredRelation(relationKey, ingestWorkers, "RoundRobin");
+    catalog.addStoredRelation(relationKey, workersToIngest, "RoundRobin");
   }
 
   /**
