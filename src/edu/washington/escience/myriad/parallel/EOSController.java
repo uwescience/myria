@@ -10,6 +10,7 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.operator.IDBInput;
 import edu.washington.escience.myriad.operator.Merge;
+import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.util.IPCUtils;
 import gnu.trove.impl.unmodifiable.TUnmodifiableIntIntMap;
 import gnu.trove.map.TIntIntMap;
@@ -59,7 +60,10 @@ public class EOSController extends Producer {
    * @param idbOpIDs the IDB operatorIDs in each Worker
    * */
   public EOSController(final Consumer[] children, final ExchangePairID[] idbOpIDs, final int[] workerIDs) {
-    super(new Merge(children), idbOpIDs, workerIDs, false);
+    super(null, idbOpIDs, workerIDs, false);
+    if (children != null) {
+      setChildren(new Operator[] { new Merge(children) });
+    }
     numEOI = new int[idbOpIDs.length][workerIDs.length];
     zeroCol = new ArrayList<Integer>();
     eosZeroColValue = idbOpIDs.length * workerIDs.length;
@@ -125,12 +129,10 @@ public class EOSController extends Producer {
 
   @Override
   protected void childEOS() throws DbException {
-
   }
 
   @Override
   protected void childEOI() throws DbException {
-
   }
 
 }

@@ -891,6 +891,7 @@ public class ChannelContext {
         newConnection = false;
         registered = true;
         inPool = true;
+        registeredContext.incReference();
         channelPool.add(ownerChannel);
         unregisteredNewChannels.remove(ownerChannel);
         synchronized (channelRegisterLock) {

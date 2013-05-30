@@ -26,16 +26,21 @@ import edu.washington.escience.myriad.operator.Operator;
     @Type(name = "Apply", value = ApplyEncoding.class),
     @Type(name = "CollectConsumer", value = CollectConsumerEncoding.class),
     @Type(name = "CollectProducer", value = CollectProducerEncoding.class),
+    @Type(name = "Project", value = ProjectEncoding.class),
+    @Type(name = "Consumer", value = ConsumerEncoding.class),
+    @Type(name = "ShuffleConsumer", value = ShuffleConsumerEncoding.class),
+    @Type(name = "LocalMultiwayConsumer", value = LocalMultiwayConsumerEncoding.class),
+    @Type(name = "ShuffleProducer", value = ShuffleProducerEncoding.class),
+    @Type(name = "LocalMultiwayProducer", value = LocalMultiwayProducerEncoding.class),
     @Type(name = "LocalJoin", value = LocalJoinEncoding.class),
     @Type(name = "LocalCountingJoin", value = LocalCountingJoinEncoding.class),
-    @Type(name = "Project", value = ProjectEncoding.class),
-    @Type(name = "ShuffleConsumer", value = ShuffleConsumerEncoding.class),
-    @Type(name = "ShuffleProducer", value = ShuffleProducerEncoding.class),
-    @Type(name = "SQLiteInsert", value = SQLiteInsertEncoding.class),
-    @Type(name = "SQLiteScan", value = SQLiteScanEncoding.class), @Type(name = "Filter", value = FilterEncoding.class),
-    @Type(name = "Project", value = ProjectEncoding.class),
     @Type(name = "MultiGroupByAggregate", value = MultiGroupByAggregateEncoding.class),
-    @Type(name = "Apply", value = ApplyEncoding.class) })
+    @Type(name = "SQLiteInsert", value = SQLiteInsertEncoding.class),
+    @Type(name = "EOSController", value = EOSControllerEncoding.class),
+    @Type(name = "IDBInput", value = IDBInputEncoding.class),
+    @Type(name = "Aggregate", value = AggregateEncoding.class),
+    @Type(name = "SQLiteScan", value = SQLiteScanEncoding.class) })
+>>>>>>> 0689bf1a59524e94dc681fc46cad49301539ecf6
 public abstract class OperatorEncoding<T extends Operator> implements MyriaApiEncoding {
 
   public String opName;
