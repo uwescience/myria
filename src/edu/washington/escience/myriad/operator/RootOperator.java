@@ -1,5 +1,7 @@
 package edu.washington.escience.myriad.operator;
 
+import com.google.common.base.Preconditions;
+
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -80,6 +82,7 @@ public abstract class RootOperator extends Operator {
     if (children.length != 1) {
       throw new IllegalArgumentException("a root operator must have exactly one child");
     }
+    Preconditions.checkNotNull(children[0]);
     child = children[0];
   }
 

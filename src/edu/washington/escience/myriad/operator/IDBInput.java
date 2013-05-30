@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Objects;
 
 import org.jboss.netty.channel.Channel;
 import org.slf4j.Logger;
@@ -106,20 +105,16 @@ public class IDBInput extends Operator {
    * */
   public IDBInput(final int selfIDBIdx, final ExchangePairID controllerOpID, final int controllerWorkerID,
       final Operator initialIDBInput, final Operator iterationInput, final Consumer eosControllerInput) {
+    Preconditions.checkNotNull(selfIDBIdx);
+    Preconditions.checkNotNull(controllerOpID);
+    Preconditions.checkNotNull(controllerWorkerID);
 
-    Objects.requireNonNull(controllerOpID);
-    Objects.requireNonNull(initialIDBInput);
-    Objects.requireNonNull(iterationInput);
-    Objects.requireNonNull(eosControllerInput);
-    Objects.requireNonNull(controllerWorkerID);
-    Preconditions.checkArgument(initialIDBInput.getSchema().equals(iterationInput.getSchema()));
-
+    this.selfIDBIdx = selfIDBIdx;
     this.controllerOpID = controllerOpID;
     this.controllerWorkerID = controllerWorkerID;
     this.initialIDBInput = initialIDBInput;
     this.iterationInput = iterationInput;
     this.eosControllerInput = eosControllerInput;
-    this.selfIDBIdx = selfIDBIdx;
   }
 
   /**
@@ -283,9 +278,14 @@ public class IDBInput extends Operator {
 
   @Override
   public final void setChildren(final Operator[] children) {
+    Preconditions.checkArgument(children.length == 3);
+    Preconditions.checkNotNull(children[0]);
+    Preconditions.checkNotNull(children[1]);
+    Preconditions.checkNotNull(children[2]);
     initialIDBInput = children[0];
     iterationInput = children[1];
     eosControllerInput = (Consumer) children[2];
+    Preconditions.checkArgument(initialIDBInput.getSchema().equals(iterationInput.getSchema()));
   }
 
   @Override

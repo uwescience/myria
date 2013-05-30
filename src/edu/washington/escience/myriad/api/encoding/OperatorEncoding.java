@@ -25,11 +25,18 @@ import edu.washington.escience.myriad.operator.Operator;
 @JsonSubTypes({
     @Type(name = "CollectConsumer", value = CollectConsumerEncoding.class),
     @Type(name = "CollectProducer", value = CollectProducerEncoding.class),
+    @Type(name = "Consumer", value = ConsumerEncoding.class),
+    @Type(name = "ShuffleConsumer", value = ShuffleConsumerEncoding.class),
+    @Type(name = "LocalMultiwayConsumer", value = LocalMultiwayConsumerEncoding.class),
+    @Type(name = "ShuffleProducer", value = ShuffleProducerEncoding.class),
+    @Type(name = "LocalMultiwayProducer", value = LocalMultiwayProducerEncoding.class),
     @Type(name = "LocalJoin", value = LocalJoinEncoding.class),
     @Type(name = "LocalCountingJoin", value = LocalCountingJoinEncoding.class),
-    @Type(name = "ShuffleConsumer", value = ShuffleConsumerEncoding.class),
-    @Type(name = "ShuffleProducer", value = ShuffleProducerEncoding.class),
+    @Type(name = "MultiGroupByAggregate", value = MultiGroupByAggregateEncoding.class),
     @Type(name = "SQLiteInsert", value = SQLiteInsertEncoding.class),
+    @Type(name = "EOSController", value = EOSControllerEncoding.class),
+    @Type(name = "IDBInput", value = IDBInputEncoding.class),
+    @Type(name = "Aggregate", value = AggregateEncoding.class),
     @Type(name = "SQLiteScan", value = SQLiteScanEncoding.class) })
 public abstract class OperatorEncoding<T extends Operator> implements MyriaApiEncoding {
 

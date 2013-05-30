@@ -24,13 +24,15 @@ public final class Aggregate extends Operator {
   private static final long serialVersionUID = 1L;
 
   /** The schema of the tuples returned by this operator. */
-  private final Schema schema;
+  private Schema schema;
   /** The source of tuples to be aggregated. */
   private Operator child;
   /** Does the actual aggregation work. */
   private final Aggregator[] agg;
   /** Which fields the aggregate is computed over. */
   private final int[] afields;
+  /** Aggregate operators. */
+  private final int[] aggOps;
 
   /**
    * buffer for holding results.
@@ -85,43 +87,13 @@ public final class Aggregate extends Operator {
     if (afields.length == 0) {
       throw new IllegalArgumentException("aggregation fields must not be empty");
     }
-
-    final ImmutableList.Builder<Type> gTypes = ImmutableList.builder();
-    final ImmutableList.Builder<String> gNames = ImmutableList.builder();
-
-    final Schema childSchema = child.getSchema();
-
-    this.child = child;
     this.afields = afields;
+    this.aggOps = aggOps;
     agg = new Aggregator[aggOps.length];
 
-    int idx = 0;
-    for (final int afield : afields) {
-      switch (childSchema.getColumnType(afield)) {
-        case BOOLEAN_TYPE:
-          agg[idx] = new BooleanAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          break;
-        case INT_TYPE:
-          agg[idx] = new IntegerAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          break;
-        case LONG_TYPE:
-          agg[idx] = new LongAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          break;
-        case FLOAT_TYPE:
-          agg[idx] = new FloatAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          break;
-        case DOUBLE_TYPE:
-          agg[idx] = new DoubleAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          break;
-        case STRING_TYPE:
-          agg[idx] = new StringAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          break;
-      }
-      gTypes.addAll(agg[idx].getResultSchema().getColumnTypes());
-      gNames.addAll(agg[idx].getResultSchema().getColumnNames());
-      idx++;
+    if (child != null) {
+      setChildren(new Operator[] { child });
     }
-    schema = new Schema(gTypes, gNames);
   }
 
   /**
@@ -181,6 +153,37 @@ public final class Aggregate extends Operator {
   @Override
   public void setChildren(final Operator[] children) {
     child = children[0];
+    final Schema childSchema = child.getSchema();
+    final ImmutableList.Builder<Type> gTypes = ImmutableList.builder();
+    final ImmutableList.Builder<String> gNames = ImmutableList.builder();
+
+    int idx = 0;
+    for (final int afield : afields) {
+      switch (childSchema.getColumnType(afield)) {
+        case BOOLEAN_TYPE:
+          agg[idx] = new BooleanAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
+          break;
+        case INT_TYPE:
+          agg[idx] = new IntegerAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
+          break;
+        case LONG_TYPE:
+          agg[idx] = new LongAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
+          break;
+        case FLOAT_TYPE:
+          agg[idx] = new FloatAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
+          break;
+        case DOUBLE_TYPE:
+          agg[idx] = new DoubleAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
+          break;
+        case STRING_TYPE:
+          agg[idx] = new StringAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
+          break;
+      }
+      gTypes.addAll(agg[idx].getResultSchema().getColumnTypes());
+      gNames.addAll(agg[idx].getResultSchema().getColumnNames());
+      idx++;
+    }
+    schema = new Schema(gTypes, gNames);
   }
 
 }
