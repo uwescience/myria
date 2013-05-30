@@ -132,11 +132,6 @@ public class Consumer extends LeafOperator {
 
   }
 
-  @Override
-  protected final TupleBatch fetchNext() throws DbException, InterruptedException {
-    return getTuplesNormal(true);
-  }
-
   /**
    * 
    * Retrieve a batch of tuples from the buffer of ExchangeMessages. Wait if the buffer is empty.

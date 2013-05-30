@@ -213,30 +213,6 @@ public class IDBInput extends Operator {
   }
 
   @Override
-  protected final TupleBatch fetchNext() throws DbException, InterruptedException {
-    TupleBatch tb;
-    while ((tb = initialIDBInput.next()) != null) {
-      tb = doDupElim(tb);
-      if (tb.numTuples() > 0) {
-        emptyDelta = false;
-        return tb;
-      }
-    }
-    if (!initialInputEnded) {
-      return null;
-    }
-
-    while ((tb = iterationInput.next()) != null) {
-      tb = doDupElim(tb);
-      if (tb.numTuples() > 0) {
-        emptyDelta = false;
-        return tb;
-      }
-    }
-    return null;
-  }
-
-  @Override
   public final void checkEOSAndEOI() {
     if (!initialInputEnded) {
       if (initialIDBInput.eos()) {

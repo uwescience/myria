@@ -98,37 +98,6 @@ public final class LocalCountingJoin extends Operator {
   }
 
   @Override
-  protected TupleBatch fetchNext() throws DbException, InterruptedException {
-    while (!child1.eos() || !child2.eos()) {
-      if (!child1.eos()) {
-        TupleBatch tb = child1.next();
-        if (tb != null) {
-          processChildTB(tb, true);
-        } else {
-          if (child1.eoi()) {
-            child1.setEOI(false);
-            childrenEOI[0] = true;
-          }
-        }
-      }
-      if (!child2.eos()) {
-        TupleBatch tb = child2.next();
-        if (tb != null) {
-          processChildTB(tb, false);
-        } else {
-          if (child2.eoi()) {
-            child2.setEOI(false);
-            childrenEOI[1] = true;
-          }
-        }
-      }
-    }
-    TupleBatchBuffer tmp = new TupleBatchBuffer(outputSchema);
-    tmp.put(0, ans);
-    return tmp.popAny();
-  }
-
-  @Override
   public void checkEOSAndEOI() {
     if (child1.eos() && child2.eos()) {
       setEOS();

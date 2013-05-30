@@ -228,48 +228,6 @@ public final class LocalJoinRefOnly extends Operator {
    * */
   private final boolean[] childrenEOI = new boolean[2];
 
-  @Override
-  protected TupleBatch fetchNext() throws DbException, InterruptedException {
-    TupleBatch nexttb = ans.popFilled();
-    while (nexttb == null) {
-      boolean hasNewTuple = false;
-      TupleBatch tb = child1.next();
-      if (tb != null) {
-        hasNewTuple = true;
-        processChildTB(tb, true);
-      } else {
-        if (child1.eoi()) {
-          child1.setEOI(false);
-          childrenEOI[0] = true;
-        }
-      }
-      tb = child2.next();
-      if (tb != null) {
-        hasNewTuple = true;
-        processChildTB(tb, false);
-      } else {
-        if (child2.eoi()) {
-          child2.setEOI(false);
-          childrenEOI[1] = true;
-        }
-      }
-      nexttb = ans.popFilled();
-      if (nexttb != null) {
-        return nexttb;
-      }
-      if (!hasNewTuple) {
-        break;
-      }
-    }
-    if (nexttb == null) {
-      if (ans.numTuples() > 0) {
-        nexttb = ans.popAny();
-      }
-      checkEOSAndEOI();
-    }
-    return nexttb;
-  }
-
   /**
    * In blocking mode, asynchronous EOI semantic may make system hang. Only synchronous EOI semantic works.
    * 

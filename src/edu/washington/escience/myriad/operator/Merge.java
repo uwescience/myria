@@ -51,17 +51,6 @@ public final class Merge extends Operator {
   }
 
   @Override
-  protected TupleBatch fetchNext() throws DbException, InterruptedException {
-    for (Operator child : children) {
-      TupleBatch tb = child.next();
-      if (tb != null) {
-        return tb;
-      }
-    }
-    return null;
-  }
-
-  @Override
   protected TupleBatch fetchNextReady() throws DbException {
     int mergedCount = 0;
     while (mergedCount < children.length) {

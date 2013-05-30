@@ -39,13 +39,6 @@ public class DelayInjector extends Operator {
   private static final long serialVersionUID = 1L;
 
   @Override
-  protected final TupleBatch fetchNext() throws DbException, InterruptedException {
-    TupleBatch tb = child.next();
-    Thread.sleep(delayInMS);
-    return tb;
-  }
-
-  @Override
   public final Operator[] getChildren() {
     return new Operator[] { child };
   }

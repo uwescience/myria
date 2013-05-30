@@ -112,7 +112,7 @@ public final class FileScan extends LeafOperator {
   }
 
   @Override
-  protected TupleBatch fetchNext() throws DbException {
+  protected TupleBatch fetchNextReady() throws DbException {
     /* Let's assume that the scanner always starts at the beginning of a line. */
     while (scanner.hasNext() && (buffer.numTuples() < TupleBatch.BATCH_SIZE)) {
       lineNumber++;
@@ -153,11 +153,6 @@ public final class FileScan extends LeafOperator {
       }
     }
     return buffer.popAny();
-  }
-
-  @Override
-  public TupleBatch fetchNextReady() throws DbException {
-    return fetchNext();
   }
 
   @Override

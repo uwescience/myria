@@ -166,18 +166,6 @@ public final class DupElimRefOnly extends Operator {
   }
 
   @Override
-  protected TupleBatch fetchNext() throws DbException, InterruptedException {
-    TupleBatch tb = null;
-    while ((tb = child.next()) != null) {
-      tb = doDupElim(tb);
-      if (tb.numTuples() > 0) {
-        return tb;
-      }
-    }
-    return null;
-  }
-
-  @Override
   public TupleBatch fetchNextReady() throws DbException {
 
     TupleBatch tb = null;
