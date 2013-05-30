@@ -75,6 +75,12 @@ public final class DatasetResource {
       throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "There are no alive workers to receive this dataset.");
     }
 
+    /* Moreover, check whether all requested workers are alive. */
+    if (dataset.workers != null && !MyriaApiUtils.getServer().getAliveWorkers().containsAll(dataset.workers)) {
+      /* Throw a 503 (Service Unavailable) */
+      throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "Not all requested workers are alive");
+    }
+
     /* Do the work. */
     try {
       if (dataset.data != null) {

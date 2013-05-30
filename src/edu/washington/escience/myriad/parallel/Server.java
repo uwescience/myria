@@ -903,11 +903,6 @@ public final class Server {
       final FileScan fileScan) throws InterruptedException, CatalogException {
     ExchangePairID scatterId = ExchangePairID.newID();
 
-    // Throw an exception in case of dead nodes in the set of workers to ingest data.
-    if (!getAliveWorkers().containsAll(workersToIngest)) {
-      throw new CatalogException("Dead nodes on the list of data workers");
-    }
-
     // TODO Major refactor to remove arrays from operators, and remove this conversion
     int[] workersArray = new int[workersToIngest.size()];
     int i = 0;
