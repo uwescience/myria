@@ -1,0 +1,268 @@
+{
+  "raw_datalog" : "smallTableJoin(x,z) :- smallTable(x,y),smallTable(y,z).",
+  "logical_ra" : "INSERT(JOIN(SCAN1,SCAN2))",
+  "expected_result_size" : "107",
+  "query_plan" : {
+    "1" : [
+	[
+        {
+          "op_name" : "SCAN1",
+          "op_type" : "SQLiteScan",
+          "relation_key" : {
+            "user_name" : "jwang",
+            "program_name" : "global_join",
+            "relation_name" : "smallTable"
+          }
+        },
+
+        {
+          "op_name" : "SP1",
+          "op_type" : "ShuffleProducer",
+          "arg_child" : "SCAN1",
+          "arg_worker_ids" : ["1","2","3","4"],
+          "arg_operator_id" : "0",
+          "arg_pf" : {
+            "type" : "SingleFieldHash",
+            "index" : "1"
+          }
+        }
+	],
+
+	[
+        {
+          "op_name" : "SCAN2",
+          "op_type" : "SQLiteScan",
+          "relation_key" : {
+            "user_name" : "jwang",
+            "program_name" : "global_join",
+            "relation_name" : "smallTable"
+          }
+        },
+
+        {
+          "op_name" : "SP2",
+          "op_type" : "ShuffleProducer",
+          "arg_child" : "SCAN2",
+          "arg_worker_ids" : ["1","2","3","4"],
+          "arg_operator_id" : "1",
+          "arg_pf" : {
+            "type" : "SingleFieldHash",
+            "index" : "0"
+          }
+        }
+	],
+
+	[
+        {
+          "op_name" : "SC1",
+          "op_type" : "ShuffleConsumer",
+          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
+          "arg_worker_ids" : ["1","2"],
+          "arg_operator_id" : "0"
+        },
+
+        {
+          "op_name" : "SC2",
+          "op_type" : "ShuffleConsumer",
+          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
+          "arg_worker_ids" : ["1","2"],
+          "arg_operator_id" : "1"
+        },
+
+        {
+          "op_name" : "JOIN",
+          "op_type" : "LocalJoin",
+          "arg_child1" : "SC1",
+          "arg_columns1" : ["1"],
+          "arg_child2" : "SC2",
+          "arg_columns2" : ["0"],
+          "arg_select1" : ["0"],
+          "arg_select2" : ["1"]
+        },
+        
+        {
+          "op_name" : "CP1",
+          "op_type" : "CollectProducer",
+          "arg_child" : "JOIN",
+          "arg_worker_id" : "0",
+          "arg_operator_id" : "2"
+        }
+     	]
+	],
+
+    "2" : [
+	[
+        {
+          "op_name" : "SCAN1",
+          "op_type" : "SQLiteScan",
+          "relation_key" : {
+            "user_name" : "jwang",
+            "program_name" : "global_join",
+            "relation_name" : "smallTable"
+          }
+        },
+
+        {
+          "op_name" : "SP1",
+          "op_type" : "ShuffleProducer",
+          "arg_child" : "SCAN1",
+          "arg_worker_ids" : ["1","2","3","4"],
+          "arg_operator_id" : "0",
+          "arg_pf" : {
+            "type" : "SingleFieldHash",
+            "index" : "1"
+          }
+        }
+	],
+
+	[
+        {
+          "op_name" : "SCAN2",
+          "op_type" : "SQLiteScan",
+          "relation_key" : {
+            "user_name" : "jwang",
+            "program_name" : "global_join",
+            "relation_name" : "smallTable"
+          }
+        },
+
+        {
+          "op_name" : "SP2",
+          "op_type" : "ShuffleProducer",
+          "arg_child" : "SCAN2",
+          "arg_worker_ids" : ["1","2","3","4"],
+          "arg_operator_id" : "1",
+          "arg_pf" : {
+            "type" : "SingleFieldHash",
+            "index" : "0"
+          }
+        }
+	],
+
+	[
+        {
+          "op_name" : "SC1",
+          "op_type" : "ShuffleConsumer",
+          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
+          "arg_worker_ids" : ["1","2"],
+          "arg_operator_id" : "0"
+        },
+
+        {
+          "op_name" : "SC2",
+          "op_type" : "ShuffleConsumer",
+          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
+          "arg_worker_ids" : ["1","2"],
+          "arg_operator_id" : "1"
+        },
+
+        {
+          "op_name" : "JOIN",
+          "op_type" : "LocalJoin",
+          "arg_child1" : "SC1",
+          "arg_columns1" : ["1"],
+          "arg_child2" : "SC2",
+          "arg_columns2" : ["0"],
+          "arg_select1" : ["0"],
+          "arg_select2" : ["1"]
+        },
+        
+        {
+          "op_name" : "CP1",
+          "op_type" : "CollectProducer",
+          "arg_child" : "JOIN",
+          "arg_worker_id" : "0",
+          "arg_operator_id" : "2"
+        }
+     	]
+	],
+
+    "3" : [
+	[
+        {
+          "op_name" : "SC1",
+          "op_type" : "ShuffleConsumer",
+          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
+          "arg_worker_ids" : ["1","2"],
+          "arg_operator_id" : "0"
+        },
+
+        {
+          "op_name" : "SC2",
+          "op_type" : "ShuffleConsumer",
+          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
+          "arg_worker_ids" : ["1","2"],
+          "arg_operator_id" : "1"
+        },
+
+        {
+          "op_name" : "JOIN",
+          "op_type" : "LocalJoin",
+          "arg_child1" : "SC1",
+          "arg_columns1" : ["1"],
+          "arg_child2" : "SC2",
+          "arg_columns2" : ["0"],
+          "arg_select1" : ["0"],
+          "arg_select2" : ["1"]
+        },
+        
+        {
+          "op_name" : "CP1",
+          "op_type" : "CollectProducer",
+          "arg_child" : "JOIN",
+          "arg_worker_id" : "0",
+          "arg_operator_id" : "2"
+        }
+     	]
+	],
+
+    "4" : [
+	[
+        {
+          "op_name" : "SC1",
+          "op_type" : "ShuffleConsumer",
+          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
+          "arg_worker_ids" : ["1","2"],
+          "arg_operator_id" : "0"
+        },
+
+        {
+          "op_name" : "SC2",
+          "op_type" : "ShuffleConsumer",
+          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
+          "arg_worker_ids" : ["1","2"],
+          "arg_operator_id" : "1"
+        },
+
+        {
+          "op_name" : "JOIN",
+          "op_type" : "LocalJoin",
+          "arg_child1" : "SC1",
+          "arg_columns1" : ["1"],
+          "arg_child2" : "SC2",
+          "arg_columns2" : ["0"],
+          "arg_select1" : ["0"],
+          "arg_select2" : ["1"]
+        },
+        
+        {
+          "op_name" : "CP1",
+          "op_type" : "CollectProducer",
+          "arg_child" : "JOIN",
+          "arg_worker_id" : "0",
+          "arg_operator_id" : "2"
+        }
+     	]
+	],
+
+    "0" : [[
+        {
+          "op_name" : "CC1",
+          "op_type" : "CollectConsumer",
+          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
+          "arg_worker_ids" : ["1","2","3","4"],
+          "arg_operator_id" : 2
+        }
+	]]
+  }
+}
