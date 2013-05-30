@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
@@ -289,17 +290,20 @@ public final class LocalJoin extends Operator {
 
     TupleBatch child1TB = null;
     TupleBatch child2TB = null;
-
     int numEOS = 0;
-    if (child1.eos()) {
-      numEOS = 1;
-    }
-    if (child2.eos()) {
-      numEOS += 1;
-    }
-    int numNoData = numEOS;
+    int numNoData = 0;
 
     while (numEOS < 2 && numNoData < 2) {
+
+      numEOS = 0;
+      if (child1.eos()) {
+        numEOS += 1;
+      }
+      if (child2.eos()) {
+        numEOS += 1;
+      }
+      numNoData = numEOS;
+
       child1TB = null;
       child2TB = null;
       if (!child1.eos()) {
@@ -350,6 +354,8 @@ public final class LocalJoin extends Operator {
         }
       }
     }
+    Preconditions.checkArgument(numEOS <= 2);
+    Preconditions.checkArgument(numNoData <= 2);
 
     checkEOSAndEOI();
     if (eoi() || eos()) {
