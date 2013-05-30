@@ -855,12 +855,16 @@ public final class Server {
    * @throws CatalogException if there is an error.
    * @throws InterruptedException interrupted
    */
-  public void ingestDataset(final RelationKey relationKey, final Schema schema, final int[] workersToIngest,
+  public void ingestDataset(final RelationKey relationKey, final Schema schema, final Set<Integer> workersToIngest,
       final byte[] data) throws CatalogException, InterruptedException {
     /* The Master plan: scan the data and scatter it to all the workers. */
     FileScan fileScan = new FileScan(schema);
     fileScan.setInputStream(new ByteArrayInputStream(data));
-    doIngest(relationKey, schema, workersToIngest, fileScan);
+    if (workersToIngest == null) {
+      doIngest(relationKey, schema, getAliveWorkers(), fileScan);
+    } else {
+      doIngest(relationKey, schema, workersToIngest, fileScan);
+    }
   }
 
   /**
@@ -874,11 +878,15 @@ public final class Server {
    * @throws InterruptedException interrupted
    * @throws FileNotFoundException if the file doesn't exist
    */
-  public void ingestDataset(final RelationKey relationKey, final Schema schema, final int[] workersToIngest,
+  public void ingestDataset(final RelationKey relationKey, final Schema schema, final Set<Integer> workersToIngest,
       final String fileName) throws CatalogException, InterruptedException, FileNotFoundException {
     /* The Master plan: scan the data and scatter it to all the workers. */
     FileScan fileScan = new FileScan(fileName, schema);
-    doIngest(relationKey, schema, workersToIngest, fileScan);
+    if (workersToIngest == null) {
+      doIngest(relationKey, schema, getAliveWorkers(), fileScan);
+    } else {
+      doIngest(relationKey, schema, workersToIngest, fileScan);
+    }
   }
 
   /**
@@ -891,32 +899,30 @@ public final class Server {
    * @throws InterruptedException interrupted
    * @throws CatalogException if there is an error
    */
-  private void doIngest(final RelationKey relationKey, final Schema schema, final int[] workersToIngest,
+  private void doIngest(final RelationKey relationKey, final Schema schema, final Set<Integer> workersToIngest,
       final FileScan fileScan) throws InterruptedException, CatalogException {
     ExchangePairID scatterId = ExchangePairID.newID();
 
-    int[] workersArray;
-    if (workersToIngest == null) {
-      workersArray = new int[getAliveWorkers().size()];
-      int count = 0;
-      for (int i : getAliveWorkers()) {
-        workersArray[count] = i;
-        count++;
-      }
-    } else {
-      // valmeida: no sanity checks, assuming the array is correct.
-      workersArray = workersToIngest;
+    // Throw an exception in case of dead nodes in the set of workers to ingest data.
+    if (!getAliveWorkers().containsAll(workersToIngest)) {
+      throw new CatalogException("Dead nodes on the list of data workers");
     }
 
+    // TODO Major refactor to remove arrays from operators, and remove this conversion
+    int[] workersArray = new int[workersToIngest.size()];
+    int i = 0;
+    for (Integer workerId : workersToIngest) {
+      workersArray[i++] = workerId;
+    }
     ShuffleProducer scatter =
-        new ShuffleProducer(fileScan, scatterId, workersArray, new RoundRobinPartitionFunction(workersArray.length));
+        new ShuffleProducer(fileScan, scatterId, workersArray, new RoundRobinPartitionFunction(workersToIngest.size()));
 
     /* The workers' plan */
     ShuffleConsumer gather = new ShuffleConsumer(schema, scatterId, new int[] { MyriaConstants.MASTER_ID });
     SQLiteInsert insert = new SQLiteInsert(gather, relationKey, true);
     Map<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
-    for (Integer i : workersArray) {
-      workerPlans.put(i, new RootOperator[] { insert });
+    for (Integer workerId : workersToIngest) {
+      workerPlans.put(workerId, new RootOperator[] { insert });
     }
 
     try {
@@ -931,7 +937,7 @@ public final class Server {
     catalog.addRelationMetadata(relationKey, schema);
 
     /* Add the round robin-partitioned shard. */
-    catalog.addStoredRelation(relationKey, workersArray, "RoundRobin");
+    catalog.addStoredRelation(relationKey, workersToIngest, "RoundRobin");
   }
 
   /**
