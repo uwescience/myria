@@ -15,23 +15,22 @@ def remote_rm(hostname, dirname, username):
 def rm_deployment(config):
     """Copies the master and worker catalogs to the remote hosts."""
     description = config['description']
-    path = config['path']
     master = config['master']
     workers = config['workers']
     username = config['username']
 
-    # Make directories on master
-    (hostname, _) = master
+    # Remove directories on master
+    (hostname, _, path) = master
     if remote_rm(hostname, "%s/%s-files" \
             % (path, description), username):
         raise Exception("Error removing directory on master %s" \
                 % (hostname,))
 
-    for (i, (hostname, _)) in enumerate(workers):
+    for (i, (hostname, _, path)) in enumerate(workers):
         # Workers are numbered from 1, not 0
         worker_id = i + 1
 
-        # Make directories on the worker
+        # Remove directories on the worker
         if remote_rm(hostname, "%s/%s-files" \
                 % (path, description), username):
             raise Exception("Error removing directory on worker %d %s" \
