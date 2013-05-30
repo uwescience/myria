@@ -59,6 +59,7 @@ import edu.washington.escience.myriad.proto.QueryProto.QueryReport;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.util.DateTimeUtils;
 import edu.washington.escience.myriad.util.IPCUtils;
+import edu.washington.escience.myriad.util.MyriaUtils;
 
 /**
  * The master entrance.
@@ -903,12 +904,7 @@ public final class Server {
       final FileScan fileScan) throws InterruptedException, CatalogException {
     ExchangePairID scatterId = ExchangePairID.newID();
 
-    // TODO Major refactor to remove arrays from operators, and remove this conversion
-    int[] workersArray = new int[workersToIngest.size()];
-    int i = 0;
-    for (Integer workerId : workersToIngest) {
-      workersArray[i++] = workerId;
-    }
+    int[] workersArray = MyriaUtils.integerCollectionToIntArray(workersToIngest);
     ShuffleProducer scatter =
         new ShuffleProducer(fileScan, scatterId, workersArray, new RoundRobinPartitionFunction(workersToIngest.size()));
 
