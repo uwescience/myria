@@ -12,10 +12,9 @@ def copy_distribution(config):
     "Copy the distribution (jar and libs and conf) to compute nodes."
     nodes = config['nodes']
     description = config['description']
-    path = config['path']
     username = config['username']
 
-    for (hostname, _) in nodes:
+    for (hostname, _, path) in nodes:
         if hostname != 'localhost':
             remote_path = "%s@%s:%s/%s-files" % (username, hostname, path, description)
         else:

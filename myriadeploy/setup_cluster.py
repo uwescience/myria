@@ -6,7 +6,7 @@ import subprocess
 import sys
 
 def host_port_list(workers):
-    return [str(x) + ':' + str(y) for (x, y) in workers]
+    return [str(x) + ':' + str(y) for (x, y, _) in workers]
 
 def make_catalog(config):
     """Creates a Myria catalog (running the Java program to do so) from the
@@ -24,6 +24,7 @@ given deployment configuration."""
             description, \
             str(len(nodes))]
     args += host_port_list(nodes)
+
     if subprocess.call(args):
         print >> sys.stderr, "error making the Catalog"
         sys.exit(1)
@@ -56,13 +57,12 @@ def copy_worker_catalog(hostname, dirname, path, i, username):
 def copy_catalogs(config):
     """Copies the master and worker catalogs to the remote hosts."""
     description = config['description']
-    path = config['path']
     master = config['master']
     workers = config['workers']
     username = config['username']
 
     # Make directories on master
-    (hostname, _) = master
+    (hostname, _, path) = master
     if remote_mkdir(hostname, "%s/%s-files/%s" \
             % (path, description, description), username):
         raise Exception("Error making directory on master %s" \
@@ -71,7 +71,7 @@ def copy_catalogs(config):
     if copy_master_catalog(hostname, description, path, username):
         raise Exception("Error copying master.catalog to %s" % (hostname,))
 
-    for (i, (hostname, _)) in enumerate(workers):
+    for (i, (hostname, _, path)) in enumerate(workers):
         # Workers are numbered from 1, not 0
         worker_id = i + 1
 
@@ -88,10 +88,9 @@ def copy_distribution(config):
     "Copy the distribution (jar and libs and conf) to compute nodes."
     nodes = config['nodes']
     description = config['description']
-    path = config['path']
     username = config['username']
 
-    for (hostname, _) in nodes:
+    for (hostname, _, path) in nodes:
         if hostname != 'localhost':
             remote_path = "%s@%s:%s/%s-files" % (username, hostname, path, description)
         else:

@@ -10,13 +10,12 @@ import sys
 def start_workers(config):
     "Start all Myria workers in the specified deployment."
     description = config['description']
-    path = config['path']
     workers = config['workers']
     username = config['username']
     max_heap_size = config['max_heap_size']
 
     worker_id = 0
-    for (hostname, _) in workers:
+    for (hostname, _, path) in workers:
         worker_id = worker_id + 1
         cmd = "cd %s/%s-files; nohup java -cp myriad-0.1.jar:conf -Djava.library.path=sqlite4java-282 " % (path, description) + max_heap_size + " edu.washington.escience.myriad.parallel.Worker --workingDir %s/worker_%d 0</dev/null 1>worker_%d_stdout 2>worker_%d_stderr &" % (description, worker_id, worker_id, worker_id)
         args = ["ssh", "%s@%s" % (username, hostname), cmd]
