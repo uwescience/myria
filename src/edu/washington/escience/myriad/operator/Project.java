@@ -1,5 +1,8 @@
 package edu.washington.escience.myriad.operator;
 
+import java.util.Objects;
+
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.DbException;
@@ -20,7 +23,7 @@ public final class Project extends Operator {
   /**
    * The result schema.
    * */
-  private final Schema schema;
+  private Schema schema;
   /**
    * The column indices to remain.
    * */
@@ -34,7 +37,9 @@ public final class Project extends Operator {
   public Project(final int[] fieldList, final Operator child) throws DbException {
     this.child = child;
     outColumnIndices = fieldList;
-    schema = child.getSchema().getSubSchema(fieldList);
+    if (child != null) {
+      schema = child.getSchema().getSubSchema(outColumnIndices);
+    }
   }
 
   @Override
@@ -72,13 +77,14 @@ public final class Project extends Operator {
 
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+    schema = child.getSchema().getSubSchema(outColumnIndices);
   }
 
   @Override
   public void setChildren(final Operator[] children) {
-    if (child != children[0]) {
-      child = children[0];
-    }
+    Preconditions
+        .checkArgument(children != null && children.length == 1, "expecting a non-null Operator[] of length 1");
+    child = Objects.requireNonNull(children[0]);
+    schema = child.getSchema().getSubSchema(outColumnIndices);
   }
-
 }
