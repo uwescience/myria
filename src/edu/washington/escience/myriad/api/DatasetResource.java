@@ -75,12 +75,18 @@ public final class DatasetResource {
       throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "There are no alive workers to receive this dataset.");
     }
 
+    /* Moreover, check whether all requested workers are alive. */
+    if (dataset.workers != null && !MyriaApiUtils.getServer().getAliveWorkers().containsAll(dataset.workers)) {
+      /* Throw a 503 (Service Unavailable) */
+      throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "Not all requested workers are alive");
+    }
+
     /* Do the work. */
     try {
       if (dataset.data != null) {
-        MyriaApiUtils.getServer().ingestDataset(dataset.relationKey, dataset.schema, dataset.data);
+        MyriaApiUtils.getServer().ingestDataset(dataset.relationKey, dataset.schema, dataset.workers, dataset.data);
       } else {
-        MyriaApiUtils.getServer().ingestDataset(dataset.relationKey, dataset.schema, dataset.fileName);
+        MyriaApiUtils.getServer().ingestDataset(dataset.relationKey, dataset.schema, dataset.workers, dataset.fileName);
       }
     } catch (InterruptedException ee) {
       Thread.currentThread().interrupt();

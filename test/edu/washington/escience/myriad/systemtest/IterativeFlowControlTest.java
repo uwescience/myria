@@ -110,7 +110,7 @@ public class IterativeFlowControlTest extends SystemTestBase {
         if (s[i][j]) {
           result.put(0, (long) i);
           result.put(1, (long) j);
-          LOGGER.debug(i + "\t" + j);
+          // LOGGER.debug(i + "\t" + j);
         }
       }
     }

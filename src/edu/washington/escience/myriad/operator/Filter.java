@@ -19,15 +19,7 @@ public final class Filter extends Operator {
   /**
    * The operator.
    * */
-  private final Predicate.Op op;
-  /**
-   * the operand constant.
-   * */
-  private final Object operand;
-  /**
-   * the index of the column to do the filtering.
-   * */
-  private final int columnIndex;
+  private final Predicate predicate;
   /**
    * the child.
    * */
@@ -36,15 +28,11 @@ public final class Filter extends Operator {
   /**
    * Constructor accepts a predicate to apply and a child operator to read tuples to filter from.
    * 
-   * @param op the operation.
-   * @param operand the operand constant.
-   * @param fieldIdx the index of the column to do the filtering.
+   * @param predicate the predicate by which to filter tuples.
    * @param child The child operator
    */
-  public Filter(final Predicate.Op op, final int fieldIdx, final Object operand, final Operator child) {
-    this.op = op;
-    columnIndex = fieldIdx;
-    this.operand = operand;
+  public Filter(final Predicate predicate, final Operator child) {
+    this.predicate = predicate;
     this.child = child;
   }
 
@@ -59,7 +47,7 @@ public final class Filter extends Operator {
 
     while ((tmp = child.next()) != null) {
       if (tmp.numTuples() > 0) {
-        tmp = tmp.filter(columnIndex, op, operand);
+        tmp = tmp.filter(predicate);
         if (tmp.numTuples() > 0) {
           return tmp;
         }
@@ -74,7 +62,7 @@ public final class Filter extends Operator {
     tmp = child.nextReady();
     while (tmp != null) {
       // tmp = child.next();
-      tmp = tmp.filter(columnIndex, op, operand);
+      tmp = tmp.filter(predicate);
       if (tmp.numTuples() > 0) {
         return tmp;
       }

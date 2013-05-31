@@ -1,5 +1,7 @@
 package edu.washington.escience.myriad.api.encoding;
 
+import java.util.Set;
+
 import javax.ws.rs.core.Response.Status;
 
 import com.google.common.base.Preconditions;
@@ -12,6 +14,7 @@ public class DatasetEncoding implements MyriaApiEncoding {
   public RelationKey relationKey;
   public Schema schema;
   public String fileName;
+  public Set<Integer> workers;
   public byte[] data;
 
   @Override

@@ -9,6 +9,7 @@ import java.util.Objects;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myriad.column.Column;
+import edu.washington.escience.myriad.column.ColumnBuilder;
 import edu.washington.escience.myriad.column.ColumnFactory;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.util.IPCUtils;
@@ -27,7 +28,7 @@ public class TupleBatchBuffer {
   /** List of completed TupleBatch objects. */
   private final List<List<Column<?>>> readyTuples;
   /** Internal state used to build up a TupleBatch. */
-  private List<Column<?>> currentColumns;
+  private List<ColumnBuilder<?>> currentBuildingColumns;
   /** Internal state representing which columns are ready in the current tuple. */
   private final BitSet columnsReady;
   /** Internal state representing the number of columns that are ready in the current tuple. */
@@ -43,7 +44,7 @@ public class TupleBatchBuffer {
   public TupleBatchBuffer(final Schema schema) {
     this.schema = Objects.requireNonNull(schema);
     readyTuples = new LinkedList<List<Column<?>>>();
-    currentColumns = ColumnFactory.allocateColumns(schema);
+    currentBuildingColumns = ColumnFactory.allocateColumns(schema);
     numColumns = schema.numColumns();
     columnsReady = new BitSet(numColumns);
     numColumnsReady = 0;
@@ -55,10 +56,23 @@ public class TupleBatchBuffer {
    * */
   public final void clear() {
     columnsReady.clear();
-    currentColumns.clear();
+    currentBuildingColumns.clear();
     currentInProgressTuples = 0;
     numColumnsReady = 0;
     readyTuples.clear();
+  }
+
+  /**
+   * Build the in progress columns. The builders' states are untouched. They can keep building.
+   * 
+   * @return the built in progress columns.
+   * */
+  private List<Column<?>> getInProgressColumns() {
+    List<Column<?>> newColumns = new ArrayList<Column<?>>(currentBuildingColumns.size());
+    for (ColumnBuilder<?> cb : currentBuildingColumns) {
+      newColumns.add(cb.forkNewBuilder().build());
+    }
+    return newColumns;
   }
 
   /**
@@ -73,9 +87,12 @@ public class TupleBatchBuffer {
     if (currentInProgressTuples == 0) {
       return false;
     }
-    // readyTuples.add(new TupleBatch(schema, currentColumns, currentInProgressTuples));
-    readyTuples.add(currentColumns);
-    currentColumns = ColumnFactory.allocateColumns(schema);
+    List<Column<?>> buildingColumns = new ArrayList<Column<?>>(currentBuildingColumns.size());
+    for (ColumnBuilder<?> cb : currentBuildingColumns) {
+      buildingColumns.add(cb.build());
+    }
+    readyTuples.add(buildingColumns);
+    currentBuildingColumns = ColumnFactory.allocateColumns(schema);
     currentInProgressTuples = 0;
     return true;
   }
@@ -91,7 +108,7 @@ public class TupleBatchBuffer {
       output.add(new TupleBatch(schema, columns, TupleBatch.BATCH_SIZE));
     }
     if (currentInProgressTuples > 0) {
-      output.add(new TupleBatch(schema, currentColumns, currentInProgressTuples));
+      output.add(new TupleBatch(schema, getInProgressColumns(), currentInProgressTuples));
     }
     return output;
   }
@@ -107,7 +124,7 @@ public class TupleBatchBuffer {
       output.add(columns);
     }
     if (currentInProgressTuples > 0) {
-      output.add(currentColumns);
+      output.add(getInProgressColumns());
     }
     return output;
   }
@@ -124,7 +141,7 @@ public class TupleBatchBuffer {
         output.add(IPCUtils.normalDataMessage(columns, TupleBatch.BATCH_SIZE));
       }
       if (currentInProgressTuples > 0) {
-        output.add(IPCUtils.normalDataMessage(currentColumns, currentInProgressTuples));
+        output.add(IPCUtils.normalDataMessage(getInProgressColumns(), currentInProgressTuples));
       }
     }
     return output;
@@ -152,7 +169,7 @@ public class TupleBatchBuffer {
     if (another.currentInProgressTuples > 0) {
       for (int row = 0; row < another.currentInProgressTuples; row++) {
         int column = 0;
-        for (final Column<?> c : another.currentColumns) {
+        for (final Column<?> c : another.getInProgressColumns()) {
           put(column, c.get(row));
           column++;
         }
@@ -183,7 +200,7 @@ public class TupleBatchBuffer {
     if (tupleBatchIndex < readyTuples.size()) {
       return readyTuples.get(tupleBatchIndex).get(colIndex).get(tupleIndex);
     }
-    return currentColumns.get(colIndex).get(tupleIndex);
+    return currentBuildingColumns.get(colIndex).get(tupleIndex);
 
   }
 
@@ -297,7 +314,7 @@ public class TupleBatchBuffer {
     if (columnsReady.get(column)) {
       throw new RuntimeException("Need to fill up one row of TupleBatchBuffer before starting new one");
     }
-    currentColumns.get(column).putObject(value);
+    currentBuildingColumns.get(column).appendObject(value);
     columnsReady.set(column, true);
     numColumnsReady++;
     if (numColumnsReady == numColumns) {

@@ -7,6 +7,7 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -19,6 +20,7 @@ import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.column.Column;
+import edu.washington.escience.myriad.column.ColumnBuilder;
 import edu.washington.escience.myriad.column.ColumnFactory;
 import edu.washington.escience.myriad.util.JdbcUtils;
 
@@ -258,7 +260,7 @@ class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
   public TupleBatch next() {
     /* Allocate TupleBatch parameters */
     final int numFields = schema.numColumns();
-    final List<Column<?>> columns = ColumnFactory.allocateColumns(schema);
+    final List<ColumnBuilder<?>> columnBuilders = ColumnFactory.allocateColumns(schema);
 
     /**
      * Loop through resultSet, adding one row at a time. Stop when numTuples hits BATCH_SIZE or there are no more
@@ -275,12 +277,17 @@ class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
         }
         for (int colIdx = 0; colIdx < numFields; ++colIdx) {
           /* Warning: JDBC is 1-indexed */
-          columns.get(colIdx).putFromJdbc(resultSet, colIdx + 1);
+          columnBuilders.get(colIdx).appendFromJdbc(resultSet, colIdx + 1);
         }
       }
     } catch (final SQLException e) {
       LOGGER.error("Got SQLException:" + e + "in JdbcTupleBatchIterator.next()");
       throw new RuntimeException(e.getMessage());
+    }
+
+    List<Column<?>> columns = new ArrayList<Column<?>>(columnBuilders.size());
+    for (ColumnBuilder<?> cb : columnBuilders) {
+      columns.add(cb.build());
     }
 
     return new TupleBatch(schema, columns, numTuples);
