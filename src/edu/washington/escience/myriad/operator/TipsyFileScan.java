@@ -143,8 +143,7 @@ public class TipsyFileScan extends LeafOperator {
       iOrderInputStream = new FileInputStream(iOrderFileName);
       grpInputStream = new FileInputStream(grpFileName);
     } catch (FileNotFoundException e) {
-      e.printStackTrace();
-      return;
+      throw new DbException(e);
     }
     int ntot = -1;
     try {
@@ -333,8 +332,8 @@ public class TipsyFileScan extends LeafOperator {
 
   /**
    * Construct tuples for gas particle records. The expected dark particles schema in the bin file is mass, x, y, z, vx,
-   * vy, vz, metals, tform, eps, phi. Merge the record in the binary file with iOrder and group number and fill in the
-   * each tuple column accordingly.
+   * >>>>>>> master vy, vz, metals, tform, eps, phi. Merge the record in the binary file with iOrder and group number
+   * and fill in the each tuple column accordingly.
    * 
    * @throws DbException if error reading from file.
    */

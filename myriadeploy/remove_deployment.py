@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 
 import myriadeploy
+import setup_cluster
 
 import subprocess
 import sys
 
 def remote_rm(hostname, dirname, username):
+    print hostname
     if hostname != 'localhost':
         args = ["ssh", "%s@%s" % (username, hostname), "rm", "-rf", dirname]
     else:
@@ -15,23 +17,24 @@ def remote_rm(hostname, dirname, username):
 def rm_deployment(config):
     """Copies the master and worker catalogs to the remote hosts."""
     description = config['description']
-    path = config['path']
+    default_path = config['path']
     master = config['master']
     workers = config['workers']
     username = config['username']
 
-    # Make directories on master
-    (hostname, _) = master
+    # Remove directories on master
+    (hostname, _, path) = setup_cluster.get_host_port_path(master, default_path)
     if remote_rm(hostname, "%s/%s-files" \
             % (path, description), username):
         raise Exception("Error removing directory on master %s" \
                 % (hostname,))
 
-    for (i, (hostname, _)) in enumerate(workers):
+    for (i, worker) in enumerate(workers):
         # Workers are numbered from 1, not 0
         worker_id = i + 1
 
-        # Make directories on the worker
+        # Remove directories on the worker
+        (hostname, _, path) = setup_cluster.get_host_port_path(worker, default_path)
         if remote_rm(hostname, "%s/%s-files" \
                 % (path, description), username):
             raise Exception("Error removing directory on worker %d %s" \
