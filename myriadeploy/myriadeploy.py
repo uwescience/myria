@@ -20,7 +20,10 @@ def read_config_file(filename='deployment.cfg'):
     # .. description is the name of the configuration
     ret['description'] = config.get('deployment', 'name')
     # .. path is the root path files will be stored on
-    ret['path'] = config.get('deployment', 'path')
+    try:
+        ret['path'] = config.get('deployment', 'path')
+    except ConfigParser.NoOptionError:
+        ret['path'] = None
     # .. username is the SSH username for remote commands. Default `whoami`
     try:
         ret['username'] = config.get('deployment', 'username')
@@ -29,14 +32,14 @@ def read_config_file(filename='deployment.cfg'):
     ret['rest_port'] = config.get('deployment', 'rest_port')
 
     # Helper function
-    def split_hostport_key(hostport):
-        "Splits host,port into a tuple (host, port)."
+    def split_hostportpath_key(hostport):
+        "Splits host,port,path into a tuple (host, port, path)."
         return tuple(hostport[0].split(','))
 
     # .. master is the master node of the cluster.
-    ret['master'] = split_hostport_key(config.items('master')[0])
+    ret['master'] = split_hostportpath_key(config.items('master')[0])
     # .. workers is a list of the worker nodes in the cluster.
-    ret['workers'] = [split_hostport_key(w) for w in config.items('workers')]
+    ret['workers'] = [split_hostportpath_key(w) for w in config.items('workers')]
     # .. nodes is master and workers
     ret['nodes'] = [ret['master']] + ret['workers']
     # .. max_heap_size is the Java maximum heap size

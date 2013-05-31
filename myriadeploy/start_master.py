@@ -3,6 +3,7 @@
 "Start the Myria master in the specified deployment."
 
 import myriadeploy
+import setup_cluster
 
 import subprocess
 import sys
@@ -10,13 +11,13 @@ import sys
 def start_master(config):
     "Start the Myria master in the specified deployment."
     description = config['description']
-    path = config['path']
+    default_path = config['path']
     master = config['master']
     username = config['username']
     max_heap_size = config['max_heap_size']
     rest_port = config['rest_port']
 
-    (hostname, _) = master
+    (hostname, _, path) = setup_cluster.get_host_port_path(master, default_path)
     cmd = "cd %s/%s-files; nohup java -cp myriad-0.1.jar:conf -Djava.library.path=sqlite4java-282 " % (path, description) + max_heap_size + " edu.washington.escience.myriad.daemon.MasterDaemon %s %s 0</dev/null 1>master_stdout 2>master_stderr &" % (description,rest_port)
     args = ["ssh", "%s@%s" % (username, hostname), cmd]
     if subprocess.call(args):

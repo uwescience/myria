@@ -6,7 +6,7 @@ import subprocess
 import sys
 
 def host_port_list(workers):
-    return [str(x) + ':' + str(y) for (x, y) in workers]
+    return [str(worker[0]) + ':' + str(worker[1]) for worker in workers]
 
 def make_catalog(config):
     """Creates a Myria catalog (running the Java program to do so) from the
@@ -24,6 +24,7 @@ given deployment configuration."""
             description, \
             str(len(nodes))]
     args += host_port_list(nodes)
+
     if subprocess.call(args):
         print >> sys.stderr, "error making the Catalog"
         sys.exit(1)
@@ -53,16 +54,27 @@ def copy_worker_catalog(hostname, dirname, path, i, username):
     args = ["rsync", "-aLvz", local_path, remote_path]
     return subprocess.call(args)
 
+def get_host_port_path(node, default_path):
+    if len(node) == 2:
+        (hostname, port) = node
+        if default_path is None:
+            raise Exception("Path not specified for node %s" % str(node))
+        else:
+            path = default_path
+    else:
+        (hostname, port, path) = node
+    return (hostname, port, path)
+
 def copy_catalogs(config):
     """Copies the master and worker catalogs to the remote hosts."""
     description = config['description']
-    path = config['path']
+    default_path = config['path']
     master = config['master']
     workers = config['workers']
     username = config['username']
 
     # Make directories on master
-    (hostname, _) = master
+    (hostname, _, path) = get_host_port_path(master, default_path)
     if remote_mkdir(hostname, "%s/%s-files/%s" \
             % (path, description, description), username):
         raise Exception("Error making directory on master %s" \
@@ -71,11 +83,12 @@ def copy_catalogs(config):
     if copy_master_catalog(hostname, description, path, username):
         raise Exception("Error copying master.catalog to %s" % (hostname,))
 
-    for (i, (hostname, _)) in enumerate(workers):
+    for (i, worker) in enumerate(workers):
         # Workers are numbered from 1, not 0
         worker_id = i + 1
-
+    
         # Make directories on the worker
+        (hostname, _, path) = get_host_port_path(worker, default_path)
         if remote_mkdir(hostname, "%s/%s-files/%s" \
                 % (path, description, description), username):
             raise Exception("Error making directory on worker %d %s" \
@@ -87,11 +100,12 @@ def copy_catalogs(config):
 def copy_distribution(config):
     "Copy the distribution (jar and libs and conf) to compute nodes."
     nodes = config['nodes']
+    default_path = config['path']
     description = config['description']
-    path = config['path']
     username = config['username']
 
-    for (hostname, _) in nodes:
+    for node in nodes:
+        (hostname, _, path) = get_host_port_path(node, default_path)
         if hostname != 'localhost':
             remote_path = "%s@%s:%s/%s-files" % (username, hostname, path, description)
         else:
