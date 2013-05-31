@@ -35,7 +35,7 @@ public final class SQLiteAccessMethod implements AccessMethod {
   /** The database connection. **/
   private SQLiteConnection sqliteConnection;
   /** The database schema. **/
-  private Schema schema;
+  private final Schema schema;
   /** The connection information. **/
   private SQLiteInfo sqliteInfo;
   /** Flag that identifies the connection type (read-only or not). **/
@@ -230,12 +230,6 @@ public final class SQLiteAccessMethod implements AccessMethod {
       throw e;
     }
   }
-
-  /** Inaccessible. */
-  private SQLiteAccessMethod() {
-    throw new AssertionError();
-  }
-
 }
 
 /**
