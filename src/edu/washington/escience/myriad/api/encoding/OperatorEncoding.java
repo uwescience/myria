@@ -1,16 +1,14 @@
 package edu.washington.escience.myriad.api.encoding;
 
+import java.util.List;
 import java.util.Map;
-
-import javax.ws.rs.core.Response.Status;
 
 import org.codehaus.jackson.annotate.JsonSubTypes;
 import org.codehaus.jackson.annotate.JsonSubTypes.Type;
 import org.codehaus.jackson.annotate.JsonTypeInfo;
 
-import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myriad.api.MyriaApiException;
 import edu.washington.escience.myriad.operator.Operator;
 
 /**
@@ -40,20 +38,14 @@ import edu.washington.escience.myriad.operator.Operator;
     @Type(name = "SQLiteScan", value = SQLiteScanEncoding.class),
     @Type(name = "Project", value = ProjectEncoding.class), @Type(name = "Apply", value = ApplyEncoding.class),
     @Type(name = "Filter", value = FilterEncoding.class) })
-public abstract class OperatorEncoding<T extends Operator> implements MyriaApiEncoding {
+public abstract class OperatorEncoding<T extends Operator> extends MyriaApiEncoding {
 
   public String opName;
-  public String opType;
 
-  @Override
-  public void validate() throws MyriaApiException {
-    try {
-      Preconditions.checkNotNull(opName);
-      Preconditions.checkNotNull(opType);
-    } catch (Exception e) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "required fields: op_name, op_type");
-    }
-  }
+  /**
+   * Connect any operators to this one.
+   */
+  public abstract void connect(Operator operator, Map<String, Operator> operators);
 
   /**
    * @return an instantiated operator.
@@ -61,7 +53,12 @@ public abstract class OperatorEncoding<T extends Operator> implements MyriaApiEn
   public abstract T construct();
 
   /**
-   * Connect any operators to this one.
+   * @return the list of arguments required for this OperatorEncoding.
    */
-  public abstract void connect(Operator operator, Map<String, Operator> operators);
+  protected abstract List<String> getRequiredArguments();
+
+  @Override
+  protected final List<String> getRequiredFields() {
+    return new ImmutableList.Builder<String>().add("opName").addAll(getRequiredArguments()).build();
+  }
 }

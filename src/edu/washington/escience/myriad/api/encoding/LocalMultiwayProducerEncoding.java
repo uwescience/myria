@@ -1,12 +1,10 @@
 package edu.washington.escience.myriad.api.encoding;
 
+import java.util.List;
 import java.util.Map;
 
-import javax.ws.rs.core.Response.Status;
+import com.google.common.collect.ImmutableList;
 
-import com.google.common.base.Preconditions;
-
-import edu.washington.escience.myriad.api.MyriaApiException;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.parallel.ExchangePairID;
 import edu.washington.escience.myriad.parallel.LocalMultiwayProducer;
@@ -18,16 +16,11 @@ import edu.washington.escience.myriad.parallel.LocalMultiwayProducer;
 public class LocalMultiwayProducerEncoding extends OperatorEncoding<LocalMultiwayProducer> {
   public String argChild;
   public int[] argOperatorIds;
+  private static final List<String> requiredArguments = ImmutableList.of("argChild", "argOperatorIds");
 
   @Override
-  public void validate() throws MyriaApiException {
-    super.validate();
-    try {
-      Preconditions.checkNotNull(argChild);
-      Preconditions.checkNotNull(argOperatorIds);
-    } catch (Exception e) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "required fields: arg_child, arg_operator_ids");
-    }
+  public void connect(Operator current, Map<String, Operator> operators) {
+    current.setChildren(new Operator[] { operators.get(argChild) });
   }
 
   @Override
@@ -40,7 +33,7 @@ public class LocalMultiwayProducerEncoding extends OperatorEncoding<LocalMultiwa
   }
 
   @Override
-  public void connect(Operator current, Map<String, Operator> operators) {
-    current.setChildren(new Operator[] { operators.get(argChild) });
+  protected List<String> getRequiredArguments() {
+    return requiredArguments;
   }
 }
