@@ -123,8 +123,7 @@ public final class LocalCountingJoin extends Operator {
    * @throws DbException if any error occurs.
    * */
   private TupleBatch fetchNextReadySynchronousEOI() throws DbException {
-    TupleBatch nexttb = ansTBB.popFilled();
-    while (nexttb == null) {
+    while (true) {
       boolean hasNewTuple = false;
       if (!child1.eos() && !childrenEOI[0]) {
         TupleBatch tb = child1.nextReady();
@@ -158,9 +157,9 @@ public final class LocalCountingJoin extends Operator {
     checkEOSAndEOI();
     if (eoi() || eos()) {
       ansTBB.put(0, ans);
+      return ansTBB.popAny();
     }
-
-    return ansTBB.popAny();
+    return null;
   }
 
   @Override
@@ -197,9 +196,9 @@ public final class LocalCountingJoin extends Operator {
     checkEOSAndEOI();
     if (eos() || eoi()) {
       ansTBB.put(0, ans);
+      return ansTBB.popAny();
     }
-
-    return ansTBB.popAny();
+    return null;
   }
 
   /**
