@@ -1,8 +1,8 @@
 package edu.washington.escience.myriad.parallel;
 
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import edu.washington.escience.myriad.TupleBatch;
@@ -22,7 +22,7 @@ public class FlowControlInputBuffer<M extends ExchangeMessage<TupleBatch>> imple
   /**
    * the storage place of messages.
    * */
-  private final LinkedBlockingQueue<M> storage;
+  private final LinkedList<M> storage;
 
   /**
    * the owner of this input buffer.
@@ -44,7 +44,7 @@ public class FlowControlInputBuffer<M extends ExchangeMessage<TupleBatch>> imple
    * @param softCapacity soft upper bound of the buffer size.
    * */
   public FlowControlInputBuffer(final int softCapacity) {
-    this.storage = new LinkedBlockingQueue<M>();
+    this.storage = new LinkedList<M>();
     this.softCapacity = softCapacity;
     bufferEmptyListeners = new ConcurrentLinkedQueue<IPCEventListener<FlowControlInputBuffer<M>>>();
     bufferFullListeners = new ConcurrentLinkedQueue<IPCEventListener<FlowControlInputBuffer<M>>>();
@@ -78,23 +78,29 @@ public class FlowControlInputBuffer<M extends ExchangeMessage<TupleBatch>> imple
    * @return the remaining capacity.
    * */
   public final int remainingCapacity() {
-    return this.softCapacity - this.storage.size();
+    synchronized (this.eventSerializeLock) {
+      return this.softCapacity - this.storage.size();
+    }
   }
 
   @Override
   public final int size() {
-    return this.storage.size();
+    synchronized (this.eventSerializeLock) {
+      return this.storage.size();
+    }
   }
 
   @Override
   public final boolean isEmpty() {
-    return this.storage.isEmpty();
+    synchronized (this.eventSerializeLock) {
+      return this.storage.isEmpty();
+    }
   }
 
   @Override
   public final void clear() {
-    this.storage.clear();
     synchronized (this.eventSerializeLock) {
+      this.storage.clear();
       fireBufferEmpty();
     }
   }
@@ -111,6 +117,7 @@ public class FlowControlInputBuffer<M extends ExchangeMessage<TupleBatch>> imple
       if (this.remainingCapacity() <= 0) {
         this.fireBufferFull();
       }
+      this.eventSerializeLock.notifyAll();
       return true;
     }
   }
@@ -139,11 +146,16 @@ public class FlowControlInputBuffer<M extends ExchangeMessage<TupleBatch>> imple
       return null;
     }
     synchronized (this.eventSerializeLock) {
-      M m = this.storage.poll(time, unit);
+      if (this.isEmpty()) {
+        this.eventSerializeLock.wait(unit.toMillis(time));
+      }
+      M m = this.storage.poll();
+      if (m == null) {
+        return null;
+      }
       if (this.isEmpty()) {
         fireBufferEmpty();
-      }
-      if (m != null && this.remainingCapacity() == 1) {
+      } else if (this.remainingCapacity() == 1) {
         fireBufferRecover();
       }
       return m;
@@ -156,11 +168,16 @@ public class FlowControlInputBuffer<M extends ExchangeMessage<TupleBatch>> imple
       return null;
     }
     synchronized (this.eventSerializeLock) {
-      M m = this.storage.take();
+      while (this.isEmpty()) {
+        this.eventSerializeLock.wait();
+      }
+      M m = this.storage.poll();
+      if (m == null) {
+        return null;
+      }
       if (this.isEmpty()) {
         fireBufferEmpty();
-      }
-      if (m != null && this.remainingCapacity() == 1) {
+      } else if (this.remainingCapacity() == 1) {
         fireBufferRecover();
       }
       return m;
@@ -172,7 +189,9 @@ public class FlowControlInputBuffer<M extends ExchangeMessage<TupleBatch>> imple
     if (this.ownerOperator == null) {
       return null;
     }
-    return this.storage.peek();
+    synchronized (this.eventSerializeLock) {
+      return this.storage.peek();
+    }
   }
 
   /**

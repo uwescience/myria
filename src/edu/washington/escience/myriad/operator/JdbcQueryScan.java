@@ -51,25 +51,11 @@ public class JdbcQueryScan extends LeafOperator {
   }
 
   @Override
-  protected final TupleBatch fetchNext() throws DbException, InterruptedException {
+  protected final TupleBatch fetchNextReady() throws DbException {
     if (tuples.hasNext()) {
       final TupleBatch tb = tuples.next();
       return tb;
     } else {
-      return null;
-    }
-  }
-
-  @Override
-  protected final TupleBatch fetchNextReady() throws DbException {
-    try {
-      TupleBatch tb = fetchNext();
-      if (tb == null) {
-        setEOS();
-      }
-      return tb;
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
       return null;
     }
   }

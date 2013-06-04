@@ -10,10 +10,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
+import edu.washington.escience.myriad.parallel.Worker.QueryExecutionMode;
 
 /**
  * This is an implementation of hash equal join. The same as in DupElim, this implementation does not keep the
@@ -96,37 +98,6 @@ public final class LocalCountingJoin extends Operator {
   }
 
   @Override
-  protected TupleBatch fetchNext() throws DbException, InterruptedException {
-    while (!child1.eos() || !child2.eos()) {
-      if (!child1.eos()) {
-        TupleBatch tb = child1.next();
-        if (tb != null) {
-          processChildTB(tb, true);
-        } else {
-          if (child1.eoi()) {
-            child1.setEOI(false);
-            childrenEOI[0] = true;
-          }
-        }
-      }
-      if (!child2.eos()) {
-        TupleBatch tb = child2.next();
-        if (tb != null) {
-          processChildTB(tb, false);
-        } else {
-          if (child2.eoi()) {
-            child2.setEOI(false);
-            childrenEOI[1] = true;
-          }
-        }
-      }
-    }
-    TupleBatchBuffer tmp = new TupleBatchBuffer(outputSchema);
-    tmp.put(0, ans);
-    return tmp.popAny();
-  }
-
-  @Override
   public void checkEOSAndEOI() {
     if (child1.eos() && child2.eos()) {
       setEOS();
@@ -145,8 +116,57 @@ public final class LocalCountingJoin extends Operator {
    * */
   private final boolean[] childrenEOI = new boolean[2];
 
+  /**
+   * In blocking mode, asynchronous EOI semantic may make system hang. Only synchronous EOI semantic works.
+   * 
+   * @return result TB.
+   * @throws DbException if any error occurs.
+   * */
+  private TupleBatch fetchNextReadySynchronousEOI() throws DbException {
+    while (true) {
+      boolean hasNewTuple = false;
+      if (!child1.eos() && !childrenEOI[0]) {
+        TupleBatch tb = child1.nextReady();
+        if (tb != null) {
+          hasNewTuple = true;
+          processChildTB(tb, true);
+        } else {
+          if (child1.eoi()) {
+            child1.setEOI(false);
+            childrenEOI[0] = true;
+          }
+        }
+      }
+      if (!child2.eos() && !childrenEOI[1]) {
+        TupleBatch tb = child2.nextReady();
+        if (tb != null) {
+          hasNewTuple = true;
+          processChildTB(tb, false);
+        } else {
+          if (child2.eoi()) {
+            child2.setEOI(false);
+            childrenEOI[1] = true;
+          }
+        }
+      }
+      if (!hasNewTuple) {
+        break;
+      }
+    }
+
+    checkEOSAndEOI();
+    if (eoi() || eos()) {
+      ansTBB.put(0, ans);
+      return ansTBB.popAny();
+    }
+    return null;
+  }
+
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
+    if (!nonBlocking) {
+      return fetchNextReadySynchronousEOI();
+    }
     TupleBatch tb;
     if (child1.eos() && child2.eos()) {
       return ansTBB.popAny();
@@ -173,11 +193,18 @@ public final class LocalCountingJoin extends Operator {
         break;
       }
     }
-    if (child1.eos() && child2.eos()) {
+    checkEOSAndEOI();
+    if (eos() || eoi()) {
       ansTBB.put(0, ans);
+      return ansTBB.popAny();
     }
-    return ansTBB.popAny();
+    return null;
   }
+
+  /**
+   * The query execution mode is nonBlocking.
+   * */
+  private transient boolean nonBlocking = true;
 
   @Override
   public Operator[] getChildren() {
@@ -207,6 +234,8 @@ public final class LocalCountingJoin extends Operator {
     hashTable2 = new TupleBatchBuffer(child2.getSchema().getSubSchema(compareIndx2));
     ans = 0;
     ansTBB = new TupleBatchBuffer(outputSchema);
+    QueryExecutionMode qem = (QueryExecutionMode) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE);
+    nonBlocking = qem == QueryExecutionMode.NON_BLOCKING;
   }
 
   /**

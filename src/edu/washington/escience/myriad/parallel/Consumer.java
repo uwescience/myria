@@ -9,9 +9,11 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.operator.LeafOperator;
+import edu.washington.escience.myriad.parallel.Worker.QueryExecutionMode;
 import gnu.trove.impl.unmodifiable.TUnmodifiableIntIntMap;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;
@@ -65,6 +67,11 @@ public class Consumer extends LeafOperator {
   private transient ConsumerChannel[] exchangeChannels;
 
   /**
+   * if current query execution is in non-blocking mode.
+   * */
+  private transient boolean nonBlockingExecution;
+
+  /**
    * @return my exchange channels.
    */
   public final ConsumerChannel[] getExchangeChannels() {
@@ -90,6 +97,17 @@ public class Consumer extends LeafOperator {
     LOGGER.trace("created Consumer for ExchangePairId=" + operatorID);
   }
 
+  /**
+   * @param schema output schema.
+   * @param operatorID {@link Consumer#operatorID}
+   * */
+  public Consumer(final Schema schema, final ExchangePairID operatorID) {
+    this.operatorID = operatorID;
+    this.schema = schema;
+    sourceWorkers = new int[] { -1 };
+    LOGGER.trace("created Consumer for ExchangePairId=" + operatorID);
+  }
+
   @Override
   public final void cleanup() {
     setInputBuffer(null);
@@ -108,11 +126,10 @@ public class Consumer extends LeafOperator {
       tmp.put(sourceWorker, idx++);
     }
     workerIdToIndex = new TUnmodifiableIntIntMap(tmp);
-  }
 
-  @Override
-  protected final TupleBatch fetchNext() throws DbException, InterruptedException {
-    return getTuplesNormal(true);
+    QueryExecutionMode executionMode = (QueryExecutionMode) execUnitEnv.get(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE);
+    nonBlockingExecution = (executionMode == QueryExecutionMode.NON_BLOCKING);
+
   }
 
   /**
@@ -147,7 +164,7 @@ public class Consumer extends LeafOperator {
       } else if (tb.isEoi()) {
         workerEOI.set(sourceWorkerIdx);
         checkEOSAndEOI();
-        if (eoi()) {
+        if (eos() || eoi()) {
           break;
         }
       } else {
@@ -243,10 +260,17 @@ public class Consumer extends LeafOperator {
     return result;
   }
 
+  /**
+   * @return if there's any message buffered.
+   * */
+  public final boolean hasNext() {
+    return !inputBuffer.isEmpty();
+  }
+
   @Override
   protected final TupleBatch fetchNextReady() throws DbException {
     try {
-      return getTuplesNormal(false);
+      return getTuplesNormal(!nonBlockingExecution);
     } catch (final InterruptedException e) {
       Thread.currentThread().interrupt();
     }
