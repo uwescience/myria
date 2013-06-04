@@ -123,77 +123,8 @@ public final class MultiGroupByAggregate extends Operator {
    * should contain one field representing the result of the aggregate. Should return null if there are no more tuples.
    * 
    * @throws DbException if any error occurs.
-   * @throws InterruptedException if interrupted
    * @return result TB.
    */
-  @Override
-  protected TupleBatch fetchNext() throws DbException, InterruptedException {
-    if (resultBuffer.numTuples() == 0) {
-      // Actually perform the aggregation
-      TupleBatch tb = null;
-      while ((tb = child.next()) != null) {
-        // get all the tuple batches from the child operator
-        // we want to get the value for each key.
-        HashMap<SimpleArrayWrapper, TupleBatchBuffer> tmpMap = new HashMap<SimpleArrayWrapper, TupleBatchBuffer>();
-        for (int i = 0; i < tb.numTuples(); i++) {
-          // generate the SimpleArrayWrapper
-          Object[] groupFields = new Object[gfields.length];
-          for (int j = 0; j < gfields.length; j++) {
-            Object val = tb.getObject(gfields[j], i);
-            groupFields[j] = val;
-          }
-          SimpleArrayWrapper grpFields = new SimpleArrayWrapper(groupFields);
-
-          // for each tuple try pulling a value from it
-          if (!groupAggs.containsKey(grpFields)) {
-            // if the aggregator for the key doesn't exists,
-            // create a new array of operators and put it in the map
-            Aggregator[] groupAgg = new Aggregator[agg.length];
-            for (int j = 0; j < groupAgg.length; j++) {
-              groupAgg[j] = agg[j].freshCopyYourself();
-            }
-            groupAggs.put(grpFields, groupAgg);
-          }
-
-          // foreach row, we need to put the tuples into its corresponding
-          // group
-          TupleBatchBuffer groupedTupleBatch = tmpMap.get(grpFields);
-          if (groupedTupleBatch == null) {
-            groupedTupleBatch = new TupleBatchBuffer(child.getSchema());
-            tmpMap.put(grpFields, groupedTupleBatch);
-          }
-          for (int j = 0; j < child.getSchema().numColumns(); j++) {
-            groupedTupleBatch.put(j, tb.getObject(j, i));
-          }
-        }
-        // add the tuples into the aggregator
-        for (SimpleArrayWrapper saw : tmpMap.keySet()) {
-          Aggregator[] aggs = groupAggs.get(saw);
-          TupleBatchBuffer tbb = tmpMap.get(saw);
-          TupleBatch filledTb = null;
-          while ((filledTb = tbb.popAny()) != null) {
-            for (final Aggregator aggLocal : aggs) {
-              aggLocal.add(filledTb);
-            }
-          }
-        }
-      }
-      for (SimpleArrayWrapper groupByFields : groupAggs.keySet()) {
-        // populate the result tuple batch buffer
-        for (int i = 0; i < gfields.length; i++) {
-          resultBuffer.put(i, groupByFields.groupFields[i]);
-        }
-        Aggregator[] value = groupAggs.get(groupByFields);
-        int currentIndex = gfields.length;
-        for (Aggregator element : value) {
-          element.getResult(resultBuffer, currentIndex);
-          currentIndex += element.getResultSchema().numColumns();
-        }
-      }
-    }
-    return resultBuffer.popAny();
-  }
-
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
     if (resultBuffer.numTuples() > 0) {

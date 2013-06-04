@@ -28,7 +28,7 @@ public class SQLiteInsertEncoding extends OperatorEncoding<SQLiteInsert> {
       Preconditions.checkNotNull(relationKey);
       Preconditions.checkNotNull(argChild);
     } catch (Exception e) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "required fields: relation_key");
+      throw new MyriaApiException(Status.BAD_REQUEST, "required fields: relation_key, arg_child");
     }
   }
 

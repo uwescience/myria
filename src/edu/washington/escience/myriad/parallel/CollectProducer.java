@@ -32,7 +32,12 @@ public final class CollectProducer extends Producer {
     tb.compactInto(getBuffers()[0]);
 
     while ((dm = getBuffers()[0].popFilledAsTM()) != null) {
-      getChannels()[0].write(dm);
+      try {
+        writeMessage(getChannels()[0], dm);
+      } catch (InterruptedException e) {
+        throw new DbException(e);
+      }
+
     }
   }
 
@@ -40,18 +45,34 @@ public final class CollectProducer extends Producer {
   protected void childEOS() throws DbException {
     TransportMessage dm = null;
     while ((dm = getBuffers()[0].popAnyAsTM()) != null) {
-      getChannels()[0].write(dm);
+      try {
+        writeMessage(getChannels()[0], dm);
+      } catch (InterruptedException e) {
+        throw new DbException(e);
+      }
     }
-    getChannels()[0].write(IPCUtils.EOS);
+    try {
+      writeMessage(getChannels()[0], IPCUtils.EOS);
+    } catch (InterruptedException e) {
+      throw new DbException(e);
+    }
   }
 
   @Override
   protected void childEOI() throws DbException {
     TransportMessage dm = null;
     while ((dm = getBuffers()[0].popAnyAsTM()) != null) {
-      getChannels()[0].write(dm);
+      try {
+        writeMessage(getChannels()[0], dm);
+      } catch (InterruptedException e) {
+        throw new DbException(e);
+      }
     }
-    getChannels()[0].write(IPCUtils.EOI);
+    try {
+      writeMessage(getChannels()[0], IPCUtils.EOI);
+    } catch (InterruptedException e) {
+      throw new DbException(e);
+    }
   }
 
 }

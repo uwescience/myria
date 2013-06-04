@@ -30,7 +30,7 @@ public final class Apply extends Operator {
   /** the field we want to apply the function on. */
   private final List<IFunctionCaller> callers;
   /** the resulting schema. */
-  private final Schema schema;
+  private Schema schema;
 
   /**
    * output buffer.
@@ -46,64 +46,6 @@ public final class Apply extends Operator {
   public Apply(final Operator child, final List<IFunctionCaller> callers) {
     this.child = child;
     this.callers = callers;
-
-    final Schema childSchema = child.getSchema();
-
-    final ImmutableList.Builder<Type> schemaTypes = ImmutableList.builder();
-    final ImmutableList.Builder<String> schemaNames = ImmutableList.builder();
-
-    schemaTypes.addAll(childSchema.getColumnTypes());
-    schemaNames.addAll(childSchema.getColumnNames());
-
-    for (IFunctionCaller caller : callers) {
-      List<Integer> applyFields = caller.getApplyField();
-      final ImmutableList.Builder<String> names = ImmutableList.builder();
-      final ImmutableList.Builder<Type> typesList = ImmutableList.builder();
-      for (Integer i : applyFields) {
-        names.add(child.getSchema().getColumnName(i));
-        typesList.add(child.getSchema().getColumnType(i));
-      }
-      schemaNames.add(caller.toString(names.build()));
-      schemaTypes.add(caller.getResultType(typesList.build()));
-    }
-
-    schema = new Schema(schemaTypes, schemaNames);
-  }
-
-  @Override
-  protected TupleBatch fetchNext() throws DbException, InterruptedException {
-    TupleBatch tb = null;
-    tb = child.next();
-    if (tb == null) {
-      return null;
-    }
-    final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
-    for (int i = 0; i < tb.numTuples(); i++) {
-      // put the content from the child operator first
-      for (int j = 0; j < tb.numColumns(); j++) {
-        tbb.put(j, tb.getObject(j, i));
-      }
-      // put the result into the tbb
-      for (int j = 0; j < callers.size(); j++) {
-        final ImmutableList.Builder<Number> srcNums = ImmutableList.builder();
-        Number value = null;
-        for (Integer index : callers.get(j).getApplyField()) {
-          Type applyFieldType = schema.getColumnType(index);
-          if (applyFieldType == Type.INT_TYPE) {
-            srcNums.add(tb.getInt(index, i));
-          } else if (applyFieldType == Type.LONG_TYPE) {
-            srcNums.add(tb.getLong(index, i));
-          } else if (applyFieldType == Type.FLOAT_TYPE) {
-            srcNums.add(tb.getFloat(index, i));
-          } else if (applyFieldType == Type.DOUBLE_TYPE) {
-            srcNums.add(tb.getDouble(index, i));
-          }
-        }
-        value = callers.get(j).execute(srcNums.build());
-        tbb.put(j + tb.numColumns(), value);
-      }
-    }
-    return tbb.popAny();
   }
 
   @Override
@@ -173,6 +115,27 @@ public final class Apply extends Operator {
 
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+    final Schema childSchema = child.getSchema();
+
+    final ImmutableList.Builder<Type> schemaTypes = ImmutableList.builder();
+    final ImmutableList.Builder<String> schemaNames = ImmutableList.builder();
+
+    schemaTypes.addAll(childSchema.getColumnTypes());
+    schemaNames.addAll(childSchema.getColumnNames());
+
+    for (IFunctionCaller caller : callers) {
+      List<Integer> applyFields = caller.getApplyField();
+      final ImmutableList.Builder<String> names = ImmutableList.builder();
+      final ImmutableList.Builder<Type> typesList = ImmutableList.builder();
+      for (Integer i : applyFields) {
+        names.add(child.getSchema().getColumnName(i));
+        typesList.add(child.getSchema().getColumnType(i));
+      }
+      schemaNames.add(caller.toString(names.build()));
+      schemaTypes.add(caller.getResultType(typesList.build()));
+    }
+
+    schema = new Schema(schemaTypes, schemaNames);
     resultBuffer = new TupleBatchBuffer(schema);
   }
 

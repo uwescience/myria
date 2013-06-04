@@ -3,14 +3,17 @@ package edu.washington.escience.myriad.parallel;
 import java.util.Arrays;
 
 import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelFuture;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.RootOperator;
+import edu.washington.escience.myriad.parallel.Worker.QueryExecutionMode;
 import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myriad.util.IPCUtils;
 
@@ -47,6 +50,11 @@ public abstract class Producer extends RootOperator {
    * Destination workers.
    * */
   private final int[] destinationWorkerIDs;
+
+  /**
+   * if current query execution is in non-blocking mode.
+   * */
+  private transient boolean nonBlockingExecution;
 
   /**
    * no worker means to the owner worker.
@@ -138,13 +146,48 @@ public abstract class Producer extends RootOperator {
 
   @Override
   public final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    connectionPool = (IPCConnectionPool) execEnvVars.get("ipcConnectionPool");
+    connectionPool = (IPCConnectionPool) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_IPC_CONNECTION_POOL);
     ioChannels = new Channel[operatorIDs.length];
     buffers = new TupleBatchBuffer[operatorIDs.length];
     for (int i = 0; i < operatorIDs.length; i++) {
       ioChannels[i] = connectionPool.reserveLongTermConnection(destinationWorkerIDs[i]);
-      ioChannels[i].write(IPCUtils.bosTM(operatorIDs[i]));
+      try {
+        writeMessage(ioChannels[i], IPCUtils.bosTM(operatorIDs[i]));
+      } catch (InterruptedException e) {
+        throw new DbException(e);
+      }
+
       buffers[i] = new TupleBatchBuffer(getSchema());
+    }
+
+    QueryExecutionMode executionMode = (QueryExecutionMode) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE);
+    nonBlockingExecution = (executionMode == QueryExecutionMode.NON_BLOCKING);
+  }
+
+  /**
+   * @param ch the channel to write
+   * @param msg the message.
+   * @throws InterruptedException if interrupted
+   * @return write future
+   * */
+  protected final ChannelFuture writeMessage(final Channel ch, final Object msg) throws InterruptedException {
+    if (nonBlockingExecution) {
+      return ch.write(msg);
+    } else {
+      int sleepTime = 1;
+      int maxSleepTime = 100;
+      while (true) {
+        if (ch.isWritable()) {
+          return ch.write(msg);
+        } else {
+          int toSleep = sleepTime - 1;
+          if (maxSleepTime < sleepTime) {
+            toSleep = maxSleepTime;
+          }
+          Thread.sleep(toSleep);
+          sleepTime *= 2;
+        }
+      }
     }
   }
 

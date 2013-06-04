@@ -219,25 +219,8 @@ public class SingleGroupByAggregate extends Operator {
    * should contain one field representing the result of the aggregate. Should return null if there are no more tuples.
    * 
    * @throws DbException if processing error occurs.
-   * @throws InterruptedException if interrupted.
    * @return next TB.
    */
-  @Override
-  protected final TupleBatch fetchNext() throws DbException, InterruptedException {
-    if (child.eos()) {
-      return resultBuffer.popAny();
-    }
-
-    TupleBatch tb = null;
-    while ((tb = child.next()) != null) {
-      processTupleBatch(tb);
-    }
-    processEnd();
-    resultBuffer = new TupleBatchBuffer(schema);
-    generateResult(resultBuffer);
-    return resultBuffer.popAny();
-  }
-
   @Override
   protected final TupleBatch fetchNextReady() throws DbException {
     TupleBatch tb = null;

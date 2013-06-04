@@ -1,19 +1,24 @@
 # Deployment configuration
 [deployment]
-path = /disk2/dhalperi
+path = /disk1/myria
 name = testMyriadeploy
 # Uncomment if need to set a specific username; does not work for localhost
 #username = dhalperi
 # Uncomment to set the maximum heap size of the Java processes
 #max_heap_size=-Xmx2g
-rest_port = 8753
+#rest_port = 8753
+rest_port = 8759
 
 # Compute nodes configuration
 [master]
-orlando.cs.washington.edu,9001
+vega.cs.washington.edu,8001
 
 [workers]
-berlin.cs.washington.edu,9002
-dallas.cs.washington.edu,9002
-seoul.cs.washington.edu,9002
-newyork.cs.washington.edu,9002
+aldebaran.cs.washington.edu,9001
+aldebaran.cs.washington.edu,9002,/disk2/myria
+aldebaran.cs.washington.edu,9003,/disk3/myria
+aldebaran.cs.washington.edu,9004,/disk4/myria
+altair.cs.washington.edu,9001
+altair.cs.washington.edu,9002,/disk2/myria
+altair.cs.washington.edu,9003,/disk3/myria
+altair.cs.washington.edu,9004,/disk4/myria

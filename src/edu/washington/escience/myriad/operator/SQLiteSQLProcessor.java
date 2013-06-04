@@ -64,24 +64,6 @@ public class SQLiteSQLProcessor extends Operator {
   /**
    * Wait children to finish.
    * 
-   * @throws InterruptedException if interrupted.
-   * @throws DbException if any operator processing error occurs
-   * */
-  private void waitChildren() throws DbException, InterruptedException {
-    if (allChildrenEOS) {
-      return;
-    }
-    for (final Operator child : children) {
-      while (!child.eos()) {
-        child.next();
-      }
-    }
-    allChildrenEOS = true;
-  }
-
-  /**
-   * Wait children to finish.
-   * 
    * @throws DbException if any operator processing error occurs
    * */
   private void waitChildrenReady() throws DbException {
@@ -110,9 +92,11 @@ public class SQLiteSQLProcessor extends Operator {
     tuples = null;
   }
 
-  @Override
-  protected final TupleBatch fetchNext() throws DbException, InterruptedException {
-    waitChildren();
+  /**
+   * @return get data from SQLite.
+   * @throws DbException error.
+   * */
+  protected final TupleBatch fetchNext() throws DbException {
     if (tuples == null) {
       tuples = SQLiteAccessMethod.tupleBatchIteratorFromQuery(databaseFilename, baseSQL, schema);
     }
@@ -125,21 +109,15 @@ public class SQLiteSQLProcessor extends Operator {
 
   @Override
   protected final TupleBatch fetchNextReady() throws DbException {
-    try {
+    if (allChildrenEOS) {
+      return fetchNext();
+    } else {
+      waitChildrenReady();
       if (allChildrenEOS) {
         return fetchNext();
-        // use super.fetchNext instead of super.fetchNextReady to avoid direct setEOS call
-      } else {
-        waitChildrenReady();
-        if (allChildrenEOS) {
-          return fetchNext();
-        }
       }
-      return null;
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      return null;
     }
+    return null;
   }
 
   @Override

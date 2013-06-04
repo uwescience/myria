@@ -52,23 +52,6 @@ public abstract class RootOperator extends Operator {
   protected abstract void childEOI() throws DbException;
 
   @Override
-  protected final TupleBatch fetchNext() throws DbException, InterruptedException {
-    TupleBatch tup = null;
-    while (!child.eos()) {
-      while ((tup = child.next()) != null) {
-        consumeTuples(tup);
-      }
-      if (child.eos()) {
-        childEOS();
-      } else if (child.eoi()) {
-        childEOI();
-        child.setEOI(false);
-      }
-    }
-    return null;
-  }
-
-  @Override
   protected final TupleBatch fetchNextReady() throws DbException {
     TupleBatch tb = null;
     tb = child.nextReady();

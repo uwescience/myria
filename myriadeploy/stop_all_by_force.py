@@ -14,7 +14,7 @@ def stop_all(config):
     username = config['username']
 
     # Stop the Master
-    (hostname, _) = master
+    (hostname, _, _) = master
     cmd = "ssh %s@%s $'ps aux | grep edu.washington.escience.myriad.daemon.MasterDaemon | grep %s | grep -v grep | awk \\'{print $2}\\''" % (username, hostname, username)
     pids = subprocess.check_output(cmd, shell=True).split('\n')
     for pid in pids:
@@ -25,7 +25,7 @@ def stop_all(config):
 
     # Workers
     done = set()
-    for (hostname, _) in workers:
+    for (hostname, _, _) in workers:
         if hostname in done:
             continue
         done.add(hostname)

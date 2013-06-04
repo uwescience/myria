@@ -1,0 +1,10 @@
+{
+    "grp_filename": "/projects/db8/leelee-testdata/iOrder3.iord",
+    "iorder_filename": "/projects/db8/leelee-testdata/grp3.amiga.grp",
+    "relation_key": {
+        "program_name": "astro",
+        "relation_name": "tipsy3_2",
+        "user_name": "leelee"
+    },
+    "tipsy_filename": "/projects/db8/leelee-testdata/tipsy3"
+}

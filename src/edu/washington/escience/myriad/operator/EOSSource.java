@@ -17,11 +17,6 @@ public class EOSSource extends LeafOperator {
   private static final long serialVersionUID = 1L;
 
   @Override
-  protected final TupleBatch fetchNext() throws DbException, InterruptedException {
-    return null;
-  }
-
-  @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
 
   }

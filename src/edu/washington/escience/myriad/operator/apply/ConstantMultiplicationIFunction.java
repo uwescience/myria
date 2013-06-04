@@ -8,6 +8,9 @@ import java.util.List;
 
 public final class ConstantMultiplicationIFunction extends IFunction {
 
+  /** Required for Java serialization. */
+  private static final long serialVersionUID = 1L;
+
   /**
    * creates the Constant Multiplication function with the desired power value.
    */
@@ -29,8 +32,12 @@ public final class ConstantMultiplicationIFunction extends IFunction {
       return constant.longValue() * src.longValue();
     } else if (src instanceof Integer) {
       return constant.intValue() * src.intValue();
-    } else {
+    } else if (src instanceof Float) {
+      return constant.floatValue() * src.floatValue();
+    } else if (src instanceof Double) {
       return constant.doubleValue() * src.doubleValue();
+    } else {
+      throw new IllegalArgumentException("Unexpected src of type " + src.getClass());
     }
   }
 
