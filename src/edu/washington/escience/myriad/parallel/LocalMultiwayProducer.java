@@ -36,7 +36,6 @@ public final class LocalMultiwayProducer extends Producer {
     tup.compactInto(buffers[0]);
     while ((dm = buffers[0].popFilledAsTM()) != null) {
       for (Channel ch : ioChannels) {
-        // ch.write(dm);
         try {
           writeMessage(ch, dm);
         } catch (InterruptedException e) {
@@ -53,7 +52,6 @@ public final class LocalMultiwayProducer extends Producer {
     Channel[] ioChannels = getChannels();
     while ((dm = buffers[0].popAnyAsTM()) != null) {
       for (Channel ch : ioChannels) {
-        // ch.write(dm);
         try {
           writeMessage(ch, dm);
         } catch (InterruptedException e) {
@@ -62,7 +60,6 @@ public final class LocalMultiwayProducer extends Producer {
       }
     }
     for (Channel channel : ioChannels) {
-      // channel.write(IPCUtils.EOS);
       try {
         writeMessage(channel, IPCUtils.EOS);
       } catch (InterruptedException e) {
@@ -78,7 +75,6 @@ public final class LocalMultiwayProducer extends Producer {
     Channel[] ioChannels = getChannels();
     while ((dm = buffers[0].popAnyAsTM()) != null) {
       for (Channel ch : ioChannels) {
-        // ch.write(dm);
         try {
           writeMessage(ch, dm);
         } catch (InterruptedException e) {
@@ -87,7 +83,6 @@ public final class LocalMultiwayProducer extends Producer {
       }
     }
     for (Channel channel : ioChannels) {
-      // channel.write(IPCUtils.EOI);
       try {
         writeMessage(channel, IPCUtils.EOI);
       } catch (InterruptedException e) {
