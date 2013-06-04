@@ -41,15 +41,6 @@ public class TBQueueExporter extends Operator {
   }
 
   @Override
-  protected final TupleBatch fetchNext() throws DbException, InterruptedException {
-    TupleBatch tb = child.next();
-    if (tb != null) {
-      queueStore.add(tb);
-    }
-    return tb;
-  }
-
-  @Override
   public final Operator[] getChildren() {
     return new Operator[] { child };
   }

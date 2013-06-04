@@ -29,7 +29,7 @@ public final class LocalMultiwayConsumer extends Consumer {
    * @param operatorID my operatorID
    */
   public LocalMultiwayConsumer(final Schema schema, final ExchangePairID operatorID) {
-    super(schema, operatorID, new int[] { -1 });
+    super(schema, operatorID);
     LOGGER.trace("created multiway consumer for ExchangePairID=" + operatorID);
   }
 

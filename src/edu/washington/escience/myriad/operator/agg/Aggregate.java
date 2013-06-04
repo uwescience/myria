@@ -111,31 +111,6 @@ public final class Aggregate extends Operator {
   }
 
   @Override
-  protected TupleBatch fetchNext() throws DbException, InterruptedException {
-    if (child.eos()) {
-      return null;
-    }
-
-    TupleBatch tb = null;
-    while (!child.eos()) {
-      while ((tb = child.next()) != null) {
-        for (final Aggregator ag : agg) {
-          ag.add(tb);
-        }
-      }
-      if (child.eoi()) {
-        child.setEOI(false);
-      }
-    }
-    int fromIndex = 0;
-    for (final Aggregator element : agg) {
-      element.getResult(aggBuffer, fromIndex);
-      fromIndex += element.getResultSchema().numColumns();
-    }
-    return aggBuffer.popAny();
-  }
-
-  @Override
   protected TupleBatch fetchNextReady() throws DbException {
     TupleBatch tb = null;
 

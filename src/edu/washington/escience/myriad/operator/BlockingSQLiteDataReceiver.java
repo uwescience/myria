@@ -43,17 +43,6 @@ public final class BlockingSQLiteDataReceiver extends Operator {
   }
 
   @Override
-  protected TupleBatch fetchNext() throws DbException, InterruptedException {
-    TupleBatch tb = null;
-    while (!child.eos()) {
-      while ((tb = child.next()) != null) {
-        SQLiteUtils.insertIntoSQLite(child.getSchema(), relationKey, pathToSQLiteDb, tb);
-      }
-    }
-    return null;
-  }
-
-  @Override
   protected TupleBatch fetchNextReady() throws DbException {
     TupleBatch tb = null;
     tb = child.nextReady();

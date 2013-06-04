@@ -69,27 +69,13 @@ public class SQLiteQueryScan extends LeafOperator {
   }
 
   @Override
-  protected final TupleBatch fetchNext() throws DbException, InterruptedException {
+  protected final TupleBatch fetchNextReady() throws DbException {
     if (tuples == null) {
       tuples = SQLiteAccessMethod.tupleBatchIteratorFromQuery(databaseFilename, baseSQL, schema);
     }
     if (tuples.hasNext()) {
       return tuples.next();
     } else {
-      return null;
-    }
-  }
-
-  @Override
-  protected final TupleBatch fetchNextReady() throws DbException {
-    try {
-      TupleBatch tb = fetchNext();
-      if (tb == null) {
-        setEOS();
-      }
-      return tb;
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
       return null;
     }
   }

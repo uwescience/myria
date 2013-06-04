@@ -8,10 +8,12 @@ import java.util.List;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
+import edu.washington.escience.myriad.parallel.Worker.QueryExecutionMode;
 
 /**
  * Join and keep the references to the source TupleBatches.
@@ -151,16 +153,16 @@ public final class LocalJoinRefOnly extends Operator {
   /**
    * Hash table for child1 tuples. { hash code -> list of indexed tuples}.
    * */
-  private HashMap<Integer, List<IndexedTuple>> hashTable1;
+  private transient HashMap<Integer, List<IndexedTuple>> hashTable1;
 
   /**
    * Hash table for child2 tuples. { hash code -> list of indexed tuples}.
    * */
-  private HashMap<Integer, List<IndexedTuple>> hashTable2;
+  private transient HashMap<Integer, List<IndexedTuple>> hashTable2;
   /**
    * Buffer holding the result.
    * */
-  private TupleBatchBuffer ans;
+  private transient TupleBatchBuffer ans;
 
   /**
    * For Java serialization.
@@ -182,9 +184,6 @@ public final class LocalJoinRefOnly extends Operator {
     this.child2 = child2;
     this.compareIndx1 = compareIndx1;
     this.compareIndx2 = compareIndx2;
-    hashTable1 = new HashMap<Integer, List<IndexedTuple>>();
-    hashTable2 = new HashMap<Integer, List<IndexedTuple>>();
-    ans = new TupleBatchBuffer(outputSchema);
   }
 
   /**
@@ -229,36 +228,45 @@ public final class LocalJoinRefOnly extends Operator {
    * */
   private final boolean[] childrenEOI = new boolean[2];
 
-  @Override
-  protected TupleBatch fetchNext() throws DbException, InterruptedException {
+  /**
+   * In blocking mode, asynchronous EOI semantic may make system hang. Only synchronous EOI semantic works.
+   * 
+   * @return result TB.
+   * @throws DbException if any error occurs.
+   * */
+  private TupleBatch fetchNextReadySynchronousEOI() throws DbException {
     TupleBatch nexttb = ans.popFilled();
     while (nexttb == null) {
-      boolean hasNewTuple = false;
-      TupleBatch tb = child1.next();
-      if (tb != null) {
-        hasNewTuple = true;
-        processChildTB(tb, true);
-      } else {
-        if (child1.eoi()) {
-          child1.setEOI(false);
-          childrenEOI[0] = true;
+      boolean hasnewtuple = false;
+      if (!child1.eos() && !childrenEOI[0]) {
+        TupleBatch tb = child1.nextReady();
+        if (tb != null) {
+          hasnewtuple = true;
+          processChildTB(tb, true);
+        } else {
+          if (child1.eoi()) {
+            child1.setEOI(false);
+            childrenEOI[0] = true;
+          }
         }
       }
-      tb = child2.next();
-      if (tb != null) {
-        hasNewTuple = true;
-        processChildTB(tb, false);
-      } else {
-        if (child2.eoi()) {
-          child2.setEOI(false);
-          childrenEOI[1] = true;
+      if (!child2.eos() && !childrenEOI[1]) {
+        TupleBatch tb = child2.nextReady();
+        if (tb != null) {
+          hasnewtuple = true;
+          processChildTB(tb, false);
+        } else {
+          if (child2.eoi()) {
+            child2.setEOI(false);
+            childrenEOI[1] = true;
+          }
         }
       }
       nexttb = ans.popFilled();
       if (nexttb != null) {
         return nexttb;
       }
-      if (!hasNewTuple) {
+      if (!hasnewtuple) {
         break;
       }
     }
@@ -271,8 +279,16 @@ public final class LocalJoinRefOnly extends Operator {
     return nexttb;
   }
 
+  /**
+   * The query execution mode is nonBlocking.
+   * */
+  private transient boolean nonBlocking = true;
+
   @Override
   public TupleBatch fetchNextReady() throws DbException {
+    if (!nonBlocking) {
+      return fetchNextReadySynchronousEOI();
+    }
     TupleBatch nexttb = ans.popFilled();
     if (nexttb != null) {
       return nexttb;
@@ -409,6 +425,8 @@ public final class LocalJoinRefOnly extends Operator {
     hashTable1 = new HashMap<Integer, List<IndexedTuple>>();
     hashTable2 = new HashMap<Integer, List<IndexedTuple>>();
     ans = new TupleBatchBuffer(outputSchema);
+    QueryExecutionMode qem = (QueryExecutionMode) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE);
+    nonBlocking = qem == QueryExecutionMode.NON_BLOCKING;
   }
 
   @Override

@@ -47,15 +47,6 @@ public final class Project extends Operator {
   }
 
   @Override
-  protected TupleBatch fetchNext() throws DbException, InterruptedException {
-    final TupleBatch tmp = child.next();
-    if (tmp != null) {
-      return tmp.project(outColumnIndices);
-    }
-    return null;
-  }
-
-  @Override
   protected TupleBatch fetchNextReady() throws DbException {
 
     TupleBatch tb = child.nextReady();

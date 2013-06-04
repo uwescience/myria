@@ -42,21 +42,6 @@ public final class Filter extends Operator {
   }
 
   @Override
-  protected TupleBatch fetchNext() throws DbException, InterruptedException {
-    TupleBatch tmp = null;
-
-    while ((tmp = child.next()) != null) {
-      if (tmp.numTuples() > 0) {
-        tmp = tmp.filter(predicate);
-        if (tmp.numTuples() > 0) {
-          return tmp;
-        }
-      }
-    }
-    return null;
-  }
-
-  @Override
   protected TupleBatch fetchNextReady() throws DbException {
     TupleBatch tmp = null;
     tmp = child.nextReady();
