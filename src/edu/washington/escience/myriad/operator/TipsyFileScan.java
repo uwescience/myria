@@ -1,5 +1,6 @@
 package edu.washington.escience.myriad.operator;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.DataInput;
 import java.io.DataInputStream;
@@ -44,6 +45,8 @@ public class TipsyFileScan extends LeafOperator {
   private transient DataInput dataInputForBin;
   /** The file stream for bin file. */
   private transient FileInputStream fStreamForBin;
+  /** A buffer for the bin file. */
+  private transient BufferedInputStream bufferedStreamForBin;
   /** Scanner used to parse the iOrder file. */
   private transient Scanner iOrderScanner = null;
   /** Scanner used to parse the group number file. */
@@ -149,10 +152,11 @@ public class TipsyFileScan extends LeafOperator {
     try {
       // Create a fileInputStream for the bin file
       fStreamForBin = new FileInputStream(binFileName);
+      bufferedStreamForBin = new BufferedInputStream(fStreamForBin);
       if (isLittleEndian) {
-        dataInputForBin = new LittleEndianDataInputStream(fStreamForBin);
+        dataInputForBin = new LittleEndianDataInputStream(bufferedStreamForBin);
       } else {
-        dataInputForBin = new DataInputStream(fStreamForBin);
+        dataInputForBin = new DataInputStream(bufferedStreamForBin);
       }
 
       dataInputForBin.readDouble(); // time
