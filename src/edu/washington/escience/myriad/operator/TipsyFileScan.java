@@ -15,7 +15,6 @@ import java.util.Scanner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.io.LittleEndianDataInputStream;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
@@ -58,8 +57,6 @@ public class TipsyFileScan extends LeafOperator {
   /** Holds the tuples that are ready for release. */
   private transient TupleBatchBuffer buffer;
 
-  /** The flag to indicate the endianess of the bin file. */
-  private final boolean isLittleEndian;
   /** The bin file name. */
   private final String binFileName;
   /** The iOrder file name. */
@@ -105,29 +102,12 @@ public class TipsyFileScan extends LeafOperator {
    * @param grpFileName The ascii file that contains the data for group number.
    */
   public TipsyFileScan(final String binFileName, final String iOrderFileName, final String grpFileName) {
-    this(binFileName, iOrderFileName, grpFileName, false);
-  }
-
-  /**
-   * Construct a new TipsyFileScan object using the given binary filename, iOrder filename and group number filename.
-   * TipsyFileScan will read the given binary file in little endian format if the isLittelEndian flag is true, otherwise
-   * it will just read the given binary file using the default which is big endian.
-   * 
-   * @param binFileName The binary file that contains the data for gas, dark, star particles.
-   * @param iOrderFileName The ascii file that contains the data for iOrder.
-   * @param grpFileName The ascii file that contains the data for group number.
-   * @param isLittleEndian The flag to indicate the endianess to read the binary file, true for little endian, false for
-   *          big endian.
-   */
-  public TipsyFileScan(final String binFileName, final String iOrderFileName, final String grpFileName,
-      final boolean isLittleEndian) {
     Objects.requireNonNull(binFileName);
     Objects.requireNonNull(iOrderFileName);
     Objects.requireNonNull(grpFileName);
     this.binFileName = binFileName;
     this.iOrderFileName = iOrderFileName;
     this.grpFileName = grpFileName;
-    this.isLittleEndian = isLittleEndian;
   }
 
   @Override
@@ -153,11 +133,7 @@ public class TipsyFileScan extends LeafOperator {
       // Create a fileInputStream for the bin file
       fStreamForBin = new FileInputStream(binFileName);
       bufferedStreamForBin = new BufferedInputStream(fStreamForBin);
-      if (isLittleEndian) {
-        dataInputForBin = new LittleEndianDataInputStream(bufferedStreamForBin);
-      } else {
-        dataInputForBin = new DataInputStream(bufferedStreamForBin);
-      }
+      dataInputForBin = new DataInputStream(bufferedStreamForBin);
 
       dataInputForBin.readDouble(); // time
       ntot = dataInputForBin.readInt();
