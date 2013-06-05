@@ -103,6 +103,7 @@ public class BinaryFileScanTest {
    * @param typeAr The type array.
    * @param row The number of row.
    */
+  @SuppressWarnings("unused")
   private void generateBinaryFile(String filename, Type[] typeAr, int row) {
     try {
       RandomAccessFile raf = new RandomAccessFile(filename, "rw");
@@ -144,6 +145,7 @@ public class BinaryFileScanTest {
    * @param filename
    * @param row
    */
+  @SuppressWarnings("unused")
   private void generateSimpleBinaryFile(String filename, int row) {
     try {
       RandomAccessFile raf = new RandomAccessFile(filename, "rw");
