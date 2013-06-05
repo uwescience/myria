@@ -52,6 +52,11 @@ public interface Aggregator<COLUMN_TYPE> extends Serializable {
    * */
   void add(COLUMN_TYPE value);
 
+  /**
+   * Add an object.
+   * 
+   * @param obj the object value.
+   * */
   void addObj(Object obj);
 
   /**

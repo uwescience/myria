@@ -10,7 +10,7 @@ import edu.washington.escience.myriad.Type;
 /**
  * Knows how to compute some aggregate over a set of IntFields.
  */
-public class IntegerAggregator implements Aggregator<Integer> {
+public final class IntegerAggregator implements Aggregator<Integer> {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -117,7 +117,7 @@ public class IntegerAggregator implements Aggregator<Integer> {
   }
 
   @Override
-  public final void add(final TupleBatch tup) {
+  public void add(final TupleBatch tup) {
 
     final int numTuples = tup.numTuples();
     if (numTuples > 0) {
@@ -138,7 +138,7 @@ public class IntegerAggregator implements Aggregator<Integer> {
   }
 
   @Override
-  public final void add(final Integer value) {
+  public void add(final Integer value) {
     if (value != null) {
       count++;
       // temp variables for stdev streaming computation
@@ -155,22 +155,22 @@ public class IntegerAggregator implements Aggregator<Integer> {
   }
 
   @Override
-  public final void addObj(final Object value) {
+  public void addObj(final Object value) {
     add((Integer) value);
   }
 
   @Override
-  public final int availableAgg() {
+  public int availableAgg() {
     return AVAILABLE_AGG;
   }
 
   @Override
-  public final IntegerAggregator freshCopyYourself() {
+  public IntegerAggregator freshCopyYourself() {
     return new IntegerAggregator(aColumn, aggOps, resultSchema);
   }
 
   @Override
-  public final void getResult(final TupleBatchBuffer buffer, final int fromIndex) {
+  public void getResult(final TupleBatchBuffer buffer, final int fromIndex) {
     int idx = fromIndex;
     if ((aggOps & AGG_OP_COUNT) != 0) {
       buffer.put(idx, count);
@@ -200,7 +200,7 @@ public class IntegerAggregator implements Aggregator<Integer> {
   }
 
   @Override
-  public final Schema getResultSchema() {
+  public Schema getResultSchema() {
     return resultSchema;
   }
 }

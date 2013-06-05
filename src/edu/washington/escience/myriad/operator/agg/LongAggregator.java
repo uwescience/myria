@@ -155,7 +155,7 @@ public final class LongAggregator implements Aggregator<Long> {
   }
 
   @Override
-  public final void addObj(final Object value) {
+  public void addObj(final Object value) {
     add((Long) value);
   }
 
