@@ -128,7 +128,7 @@ public class TipsyFileScan extends LeafOperator {
   }
 
   @Override
-  protected final TupleBatch fetchNext() throws DbException {
+  protected final TupleBatch fetchNextReady() throws DbException {
     processGasRecords();
     processDarkRecords();
     processStarRecords();
@@ -199,11 +199,6 @@ public class TipsyFileScan extends LeafOperator {
     while (buffer.numTuples() > 0) {
       buffer.popAny();
     }
-  }
-
-  @Override
-  protected final TupleBatch fetchNextReady() throws DbException {
-    return fetchNext();
   }
 
   @Override
@@ -337,8 +332,8 @@ public class TipsyFileScan extends LeafOperator {
 
   /**
    * Construct tuples for gas particle records. The expected dark particles schema in the bin file is mass, x, y, z, vx,
-   * vy, vz, metals, tform, eps, phi. Merge the record in the binary file with iOrder and group number and fill in the
-   * each tuple column accordingly.
+   * >>>>>>> master vy, vz, metals, tform, eps, phi. Merge the record in the binary file with iOrder and group number
+   * and fill in the each tuple column accordingly.
    * 
    * @throws DbException if error reading from file.
    */

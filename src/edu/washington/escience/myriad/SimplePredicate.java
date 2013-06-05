@@ -118,11 +118,10 @@ public class SimplePredicate implements Serializable, Predicate {
   @Override
   public final ImmutableBitSet filter(final TupleBatch tb) {
     Preconditions.checkNotNull(tb);
-    BitSet newValidTuples = null;
+    BitSet newValidTuples = new BitSet();
     if (tb.numTuples() > 0) {
       final Column<?> columnValues = tb.getDataColumns().get(getField());
       final Type columnType = tb.getSchema().getColumnType(getField());
-      newValidTuples = new BitSet();
       ImmutableList<Integer> validIndices = tb.getValidIndices();
       for (final int validIdx : validIndices) {
         if (columnType.filter(getOp(), columnValues, validIdx, getOperand())) {

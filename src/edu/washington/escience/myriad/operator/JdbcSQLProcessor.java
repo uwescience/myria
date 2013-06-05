@@ -65,24 +65,6 @@ public class JdbcSQLProcessor extends Operator {
   /**
    * Wait children to finish.
    * 
-   * @throws InterruptedException if interrupted.
-   * @throws DbException if any operator processing error occurs
-   * */
-  private void waitChildren() throws DbException, InterruptedException {
-    if (allChildrenEOS) {
-      return;
-    }
-    for (final Operator child : children) {
-      while (!child.eos()) {
-        child.next();
-      }
-    }
-    allChildrenEOS = true;
-  }
-
-  /**
-   * Wait children to finish.
-   * 
    * @throws DbException if any operator processing error occurs
    * */
   private void waitChildrenReady() throws DbException {
@@ -109,25 +91,22 @@ public class JdbcSQLProcessor extends Operator {
 
   @Override
   protected final TupleBatch fetchNextReady() throws DbException {
-    try {
+    if (allChildrenEOS) {
+      return fetchNext();
+    } else {
+      waitChildrenReady();
       if (allChildrenEOS) {
         return fetchNext();
-      } else {
-        waitChildrenReady();
-        if (allChildrenEOS) {
-          return fetchNext();
-        }
       }
-      return null;
-    } catch (InterruptedException ee) {
-      Thread.currentThread().interrupt();
-      return null;
     }
+    return null;
   }
 
-  @Override
-  protected final TupleBatch fetchNext() throws DbException, InterruptedException {
-    waitChildren();
+  /**
+   * @return get data from SQLite.
+   * @throws DbException error.
+   * */
+  protected final TupleBatch fetchNext() throws DbException {
     if (tuples == null) {
       tuples = JdbcAccessMethod.tupleBatchIteratorFromQuery(jdbcInfo, baseSQL);
     }

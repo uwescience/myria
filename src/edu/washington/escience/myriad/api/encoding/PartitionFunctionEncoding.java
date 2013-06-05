@@ -12,7 +12,9 @@ import edu.washington.escience.myriad.api.MyriaApiException;
 import edu.washington.escience.myriad.parallel.PartitionFunction;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
-@JsonSubTypes({ @Type(value = SingleFieldPartitionFunctionEncoding.class, name = "SingleFieldHash") })
+@JsonSubTypes({
+    @Type(value = MultiFieldPartitionFunctionEncoding.class, name = "MultiFieldHash"),
+    @Type(value = SingleFieldPartitionFunctionEncoding.class, name = "SingleFieldHash") })
 public abstract class PartitionFunctionEncoding<T extends PartitionFunction<?, ?>> implements MyriaApiEncoding {
   public String type;
 

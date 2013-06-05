@@ -72,7 +72,7 @@ public class BinaryFileScan extends LeafOperator {
   }
 
   @Override
-  protected final TupleBatch fetchNext() throws DbException {
+  protected final TupleBatch fetchNextReady() throws DbException {
     try {
       while (fileLength > 0 && buffer.numTuples() < TupleBatch.BATCH_SIZE) {
         for (int count = 0; count < schema.numColumns(); ++count) {
@@ -113,11 +113,6 @@ public class BinaryFileScan extends LeafOperator {
     while (buffer.numTuples() > 0) {
       buffer.popAny();
     }
-  }
-
-  @Override
-  protected final TupleBatch fetchNextReady() throws DbException {
-    return fetchNext();
   }
 
   @Override

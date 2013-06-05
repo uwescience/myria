@@ -21,9 +21,9 @@ public interface QueryPartition extends Comparable<QueryPartition> {
   void setPriority(final int priority);
 
   /**
-   * Start non-blocking execution.
+   * Start execution.
    * */
-  void startNonBlockingExecution();
+  void startExecution();
 
   /**
    * Prepare to execute, reserve resources, allocate data structures to be used in execution, etc.

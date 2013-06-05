@@ -16,7 +16,7 @@ import edu.washington.escience.myriad.util.IPCUtils;
  * PartitionFunction object during the ShuffleProducer's instantiation).
  * 
  */
-public class ShuffleProducer extends Producer {
+public class LocalShuffleProducer extends Producer {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -28,13 +28,11 @@ public class ShuffleProducer extends Producer {
 
   /**
    * @param child the child who provides data for this producer to distribute.
-   * @param operatorID destination operators the data goes
-   * @param workerIDs destination workers the data goes.
+   * @param operatorIDs destination operators the data goes
    * @param pf the partition function
    * */
-  public ShuffleProducer(final Operator child, final ExchangePairID operatorID, final int[] workerIDs,
-      final PartitionFunction<?, ?> pf) {
-    super(child, operatorID, workerIDs);
+  public LocalShuffleProducer(final Operator child, final ExchangePairID[] operatorIDs, final PartitionFunction<?, ?> pf) {
+    super(child, operatorIDs);
     partitionFunction = pf;
   }
 
