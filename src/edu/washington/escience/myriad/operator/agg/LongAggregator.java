@@ -10,7 +10,7 @@ import edu.washington.escience.myriad.Type;
 /**
  * Knows how to compute some aggregates over a LongColumn.
  */
-public final class LongAggregator implements Aggregator {
+public final class LongAggregator implements Aggregator<Long> {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -135,6 +135,28 @@ public final class LongAggregator implements Aggregator {
         }
       }
     }
+  }
+
+  @Override
+  public void add(final Long value) {
+    if (value != null) {
+      count++;
+      // temp variables for stdev streaming computation
+      final long x = value;
+      sum += x;
+      sumSquared += x * x;
+      if (min > x) {
+        min = x;
+      }
+      if (max < x) {
+        max = x;
+      }
+    }
+  }
+
+  @Override
+  public final void addObj(final Object value) {
+    add((Long) value);
   }
 
   @Override

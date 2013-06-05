@@ -10,7 +10,7 @@ import edu.washington.escience.myriad.Type;
 /**
  * Knows how to compute some aggregate over a set of IntFields.
  */
-public class IntegerAggregator implements Aggregator {
+public class IntegerAggregator implements Aggregator<Integer> {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -138,12 +138,34 @@ public class IntegerAggregator implements Aggregator {
   }
 
   @Override
+  public final void add(final Integer value) {
+    if (value != null) {
+      count++;
+      // temp variables for stdev streaming computation
+      final int x = value;
+      sum += x;
+      sumSquared += x * x;
+      if (min > x) {
+        min = x;
+      }
+      if (max < x) {
+        max = x;
+      }
+    }
+  }
+
+  @Override
+  public final void addObj(final Object value) {
+    add((Integer) value);
+  }
+
+  @Override
   public final int availableAgg() {
     return AVAILABLE_AGG;
   }
 
   @Override
-  public final Aggregator freshCopyYourself() {
+  public final IntegerAggregator freshCopyYourself() {
     return new IntegerAggregator(aColumn, aggOps, resultSchema);
   }
 
