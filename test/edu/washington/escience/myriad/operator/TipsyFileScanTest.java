@@ -2,7 +2,6 @@ package edu.washington.escience.myriad.operator;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.DataOutput;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -11,8 +10,6 @@ import java.io.IOException;
 import java.io.PrintStream;
 
 import org.junit.Test;
-
-import com.google.common.io.LittleEndianDataOutputStream;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.SimplePredicate;
@@ -58,20 +55,11 @@ public class TipsyFileScanTest {
   }
 
   @Test
-  public void testSimpleLittleEndian() throws IOException, DbException {
-    String binFilename = "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "tipsy2";
-    String iOrderFilename = "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "iOrder2.iord";
-    String grpFilename = "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "grp2.amiga.grp";
-    TipsyFileScan filescan = new TipsyFileScan(binFilename, iOrderFilename, grpFilename, true);
-    assertEquals(3, getRowCount(filescan));
-  }
-
-  @Test
   public void testSimpleBigEndianStar() throws IOException, DbException {
     String binFilename = "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "tipsy3";
     String iOrderFilename = "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "iOrder3.iord";
     String grpFilename = "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "grp3.amiga.grp";
-    TipsyFileScan filescan = new TipsyFileScan(binFilename, iOrderFilename, grpFilename, true);
+    TipsyFileScan filescan = new TipsyFileScan(binFilename, iOrderFilename, grpFilename);
     Filter filter = new Filter(new SimplePredicate(16, SimplePredicate.Op.EQUALS, "star"), filescan);
     assertEquals(3, getRowCount(filter));
   }
@@ -81,7 +69,7 @@ public class TipsyFileScanTest {
     String binFilename = "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "tipsy3";
     String iOrderFilename = "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "iOrder3.iord";
     String grpFilename = "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "grp3.amiga.grp";
-    TipsyFileScan filescan = new TipsyFileScan(binFilename, iOrderFilename, grpFilename, true);
+    TipsyFileScan filescan = new TipsyFileScan(binFilename, iOrderFilename, grpFilename);
     Filter filter = new Filter(new SimplePredicate(16, SimplePredicate.Op.EQUALS, "dark"), filescan);
     assertEquals(2, getRowCount(filter));
   }
@@ -91,14 +79,14 @@ public class TipsyFileScanTest {
     String binFilename = "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "tipsy3";
     String iOrderFilename = "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "iOrder3.iord";
     String grpFilename = "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "grp3.amiga.grp";
-    TipsyFileScan filescan = new TipsyFileScan(binFilename, iOrderFilename, grpFilename, true);
+    TipsyFileScan filescan = new TipsyFileScan(binFilename, iOrderFilename, grpFilename);
     Filter filter = new Filter(new SimplePredicate(16, SimplePredicate.Op.EQUALS, "gas"), filescan);
     assertEquals(4, getRowCount(filter));
   }
 
   // @Test
-  // warning: this test takes about 35 minutes to run on a mac with 8gb ram, i7
-  // processor.
+  // the data is stored in /projects/db8/dataset_astro_2011/
+  // this test took 161796 ms which is about 2.7 minutes on a i7 processor 8gb ram machine
   public void testCosmo512Star() throws DbException {
     String binFileName =
         "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "cosmo50cmb.256g2MbwK.00512";
@@ -108,7 +96,6 @@ public class TipsyFileScanTest {
         "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "cosmo50cmb.256g2MbwK.00512.amiga.grp";
     TipsyFileScan tfScan = new TipsyFileScan(binFileName, iOrderFileName, grpFileName);
     Filter filter = new Filter(new SimplePredicate(16, SimplePredicate.Op.EQUALS, "star"), tfScan);
-
     assertEquals(6949401, getRowCount(filter));
   }
 
@@ -121,37 +108,9 @@ public class TipsyFileScanTest {
    * @param nstar The number of star records.
    * @throws IOException if error writing to file.
    */
-  public static void generateBigEndianBinaryFile(String filename, int ngas, int ndark, int nstar) throws IOException {
+  public static void generateTipsyFile(String filename, int ngas, int ndark, int nstar) throws IOException {
     FileOutputStream fStream = new FileOutputStream(filename);
     DataOutputStream output = new DataOutputStream(fStream);
-    generateBinaryFile(output, ngas, ndark, nstar);
-  }
-
-  /**
-   * Generate little endian binary file.
-   * 
-   * @param filename The filename to generate the content.
-   * @param ngas The number of gas records.
-   * @param ndark The number of dark records.
-   * @param nstar The number of star records.
-   * @throws IOException if error writing to file.
-   */
-  public static void generateLittleEndianBinaryFile(String filename, int ngas, int ndark, int nstar) throws IOException {
-    FileOutputStream fStream = new FileOutputStream(filename);
-    LittleEndianDataOutputStream output = new LittleEndianDataOutputStream(fStream);
-    generateBinaryFile(output, ngas, ndark, nstar);
-  }
-
-  /**
-   * Generate binary file using the DataOutput object.
-   * 
-   * @param output The DataOutput object.
-   * @param ngas The number of gas records.
-   * @param ndark The number of dark records.
-   * @param nstar The number of star records.
-   * @throws IOException if error writing to file.
-   */
-  private static void generateBinaryFile(DataOutput output, int ngas, int ndark, int nstar) throws IOException {
     // write header
     // time
     output.writeDouble(System.currentTimeMillis());
@@ -185,6 +144,7 @@ public class TipsyFileScanTest {
         output.writeFloat(j);
       }
     }
+    output.close();
   }
 
   /**

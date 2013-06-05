@@ -8,14 +8,16 @@ import org.codehaus.jackson.annotate.JsonTypeInfo;
 
 import com.google.common.base.Preconditions;
 
+import edu.washington.escience.myriad.Predicate;
 import edu.washington.escience.myriad.api.MyriaApiException;
-import edu.washington.escience.myriad.parallel.PartitionFunction;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
-    @Type(value = MultiFieldPartitionFunctionEncoding.class, name = "MultiFieldHash"),
-    @Type(value = SingleFieldPartitionFunctionEncoding.class, name = "SingleFieldHash") })
-public abstract class PartitionFunctionEncoding<T extends PartitionFunction<?, ?>> implements MyriaApiEncoding {
+    @Type(value = WithinSumRangePredicateEncoding.class, name = "WithinSumRangePredicate"),
+    @Type(value = EqualsPredicateEncoding.class, name = "EqualsPredicate"),
+    @Type(value = NotEqualsPredicateEncoding.class, name = "NotEqualsPredicate") })
+public abstract class PredicateEncoding<T extends Predicate> implements MyriaApiEncoding {
+
   public String type;
 
   @Override
@@ -27,5 +29,6 @@ public abstract class PartitionFunctionEncoding<T extends PartitionFunction<?, ?
     }
   }
 
-  public abstract T construct(int numPartitions);
+  public abstract T construct();
+
 }
