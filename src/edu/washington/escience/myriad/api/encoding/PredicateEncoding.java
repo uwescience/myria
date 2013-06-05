@@ -12,7 +12,10 @@ import edu.washington.escience.myriad.Predicate;
 import edu.washington.escience.myriad.api.MyriaApiException;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
-@JsonSubTypes({ @Type(value = WithinSumRangePredicateEncoding.class, name = "WithinSumRangePredicate") })
+@JsonSubTypes({
+    @Type(value = WithinSumRangePredicateEncoding.class, name = "WithinSumRangePredicate"),
+    @Type(value = EqualsPredicateEncoding.class, name = "EqualsPredicate"),
+    @Type(value = NotEqualsPredicateEncoding.class, name = "NotEqualsPredicate") })
 public abstract class PredicateEncoding<T extends Predicate> implements MyriaApiEncoding {
 
   public String type;
