@@ -77,15 +77,6 @@ public class SingleRandomFailureInjector extends Operator {
   private static final long serialVersionUID = 1L;
 
   @Override
-  protected final TupleBatch fetchNext() throws DbException, InterruptedException {
-    if (toFail) {
-      toFail = false;
-      throw new InjectedFailureException("Failure injected by " + this);
-    }
-    return child.next();
-  }
-
-  @Override
   public final Operator[] getChildren() {
     return new Operator[] { child };
   }

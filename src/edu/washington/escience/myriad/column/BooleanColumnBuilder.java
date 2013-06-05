@@ -110,7 +110,7 @@ public final class BooleanColumnBuilder implements ColumnBuilder<Boolean> {
   public BooleanColumnBuilder appendFromSQLite(final SQLiteStatement statement, final int index)
       throws SQLiteException, BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    throw new UnsupportedOperationException("SQLite does not support Boolean columns.");
+    return append(0 != statement.columnInt(index));
   }
 
   @Override

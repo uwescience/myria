@@ -67,18 +67,6 @@ public final class BlockingJDBCDataReceiver extends Operator {
   }
 
   @Override
-  protected TupleBatch fetchNext() throws DbException, InterruptedException {
-    TupleBatch tb = null;
-    while (!child.eos()) {
-      while ((tb = child.next()) != null) {
-        JdbcAccessMethod.tupleBatchInsert(jdbcInfo, "insert into " + tableName + " ( "
-            + StringUtils.join(columnNames, ',') + " ) values ( " + StringUtils.join(placeHolders, ',') + " )", tb);
-      }
-    }
-    return null;
-  }
-
-  @Override
   protected TupleBatch fetchNextReady() throws DbException {
     TupleBatch tb = null;
     tb = child.nextReady();

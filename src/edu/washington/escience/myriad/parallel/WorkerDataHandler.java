@@ -20,7 +20,6 @@ import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnFactory;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.parallel.ExchangeData.MetaMessage;
-import edu.washington.escience.myriad.parallel.Worker.QueryExecutionMode;
 import edu.washington.escience.myriad.parallel.ipc.ChannelContext;
 import edu.washington.escience.myriad.parallel.ipc.MessageChannelHandler;
 import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
@@ -192,11 +191,7 @@ public final class WorkerDataHandler extends SimpleChannelUpstreamHandler implem
           switch (qm.getType()) {
             case QUERY_START:
               q.init();
-              if (ownerWorker.getQueryExecutionMode() == QueryExecutionMode.NON_BLOCKING) {
-                q.startNonBlockingExecution();
-              } else {
-                q.startBlockingExecution();
-              }
+              q.startExecution();
               break;
             case QUERY_PAUSE:
               q.pause();

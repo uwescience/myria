@@ -23,6 +23,12 @@ public class SinkRoot extends RootOperator {
   private long cnt;
 
   /**
+   * The maximum number of tuples to read. If limit <= 0, all tuples will be read. Note that this is only accurate to
+   * the nearest TupleBatch over limit.
+   */
+  private long limit;
+
+  /**
    * @return count.
    * */
   public final long getCount() {
@@ -34,11 +40,25 @@ public class SinkRoot extends RootOperator {
    * */
   public SinkRoot(final Operator child) {
     super(child);
+    setLimit(0);
+  }
+
+  /**
+   * @param child the child.
+   * @param limit the limit of the number of tuples this operator will absorb. If limit <= 0, all tuples will be read.
+   *          Note that this is only accurate to the nearest TupleBatch over limit.
+   * */
+  public SinkRoot(final Operator child, final long limit) {
+    super(child);
+    setLimit(limit);
   }
 
   @Override
   protected final void consumeTuples(final TupleBatch tuples) throws DbException {
     cnt += tuples.numTuples();
+    if (limit > 0 && cnt >= limit) {
+      setEOS();
+    }
   }
 
   @Override
@@ -58,4 +78,14 @@ public class SinkRoot extends RootOperator {
   protected void cleanup() throws DbException {
   }
 
+  /**
+   * Set the limit of the number of tuples this operator will absorb. If limit <= 0, all tuples will be read. Note that
+   * this is only accurate to the nearest TupleBatch over limit.
+   * 
+   * @param limit the number of tuples this operator will absorb. If limit <= 0, all tuples will be read. Note that this
+   *          is only accurate to the nearest TupleBatch over limit.
+   */
+  public final void setLimit(final long limit) {
+    this.limit = limit;
+  }
 }

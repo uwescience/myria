@@ -21,8 +21,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.ws.rs.WebApplicationException;
-
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelPipelineFactory;
@@ -44,7 +42,7 @@ import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnFactory;
 import edu.washington.escience.myriad.coordinator.catalog.Catalog;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
-import edu.washington.escience.myriad.operator.FileScan;
+import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SQLiteInsert;
 import edu.washington.escience.myriad.parallel.ExchangeData.MetaMessage;
@@ -59,6 +57,7 @@ import edu.washington.escience.myriad.proto.QueryProto.QueryReport;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.util.DateTimeUtils;
 import edu.washington.escience.myriad.util.IPCUtils;
+import edu.washington.escience.myriad.util.MyriaUtils;
 
 /**
  * The master entrance.
@@ -469,7 +468,7 @@ public final class Server {
         new IPCConnectionPool(MyriaConstants.MASTER_ID, computingUnits, IPCConfigurations
             .createMasterIPCServerBootstrap(this), IPCConfigurations.createMasterIPCClientBootstrap(this));
 
-    execEnvVars.put("ipcConnectionPool", connectionPool);
+    execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_IPC_CONNECTION_POOL, connectionPool);
 
     scheduledTaskExecutor =
         Executors.newSingleThreadScheduledExecutor(new RenamingThreadFactory("Master global timer"));
@@ -811,7 +810,7 @@ public final class Server {
       @Override
       public void operationComplete(final QueryFuture future) throws Exception {
         mqp.init();
-        mqp.startNonBlockingExecution();
+        mqp.startExecution();
         Server.this.startWorkerQuery(future.getQuery().getQueryID());
       }
     });
@@ -846,82 +845,48 @@ public final class Server {
   }
 
   /**
-   * Adds the data for the specified dataset to all alive workers.
+   * Ingest the given dataset.
    * 
    * @param relationKey the name of the dataset.
-   * @param schema the format of the tuples.
-   * @param data the data.
-   * @throws CatalogException if there is an error.
+   * @param workersToIngest restrict the workers to ingest data (null for all)
+   * @param source the source of tuples to be ingested.
    * @throws InterruptedException interrupted
+   * @throws DbException if there is an error
    */
-  public void ingestDataset(final RelationKey relationKey, final Schema schema, final byte[] data)
-      throws CatalogException, InterruptedException {
-    /* The Master plan: scan the data and scatter it to all the workers. */
-    FileScan fileScan = new FileScan(schema);
-    fileScan.setInputStream(new ByteArrayInputStream(data));
-    doIngest(relationKey, schema, fileScan);
-  }
-
-  /**
-   * Adds the data for the specified dataset to all alive workers.
-   * 
-   * @param relationKey the name of the dataset.
-   * @param schema the format of the tuples.
-   * @param fileName the file name.
-   * @throws CatalogException if there is an error.
-   * @throws InterruptedException interrupted
-   * @throws FileNotFoundException if the file doesn't exist
-   */
-  public void ingestDataset(final RelationKey relationKey, final Schema schema, final String fileName)
-      throws CatalogException, InterruptedException, FileNotFoundException {
-    /* The Master plan: scan the data and scatter it to all the workers. */
-    FileScan fileScan = new FileScan(fileName, schema);
-    doIngest(relationKey, schema, fileScan);
-  }
-
-  /**
-   * Do the real ingest.
-   * 
-   * @param relationKey the name of the dataset.
-   * @param schema the format of the tuples.
-   * @param fileScan the FileScan operator, constructed by either a filename or a byte[].
-   * @throws InterruptedException interrupted
-   * @throws CatalogException if there is an error
-   */
-  private void doIngest(final RelationKey relationKey, final Schema schema, final FileScan fileScan)
-      throws InterruptedException, CatalogException {
-    ExchangePairID scatterId = ExchangePairID.newID();
-    int[] workersArray = new int[workers.size()];
-    int count = 0;
-    final Set<Integer> ingestWorkers = getAliveWorkers();
-    for (int i : ingestWorkers) {
-      workersArray[count] = i;
-      count++;
+  public void ingestDataset(final RelationKey relationKey, final Set<Integer> workersToIngest, final Operator source)
+      throws InterruptedException, DbException {
+    /* Figure out the workers we will use. If workersToIngest is null, use all active workers. */
+    Set<Integer> actualWorkers = workersToIngest;
+    if (workersToIngest == null) {
+      actualWorkers = getAliveWorkers();
     }
+    int[] workersArray = MyriaUtils.integerCollectionToIntArray(actualWorkers);
+
+    /* The master plan: send the tuples out. */
+    ExchangePairID scatterId = ExchangePairID.newID();
     ShuffleProducer scatter =
-        new ShuffleProducer(fileScan, scatterId, workersArray, new RoundRobinPartitionFunction(ingestWorkers.size()));
+        new ShuffleProducer(source, scatterId, workersArray, new RoundRobinPartitionFunction(workersArray.length));
 
     /* The workers' plan */
-    ShuffleConsumer gather = new ShuffleConsumer(schema, scatterId, new int[] { MyriaConstants.MASTER_ID });
+    ShuffleConsumer gather = new ShuffleConsumer(source.getSchema(), scatterId, new int[] { MyriaConstants.MASTER_ID });
     SQLiteInsert insert = new SQLiteInsert(gather, relationKey, true);
     Map<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
-    for (Integer i : ingestWorkers) {
-      workerPlans.put(i, new RootOperator[] { insert });
+    for (Integer workerId : workersArray) {
+      workerPlans.put(workerId, new RootOperator[] { insert });
     }
 
     try {
       /* Start the workers */
       submitQuery("ingest " + relationKey.toString("sqlite"), "ingest " + relationKey.toString("sqlite"), scatter,
           workerPlans).sync();
-    } catch (CatalogException | DbException e) {
-      throw new WebApplicationException(e);
+      /* Now that the query has finished, add the metadata about this relation to the dataset. */
+      catalog.addRelationMetadata(relationKey, source.getSchema());
+
+      /* Add the round robin-partitioned shard. */
+      catalog.addStoredRelation(relationKey, actualWorkers, "RoundRobin");
+    } catch (CatalogException e) {
+      throw new DbException(e);
     }
-
-    /* Now that the query has finished, add the metadata about this relation to the dataset. */
-    catalog.addRelationMetadata(relationKey, schema);
-
-    /* Add the round robin-partitioned shard. */
-    catalog.addStoredRelation(relationKey, ingestWorkers, "RoundRobin");
   }
 
   /**

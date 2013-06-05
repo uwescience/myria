@@ -28,11 +28,13 @@ public class BinaryFileScanTest {
   @Test
   /**
    * Test default BinaryFileScan that reads data bytes in big endian format.
+   * 
+   * File was generated with:
+   *     generateSimpleBinaryFile(filename, 2);
    */
   public void testSimple() throws DbException {
     Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE));
     String filename = "testdata" + File.separatorChar + "binaryfilescan" + File.separatorChar + "testSimple";
-    generateSimpleBinaryFile(filename, 2);
     BinaryFileScan bfs = new BinaryFileScan(schema, filename);
     assertEquals(2, getRowCount(bfs));
   }
@@ -41,6 +43,9 @@ public class BinaryFileScanTest {
   /**
    * Test default BinaryFileScan that reads data bytes in big endian format with the bin file
    * that has the astronomy data schema.
+
+   * File was generated with:
+   *     generateSimpleBinaryFile(filename, 2);
    */
   public void testWithAstronomySchema() throws DbException {
     Type[] typeAr = { Type.LONG_TYPE, // iOrder
@@ -62,7 +67,6 @@ public class BinaryFileScanTest {
     Schema schema = new Schema(Arrays.asList(typeAr));
     String filename =
         "testdata" + File.separatorChar + "binaryfilescan" + File.separatorChar + "testWithAstronomySchema";
-    generateBinaryFile(filename, typeAr, 8);
     BinaryFileScan bfs = new BinaryFileScan(schema, filename);
     assertEquals(8, getRowCount(bfs));
   }

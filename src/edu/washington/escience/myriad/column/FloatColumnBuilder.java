@@ -98,7 +98,7 @@ public final class FloatColumnBuilder implements ColumnBuilder<Float> {
   public FloatColumnBuilder appendFromSQLite(final SQLiteStatement statement, final int index) throws SQLiteException,
       BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    throw new UnsupportedOperationException("SQLite does not support Float columns.");
+    return append((float) statement.columnDouble(index));
   }
 
   @Override

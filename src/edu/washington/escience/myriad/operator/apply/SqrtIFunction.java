@@ -10,6 +10,11 @@ import edu.washington.escience.myriad.Type;
 public final class SqrtIFunction extends IFunction {
 
   /**
+   * For serialization.
+   */
+  private static final long serialVersionUID = 1L;
+
+  /**
    * {@inheritDoc}
    */
   @Override

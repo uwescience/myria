@@ -14,7 +14,6 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.operator.RootOperator;
-import edu.washington.escience.myriad.parallel.Worker.QueryExecutionMode;
 import edu.washington.escience.myriad.parallel.ipc.IPCEvent;
 import edu.washington.escience.myriad.parallel.ipc.IPCEventListener;
 import edu.washington.escience.myriad.util.DateTimeUtils;
@@ -158,7 +157,7 @@ public class WorkerQueryPartition implements QueryPartition {
     for (final RootOperator taskRootOp : operators) {
       final QuerySubTreeTask drivingTask =
           new QuerySubTreeTask(ownerWorker.getIPCConnectionPool().getMyIPCID(), this, taskRootOp, ownerWorker
-              .getQueryExecutor(), QueryExecutionMode.NON_BLOCKING);
+              .getQueryExecutor());
       QueryFuture taskExecutionFuture = drivingTask.getExecutionFuture();
       taskExecutionFuture.addListener(taskExecutionListener);
 
@@ -252,26 +251,13 @@ public class WorkerQueryPartition implements QueryPartition {
   }
 
   @Override
-  public final void startNonBlockingExecution() {
+  public final void startExecution() {
     if (LOGGER.isInfoEnabled()) {
       LOGGER.info("Query : " + getQueryID() + " start processing.");
     }
     queryStatistics.markQueryStart();
     for (QuerySubTreeTask t : tasks) {
-      t.nonBlockingExecute();
-    }
-  }
-
-  /**
-   * start blocking execution.
-   */
-  @Deprecated
-  public final void startBlockingExecution() {
-    if (LOGGER.isInfoEnabled()) {
-      LOGGER.info("Query : " + getQueryID() + " start processing.");
-    }
-    for (QuerySubTreeTask t : tasks) {
-      t.blockingExecute();
+      t.execute();
     }
   }
 
