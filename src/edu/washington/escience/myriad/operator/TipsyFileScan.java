@@ -1,5 +1,6 @@
 package edu.washington.escience.myriad.operator;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.DataInput;
 import java.io.DataInputStream;
@@ -44,6 +45,8 @@ public class TipsyFileScan extends LeafOperator {
   private transient DataInput dataInputForBin;
   /** The file stream for bin file. */
   private transient FileInputStream fStreamForBin;
+  /** A buffer for the bin file. */
+  private transient BufferedInputStream bufferedStreamForBin;
   /** Scanner used to parse the iOrder file. */
   private transient Scanner iOrderScanner = null;
   /** Scanner used to parse the group number file. */
@@ -149,10 +152,11 @@ public class TipsyFileScan extends LeafOperator {
     try {
       // Create a fileInputStream for the bin file
       fStreamForBin = new FileInputStream(binFileName);
+      bufferedStreamForBin = new BufferedInputStream(fStreamForBin);
       if (isLittleEndian) {
-        dataInputForBin = new LittleEndianDataInputStream(fStreamForBin);
+        dataInputForBin = new LittleEndianDataInputStream(bufferedStreamForBin);
       } else {
-        dataInputForBin = new DataInputStream(fStreamForBin);
+        dataInputForBin = new DataInputStream(bufferedStreamForBin);
       }
 
       dataInputForBin.readDouble(); // time
@@ -216,45 +220,31 @@ public class TipsyFileScan extends LeafOperator {
   private void processGasRecords() throws DbException {
     while (ngas > 0 && (buffer.numTuples() < TupleBatch.BATCH_SIZE)) {
       lineNumber++;
-      for (int count = 0; count < schema.numColumns(); ++count) {
-        try {
-          switch (count + 1) {
-            case 1:
-              buffer.put(count, iOrderScanner.nextLong());
-              break;
-            case 2:
-            case 3:
-            case 4:
-            case 5:
-            case 6:
-            case 7:
-            case 8:
-            case 9:
-            case 10:
-            case 11:
-            case 12:
-              buffer.put(count, dataInputForBin.readFloat());
-              break;
-            case 13:
-            case 14:
-              // TODO(leelee): Should be null for this column. Put 0 for now as
-              // TupleBatchBuffer does not support null
-              // value for now.
-              buffer.put(count, (float) 0);
-              break;
-            case 15:
-              buffer.put(count, dataInputForBin.readFloat());
-              break;
-            case 16:
-              buffer.put(count, grpScanner.nextInt());
-              break;
-            case 17:
-              buffer.put(count, "gas");
-              break;
-          }
-        } catch (final IOException e) {
-          throw new DbException(e);
-        }
+      try {
+        int count = 0;
+        buffer.put(count++, iOrderScanner.nextLong());
+        buffer.put(count++, dataInputForBin.readFloat());
+        buffer.put(count++, dataInputForBin.readFloat());
+        buffer.put(count++, dataInputForBin.readFloat());
+        buffer.put(count++, dataInputForBin.readFloat());
+        buffer.put(count++, dataInputForBin.readFloat());
+        buffer.put(count++, dataInputForBin.readFloat());
+        buffer.put(count++, dataInputForBin.readFloat());
+        buffer.put(count++, dataInputForBin.readFloat());
+        buffer.put(count++, dataInputForBin.readFloat());
+        buffer.put(count++, dataInputForBin.readFloat());
+        buffer.put(count++, dataInputForBin.readFloat());
+        /*
+         * TODO(leelee): Should be null for the next two columns. Put 0 for now as TupleBatchBuffer does not support
+         * null value.
+         */
+        buffer.put(count++, (float) 0);
+        buffer.put(count++, (float) 0);
+        buffer.put(count++, dataInputForBin.readFloat());
+        buffer.put(count++, grpScanner.nextInt());
+        buffer.put(count++, "gas");
+      } catch (final IOException e) {
+        throw new DbException(e);
       }
       final String iOrderRest = iOrderScanner.nextLine().trim();
       if (iOrderRest.length() > 0) {
@@ -278,45 +268,31 @@ public class TipsyFileScan extends LeafOperator {
   private void processDarkRecords() throws DbException {
     while (ndark > 0 && (buffer.numTuples() < TupleBatch.BATCH_SIZE)) {
       lineNumber++;
-      for (int count = 0; count < schema.numColumns(); ++count) {
-        try {
-          switch (count + 1) {
-            case 1:
-              buffer.put(count, iOrderScanner.nextLong());
-              break;
-            case 2:
-            case 3:
-            case 4:
-            case 5:
-            case 6:
-            case 7:
-            case 8:
-              buffer.put(count, dataInputForBin.readFloat());
-              break;
-            case 9:
-            case 10:
-            case 11:
-            case 12:
-            case 13:
-              // TODO(leelee): Should be null for this column. Put 0 for now as
-              // TupleBatchBuffer does not support null
-              // value for now.
-              buffer.put(count, (float) 0);
-              break;
-            case 14:
-            case 15:
-              buffer.put(count, dataInputForBin.readFloat());
-              break;
-            case 16:
-              buffer.put(count, grpScanner.nextInt());
-              break;
-            case 17:
-              buffer.put(count, "dark");
-              break;
-          }
-        } catch (final IOException e) {
-          throw new DbException(e);
-        }
+      try {
+        int count = 0;
+        buffer.put(count++, iOrderScanner.nextLong());
+        buffer.put(count++, dataInputForBin.readFloat());
+        buffer.put(count++, dataInputForBin.readFloat());
+        buffer.put(count++, dataInputForBin.readFloat());
+        buffer.put(count++, dataInputForBin.readFloat());
+        buffer.put(count++, dataInputForBin.readFloat());
+        buffer.put(count++, dataInputForBin.readFloat());
+        buffer.put(count++, dataInputForBin.readFloat());
+        /*
+         * TODO(leelee): Should be null for the next five columns. Put 0 for now as TupleBatchBuffer does not support
+         * null value.
+         */
+        buffer.put(count++, (float) 0);
+        buffer.put(count++, (float) 0);
+        buffer.put(count++, (float) 0);
+        buffer.put(count++, (float) 0);
+        buffer.put(count++, (float) 0);
+        buffer.put(count++, dataInputForBin.readFloat());
+        buffer.put(count++, dataInputForBin.readFloat());
+        buffer.put(count++, grpScanner.nextInt());
+        buffer.put(count++, "dark");
+      } catch (final IOException e) {
+        throw new DbException(e);
       }
       final String iOrderRest = iOrderScanner.nextLine().trim();
       if (iOrderRest.length() > 0) {
@@ -332,53 +308,39 @@ public class TipsyFileScan extends LeafOperator {
 
   /**
    * Construct tuples for gas particle records. The expected dark particles schema in the bin file is mass, x, y, z, vx,
-   * >>>>>>> master vy, vz, metals, tform, eps, phi. Merge the record in the binary file with iOrder and group number
-   * and fill in the each tuple column accordingly.
+   * vy, vz, metals, tform, eps, phi. Merge the record in the binary file with iOrder and group number and fill in the
+   * each tuple column accordingly.
    * 
    * @throws DbException if error reading from file.
    */
   private void processStarRecords() throws DbException {
     while (nstar > 0 && (buffer.numTuples() < TupleBatch.BATCH_SIZE)) {
       lineNumber++;
-      for (int count = 0; count < schema.numColumns(); ++count) {
-        try {
-          switch (count + 1) {
-            case 1:
-              buffer.put(count, iOrderScanner.nextLong());
-              break;
-            case 2:
-            case 3:
-            case 4:
-            case 5:
-            case 6:
-            case 7:
-            case 8:
-              buffer.put(count, dataInputForBin.readFloat());
-              break;
-            case 9:
-            case 10:
-            case 11:
-              // TODO(leelee): Should be null for this column. Put 0 for now as
-              // TupleBatchBuffer does not support null
-              // value for now.
-              buffer.put(count, (float) 0);
-              break;
-            case 12:
-            case 13:
-            case 14:
-            case 15:
-              buffer.put(count, dataInputForBin.readFloat());
-              break;
-            case 16:
-              buffer.put(count, grpScanner.nextInt());
-              break;
-            case 17:
-              buffer.put(count, "star");
-              break;
-          }
-        } catch (final IOException e) {
-          throw new DbException(e);
-        }
+      try {
+        int count = 0;
+        buffer.put(count++, iOrderScanner.nextLong());
+        buffer.put(count++, dataInputForBin.readFloat());
+        buffer.put(count++, dataInputForBin.readFloat());
+        buffer.put(count++, dataInputForBin.readFloat());
+        buffer.put(count++, dataInputForBin.readFloat());
+        buffer.put(count++, dataInputForBin.readFloat());
+        buffer.put(count++, dataInputForBin.readFloat());
+        buffer.put(count++, dataInputForBin.readFloat());
+        /*
+         * TODO(leelee): Should be null for the next three columns. Put 0 for now as TupleBatchBuffer does not support
+         * null value.
+         */
+        buffer.put(count++, (float) 0);
+        buffer.put(count++, (float) 0);
+        buffer.put(count++, (float) 0);
+        buffer.put(count++, dataInputForBin.readFloat());
+        buffer.put(count++, dataInputForBin.readFloat());
+        buffer.put(count++, dataInputForBin.readFloat());
+        buffer.put(count++, dataInputForBin.readFloat());
+        buffer.put(count++, grpScanner.nextInt());
+        buffer.put(count++, "star");
+      } catch (final IOException e) {
+        throw new DbException(e);
       }
       final String iOrderRest = iOrderScanner.nextLine().trim();
       if (iOrderRest.length() > 0) {
