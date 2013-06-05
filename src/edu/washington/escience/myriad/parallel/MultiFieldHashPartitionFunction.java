@@ -9,7 +9,7 @@ import edu.washington.escience.myriad.TupleBatch;
  * 
  * The partition of a tuple is decided by the hash code of a group of fields of the tuple.
  */
-public class MultiFieldHashPartitionFunction extends PartitionFunction<String, int[]> {
+public final class MultiFieldHashPartitionFunction extends PartitionFunction<String, int[]> {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -18,7 +18,7 @@ public class MultiFieldHashPartitionFunction extends PartitionFunction<String, i
   public static final String FIELD_INDEX = "field_index";
 
   /** The indices used for partitioning. */
-  private int[] fieldIndex;
+  private int[] fieldIndexes;
 
   /**
    * @param numPartition number of partitions
@@ -35,7 +35,7 @@ public class MultiFieldHashPartitionFunction extends PartitionFunction<String, i
   public int[] partition(final TupleBatch tb) {
     final int[] result = new int[tb.numTuples()];
     for (int i = 0; i < result.length; i++) {
-      int p = tb.hashCode(i, fieldIndex) % numPartition();
+      int p = tb.hashCode(i, fieldIndexes) % numPartition();
       if (p < 0) {
         p = p + numPartition();
       }
@@ -52,7 +52,7 @@ public class MultiFieldHashPartitionFunction extends PartitionFunction<String, i
   public void setAttribute(final String attribute, final int[] value) {
     super.setAttribute(attribute, value);
     if (attribute.equals(FIELD_INDEX)) {
-      fieldIndex = Arrays.copyOf(value, value.length);
+      fieldIndexes = Arrays.copyOf(value, value.length);
     }
   }
 
