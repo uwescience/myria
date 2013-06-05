@@ -10,7 +10,7 @@ import edu.washington.escience.myriad.Type;
 /**
  * Knows how to compute some aggregates over a BooleanColumn.
  */
-public final class BooleanAggregator implements Aggregator {
+public final class BooleanAggregator implements Aggregator<Boolean> {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -73,6 +73,18 @@ public final class BooleanAggregator implements Aggregator {
   @Override
   public void add(final TupleBatch tup) {
     count += tup.numTuples();
+  }
+
+  @Override
+  public void add(final Boolean value) {
+    if (value != null) {
+      count++;
+    }
+  }
+
+  @Override
+  public void addObj(final Object obj) {
+    this.add((Boolean) obj);
   }
 
   @Override
