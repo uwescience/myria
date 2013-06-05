@@ -156,7 +156,7 @@ public final class DatasetResource {
     /* Do the work. */
     try {
       MyriaApiUtils.getServer().ingestDataset(dataset.relationKey, dataset.workers,
-          new TipsyFileScan(dataset.tipsyFilename, dataset.grpFilename, dataset.iorderFilename, true));
+          new TipsyFileScan(dataset.tipsyFilename, dataset.grpFilename, dataset.iorderFilename));
     } catch (InterruptedException ee) {
       Thread.currentThread().interrupt();
       ee.printStackTrace();
