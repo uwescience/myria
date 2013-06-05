@@ -4,8 +4,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
@@ -23,11 +21,6 @@ import edu.washington.escience.myriad.accessmethod.SQLiteAccessMethod;
  * Note that the result of the child must be a set. Otherwise the result may have duplicates.
  * */
 public class SQLiteSetFilter extends Operator {
-
-  /**
-   * 
-   * */
-  private static final Logger LOGGER = LoggerFactory.getLogger(SQLiteSetFilter.class);
 
   /**
    * 
@@ -73,51 +66,6 @@ public class SQLiteSetFilter extends Operator {
             setColumnName);
     this.child = child;
     this.outputSchema = outputSchema;
-  }
-
-  @Override
-  protected final TupleBatch fetchNext() throws DbException, InterruptedException {
-    if (tuples != null) {
-      if (tuples.hasNext()) {
-        return tuples.next();
-      }
-      tuples = null;
-    }
-
-    TupleBatch tb = child.next();
-    while (tb != null && tb.numTuples() <= 0) {
-      tb = child.next();
-    }
-
-    if (tb != null) {
-      int numTuples = tb.numTuples();
-      Type ft = child.getSchema().getColumnType(0);
-      ArrayList<Object> setValues = new ArrayList<Object>();
-      Object v;
-      for (int i = 0; i < numTuples; i++) {
-        switch (ft) {
-          case STRING_TYPE:
-            v = "'" + tb.getString(0, i) + "'";
-            break;
-          default:
-            v = tb.getObject(0, i);
-        }
-        setValues.add(v);
-      }
-      String sql = sqlTemplate + StringUtils.join(setValues, ",") + ")";
-      if (LOGGER.isDebugEnabled()) {
-        LOGGER.debug(sql);
-      }
-      tuples = SQLiteAccessMethod.tupleBatchIteratorFromQuery(databaseFilename, sql, outputSchema);
-      if (tuples.hasNext()) {
-        return tuples.next();
-      }
-      tuples = null;
-      return null;
-    } else {
-      return null;
-    }
-
   }
 
   @Override

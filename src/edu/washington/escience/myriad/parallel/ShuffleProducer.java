@@ -54,7 +54,11 @@ public class ShuffleProducer extends Producer {
     for (int p = 0; p < ioChannels.length; p++) {
       final TupleBatchBuffer etb = buffers[p];
       while ((dm = etb.popFilledAsTM()) != null) {
-        ioChannels[p].write(dm);
+        try {
+          writeMessage(ioChannels[p], dm);
+        } catch (InterruptedException e) {
+          throw new DbException(e);
+        }
       }
     }
   }
@@ -66,11 +70,19 @@ public class ShuffleProducer extends Producer {
     Channel[] ioChannels = getChannels();
     for (int i = 0; i < ioChannels.length; i++) {
       while ((dm = buffers[i].popAnyAsTM()) != null) {
-        ioChannels[i].write(dm);
+        try {
+          writeMessage(ioChannels[i], dm);
+        } catch (InterruptedException e) {
+          throw new DbException(e);
+        }
       }
     }
     for (Channel channel : ioChannels) {
-      channel.write(IPCUtils.EOS);
+      try {
+        writeMessage(channel, IPCUtils.EOS);
+      } catch (InterruptedException e) {
+        throw new DbException(e);
+      }
     }
 
   }
@@ -82,11 +94,19 @@ public class ShuffleProducer extends Producer {
     Channel[] ioChannels = getChannels();
     for (int i = 0; i < ioChannels.length; i++) {
       while ((dm = buffers[i].popAnyAsTM()) != null) {
-        ioChannels[i].write(dm);
+        try {
+          writeMessage(ioChannels[i], dm);
+        } catch (InterruptedException e) {
+          throw new DbException(e);
+        }
       }
     }
     for (Channel channel : ioChannels) {
-      channel.write(IPCUtils.EOI);
+      try {
+        writeMessage(channel, IPCUtils.EOI);
+      } catch (InterruptedException e) {
+        throw new DbException(e);
+      }
     }
   }
 }

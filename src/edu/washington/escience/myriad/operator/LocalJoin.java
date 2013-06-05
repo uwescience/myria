@@ -10,10 +10,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
+import edu.washington.escience.myriad.parallel.Worker.QueryExecutionMode;
 
 /**
  * This is an implementation of hash equal join. The same as in DupElim, this implementation does not keep the
@@ -215,36 +217,45 @@ public final class LocalJoin extends Operator {
     ans = null;
   }
 
-  @Override
-  protected TupleBatch fetchNext() throws DbException, InterruptedException {
+  /**
+   * In blocking mode, asynchronous EOI semantic may make system hang. Only synchronous EOI semantic works.
+   * 
+   * @return result TB.
+   * @throws DbException if any error occurs.
+   * */
+  private TupleBatch fetchNextReadySynchronousEOI() throws DbException {
     TupleBatch nexttb = ans.popFilled();
     while (nexttb == null) {
-      boolean hasNewTuple = false;
-      TupleBatch tb = child1.next();
-      if (tb != null) {
-        hasNewTuple = true;
-        processChildTB(tb, true);
-      } else {
-        if (child1.eoi()) {
-          child1.setEOI(false);
-          childrenEOI[0] = true;
+      boolean hasnewtuple = false;
+      if (!child1.eos() && !childrenEOI[0]) {
+        TupleBatch tb = child1.nextReady();
+        if (tb != null) {
+          hasnewtuple = true;
+          processChildTB(tb, true);
+        } else {
+          if (child1.eoi()) {
+            child1.setEOI(false);
+            childrenEOI[0] = true;
+          }
         }
       }
-      tb = child2.next();
-      if (tb != null) {
-        hasNewTuple = true;
-        processChildTB(tb, false);
-      } else {
-        if (child2.eoi()) {
-          child2.setEOI(false);
-          childrenEOI[1] = true;
+      if (!child2.eos() && !childrenEOI[1]) {
+        TupleBatch tb = child2.nextReady();
+        if (tb != null) {
+          hasnewtuple = true;
+          processChildTB(tb, false);
+        } else {
+          if (child2.eoi()) {
+            child2.setEOI(false);
+            childrenEOI[1] = true;
+          }
         }
       }
       nexttb = ans.popFilled();
       if (nexttb != null) {
         return nexttb;
       }
-      if (!hasNewTuple) {
+      if (!hasnewtuple) {
         break;
       }
     }
@@ -279,6 +290,9 @@ public final class LocalJoin extends Operator {
 
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
+    if (!nonBlocking) {
+      return fetchNextReadySynchronousEOI();
+    }
     TupleBatch nexttb = ans.popFilled();
     if (nexttb != null) {
       return nexttb;
@@ -381,7 +395,14 @@ public final class LocalJoin extends Operator {
     hashTable1 = new TupleBatchBuffer(child1.getSchema());
     hashTable2 = new TupleBatchBuffer(child2.getSchema());
     ans = new TupleBatchBuffer(outputSchema);
+    QueryExecutionMode qem = (QueryExecutionMode) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE);
+    nonBlocking = qem == QueryExecutionMode.NON_BLOCKING;
   }
+
+  /**
+   * The query execution mode is nonBlocking.
+   * */
+  private transient boolean nonBlocking = true;
 
   /**
    * Check if a tuple in uniqueTuples equals to the comparing tuple (cntTuple).

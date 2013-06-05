@@ -90,66 +90,11 @@ public abstract class Operator implements Serializable {
   }
 
   /**
-   * Returns the next output TupleBatch, or null if EOS is meet.
-   * 
-   * This method is blocking.
-   * 
-   * 
-   * @return the next output TupleBatch, or null if EOS
-   * 
-   * @throws DbException if any processing error occurs
-   * @throws InterruptedException if the execution thread is interrupted
-   * 
-   */
-  protected abstract TupleBatch fetchNext() throws DbException, InterruptedException;
-
-  /**
    * @return return the children Operators of this operator. If there is only one child, return an array of only one
    *         element. For join operators, the order of the children is not important. But they should be consistent
    *         among multiple calls.
    */
   public abstract Operator[] getChildren();
-
-  /**
-   * Get next TupleBatch. If EOS has not meet, it will wait until a TupleBatch is ready
-   * 
-   * This method is blocking.
-   * 
-   * @return next TupleBatch, or null if EOS or EOI
-   * 
-   * @throws DbException if there's any problem in fetching the next TupleBatch.
-   * @throws IllegalStateException if the operator is not open yet
-   * @throws InterruptedException if the execution thread is interrupted
-   * */
-  public final TupleBatch next() throws DbException, InterruptedException {
-    if (!open) {
-      throw new IllegalStateException("Operator not yet open");
-    }
-    if (eos() || eoi()) {
-      return null;
-    }
-
-    LOGGER.error("Error: next get called at non-blocking execution.", new NullPointerException());
-
-    TupleBatch result = null;
-
-    result = fetchNext();
-
-    while (result != null && result.numTuples() <= 0) {
-      result = fetchNext();
-    }
-
-    if (result == null) {
-      // now we have three possibilities when result == null: EOS, EOI, or just a null.
-      // returns a null won't cause a problem so far, since a producer will keep calling fetchNext() until EOS
-      // call checkEOSAndEOI to set self EOS and EOI, if applicable
-      checkEOSAndEOI();
-    } else {
-      numOutputTBs++;
-      numOutputTuples += result.numTuples();
-    }
-    return result;
-  }
 
   /**
    * process EOS and EOI logic.

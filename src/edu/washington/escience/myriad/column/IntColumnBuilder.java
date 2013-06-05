@@ -98,7 +98,7 @@ public final class IntColumnBuilder implements ColumnBuilder<Integer> {
   public IntColumnBuilder appendFromSQLite(final SQLiteStatement statement, final int index) throws SQLiteException,
       BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    throw new UnsupportedOperationException("SQLite does not support Int columns.");
+    return append(statement.columnInt(index));
   }
 
   @Override

@@ -1,0 +1,53 @@
+{
+    "logical_ra": "blah",
+    "query_plan": {
+        "1": [
+            [
+                {
+                    "op_name": "Scan",
+                    "op_type": "SQLiteScan",
+                    "relation_key": {
+                        "program_name": "astro",
+                        "relation_name": "tipsy3_2",
+                        "user_name": "leelee"
+                    }
+                },
+                {
+                    "arg_child": "Scan",
+                    "arg_column_index": "16",
+                    "arg_op": "0",
+                    "arg_operand": "star",
+                    "op_name": "Filter",
+                    "op_type": "Filter"
+                },
+                {
+                    "arg_child": "Filter",
+                    "arg_const_argument": ["1", "1.84793e16"],
+                    "arg_function": {
+                        "type": "ConstantMultiplicationIFunction"
+                    },
+                    "op_name": "Apply",
+                    "op_type": "Apply"
+                },
+                {
+                    "arg_child": "Apply",
+                    "arg_field_list" : ["0", "16"],
+                    "op_name" : "Project",
+                    "op_type" : "Project"
+                },
+                {
+                    "arg_child": "Project",
+                    "op_name": "Insert",
+                    "op_type": "SQLiteInsert",
+                    "relation_key": {
+                        "program_name": "astro",
+                        "relation_name": "tipsy3_applied_project3",
+                        "user_name": "leelee"
+                    }
+                }
+
+            ]
+        ]
+    },
+    "raw_datalog": "blah."
+}

@@ -46,21 +46,11 @@ public final class TupleSource extends LeafOperator {
   }
 
   @Override
-  protected TupleBatch fetchNext() throws DbException {
+  protected TupleBatch fetchNextReady() throws DbException {
     if (index >= data.size()) {
-      setEOS();
       return null;
     }
     return data.get(index++);
-  }
-
-  @Override
-  protected TupleBatch fetchNextReady() throws DbException {
-    TupleBatch tb = fetchNext();
-    if (tb == null) {
-      setEOS();
-    }
-    return tb;
   }
 
   @Override

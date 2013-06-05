@@ -237,35 +237,6 @@ public final class LocalProjectingJoinRefOnly extends Operator implements Extern
   }
 
   @Override
-  protected TupleBatch fetchNext() throws DbException, InterruptedException {
-    TupleBatch nexttb = ans.popFilled();
-    while (nexttb == null) {
-      boolean hasNewTuple = false; // might change to EOS instead of hasNext()
-      TupleBatch tb = child1.next();
-      if (tb != null) {
-        hasNewTuple = true;
-        processChild1TB(tb);
-      }
-      // child2
-      tb = child2.next();
-      if (tb != null) {
-        hasNewTuple = true;
-        processChild2TB(tb);
-      }
-      nexttb = ans.popFilled();
-      if (!hasNewTuple) {
-        break;
-      }
-    }
-    if (nexttb == null) {
-      if (ans.numTuples() > 0) {
-        nexttb = ans.popAny();
-      }
-    }
-    return nexttb;
-  }
-
-  @Override
   public TupleBatch fetchNextReady() throws DbException {
     throw new UnsupportedOperationException("This operator is not implemented.");
   }

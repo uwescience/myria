@@ -14,6 +14,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
@@ -207,30 +208,6 @@ public class IDBInput extends Operator {
   }
 
   @Override
-  protected final TupleBatch fetchNext() throws DbException, InterruptedException {
-    TupleBatch tb;
-    while ((tb = initialIDBInput.next()) != null) {
-      tb = doDupElim(tb);
-      if (tb.numTuples() > 0) {
-        emptyDelta = false;
-        return tb;
-      }
-    }
-    if (!initialInputEnded) {
-      return null;
-    }
-
-    while ((tb = iterationInput.next()) != null) {
-      tb = doDupElim(tb);
-      if (tb.numTuples() > 0) {
-        emptyDelta = false;
-        return tb;
-      }
-    }
-    return null;
-  }
-
-  @Override
   public final void checkEOSAndEOI() {
     if (!initialInputEnded) {
       if (initialIDBInput.eos()) {
@@ -240,7 +217,10 @@ public class IDBInput extends Operator {
       }
     } else {
       try {
-        eosControllerInput.nextReady();
+        if (eosControllerInput.hasNext()) {
+          eosControllerInput.nextReady();
+        }
+
         if (eosControllerInput.eos()) {
           setEOS();
           eoiReportChannel.write(IPCUtils.EOS);
@@ -291,7 +271,7 @@ public class IDBInput extends Operator {
     emptyDelta = true;
     uniqueTupleIndices = new HashMap<Integer, List<Integer>>();
     uniqueTuples = new TupleBatchBuffer(getSchema());
-    connectionPool = (IPCConnectionPool) execEnvVars.get("ipcConnectionPool");
+    connectionPool = (IPCConnectionPool) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_IPC_CONNECTION_POOL);
     eoiReportChannel = connectionPool.reserveLongTermConnection(controllerWorkerID);
     eoiReportChannel.write(IPCUtils.bosTM(controllerOpID));
   }
