@@ -16,6 +16,7 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.parallel.Worker.QueryExecutionMode;
+import edu.washington.escience.myriad.util.MyriaUtils;
 
 /**
  * This is an implementation of hash equal join. The same as in DupElim, this implementation does not keep the
@@ -131,22 +132,8 @@ public final class LocalJoin extends Operator {
    */
   private LocalJoin(final Schema outputSchema, final Operator child1, final Operator child2, final int[] compareIndx1,
       final int[] compareIndx2) {
-    this(outputSchema, child1, child2, compareIndx1, compareIndx2, range(child1.getSchema().numColumns()), range(child2
-        .getSchema().numColumns()));
-  }
-
-  /**
-   * Helper function that generates an array of the numbers 0..max-1.
-   * 
-   * @param max the size of the array.
-   * @return an array of the numbers 0..max-1.
-   */
-  private static int[] range(final int max) {
-    int[] ret = new int[max];
-    for (int i = 0; i < max; ++i) {
-      ret[i] = i;
-    }
-    return ret;
+    this(outputSchema, child1, child2, compareIndx1, compareIndx2, MyriaUtils.range(child1.getSchema().numColumns()),
+        MyriaUtils.range(child2.getSchema().numColumns()));
   }
 
   /**
