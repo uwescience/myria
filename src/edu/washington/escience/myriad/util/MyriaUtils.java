@@ -29,4 +29,19 @@ public final class MyriaUtils {
     }
     return output;
   }
+
+  /**
+   * Helper function that generates an array of the numbers 0..max-1.
+   * 
+   * @param max the size of the array.
+   * @return an array of the numbers 0..max-1.
+   */
+  public static int[] range(final int max) {
+    int[] ret = new int[max];
+    for (int i = 0; i < max; ++i) {
+      ret[i] = i;
+    }
+    return ret;
+  }
+
 }
