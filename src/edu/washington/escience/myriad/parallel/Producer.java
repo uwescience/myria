@@ -56,6 +56,8 @@ public abstract class Producer extends RootOperator {
    * */
   private transient boolean nonBlockingExecution;
 
+  private final boolean materialize = true;
+
   /**
    * no worker means to the owner worker.
    * 
@@ -171,6 +173,10 @@ public abstract class Producer extends RootOperator {
    * @return write future
    * */
   protected final ChannelFuture writeMessage(final Channel ch, final Object msg) throws InterruptedException {
+    if (materialize) {// do materialize
+
+    }
+
     if (nonBlockingExecution) {
       return ch.write(msg);
     } else {
