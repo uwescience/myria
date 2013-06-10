@@ -133,6 +133,28 @@ public class TupleBatch {
   }
 
   /**
+   * Standard immutable TupleBatch constructor. All fields must be populated before creation and cannot be changed.
+   * 
+   * @param schema schema of the tuples in this batch. Must match columns.
+   * @param columns contains the column-stored data. Must match schema.
+   * @param validTuples the valid tuple BitSet
+   */
+  public TupleBatch(final Schema schema, final List<Column<?>> columns, final ImmutableBitSet validTuples) {
+    /* Take the input arguments directly */
+    this.schema = Objects.requireNonNull(schema);
+    Objects.requireNonNull(columns);
+    Preconditions.checkArgument(columns.size() == schema.numColumns(),
+        "Number of columns in data must equal to the number of fields in schema");
+    if (columns instanceof ImmutableList) {
+      this.columns = (ImmutableList<Column<?>>) columns;
+    } else {
+      this.columns = ImmutableList.copyOf(columns);
+    }
+    numValidTuples = validTuples.cardinality();
+    this.validTuples = validTuples;
+  }
+
+  /**
    * Helper function to append the specified row into the specified TupleBatchBuffer.
    * 
    * @param mappedRow the true row in column list to append to the buffer.
@@ -528,6 +550,13 @@ public class TupleBatch {
    * */
   public final ImmutableList<Column<?>> getDataColumns() {
     return columns;
+  }
+
+  /**
+   * @return expose valid tuple BitSet.
+   * */
+  public final ImmutableBitSet getValidTuples() {
+    return validTuples;
   }
 
 }
