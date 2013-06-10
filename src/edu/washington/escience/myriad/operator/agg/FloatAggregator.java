@@ -10,7 +10,7 @@ import edu.washington.escience.myriad.Type;
 /**
  * Knows how to compute some aggregates over a FloatColumn.
  */
-public final class FloatAggregator implements Aggregator {
+public final class FloatAggregator implements Aggregator<Float> {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -136,6 +136,28 @@ public final class FloatAggregator implements Aggregator {
         // computing the standard deviation
       }
     }
+  }
+
+  @Override
+  public void add(final Float value) {
+    if (value != null) {
+      count++;
+      // temp variables for stdev streaming computation
+      final float x = value;
+      sum += x;
+      sumSquared += x * x;
+      if (Float.compare(x, min) < 0) {
+        min = x;
+      }
+      if (Float.compare(x, max) > 0) {
+        max = x;
+      }
+    }
+  }
+
+  @Override
+  public void addObj(final Object obj) {
+    this.add((Float) obj);
   }
 
   @Override
