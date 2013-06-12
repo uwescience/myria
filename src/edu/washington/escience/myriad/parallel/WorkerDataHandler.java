@@ -155,6 +155,8 @@ public final class WorkerDataHandler extends SimpleChannelUpstreamHandler implem
 
             ed = new ExchangeData(msgOwnerOpID, remoteID, msgOwnerOpSchema, MetaMessage.EOS);
             break;
+          default:
+            break;
         }
         pushToBufferSucceed = msgDestIB.offer(ed);
         msgOwnerTask.notifyNewInput();
@@ -202,6 +204,8 @@ public final class WorkerDataHandler extends SimpleChannelUpstreamHandler implem
             case QUERY_KILL:
               q.kill();
               break;
+            default:
+              break;
           }
         }
         break;
@@ -223,6 +227,8 @@ public final class WorkerDataHandler extends SimpleChannelUpstreamHandler implem
             LOGGER.error("Error decoding query", e);
           }
         }
+        break;
+      default:
         break;
     }
     return result;
