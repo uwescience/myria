@@ -541,7 +541,7 @@ public class TupleBatch {
    * @param rightCompareIdx an array specifying the columns of the right tuple to be used in the comparison
    * @return true if the tuples match
    * */
-  public final boolean tupleMatch(final int leftIdx, final int[] leftCompareIdx, final TupleBatch rightTb,
+  public final boolean tupleMatches(final int leftIdx, final int[] leftCompareIdx, final TupleBatch rightTb,
       final int rightIdx, final int[] rightCompareIdx) {
     for (int i = 0; i < leftCompareIdx.length; ++i) {
       if (!columns.get(leftCompareIdx[i]).equals(leftIdx, rightTb.columns.get(rightCompareIdx[i]), rightIdx)) {

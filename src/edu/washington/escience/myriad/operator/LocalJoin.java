@@ -446,7 +446,7 @@ public final class LocalJoin extends Operator {
       List<IndexedTuple> tupleList = hashTable2Local.get(cntHashCode);
       if (tupleList != null) {
         for (final IndexedTuple tuple : tupleList) {
-          if (tb.tupleEquals(i, tuple.getTupleBatch(), tuple.getIndex(), compareIndx1Local, compareIndx2Local)) {
+          if (tb.tupleMatches(i, compareIndx1Local, tuple.getTupleBatch(), tuple.getIndex(), compareIndx2Local)) {
             addToAns(tb, i, tuple.getTupleBatch(), tuple.getIndex(), fromChild1);
           }
         }

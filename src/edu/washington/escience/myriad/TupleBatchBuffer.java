@@ -327,4 +327,30 @@ public class TupleBatchBuffer {
     }
   }
 
+  /**
+   * Append a complete tuple coming from two tuple batches: left and right. Used in join operators.
+   * 
+   * @param leftTb the left tuple batch
+   * @param leftIdx the index of the left tuple in the tuple batch
+   * @param leftAnswerColumns an array that specifies which columns from the left tuple batch
+   * @param rightTb the right tuple batch
+   * @param rightIdx the index of the right tuple in the tuple batch
+   * @param rightAnswerColumns an array that specifies which columns from the right tuple batch
+   * 
+   */
+  public final void put(final TupleBatch leftTb, final int leftIdx, final int[] leftAnswerColumns,
+      final TupleBatch rightTb, final int rightIdx, final int[] rightAnswerColumns) {
+    for (int i = 0; i < leftAnswerColumns.length; ++i) {
+      leftTb.getDataColumns().get(leftAnswerColumns[i]).append(leftIdx, currentBuildingColumns.get(i));
+    }
+    for (int i = 0; i < rightAnswerColumns.length; ++i) {
+      rightTb.getDataColumns().get(rightAnswerColumns[i]).append(rightIdx,
+          currentBuildingColumns.get(i + leftAnswerColumns.length));
+    }
+    currentInProgressTuples++;
+    if (currentInProgressTuples == TupleBatch.BATCH_SIZE) {
+      finishBatch();
+    }
+  }
+
 }

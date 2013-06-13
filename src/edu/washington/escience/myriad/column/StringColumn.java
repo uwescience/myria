@@ -108,4 +108,9 @@ public final class StringColumn implements Column<String> {
   public boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx) {
     return getString(leftIdx).equals(rightColumn.get(rightIdx));
   }
+
+  @Override
+  public void append(final int index, final ColumnBuilder<?> columnBuilder) {
+    ((StringColumnBuilder) columnBuilder).append(getString(index));
+  }
 }

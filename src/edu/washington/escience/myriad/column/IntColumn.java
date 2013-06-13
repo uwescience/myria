@@ -105,4 +105,9 @@ public final class IntColumn implements Column<Integer> {
   public boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx) {
     return getInt(leftIdx) == ((IntColumn) rightColumn).getInt(rightIdx);
   }
+
+  @Override
+  public void append(final int index, final ColumnBuilder<?> columnBuilder) {
+    ((IntColumnBuilder) columnBuilder).append(getInt(index));
+  }
 }

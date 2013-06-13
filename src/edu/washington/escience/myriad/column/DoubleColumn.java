@@ -106,4 +106,9 @@ public final class DoubleColumn implements Column<Double> {
   public boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx) {
     return getDouble(leftIdx) == ((DoubleColumn) rightColumn).getDouble(rightIdx);
   }
+
+  @Override
+  public void append(final int index, final ColumnBuilder<?> columnBuilder) {
+    ((DoubleColumnBuilder) columnBuilder).append(getDouble(index));
+  }
 }

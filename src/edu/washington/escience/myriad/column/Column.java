@@ -75,5 +75,13 @@ public interface Column<T extends Comparable<T>> {
    * @param rightIdx the index of the value to compare with on the right column
    * @return true if equals, false otherwise
    */
-  boolean equals(int leftIdx, Column<?> rightColumn, int rightIdx);
+  boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx);
+
+  /**
+   * Append the value indexed by leftIdx into the column builder.
+   * 
+   * @param index the index on this column
+   * @param columnBuilder the column builder to append the value
+   */
+  void append(final int index, final ColumnBuilder<?> columnBuilder);
 }
