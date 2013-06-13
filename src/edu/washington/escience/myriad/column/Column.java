@@ -65,4 +65,15 @@ public interface Column<T extends Comparable<T>> {
    * @return the number of elements in this column.
    */
   int size();
+
+  /**
+   * Check whether the value indexed by leftIdx in this column is equal to the value of the column rightColumn indexed
+   * by rightIdx.
+   * 
+   * @param leftIdx the index on this column
+   * @param rightColumn the right column
+   * @param rightIdx the index of the value to compare with on the right column
+   * @return true if equals, false otherwise
+   */
+  boolean equals(int leftIdx, Column<?> rightColumn, int rightIdx);
 }
