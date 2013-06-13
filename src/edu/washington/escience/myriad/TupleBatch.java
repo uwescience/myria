@@ -351,6 +351,9 @@ public class TupleBatch {
    * @return the hash code value for the specified tuple using the specified key columns.
    */
   public final int hashCode(final int row, final int[] hashColumns) {
+    // final int mappedRow = getValidIndices()[row];
+    // for (Column<?> c : columns) {
+    // c.appendToHasher(mappedRow, hasher);
     Objects.requireNonNull(hashColumns);
     Hasher hasher = HASH_FUNCTION.newHasher();
     final int mappedRow = getValidIndices().get(row);
