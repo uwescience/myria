@@ -34,11 +34,15 @@ import edu.washington.escience.myriad.parallel.Server;
     @Type(name = "LocalCountingJoin", value = LocalCountingJoinEncoding.class),
     @Type(name = "MultiGroupByAggregate", value = MultiGroupByAggregateEncoding.class),
     @Type(name = "SQLiteInsert", value = SQLiteInsertEncoding.class),
+    @Type(name = "FileScan", value = FileScanEncoding.class),
+    @Type(name = "BinaryFileScan", value = BinaryFileScanEncoding.class),
+    @Type(name = "TipsyFileScan", value = TipsyFileScanEncoding.class),
     @Type(name = "EOSController", value = EOSControllerEncoding.class),
     @Type(name = "IDBInput", value = IDBInputEncoding.class),
     @Type(name = "Aggregate", value = AggregateEncoding.class), @Type(name = "Merge", value = MergeEncoding.class),
     @Type(name = "SQLiteScan", value = SQLiteScanEncoding.class),
     @Type(name = "Project", value = ProjectEncoding.class), @Type(name = "Apply", value = ApplyEncoding.class),
+    @Type(name = "SQLiteQueryScan", value = SQLiteQueryScanEncoding.class),
     @Type(name = "Filter", value = FilterEncoding.class) })
 public abstract class OperatorEncoding<T extends Operator> extends MyriaApiEncoding {
 
