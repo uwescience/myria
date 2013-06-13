@@ -1,16 +1,13 @@
 package edu.washington.escience.myriad.api;
 
 import java.io.IOException;
-import java.util.Map;
 
 import javax.ws.rs.core.Response.Status;
 
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.PropertyNamingStrategy;
-import org.restlet.Context;
 
 import edu.washington.escience.myriad.api.encoding.MyriaApiEncoding;
-import edu.washington.escience.myriad.parallel.Server;
 
 /**
  * Helper functions to simplify Restlet representation-writing code.
@@ -25,20 +22,6 @@ public final class MyriaApiUtils {
 
   /** Used to deserialize JSON objects. */
   private static ThreadLocal<ObjectMapper> mapper = new ThreadLocal<ObjectMapper>();
-
-  /**
-   * @return the set of attributes in the Restlet Context.
-   */
-  public static Map<String, Object> getContextAttributes() {
-    return Context.getCurrent().getAttributes();
-  }
-
-  /**
-   * @return the Myria Server in the Restlet Context.
-   */
-  public static Server getServer() {
-    return (Server) getContextAttributes().get(MyriaApiConstants.MYRIA_SERVER_ATTRIBUTE);
-  }
 
   /**
    * @return an ObjectMapper to deserialize objects.

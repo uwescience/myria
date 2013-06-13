@@ -7,6 +7,7 @@ import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.parallel.CollectProducer;
+import edu.washington.escience.myriad.parallel.Server;
 import edu.washington.escience.myriad.util.MyriaUtils;
 
 public class CollectProducerEncoding extends AbstractProducerEncoding<CollectProducer> {
@@ -20,7 +21,7 @@ public class CollectProducerEncoding extends AbstractProducerEncoding<CollectPro
   }
 
   @Override
-  public CollectProducer construct() {
+  public CollectProducer construct(Server server) {
     return new CollectProducer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), MyriaUtils
         .getSingleElement(getRealWorkerIds()));
   }

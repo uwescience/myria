@@ -8,6 +8,7 @@ import com.google.common.collect.ImmutableList;
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.Project;
+import edu.washington.escience.myriad.parallel.Server;
 
 /**
  * A JSON-able wrapper for the expected wire message for a new dataset.
@@ -27,7 +28,7 @@ public class ProjectEncoding extends OperatorEncoding<Project> {
   }
 
   @Override
-  public Project construct() {
+  public Project construct(Server server) {
     try {
       return new Project(argFieldList, null);
     } catch (DbException e) {

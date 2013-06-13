@@ -1,14 +1,20 @@
 package edu.washington.escience.myriad.daemon;
 
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.util.HashMap;
 import java.util.Set;
 
+import javax.ws.rs.core.Response.Status;
+
 import org.apache.mina.util.AvailablePortFinder;
 import org.junit.Test;
-import org.restlet.resource.ClientResource;
 
 import com.google.common.io.Files;
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.WebResource;
 
 import edu.washington.escience.myriad.MyriaSystemConfigKeys;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogMaker;
@@ -44,7 +50,7 @@ public class MasterDaemonTest {
       /* Wait for all threads that weren't there when we started to finish. */
       Set<Thread> doneThreads = ThreadUtils.getCurrentThreads();
       for (Thread t : doneThreads) {
-        if (!startThreads.contains(t)) {
+        if (!t.isDaemon() && !startThreads.contains(t)) {
           t.join();
         }
       }
@@ -74,15 +80,28 @@ public class MasterDaemonTest {
       MasterDaemon md = new MasterDaemon(new String[] { tmpFolder.getAbsolutePath(), Integer.toString(REST_PORT) });
       md.start();
 
+      /* Allocate the client that we'll use to make requests. */
+      Client client = Client.create();
+
+      /* First, make sure the server is up by waiting for a successful 404 response. */
+      WebResource invalidResource = client.resource("http://localhost:" + REST_PORT + "/invalid");
+      while (true) {
+        ClientResponse response = invalidResource.get(ClientResponse.class);
+        if (response.getStatus() == Status.NOT_FOUND.getStatusCode()) {
+          break;
+        }
+      }
+
       /* Stop the master. */
-      ClientResource shutdownRest = new ClientResource("http://localhost:" + REST_PORT + "/server/shutdown");
-      shutdownRest.get();
-      shutdownRest.release();
+      WebResource shutdownRest = client.resource("http://localhost:" + REST_PORT + "/server/shutdown");
+      ClientResponse response = shutdownRest.get(ClientResponse.class);
+      assertTrue(response.getStatus() == Status.NO_CONTENT.getStatusCode());
+      client.destroy();
 
       /* Wait for all threads that weren't there when we started to finish. */
       Set<Thread> doneThreads = ThreadUtils.getCurrentThreads();
       for (Thread t : doneThreads) {
-        if (!startThreads.contains(t)) {
+        if (!t.isDaemon() && !startThreads.contains(t)) {
           t.join();
         }
       }
@@ -93,5 +112,4 @@ public class MasterDaemonTest {
       }
     }
   }
-
 }

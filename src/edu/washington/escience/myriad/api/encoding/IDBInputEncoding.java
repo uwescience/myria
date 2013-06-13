@@ -8,6 +8,7 @@ import com.google.common.collect.ImmutableList;
 import edu.washington.escience.myriad.operator.IDBInput;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.parallel.ExchangePairID;
+import edu.washington.escience.myriad.parallel.Server;
 
 public class IDBInputEncoding extends OperatorEncoding<IDBInput> {
   public Integer argSelfIdbId;
@@ -21,7 +22,7 @@ public class IDBInputEncoding extends OperatorEncoding<IDBInput> {
       "argInitialInput", "argIterationInput", "argEosControllerInput");
 
   @Override
-  public IDBInput construct() {
+  public IDBInput construct(Server server) {
     return new IDBInput(argSelfIdbId, realControllerOperatorId, realControllerWorkerId, null, null, null);
   }
 

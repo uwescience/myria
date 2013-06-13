@@ -9,7 +9,7 @@ import edu.washington.escience.myriad.parallel.MultiFieldHashPartitionFunction;
 public class MultiFieldPartitionFunctionEncoding extends PartitionFunctionEncoding<MultiFieldHashPartitionFunction> {
 
   public int[] index;
-  private static final List<String> requiredArguments = ImmutableList.of("index");
+  private static final List<String> requiredFields = ImmutableList.of("index");
 
   @Override
   public MultiFieldHashPartitionFunction construct(int numPartitions) {
@@ -19,7 +19,7 @@ public class MultiFieldPartitionFunctionEncoding extends PartitionFunctionEncodi
   }
 
   @Override
-  protected List<String> getRequiredArguments() {
-    return requiredArguments;
+  protected List<String> getRequiredFields() {
+    return requiredFields;
   }
 }

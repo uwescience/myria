@@ -8,6 +8,7 @@ import com.google.common.collect.ImmutableList;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.parallel.Consumer;
+import edu.washington.escience.myriad.parallel.Server;
 import edu.washington.escience.myriad.util.MyriaUtils;
 
 public class ConsumerEncoding extends AbstractConsumerEncoding<Consumer> {
@@ -17,7 +18,7 @@ public class ConsumerEncoding extends AbstractConsumerEncoding<Consumer> {
   private final static List<String> requiredArguments = ImmutableList.of("argSchema", "argOperatorId");
 
   @Override
-  public Consumer construct() {
+  public Consumer construct(Server server) {
     return new Consumer(argSchema, MyriaUtils.getSingleElement(getRealOperatorIds()), MyriaUtils
         .integerCollectionToIntArray(getRealWorkerIds()));
   }

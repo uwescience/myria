@@ -56,13 +56,12 @@ tasks.eclipseClasspath.dependsOn cleanEclipseClasspath
 /* Where we will fetch external JAR files from. */
 repositories {
   mavenCentral() /* The standard Java Maven repository. */
-  maven { url "http://maven.restlet.org" } /* Restlet */
   maven { url "http://clojars.org/repo" } /* Clojars, for MonetDB */
 }
 
 /* List constants that we use in multiple places. */
 ext.slf4jVersion = "1.7.5"
-ext.restletVersion = "2.1.2"
+ext.jerseyVersion = "1.17.1"
 
 dependencies {
   compile "com.carrotsearch:hppc:0.4.3"
@@ -78,10 +77,11 @@ dependencies {
   compile "org.apache.commons:commons-lang3:3.1"
   compile "commons-cli:commons-cli:1.2"
 
-  compile "org.restlet.jse:org.restlet:${restletVersion}"
-  compile "org.restlet.jse:org.restlet.ext.jackson:${restletVersion}"
-  compile "org.restlet.jse:org.restlet.ext.jaxrs:${restletVersion}"
-  compile "org.restlet.jse:org.restlet.ext.jetty:${restletVersion}"
+  compile "com.sun.jersey:jersey-core:${jerseyVersion}"
+  compile "com.sun.jersey:jersey-server:${jerseyVersion}"
+  compile "com.sun.jersey:jersey-client:${jerseyVersion}"
+  compile "com.sun.jersey:jersey-grizzly2:${jerseyVersion}"
+  compile "com.sun.jersey:jersey-json:${jerseyVersion}"
 
   compile "org.slf4j:slf4j-api:${slf4jVersion}"
   //runtime "org.slf4j:slf4j-simple:${slf4jVersion}"
