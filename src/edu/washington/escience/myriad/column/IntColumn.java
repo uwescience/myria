@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
+import com.google.common.hash.Hasher;
 import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myriad.Type;
@@ -109,5 +110,10 @@ public final class IntColumn implements Column<Integer> {
   @Override
   public void append(final int index, final ColumnBuilder<?> columnBuilder) {
     ((IntColumnBuilder) columnBuilder).append(getInt(index));
+  }
+
+  @Override
+  public void addToHasher(final int row, final Hasher hasher) {
+    hasher.putInt(getInt(row));
   }
 }

@@ -6,11 +6,13 @@ import java.sql.SQLException;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
+import com.google.common.hash.Hasher;
 import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.StringColumnMessage;
+import edu.washington.escience.myriad.util.TypeFunnel;
 
 /**
  * A column of String values.
@@ -112,5 +114,10 @@ public final class StringColumn implements Column<String> {
   @Override
   public void append(final int index, final ColumnBuilder<?> columnBuilder) {
     ((StringColumnBuilder) columnBuilder).append(getString(index));
+  }
+
+  @Override
+  public void addToHasher(final int row, final Hasher hasher) {
+    hasher.putObject(getString(row), TypeFunnel.INSTANCE);
   }
 }

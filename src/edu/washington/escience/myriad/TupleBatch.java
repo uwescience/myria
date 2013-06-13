@@ -30,7 +30,6 @@ import edu.washington.escience.myriad.column.LongColumn;
 import edu.washington.escience.myriad.column.StringColumn;
 import edu.washington.escience.myriad.parallel.PartitionFunction;
 import edu.washington.escience.myriad.util.ImmutableBitSet;
-import edu.washington.escience.myriad.util.TypeFunnel;
 
 /**
  * Container class for a batch of tuples. The goal is to amortize memory management overhead.
@@ -55,17 +54,16 @@ public class TupleBatch {
   /** Which tuples are valid in this batch. */
   private final ImmutableBitSet validTuples;
   /** An ImmutableList<Integer> view of the indices of validTuples. */
-  private ImmutableList<Integer> validIndices;
+  private int[] validIndices;
 
   /** Identity mapping. */
-  protected static final ImmutableList<Integer> IDENTITY_MAPPING;
+  protected static final int[] IDENTITY_MAPPING;
 
   static {
-    ImmutableList.Builder<Integer> tmp = new ImmutableList.Builder<Integer>();
+    IDENTITY_MAPPING = new int[BATCH_SIZE];
     for (int i = 0; i < BATCH_SIZE; i++) {
-      tmp.add(i);
+      IDENTITY_MAPPING[i] = i;
     }
-    IDENTITY_MAPPING = tmp.build();
   }
 
   /**
@@ -78,7 +76,7 @@ public class TupleBatch {
    * @param validIndices valid tuple indices.
    */
   protected TupleBatch(final Schema schema, final ImmutableList<Column<?>> columns, final ImmutableBitSet validTuples,
-      final ImmutableList<Integer> validIndices) {
+      final int[] validIndices) {
     /** For a private copy constructor, no data checks are needed. Checks are only needed in the public constructor. */
     this.schema = schema;
     this.columns = columns;
@@ -100,7 +98,7 @@ public class TupleBatch {
    * @return shallow copy
    */
   protected TupleBatch shallowCopy(final Schema schema, final ImmutableList<Column<?>> columns,
-      final ImmutableBitSet validTuples, final ImmutableList<Integer> validIndices) {
+      final ImmutableBitSet validTuples, final int[] validIndices) {
     return new TupleBatch(schema, columns, validTuples, validIndices);
   }
 
@@ -125,7 +123,7 @@ public class TupleBatch {
     Preconditions.checkArgument(numTuples >= 0 && numTuples <= BATCH_SIZE,
         "numTuples must be at least 1 and no more than TupleBatch.BATCH_SIZE");
     numValidTuples = numTuples;
-    validIndices = IDENTITY_MAPPING.subList(0, numTuples);
+    validIndices = Arrays.copyOfRange(IDENTITY_MAPPING, 0, numTuples);
     /* All tuples are valid */
     final BitSet tmp = new BitSet(numTuples);
     tmp.set(0, numTuples);
@@ -213,7 +211,7 @@ public class TupleBatch {
    * @return the value in the specified column and row.
    */
   public final boolean getBoolean(final int column, final int row) {
-    return ((BooleanColumn) columns.get(column)).getBoolean(getValidIndices().get(row));
+    return ((BooleanColumn) columns.get(column)).getBoolean(getValidIndices()[row]);
   }
 
   /**
@@ -222,7 +220,7 @@ public class TupleBatch {
    * @return the value in the specified column and row.
    */
   public final double getDouble(final int column, final int row) {
-    return ((DoubleColumn) columns.get(column)).getDouble(getValidIndices().get(row));
+    return ((DoubleColumn) columns.get(column)).getDouble(getValidIndices()[row]);
   }
 
   /**
@@ -231,7 +229,7 @@ public class TupleBatch {
    * @return the value in the specified column and row.
    */
   public final float getFloat(final int column, final int row) {
-    return ((FloatColumn) columns.get(column)).getFloat(getValidIndices().get(row));
+    return ((FloatColumn) columns.get(column)).getFloat(getValidIndices()[row]);
   }
 
   /**
@@ -240,7 +238,7 @@ public class TupleBatch {
    * @return the value in the specified column and row.
    */
   public final int getInt(final int column, final int row) {
-    return ((IntColumn) columns.get(column)).getInt(getValidIndices().get(row));
+    return ((IntColumn) columns.get(column)).getInt(getValidIndices()[row]);
   }
 
   /**
@@ -282,7 +280,7 @@ public class TupleBatch {
    * @return the value in the specified column and row.
    */
   public final long getLong(final int column, final int row) {
-    return ((LongColumn) columns.get(column)).getLong(getValidIndices().get(row));
+    return ((LongColumn) columns.get(column)).getLong(getValidIndices()[row]);
   }
 
   /**
@@ -291,7 +289,7 @@ public class TupleBatch {
    * @return the value in the specified column and row.
    */
   public final Object getObject(final int column, final int row) {
-    return columns.get(column).get(getValidIndices().get(row));
+    return columns.get(column).get(getValidIndices()[row]);
   }
 
   /**
@@ -311,7 +309,7 @@ public class TupleBatch {
    * @return the element at the specified position in this TupleBatch.
    */
   public final String getString(final int column, final int row) {
-    return ((StringColumn) columns.get(column)).getString(getValidIndices().get(row));
+    return ((StringColumn) columns.get(column)).getString(getValidIndices()[row]);
   }
 
   /**
@@ -358,9 +356,9 @@ public class TupleBatch {
    */
   public final int hashCode(final int row) {
     Hasher hasher = HASH_FUNCTION.newHasher();
-    final int mappedRow = getValidIndices().get(row);
+    final int mappedRow = getValidIndices()[row];
     for (Column<?> c : columns) {
-      hasher.putObject(c.get(mappedRow), TypeFunnel.INSTANCE);
+      c.addToHasher(mappedRow, hasher);
     }
     return hasher.hash().asInt();
   }
@@ -375,10 +373,10 @@ public class TupleBatch {
   public final int hashCode(final int row, final int[] hashColumns) {
     Objects.requireNonNull(hashColumns);
     Hasher hasher = HASH_FUNCTION.newHasher();
-    final int mappedRow = getValidIndices().get(row);
+    final int mappedRow = getValidIndices()[row];
     for (final int i : hashColumns) {
       Column<?> c = columns.get(i);
-      hasher.putObject(c.get(mappedRow), TypeFunnel.INSTANCE);
+      c.addToHasher(mappedRow, hasher);
     }
     return hasher.hash().asInt();
   }
@@ -392,9 +390,9 @@ public class TupleBatch {
    */
   public final int hashCode(final int row, final int hashColumn) {
     Hasher hasher = HASH_FUNCTION.newHasher();
-    final int mappedRow = getValidIndices().get(row);
+    final int mappedRow = getValidIndices()[row];
     Column<?> c = columns.get(hashColumn);
-    hasher.putObject(c.get(mappedRow), TypeFunnel.INSTANCE);
+    c.addToHasher(mappedRow, hasher);
     return hasher.hash().asInt();
   }
 
@@ -427,10 +425,10 @@ public class TupleBatch {
 
     final int[] partitions = pf.partition(this);
 
-    final List<Integer> mapping = getValidIndices();
+    final int[] mapping = getValidIndices();
     for (int i = 0; i < partitions.length; i++) {
       final int pOfTuple = partitions[i];
-      final int mappedI = mapping.get(i);
+      final int mappedI = mapping[i];
       for (int j = 0; j < numColumns; j++) {
         buffers[pOfTuple].put(j, columns.get(j).get(mappedI));
       }
@@ -496,10 +494,10 @@ public class TupleBatch {
    * @return a new TB.
    * */
   public final TupleBatch remove(final BitSet tupleIndicesToRemove) {
-    final List<Integer> mapping = getValidIndices();
+    final int[] mapping = getValidIndices();
     final BitSet newValidTuples = validTuples.cloneAsBitSet();
     for (int i = tupleIndicesToRemove.nextSetBit(0); i >= 0; i = tupleIndicesToRemove.nextSetBit(i + 1)) {
-      newValidTuples.clear(mapping.get(i));
+      newValidTuples.clear(mapping[i]);
     }
     if (newValidTuples.cardinality() != numValidTuples) {
       return shallowCopy(schema, columns, new ImmutableBitSet(newValidTuples), null);
@@ -532,16 +530,17 @@ public class TupleBatch {
    * 
    * @return a list containing the indices of all valid rows.
    */
-  public final ImmutableList<Integer> getValidIndices() {
+  public final int[] getValidIndices() {
     if (validIndices != null) {
       return validIndices;
     }
 
-    ImmutableList.Builder<Integer> tmp = new ImmutableList.Builder<Integer>();
-    for (int i = validTuples.nextSetBit(0); i >= 0; i = validTuples.nextSetBit(i + 1)) {
-      tmp.add(i);
+    validIndices = new int[numValidTuples];
+    int i = 0;
+    for (int valid = validTuples.nextSetBit(0); valid >= 0; valid = validTuples.nextSetBit(valid + 1)) {
+      validIndices[i] = valid;
+      i++;
     }
-    validIndices = tmp.build();
     return validIndices;
   }
 
@@ -573,7 +572,8 @@ public class TupleBatch {
   public final boolean tupleMatches(final int leftIdx, final int[] leftCompareIdx, final TupleBatch rightTb,
       final int rightIdx, final int[] rightCompareIdx) {
     for (int i = 0; i < leftCompareIdx.length; ++i) {
-      if (!columns.get(leftCompareIdx[i]).equals(leftIdx, rightTb.columns.get(rightCompareIdx[i]), rightIdx)) {
+      if (!columns.get(leftCompareIdx[i]).equals(getValidIndices()[leftIdx], rightTb.columns.get(rightCompareIdx[i]),
+          rightTb.getValidIndices()[rightIdx])) {
         return false;
       }
     }
