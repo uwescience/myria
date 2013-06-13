@@ -1,0 +1,59 @@
+{
+    "fragments": [
+        {
+            "operators": [
+                {
+                    "op_name": "Scan",
+                    "op_type": "SQLiteScan",
+                    "relation_key": {
+                        "program_name": "global_join",
+                        "relation_name": "smallTable",
+                        "user_name": "jwang"
+                    }
+                },
+                {
+                    "arg_child": "Scan",
+                    "arg_operator_id": "hash(follower)",
+                    "arg_pf": {
+                        "index": 0,
+                        "type": "SingleFieldHash"
+                    },
+                    "op_name": "Scatter",
+                    "op_type": "ShuffleProducer"
+                }
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "arg_operator_id": "hash(follower)",
+                    "arg_schema": {
+                        "column_names": [
+                            "follower",
+                            "followee"
+                        ],
+                        "column_types": [
+                            "LONG_TYPE",
+                            "LONG_TYPE"
+                        ]
+                    },
+                    "op_name": "Gather",
+                    "op_type": "ShuffleConsumer"
+                },
+                {
+                    "arg_child": "Gather",
+                    "arg_overwrite_table": true,
+                    "op_name": "Insert",
+                    "op_type": "SQLiteInsert",
+                    "relation_key": {
+                        "program_name": "global_join",
+                        "relation_name": "smallTable_hash_follower",
+                        "user_name": "jwang"
+                    }
+                }
+            ]
+        }
+    ],
+    "logical_ra": "Insert[Shuffle(0)[Scan[smallTable], smallTable2]]",
+    "raw_datalog": "smallTable_hash_follower(x,y) :- smallTable(x,y), @hash(x)."
+}
