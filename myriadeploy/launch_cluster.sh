@@ -9,9 +9,6 @@ if [ $RET -ne 0 ]; then
 	exit $RET
 fi
 
-# Sleep to ensure that the master is awake.
-sleep 1
-
 # Start the workers
 echo "starting workers"
 ./start_workers.py $1
