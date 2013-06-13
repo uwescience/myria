@@ -215,25 +215,20 @@ public final class LocalJoin extends Operator {
   }
 
   /**
-   * @param leftTuple a list representation of the left tuple
-   * @param tuple a tuple batch indexed tuple for the right tuple
+   * Adds a tuple to the answer.
+   * 
+   * @param leftTb the tuple batch that contains the left tuple
+   * @param leftIdx the index of the left tuple in the leftTb
+   * @param rightTb the tuple batch that contains the right tuple
+   * @param rightIdx the index of the right tuple in the rightTb
    * @param fromLeft if the tuple starts from the left
    */
-  protected void addToAns(final List<Object> leftTuple, final IndexedTuple tuple, final boolean fromLeft) {
+  protected void addToAns(final TupleBatch leftTb, final int leftIdx, final TupleBatch rightTb, final int rightIdx,
+      final boolean fromLeft) {
     if (fromLeft) {
-      for (int i = 0; i < answerColumns1.length; ++i) {
-        ans.put(i, leftTuple.get(answerColumns1[i]));
-      }
-      for (int i = 0; i < answerColumns2.length; ++i) {
-        ans.put(i + answerColumns1.length, tuple.getTupleBatch().getObject(answerColumns2[i], tuple.getIndex()));
-      }
+      ans.put(leftTb, leftIdx, answerColumns1, rightTb, rightIdx, answerColumns2);
     } else {
-      for (int i = 0; i < answerColumns1.length; ++i) {
-        ans.put(i, tuple.getTupleBatch().getObject(answerColumns1[i], tuple.getIndex()));
-      }
-      for (int i = 0; i < answerColumns2.length; ++i) {
-        ans.put(i + answerColumns1.length, leftTuple.get(answerColumns2[i]));
-      }
+      ans.put(rightTb, rightIdx, answerColumns1, leftTb, leftIdx, answerColumns2);
     }
   }
 
@@ -430,25 +425,6 @@ public final class LocalJoin extends Operator {
   private transient boolean nonBlocking = true;
 
   /**
-   * Check if left and right tuples match.
-   * 
-   * @param leftTuple the left tuple
-   * @param tuple a tuple batch indexed tuple for the right tuple
-   * @param compareIndx1 the comparing list of columns of cntTuple
-   * @param compareIndx2 the comparing list of columns of hashTable
-   * @return true if equals.
-   * */
-  private boolean tupleEquals(final List<Object> leftTuple, final IndexedTuple tuple, final int[] compareIndx1,
-      final int[] compareIndx2) {
-    for (int i = 0; i < compareIndx1.length; ++i) {
-      if (!leftTuple.get(compareIndx1[i]).equals(tuple.getTupleBatch().getObject(compareIndx2[i], tuple.getIndex()))) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  /**
    * @param tb the incoming TupleBatch for processing join.
    * @param fromChild1 if the tb is from child1.
    * */
@@ -466,16 +442,12 @@ public final class LocalJoin extends Operator {
     }
 
     for (int i = 0; i < tb.numTuples(); ++i) {
-      final List<Object> cntTuple = new ArrayList<Object>();
-      for (int j = 0; j < tb.numColumns(); ++j) {
-        cntTuple.add(tb.getObject(j, i));
-      }
       final int cntHashCode = tb.hashCode(i, compareIndx1Local);
       List<IndexedTuple> tupleList = hashTable2Local.get(cntHashCode);
       if (tupleList != null) {
         for (final IndexedTuple tuple : tupleList) {
-          if (tupleEquals(cntTuple, tuple, compareIndx1Local, compareIndx2Local)) {
-            addToAns(cntTuple, tuple, fromChild1);
+          if (tb.tupleEquals(i, tuple.getTupleBatch(), tuple.getIndex(), compareIndx1Local, compareIndx2Local)) {
+            addToAns(tb, i, tuple.getTupleBatch(), tuple.getIndex(), fromChild1);
           }
         }
       }

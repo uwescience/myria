@@ -530,4 +530,9 @@ public class TupleBatch {
     return columns;
   }
 
+  public boolean tupleEquals(int i, TupleBatch tupleBatch, int index, int[] compareIndx1Local, int[] compareIndx2Local) {
+    // TODO Auto-generated method stub
+    return false;
+  }
+
 }
