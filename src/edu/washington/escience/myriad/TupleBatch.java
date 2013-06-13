@@ -559,4 +559,25 @@ public class TupleBatch {
     return validTuples;
   }
 
+  /**
+   * Check whether left (in this tuple batch) and right (in the tuple batch rightTb) tuples match w.r.t. columns in
+   * leftCompareIndx and rightCompareIndex. This method is used in equi-join operators.
+   * 
+   * @param leftIdx the index of the left tuple in this tuple batch
+   * @param leftCompareIdx an array specifying the columns of the left tuple to be used in the comparison
+   * @param rightTb the tuple batch containing the right tuple
+   * @param rightIdx the index of the right tuple in the rightTb tuple batch
+   * @param rightCompareIdx an array specifying the columns of the right tuple to be used in the comparison
+   * @return true if the tuples match
+   * */
+  public final boolean tupleMatches(final int leftIdx, final int[] leftCompareIdx, final TupleBatch rightTb,
+      final int rightIdx, final int[] rightCompareIdx) {
+    for (int i = 0; i < leftCompareIdx.length; ++i) {
+      if (!columns.get(leftCompareIdx[i]).equals(leftIdx, rightTb.columns.get(rightCompareIdx[i]), rightIdx)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
 }

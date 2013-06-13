@@ -101,4 +101,14 @@ public final class FloatColumn implements Column<Float> {
     sb.append(']');
     return sb.toString();
   }
+
+  @Override
+  public boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx) {
+    return getFloat(leftIdx) == ((FloatColumn) rightColumn).getFloat(rightIdx);
+  }
+
+  @Override
+  public void append(final int index, final ColumnBuilder<?> columnBuilder) {
+    ((FloatColumnBuilder) columnBuilder).append(getFloat(index));
+  }
 }

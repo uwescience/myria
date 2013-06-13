@@ -93,4 +93,14 @@ public final class BooleanColumn implements Column<Boolean> {
     sb.append(']');
     return sb.toString();
   }
+
+  @Override
+  public boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx) {
+    return getBoolean(leftIdx) == ((BooleanColumn) rightColumn).getBoolean(rightIdx);
+  }
+
+  @Override
+  public void append(final int index, final ColumnBuilder<?> columnBuilder) {
+    ((BooleanColumnBuilder) columnBuilder).append(getBoolean(index));
+  }
 }
