@@ -341,10 +341,11 @@ public class TupleBatchBuffer {
   public final void put(final TupleBatch leftTb, final int leftIdx, final int[] leftAnswerColumns,
       final TupleBatch rightTb, final int rightIdx, final int[] rightAnswerColumns) {
     for (int i = 0; i < leftAnswerColumns.length; ++i) {
-      leftTb.getDataColumns().get(leftAnswerColumns[i]).append(leftIdx, currentBuildingColumns.get(i));
+      leftTb.getDataColumns().get(leftAnswerColumns[i]).append(leftTb.getValidIndices()[leftIdx],
+          currentBuildingColumns.get(i));
     }
     for (int i = 0; i < rightAnswerColumns.length; ++i) {
-      rightTb.getDataColumns().get(rightAnswerColumns[i]).append(rightIdx,
+      rightTb.getDataColumns().get(rightAnswerColumns[i]).append(rightTb.getValidIndices()[rightIdx],
           currentBuildingColumns.get(i + leftAnswerColumns.length));
     }
     currentInProgressTuples++;

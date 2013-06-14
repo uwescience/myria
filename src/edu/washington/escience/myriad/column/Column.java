@@ -5,6 +5,7 @@ import java.sql.SQLException;
 
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
+import com.google.common.hash.Hasher;
 
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
@@ -84,4 +85,12 @@ public interface Column<T extends Comparable<T>> {
    * @param columnBuilder the column builder to append the value
    */
   void append(final int index, final ColumnBuilder<?> columnBuilder);
+
+  /**
+   * Adds the value in the row to a hasher object.
+   * 
+   * @param row the row in this column
+   * @param hasher the hasher object to add the value
+   */
+  void addToHasher(final int row, final Hasher hasher);
 }

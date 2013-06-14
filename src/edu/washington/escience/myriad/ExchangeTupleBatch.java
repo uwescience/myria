@@ -40,8 +40,8 @@ public class ExchangeTupleBatch extends TupleBatch {
    * @param sourceWorkerID which worker the TB from
    */
   private ExchangeTupleBatch(final Schema schema, final ImmutableList<Column<?>> columns,
-      final ImmutableBitSet validTuples, final ImmutableList<Integer> validIndices, final long startingTupleSeqNum,
-      final long lsn, final int sourceWorkerID) {
+      final ImmutableBitSet validTuples, final int[] validIndices, final long startingTupleSeqNum, final long lsn,
+      final int sourceWorkerID) {
     /** For a private copy constructor, no data checks are needed. Checks are only needed in the public constructor. */
     super(schema, columns, validTuples, validIndices);
     startingSeqNum = startingTupleSeqNum;
@@ -70,7 +70,7 @@ public class ExchangeTupleBatch extends TupleBatch {
 
   @Override
   protected final TupleBatch shallowCopy(final Schema schema, final ImmutableList<Column<?>> columns,
-      final ImmutableBitSet validTuples, final ImmutableList<Integer> validIndices) {
+      final ImmutableBitSet validTuples, final int[] validIndices) {
     return new ExchangeTupleBatch(schema, columns, validTuples, validIndices, startingSeqNum, lsn, sourceWorkerID);
   }
 

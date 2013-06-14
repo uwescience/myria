@@ -42,7 +42,7 @@ public class WithinSumRangePredicate implements Predicate {
   public final ImmutableBitSet filter(final TupleBatch tb) {
     Preconditions.checkNotNull(tb);
     ImmutableList<Column<?>> columns = tb.getDataColumns();
-    ImmutableList<Integer> validIndices = tb.getValidIndices();
+    final int[] validIndices = tb.getValidIndices();
     Schema schema = tb.getSchema();
     BitSet result = new BitSet();
     if (schema.getColumnType(compareIndex) == Type.INT_TYPE) {

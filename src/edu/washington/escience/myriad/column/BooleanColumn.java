@@ -7,6 +7,7 @@ import java.util.BitSet;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
+import com.google.common.hash.Hasher;
 import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myriad.Type;
@@ -102,5 +103,10 @@ public final class BooleanColumn implements Column<Boolean> {
   @Override
   public void append(final int index, final ColumnBuilder<?> columnBuilder) {
     ((BooleanColumnBuilder) columnBuilder).append(getBoolean(index));
+  }
+
+  @Override
+  public void addToHasher(final int row, final Hasher hasher) {
+    hasher.putBoolean(getBoolean(row));
   }
 }
