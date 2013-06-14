@@ -2,9 +2,9 @@ package edu.washington.escience.myriad.operator;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 
+import com.carrotsearch.hppc.IntObjectOpenHashMap;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -95,11 +95,11 @@ public final class LocalJoin extends Operator {
   /**
    * A hash table for tuples from left child.
    * */
-  private transient HashMap<Integer, List<IndexedTuple>> leftHashTable;
+  private transient IntObjectOpenHashMap<List<IndexedTuple>> leftHashTable;
   /**
    * A hash table for tuples from right child.
    * */
-  private transient HashMap<Integer, List<IndexedTuple>> rightHashTable;
+  private transient IntObjectOpenHashMap<List<IndexedTuple>> rightHashTable;
   /**
    * The buffer holding the results.
    * */
@@ -412,8 +412,8 @@ public final class LocalJoin extends Operator {
 
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    leftHashTable = new HashMap<Integer, List<IndexedTuple>>();
-    rightHashTable = new HashMap<Integer, List<IndexedTuple>>();
+    leftHashTable = new IntObjectOpenHashMap<List<IndexedTuple>>();
+    rightHashTable = new IntObjectOpenHashMap<List<IndexedTuple>>();
     ans = new TupleBatchBuffer(outputSchema);
     QueryExecutionMode qem = (QueryExecutionMode) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE);
     nonBlocking = qem == QueryExecutionMode.NON_BLOCKING;
@@ -430,8 +430,8 @@ public final class LocalJoin extends Operator {
    * */
   protected void processChildTB(final TupleBatch tb, final boolean fromChild1) {
 
-    HashMap<Integer, List<IndexedTuple>> hashTable1Local = leftHashTable;
-    HashMap<Integer, List<IndexedTuple>> hashTable2Local = rightHashTable;
+    IntObjectOpenHashMap<List<IndexedTuple>> hashTable1Local = leftHashTable;
+    IntObjectOpenHashMap<List<IndexedTuple>> hashTable2Local = rightHashTable;
     int[] compareIndx1Local = compareIndx1;
     int[] compareIndx2Local = compareIndx2;
     if (!fromChild1) {
