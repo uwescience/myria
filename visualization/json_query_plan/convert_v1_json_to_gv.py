@@ -17,35 +17,38 @@ children['MultiGroupByAggregate'] = ['arg_child']
 children['ShuffleProducer'] = ['arg_child']
 children['SQLiteInsert'] = ['arg_child']
 
-# Colors supported by graphviz, in some pleasing order
-colors = [
-        "red",      #0
-        "green",    #1
-        "blue",     #2
-        "yellow",   #3
-        "purple",   #4
-        "orange",   #5
-        "cyan",     #6
-        "magenta"   #7
-]
-
 def read_json(filename):
     with open(filename, 'r') as f:
         return json.load(f)
 
-def unify_fragments(fragments):
-    """Returns a list of operators, adding to each operator a field
-    fragment_id, a field id, and updating all the children links with the
-    fragment id."""
-    ret = []
-    for (i, fragment) in enumerate(fragments):
-        for operator in fragment['operators']:
-            operator['fragment_id'] = i
-            operator['id'] = str(i) + '-' + operator['op_name']
-            for field in children[operator['op_type']]:
-                operator[field] = str(i) + '-' + operator[field]
-            ret.append(operator)
-    return ret
+def uniquify_fragments(query_plan):
+    fragment_inv = []
+    for worker in sorted(query_plan.keys()):
+        worker_plan = query_plan[worker]
+        for fragment in worker_plan:
+            flag = False
+            for (i,(x,y)) in enumerate(fragment_inv):
+                if y == fragment:
+                    fragment_inv[i] = (x + [worker], y)
+                    flag = True
+                    break
+            if flag:
+                continue
+            fragment_inv.append(([worker], fragment))
+    return [(i,x,y) for (i,(x,y)) in enumerate(fragment_inv)]
+
+def unify_plan(unique_fragments):
+    def unify_fragment(fragment_id, workers, fragment):
+        ret = []
+        for op in fragment:
+            t = op
+            t['op_name'] = str(fragment_id) + '-' + t['op_name']
+            for f in children[t['op_type']]:
+                t[f] = str(fragment_id) + '-' + t[f]
+            ret.append(t)
+        return ret
+    ret = [unify_fragment(x,y,z) for (x,y,z) in unique_fragments]
+    return list(itertools.chain.from_iterable(ret))
 
 def operator_get_children(op):
     # Return the names of all child operators of this operator
@@ -79,24 +82,25 @@ def operator_get_in_pipes(op):
     return [str(op[x]) for x in pipe_fields[op['op_type']]]
 
 def get_graph(unified_plan):
-    nodes = unified_plan
+    nodes = []
     local_edges = []
     in_pipes = defaultdict(list)
     out_pipes = defaultdict(list)
     for op in unified_plan:
-        # Operator id
-        op_id = op['id']
+        name = op['op_name']
+        # New node
+        nodes.append(name)
         # Add child edges
-        local_edges.extend([(x,op_id) for x in operator_get_children(op)])
+        local_edges.extend([(x,name) for x in operator_get_children(op)])
         # Add pipes
         for pipe_id in operator_get_in_pipes(op):
-            in_pipes[pipe_id].append(op_id)
+            in_pipes[pipe_id].append(name)
         for pipe_id in operator_get_out_pipes(op):
-            out_pipes[pipe_id].append(op_id)
+            out_pipes[pipe_id].append(name)
     pipe_edges = []
     for pipe_id in out_pipes:
-        pipe_edges.extend([(x,y,pipe_id) for x in out_pipes[pipe_id] for y in in_pipes[pipe_id]])
-    return (unified_plan, local_edges, pipe_edges)
+        pipe_edges.extend([(x,y) for x in out_pipes[pipe_id] for y in in_pipes[pipe_id]])
+    return (nodes, local_edges, pipe_edges)
 
 def export_dot(nodes, edges, pipe_edges, filename=""):
     print """digraph MyriaPlan {
@@ -106,20 +110,20 @@ def export_dot(nodes, edges, pipe_edges, filename=""):
   rankdir = "BT" ;
   ranksep = 0.25 ;
   node [fontname="Helvetica", fontsize=10, shape=oval, style=filled, fillcolor=white ] ;
-  edge [fontname="Helvetica", fontsize=9 ] ;
 """ % (filename,)
     for n in nodes:
-       print "\"%s\" [label=\"%s\", color=%s, penwidth=2];" % (n['id'], n['op_name'], colors[n['fragment_id'] % len(colors)])
+       print "\"%s\" ;" % (n,)
     for (x,y) in edges:
         print "\"%s\" -> \"%s\" [color=black]" % (x, y)
-    for (x,y,label) in pipe_edges:
-        print "\"%s\" -> \"%s\" [penwidth=3, style=dashed, label=\"    %s\"]" % (x, y, label)
+    for (x,y) in pipe_edges:
+        print "\"%s\" -> \"%s\" [penwidth=5, color=red]" % (x, y)
     print "}"
 
 def main(filename):
     myria_json_plan = read_json(filename)
-    fragments = myria_json_plan['fragments']
-    unified_plan = unify_fragments(fragments)
+    query_plan = myria_json_plan['query_plan']
+    unique_fragments = uniquify_fragments(query_plan)
+    unified_plan = unify_plan(unique_fragments)
     [nodes, edges, pipe_edges] = get_graph(unified_plan)
     export_dot(nodes, edges, pipe_edges, filename)
 

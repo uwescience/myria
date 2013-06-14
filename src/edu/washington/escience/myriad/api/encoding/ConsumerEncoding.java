@@ -1,41 +1,39 @@
 package edu.washington.escience.myriad.api.encoding;
 
+import java.util.List;
 import java.util.Map;
 
-import javax.ws.rs.core.Response.Status;
-
-import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.Schema;
-import edu.washington.escience.myriad.api.MyriaApiException;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.parallel.Consumer;
-import edu.washington.escience.myriad.parallel.ExchangePairID;
+import edu.washington.escience.myriad.util.MyriaUtils;
 
-public class ConsumerEncoding extends OperatorEncoding<Consumer> {
+public class ConsumerEncoding extends AbstractConsumerEncoding<Consumer> {
   public Schema argSchema;
   public int[] argWorkerIds;
-  public Integer argOperatorId;
-
-  @Override
-  public void validate() throws MyriaApiException {
-    super.validate();
-    try {
-      Preconditions.checkNotNull(argSchema);
-      Preconditions.checkNotNull(argWorkerIds);
-      Preconditions.checkNotNull(argOperatorId);
-    } catch (Exception e) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "required fields: arg_schema, arg_worker_ids, arg_operator_id");
-    }
-  }
+  public String argOperatorId;
+  private final static List<String> requiredArguments = ImmutableList.of("argSchema", "argOperatorId");
 
   @Override
   public Consumer construct() {
-    return new Consumer(argSchema, ExchangePairID.fromExisting(argOperatorId), argWorkerIds);
+    return new Consumer(argSchema, MyriaUtils.getSingleElement(getRealOperatorIds()), MyriaUtils
+        .integerCollectionToIntArray(getRealWorkerIds()));
   }
 
   @Override
   public void connect(Operator current, Map<String, Operator> operators) {
     /* Do nothing. */
+  }
+
+  @Override
+  protected List<String> getRequiredArguments() {
+    return requiredArguments;
+  }
+
+  @Override
+  protected List<String> getOperatorIds() {
+    return ImmutableList.of(argOperatorId);
   }
 }

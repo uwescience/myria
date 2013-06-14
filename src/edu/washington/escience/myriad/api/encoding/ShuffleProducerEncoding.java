@@ -1,48 +1,48 @@
 package edu.washington.escience.myriad.api.encoding;
 
+import java.util.List;
 import java.util.Map;
 
-import javax.ws.rs.core.Response.Status;
+import com.google.common.collect.ImmutableList;
 
-import com.google.common.base.Preconditions;
-
-import edu.washington.escience.myriad.api.MyriaApiException;
 import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.parallel.ExchangePairID;
 import edu.washington.escience.myriad.parallel.ShuffleProducer;
+import edu.washington.escience.myriad.util.MyriaUtils;
 
 /**
  * A JSON-able wrapper for the expected wire message for a new dataset.
  * 
  */
-public class ShuffleProducerEncoding extends OperatorEncoding<ShuffleProducer> {
+public class ShuffleProducerEncoding extends AbstractProducerEncoding<ShuffleProducer> {
   public String argChild;
-  public int[] argWorkerIds;
-  public Integer argOperatorId;
+  public String argOperatorId;
   public PartitionFunctionEncoding<?> argPf;
+  private static final List<String> requiredArguments = ImmutableList.of("argChild", "argOperatorId", "argPf");
 
   @Override
-  public void validate() throws MyriaApiException {
-    super.validate();
-    try {
-      Preconditions.checkNotNull(argChild);
-      Preconditions.checkNotNull(argWorkerIds);
-      Preconditions.checkNotNull(argOperatorId);
-      Preconditions.checkNotNull(argPf);
-    } catch (Exception e) {
-      throw new MyriaApiException(Status.BAD_REQUEST,
-          "required fields: arg_child, arg_worker_ids, arg_operator_id, arg_pf");
-    }
+  public void connect(final Operator current, final Map<String, Operator> operators) {
+    current.setChildren(new Operator[] { operators.get(argChild) });
   }
 
   @Override
   public ShuffleProducer construct() {
-    return new ShuffleProducer(null, ExchangePairID.fromExisting(argOperatorId), argWorkerIds, argPf
-        .construct(argWorkerIds.length));
+    List<Integer> workerIds = getRealWorkerIds();
+    return new ShuffleProducer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), MyriaUtils
+        .integerCollectionToIntArray(workerIds), argPf.construct(workerIds.size()));
   }
 
   @Override
-  public void connect(Operator current, Map<String, Operator> operators) {
-    current.setChildren(new Operator[] { operators.get(argChild) });
+  protected List<String> getRequiredArguments() {
+    return requiredArguments;
+  }
+
+  @Override
+  protected void validateExtra() {
+    argPf.validate();
+  }
+
+  @Override
+  protected List<String> getOperatorIds() {
+    return ImmutableList.of(argOperatorId);
   }
 }
