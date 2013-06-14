@@ -3,7 +3,12 @@ Visualize a Myria query plan (JSON)
 
 1. Run `convert_json_to_gv.py` and save the output in a `.gv` file.
 
-       ./convert_json_to_gv.py ../../jsonQueries/globalJoin_jwang/global_join.json \
+   for new queries (which contain "fragments")
+       ./convert_json_to_gv.py ../../jsonQueries/sample_queries/single_join.json \
+           > single_join.gv
+
+   for old queries (which contain "query_plan")
+       ./convert_v1_json_to_gv.py ../../jsonQueries/globalJoin_jwang/global_join.json \
            > global_join.gv
            
 2. Open `vizplan.html` in an HTML5-compliant web browser. (I've only tested in Chrome.)
