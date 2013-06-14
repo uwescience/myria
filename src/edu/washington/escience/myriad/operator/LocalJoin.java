@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -442,8 +443,10 @@ public final class LocalJoin extends Operator {
 
   @Override
   public void setChildren(final Operator[] children) {
-    child1 = children[0];
-    child2 = children[1];
+    Preconditions.checkNotNull(children, "LocalJoin.setChildren called with null argument.");
+    Preconditions.checkArgument(children.length == 2, "LocalJoin must have exactly 2 children.");
+    child1 = Objects.requireNonNull(children[0], "LocalJoin.setChildren called with null left child.");
+    child2 = Objects.requireNonNull(children[1], "LocalJoin.setChildren called with null right child.");
     outputSchema = mergeFilter(child1, child2, answerColumns1, answerColumns2);
   }
 }

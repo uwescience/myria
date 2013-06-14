@@ -51,8 +51,12 @@ public final class MyriaApiException extends WebApplicationException {
    * @return the HTTP Response.
    */
   private static Response getResponse(final Status status, final Throwable cause) {
+    /* Pass MyriaApiException objects right on through. */
+    if (cause instanceof MyriaApiException) {
+      return ((MyriaApiException) cause).getResponse();
+    }
     ResponseBuilder ret = Response.status(status);
-    if (status.equals(Status.INTERNAL_SERVER_ERROR)) {
+    if (status.equals(Status.INTERNAL_SERVER_ERROR) || cause.getMessage() == null || cause.getMessage().length() == 0) {
       StringWriter stringWriter = new StringWriter();
       cause.printStackTrace(new PrintWriter(stringWriter));
       String stackTrace = stringWriter.toString();

@@ -1,40 +1,37 @@
 package edu.washington.escience.myriad.api.encoding;
 
+import java.util.List;
 import java.util.Map;
 
-import javax.ws.rs.core.Response.Status;
+import com.google.common.collect.ImmutableList;
 
-import com.google.common.base.Preconditions;
-
-import edu.washington.escience.myriad.api.MyriaApiException;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.parallel.CollectProducer;
-import edu.washington.escience.myriad.parallel.ExchangePairID;
+import edu.washington.escience.myriad.util.MyriaUtils;
 
-public class CollectProducerEncoding extends OperatorEncoding<CollectProducer> {
+public class CollectProducerEncoding extends AbstractProducerEncoding<CollectProducer> {
   public String argChild;
-  public Integer argWorkerId;
-  public Integer argOperatorId;
+  public String argOperatorId;
+  private static final List<String> requiredArguments = ImmutableList.of("argChild", "argOperatorId");
 
   @Override
-  public void validate() throws MyriaApiException {
-    super.validate();
-    try {
-      Preconditions.checkNotNull(argChild);
-      Preconditions.checkNotNull(argWorkerId);
-      Preconditions.checkNotNull(argOperatorId);
-    } catch (Exception e) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "required fields: arg_child, arg_worker_id, arg_operator_id");
-    }
+  public void connect(final Operator current, final Map<String, Operator> operators) {
+    current.setChildren(new Operator[] { operators.get(argChild) });
   }
 
   @Override
   public CollectProducer construct() {
-    return new CollectProducer(null, ExchangePairID.fromExisting(argOperatorId), argWorkerId);
+    return new CollectProducer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), MyriaUtils
+        .getSingleElement(getRealWorkerIds()));
   }
 
   @Override
-  public void connect(Operator current, Map<String, Operator> operators) {
-    current.setChildren(new Operator[] { operators.get(argChild) });
+  protected List<String> getRequiredArguments() {
+    return requiredArguments;
+  }
+
+  @Override
+  protected List<String> getOperatorIds() {
+    return ImmutableList.of(argOperatorId);
   }
 }
