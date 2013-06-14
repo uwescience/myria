@@ -65,6 +65,7 @@ ext.slf4jVersion = "1.7.5"
 ext.restletVersion = "2.1.2"
 
 dependencies {
+  compile "com.carrotsearch:hppc:0.4.3"
   compile "com.almworks.sqlite4java:sqlite4java:0.282"
 
   compile "com.google.guava:guava:14.0.1"
