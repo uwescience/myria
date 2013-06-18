@@ -8,6 +8,8 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 
+import org.slf4j.LoggerFactory;
+
 /**
  * A helper function to easily create HTTP error responses in the API server.
  * 
@@ -18,6 +20,8 @@ public final class MyriaApiException extends WebApplicationException {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
+  /** The logger for this class. */
+  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(MyriaApiException.class);
 
   /**
    * Construct a MyriaApiException from the given status and cause. The entity of the HTTP Response includes the given
@@ -29,6 +33,7 @@ public final class MyriaApiException extends WebApplicationException {
    */
   public MyriaApiException(final Status status, final Throwable cause) {
     super(getResponse(status, cause));
+    LOGGER.trace("In Status:Throwable (log will be after getResponse)");
   }
 
   /**
@@ -40,6 +45,7 @@ public final class MyriaApiException extends WebApplicationException {
    */
   public MyriaApiException(final Status status, final String explanation) {
     super(getResponse(status, explanation));
+    LOGGER.trace("In Status:String (log will be after getResponse)");
   }
 
   /**
@@ -53,6 +59,7 @@ public final class MyriaApiException extends WebApplicationException {
   private static Response getResponse(final Status status, final Throwable cause) {
     /* Pass MyriaApiException objects right on through. */
     if (cause instanceof MyriaApiException) {
+      LOGGER.trace("Here in getResponse::Status:Throwable");
       return ((MyriaApiException) cause).getResponse();
     }
     ResponseBuilder ret = Response.status(status);
@@ -64,6 +71,7 @@ public final class MyriaApiException extends WebApplicationException {
     } else {
       ret.entity(cause.getMessage());
     }
+    LOGGER.trace("In getResponse::Status:Throwable");
     return ret.build();
   }
 
@@ -76,6 +84,7 @@ public final class MyriaApiException extends WebApplicationException {
    */
   private static Response getResponse(final Status status, final String explanation) {
     Response ret = Response.status(status).entity(explanation).build();
+    LOGGER.trace("In getResponse::Status:String");
     return ret;
   }
 }
