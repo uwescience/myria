@@ -1,12 +1,10 @@
 package edu.washington.escience.myriad.api.encoding;
 
+import java.util.List;
 import java.util.Map;
 
-import javax.ws.rs.core.Response.Status;
+import com.google.common.collect.ImmutableList;
 
-import com.google.common.base.Preconditions;
-
-import edu.washington.escience.myriad.api.MyriaApiException;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.agg.Aggregate;
 
@@ -14,18 +12,7 @@ public class AggregateEncoding extends OperatorEncoding<Aggregate> {
   public int[] argAggOps;
   public int[] argAggFields;
   public String argChild;
-
-  @Override
-  public void validate() throws MyriaApiException {
-    super.validate();
-    try {
-      Preconditions.checkNotNull(argChild);
-      Preconditions.checkNotNull(argAggOps);
-      Preconditions.checkNotNull(argAggFields);
-    } catch (Exception e) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "required fields: arg_child, arg_agg_ops, arg_agg_fields");
-    }
-  }
+  private static final List<String> requiredFields = ImmutableList.of("argChild", "argAggOps", "argAggFields");
 
   @Override
   public Aggregate construct() {
@@ -35,5 +22,10 @@ public class AggregateEncoding extends OperatorEncoding<Aggregate> {
   @Override
   public void connect(Operator current, Map<String, Operator> operators) {
     current.setChildren(new Operator[] { operators.get(argChild) });
+  }
+
+  @Override
+  protected List<String> getRequiredArguments() {
+    return requiredFields;
   }
 }

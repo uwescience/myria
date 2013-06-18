@@ -1,0 +1,127 @@
+{
+    "fragments": [
+        {
+            "operators": [
+                {
+                    "op_name": "Scan0",
+                    "op_type": "SQLiteScan",
+                    "relation_key": {
+                        "program_name": "global_join",
+                        "relation_name": "smallTable",
+                        "user_name": "jwang"
+                    }
+                },
+                {
+                    "arg_child": "Scan0",
+                    "arg_operator_id": "hash(x)",
+                    "arg_pf": {
+                        "index": 0,
+                        "type": "SingleFieldHash"
+                    },
+                    "op_name": "Scatter0",
+                    "op_type": "ShuffleProducer"
+                }
+            ],
+            "workers": [
+                1,
+                2
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "op_name": "Scan1",
+                    "op_type": "SQLiteScan",
+                    "relation_key": {
+                        "program_name": "global_join",
+                        "relation_name": "smallTable",
+                        "user_name": "jwang"
+                    }
+                },
+                {
+                    "arg_child": "Scan1",
+                    "arg_operator_id": "hash(y)",
+                    "arg_pf": {
+                        "index": 1,
+                        "type": "SingleFieldHash"
+                    },
+                    "op_name": "Scatter1",
+                    "op_type": "ShuffleProducer"
+                }
+            ],
+            "workers": [
+                1,
+                2
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "arg_operator_id": "hash(x)",
+                    "arg_schema": {
+                        "column_names": [
+                            "follower",
+                            "followee"
+                        ],
+                        "column_types": [
+                            "LONG_TYPE",
+                            "LONG_TYPE"
+                        ]
+                    },
+                    "op_name": "Gather0",
+                    "op_type": "ShuffleConsumer"
+                },
+                {
+                    "arg_operator_id": "hash(y)",
+                    "arg_schema": {
+                        "column_names": [
+                            "follower",
+                            "followee"
+                        ],
+                        "column_types": [
+                            "LONG_TYPE",
+                            "LONG_TYPE"
+                        ]
+                    },
+                    "op_name": "Gather1",
+                    "op_type": "ShuffleConsumer"
+                },
+                {
+                    "arg_child1": "Gather1",
+                    "arg_child2": "Gather0",
+                    "arg_columns1": [
+                        1
+                    ],
+                    "arg_columns2": [
+                        0
+                    ],
+                    "arg_select1": [
+                        0
+                    ],
+                    "arg_select2": [
+                        1
+                    ],
+                    "op_name": "Join",
+                    "op_type": "LocalJoin"
+                },
+                {
+                    "arg_child": "Join",
+                    "arg_overwrite_table": true,
+                    "op_name": "Insert",
+                    "op_type": "SQLiteInsert",
+                    "relation_key": {
+                        "program_name": "global_join",
+                        "relation_name": "smallTable_join_smallTable",
+                        "user_name": "jwang"
+                    }
+                }
+            ],
+            "workers": [
+                3,
+                4
+            ]
+        }
+    ],
+    "logical_ra": "Insert(smallTable_join_smallTable)[Join(1=0; [0,3])[Shuffle(1)[Scan], Shuffle(1)[Scan]]]",
+    "raw_datalog": "smallTable_join_smallTable(x,z) :- smallTable(x,y), mallTable(y,z)"
+}

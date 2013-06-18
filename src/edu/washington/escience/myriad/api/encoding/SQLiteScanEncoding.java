@@ -1,10 +1,11 @@
 package edu.washington.escience.myriad.api.encoding;
 
+import java.util.List;
 import java.util.Map;
 
 import javax.ws.rs.core.Response.Status;
 
-import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.RelationKey;
@@ -18,15 +19,12 @@ import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 public class SQLiteScanEncoding extends OperatorEncoding<SQLiteQueryScan> {
   /** The name of the relation to be scanned. */
   public RelationKey relationKey;
+  public Integer storedRelationId;
+  private static final List<String> requiredArguments = ImmutableList.of("relationKey");
 
   @Override
-  public void validate() throws MyriaApiException {
-    super.validate();
-    try {
-      Preconditions.checkNotNull(relationKey);
-    } catch (Exception e) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "required fields: relation_key");
-    }
+  public void connect(final Operator current, final Map<String, Operator> operators) {
+    /* Do nothing; no children. */
   }
 
   @Override
@@ -45,7 +43,7 @@ public class SQLiteScanEncoding extends OperatorEncoding<SQLiteQueryScan> {
   }
 
   @Override
-  public void connect(Operator current, Map<String, Operator> operators) {
-    /* Do nothing; no children. */
+  protected List<String> getRequiredArguments() {
+    return requiredArguments;
   }
 }

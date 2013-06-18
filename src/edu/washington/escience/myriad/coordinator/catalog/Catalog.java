@@ -872,4 +872,61 @@ public final class Catalog {
       throw new CatalogException(e);
     }
   }
+
+  /**
+   * @param relationKey the name of the relation.
+   * @param storedRelationId the id of the stored relation (copy of the relation we want to read).
+   * @return the list of workers that are involved in storing this relation.
+   * @throws CatalogException if there is an error in the database.
+   */
+  public List<Integer> getWorkersForRelation(final RelationKey relationKey, final Integer storedRelationId)
+      throws CatalogException {
+    Objects.requireNonNull(relationKey);
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+
+    try {
+      return queue.execute(new SQLiteJob<List<Integer>>() {
+        @Override
+        protected List<Integer> job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+          try {
+            Integer relationId = storedRelationId;
+            /* First, if the storedRelationId is null we pick the first copy of this relation. */
+            if (storedRelationId == null) {
+              SQLiteStatement statement =
+                  sqliteConnection
+                      .prepare("SELECT MIN(stored_relation_id) FROM stored_relations WHERE user_name = ? AND program_name = ? AND relation_name = ?;");
+              statement.bind(1, relationKey.getUserName());
+              statement.bind(2, relationKey.getProgramName());
+              statement.bind(3, relationKey.getRelationName());
+              if (!statement.step()) {
+                statement.dispose();
+                return null;
+              }
+              relationId = statement.columnInt(0);
+              statement.dispose();
+            }
+            /* Get the list of associated workers. */
+            SQLiteStatement statement =
+                sqliteConnection.prepare("SELECT worker_id FROM shards WHERE stored_relation_id = ?;");
+            statement.bind(1, relationId);
+            List<Integer> ret = new ArrayList<Integer>();
+            while (statement.step()) {
+              ret.add(statement.columnInt(0));
+            }
+            statement.dispose();
+            if (ret.size() == 0) {
+              return null;
+            }
+            return ret;
+          } catch (final SQLiteException e) {
+            throw new CatalogException(e);
+          }
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
 }

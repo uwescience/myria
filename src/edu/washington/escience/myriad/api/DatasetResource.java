@@ -32,6 +32,7 @@ import edu.washington.escience.myriad.operator.TipsyFileScan;
  * 
  * @author dhalperi
  */
+@Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 @Path("/dataset")
 public final class DatasetResource {
