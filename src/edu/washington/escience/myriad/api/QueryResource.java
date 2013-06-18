@@ -46,13 +46,14 @@ public final class QueryResource {
   /**
    * For now, simply echoes back its input.
    * 
-   * @param payload the payload of the POST request itself.
+   * @param query the query to be executed.
    * @param uriInfo the URI of the current request.
    * @return the URI of the created query.
    */
   @POST
-  public Response postNewQuery(final byte[] payload, @Context final UriInfo uriInfo) {
-    final QueryEncoding query = MyriaApiUtils.deserialize(payload, QueryEncoding.class);
+  public Response postNewQuery(final QueryEncoding query, @Context final UriInfo uriInfo) {
+    /* Validate the input. */
+    query.validate();
 
     /* Deserialize the three arguments we need */
     Map<Integer, RootOperator[]> queryPlan;

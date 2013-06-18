@@ -63,16 +63,15 @@ public final class DatasetResource {
   }
 
   /**
-   * @param payload the request payload.
+   * @param dataset the dataset to be ingested.
    * @param uriInfo information about the current URL.
    * @return the created dataset resource.
    * @throws DbException if there is an error in the database.
    */
   @POST
   @Consumes(MediaType.APPLICATION_JSON)
-  public Response newDataset(final byte[] payload, @Context final UriInfo uriInfo) throws DbException {
-    /* Attempt to deserialize the object. */
-    DatasetEncoding dataset = MyriaApiUtils.deserialize(payload, DatasetEncoding.class);
+  public Response newDataset(final DatasetEncoding dataset, @Context final UriInfo uriInfo) throws DbException {
+    dataset.validate();
 
     /* If we already have a dataset by this name, tell the user there's a conflict. */
     try {
@@ -124,7 +123,7 @@ public final class DatasetResource {
   }
 
   /**
-   * @param payload the request payload.
+   * @param dataset the dataset to be ingested.
    * @param uriInfo information about the current URL.
    * @return the created dataset resource.
    * @throws DbException if there is an error in the database.
@@ -132,9 +131,9 @@ public final class DatasetResource {
   @POST
   @Path("/tipsy")
   @Consumes(MediaType.APPLICATION_JSON)
-  public Response newTipsyDataset(final byte[] payload, @Context final UriInfo uriInfo) throws DbException {
-    /* Attempt to deserialize the object. */
-    TipsyDatasetEncoding dataset = MyriaApiUtils.deserialize(payload, TipsyDatasetEncoding.class);
+  public Response newTipsyDataset(final TipsyDatasetEncoding dataset, @Context final UriInfo uriInfo)
+      throws DbException {
+    dataset.validate();
 
     /* If we already have a dataset by this name, tell the user there's a conflict. */
     try {
