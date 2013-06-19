@@ -141,7 +141,7 @@ public class SingleGroupByAggregateNoBuffer extends Operator {
     gColumnType = childSchema.getColumnType(gColumn);
     aColumnTypes = new Type[this.afields.length];
 
-    agg = new Aggregator[aggOps.length];
+    agg = new Aggregator<?>[aggOps.length];
 
     int idx = 0;
     for (final int afield : afields) {
@@ -295,7 +295,7 @@ public class SingleGroupByAggregateNoBuffer extends Operator {
           long groupByKey = tb.getLong(gColumn, i);
           Aggregator<?>[] groupAgg = groupAggsLong.get(groupByKey);
           if (groupAgg == null) {
-            groupAgg = new Aggregator[agg.length];
+            groupAgg = new Aggregator<?>[agg.length];
             for (int j = 0; j < agg.length; j++) {
               groupAgg[j] = agg[j].freshCopyYourself();
             }
@@ -327,7 +327,7 @@ public class SingleGroupByAggregateNoBuffer extends Operator {
           double groupByKey = tb.getDouble(gColumn, i);
           Aggregator<?>[] groupAgg = groupAggsDouble.get(groupByKey);
           if (groupAgg == null) {
-            groupAgg = new Aggregator[agg.length];
+            groupAgg = new Aggregator<?>[agg.length];
             for (int j = 0; j < agg.length; j++) {
               groupAgg[j] = agg[j].freshCopyYourself();
             }

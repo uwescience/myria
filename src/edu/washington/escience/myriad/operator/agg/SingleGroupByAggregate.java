@@ -95,7 +95,7 @@ public class SingleGroupByAggregate extends Operator {
     this.child = child;
     this.afields = afields;
     gColumn = gfield;
-    agg = new Aggregator[aggOps.length];
+    agg = new Aggregator<?>[aggOps.length];
 
     int idx = 0;
     for (final int afield : afields) {
@@ -155,7 +155,7 @@ public class SingleGroupByAggregate extends Operator {
         final TupleBatchBuffer tbb = p.getRight();
         Aggregator<?>[] groupAgg = groupAggs.get(groupColumnValue);
         if (groupAgg == null) {
-          groupAgg = new Aggregator[agg.length];
+          groupAgg = new Aggregator<?>[agg.length];
           for (int j = 0; j < agg.length; j++) {
             groupAgg[j] = agg[j].freshCopyYourself();
           }
@@ -180,7 +180,7 @@ public class SingleGroupByAggregate extends Operator {
       final Object groupColumnValue = p.getKey();
       Aggregator<?>[] groupAgg = groupAggs.get(groupColumnValue);
       if (groupAgg == null) {
-        groupAgg = new Aggregator[agg.length];
+        groupAgg = new Aggregator<?>[agg.length];
         for (int j = 0; j < agg.length; j++) {
           groupAgg[j] = agg[j].freshCopyYourself();
         }

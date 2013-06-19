@@ -145,7 +145,7 @@ public class AggregateTest {
 
   @Test
   public void testNoGroupMaxNonBlocking() throws DbException, InterruptedException {
-    final int maxValue = 200000;
+    // final int maxValue = 200000;
     final int numTuples = 1;// (int) (Math.random() * maxValue);
 
     final TupleBatchBuffer testBase = generateRandomTuples(numTuples);
