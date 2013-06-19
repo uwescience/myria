@@ -28,7 +28,7 @@ public final class Aggregate extends Operator {
   /** The source of tuples to be aggregated. */
   private Operator child;
   /** Does the actual aggregation work. */
-  private final Aggregator[] agg;
+  private final Aggregator<?>[] agg;
   /** Which fields the aggregate is computed over. */
   private final int[] afields;
   /** Aggregate operators. */
@@ -89,7 +89,7 @@ public final class Aggregate extends Operator {
     }
     this.afields = afields;
     this.aggOps = aggOps;
-    agg = new Aggregator[aggOps.length];
+    agg = new Aggregator<?>[aggOps.length];
 
     if (child != null) {
       setChildren(new Operator[] { child });
@@ -119,14 +119,14 @@ public final class Aggregate extends Operator {
     }
 
     while ((tb = child.nextReady()) != null) {
-      for (final Aggregator ag : agg) {
+      for (final Aggregator<?> ag : agg) {
         ag.add(tb);
       }
     }
 
     if (child.eos() || child.eoi()) {
       int fromIndex = 0;
-      for (final Aggregator element : agg) {
+      for (final Aggregator<?> element : agg) {
         element.getResult(aggBuffer, fromIndex);
         fromIndex += element.getResultSchema().numColumns();
       }

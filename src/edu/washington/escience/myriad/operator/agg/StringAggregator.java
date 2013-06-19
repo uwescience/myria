@@ -10,7 +10,7 @@ import edu.washington.escience.myriad.Type;
 /**
  * Knows how to compute some aggregate over a StringColumn.
  */
-public final class StringAggregator implements Aggregator {
+public final class StringAggregator implements Aggregator<String> {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -143,6 +143,37 @@ public final class StringAggregator implements Aggregator {
       }
     }
 
+  }
+
+  @Override
+  public void add(final String value) {
+
+    if (value != null) {
+      count++;
+      if (computeMin || computeMax) {
+        final String r = value;
+        if (computeMin) {
+          if (min == null) {
+            min = r;
+          } else if (r.compareTo(min) < 0) {
+            min = r;
+          }
+        }
+        if (computeMax) {
+          if (max == null) {
+            max = r;
+          } else if (r.compareTo(max) > 0) {
+            max = r;
+          }
+        }
+      }
+    }
+
+  }
+
+  @Override
+  public void addObj(final Object value) {
+    add((String) value);
   }
 
   @Override
