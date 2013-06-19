@@ -29,6 +29,7 @@ import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myriad.parallel.ipc.InJVMLoopbackChannelSink;
 import edu.washington.escience.myriad.parallel.ipc.MessageChannelHandler;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
+import edu.washington.escience.myriad.systemtest.SystemTestBase;
 import edu.washington.escience.myriad.systemtest.SystemTestBase.Tuple;
 import edu.washington.escience.myriad.util.QueueBasedMessageHandler.TestMessageWrapper;
 
@@ -206,6 +207,206 @@ public final class TestUtils {
     }
     return result;
 
+  }
+
+  public static HashMap<SystemTestBase.Tuple, Integer> groupByAvgLongColumn(final TupleBatchBuffer source,
+      final int groupByColumn, final int aggColumn) {
+    final List<List<Column<?>>> tbs = source.getAllAsRawColumn();
+    final HashMap<Object, Long> sum = new HashMap<Object, Long>();
+    final HashMap<Object, Integer> count = new HashMap<Object, Integer>();
+    for (final List<Column<?>> rawData : tbs) {
+      final int numTuples = rawData.get(0).size();
+      for (int i = 0; i < numTuples; i++) {
+        final Object groupByValue = rawData.get(groupByColumn).get(i);
+        final Long aggValue = (Long) rawData.get(aggColumn).get(i);
+        Long currentSum = sum.get(groupByValue);
+        if (currentSum == null) {
+          currentSum = 0L;
+          count.put(groupByValue, 1);
+        } else {
+          count.put(groupByValue, count.get(groupByValue) + 1);
+        }
+        sum.put(groupByValue, currentSum + aggValue);
+      }
+    }
+    final HashMap<SystemTestBase.Tuple, Integer> result = new HashMap<SystemTestBase.Tuple, Integer>();
+
+    for (final Map.Entry<Object, Long> e : sum.entrySet()) {
+      final Object gValue = e.getKey();
+      final Long sumV = e.getValue();
+      final SystemTestBase.Tuple t = new SystemTestBase.Tuple(2);
+      t.set(0, (Comparable<?>) gValue);
+      t.set(1, sumV * 1.0 / count.get(gValue));
+      result.put(t, 1);
+    }
+    return result;
+  }
+
+  public static HashMap<SystemTestBase.Tuple, Integer> groupByCount(final TupleBatchBuffer source,
+      final int groupByColumn) {
+    final List<List<Column<?>>> tbs = source.getAllAsRawColumn();
+    final HashMap<Object, Long> count = new HashMap<Object, Long>();
+    for (final List<Column<?>> rawData : tbs) {
+      final int numTuples = rawData.get(0).size();
+      for (int i = 0; i < numTuples; i++) {
+        final Object groupByValue = rawData.get(groupByColumn).get(i);
+        Long currentCount = count.get(groupByValue);
+        if (currentCount == null) {
+          currentCount = 0L;
+        }
+        count.put(groupByValue, ++currentCount);
+      }
+    }
+    final HashMap<SystemTestBase.Tuple, Integer> result = new HashMap<SystemTestBase.Tuple, Integer>();
+
+    for (final Map.Entry<Object, Long> e : count.entrySet()) {
+      final Object gValue = e.getKey();
+      final Long countV = e.getValue();
+      final SystemTestBase.Tuple t = new SystemTestBase.Tuple(2);
+      t.set(0, (Comparable<?>) gValue);
+      t.set(1, countV);
+      result.put(t, 1);
+    }
+    return result;
+  }
+
+  public static <T extends Comparable<T>> HashMap<SystemTestBase.Tuple, Integer> groupByMax(
+      final TupleBatchBuffer source, final int groupByColumn, final int aggColumn) {
+    final List<List<Column<?>>> tbs = source.getAllAsRawColumn();
+    final HashMap<Object, T> max = new HashMap<Object, T>();
+    for (final List<Column<?>> rawData : tbs) {
+      final int numTuples = rawData.get(0).size();
+      for (int i = 0; i < numTuples; i++) {
+        final Object groupByValue = rawData.get(groupByColumn).get(i);
+        @SuppressWarnings("unchecked")
+        final T aggValue = (T) rawData.get(aggColumn).get(i);
+        final T currentMax = max.get(groupByValue);
+        if (currentMax == null) {
+          max.put(groupByValue, aggValue);
+        } else if (aggValue.compareTo(currentMax) > 0) {
+          max.put(groupByValue, aggValue);
+        }
+      }
+    }
+    final HashMap<SystemTestBase.Tuple, Integer> result = new HashMap<SystemTestBase.Tuple, Integer>();
+
+    for (final Map.Entry<Object, T> e : max.entrySet()) {
+      final Object gValue = e.getKey();
+      final T maxV = e.getValue();
+      final SystemTestBase.Tuple t = new SystemTestBase.Tuple(2);
+      t.set(0, (Comparable<?>) gValue);
+      t.set(1, maxV);
+      result.put(t, 1);
+    }
+    return result;
+  }
+
+  public static <T extends Comparable<T>> HashMap<SystemTestBase.Tuple, Integer> groupByMin(
+      final TupleBatchBuffer source, final int groupByColumn, final int aggColumn) {
+    final List<List<Column<?>>> tbs = source.getAllAsRawColumn();
+    final HashMap<Object, T> min = new HashMap<Object, T>();
+    for (final List<Column<?>> rawData : tbs) {
+      final int numTuples = rawData.get(0).size();
+      for (int i = 0; i < numTuples; i++) {
+        final Object groupByValue = rawData.get(groupByColumn).get(i);
+        @SuppressWarnings("unchecked")
+        final T aggValue = (T) rawData.get(aggColumn).get(i);
+        final T currentMin = min.get(groupByValue);
+        if (currentMin == null) {
+          min.put(groupByValue, aggValue);
+        } else if (aggValue.compareTo(currentMin) < 0) {
+          min.put(groupByValue, aggValue);
+        }
+      }
+    }
+    final HashMap<SystemTestBase.Tuple, Integer> result = new HashMap<SystemTestBase.Tuple, Integer>();
+
+    for (final Map.Entry<Object, T> e : min.entrySet()) {
+      final Object gValue = e.getKey();
+      final T minV = e.getValue();
+      final SystemTestBase.Tuple t = new SystemTestBase.Tuple(2);
+      t.set(0, (Comparable<?>) gValue);
+      t.set(1, minV);
+      result.put(t, 1);
+    }
+    return result;
+  }
+
+  public static HashMap<SystemTestBase.Tuple, Integer> groupBySumLongColumn(final TupleBatchBuffer source,
+      final int groupByColumn, final int aggColumn) {
+    final List<List<Column<?>>> tbs = source.getAllAsRawColumn();
+    final HashMap<Object, Long> sum = new HashMap<Object, Long>();
+    for (final List<Column<?>> rawData : tbs) {
+      final int numTuples = rawData.get(0).size();
+      for (int i = 0; i < numTuples; i++) {
+        final Object groupByValue = rawData.get(groupByColumn).get(i);
+        final Long aggValue = (Long) rawData.get(aggColumn).get(i);
+        Long currentSum = sum.get(groupByValue);
+        if (currentSum == null) {
+          currentSum = 0L;
+        }
+        sum.put(groupByValue, currentSum + aggValue);
+      }
+    }
+    final HashMap<SystemTestBase.Tuple, Integer> result = new HashMap<SystemTestBase.Tuple, Integer>();
+
+    for (final Map.Entry<Object, Long> e : sum.entrySet()) {
+      final Object gValue = e.getKey();
+      final Long sumV = e.getValue();
+      final SystemTestBase.Tuple t = new SystemTestBase.Tuple(2);
+      t.set(0, (Comparable<?>) gValue);
+      t.set(1, sumV);
+      result.put(t, 1);
+    }
+    return result;
+  }
+
+  @SuppressWarnings("unchecked")
+  public static <T extends Comparable<T>> T max(final TupleBatchBuffer tbb, final int column) {
+    final List<List<Column<?>>> tbs = tbb.getAllAsRawColumn();
+    T max = (T) tbs.get(0).get(column).get(0);
+    for (final List<Column<?>> tb : tbs) {
+      final int numTuples = tb.get(0).size();
+      final Column<?> c = tb.get(column);
+      for (int i = 0; i < numTuples; i++) {
+        final T current = (T) c.get(i);
+        if (max.compareTo(current) < 0) {
+          max = current;
+        }
+      }
+    }
+    return max;
+  }
+
+  @SuppressWarnings("unchecked")
+  public static <T extends Comparable<T>> T min(final TupleBatchBuffer tbb, final int column) {
+    final List<List<Column<?>>> tbs = tbb.getAllAsRawColumn();
+    T min = (T) tbs.get(0).get(column).get(0);
+    for (final List<Column<?>> tb : tbs) {
+      final int numTuples = tb.get(0).size();
+      final Column<?> c = tb.get(column);
+      for (int i = 0; i < numTuples; i++) {
+        final T current = (T) c.get(i);
+        if (min.compareTo(current) > 0) {
+          min = current;
+        }
+      }
+    }
+    return min;
+  }
+
+  public static long sumLong(final TupleBatchBuffer tbb, final int column) {
+    final List<List<Column<?>>> tbs = tbb.getAllAsRawColumn();
+    long sum = 0;
+    for (final List<Column<?>> tb : tbs) {
+      final int numTuples = tb.get(0).size();
+      final Column<?> c = tb.get(column);
+      for (int i = 0; i < numTuples; i++) {
+        final Long current = (Long) c.get(i);
+        sum += current;
+      }
+    }
+    return sum;
   }
 
   /***/

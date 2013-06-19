@@ -39,7 +39,7 @@ public class SingleGroupByAggregate extends Operator {
    * compute multiple aggregates in the same time. The columns to compute the aggregates are
    * {@link SingleGroupByAggregate#afields}.
    * */
-  private final Aggregator[] agg;
+  private final Aggregator<?>[] agg;
 
   /**
    * Compute aggregate on each of the {@link SingleGroupByAggregate#afields}, with the corresponding {@link Aggregator}
@@ -55,7 +55,7 @@ public class SingleGroupByAggregate extends Operator {
   /**
    * The buffer storing in-progress group by results. {groupby-column-value -> Aggregator Array}
    * */
-  private transient HashMap<Object, Aggregator[]> groupAggs;
+  private transient HashMap<Object, Aggregator<?>[]> groupAggs;
 
   /**
    * {groupby-column-value -> }.
@@ -95,7 +95,7 @@ public class SingleGroupByAggregate extends Operator {
     this.child = child;
     this.afields = afields;
     gColumn = gfield;
-    agg = new Aggregator[aggOps.length];
+    agg = new Aggregator<?>[aggOps.length];
 
     int idx = 0;
     for (final int afield : afields) {
@@ -139,7 +139,7 @@ public class SingleGroupByAggregate extends Operator {
 
   @Override
   protected final void cleanup() throws DbException {
-    groupAggs = new HashMap<Object, Aggregator[]>();
+    groupAggs = new HashMap<Object, Aggregator<?>[]>();
     groupedTupleBatches = new HashMap<Object, Pair<Object, TupleBatchBuffer>>();
     resultBuffer = null;
   }
@@ -153,9 +153,9 @@ public class SingleGroupByAggregate extends Operator {
       for (final Pair<Object, TupleBatchBuffer> p : readyTBB) {
         final Object groupColumnValue = p.getKey();
         final TupleBatchBuffer tbb = p.getRight();
-        Aggregator[] groupAgg = groupAggs.get(groupColumnValue);
+        Aggregator<?>[] groupAgg = groupAggs.get(groupColumnValue);
         if (groupAgg == null) {
-          groupAgg = new Aggregator[agg.length];
+          groupAgg = new Aggregator<?>[agg.length];
           for (int j = 0; j < agg.length; j++) {
             groupAgg[j] = agg[j].freshCopyYourself();
           }
@@ -164,7 +164,7 @@ public class SingleGroupByAggregate extends Operator {
 
         TupleBatch filledTB = null;
         while ((filledTB = tbb.popFilled()) != null) {
-          for (final Aggregator ag : groupAgg) {
+          for (final Aggregator<?> ag : groupAgg) {
             ag.add(filledTB);
           }
         }
@@ -178,9 +178,9 @@ public class SingleGroupByAggregate extends Operator {
   private void processEnd() {
     for (final Pair<Object, TupleBatchBuffer> p : groupedTupleBatches.values()) {
       final Object groupColumnValue = p.getKey();
-      Aggregator[] groupAgg = groupAggs.get(groupColumnValue);
+      Aggregator<?>[] groupAgg = groupAggs.get(groupColumnValue);
       if (groupAgg == null) {
-        groupAgg = new Aggregator[agg.length];
+        groupAgg = new Aggregator<?>[agg.length];
         for (int j = 0; j < agg.length; j++) {
           groupAgg[j] = agg[j].freshCopyYourself();
         }
@@ -189,7 +189,7 @@ public class SingleGroupByAggregate extends Operator {
       final TupleBatchBuffer tbb = p.getRight();
       TupleBatch anyTBB = null;
       while ((anyTBB = tbb.popAny()) != null) {
-        for (final Aggregator ag : groupAgg) {
+        for (final Aggregator<?> ag : groupAgg) {
           ag.add(anyTBB);
         }
       }
@@ -201,12 +201,12 @@ public class SingleGroupByAggregate extends Operator {
    * */
   private void generateResult(final TupleBatchBuffer resultBuffer) {
 
-    for (final Map.Entry<Object, Aggregator[]> e : groupAggs.entrySet()) {
+    for (final Map.Entry<Object, Aggregator<?>[]> e : groupAggs.entrySet()) {
       final Object groupByValue = e.getKey();
-      final Aggregator[] aggLocal = e.getValue();
+      final Aggregator<?>[] aggLocal = e.getValue();
       resultBuffer.put(0, groupByValue);
       int fromIndex = 1;
-      for (final Aggregator element : aggLocal) {
+      for (final Aggregator<?> element : aggLocal) {
         element.getResult(resultBuffer, fromIndex);
         fromIndex += element.getResultSchema().numColumns();
       }
@@ -263,7 +263,7 @@ public class SingleGroupByAggregate extends Operator {
 
   @Override
   protected final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    groupAggs = new HashMap<Object, Aggregator[]>();
+    groupAggs = new HashMap<Object, Aggregator<?>[]>();
     groupedTupleBatches = new HashMap<Object, Pair<Object, TupleBatchBuffer>>();
     resultBuffer = new TupleBatchBuffer(schema);
 
