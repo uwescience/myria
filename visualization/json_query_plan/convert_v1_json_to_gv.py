@@ -67,7 +67,7 @@ def operator_get_children(op):
     # Return the names of all child operators of this operator
     ret = []
     for x in children[op['op_type']]:
-    	for c in op[x]:
+        for c in op[x]:
             ret.append(c)
     return ret
 
