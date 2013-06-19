@@ -1,0 +1,196 @@
+{
+	"expected_result": "working on the t_20000000 dataset, staring from node 12, using 14 workers, 2G memory on each, finishes in about 2 mins. number of result: 4215071 (although not directly observable from this query)",
+	"fragments": 
+	[
+		{
+			"operators": 
+			[
+			{
+			  "op_name" : "cc",
+			  "op_type" : "CollectConsumer",
+			  "arg_schema" : {"column_types":["LONG_TYPE"],"column_names":["follower"]},
+			  "arg_operator_id" : "7"
+			}
+			],
+			"workers": 
+			[
+				0
+			]
+		},
+		{
+			"operators": 
+			[
+			{
+				"op_name" : "eoiReceiverA",
+				"op_type" : "Consumer",
+				"arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
+				"arg_operator_id" : "0"
+			},
+			{
+				"op_name" : "merge",
+				"op_type" : "Merge",
+				"arg_children" : ["eoiReceiverA"]
+			},
+			{
+				"op_name" : "eosController",
+				"op_type" : "EOSController",
+				"arg_child" : "merge",
+				"arg_idb_operator_ids" : ["1"]
+			}
+			],
+			"workers": 
+			[
+				1
+			]
+		},
+		{
+			"operators": 
+			[
+			{
+				"op_name" : "scan2a",
+				"op_type" : "SQLiteScan",
+				"relation_key" : {
+					"user_name" : "jwang",
+					"program_name" : "reachability",
+					"relation_name" : "a0"
+				}
+			},
+			{
+				"op_name" : "sp2a",
+				"op_type" : "ShuffleProducer",
+				"arg_child" : "scan2a",
+				"arg_pf" : {
+					"type" : "SingleFieldHash",
+					"index" : 0
+				},
+				"arg_operator_id" : "2"
+			}
+			]
+		},
+		{
+			"operators": 
+			[
+			{
+				"op_name" : "scan2g",
+				"op_type" : "SQLiteScan",
+				"relation_key" : {
+					"user_name" : "jwang",
+					"program_name" : "reachability",
+					"relation_name" : "g"
+				}
+			},
+			{
+				"op_name" : "sp2g",
+				"op_type" : "ShuffleProducer",
+				"arg_child" : "scan2g",
+				"arg_operator_id" : "3",
+				"arg_pf" : {
+					"type" : "SingleFieldHash",
+					"index" : 0
+				}
+			}
+			]
+		},
+		{
+			"operators": 
+			[
+			{
+				"op_name" : "sc2a",
+				"op_type" : "ShuffleConsumer",
+				"arg_operator_id" : "2",
+				"arg_schema" : {"column_types":["LONG_TYPE"],"column_names":["follower"]}
+			},
+			{
+				"op_name" : "sc3a",
+				"op_type" : "ShuffleConsumer",
+				"arg_operator_id" : "4",
+				"arg_schema" : {"column_types":["LONG_TYPE"],"column_names":["follower"]}
+			},
+			{
+				"op_name" : "eosReceivera",
+				"op_type" : "Consumer",
+				"arg_operator_id" : "1",
+				"arg_schema" : {"column_types":["BOOLEAN_TYPE"],"column_names":["EOS"]}
+			},
+			{
+				"op_name" : "idbinputa",
+				"op_type" : "IDBInput",
+				"arg_controller_operator_id" : "0",
+				"arg_self_idb_id" : "0",
+				"arg_initial_input" : "sc2a",
+				"arg_iteration_input" : "sc3a",
+				"arg_eos_controller_input" : "eosReceivera"
+			},
+			{
+				"op_name" : "mpa",
+				"op_type" : "LocalMultiwayProducer",
+				"arg_operator_ids" : ["5", "6"],
+				"arg_child" : "idbinputa"
+			}
+			]
+		},
+		{
+			"operators": 
+			[
+			{
+				"op_name" : "send2joina",
+				"op_type" : "LocalMultiwayConsumer",
+				"arg_operator_id" : "5",
+				"arg_schema" : {"column_types":["LONG_TYPE"],"column_names":["follower"]}
+			},
+			{
+				"op_name" : "sc1g",
+				"op_type" : "ShuffleConsumer",
+				"arg_operator_id" : "3",
+				"arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]}
+			},
+			{
+				"op_name" : "joina",
+				"op_type" : "LocalJoin",
+				"arg_child1" : "send2joina",
+				"arg_child2" : "sc1g",
+				"arg_columns1" : ["0"],
+				"arg_columns2" : ["0"],
+				"arg_select1" : [],
+				"arg_select2" : ["1"]
+			},
+			{
+				"op_name" : "sp3a",
+				"op_type" : "ShuffleProducer",
+				"arg_child" : "joina",
+				"arg_operator_id" : "4",
+				"arg_pf" : {
+					"type" : "SingleFieldHash",
+					"index" : 0
+				}
+			}
+			]
+		},
+		{
+			"operators": 
+			[
+			{
+				"op_name" : "send2server",
+				"op_type" : "LocalMultiwayConsumer",
+				"arg_operator_id" : "6",
+				"arg_schema" : {"column_types":["LONG_TYPE"],"column_names":["follower"]}
+			},
+			{
+				"op_name" : "count",
+				"op_type" : "Aggregate",
+				"arg_child" : "send2server",
+				"arg_agg_fields" : ["0"],
+				"arg_agg_ops" : ["1"]
+			},
+			{
+				"op_name" : "cpc",
+				"op_type" : "CollectProducer",
+				"arg_operator_id" : "7",
+				"arg_child" : "count"
+			}
+			]
+		}
+	],
+	"logical_ra": "",
+	"raw_datalog": ""
+}

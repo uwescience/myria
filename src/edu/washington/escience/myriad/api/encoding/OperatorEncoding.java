@@ -35,7 +35,7 @@ import edu.washington.escience.myriad.operator.Operator;
     @Type(name = "SQLiteInsert", value = SQLiteInsertEncoding.class),
     @Type(name = "EOSController", value = EOSControllerEncoding.class),
     @Type(name = "IDBInput", value = IDBInputEncoding.class),
-    @Type(name = "Aggregate", value = AggregateEncoding.class),
+    @Type(name = "Aggregate", value = AggregateEncoding.class), @Type(name = "Merge", value = MergeEncoding.class),
     @Type(name = "SQLiteScan", value = SQLiteScanEncoding.class),
     @Type(name = "Project", value = ProjectEncoding.class), @Type(name = "Apply", value = ApplyEncoding.class),
     @Type(name = "Filter", value = FilterEncoding.class) })

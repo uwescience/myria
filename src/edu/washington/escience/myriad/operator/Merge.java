@@ -20,11 +20,7 @@ public final class Merge extends Operator {
   /**
    * The merge children. It is required that the schemas of all the children are the same.
    * */
-  private final Operator[] children;
-  /**
-   * The result schema.
-   * */
-  private final Schema outputSchema;
+  private Operator[] children;
 
   /**
    * Fairly get data from children.
@@ -35,14 +31,6 @@ public final class Merge extends Operator {
    * @param children the children for merging.
    * */
   public Merge(final Operator[] children) {
-    Objects.requireNonNull(children);
-    Preconditions.checkArgument(children.length > 0);
-
-    for (Operator op : children) {
-      Preconditions.checkArgument(op.getSchema().equals(children[0].getSchema()));
-    }
-
-    outputSchema = children[0].getSchema();
     this.children = children;
   }
 
@@ -76,7 +64,7 @@ public final class Merge extends Operator {
 
   @Override
   public Schema getSchema() {
-    return outputSchema;
+    return children[0].getSchema();
   }
 
   @Override
@@ -86,12 +74,11 @@ public final class Merge extends Operator {
 
   @Override
   public void setChildren(final Operator[] children) {
-    int size = this.children.length;
-    if (size > children.length) {
-      size = children.length;
+    Objects.requireNonNull(children);
+    Preconditions.checkArgument(children.length > 0);
+    for (Operator op : children) {
+      Preconditions.checkArgument(op.getSchema().equals(children[0].getSchema()));
     }
-    for (int i = 0; i < size; i++) {
-      this.children[i] = children[i];
-    }
+    this.children = children;
   }
 }
