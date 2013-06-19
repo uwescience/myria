@@ -9,7 +9,7 @@ import sys
 children = defaultdict(list)
 # Populate the list for all operators that do have children
 children['CollectProducer'] = ['arg_child']
-children['EOSController'] = ['arg_children']
+children['EOSController'] = ['arg_child']
 children['IDBInput'] = ['arg_initial_input', 'arg_iteration_input', 'arg_eos_controller_input']
 children['LocalJoin'] = ['arg_child1', 'arg_child2']
 children['LocalMultiwayProducer'] = ['arg_child']
@@ -19,6 +19,7 @@ children['SQLiteInsert'] = ['arg_child']
 children['Aggregate'] = ['arg_child']
 children['Apply'] = ['arg_child']
 children['Filter'] = ['arg_child']
+children['Merge'] = ['arg_children']
 children['Project'] = ['arg_child']
 children['LocalCountingJoin'] = ['arg_child1', 'arg_child2']
 children['SQLiteInsert'] = ['arg_child']

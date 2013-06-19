@@ -55,14 +55,14 @@ public class EOSController extends Producer {
    * Each worker in workerIDs has the whole array of idbOpIDS. So the total number of IDBInput operators are
    * idbOpIDs.length*workerIDs.length.
    * 
-   * @param children The children are responsible for receiving EOI report from all controlled IDBInputs.
+   * @param child The child are responsible for receiving EOI report from all controlled IDBInputs.
    * @param workerIDs the workers where the IDBInput operators resides
    * @param idbOpIDs the IDB operatorIDs in each Worker
    * */
-  public EOSController(final Consumer[] children, final ExchangePairID[] idbOpIDs, final int[] workerIDs) {
+  public EOSController(final Merge child, final ExchangePairID[] idbOpIDs, final int[] workerIDs) {
     super(null, idbOpIDs, workerIDs, false);
-    if (children != null) {
-      setChildren(new Operator[] { new Merge(children) });
+    if (child != null) {
+      setChildren(new Operator[] { child });
     }
     numEOI = new int[idbOpIDs.length][workerIDs.length];
     zeroCol = new ArrayList<Integer>();
