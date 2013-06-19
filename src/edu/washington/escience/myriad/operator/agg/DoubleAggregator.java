@@ -10,7 +10,7 @@ import edu.washington.escience.myriad.Type;
 /**
  * Knows how to compute some aggregates over a DoubleColumn.
  */
-public final class DoubleAggregator implements Aggregator {
+public final class DoubleAggregator implements Aggregator<Double> {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -137,6 +137,28 @@ public final class DoubleAggregator implements Aggregator {
         }
       }
     }
+  }
+
+  @Override
+  public void add(final Double value) {
+    if (value != null) {
+      count++;
+      // temp variables for stdev streaming computation
+      final double x = value;
+      sum += x;
+      sumSquared += x * x;
+      if (Double.compare(x, min) < 0) {
+        min = x;
+      }
+      if (Double.compare(x, max) > 0) {
+        max = x;
+      }
+    }
+  }
+
+  @Override
+  public void addObj(final Object obj) {
+    this.add((Double) obj);
   }
 
   @Override

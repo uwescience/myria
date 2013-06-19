@@ -64,7 +64,7 @@ public final class MultiGroupByAggregate extends Operator {
   /** The child operator that will feed tuples in. **/
   private Operator child;
   /** The aggregators being used. **/
-  private final Aggregator[] agg;
+  private final Aggregator<?>[] agg;
   /** Aggregate fields. **/
   private final int[] afields;
   /** Group fields. **/
@@ -75,7 +75,7 @@ public final class MultiGroupByAggregate extends Operator {
   /** The resulting buffer to return. **/
   private TupleBatchBuffer resultBuffer = null;
   /** Mapping between the group to the aggregators being used. **/
-  private final HashMap<SimpleArrayWrapper, Aggregator[]> groupAggs;
+  private final HashMap<SimpleArrayWrapper, Aggregator<?>[]> groupAggs;
 
   /**
    * Constructor.
@@ -99,8 +99,8 @@ public final class MultiGroupByAggregate extends Operator {
     this.afields = afields;
     this.gfields = gfields;
     this.aggOps = aggOps;
-    groupAggs = new HashMap<SimpleArrayWrapper, Aggregator[]>();
-    agg = new Aggregator[aggOps.length];
+    groupAggs = new HashMap<SimpleArrayWrapper, Aggregator<?>[]>();
+    agg = new Aggregator<?>[aggOps.length];
     schema = generateSchema(child, groupAggs, gfields, afields, agg, aggOps);
   }
 
@@ -154,7 +154,7 @@ public final class MultiGroupByAggregate extends Operator {
         if (!groupAggs.containsKey(grpFields)) {
           // if the aggregator for the key doesn't exists,
           // create a new array of operators and put it in the map
-          Aggregator[] groupAgg = new Aggregator[agg.length];
+          Aggregator<?>[] groupAgg = new Aggregator<?>[agg.length];
           for (int j = 0; j < groupAgg.length; j++) {
             groupAgg[j] = agg[j].freshCopyYourself();
           }
@@ -174,11 +174,11 @@ public final class MultiGroupByAggregate extends Operator {
       }
       // add the tuples into the aggregator
       for (SimpleArrayWrapper saw : tmpMap.keySet()) {
-        Aggregator[] aggs = groupAggs.get(saw);
+        Aggregator<?>[] aggs = groupAggs.get(saw);
         TupleBatchBuffer tbb = tmpMap.get(saw);
         TupleBatch filledTb = null;
         while ((filledTb = tbb.popAny()) != null) {
-          for (final Aggregator aggLocal : aggs) {
+          for (final Aggregator<?> aggLocal : aggs) {
             aggLocal.add(filledTb);
           }
         }
@@ -191,9 +191,9 @@ public final class MultiGroupByAggregate extends Operator {
         for (int i = 0; i < gfields.length; i++) {
           resultBuffer.put(i, groupByFields.groupFields[i]);
         }
-        Aggregator[] value = groupAggs.get(groupByFields);
+        Aggregator<?>[] value = groupAggs.get(groupByFields);
         int currentIndex = gfields.length;
-        for (Aggregator element : value) {
+        for (Aggregator<?> element : value) {
           element.getResult(resultBuffer, currentIndex);
           currentIndex += element.getResultSchema().numColumns();
         }
@@ -247,8 +247,8 @@ public final class MultiGroupByAggregate extends Operator {
    * 
    * @return the schema based on the aggregate, if the child is null, will return null.
    */
-  private static Schema generateSchema(final Operator child, final Map<SimpleArrayWrapper, Aggregator[]> groupAggs,
-      final int[] gfields, final int[] afields, final Aggregator[] agg, final int[] aggOps) {
+  private static Schema generateSchema(final Operator child, final Map<SimpleArrayWrapper, Aggregator<?>[]> groupAggs,
+      final int[] gfields, final int[] afields, final Aggregator<?>[] agg, final int[] aggOps) {
     if (child == null) {
       return null;
     }
