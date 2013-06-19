@@ -7,6 +7,8 @@ import java.util.Map;
 
 import javax.ws.rs.core.Response.Status;
 
+import org.codehaus.jackson.annotate.JsonIgnoreProperties;
+
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.MyriaConstants;
@@ -20,6 +22,7 @@ import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.ExchangePairID;
 import edu.washington.escience.myriad.util.MyriaUtils;
 
+@JsonIgnoreProperties({ "expected_result" })
 /**
  * A JSON-able wrapper for the expected wire message for a query.
  * 

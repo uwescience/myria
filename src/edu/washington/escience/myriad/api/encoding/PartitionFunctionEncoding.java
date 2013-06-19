@@ -24,12 +24,12 @@ public abstract class PartitionFunctionEncoding<T extends PartitionFunction<?, ?
   public abstract T construct(int numPartitions);
 
   /**
-   * @return the list of required arguments for this PartitionFunctionEncodign.
+   * @return the list of required arguments for this PartitionFunctionEncoding.
    */
   protected abstract List<String> getRequiredArguments();
 
   @Override
   protected List<String> getRequiredFields() {
-    return new ImmutableList.Builder<String>().add("type").addAll(getRequiredArguments()).build();
+    return new ImmutableList.Builder<String>().addAll(getRequiredArguments()).build();
   }
 }
