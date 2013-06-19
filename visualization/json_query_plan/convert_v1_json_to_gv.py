@@ -10,11 +10,18 @@ children = defaultdict(list)
 # Populate the list for all operators that do have children
 children['CollectProducer'] = ['arg_child']
 children['EOSController'] = ['arg_child']
-children['IDBInput'] = ['arg_child1', 'arg_child2', 'arg_child3']
+children['IDBInput'] = ['arg_initial_input', 'arg_iteration_input', 'arg_eos_controller_input']
 children['LocalJoin'] = ['arg_child1', 'arg_child2']
 children['LocalMultiwayProducer'] = ['arg_child']
 children['MultiGroupByAggregate'] = ['arg_child']
 children['ShuffleProducer'] = ['arg_child']
+children['SQLiteInsert'] = ['arg_child']
+children['Aggregate'] = ['arg_child']
+children['Apply'] = ['arg_child']
+children['Filter'] = ['arg_child']
+children['Merge'] = ['arg_children']
+children['Project'] = ['arg_child']
+children['LocalCountingJoin'] = ['arg_child1', 'arg_child2']
 children['SQLiteInsert'] = ['arg_child']
 
 def read_json(filename):
@@ -44,7 +51,13 @@ def unify_plan(unique_fragments):
             t = op
             t['op_name'] = str(fragment_id) + '-' + t['op_name']
             for f in children[t['op_type']]:
-                t[f] = str(fragment_id) + '-' + t[f]
+                names = []
+                if isinstance(t[f], list):
+                    for child in t[f]:
+                        names.append(str(fragment_id) + '-' + child)
+                else:
+                    names.append(str(fragment_id) + '-' + t[f])
+                t[f] = names
             ret.append(t)
         return ret
     ret = [unify_fragment(x,y,z) for (x,y,z) in unique_fragments]
@@ -52,16 +65,21 @@ def unify_plan(unique_fragments):
 
 def operator_get_children(op):
     # Return the names of all child operators of this operator
-    return [op[x] for x in children[op['op_type']]]
+    ret = []
+    for x in children[op['op_type']]:
+        for c in op[x]:
+            ret.append(c)
+    return ret
 
 def operator_get_out_pipes(op):
     # By default, all operators have no out pipes
     pipe_fields = defaultdict(list)
     # Populate the list for all operators that do have children
     pipe_fields['CollectProducer'] = ['arg_operator_id']
-    pipe_fields['EOSController'] = ['arg_operator_id']
+    pipe_fields['EOSController'] = ['arg_idb_operator_ids']
     pipe_fields['LocalMultiwayProducer'] = ['arg_operator_ids']
     pipe_fields['ShuffleProducer'] = ['arg_operator_id']
+    pipe_fields['IDBInput'] = ['arg_controller_operator_id']
     ret = []
     for x in pipe_fields[op['op_type']]:
         if isinstance(op[x],list):
@@ -76,7 +94,6 @@ def operator_get_in_pipes(op):
     # Populate the list for all operators that do have children
     pipe_fields['CollectConsumer'] = ['arg_operator_id']
     pipe_fields['Consumer'] = ['arg_operator_id']
-    pipe_fields['IDBInput'] = ['arg_operator_id']
     pipe_fields['LocalMultiwayConsumer'] = ['arg_operator_id']
     pipe_fields['ShuffleConsumer'] = ['arg_operator_id']
     return [str(op[x]) for x in pipe_fields[op['op_type']]]
