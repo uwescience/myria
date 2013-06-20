@@ -100,7 +100,7 @@ public final class MultiGroupByAggregate extends Operator {
     this.gfields = gfields;
     this.aggOps = aggOps;
     groupAggs = new HashMap<SimpleArrayWrapper, Aggregator<?>[]>();
-    agg = new Aggregator[aggOps.length];
+    agg = new Aggregator<?>[aggOps.length];
     schema = generateSchema(child, groupAggs, gfields, afields, agg, aggOps);
   }
 
@@ -154,7 +154,7 @@ public final class MultiGroupByAggregate extends Operator {
         if (!groupAggs.containsKey(grpFields)) {
           // if the aggregator for the key doesn't exists,
           // create a new array of operators and put it in the map
-          Aggregator<?>[] groupAgg = new Aggregator[agg.length];
+          Aggregator<?>[] groupAgg = new Aggregator<?>[agg.length];
           for (int j = 0; j < groupAgg.length; j++) {
             groupAgg[j] = agg[j].freshCopyYourself();
           }

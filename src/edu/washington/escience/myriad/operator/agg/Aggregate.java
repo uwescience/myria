@@ -89,7 +89,7 @@ public final class Aggregate extends Operator {
     }
     this.afields = afields;
     this.aggOps = aggOps;
-    agg = new Aggregator[aggOps.length];
+    agg = new Aggregator<?>[aggOps.length];
 
     if (child != null) {
       setChildren(new Operator[] { child });
