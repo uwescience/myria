@@ -1,31 +1,25 @@
 package edu.washington.escience.myriad.api.encoding;
 
-import javax.ws.rs.core.Response.Status;
+import java.util.List;
 
-import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.NotEqualsPredicate;
-import edu.washington.escience.myriad.api.MyriaApiException;
 
 public class NotEqualsPredicateEncoding extends PredicateEncoding<NotEqualsPredicate> {
 
   public Integer argCompareIndex;
   public String argCompareValue;
-
-  @Override
-  public void validate() throws MyriaApiException {
-    super.validate();
-    try {
-      Preconditions.checkNotNull(argCompareIndex);
-      Preconditions.checkNotNull(argCompareValue);
-    } catch (Exception e) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "required field: index");
-    }
-  }
+  private static final List<String> requiredArguments = ImmutableList.of("argCompareIndex", "argCompareValue");
 
   @Override
   public NotEqualsPredicate construct() {
     return new NotEqualsPredicate(argCompareIndex, argCompareValue);
+  }
+
+  @Override
+  protected List<String> getRequiredArguments() {
+    return requiredArguments;
   }
 
 }

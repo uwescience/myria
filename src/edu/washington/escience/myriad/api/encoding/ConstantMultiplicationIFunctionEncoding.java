@@ -1,5 +1,9 @@
 package edu.washington.escience.myriad.api.encoding;
 
+import java.util.List;
+
+import com.google.common.collect.ImmutableList;
+
 import edu.washington.escience.myriad.operator.apply.ConstantMultiplicationIFunction;
 
 /**
@@ -12,5 +16,10 @@ public class ConstantMultiplicationIFunctionEncoding extends IFunctionEncoding<C
   @Override
   public ConstantMultiplicationIFunction construct() {
     return new ConstantMultiplicationIFunction();
+  }
+
+  @Override
+  protected List<String> getRequiredArguments() {
+    return ImmutableList.of();
   }
 }

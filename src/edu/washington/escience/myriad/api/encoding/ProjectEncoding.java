@@ -1,13 +1,11 @@
 package edu.washington.escience.myriad.api.encoding;
 
+import java.util.List;
 import java.util.Map;
 
-import javax.ws.rs.core.Response.Status;
-
-import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.DbException;
-import edu.washington.escience.myriad.api.MyriaApiException;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.Project;
 
@@ -21,16 +19,11 @@ public class ProjectEncoding extends OperatorEncoding<Project> {
 
   public int[] argFieldList;
   public String argChild;
+  private static final List<String> requiredArguments = ImmutableList.of("argFieldList", "argChild");
 
   @Override
-  public void validate() {
-    super.validate();
-    try {
-      Preconditions.checkNotNull(argFieldList);
-      Preconditions.checkNotNull(argChild);
-    } catch (Exception e) {
-      throw new MyriaApiException(Status.BAD_REQUEST, "required fields: arg_field_list, arg_child");
-    }
+  public void connect(Operator current, Map<String, Operator> operators) {
+    current.setChildren(new Operator[] { operators.get(argChild) });
   }
 
   @Override
@@ -43,7 +36,7 @@ public class ProjectEncoding extends OperatorEncoding<Project> {
   }
 
   @Override
-  public void connect(Operator current, Map<String, Operator> operators) {
-    current.setChildren(new Operator[] { operators.get(argChild) });
+  protected List<String> getRequiredArguments() {
+    return requiredArguments;
   }
 }
