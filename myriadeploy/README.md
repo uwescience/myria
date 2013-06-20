@@ -1,7 +1,14 @@
 #Preparing to use
 
+#### 0. Create symlinks
+
+The scripts copy the directories `conf` and `libs` to the deployment hosts. The easiest way to manage and update this is via symbolic links:
+
+    ln -s ../conf conf
+    ln -s ../build/libs libs
+
 #### 1. Build the Myria jar
-In Myria source (`../`), run `gradle jar` and copy `build/libs/myriad-0.1.jar` here.
+In Myria source (`../`), run `gradle jar`.
 
 #### 2. Myria needs Java 7
 Make sure `java -version` shows 7 on any machines in the cluster. 

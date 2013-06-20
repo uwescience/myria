@@ -165,15 +165,21 @@ test {
     // beforeTest { desc -> println "Executing test ${desc.name} [${desc.className}]" }
 }
 
+/*
+ * Copy all the jars that this project depends on into `build/libs`, and make
+ * sure it this happens whenever jar is run.
+ */
+task copyToLib(type: Copy) {
+    into "$buildDir/libs"
+    from configurations.runtime
+}
+tasks.jar.dependsOn copyToLib
+
+/* Assemble the Myria jar into `build/libs` */
 jar {
-  excludes = [ 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA' ] 
   manifest {
     attributes("Implementation-Title" : "Myria",
                "Implementation-Version": version,
 	       "Main-Class": "edu.washington.escience.myriad.daemon.MasterDaemon")
-  }
-
-  from configurations.runtime.collect {
-    it.isDirectory() ? it : zipTree(it)
   }
 }
