@@ -52,7 +52,7 @@ public final class MyriaSystemConfigKeys {
   /**
    * .
    * */
-  public static final String WORKER_STORAGE_SYSTEM_TYPE = MyriaConstants.STORAGE_SYSTEM_SQLITE;
+  public static final String WORKER_STORAGE_SYSTEM_TYPE = "worker.storage.system";
 
   /**
    * .

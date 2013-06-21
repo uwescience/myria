@@ -34,6 +34,13 @@ public final class EclipseClasspathReader {
     }
 
     final String eclipseCPFilePath = args[0];
+    String type = "cp"; // cp: classpath; lib: libpath
+    if (args.length >= 2) {
+      if (args[1].equalsIgnoreCase("lib")) {
+        type = "lib";
+      }
+    }
+
     final File eclipseCPFile = new File(eclipseCPFilePath);
     if (!eclipseCPFile.exists()) {
       System.err.println("Eclipse classpath file does not exist");
@@ -42,23 +49,13 @@ public final class EclipseClasspathReader {
 
     final String[] cp = readEclipseClasspath(eclipseCPFile);
 
-    // 1: need -Djava.library.path, for runtime
-    // 0: doesn't need -Djava.library.path, for compiling
-    // default: 1
-    int needLibpath = 1;
-    if (args.length > 1) {
-      needLibpath = Integer.parseInt(args[1]);
+    if (type.equals("cp")) {
+      System.out.print(cp[0]);
+      // System.out.print(" -classpath " + cp[0] + " ");
+    } else {
+      // System.out.print(" -Djava.library.path=" + cp[1] + " ");
+      System.out.print(cp[1]);
     }
-    if (needLibpath == 1) {
-      System.out.print(" -Djava.library.path=" + cp[1] + " ");
-      // if another classpath is provided, use it instead of eclipse classpath
-      if (args.length > 2) {
-        cp[0] = args[2] + System.getProperty("path.separator") + cp[0].substring(cp[0].indexOf("build/eclipse") + 14);
-      }
-    } else if (needLibpath == 0) {
-      cp[0] = cp[0].substring(cp[0].indexOf("build/eclipse") + 14);
-    }
-    System.out.print(" -classpath " + cp[0] + " ");
   }
 
   /**
@@ -76,6 +73,8 @@ public final class EclipseClasspathReader {
       throw new IOException(e);
     }
 
+    File projectRoot = eclipseClasspathXMLFile.getParentFile();
+
     Document doc;
     try {
       doc = dBuilder.parse(eclipseClasspathXMLFile);
@@ -87,6 +86,7 @@ public final class EclipseClasspathReader {
     final NodeList nList = doc.getElementsByTagName("classpathentry");
 
     final String separator = System.getProperty("path.separator");
+
     final StringBuilder classpathSB = new StringBuilder();
     for (int i = 0; i < nList.getLength(); i++) {
       final Node node = nList.item(i);
@@ -95,13 +95,28 @@ public final class EclipseClasspathReader {
 
         final String kind = e.getAttribute("kind");
         if (kind.equals("output")) {
-          classpathSB.append(new File(e.getAttribute("path")).getAbsolutePath() + separator);
+          String path = e.getAttribute("path");
+          if (path.startsWith(File.separator)) {
+            classpathSB.append(new File(path).getAbsolutePath() + separator);
+          } else {
+            classpathSB.append(new File(projectRoot, path).getAbsolutePath() + separator);
+          }
         }
         if (kind.equals("lib")) {
-          classpathSB.append(new File(e.getAttribute("path")).getAbsolutePath() + separator);
+          String path = e.getAttribute("path");
+          if (path.startsWith(File.separator)) {
+            classpathSB.append(new File(path).getAbsolutePath() + separator);
+          } else {
+            classpathSB.append(new File(projectRoot, path).getAbsolutePath() + separator);
+          }
         }
         if (kind.equals("src")) {
-          classpathSB.append(new File(e.getAttribute("output")).getAbsoluteFile() + separator);
+          String path = e.getAttribute("output");
+          if (path.startsWith(File.separator)) {
+            classpathSB.append(new File(path).getAbsoluteFile() + separator);
+          } else {
+            classpathSB.append(new File(projectRoot, path).getAbsoluteFile() + separator);
+          }
         }
       }
     }
@@ -114,11 +129,13 @@ public final class EclipseClasspathReader {
           && ("org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY".equals(((Element) node)
               .getAttribute("name")))) {
         String value = ((Element) node).getAttribute("value");
+
         if (value != null) {
-          File f = new File(value);
-          while (value != null && value.length() > 0 && !f.exists()) {
+          // remove the project name
+          File f = new File(projectRoot, value);
+          while (value != null && value.length() > 0 && !f.exists() && value.indexOf(File.separator) >= 0) {
             value = value.substring(value.indexOf(File.separator) + 1);
-            f = new File(value);
+            f = new File(projectRoot, value);
           }
           if (f.exists()) {
             libPathSB.append(f.getAbsolutePath() + separator);
