@@ -18,6 +18,7 @@ public class DatasetEncoding extends MyriaApiEncoding {
   public Schema schema;
   public String fileName;
   public Set<Integer> workers;
+  public Boolean isCommaSeparated;
   public byte[] data;
   private static final List<String> requiredFields = ImmutableList.of("relationKey", "schema");
 
