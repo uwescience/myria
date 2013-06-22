@@ -2,10 +2,10 @@ package edu.washington.escience.myriad.operator;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
+import com.carrotsearch.hppc.IntObjectOpenHashMap;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -28,6 +28,56 @@ public final class LocalJoin extends Operator {
   private static final long serialVersionUID = 1L;
 
   /**
+   * Data structure for keeping references to a tuple in a TupleBatch.
+   * */
+  private static final class IndexedTuple {
+    /**
+     * The row index.
+     * */
+    private final int index;
+    /**
+     * The source data tuple batch.
+     * */
+    private final TupleBatch tupleBatch;
+
+    /**
+     * Factory.
+     * 
+     * @param tb the tuple batch
+     * @param index the row of the tuple in the tuple batch
+     * @return the IndexedTuple object
+     */
+    public static IndexedTuple of(final TupleBatch tb, final int index) {
+      return new IndexedTuple(tb, index);
+    }
+
+    /**
+     * The private constructor.
+     * 
+     * @param tb the tuple batch
+     * @param index the row of the tuple in the tuple batch
+     * */
+    private IndexedTuple(final TupleBatch tb, final int index) {
+      tupleBatch = tb;
+      this.index = index;
+    }
+
+    /**
+     * @return the index
+     */
+    public int getIndex() {
+      return index;
+    }
+
+    /**
+     * @return the tb
+     */
+    public TupleBatch getTupleBatch() {
+      return tupleBatch;
+    }
+  }
+
+  /**
    * The two children.
    * */
   private Operator child1, child2;
@@ -46,11 +96,11 @@ public final class LocalJoin extends Operator {
   /**
    * A hash table for tuples from left child.
    * */
-  private transient HashMap<Integer, List<List<Object>>> leftHashTable;
+  private transient IntObjectOpenHashMap<List<IndexedTuple>> leftHashTable;
   /**
    * A hash table for tuples from right child.
    * */
-  private transient HashMap<Integer, List<List<Object>>> rightHashTable;
+  private transient IntObjectOpenHashMap<List<IndexedTuple>> rightHashTable;
   /**
    * The buffer holding the results.
    * */
@@ -166,25 +216,20 @@ public final class LocalJoin extends Operator {
   }
 
   /**
-   * @param leftTuple a list representation of the left tuple
-   * @param rightTuple a list representation of the right tuple
+   * Adds a tuple to the answer.
+   * 
+   * @param leftTb the tuple batch that contains the left tuple
+   * @param leftIdx the index of the left tuple in the leftTb
+   * @param rightTb the tuple batch that contains the right tuple
+   * @param rightIdx the index of the right tuple in the rightTb
    * @param fromLeft if the tuple starts from the left
    */
-  protected void addToAns(final List<Object> leftTuple, final List<Object> rightTuple, final boolean fromLeft) {
+  protected void addToAns(final TupleBatch leftTb, final int leftIdx, final TupleBatch rightTb, final int rightIdx,
+      final boolean fromLeft) {
     if (fromLeft) {
-      for (int i = 0; i < answerColumns1.length; ++i) {
-        ans.put(i, leftTuple.get(answerColumns1[i]));
-      }
-      for (int i = 0; i < answerColumns2.length; ++i) {
-        ans.put(i + answerColumns1.length, rightTuple.get(answerColumns2[i]));
-      }
+      ans.put(leftTb, leftIdx, answerColumns1, rightTb, rightIdx, answerColumns2);
     } else {
-      for (int i = 0; i < answerColumns1.length; ++i) {
-        ans.put(i, rightTuple.get(answerColumns1[i]));
-      }
-      for (int i = 0; i < answerColumns2.length; ++i) {
-        ans.put(i + answerColumns1.length, leftTuple.get(answerColumns2[i]));
-      }
+      ans.put(rightTb, rightIdx, answerColumns1, leftTb, leftIdx, answerColumns2);
     }
   }
 
@@ -368,8 +413,8 @@ public final class LocalJoin extends Operator {
 
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    leftHashTable = new HashMap<Integer, List<List<Object>>>();
-    rightHashTable = new HashMap<Integer, List<List<Object>>>();
+    leftHashTable = new IntObjectOpenHashMap<List<IndexedTuple>>();
+    rightHashTable = new IntObjectOpenHashMap<List<IndexedTuple>>();
     ans = new TupleBatchBuffer(outputSchema);
     QueryExecutionMode qem = (QueryExecutionMode) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE);
     nonBlocking = qem == QueryExecutionMode.NON_BLOCKING;
@@ -381,32 +426,13 @@ public final class LocalJoin extends Operator {
   private transient boolean nonBlocking = true;
 
   /**
-   * Check if left and right tuples match.
-   * 
-   * @param leftTuple the left tuple
-   * @param rightTuple the right tuple
-   * @param compareIndx1 the comparing list of columns of cntTuple
-   * @param compareIndx2 the comparing list of columns of hashTable
-   * @return true if equals.
-   * */
-  private boolean tupleEquals(final List<Object> leftTuple, final List<Object> rightTuple, final int[] compareIndx1,
-      final int[] compareIndx2) {
-    for (int i = 0; i < compareIndx1.length; ++i) {
-      if (!leftTuple.get(compareIndx1[i]).equals(rightTuple.get(compareIndx2[i]))) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  /**
    * @param tb the incoming TupleBatch for processing join.
    * @param fromChild1 if the tb is from child1.
    * */
   protected void processChildTB(final TupleBatch tb, final boolean fromChild1) {
 
-    HashMap<Integer, List<List<Object>>> hashTable1Local = leftHashTable;
-    HashMap<Integer, List<List<Object>>> hashTable2Local = rightHashTable;
+    IntObjectOpenHashMap<List<IndexedTuple>> hashTable1Local = leftHashTable;
+    IntObjectOpenHashMap<List<IndexedTuple>> hashTable2Local = rightHashTable;
     int[] compareIndx1Local = compareIndx1;
     int[] compareIndx2Local = compareIndx2;
     if (!fromChild1) {
@@ -417,16 +443,12 @@ public final class LocalJoin extends Operator {
     }
 
     for (int i = 0; i < tb.numTuples(); ++i) {
-      final List<Object> cntTuple = new ArrayList<Object>();
-      for (int j = 0; j < tb.numColumns(); ++j) {
-        cntTuple.add(tb.getObject(j, i));
-      }
       final int cntHashCode = tb.hashCode(i, compareIndx1Local);
-      List<List<Object>> tupleList = hashTable2Local.get(cntHashCode);
+      List<IndexedTuple> tupleList = hashTable2Local.get(cntHashCode);
       if (tupleList != null) {
-        for (final List<Object> tuple : tupleList) {
-          if (tupleEquals(cntTuple, tuple, compareIndx1Local, compareIndx2Local)) {
-            addToAns(cntTuple, tuple, fromChild1);
+        for (final IndexedTuple tuple : tupleList) {
+          if (tb.tupleMatches(i, compareIndx1Local, tuple.getTupleBatch(), tuple.getIndex(), compareIndx2Local)) {
+            addToAns(tb, i, tuple.getTupleBatch(), tuple.getIndex(), fromChild1);
           }
         }
       }
@@ -434,10 +456,10 @@ public final class LocalJoin extends Operator {
       if (hashTable1Local.containsKey(cntHashCode)) {
         tupleList = hashTable1Local.get(cntHashCode);
       } else {
-        tupleList = new ArrayList<List<Object>>();
+        tupleList = new ArrayList<IndexedTuple>();
         hashTable1Local.put(cntHashCode, tupleList);
       }
-      tupleList.add(cntTuple);
+      tupleList.add(IndexedTuple.of(tb, i));
     }
   }
 
