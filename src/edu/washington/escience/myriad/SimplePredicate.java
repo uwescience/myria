@@ -4,7 +4,6 @@ import java.io.Serializable;
 import java.util.BitSet;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.util.ImmutableBitSet;
@@ -122,7 +121,7 @@ public class SimplePredicate implements Serializable, Predicate {
     if (tb.numTuples() > 0) {
       final Column<?> columnValues = tb.getDataColumns().get(getField());
       final Type columnType = tb.getSchema().getColumnType(getField());
-      ImmutableList<Integer> validIndices = tb.getValidIndices();
+      final int[] validIndices = tb.getValidIndices();
       for (final int validIdx : validIndices) {
         if (columnType.filter(getOp(), columnValues, validIdx, getOperand())) {
           newValidTuples.set(validIdx);

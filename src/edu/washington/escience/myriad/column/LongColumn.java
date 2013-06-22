@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
+import com.google.common.hash.Hasher;
 import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myriad.Type;
@@ -98,5 +99,20 @@ public final class LongColumn implements Column<Long> {
     }
     sb.append(']');
     return sb.toString();
+  }
+
+  @Override
+  public boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx) {
+    return getLong(leftIdx) == ((LongColumn) rightColumn).getLong(rightIdx);
+  }
+
+  @Override
+  public void append(final int index, final ColumnBuilder<?> columnBuilder) {
+    ((LongColumnBuilder) columnBuilder).append(getLong(index));
+  }
+
+  @Override
+  public void addToHasher(final int row, final Hasher hasher) {
+    hasher.putLong(getLong(row));
   }
 }

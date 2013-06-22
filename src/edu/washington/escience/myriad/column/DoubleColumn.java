@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
+import com.google.common.hash.Hasher;
 import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myriad.TupleBatch;
@@ -100,5 +101,20 @@ public final class DoubleColumn implements Column<Double> {
     }
     sb.append(']');
     return sb.toString();
+  }
+
+  @Override
+  public boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx) {
+    return getDouble(leftIdx) == ((DoubleColumn) rightColumn).getDouble(rightIdx);
+  }
+
+  @Override
+  public void append(final int index, final ColumnBuilder<?> columnBuilder) {
+    ((DoubleColumnBuilder) columnBuilder).append(getDouble(index));
+  }
+
+  @Override
+  public void addToHasher(final int row, final Hasher hasher) {
+    hasher.putDouble(getDouble(row));
   }
 }
