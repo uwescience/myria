@@ -254,8 +254,7 @@ public class MasterQueryPartition implements QueryPartition {
 
     @Override
     public void operationComplete(final QueryFuture future) throws Exception {
-      QuerySubTreeTask drivingTask = (QuerySubTreeTask) (future.getAttachment());
-      drivingTask.cleanup();
+
       if (future.isSuccess()) {
         if (root instanceof SinkRoot) {
           if (LOGGER.isInfoEnabled()) {
