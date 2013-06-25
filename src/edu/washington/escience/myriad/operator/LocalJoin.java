@@ -17,7 +17,6 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.parallel.Worker.QueryExecutionMode;
-import edu.washington.escience.myriad.util.MyriaUtils;
 
 /**
  * This is an implementation of hash equal join. The same as in DupElim, this implementation does not keep the
@@ -44,13 +43,21 @@ public final class LocalJoin extends Operator {
    * */
   private final int[] compareIndx2;
   /**
-   * A hash table for tuples from left child.
+   * A hash table for tuples from child 1. {Hashcode -> List of tuple indices with the same hash code}
    * */
-  private transient HashMap<Integer, List<List<Object>>> leftHashTable;
+  private transient HashMap<Integer, List<Integer>> hashTable1Indices;
   /**
-   * A hash table for tuples from right child.
+   * A hash table for tuples from child 2. {Hashcode -> List of tuple indices with the same hash code}
    * */
-  private transient HashMap<Integer, List<List<Object>>> rightHashTable;
+  private transient HashMap<Integer, List<Integer>> hashTable2Indices;
+  /**
+   * The buffer holding the valid tuples from child1.
+   * */
+  private transient TupleBatchBuffer hashTable1;
+  /**
+   * The buffer holding the valid tuples from child2.
+   * */
+  private transient TupleBatchBuffer hashTable2;
   /**
    * The buffer holding the results.
    * */
@@ -133,8 +140,22 @@ public final class LocalJoin extends Operator {
    */
   private LocalJoin(final Schema outputSchema, final Operator child1, final Operator child2, final int[] compareIndx1,
       final int[] compareIndx2) {
-    this(outputSchema, child1, child2, compareIndx1, compareIndx2, MyriaUtils.range(child1.getSchema().numColumns()),
-        MyriaUtils.range(child2.getSchema().numColumns()));
+    this(outputSchema, child1, child2, compareIndx1, compareIndx2, range(child1.getSchema().numColumns()), range(child2
+        .getSchema().numColumns()));
+  }
+
+  /**
+   * Helper function that generates an array of the numbers 0..max-1.
+   * 
+   * @param max the size of the array.
+   * @return an array of the numbers 0..max-1.
+   */
+  private static int[] range(final int max) {
+    int[] ret = new int[max];
+    for (int i = 0; i < max; ++i) {
+      ret[i] = i;
+    }
+    return ret;
   }
 
   /**
@@ -166,32 +187,34 @@ public final class LocalJoin extends Operator {
   }
 
   /**
-   * @param leftTuple a list representation of the left tuple
-   * @param rightTuple a list representation of the right tuple
-   * @param fromLeft if the tuple starts from the left
+   * @param cntTuple a list representation of a tuple
+   * @param hashTable the buffer holding the tuples to join against
+   * @param index the index of hashTable, which the cntTuple is to join with
+   * @param fromChild1 if the tuple is from child 1
    */
-  protected void addToAns(final List<Object> leftTuple, final List<Object> rightTuple, final boolean fromLeft) {
-    if (fromLeft) {
+  protected void addToAns(final List<Object> cntTuple, final TupleBatchBuffer hashTable, final int index,
+      final boolean fromChild1) {
+    if (fromChild1) {
       for (int i = 0; i < answerColumns1.length; ++i) {
-        ans.put(i, leftTuple.get(answerColumns1[i]));
+        ans.put(i, cntTuple.get(answerColumns1[i]));
       }
       for (int i = 0; i < answerColumns2.length; ++i) {
-        ans.put(i + answerColumns1.length, rightTuple.get(answerColumns2[i]));
+        ans.put(i + answerColumns1.length, hashTable.get(answerColumns2[i], index));
       }
     } else {
       for (int i = 0; i < answerColumns1.length; ++i) {
-        ans.put(i, rightTuple.get(answerColumns1[i]));
+        ans.put(i, hashTable.get(answerColumns1[i], index));
       }
       for (int i = 0; i < answerColumns2.length; ++i) {
-        ans.put(i + answerColumns1.length, leftTuple.get(answerColumns2[i]));
+        ans.put(i + answerColumns1.length, cntTuple.get(answerColumns2[i]));
       }
     }
   }
 
   @Override
   protected void cleanup() throws DbException {
-    leftHashTable = null;
-    rightHashTable = null;
+    hashTable1 = null;
+    hashTable2 = null;
     ans = null;
   }
 
@@ -368,8 +391,10 @@ public final class LocalJoin extends Operator {
 
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    leftHashTable = new HashMap<Integer, List<List<Object>>>();
-    rightHashTable = new HashMap<Integer, List<List<Object>>>();
+    hashTable1Indices = new HashMap<Integer, List<Integer>>();
+    hashTable2Indices = new HashMap<Integer, List<Integer>>();
+    hashTable1 = new TupleBatchBuffer(child1.getSchema());
+    hashTable2 = new TupleBatchBuffer(child2.getSchema());
     ans = new TupleBatchBuffer(outputSchema);
     QueryExecutionMode qem = (QueryExecutionMode) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE);
     nonBlocking = qem == QueryExecutionMode.NON_BLOCKING;
@@ -381,18 +406,22 @@ public final class LocalJoin extends Operator {
   private transient boolean nonBlocking = true;
 
   /**
-   * Check if left and right tuples match.
+   * Check if a tuple in uniqueTuples equals to the comparing tuple (cntTuple).
    * 
-   * @param leftTuple the left tuple
-   * @param rightTuple the right tuple
+   * @param hashTable the TupleBatchBuffer holding the tuples to compare against
+   * @param index the index in the hashTable
+   * @param cntTuple a list representation of a tuple
    * @param compareIndx1 the comparing list of columns of cntTuple
    * @param compareIndx2 the comparing list of columns of hashTable
    * @return true if equals.
    * */
-  private boolean tupleEquals(final List<Object> leftTuple, final List<Object> rightTuple, final int[] compareIndx1,
-      final int[] compareIndx2) {
+  private boolean tupleEquals(final List<Object> cntTuple, final TupleBatchBuffer hashTable, final int index,
+      final int[] compareIndx1, final int[] compareIndx2) {
+    if (compareIndx1.length != compareIndx2.length) {
+      return false;
+    }
     for (int i = 0; i < compareIndx1.length; ++i) {
-      if (!leftTuple.get(compareIndx1[i]).equals(rightTuple.get(compareIndx2[i]))) {
+      if (!cntTuple.get(compareIndx1[i]).equals(hashTable.get(compareIndx2[i], index))) {
         return false;
       }
     }
@@ -405,13 +434,17 @@ public final class LocalJoin extends Operator {
    * */
   protected void processChildTB(final TupleBatch tb, final boolean fromChild1) {
 
-    HashMap<Integer, List<List<Object>>> hashTable1Local = leftHashTable;
-    HashMap<Integer, List<List<Object>>> hashTable2Local = rightHashTable;
+    TupleBatchBuffer hashTable1Local = hashTable1;
+    TupleBatchBuffer hashTable2Local = hashTable2;
+    HashMap<Integer, List<Integer>> hashTable1IndicesLocal = hashTable1Indices;
+    HashMap<Integer, List<Integer>> hashTable2IndicesLocal = hashTable2Indices;
     int[] compareIndx1Local = compareIndx1;
     int[] compareIndx2Local = compareIndx2;
     if (!fromChild1) {
-      hashTable1Local = rightHashTable;
-      hashTable2Local = leftHashTable;
+      hashTable1Local = hashTable2;
+      hashTable2Local = hashTable1;
+      hashTable1IndicesLocal = hashTable2Indices;
+      hashTable2IndicesLocal = hashTable1Indices;
       compareIndx1Local = compareIndx2;
       compareIndx2Local = compareIndx1;
     }
@@ -421,23 +454,23 @@ public final class LocalJoin extends Operator {
       for (int j = 0; j < tb.numColumns(); ++j) {
         cntTuple.add(tb.getObject(j, i));
       }
+      final int nextIndex = hashTable1Local.numTuples();
       final int cntHashCode = tb.hashCode(i, compareIndx1Local);
-      List<List<Object>> tupleList = hashTable2Local.get(cntHashCode);
-      if (tupleList != null) {
-        for (final List<Object> tuple : tupleList) {
-          if (tupleEquals(cntTuple, tuple, compareIndx1Local, compareIndx2Local)) {
-            addToAns(cntTuple, tuple, fromChild1);
+      List<Integer> indexList = hashTable2IndicesLocal.get(cntHashCode);
+      if (indexList != null) {
+        for (final int index : indexList) {
+          if (tupleEquals(cntTuple, hashTable2Local, index, compareIndx1Local, compareIndx2Local)) {
+            addToAns(cntTuple, hashTable2Local, index, fromChild1);
           }
         }
       }
-
-      if (hashTable1Local.containsKey(cntHashCode)) {
-        tupleList = hashTable1Local.get(cntHashCode);
-      } else {
-        tupleList = new ArrayList<List<Object>>();
-        hashTable1Local.put(cntHashCode, tupleList);
+      if (hashTable1IndicesLocal.get(cntHashCode) == null) {
+        hashTable1IndicesLocal.put(cntHashCode, new ArrayList<Integer>());
       }
-      tupleList.add(cntTuple);
+      hashTable1IndicesLocal.get(cntHashCode).add(nextIndex);
+      for (int j = 0; j < tb.numColumns(); ++j) {
+        hashTable1Local.put(j, cntTuple.get(j));
+      }
     }
   }
 
