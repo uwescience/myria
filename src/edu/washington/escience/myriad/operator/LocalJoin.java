@@ -325,7 +325,7 @@ public final class LocalJoin extends Operator {
         child1TB = child1.nextReady();
         if (child1TB != null) { // data
           processChildTB(child1TB, true);
-          nexttb = ans.popFilled();
+          nexttb = ans.popAnyUsingTimeout();
           if (nexttb != null) {
             return nexttb;
           }
@@ -349,7 +349,7 @@ public final class LocalJoin extends Operator {
         child2TB = child2.nextReady();
         if (child2TB != null) {
           processChildTB(child2TB, false);
-          nexttb = ans.popFilled();
+          nexttb = ans.popAnyUsingTimeout();
           if (nexttb != null) {
             return nexttb;
           }
