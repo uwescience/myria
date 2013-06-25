@@ -70,6 +70,10 @@ public class MasterQueryPartition implements QueryPartition {
             if (!(future.getCause() instanceof QueryKilledException)) {
               // Only record non-killed exceptions
               failedQueryPartitions.put(workerID, future.getCause());
+
+              // if any worker fails because of some exception, kill the query.
+              kill();
+
             }
           }
           if (current >= total) {
@@ -250,8 +254,7 @@ public class MasterQueryPartition implements QueryPartition {
 
     @Override
     public void operationComplete(final QueryFuture future) throws Exception {
-      QuerySubTreeTask drivingTask = (QuerySubTreeTask) (future.getAttachment());
-      drivingTask.cleanup();
+
       if (future.isSuccess()) {
         if (root instanceof SinkRoot) {
           if (LOGGER.isInfoEnabled()) {
