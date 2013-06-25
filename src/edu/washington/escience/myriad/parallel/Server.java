@@ -168,11 +168,6 @@ public final class Server {
                     LOGGER.error("Worker #{} failed in executing query #{}.", senderID, queryId, cause);
                   }
 
-                  if (!(cause instanceof QueryKilledException)) {
-                    // if any worker fails because of some exception, kill the query.
-                    mqp.kill();
-                  }
-
                 }
                 break;
               default:

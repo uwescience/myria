@@ -70,6 +70,10 @@ public class MasterQueryPartition implements QueryPartition {
             if (!(future.getCause() instanceof QueryKilledException)) {
               // Only record non-killed exceptions
               failedQueryPartitions.put(workerID, future.getCause());
+
+              // if any worker fails because of some exception, kill the query.
+              kill();
+
             }
           }
           if (current >= total) {
