@@ -1,12 +1,8 @@
 package edu.washington.escience.myriad.api.encoding;
 
-import java.util.List;
-
 import org.codehaus.jackson.annotate.JsonSubTypes;
 import org.codehaus.jackson.annotate.JsonSubTypes.Type;
 import org.codehaus.jackson.annotate.JsonTypeInfo;
-
-import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.parallel.PartitionFunction;
 
@@ -22,14 +18,4 @@ public abstract class PartitionFunctionEncoding<T extends PartitionFunction<?, ?
    * @return the instantiated partition function.
    */
   public abstract T construct(int numPartitions);
-
-  /**
-   * @return the list of required arguments for this PartitionFunctionEncoding.
-   */
-  protected abstract List<String> getRequiredArguments();
-
-  @Override
-  protected List<String> getRequiredFields() {
-    return new ImmutableList.Builder<String>().addAll(getRequiredArguments()).build();
-  }
 }

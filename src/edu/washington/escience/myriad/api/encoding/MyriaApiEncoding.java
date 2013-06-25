@@ -35,9 +35,11 @@ public abstract class MyriaApiEncoding {
   public final void validate() throws MyriaApiException {
     /* Fetch the list of required fields. */
     final List<String> fields = getRequiredFields();
+    String current = "";
     /* Check using Java reflection to see that every field is there. */
     try {
       for (final String f : fields) {
+        current = f;
         Preconditions.checkNotNull(getClass().getField(f).get(this));
       }
     } catch (NoSuchFieldException | IllegalAccessException e) {
@@ -54,6 +56,8 @@ public abstract class MyriaApiEncoding {
         first = false;
         sb.append(translator.translate(f));
       }
+      sb.append(". Error on ");
+      sb.append(translator.translate(current));
       throw new MyriaApiException(Status.BAD_REQUEST, sb.toString());
     }
     validateExtra();

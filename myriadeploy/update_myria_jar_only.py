@@ -22,7 +22,7 @@ def copy_distribution(config):
             remote_path = "%s@%s:%s/%s-files" % (username, hostname, path, description)
         else:
             remote_path = "%s/%s-files" % (path, description)
-        to_copy = ["myriad-0.1.jar"]
+        to_copy = ["libs", "conf"]
         args = ["rsync", "-aLvz"] + to_copy + [remote_path]
         if subprocess.call(args):
             raise Exception("Error copying distribution to %s" % (hostname,))
@@ -36,7 +36,7 @@ def main(argv):
 
     config = myriadeploy.read_config_file(argv[1])
 
-    # Step 1: Copy over java, libs, myriad
+    # Step 1: Copy over libs, "conf", myriad
     copy_distribution(config)
 
 if __name__ == "__main__":

@@ -7,13 +7,14 @@ import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.operator.Merge;
 import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.parallel.Server;
 
 public class MergeEncoding extends OperatorEncoding<Merge> {
   public String[] argChildren;
   private static final List<String> requiredArguments = ImmutableList.of("argChildren");
 
   @Override
-  public Merge construct() {
+  public Merge construct(final Server server) {
     return new Merge(null);
   }
 

@@ -33,7 +33,6 @@ Slightly modified version of Sun Checks that better matches the default code for
     <module name="IllegalImport"/>
     <module name="RedundantImport"/>
     <module name="MethodLength"/>
-    <module name="ParameterNumber"/>
     <module name="EmptyForIteratorPad"/>
     <module name="MethodParamPad"/>
     <module name="NoWhitespaceAfter">

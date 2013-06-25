@@ -9,9 +9,11 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 
+import edu.washington.escience.myriad.parallel.Server;
 import edu.washington.escience.myriad.parallel.SocketInfo;
 
 /**
@@ -22,13 +24,17 @@ import edu.washington.escience.myriad.parallel.SocketInfo;
 @Path("/workers")
 @Produces(MediaType.APPLICATION_JSON)
 public final class WorkerCollection {
+  /** The Myria server running on the master. */
+  @Context
+  private Server server;
+
   /**
    * @return the list of identifiers of workers that are currently alive.
    */
   @GET
   @Path("/alive")
   public Set<Integer> getAliveWorkers() {
-    return MyriaApiUtils.getServer().getAliveWorkers();
+    return server.getAliveWorkers();
   }
 
   /**
@@ -40,7 +46,7 @@ public final class WorkerCollection {
   public String getWorker(@PathParam("workerId") final String workerId) {
     SocketInfo workerInfo;
     try {
-      workerInfo = MyriaApiUtils.getServer().getWorkers().get(Integer.parseInt(workerId));
+      workerInfo = server.getWorkers().get(Integer.parseInt(workerId));
     } catch (final NumberFormatException e) {
       /* Parsing failed, throw a 400 (Bad Request) */
       throw new MyriaApiException(Status.BAD_REQUEST, e);
@@ -59,7 +65,7 @@ public final class WorkerCollection {
   @GET
   public Map<Integer, String> getWorkers() {
     Map<Integer, SocketInfo> workers;
-    workers = MyriaApiUtils.getServer().getWorkers();
+    workers = server.getWorkers();
     final Map<Integer, String> ret = new HashMap<Integer, String>();
     for (final Entry<Integer, SocketInfo> workerInfo : workers.entrySet()) {
       ret.put(workerInfo.getKey(), workerInfo.getValue().toString());

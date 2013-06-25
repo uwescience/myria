@@ -8,6 +8,7 @@ import com.google.common.collect.ImmutableList;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.parallel.EOSController;
 import edu.washington.escience.myriad.parallel.ExchangePairID;
+import edu.washington.escience.myriad.parallel.Server;
 import edu.washington.escience.myriad.util.MyriaUtils;
 
 public class EOSControllerEncoding extends AbstractProducerEncoding<EOSController> {
@@ -16,7 +17,7 @@ public class EOSControllerEncoding extends AbstractProducerEncoding<EOSControlle
   private static final List<String> requiredArguments = ImmutableList.of("argIdbOperatorIds", "argChild");
 
   @Override
-  public EOSController construct() {
+  public EOSController construct(Server server) {
     List<ExchangePairID> ids = getRealOperatorIds();
     return new EOSController(null, ids.toArray(new ExchangePairID[ids.size()]), MyriaUtils
         .integerCollectionToIntArray(getRealWorkerIds()));
