@@ -31,7 +31,7 @@ public final class CollectProducer extends Producer {
     TransportMessage dm = null;
     tb.compactInto(getBuffers()[0]);
 
-    while ((dm = getBuffers()[0].popFilledAsTM()) != null) {
+    while ((dm = getBuffers()[0].popAnyAsTMUsingTimeout()) != null) {
       try {
         writeMessage(getChannels()[0], dm);
       } catch (InterruptedException e) {

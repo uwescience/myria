@@ -53,7 +53,7 @@ public class ShuffleProducer extends Producer {
     TransportMessage dm = null;
     for (int p = 0; p < ioChannels.length; p++) {
       final TupleBatchBuffer etb = buffers[p];
-      while ((dm = etb.popFilledAsTM()) != null) {
+      while ((dm = etb.popAnyAsTMUsingTimeout()) != null) {
         try {
           writeMessage(ioChannels[p], dm);
         } catch (InterruptedException e) {

@@ -34,7 +34,7 @@ public final class LocalMultiwayProducer extends Producer {
     Channel[] ioChannels = getChannels();
     TransportMessage dm = null;
     tup.compactInto(buffers[0]);
-    while ((dm = buffers[0].popFilledAsTM()) != null) {
+    while ((dm = buffers[0].popAnyAsTMUsingTimeout()) != null) {
       for (Channel ch : ioChannels) {
         try {
           writeMessage(ch, dm);
