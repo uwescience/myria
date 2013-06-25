@@ -1,4 +1,4 @@
-package edu.washington.escience.myriad.operator;
+package edu.washington.escience.myriad.util;
 
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
@@ -8,6 +8,7 @@ import com.google.common.collect.ImmutableMap;
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
+import edu.washington.escience.myriad.operator.Operator;
 
 /**
  * Inject a random failure. The injection is conducted as the following:<br/>
@@ -98,6 +99,12 @@ public class SingleRandomFailureInjector extends Operator {
             return;
           }
           while (true) {
+            if (r.nextDouble() < failureProbabilityPerSecond) {
+              toFail = true;
+              hasFailed = true;
+              return;
+            }
+
             try {
               Thread.sleep(TimeUnit.SECONDS.toMillis(1));
             } catch (InterruptedException e) {
@@ -106,11 +113,7 @@ public class SingleRandomFailureInjector extends Operator {
               }
               return;
             }
-            if (r.nextDouble() < failureProbabilityPerSecond) {
-              toFail = true;
-              hasFailed = true;
-              return;
-            }
+
           }
         }
       };
