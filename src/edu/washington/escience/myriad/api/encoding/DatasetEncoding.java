@@ -11,6 +11,7 @@ import com.google.common.collect.ImmutableList;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.api.MyriaApiException;
+import edu.washington.escience.myriad.util.FSUtils;
 
 public class DatasetEncoding extends MyriaApiEncoding {
   public RelationKey relationKey;
@@ -32,6 +33,15 @@ public class DatasetEncoding extends MyriaApiEncoding {
     } catch (final Exception e) {
       throw new MyriaApiException(Status.BAD_REQUEST, getClass().getName()
           + " has required fields: relation_key, schema, file_name | data");
+    }
+    /*
+     * Note we can only do this because we know that the operator will be run on the master. So we can't do this e.g.
+     * for FileScan because that might be run on a worker.
+     */
+    try {
+      FSUtils.checkFileReadable(fileName);
+    } catch (Exception e) {
+      throw new MyriaApiException(Status.BAD_REQUEST, e);
     }
   }
 }
