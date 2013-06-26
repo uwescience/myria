@@ -114,4 +114,7 @@ public final class MyriaConstants {
    * */
   public static final String EXEC_ENV_VAR_EXECUTION_MODE = "query.execution.mode";
 
+  /** timeout of returning a tuple batch even not filled. */
+  public static final long PUSHING_TB_TIMEOUT = 1000000000;
+
 }

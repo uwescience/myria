@@ -28,7 +28,7 @@ def stop_all(config):
     for pid in pids:
         if pid != "":
             print  "killing %s on %s" % (pid, hostname)
-            cmd = "ssh %s@%s kill %s" % (username, hostname, pid)
+            cmd = "ssh %s@%s kill -9 %s" % (username, hostname, pid)
             subprocess.call(cmd, shell=True)
 
     # Workers
@@ -43,7 +43,7 @@ def stop_all(config):
         for pid in pids:
             if pid != "":
                 print  "killing %s on %s" % (pid, hostname)
-                cmd = "ssh %s@%s kill %s" % (username, hostname, pid)
+                cmd = "ssh %s@%s kill -9 %s" % (username, hostname, pid)
                 subprocess.call(cmd, shell=True)
 
 def main(argv):
