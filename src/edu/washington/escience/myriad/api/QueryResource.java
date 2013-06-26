@@ -26,6 +26,7 @@ import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.parallel.QueryFuture;
 import edu.washington.escience.myriad.parallel.QueryFutureListener;
+import edu.washington.escience.myriad.parallel.Server;
 
 /**
  * Class that handles queries.
@@ -38,22 +39,26 @@ import edu.washington.escience.myriad.parallel.QueryFutureListener;
 public final class QueryResource {
   /** The logger for this class. */
   private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(QueryResource.class);
+  /** The Myria server running on the master. */
+  @Context
+  private Server server;
 
   /**
    * For now, simply echoes back its input.
    * 
-   * @param payload the payload of the POST request itself.
+   * @param query the query to be executed.
    * @param uriInfo the URI of the current request.
    * @return the URI of the created query.
    */
   @POST
-  public Response postNewQuery(final byte[] payload, @Context final UriInfo uriInfo) {
-    final QueryEncoding query = MyriaApiUtils.deserialize(payload, QueryEncoding.class);
+  public Response postNewQuery(final QueryEncoding query, @Context final UriInfo uriInfo) {
+    /* Validate the input. */
+    query.validate();
 
     /* Deserialize the three arguments we need */
     Map<Integer, RootOperator[]> queryPlan;
     try {
-      queryPlan = query.instantiate();
+      queryPlan = query.instantiate(server);
     } catch (CatalogException e) {
       /* CatalogException means something went wrong interfacing with the Catalog. */
       throw new MyriaApiException(Status.INTERNAL_SERVER_ERROR, e);
@@ -70,7 +75,7 @@ public final class QueryResource {
     /* Remove the server plan if present */
     usingWorkers.remove(MyriaConstants.MASTER_ID);
     /* Make sure that the requested workers are alive. */
-    if (!MyriaApiUtils.getServer().getAliveWorkers().containsAll(usingWorkers)) {
+    if (!server.getAliveWorkers().containsAll(usingWorkers)) {
       /* Throw a 503 (Service Unavailable) */
       throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "Not all requested workers are alive");
     }
@@ -85,7 +90,7 @@ public final class QueryResource {
     /* Start the query, and get its Server-assigned Query ID */
     QueryFuture qf;
     try {
-      qf = MyriaApiUtils.getServer().submitQuery(query.rawDatalog, query.logicalRa, queryPlan);
+      qf = server.submitQuery(query.rawDatalog, query.logicalRa, queryPlan);
     } catch (DbException | CatalogException e) {
       throw new MyriaApiException(Status.INTERNAL_SERVER_ERROR, e);
     }

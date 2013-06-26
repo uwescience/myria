@@ -427,13 +427,16 @@ final class QuerySubTreeTask {
 
       if ((executionCondition.get() & STATE_FAIL) == STATE_FAIL) {
         // failed
+        cleanup(true);
         taskExecutionFuture.setFailure(failureCause);
       } else if (root.eos()) {
         AtomicUtils.setBitByValue(executionCondition, STATE_EOS);
 
+        cleanup(false);
         taskExecutionFuture.setSuccess();
       } else if ((executionCondition.get() & STATE_KILLED) == STATE_KILLED) {
         // killed
+        cleanup(true);
         taskExecutionFuture.setFailure(new QueryKilledException("Task gets killed"));
       }
     }
@@ -521,8 +524,10 @@ final class QuerySubTreeTask {
 
   /**
    * clean up the task, release resources, etc.
+   * 
+   * @param failed if the task execution is already failed.
    * */
-  public void cleanup() {
+  private void cleanup(final boolean failed) {
     if (AtomicUtils.unsetBitIfSetByValue(executionCondition, STATE_INITIALIZED)) {
       // Only cleanup if initialized.
       try {
@@ -532,6 +537,9 @@ final class QuerySubTreeTask {
       } catch (Throwable ee) {
         if (LOGGER.isErrorEnabled()) {
           LOGGER.error("Unknown exception at operator close. Root operator: " + root + ".", ee);
+        }
+        if (!failed) {
+          taskExecutionFuture.setFailure(ee);
         }
       }
     }
@@ -564,6 +572,7 @@ final class QuerySubTreeTask {
       killed = oldV | STATE_KILLED;
       if (executionCondition.compareAndSet(notKilledNotInExec, killed)) {
         // not in execution, kill the query here
+        cleanup(true);
         taskExecutionFuture.setFailure(new QueryKilledException("Task gets killed"));
       }
     }
@@ -591,14 +600,15 @@ final class QuerySubTreeTask {
       synchronized (executionLock) {
         root.open(execUnitEnv);
       }
+      AtomicUtils.setBitByValue(executionCondition, STATE_INITIALIZED);
     } catch (Throwable e) {
       if (LOGGER.isErrorEnabled()) {
         LOGGER.error("Task failed to open because of execption. ", e);
       }
       AtomicUtils.setBitByValue(executionCondition, STATE_FAIL);
+      cleanup(true);
       taskExecutionFuture.setFailure(e);
     }
-    AtomicUtils.setBitByValue(executionCondition, STATE_INITIALIZED);
   }
 
 }

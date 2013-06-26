@@ -110,7 +110,7 @@ def copy_distribution(config):
             remote_path = "%s@%s:%s/%s-files" % (username, hostname, path, description)
         else:
             remote_path = "%s/%s-files" % (path, description)
-        to_copy = ["myriad-0.1.jar", "sqlite4java-282", "conf"]
+        to_copy = ["libs", "conf", "sqlite4java-282"]
         args = ["rsync", "-aLvz"] + to_copy + [remote_path]
         if subprocess.call(args):
             raise Exception("Error copying distribution to %s" % (hostname,))
@@ -130,7 +130,7 @@ def main(argv):
     # Step 2: Copy each catalog over
     copy_catalogs(config)
 
-    # Step 3: Copy over java, libs, myriad
+    # Step 3: Copy over java, libs, myriad, conf
     copy_distribution(config)
 
 if __name__ == "__main__":

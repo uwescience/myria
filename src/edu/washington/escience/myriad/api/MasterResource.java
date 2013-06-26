@@ -2,6 +2,7 @@ package edu.washington.escience.myriad.api;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
 import edu.washington.escience.myriad.daemon.MasterDaemon;
@@ -19,15 +20,12 @@ public final class MasterResource {
   /**
    * Shutdown the server.
    * 
+   * @param daemon the Myria {@link MasterDaemon} to be shutdown.
    * @return an HTTP 204 (NO CONTENT) response.
    */
   @GET
   @Path("/shutdown")
-  public Response shutdown() {
-    /* Get the daemon and save it to be used in the stopping. */
-    final MasterDaemon daemon =
-        (MasterDaemon) MyriaApiUtils.getContextAttributes().get(MyriaApiConstants.MYRIA_MASTER_DAEMON_ATTRIBUTE);
-
+  public Response shutdown(@Context final MasterDaemon daemon) {
     /* A thread to stop the daemon after this request finishes. */
     Thread shutdownThread = new Thread("MasterResource-Shutdown") {
       @Override

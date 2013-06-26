@@ -20,14 +20,12 @@ import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
-import edu.washington.escience.myriad.operator.DelayInjector;
 import edu.washington.escience.myriad.operator.IDBInput;
 import edu.washington.escience.myriad.operator.LocalJoin;
 import edu.washington.escience.myriad.operator.Merge;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
-import edu.washington.escience.myriad.operator.SingleRandomFailureInjector;
 import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
@@ -40,6 +38,8 @@ import edu.washington.escience.myriad.parallel.PartitionFunction;
 import edu.washington.escience.myriad.parallel.ShuffleConsumer;
 import edu.washington.escience.myriad.parallel.ShuffleProducer;
 import edu.washington.escience.myriad.parallel.SingleFieldHashPartitionFunction;
+import edu.washington.escience.myriad.util.DelayInjector;
+import edu.washington.escience.myriad.util.SingleRandomFailureInjector;
 import edu.washington.escience.myriad.util.TestUtils;
 
 public class IterativeFailureTest extends SystemTestBase {

@@ -8,6 +8,7 @@ import com.google.common.collect.ImmutableList;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.parallel.LocalMultiwayConsumer;
+import edu.washington.escience.myriad.parallel.Server;
 import edu.washington.escience.myriad.util.MyriaUtils;
 
 /**
@@ -25,7 +26,7 @@ public class LocalMultiwayConsumerEncoding extends AbstractConsumerEncoding<Loca
   }
 
   @Override
-  public LocalMultiwayConsumer construct() {
+  public LocalMultiwayConsumer construct(Server server) {
     return new LocalMultiwayConsumer(argSchema, MyriaUtils.getSingleElement(getRealOperatorIds()));
   }
 

@@ -1,4 +1,4 @@
-package edu.washington.escience.myriad.operator;
+package edu.washington.escience.myriad.util;
 
 import edu.washington.escience.myriad.DbException;
 

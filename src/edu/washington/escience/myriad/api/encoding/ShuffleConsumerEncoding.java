@@ -7,6 +7,7 @@ import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.parallel.Server;
 import edu.washington.escience.myriad.parallel.ShuffleConsumer;
 import edu.washington.escience.myriad.util.MyriaUtils;
 
@@ -25,7 +26,7 @@ public class ShuffleConsumerEncoding extends AbstractConsumerEncoding<ShuffleCon
   }
 
   @Override
-  public ShuffleConsumer construct() {
+  public ShuffleConsumer construct(Server server) {
     return new ShuffleConsumer(argSchema, MyriaUtils.getSingleElement(getRealOperatorIds()), MyriaUtils
         .integerCollectionToIntArray(getRealWorkerIds()));
   }
