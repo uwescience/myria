@@ -50,13 +50,13 @@ def unify_fragments(fragments):
             operator['fragment_id'] = i
             operator['id'] = str(i) + '-' + operator['op_name']
             for field in children[operator['op_type']]:
-            names = []
-            if isinstance(operator[field], list):
-                for child in operator[field]:
-                    names.append(str(i) + '-' + child)
-            else:
-                names.append(str(i) + '-' + operator[field])
-            operator[field] = names         
+                names = []
+                if isinstance(operator[field], list):
+                    for child in operator[field]:
+                        names.append(str(i) + '-' + child)
+                else:
+                    names.append(str(i) + '-' + operator[field])
+                operator[field] = names         
             ret.append(operator)
     return ret
 
