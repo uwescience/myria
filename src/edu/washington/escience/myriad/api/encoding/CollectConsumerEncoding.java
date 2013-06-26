@@ -8,6 +8,7 @@ import com.google.common.collect.ImmutableList;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
+import edu.washington.escience.myriad.parallel.Server;
 import edu.washington.escience.myriad.util.MyriaUtils;
 
 public class CollectConsumerEncoding extends AbstractConsumerEncoding<CollectConsumer> {
@@ -21,7 +22,7 @@ public class CollectConsumerEncoding extends AbstractConsumerEncoding<CollectCon
   }
 
   @Override
-  public CollectConsumer construct() {
+  public CollectConsumer construct(Server server) {
     return new CollectConsumer(argSchema, MyriaUtils.getSingleElement(getRealOperatorIds()), MyriaUtils
         .integerCollectionToIntArray(getRealWorkerIds()));
   }

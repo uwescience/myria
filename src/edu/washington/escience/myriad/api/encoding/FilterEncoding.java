@@ -7,6 +7,7 @@ import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.operator.Filter;
 import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.parallel.Server;
 
 public class FilterEncoding extends OperatorEncoding<Filter> {
 
@@ -20,7 +21,7 @@ public class FilterEncoding extends OperatorEncoding<Filter> {
   }
 
   @Override
-  public Filter construct() {
+  public Filter construct(Server server) {
     return new Filter(argPredicate.construct(), null);
   }
 

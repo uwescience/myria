@@ -7,6 +7,7 @@ import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.agg.Aggregate;
+import edu.washington.escience.myriad.parallel.Server;
 
 public class AggregateEncoding extends OperatorEncoding<Aggregate> {
   public int[] argAggOps;
@@ -15,7 +16,7 @@ public class AggregateEncoding extends OperatorEncoding<Aggregate> {
   private static final List<String> requiredFields = ImmutableList.of("argChild", "argAggOps", "argAggFields");
 
   @Override
-  public Aggregate construct() {
+  public Aggregate construct(Server server) {
     return new Aggregate(null, argAggFields, argAggOps);
   }
 

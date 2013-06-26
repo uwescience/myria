@@ -8,7 +8,7 @@ import edu.washington.escience.myriad.parallel.SingleFieldHashPartitionFunction;
 
 public class SingleFieldPartitionFunctionEncoding extends PartitionFunctionEncoding<SingleFieldHashPartitionFunction> {
   public Integer index;
-  private static final List<String> requiredArguments = ImmutableList.of("index");
+  private static final List<String> requiredFields = ImmutableList.of("index");
 
   @Override
   public SingleFieldHashPartitionFunction construct(final int numPartitions) {
@@ -18,7 +18,7 @@ public class SingleFieldPartitionFunctionEncoding extends PartitionFunctionEncod
   }
 
   @Override
-  protected List<String> getRequiredArguments() {
-    return requiredArguments;
+  protected List<String> getRequiredFields() {
+    return requiredFields;
   }
 }

@@ -81,8 +81,8 @@ public final class MasterDaemon {
    * @throws Exception if there is an issue starting either server.
    */
   public void start() throws Exception {
-    apiServer.start();
     server.start();
+    apiServer.start();
   }
 
   /**

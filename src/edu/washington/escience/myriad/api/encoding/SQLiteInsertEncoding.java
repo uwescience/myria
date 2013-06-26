@@ -8,6 +8,7 @@ import com.google.common.collect.ImmutableList;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.SQLiteInsert;
+import edu.washington.escience.myriad.parallel.Server;
 
 /**
  * A JSON-able wrapper for the expected wire message for a new dataset.
@@ -28,7 +29,7 @@ public class SQLiteInsertEncoding extends OperatorEncoding<SQLiteInsert> {
   }
 
   @Override
-  public SQLiteInsert construct() {
+  public SQLiteInsert construct(Server server) {
     if (argOverwriteTable != null) {
       return new SQLiteInsert(null, relationKey, argOverwriteTable);
     }

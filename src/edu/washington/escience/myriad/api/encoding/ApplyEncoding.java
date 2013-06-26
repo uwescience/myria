@@ -8,6 +8,7 @@ import com.google.common.collect.ImmutableList;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.apply.Apply;
 import edu.washington.escience.myriad.operator.apply.IFunctionCaller;
+import edu.washington.escience.myriad.parallel.Server;
 
 /**
  * 
@@ -23,7 +24,7 @@ public class ApplyEncoding extends OperatorEncoding<Apply> {
       "argFunction");
 
   @Override
-  public Apply construct() {
+  public Apply construct(Server server) {
     IFunctionCaller caller = new IFunctionCaller(argFunction.construct(), argConstArgument);
     return new Apply(null, ImmutableList.of(caller));
   }

@@ -8,6 +8,7 @@ import com.google.common.collect.ImmutableList;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.agg.Aggregator;
 import edu.washington.escience.myriad.operator.agg.MultiGroupByAggregate;
+import edu.washington.escience.myriad.parallel.Server;
 
 public class MultiGroupByAggregateEncoding extends OperatorEncoding<MultiGroupByAggregate> {
 
@@ -24,7 +25,7 @@ public class MultiGroupByAggregateEncoding extends OperatorEncoding<MultiGroupBy
   }
 
   @Override
-  public MultiGroupByAggregate construct() {
+  public MultiGroupByAggregate construct(Server server) {
     int[] ops = deserializeAggregateOperator(argAggOperators);
     return new MultiGroupByAggregate(null, argAggFields, argGroupFields, ops);
   }

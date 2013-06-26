@@ -11,6 +11,7 @@ import org.codehaus.jackson.annotate.JsonTypeInfo;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.parallel.Server;
 
 /**
  * A JSON-able wrapper for the expected wire message for an operator. To add a new operator, three things need to be
@@ -49,9 +50,10 @@ public abstract class OperatorEncoding<T extends Operator> extends MyriaApiEncod
   public abstract void connect(Operator operator, Map<String, Operator> operators);
 
   /**
+   * @param server the Myria server for which this operator will be used.
    * @return an instantiated operator.
    */
-  public abstract T construct();
+  public abstract T construct(Server server);
 
   /**
    * @return the list of arguments required for this OperatorEncoding.

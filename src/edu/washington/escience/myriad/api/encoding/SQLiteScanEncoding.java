@@ -11,10 +11,10 @@ import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.api.MyriaApiException;
-import edu.washington.escience.myriad.api.MyriaApiUtils;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
+import edu.washington.escience.myriad.parallel.Server;
 
 public class SQLiteScanEncoding extends OperatorEncoding<SQLiteQueryScan> {
   /** The name of the relation to be scanned. */
@@ -28,10 +28,10 @@ public class SQLiteScanEncoding extends OperatorEncoding<SQLiteQueryScan> {
   }
 
   @Override
-  public SQLiteQueryScan construct() {
+  public SQLiteQueryScan construct(final Server server) {
     Schema schema;
     try {
-      schema = MyriaApiUtils.getServer().getSchema(relationKey);
+      schema = server.getSchema(relationKey);
     } catch (final CatalogException e) {
       throw new MyriaApiException(Status.INTERNAL_SERVER_ERROR, e);
     }

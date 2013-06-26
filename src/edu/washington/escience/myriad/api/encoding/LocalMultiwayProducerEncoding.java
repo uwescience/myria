@@ -8,6 +8,7 @@ import com.google.common.collect.ImmutableList;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.parallel.ExchangePairID;
 import edu.washington.escience.myriad.parallel.LocalMultiwayProducer;
+import edu.washington.escience.myriad.parallel.Server;
 
 /**
  * A JSON-able wrapper for the expected wire message for a new dataset.
@@ -24,7 +25,7 @@ public class LocalMultiwayProducerEncoding extends AbstractProducerEncoding<Loca
   }
 
   @Override
-  public LocalMultiwayProducer construct() {
+  public LocalMultiwayProducer construct(Server server) {
     List<ExchangePairID> ids = getRealOperatorIds();
     return new LocalMultiwayProducer(null, ids.toArray(new ExchangePairID[ids.size()]));
   }

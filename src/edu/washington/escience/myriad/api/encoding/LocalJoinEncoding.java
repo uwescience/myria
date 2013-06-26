@@ -7,6 +7,7 @@ import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.operator.LocalJoin;
 import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.parallel.Server;
 
 public class LocalJoinEncoding extends OperatorEncoding<LocalJoin> {
   public String argChild1;
@@ -24,7 +25,7 @@ public class LocalJoinEncoding extends OperatorEncoding<LocalJoin> {
   }
 
   @Override
-  public LocalJoin construct() {
+  public LocalJoin construct(Server server) {
     return new LocalJoin(null, null, argColumns1, argColumns2, argSelect1, argSelect2);
   }
 

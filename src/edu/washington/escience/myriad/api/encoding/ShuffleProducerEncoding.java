@@ -6,6 +6,7 @@ import java.util.Map;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.parallel.Server;
 import edu.washington.escience.myriad.parallel.ShuffleProducer;
 import edu.washington.escience.myriad.util.MyriaUtils;
 
@@ -25,7 +26,7 @@ public class ShuffleProducerEncoding extends AbstractProducerEncoding<ShufflePro
   }
 
   @Override
-  public ShuffleProducer construct() {
+  public ShuffleProducer construct(Server server) {
     List<Integer> workerIds = getRealWorkerIds();
     return new ShuffleProducer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), MyriaUtils
         .integerCollectionToIntArray(workerIds), argPf.construct(workerIds.size()));
