@@ -8,6 +8,7 @@ import edu.washington.escience.myriad.parallel.PartitionFunction;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
+    @Type(value = RoundRobinPartitionFunctionEncoding.class, name = "RoundRobin"),
     @Type(value = MultiFieldPartitionFunctionEncoding.class, name = "MultiFieldHash"),
     @Type(value = SingleFieldPartitionFunctionEncoding.class, name = "SingleFieldHash") })
 public abstract class PartitionFunctionEncoding<T extends PartitionFunction<?, ?>> extends MyriaApiEncoding {
