@@ -1,0 +1,422 @@
+{
+    "fragments": [
+        {
+            "operators": [
+                {
+                    "op_name": "Scan_base",
+                    "op_type": "SQLiteQueryScan",
+                    "schema": {
+                        "column_names": [
+                            "iOrder",
+                            "grp"
+                        ],
+                        "column_types": [
+                            "LONG_TYPE",
+                            "INT_TYPE"
+                        ]
+                    },
+                    "sql": "SELECT iOrder, grp FROM [leelee#astro#cosmo512] WHERE type='star'"
+                },
+                {
+                    "arg_child": "Scan_base",
+                    "arg_operator_id": "0",
+                    "arg_pf": {
+                        "index": "0",
+                        "type": "SingleFieldHash"
+                    },
+                    "op_name": "SP_base",
+                    "op_type": "ShuffleProducer"
+                }
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "op_name": "Scan_pgtr",
+                    "op_type": "SQLiteQueryScan",
+                    "schema": {
+                        "column_names": [
+                            "iOrder",
+                            "grp"
+                        ],
+                        "column_types": [
+                            "LONG_TYPE",
+                            "INT_TYPE"
+                        ]
+                    },
+                    "sql": "SELECT iOrder, grp FROM [leelee#astro#cosmo512] WHERE grp<>0"
+                },
+                {
+                    "arg_child": "Scan_pgtr",
+                    "arg_operator_id": "1",
+                    "arg_pf": {
+                        "index": "0",
+                        "type": "SingleFieldHash"
+                    },
+                    "op_name": "SP_pgtr",
+                    "op_type": "ShuffleProducer"
+                }
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "arg_operator_id": "0",
+                    "arg_schema": {
+                        "column_names": [
+                            "iOrder",
+                            "grp"
+                        ],
+                        "column_types": [
+                            "LONG_TYPE",
+                            "INT_TYPE"
+                        ]
+                    },
+                    "op_name": "SC1",
+                    "op_type": "ShuffleConsumer"
+                },
+                {
+                    "arg_operator_id": "1",
+                    "arg_schema": {
+                        "column_names": [
+                            "iOrder2",
+                            "grp2"
+                        ],
+                        "column_types": [
+                            "LONG_TYPE",
+                            "INT_TYPE"
+                        ]
+                    },
+                    "op_name": "SC2",
+                    "op_type": "ShuffleConsumer"
+                },
+                {
+                    "arg_child1": "SC1",
+                    "arg_child2": "SC2",
+                    "arg_columns1": [
+                        "0"
+                    ],
+                    "arg_columns2": [
+                        "0"
+                    ],
+                    "arg_select1": [
+                        "0",
+                        "1"
+                    ],
+                    "arg_select2": [
+                        "1"
+                    ],
+                    "op_name": "JoinOnIOrder",
+                    "op_type": "LocalJoin"
+                },
+                {
+                    "arg_child": "JoinOnIOrder",
+                    "arg_operator_id": "2",
+                    "arg_pf": {
+                        "index": "1",
+                        "type": "SingleFieldHash"
+                    },
+                    "op_name": "SP_JoinOnIOrder",
+                    "op_type": "ShuffleProducer"
+                }
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "op_name": "Scan_grps_of_interest",
+                    "op_type": "SQLiteScan",
+                    "relation_key": {
+                        "program_name": "astro",
+                        "relation_name": "grps_of_interest",
+                        "user_name": "leelee"
+                    }
+                },
+                {
+                    "arg_child": "Scan_grps_of_interest",
+                    "arg_operator_id": "3",
+                    "arg_pf": {
+                        "index": "0",
+                        "type": "SingleFieldHash"
+                    },
+                    "op_name": "SP_grps_of_interest",
+                    "op_type": "ShuffleProducer"
+                }
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "arg_operator_id": "2",
+                    "arg_schema": {
+                        "column_names": [
+                            "iOrder",
+                            "grp1",
+                            "pgtr"
+                        ],
+                        "column_types": [
+                            "LONG_TYPE",
+                            "INT_TYPE",
+                            "INT_TYPE"
+                        ]
+                    },
+                    "op_name": "SC3",
+                    "op_type": "ShuffleConsumer"
+                },
+                {
+                    "arg_operator_id": "3",
+                    "arg_schema": {
+                        "column_names": [
+                            "grp"
+                        ],
+                        "column_types": [
+                            "INT_TYPE"
+                        ]
+                    },
+                    "op_name": "SC4",
+                    "op_type": "ShuffleConsumer"
+                },
+                {
+                    "arg_child1": "SC3",
+                    "arg_child2": "SC4",
+                    "arg_columns1": [
+                        "1"
+                    ],
+                    "arg_columns2": [
+                        "0"
+                    ],
+                    "arg_select1": [
+                        "0",
+                        "1",
+                        "2"
+                    ],
+                    "arg_select2": [
+                        "0"
+                    ],
+                    "op_name": "JoinOnIOrderWihGroupsOfInterest",
+                    "op_type": "LocalJoin"
+                },
+                {
+                    "arg_child": "JoinOnIOrderWihGroupsOfInterest",
+                    "arg_operator_id": "4",
+                    "arg_pf": {
+                        "index": [
+                            "1",
+                            "2"
+                        ],
+                        "type": "MultiFieldHash"
+                    },
+                    "op_name": "SP_JoinOnIOrderWithGroupsOfInterest",
+                    "op_type": "ShuffleProducer"
+                }
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "arg_operator_id": "4",
+                    "arg_schema": {
+                        "column_names": [
+                            "iOrder",
+                            "base_grp",
+                            "pgtr",
+                            "grp"
+                        ],
+                        "column_types": [
+                            "LONG_TYPE",
+                            "INT_TYPE",
+                            "INT_TYPE",
+                            "INT_TYPE"
+                        ]
+                    },
+                    "op_name": "SC_JoinOnIOrderWithGroupsOfInterest",
+                    "op_type": "ShuffleConsumer"
+                },
+                {
+                    "arg_agg_fields": [
+                        "0"
+                    ],
+                    "arg_agg_operators": [
+                        [
+                            "AGG_OP_COUNT"
+                        ]
+                    ],
+                    "arg_child": "SC_JoinOnIOrderWithGroupsOfInterest",
+                    "arg_group_fields": [
+                        "1",
+                        "2"
+                    ],
+                    "op_name": "PotentialProgenitorGroup",
+                    "op_type": "MultiGroupByAggregate"
+                },
+                {
+                    "arg_child": "PotentialProgenitorGroup",
+                    "arg_operator_ids": [
+                        "5",
+                        "6"
+                    ],
+                    "op_name": "PotPro",
+                    "op_type": "LocalMultiwayProducer"
+                }
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "op_name": "Scan_masstable",
+                    "op_type": "SQLiteScan",
+                    "relation_key": {
+                        "program_name": "astro",
+                        "relation_name": "masstable",
+                        "user_name": "leelee"
+                    }
+                },
+                {
+                    "arg_child": "Scan_masstable",
+                    "arg_operator_id": "7",
+                    "arg_pf": {
+                        "index": "0",
+                        "type": "SingleFieldHash"
+                    },
+                    "op_name": "SP_masstable",
+                    "op_type": "ShuffleProducer"
+                }
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "arg_operator_id": "7",
+                    "arg_schema": {
+                        "column_names": [
+                            "grp_m",
+                            "tot_mass"
+                        ],
+                        "column_types": [
+                            "INT_TYPE",
+                            "FLOAT_TYPE"
+                        ]
+                    },
+                    "op_name": "SC_masstable",
+                    "op_type": "ShuffleConsumer"
+                },
+                {
+                    "arg_operator_id": "5",
+                    "arg_schema": {
+                        "column_names": [
+                            "grp1",
+                            "pgrt1",
+                            "aggr_col1"
+                        ],
+                        "column_types": [
+                            "INT_TYPE",
+                            "INT_TYPE",
+                            "LONG_TYPE"
+                        ]
+                    },
+                    "op_name": "PotPro1",
+                    "op_type": "LocalMultiwayConsumer"
+                },
+                {
+                    "arg_agg_fields": [
+                        "2"
+                    ],
+                    "arg_agg_operators": [
+                        [
+                            "AGG_OP_MAX"
+                        ]
+                    ],
+                    "arg_child": "PotPro1",
+                    "arg_group_field": 0,
+                    "op_name": "GrpsWithMaxVals",
+                    "op_type": "SingleGroupByAggregate"
+                },
+                {
+                    "arg_operator_id": "6",
+                    "arg_schema": {
+                        "column_names": [
+                            "grp",
+                            "pgrt",
+                            "aggr_col"
+                        ],
+                        "column_types": [
+                            "INT_TYPE",
+                            "INT_TYPE",
+                            "LONG_TYPE"
+                        ]
+                    },
+                    "op_name": "PotPro2",
+                    "op_type": "LocalMultiwayConsumer"
+                },
+                {
+                    "arg_child1": "PotPro2",
+                    "arg_child2": "GrpsWithMaxVals",
+                    "arg_columns1": [
+                        "0",
+                        "2"
+                    ],
+                    "arg_columns2": [
+                        "0",
+                        "1"
+                    ],
+                    "arg_select1": [
+                        "0",
+                        "1",
+                        "2"
+                    ],
+                    "arg_select2": [
+                        "0"
+                    ],
+                    "op_name": "SelectedProgenitorJoined",
+                    "op_type": "LocalJoin"
+                },
+                {
+                    "arg_agg_fields": [
+                        "1"
+                    ],
+                    "arg_agg_operators": [
+                        [
+                            "AGG_OP_MIN"
+                        ]
+                    ],
+                    "arg_child": "SelectedProgenitorJoined",
+                    "arg_group_field": 0,
+                    "op_name": "SelectedProgenitorGroupedBy",
+                    "op_type": "SingleGroupByAggregate"
+                },
+                {
+                    "arg_child1": "SelectedProgenitorGroupedBy",
+                    "arg_child2": "SC_masstable",
+                    "arg_columns1": [
+                        "1"
+                    ],
+                    "arg_columns2": [
+                        "0"
+                    ],
+                    "arg_select1": [
+                        "0",
+                        "1"
+                    ],
+                    "arg_select2": [
+                        "1"
+                    ],
+                    "op_name": "result",
+                    "op_type": "LocalJoin"
+                },
+                {
+                    "arg_child": "result",
+                    "arg_overwrite_table": true,
+                    "op_name": "INSERT",
+                    "op_type": "SQLiteInsert",
+                    "relation_key": {
+                        "program_name": "astro",
+                        "relation_name": "progenitor512-512",
+                        "user_name": "leelee"
+                    }
+                }
+            ]
+        }
+    ],
+    "logical_ra": "progenitor512-512 holds the results of a large progenitor query",
+    "raw_datalog": "blah."
+}
