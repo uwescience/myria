@@ -34,6 +34,7 @@ import edu.washington.escience.myriad.parallel.Server;
     @Type(name = "LocalJoin", value = LocalJoinEncoding.class),
     @Type(name = "LocalCountingJoin", value = LocalCountingJoinEncoding.class),
     @Type(name = "MultiGroupByAggregate", value = MultiGroupByAggregateEncoding.class),
+    @Type(name = "SingleGroupByAggregate", value = SingleGroupByAggregateEncoding.class),
     @Type(name = "SQLiteInsert", value = SQLiteInsertEncoding.class),
     @Type(name = "FileScan", value = FileScanEncoding.class),
     @Type(name = "BinaryFileScan", value = BinaryFileScanEncoding.class),
