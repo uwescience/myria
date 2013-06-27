@@ -29,6 +29,7 @@ import edu.washington.escience.myriad.parallel.Server;
     @Type(name = "ShuffleConsumer", value = ShuffleConsumerEncoding.class),
     @Type(name = "LocalMultiwayConsumer", value = LocalMultiwayConsumerEncoding.class),
     @Type(name = "ShuffleProducer", value = ShuffleProducerEncoding.class),
+    @Type(name = "SinkRoot", value = SinkRootEncoding.class),
     @Type(name = "LocalMultiwayProducer", value = LocalMultiwayProducerEncoding.class),
     @Type(name = "LocalJoin", value = LocalJoinEncoding.class),
     @Type(name = "LocalCountingJoin", value = LocalCountingJoinEncoding.class),
