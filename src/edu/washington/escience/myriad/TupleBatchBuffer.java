@@ -36,6 +36,8 @@ public class TupleBatchBuffer {
   /** Internal state representing the number of tuples in the in-progress TupleBatch. */
   private int currentInProgressTuples;
 
+  private long lastPopedTime;
+
   /**
    * Constructs an empty TupleBatchBuffer to hold tuples matching the specified Schema.
    * 
@@ -49,6 +51,7 @@ public class TupleBatchBuffer {
     columnsReady = new BitSet(numColumns);
     numColumnsReady = 0;
     currentInProgressTuples = 0;
+    lastPopedTime = System.nanoTime();
   }
 
   /**
@@ -217,11 +220,33 @@ public class TupleBatchBuffer {
   public final TupleBatch popAny() {
     final TupleBatch tb = popFilled();
     if (tb != null) {
+      updateLastPopedTime();
       return tb;
     } else {
       if (currentInProgressTuples > 0) {
         final int size = currentInProgressTuples;
         finishBatch();
+        updateLastPopedTime();
+        return new TupleBatch(schema, readyTuples.remove(0), size);
+      } else {
+        return null;
+      }
+    }
+  }
+
+  /**
+   * @return pop filled and non-filled TupleBatch
+   * */
+  public final TupleBatch popAnyUsingTimeout() {
+    final TupleBatch tb = popFilled();
+    if (tb != null) {
+      updateLastPopedTime();
+      return tb;
+    } else {
+      if (currentInProgressTuples > 0 && getElapsedTime() >= MyriaConstants.PUSHING_TB_TIMEOUT) {
+        final int size = currentInProgressTuples;
+        finishBatch();
+        updateLastPopedTime();
         return new TupleBatch(schema, readyTuples.remove(0), size);
       } else {
         return null;
@@ -235,10 +260,12 @@ public class TupleBatchBuffer {
   public final List<Column<?>> popAnyAsRawColumn() {
     final List<Column<?>> rc = popFilledAsRawColumn();
     if (rc != null) {
+      updateLastPopedTime();
       return rc;
     } else {
       if (currentInProgressTuples > 0) {
         finishBatch();
+        updateLastPopedTime();
         return readyTuples.remove(0);
       } else {
         return null;
@@ -252,12 +279,35 @@ public class TupleBatchBuffer {
   public final TransportMessage popAnyAsTM() {
     final TransportMessage ans = popFilledAsTM();
     if (ans != null) {
+      updateLastPopedTime();
       return ans;
     } else {
       if (currentInProgressTuples > 0) {
         int numTuples = currentInProgressTuples;
         finishBatch();
         final List<Column<?>> columns = readyTuples.remove(0);
+        updateLastPopedTime();
+        return IPCUtils.normalDataMessage(columns, numTuples);
+      } else {
+        return null;
+      }
+    }
+  }
+
+  /**
+   * @return pop filled and non-filled TransportMessage
+   * */
+  public final TransportMessage popAnyAsTMUsingTimeout() {
+    final TransportMessage ans = popFilledAsTM();
+    if (ans != null) {
+      updateLastPopedTime();
+      return ans;
+    } else {
+      if (currentInProgressTuples > 0 && getElapsedTime() >= MyriaConstants.PUSHING_TB_TIMEOUT) {
+        int numTuples = currentInProgressTuples;
+        finishBatch();
+        final List<Column<?>> columns = readyTuples.remove(0);
+        updateLastPopedTime();
         return IPCUtils.normalDataMessage(columns, numTuples);
       } else {
         return null;
@@ -272,6 +322,7 @@ public class TupleBatchBuffer {
    */
   public final TupleBatch popFilled() {
     if (readyTuples.size() > 0) {
+      updateLastPopedTime();
       return new TupleBatch(schema, readyTuples.remove(0), TupleBatch.BATCH_SIZE);
     }
     return null;
@@ -284,6 +335,7 @@ public class TupleBatchBuffer {
    * */
   public final List<Column<?>> popFilledAsRawColumn() {
     if (readyTuples.size() > 0) {
+      updateLastPopedTime();
       return readyTuples.remove(0);
     }
     return null;
@@ -298,6 +350,7 @@ public class TupleBatchBuffer {
   public final TransportMessage popFilledAsTM() {
     if (readyTuples.size() > 0) {
       final List<Column<?>> columns = readyTuples.remove(0);
+      updateLastPopedTime();
       return IPCUtils.normalDataMessage(columns, TupleBatch.BATCH_SIZE);
     }
     return null;
@@ -354,4 +407,19 @@ public class TupleBatchBuffer {
     }
   }
 
+  /**
+   * Update lastPopedTime to be the current time.
+   */
+  private void updateLastPopedTime() {
+    lastPopedTime = System.nanoTime();
+  }
+
+  /**
+   * Get elapsed time since the last time when a TB is poped.
+   * 
+   * @return the elapsed time from lastPopedTime to present
+   */
+  private long getElapsedTime() {
+    return System.nanoTime() - lastPopedTime;
+  }
 }
