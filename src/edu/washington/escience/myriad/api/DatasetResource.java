@@ -165,7 +165,7 @@ public final class DatasetResource {
     /* Do the work. */
     try {
       server.ingestDataset(dataset.relationKey, dataset.workers, new TipsyFileScan(dataset.tipsyFilename,
-          dataset.grpFilename, dataset.iorderFilename));
+          dataset.iorderFilename, dataset.grpFilename));
     } catch (InterruptedException ee) {
       Thread.currentThread().interrupt();
       ee.printStackTrace();
