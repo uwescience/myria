@@ -31,7 +31,7 @@ def start_master(config):
     start = time.time()
     while True:
         try:
-            resp = urllib2.urlopen(master_alive_url)
+            resp = urllib2.urlopen(master_alive_url, timeout=2.0)
             if resp.getcode() == 200:
                 break
         except:

@@ -103,7 +103,11 @@ public final class DatasetResource {
       ((FileScan) source).setInputStream(new ByteArrayInputStream(dataset.data));
     } else {
       try {
-        source = new FileScan(dataset.fileName, dataset.schema);
+        if (dataset.isCommaSeparated == null) {
+          source = new FileScan(dataset.fileName, dataset.schema);
+        } else {
+          source = new FileScan(dataset.fileName, dataset.schema, dataset.isCommaSeparated);
+        }
       } catch (FileNotFoundException e) {
         throw new MyriaApiException(Status.NOT_FOUND, e);
       }
@@ -161,7 +165,7 @@ public final class DatasetResource {
     /* Do the work. */
     try {
       server.ingestDataset(dataset.relationKey, dataset.workers, new TipsyFileScan(dataset.tipsyFilename,
-          dataset.grpFilename, dataset.iorderFilename));
+          dataset.iorderFilename, dataset.grpFilename));
     } catch (InterruptedException ee) {
       Thread.currentThread().interrupt();
       ee.printStackTrace();
