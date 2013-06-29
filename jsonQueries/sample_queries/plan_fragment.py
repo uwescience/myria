@@ -193,5 +193,123 @@ def single_join():
     }
     return whole_plan
 
+def tipsy_schema():
+    return {
+        "column_types": [
+            "LONG_TYPE", "FLOAT_TYPE", "FLOAT_TYPE", "FLOAT_TYPE",
+            "FLOAT_TYPE", "FLOAT_TYPE", "FLOAT_TYPE", "FLOAT_TYPE",
+            "FLOAT_TYPE", "FLOAT_TYPE", "FLOAT_TYPE", "FLOAT_TYPE",
+            "FLOAT_TYPE", "FLOAT_TYPE", "FLOAT_TYPE", "INT_TYPE", "STRING_TYPE"
+        ],
+        "column_names": [
+            "iOrder", "mass", "x", "y", "z", "vx", "vy", "vz", "rho", "temp",
+            "hsmooth", "metals", "tform", "eps", "phi", "grp", "type"
+        ]
+    }
+
+def ingest_tipsy_rr():
+    BASE_FILE = '/Users/dhalperi/escience/myria/data_nocommit/tipsy/'
+    BASE_FILE = '/disk2/dhalperi'
+    tipsy_scan = {
+        "op_type" : 'TipsyFileScan',
+        'op_name' : 'Scan',
+        "tipsy_filename": BASE_FILE+"/cosmo50cmb.256g2MbwK.00512",
+        "iorder_filename": BASE_FILE+"/cosmo50cmb.256g2MbwK.00512.iord",
+        "grp_filename": BASE_FILE+"/cosmo50cmb.256g2MbwK.00512.amiga.grp"
+    }
+    scatter = {
+        'op_type' : 'ShuffleProducer',
+        'op_name' : 'Scatter',
+        'arg_child' : 'Scan',
+        'arg_operator_id' : 'RoundRobin',
+        'arg_pf' : {
+            'type' : 'RoundRobin'
+        }
+    }
+    scan_fragment = {
+        'operators' : [ tipsy_scan, scatter ],
+        'workers' : [0]
+    }
+
+    gather = {
+        'op_type' : 'ShuffleConsumer',
+        'op_name' : 'Gather',
+        'arg_operator_id' : 'RoundRobin',
+        "arg_schema" : tipsy_schema()
+    }
+    insert = {
+        'op_type' : 'SQLiteInsert',
+        'op_name' : 'Insert',
+        'arg_child' : 'Gather',
+        'arg_overwrite_table' : True,
+        'relation_key' : {
+            'user_name' : 'leelee',
+            'program_name' : 'astro',
+            'relation_name' : 'cosmo512'
+        }
+    }
+    insert_fragment = {
+        'operators' : [ gather, insert ]
+    }
+
+    return {
+        'logical_ra' : 'ingest tipsy rr',
+        'raw_datalog' : 'ingest tipsy rr',
+        'fragments' : [ scan_fragment, insert_fragment ]
+    }
+
+def ingest_tipsy_hash_iorder():
+    BASE_FILE = '/Users/dhalperi/escience/myria/data_nocommit/tipsy/'
+    BASE_FILE = '/disk2/dhalperi'
+    tipsy_scan = {
+        "op_type" : 'TipsyFileScan',
+        'op_name' : 'Scan',
+        "tipsy_filename": BASE_FILE+"/cosmo50cmb.256g2MbwK.00512",
+        "iorder_filename": BASE_FILE+"/cosmo50cmb.256g2MbwK.00512.iord",
+        "grp_filename": BASE_FILE+"/cosmo50cmb.256g2MbwK.00512.amiga.grp"
+    }
+    scatter = {
+        'op_type' : 'ShuffleProducer',
+        'op_name' : 'Scatter',
+        'arg_child' : 'Scan',
+        'arg_operator_id' : 'hash(iorder)',
+        'arg_pf' : {
+            'type' : 'SingleFieldHash',
+            'index' : 0
+        }
+    }
+    scan_fragment = {
+        'operators' : [ tipsy_scan, scatter ],
+        'workers' : [0]
+    }
+
+    gather = {
+        'op_type' : 'ShuffleConsumer',
+        'op_name' : 'Gather',
+        'arg_operator_id' : 'hash(iorder)',
+        "arg_schema" : tipsy_schema()
+    }
+    insert = {
+        'op_type' : 'SQLiteInsert',
+        'op_name' : 'Insert',
+        'arg_child' : 'Gather',
+        'arg_overwrite_table' : True,
+        'relation_key' : {
+            'user_name' : 'leelee',
+            'program_name' : 'astro',
+            'relation_name' : 'cosmo512'
+        }
+    }
+    insert_fragment = {
+        'operators' : [ gather, insert ]
+    }
+
+    return {
+        'logical_ra' : 'ingest tipsy rr',
+        'raw_datalog' : 'ingest tipsy rr',
+        'fragments' : [ scan_fragment, insert_fragment ]
+    }
+
 #print pretty_json(repartition_on_x())
-print pretty_json(single_join())
+#print pretty_json(single_join())
+print pretty_json(ingest_tipsy_hash_iorder())

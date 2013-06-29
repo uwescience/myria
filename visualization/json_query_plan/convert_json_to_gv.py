@@ -14,6 +14,7 @@ children['IDBInput'] = ['arg_initial_input', 'arg_iteration_input', 'arg_eos_con
 children['LocalJoin'] = ['arg_child1', 'arg_child2']
 children['LocalMultiwayProducer'] = ['arg_child']
 children['MultiGroupByAggregate'] = ['arg_child']
+children['SingleGroupByAggregate'] = ['arg_child']
 children['ShuffleProducer'] = ['arg_child']
 children['SQLiteInsert'] = ['arg_child']
 children['Aggregate'] = ['arg_child']

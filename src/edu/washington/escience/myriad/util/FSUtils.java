@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
+import java.security.AccessControlException;
 
 /**
  * Filesystem util methods.
@@ -140,6 +141,25 @@ public final class FSUtils {
           raf.close();
         }
       }
+    }
+  }
+
+  /**
+   * Check whether the specified filepath is a file and is readable.
+   * 
+   * @param filepath the path to the file.
+   * @throws FileNotFoundException if the specified filepath does not exist or is not a file.
+   */
+  public static void checkFileReadable(final String filepath) throws FileNotFoundException {
+    File f = new File(filepath);
+    if (!f.exists()) {
+      throw new FileNotFoundException(filepath + " could not be found");
+    }
+    if (!f.isFile()) {
+      throw new FileNotFoundException(filepath + " is not a file");
+    }
+    if (!f.canRead()) {
+      throw new AccessControlException(filepath + " could not be read");
     }
   }
 
