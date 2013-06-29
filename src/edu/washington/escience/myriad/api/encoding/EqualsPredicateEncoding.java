@@ -10,7 +10,7 @@ public class EqualsPredicateEncoding extends PredicateEncoding<EqualsPredicate> 
 
   public Integer argCompareIndex;
   public String argCompareValue;
-  private static List<String> requiredArguments = ImmutableList.of("argCompareIndex", "argCompareValue");
+  private static List<String> requiredFields = ImmutableList.of("argCompareIndex", "argCompareValue");
 
   @Override
   public EqualsPredicate construct() {
@@ -18,8 +18,8 @@ public class EqualsPredicateEncoding extends PredicateEncoding<EqualsPredicate> 
   }
 
   @Override
-  protected List<String> getRequiredArguments() {
-    return requiredArguments;
+  protected List<String> getRequiredFields() {
+    return requiredFields;
   }
 
 }
