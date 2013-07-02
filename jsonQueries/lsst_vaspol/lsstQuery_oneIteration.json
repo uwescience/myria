@@ -1,0 +1,216 @@
+{
+    "fragments": [
+        {
+            "operators": [
+                {
+                    "op_name": "SCAN1",
+                    "op_type": "SQLiteScan",
+                    "relation_key": {
+                        "program_name": "LSST_useCase",
+                        "relation_name": "testtable",
+                        "user_name": "vaspol"
+                    }
+                },
+                {
+                    "arg_child": "SCAN1",
+                    "arg_operator_id": "0",
+                    "arg_pf": {
+                        "index": [
+                            "0",
+                            "1"
+                        ],
+                        "type": "MultiFieldHash"
+                    },
+                    "op_name": "SP1",
+                    "op_type": "ShuffleProducer"
+                }
+            ],
+            "workers": [
+                "1",
+                "2",
+                "3"
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "op_name": "SCAN2",
+                    "op_type": "SQLiteScan",
+                    "relation_key": {
+                        "program_name": "LSST_useCase",
+                        "relation_name": "testtable",
+                        "user_name": "vaspol"
+                    }
+                },
+                {
+                    "arg_child": "SCAN2",
+                    "arg_operator_id": "2",
+                    "arg_pf": {
+                        "index": [
+                            "0",
+                            "1"
+                        ],
+                        "type": "MultiFieldHash"
+                    },
+                    "op_name": "SP1",
+                    "op_type": "ShuffleProducer"
+                }
+            ],
+            "workers": [
+                "1",
+                "2",
+                "3"
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "arg_operator_id": "0",
+                    "arg_schema": {
+                        "column_names": [
+                            "x",
+                            "y",
+                            "time",
+                            "data"
+                        ],
+                        "column_types": [
+                            "LONG_TYPE",
+                            "LONG_TYPE",
+                            "LONG_TYPE",
+                            "DOUBLE_TYPE"
+                        ]
+                    },
+                    "op_name": "SC1",
+                    "op_type": "ShuffleConsumer"
+                },
+                {
+                    "arg_agg_fields": [
+                        "3"
+                    ],
+                    "arg_agg_operators": [
+                        [
+                            "AGG_OP_AVG",
+                            "AGG_OP_STDEV"
+                        ]
+                    ],
+                    "arg_child": "SC1",
+                    "arg_group_fields": [
+                        "0",
+                        "1"
+                    ],
+                    "op_name": "MULTI_GRP_AGG",
+                    "op_type": "MultiGroupByAggregate"
+                },
+                {
+                    "arg_operator_id": "2",
+                    "arg_schema": {
+                        "column_names": [
+                            "x",
+                            "y",
+                            "time",
+                            "data"
+                        ],
+                        "column_types": [
+                            "LONG_TYPE",
+                            "LONG_TYPE",
+                            "LONG_TYPE",
+                            "DOUBLE_TYPE"
+                        ]
+                    },
+                    "op_name": "SC3",
+                    "op_type": "ShuffleConsumer"
+                },
+                {
+                    "arg_child1": "MULTI_GRP_AGG",
+                    "arg_child2": "SC3",
+                    "arg_columns1": [
+                        "0",
+                        "1"
+                    ],
+                    "arg_columns2": [
+                        "0",
+                        "1"
+                    ],
+                    "arg_select1": [
+                        "0",
+                        "1",
+                        "2",
+                        "3"
+                    ],
+                    "arg_select2": [
+                        "2",
+                        "3"
+                    ],
+                    "op_name": "JOIN",
+                    "op_type": "LocalJoin"
+                },
+                {
+                    "arg_child": "JOIN",
+                    "arg_predicate": {
+                        "arg_compare_index": "5",
+                        "arg_operand_indices": [
+                            "2",
+                            "3"
+                        ],
+                        "type": "WithinSumRangePredicate"
+                    },
+                    "op_name": "FILTER",
+                    "op_type": "Filter"
+                },
+                {
+                    "arg_child": "FILTER",
+                    "arg_operator_id": "3",
+                    "op_name": "CP1",
+                    "op_type": "CollectProducer"
+                }
+            ],
+            "workers": [
+                "1",
+                "2",
+                "3"
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "arg_operator_id": "3",
+                    "arg_schema": {
+                        "column_names": [
+                            "x",
+                            "y",
+                            "avg(data)",
+                            "stdev(data)",
+                            "time",
+                            "data"
+                        ],
+                        "column_types": [
+                            "LONG_TYPE",
+                            "LONG_TYPE",
+                            "DOUBLE_TYPE",
+                            "DOUBLE_TYPE",
+                            "LONG_TYPE",
+                            "DOUBLE_TYPE"
+                        ]
+                    },
+                    "op_name": "CC1",
+                    "op_type": "CollectConsumer"
+                },
+                {
+                    "arg_child": "CC1",
+                    "op_name": "INSERT",
+                    "op_type": "SQLiteInsert",
+                    "relation_key": {
+                        "program_name": "LSST_useCase",
+                        "relation_name": "queryResult3",
+                        "user_name": "vaspol"
+                    }
+                }
+            ],
+            "workers": [
+                "1"
+            ]
+        }
+    ],
+    "logical_ra": "INSERT(JOIN(SCAN1,SCAN2))",
+    "raw_datalog": "smallTableJoin(x,z) :- smallTable(x,y),smallTable(y,z)."
+}
