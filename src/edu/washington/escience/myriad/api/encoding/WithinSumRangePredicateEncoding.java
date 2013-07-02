@@ -10,7 +10,7 @@ public class WithinSumRangePredicateEncoding extends PredicateEncoding<WithinSum
 
   public Integer argCompareIndex;
   public List<Integer> argOperandIndices;
-  private static final List<String> requiredArguments = ImmutableList.of("argCompareIndex", "argOperandIndices");
+  private static final List<String> requiredFields = ImmutableList.of("argCompareIndex", "argOperandIndices");
 
   @Override
   public WithinSumRangePredicate construct() {
@@ -18,7 +18,7 @@ public class WithinSumRangePredicateEncoding extends PredicateEncoding<WithinSum
   }
 
   @Override
-  protected List<String> getRequiredArguments() {
-    return requiredArguments;
+  protected List<String> getRequiredFields() {
+    return requiredFields;
   }
 }

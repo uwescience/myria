@@ -10,7 +10,7 @@ public class NotEqualsPredicateEncoding extends PredicateEncoding<NotEqualsPredi
 
   public Integer argCompareIndex;
   public String argCompareValue;
-  private static final List<String> requiredArguments = ImmutableList.of("argCompareIndex", "argCompareValue");
+  private static final List<String> requiredFields = ImmutableList.of("argCompareIndex", "argCompareValue");
 
   @Override
   public NotEqualsPredicate construct() {
@@ -18,8 +18,7 @@ public class NotEqualsPredicateEncoding extends PredicateEncoding<NotEqualsPredi
   }
 
   @Override
-  protected List<String> getRequiredArguments() {
-    return requiredArguments;
+  protected List<String> getRequiredFields() {
+    return requiredFields;
   }
-
 }

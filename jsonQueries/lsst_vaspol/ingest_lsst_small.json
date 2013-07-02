@@ -1,0 +1,12 @@
+{
+  "relation_key" : {
+    "user_name" : "vaspol",
+    "program_name" : "LSST_useCase",
+    "relation_name" : "testtable"
+  },
+  "schema" : {
+    "column_types" : ["LONG_TYPE","LONG_TYPE","LONG_TYPE","DOUBLE_TYPE"],
+    "column_names" : ["x","y","time","data"]
+  },
+  "file_name" : "/disk1/lsst_dataset/small.csv"
+}
