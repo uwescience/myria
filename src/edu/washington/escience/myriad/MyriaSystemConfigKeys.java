@@ -1,5 +1,7 @@
 package edu.washington.escience.myriad;
 
+import java.util.Map;
+
 import org.jboss.netty.channel.socket.nio.NioSocketChannelConfig;
 
 import edu.washington.escience.myriad.parallel.Consumer;
@@ -74,4 +76,31 @@ public final class MyriaSystemConfigKeys {
    * */
   public static final String IPC_SERVER_PORT = "ipc.server.port";
 
+  /**
+   * Add default configurations into a configuraion.
+   * 
+   * @param config the configuration.
+   * */
+  public static void addDefaultConfigKeys(final Map<String, String> config) {
+    if (!config.containsKey(FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES)) {
+      config.put(FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES,
+          MyriaConstants.FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES_DEFAULT_VALUE + "");
+    }
+    if (!config.containsKey(FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES)) {
+      config.put(FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES,
+          MyriaConstants.FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES_DEFAULT_VALUE + "");
+    }
+    if (!config.containsKey(OPERATOR_INPUT_BUFFER_CAPACITY)) {
+      config.put(OPERATOR_INPUT_BUFFER_CAPACITY, MyriaConstants.OPERATOR_INPUT_BUFFER_CAPACITY_DEFAULT_VALUE + "");
+    }
+    if (!config.containsKey(TCP_CONNECTION_TIMEOUT_MILLIS)) {
+      config.put(TCP_CONNECTION_TIMEOUT_MILLIS, MyriaConstants.TCP_CONNECTION_TIMEOUT_MILLIS_DEFAULT_VALUE + "");
+    }
+    if (!config.containsKey(TCP_RECEIVE_BUFFER_SIZE_BYTES)) {
+      config.put(TCP_RECEIVE_BUFFER_SIZE_BYTES, MyriaConstants.TCP_RECEIVE_BUFFER_SIZE_BYTES_DEFAULT_VALUE + "");
+    }
+    if (!config.containsKey(TCP_SEND_BUFFER_SIZE_BYTES)) {
+      config.put(TCP_SEND_BUFFER_SIZE_BYTES, MyriaConstants.TCP_SEND_BUFFER_SIZE_BYTES_DEFAULT_VALUE + "");
+    }
+  }
 }
