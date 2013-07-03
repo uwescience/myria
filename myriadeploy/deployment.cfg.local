@@ -10,8 +10,8 @@ rest_port = 8753
 
 # Compute nodes configuration
 [master]
-localhost,8001
+0 = localhost:8001
 
 [workers]
-localhost,9001
-localhost,9002
+1 = localhost:9001
+2 = localhost:9002

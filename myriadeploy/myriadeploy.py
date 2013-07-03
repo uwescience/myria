@@ -34,7 +34,7 @@ def read_config_file(filename='deployment.cfg'):
     # Helper function
     def split_hostportpath_key(hostport):
         "Splits host,port,path into a tuple (host, port, path)."
-        return tuple(hostport[0].split(','))
+        return tuple(hostport[1].split(':'))
 
     # .. master is the master node of the cluster.
     ret['master'] = split_hostportpath_key(config.items('master')[0])
