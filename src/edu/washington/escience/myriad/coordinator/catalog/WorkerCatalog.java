@@ -481,6 +481,9 @@ public final class WorkerCatalog {
       sqliteConnection.exec("BEGIN TRANSACTION");
       final SQLiteStatement statement = sqliteConnection.prepare("INSERT INTO configuration VALUES(?,?);", false);
       for (Map.Entry<String, String> entry : entries.entrySet()) {
+        if (entry.getValue() == null) {
+          continue;
+        }
         statement.bind(1, entry.getKey());
         statement.bind(2, entry.getValue());
         statement.step();

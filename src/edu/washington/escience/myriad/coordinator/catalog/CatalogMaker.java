@@ -1,6 +1,8 @@
 package edu.washington.escience.myriad.coordinator.catalog;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
@@ -23,6 +25,7 @@ import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.parallel.SocketInfo;
+import edu.washington.escience.myriad.tool.MyriaConfigurationReader;
 
 /**
  * A helper class used to make Catalogs. This will contain the creation code for all the Catalogs we use for
@@ -35,34 +38,22 @@ public final class CatalogMaker {
   /** The logger for this class. */
   private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(CatalogMaker.class);
 
+  /** The reader. */
+  private static final MyriaConfigurationReader READER = new MyriaConfigurationReader();
+
   /**
-   * Used in Catalog creation.
-   * 
-   * args[0]: directory name
-   * 
-   * args[1]: number of workers
-   * 
-   * args[2]: master, if specified, otherwise localhost
-   * 
-   * args[3-n]: workers, if specified, otherwise localhost
+   * Used in Catalog creation. args[0]: directory name args[1]: path to the config file.
    * 
    * @param args contains the parameters necessary to start the catalog.
    * @throws IOException if there is an error creating the catalog.
    */
   public static void main(final String[] args) throws IOException {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
-    Preconditions.checkArgument(args.length >= 2, "Usage: CatalogMaker <directory> <N> [master] [workers...]");
+    Preconditions.checkArgument(args.length >= 2, "Usage: CatalogMaker <directory> <config_file>");
     try {
-      if (args.length > 2) {
-        makeNNodesParallelCatalog(args);
-      } else {
-        makeNNodesLocalParallelCatalog(args[0], Integer.parseInt(args[1]));
-      }
+      makeNNodesParallelCatalog(args);
     } catch (final IOException e) {
       System.err.println("Error creating catalog " + args[0] + ": " + e.getMessage());
-      throw (e);
-    } catch (final NumberFormatException e) {
-      System.err.println("args[1] " + args[1] + " is not a number!");
       throw (e);
     }
   }
@@ -95,14 +86,21 @@ public final class CatalogMaker {
   public static void makeNNodesLocalParallelCatalog(final String directoryName, final int n,
       final Map<String, String> masterConfigurations, final Map<String, String> workerConfigurations)
       throws IOException {
-    final String[] args = new String[n + 3];
+
+    final String[] args = new String[2];
     args[0] = directoryName;
-    args[1] = Integer.toString(n);
-    args[2] = "localhost:" + masterConfigurations.get(MyriaSystemConfigKeys.IPC_SERVER_PORT);
+    File temp = File.createTempFile("localMyriaConfig", ".cfg");
+    BufferedWriter writer = new BufferedWriter(new FileWriter(temp));
+    writer.write("[deployment]\n");
+    writer.write("[master]\n");
+    writer.write("0 = localhost:" + masterConfigurations.get(MyriaSystemConfigKeys.IPC_SERVER_PORT) + "\n");
+    writer.write("[workers]\n");
     final int baseWorkerPort = Integer.valueOf(workerConfigurations.get(MyriaSystemConfigKeys.IPC_SERVER_PORT));
-    for (int i = 0; i < n; ++i) {
-      args[i + 3] = "localhost:" + (baseWorkerPort + i);
+    for (int i = 1; i <= n; ++i) {
+      writer.write(i + " = localhost:" + (baseWorkerPort + i) + "\n");
     }
+    writer.close();
+    args[1] = temp.getAbsolutePath();
     makeNNodesParallelCatalog(args, masterConfigurations, workerConfigurations);
   }
 
@@ -120,33 +118,36 @@ public final class CatalogMaker {
    */
   public static void makeNNodesParallelCatalog(final String[] args, final Map<String, String> masterConfigurations,
       final Map<String, String> workerConfigurations) throws IOException {
-    final int n = args.length - 3;
-    String baseDirectoryName = args[0];
-    final String description = numberToEnglish(n) + "NodeParallel";
-    List<SocketInfo> masters;
-    Map<Integer, SocketInfo> workers;
 
     /* The server configuration. */
+    Map<String, HashMap<String, String>> config = READER.load(args[1]);
     MasterCatalog c = null;
     try {
-      final String catalogFileName = FilenameUtils.concat(baseDirectoryName, "master.catalog");
-      final File catalogDir = new File(baseDirectoryName);
+      String catalogLocation = args[0];
+      final String catalogFileName = FilenameUtils.concat(catalogLocation, "master.catalog");
+      final File catalogDir = new File(catalogLocation);
       while (!catalogDir.exists()) {
         catalogDir.mkdirs();
       }
       c = newCatalog(catalogFileName);
-      c.addMaster(args[2]);
-      for (int i = 0; i < n; ++i) {
-        c.addWorker(args[i + 3]);
+      final Map<String, String> masters = config.get("master");
+      for (final String id : masters.keySet()) {
+        c.addMaster(masters.get(id));
       }
-      masters = c.getMasters();
-      workers = c.getWorkers();
+      final Map<String, String> workers = config.get("workers");
+      for (final String id : workers.keySet()) {
+        c.addWorker(workers.get(id));
+      }
 
       /* A simple test relation. */
       c.addRelationMetadata(RelationKey.of("test", "test", "testRelation"), new Schema(ImmutableList.of(Type.LONG_TYPE,
           Type.LONG_TYPE), ImmutableList.of("x", "y")));
 
       HashMap<String, String> configurationValues = new HashMap<String, String>(masterConfigurations);
+      configurationValues.put("workingDir", config.get("deployment").get("path"));
+      configurationValues.put("description", config.get("deployment").get("name"));
+      configurationValues.put("username", config.get("deployment").get("username"));
+      configurationValues.put("max_heap_size", config.get("deployment").get("max_heap_size"));
 
       /* Add all missing configuration values to the map. */
       if (!masterConfigurations.containsKey(MyriaSystemConfigKeys.FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES)) {
@@ -175,8 +176,13 @@ public final class CatalogMaker {
       }
       c.setAllConfigurationValues(configurationValues);
 
+      /* Each worker's configuration. */
+      for (final String workerId : workers.keySet()) {
+        makeOneWorkerCatalog(workerId, catalogLocation, c, workerConfigurations);
+      }
       /* Close the master catalog. */
       c.close();
+
     } catch (final CatalogException e) {
       try {
         if (c != null) {
@@ -187,75 +193,93 @@ public final class CatalogMaker {
       }
       throw new RuntimeException(e);
     }
+  }
 
-    /* Each worker's configuration. */
-    for (final int workerId : workers.keySet()) {
-      /* Start by making the directory for the worker */
-      final String dirName = FilenameUtils.concat(baseDirectoryName, "worker_" + workerId);
-      final File dir = new File(dirName);
-      while (!dir.exists()) {
-        dir.mkdirs();
-      }
+  /**
+   * Creates a WorkerCatalog.
+   * 
+   * @param workerId the worker whose catalog is being creating.
+   * @param catalogLocation directory name.
+   * @param c the master catalog.
+   * @param workerConfigurations worker configuration.
+   * @throws CatalogException if can't get information from the master catalog.
+   */
+  public static void makeOneWorkerCatalog(final String workerId, final String catalogLocation, final MasterCatalog c,
+      final Map<String, String> workerConfigurations) throws CatalogException {
+    /* Start by making the directory for the worker */
 
-      final String sqliteDbName = FilenameUtils.concat(dirName, "worker_" + workerId + "_data.db");
-      final String catalogName = FilenameUtils.concat(dirName, "worker.catalog");
-      WorkerCatalog wc;
-      try {
-        /* Create the catalog. */
-        try {
-          wc = newWorkerCatalog(catalogName);
-        } catch (final IOException e) {
-          throw new RuntimeException("There is already a Catalog by that name", e);
-        }
-
-        /* Add any and all masters. */
-        for (final SocketInfo s : masters) {
-          wc.addMaster(s.toString());
-        }
-
-        /* Add any and all masters. */
-        for (final Entry<Integer, SocketInfo> w : workers.entrySet()) {
-          wc.addWorker(w.getKey(), w.getValue().toString());
-        }
-
-        /* Build up a map of the worker configuration variables. */
-        HashMap<String, String> configurationValues = new HashMap<String, String>(workerConfigurations);
-        /* Three worker-specific values. */
-        configurationValues.put(MyriaSystemConfigKeys.WORKER_IDENTIFIER, "" + workerId);
-        configurationValues.put(MyriaSystemConfigKeys.WORKER_STORAGE_SYSTEM_TYPE, MyriaConstants.STORAGE_SYSTEM_SQLITE);
-        configurationValues.put(MyriaSystemConfigKeys.WORKER_DATA_SQLITE_DB, sqliteDbName);
-        /* All of the missing values from the other configurations. */
-        if (!workerConfigurations.containsKey(MyriaSystemConfigKeys.FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES)) {
-          configurationValues.put(MyriaSystemConfigKeys.FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES, ""
-              + MyriaConstants.FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES_DEFAULT_VALUE);
-        }
-        if (!workerConfigurations.containsKey(MyriaSystemConfigKeys.FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES)) {
-          configurationValues.put(MyriaSystemConfigKeys.FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES, ""
-              + MyriaConstants.FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES_DEFAULT_VALUE);
-        }
-        if (!workerConfigurations.containsKey(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY)) {
-          configurationValues.put(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY, ""
-              + MyriaConstants.OPERATOR_INPUT_BUFFER_CAPACITY_DEFAULT_VALUE);
-        }
-        if (!workerConfigurations.containsKey(MyriaSystemConfigKeys.TCP_CONNECTION_TIMEOUT_MILLIS)) {
-          configurationValues.put(MyriaSystemConfigKeys.TCP_CONNECTION_TIMEOUT_MILLIS, ""
-              + MyriaConstants.TCP_CONNECTION_TIMEOUT_MILLIS_DEFAULT_VALUE);
-        }
-        if (!workerConfigurations.containsKey(MyriaSystemConfigKeys.TCP_RECEIVE_BUFFER_SIZE_BYTES)) {
-          configurationValues.put(MyriaSystemConfigKeys.TCP_RECEIVE_BUFFER_SIZE_BYTES, ""
-              + MyriaConstants.TCP_RECEIVE_BUFFER_SIZE_BYTES_DEFAULT_VALUE);
-        }
-        if (!workerConfigurations.containsKey(MyriaSystemConfigKeys.TCP_SEND_BUFFER_SIZE_BYTES)) {
-          configurationValues.put(MyriaSystemConfigKeys.TCP_SEND_BUFFER_SIZE_BYTES, ""
-              + MyriaConstants.TCP_SEND_BUFFER_SIZE_BYTES_DEFAULT_VALUE);
-        }
-        /* Set them all in the worker catalog. */
-        wc.setAllConfigurationValues(configurationValues);
-      } catch (final CatalogException e) {
-        throw new RuntimeException(e);
-      }
-      wc.close();
+    final String dirName = FilenameUtils.concat(catalogLocation, "worker_" + workerId);
+    final File dir = new File(dirName);
+    while (!dir.exists()) {
+      dir.mkdirs();
     }
+
+    final String sqliteDbName = FilenameUtils.concat(dirName, "worker_" + workerId + "_data.db");
+    final String catalogName = FilenameUtils.concat(dirName, "worker.catalog");
+    WorkerCatalog wc;
+    try {
+      /* Create the catalog. */
+      try {
+        wc = newWorkerCatalog(catalogName);
+      } catch (final IOException e) {
+        throw new RuntimeException("There is already a Catalog by that name", e);
+      }
+
+      /* Add any and all masters. */
+      final List<SocketInfo> masters = c.getMasters();
+      for (final SocketInfo s : masters) {
+        wc.addMaster(s.toString());
+      }
+
+      /* Add any and all workers. */
+      final Map<Integer, SocketInfo> workers = c.getWorkers();
+      for (final Entry<Integer, SocketInfo> w : workers.entrySet()) {
+        wc.addWorker(w.getKey(), w.getValue().toString());
+      }
+
+      /* Build up a map of the worker configuration variables. */
+      HashMap<String, String> configurationValues = new HashMap<String, String>(workerConfigurations);
+      configurationValues.put("workingDir", c.getConfigurationValue("workingDir"));
+      configurationValues.put("description", c.getConfigurationValue("description"));
+      configurationValues.put("username", c.getConfigurationValue("username"));
+      configurationValues.put("max_heap_size", c.getConfigurationValue("max_heap_size"));
+
+      /* Three worker-specific values. */
+      configurationValues.put(MyriaSystemConfigKeys.WORKER_IDENTIFIER, "" + workerId);
+      configurationValues.put(MyriaSystemConfigKeys.WORKER_STORAGE_SYSTEM_TYPE, MyriaConstants.STORAGE_SYSTEM_SQLITE);
+      configurationValues.put(MyriaSystemConfigKeys.WORKER_DATA_SQLITE_DB, sqliteDbName);
+
+      /* All of the missing values from the other configurations. */
+      if (!workerConfigurations.containsKey(MyriaSystemConfigKeys.FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES)) {
+        configurationValues.put(MyriaSystemConfigKeys.FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES, ""
+            + MyriaConstants.FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES_DEFAULT_VALUE);
+      }
+      if (!workerConfigurations.containsKey(MyriaSystemConfigKeys.FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES)) {
+        configurationValues.put(MyriaSystemConfigKeys.FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES, ""
+            + MyriaConstants.FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES_DEFAULT_VALUE);
+      }
+      if (!workerConfigurations.containsKey(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY)) {
+        configurationValues.put(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY, ""
+            + MyriaConstants.OPERATOR_INPUT_BUFFER_CAPACITY_DEFAULT_VALUE);
+      }
+      if (!workerConfigurations.containsKey(MyriaSystemConfigKeys.TCP_CONNECTION_TIMEOUT_MILLIS)) {
+        configurationValues.put(MyriaSystemConfigKeys.TCP_CONNECTION_TIMEOUT_MILLIS, ""
+            + MyriaConstants.TCP_CONNECTION_TIMEOUT_MILLIS_DEFAULT_VALUE);
+      }
+      if (!workerConfigurations.containsKey(MyriaSystemConfigKeys.TCP_RECEIVE_BUFFER_SIZE_BYTES)) {
+        configurationValues.put(MyriaSystemConfigKeys.TCP_RECEIVE_BUFFER_SIZE_BYTES, ""
+            + MyriaConstants.TCP_RECEIVE_BUFFER_SIZE_BYTES_DEFAULT_VALUE);
+      }
+      if (!workerConfigurations.containsKey(MyriaSystemConfigKeys.TCP_SEND_BUFFER_SIZE_BYTES)) {
+        configurationValues.put(MyriaSystemConfigKeys.TCP_SEND_BUFFER_SIZE_BYTES, ""
+            + MyriaConstants.TCP_SEND_BUFFER_SIZE_BYTES_DEFAULT_VALUE);
+      }
+      /* Set them all in the worker catalog. */
+      wc.setAllConfigurationValues(configurationValues);
+    } catch (final CatalogException e) {
+      throw new RuntimeException(e);
+    }
+    wc.close();
   }
 
   /**
@@ -275,7 +299,6 @@ public final class CatalogMaker {
    * Helper utility that creates a new Catalog with a given filename and description.
    * 
    * @param filename specifies where the Catalog will be created.
-   * @param description describes and names the Catalog. E.g., "twoNodeLocalParallel".
    * @return a fresh Catalog with the given description, stored in the path given by filename.
    * @throws CatalogException if there is an error in the backend database.
    * @throws IOException if the file already exists.
