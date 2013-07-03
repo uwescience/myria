@@ -49,7 +49,7 @@ public final class CatalogMaker {
    */
   public static void main(final String[] args) throws IOException {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
-    Preconditions.checkArgument(args.length >= 2, "Usage: CatalogMaker <directory> <config_file>");
+    Preconditions.checkArgument(args.length >= 1, "Usage: CatalogMaker <config_file> <optional: catalog_location>");
     try {
       makeNNodesParallelCatalog(args);
     } catch (final IOException e) {
@@ -88,7 +88,7 @@ public final class CatalogMaker {
       throws IOException {
 
     final String[] args = new String[2];
-    args[0] = directoryName;
+    args[1] = directoryName;
     File temp = File.createTempFile("localMyriaConfig", ".cfg");
     BufferedWriter writer = new BufferedWriter(new FileWriter(temp));
     writer.write("[deployment]\n");
@@ -100,7 +100,7 @@ public final class CatalogMaker {
       writer.write(i + " = localhost:" + (baseWorkerPort + i) + "\n");
     }
     writer.close();
-    args[1] = temp.getAbsolutePath();
+    args[0] = temp.getAbsolutePath();
     makeNNodesParallelCatalog(args, masterConfigurations, workerConfigurations);
   }
 
@@ -120,10 +120,15 @@ public final class CatalogMaker {
       final Map<String, String> workerConfigurations) throws IOException {
 
     /* The server configuration. */
-    Map<String, HashMap<String, String>> config = READER.load(args[1]);
+    Map<String, HashMap<String, String>> config = READER.load(args[0]);
     MasterCatalog c = null;
     try {
-      String catalogLocation = args[0];
+      String catalogLocation;
+      if (args.length > 1) {
+        catalogLocation = args[1];
+      } else {
+        catalogLocation = config.get("deployment").get("name");
+      }
       final String catalogFileName = FilenameUtils.concat(catalogLocation, "master.catalog");
       final File catalogDir = new File(catalogLocation);
       while (!catalogDir.exists()) {
