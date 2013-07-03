@@ -3,7 +3,7 @@ package edu.washington.escience.myriad;
 import java.io.Serializable;
 import java.util.Objects;
 
-import org.codehaus.jackson.annotate.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * This class holds the key that identifies a relation. The notation is user.program.relation.
