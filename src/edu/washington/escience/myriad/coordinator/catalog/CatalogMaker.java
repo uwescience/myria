@@ -127,7 +127,7 @@ public final class CatalogMaker {
     Map<Integer, SocketInfo> workers;
 
     /* The server configuration. */
-    Catalog c = null;
+    MasterCatalog c = null;
     try {
       final String catalogFileName = FilenameUtils.concat(baseDirectoryName, "master.catalog");
       final File catalogDir = new File(baseDirectoryName);
@@ -282,10 +282,10 @@ public final class CatalogMaker {
    * 
    *           TODO check the description can be a file basename, e.g., it has no / or space etc.
    */
-  private static Catalog newCatalog(final String filename, final String description) throws CatalogException,
+  private static MasterCatalog newCatalog(final String filename, final String description) throws CatalogException,
       IOException {
     Objects.requireNonNull(description);
-    return Catalog.create(filename, description, false);
+    return MasterCatalog.create(filename, description, false);
   }
 
   /**

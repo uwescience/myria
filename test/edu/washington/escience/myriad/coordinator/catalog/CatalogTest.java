@@ -51,10 +51,10 @@ public class CatalogTest {
     /* Turn off SQLite logging, it's annoying. */
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.OFF);
 
-    Catalog catalog = null;
+    MasterCatalog catalog = null;
 
     /* Set and test the description */
-    catalog = Catalog.createInMemory(DESCRIPTION);
+    catalog = MasterCatalog.createInMemory(DESCRIPTION);
     assertTrue(catalog.getDescription().equals(DESCRIPTION));
 
     /* Set and test the server */
@@ -89,7 +89,7 @@ public class CatalogTest {
     final int numWorkers = 5;
     final String masterCatalogPath = path.toString() + File.separatorChar + "master.catalog";
     CatalogMaker.makeNNodesLocalParallelCatalog(path.toFile().getAbsolutePath(), 5);
-    Catalog c = Catalog.open(masterCatalogPath);
+    MasterCatalog c = MasterCatalog.open(masterCatalogPath);
     assertTrue(c.getWorkers().size() == numWorkers);
     c.close();
     FSUtils.blockingDeleteDirectory(path.toString());
