@@ -54,7 +54,8 @@ public class CatalogTest {
     MasterCatalog catalog = null;
 
     /* Set and test the description */
-    catalog = MasterCatalog.createInMemory(DESCRIPTION);
+    catalog = MasterCatalog.createInMemory();
+    catalog.setConfigurationValue("description", DESCRIPTION);
     assertTrue(catalog.getDescription().equals(DESCRIPTION));
 
     /* Set and test the server */

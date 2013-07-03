@@ -134,7 +134,7 @@ public final class CatalogMaker {
       while (!catalogDir.exists()) {
         catalogDir.mkdirs();
       }
-      c = newCatalog(catalogFileName, description);
+      c = newCatalog(catalogFileName);
       c.addMaster(args[2]);
       for (int i = 0; i < n; ++i) {
         c.addWorker(args[i + 3]);
@@ -282,10 +282,8 @@ public final class CatalogMaker {
    * 
    *           TODO check the description can be a file basename, e.g., it has no / or space etc.
    */
-  private static MasterCatalog newCatalog(final String filename, final String description) throws CatalogException,
-      IOException {
-    Objects.requireNonNull(description);
-    return MasterCatalog.create(filename, description, false);
+  private static MasterCatalog newCatalog(final String filename) throws CatalogException, IOException {
+    return MasterCatalog.create(filename, false);
   }
 
   /**

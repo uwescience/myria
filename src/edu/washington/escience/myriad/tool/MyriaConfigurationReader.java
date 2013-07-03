@@ -8,8 +8,10 @@ import java.util.Map;
 
 import org.ini4j.ConfigParser;
 
+/** The class to read Myria configuration file, e.g. deployment.cfg. */
 public final class MyriaConfigurationReader extends ConfigParser {
 
+  /** for serialization. */
   private static final long serialVersionUID = 1L;
   /** usage. */
   public static final String USAGE = "java MyriaConfigurationReader [config_file]";
