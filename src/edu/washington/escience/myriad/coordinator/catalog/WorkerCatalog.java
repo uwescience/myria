@@ -87,28 +87,34 @@ public final class WorkerCatalog {
       /* @formatter:off */
       sqliteConnection.exec("PRAGMA journal_mode = WAL;");
       sqliteConnection.exec("BEGIN TRANSACTION");
+      sqliteConnection.exec("DROP TABLE IF EXISTS configuration");
       sqliteConnection.exec(
           "CREATE TABLE configuration (\n"
         + "    key STRING UNIQUE NOT NULL,\n"
         + "    value STRING NOT NULL);");
+      sqliteConnection.exec("DROP TABLE IF EXISTS masters");
       sqliteConnection.exec(
           "CREATE TABLE masters (\n"
         + "    master_id INTEGER PRIMARY KEY ASC,\n"
         + "    host_port STRING NOT NULL);");
+      sqliteConnection.exec("DROP TABLE IF EXISTS workers");
       sqliteConnection.exec(
           "CREATE TABLE workers (\n"
         + "    worker_id INTEGER PRIMARY KEY ASC,\n"
         + "    host_port STRING NOT NULL);");
+      sqliteConnection.exec("DROP TABLE IF EXISTS relations");
       sqliteConnection.exec(
           "CREATE TABLE relations (\n"
         + "    relation_id INTEGER PRIMARY KEY ASC,\n"
         + "    relation_name STRING NOT NULL UNIQUE);");
+      sqliteConnection.exec("DROP TABLE IF EXISTS relation_schema");
       sqliteConnection.exec(
           "CREATE TABLE relation_schema (\n"
         + "    relation_id INTEGER NOT NULL REFERENCES relations(relation_id),\n"
         + "    col_index INTEGER NOT NULL,\n"
         + "    col_name STRING,\n"
         + "    col_type STRING NOT NULL);");
+      sqliteConnection.exec("DROP TABLE IF EXISTS shards");
       sqliteConnection.exec(
           "CREATE TABLE shards (\n"
         + "    stored_relation_id INTEGER NOT NULL REFERENCES stored_relations(stored_relation_id),\n"

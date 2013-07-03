@@ -8,19 +8,12 @@ import sys
 def host_port_list(workers):
     return [str(worker[0]) + ':' + str(worker[1]) for worker in workers]
 
-def make_catalog(config, config_file):
+def make_catalog(config_file):
     """Creates a Myria catalog (running the Java program to do so) from the
 given deployment configuration."""
-    # Extract the needed arguments from config
-    description = config['description']
-
-    # Remove the old catalog, if it exists.
-    args = ["rm", "-rf", description]
-    subprocess.call(args)
 
     # Create a new one.
-    args = ["./run_catalog_maker.sh", description, config_file]
-
+    args = ["./run_catalog_maker.sh", config_file]
     if subprocess.call(args):
         print >> sys.stderr, "error making the Catalog"
         sys.exit(1)
@@ -121,7 +114,7 @@ def main(argv):
     config = myriadeploy.read_config_file(argv[1])
 
     # Step 1: make the Catalog
-    make_catalog(config, argv[1])
+    make_catalog(argv[1])
 
     # Step 2: Copy each catalog over
     copy_catalogs(config)

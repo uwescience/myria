@@ -94,30 +94,39 @@ public final class MasterCatalog {
           try {
             sqliteConnection.exec("PRAGMA journal_mode = WAL;");
             sqliteConnection.exec("BEGIN TRANSACTION");
+            sqliteConnection.exec("DROP TABLE IF EXISTS configuration");
             sqliteConnection.exec("CREATE TABLE configuration (\n" + "    key STRING UNIQUE NOT NULL,\n"
                 + "    value STRING NOT NULL);");
+            sqliteConnection.exec("DROP TABLE IF EXISTS workers");
             sqliteConnection.exec("CREATE TABLE workers (\n" + "    worker_id INTEGER PRIMARY KEY ASC,\n"
                 + "    host_port STRING NOT NULL);");
+            sqliteConnection.exec("DROP TABLE IF EXISTS alive_workers");
             sqliteConnection.exec("CREATE TABLE alive_workers (\n"
                 + "    worker_id INTEGER PRIMARY KEY ASC REFERENCES workers(worker_id));");
+            sqliteConnection.exec("DROP TABLE IF EXISTS masters");
             sqliteConnection.exec("CREATE TABLE masters (\n" + "    master_id INTEGER PRIMARY KEY ASC,\n"
                 + "    host_port STRING NOT NULL);");
+            sqliteConnection.exec("DROP TABLE IF EXISTS relations");
             sqliteConnection.exec("CREATE TABLE relations (\n" + "    user_name STRING NOT NULL,\n"
                 + "    program_name STRING NOT NULL,\n" + "    relation_name STRING NOT NULL,\n"
                 + "    PRIMARY KEY (user_name,program_name,relation_name));");
+            sqliteConnection.exec("DROP TABLE IF EXISTS relation_schema");
             sqliteConnection.exec("CREATE TABLE relation_schema (\n" + "    user_name STRING NOT NULL,\n"
                 + "    program_name STRING NOT NULL,\n" + "    relation_name STRING NOT NULL,\n"
                 + "    col_index INTEGER NOT NULL,\n" + "    col_name STRING,\n" + "    col_type STRING NOT NULL,\n"
                 + "    FOREIGN KEY (user_name,program_name,relation_name) REFERENCES relations);");
+            sqliteConnection.exec("DROP TABLE IF EXISTS stored_relations");
             sqliteConnection.exec("CREATE TABLE stored_relations (\n"
                 + "    stored_relation_id INTEGER PRIMARY KEY ASC,\n" + "    user_name STRING NOT NULL,\n"
                 + "    program_name STRING NOT NULL,\n" + "    relation_name STRING NOT NULL,\n"
                 + "    num_shards INTEGER NOT NULL,\n" + "    how_partitioned STRING NOT NULL,\n"
                 + "    FOREIGN KEY (user_name,program_name,relation_name) REFERENCES relations);");
+            sqliteConnection.exec("DROP TABLE IF EXISTS shards");
             sqliteConnection.exec("CREATE TABLE shards (\n"
                 + "    stored_relation_id INTEGER NOT NULL REFERENCES stored_relations(stored_relation_id),\n"
                 + "    shard_index INTEGER NOT NULL,\n"
                 + "    worker_id INTEGER NOT NULL REFERENCES workers(worker_id));");
+            sqliteConnection.exec("DROP TABLE IF EXISTS queries");
             sqliteConnection.exec("CREATE TABLE queries (\n" + "    query_id INTEGER NOT NULL PRIMARY KEY ASC,\n"
                 + "    raw_query TEXT NOT NULL,\n" + "    logical_ra TEXT NOT NULL);");
             sqliteConnection.exec("END TRANSACTION");

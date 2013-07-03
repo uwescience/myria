@@ -49,7 +49,8 @@ public final class CatalogMaker {
    */
   public static void main(final String[] args) throws IOException {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
-    Preconditions.checkArgument(args.length >= 1, "Usage: CatalogMaker <config_file> <optional: catalog_location>");
+    Preconditions.checkArgument(args.length >= 1,
+        "Usage: CatalogMaker <config_file> <optional: catalog_location> <optional: overwrite>");
     try {
       makeNNodesParallelCatalog(args);
     } catch (final IOException e) {
@@ -129,12 +130,16 @@ public final class CatalogMaker {
       } else {
         catalogLocation = config.get("deployment").get("name");
       }
+      boolean overwrite = true;
+      if (args.length > 2) {
+        overwrite = Boolean.parseBoolean(args[2]);
+      }
       final String catalogFileName = FilenameUtils.concat(catalogLocation, "master.catalog");
       final File catalogDir = new File(catalogLocation);
       while (!catalogDir.exists()) {
         catalogDir.mkdirs();
       }
-      c = newCatalog(catalogFileName);
+      c = newMasterCatalog(catalogFileName, overwrite);
       final Map<String, String> masters = config.get("master");
       for (final String id : masters.keySet()) {
         c.addMaster(masters.get(id));
@@ -161,7 +166,7 @@ public final class CatalogMaker {
 
       /* Each worker's configuration. */
       for (final String workerId : workers.keySet()) {
-        makeOneWorkerCatalog(workerId, catalogLocation, c, workerConfigurations);
+        makeOneWorkerCatalog(workerId, catalogLocation, c, workerConfigurations, overwrite);
       }
       /* Close the master catalog. */
       c.close();
@@ -185,10 +190,11 @@ public final class CatalogMaker {
    * @param catalogLocation directory name.
    * @param c the master catalog.
    * @param workerConfigurations worker configuration.
+   * @param overwrite true/false if want to overwrite old catalog.
    * @throws CatalogException if can't get information from the master catalog.
    */
   public static void makeOneWorkerCatalog(final String workerId, final String catalogLocation, final MasterCatalog c,
-      final Map<String, String> workerConfigurations) throws CatalogException {
+      final Map<String, String> workerConfigurations, final boolean overwrite) throws CatalogException {
     /* Start by making the directory for the worker */
 
     final String dirName = FilenameUtils.concat(catalogLocation, "worker_" + workerId);
@@ -203,7 +209,7 @@ public final class CatalogMaker {
     try {
       /* Create the catalog. */
       try {
-        wc = newWorkerCatalog(catalogName);
+        wc = newWorkerCatalog(catalogName, overwrite);
       } catch (final IOException e) {
         throw new RuntimeException("There is already a Catalog by that name", e);
       }
@@ -260,29 +266,33 @@ public final class CatalogMaker {
    * Helper utility that creates a new Catalog with a given filename and description.
    * 
    * @param filename specifies where the Catalog will be created.
+   * @param overwrite true/false if want to overwrite old catalog.
    * @return a fresh Catalog with the given description, stored in the path given by filename.
    * @throws CatalogException if there is an error in the backend database.
    * @throws IOException if the file already exists.
    * 
    *           TODO check the description can be a file basename, e.g., it has no / or space etc.
    */
-  private static MasterCatalog newCatalog(final String filename) throws CatalogException, IOException {
-    return MasterCatalog.create(filename, false);
+  private static MasterCatalog newMasterCatalog(final String filename, final boolean overwrite)
+      throws CatalogException, IOException {
+    return MasterCatalog.create(filename, overwrite);
   }
 
   /**
    * Helper utility that creates a new WorkerCatalog with a given filename.
    * 
    * @param filename path to the WorkerCatalog database.
+   * @param overwrite true/false if want to overwrite old catalog.
    * @return a fresh WorkerCatalog.
    * @throws CatalogException if there is an error in the backend database.
    * @throws IOException if the file already exists.
    * 
    *           TODO check the description can be a file basename, e.g., it has no / or space etc.
    */
-  private static WorkerCatalog newWorkerCatalog(final String filename) throws CatalogException, IOException {
+  private static WorkerCatalog newWorkerCatalog(final String filename, final boolean overwrite)
+      throws CatalogException, IOException {
     Objects.requireNonNull(filename);
-    return WorkerCatalog.create(filename, false);
+    return WorkerCatalog.create(filename, overwrite);
   }
 
   /**
