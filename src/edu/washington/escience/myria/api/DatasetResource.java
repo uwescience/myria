@@ -24,9 +24,14 @@ import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
+import org.apache.commons.httpclient.HttpStatus;
 import org.slf4j.LoggerFactory;
 
 import com.sun.jersey.core.header.ContentDisposition;
+import com.wordnik.swagger.annotations.Api;
+import com.wordnik.swagger.annotations.ApiOperation;
+import com.wordnik.swagger.annotations.ApiResponse;
+import com.wordnik.swagger.annotations.ApiResponses;
 
 import edu.washington.escience.myria.CsvTupleWriter;
 import edu.washington.escience.myria.DbException;
@@ -53,6 +58,7 @@ import edu.washington.escience.myria.parallel.Server;
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 @Path("/dataset")
+@Api(value = "/dataset", description = "Operations on datasets")
 public final class DatasetResource {
   /** The Myria server running on the master. */
   @Context
@@ -72,6 +78,8 @@ public final class DatasetResource {
    * @throws DbException if there is an error in the database.
    */
   @GET
+  @ApiOperation(value = "get information about a dataset", response = DatasetStatus.class)
+  @ApiResponses(value = { @ApiResponse(code = HttpStatus.SC_NOT_FOUND, message = "Dataset not found", response = String.class) })
   @Path("/user-{user_name}/program-{program_name}/relation-{relation_name}")
   public Response getDataset(@PathParam("user_name") final String userName,
       @PathParam("program_name") final String programName, @PathParam("relation_name") final String relationName)
