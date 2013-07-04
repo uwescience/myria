@@ -2,8 +2,7 @@ package edu.washington.escience.myriad.api;
 
 import javax.ws.rs.core.Context;
 
-import org.codehaus.jackson.jaxrs.JacksonJsonProvider;
-
+import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.sun.jersey.api.core.PackagesResourceConfig;
 import com.sun.jersey.spi.inject.SingletonTypeInjectableProvider;
 

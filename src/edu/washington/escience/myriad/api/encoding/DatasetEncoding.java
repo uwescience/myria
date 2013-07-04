@@ -39,10 +39,12 @@ public class DatasetEncoding extends MyriaApiEncoding {
      * Note we can only do this because we know that the operator will be run on the master. So we can't do this e.g.
      * for FileScan because that might be run on a worker.
      */
-    try {
-      FSUtils.checkFileReadable(fileName);
-    } catch (Exception e) {
-      throw new MyriaApiException(Status.BAD_REQUEST, e);
+    if (null == data) {
+      try {
+        FSUtils.checkFileReadable(fileName);
+      } catch (Exception e) {
+        throw new MyriaApiException(Status.BAD_REQUEST, e);
+      }
     }
   }
 }

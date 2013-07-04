@@ -163,7 +163,7 @@ public class IterativeFailureTest extends SystemTestBase {
     final PartitionFunction<String, Integer> pf1 = new SingleFieldHashPartitionFunction(numPartition);
     pf1.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1);
 
-    final ShuffleConsumer sc1;
+    ShuffleConsumer sc1;
     if (isHead) {
       ExchangePairID joinArrayID = ExchangePairID.newID();
       final SQLiteQueryScan scan1 = new SQLiteQueryScan(RelationKey.of("test", "test", "r"), tableSchema);

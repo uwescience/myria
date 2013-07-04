@@ -111,6 +111,7 @@ public class Main {
     while ((line = br.readLine()) != null) {
       computingWorkers.add(workerName2ID.get(line));
     }
+    br.close();
 
     int[] allQueryWorkers = com.google.common.primitives.Ints.toArray(computingWorkers);
 

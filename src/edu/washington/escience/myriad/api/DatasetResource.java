@@ -49,9 +49,9 @@ public final class DatasetResource {
    * @throws CatalogException if there is an error in the database.
    */
   @GET
-  @Path("/user-{userName}/program-{programName}/relation-{relationName}")
-  public Schema getDataset(@PathParam("userName") final String userName,
-      @PathParam("programName") final String programName, @PathParam("relationName") final String relationName)
+  @Path("/user-{user_name}/program-{program_name}/relation-{relation_name}")
+  public Schema getDataset(@PathParam("user_name") final String userName,
+      @PathParam("program_name") final String programName, @PathParam("relation_name") final String relationName)
       throws CatalogException {
     Schema schema = server.getSchema(RelationKey.of(userName, programName, relationName));
     if (schema == null) {

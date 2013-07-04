@@ -19,11 +19,6 @@ import edu.washington.escience.myriad.operator.Operator;
 public class InitFailureInjector extends Operator {
 
   /**
-   * Logger.
-   * */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(InitFailureInjector.class.getName());
-
-  /**
    * Child.
    * */
   private Operator child;
