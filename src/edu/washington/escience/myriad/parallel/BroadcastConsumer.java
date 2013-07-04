@@ -30,7 +30,7 @@ public final class BroadcastConsumer extends Consumer {
    */
   public BroadcastConsumer(final Schema schema, final ExchangePairID operatorID, final int[] workerIDs) {
     super(schema, operatorID, workerIDs);
-    LOGGER.trace("created CollectConsumer for ExchangePairId=" + operatorID);
+    LOGGER.trace("created BroadcastConsumer for ExchangePairId=" + operatorID);
   }
 
 }
