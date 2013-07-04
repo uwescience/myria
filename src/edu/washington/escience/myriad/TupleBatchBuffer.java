@@ -36,7 +36,8 @@ public class TupleBatchBuffer {
   /** Internal state representing the number of tuples in the in-progress TupleBatch. */
   private int currentInProgressTuples;
 
-  private long lastPopedTime;
+  /** The last time this operator returned a TupleBatch. */
+  private long lastPoppedTime;
 
   /**
    * Constructs an empty TupleBatchBuffer to hold tuples matching the specified Schema.
@@ -51,7 +52,7 @@ public class TupleBatchBuffer {
     columnsReady = new BitSet(numColumns);
     numColumnsReady = 0;
     currentInProgressTuples = 0;
-    lastPopedTime = System.nanoTime();
+    lastPoppedTime = System.nanoTime();
   }
 
   /**
@@ -411,7 +412,7 @@ public class TupleBatchBuffer {
    * Update lastPopedTime to be the current time.
    */
   private void updateLastPopedTime() {
-    lastPopedTime = System.nanoTime();
+    lastPoppedTime = System.nanoTime();
   }
 
   /**
@@ -420,6 +421,6 @@ public class TupleBatchBuffer {
    * @return the elapsed time from lastPopedTime to present
    */
   private long getElapsedTime() {
-    return System.nanoTime() - lastPopedTime;
+    return System.nanoTime() - lastPoppedTime;
   }
 }
