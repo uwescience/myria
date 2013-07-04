@@ -12,8 +12,9 @@ import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
 
-import org.codehaus.jackson.map.JsonMappingException;
 import org.slf4j.LoggerFactory;
+
+import com.fasterxml.jackson.databind.JsonMappingException;
 
 /**
  * This class determines what HTTP response will be sent when a web request causes a certain exception type. The

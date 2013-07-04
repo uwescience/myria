@@ -7,9 +7,9 @@ import java.util.Map;
 
 import javax.ws.rs.core.Response.Status;
 
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.MyriaConstants;
@@ -23,11 +23,11 @@ import edu.washington.escience.myriad.parallel.ExchangePairID;
 import edu.washington.escience.myriad.parallel.Server;
 import edu.washington.escience.myriad.util.MyriaUtils;
 
-@JsonIgnoreProperties({ "expected_result" })
 /**
  * A JSON-able wrapper for the expected wire message for a query.
  * 
  */
+@JsonIgnoreProperties({ "expected_result" })
 public class QueryEncoding extends MyriaApiEncoding {
   /** The raw Datalog. */
   public String rawDatalog;

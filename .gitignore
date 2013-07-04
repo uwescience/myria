@@ -8,3 +8,4 @@ build
 *NodeLocalParallel
 *catalog-journal
 englink-log4j.log
+/bin
