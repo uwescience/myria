@@ -203,7 +203,6 @@ public final class CatalogMaker {
       dir.mkdirs();
     }
 
-    final String sqliteDbName = FilenameUtils.concat(dirName, "worker_" + workerId + "_data.db");
     final String catalogName = FilenameUtils.concat(dirName, "worker.catalog");
     WorkerCatalog wc;
     try {
@@ -237,6 +236,15 @@ public final class CatalogMaker {
       MyriaSystemConfigKeys.addDefaultConfigKeys(configurationValues);
 
       /* Three worker-specific values. */
+
+      String description = c.getConfigurationValue("description");
+      String sqliteDbName = "";
+      if (description != null) {
+        sqliteDbName = FilenameUtils.concat(description, "worker_" + workerId);
+        sqliteDbName = FilenameUtils.concat(sqliteDbName, "worker_" + workerId + "_data.db");
+      } else {
+        sqliteDbName = FilenameUtils.concat(dirName, "worker_" + workerId + "_data.db");
+      }
       configurationValues.put(MyriaSystemConfigKeys.WORKER_IDENTIFIER, "" + workerId);
       configurationValues.put(MyriaSystemConfigKeys.WORKER_STORAGE_SYSTEM_TYPE, MyriaConstants.STORAGE_SYSTEM_SQLITE);
       configurationValues.put(MyriaSystemConfigKeys.WORKER_DATA_SQLITE_DB, sqliteDbName);
