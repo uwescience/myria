@@ -34,7 +34,11 @@ public class ShuffleSQLiteTest extends SystemTestBase {
   @Test
   public void shuffleTestSQLite() throws Exception {
 
-    /* Prepare expected result */
+    /*
+     * Prepare expected result
+     * 
+     * NOTE: simpleRandomJoinTestBase() have already create and add tuples to testtable1 and testtable2
+     */
     final HashMap<Tuple, Integer> expectedResult = simpleRandomJoinTestBase();
 
     /* Create table: testtable1, testtable2, temptable1, temptable2 */
@@ -80,7 +84,7 @@ public class ShuffleSQLiteTest extends SystemTestBase {
     final ShuffleConsumer sc2 = new ShuffleConsumer(sp2.getSchema(), shuffle2ID, WORKER_ID);
     final BlockingSQLiteDataReceiver buffer2 = new BlockingSQLiteDataReceiver(temptable2Key, sc2);
 
-    /* Set collect producer with will send data inner-joined */
+    /* Set collect producer which will send data inner-joined */
     final SQLiteSQLProcessor ssp =
         new SQLiteSQLProcessor("select * from " + temptable1Key.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE)
             + " inner join " + temptable2Key.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE) + " on "
