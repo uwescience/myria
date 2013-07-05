@@ -434,10 +434,11 @@ public final class MasterCatalog {
    * Adds a worker using the specified host and port to the Catalog.
    * 
    * @param hostPortString specifies the path to the worker in the format "host:port"
+   * @param workerId the worker id to be added
    * @return this Catalog
    * @throws CatalogException if the hostPortString is invalid or there is a database exception.
    */
-  public MasterCatalog addWorker(final String hostPortString) throws CatalogException {
+  public MasterCatalog addWorker(final int workerId, final String hostPortString) throws CatalogException {
     Objects.requireNonNull(hostPortString);
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
@@ -451,8 +452,9 @@ public final class MasterCatalog {
             /* Just used to verify that hostPortString is legal */
             final SocketInfo sockInfo = SocketInfo.valueOf(hostPortString);
             final SQLiteStatement statement =
-                sqliteConnection.prepare("INSERT INTO workers(host_port) VALUES(?);", false);
-            statement.bind(1, hostPortString);
+                sqliteConnection.prepare("INSERT INTO workers(worker_id, host_port) VALUES(?,?);", false);
+            statement.bind(1, workerId);
+            statement.bind(2, hostPortString);
             statement.step();
             statement.dispose();
           } catch (final SQLiteException e) {

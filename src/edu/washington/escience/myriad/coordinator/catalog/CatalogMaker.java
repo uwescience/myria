@@ -146,7 +146,7 @@ public final class CatalogMaker {
       }
       final Map<String, String> workers = config.get("workers");
       for (final String id : workers.keySet()) {
-        c.addWorker(workers.get(id));
+        c.addWorker(Integer.parseInt(id), workers.get(id));
       }
 
       /* A simple test relation. */

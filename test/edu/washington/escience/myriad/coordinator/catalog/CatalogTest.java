@@ -65,8 +65,8 @@ public class CatalogTest {
     assertTrue(servers.get(0).toString().equals(SERVER));
 
     /* Set and test the workers */
-    for (final String worker : WORKERS) {
-      catalog.addWorker(worker);
+    for (int i = 0; i < WORKERS.length; ++i) {
+      catalog.addWorker(i + 1, WORKERS[i]);
     }
     final Map<Integer, SocketInfo> workers = catalog.getWorkers();
     assertTrue(workers.size() == WORKERS.length);
