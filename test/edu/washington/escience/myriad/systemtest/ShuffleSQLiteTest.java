@@ -34,11 +34,17 @@ public class ShuffleSQLiteTest extends SystemTestBase {
   @Test
   public void shuffleTestSQLite() throws Exception {
 
+    /*
+     * Prepare expected result
+     * 
+     * NOTE: simpleRandomJoinTestBase() have already create and add tuples to testtable1 and testtable2
+     */
+    final HashMap<Tuple, Integer> expectedResult = simpleRandomJoinTestBase();
+
+    /* Create table: testtable1, testtable2, temptable1, temptable2 */
     final ImmutableList<Type> types = ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE);
     final ImmutableList<String> columnNames = ImmutableList.of("id", "name");
     final Schema schema = new Schema(types, columnNames);
-
-    final HashMap<Tuple, Integer> expectedResult = simpleRandomJoinTestBase();
 
     final RelationKey testtable1Key = RelationKey.of("test", "test", "testtable1");
     final RelationKey testtable2Key = RelationKey.of("test", "test", "testtable2");
@@ -50,32 +56,35 @@ public class ShuffleSQLiteTest extends SystemTestBase {
     createTable(WORKER_ID[1], temptable1Key, "id int, name varchar(20)");
     createTable(WORKER_ID[1], temptable2Key, "id int, name varchar(20)");
 
-    final ExchangePairID serverReceiveID = ExchangePairID.newID();
-    final ExchangePairID shuffle1ID = ExchangePairID.newID();
-    final ExchangePairID shuffle2ID = ExchangePairID.newID();
+    final ExchangePairID serverReceiveID = ExchangePairID.newID(); // for CollectOperator
+    final ExchangePairID shuffle1ID = ExchangePairID.newID(); // for ShuffleOperator
+    final ExchangePairID shuffle2ID = ExchangePairID.newID(); // for ShuffleOperator
 
+    /* Set output schema */
     final ImmutableList<Type> outputTypes =
         ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE, Type.LONG_TYPE, Type.STRING_TYPE);
     final ImmutableList<String> outputColumnNames = ImmutableList.of("id1", "name1", "id2", "name2");
     final Schema outputSchema = new Schema(outputTypes, outputColumnNames);
 
+    /* Create partition function */
     final int numPartition = 2;
-
     final PartitionFunction<String, Integer> pf = new SingleFieldHashPartitionFunction(numPartition);
     pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1); // partition by name
 
+    /* Set shuffle producers, sp1, sp2 , which load data from scan1, scan 2 */
     final SQLiteQueryScan scan1 = new SQLiteQueryScan(testtable1Key, schema);
     final SQLiteQueryScan scan2 = new SQLiteQueryScan(testtable2Key, schema);
     final ShuffleProducer sp1 = new ShuffleProducer(scan1, shuffle1ID, WORKER_ID, pf);
-
     final ShuffleProducer sp2 = new ShuffleProducer(scan2, shuffle2ID, WORKER_ID, pf);
 
+    /* Set shuffle consumers, sc1, sc2, which received data and store as new table temptable1 and 2 */
     final ShuffleConsumer sc1 = new ShuffleConsumer(sp1.getSchema(), shuffle1ID, WORKER_ID);
     final BlockingSQLiteDataReceiver buffer1 = new BlockingSQLiteDataReceiver(temptable1Key, sc1);
 
     final ShuffleConsumer sc2 = new ShuffleConsumer(sp2.getSchema(), shuffle2ID, WORKER_ID);
     final BlockingSQLiteDataReceiver buffer2 = new BlockingSQLiteDataReceiver(temptable2Key, sc2);
 
+    /* Set collect producer which will send data inner-joined */
     final SQLiteSQLProcessor ssp =
         new SQLiteSQLProcessor("select * from " + temptable1Key.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE)
             + " inner join " + temptable2Key.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE) + " on "
@@ -84,16 +93,19 @@ public class ShuffleSQLiteTest extends SystemTestBase {
             buffer1, buffer2 });
     final CollectProducer cp = new CollectProducer(ssp, serverReceiveID, MASTER_ID);
 
+    /* Set worker plans */
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
     workerPlans.put(WORKER_ID[0], new RootOperator[] { cp, sp1, sp2 });
     workerPlans.put(WORKER_ID[1], new RootOperator[] { cp, sp1, sp2 });
 
+    /* Prepare collect consumers */
     final CollectConsumer serverCollect =
         new CollectConsumer(outputSchema, serverReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
     final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
     final SinkRoot serverPlan = new SinkRoot(queueStore);
 
+    /* Submit and execute worker plans */
     server.submitQueryPlan(serverPlan, workerPlans).sync();
     TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
     TupleBatch tb = null;
