@@ -1,5 +1,6 @@
 package edu.washington.escience.myriad.column;
 
+import java.io.Serializable;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
@@ -18,7 +19,7 @@ import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
  * @author dhalperi
  * 
  */
-public interface Column<T extends Comparable<T>> {
+public interface Column<T extends Comparable<T>> extends Serializable {
 
   /**
    * Returns the element at the specified row in this column.

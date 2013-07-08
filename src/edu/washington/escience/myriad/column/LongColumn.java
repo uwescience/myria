@@ -21,6 +21,10 @@ import edu.washington.escience.myriad.proto.DataProto.LongColumnMessage;
  * 
  */
 public final class LongColumn implements Column<Long> {
+  /**
+   * 
+   */
+  private static final long serialVersionUID = 1L;
   /** Internal representation of the column data. */
   private final long[] data;
   /** The number of existing rows in this column. */

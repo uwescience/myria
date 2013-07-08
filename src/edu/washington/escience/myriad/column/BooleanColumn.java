@@ -22,6 +22,10 @@ import edu.washington.escience.myriad.util.ImmutableBitSet;
  * 
  */
 public final class BooleanColumn implements Column<Boolean> {
+  /**
+   * 
+   */
+  private static final long serialVersionUID = 1L;
   /** Internal representation of the column data. */
   private final BitSet data;
   /** Number of valid elements. */

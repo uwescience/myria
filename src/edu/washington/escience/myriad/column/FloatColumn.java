@@ -22,6 +22,10 @@ import edu.washington.escience.myriad.proto.DataProto.FloatColumnMessage;
  * 
  */
 public final class FloatColumn implements Column<Float> {
+  /**
+   * 
+   */
+  private static final long serialVersionUID = 1L;
   /** Internal representation of the column data. */
   private final float[] data;
   /** The number of existing rows in this column. */

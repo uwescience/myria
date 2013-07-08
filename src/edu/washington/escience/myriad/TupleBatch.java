@@ -1,5 +1,6 @@
 package edu.washington.escience.myriad;
 
+import java.io.Serializable;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Arrays;
@@ -37,14 +38,18 @@ import edu.washington.escience.myriad.util.ImmutableBitSet;
  * @author dhalperi
  * 
  */
-public class TupleBatch {
+public class TupleBatch implements Serializable {
+  /**
+   * 
+   */
+  private static final long serialVersionUID = 1L;
+
   /** The hard-coded number of tuples in a batch. */
   public static final int BATCH_SIZE = 10 * 1000;
   /** Class-specific magic number used to generate the hash code. */
   private static final int MAGIC_HASHCODE = 243;
   /** The hash function for this class. */
   private static final HashFunction HASH_FUNCTION = Hashing.murmur3_32(MAGIC_HASHCODE);
-
   /** Schema of tuples in this batch. */
   private final Schema schema;
   /** Tuple data stored as columns in this batch. */
