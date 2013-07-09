@@ -1,7 +1,5 @@
 package edu.washington.escience.myriad.parallel;
 
-import org.jboss.netty.channel.Channel;
-
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.operator.Operator;
@@ -39,9 +37,9 @@ public class BroadcastProducer extends Producer {
     while ((dm = getBuffers()[0].popAnyAsTMUsingTimeout()) != null) {
 
       /* broadcast message to multiple workers */
-      for (Channel channel : getChannels()) {
+      for (int i = 0; i < numChannels(); i++) {
         try {
-          writeMessage(channel, dm);
+          writeMessage(i, dm);
         } catch (InterruptedException e) {
           throw new DbException(e);
         }
@@ -57,9 +55,9 @@ public class BroadcastProducer extends Producer {
 
     /* BroadcastProducer only uses getBuffers()[0] */
     while ((dm = getBuffers()[0].popAnyAsTM()) != null) {
-      for (Channel channel : getChannels()) {
+      for (int i = 0; i < numChannels(); i++) {
         try {
-          writeMessage(channel, dm);
+          writeMessage(i, dm);
         } catch (InterruptedException e) {
           throw new DbException(e);
         }
@@ -78,18 +76,18 @@ public class BroadcastProducer extends Producer {
 
     /* BroadcastProducer only uses getBuffers()[0] */
     while ((dm = getBuffers()[0].popAnyAsTM()) != null) {
-      for (Channel channel : getChannels()) {
+      for (int i = 0; i < numChannels(); i++) {
         try {
-          writeMessage(channel, dm);
+          writeMessage(i, dm);
         } catch (InterruptedException e) {
           throw new DbException(e);
         }
       }
     }
 
-    for (Channel channel : getChannels()) {
+    for (int i = 0; i < numChannels(); i++) {
       try {
-        writeMessage(channel, IPCUtils.EOI);
+        writeMessage(i, IPCUtils.EOI);
       } catch (InterruptedException e) {
         throw new DbException(e);
       }

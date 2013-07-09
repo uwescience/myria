@@ -158,17 +158,18 @@ public abstract class Producer extends RootOperator {
   }
 
   /**
-   * @param ch the channel to write
+   * @param chIdx the channel to write
    * @param msg the message.
    * @throws InterruptedException if interrupted
    * @return write future
    * */
-  protected final ChannelFuture writeMessage(final Channel ch, final Object msg) throws InterruptedException {
+  protected final ChannelFuture writeMessage(final int chIdx, final Object msg) throws InterruptedException {
+    Channel ch = ioChannels[chIdx];
     if (nonBlockingExecution) {
       return ch.write(msg);
     } else {
       int sleepTime = 1;
-      int maxSleepTime = 100;
+      int maxSleepTime = MyriaConstants.SHORT_WAITING_INTERVAL_MS;
       while (true) {
         if (ch.isWritable()) {
           return ch.write(msg);
@@ -190,13 +191,16 @@ public abstract class Producer extends RootOperator {
    * */
   protected final ChannelFuture channelEnds(final int chIdx) {
     ChannelFuture cf = connectionPool.releaseLongTermConnection(ioChannels[chIdx]);
+    ioChannels[chIdx] = null;
     return cf;
   }
 
   @Override
   public final void cleanup() throws DbException {
     for (int i = 0; i < destinationWorkerIDs.length; i++) {
-      connectionPool.releaseLongTermConnection(ioChannels[i]);
+      if (ioChannels[i] != null) {
+        connectionPool.releaseLongTermConnection(ioChannels[i]);
+      }
       buffers[i] = null;
     }
     buffers = null;
@@ -257,13 +261,6 @@ public abstract class Producer extends RootOperator {
   private static int[] arrayFillAndReturn(final int[] arr, final int e) {
     Arrays.fill(arr, e);
     return arr;
-  }
-
-  /**
-   * @return the IO channels.
-   * */
-  protected final Channel[] getChannels() {
-    return ioChannels;
   }
 
   /**

@@ -33,7 +33,7 @@ public final class CollectProducer extends Producer {
 
     while ((dm = getBuffers()[0].popAnyAsTMUsingTimeout()) != null) {
       try {
-        writeMessage(getChannels()[0], dm);
+        writeMessage(0, dm);
       } catch (InterruptedException e) {
         throw new DbException(e);
       }
@@ -46,7 +46,7 @@ public final class CollectProducer extends Producer {
     TransportMessage dm = null;
     while ((dm = getBuffers()[0].popAnyAsTM()) != null) {
       try {
-        writeMessage(getChannels()[0], dm);
+        writeMessage(0, dm);
       } catch (InterruptedException e) {
         throw new DbException(e);
       }
@@ -59,13 +59,13 @@ public final class CollectProducer extends Producer {
     TransportMessage dm = null;
     while ((dm = getBuffers()[0].popAnyAsTM()) != null) {
       try {
-        writeMessage(getChannels()[0], dm);
+        writeMessage(0, dm);
       } catch (InterruptedException e) {
         throw new DbException(e);
       }
     }
     try {
-      writeMessage(getChannels()[0], IPCUtils.EOI);
+      writeMessage(0, IPCUtils.EOI);
     } catch (InterruptedException e) {
       throw new DbException(e);
     }

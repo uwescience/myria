@@ -1,7 +1,5 @@
 package edu.washington.escience.myriad.parallel;
 
-import org.jboss.netty.channel.Channel;
-
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
@@ -31,13 +29,12 @@ public final class LocalMultiwayProducer extends Producer {
   @Override
   protected void consumeTuples(final TupleBatch tup) throws DbException {
     TupleBatchBuffer[] buffers = getBuffers();
-    Channel[] ioChannels = getChannels();
     TransportMessage dm = null;
     tup.compactInto(buffers[0]);
     while ((dm = buffers[0].popAnyAsTMUsingTimeout()) != null) {
-      for (Channel ch : ioChannels) {
+      for (int i = 0; i < numChannels(); i++) {
         try {
-          writeMessage(ch, dm);
+          writeMessage(i, dm);
         } catch (InterruptedException e) {
           throw new DbException(e);
         }
@@ -49,11 +46,10 @@ public final class LocalMultiwayProducer extends Producer {
   protected void childEOS() throws DbException {
     TransportMessage dm = null;
     TupleBatchBuffer[] buffers = getBuffers();
-    Channel[] ioChannels = getChannels();
     while ((dm = buffers[0].popAnyAsTM()) != null) {
-      for (Channel ch : ioChannels) {
+      for (int i = 0; i < numChannels(); i++) {
         try {
-          writeMessage(ch, dm);
+          writeMessage(i, dm);
         } catch (InterruptedException e) {
           throw new DbException(e);
         }
@@ -69,19 +65,18 @@ public final class LocalMultiwayProducer extends Producer {
   protected void childEOI() throws DbException {
     TransportMessage dm = null;
     TupleBatchBuffer[] buffers = getBuffers();
-    Channel[] ioChannels = getChannels();
     while ((dm = buffers[0].popAnyAsTM()) != null) {
-      for (Channel ch : ioChannels) {
+      for (int i = 0; i < numChannels(); i++) {
         try {
-          writeMessage(ch, dm);
+          writeMessage(i, dm);
         } catch (InterruptedException e) {
           throw new DbException(e);
         }
       }
     }
-    for (Channel channel : ioChannels) {
+    for (int i = 0; i < numChannels(); i++) {
       try {
-        writeMessage(channel, IPCUtils.EOI);
+        writeMessage(i, IPCUtils.EOI);
       } catch (InterruptedException e) {
         throw new DbException(e);
       }
