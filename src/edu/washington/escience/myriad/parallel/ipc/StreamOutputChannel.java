@@ -9,8 +9,9 @@ import edu.washington.escience.myriad.parallel.QuerySubTreeTask;
  * 
  * An {@link StreamOutputChannel} represents a partition of {@link Producer}.
  * 
+ * @param <PAYLOAD> the type of payload that this output channel will send.
  * */
-public class StreamOutputChannel extends StreamIOChannel {
+public class StreamOutputChannel<PAYLOAD> extends StreamIOChannel {
 
   /** The logger for this class. */
   static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(StreamOutputChannel.class.getName());

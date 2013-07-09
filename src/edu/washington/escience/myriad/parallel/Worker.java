@@ -34,10 +34,10 @@ import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.MyriaSystemConfigKeys;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.coordinator.catalog.WorkerCatalog;
-import edu.washington.escience.myriad.parallel.ipc.StreamInputChannel;
-import edu.washington.escience.myriad.parallel.ipc.StreamIOChannelID;
 import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myriad.parallel.ipc.InJVMLoopbackChannelSink;
+import edu.washington.escience.myriad.parallel.ipc.StreamIOChannelID;
+import edu.washington.escience.myriad.parallel.ipc.StreamInputChannel;
 import edu.washington.escience.myriad.parallel.ipc.StreamOutputChannel;
 import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
@@ -332,12 +332,12 @@ public final class Worker {
   /**
    * Producer channel mapping of current active queries.
    * */
-  private final ConcurrentHashMap<StreamIOChannelID, StreamOutputChannel> producerChannelMapping;
+  private final ConcurrentHashMap<StreamIOChannelID, StreamOutputChannel<TransportMessage>> producerChannelMapping;
 
   /**
    * Consumer channel mapping of current active queries.
    * */
-  private final ConcurrentHashMap<StreamIOChannelID, StreamInputChannel> consumerChannelMapping;
+  private final ConcurrentHashMap<StreamIOChannelID, StreamInputChannel<TransportMessage>> consumerChannelMapping;
 
   /**
    * {@link ExecutorService} for Netty pipelines.
@@ -518,8 +518,8 @@ public final class Worker {
         new IPCConnectionPool(myID, computingUnits, IPCConfigurations.createWorkerIPCServerBootstrap(this),
             IPCConfigurations.createWorkerIPCClientBootstrap(this));
     activeQueries = new ConcurrentHashMap<Long, WorkerQueryPartition>();
-    producerChannelMapping = new ConcurrentHashMap<StreamIOChannelID, StreamOutputChannel>();
-    consumerChannelMapping = new ConcurrentHashMap<StreamIOChannelID, StreamInputChannel>();
+    producerChannelMapping = new ConcurrentHashMap<StreamIOChannelID, StreamOutputChannel<TransportMessage>>();
+    consumerChannelMapping = new ConcurrentHashMap<StreamIOChannelID, StreamInputChannel<TransportMessage>>();
     flowController = new FlowControlHandler(consumerChannelMapping, producerChannelMapping);
 
     inputBufferCapacity =

@@ -1,7 +1,5 @@
 package edu.washington.escience.myriad.parallel.ipc;
 
-import org.jboss.netty.channel.Channel;
-
 import edu.washington.escience.myriad.parallel.Consumer;
 import edu.washington.escience.myriad.parallel.QuerySubTreeTask;
 
@@ -9,11 +7,12 @@ import edu.washington.escience.myriad.parallel.QuerySubTreeTask;
  * 
  * An {@link StreamInputChannel} represents a partition of a {@link Consumer} input .
  * 
+ * @param <PAYLOAD> the type of payload that this input channel will receive.
  * */
-public class StreamInputChannel extends StreamIOChannel {
+public class StreamInputChannel<PAYLOAD> extends StreamIOChannel {
 
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(StreamInputChannel.class.getName());
+  static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(StreamInputChannel.class.getName());
 
   /**
    * @param ownerTask the task who owns the output channel.
@@ -41,11 +40,6 @@ public class StreamInputChannel extends StreamIOChannel {
   private final Consumer op;
 
   /**
-   * Physical channel for IO.
-   * */
-  private volatile Channel ioChannel;
-
-  /**
    * owner task.
    * */
   private final QuerySubTreeTask ownerTask;
@@ -66,6 +60,6 @@ public class StreamInputChannel extends StreamIOChannel {
 
   @Override
   public final String toString() {
-    return "ConsumerChannel{ ID: " + getID() + ",Op: " + op + ",IOChannel: " + ioChannel + " }";
+    return "ConsumerChannel{ ID: " + getID() + ",Op: " + op + ",IOChannel: " + getIOChannel() + " }";
   }
 }

@@ -18,6 +18,7 @@ import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.parallel.ipc.StreamIOChannelID;
 import edu.washington.escience.myriad.parallel.ipc.StreamInputChannel;
+import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.util.AtomicUtils;
 import edu.washington.escience.myriad.util.ReentrantSpinLock;
 
@@ -226,13 +227,14 @@ public final class QuerySubTreeTask {
       Consumer c = (Consumer) currentOperator;
       int[] sourceWorkers = c.getSourceWorkers(ipcEntityID);
       ExchangePairID oID = c.getOperatorID();
-      StreamInputChannel[] ccs = new StreamInputChannel[sourceWorkers.length];
+      @SuppressWarnings("unchecked")
+      StreamInputChannel<TransportMessage>[] ccs = new StreamInputChannel[sourceWorkers.length];
       int i = 0;
       for (int sourceWorker : sourceWorkers) {
         inputExchangeChannels.put(new StreamIOChannelID(oID.getLong(), sourceWorker), c);
-        ccs[i++] = new StreamInputChannel(this, c, sourceWorker);
+        ccs[i++] = new StreamInputChannel<TransportMessage>(this, c, sourceWorker);
       }
-      c.setExchangeChannels(ccs);
+      c.setInputChannels(ccs);
     }
 
     final Operator[] children = currentOperator.getChildren();

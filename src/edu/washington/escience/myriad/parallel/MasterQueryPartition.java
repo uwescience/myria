@@ -22,11 +22,12 @@ import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SinkRoot;
-import edu.washington.escience.myriad.parallel.ipc.StreamInputChannel;
-import edu.washington.escience.myriad.parallel.ipc.StreamIOChannelID;
 import edu.washington.escience.myriad.parallel.ipc.IPCEvent;
 import edu.washington.escience.myriad.parallel.ipc.IPCEventListener;
+import edu.washington.escience.myriad.parallel.ipc.StreamIOChannelID;
+import edu.washington.escience.myriad.parallel.ipc.StreamInputChannel;
 import edu.washington.escience.myriad.parallel.ipc.StreamOutputChannel;
+import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.util.DateTimeUtils;
 import edu.washington.escience.myriad.util.IPCUtils;
 
@@ -229,24 +230,24 @@ public class MasterQueryPartition implements QueryPartition {
   /**
    * Producer channel mapping of current active queries.
    * */
-  private final ConcurrentHashMap<StreamIOChannelID, StreamOutputChannel> producerChannelMapping;
+  private final ConcurrentHashMap<StreamIOChannelID, StreamOutputChannel<TransportMessage>> producerChannelMapping;
 
   /**
    * @return all producer channel mapping in this query partition.
    * */
-  final Map<StreamIOChannelID, StreamOutputChannel> getProducerChannelMapping() {
+  final Map<StreamIOChannelID, StreamOutputChannel<TransportMessage>> getProducerChannelMapping() {
     return producerChannelMapping;
   }
 
   /**
    * Consumer channel mapping of current active queries.
    * */
-  private final ConcurrentHashMap<StreamIOChannelID, StreamInputChannel> consumerChannelMapping;
+  private final ConcurrentHashMap<StreamIOChannelID, StreamInputChannel<TransportMessage>> consumerChannelMapping;
 
   /**
    * @return all consumer channel mapping in this query partition.
    * */
-  final Map<StreamIOChannelID, StreamInputChannel> getConsumerChannelMapping() {
+  final Map<StreamIOChannelID, StreamInputChannel<TransportMessage>> getConsumerChannelMapping() {
     return consumerChannelMapping;
   }
 
@@ -404,22 +405,22 @@ public class MasterQueryPartition implements QueryPartition {
     WorkerExecutionInfo masterPart = new WorkerExecutionInfo(MyriaConstants.MASTER_ID, new RootOperator[] { rootOp });
     workerExecutionInfo.put(MyriaConstants.MASTER_ID, masterPart);
 
-    producerChannelMapping = new ConcurrentHashMap<StreamIOChannelID, StreamOutputChannel>();
-    consumerChannelMapping = new ConcurrentHashMap<StreamIOChannelID, StreamInputChannel>();
+    producerChannelMapping = new ConcurrentHashMap<StreamIOChannelID, StreamOutputChannel<TransportMessage>>();
+    consumerChannelMapping = new ConcurrentHashMap<StreamIOChannelID, StreamInputChannel<TransportMessage>>();
     rootTask = new QuerySubTreeTask(MyriaConstants.MASTER_ID, this, root, master.getQueryExecutor());
     rootTask.getExecutionFuture().addListener(taskExecutionListener);
     for (Consumer c : rootTask.getInputChannels().values()) {
-      for (StreamInputChannel cc : c.getExchangeChannels()) {
+      for (StreamInputChannel<TransportMessage> cc : c.getExchangeChannels()) {
         consumerChannelMapping.putIfAbsent(cc.getID(), cc);
       }
     }
 
     for (StreamIOChannelID producerID : rootTask.getOutputChannels()) {
-      producerChannelMapping.put(producerID, new StreamOutputChannel(rootTask, producerID));
+      producerChannelMapping.put(producerID, new StreamOutputChannel<TransportMessage>(rootTask, producerID));
     }
 
     final FlowControlHandler fch = master.getFlowControlHandler();
-    for (StreamInputChannel cChannel : consumerChannelMapping.values()) {
+    for (StreamInputChannel<TransportMessage> cChannel : consumerChannelMapping.values()) {
       final Consumer operator = cChannel.getOwnerConsumer();
 
       FlowControlInputBuffer<ExchangeData> inputBuffer =

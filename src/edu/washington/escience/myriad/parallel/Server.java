@@ -47,10 +47,10 @@ import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SQLiteInsert;
 import edu.washington.escience.myriad.parallel.ExchangeData.MetaMessage;
 import edu.washington.escience.myriad.parallel.MasterDataHandler.MessageWrapper;
-import edu.washington.escience.myriad.parallel.ipc.StreamInputChannel;
-import edu.washington.escience.myriad.parallel.ipc.StreamIOChannelID;
 import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myriad.parallel.ipc.InJVMLoopbackChannelSink;
+import edu.washington.escience.myriad.parallel.ipc.StreamIOChannelID;
+import edu.washington.escience.myriad.parallel.ipc.StreamInputChannel;
 import edu.washington.escience.myriad.parallel.ipc.StreamOutputChannel;
 import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
@@ -96,7 +96,8 @@ public final class Server {
             final DataMessage data = m.getDataMessage();
             final long exchangePairIDLong = data.getOperatorID();
             final ExchangePairID exchangePairID = ExchangePairID.fromExisting(exchangePairIDLong);
-            StreamInputChannel cc = consumerChannelMap.get(new StreamIOChannelID(exchangePairIDLong, senderID));
+            StreamInputChannel<TransportMessage> cc =
+                consumerChannelMap.get(new StreamIOChannelID(exchangePairIDLong, senderID));
             final Schema operatorSchema = cc.getOwnerConsumer().getSchema();
             switch (data.getType()) {
               case EOS:
@@ -274,12 +275,12 @@ public final class Server {
   /**
    * Producer channel mapping of current active queries.
    * */
-  private final ConcurrentHashMap<StreamIOChannelID, StreamOutputChannel> producerChannelMap;
+  private final ConcurrentHashMap<StreamIOChannelID, StreamOutputChannel<TransportMessage>> producerChannelMap;
 
   /**
    * Consumer channel mapping of current active queries.
    * */
-  private final ConcurrentHashMap<StreamIOChannelID, StreamInputChannel> consumerChannelMap;
+  private final ConcurrentHashMap<StreamIOChannelID, StreamInputChannel<TransportMessage>> consumerChannelMap;
 
   /**
    * max number of seconds for elegant cleanup.
@@ -452,8 +453,8 @@ public final class Server {
     computingUnits.put(MyriaConstants.MASTER_ID, masterSocketInfo);
 
     masterDataHandler = new MasterDataHandler(messageQueue);
-    producerChannelMap = new ConcurrentHashMap<StreamIOChannelID, StreamOutputChannel>();
-    consumerChannelMap = new ConcurrentHashMap<StreamIOChannelID, StreamInputChannel>();
+    producerChannelMap = new ConcurrentHashMap<StreamIOChannelID, StreamOutputChannel<TransportMessage>>();
+    consumerChannelMap = new ConcurrentHashMap<StreamIOChannelID, StreamInputChannel<TransportMessage>>();
     flowController = new FlowControlHandler(consumerChannelMap, producerChannelMap);
 
     connectionPool =

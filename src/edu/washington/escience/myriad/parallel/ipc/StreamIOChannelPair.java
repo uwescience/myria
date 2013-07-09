@@ -10,8 +10,8 @@ import edu.washington.escience.myriad.parallel.Producer;
 import edu.washington.escience.myriad.util.IPCUtils;
 
 /**
- * The data structure recording the logical role of {@link StreamInputChannel} and {@link StreamOutputChannel} that an IO
- * channel plays.
+ * The data structure recording the logical role of {@link StreamInputChannel} and {@link StreamOutputChannel} that an
+ * IO channel plays.
  * <p>
  * An IO channel can be an input of a {@link Consumer} operator (inputChannel) and in the same time an output of a
  * {@link Producer} operator (outputChannel).
@@ -34,28 +34,32 @@ public class StreamIOChannelPair {
   /**
    * The logical input channel.
    * */
-  private StreamInputChannel inputChannel;
+  private StreamInputChannel<?> inputChannel;
 
   /**
    * The logical output channel.
    * */
-  private StreamOutputChannel outputChannel;
+  private StreamOutputChannel<?> outputChannel;
 
   /**
    * @return the input channel in the pair.
+   * @param <PAYLOAD> the payload type.
    * */
-  public final StreamInputChannel getInputChannel() {
+  @SuppressWarnings("unchecked")
+  public final <PAYLOAD> StreamInputChannel<PAYLOAD> getInputChannel() {
     synchronized (inputFlowControlLock) {
-      return inputChannel;
+      return (StreamInputChannel<PAYLOAD>) inputChannel;
     }
   }
 
   /**
    * @return the output channel in the pair.
+   * @param <PAYLOAD> the payload type.
    * */
-  public final StreamOutputChannel getOutputChannel() {
+  @SuppressWarnings("unchecked")
+  public final <PAYLOAD> StreamOutputChannel<PAYLOAD> getOutputChannel() {
     synchronized (outputFlowControlLock) {
-      return outputChannel;
+      return (StreamOutputChannel<PAYLOAD>) outputChannel;
     }
   }
 
@@ -65,7 +69,7 @@ public class StreamIOChannelPair {
    * @param inputChannel the logical channel.
    * @param ioChannel the physical channel.
    * */
-  public final void mapInputChannel(final StreamInputChannel inputChannel, final Channel ioChannel) {
+  public final void mapInputChannel(final StreamInputChannel<?> inputChannel, final Channel ioChannel) {
     Preconditions.checkNotNull(inputChannel);
     synchronized (inputFlowControlLock) {
       if (this.inputChannel != null) {
@@ -102,7 +106,7 @@ public class StreamIOChannelPair {
    * @param outputChannel the logical channel.
    * @param ioChannel the physical channel.
    * */
-  public final void mapOutputChannel(final StreamOutputChannel outputChannel, final Channel ioChannel) {
+  public final void mapOutputChannel(final StreamOutputChannel<?> outputChannel, final Channel ioChannel) {
     Preconditions.checkNotNull(outputChannel);
     synchronized (outputFlowControlLock) {
       if (this.outputChannel != null) {

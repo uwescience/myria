@@ -17,9 +17,9 @@ import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroupFuture;
 
 import edu.washington.escience.myriad.parallel.ipc.ChannelContext;
-import edu.washington.escience.myriad.parallel.ipc.StreamInputChannel;
 import edu.washington.escience.myriad.parallel.ipc.StreamIOChannelID;
 import edu.washington.escience.myriad.parallel.ipc.StreamIOChannelPair;
+import edu.washington.escience.myriad.parallel.ipc.StreamInputChannel;
 import edu.washington.escience.myriad.parallel.ipc.StreamOutputChannel;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
@@ -37,19 +37,20 @@ public final class FlowControlHandler extends SimpleChannelHandler {
    * Producer channel mapping. The mapping is created at {@link Worker} or at {@link Server}. Here the mapping is only
    * used for look up.
    * */
-  private final ConcurrentHashMap<StreamIOChannelID, StreamOutputChannel> producerChannelMap;
+  private final ConcurrentHashMap<StreamIOChannelID, StreamOutputChannel<TransportMessage>> producerChannelMap;
   /**
    * Consumer channel mapping. The mapping is created at {@link Worker} or at {@link Server}. Here the mapping is only
    * used for look up.
    * */
-  private final ConcurrentHashMap<StreamIOChannelID, StreamInputChannel> consumerChannelMap;
+  private final ConcurrentHashMap<StreamIOChannelID, StreamInputChannel<TransportMessage>> consumerChannelMap;
 
   /**
    * @param producerChannelMap {@link FlowControlHandler#producerChannelMap}
    * @param consumerChannelMap {@link FlowControlHandler#consumerChannelMap}
    * */
-  public FlowControlHandler(final ConcurrentHashMap<StreamIOChannelID, StreamInputChannel> consumerChannelMap,
-      final ConcurrentHashMap<StreamIOChannelID, StreamOutputChannel> producerChannelMap) {
+  public FlowControlHandler(
+      final ConcurrentHashMap<StreamIOChannelID, StreamInputChannel<TransportMessage>> consumerChannelMap,
+      final ConcurrentHashMap<StreamIOChannelID, StreamOutputChannel<TransportMessage>> producerChannelMap) {
     this.consumerChannelMap = consumerChannelMap;
     this.producerChannelMap = producerChannelMap;
   }
@@ -85,12 +86,12 @@ public final class FlowControlHandler extends SimpleChannelHandler {
               }
             }
             StreamIOChannelID ecID = new StreamIOChannelID(operatorID, senderID);
-            StreamInputChannel ccc = consumerChannelMap.get(ecID);
+            StreamInputChannel<TransportMessage> ccc = consumerChannelMap.get(ecID);
             ecp.mapInputChannel(ccc, channel);
             break;
           case EOS:
             isEOS = true;
-            StreamInputChannel cChannel = ecp.getInputChannel();
+            StreamInputChannel<TransportMessage> cChannel = ecp.getInputChannel();
             LOGGER.debug("EOS received for: " + cChannel.getID());
             break;
         }
@@ -116,10 +117,10 @@ public final class FlowControlHandler extends SimpleChannelHandler {
    * */
   public ChannelGroupFuture resumeRead(final Consumer consumerOp) {
 
-    StreamInputChannel[] ec = consumerOp.getExchangeChannels();
+    StreamInputChannel<TransportMessage>[] ec = consumerOp.getExchangeChannels();
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("Resume read for operator {}, IO Channels are {", consumerOp.getOperatorID());
-      for (StreamInputChannel e : ec) {
+      for (StreamInputChannel<TransportMessage> e : ec) {
         Channel ch = e.getIOChannel();
         LOGGER.debug("{}", ch);
       }
@@ -128,7 +129,7 @@ public final class FlowControlHandler extends SimpleChannelHandler {
 
     LinkedList<ChannelFuture> allResumeFutures = new LinkedList<ChannelFuture>();
     ChannelGroup cg = new DefaultChannelGroup();
-    for (StreamInputChannel e : ec) {
+    for (StreamInputChannel<TransportMessage> e : ec) {
 
       Channel ch = e.getIOChannel();
       if (ch != null) {
@@ -166,10 +167,10 @@ public final class FlowControlHandler extends SimpleChannelHandler {
    * @return ChannelGroupFuture denotes the future of the pause read action.
    * */
   public ChannelGroupFuture pauseRead(final Consumer consumerOp) {
-    StreamInputChannel[] consumerChannels = consumerOp.getExchangeChannels();
+    StreamInputChannel<TransportMessage>[] consumerChannels = consumerOp.getExchangeChannels();
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("Pause read for operator {}, IO Channels are {", consumerOp.getOperatorID());
-      for (StreamInputChannel ec : consumerChannels) {
+      for (StreamInputChannel<TransportMessage> ec : consumerChannels) {
         // here ch may be null, it means an EOS message is already received, the IO Channel is already detached from
         // this ConsumerChannel. No flow control is needed. Just ignore it.
         Channel ch = ec.getIOChannel();
@@ -180,7 +181,7 @@ public final class FlowControlHandler extends SimpleChannelHandler {
 
     LinkedList<ChannelFuture> allPauseFutures = new LinkedList<ChannelFuture>();
     ChannelGroup cg = new DefaultChannelGroup();
-    for (StreamInputChannel ec : consumerChannels) {
+    for (StreamInputChannel<TransportMessage> ec : consumerChannels) {
       Channel ch = ec.getIOChannel();
       if (ch != null) {
 
@@ -243,7 +244,7 @@ public final class FlowControlHandler extends SimpleChannelHandler {
               ecp = (StreamIOChannelPair) cc.getAttachment();
             }
           }
-          StreamOutputChannel pc = producerChannelMap.get(ecID);
+          StreamOutputChannel<TransportMessage> pc = producerChannelMap.get(ecID);
           ecp.mapOutputChannel(pc, ioChannel);
           break;
         case EOS:
@@ -286,7 +287,7 @@ public final class FlowControlHandler extends SimpleChannelHandler {
       ChannelContext cc = ((ChannelContext) (ioChannel.getAttachment()));
       StreamIOChannelPair p = (StreamIOChannelPair) (cc.getAttachment());
       if (p != null) {
-        StreamOutputChannel producerChannel = p.getOutputChannel();
+        StreamOutputChannel<TransportMessage> producerChannel = p.getOutputChannel();
         if (producerChannel != null) {
           int remoteID = cc.getRegisteredChannelContext().getRemoteID();
           if (LOGGER.isDebugEnabled()) {
