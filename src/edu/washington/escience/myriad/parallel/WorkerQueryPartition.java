@@ -14,8 +14,11 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.operator.RootOperator;
+import edu.washington.escience.myriad.parallel.ipc.StreamInputChannel;
+import edu.washington.escience.myriad.parallel.ipc.StreamIOChannelID;
 import edu.washington.escience.myriad.parallel.ipc.IPCEvent;
 import edu.washington.escience.myriad.parallel.ipc.IPCEventListener;
+import edu.washington.escience.myriad.parallel.ipc.StreamOutputChannel;
 import edu.washington.escience.myriad.util.DateTimeUtils;
 
 /**
@@ -120,24 +123,24 @@ public class WorkerQueryPartition implements QueryPartition {
   /**
    * Producer channel mapping of current active queries.
    * */
-  private final ConcurrentHashMap<ExchangeChannelID, ProducerChannel> producerChannelMapping;
+  private final ConcurrentHashMap<StreamIOChannelID, StreamOutputChannel> producerChannelMapping;
 
   /**
    * @return all producer channel mapping in this query partition.
    * */
-  final Map<ExchangeChannelID, ProducerChannel> getProducerChannelMapping() {
+  final Map<StreamIOChannelID, StreamOutputChannel> getProducerChannelMapping() {
     return producerChannelMapping;
   }
 
   /**
    * Consumer channel mapping of current active queries.
    * */
-  private final ConcurrentHashMap<ExchangeChannelID, ConsumerChannel> consumerChannelMapping;
+  private final ConcurrentHashMap<StreamIOChannelID, StreamInputChannel> consumerChannelMapping;
 
   /**
    * @return all consumer channel mapping in this query partition.
    * */
-  final Map<ExchangeChannelID, ConsumerChannel> getConsumerChannelMapping() {
+  final Map<StreamIOChannelID, StreamInputChannel> getConsumerChannelMapping() {
     return consumerChannelMapping;
   }
 
@@ -151,8 +154,8 @@ public class WorkerQueryPartition implements QueryPartition {
     tasks = new HashSet<QuerySubTreeTask>(operators.length);
     numFinishedTasks = new AtomicInteger(0);
     this.ownerWorker = ownerWorker;
-    producerChannelMapping = new ConcurrentHashMap<ExchangeChannelID, ProducerChannel>();
-    consumerChannelMapping = new ConcurrentHashMap<ExchangeChannelID, ConsumerChannel>();
+    producerChannelMapping = new ConcurrentHashMap<StreamIOChannelID, StreamOutputChannel>();
+    consumerChannelMapping = new ConcurrentHashMap<StreamIOChannelID, StreamInputChannel>();
     for (final RootOperator taskRootOp : operators) {
       final QuerySubTreeTask drivingTask =
           new QuerySubTreeTask(ownerWorker.getIPCConnectionPool().getMyIPCID(), this, taskRootOp, ownerWorker
@@ -163,19 +166,19 @@ public class WorkerQueryPartition implements QueryPartition {
       tasks.add(drivingTask);
 
       for (Consumer c : drivingTask.getInputChannels().values()) {
-        for (ConsumerChannel cc : c.getExchangeChannels()) {
-          consumerChannelMapping.putIfAbsent(cc.getExchangeChannelID(), cc);
+        for (StreamInputChannel cc : c.getExchangeChannels()) {
+          consumerChannelMapping.putIfAbsent(cc.getID(), cc);
         }
       }
 
-      for (ExchangeChannelID producerID : drivingTask.getOutputChannels()) {
-        producerChannelMapping.put(producerID, new ProducerChannel(drivingTask, producerID));
+      for (StreamIOChannelID producerID : drivingTask.getOutputChannels()) {
+        producerChannelMapping.put(producerID, new StreamOutputChannel(drivingTask, producerID));
       }
 
     }
 
     final FlowControlHandler fch = ownerWorker.getFlowControlHandler();
-    for (ConsumerChannel cChannel : consumerChannelMapping.values()) {
+    for (StreamInputChannel cChannel : consumerChannelMapping.values()) {
       // setup input buffers.
       final Consumer operator = cChannel.getOwnerConsumer();
 

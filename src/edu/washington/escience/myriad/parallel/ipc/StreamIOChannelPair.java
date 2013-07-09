@@ -1,23 +1,25 @@
-package edu.washington.escience.myriad.parallel;
+package edu.washington.escience.myriad.parallel.ipc;
 
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
 
 import com.google.common.base.Preconditions;
 
+import edu.washington.escience.myriad.parallel.Consumer;
+import edu.washington.escience.myriad.parallel.Producer;
 import edu.washington.escience.myriad.util.IPCUtils;
 
 /**
- * The data structure recording the logical role of {@link ConsumerChannel} and {@link ProducerChannel} that an IO
+ * The data structure recording the logical role of {@link StreamInputChannel} and {@link StreamOutputChannel} that an IO
  * channel plays.
  * <p>
  * An IO channel can be an input of a {@link Consumer} operator (inputChannel) and in the same time an output of a
  * {@link Producer} operator (outputChannel).
  * */
-public class ExchangeChannelPair {
+public class StreamIOChannelPair {
 
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(ExchangeChannelPair.class.getName());
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(StreamIOChannelPair.class.getName());
 
   /**
    * The lock protecting the consistency of input flow control setup.
@@ -32,17 +34,17 @@ public class ExchangeChannelPair {
   /**
    * The logical input channel.
    * */
-  private ConsumerChannel inputChannel;
+  private StreamInputChannel inputChannel;
 
   /**
    * The logical output channel.
    * */
-  private ProducerChannel outputChannel;
+  private StreamOutputChannel outputChannel;
 
   /**
    * @return the input channel in the pair.
    * */
-  public final ConsumerChannel getInputChannel() {
+  public final StreamInputChannel getInputChannel() {
     synchronized (inputFlowControlLock) {
       return inputChannel;
     }
@@ -51,7 +53,7 @@ public class ExchangeChannelPair {
   /**
    * @return the output channel in the pair.
    * */
-  public final ProducerChannel getOutputChannel() {
+  public final StreamOutputChannel getOutputChannel() {
     synchronized (outputFlowControlLock) {
       return outputChannel;
     }
@@ -63,7 +65,7 @@ public class ExchangeChannelPair {
    * @param inputChannel the logical channel.
    * @param ioChannel the physical channel.
    * */
-  public final void mapInputChannel(final ConsumerChannel inputChannel, final Channel ioChannel) {
+  public final void mapInputChannel(final StreamInputChannel inputChannel, final Channel ioChannel) {
     Preconditions.checkNotNull(inputChannel);
     synchronized (inputFlowControlLock) {
       if (this.inputChannel != null) {
@@ -82,7 +84,7 @@ public class ExchangeChannelPair {
     synchronized (inputFlowControlLock) {
       if (inputChannel != null) {
         if (LOGGER.isDebugEnabled()) {
-          LOGGER.debug("deMap " + inputChannel.getExchangeChannelID() + ", ioChannel: " + inputChannel.getIOChannel());
+          LOGGER.debug("deMap " + inputChannel.getID() + ", ioChannel: " + inputChannel.getIOChannel());
         }
         Channel channel = inputChannel.getIOChannel();
         inputChannel.dettachIOChannel();
@@ -100,7 +102,7 @@ public class ExchangeChannelPair {
    * @param outputChannel the logical channel.
    * @param ioChannel the physical channel.
    * */
-  public final void mapOutputChannel(final ProducerChannel outputChannel, final Channel ioChannel) {
+  public final void mapOutputChannel(final StreamOutputChannel outputChannel, final Channel ioChannel) {
     Preconditions.checkNotNull(outputChannel);
     synchronized (outputFlowControlLock) {
       if (this.outputChannel != null) {

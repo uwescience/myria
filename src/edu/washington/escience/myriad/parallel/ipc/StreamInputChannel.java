@@ -1,34 +1,35 @@
-package edu.washington.escience.myriad.parallel;
+package edu.washington.escience.myriad.parallel.ipc;
 
 import org.jboss.netty.channel.Channel;
 
+import edu.washington.escience.myriad.parallel.Consumer;
+import edu.washington.escience.myriad.parallel.QuerySubTreeTask;
+
 /**
  * 
- * An ExchangeChannel represents a partition of a {@link Consumer}/{@link Producer} operator.
- * 
- * It's an input ExchangeChannel if it's a partition of a {@link Consumer}. Otherwise, an output ExchangeChannel.
+ * An {@link StreamInputChannel} represents a partition of a {@link Consumer} input .
  * 
  * */
-public class ConsumerChannel {
+public class StreamInputChannel {
 
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(ConsumerChannel.class.getName());
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(StreamInputChannel.class.getName());
 
   /**
    * @param ownerTask the task who owns the output channel.
    * @param consumer the owner consumer operator.
    * @param remoteID from which worker the input data comes.
    * */
-  public ConsumerChannel(final QuerySubTreeTask ownerTask, final Consumer consumer, final int remoteID) {
-    this(ownerTask, consumer, new ExchangeChannelID(consumer.getOperatorID().getLong(), remoteID));
+  public StreamInputChannel(final QuerySubTreeTask ownerTask, final Consumer consumer, final int remoteID) {
+    this(ownerTask, consumer, new StreamIOChannelID(consumer.getOperatorID().getLong(), remoteID));
   }
 
   /**
    * @param ownerTask the task who owns the output channel.
    * @param consumer the owner consumer operator.
-   * @param ecID exchange channel ID.
+   * @param ecID ID.
    * */
-  public ConsumerChannel(final QuerySubTreeTask ownerTask, final Consumer consumer, final ExchangeChannelID ecID) {
+  public StreamInputChannel(final QuerySubTreeTask ownerTask, final Consumer consumer, final StreamIOChannelID ecID) {
     id = ecID;
     this.ownerTask = ownerTask;
     op = consumer;
@@ -47,7 +48,7 @@ public class ConsumerChannel {
   /**
    * ID.
    * */
-  private final ExchangeChannelID id;
+  private final StreamIOChannelID id;
 
   /**
    * owner task.
@@ -98,9 +99,9 @@ public class ConsumerChannel {
   }
 
   /**
-   * @return my logical exchange channel ID.
+   * @return my ID.
    * */
-  public final ExchangeChannelID getExchangeChannelID() {
+  public final StreamIOChannelID getID() {
     return id;
   }
 

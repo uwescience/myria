@@ -15,7 +15,6 @@ import org.jboss.netty.channel.group.ChannelGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import edu.washington.escience.myriad.parallel.ExchangeChannelPair;
 import edu.washington.escience.myriad.util.IPCUtils;
 
 /**
@@ -255,7 +254,7 @@ public class ChannelContext {
     /**
      * The logical I/O pair of a physical channel.
      * */
-    private final ExchangeChannelPair ioPair;
+    private final StreamIOChannelPair ioPair;
 
     /**
      * @param remoteID the remote IPC entity ID.
@@ -265,13 +264,13 @@ public class ChannelContext {
       this.remoteID = remoteID;
       channelGroup = ownerChannelGroup;
       numberOfReference = new AtomicInteger(0);
-      ioPair = new ExchangeChannelPair();
+      ioPair = new StreamIOChannelPair();
     }
 
     /**
      * @return attachment.
      * */
-    public final ExchangeChannelPair getIOPair() {
+    public final StreamIOChannelPair getIOPair() {
       return ioPair;
     }
 

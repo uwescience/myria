@@ -21,6 +21,8 @@ import edu.washington.escience.myriad.column.ColumnFactory;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.parallel.ExchangeData.MetaMessage;
 import edu.washington.escience.myriad.parallel.ipc.ChannelContext;
+import edu.washington.escience.myriad.parallel.ipc.StreamInputChannel;
+import edu.washington.escience.myriad.parallel.ipc.StreamIOChannelPair;
 import edu.washington.escience.myriad.parallel.ipc.MessageChannelHandler;
 import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
@@ -92,12 +94,12 @@ public final class WorkerDataHandler extends SimpleChannelUpstreamHandler implem
       LOGGER.debug("TupleBatch received from " + remoteID + " to Operator: " + dm.getOperatorID());
     }
     final ChannelContext cs = (ChannelContext) ch.getAttachment();
-    ExchangeChannelPair ecp = (ExchangeChannelPair) cs.getAttachment();
+    StreamIOChannelPair ecp = (StreamIOChannelPair) cs.getAttachment();
     DATAMESSAGE_PROCESSING : switch (dm.getType()) {
       case NORMAL:
       case EOI:
       case EOS:
-        ConsumerChannel cc = ecp.getInputChannel();
+        StreamInputChannel cc = ecp.getInputChannel();
         Consumer msgOwnerOp = cc.getOwnerConsumer();
         ExchangePairID msgOwnerOpID = msgOwnerOp.getOperatorID();
         Schema msgOwnerOpSchema = msgOwnerOp.getSchema();

@@ -14,6 +14,7 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.operator.LeafOperator;
 import edu.washington.escience.myriad.parallel.Worker.QueryExecutionMode;
+import edu.washington.escience.myriad.parallel.ipc.StreamInputChannel;
 import gnu.trove.impl.unmodifiable.TUnmodifiableIntIntMap;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;
@@ -64,7 +65,7 @@ public class Consumer extends LeafOperator {
   /**
    * the consumer channels, for recording the mapping between ExchangeChannelIDs to a Consumer instances.
    * */
-  private transient ConsumerChannel[] exchangeChannels;
+  private transient StreamInputChannel[] exchangeChannels;
 
   /**
    * if current query execution is in non-blocking mode.
@@ -74,14 +75,14 @@ public class Consumer extends LeafOperator {
   /**
    * @return my exchange channels.
    */
-  public final ConsumerChannel[] getExchangeChannels() {
+  public final StreamInputChannel[] getExchangeChannels() {
     return exchangeChannels;
   }
 
   /**
    * @param exchangeChannels my exchange channels.
    */
-  public final void setExchangeChannels(final ConsumerChannel[] exchangeChannels) {
+  public final void setExchangeChannels(final StreamInputChannel[] exchangeChannels) {
     this.exchangeChannels = exchangeChannels;
   }
 

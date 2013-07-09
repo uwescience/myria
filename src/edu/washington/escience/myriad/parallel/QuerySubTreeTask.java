@@ -16,6 +16,8 @@ import com.google.common.collect.ImmutableMap;
 import edu.washington.escience.myriad.operator.IDBInput;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.RootOperator;
+import edu.washington.escience.myriad.parallel.ipc.StreamIOChannelID;
+import edu.washington.escience.myriad.parallel.ipc.StreamInputChannel;
 import edu.washington.escience.myriad.util.AtomicUtils;
 import edu.washington.escience.myriad.util.ReentrantSpinLock;
 
@@ -28,7 +30,7 @@ import edu.washington.escience.myriad.util.ReentrantSpinLock;
  * 3) Already finished.<br>
  * 4) Has not started.
  * */
-final class QuerySubTreeTask {
+public final class QuerySubTreeTask {
   /** The logger for this class. */
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(QuerySubTreeTask.class.getName());
 
@@ -60,12 +62,12 @@ final class QuerySubTreeTask {
   /**
    * The output channels belonging to this task.
    * */
-  private final ExchangeChannelID[] outputChannels;
+  private final StreamIOChannelID[] outputChannels;
 
   /**
    * The output channels belonging to this task.
    * */
-  private final Map<ExchangeChannelID, Consumer> inputChannels;
+  private final Map<StreamIOChannelID, Consumer> inputChannels;
 
   /**
    * The IDBInput operators in this task.
@@ -120,10 +122,10 @@ final class QuerySubTreeTask {
     taskExecutionFuture = new DefaultQueryFuture(this.ownerQuery, true);
     ((DefaultQueryFuture) taskExecutionFuture).setAttachment(this);
     idbInputSet = new HashSet<IDBInput>();
-    HashSet<ExchangeChannelID> outputChannelSet = new HashSet<ExchangeChannelID>();
+    HashSet<StreamIOChannelID> outputChannelSet = new HashSet<StreamIOChannelID>();
     collectDownChannels(root, outputChannelSet);
-    outputChannels = outputChannelSet.toArray(new ExchangeChannelID[] {});
-    HashMap<ExchangeChannelID, Consumer> inputChannelMap = new HashMap<ExchangeChannelID, Consumer>();
+    outputChannels = outputChannelSet.toArray(new StreamIOChannelID[] {});
+    HashMap<StreamIOChannelID, Consumer> inputChannelMap = new HashMap<StreamIOChannelID, Consumer>();
     collectUpChannels(root, inputChannelMap);
     inputChannels = inputChannelMap;
     Arrays.sort(outputChannels);
@@ -151,14 +153,14 @@ final class QuerySubTreeTask {
   /**
    * @return all input channels belonging to this task.
    * */
-  Map<ExchangeChannelID, Consumer> getInputChannels() {
+  Map<StreamIOChannelID, Consumer> getInputChannels() {
     return inputChannels;
   }
 
   /**
    * @return all output channels belonging to this task.
    */
-  ExchangeChannelID[] getOutputChannels() {
+  StreamIOChannelID[] getOutputChannels() {
     return outputChannels;
   }
 
@@ -176,7 +178,7 @@ final class QuerySubTreeTask {
    * @param outputExchangeChannels the current collected output channel IDs.
    * */
   private void collectDownChannels(final Operator currentOperator,
-      final HashSet<ExchangeChannelID> outputExchangeChannels) {
+      final HashSet<StreamIOChannelID> outputExchangeChannels) {
 
     if (currentOperator instanceof Producer) {
       Producer p = (Producer) currentOperator;
@@ -184,13 +186,13 @@ final class QuerySubTreeTask {
       ExchangePairID[] oIDs = p.operatorIDs();
       int[] destWorkers = p.getDestinationWorkerIDs(ipcEntityID);
       for (int i = 0; i < destWorkers.length; i++) {
-        outputExchangeChannels.add(new ExchangeChannelID(oIDs[i].getLong(), destWorkers[i]));
+        outputExchangeChannels.add(new StreamIOChannelID(oIDs[i].getLong(), destWorkers[i]));
       }
     } else if (currentOperator instanceof IDBInput) {
       IDBInput p = (IDBInput) currentOperator;
       ExchangePairID oID = p.getControllerOperatorID();
       int wID = p.getControllerWorkerID();
-      outputExchangeChannels.add(new ExchangeChannelID(oID.getLong(), wID));
+      outputExchangeChannels.add(new StreamIOChannelID(oID.getLong(), wID));
       idbInputSet.add(p);
     }
 
@@ -218,17 +220,17 @@ final class QuerySubTreeTask {
    * @param inputExchangeChannels the current collected input channels.
    * */
   private void collectUpChannels(final Operator currentOperator,
-      final Map<ExchangeChannelID, Consumer> inputExchangeChannels) {
+      final Map<StreamIOChannelID, Consumer> inputExchangeChannels) {
 
     if (currentOperator instanceof Consumer) {
       Consumer c = (Consumer) currentOperator;
       int[] sourceWorkers = c.getSourceWorkers(ipcEntityID);
       ExchangePairID oID = c.getOperatorID();
-      ConsumerChannel[] ccs = new ConsumerChannel[sourceWorkers.length];
+      StreamInputChannel[] ccs = new StreamInputChannel[sourceWorkers.length];
       int i = 0;
       for (int sourceWorker : sourceWorkers) {
-        inputExchangeChannels.put(new ExchangeChannelID(oID.getLong(), sourceWorker), c);
-        ccs[i++] = new ConsumerChannel(this, c, sourceWorker);
+        inputExchangeChannels.put(new StreamIOChannelID(oID.getLong(), sourceWorker), c);
+        ccs[i++] = new StreamInputChannel(this, c, sourceWorker);
       }
       c.setExchangeChannels(ccs);
     }
@@ -257,7 +259,7 @@ final class QuerySubTreeTask {
    * 
    * @param outputChannelID the logical output channel ID.
    */
-  public void notifyOutputDisabled(final ExchangeChannelID outputChannelID) {
+  public void notifyOutputDisabled(final StreamIOChannelID outputChannelID) {
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("Output disabled: " + outputChannelID);
     }
@@ -277,7 +279,7 @@ final class QuerySubTreeTask {
    * 
    * @param outputChannelID the down channel ID.
    * */
-  public void notifyOutputEnabled(final ExchangeChannelID outputChannelID) {
+  public void notifyOutputEnabled(final StreamIOChannelID outputChannelID) {
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("Output enabled: " + outputChannelID);
     }

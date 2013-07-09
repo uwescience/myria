@@ -17,6 +17,10 @@ import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroupFuture;
 
 import edu.washington.escience.myriad.parallel.ipc.ChannelContext;
+import edu.washington.escience.myriad.parallel.ipc.StreamInputChannel;
+import edu.washington.escience.myriad.parallel.ipc.StreamIOChannelID;
+import edu.washington.escience.myriad.parallel.ipc.StreamIOChannelPair;
+import edu.washington.escience.myriad.parallel.ipc.StreamOutputChannel;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 
@@ -33,19 +37,19 @@ public final class FlowControlHandler extends SimpleChannelHandler {
    * Producer channel mapping. The mapping is created at {@link Worker} or at {@link Server}. Here the mapping is only
    * used for look up.
    * */
-  private final ConcurrentHashMap<ExchangeChannelID, ProducerChannel> producerChannelMap;
+  private final ConcurrentHashMap<StreamIOChannelID, StreamOutputChannel> producerChannelMap;
   /**
    * Consumer channel mapping. The mapping is created at {@link Worker} or at {@link Server}. Here the mapping is only
    * used for look up.
    * */
-  private final ConcurrentHashMap<ExchangeChannelID, ConsumerChannel> consumerChannelMap;
+  private final ConcurrentHashMap<StreamIOChannelID, StreamInputChannel> consumerChannelMap;
 
   /**
    * @param producerChannelMap {@link FlowControlHandler#producerChannelMap}
    * @param consumerChannelMap {@link FlowControlHandler#consumerChannelMap}
    * */
-  public FlowControlHandler(final ConcurrentHashMap<ExchangeChannelID, ConsumerChannel> consumerChannelMap,
-      final ConcurrentHashMap<ExchangeChannelID, ProducerChannel> producerChannelMap) {
+  public FlowControlHandler(final ConcurrentHashMap<StreamIOChannelID, StreamInputChannel> consumerChannelMap,
+      final ConcurrentHashMap<StreamIOChannelID, StreamOutputChannel> producerChannelMap) {
     this.consumerChannelMap = consumerChannelMap;
     this.producerChannelMap = producerChannelMap;
   }
@@ -57,7 +61,7 @@ public final class FlowControlHandler extends SimpleChannelHandler {
     final ChannelContext cc = (ChannelContext) channel.getAttachment();
     final ChannelContext.RegisteredChannelContext ecc = cc.getRegisteredChannelContext();
     final Integer senderID = ecc.getRemoteID();
-    ExchangeChannelPair ecp = (ExchangeChannelPair) cc.getAttachment();
+    StreamIOChannelPair ecp = (StreamIOChannelPair) cc.getAttachment();
     boolean isEOS = false;
     switch (tm.getType()) {
       case DATA:
@@ -75,19 +79,19 @@ public final class FlowControlHandler extends SimpleChannelHandler {
             // At the beginning of a stream, record the operator id.
             final long operatorID = data.getOperatorID();
             if (ecp == null) {
-              ecp = new ExchangeChannelPair();
+              ecp = new StreamIOChannelPair();
               if (!cc.setAttachmentIfAbsent(ecp)) {
-                ecp = (ExchangeChannelPair) cc.getAttachment();
+                ecp = (StreamIOChannelPair) cc.getAttachment();
               }
             }
-            ExchangeChannelID ecID = new ExchangeChannelID(operatorID, senderID);
-            ConsumerChannel ccc = consumerChannelMap.get(ecID);
+            StreamIOChannelID ecID = new StreamIOChannelID(operatorID, senderID);
+            StreamInputChannel ccc = consumerChannelMap.get(ecID);
             ecp.mapInputChannel(ccc, channel);
             break;
           case EOS:
             isEOS = true;
-            ConsumerChannel cChannel = ecp.getInputChannel();
-            LOGGER.debug("EOS received for: " + cChannel.getExchangeChannelID());
+            StreamInputChannel cChannel = ecp.getInputChannel();
+            LOGGER.debug("EOS received for: " + cChannel.getID());
             break;
         }
         break;
@@ -112,10 +116,10 @@ public final class FlowControlHandler extends SimpleChannelHandler {
    * */
   public ChannelGroupFuture resumeRead(final Consumer consumerOp) {
 
-    ConsumerChannel[] ec = consumerOp.getExchangeChannels();
+    StreamInputChannel[] ec = consumerOp.getExchangeChannels();
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("Resume read for operator {}, IO Channels are {", consumerOp.getOperatorID());
-      for (ConsumerChannel e : ec) {
+      for (StreamInputChannel e : ec) {
         Channel ch = e.getIOChannel();
         LOGGER.debug("{}", ch);
       }
@@ -124,12 +128,12 @@ public final class FlowControlHandler extends SimpleChannelHandler {
 
     LinkedList<ChannelFuture> allResumeFutures = new LinkedList<ChannelFuture>();
     ChannelGroup cg = new DefaultChannelGroup();
-    for (ConsumerChannel e : ec) {
+    for (StreamInputChannel e : ec) {
 
       Channel ch = e.getIOChannel();
       if (ch != null) {
         ChannelContext cc = ((ChannelContext) (ch.getAttachment()));
-        ExchangeChannelPair ecp = (ExchangeChannelPair) cc.getAttachment();
+        StreamIOChannelPair ecp = (StreamIOChannelPair) cc.getAttachment();
         if (ecp != null) {
           ChannelFuture resumeFuture = ecp.resumeRead();
           if (resumeFuture != null) {
@@ -162,10 +166,10 @@ public final class FlowControlHandler extends SimpleChannelHandler {
    * @return ChannelGroupFuture denotes the future of the pause read action.
    * */
   public ChannelGroupFuture pauseRead(final Consumer consumerOp) {
-    ConsumerChannel[] consumerChannels = consumerOp.getExchangeChannels();
+    StreamInputChannel[] consumerChannels = consumerOp.getExchangeChannels();
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("Pause read for operator {}, IO Channels are {", consumerOp.getOperatorID());
-      for (ConsumerChannel ec : consumerChannels) {
+      for (StreamInputChannel ec : consumerChannels) {
         // here ch may be null, it means an EOS message is already received, the IO Channel is already detached from
         // this ConsumerChannel. No flow control is needed. Just ignore it.
         Channel ch = ec.getIOChannel();
@@ -176,12 +180,12 @@ public final class FlowControlHandler extends SimpleChannelHandler {
 
     LinkedList<ChannelFuture> allPauseFutures = new LinkedList<ChannelFuture>();
     ChannelGroup cg = new DefaultChannelGroup();
-    for (ConsumerChannel ec : consumerChannels) {
+    for (StreamInputChannel ec : consumerChannels) {
       Channel ch = ec.getIOChannel();
       if (ch != null) {
 
         ChannelContext cc = ((ChannelContext) (ch.getAttachment()));
-        ExchangeChannelPair ecp = (ExchangeChannelPair) cc.getAttachment();
+        StreamIOChannelPair ecp = (StreamIOChannelPair) cc.getAttachment();
         if (ecp != null) {
           ChannelFuture pauseFuture = ecp.pauseRead();
           if (pauseFuture != null) {
@@ -221,7 +225,7 @@ public final class FlowControlHandler extends SimpleChannelHandler {
     if (tm.getType() == TransportMessage.Type.DATA) {
       DataMessage dm = tm.getDataMessage();
       int remoteID = cc.getRegisteredChannelContext().getRemoteID();
-      ExchangeChannelPair ecp = (ExchangeChannelPair) cc.getAttachment();
+      StreamIOChannelPair ecp = (StreamIOChannelPair) cc.getAttachment();
       switch (dm.getType()) {
         case NORMAL:
         case EOI:
@@ -231,15 +235,15 @@ public final class FlowControlHandler extends SimpleChannelHandler {
             LOGGER.debug("New data connection, setup flow control context.");
           }
           long operatorID = dm.getOperatorID();
-          ExchangeChannelID ecID = new ExchangeChannelID(operatorID, remoteID);
+          StreamIOChannelID ecID = new StreamIOChannelID(operatorID, remoteID);
 
           if (ecp == null) {
-            ecp = new ExchangeChannelPair();
+            ecp = new StreamIOChannelPair();
             if (!cc.setAttachmentIfAbsent(ecp)) {
-              ecp = (ExchangeChannelPair) cc.getAttachment();
+              ecp = (StreamIOChannelPair) cc.getAttachment();
             }
           }
-          ProducerChannel pc = producerChannelMap.get(ecID);
+          StreamOutputChannel pc = producerChannelMap.get(ecID);
           ecp.mapOutputChannel(pc, ioChannel);
           break;
         case EOS:
@@ -252,7 +256,7 @@ public final class FlowControlHandler extends SimpleChannelHandler {
     ctx.sendDownstream(e);
 
     if (tm.getType() == TransportMessage.Type.DATA) {
-      ExchangeChannelPair ecp = (ExchangeChannelPair) cc.getAttachment();
+      StreamIOChannelPair ecp = (StreamIOChannelPair) cc.getAttachment();
       int remoteID = cc.getRegisteredChannelContext().getRemoteID();
       if (!ioChannel.isWritable()) {
         // this io channel is already full of write requests
@@ -280,9 +284,9 @@ public final class FlowControlHandler extends SimpleChannelHandler {
     Channel ioChannel = ctx.getChannel();
     if (ioChannel.isWritable()) {
       ChannelContext cc = ((ChannelContext) (ioChannel.getAttachment()));
-      ExchangeChannelPair p = (ExchangeChannelPair) (cc.getAttachment());
+      StreamIOChannelPair p = (StreamIOChannelPair) (cc.getAttachment());
       if (p != null) {
-        ProducerChannel producerChannel = p.getOutputChannel();
+        StreamOutputChannel producerChannel = p.getOutputChannel();
         if (producerChannel != null) {
           int remoteID = cc.getRegisteredChannelContext().getRemoteID();
           if (LOGGER.isDebugEnabled()) {

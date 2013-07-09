@@ -1,38 +1,39 @@
-package edu.washington.escience.myriad.parallel;
+package edu.washington.escience.myriad.parallel.ipc;
 
 import org.jboss.netty.channel.Channel;
 
+import edu.washington.escience.myriad.parallel.Producer;
+import edu.washington.escience.myriad.parallel.QuerySubTreeTask;
+
 /**
  * 
- * An ExchangeChannel represents a partition of a {@link Consumer}/{@link Producer} operator.
- * 
- * It's an input ExchangeChannel if it's a partition of a {@link Consumer}. Otherwise, an output ExchangeChannel.
+ * An {@link StreamOutputChannel} represents a partition of {@link Producer}.
  * 
  * */
-public class ProducerChannel {
+public class StreamOutputChannel {
 
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(ProducerChannel.class.getName());
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(StreamOutputChannel.class.getName());
 
   /**
    * @param ownerTask the task who owns the output channel.
    * @param ecID exchange channel ID.
    * */
-  public ProducerChannel(final QuerySubTreeTask ownerTask, final ExchangeChannelID ecID) {
+  public StreamOutputChannel(final QuerySubTreeTask ownerTask, final StreamIOChannelID ecID) {
     id = ecID;
     ownerQuerySubTreeTask = ownerTask;
-    // this.op = op;
   }
 
   /**
-   * Call the method if the physical output device used by this {@link ProducerChannel} is not able to process writes.
+   * Call the method if the physical output device used by this {@link StreamOutputChannel} is not able to process
+   * writes.
    * */
   public final void notifyOutputDisabled() {
     ownerQuerySubTreeTask.notifyOutputDisabled(id);
   }
 
   /**
-   * Call the method if the physical output device used by this {@link ProducerChannel} is able to process writes.
+   * Call the method if the physical output device used by this {@link StreamOutputChannel} is able to process writes.
    * */
   public final void notifyOutputEnabled() {
     ownerQuerySubTreeTask.notifyOutputEnabled(id);
@@ -48,7 +49,7 @@ public class ProducerChannel {
   /**
    * ID.
    * */
-  private final ExchangeChannelID id;
+  private final StreamIOChannelID id;
 
   /**
    * owner task.
@@ -79,7 +80,7 @@ public class ProducerChannel {
    * */
   public final void dettachIOChannel() {
     if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug("ProducerChannel ID: {} detatch from output channel: IOChannel: {}, ", id, ioChannel);
+      LOGGER.debug("StreamOutputChannel ID: {} detatch from output channel: IOChannel: {}, ", id, ioChannel);
     }
     ioChannel = null;
   }
@@ -87,12 +88,12 @@ public class ProducerChannel {
   /**
    * @return my logical exchange channel ID.
    * */
-  public final ExchangeChannelID getExchangeChannelID() {
+  public final StreamIOChannelID getID() {
     return id;
   }
 
   @Override
   public final String toString() {
-    return "ProducerChannel{ ID: " + id + ",IOChannel: " + ioChannel + " }";
+    return "StreamOutputChannel{ ID: " + id + ",IOChannel: " + ioChannel + " }";
   }
 }

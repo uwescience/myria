@@ -17,7 +17,6 @@ import edu.washington.escience.myriad.parallel.ExchangePairID;
 import edu.washington.escience.myriad.parallel.SocketInfo;
 import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
-import edu.washington.escience.myriad.util.IPCUtils;
 import edu.washington.escience.myriad.util.QueueBasedMessageHandler.TestMessageWrapper;
 import edu.washington.escience.myriad.util.TestUtils;
 
@@ -45,8 +44,7 @@ public class TenGBTupleBatchSenderUsingConnectionPool {
     long end = 0;
 
     final ExchangePairID eID = ExchangePairID.fromExisting(0L);
-    final Channel ch = connectionPool.reserveLongTermConnection(0);
-    ch.write(IPCUtils.bosTM(eID));
+    final Channel ch = connectionPool.reserveLongTermConnection(0, eID.getLong());
     start = System.currentTimeMillis();
     System.out.println("Start at " + start);
 
@@ -75,8 +73,7 @@ public class TenGBTupleBatchSenderUsingConnectionPool {
       cf = ch.write(tm);
       numSent++;
     }
-    ch.write(IPCUtils.EOS).await();
-    connectionPool.releaseLongTermConnection(ch);
+    connectionPool.releaseLongTermConnection(ch).await();
     numSent++;
     end = System.currentTimeMillis();
     System.out.println("Start at " + start);

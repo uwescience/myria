@@ -1,13 +1,17 @@
-package edu.washington.escience.myriad.parallel;
+package edu.washington.escience.myriad.parallel.ipc;
+
+import edu.washington.escience.myriad.parallel.Consumer;
+import edu.washington.escience.myriad.parallel.Producer;
 
 /**
  * 
- * An ExchangeChannel represents a partition of a {@link Consumer}/{@link Producer} operator.
+ * An {@link StreamIOChannel} represents a partition of a {@link Consumer}/{@link Producer} operator.
  * 
- * It's an input ExchangeChannel if it's a partition of a {@link Consumer}. Otherwise, an output ExchangeChannel.
+ * It's an input {@link StreamIOChannel} if it's a partition of a {@link Consumer}. Otherwise, an output
+ * {@link StreamIOChannel}.
  * 
  * */
-public class ExchangeChannelID implements Comparable<ExchangeChannelID> {
+public class StreamIOChannelID implements Comparable<StreamIOChannelID> {
 
   /**
    * remote worker ID.
@@ -28,7 +32,7 @@ public class ExchangeChannelID implements Comparable<ExchangeChannelID> {
    * @param operatorID operator ID.
    * @param remoteID worker ID.
    * */
-  public ExchangeChannelID(final long operatorID, final int remoteID) {
+  public StreamIOChannelID(final long operatorID, final int remoteID) {
     this.remoteID = remoteID;
     this.operatorID = operatorID;
     toStringValue = "opID[" + operatorID + "],rmtID[" + remoteID + "]";
@@ -50,7 +54,7 @@ public class ExchangeChannelID implements Comparable<ExchangeChannelID> {
   private static final int MAGIC_HASHCODE_BASE = 31;
 
   @Override
-  public final int compareTo(final ExchangeChannelID o) {
+  public final int compareTo(final StreamIOChannelID o) {
     if (operatorID != o.operatorID) {
       return (int) (operatorID - o.operatorID);
     }
@@ -62,7 +66,7 @@ public class ExchangeChannelID implements Comparable<ExchangeChannelID> {
     if (oo == null) {
       return false;
     }
-    ExchangeChannelID o = (ExchangeChannelID) oo;
+    StreamIOChannelID o = (StreamIOChannelID) oo;
     if (this == o) {
       return true;
     }
