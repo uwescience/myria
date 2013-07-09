@@ -1,17 +1,18 @@
 package edu.washington.escience.myriad.parallel.ipc;
 
-import edu.washington.escience.myriad.parallel.Consumer;
-import edu.washington.escience.myriad.parallel.Producer;
+import java.io.Serializable;
 
 /**
  * 
- * An {@link StreamIOChannel} represents a partition of a {@link Consumer}/{@link Producer} operator.
- * 
- * It's an input {@link StreamIOChannel} if it's a partition of a {@link Consumer}. Otherwise, an output
- * {@link StreamIOChannel}.
+ * ID of a stream I/O channel.
  * 
  * */
-public class StreamIOChannelID implements Comparable<StreamIOChannelID> {
+public class StreamIOChannelID implements Comparable<StreamIOChannelID>, Serializable {
+
+  /**
+   * 
+   */
+  private static final long serialVersionUID = -5362137244233871013L;
 
   /**
    * remote worker ID.
@@ -21,7 +22,7 @@ public class StreamIOChannelID implements Comparable<StreamIOChannelID> {
   /**
    * operator id.
    * */
-  private final long operatorID;
+  private final long streamID;
 
   /**
    * used in toString.
@@ -29,13 +30,13 @@ public class StreamIOChannelID implements Comparable<StreamIOChannelID> {
   private final String toStringValue;
 
   /**
-   * @param operatorID operator ID.
+   * @param streamID stream ID.
    * @param remoteID worker ID.
    * */
-  public StreamIOChannelID(final long operatorID, final int remoteID) {
+  public StreamIOChannelID(final long streamID, final int remoteID) {
     this.remoteID = remoteID;
-    this.operatorID = operatorID;
-    toStringValue = "opID[" + operatorID + "],rmtID[" + remoteID + "]";
+    this.streamID = streamID;
+    toStringValue = "(opID:" + streamID + ",rmtID:" + remoteID + "])";
   }
 
   @Override
@@ -45,7 +46,7 @@ public class StreamIOChannelID implements Comparable<StreamIOChannelID> {
 
   @Override
   public final int hashCode() {
-    return (int) operatorID * MAGIC_HASHCODE_BASE + remoteID;
+    return (int) streamID * MAGIC_HASHCODE_BASE + remoteID;
   }
 
   /**
@@ -55,10 +56,24 @@ public class StreamIOChannelID implements Comparable<StreamIOChannelID> {
 
   @Override
   public final int compareTo(final StreamIOChannelID o) {
-    if (operatorID != o.operatorID) {
-      return (int) (operatorID - o.operatorID);
+    if (streamID != o.streamID) {
+      return (int) (streamID - o.streamID);
     }
     return remoteID - o.remoteID;
+  }
+
+  /**
+   * @return the remoteID of this channel.
+   * */
+  public final int getRemoteID() {
+    return remoteID;
+  }
+
+  /**
+   * @return the streamID of this channel.
+   * */
+  public final long getStreamID() {
+    return streamID;
   }
 
   @Override
@@ -70,7 +85,7 @@ public class StreamIOChannelID implements Comparable<StreamIOChannelID> {
     if (this == o) {
       return true;
     }
-    if (operatorID == o.operatorID && remoteID == o.remoteID) {
+    if (streamID == o.streamID && remoteID == o.remoteID) {
       return true;
     }
     return false;
