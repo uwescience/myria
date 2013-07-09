@@ -15,6 +15,7 @@ import org.jboss.netty.channel.group.ChannelGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import edu.washington.escience.myriad.parallel.ExchangeChannelPair;
 import edu.washington.escience.myriad.util.IPCUtils;
 
 /**
@@ -252,6 +253,11 @@ public class ChannelContext {
     private final AtomicInteger numberOfReference;
 
     /**
+     * The logical I/O pair of a physical channel.
+     * */
+    private final ExchangeChannelPair ioPair;
+
+    /**
      * @param remoteID the remote IPC entity ID.
      * @param ownerChannelGroup which channel set the channel belongs.
      * */
@@ -259,6 +265,14 @@ public class ChannelContext {
       this.remoteID = remoteID;
       channelGroup = ownerChannelGroup;
       numberOfReference = new AtomicInteger(0);
+      ioPair = new ExchangeChannelPair();
+    }
+
+    /**
+     * @return attachment.
+     * */
+    public final ExchangeChannelPair getIOPair() {
+      return ioPair;
     }
 
     /**
@@ -737,7 +751,7 @@ public class ChannelContext {
       synchronized (stateMachineLock) {
         if (connected && registered && !inPool && !inRecycleBin && inTrashBin && !newConnection) {
           // if here is to make sure that the message gets sent only once.
-          final ChannelFuture cf = ownerChannel.write(IPCUtils.CONTROL_DISCONNECT);
+          final ChannelFuture cf = ownerChannel.write(IPCMessage.Meta.DISCONNECT);
           disconnectSent();
           cf.addListener(new ChannelFutureListener() {
 

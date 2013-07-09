@@ -22,7 +22,6 @@ import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.parallel.Consumer;
 import edu.washington.escience.myriad.parallel.ExchangePairID;
 import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
-import edu.washington.escience.myriad.util.IPCUtils;
 
 /**
  * Together with the EOSController, the IDBInput controls what to serve into an iteration and when to stop an iteration.
@@ -223,7 +222,8 @@ public class IDBInput extends Operator {
 
         if (eosControllerInput.eos()) {
           setEOS();
-          eoiReportChannel.write(IPCUtils.EOS);
+          connectionPool.releaseLongTermConnection(eoiReportChannel);
+          eoiReportChannel = null;
           // notify the EOSController to end.
         } else if (iterationInput.eoi()) {
           iterationInput.setEOI(false);
@@ -272,8 +272,7 @@ public class IDBInput extends Operator {
     uniqueTupleIndices = new HashMap<Integer, List<Integer>>();
     uniqueTuples = new TupleBatchBuffer(getSchema());
     connectionPool = (IPCConnectionPool) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_IPC_CONNECTION_POOL);
-    eoiReportChannel = connectionPool.reserveLongTermConnection(controllerWorkerID);
-    eoiReportChannel.write(IPCUtils.bosTM(controllerOpID));
+    eoiReportChannel = connectionPool.reserveLongTermConnection(controllerWorkerID, controllerOpID.getLong());
   }
 
   @Override

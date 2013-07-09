@@ -35,6 +35,8 @@ import org.jboss.netty.util.ExternalResourceReleasable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Preconditions;
+
 import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.parallel.RenamingThreadFactory;
 import edu.washington.escience.myriad.parallel.SocketInfo;
@@ -366,7 +368,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
   /**
    * myID TM.
    * */
-  private final TransportMessage myIDTM;
+  private final IPCMessage.Meta.CONNECT myIDMsg;
 
   /**
    * Denote whether the connection pool has been shutdown.
@@ -417,13 +419,11 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
    * @param clientBootstrap IPC client bootstrap
    * */
   public IPCConnectionPool(final int myID, final Map<Integer, SocketInfo> remoteAddresses// ,
-      // final MessageChannelHandler<TransportMessage> messageHandler
       , final ServerBootstrap serverBootstrap, final ClientBootstrap clientBootstrap) {
     this.myID = myID;
-    // messageQueue = messageQueue;
-    myIDTM = IPCUtils.connectTM(myID);
     // inJVMShortMessageChannel = new InJVMChannel(myID, messageHandler);
     // this.messageHandler = messageHandler;
+    myIDMsg = new IPCMessage.Meta.CONNECT(myID);
     myIPCServerAddress = remoteAddresses.get(myID).getBindAddress();
     this.clientBootstrap = clientBootstrap;
     this.serverBootstrap = serverBootstrap;
@@ -557,7 +557,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
       final ChannelContext cc = new ChannelContext(channel, true);
       channel.setAttachment(cc);
       cc.connected();
-      final ChannelFuture idWriteFuture = channel.write(myIDTM);
+      final ChannelFuture idWriteFuture = channel.write(myIDMsg);
       int retry = 0;
       while (retry < MAX_NUM_RETRY && !idWriteFuture.awaitUninterruptibly(DATA_TRANSFER_TIMEOUT_IN_MS)) {
         // tell the remote part my id
@@ -685,8 +685,8 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
   /**
    * @return my id as TM.
    * */
-  TransportMessage getMyIDAsTM() {
-    return myIDTM;
+  IPCMessage.Meta.CONNECT getMyIDAsMsg() {
+    return myIDMsg;
   }
 
   /**
@@ -781,26 +781,45 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
 
   /**
    * @param channel the channel.
+   * @return channel release future.
    * */
-  public void releaseLongTermConnection(final Channel channel) {
-    if (channel == null) {
-      return;
-    }
-    if (channel instanceof InJVMChannel) {
-      channel.close();
-      return;
-    }
+  public ChannelFuture releaseLongTermConnection(final Channel channel) {
+    Preconditions.checkNotNull(channel);
+
     final ChannelContext cc = ChannelContext.getChannelContext(channel);
     final ChannelContext.RegisteredChannelContext ecc = cc.getRegisteredChannelContext();
+    ChannelFuture cf = null;
+
     if (ecc == null) {
+      cf = new DefaultChannelFuture(channel, false);
+      cf.setSuccess();
       channelTrashBin.add(channel);
-      // closeChannel(channel);
-      return;
+    } else {
+      cf = channel.write(IPCMessage.Meta.EOS);
+      cf.addListener(new ChannelFutureListener() {
+
+        @Override
+        public void operationComplete(final ChannelFuture future) throws Exception {
+
+          ChannelContext cc = ChannelContext.getChannelContext(future.getChannel());
+          cc.getRegisteredChannelContext().getIOPair().deMapOutputChannel();
+
+          final Channel channel = future.getChannel();
+          if (channel instanceof InJVMChannel) {
+            channel.close();
+            return;
+          }
+
+          final IPCRemote r = channelPool.get(ecc.getRemoteID());
+          if (r != null) {
+            r.registeredChannels.release(channel, channelTrashBin, recyclableRegisteredChannels);
+          } else {
+            ecc.decReference();
+          }
+        }
+      });
     }
-    final IPCRemote r = channelPool.get(ecc.getRemoteID());
-    if (r != null) {
-      r.registeredChannels.release(channel, channelTrashBin, recyclableRegisteredChannels);
-    }
+    return cf;
   }
 
   /**
@@ -874,17 +893,34 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
    * get an IO channel.
    * 
    * @param id of a remote IPC entity
+   * @param streamID of a stream
    * @return IPC channel, null if id is invalid or connect fails.
    * @throws IllegalStateException if the connection pool is already shutdown
    */
-  public Channel reserveLongTermConnection(final int id) {
+  public Channel reserveLongTermConnection(final int id, final long streamID) {
     checkShutdown();
     try {
-      return getAConnection(id);
+      Channel ch = getAConnection(id);
+      if (ch != null) {
+        ch.write(new IPCMessage.Meta.BOS(streamID));
+
+        ChannelContext cc = ((ChannelContext) (ch.getAttachment()));
+
+        int remoteID = cc.getRegisteredChannelContext().getRemoteID();
+        if (LOGGER.isDebugEnabled()) {
+          LOGGER.debug("New data connection, setup flow control context.");
+        }
+
+        return ch;
+      }
+
     } catch (ChannelException e) {
-      LOGGER.error("Unable to connect to remote. Cause is: ", e);
-      return null;
+      if (LOGGER.isErrorEnabled()) {
+        LOGGER.error("Unable to connect to remote. Cause is: ", e);
+      }
+
     }
+    return null;
   }
 
   /**

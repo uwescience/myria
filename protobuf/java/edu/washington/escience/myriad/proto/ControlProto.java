@@ -14,10 +14,6 @@ public final class ControlProto {
     // required .ControlMessage.Type type = 1;
     boolean hasType();
     edu.washington.escience.myriad.proto.ControlProto.ControlMessage.Type getType();
-    
-    // optional int32 remote_id = 2;
-    boolean hasRemoteId();
-    int getRemoteId();
   }
   public static final class ControlMessage extends
       com.google.protobuf.GeneratedMessage
@@ -49,14 +45,10 @@ public final class ControlProto {
     
     public enum Type
         implements com.google.protobuf.ProtocolMessageEnum {
-      CONNECT(0, 0),
-      DISCONNECT(1, 4),
-      SHUTDOWN(2, 3),
-      WORKER_ALIVE(3, 5),
+      SHUTDOWN(0, 3),
+      WORKER_ALIVE(1, 5),
       ;
       
-      public static final int CONNECT_VALUE = 0;
-      public static final int DISCONNECT_VALUE = 4;
       public static final int SHUTDOWN_VALUE = 3;
       public static final int WORKER_ALIVE_VALUE = 5;
       
@@ -65,8 +57,6 @@ public final class ControlProto {
       
       public static Type valueOf(int value) {
         switch (value) {
-          case 0: return CONNECT;
-          case 4: return DISCONNECT;
           case 3: return SHUTDOWN;
           case 5: return WORKER_ALIVE;
           default: return null;
@@ -99,7 +89,7 @@ public final class ControlProto {
       }
       
       private static final Type[] VALUES = {
-        CONNECT, DISCONNECT, SHUTDOWN, WORKER_ALIVE, 
+        SHUTDOWN, WORKER_ALIVE, 
       };
       
       public static Type valueOf(
@@ -133,19 +123,8 @@ public final class ControlProto {
       return type_;
     }
     
-    // optional int32 remote_id = 2;
-    public static final int REMOTE_ID_FIELD_NUMBER = 2;
-    private int remoteId_;
-    public boolean hasRemoteId() {
-      return ((bitField0_ & 0x00000002) == 0x00000002);
-    }
-    public int getRemoteId() {
-      return remoteId_;
-    }
-    
     private void initFields() {
-      type_ = edu.washington.escience.myriad.proto.ControlProto.ControlMessage.Type.CONNECT;
-      remoteId_ = 0;
+      type_ = edu.washington.escience.myriad.proto.ControlProto.ControlMessage.Type.SHUTDOWN;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -166,9 +145,6 @@ public final class ControlProto {
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeEnum(1, type_.getNumber());
       }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeInt32(2, remoteId_);
-      }
       getUnknownFields().writeTo(output);
     }
     
@@ -181,10 +157,6 @@ public final class ControlProto {
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         size += com.google.protobuf.CodedOutputStream
           .computeEnumSize(1, type_.getNumber());
-      }
-      if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += com.google.protobuf.CodedOutputStream
-          .computeInt32Size(2, remoteId_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -310,10 +282,8 @@ public final class ControlProto {
       
       public Builder clear() {
         super.clear();
-        type_ = edu.washington.escience.myriad.proto.ControlProto.ControlMessage.Type.CONNECT;
+        type_ = edu.washington.escience.myriad.proto.ControlProto.ControlMessage.Type.SHUTDOWN;
         bitField0_ = (bitField0_ & ~0x00000001);
-        remoteId_ = 0;
-        bitField0_ = (bitField0_ & ~0x00000002);
         return this;
       }
       
@@ -356,10 +326,6 @@ public final class ControlProto {
           to_bitField0_ |= 0x00000001;
         }
         result.type_ = type_;
-        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
-          to_bitField0_ |= 0x00000002;
-        }
-        result.remoteId_ = remoteId_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -378,9 +344,6 @@ public final class ControlProto {
         if (other == edu.washington.escience.myriad.proto.ControlProto.ControlMessage.getDefaultInstance()) return this;
         if (other.hasType()) {
           setType(other.getType());
-        }
-        if (other.hasRemoteId()) {
-          setRemoteId(other.getRemoteId());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -428,11 +391,6 @@ public final class ControlProto {
               }
               break;
             }
-            case 16: {
-              bitField0_ |= 0x00000002;
-              remoteId_ = input.readInt32();
-              break;
-            }
           }
         }
       }
@@ -440,7 +398,7 @@ public final class ControlProto {
       private int bitField0_;
       
       // required .ControlMessage.Type type = 1;
-      private edu.washington.escience.myriad.proto.ControlProto.ControlMessage.Type type_ = edu.washington.escience.myriad.proto.ControlProto.ControlMessage.Type.CONNECT;
+      private edu.washington.escience.myriad.proto.ControlProto.ControlMessage.Type type_ = edu.washington.escience.myriad.proto.ControlProto.ControlMessage.Type.SHUTDOWN;
       public boolean hasType() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
@@ -458,28 +416,7 @@ public final class ControlProto {
       }
       public Builder clearType() {
         bitField0_ = (bitField0_ & ~0x00000001);
-        type_ = edu.washington.escience.myriad.proto.ControlProto.ControlMessage.Type.CONNECT;
-        onChanged();
-        return this;
-      }
-      
-      // optional int32 remote_id = 2;
-      private int remoteId_ ;
-      public boolean hasRemoteId() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
-      }
-      public int getRemoteId() {
-        return remoteId_;
-      }
-      public Builder setRemoteId(int value) {
-        bitField0_ |= 0x00000002;
-        remoteId_ = value;
-        onChanged();
-        return this;
-      }
-      public Builder clearRemoteId() {
-        bitField0_ = (bitField0_ & ~0x00000002);
-        remoteId_ = 0;
+        type_ = edu.washington.escience.myriad.proto.ControlProto.ControlMessage.Type.SHUTDOWN;
         onChanged();
         return this;
       }
@@ -509,12 +446,11 @@ public final class ControlProto {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\rcontrol.proto\"\214\001\n\016ControlMessage\022\"\n\004ty" +
-      "pe\030\001 \002(\0162\024.ControlMessage.Type\022\021\n\tremote" +
-      "_id\030\002 \001(\005\"C\n\004Type\022\013\n\007CONNECT\020\000\022\016\n\nDISCON" +
-      "NECT\020\004\022\014\n\010SHUTDOWN\020\003\022\020\n\014WORKER_ALIVE\020\005B4" +
-      "\n$edu.washington.escience.myriad.protoB\014" +
-      "ControlProto"
+      "\n\rcontrol.proto\"\\\n\016ControlMessage\022\"\n\004typ" +
+      "e\030\001 \002(\0162\024.ControlMessage.Type\"&\n\004Type\022\014\n" +
+      "\010SHUTDOWN\020\003\022\020\n\014WORKER_ALIVE\020\005B4\n$edu.was" +
+      "hington.escience.myriad.protoB\014ControlPr" +
+      "oto"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -526,7 +462,7 @@ public final class ControlProto {
           internal_static_ControlMessage_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_ControlMessage_descriptor,
-              new java.lang.String[] { "Type", "RemoteId", },
+              new java.lang.String[] { "Type", },
               edu.washington.escience.myriad.proto.ControlProto.ControlMessage.class,
               edu.washington.escience.myriad.proto.ControlProto.ControlMessage.Builder.class);
           return null;

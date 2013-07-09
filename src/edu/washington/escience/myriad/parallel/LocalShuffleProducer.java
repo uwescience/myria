@@ -75,12 +75,8 @@ public class LocalShuffleProducer extends Producer {
         }
       }
     }
-    for (Channel channel : ioChannels) {
-      try {
-        writeMessage(channel, IPCUtils.EOS);
-      } catch (InterruptedException e) {
-        throw new DbException(e);
-      }
+    for (int i = 0; i < numChannels(); i++) {
+      super.channelEnds(i);
     }
 
   }

@@ -118,9 +118,6 @@ public final class Server {
                     data.getSeq())));
                 cc.getOwnerTask().notifyNewInput();
                 break;
-              case BOS:
-                /* ignored */
-                break;
             }
             break;
           case CONTROL:
@@ -128,9 +125,6 @@ public final class Server {
             switch (controlM.getType()) {
               case WORKER_ALIVE:
                 aliveWorkers.add(senderID);
-                break;
-              case DISCONNECT:
-                /* TODO */
                 break;
               default:
                 if (LOGGER.isErrorEnabled()) {

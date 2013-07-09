@@ -63,7 +63,7 @@ public class IPCSessionManagerServer extends SimpleChannelHandler {
       // connect request sent from other workers
       final Integer remoteID = IPCUtils.checkConnectTM(tm);
       if (remoteID != null) {
-        ch.write(connectionPool.getMyIDAsTM()).await(); // await to finish channel registering
+        ch.write(connectionPool.getMyIDAsMsg()).await(); // await to finish channel registering
         connectionPool.registerChannel(remoteID, ch);
       } else {
         LOGGER.log(Level.WARNING, "Channel: " + ch + ". Unknown session. Send me the remote id before data transfer.");

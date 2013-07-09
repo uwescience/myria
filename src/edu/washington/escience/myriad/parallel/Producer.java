@@ -15,7 +15,6 @@ import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.parallel.Worker.QueryExecutionMode;
 import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
-import edu.washington.escience.myriad.util.IPCUtils;
 
 /**
  * A Producer is the counterpart of a consumer. It dispatch data using IPC channels to Consumers. Like network socket,
@@ -150,13 +149,7 @@ public abstract class Producer extends RootOperator {
     ioChannels = new Channel[operatorIDs.length];
     buffers = new TupleBatchBuffer[operatorIDs.length];
     for (int i = 0; i < operatorIDs.length; i++) {
-      ioChannels[i] = connectionPool.reserveLongTermConnection(destinationWorkerIDs[i]);
-      try {
-        writeMessage(ioChannels[i], IPCUtils.bosTM(operatorIDs[i]));
-      } catch (InterruptedException e) {
-        throw new DbException(e);
-      }
-
+      ioChannels[i] = connectionPool.reserveLongTermConnection(destinationWorkerIDs[i], operatorIDs[i].getLong());
       buffers[i] = new TupleBatchBuffer(getSchema());
     }
 
@@ -189,6 +182,15 @@ public abstract class Producer extends RootOperator {
         }
       }
     }
+  }
+
+  /**
+   * @param chIdx the channel to write
+   * @return channel release future.
+   * */
+  protected final ChannelFuture channelEnds(final int chIdx) {
+    ChannelFuture cf = connectionPool.releaseLongTermConnection(ioChannels[chIdx]);
+    return cf;
   }
 
   @Override
@@ -262,6 +264,13 @@ public abstract class Producer extends RootOperator {
    * */
   protected final Channel[] getChannels() {
     return ioChannels;
+  }
+
+  /**
+   * @return number of output channels.
+   * */
+  public final int numChannels() {
+    return ioChannels.length;
   }
 
   /**

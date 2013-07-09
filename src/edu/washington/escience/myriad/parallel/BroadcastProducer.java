@@ -53,6 +53,7 @@ public class BroadcastProducer extends Producer {
   protected final void childEOS() throws DbException {
 
     TransportMessage dm = null;
+    int numChannels = super.numChannels();
 
     /* BroadcastProducer only uses getBuffers()[0] */
     while ((dm = getBuffers()[0].popAnyAsTM()) != null) {
@@ -65,14 +66,9 @@ public class BroadcastProducer extends Producer {
       }
     }
 
-    for (Channel channel : getChannels()) {
-      try {
-        writeMessage(channel, IPCUtils.EOS);
-      } catch (InterruptedException e) {
-        throw new DbException(e);
-      }
+    for (int i = 0; i < numChannels; i++) {
+      super.channelEnds(i);
     }
-
   }
 
   @Override

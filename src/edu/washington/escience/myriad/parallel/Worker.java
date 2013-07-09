@@ -99,15 +99,6 @@ public final class Worker {
             while ((cm = controlMessageQueue.take()) != null) {
               switch (cm.getType()) {
 
-                case DISCONNECT:
-                case CONNECT:
-                  // DISCONNECT and CONNECT are used exclusively in IPC connection pool. They should not arrive here.
-                  if (LOGGER.isErrorEnabled()) {
-                    LOGGER
-                        .error("DISCONNECT and CONNECT are used exclusively in IPC connection pool. They should not arrive here.");
-                  }
-                  break;
-
                 case SHUTDOWN:
                   if (LOGGER.isInfoEnabled()) {
                     if (LOGGER.isInfoEnabled()) {
@@ -207,7 +198,7 @@ public final class Worker {
     public synchronized void run() {
       Channel serverChannel = null;
       try {
-        serverChannel = owner.connectionPool.reserveLongTermConnection(MyriaConstants.MASTER_ID);
+        serverChannel = owner.connectionPool.reserveLongTermConnection(MyriaConstants.MASTER_ID, 0);
         if (IPCUtils.isRemoteConnected(serverChannel)) {
           return;
         }

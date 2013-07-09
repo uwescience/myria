@@ -14,7 +14,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
-import org.jboss.netty.channel.ChannelFutureListener;
 import org.jboss.netty.channel.group.ChannelGroupFuture;
 import org.junit.Rule;
 import org.junit.Test;
@@ -153,16 +152,13 @@ public class ProtobufTest {
       final Thread tt = new Thread() {
         @Override
         public void run() {
-          final Channel ch = connectionPool.reserveLongTermConnection(0);
-          ch.write(IPCUtils.bosTM(epID));
+          final Channel ch = connectionPool.reserveLongTermConnection(0, epID.getLong());
 
           try {
             for (final TransportMessage tm : tbs) {
               ch.write(tm);
               numSent.incrementAndGet();
             }
-            ch.write(IPCUtils.EOS);
-            numSent.incrementAndGet();
           } finally {
             connectionPool.releaseLongTermConnection(ch);
           }
@@ -182,10 +178,9 @@ public class ProtobufTest {
     connectionPool.releaseExternalResources();
     int numReceived = 0;
     final TupleBatchBuffer actualTBB = new TupleBatchBuffer(tbb.getSchema());
-    int numEOS = 0;
     TestMessageWrapper m = null;
     final int timeoutInSeconds = 10;
-    while (numEOS < numThreads) {
+    while (numReceived < numSent.get()) {
       m = messageQueue.poll(timeoutInSeconds, TimeUnit.SECONDS);
       if (m == null) {
         throw new Exception("Timeout in retrieving data from receive buffer.");
@@ -194,12 +189,7 @@ public class ProtobufTest {
       if (tm.getType() == TransportMessage.Type.DATA) {
         final DataMessage data = tm.getDataMessage();
         switch (data.getType()) {
-          case EOS:
-            numEOS += 1;
-            numReceived++;
-            break;
           case EOI:
-          case BOS:
             // nothing to do
             break;
           case NORMAL:
@@ -339,24 +329,14 @@ public class ProtobufTest {
       final Thread tt = new Thread() {
         @Override
         public void run() {
-          final Channel ch = clientConnectionPool.reserveLongTermConnection(0);
-          ch.write(IPCUtils.bosTM(epID));
+          final Channel ch = clientConnectionPool.reserveLongTermConnection(0, epID.getLong());
 
           try {
             for (final TransportMessage tm : tbs) {
               ch.write(tm);
               numSent.incrementAndGet();
             }
-            final ChannelFuture eosFuture = ch.write(IPCUtils.EOS);
-            cf.add(eosFuture);
-            eosFuture.addListener(new ChannelFutureListener() {
 
-              @Override
-              public void operationComplete(final ChannelFuture future) throws Exception {
-
-              }
-            });
-            numSent.incrementAndGet();
           } finally {
             clientConnectionPool.releaseLongTermConnection(ch);
           }
@@ -385,10 +365,9 @@ public class ProtobufTest {
     serverConnectionPool.releaseExternalResources();
     int numReceived = 0;
     final TupleBatchBuffer actualTBB = new TupleBatchBuffer(tbb.getSchema());
-    int numEOS = 0;
     TestMessageWrapper m = null;
     final int timeoutInSeconds = 10;
-    while (numEOS < numThreads) {
+    while (numReceived < numSent.get()) {
       m = serverMessageQueue.poll(timeoutInSeconds, TimeUnit.SECONDS);
       if (m == null) {
         throw new Exception("Timeout in retrieving data from receive buffer.");
@@ -397,12 +376,7 @@ public class ProtobufTest {
       if (tm.getType() == TransportMessage.Type.DATA) {
         final DataMessage data = tm.getDataMessage();
         switch (data.getType()) {
-          case EOS:
-            numEOS += 1;
-            numReceived++;
-            break;
           case EOI:
-          case BOS:
             // nothing to do
             break;
           case NORMAL:
@@ -475,24 +449,13 @@ public class ProtobufTest {
       final Thread tt = new Thread() {
         @Override
         public void run() {
-          final Channel ch = connectionPool.reserveLongTermConnection(0);
-          ch.write(IPCUtils.bosTM(epID));
+          final Channel ch = connectionPool.reserveLongTermConnection(0, epID.getLong());
 
           try {
             for (final TransportMessage tm : tbs) {
               ch.write(tm);
               numSent.incrementAndGet();
             }
-            final ChannelFuture eosFuture = ch.write(IPCUtils.EOS);
-            cf.add(eosFuture);
-            eosFuture.addListener(new ChannelFutureListener() {
-
-              @Override
-              public void operationComplete(final ChannelFuture future) throws Exception {
-
-              }
-            });
-            numSent.incrementAndGet();
           } finally {
             connectionPool.releaseLongTermConnection(ch);
           }
@@ -517,10 +480,9 @@ public class ProtobufTest {
     connectionPool.releaseExternalResources();
     int numReceived = 0;
     final TupleBatchBuffer actualTBB = new TupleBatchBuffer(tbb.getSchema());
-    int numEOS = 0;
     TestMessageWrapper m = null;
     final int timeoutInSeconds = 10;
-    while (numEOS < numThreads) {
+    while (numReceived < numSent.get()) {
       m = messageQueue.poll(timeoutInSeconds, TimeUnit.SECONDS);
       if (m == null) {
         throw new Exception("Timeout in retrieving data from receive buffer.");
@@ -529,12 +491,7 @@ public class ProtobufTest {
       if (tm.getType() == TransportMessage.Type.DATA) {
         final DataMessage data = tm.getDataMessage();
         switch (data.getType()) {
-          case EOS:
-            numEOS += 1;
-            numReceived++;
-            break;
           case EOI:
-          case BOS:
             // nothing to do
             break;
           case NORMAL:
@@ -592,16 +549,13 @@ public class ProtobufTest {
     final List<TransportMessage> tbs = tbb.getAllAsTM();
 
     final AtomicInteger numSent = new AtomicInteger();
-    final Channel ch = connectionPool.reserveLongTermConnection(0);
-    ch.write(IPCUtils.bosTM(epID));
+    final Channel ch = connectionPool.reserveLongTermConnection(0, epID.getLong());
 
     try {
       for (final TransportMessage tm : tbs) {
         ch.write(tm);
         numSent.incrementAndGet();
       }
-      ch.write(IPCUtils.EOS);
-      numSent.incrementAndGet();
     } finally {
       connectionPool.releaseLongTermConnection(ch);
     }
@@ -612,10 +566,9 @@ public class ProtobufTest {
 
     int numReceived = 0;
     final TupleBatchBuffer actualTBB = new TupleBatchBuffer(tbb.getSchema());
-    int numEOS = 0;
     TestMessageWrapper m = null;
     final int timeoutInSeconds = 10;
-    while (numEOS < 1) {
+    while (numReceived < numSent.get()) {
       m = messageQueue.poll(timeoutInSeconds, TimeUnit.SECONDS);
       if (m == null) {
         throw new Exception("Timeout in retrieving data from receive buffer.");
@@ -624,12 +577,7 @@ public class ProtobufTest {
       if (tm.getType() == TransportMessage.Type.DATA) {
         final DataMessage data = tm.getDataMessage();
         switch (data.getType()) {
-          case EOS:
-            numEOS += 1;
-            numReceived++;
-            break;
           case EOI:
-          case BOS:
             // nothing to do
             break;
           case NORMAL:
@@ -740,18 +688,15 @@ public class ProtobufTest {
 
     final AtomicInteger numSent = new AtomicInteger();
     final ChannelFuture cf;
-    final Channel ch = connectionPoolClient.reserveLongTermConnection(0);
-    ch.write(IPCUtils.bosTM(epID));
+    final Channel ch = connectionPoolClient.reserveLongTermConnection(0, epID.getLong());
 
     try {
       for (final TransportMessage tm : tbs) {
         ch.write(tm);
         numSent.incrementAndGet();
       }
-      cf = ch.write(IPCUtils.EOS);
-      numSent.incrementAndGet();
     } finally {
-      connectionPoolClient.releaseLongTermConnection(ch);
+      cf = connectionPoolClient.releaseLongTermConnection(ch);
     }
     if (cf != null) {
       cf.awaitUninterruptibly();
@@ -769,10 +714,9 @@ public class ProtobufTest {
 
     int numReceived = 0;
     final TupleBatchBuffer actualTBB = new TupleBatchBuffer(tbb.getSchema());
-    int numEOS = 0;
     TestMessageWrapper m = null;
     final int timeoutInSeconds = 10;
-    while (numEOS < 1) {
+    while (numReceived < numSent.get()) {
       m = serverMessageQueue.poll(timeoutInSeconds, TimeUnit.SECONDS);
       if (m == null) {
         throw new Exception("Timeout in retrieving data from receive buffer.");
@@ -781,12 +725,7 @@ public class ProtobufTest {
       if (tm.getType() == TransportMessage.Type.DATA) {
         final DataMessage data = tm.getDataMessage();
         switch (data.getType()) {
-          case EOS:
-            numEOS += 1;
-            numReceived++;
-            break;
           case EOI:
-          case BOS:
             // nothing to do
             break;
           case NORMAL:
@@ -844,18 +783,15 @@ public class ProtobufTest {
 
     final AtomicInteger numSent = new AtomicInteger();
     final ChannelFuture cf;
-    final Channel ch = connectionPool.reserveLongTermConnection(0);
-    ch.write(IPCUtils.bosTM(epID));
+    final Channel ch = connectionPool.reserveLongTermConnection(0, epID.getLong());
 
     try {
       for (final TransportMessage tm : tbs) {
         ch.write(tm);
         numSent.incrementAndGet();
       }
-      cf = ch.write(IPCUtils.EOS);
-      numSent.incrementAndGet();
     } finally {
-      connectionPool.releaseLongTermConnection(ch);
+      cf = connectionPool.releaseLongTermConnection(ch);
     }
     if (cf != null) {
       cf.awaitUninterruptibly();
@@ -869,10 +805,9 @@ public class ProtobufTest {
 
     int numReceived = 0;
     final TupleBatchBuffer actualTBB = new TupleBatchBuffer(tbb.getSchema());
-    int numEOS = 0;
     TestMessageWrapper m = null;
     final int timeoutInSeconds = 10;
-    while (numEOS < 1) {
+    while (numReceived < numSent.get()) {
       m = messageQueue.poll(timeoutInSeconds, TimeUnit.SECONDS);
       if (m == null) {
         throw new Exception("Timeout in retrieving data from receive buffer.");
@@ -881,12 +816,7 @@ public class ProtobufTest {
       if (tm.getType() == TransportMessage.Type.DATA) {
         final DataMessage data = tm.getDataMessage();
         switch (data.getType()) {
-          case EOS:
-            numReceived++;
-            numEOS += 1;
-            break;
           case EOI:
-          case BOS:
             // nothing to do
             break;
           case NORMAL:

@@ -11,7 +11,7 @@ from google.protobuf import descriptor_pb2
 DESCRIPTOR = descriptor.FileDescriptor(
   name='control.proto',
   package='',
-  serialized_pb='\n\rcontrol.proto\"\x8c\x01\n\x0e\x43ontrolMessage\x12\"\n\x04type\x18\x01 \x02(\x0e\x32\x14.ControlMessage.Type\x12\x11\n\tremote_id\x18\x02 \x01(\x05\"C\n\x04Type\x12\x0b\n\x07\x43ONNECT\x10\x00\x12\x0e\n\nDISCONNECT\x10\x04\x12\x0c\n\x08SHUTDOWN\x10\x03\x12\x10\n\x0cWORKER_ALIVE\x10\x05\x42\x34\n$edu.washington.escience.myriad.protoB\x0c\x43ontrolProto')
+  serialized_pb='\n\rcontrol.proto\"\\\n\x0e\x43ontrolMessage\x12\"\n\x04type\x18\x01 \x02(\x0e\x32\x14.ControlMessage.Type\"&\n\x04Type\x12\x0c\n\x08SHUTDOWN\x10\x03\x12\x10\n\x0cWORKER_ALIVE\x10\x05\x42\x34\n$edu.washington.escience.myriad.protoB\x0c\x43ontrolProto')
 
 
 
@@ -22,26 +22,18 @@ _CONTROLMESSAGE_TYPE = descriptor.EnumDescriptor(
   file=DESCRIPTOR,
   values=[
     descriptor.EnumValueDescriptor(
-      name='CONNECT', index=0, number=0,
+      name='SHUTDOWN', index=0, number=3,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='DISCONNECT', index=1, number=4,
-      options=None,
-      type=None),
-    descriptor.EnumValueDescriptor(
-      name='SHUTDOWN', index=2, number=3,
-      options=None,
-      type=None),
-    descriptor.EnumValueDescriptor(
-      name='WORKER_ALIVE', index=3, number=5,
+      name='WORKER_ALIVE', index=1, number=5,
       options=None,
       type=None),
   ],
   containing_type=None,
   options=None,
-  serialized_start=91,
-  serialized_end=158,
+  serialized_start=71,
+  serialized_end=109,
 )
 
 
@@ -55,14 +47,7 @@ _CONTROLMESSAGE = descriptor.Descriptor(
     descriptor.FieldDescriptor(
       name='type', full_name='ControlMessage.type', index=0,
       number=1, type=14, cpp_type=8, label=2,
-      has_default_value=False, default_value=0,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    descriptor.FieldDescriptor(
-      name='remote_id', full_name='ControlMessage.remote_id', index=1,
-      number=2, type=5, cpp_type=1, label=1,
-      has_default_value=False, default_value=0,
+      has_default_value=False, default_value=3,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
@@ -76,8 +61,8 @@ _CONTROLMESSAGE = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=18,
-  serialized_end=158,
+  serialized_start=17,
+  serialized_end=109,
 )
 
 _CONTROLMESSAGE.fields_by_name['type'].enum_type = _CONTROLMESSAGE_TYPE

@@ -161,8 +161,6 @@ public final class WorkerDataHandler extends SimpleChannelUpstreamHandler implem
         pushToBufferSucceed = msgDestIB.offer(ed);
         msgOwnerTask.notifyNewInput();
         break;
-      case BOS:
-        break;
     }
     return pushToBufferSucceed;
   }

@@ -51,11 +51,7 @@ public final class CollectProducer extends Producer {
         throw new DbException(e);
       }
     }
-    try {
-      writeMessage(getChannels()[0], IPCUtils.EOS);
-    } catch (InterruptedException e) {
-      throw new DbException(e);
-    }
+    super.channelEnds(0);
   }
 
   @Override
