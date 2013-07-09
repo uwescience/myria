@@ -54,6 +54,19 @@ public final class MyriaConfigurationReader extends ConfigParser {
     } catch (Exception e) {
       throw new IOException(e);
     }
+    String defaultPath = ans.get("deployment").get("path");
+    HashMap<String, String> workers = ans.get("workers");
+    HashMap<String, String> paths = new HashMap<String, String>();
+    ans.put("paths", paths);
+    for (String workerId : workers.keySet()) {
+      String[] tmp = workers.get(workerId).split(":");
+      workers.put(workerId, tmp[0] + ":" + tmp[1]);
+      if (tmp.length == 3) {
+        paths.put(workerId, tmp[2]);
+      } else {
+        paths.put(workerId, defaultPath);
+      }
+    }
     return ans;
   }
 }

@@ -36,12 +36,12 @@ public final class DeploymentUtils {
     }
 
     Map<String, HashMap<String, String>> config = READER.load(args[0]);
-    String workingDir = config.get("deployment").get("path");
     String description = config.get("deployment").get("name");
     String username = config.get("deployment").get("username");
 
     final String action = args[1];
     if (action.equals("-copy_master_catalog")) {
+      String workingDir = config.get("deployment").get("path");
       String remotePath = workingDir + "/" + description + "-files" + "/" + description;
       // Although we have only one master now
       HashMap<String, String> masters = config.get("master");
@@ -55,9 +55,10 @@ public final class DeploymentUtils {
         rsyncFileToRemote(localPath, hostname, remotePath);
       }
     } else if (action.equals("-copy_worker_catalogs")) {
-      String remotePath = workingDir + "/" + description + "-files" + "/" + description;
       HashMap<String, String> workers = config.get("workers");
       for (String workerId : workers.keySet()) {
+        String workingDir = config.get("paths").get(workerId);
+        String remotePath = workingDir + "/" + description + "-files" + "/" + description;
         String hostname = getHostname(workers.get(workerId));
         if (username != null) {
           hostname = username + "@" + hostname;
@@ -67,6 +68,7 @@ public final class DeploymentUtils {
         rsyncFileToRemote(localPath, hostname, remotePath);
       }
     } else if (action.equals("-copy_distribution")) {
+      String workingDir = config.get("deployment").get("path");
       String remotePath = workingDir + "/" + description + "-files";
       HashMap<String, String> masters = config.get("master");
       for (String masterId : masters.keySet()) {
@@ -80,6 +82,8 @@ public final class DeploymentUtils {
       }
       HashMap<String, String> workers = config.get("workers");
       for (String workerId : workers.keySet()) {
+        workingDir = config.get("paths").get(workerId);
+        remotePath = workingDir + "/" + description + "-files";
         String hostname = getHostname(workers.get(workerId));
         if (username != null) {
           hostname = username + "@" + hostname;
@@ -89,6 +93,7 @@ public final class DeploymentUtils {
         rsyncFileToRemote("sqlite4java-282", hostname, remotePath);
       }
     } else if (action.equals("-start_master")) {
+      String workingDir = config.get("deployment").get("path");
       String restPort = config.get("deployment").get("rest_port");
       String maxHeapSize = config.get("deployment").get("max_heap_size");
       if (maxHeapSize == null) {
@@ -114,6 +119,7 @@ public final class DeploymentUtils {
         if (username != null) {
           hostname = username + "@" + hostname;
         }
+        String workingDir = config.get("paths").get(workerId);
         startWorker(hostname, workingDir, description, maxHeapSize, workerId);
       }
     } else {
@@ -146,7 +152,7 @@ public final class DeploymentUtils {
     builder.append(" 1>worker_" + workerId + "_stdout");
     builder.append(" 2>worker_" + workerId + "_stderr");
     builder.append(" &");
-    System.out.println(address);
+    System.out.println(workerId + " = " + address);
     startAProcess(builder.toString());
   }
 

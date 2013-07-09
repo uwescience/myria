@@ -160,7 +160,7 @@ public final class CatalogMaker {
 
       /* Each worker's configuration. */
       for (final String workerId : workers.keySet()) {
-        makeOneWorkerCatalog(workerId, catalogLocation, c, workerConfigurations, overwrite);
+        makeOneWorkerCatalog(workerId, catalogLocation, config, workerConfigurations, overwrite);
       }
       /* Close the master catalog. */
       c.close();
@@ -182,13 +182,14 @@ public final class CatalogMaker {
    * 
    * @param workerId the worker whose catalog is being creating.
    * @param catalogLocation directory name.
-   * @param c the master catalog.
+   * @param config the parsed configuration.
    * @param workerConfigurations worker configuration.
    * @param overwrite true/false if want to overwrite old catalog.
    * @throws CatalogException if can't get information from the master catalog.
    */
-  public static void makeOneWorkerCatalog(final String workerId, final String catalogLocation, final MasterCatalog c,
-      final Map<String, String> workerConfigurations, final boolean overwrite) throws CatalogException {
+  public static void makeOneWorkerCatalog(final String workerId, final String catalogLocation,
+      final Map<String, HashMap<String, String>> config, final Map<String, String> workerConfigurations,
+      final boolean overwrite) throws CatalogException {
     /* Start by making the directory for the worker */
 
     final String dirName = FilenameUtils.concat(catalogLocation, "worker_" + workerId);
@@ -208,19 +209,18 @@ public final class CatalogMaker {
       }
 
       /* Add any and all masters. */
-      final List<SocketInfo> masters = c.getMasters();
-      for (final SocketInfo s : masters) {
-        wc.addMaster(s.toString());
+      final Map<String, String> masters = config.get("master");
+      for (final String id : masters.keySet()) {
+        wc.addMaster(masters.get(id));
       }
-
-      /* Add any and all workers. */
-      final Map<Integer, SocketInfo> workers = c.getWorkers();
-      for (final Entry<Integer, SocketInfo> w : workers.entrySet()) {
-        wc.addWorker(w.getKey(), w.getValue().toString());
+      final Map<String, String> workers = config.get("workers");
+      for (final String id : workers.keySet()) {
+        wc.addWorker(Integer.parseInt(id), workers.get(id));
       }
 
       /* Build up a map of the worker configuration variables. */
       HashMap<String, String> configurationValues = new HashMap<String, String>(workerConfigurations);
+      configurationValues.put(MyriaSystemConfigKeys.WORKING_DIRECTORY, config.get("paths").get(workerId));
       MyriaSystemConfigKeys.addDeploymentKeysFromConfigFile(configurationValues, config.get("deployment"));
 
       /* Add all missing default configuration values to the map. */
@@ -228,7 +228,7 @@ public final class CatalogMaker {
 
       /* Three worker-specific values. */
 
-      String description = c.getConfigurationValue("description");
+      String description = config.get("deployment").get("description");
       String sqliteDbName = "";
       if (description != null) {
         sqliteDbName = FilenameUtils.concat(description, "worker_" + workerId);
