@@ -17,7 +17,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.commons.io.FilenameUtils;
 
 import edu.washington.escience.myriad.TupleBatch;
-import edu.washington.escience.myriad.coordinator.catalog.Catalog;
+import edu.washington.escience.myriad.coordinator.catalog.MasterCatalog;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.parallel.QueryFuture;
@@ -85,7 +85,7 @@ public class Main {
     BufferedReader br =
         new BufferedReader(new InputStreamReader(new FileInputStream(new File(queryWorkerNameListFile))));
 
-    Catalog catalog = Catalog.open(FilenameUtils.concat(masterHome, "master.catalog"));
+    MasterCatalog catalog = MasterCatalog.open(FilenameUtils.concat(masterHome, "master.catalog"));
     Map<Integer, SocketInfo> allWorkerInfos = catalog.getWorkers();
     catalog.close();
 

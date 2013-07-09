@@ -35,28 +35,25 @@ import edu.washington.escience.myriad.parallel.SocketInfo;
  * @author dhalperi
  * 
  */
-public final class Catalog {
+public final class MasterCatalog {
   /** The logger for this class. */
-  private static final Logger LOGGER = LoggerFactory.getLogger(Catalog.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(MasterCatalog.class);
 
   /**
    * @param filename the path to the SQLite database storing the catalog.
-   * @param description specifies a description for the configuration stored in this Catalog.
    * @return a fresh Catalog fitting the specified description.
    * @throws IOException if the specified file already exists.
    * @throws CatalogException if there is an error opening the database.
    * 
    *           TODO add some sanity checks to the filename?
    */
-  public static Catalog create(final String filename, final String description) throws IOException, CatalogException {
+  public static MasterCatalog create(final String filename) throws IOException, CatalogException {
     Objects.requireNonNull(filename);
-    Objects.requireNonNull(description);
-    return Catalog.create(filename, description, false);
+    return MasterCatalog.create(filename, false);
   }
 
   /**
    * @param filename the path to the SQLite database storing the catalog.
-   * @param description specifies a description for the configuration stored in this Catalog.
    * @param overwrite specifies whether to overwrite an existing Catalog.
    * @return a fresh Catalog fitting the specified description.
    * @throws IOException if overwrite is true and the specified file already exists.
@@ -64,32 +61,28 @@ public final class Catalog {
    * 
    *           TODO add some sanity checks to the filename?
    */
-  public static Catalog create(final String filename, final String description, final boolean overwrite)
-      throws IOException, CatalogException {
+  public static MasterCatalog create(final String filename, final boolean overwrite) throws IOException,
+      CatalogException {
     Objects.requireNonNull(filename);
-    Objects.requireNonNull(description);
 
     /* if overwrite is false, error if the file exists. */
     final File catalogFile = new File(filename);
     if (!overwrite && catalogFile.exists()) {
       throw new IOException(filename + " already exists");
     }
-    return Catalog.createFromFile(catalogFile, description);
+    return MasterCatalog.createFromFile(catalogFile);
   }
 
   /**
    * 
    * @param catalogFile a File object pointing to the SQLite database that will store the Catalog. If catalogFile is
    *          null, this creates an in-memory SQLite database.
-   * @param description specifies a description for the configuration stored in this Catalog.
    * @return a fresh Catalog fitting the specified description.
    * @throws CatalogException if there is an error opening the database.
    * 
    *           TODO add some sanity checks to the filename?
    */
-  private static Catalog createFromFile(final File catalogFile, final String description) throws CatalogException {
-    Objects.requireNonNull(description);
-
+  private static MasterCatalog createFromFile(final File catalogFile) throws CatalogException {
     /* Connect to the database. */
     final SQLiteQueue queue = new SQLiteQueue(catalogFile).start();
     try {
@@ -101,30 +94,39 @@ public final class Catalog {
           try {
             sqliteConnection.exec("PRAGMA journal_mode = WAL;");
             sqliteConnection.exec("BEGIN TRANSACTION");
+            sqliteConnection.exec("DROP TABLE IF EXISTS configuration");
             sqliteConnection.exec("CREATE TABLE configuration (\n" + "    key STRING UNIQUE NOT NULL,\n"
                 + "    value STRING NOT NULL);");
+            sqliteConnection.exec("DROP TABLE IF EXISTS workers");
             sqliteConnection.exec("CREATE TABLE workers (\n" + "    worker_id INTEGER PRIMARY KEY ASC,\n"
                 + "    host_port STRING NOT NULL);");
+            sqliteConnection.exec("DROP TABLE IF EXISTS alive_workers");
             sqliteConnection.exec("CREATE TABLE alive_workers (\n"
                 + "    worker_id INTEGER PRIMARY KEY ASC REFERENCES workers(worker_id));");
+            sqliteConnection.exec("DROP TABLE IF EXISTS masters");
             sqliteConnection.exec("CREATE TABLE masters (\n" + "    master_id INTEGER PRIMARY KEY ASC,\n"
                 + "    host_port STRING NOT NULL);");
+            sqliteConnection.exec("DROP TABLE IF EXISTS relations");
             sqliteConnection.exec("CREATE TABLE relations (\n" + "    user_name STRING NOT NULL,\n"
                 + "    program_name STRING NOT NULL,\n" + "    relation_name STRING NOT NULL,\n"
                 + "    PRIMARY KEY (user_name,program_name,relation_name));");
+            sqliteConnection.exec("DROP TABLE IF EXISTS relation_schema");
             sqliteConnection.exec("CREATE TABLE relation_schema (\n" + "    user_name STRING NOT NULL,\n"
                 + "    program_name STRING NOT NULL,\n" + "    relation_name STRING NOT NULL,\n"
                 + "    col_index INTEGER NOT NULL,\n" + "    col_name STRING,\n" + "    col_type STRING NOT NULL,\n"
                 + "    FOREIGN KEY (user_name,program_name,relation_name) REFERENCES relations);");
+            sqliteConnection.exec("DROP TABLE IF EXISTS stored_relations");
             sqliteConnection.exec("CREATE TABLE stored_relations (\n"
                 + "    stored_relation_id INTEGER PRIMARY KEY ASC,\n" + "    user_name STRING NOT NULL,\n"
                 + "    program_name STRING NOT NULL,\n" + "    relation_name STRING NOT NULL,\n"
                 + "    num_shards INTEGER NOT NULL,\n" + "    how_partitioned STRING NOT NULL,\n"
                 + "    FOREIGN KEY (user_name,program_name,relation_name) REFERENCES relations);");
+            sqliteConnection.exec("DROP TABLE IF EXISTS shards");
             sqliteConnection.exec("CREATE TABLE shards (\n"
                 + "    stored_relation_id INTEGER NOT NULL REFERENCES stored_relations(stored_relation_id),\n"
                 + "    shard_index INTEGER NOT NULL,\n"
                 + "    worker_id INTEGER NOT NULL REFERENCES workers(worker_id));");
+            sqliteConnection.exec("DROP TABLE IF EXISTS queries");
             sqliteConnection.exec("CREATE TABLE queries (\n" + "    query_id INTEGER NOT NULL PRIMARY KEY ASC,\n"
                 + "    raw_query TEXT NOT NULL,\n" + "    logical_ra TEXT NOT NULL);");
             sqliteConnection.exec("END TRANSACTION");
@@ -135,21 +137,6 @@ public final class Catalog {
             }
             throw new CatalogException("SQLiteException while creating new Catalog tables", e);
           }
-
-          /* Populate what tables we can. */
-          try {
-            final SQLiteStatement statement =
-                sqliteConnection.prepare("INSERT INTO configuration (key, value) VALUES (?,?);", false);
-            statement.bind(1, "description");
-            statement.bind(2, description);
-            statement.step();
-            statement.dispose();
-          } catch (final SQLiteException e) {
-            if (LOGGER.isErrorEnabled()) {
-              LOGGER.error(e.toString());
-            }
-            throw new CatalogException("SQLiteException while populating new Catalog tables", e);
-          }
           return null;
         }
       }).get();
@@ -157,18 +144,15 @@ public final class Catalog {
       throw new CatalogException(e);
     }
 
-    return new Catalog(queue);
+    return new MasterCatalog(queue);
   }
 
   /**
-   * @param description specifies a description for the configuration stored in this Catalog.
    * @return a fresh Catalog fitting the specified description.
    * @throws CatalogException if there is an error opening the database.
    */
-  public static Catalog createInMemory(final String description) throws CatalogException {
-    Objects.requireNonNull(description);
-
-    return Catalog.createFromFile(null, description);
+  public static MasterCatalog createInMemory() throws CatalogException {
+    return MasterCatalog.createFromFile(null);
   }
 
   /**
@@ -181,7 +165,7 @@ public final class Catalog {
    * 
    *           TODO add some sanity checks to the filename?
    */
-  public static Catalog open(final String filename) throws FileNotFoundException, CatalogException {
+  public static MasterCatalog open(final String filename) throws FileNotFoundException, CatalogException {
     Objects.requireNonNull(filename);
 
     java.util.logging.Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
@@ -194,7 +178,7 @@ public final class Catalog {
     }
 
     /* Connect to the database */
-    return new Catalog(new SQLiteQueue(catalogFile).start());
+    return new MasterCatalog(new SQLiteQueue(catalogFile).start());
   }
 
   /**
@@ -215,7 +199,7 @@ public final class Catalog {
    * @param queue thread manager for the SQLite database that stores the Catalog.
    * @throws CatalogException if there is an error turning on foreign keys or locking the database.
    */
-  private Catalog(final SQLiteQueue queue) throws CatalogException {
+  private MasterCatalog(final SQLiteQueue queue) throws CatalogException {
     this.queue = queue;
     isClosed = false;
     try {
@@ -241,7 +225,7 @@ public final class Catalog {
    * @return this Catalog
    * @throws CatalogException if the hostPortString is invalid or there is a database exception.
    */
-  public Catalog addMaster(final String hostPortString) throws CatalogException {
+  public MasterCatalog addMaster(final String hostPortString) throws CatalogException {
     Objects.requireNonNull(hostPortString);
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
@@ -450,10 +434,11 @@ public final class Catalog {
    * Adds a worker using the specified host and port to the Catalog.
    * 
    * @param hostPortString specifies the path to the worker in the format "host:port"
+   * @param workerId the worker id to be added
    * @return this Catalog
    * @throws CatalogException if the hostPortString is invalid or there is a database exception.
    */
-  public Catalog addWorker(final String hostPortString) throws CatalogException {
+  public MasterCatalog addWorker(final int workerId, final String hostPortString) throws CatalogException {
     Objects.requireNonNull(hostPortString);
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
@@ -467,8 +452,9 @@ public final class Catalog {
             /* Just used to verify that hostPortString is legal */
             final SocketInfo sockInfo = SocketInfo.valueOf(hostPortString);
             final SQLiteStatement statement =
-                sqliteConnection.prepare("INSERT INTO workers(host_port) VALUES(?);", false);
-            statement.bind(1, hostPortString);
+                sqliteConnection.prepare("INSERT INTO workers(worker_id, host_port) VALUES(?,?);", false);
+            statement.bind(1, workerId);
+            statement.bind(2, hostPortString);
             statement.step();
             statement.dispose();
           } catch (final SQLiteException e) {
@@ -636,6 +622,9 @@ public final class Catalog {
             sqliteConnection.exec("BEGIN TRANSACTION");
             final SQLiteStatement statement = sqliteConnection.prepare("INSERT INTO configuration VALUES(?,?);", false);
             for (Map.Entry<String, String> entry : entries.entrySet()) {
+              if (entry.getValue() == null) {
+                continue;
+              }
               statement.bind(1, entry.getKey());
               statement.bind(2, entry.getValue());
               statement.step();
