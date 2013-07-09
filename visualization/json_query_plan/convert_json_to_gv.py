@@ -24,6 +24,7 @@ children['Merge'] = ['arg_children']
 children['Project'] = ['arg_child']
 children['LocalCountingJoin'] = ['arg_child1', 'arg_child2']
 children['SQLiteInsert'] = ['arg_child']
+children['BroadcastProducer'] = ['arg_child']
 
 # Colors supported by graphviz, in some pleasing order
 colors = [
@@ -78,6 +79,7 @@ def operator_get_out_pipes(op):
     pipe_fields['LocalMultiwayProducer'] = ['arg_operator_ids']
     pipe_fields['ShuffleProducer'] = ['arg_operator_id']
     pipe_fields['IDBInput'] = ['arg_controller_operator_id']
+    pipe_fields['BroadcastProducer'] = ['arg_operator_id']
     ret = []
     for x in pipe_fields[op['op_type']]:
         if isinstance(op[x],list):
@@ -94,6 +96,7 @@ def operator_get_in_pipes(op):
     pipe_fields['Consumer'] = ['arg_operator_id']
     pipe_fields['LocalMultiwayConsumer'] = ['arg_operator_id']
     pipe_fields['ShuffleConsumer'] = ['arg_operator_id']
+    pipe_fields['BroadcastConsumer'] = ['arg_operator_id']
     return [str(op[x]) for x in pipe_fields[op['op_type']]]
 
 def get_graph(unified_plan):

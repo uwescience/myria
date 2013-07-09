@@ -1,0 +1,14 @@
+{
+  "relation_key" : {
+    "user_name" : "shumo_chu",
+    "program_name" : "broadcast_join",
+    "relation_name" : "smallTable"
+  },
+  "schema" : {
+    "column_types" : ["LONG_TYPE", "LONG_TYPE"],
+    "column_names" : ["follower", "followee"]
+  },
+  "file_name" : "/Users/steve/Project/myriad/jsonQueries/broadcastJoin_shumo
+/smallTable",
+  "is_comma_separated" : false
+}
