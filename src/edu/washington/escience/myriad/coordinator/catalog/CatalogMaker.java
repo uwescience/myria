@@ -6,9 +6,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -24,7 +22,6 @@ import edu.washington.escience.myriad.MyriaSystemConfigKeys;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.parallel.SocketInfo;
 import edu.washington.escience.myriad.tool.MyriaConfigurationReader;
 
 /**
@@ -154,10 +151,7 @@ public final class CatalogMaker {
           Type.LONG_TYPE), ImmutableList.of("x", "y")));
 
       HashMap<String, String> configurationValues = new HashMap<String, String>(masterConfigurations);
-      configurationValues.put("workingDir", config.get("deployment").get("path"));
-      configurationValues.put("description", config.get("deployment").get("name"));
-      configurationValues.put("username", config.get("deployment").get("username"));
-      configurationValues.put("max_heap_size", config.get("deployment").get("max_heap_size"));
+      MyriaSystemConfigKeys.addDeploymentKeysFromConfigFile(configurationValues, config.get("deployment"));
 
       /* Add all missing default configuration values to the map. */
       MyriaSystemConfigKeys.addDefaultConfigKeys(configurationValues);
@@ -227,10 +221,7 @@ public final class CatalogMaker {
 
       /* Build up a map of the worker configuration variables. */
       HashMap<String, String> configurationValues = new HashMap<String, String>(workerConfigurations);
-      configurationValues.put("workingDir", c.getConfigurationValue("workingDir"));
-      configurationValues.put("description", c.getConfigurationValue("description"));
-      configurationValues.put("username", c.getConfigurationValue("username"));
-      configurationValues.put("max_heap_size", c.getConfigurationValue("max_heap_size"));
+      MyriaSystemConfigKeys.addDeploymentKeysFromConfigFile(configurationValues, config.get("deployment"));
 
       /* Add all missing default configuration values to the map. */
       MyriaSystemConfigKeys.addDefaultConfigKeys(configurationValues);

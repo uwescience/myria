@@ -76,6 +76,15 @@ public final class MyriaSystemConfigKeys {
    * */
   public static final String IPC_SERVER_PORT = "ipc.server.port";
 
+  /** */
+  public static final String WORKING_DIRECTORY = "working.directory";
+  /** */
+  public static final String DESCRIPTION = "description";
+  /** */
+  public static final String USERNAME = "username";
+  /** */
+  public static final String MAX_HEAP_SIZE = "max.heap.size";
+
   /**
    * Add default configurations into a configuraion.
    * 
@@ -103,4 +112,27 @@ public final class MyriaSystemConfigKeys {
       config.put(TCP_SEND_BUFFER_SIZE_BYTES, MyriaConstants.TCP_SEND_BUFFER_SIZE_BYTES_DEFAULT_VALUE + "");
     }
   }
+
+  /**
+   * Add configurations from the parsed result of the deployment section of a config file.
+   * 
+   * @param config the configuration to be added to.
+   * @param deployment the parsed result of the deployment section.
+   * */
+  public static void addDeploymentKeysFromConfigFile(final Map<String, String> config,
+      final Map<String, String> deployment) {
+    if (!config.containsKey(WORKING_DIRECTORY)) {
+      config.put(WORKING_DIRECTORY, deployment.get("path"));
+    }
+    if (!config.containsKey(DESCRIPTION)) {
+      config.put(DESCRIPTION, deployment.get("description"));
+    }
+    if (!config.containsKey(USERNAME)) {
+      config.put(USERNAME, deployment.get("username"));
+    }
+    if (!config.containsKey(MAX_HEAP_SIZE)) {
+      config.put(MAX_HEAP_SIZE, deployment.get("max_heap_size"));
+    }
+  }
+
 }
