@@ -1,7 +1,6 @@
 package edu.washington.escience.myriad.parallel.ipc;
 
 import org.jboss.netty.channel.Channel;
-import org.jboss.netty.channel.ChannelFuture;
 
 import com.google.common.base.Preconditions;
 
@@ -163,46 +162,6 @@ public class StreamIOChannelPair {
     } finally {
       outputMappingLock.unlock();
     }
-  }
-
-  /**
-   * Resume reading from the input channel.
-   * 
-   * @return the future of this action, null if no physical IO channel is associated.
-   * */
-  public final ChannelFuture resumeRead() {
-    inputMappingLock.lock();
-    try {
-      if (inputStreamChannel != null) {
-        Channel ch = inputStreamChannel.getIOChannel();
-        if (ch != null && !ch.isReadable()) {
-          return IPCUtils.resumeRead(ch);
-        }
-      }
-    } finally {
-      inputMappingLock.unlock();
-    }
-    return null;
-  }
-
-  /**
-   * Pause reading from the input channel.
-   * 
-   * @return the future of this action, null if no physical IO channel is associated.
-   * */
-  public final ChannelFuture pauseRead() {
-    inputMappingLock.lock();
-    try {
-      if (inputStreamChannel != null) {
-        Channel ch = inputStreamChannel.getIOChannel();
-        if (ch != null && ch.isReadable()) {
-          return IPCUtils.pauseRead(ch);
-        }
-      }
-    } finally {
-      inputMappingLock.unlock();
-    }
-    return null;
   }
 
 }

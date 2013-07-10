@@ -67,25 +67,6 @@ public class StreamOutputChannel<PAYLOAD> extends StreamIOChannel {
   }
 
   /**
-   * Call the method if the physical output device used by this {@link StreamOutputChannel} is not able to process
-   * writes.
-   * */
-  final void notifyOutputDisabled() {
-    for (IPCEventListener l : outputDisableListeners) {
-      l.triggered(this.outputDisabledEvent);
-    }
-  }
-
-  /**
-   * Call the method if the physical output device used by this {@link StreamOutputChannel} is able to process writes.
-   * */
-  final void notifyOutputEnabled() {
-    for (IPCEventListener l : outputRecoverListeners) {
-      l.triggered(this.outputRecoveredEvent);
-    }
-  }
-
-  /**
    * Callback from the physical IO layer if the channel interest changed.
    * */
   final void channelInterestChangedCallback() {
