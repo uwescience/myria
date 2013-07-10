@@ -6,6 +6,7 @@ import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
 
 import edu.washington.escience.myriad.parallel.Producer;
+import edu.washington.escience.myriad.parallel.ipc.IPCEvent.EventType;
 
 /**
  * 
@@ -21,41 +22,27 @@ public class StreamOutputChannel<PAYLOAD> extends StreamIOChannel {
   /**
    * Output disabled listeners.
    * */
-  private final ConcurrentLinkedQueue<IPCEventListener<StreamOutputChannel<PAYLOAD>>> outputDisableListeners;
+  private final ConcurrentLinkedQueue<IPCEventListener> outputDisableListeners;
 
   /**
    * Output recovered listeners.
    * */
-  private final ConcurrentLinkedQueue<IPCEventListener<StreamOutputChannel<PAYLOAD>>> outputRecoverListeners;
-
-  /**
-   * the output disabled event.
-   * */
-  public final IPCEvent<StreamOutputChannel<PAYLOAD>> outputDisabledEvent =
-      new IPCEvent<StreamOutputChannel<PAYLOAD>>() {
-
-        @Override
-        public StreamOutputChannel<PAYLOAD> getAttachment() {
-          return StreamOutputChannel.this;
-        }
-      };
-
-  /**
-   * the output enabled event.
-   * */
-  public final IPCEvent<StreamOutputChannel<PAYLOAD>> outputEnabledEvent =
-      new IPCEvent<StreamOutputChannel<PAYLOAD>>() {
-
-        @Override
-        public StreamOutputChannel<PAYLOAD> getAttachment() {
-          return StreamOutputChannel.this;
-        }
-      };
+  private final ConcurrentLinkedQueue<IPCEventListener> outputRecoverListeners;
 
   /**
    * owner IPC pool.
    * */
   private final IPCConnectionPool ownerPool;
+
+  /**
+   * Output disabled event.
+   * */
+  public static final EventType OUTPUT_DISABLED = new EventType("Output disabled");
+
+  /**
+   * Output recovered event.
+   * */
+  public static final EventType OUTPUT_RECOVERED = new EventType("Output recovered");
 
   /**
    * Channel release future.
@@ -70,8 +57,8 @@ public class StreamOutputChannel<PAYLOAD> extends StreamIOChannel {
   public StreamOutputChannel(final StreamIOChannelID ecID, final IPCConnectionPool ownerPool,
       final Channel initialPhysicalChannel) {
     super(ecID);
-    outputDisableListeners = new ConcurrentLinkedQueue<IPCEventListener<StreamOutputChannel<PAYLOAD>>>();
-    outputRecoverListeners = new ConcurrentLinkedQueue<IPCEventListener<StreamOutputChannel<PAYLOAD>>>();
+    outputDisableListeners = new ConcurrentLinkedQueue<IPCEventListener>();
+    outputRecoverListeners = new ConcurrentLinkedQueue<IPCEventListener>();
     this.ownerPool = ownerPool;
     ChannelContext.getChannelContext(initialPhysicalChannel).getRegisteredChannelContext().getIOPair()
         .mapOutputChannel(this, initialPhysicalChannel);
@@ -81,8 +68,8 @@ public class StreamOutputChannel<PAYLOAD> extends StreamIOChannel {
    * Call the method if the physical output device used by this {@link StreamOutputChannel} is not able to process
    * writes.
    * */
-  public final void notifyOutputDisabled() {
-    for (IPCEventListener<StreamOutputChannel<PAYLOAD>> l : outputDisableListeners) {
+  final void notifyOutputDisabled() {
+    for (IPCEventListener l : outputDisableListeners) {
       l.triggered(this.outputDisabledEvent);
     }
   }
@@ -90,9 +77,9 @@ public class StreamOutputChannel<PAYLOAD> extends StreamIOChannel {
   /**
    * Call the method if the physical output device used by this {@link StreamOutputChannel} is able to process writes.
    * */
-  public final void notifyOutputEnabled() {
-    for (IPCEventListener<StreamOutputChannel<PAYLOAD>> l : outputRecoverListeners) {
-      l.triggered(this.outputEnabledEvent);
+  final void notifyOutputEnabled() {
+    for (IPCEventListener l : outputRecoverListeners) {
+      l.triggered(this.outputRecoveredEvent);
     }
   }
 
@@ -102,13 +89,47 @@ public class StreamOutputChannel<PAYLOAD> extends StreamIOChannel {
   }
 
   /**
+   * The output disabled event.
+   * */
+  private final IPCEvent outputDisabledEvent = new IPCEvent() {
+
+    @Override
+    public Object getAttachment() {
+      return StreamOutputChannel.this;
+    }
+
+    @Override
+    public EventType getType() {
+      return OUTPUT_DISABLED;
+    }
+
+  };
+
+  /**
+   * The output recover event.
+   * */
+  private final IPCEvent outputRecoveredEvent = new IPCEvent() {
+
+    @Override
+    public Object getAttachment() {
+      return StreamOutputChannel.this;
+    }
+
+    @Override
+    public EventType getType() {
+      return OUTPUT_RECOVERED;
+    }
+
+  };
+
+  /**
    * @param t event type.
    * @param l event listener.
    * */
-  public final void addListener(final IPCEvent<?> t, final IPCEventListener<StreamOutputChannel<PAYLOAD>> l) {
-    if (t == this.outputDisabledEvent) {
+  public final void addListener(final EventType t, final IPCEventListener l) {
+    if (t == OUTPUT_DISABLED) {
       outputDisableListeners.add(l);
-    } else if (t == this.outputEnabledEvent) {
+    } else if (t == OUTPUT_RECOVERED) {
       outputRecoverListeners.add(l);
     } else {
       throw new IllegalArgumentException("Unsupported event: " + t);

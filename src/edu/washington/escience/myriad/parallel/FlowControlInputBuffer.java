@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit;
 
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.parallel.ipc.IPCEvent;
+import edu.washington.escience.myriad.parallel.ipc.IPCEvent.EventType;
 import edu.washington.escience.myriad.parallel.ipc.IPCEventListener;
 
 /**
@@ -46,9 +47,9 @@ public class FlowControlInputBuffer<M extends ExchangeMessage<TupleBatch>> imple
   public FlowControlInputBuffer(final int softCapacity) {
     this.storage = new LinkedList<M>();
     this.softCapacity = softCapacity;
-    bufferEmptyListeners = new ConcurrentLinkedQueue<IPCEventListener<FlowControlInputBuffer<M>>>();
-    bufferFullListeners = new ConcurrentLinkedQueue<IPCEventListener<FlowControlInputBuffer<M>>>();
-    bufferRecoverListeners = new ConcurrentLinkedQueue<IPCEventListener<FlowControlInputBuffer<M>>>();
+    bufferEmptyListeners = new ConcurrentLinkedQueue<IPCEventListener>();
+    bufferFullListeners = new ConcurrentLinkedQueue<IPCEventListener>();
+    bufferRecoverListeners = new ConcurrentLinkedQueue<IPCEventListener>();
   }
 
   /**
@@ -197,93 +198,89 @@ public class FlowControlInputBuffer<M extends ExchangeMessage<TupleBatch>> imple
   /**
    * Buffer empty event listeners.
    * */
-  private final ConcurrentLinkedQueue<IPCEventListener<FlowControlInputBuffer<M>>> bufferEmptyListeners;
+  private final ConcurrentLinkedQueue<IPCEventListener> bufferEmptyListeners;
 
   /**
    * Buffer full event listeners.
    * */
-  private final ConcurrentLinkedQueue<IPCEventListener<FlowControlInputBuffer<M>>> bufferFullListeners;
+  private final ConcurrentLinkedQueue<IPCEventListener> bufferFullListeners;
 
   /**
    * Buffer recover event listeners.
    * */
-  private final ConcurrentLinkedQueue<IPCEventListener<FlowControlInputBuffer<M>>> bufferRecoverListeners;
+  private final ConcurrentLinkedQueue<IPCEventListener> bufferRecoverListeners;
 
   /**
    * the buffer empty event.
    * */
-  private final IPCEvent<FlowControlInputBuffer<M>> bufferEmptyEvent = new IPCEvent<FlowControlInputBuffer<M>>() {
+  private final IPCEvent bufferEmptyEvent = new IPCEvent() {
 
     @Override
     public final FlowControlInputBuffer<M> getAttachment() {
       return FlowControlInputBuffer.this;
+    }
+
+    @Override
+    public EventType getType() {
+      return BUFFER_EMPTY;
     }
   };
 
   /**
    * the buffer full event.
    * */
-  private final IPCEvent<FlowControlInputBuffer<M>> bufferFullEvent = new IPCEvent<FlowControlInputBuffer<M>>() {
+  private final IPCEvent bufferFullEvent = new IPCEvent() {
 
     @Override
     public FlowControlInputBuffer<M> getAttachment() {
       return FlowControlInputBuffer.this;
+    }
+
+    @Override
+    public EventType getType() {
+      return BUFFER_FULL;
     }
   };
 
   /**
    * the buffer recover event.
    * */
-  private final IPCEvent<FlowControlInputBuffer<M>> bufferRecoverEvent = new IPCEvent<FlowControlInputBuffer<M>>() {
+  private final IPCEvent bufferRecoverEvent = new IPCEvent() {
 
     @Override
     public FlowControlInputBuffer<M> getAttachment() {
       return FlowControlInputBuffer.this;
+    }
+
+    @Override
+    public EventType getType() {
+      return BUFFER_RECOVER;
     }
   };
 
   /**
    * Add a buffer recover event listener.
    * 
+   * @param type event type.
    * @param e an IOEventListener.
    * */
-  public final void addBufferEmptyListener(final IPCEventListener<FlowControlInputBuffer<M>> e) {
-    if (this.ownerOperator != null) {
-      if (this.isEmpty()) {
-        e.triggered(bufferEmptyEvent);
-      }
+  public final void addListener(final IPCEvent.EventType type, final IPCEventListener e) {
+    if (type == BUFFER_FULL) {
+      this.bufferFullListeners.add(e);
+    } else if (type == BUFFER_EMPTY) {
+      bufferEmptyListeners.add(e);
+    } else if (type == BUFFER_RECOVER) {
+      this.bufferRecoverListeners.add(e);
+    } else {
+      throw new IllegalArgumentException("Unsupported event: " + type);
     }
-    bufferEmptyListeners.add(e);
-  }
-
-  /**
-   * Add a buffer recover event listener.
-   * 
-   * @param e an IOEventListener.
-   * */
-  public final void addBufferFullListener(final IPCEventListener<FlowControlInputBuffer<M>> e) {
-    if (this.ownerOperator != null) {
-      if (this.remainingCapacity() <= 0) {
-        e.triggered(bufferFullEvent);
-      }
-    }
-    bufferFullListeners.add(e);
-  }
-
-  /**
-   * Add a buffer recover event listener.
-   * 
-   * @param e an IOEventListener.
-   * */
-  public final void addBufferRecoverListener(final IPCEventListener<FlowControlInputBuffer<M>> e) {
-    bufferRecoverListeners.add(e);
   }
 
   /**
    * Fire a buffer empty event. All the buffer empty event listeners will be notified.
    * */
   private void fireBufferEmpty() {
-    for (IPCEventListener<FlowControlInputBuffer<M>> l : bufferEmptyListeners) {
+    for (IPCEventListener l : bufferEmptyListeners) {
       l.triggered(bufferEmptyEvent);
     }
   }
@@ -292,7 +289,7 @@ public class FlowControlInputBuffer<M extends ExchangeMessage<TupleBatch>> imple
    * Fire a buffer full event. All the buffer full event listeners will be notified.
    * */
   private void fireBufferFull() {
-    for (IPCEventListener<FlowControlInputBuffer<M>> l : bufferFullListeners) {
+    for (IPCEventListener l : bufferFullListeners) {
       l.triggered(bufferFullEvent);
     }
   }
@@ -301,7 +298,7 @@ public class FlowControlInputBuffer<M extends ExchangeMessage<TupleBatch>> imple
    * Fire a buffer recover event. All the buffer recover event listeners will be notified.
    * */
   private void fireBufferRecover() {
-    for (IPCEventListener<FlowControlInputBuffer<M>> l : bufferRecoverListeners) {
+    for (IPCEventListener l : bufferRecoverListeners) {
       l.triggered(bufferRecoverEvent);
     }
   }
@@ -329,4 +326,19 @@ public class FlowControlInputBuffer<M extends ExchangeMessage<TupleBatch>> imple
       this.clear();
     }
   }
+
+  /**
+   * Buffer full event.
+   * */
+  public static final EventType BUFFER_FULL = new EventType("Buffer full");
+
+  /**
+   * Buffer empty event.
+   * */
+  public static final EventType BUFFER_EMPTY = new EventType("Buffer empty");
+
+  /**
+   * Buffer recovered event.
+   * */
+  public static final EventType BUFFER_RECOVER = new EventType("Buffer recovered");
 }

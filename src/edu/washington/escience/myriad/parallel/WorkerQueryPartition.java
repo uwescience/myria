@@ -176,17 +176,17 @@ public class WorkerQueryPartition implements QueryPartition {
         StreamOutputChannel<TransportMessage> o =
             new StreamOutputChannel<TransportMessage>(producerID, this.ownerWorker.getIPCConnectionPool(), null);
 
-        o.addListener(o.outputEnabledEvent, new IPCEventListener<StreamOutputChannel<TransportMessage>>() {
+        o.addListener(StreamOutputChannel.OUTPUT_RECOVERED, new IPCEventListener() {
 
           @Override
-          public void triggered(final IPCEvent<StreamOutputChannel<TransportMessage>> event) {
+          public void triggered(final IPCEvent event) {
             drivingTask.notifyOutputEnabled(producerID);
           }
         });
-        o.addListener(o.outputDisabledEvent, new IPCEventListener<StreamOutputChannel<TransportMessage>>() {
+        o.addListener(StreamOutputChannel.OUTPUT_DISABLED, new IPCEventListener() {
 
           @Override
-          public void triggered(final IPCEvent<StreamOutputChannel<TransportMessage>> event) {
+          public void triggered(final IPCEvent event) {
             drivingTask.notifyOutputDisabled(producerID);
           }
         });
@@ -203,26 +203,32 @@ public class WorkerQueryPartition implements QueryPartition {
       FlowControlInputBuffer<ExchangeData> inputBuffer =
           new FlowControlInputBuffer<ExchangeData>(ownerWorker.getInputBufferCapacity());
       inputBuffer.attach(operator.getOperatorID());
-      inputBuffer.addBufferFullListener(new IPCEventListener<FlowControlInputBuffer<ExchangeData>>() {
+      inputBuffer.addListener(FlowControlInputBuffer.BUFFER_FULL, new IPCEventListener() {
         @Override
-        public void triggered(final IPCEvent<FlowControlInputBuffer<ExchangeData>> e) {
-          if (e.getAttachment().remainingCapacity() <= 0) {
+        public void triggered(final IPCEvent e) {
+          @SuppressWarnings("unchecked")
+          FlowControlInputBuffer<ExchangeData> f = (FlowControlInputBuffer<ExchangeData>) e.getAttachment();
+          if (f.remainingCapacity() <= 0) {
             fch.pauseRead(operator).awaitUninterruptibly();
           }
         }
       });
-      inputBuffer.addBufferRecoverListener(new IPCEventListener<FlowControlInputBuffer<ExchangeData>>() {
+      inputBuffer.addListener(FlowControlInputBuffer.BUFFER_RECOVER, new IPCEventListener() {
         @Override
-        public void triggered(final IPCEvent<FlowControlInputBuffer<ExchangeData>> e) {
-          if (e.getAttachment().remainingCapacity() > 0) {
+        public void triggered(final IPCEvent e) {
+          @SuppressWarnings("unchecked")
+          FlowControlInputBuffer<ExchangeData> f = (FlowControlInputBuffer<ExchangeData>) e.getAttachment();
+          if (f.remainingCapacity() > 0) {
             fch.resumeRead(operator).awaitUninterruptibly();
           }
         }
       });
-      inputBuffer.addBufferEmptyListener(new IPCEventListener<FlowControlInputBuffer<ExchangeData>>() {
+      inputBuffer.addListener(FlowControlInputBuffer.BUFFER_EMPTY, new IPCEventListener() {
         @Override
-        public void triggered(final IPCEvent<FlowControlInputBuffer<ExchangeData>> e) {
-          if (e.getAttachment().remainingCapacity() > 0) {
+        public void triggered(final IPCEvent e) {
+          @SuppressWarnings("unchecked")
+          FlowControlInputBuffer<ExchangeData> f = (FlowControlInputBuffer<ExchangeData>) e.getAttachment();
+          if (f.remainingCapacity() > 0) {
             fch.resumeRead(operator).awaitUninterruptibly();
           }
         }
