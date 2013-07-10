@@ -8,7 +8,8 @@ import com.google.common.collect.ImmutableSet;
  * Array related utility functions.
  * 
  */
-public final class ArrayUtils {
+public final class ArrayUtils extends org.apache.commons.lang3.ArrayUtils {
+
   /**
    * Utility classes should not be instantiated.
    */

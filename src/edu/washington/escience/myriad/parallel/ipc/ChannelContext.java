@@ -5,7 +5,6 @@ import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
@@ -21,7 +20,7 @@ import edu.washington.escience.myriad.util.IPCUtils;
  * Recording the various context information of a channel. The most important part of this class is the state machine of
  * a channel.
  * */
-public class ChannelContext {
+public class ChannelContext extends AttachmentableAdapter {
 
   /**
    * Channel close requested event.
@@ -395,11 +394,6 @@ public class ChannelContext {
   private final Object channelRegisterLock = new Object();
 
   /**
-   * An attachment for customized extra functionality.
-   * */
-  private final AtomicReference<Object> attachment;
-
-  /**
    * last IO timestamp. 0 or negative means the channel is connected by not used. If the channel is assigned to do some
    * IO task, then this field must be updated to the timestamp of assignment. Also, each IO operation on this channel
    * should update this timestamp.
@@ -473,34 +467,6 @@ public class ChannelContext {
     registeredContext = null;
     registerConditionFutures = new HashSet<EqualityCloseFuture<Integer>>();
     delayedEvents = new ConcurrentLinkedQueue<DelayedTransitionEvent>();
-    attachment = new AtomicReference<Object>();
-  }
-
-  /**
-   * @return attachment.
-   * */
-  public final Object getAttachment() {
-    return attachment.get();
-  }
-
-  /**
-   * Set attachment to the new value and return old value.
-   * 
-   * @return the old value.
-   * @param attachment the new attachment
-   * */
-  public final Object setAttachment(final Object attachment) {
-    return this.attachment.getAndSet(attachment);
-  }
-
-  /**
-   * Set attachment to the value only if currently no attachment is set.
-   * 
-   * @return if the attachment is already set, return false, otherwise true.
-   * @param attachment the attachment to set
-   * */
-  public final boolean setAttachmentIfAbsent(final Object attachment) {
-    return this.attachment.compareAndSet(null, attachment);
   }
 
   /**

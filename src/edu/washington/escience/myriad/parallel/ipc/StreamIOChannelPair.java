@@ -16,7 +16,7 @@ import edu.washington.escience.myriad.util.ReentrantSpinLock;
  * An IO channel can be an input of a {@link Consumer} operator (inputChannel) and in the same time an output of a
  * {@link Producer} operator (outputChannel).
  * */
-public class StreamIOChannelPair {
+class StreamIOChannelPair {
 
   /** The logger for this class. */
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(StreamIOChannelPair.class.getName());

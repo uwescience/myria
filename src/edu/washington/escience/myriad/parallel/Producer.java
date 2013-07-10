@@ -1,7 +1,5 @@
 package edu.washington.escience.myriad.parallel;
 
-import java.util.Arrays;
-
 import org.jboss.netty.channel.ChannelFuture;
 
 import com.google.common.base.Preconditions;
@@ -19,6 +17,7 @@ import edu.washington.escience.myriad.parallel.ipc.IPCEvent;
 import edu.washington.escience.myriad.parallel.ipc.IPCEventListener;
 import edu.washington.escience.myriad.parallel.ipc.StreamIOChannelID;
 import edu.washington.escience.myriad.parallel.ipc.StreamOutputChannel;
+import edu.washington.escience.myriad.util.ArrayUtils;
 
 /**
  * A Producer is the counterpart of a consumer. It dispatch data using IPC channels to Consumers. Like network socket,
@@ -66,7 +65,7 @@ public abstract class Producer extends RootOperator {
    * @param oIDs operator IDs.
    * */
   public Producer(final Operator child, final ExchangePairID[] oIDs) {
-    this(child, oIDs, arrayFillAndReturn(new int[oIDs.length], -1), true);
+    this(child, oIDs, ArrayUtils.arrayFillAndReturn(new int[oIDs.length], -1), true);
   }
 
   /**
@@ -78,7 +77,7 @@ public abstract class Producer extends RootOperator {
    * 
    * */
   public Producer(final Operator child, final ExchangePairID oID, final int[] destinationWorkerIDs) {
-    this(child, (ExchangePairID[]) arrayFillAndReturn(new ExchangePairID[destinationWorkerIDs.length], oID),
+    this(child, (ExchangePairID[]) ArrayUtils.arrayFillAndReturn(new ExchangePairID[destinationWorkerIDs.length], oID),
         destinationWorkerIDs, true);
   }
 
@@ -90,7 +89,7 @@ public abstract class Producer extends RootOperator {
    * @param destinationWorkerID the worker ID.
    * */
   public Producer(final Operator child, final ExchangePairID[] oIDs, final int destinationWorkerID) {
-    this(child, oIDs, arrayFillAndReturn(new int[oIDs.length], Integer.valueOf(destinationWorkerID)), true);
+    this(child, oIDs, ArrayUtils.arrayFillAndReturn(new int[oIDs.length], Integer.valueOf(destinationWorkerID)), true);
   }
 
   /**
@@ -262,30 +261,6 @@ public abstract class Producer extends RootOperator {
     }
 
     return result;
-  }
-
-  /**
-   * Fill object array.
-   * 
-   * @return the filled array.
-   * @param arr the array to fill
-   * @param e the element to fill.
-   * */
-  private static Object[] arrayFillAndReturn(final Object[] arr, final Object e) {
-    Arrays.fill(arr, e);
-    return arr;
-  }
-
-  /**
-   * Fill int array.
-   * 
-   * @return the filled array.
-   * @param arr the array to fill
-   * @param e the element to fill.
-   * */
-  private static int[] arrayFillAndReturn(final int[] arr, final int e) {
-    Arrays.fill(arr, e);
-    return arr;
   }
 
   /**
