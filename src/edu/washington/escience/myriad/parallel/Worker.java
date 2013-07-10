@@ -36,7 +36,6 @@ import edu.washington.escience.myriad.coordinator.catalog.WorkerCatalog;
 import edu.washington.escience.myriad.parallel.ipc.FlowControlBagInputBuffer;
 import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myriad.parallel.ipc.InJVMLoopbackChannelSink;
-import edu.washington.escience.myriad.parallel.ipc.StreamOutputChannel;
 import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.util.IPCUtils;
@@ -197,27 +196,14 @@ public final class Worker {
 
     @Override
     public synchronized void run() {
-      StreamOutputChannel<TransportMessage> serverChannel = null;
-      try {
-        serverChannel = owner.connectionPool.<TransportMessage> reserveLongTermConnection(MyriaConstants.MASTER_ID, 0);
-        if (IPCUtils.isRemoteConnected(serverChannel)) {
-          return;
+      if (!owner.connectionPool.isRemoteAlive(MyriaConstants.MASTER_ID)) {
+        if (LOGGER.isInfoEnabled()) {
+          LOGGER.info("The Master has shutdown, I'll shutdown now.");
         }
-      } catch (Throwable ee) {
-        if (LOGGER.isErrorEnabled()) {
-          LOGGER.error("Unknown exception caught at reporter.", ee);
-        }
-      } finally {
-        if (serverChannel != null) {
-          owner.connectionPool.releaseLongTermConnection(serverChannel);
-        }
+        owner.toShutdown = true;
+        owner.abruptShutdown = true;
+        cancel();
       }
-      if (LOGGER.isInfoEnabled()) {
-        LOGGER.info("The Master has shutdown, I'll shutdown now.");
-      }
-      owner.toShutdown = true;
-      owner.abruptShutdown = true;
-      cancel();
     }
   }
 

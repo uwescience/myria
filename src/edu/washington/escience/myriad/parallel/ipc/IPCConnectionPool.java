@@ -4,6 +4,7 @@ import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -512,6 +513,52 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
   }
 
   /**
+   * Detect if the remote IPC entity is still alive or not.
+   * 
+   * @param remoteID remote ID.
+   * @return true if remote is still alive, false otherwise.
+   * */
+  public boolean isRemoteAlive(final int remoteID) {
+    Channel ch = null;
+    if (shutdown) {
+      // already shutdown
+      return false;
+    }
+
+    if (!channelPool.containsKey(remoteID)) {
+      // remoteID is not valid
+      return false;
+    }
+
+    try {
+      ch = getAConnection(remoteID);
+      if (ch == null) {
+        return false;
+      }
+
+      if (!IPCUtils.isRemoteConnected(ch)) {
+        // shallow testing
+        return false;
+      }
+
+      boolean ss = ch.write(IPCMessage.Meta.PING).awaitUninterruptibly().isSuccess();
+      if (!ss) {
+        return false;
+      }
+      return true;
+    } catch (Throwable ee) {
+      if (LOGGER.isErrorEnabled()) {
+        LOGGER.error("Error in testing remote alive.", ee);
+      }
+    } finally {
+      if (ch != null) {
+        ChannelContext.getChannelContext(ch).getRegisteredChannelContext().decReference();
+      }
+    }
+    return false;
+  }
+
+  /**
    * A remote IPC entity has requested to close the channel.
    * 
    * @param channel the channel to be closed.
@@ -673,6 +720,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
         if (LOGGER.isErrorEnabled()) {
           LOGGER.error("Unknown error occurs when creating in JVM pipeline", e);
         }
+        return null;
       }
     }
 
@@ -907,7 +955,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
       LOGGER.debug("remove the remote entity #" + remoteID + " from IPC connection pool");
     }
     if (remoteID == myID || remoteID == SELF_IPC_ID) {
-      return null;
+      return new DefaultChannelGroupFuture(new DefaultChannelGroup(), Collections.<ChannelFuture> emptySet());
     }
     final IPCRemote old = channelPool.get(remoteID);
     if (old != null) {
