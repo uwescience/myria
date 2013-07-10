@@ -113,6 +113,18 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
   }
 
   /**
+   * payload serializer/deserializer.
+   * */
+  private final PayloadSerializer s = null;
+
+  /**
+   * @return the payload serializer/deserializer
+   * */
+  public PayloadSerializer getPayloadSerializer() {
+    return s;
+  }
+
+  /**
    * Check the registration of new connections.
    * */
   protected class ChannelIDChecker implements Runnable {
@@ -1234,13 +1246,14 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
    * @param localInJVMPipelineFactory IPC in JVM channel pipeline factory
    * @param localInJVMChannelSink IPC in JVM channel sink.
    * @param mp short message processor
+   * @param payloadSerializer the payload serializer
    * 
    * @throws Exception if any error occurs.
    * */
   public void start(final ChannelFactory serverChannelFactory, final ChannelPipelineFactory serverPipelineFactory,
       final ChannelFactory clientChannelFactory, final ChannelPipelineFactory clientPipelineFactory,
       final ChannelPipelineFactory localInJVMPipelineFactory, final ChannelSink localInJVMChannelSink,
-      final ShortMessageProcessor<?> mp) throws Exception {
+      final ShortMessageProcessor<?> mp, final PayloadSerializer payloadSerializer) throws Exception {
 
     serverBootstrap.setFactory(serverChannelFactory);
     serverBootstrap.setPipelineFactory(serverPipelineFactory);

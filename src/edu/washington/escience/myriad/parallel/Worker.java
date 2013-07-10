@@ -694,7 +694,8 @@ public final class Worker {
     ChannelPipelineFactory workerInJVMPipelineFactory = new IPCPipelineFactories.WorkerInJVMPipelineFactory(this);
 
     connectionPool.start(serverChannelFactory, serverPipelineFactory, clientChannelFactory, clientPipelineFactory,
-        workerInJVMPipelineFactory, new InJVMLoopbackChannelSink(), workerShortMessageProcessor);
+        workerInJVMPipelineFactory, new InJVMLoopbackChannelSink(), workerShortMessageProcessor,
+        new TransportMessageSerializer());
 
     if (queryExecutionMode == QueryExecutionMode.NON_BLOCKING) {
       int numCPU = Runtime.getRuntime().availableProcessors();

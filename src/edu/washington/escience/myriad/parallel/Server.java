@@ -603,7 +603,8 @@ public final class Server {
     ChannelPipelineFactory masterInJVMPipelineFactory = new IPCPipelineFactories.MasterInJVMPipelineFactory(this);
 
     connectionPool.start(serverChannelFactory, serverPipelineFactory, clientChannelFactory, clientPipelineFactory,
-        masterInJVMPipelineFactory, new InJVMLoopbackChannelSink(), masterShortMessageProcessor);
+        masterInJVMPipelineFactory, new InJVMLoopbackChannelSink(), masterShortMessageProcessor,
+        new TransportMessageSerializer());
 
     messageProcessingExecutor.submit(new MessageProcessor());
     LOGGER.info("Server started on {}", masterSocketInfo.toString());
