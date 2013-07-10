@@ -264,7 +264,7 @@ public class ChannelContext {
       this.remoteID = remoteID;
       channelGroup = ownerChannelGroup;
       numberOfReference = new AtomicInteger(0);
-      ioPair = new StreamIOChannelPair();
+      ioPair = new StreamIOChannelPair(ChannelContext.this);
     }
 
     /**

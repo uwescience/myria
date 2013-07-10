@@ -61,7 +61,7 @@ public class StreamOutputChannel<PAYLOAD> extends StreamIOChannel {
     outputRecoverListeners = new ConcurrentLinkedQueue<IPCEventListener>();
     this.ownerPool = ownerPool;
     ChannelContext.getChannelContext(initialPhysicalChannel).getRegisteredChannelContext().getIOPair()
-        .mapOutputChannel(this, initialPhysicalChannel);
+        .mapOutputChannel(this);
   }
 
   /**

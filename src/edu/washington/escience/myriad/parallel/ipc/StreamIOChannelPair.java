@@ -8,6 +8,7 @@ import com.google.common.base.Preconditions;
 import edu.washington.escience.myriad.parallel.Consumer;
 import edu.washington.escience.myriad.parallel.Producer;
 import edu.washington.escience.myriad.util.IPCUtils;
+import edu.washington.escience.myriad.util.ReentrantSpinLock;
 
 /**
  * The data structure recording the logical role of {@link StreamInputChannel} and {@link StreamOutputChannel} that an
@@ -24,31 +25,46 @@ public class StreamIOChannelPair {
   /**
    * The lock protecting the consistency of input flow control setup.
    * */
-  private final Object inputFlowControlLock = new Object();
+  private final ReentrantSpinLock inputMappingLock = new ReentrantSpinLock();
 
   /**
    * The lock protecting the consistency of output flow control setup.
    * */
-  private final Object outputFlowControlLock = new Object();
+  private final ReentrantSpinLock outputMappingLock = new ReentrantSpinLock();
 
   /**
-   * The logical input channel.
+   * The input stream channel.
    * */
-  private StreamInputChannel<?> inputChannel;
+  private StreamInputChannel<?> inputStreamChannel;
 
   /**
-   * The logical output channel.
+   * The output stream channel.
    * */
-  private StreamOutputChannel<?> outputChannel;
+  private StreamOutputChannel<?> outputStreamChannel;
+
+  /**
+   * Owner channel context. A StreamIOChannelPair must be attached to a channel.
+   * */
+  private final ChannelContext ownerChannelContext;
+
+  /**
+   * @param ownerCTX owner ChannelContext.
+   * */
+  StreamIOChannelPair(final ChannelContext ownerCTX) {
+    ownerChannelContext = Preconditions.checkNotNull(ownerCTX);
+  }
 
   /**
    * @return the input channel in the pair.
    * @param <PAYLOAD> the payload type.
    * */
   @SuppressWarnings("unchecked")
-  public final <PAYLOAD> StreamInputChannel<PAYLOAD> getInputChannel() {
-    synchronized (inputFlowControlLock) {
-      return (StreamInputChannel<PAYLOAD>) inputChannel;
+  final <PAYLOAD> StreamInputChannel<PAYLOAD> getInputChannel() {
+    inputMappingLock.lock();
+    try {
+      return (StreamInputChannel<PAYLOAD>) inputStreamChannel;
+    } finally {
+      inputMappingLock.unlock();
     }
   }
 
@@ -57,9 +73,12 @@ public class StreamIOChannelPair {
    * @param <PAYLOAD> the payload type.
    * */
   @SuppressWarnings("unchecked")
-  public final <PAYLOAD> StreamOutputChannel<PAYLOAD> getOutputChannel() {
-    synchronized (outputFlowControlLock) {
-      return (StreamOutputChannel<PAYLOAD>) outputChannel;
+  final <PAYLOAD> StreamOutputChannel<PAYLOAD> getOutputChannel() {
+    outputMappingLock.lock();
+    try {
+      return (StreamOutputChannel<PAYLOAD>) outputStreamChannel;
+    } finally {
+      outputMappingLock.unlock();
     }
   }
 
@@ -67,16 +86,23 @@ public class StreamIOChannelPair {
    * Link the logical inputChannel with the physical ioChannel.
    * 
    * @param inputChannel the logical channel.
-   * @param ioChannel the physical channel.
    * */
-  public final void mapInputChannel(final StreamInputChannel<?> inputChannel, final Channel ioChannel) {
+  final void mapInputChannel(final StreamInputChannel<?> inputChannel) {
     Preconditions.checkNotNull(inputChannel);
-    synchronized (inputFlowControlLock) {
-      if (this.inputChannel != null) {
+    Channel ioChannel = ownerChannelContext.getChannel();
+    inputMappingLock.lock();
+    try {
+      if (inputStreamChannel != null) {
         deMapInputChannel();
       }
-      this.inputChannel = inputChannel;
+      inputStreamChannel = inputChannel;
       inputChannel.attachIOChannel(ioChannel);
+      if (LOGGER.isTraceEnabled()) {
+        LOGGER.trace(String.format("Stream input channel %1$s associates to physical channel %2$s.",
+            inputStreamChannel, ioChannel));
+      }
+    } finally {
+      inputMappingLock.unlock();
     }
   }
 
@@ -84,19 +110,23 @@ public class StreamIOChannelPair {
    * Remove the link between a logical input channel and a physical IO channel. And the IO channel reading gets resumed
    * anyway.
    * */
-  public final void deMapInputChannel() {
-    synchronized (inputFlowControlLock) {
-      if (inputChannel != null) {
-        if (LOGGER.isDebugEnabled()) {
-          LOGGER.debug("deMap " + inputChannel.getID() + ", ioChannel: " + inputChannel.getIOChannel());
+  final void deMapInputChannel() {
+    inputMappingLock.lock();
+    try {
+      if (inputStreamChannel != null) {
+        Channel channel = inputStreamChannel.getIOChannel();
+        if (LOGGER.isTraceEnabled()) {
+          LOGGER.trace(String.format("Stream input channel %1$s disassociated from physical channel %2$s.",
+              inputStreamChannel, channel));
         }
-        Channel channel = inputChannel.getIOChannel();
-        inputChannel.dettachIOChannel();
-        inputChannel = null;
+        inputStreamChannel.dettachIOChannel();
+        inputStreamChannel = null;
         if (channel != null) {
           IPCUtils.resumeRead(channel).awaitUninterruptibly();
         }
       }
+    } finally {
+      inputMappingLock.unlock();
     }
   }
 
@@ -104,28 +134,34 @@ public class StreamIOChannelPair {
    * Link the logical outputChannel with the physical ioChannel.
    * 
    * @param outputChannel the logical channel.
-   * @param ioChannel the physical channel.
    * */
-  public final void mapOutputChannel(final StreamOutputChannel<?> outputChannel, final Channel ioChannel) {
+  final void mapOutputChannel(final StreamOutputChannel<?> outputChannel) {
     Preconditions.checkNotNull(outputChannel);
-    synchronized (outputFlowControlLock) {
-      if (this.outputChannel != null) {
+    Channel ioChannel = ownerChannelContext.getChannel();
+    outputMappingLock.lock();
+    try {
+      if (outputStreamChannel != null) {
         deMapOutputChannel();
       }
-      this.outputChannel = outputChannel;
+      outputStreamChannel = outputChannel;
       outputChannel.attachIOChannel(ioChannel);
+    } finally {
+      outputMappingLock.unlock();
     }
   }
 
   /**
    * Remove the link between a logical output channel and a physical IO channel.
    * */
-  public final void deMapOutputChannel() {
-    synchronized (outputFlowControlLock) {
-      if (outputChannel != null) {
-        outputChannel.dettachIOChannel();
-        outputChannel = null;
+  final void deMapOutputChannel() {
+    outputMappingLock.lock();
+    try {
+      if (outputStreamChannel != null) {
+        outputStreamChannel.dettachIOChannel();
+        outputStreamChannel = null;
       }
+    } finally {
+      outputMappingLock.unlock();
     }
   }
 
@@ -135,13 +171,16 @@ public class StreamIOChannelPair {
    * @return the future of this action, null if no physical IO channel is associated.
    * */
   public final ChannelFuture resumeRead() {
-    synchronized (inputFlowControlLock) {
-      if (inputChannel != null) {
-        Channel ch = inputChannel.getIOChannel();
+    inputMappingLock.lock();
+    try {
+      if (inputStreamChannel != null) {
+        Channel ch = inputStreamChannel.getIOChannel();
         if (ch != null && !ch.isReadable()) {
           return IPCUtils.resumeRead(ch);
         }
       }
+    } finally {
+      inputMappingLock.unlock();
     }
     return null;
   }
@@ -152,13 +191,16 @@ public class StreamIOChannelPair {
    * @return the future of this action, null if no physical IO channel is associated.
    * */
   public final ChannelFuture pauseRead() {
-    synchronized (inputFlowControlLock) {
-      if (inputChannel != null) {
-        Channel ch = inputChannel.getIOChannel();
+    inputMappingLock.lock();
+    try {
+      if (inputStreamChannel != null) {
+        Channel ch = inputStreamChannel.getIOChannel();
         if (ch != null && ch.isReadable()) {
           return IPCUtils.pauseRead(ch);
         }
       }
+    } finally {
+      inputMappingLock.unlock();
     }
     return null;
   }
