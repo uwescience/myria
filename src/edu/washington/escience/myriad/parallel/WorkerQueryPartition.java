@@ -11,7 +11,9 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableMap;
 
+import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.operator.RootOperator;
+import edu.washington.escience.myriad.parallel.ipc.FlowControlBagInputBuffer;
 import edu.washington.escience.myriad.parallel.ipc.IPCEvent;
 import edu.washington.escience.myriad.parallel.ipc.IPCEventListener;
 import edu.washington.escience.myriad.parallel.ipc.StreamIOChannelID;
@@ -140,39 +142,18 @@ public class WorkerQueryPartition implements QueryPartition {
       HashSet<Consumer> consumerSet = new HashSet<Consumer>();
       consumerSet.addAll(drivingTask.getInputChannels().values());
 
-      final FlowControlHandler fch = ownerWorker.getFlowControlHandler();
       for (final Consumer c : consumerSet) {
-        FlowControlInputBuffer<ExchangeData> inputBuffer =
-            new FlowControlInputBuffer<ExchangeData>(ownerWorker.getInputBufferCapacity());
-        inputBuffer.attach(c.getOperatorID());
-        inputBuffer.addListener(FlowControlInputBuffer.BUFFER_FULL, new IPCEventListener() {
+        FlowControlBagInputBuffer<TupleBatch> inputBuffer =
+            new FlowControlBagInputBuffer<TupleBatch>(ownerWorker.getIPCConnectionPool(), c
+                .getExchangeChannels(ownerWorker.getIPCConnectionPool().getMyIPCID()), ownerWorker
+                .getInputBufferCapacity(), ownerWorker.getInputBufferRecoverTrigger(), this.ownerWorker
+                .getIPCConnectionPool());
+
+        inputBuffer.addListener(FlowControlBagInputBuffer.NEW_INPUT_DATA, new IPCEventListener() {
+
           @Override
-          public void triggered(final IPCEvent e) {
-            @SuppressWarnings("unchecked")
-            FlowControlInputBuffer<ExchangeData> f = (FlowControlInputBuffer<ExchangeData>) e.getAttachment();
-            if (f.remainingCapacity() <= 0) {
-              fch.pauseRead(c).awaitUninterruptibly();
-            }
-          }
-        });
-        inputBuffer.addListener(FlowControlInputBuffer.BUFFER_RECOVER, new IPCEventListener() {
-          @Override
-          public void triggered(final IPCEvent e) {
-            @SuppressWarnings("unchecked")
-            FlowControlInputBuffer<ExchangeData> f = (FlowControlInputBuffer<ExchangeData>) e.getAttachment();
-            if (f.remainingCapacity() > 0) {
-              fch.resumeRead(c).awaitUninterruptibly();
-            }
-          }
-        });
-        inputBuffer.addListener(FlowControlInputBuffer.BUFFER_EMPTY, new IPCEventListener() {
-          @Override
-          public void triggered(final IPCEvent e) {
-            @SuppressWarnings("unchecked")
-            FlowControlInputBuffer<ExchangeData> f = (FlowControlInputBuffer<ExchangeData>) e.getAttachment();
-            if (f.remainingCapacity() > 0) {
-              fch.resumeRead(c).awaitUninterruptibly();
-            }
+          public void triggered(final IPCEvent event) {
+            drivingTask.notifyNewInput();
           }
         });
         c.setInputBuffer(inputBuffer);

@@ -10,12 +10,15 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.ExchangeTupleBatch;
 import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.operator.LeafOperator;
 import edu.washington.escience.myriad.parallel.Worker.QueryExecutionMode;
+import edu.washington.escience.myriad.parallel.ipc.IPCMessage;
 import edu.washington.escience.myriad.parallel.ipc.StreamIOChannelID;
+import edu.washington.escience.myriad.parallel.ipc.StreamInputBuffer;
 import gnu.trove.impl.unmodifiable.TUnmodifiableIntIntMap;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;
@@ -31,11 +34,11 @@ public class Consumer extends LeafOperator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
+
   /**
-   * The buffer for receiving ExchangeMessages. This buffer should be assigned by the Worker. Basically, buffer =
-   * Worker.inBuffer.get(this.getOperatorID())
+   * The buffer for receiving input data.
    */
-  private transient volatile InputBuffer<TupleBatch, ExchangeData> inputBuffer;
+  private transient volatile StreamInputBuffer<TupleBatch> inputBuffer;
 
   /**
    * The operatorID of this Consumer.
@@ -149,25 +152,30 @@ public class Consumer extends LeafOperator {
       timeToWait = 0;
     }
 
-    ExchangeData tb = null;
+    IPCMessage.StreamData<TupleBatch> tb = null;
     TupleBatch result = null;
     while ((tb = take(timeToWait)) != null) {
-      int sourceWorkerIdx = workerIdToIndex.get(tb.getSourceIPCID());
+      int sourceWorkerIdx = workerIdToIndex.get(tb.getRemoteID());
+      TupleBatch ttbb = tb.getPayload();
+      if (ttbb != null) {
+        ttbb = new ExchangeTupleBatch(ttbb, tb.getRemoteID());
+      }
 
-      if (tb.isEos()) {
+      if (ttbb == null) {
+        // EOS
         workerEOS.set(sourceWorkerIdx);
         checkEOSAndEOI();
         if (eos() || eoi()) {
           break;
         }
-      } else if (tb.isEoi()) {
+      } else if (ttbb.isEOI()) {
         workerEOI.set(sourceWorkerIdx);
         checkEOSAndEOI();
         if (eos() || eoi()) {
           break;
         }
       } else {
-        result = tb.getData();
+        result = ttbb;
         break;
       }
     }
@@ -221,13 +229,14 @@ public class Consumer extends LeafOperator {
    * 
    * @param buffer my input buffer.
    * */
-  public final void setInputBuffer(final InputBuffer<TupleBatch, ExchangeData> buffer) {
-    if (inputBuffer != null) {
-      inputBuffer.detached();
+  public final void setInputBuffer(final StreamInputBuffer<TupleBatch> buffer) {
+    if (inputBuffer != null && buffer != null) {
+      inputBuffer.clear();
       inputBuffer = null;
     }
     if (buffer != null) {
-      buffer.attach(operatorID);
+      buffer.setAttachment(schema);
+      buffer.start(this);
       inputBuffer = buffer;
     }
   }
@@ -235,7 +244,7 @@ public class Consumer extends LeafOperator {
   /**
    * @return my input buffer.
    * */
-  public final InputBuffer<TupleBatch, ExchangeData> getInputBuffer() {
+  public final StreamInputBuffer<TupleBatch> getInputBuffer() {
     return inputBuffer;
   }
 
@@ -246,8 +255,8 @@ public class Consumer extends LeafOperator {
    * @return received data.
    * @throws InterruptedException if interrupted.
    */
-  private ExchangeData take(final int timeout) throws InterruptedException {
-    ExchangeData result = null;
+  private IPCMessage.StreamData<TupleBatch> take(final int timeout) throws InterruptedException {
+    IPCMessage.StreamData<TupleBatch> result = null;
     if (timeout == 0) {
       result = inputBuffer.poll();
     } else if (timeout > 0) {

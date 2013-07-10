@@ -20,8 +20,10 @@ import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.MyriaConstants;
+import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SinkRoot;
+import edu.washington.escience.myriad.parallel.ipc.FlowControlBagInputBuffer;
 import edu.washington.escience.myriad.parallel.ipc.IPCEvent;
 import edu.washington.escience.myriad.parallel.ipc.IPCEventListener;
 import edu.washington.escience.myriad.parallel.ipc.StreamIOChannelID;
@@ -385,44 +387,19 @@ public class MasterQueryPartition implements QueryPartition {
     HashSet<Consumer> consumerSet = new HashSet<Consumer>();
     consumerSet.addAll(rootTask.getInputChannels().values());
 
-    final FlowControlHandler fch = master.getFlowControlHandler();
     for (final Consumer operator : consumerSet) {
-
-      FlowControlInputBuffer<ExchangeData> inputBuffer =
-          new FlowControlInputBuffer<ExchangeData>(master.getInputBufferCapacity());
-      inputBuffer.attach(operator.getOperatorID());
-      inputBuffer.addListener(FlowControlInputBuffer.BUFFER_FULL, new IPCEventListener() {
-        @Override
-        public void triggered(final IPCEvent e) {
-          @SuppressWarnings("unchecked")
-          FlowControlInputBuffer<ExchangeData> f = (FlowControlInputBuffer<ExchangeData>) e.getAttachment();
-          if (f.remainingCapacity() <= 0) {
-            fch.pauseRead(operator).awaitUninterruptibly();
-          }
-        }
-      });
-      inputBuffer.addListener(FlowControlInputBuffer.BUFFER_RECOVER, new IPCEventListener() {
-        @Override
-        public void triggered(final IPCEvent e) {
-          @SuppressWarnings("unchecked")
-          FlowControlInputBuffer<ExchangeData> f = (FlowControlInputBuffer<ExchangeData>) e.getAttachment();
-          if (f.remainingCapacity() > 0) {
-            fch.resumeRead(operator).awaitUninterruptibly();
-          }
-        }
-      });
-      inputBuffer.addListener(FlowControlInputBuffer.BUFFER_EMPTY, new IPCEventListener() {
-        @Override
-        public void triggered(final IPCEvent e) {
-          @SuppressWarnings("unchecked")
-          FlowControlInputBuffer<ExchangeData> f = (FlowControlInputBuffer<ExchangeData>) e.getAttachment();
-          if (f.remainingCapacity() > 0) {
-            fch.resumeRead(operator).awaitUninterruptibly();
-          }
-        }
-      });
+      FlowControlBagInputBuffer<TupleBatch> inputBuffer =
+          new FlowControlBagInputBuffer<TupleBatch>(this.master.getIPCConnectionPool(), operator
+              .getExchangeChannels(this.master.getIPCConnectionPool().getMyIPCID()), master.getInputBufferCapacity(),
+              master.getInputBufferRecoverTrigger(), this.master.getIPCConnectionPool());
       operator.setInputBuffer(inputBuffer);
-      master.getDataBuffer().put(operator.getOperatorID(), inputBuffer);
+      inputBuffer.addListener(FlowControlBagInputBuffer.NEW_INPUT_DATA, new IPCEventListener() {
+
+        @Override
+        public void triggered(final IPCEvent event) {
+          rootTask.notifyNewInput();
+        }
+      });
     }
 
     for (final StreamIOChannelID producerID : rootTask.getOutputChannels()) {

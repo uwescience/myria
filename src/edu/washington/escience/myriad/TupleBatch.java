@@ -60,6 +60,10 @@ public class TupleBatch implements Serializable {
   private final ImmutableBitSet validTuples;
   /** An ImmutableList<Integer> view of the indices of validTuples. */
   private int[] validIndices;
+  /**
+   * If this TB is an EOI TB.
+   * */
+  private final boolean isEOI;
 
   /** Identity mapping. */
   protected static final int[] IDENTITY_MAPPING;
@@ -79,18 +83,31 @@ public class TupleBatch implements Serializable {
    * @param columns contains the column-stored data. Must match schema.
    * @param validTuples BitSet determines which tuples are valid tuples in this batch.
    * @param validIndices valid tuple indices.
+   * @param isEOI eoi TB
    */
   protected TupleBatch(final Schema schema, final ImmutableList<Column<?>> columns, final ImmutableBitSet validTuples,
-      final int[] validIndices) {
+      final int[] validIndices, final boolean isEOI) {
     /** For a private copy constructor, no data checks are needed. Checks are only needed in the public constructor. */
     this.schema = schema;
     this.columns = columns;
-
     numValidTuples = validTuples.cardinality();
-
     this.validTuples = validTuples;
-
     this.validIndices = validIndices;
+    this.isEOI = isEOI;
+  }
+
+  /**
+   * EOI TB constructor.
+   * 
+   * @param schema schema of the tuples in this batch. Must match columns.
+   * */
+  private TupleBatch(final Schema schema) {
+    validTuples = new ImmutableBitSet(new BitSet());
+    this.schema = schema;
+    numValidTuples = 0;
+    ImmutableList.Builder<Column<?>> b = ImmutableList.builder();
+    columns = b.build();
+    isEOI = true;
   }
 
   /**
@@ -100,11 +117,12 @@ public class TupleBatch implements Serializable {
    * @param columns contains the column-stored data. Must match schema.
    * @param validTuples BitSet determines which tuples are valid tuples in this batch.
    * @param validIndices valid tuple indices.
+   * @param isEOI if isEOI
    * @return shallow copy
    */
   protected TupleBatch shallowCopy(final Schema schema, final ImmutableList<Column<?>> columns,
-      final ImmutableBitSet validTuples, final int[] validIndices) {
-    return new TupleBatch(schema, columns, validTuples, validIndices);
+      final ImmutableBitSet validTuples, final int[] validIndices, final boolean isEOI) {
+    return new TupleBatch(schema, columns, validTuples, validIndices, isEOI);
   }
 
   /**
@@ -133,6 +151,7 @@ public class TupleBatch implements Serializable {
     final BitSet tmp = new BitSet(numTuples);
     tmp.set(0, numTuples);
     validTuples = new ImmutableBitSet(tmp);
+    isEOI = false;
   }
 
   /**
@@ -155,6 +174,7 @@ public class TupleBatch implements Serializable {
     }
     numValidTuples = validTuples.cardinality();
     this.validTuples = validTuples;
+    isEOI = false;
   }
 
   /**
@@ -202,7 +222,7 @@ public class TupleBatch implements Serializable {
     }
 
     if (newValidTuples != null && newValidTuples.cardinality() != validTuples.cardinality()) {
-      return shallowCopy(schema, columns, new ImmutableBitSet(newValidTuples), null);
+      return shallowCopy(schema, columns, new ImmutableBitSet(newValidTuples), null, isEOI);
     }
 
     /* If no tuples are filtered, new TupleBatch instance is not needed */
@@ -478,7 +498,7 @@ public class TupleBatch implements Serializable {
       newTypes.add(schema.getColumnType(i));
       newNames.add(schema.getColumnName(i));
     }
-    return shallowCopy(new Schema(newTypes, newNames), newColumns.build(), validTuples, validIndices);
+    return shallowCopy(new Schema(newTypes, newNames), newColumns.build(), validTuples, validIndices, isEOI);
   }
 
   /**
@@ -505,7 +525,7 @@ public class TupleBatch implements Serializable {
       newValidTuples.clear(mapping[i]);
     }
     if (newValidTuples.cardinality() != numValidTuples) {
-      return shallowCopy(schema, columns, new ImmutableBitSet(newValidTuples), null);
+      return shallowCopy(schema, columns, new ImmutableBitSet(newValidTuples), null, isEOI);
     } else {
       return this;
     }
@@ -585,4 +605,20 @@ public class TupleBatch implements Serializable {
     return true;
   }
 
+  /**
+   * Create an EOI TupleBatch.
+   * 
+   * @param schema schema.
+   * @return EOI TB for the schema.
+   * */
+  public static final TupleBatch eoiTupleBatch(final Schema schema) {
+    return new TupleBatch(schema);
+  }
+
+  /**
+   * @return if the TupleBatch is an EOI.
+   * */
+  public final boolean isEOI() {
+    return isEOI;
+  }
 }

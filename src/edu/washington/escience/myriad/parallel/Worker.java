@@ -33,6 +33,7 @@ import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.MyriaSystemConfigKeys;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.coordinator.catalog.WorkerCatalog;
+import edu.washington.escience.myriad.parallel.ipc.FlowControlBagInputBuffer;
 import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myriad.parallel.ipc.InJVMLoopbackChannelSink;
 import edu.washington.escience.myriad.parallel.ipc.ShortMessageProcessor;
@@ -344,6 +345,13 @@ public final class Worker {
   private final int inputBufferCapacity;
 
   /**
+   * the system wide default inuput buffer recover event trigger.
+   * 
+   * @see FlowControlBagInputBuffer#INPUT_BUFFER_RECOVER
+   * */
+  private final int inputBufferRecoverTrigger;
+
+  /**
    * Current working directory. It's the logical root of the worker. All the data the worker and the operators running
    * on the worker can access should be put under this directory.
    * */
@@ -447,6 +455,14 @@ public final class Worker {
   }
 
   /**
+   * @return the system wide default inuput buffer recover event trigger.
+   * @see FlowControlBagInputBuffer#INPUT_BUFFER_RECOVER
+   * */
+  int getInputBufferRecoverTrigger() {
+    return inputBufferRecoverTrigger;
+  }
+
+  /**
    * @return my execution environment variables for init of operators.
    * */
   ConcurrentHashMap<String, Object> getExecEnvVars() {
@@ -508,6 +524,10 @@ public final class Worker {
 
     inputBufferCapacity =
         Integer.valueOf(catalog.getConfigurationValue(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY));
+
+    inputBufferRecoverTrigger =
+        Integer.valueOf(catalog.getConfigurationValue(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER));
+
     execEnvVars = new ConcurrentHashMap<String, Object>();
 
     for (Entry<String, String> cE : catalog.getAllConfigurations().entrySet()) {

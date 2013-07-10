@@ -36,12 +36,12 @@ import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.MyriaSystemConfigKeys;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
-import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.coordinator.catalog.Catalog;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SQLiteInsert;
+import edu.washington.escience.myriad.parallel.ipc.FlowControlBagInputBuffer;
 import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myriad.parallel.ipc.IPCMessage;
 import edu.washington.escience.myriad.parallel.ipc.InJVMLoopbackChannelSink;
@@ -174,18 +174,6 @@ public final class Server {
   private final ConcurrentHashMap<String, Object> execEnvVars;
 
   /**
-   * The I/O buffer, all the ExchangeMessages sent to the server are buffered here.
-   */
-  private final ConcurrentHashMap<ExchangePairID, InputBuffer<TupleBatch, ExchangeData>> dataBuffer;
-
-  /**
-   * @return all input buffers currently in use.
-   * */
-  ConcurrentHashMap<ExchangePairID, InputBuffer<TupleBatch, ExchangeData>> getDataBuffer() {
-    return dataBuffer;
-  }
-
-  /**
    * All message queue.
    * 
    * @TODO remove this queue as in {@link Worker}s.
@@ -219,6 +207,12 @@ public final class Server {
    * Default input buffer capacity for {@link Consumer} input buffers.
    * */
   private final int inputBufferCapacity;
+
+  /**
+   * @return the system wide default inuput buffer recover event trigger.
+   * @see FlowControlBagInputBuffer#INPUT_BUFFER_RECOVER
+   * */
+  private final int inputBufferRecoverTrigger;
 
   /**
    * The {@link OrderedMemoryAwareThreadPoolExecutor} who gets messages from {@link workerExecutor} and further process
@@ -387,6 +381,10 @@ public final class Server {
 
     inputBufferCapacity =
         Integer.valueOf(catalog.getConfigurationValue(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY));
+
+    inputBufferRecoverTrigger =
+        Integer.valueOf(catalog.getConfigurationValue(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER));
+
     execEnvVars = new ConcurrentHashMap<String, Object>();
     for (Entry<String, String> cE : allConfigurations.entrySet()) {
       execEnvVars.put(cE.getKey(), cE.getValue());
@@ -395,7 +393,6 @@ public final class Server {
     aliveWorkers = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
     activeQueries = new ConcurrentHashMap<Long, MasterQueryPartition>();
 
-    dataBuffer = new ConcurrentHashMap<ExchangePairID, InputBuffer<TupleBatch, ExchangeData>>();
     messageQueue = new LinkedBlockingQueue<IPCMessage.Data<TransportMessage>>();
 
     final Map<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>(workers);
@@ -544,21 +541,6 @@ public final class Server {
   }
 
   /**
-   * Callback method when a data item is received.
-   * 
-   * @param data the data that was received.
-   */
-  private void receiveData(final ExchangeData data) {
-    InputBuffer<TupleBatch, ExchangeData> q = null;
-    q = dataBuffer.get(data.getOperatorID());
-    if (q != null) {
-      q.offer(data);
-    } else {
-      LOGGER.warn("weird: got ExchangeData (" + data + ") on null q");
-    }
-  }
-
-  /**
    * @return if a query is running.
    * @param queryId queryID.
    * */
@@ -632,6 +614,14 @@ public final class Server {
    * */
   int getInputBufferCapacity() {
     return inputBufferCapacity;
+  }
+
+  /**
+   * @return the system wide default inuput buffer recover event trigger.
+   * @see FlowControlBagInputBuffer#INPUT_BUFFER_RECOVER
+   * */
+  int getInputBufferRecoverTrigger() {
+    return inputBufferRecoverTrigger;
   }
 
   /**

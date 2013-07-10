@@ -3,7 +3,6 @@ package edu.washington.escience.myriad;
 import org.jboss.netty.channel.socket.nio.NioSocketChannelConfig;
 
 import edu.washington.escience.myriad.parallel.Consumer;
-import edu.washington.escience.myriad.parallel.FlowControlInputBuffer;
 import edu.washington.escience.myriad.parallel.InputBuffer;
 
 /**
@@ -23,6 +22,12 @@ public final class MyriaSystemConfigKeys {
    * example, a {@link FlowControlInputBuffer} use the upper bound as a soft restriction.
    * */
   public static final String OPERATOR_INPUT_BUFFER_CAPACITY = "operator.consumer.inputbuffer.capacity";
+
+  /**
+   * After an input buffer full event, if the size of the input buffer reduced to the recover_trigger, the input buffer
+   * recover event should be issued.
+   * */
+  public static final String OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER = "operator.consumer.inputbuffer.recover.trigger";
 
   /**
    * .
