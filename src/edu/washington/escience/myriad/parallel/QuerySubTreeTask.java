@@ -138,14 +138,20 @@ public final class QuerySubTreeTask {
       @Override
       public Object call() throws Exception {
         // synchronized to keep memory consistency
-        synchronized (executionLock) {
-          try {
-            QuerySubTreeTask.this.executeActually();
-          } finally {
-            executionHandle = null;
-          }
-          return null;
+        if (LOGGER.isTraceEnabled()) {
+          LOGGER.trace("Start task execution: " + QuerySubTreeTask.this);
         }
+        try {
+          synchronized (executionLock) {
+            QuerySubTreeTask.this.executeActually();
+          }
+        } finally {
+          executionHandle = null;
+        }
+        if (LOGGER.isTraceEnabled()) {
+          LOGGER.trace("End execution: " + QuerySubTreeTask.this);
+        }
+        return null;
       }
     };
   }

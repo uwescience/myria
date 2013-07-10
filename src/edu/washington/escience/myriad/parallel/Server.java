@@ -134,7 +134,6 @@ public final class Server {
                 }
                 break;
             }
-
             break;
           default:
             if (LOGGER.isErrorEnabled()) {
@@ -205,7 +204,7 @@ public final class Server {
 
   /**
    * The {@link OrderedMemoryAwareThreadPoolExecutor} who gets messages from {@link workerExecutor} and further process
-   * them using application specific message handlers, e.g. {@link MasterDataHandler}.
+   * them using application specific message handlers, e.g. {@link MasterShortMessageProcessor}.
    * */
   private volatile OrderedMemoryAwareThreadPoolExecutor ipcPipelineExecutor;
 
@@ -386,6 +385,7 @@ public final class Server {
             new TransportMessageSerializer(), new QueueBasedShortMessageProcessor<TransportMessage>(messageQueue));
 
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_IPC_CONNECTION_POOL, connectionPool);
+    execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE, Worker.QueryExecutionMode.NON_BLOCKING);
 
     scheduledTaskExecutor =
         Executors.newSingleThreadScheduledExecutor(new RenamingThreadFactory("Master global timer"));

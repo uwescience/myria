@@ -237,8 +237,9 @@ public class Consumer extends LeafOperator {
    * @param buffer my input buffer.
    * */
   public final void setInputBuffer(final StreamInputBuffer<TupleBatch> buffer) {
-    if (inputBuffer != null && buffer != null) {
+    if (inputBuffer != null) {
       inputBuffer.clear();
+      inputBuffer.getOwnerConnectionPool().deRegisterStreamInput(inputBuffer);
       inputBuffer = null;
     }
     if (buffer != null) {

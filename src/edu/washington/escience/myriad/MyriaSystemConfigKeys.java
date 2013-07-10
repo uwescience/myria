@@ -3,6 +3,7 @@ package edu.washington.escience.myriad;
 import org.jboss.netty.channel.socket.nio.NioSocketChannelConfig;
 
 import edu.washington.escience.myriad.parallel.Consumer;
+import edu.washington.escience.myriad.parallel.ipc.FlowControlBagInputBuffer;
 import edu.washington.escience.myriad.parallel.ipc.StreamInputBuffer;
 
 /**
@@ -19,7 +20,7 @@ public final class MyriaSystemConfigKeys {
   /**
    * The max number of data messages that the {@link StreamInputBuffer} of each {@link Consumer} operator should hold.
    * It's not a restrict upper bound. Different implementations of {@link StreamInputBuffer} may restrict the size
-   * differently. For example, a {@link FlowControlInputBuffer} use the upper bound as a soft restriction.
+   * differently. For example, a {@link FlowControlBagInputBuffer} use the upper bound as a soft restriction.
    * */
   public static final String OPERATOR_INPUT_BUFFER_CAPACITY = "operator.consumer.inputbuffer.capacity";
 
