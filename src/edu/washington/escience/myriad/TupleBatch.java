@@ -30,6 +30,8 @@ import edu.washington.escience.myriad.column.IntColumn;
 import edu.washington.escience.myriad.column.LongColumn;
 import edu.washington.escience.myriad.column.StringColumn;
 import edu.washington.escience.myriad.parallel.PartitionFunction;
+import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
+import edu.washington.escience.myriad.util.IPCUtils;
 import edu.washington.escience.myriad.util.ImmutableBitSet;
 
 /**
@@ -108,6 +110,13 @@ public class TupleBatch implements Serializable {
     ImmutableList.Builder<Column<?>> b = ImmutableList.builder();
     columns = b.build();
     isEOI = true;
+  }
+
+  /**
+   * @return if this TB is compact.
+   * */
+  public final boolean isCompact() {
+    return validTuples.nextClearBit(0) == numValidTuples;
   }
 
   /**
@@ -603,6 +612,19 @@ public class TupleBatch implements Serializable {
       }
     }
     return true;
+  }
+
+  /**
+   * @return a TransportMessage encoding the TupleBatch.
+   * */
+  public final TransportMessage toTransportMessage() {
+    if (isCompact()) {
+      return IPCUtils.normalDataMessage(columns, numValidTuples);
+    } else {
+      TupleBatchBuffer tbb = new TupleBatchBuffer(getSchema());
+      compactInto(tbb);
+      return IPCUtils.normalDataMessage(tbb.popAnyAsRawColumn(), numValidTuples);
+    }
   }
 
   /**
