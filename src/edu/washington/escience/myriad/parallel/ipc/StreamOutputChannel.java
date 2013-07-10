@@ -215,7 +215,7 @@ public class StreamOutputChannel<PAYLOAD> extends StreamIOChannel {
    * @param message the message to write
    * @return the write future.
    * */
-  public final ChannelFuture write(final Object message) {
+  public final ChannelFuture write(final PAYLOAD message) {
     Channel ch = getIOChannel();
     if (ch != null) {
       return ch.write(message);

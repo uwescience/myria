@@ -22,7 +22,6 @@ import edu.washington.escience.myriad.parallel.Consumer;
 import edu.washington.escience.myriad.parallel.ExchangePairID;
 import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myriad.parallel.ipc.StreamOutputChannel;
-import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 
 /**
  * Together with the EOSController, the IDBInput controls what to serve into an iteration and when to stop an iteration.
@@ -88,7 +87,7 @@ public class IDBInput extends Operator {
   /**
    * The IPC channel for EOI report.
    * */
-  private transient StreamOutputChannel<TransportMessage> eoiReportChannel;
+  private transient StreamOutputChannel<TupleBatch> eoiReportChannel;
 
   /**
    * The logger for this class.
@@ -232,7 +231,7 @@ public class IDBInput extends Operator {
           // buffer.put(0, eosControllerInput.getOperatorID().getLong());
           buffer.put(0, selfIDBIdx);
           buffer.put(1, emptyDelta);
-          eoiReportChannel.write(buffer.popAnyAsTM());
+          eoiReportChannel.write(buffer.popAny());
           emptyDelta = true;
         }
       } catch (DbException e) {
