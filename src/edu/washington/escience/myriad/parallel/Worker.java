@@ -561,7 +561,6 @@ public final class Worker {
     if (LOGGER.isInfoEnabled()) {
       LOGGER.info("Query received" + query.getQueryID());
     }
-    producerChannelMapping.putAll(query.getProducerChannelMapping());
 
     activeQueries.put(query.getQueryID(), query);
     query.getExecutionFuture().addListener(new QueryFutureListener() {
@@ -569,10 +568,6 @@ public final class Worker {
       @Override
       public void operationComplete(final QueryFuture future) throws Exception {
         activeQueries.remove(query.getQueryID());
-
-        for (StreamIOChannelID producerChannelID : query.getProducerChannelMapping().keySet()) {
-          producerChannelMapping.remove(producerChannelID);
-        }
 
         if (future.isSuccess()) {
 

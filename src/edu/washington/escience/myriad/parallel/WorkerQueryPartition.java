@@ -1,9 +1,7 @@
 package edu.washington.escience.myriad.parallel;
 
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -121,18 +119,6 @@ public class WorkerQueryPartition implements QueryPartition {
   private final QueryExecutionStatistics queryStatistics = new QueryExecutionStatistics();
 
   /**
-   * Producer channel mapping of current active queries.
-   * */
-  private final ConcurrentHashMap<StreamIOChannelID, StreamOutputChannel<TransportMessage>> producerChannelMapping;
-
-  /**
-   * @return all producer channel mapping in this query partition.
-   * */
-  final Map<StreamIOChannelID, StreamOutputChannel<TransportMessage>> getProducerChannelMapping() {
-    return producerChannelMapping;
-  }
-
-  /**
    * @param operators the operators belonging to this query partition.
    * @param queryID the id of the query.
    * @param ownerWorker the worker on which this query partition is going to run
@@ -142,7 +128,6 @@ public class WorkerQueryPartition implements QueryPartition {
     tasks = new HashSet<QuerySubTreeTask>(operators.length);
     numFinishedTasks = new AtomicInteger(0);
     this.ownerWorker = ownerWorker;
-    producerChannelMapping = new ConcurrentHashMap<StreamIOChannelID, StreamOutputChannel<TransportMessage>>();
     for (final RootOperator taskRootOp : operators) {
       final QuerySubTreeTask drivingTask =
           new QuerySubTreeTask(ownerWorker.getIPCConnectionPool().getMyIPCID(), this, taskRootOp, ownerWorker
@@ -211,7 +196,6 @@ public class WorkerQueryPartition implements QueryPartition {
             drivingTask.notifyOutputDisabled(producerID);
           }
         });
-        producerChannelMapping.put(producerID, o);
       }
 
     }

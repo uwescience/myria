@@ -51,7 +51,6 @@ import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myriad.parallel.ipc.InJVMLoopbackChannelSink;
 import edu.washington.escience.myriad.parallel.ipc.StreamIOChannelID;
 import edu.washington.escience.myriad.parallel.ipc.StreamInputChannel;
-import edu.washington.escience.myriad.parallel.ipc.StreamOutputChannel;
 import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage;
@@ -273,11 +272,6 @@ public final class Server {
   }
 
   /**
-   * Producer channel mapping of current active queries.
-   * */
-  private final ConcurrentHashMap<StreamIOChannelID, StreamOutputChannel<TransportMessage>> producerChannelMap;
-
-  /**
    * max number of seconds for elegant cleanup.
    * */
   public static final int NUM_SECONDS_FOR_ELEGANT_CLEANUP = 10;
@@ -448,8 +442,7 @@ public final class Server {
     computingUnits.put(MyriaConstants.MASTER_ID, masterSocketInfo);
 
     masterDataHandler = new MasterDataHandler(messageQueue);
-    producerChannelMap = new ConcurrentHashMap<StreamIOChannelID, StreamOutputChannel<TransportMessage>>();
-    flowController = new FlowControlHandler(null, producerChannelMap);
+    flowController = new FlowControlHandler(null, null);
 
     connectionPool =
         new IPCConnectionPool(MyriaConstants.MASTER_ID, computingUnits, IPCConfigurations
@@ -759,7 +752,6 @@ public final class Server {
     workerPlans.remove(MyriaConstants.MASTER_ID);
     final long queryID = catalog.newQuery(rawQuery, logicalRa);
     final MasterQueryPartition mqp = new MasterQueryPartition(masterPlan, workerPlans, queryID, this);
-    producerChannelMap.putAll(mqp.getProducerChannelMapping());
 
     activeQueries.put(queryID, mqp);
 
@@ -768,10 +760,6 @@ public final class Server {
       public void operationComplete(final QueryFuture future) throws Exception {
 
         activeQueries.remove(mqp.getQueryID());
-
-        for (StreamIOChannelID producerChannelID : mqp.getProducerChannelMapping().keySet()) {
-          producerChannelMap.remove(producerChannelID);
-        }
 
         if (future.isSuccess()) {
           if (LOGGER.isInfoEnabled()) {

@@ -227,18 +227,6 @@ public class MasterQueryPartition implements QueryPartition {
       new ConcurrentHashMap<Integer, Throwable>();
 
   /**
-   * Producer channel mapping of current active queries.
-   * */
-  private final ConcurrentHashMap<StreamIOChannelID, StreamOutputChannel<TransportMessage>> producerChannelMapping;
-
-  /**
-   * @return all producer channel mapping in this query partition.
-   * */
-  final Map<StreamIOChannelID, StreamOutputChannel<TransportMessage>> getProducerChannelMapping() {
-    return producerChannelMapping;
-  }
-
-  /**
    * The future listener for processing the complete events of the execution of the master task.
    * */
   private final QueryFutureListener taskExecutionListener = new QueryFutureListener() {
@@ -392,7 +380,6 @@ public class MasterQueryPartition implements QueryPartition {
     WorkerExecutionInfo masterPart = new WorkerExecutionInfo(MyriaConstants.MASTER_ID, new RootOperator[] { rootOp });
     workerExecutionInfo.put(MyriaConstants.MASTER_ID, masterPart);
 
-    producerChannelMapping = new ConcurrentHashMap<StreamIOChannelID, StreamOutputChannel<TransportMessage>>();
     rootTask = new QuerySubTreeTask(MyriaConstants.MASTER_ID, this, root, master.getQueryExecutor());
     rootTask.getExecutionFuture().addListener(taskExecutionListener);
     HashSet<Consumer> consumerSet = new HashSet<Consumer>();
@@ -456,7 +443,6 @@ public class MasterQueryPartition implements QueryPartition {
           rootTask.notifyOutputDisabled(producerID);
         }
       });
-      producerChannelMapping.put(producerID, o);
     }
 
   }
