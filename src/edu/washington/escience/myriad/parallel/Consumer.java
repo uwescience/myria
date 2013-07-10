@@ -19,6 +19,7 @@ import edu.washington.escience.myriad.parallel.Worker.QueryExecutionMode;
 import edu.washington.escience.myriad.parallel.ipc.IPCMessage;
 import edu.washington.escience.myriad.parallel.ipc.StreamIOChannelID;
 import edu.washington.escience.myriad.parallel.ipc.StreamInputBuffer;
+import edu.washington.escience.myriad.util.ArrayUtils;
 import gnu.trove.impl.unmodifiable.TUnmodifiableIntIntMap;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;
@@ -64,7 +65,7 @@ public class Consumer extends LeafOperator {
   /**
    * From which workers to receive data.
    * */
-  private final int[] sourceWorkers;
+  private final ImmutableSet<Integer> sourceWorkers;
 
   /**
    * if current query execution is in non-blocking mode.
@@ -93,6 +94,15 @@ public class Consumer extends LeafOperator {
    * @param workerIDs {@link Consumer#sourceWorkers}
    * */
   public Consumer(final Schema schema, final ExchangePairID operatorID, final int[] workerIDs) {
+    this(schema, operatorID, ArrayUtils.checkSet(org.apache.commons.lang3.ArrayUtils.toObject(workerIDs)));
+  }
+
+  /**
+   * @param schema output schema.
+   * @param operatorID {@link Consumer#operatorID}
+   * @param workerIDs {@link Consumer#sourceWorkers}
+   * */
+  public Consumer(final Schema schema, final ExchangePairID operatorID, final ImmutableSet<Integer> workerIDs) {
     this.operatorID = operatorID;
     this.schema = schema;
     sourceWorkers = workerIDs;
@@ -104,10 +114,7 @@ public class Consumer extends LeafOperator {
    * @param operatorID {@link Consumer#operatorID}
    * */
   public Consumer(final Schema schema, final ExchangePairID operatorID) {
-    this.operatorID = operatorID;
-    this.schema = schema;
-    sourceWorkers = new int[] { -1 };
-    LOGGER.trace("created Consumer for ExchangePairId=" + operatorID);
+    this(schema, operatorID, ImmutableSet.of(-1));
   }
 
   @Override
@@ -119,8 +126,8 @@ public class Consumer extends LeafOperator {
 
   @Override
   protected final void init(final ImmutableMap<String, Object> execUnitEnv) throws DbException {
-    workerEOS = new BitSet(sourceWorkers.length);
-    workerEOI = new BitSet(sourceWorkers.length);
+    workerEOS = new BitSet(sourceWorkers.size());
+    workerEOI = new BitSet(sourceWorkers.size());
 
     TIntIntMap tmp = new TIntIntHashMap();
     int idx = 0;
@@ -186,14 +193,14 @@ public class Consumer extends LeafOperator {
   @Override
   public final void checkEOSAndEOI() {
 
-    if (workerEOS.nextClearBit(0) >= sourceWorkers.length) {
+    if (workerEOS.nextClearBit(0) >= sourceWorkers.size()) {
       setEOS();
       return;
     }
     BitSet tmp = (BitSet) workerEOI.clone();
     tmp.or(workerEOS);
     // EOS could be used as an EOI
-    if (tmp.nextClearBit(0) >= sourceWorkers.length) {
+    if (tmp.nextClearBit(0) >= sourceWorkers.size()) {
       setEOI(true);
       workerEOI.clear();
     }
@@ -211,7 +218,7 @@ public class Consumer extends LeafOperator {
    * @return source worker IDs with self-reference parsed.
    * */
   public final int[] getSourceWorkers(final int myWorkerID) {
-    int[] result = new int[sourceWorkers.length];
+    int[] result = new int[sourceWorkers.size()];
     int idx = 0;
     for (int workerID : sourceWorkers) {
       if (workerID >= 0) {

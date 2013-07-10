@@ -33,9 +33,9 @@ public final class CollectProducer extends Producer {
       try {
         writeMessage(0, dm);
       } catch (InterruptedException e) {
-        throw new DbException(e);
+        Thread.currentThread().interrupt();
+        return;
       }
-
     }
   }
 
@@ -46,7 +46,8 @@ public final class CollectProducer extends Producer {
       try {
         writeMessage(0, dm);
       } catch (InterruptedException e) {
-        throw new DbException(e);
+        Thread.currentThread().interrupt();
+        return;
       }
     }
     super.channelEnds(0);
@@ -59,13 +60,15 @@ public final class CollectProducer extends Producer {
       try {
         writeMessage(0, dm);
       } catch (InterruptedException e) {
-        throw new DbException(e);
+        Thread.currentThread().interrupt();
+        return;
       }
     }
     try {
       writeMessage(0, TupleBatch.eoiTupleBatch(getSchema()));
     } catch (InterruptedException e) {
-      throw new DbException(e);
+      Thread.currentThread().interrupt();
+      return;
     }
   }
 

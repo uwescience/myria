@@ -3,7 +3,10 @@ package edu.washington.escience.myriad.parallel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ImmutableSet;
+
 import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.util.ArrayUtils;
 
 /**
  * The consumer part of the Collect Exchange operator.
@@ -27,9 +30,18 @@ public final class CollectConsumer extends Consumer {
    * @param operatorID my operatorID
    * @param workerIDs from which workers the data will come.
    * */
-  public CollectConsumer(final Schema schema, final ExchangePairID operatorID, final int[] workerIDs) {
+  public CollectConsumer(final Schema schema, final ExchangePairID operatorID, final ImmutableSet<Integer> workerIDs) {
     super(schema, operatorID, workerIDs);
     LOGGER.trace("created CollectConsumer for ExchangePairId=" + operatorID);
+  }
+
+  /**
+   * @param schema input/output data schema
+   * @param operatorID my operatorID
+   * @param workerIDs from which workers the data will come.
+   * */
+  public CollectConsumer(final Schema schema, final ExchangePairID operatorID, final int[] workerIDs) {
+    this(schema, operatorID, ArrayUtils.checkSet(org.apache.commons.lang3.ArrayUtils.toObject(workerIDs)));
   }
 
 }
