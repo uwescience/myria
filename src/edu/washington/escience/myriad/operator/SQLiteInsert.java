@@ -75,6 +75,7 @@ public final class SQLiteInsert extends RootOperator {
       queue.stop(true).join();
     } catch (final InterruptedException e) {
       Thread.currentThread().interrupt();
+      return;
     }
   }
 
@@ -104,11 +105,10 @@ public final class SQLiteInsert extends RootOperator {
       future.get();
       queue.flush();
     } catch (final InterruptedException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
+      Thread.currentThread().interrupt();
+      return;
     } catch (final ExecutionException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
+      throw new DbException(e);
     }
   }
 
@@ -140,7 +140,10 @@ public final class SQLiteInsert extends RootOperator {
           return null;
         }
       }).get();
-    } catch (InterruptedException | ExecutionException e) {
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      return;
+    } catch (final ExecutionException e) {
       throw new DbException(e);
     }
 

@@ -228,7 +228,6 @@ public class IDBInput extends Operator {
           iterationInput.setEOI(false);
           setEOI(true);
           final TupleBatchBuffer buffer = new TupleBatchBuffer(EOI_REPORT_SCHEMA);
-          // buffer.put(0, eosControllerInput.getOperatorID().getLong());
           buffer.put(0, selfIDBIdx);
           buffer.put(1, emptyDelta);
           eoiReportChannel.write(buffer.popAny());
