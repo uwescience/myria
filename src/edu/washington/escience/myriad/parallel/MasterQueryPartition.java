@@ -108,6 +108,7 @@ public class MasterQueryPartition implements QueryPartition {
                     composedException.addSuppressed(workerException);
                   }
                 }
+                queryExecutionFuture.setFailure(composedException);
               }
             }
           }
