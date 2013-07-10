@@ -65,7 +65,7 @@ public abstract class Producer extends RootOperator {
    * @param oIDs operator IDs.
    * */
   public Producer(final Operator child, final ExchangePairID[] oIDs) {
-    this(child, oIDs, ArrayUtils.arrayFillAndReturn(new int[oIDs.length], -1), true);
+    this(child, oIDs, ArrayUtils.arrayFillAndReturn(new int[oIDs.length], IPCConnectionPool.SELF_IPC_ID), true);
   }
 
   /**
@@ -155,7 +155,7 @@ public abstract class Producer extends RootOperator {
     buffers = new TupleBatchBuffer[outputIDs.length];
     localizedOutputIDs = new StreamIOChannelID[outputIDs.length];
     for (int i = 0; i < outputIDs.length; i++) {
-      if (outputIDs[i].getRemoteID() < 0) {
+      if (outputIDs[i].getRemoteID() == IPCConnectionPool.SELF_IPC_ID) {
         localizedOutputIDs[i] = new StreamIOChannelID(outputIDs[i].getStreamID(), connectionPool.getMyIPCID());
       } else {
         localizedOutputIDs[i] = outputIDs[i];
@@ -253,7 +253,7 @@ public abstract class Producer extends RootOperator {
     StreamIOChannelID[] result = new StreamIOChannelID[outputIDs.length];
     int idx = 0;
     for (StreamIOChannelID ecID : outputIDs) {
-      if (ecID.getRemoteID() < 0) {
+      if (ecID.getRemoteID() != IPCConnectionPool.SELF_IPC_ID) {
         result[idx++] = ecID;
       } else {
         result[idx++] = new StreamIOChannelID(ecID.getStreamID(), myWorkerID);

@@ -16,6 +16,7 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.operator.LeafOperator;
 import edu.washington.escience.myriad.parallel.Worker.QueryExecutionMode;
+import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myriad.parallel.ipc.IPCMessage;
 import edu.washington.escience.myriad.parallel.ipc.StreamIOChannelID;
 import edu.washington.escience.myriad.parallel.ipc.StreamInputBuffer;
@@ -79,7 +80,7 @@ public class Consumer extends LeafOperator {
   public final ImmutableSet<StreamIOChannelID> getInputChannelIDs(final int myWorkerID) {
     ImmutableSet.Builder<StreamIOChannelID> ecB = ImmutableSet.builder();
     for (int wID : sourceWorkers) {
-      if (wID < 0) {
+      if (wID == IPCConnectionPool.SELF_IPC_ID) {
         ecB.add(new StreamIOChannelID(operatorID.getLong(), myWorkerID));
       } else {
         ecB.add(new StreamIOChannelID(operatorID.getLong(), wID));
@@ -114,7 +115,7 @@ public class Consumer extends LeafOperator {
    * @param operatorID {@link Consumer#operatorID}
    * */
   public Consumer(final Schema schema, final ExchangePairID operatorID) {
-    this(schema, operatorID, ImmutableSet.of(-1));
+    this(schema, operatorID, ImmutableSet.of(IPCConnectionPool.SELF_IPC_ID));
   }
 
   @Override
@@ -221,7 +222,7 @@ public class Consumer extends LeafOperator {
     int[] result = new int[sourceWorkers.size()];
     int idx = 0;
     for (int workerID : sourceWorkers) {
-      if (workerID >= 0) {
+      if (workerID != IPCConnectionPool.SELF_IPC_ID) {
         result[idx++] = workerID;
       } else {
         result[idx++] = myWorkerID;

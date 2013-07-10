@@ -573,8 +573,10 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
    * @param remote the remote info.
    * @param connectionTimeoutMS timeout.
    * @param ic connector;
+   * @throws ChannelException if any error occurs in creating new connections in the Netty layer
    * */
-  private Channel createANewConnection(final IPCRemote remote, final long connectionTimeoutMS, final ClientBootstrap ic) {
+  private Channel createANewConnection(final IPCRemote remote, final long connectionTimeoutMS, final ClientBootstrap ic)
+      throws ChannelException {
     boolean connected = true;
     ChannelFuture c = null;
     try {
@@ -655,7 +657,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
   private Channel getAConnection(final int ipcIDP) throws IllegalStateException, ChannelException {
     checkShutdown();
     int ipcID = ipcIDP;
-    if (ipcIDP < 0) {
+    if (ipcIDP == SELF_IPC_ID) {
       ipcID = myID;
     }
     final IPCRemote remote = channelPool.get(ipcID);
@@ -776,7 +778,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
    * @param remoteAddress remote address.
    * */
   public void putRemote(final int remoteID, final SocketInfo remoteAddress) {
-    if (remoteID == myID || remoteID < 0) {
+    if (remoteID == myID || remoteID == SELF_IPC_ID) {
       return;
     }
     final IPCRemote newOne = new IPCRemote(remoteID, remoteAddress, clientBootstrap);
@@ -800,7 +802,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
    * */
   void registerChannel(final int remoteIDP, final Channel channel) {
     int remoteID = remoteIDP;
-    if (remoteIDP < 0) {
+    if (remoteIDP == SELF_IPC_ID) {
       remoteID = myID;
     }
     final IPCRemote remote = channelPool.get(remoteID);
@@ -904,7 +906,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("remove the remote entity #" + remoteID + " from IPC connection pool");
     }
-    if (remoteID == myID || remoteID < 0) {
+    if (remoteID == myID || remoteID == SELF_IPC_ID) {
       return null;
     }
     final IPCRemote old = channelPool.get(remoteID);
@@ -1006,7 +1008,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
    * */
   public <PAYLOAD> ChannelFuture sendShortMessage(final int ipcID, final PAYLOAD message) throws IllegalStateException {
     checkShutdown();
-    if (ipcID == myID || ipcID < 0) {
+    if (ipcID == myID || ipcID == SELF_IPC_ID) {
       return inJVMShortMessageChannel.write(message);
     }
     Channel ch;
@@ -1050,7 +1052,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
 
     ImmutableSet<StreamIOChannelID> sourceChannels = inputBuffer.getSourceChannels();
     for (StreamIOChannelID id : sourceChannels) {
-      if (id.getRemoteID() < 0) {
+      if (id.getRemoteID() == SELF_IPC_ID) {
         id = new StreamIOChannelID(id.getStreamID(), myID);
       }
       StreamInputBuffer<?> ic = consumerChannelMap.putIfAbsent(id, inputBuffer);
@@ -1070,7 +1072,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
 
     ImmutableSet<StreamIOChannelID> sourceChannels = inputBuffer.getSourceChannels();
     for (StreamIOChannelID id : sourceChannels) {
-      if (id.getRemoteID() < 0) {
+      if (id.getRemoteID() == SELF_IPC_ID) {
         id = new StreamIOChannelID(id.getStreamID(), myID);
       }
       consumerChannelMap.remove(id, inputBuffer);
@@ -1095,7 +1097,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
   @SuppressWarnings("unchecked")
   <PAYLOAD> StreamInputBuffer<PAYLOAD> getInputBuffer(final StreamIOChannelID inputID) {
     StreamIOChannelID ecID = inputID;
-    if (inputID.getRemoteID() < 0) {
+    if (inputID.getRemoteID() == SELF_IPC_ID) {
       ecID = new StreamIOChannelID(inputID.getStreamID(), myID);
     }
     return (StreamInputBuffer<PAYLOAD>) consumerChannelMap.get(ecID);
