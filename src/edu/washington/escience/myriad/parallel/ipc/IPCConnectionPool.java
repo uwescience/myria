@@ -41,6 +41,7 @@ import com.google.common.collect.ImmutableSet;
 import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.parallel.RenamingThreadFactory;
 import edu.washington.escience.myriad.parallel.SocketInfo;
+import edu.washington.escience.myriad.parallel.ipc.ChannelContext.RegisteredChannelContext;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.util.IPCUtils;
 import edu.washington.escience.myriad.util.OrderedExecutorService;
@@ -1210,6 +1211,27 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
           shutdownFuture.setCondition(true);
           return shutdownFuture;
         }
+      }
+    }
+  }
+
+  /**
+   * Callback if error encountered for a channel.
+   * 
+   * @param ch the error channel
+   * @param cause the cause of the error.
+   * */
+  void errorEncountered(final Channel ch, final Throwable cause) {
+    ChannelContext cc = ChannelContext.getChannelContext(ch);
+    if (cc == null) {
+      ch.close();
+    } else {
+      RegisteredChannelContext rcc = cc.getRegisteredChannelContext();
+      if (rcc != null) {
+        cc.errorEncountered(unregisteredChannels, recyclableRegisteredChannels, channelTrashBin, channelPool.get(rcc
+            .getRemoteID()).registeredChannels);
+      } else {
+        cc.errorEncountered(unregisteredChannels, recyclableRegisteredChannels, channelTrashBin, null);
       }
     }
   }

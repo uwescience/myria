@@ -552,6 +552,42 @@ public class ChannelContext {
   }
 
   /**
+   * Any error encoutered, cleanup state, close the channel directly.
+   * 
+   * @param unregisteredNewChannels Set of new channels who have not identified there worker IDs yet (i.e. not
+   *          registered).
+   * 
+   * @param trashBin channel trash bin. The place where to-be-closed channels reside.
+   * @param channelPool the channel pool in which the channel resides. may be null if the channel is not registered yet
+   * @param recycleBin channel recycle bin. The place where currently-unused-but-waiting-for-possible-reuse channels
+   *          reside.
+   */
+  public final void errorEncountered(final ConcurrentHashMap<Channel, Channel> unregisteredNewChannels,
+      final ConcurrentHashMap<Channel, Channel> recycleBin, final ChannelGroup trashBin,
+      final ChannelPrioritySet channelPool) {
+    synchronized (stateMachineLock) {
+      unregisteredNewChannels.remove(ownerChannel);
+      if (channelPool != null) {
+        channelPool.remove(ownerChannel);
+      }
+      recycleBin.remove(ownerChannel);
+      trashBin.remove(ownerChannel);
+      connected = false;
+      registered = false;
+      inPool = false;
+      inRecycleBin = false;
+      inTrashBin = false;
+      newConnection = false;
+      closeRequested = false;
+      alive = false;
+      synchronized (channelRegisterLock) {
+        channelRegisterLock.notifyAll();
+      }
+    }
+    ownerChannel.close();
+  }
+
+  /**
    * Callback when the owner channel is connected.
    * */
   public final void connected() {
