@@ -158,7 +158,7 @@ public class Consumer extends LeafOperator {
       int sourceWorkerIdx = workerIdToIndex.get(tb.getRemoteID());
       TupleBatch ttbb = tb.getPayload();
       if (ttbb != null) {
-        ttbb = new ExchangeTupleBatch(ttbb, tb.getRemoteID());
+        ttbb = ExchangeTupleBatch.wrap(ttbb, tb.getRemoteID());
       }
 
       if (ttbb == null) {

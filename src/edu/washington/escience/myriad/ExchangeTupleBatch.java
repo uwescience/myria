@@ -43,6 +43,7 @@ public class ExchangeTupleBatch extends TupleBatch {
    * @param startingTupleSeqNum of the tuples in this TB.
    * @param lsn log sequence number, for fault tolerance
    * @param sourceWorkerID which worker the TB from
+   * @param isEOI is EOI TB
    */
   private ExchangeTupleBatch(final Schema schema, final ImmutableList<Column<?>> columns,
       final ImmutableBitSet validTuples, final int[] validIndices, final long startingTupleSeqNum, final long lsn,
@@ -74,17 +75,19 @@ public class ExchangeTupleBatch extends TupleBatch {
   }
 
   /**
-   * Standard immutable TupleBatch constructor. All fields must be populated before creation and cannot be changed.
+   * wrap a TB in ExchangeTupleBatch.
    * 
    * @param data the TB data.
    * @param sourceWorkerID which worker the TB from
+   * @return a wrapped ETB
    */
-  public ExchangeTupleBatch(final TupleBatch data, final int sourceWorkerID) {
-    /* Take the input arguments directly */
-    super(data.getSchema(), data.getDataColumns(), data.getValidTuples(), data.getValidIndices(), data.isEOI());
-    this.sourceWorkerID = sourceWorkerID;
-    lsn = -1;
-    startingSeqNum = -1;
+  public static final ExchangeTupleBatch wrap(final TupleBatch data, final int sourceWorkerID) {
+    if (data instanceof ExchangeTupleBatch) {
+      return (ExchangeTupleBatch) data;
+    } else {
+      return new ExchangeTupleBatch(data.getSchema(), data.getDataColumns(), data.getValidTuples(), data
+          .getValidIndices(), -1, -1, sourceWorkerID, data.isEOI());
+    }
   }
 
   @Override
