@@ -100,8 +100,13 @@ public class WorkerQueryPartition implements QueryPartition {
         if (failTasks.isEmpty()) {
           executionFuture.setSuccess();
         } else {
-          // TODO currently use the cause of the first failed task as the case of the failure of the whole query.
-          executionFuture.setFailure(failTasks.peek().getExecutionFuture().getCause());
+          Throwable existingCause = executionFuture.getCause();
+          Throwable newCause = failTasks.peek().getExecutionFuture().getCause();
+          if (existingCause == null) {
+            executionFuture.setFailure(newCause);
+          } else {
+            existingCause.addSuppressed(newCause);
+          }
         }
       } else {
         if (LOGGER.isDebugEnabled()) {

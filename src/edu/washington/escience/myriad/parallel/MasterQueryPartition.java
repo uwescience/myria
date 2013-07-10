@@ -92,39 +92,22 @@ public class MasterQueryPartition implements QueryPartition {
                 // query gets killed.
                 queryExecutionFuture.setFailure(new QueryKilledException());
               } else {
-                StringBuilder errorMessage = new StringBuilder();
-                int numStackTraceElements = 0;
-                for (Entry<Integer, Throwable> workerIDCause : failedQueryPartitions.entrySet()) {
-                  numStackTraceElements += workerIDCause.getValue().getStackTrace().length;
-                }
-                DbException currentStackTrace =
-                    new DbException("Query #" + future.getQuery().getQueryID() + " failed.\n");
-                StackTraceElement[] newStackTrace =
-                    new StackTraceElement[currentStackTrace.getStackTrace().length + numStackTraceElements];
-                System.arraycopy(currentStackTrace.getStackTrace(), 0, newStackTrace, 0, currentStackTrace
-                    .getStackTrace().length);
-                int stackTraceShift = currentStackTrace.getStackTrace().length;
-                errorMessage.append(currentStackTrace.getMessage());
+                DbException composedException =
+                    new DbException("Query #" + future.getQuery().getQueryID() + " failed.");
                 for (Entry<Integer, Throwable> workerIDCause : failedQueryPartitions.entrySet()) {
                   int failedWorkerID = workerIDCause.getKey();
                   Throwable cause = workerIDCause.getValue();
                   if (!(cause instanceof QueryKilledException)) {
                     // Only record non-killed exceptoins
-                    StackTraceElement[] e = cause.getStackTrace();
-                    System.arraycopy(e, 0, newStackTrace, stackTraceShift, e.length);
-                    stackTraceShift += e.length;
-                    errorMessage.append("\t" + cause.getClass().getName());
-                    errorMessage.append(" in worker #");
-                    errorMessage.append(failedWorkerID);
-                    errorMessage.append(", with message: [");
-                    errorMessage.append(cause.getMessage());
-                    errorMessage.append("].\n");
+                    DbException workerException =
+                        new DbException("Worker #" + failedWorkerID + " failed: " + cause.getMessage(), cause);
+                    workerException.setStackTrace(cause.getStackTrace());
+                    for (Throwable sup : cause.getSuppressed()) {
+                      workerException.addSuppressed(sup);
+                    }
+                    composedException.addSuppressed(workerException);
                   }
                 }
-                currentStackTrace.setStackTrace(newStackTrace);
-                DbException composedException = new DbException(errorMessage.toString());
-                composedException.setStackTrace(newStackTrace);
-                queryExecutionFuture.setFailure(composedException);
               }
             }
           }
