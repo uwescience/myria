@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.FilenameUtils;
 
 import edu.washington.escience.myriad.TupleBatch;
-import edu.washington.escience.myriad.coordinator.catalog.Catalog;
+import edu.washington.escience.myriad.coordinator.catalog.MasterCatalog;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.parallel.QueryFuture;
 import edu.washington.escience.myriad.parallel.QueryFutureListener;
@@ -86,7 +86,7 @@ public class Main {
     startWorkers(startWorkersScript);
     System.out.println("End start workers");
 
-    Catalog catalog = Catalog.open(catalogFileName);
+    MasterCatalog catalog = MasterCatalog.open(catalogFileName);
     Set<Integer> workerSet = catalog.getWorkers().keySet();
     catalog.close();
 

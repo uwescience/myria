@@ -36,8 +36,8 @@ import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.MyriaSystemConfigKeys;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
-import edu.washington.escience.myriad.coordinator.catalog.Catalog;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
+import edu.washington.escience.myriad.coordinator.catalog.MasterCatalog;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SQLiteInsert;
@@ -189,7 +189,7 @@ public final class Server {
   private volatile ExecutorService messageProcessingExecutor;
 
   /** The Catalog stores the metadata about the Myria instance. */
-  private final Catalog catalog;
+  private final MasterCatalog catalog;
 
   /**
    * Default input buffer capacity for {@link Consumer} input buffers.
@@ -348,7 +348,7 @@ public final class Server {
    * @throws CatalogException if there is an error reading from the Catalog.
    */
   public Server(final String catalogFileName) throws FileNotFoundException, CatalogException {
-    catalog = Catalog.open(catalogFileName);
+    catalog = MasterCatalog.open(catalogFileName);
 
     /* Get the master socket info */
     List<SocketInfo> masters = catalog.getMasters();
