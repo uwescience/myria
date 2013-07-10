@@ -36,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.parallel.RenamingThreadFactory;
@@ -445,6 +446,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
     allPossibleChannels = new DefaultChannelGroup();
     allAcceptedRemoteChannels = new DefaultChannelGroup();
     shutdownFuture = new ConditionChannelGroupFuture();
+    consumerChannelMap = new ConcurrentHashMap<StreamIOChannelID, StreamInputBuffer<?>>();
   }
 
   /**
@@ -975,6 +977,63 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
     });
     return cf;
   }
+
+  /**
+   * @param inputBuffer register the inputbuffer. Setup the input channel IDs -> input buffer mapping.
+   * @throws IllegalStateException if any of the inputBuffer's inputChannels have been linked to an existing input
+   *           buffer
+   * */
+  public void registerStreamInput(final StreamInputBuffer<?> inputBuffer) throws IllegalStateException {
+    Preconditions.checkNotNull(inputBuffer);
+
+    ImmutableSet<StreamIOChannelID> sourceChannels = inputBuffer.getSourceChannels();
+    for (StreamIOChannelID id : sourceChannels) {
+      if (id.getRemoteID() < 0) {
+        id = new StreamIOChannelID(id.getStreamID(), myID);
+      }
+      StreamInputBuffer<?> ic = consumerChannelMap.putIfAbsent(id, inputBuffer);
+      if (ic != null) {
+        throw new IllegalArgumentException("Input channel: " + id
+            + " is already linked to an input buffer, with procesor: " + ic.getProcessor());
+      }
+    }
+
+  }
+
+  /**
+   * @param inputBuffer de-register the inputbuffer. Clean up the input channel IDs -> input buffer mapping.
+   * */
+  public void deRegisterStreamInput(final StreamInputBuffer<?> inputBuffer) {
+    Preconditions.checkNotNull(inputBuffer);
+
+    ImmutableSet<StreamIOChannelID> sourceChannels = inputBuffer.getSourceChannels();
+    for (StreamIOChannelID id : sourceChannels) {
+      if (id.getRemoteID() < 0) {
+        id = new StreamIOChannelID(id.getStreamID(), myID);
+      }
+      consumerChannelMap.remove(id, inputBuffer);
+    }
+
+  }
+
+  /**
+   * @param inputID the input channel ID.
+   * @return the input buffer for the input channel ID.
+   * @param <PAYLOAD> the payload type of the input buffer.
+   * */
+  @SuppressWarnings("unchecked")
+  <PAYLOAD> StreamInputBuffer<PAYLOAD> getInputBuffer(final StreamIOChannelID inputID) {
+    StreamIOChannelID ecID = inputID;
+    if (inputID.getRemoteID() < 0) {
+      ecID = new StreamIOChannelID(inputID.getStreamID(), myID);
+    }
+    return (StreamInputBuffer<PAYLOAD>) consumerChannelMap.get(ecID);
+  }
+
+  /**
+   * input buffer mapping.
+   * */
+  private final ConcurrentHashMap<StreamIOChannelID, StreamInputBuffer<?>> consumerChannelMap;
 
   /**
    * Close all the connections abruptly. Do not call this method to shutdown IPC pool if not necessary. Call
