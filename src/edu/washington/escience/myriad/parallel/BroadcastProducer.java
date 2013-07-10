@@ -3,8 +3,6 @@ package edu.washington.escience.myriad.parallel;
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
-import edu.washington.escience.myriad.util.IPCUtils;
 
 /**
  * The producer part of broadcast operator
@@ -31,10 +29,10 @@ public class BroadcastProducer extends Producer {
   @Override
   protected final void consumeTuples(final TupleBatch tuples) throws DbException {
 
-    TransportMessage dm = null;
+    TupleBatch dm = null;
     tuples.compactInto(getBuffers()[0]);
 
-    while ((dm = getBuffers()[0].popAnyAsTMUsingTimeout()) != null) {
+    while ((dm = getBuffers()[0].popAnyUsingTimeout()) != null) {
 
       /* broadcast message to multiple workers */
       for (int i = 0; i < numChannels(); i++) {
@@ -50,11 +48,11 @@ public class BroadcastProducer extends Producer {
   @Override
   protected final void childEOS() throws DbException {
 
-    TransportMessage dm = null;
+    TupleBatch dm = null;
     int numChannels = super.numChannels();
 
     /* BroadcastProducer only uses getBuffers()[0] */
-    while ((dm = getBuffers()[0].popAnyAsTM()) != null) {
+    while ((dm = getBuffers()[0].popAny()) != null) {
       for (int i = 0; i < numChannels(); i++) {
         try {
           writeMessage(i, dm);
@@ -72,10 +70,10 @@ public class BroadcastProducer extends Producer {
   @Override
   protected final void childEOI() throws DbException {
 
-    TransportMessage dm = null;
+    TupleBatch dm = null;
 
     /* BroadcastProducer only uses getBuffers()[0] */
-    while ((dm = getBuffers()[0].popAnyAsTM()) != null) {
+    while ((dm = getBuffers()[0].popAny()) != null) {
       for (int i = 0; i < numChannels(); i++) {
         try {
           writeMessage(i, dm);
@@ -87,7 +85,7 @@ public class BroadcastProducer extends Producer {
 
     for (int i = 0; i < numChannels(); i++) {
       try {
-        writeMessage(i, IPCUtils.EOI);
+        writeMessage(i, TupleBatch.eoiTupleBatch(getSchema()));
       } catch (InterruptedException e) {
         throw new DbException(e);
       }

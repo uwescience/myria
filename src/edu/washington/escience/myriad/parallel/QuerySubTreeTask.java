@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.collect.ImmutableMap;
 
+import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.operator.IDBInput;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.RootOperator;
@@ -181,11 +182,9 @@ public final class QuerySubTreeTask {
 
     if (currentOperator instanceof Producer) {
       Producer p = (Producer) currentOperator;
-      p.getDestinationWorkerIDs(ipcEntityID);
-      ExchangePairID[] oIDs = p.operatorIDs();
-      int[] destWorkers = p.getDestinationWorkerIDs(ipcEntityID);
-      for (int i = 0; i < destWorkers.length; i++) {
-        outputExchangeChannels.add(new StreamIOChannelID(oIDs[i].getLong(), destWorkers[i]));
+      StreamIOChannelID[] exCID = p.getOutputChannelIDs(ipcEntityID);
+      for (StreamIOChannelID element : exCID) {
+        outputExchangeChannels.add(element);
       }
     } else if (currentOperator instanceof IDBInput) {
       IDBInput p = (IDBInput) currentOperator;
@@ -590,12 +589,13 @@ public final class QuerySubTreeTask {
   /**
    * Initialize the task.
    * 
-   * @param execUnitEnv execution environment variable.s
+   * @param execEnvVars execution environment variable.
    * */
-  public void init(final ImmutableMap<String, Object> execUnitEnv) {
+  public void init(final ImmutableMap<String, Object> execEnvVars) {
     try {
       synchronized (executionLock) {
-        root.open(execUnitEnv);
+        ImmutableMap.Builder<String, Object> b = ImmutableMap.builder();
+        root.open(b.putAll(execEnvVars).put(MyriaConstants.EXEC_ENV_VAR_DRIVING_TASK, this).build());
       }
       AtomicUtils.setBitByValue(executionCondition, STATE_INITIALIZED);
     } catch (Throwable e) {

@@ -4,8 +4,6 @@ import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
-import edu.washington.escience.myriad.util.IPCUtils;
 
 /**
  * The producer part of the Shuffle Exchange operator.
@@ -47,10 +45,10 @@ public class ShuffleProducer extends Producer {
   protected final void consumeTuples(final TupleBatch tup) throws DbException {
     TupleBatchBuffer[] buffers = getBuffers();
     tup.partition(partitionFunction, buffers);
-    TransportMessage dm = null;
+    TupleBatch dm = null;
     for (int i = 0; i < numChannels(); i++) {
       final TupleBatchBuffer etb = buffers[i];
-      while ((dm = etb.popAnyAsTMUsingTimeout()) != null) {
+      while ((dm = etb.popAnyUsingTimeout()) != null) {
         try {
           writeMessage(i, dm);
         } catch (InterruptedException e) {
@@ -62,10 +60,10 @@ public class ShuffleProducer extends Producer {
 
   @Override
   protected final void childEOS() throws DbException {
-    TransportMessage dm = null;
+    TupleBatch dm = null;
     TupleBatchBuffer[] buffers = getBuffers();
     for (int i = 0; i < numChannels(); i++) {
-      while ((dm = buffers[i].popAnyAsTM()) != null) {
+      while ((dm = buffers[i].popAny()) != null) {
         try {
           writeMessage(i, dm);
         } catch (InterruptedException e) {
@@ -81,10 +79,10 @@ public class ShuffleProducer extends Producer {
 
   @Override
   protected final void childEOI() throws DbException {
-    TransportMessage dm = null;
+    TupleBatch dm = null;
     TupleBatchBuffer[] buffers = getBuffers();
     for (int i = 0; i < numChannels(); i++) {
-      while ((dm = buffers[i].popAnyAsTM()) != null) {
+      while ((dm = buffers[i].popAny()) != null) {
         try {
           writeMessage(i, dm);
         } catch (InterruptedException e) {
@@ -94,7 +92,7 @@ public class ShuffleProducer extends Producer {
     }
     for (int i = 0; i < numChannels(); i++) {
       try {
-        writeMessage(i, IPCUtils.EOI);
+        writeMessage(i, TupleBatch.eoiTupleBatch(getSchema()));
       } catch (InterruptedException e) {
         throw new DbException(e);
       }

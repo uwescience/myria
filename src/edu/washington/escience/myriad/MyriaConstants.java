@@ -110,6 +110,11 @@ public final class MyriaConstants {
   public static final String EXEC_ENV_VAR_IPC_CONNECTION_POOL = "ipcConnectionPool";
 
   /**
+   * Driving task.
+   * */
+  public static final String EXEC_ENV_VAR_DRIVING_TASK = "drivingTask";
+
+  /**
    * query execution mode.
    * */
   public static final String EXEC_ENV_VAR_EXECUTION_MODE = "query.execution.mode";

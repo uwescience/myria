@@ -3,8 +3,6 @@ package edu.washington.escience.myriad.parallel;
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
-import edu.washington.escience.myriad.util.IPCUtils;
 
 /**
  * The producer part of the Collect Exchange operator.
@@ -28,10 +26,10 @@ public final class CollectProducer extends Producer {
 
   @Override
   protected void consumeTuples(final TupleBatch tb) throws DbException {
-    TransportMessage dm = null;
+    TupleBatch dm = null;
     tb.compactInto(getBuffers()[0]);
 
-    while ((dm = getBuffers()[0].popAnyAsTMUsingTimeout()) != null) {
+    while ((dm = getBuffers()[0].popAnyUsingTimeout()) != null) {
       try {
         writeMessage(0, dm);
       } catch (InterruptedException e) {
@@ -43,8 +41,8 @@ public final class CollectProducer extends Producer {
 
   @Override
   protected void childEOS() throws DbException {
-    TransportMessage dm = null;
-    while ((dm = getBuffers()[0].popAnyAsTM()) != null) {
+    TupleBatch dm = null;
+    while ((dm = getBuffers()[0].popAny()) != null) {
       try {
         writeMessage(0, dm);
       } catch (InterruptedException e) {
@@ -56,8 +54,8 @@ public final class CollectProducer extends Producer {
 
   @Override
   protected void childEOI() throws DbException {
-    TransportMessage dm = null;
-    while ((dm = getBuffers()[0].popAnyAsTM()) != null) {
+    TupleBatch dm = null;
+    while ((dm = getBuffers()[0].popAny()) != null) {
       try {
         writeMessage(0, dm);
       } catch (InterruptedException e) {
@@ -65,7 +63,7 @@ public final class CollectProducer extends Producer {
       }
     }
     try {
-      writeMessage(0, IPCUtils.EOI);
+      writeMessage(0, TupleBatch.eoiTupleBatch(getSchema()));
     } catch (InterruptedException e) {
       throw new DbException(e);
     }
