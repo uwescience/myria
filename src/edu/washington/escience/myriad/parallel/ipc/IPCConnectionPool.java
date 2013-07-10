@@ -1017,6 +1017,15 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
   }
 
   /**
+   * @return short message processor.
+   * @param <PAYLOAD> the payload type.
+   * */
+  @SuppressWarnings("unchecked")
+  <PAYLOAD> ShortMessageProcessor<PAYLOAD> getShortMessageProcessor() {
+    return (ShortMessageProcessor<PAYLOAD>) shortMessageProcessor;
+  }
+
+  /**
    * @param inputID the input channel ID.
    * @return the input buffer for the input channel ID.
    * @param <PAYLOAD> the payload type of the input buffer.
@@ -1089,6 +1098,11 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
    * Future for pool shut down.
    * */
   private final ConditionChannelGroupFuture shutdownFuture;
+
+  /**
+   * Short message processor.
+   * */
+  private volatile ShortMessageProcessor<?> shortMessageProcessor;
 
   /**
    * This method will always return the same Future instance for an IPCConnectionPool.
@@ -1201,12 +1215,14 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
    * @param clientPipelineFactory IPC client pipeline factory
    * @param localInJVMPipelineFactory IPC in JVM channel pipeline factory
    * @param localInJVMChannelSink IPC in JVM channel sink.
+   * @param mp short message processor
    * 
    * @throws Exception if any error occurs.
    * */
   public void start(final ChannelFactory serverChannelFactory, final ChannelPipelineFactory serverPipelineFactory,
       final ChannelFactory clientChannelFactory, final ChannelPipelineFactory clientPipelineFactory,
-      final ChannelPipelineFactory localInJVMPipelineFactory, final ChannelSink localInJVMChannelSink) throws Exception {
+      final ChannelPipelineFactory localInJVMPipelineFactory, final ChannelSink localInJVMChannelSink,
+      final ShortMessageProcessor<?> mp) throws Exception {
 
     serverBootstrap.setFactory(serverChannelFactory);
     serverBootstrap.setPipelineFactory(serverPipelineFactory);
@@ -1245,6 +1261,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
     scheduledTaskExecutor.scheduleAtFixedRate(idChecker,
         (int) ((1 + Math.random()) * CONNECTION_ID_CHECK_TIMEOUT_IN_MS / 2), CONNECTION_ID_CHECK_TIMEOUT_IN_MS / 2,
         TimeUnit.MILLISECONDS);
+    shortMessageProcessor = mp;
   }
 
   /**

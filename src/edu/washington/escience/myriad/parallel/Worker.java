@@ -35,6 +35,7 @@ import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.coordinator.catalog.WorkerCatalog;
 import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myriad.parallel.ipc.InJVMLoopbackChannelSink;
+import edu.washington.escience.myriad.parallel.ipc.ShortMessageProcessor;
 import edu.washington.escience.myriad.parallel.ipc.StreamIOChannelID;
 import edu.washington.escience.myriad.parallel.ipc.StreamOutputChannel;
 import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
@@ -268,14 +269,14 @@ public final class Worker {
   private final ConcurrentHashMap<Long, WorkerQueryPartition> activeQueries;
 
   /**
-   * My message handler.
-   * */
-  private final WorkerDataHandler workerDataHandler;
-
-  /**
    * IPC flow controller.
    * */
   private final FlowControlHandler flowController;
+
+  /**
+   * My message handler.
+   * */
+  private final ShortMessageProcessor<TransportMessage> workerShortMessageProcessor;
 
   /**
    * timer task executor.
@@ -425,13 +426,6 @@ public final class Worker {
   }
 
   /**
-   * @return my message processor.
-   * */
-  WorkerDataHandler getWorkerDataHandler() {
-    return workerDataHandler;
-  }
-
-  /**
    * @return my connection pool for IPC.
    * */
   IPCConnectionPool getIPCConnectionPool() {
@@ -494,13 +488,11 @@ public final class Worker {
     this.workingDirectory = workingDirectory;
     myID = Integer.parseInt(catalog.getConfigurationValue(MyriaSystemConfigKeys.WORKER_IDENTIFIER));
 
-    // mySocketInfo = catalog.getWorkers().get(myID);
-
     controlMessageQueue = new LinkedBlockingQueue<ControlMessage>();
     queryQueue = new PriorityBlockingQueue<WorkerQueryPartition>();
 
     masterSocketInfo = catalog.getMasters().get(0);
-    workerDataHandler = new WorkerDataHandler(this);
+    workerShortMessageProcessor = new WorkerShortMessageProcessor(this);
 
     final Map<Integer, SocketInfo> workers = catalog.getWorkers();
     final Map<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
@@ -682,7 +674,7 @@ public final class Worker {
     ChannelPipelineFactory workerInJVMPipelineFactory = new IPCPipelineFactories.WorkerInJVMPipelineFactory(this);
 
     connectionPool.start(serverChannelFactory, serverPipelineFactory, clientChannelFactory, clientPipelineFactory,
-        workerInJVMPipelineFactory, new InJVMLoopbackChannelSink());
+        workerInJVMPipelineFactory, new InJVMLoopbackChannelSink(), workerShortMessageProcessor);
 
     if (queryExecutionMode == QueryExecutionMode.NON_BLOCKING) {
       int numCPU = Runtime.getRuntime().availableProcessors();

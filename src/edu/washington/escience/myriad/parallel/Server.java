@@ -48,7 +48,10 @@ import edu.washington.escience.myriad.operator.SQLiteInsert;
 import edu.washington.escience.myriad.parallel.ExchangeData.MetaMessage;
 import edu.washington.escience.myriad.parallel.MasterDataHandler.MessageWrapper;
 import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
+import edu.washington.escience.myriad.parallel.ipc.IPCMessage;
 import edu.washington.escience.myriad.parallel.ipc.InJVMLoopbackChannelSink;
+import edu.washington.escience.myriad.parallel.ipc.QueueBasedShortMessageProcessor;
+import edu.washington.escience.myriad.parallel.ipc.ShortMessageProcessor;
 import edu.washington.escience.myriad.parallel.ipc.StreamIOChannelID;
 import edu.washington.escience.myriad.parallel.ipc.StreamInputChannel;
 import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
@@ -223,7 +226,7 @@ public final class Server {
    * 
    * @TODO remove this queue as in {@link Worker}s.
    * */
-  private final LinkedBlockingQueue<MasterDataHandler.MessageWrapper> messageQueue;
+  private final LinkedBlockingQueue<IPCMessage.Data<TransportMessage>> messageQueue;
 
   /**
    * The IPC Connection Pool.
@@ -244,9 +247,9 @@ public final class Server {
   private final FlowControlHandler flowController;
 
   /**
-   * IPC message handler.
+   * IPC short message processor.
    * */
-  private final MasterDataHandler masterDataHandler;
+  private final ShortMessageProcessor<TransportMessage> masterShortMessageProcessor;
 
   /**
    * Default input buffer capacity for {@link Consumer} input buffers.
@@ -375,13 +378,6 @@ public final class Server {
   }
 
   /**
-   * @return my message processor.
-   * */
-  MasterDataHandler getDataHandler() {
-    return masterDataHandler;
-  }
-
-  /**
    * @return my connection pool for IPC.
    * */
   IPCConnectionPool getIPCConnectionPool() {
@@ -436,12 +432,13 @@ public final class Server {
     activeQueries = new ConcurrentHashMap<Long, MasterQueryPartition>();
 
     dataBuffer = new ConcurrentHashMap<ExchangePairID, InputBuffer<TupleBatch, ExchangeData>>();
-    messageQueue = new LinkedBlockingQueue<MessageWrapper>();
+    messageQueue = new LinkedBlockingQueue<IPCMessage.Data<TransportMessage>>();
 
     final Map<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>(workers);
     computingUnits.put(MyriaConstants.MASTER_ID, masterSocketInfo);
 
-    masterDataHandler = new MasterDataHandler(messageQueue);
+    masterShortMessageProcessor = new QueueBasedShortMessageProcessor<TransportMessage>(messageQueue);
+
     flowController = new FlowControlHandler(null, null);
 
     connectionPool =
@@ -660,7 +657,7 @@ public final class Server {
     ChannelPipelineFactory masterInJVMPipelineFactory = new IPCPipelineFactories.MasterInJVMPipelineFactory(this);
 
     connectionPool.start(serverChannelFactory, serverPipelineFactory, clientChannelFactory, clientPipelineFactory,
-        masterInJVMPipelineFactory, new InJVMLoopbackChannelSink());
+        masterInJVMPipelineFactory, new InJVMLoopbackChannelSink(), masterShortMessageProcessor);
 
     messageProcessingExecutor.submit(new MessageProcessor());
     LOGGER.info("Server started on {}", masterSocketInfo.toString());
