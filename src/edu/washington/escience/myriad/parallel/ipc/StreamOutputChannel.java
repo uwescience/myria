@@ -7,6 +7,8 @@ import org.jboss.netty.channel.ChannelFuture;
 
 import edu.washington.escience.myriad.parallel.Producer;
 import edu.washington.escience.myriad.parallel.ipc.IPCEvent.EventType;
+import edu.washington.escience.myriad.util.OrderedExecutorService;
+import edu.washington.escience.myriad.util.ReentrantSpinLock;
 
 /**
  * 
@@ -83,10 +85,41 @@ public class StreamOutputChannel<PAYLOAD> extends StreamIOChannel {
     }
   }
 
+  /**
+   * Callback from the physical IO layer if the channel interest changed.
+   * */
+  final void channelInterestChangedCallback() {
+    Channel ch = getIOChannel();
+    if (ch != null) {
+      boolean writable = ch.isWritable();
+
+      eventSerializeLock.lock();
+      try {
+        if (previousEvent == OUTPUT_DISABLED && writable) {
+          fireOutputRecovered();
+        } else if (previousEvent == OUTPUT_RECOVERED && !writable) {
+          fireOutputDisabled();
+        }
+      } finally {
+        eventSerializeLock.unlock();
+      }
+    }
+  }
+
   @Override
   public final String toString() {
     return "StreamOutputChannel{ ID: " + getID() + ",IOChannel: " + getIOChannel() + " }";
   }
+
+  /**
+   * serialize the events.
+   * */
+  private final ReentrantSpinLock eventSerializeLock = new ReentrantSpinLock();
+
+  /**
+   * protected by the event serialize lock.
+   * */
+  private EventType previousEvent = OUTPUT_RECOVERED;
 
   /**
    * The output disabled event.
@@ -121,6 +154,48 @@ public class StreamOutputChannel<PAYLOAD> extends StreamIOChannel {
     }
 
   };
+
+  /**
+   * Fire a buffer full event. All the buffer full event listeners will be notified.
+   * */
+  private void fireOutputDisabled() {
+    previousEvent = OUTPUT_DISABLED;
+    ownerPool.getIPCEventProcessor().execute(new OrderedExecutorService.KeyRunnable<StreamOutputChannel<PAYLOAD>>() {
+
+      @Override
+      public void run() {
+        for (IPCEventListener l : outputDisableListeners) {
+          l.triggered(outputDisabledEvent);
+        }
+      }
+
+      @Override
+      public StreamOutputChannel<PAYLOAD> getKey() {
+        return StreamOutputChannel.this;
+      }
+    });
+  }
+
+  /**
+   * Fire a buffer full event. All the buffer full event listeners will be notified.
+   * */
+  private void fireOutputRecovered() {
+    previousEvent = OUTPUT_RECOVERED;
+    ownerPool.getIPCEventProcessor().execute(new OrderedExecutorService.KeyRunnable<StreamOutputChannel<PAYLOAD>>() {
+
+      @Override
+      public void run() {
+        for (IPCEventListener l : outputRecoverListeners) {
+          l.triggered(outputRecoveredEvent);
+        }
+      }
+
+      @Override
+      public StreamOutputChannel<PAYLOAD> getKey() {
+        return StreamOutputChannel.this;
+      }
+    });
+  }
 
   /**
    * @param t event type.
