@@ -85,7 +85,7 @@ public class TupleBatch implements Serializable {
    * @param columns contains the column-stored data. Must match schema.
    * @param validTuples BitSet determines which tuples are valid tuples in this batch.
    * @param validIndices valid tuple indices.
-   * @param isEOI eoi TB
+   * @param isEOI eoi TB.
    */
   protected TupleBatch(final Schema schema, final ImmutableList<Column<?>> columns, final ImmutableBitSet validTuples,
       final int[] validIndices, final boolean isEOI) {
@@ -126,7 +126,7 @@ public class TupleBatch implements Serializable {
    * @param columns contains the column-stored data. Must match schema.
    * @param validTuples BitSet determines which tuples are valid tuples in this batch.
    * @param validIndices valid tuple indices.
-   * @param isEOI if isEOI
+   * @param isEOI if is EOI
    * @return shallow copy
    */
   protected TupleBatch shallowCopy(final Schema schema, final ImmutableList<Column<?>> columns,
@@ -153,7 +153,7 @@ public class TupleBatch implements Serializable {
       this.columns = ImmutableList.copyOf(columns);
     }
     Preconditions.checkArgument(numTuples >= 0 && numTuples <= BATCH_SIZE,
-        "numTuples must be at least 1 and no more than TupleBatch.BATCH_SIZE");
+        "numTuples must be non negative and no more than TupleBatch.BATCH_SIZE");
     numValidTuples = numTuples;
     validIndices = Arrays.copyOfRange(IDENTITY_MAPPING, 0, numTuples);
     /* All tuples are valid */
@@ -470,6 +470,41 @@ public class TupleBatch implements Serializable {
   }
 
   /**
+   * Partition this TB using the partition function. The method is implemented by shallow copy of TupleBatches.
+   * 
+   * @return an array of TBs. The length of the array is the same as the number of partitions. If no tuple presents in a
+   *         partition, say the i'th partition, the i'th element in the result array is null.
+   * @param pf the partition function.
+   * */
+  public final TupleBatch[] partition(final PartitionFunction<?, ?> pf) {
+    TupleBatch[] result = new TupleBatch[pf.numPartition()];
+    if (isEOI) {
+      Arrays.fill(result, this);
+      return result;
+    }
+
+    final int[] partitions = pf.partition(this);
+    final int[] mapping = getValidIndices();
+
+    BitSet[] resultBitSet = new BitSet[result.length];
+    for (int i = 0; i < partitions.length; i++) {
+      int p = partitions[i];
+      int actualRow = mapping[i];
+      if (resultBitSet[p] == null) {
+        resultBitSet[p] = new BitSet(actualRow + 1);
+      }
+      resultBitSet[p].set(actualRow);
+    }
+
+    for (int i = 0; i < result.length; i++) {
+      if (resultBitSet[i] != null) {
+        result[i] = shallowCopy(schema, columns, new ImmutableBitSet(resultBitSet[i]), null, isEOI);
+      }
+    }
+    return result;
+  }
+
+  /**
    * Hash the valid tuples in this batch and partition them into the supplied TupleBatchBuffers. This is a useful helper
    * primitive for, e.g., the Scatter operator.
    * 
@@ -542,6 +577,9 @@ public class TupleBatch implements Serializable {
 
   @Override
   public final String toString() {
+    if (isEOI) {
+      return "EOI";
+    }
     final List<Type> columnTypes = schema.getColumnTypes();
     final StringBuilder sb = new StringBuilder();
     for (final int i : getValidIndices()) {

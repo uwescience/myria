@@ -39,7 +39,8 @@ public class BroadcastProducer extends Producer {
         try {
           writeMessage(i, dm);
         } catch (InterruptedException e) {
-          throw new DbException(e);
+          Thread.currentThread().interrupt();
+          return;
         }
       }
     }
@@ -57,7 +58,8 @@ public class BroadcastProducer extends Producer {
         try {
           writeMessage(i, dm);
         } catch (InterruptedException e) {
-          throw new DbException(e);
+          Thread.currentThread().interrupt();
+          return;
         }
       }
     }
@@ -78,16 +80,18 @@ public class BroadcastProducer extends Producer {
         try {
           writeMessage(i, dm);
         } catch (InterruptedException e) {
-          throw new DbException(e);
+          Thread.currentThread().interrupt();
+          return;
         }
       }
     }
-
+    TupleBatch eoiTB = TupleBatch.eoiTupleBatch(getSchema());
     for (int i = 0; i < numChannels(); i++) {
       try {
-        writeMessage(i, TupleBatch.eoiTupleBatch(getSchema()));
+        writeMessage(i, eoiTB);
       } catch (InterruptedException e) {
-        throw new DbException(e);
+        Thread.currentThread().interrupt();
+        return;
       }
     }
 

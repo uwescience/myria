@@ -52,7 +52,8 @@ public class ShuffleProducer extends Producer {
         try {
           writeMessage(i, dm);
         } catch (InterruptedException e) {
-          throw new DbException(e);
+          Thread.currentThread().interrupt();
+          return;
         }
       }
     }
@@ -67,7 +68,8 @@ public class ShuffleProducer extends Producer {
         try {
           writeMessage(i, dm);
         } catch (InterruptedException e) {
-          throw new DbException(e);
+          Thread.currentThread().interrupt();
+          return;
         }
       }
     }
@@ -81,20 +83,23 @@ public class ShuffleProducer extends Producer {
   protected final void childEOI() throws DbException {
     TupleBatch dm = null;
     TupleBatchBuffer[] buffers = getBuffers();
+    TupleBatch eoiTB = TupleBatch.eoiTupleBatch(getSchema());
     for (int i = 0; i < numChannels(); i++) {
       while ((dm = buffers[i].popAny()) != null) {
         try {
           writeMessage(i, dm);
         } catch (InterruptedException e) {
-          throw new DbException(e);
+          Thread.currentThread().interrupt();
+          return;
         }
       }
     }
     for (int i = 0; i < numChannels(); i++) {
       try {
-        writeMessage(i, TupleBatch.eoiTupleBatch(getSchema()));
+        writeMessage(i, eoiTB);
       } catch (InterruptedException e) {
-        throw new DbException(e);
+        Thread.currentThread().interrupt();
+        return;
       }
     }
   }

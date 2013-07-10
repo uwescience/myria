@@ -2,7 +2,6 @@ package edu.washington.escience.myriad.parallel;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.TupleBatch;
-import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.operator.Operator;
 
 /**
@@ -41,58 +40,35 @@ public class LocalShuffleProducer extends Producer {
 
   @Override
   protected final void consumeTuples(final TupleBatch tup) throws DbException {
-    TupleBatchBuffer[] buffers = getBuffers();
-    tup.partition(partitionFunction, buffers);
-    TupleBatch dm = null;
-    for (int p = 0; p < numChannels(); p++) {
-      final TupleBatchBuffer etb = buffers[p];
-      while ((dm = etb.popAnyUsingTimeout()) != null) {
-        try {
-          writeMessage(p, dm);
-        } catch (InterruptedException e) {
-          throw new DbException(e);
+    TupleBatch[] tbs = tup.partition(partitionFunction);
+    for (int p = 0; p < tbs.length; p++) {
+      try {
+        if (tbs[p] != null) {
+          writeMessage(p, tbs[p]);
         }
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        return;
       }
     }
   }
 
   @Override
   protected final void childEOS() throws DbException {
-    TupleBatch dm = null;
-    TupleBatchBuffer[] buffers = getBuffers();
-    for (int i = 0; i < numChannels(); i++) {
-      while ((dm = buffers[i].popAny()) != null) {
-        try {
-          writeMessage(i, dm);
-        } catch (InterruptedException e) {
-          throw new DbException(e);
-        }
-      }
-    }
     for (int i = 0; i < numChannels(); i++) {
       super.channelEnds(i);
     }
-
   }
 
   @Override
   protected final void childEOI() throws DbException {
-    TupleBatch dm = null;
-    TupleBatchBuffer[] buffers = getBuffers();
-    for (int i = 0; i < numChannels(); i++) {
-      while ((dm = buffers[i].popAny()) != null) {
-        try {
-          writeMessage(i, dm);
-        } catch (InterruptedException e) {
-          throw new DbException(e);
-        }
-      }
-    }
+    TupleBatch eoiTB = TupleBatch.eoiTupleBatch(getSchema());
     for (int i = 0; i < numChannels(); i++) {
       try {
-        writeMessage(i, TupleBatch.eoiTupleBatch(getSchema()));
+        writeMessage(i, eoiTB);
       } catch (InterruptedException e) {
-        throw new DbException(e);
+        Thread.currentThread().interrupt();
+        return;
       }
     }
   }
