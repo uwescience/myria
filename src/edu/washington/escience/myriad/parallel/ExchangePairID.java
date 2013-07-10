@@ -23,7 +23,13 @@ public final class ExchangePairID implements Serializable {
   /**
    * Atomic global id generator.
    * */
-  private static final AtomicLong ID_GENERATOR = new AtomicLong();
+  private static final AtomicLong GLOBAL_ID_GENERATOR = new AtomicLong();
+
+  /**
+   * Local id generator.
+   * 
+   */
+  private static final AtomicLong LOCAL_ID_GENERATOR = new AtomicLong(-1);
 
   /**
    * @return build one from a long value
@@ -37,7 +43,17 @@ public final class ExchangePairID implements Serializable {
    * @return The only way to create a {@link ExchangePairID}.
    */
   public static ExchangePairID newID() {
-    return new ExchangePairID(ID_GENERATOR.getAndIncrement());
+    return new ExchangePairID(GLOBAL_ID_GENERATOR.getAndIncrement());
+  }
+
+  /**
+   * A local ID can be used locally in a Worker. It will be used when any worker decides to split some computing load
+   * into multiple concurrent running pieces to use multicore.
+   * 
+   * @return new local id.
+   * */
+  public static ExchangePairID newLocalID() {
+    return new ExchangePairID(LOCAL_ID_GENERATOR.getAndDecrement());
   }
 
   /**
