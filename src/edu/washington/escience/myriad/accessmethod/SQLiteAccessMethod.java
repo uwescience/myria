@@ -2,6 +2,7 @@ package edu.washington.escience.myriad.accessmethod;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -14,6 +15,7 @@ import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 
 import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.column.Column;
@@ -75,8 +77,8 @@ public final class SQLiteAccessMethod implements AccessMethod {
       }
       sqliteConnection.setBusyTimeout(SQLiteAccessMethod.DEFAULT_BUSY_TIMEOUT);
     } catch (final SQLiteException e) {
-      LOGGER.error(e.getMessage());
-      throw new DbException(e.getMessage());
+      LOGGER.error(e.getMessage(), e);
+      throw new DbException(e);
     }
   }
 
@@ -108,8 +110,8 @@ public final class SQLiteAccessMethod implements AccessMethod {
       sqliteConnection.exec("COMMIT TRANSACTION");
 
     } catch (final SQLiteException e) {
-      LOGGER.error(e.getMessage());
-      throw new DbException(e.getMessage());
+      LOGGER.error(e.getMessage(), e);
+      throw new DbException(e);
     } finally {
       if (statement != null && !statement.isDisposed()) {
         statement.dispose();
@@ -140,13 +142,14 @@ public final class SQLiteAccessMethod implements AccessMethod {
         conflict = true;
         count++;
         if (count >= 1000) {
-          LOGGER.error(e.getMessage());
+          LOGGER.error(e.getMessage(), e);
           throw new DbException(e);
         }
         try {
-          Thread.sleep(10);
+          Thread.sleep(MyriaConstants.SHORT_WAITING_INTERVAL_10_MS);
         } catch (InterruptedException e1) {
-          e1.printStackTrace();
+          Thread.currentThread().interrupt();
+          return Collections.<TupleBatch> emptyList().iterator();
         }
       }
     }
@@ -155,7 +158,7 @@ public final class SQLiteAccessMethod implements AccessMethod {
       /* Step the statement once so we can figure out the Schema */
       statement.step();
     } catch (final SQLiteException e) {
-      LOGGER.error(e.getMessage());
+      LOGGER.error(e.getMessage(), e);
       throw new DbException(e);
     }
 
@@ -169,8 +172,8 @@ public final class SQLiteAccessMethod implements AccessMethod {
     try {
       sqliteConnection.exec(ddlCommand);
     } catch (final SQLiteException e) {
-      LOGGER.error(e.getMessage());
-      throw new DbException(e.getMessage());
+      LOGGER.error(e.getMessage(), e);
+      throw new DbException(e);
     }
   }
 
@@ -198,8 +201,6 @@ public final class SQLiteAccessMethod implements AccessMethod {
       // sqliteAccessMethod.execute("BEGIN TRANSACTION");
       sqliteAccessMethod.tupleBatchInsert(insertString, tupleBatch);
       // sqliteAccessMethod.execute("COMMIT TRANSACTION");
-    } catch (DbException e) {
-      throw e;
     } finally {
       if (sqliteAccessMethod != null) {
         sqliteAccessMethod.close();
@@ -223,11 +224,10 @@ public final class SQLiteAccessMethod implements AccessMethod {
     try {
       sqliteAccessMethod = new SQLiteAccessMethod(SQLiteInfo.of(pathToSQLiteDb), schema, true);
       return sqliteAccessMethod.tupleBatchIteratorFromQuery(queryString);
-    } catch (DbException e) {
+    } finally {
       if (sqliteAccessMethod != null) {
         sqliteAccessMethod.close();
       }
-      throw e;
     }
   }
 }
@@ -278,7 +278,7 @@ class SQLiteTupleBatchIterator implements Iterator<TupleBatch> {
       }
       this.schema = schema;
     } catch (final SQLiteException e) {
-      throw new RuntimeException(e.getMessage());
+      throw new RuntimeException(e);
     }
   }
 
@@ -311,8 +311,8 @@ class SQLiteTupleBatchIterator implements Iterator<TupleBatch> {
         statement.step();
       }
     } catch (final SQLiteException e) {
-      LOGGER.error("Got SQLiteException:" + e + "in TupleBatchIterator.next()");
-      throw new RuntimeException(e.getMessage());
+      LOGGER.error("Got in TupleBatchIterator.next()", e);
+      throw new RuntimeException(e);
     }
 
     List<Column<?>> columns = new ArrayList<Column<?>>(columnBuilders.size());

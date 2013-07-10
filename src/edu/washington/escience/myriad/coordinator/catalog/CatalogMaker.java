@@ -161,6 +161,10 @@ public final class CatalogMaker {
         configurationValues.put(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY,
             MyriaConstants.OPERATOR_INPUT_BUFFER_CAPACITY_DEFAULT_VALUE + "");
       }
+      if (!masterConfigurations.containsKey(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER)) {
+        configurationValues.put(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER,
+            MyriaConstants.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER_DEFAULT_VALUE + "");
+      }
       if (!masterConfigurations.containsKey(MyriaSystemConfigKeys.TCP_CONNECTION_TIMEOUT_MILLIS)) {
         configurationValues.put(MyriaSystemConfigKeys.TCP_CONNECTION_TIMEOUT_MILLIS,
             MyriaConstants.TCP_CONNECTION_TIMEOUT_MILLIS_DEFAULT_VALUE + "");
@@ -236,6 +240,10 @@ public final class CatalogMaker {
         if (!workerConfigurations.containsKey(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY)) {
           configurationValues.put(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY, ""
               + MyriaConstants.OPERATOR_INPUT_BUFFER_CAPACITY_DEFAULT_VALUE);
+        }
+        if (!workerConfigurations.containsKey(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER)) {
+          configurationValues.put(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER,
+              MyriaConstants.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER_DEFAULT_VALUE + "");
         }
         if (!workerConfigurations.containsKey(MyriaSystemConfigKeys.TCP_CONNECTION_TIMEOUT_MILLIS)) {
           configurationValues.put(MyriaSystemConfigKeys.TCP_CONNECTION_TIMEOUT_MILLIS, ""
