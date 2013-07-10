@@ -12,12 +12,11 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.parallel.ExchangePairID;
 import edu.washington.escience.myriad.parallel.SocketInfo;
+import edu.washington.escience.myriad.parallel.TransportMessageSerializer;
 import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
+import edu.washington.escience.myriad.parallel.ipc.IPCMessage;
 import edu.washington.escience.myriad.parallel.ipc.StreamOutputChannel;
-import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
-import edu.washington.escience.myriad.util.QueueBasedMessageHandler.TestMessageWrapper;
 import edu.washington.escience.myriad.util.TestUtils;
 
 public class TenGBTupleBatchSenderUsingConnectionPool {
@@ -27,29 +26,35 @@ public class TenGBTupleBatchSenderUsingConnectionPool {
   final static Schema schema = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("id",
       "id2"));
 
+  public static final int IPCID = 1;
+
+  public static final long streamID = 1;
+
   public static void doSend(final String[] args, final TupleBatchBuffer dataToSend, final int tupleSize)
       throws Exception {
 
     final String receiveHostName = args[0];
 
     final HashMap<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
-    computingUnits.put(0, new SocketInfo(receiveHostName, TenGBTupleBatchReceiverUsingConnectionPool.PORT));
-    computingUnits.put(1, new SocketInfo(InetAddress.getLocalHost().getHostName(), PORT));
+    computingUnits.put(TenGBTupleBatchReceiverUsingConnectionPool.IPCID, new SocketInfo(receiveHostName,
+        TenGBTupleBatchReceiverUsingConnectionPool.PORT));
+    computingUnits.put(IPCID, new SocketInfo(InetAddress.getLocalHost().getHostName(), PORT));
 
     final IPCConnectionPool connectionPool =
-        TestUtils.startIPCConnectionPool(1, computingUnits, new LinkedBlockingQueue<TestMessageWrapper>());
+        TestUtils.startIPCConnectionPool(1, computingUnits, new LinkedBlockingQueue<IPCMessage.Data<TupleBatch>>(),
+            new TransportMessageSerializer());
 
     long numSent = 0;
     long start = 0;
     long end = 0;
 
-    final ExchangePairID eID = ExchangePairID.fromExisting(0L);
-    final StreamOutputChannel<TransportMessage> ch = connectionPool.reserveLongTermConnection(0, eID.getLong());
+    final StreamOutputChannel<TupleBatch> ch =
+        connectionPool.reserveLongTermConnection(TenGBTupleBatchReceiverUsingConnectionPool.IPCID, streamID);
     start = System.currentTimeMillis();
     System.out.println("Start at " + start);
 
-    final TransportMessage tm = dataToSend.popAnyAsTM();
-    final long serializedSize = tm.getSerializedSize();
+    final TupleBatch tm = dataToSend.popAny();
+    final long serializedSize = tm.toTransportMessage().getSerializedSize();
     System.out.println("TupleBatch payload size: " + ((Long.SIZE / 8) + tupleSize * TupleBatch.BATCH_SIZE));
     System.out.println("TupleBatch serialized size: " + serializedSize);
     final long tenGBytes = 10L * 1024L * 1024L * 1024L;
@@ -80,8 +85,8 @@ public class TenGBTupleBatchSenderUsingConnectionPool {
     System.out.println("End at " + end);
     System.out.println("Total sent: " + numSent + " TupleBatches");
     System.out.println("Total sent: " + realSentSize / 1024.0 / 1024.0 / 1024.0 + " G-bytes");
-    System.out.println("Total payload: " + numSent * tm.getDataMessage().getNumTuples() * tupleSize / 1024.0 / 1024.0
-        / 1024.0 + " G-bytes");
+    System.out
+        .println("Total payload: " + numSent * tm.numTuples() * tupleSize / 1024.0 / 1024.0 / 1024.0 + " G-bytes");
     System.out.println("Speed: " + realSentSize * 1.0 / 1024 / 1024 / elapsedInSeconds(start) + "mega-bytes/s");
 
     System.out.println();

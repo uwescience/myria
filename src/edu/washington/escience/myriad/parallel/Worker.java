@@ -270,11 +270,6 @@ public final class Worker {
   private final ConcurrentHashMap<Long, WorkerQueryPartition> activeQueries;
 
   /**
-   * IPC flow controller.
-   * */
-  private final FlowControlHandler flowController;
-
-  /**
    * My message handler.
    * */
   private final ShortMessageProcessor<TransportMessage> workerShortMessageProcessor;
@@ -427,13 +422,6 @@ public final class Worker {
   }
 
   /**
-   * @return my flow controller.
-   * */
-  FlowControlHandler getFlowControlHandler() {
-    return flowController;
-  }
-
-  /**
    * @return my connection pool for IPC.
    * */
   IPCConnectionPool getIPCConnectionPool() {
@@ -520,7 +508,6 @@ public final class Worker {
             IPCConfigurations.createWorkerIPCClientBootstrap(this));
     activeQueries = new ConcurrentHashMap<Long, WorkerQueryPartition>();
     producerChannelMapping = new ConcurrentHashMap<StreamIOChannelID, StreamOutputChannel<TransportMessage>>();
-    flowController = new FlowControlHandler(null, producerChannelMapping);
 
     inputBufferCapacity =
         Integer.valueOf(catalog.getConfigurationValue(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY));
@@ -689,9 +676,12 @@ public final class Worker {
         new NioServerSocketChannelFactory(bossExecutor, workerExecutor,
             Runtime.getRuntime().availableProcessors() * 2 + 1);
 
-    ChannelPipelineFactory serverPipelineFactory = new IPCPipelineFactories.WorkerServerPipelineFactory(this);
-    ChannelPipelineFactory clientPipelineFactory = new IPCPipelineFactories.WorkerClientPipelineFactory(this);
-    ChannelPipelineFactory workerInJVMPipelineFactory = new IPCPipelineFactories.WorkerInJVMPipelineFactory(this);
+    ChannelPipelineFactory serverPipelineFactory =
+        new IPCPipelineFactories.WorkerServerPipelineFactory(connectionPool, getPipelineExecutor());
+    ChannelPipelineFactory clientPipelineFactory =
+        new IPCPipelineFactories.WorkerClientPipelineFactory(connectionPool, getPipelineExecutor());
+    ChannelPipelineFactory workerInJVMPipelineFactory =
+        new IPCPipelineFactories.WorkerInJVMPipelineFactory(connectionPool);
 
     connectionPool.start(serverChannelFactory, serverPipelineFactory, clientChannelFactory, clientPipelineFactory,
         workerInJVMPipelineFactory, new InJVMLoopbackChannelSink(), workerShortMessageProcessor,

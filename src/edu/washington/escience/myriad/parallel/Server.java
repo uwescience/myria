@@ -194,11 +194,6 @@ public final class Server {
   private final Catalog catalog;
 
   /**
-   * IPC flow controller.
-   * */
-  private final FlowControlHandler flowController;
-
-  /**
    * IPC short message processor.
    * */
   private final ShortMessageProcessor<TransportMessage> masterShortMessageProcessor;
@@ -329,13 +324,6 @@ public final class Server {
   }
 
   /**
-   * @return my flow controller.
-   * */
-  FlowControlHandler getFlowControlHandler() {
-    return flowController;
-  }
-
-  /**
    * @return my connection pool for IPC.
    * */
   IPCConnectionPool getIPCConnectionPool() {
@@ -399,8 +387,6 @@ public final class Server {
     computingUnits.put(MyriaConstants.MASTER_ID, masterSocketInfo);
 
     masterShortMessageProcessor = new QueueBasedShortMessageProcessor<TransportMessage>(messageQueue);
-
-    flowController = new FlowControlHandler(null, null);
 
     connectionPool =
         new IPCConnectionPool(MyriaConstants.MASTER_ID, computingUnits, IPCConfigurations
@@ -598,9 +584,12 @@ public final class Server {
             .availableProcessors() * 2 + 1);
     // Start server with Nb of active threads = 2*NB CPU + 1 as maximum.
 
-    ChannelPipelineFactory serverPipelineFactory = new IPCPipelineFactories.MasterServerPipelineFactory(this);
-    ChannelPipelineFactory clientPipelineFactory = new IPCPipelineFactories.MasterClientPipelineFactory(this);
-    ChannelPipelineFactory masterInJVMPipelineFactory = new IPCPipelineFactories.MasterInJVMPipelineFactory(this);
+    ChannelPipelineFactory serverPipelineFactory =
+        new IPCPipelineFactories.MasterServerPipelineFactory(connectionPool, getPipelineExecutor());
+    ChannelPipelineFactory clientPipelineFactory =
+        new IPCPipelineFactories.MasterClientPipelineFactory(connectionPool, getPipelineExecutor());
+    ChannelPipelineFactory masterInJVMPipelineFactory =
+        new IPCPipelineFactories.MasterInJVMPipelineFactory(connectionPool);
 
     connectionPool.start(serverChannelFactory, serverPipelineFactory, clientChannelFactory, clientPipelineFactory,
         masterInJVMPipelineFactory, new InJVMLoopbackChannelSink(), masterShortMessageProcessor,

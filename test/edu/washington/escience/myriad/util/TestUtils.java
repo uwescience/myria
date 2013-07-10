@@ -6,7 +6,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Queue;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -26,19 +25,15 @@ import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.parallel.SocketInfo;
 import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
+import edu.washington.escience.myriad.parallel.ipc.IPCMessage;
 import edu.washington.escience.myriad.parallel.ipc.InJVMLoopbackChannelSink;
-import edu.washington.escience.myriad.parallel.ipc.MessageChannelHandler;
-import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
+import edu.washington.escience.myriad.parallel.ipc.PayloadSerializer;
+import edu.washington.escience.myriad.parallel.ipc.QueueBasedShortMessageProcessor;
+import edu.washington.escience.myriad.parallel.ipc.ShortMessageProcessor;
 import edu.washington.escience.myriad.systemtest.SystemTestBase;
 import edu.washington.escience.myriad.systemtest.SystemTestBase.Tuple;
-import edu.washington.escience.myriad.util.QueueBasedMessageHandler.TestMessageWrapper;
 
 public final class TestUtils {
-
-  public static MessageChannelHandler<TransportMessage> messageQueueWrapperFullChannelHandler(
-      final Queue<TestMessageWrapper> messageQueue) {
-    return new QueueBasedMessageHandler(messageQueue);
-  }
 
   public static void assertEqualsToStringBuilder(final StringBuilder errorMessageHolder, final String currentEM,
       final Object expected, final Object actual) {
@@ -473,8 +468,9 @@ public final class TestUtils {
     return result;
   }
 
-  public final static IPCConnectionPool startIPCConnectionPool(final int myID,
-      final HashMap<Integer, SocketInfo> computingUnits, final LinkedBlockingQueue<TestMessageWrapper> messageQueue)
+  public final static <PAYLOAD> IPCConnectionPool startIPCConnectionPool(final int myID,
+      final HashMap<Integer, SocketInfo> computingUnits,
+      final LinkedBlockingQueue<IPCMessage.Data<PAYLOAD>> shortMessageQueue, final PayloadSerializer ps)
       throws Exception {
     final IPCConnectionPool connectionPool =
         new IPCConnectionPool(myID, computingUnits, new ServerBootstrap(), new ClientBootstrap());
@@ -491,16 +487,16 @@ public final class TestUtils {
         new NioServerSocketChannelFactory(bossExecutor, workerExecutor,
             Runtime.getRuntime().availableProcessors() * 2 + 1);
 
-    MessageChannelHandler<TransportMessage> h = TestUtils.messageQueueWrapperFullChannelHandler(messageQueue);
+    ShortMessageProcessor<PAYLOAD> h = new QueueBasedShortMessageProcessor<PAYLOAD>(shortMessageQueue);
 
     ChannelPipelineFactory serverPipelineFactory =
-        new TestIPCPipelineFactories.ServerPipelineFactory(connectionPool, h, null);
-    ChannelPipelineFactory clientPipelineFactory = new TestIPCPipelineFactories.ClientPipelineFactory(h);
+        new TestIPCPipelineFactories.ServerPipelineFactory(connectionPool, null);
+    ChannelPipelineFactory clientPipelineFactory = new TestIPCPipelineFactories.ClientPipelineFactory(connectionPool);
 
-    ChannelPipelineFactory inJVMPipelineFactory = new TestIPCPipelineFactories.InJVMPipelineFactory(h);
+    ChannelPipelineFactory inJVMPipelineFactory = new TestIPCPipelineFactories.InJVMPipelineFactory(connectionPool);
 
     connectionPool.start(serverChannelFactory, serverPipelineFactory, clientChannelFactory, clientPipelineFactory,
-        inJVMPipelineFactory, new InJVMLoopbackChannelSink());
+        inJVMPipelineFactory, new InJVMLoopbackChannelSink(), h, ps);
     return connectionPool;
   }
 
