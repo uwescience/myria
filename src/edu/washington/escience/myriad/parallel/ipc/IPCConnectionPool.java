@@ -783,7 +783,20 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
    * @param channel the channel.
    * @return channel release future.
    * */
-  public ChannelFuture releaseLongTermConnection(final Channel channel) {
+  public ChannelFuture releaseLongTermConnection(final StreamOutputChannel<?> channel) {
+    LOGGER.trace("Released long-term connection " + channel);
+    Channel ch = channel.getIOChannel();
+    if (ch != null) {
+      return this.releaseLongTermConnection(ch);
+    }
+    return null;
+  }
+
+  /**
+   * @param channel the channel.
+   * @return channel release future.
+   * */
+  ChannelFuture releaseLongTermConnection(final Channel channel) {
     Preconditions.checkNotNull(channel);
 
     final ChannelContext cc = ChannelContext.getChannelContext(channel);
@@ -896,8 +909,9 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
    * @param streamID of a stream
    * @return IPC channel, null if id is invalid or connect fails.
    * @throws IllegalStateException if the connection pool is already shutdown
+   * @param <PAYLOAD> the IPC message payload type
    */
-  public Channel reserveLongTermConnection(final int id, final long streamID) {
+  public <PAYLOAD> StreamOutputChannel<PAYLOAD> reserveLongTermConnection(final int id, final long streamID) {
     checkShutdown();
     try {
       Channel ch = getAConnection(id);
@@ -911,7 +925,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
           LOGGER.debug("New data connection, setup flow control context.");
         }
 
-        return ch;
+        return new StreamOutputChannel<PAYLOAD>(new StreamIOChannelID(streamID, remoteID), this, ch);
       }
 
     } catch (ChannelException e) {

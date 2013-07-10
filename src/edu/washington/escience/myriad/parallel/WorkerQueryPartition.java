@@ -172,8 +172,25 @@ public class WorkerQueryPartition implements QueryPartition {
         }
       }
 
-      for (StreamIOChannelID producerID : drivingTask.getOutputChannels()) {
-        producerChannelMapping.put(producerID, new StreamOutputChannel<TransportMessage>(drivingTask, producerID));
+      for (final StreamIOChannelID producerID : drivingTask.getOutputChannels()) {
+        StreamOutputChannel<TransportMessage> o =
+            new StreamOutputChannel<TransportMessage>(producerID, this.ownerWorker.getIPCConnectionPool(), null);
+
+        o.addListener(o.outputEnabledEvent, new IPCEventListener<StreamOutputChannel<TransportMessage>>() {
+
+          @Override
+          public void triggered(final IPCEvent<StreamOutputChannel<TransportMessage>> event) {
+            drivingTask.notifyOutputEnabled(producerID);
+          }
+        });
+        o.addListener(o.outputDisabledEvent, new IPCEventListener<StreamOutputChannel<TransportMessage>>() {
+
+          @Override
+          public void triggered(final IPCEvent<StreamOutputChannel<TransportMessage>> event) {
+            drivingTask.notifyOutputDisabled(producerID);
+          }
+        });
+        producerChannelMapping.put(producerID, o);
       }
 
     }

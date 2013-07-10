@@ -5,7 +5,6 @@ import java.util.BitSet;
 import java.util.HashMap;
 import java.util.List;
 
-import org.jboss.netty.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,6 +21,8 @@ import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.parallel.Consumer;
 import edu.washington.escience.myriad.parallel.ExchangePairID;
 import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
+import edu.washington.escience.myriad.parallel.ipc.StreamOutputChannel;
+import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 
 /**
  * Together with the EOSController, the IDBInput controls what to serve into an iteration and when to stop an iteration.
@@ -87,7 +88,7 @@ public class IDBInput extends Operator {
   /**
    * The IPC channel for EOI report.
    * */
-  private transient Channel eoiReportChannel;
+  private transient StreamOutputChannel<TransportMessage> eoiReportChannel;
 
   /**
    * The logger for this class.
@@ -222,8 +223,7 @@ public class IDBInput extends Operator {
 
         if (eosControllerInput.eos()) {
           setEOS();
-          connectionPool.releaseLongTermConnection(eoiReportChannel);
-          eoiReportChannel = null;
+          eoiReportChannel.release();
           // notify the EOSController to end.
         } else if (iterationInput.eoi()) {
           iterationInput.setEOI(false);
@@ -291,9 +291,7 @@ public class IDBInput extends Operator {
   protected final void cleanup() throws DbException {
     uniqueTupleIndices = null;
     uniqueTuples = null;
-    if (eoiReportChannel != null) {
-      connectionPool.releaseLongTermConnection(eoiReportChannel);
-    }
+    eoiReportChannel.release();
     eoiReportChannel = null;
     connectionPool = null;
   }

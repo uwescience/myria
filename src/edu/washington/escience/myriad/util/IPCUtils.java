@@ -14,6 +14,7 @@ import com.google.protobuf.ByteString;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.parallel.QueryExecutionStatistics;
+import edu.washington.escience.myriad.parallel.ipc.StreamOutputChannel;
 import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage;
@@ -195,6 +196,19 @@ public final class IPCUtils {
     } else {
       return false;
     }
+  }
+
+  /**
+   * Check if the remote side of the channel is still connected.
+   * 
+   * @param ch the channel to check.
+   * @return true if the remote side is still connected, false otherwise.
+   * */
+  public static boolean isRemoteConnected(final StreamOutputChannel<?> ch) {
+    if (ch == null) {
+      return false;
+    }
+    return isRemoteConnected(ch.getIOChannel());
   }
 
   /**

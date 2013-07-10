@@ -12,7 +12,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.group.ChannelGroupFuture;
 import org.junit.Rule;
@@ -34,6 +33,7 @@ import edu.washington.escience.myriad.column.ColumnFactory;
 import edu.washington.escience.myriad.parallel.ExchangePairID;
 import edu.washington.escience.myriad.parallel.SocketInfo;
 import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
+import edu.washington.escience.myriad.parallel.ipc.StreamOutputChannel;
 import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage;
@@ -152,7 +152,7 @@ public class ProtobufTest {
       final Thread tt = new Thread() {
         @Override
         public void run() {
-          final Channel ch = connectionPool.reserveLongTermConnection(0, epID.getLong());
+          final StreamOutputChannel<TransportMessage> ch = connectionPool.reserveLongTermConnection(0, epID.getLong());
 
           try {
             for (final TransportMessage tm : tbs) {
@@ -160,7 +160,7 @@ public class ProtobufTest {
               numSent.incrementAndGet();
             }
           } finally {
-            connectionPool.releaseLongTermConnection(ch);
+            ch.release();
           }
         }
       };
@@ -329,7 +329,8 @@ public class ProtobufTest {
       final Thread tt = new Thread() {
         @Override
         public void run() {
-          final Channel ch = clientConnectionPool.reserveLongTermConnection(0, epID.getLong());
+          final StreamOutputChannel<TransportMessage> ch =
+              clientConnectionPool.reserveLongTermConnection(0, epID.getLong());
 
           try {
             for (final TransportMessage tm : tbs) {
@@ -338,7 +339,7 @@ public class ProtobufTest {
             }
 
           } finally {
-            clientConnectionPool.releaseLongTermConnection(ch);
+            ch.release();
           }
         }
       };
@@ -449,7 +450,7 @@ public class ProtobufTest {
       final Thread tt = new Thread() {
         @Override
         public void run() {
-          final Channel ch = connectionPool.reserveLongTermConnection(0, epID.getLong());
+          final StreamOutputChannel<TransportMessage> ch = connectionPool.reserveLongTermConnection(0, epID.getLong());
 
           try {
             for (final TransportMessage tm : tbs) {
@@ -457,7 +458,7 @@ public class ProtobufTest {
               numSent.incrementAndGet();
             }
           } finally {
-            connectionPool.releaseLongTermConnection(ch);
+            ch.release();
           }
         }
       };
@@ -549,7 +550,7 @@ public class ProtobufTest {
     final List<TransportMessage> tbs = tbb.getAllAsTM();
 
     final AtomicInteger numSent = new AtomicInteger();
-    final Channel ch = connectionPool.reserveLongTermConnection(0, epID.getLong());
+    final StreamOutputChannel<TransportMessage> ch = connectionPool.reserveLongTermConnection(0, epID.getLong());
 
     try {
       for (final TransportMessage tm : tbs) {
@@ -557,7 +558,7 @@ public class ProtobufTest {
         numSent.incrementAndGet();
       }
     } finally {
-      connectionPool.releaseLongTermConnection(ch);
+      ch.release();
     }
 
     LOGGER.info("Total sent: " + numSent.get() + " TupleBatches");
@@ -688,7 +689,7 @@ public class ProtobufTest {
 
     final AtomicInteger numSent = new AtomicInteger();
     final ChannelFuture cf;
-    final Channel ch = connectionPoolClient.reserveLongTermConnection(0, epID.getLong());
+    final StreamOutputChannel<TransportMessage> ch = connectionPoolClient.reserveLongTermConnection(0, epID.getLong());
 
     try {
       for (final TransportMessage tm : tbs) {
@@ -696,7 +697,7 @@ public class ProtobufTest {
         numSent.incrementAndGet();
       }
     } finally {
-      cf = connectionPoolClient.releaseLongTermConnection(ch);
+      cf = ch.release();
     }
     if (cf != null) {
       cf.awaitUninterruptibly();
@@ -783,7 +784,7 @@ public class ProtobufTest {
 
     final AtomicInteger numSent = new AtomicInteger();
     final ChannelFuture cf;
-    final Channel ch = connectionPool.reserveLongTermConnection(0, epID.getLong());
+    final StreamOutputChannel<TransportMessage> ch = connectionPool.reserveLongTermConnection(0, epID.getLong());
 
     try {
       for (final TransportMessage tm : tbs) {
@@ -791,7 +792,7 @@ public class ProtobufTest {
         numSent.incrementAndGet();
       }
     } finally {
-      cf = connectionPool.releaseLongTermConnection(ch);
+      cf = ch.release();
     }
     if (cf != null) {
       cf.awaitUninterruptibly();

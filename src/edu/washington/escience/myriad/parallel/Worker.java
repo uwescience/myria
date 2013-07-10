@@ -17,7 +17,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 import org.apache.commons.io.FilenameUtils;
-import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
@@ -199,9 +198,9 @@ public final class Worker {
 
     @Override
     public synchronized void run() {
-      Channel serverChannel = null;
+      StreamOutputChannel<TransportMessage> serverChannel = null;
       try {
-        serverChannel = owner.connectionPool.reserveLongTermConnection(MyriaConstants.MASTER_ID, 0);
+        serverChannel = owner.connectionPool.<TransportMessage> reserveLongTermConnection(MyriaConstants.MASTER_ID, 0);
         if (IPCUtils.isRemoteConnected(serverChannel)) {
           return;
         }

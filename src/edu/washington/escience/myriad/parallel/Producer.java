@@ -2,7 +2,6 @@ package edu.washington.escience.myriad.parallel;
 
 import java.util.Arrays;
 
-import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
 
 import com.google.common.base.Preconditions;
@@ -15,6 +14,8 @@ import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.parallel.Worker.QueryExecutionMode;
 import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
+import edu.washington.escience.myriad.parallel.ipc.StreamOutputChannel;
+import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 
 /**
  * A Producer is the counterpart of a consumer. It dispatch data using IPC channels to Consumers. Like network socket,
@@ -33,7 +34,7 @@ public abstract class Producer extends RootOperator {
   /**
    * the netty channels doing the true IPC IO.
    * */
-  private transient Channel[] ioChannels;
+  private transient StreamOutputChannel<TransportMessage>[] ioChannels;
 
   /**
    * output buffers.
@@ -143,13 +144,16 @@ public abstract class Producer extends RootOperator {
     }
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     connectionPool = (IPCConnectionPool) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_IPC_CONNECTION_POOL);
-    ioChannels = new Channel[operatorIDs.length];
+    ioChannels = new StreamOutputChannel[operatorIDs.length];
     buffers = new TupleBatchBuffer[operatorIDs.length];
     for (int i = 0; i < operatorIDs.length; i++) {
-      ioChannels[i] = connectionPool.reserveLongTermConnection(destinationWorkerIDs[i], operatorIDs[i].getLong());
+      ioChannels[i] =
+          connectionPool
+              .<TransportMessage> reserveLongTermConnection(destinationWorkerIDs[i], operatorIDs[i].getLong());
       buffers[i] = new TupleBatchBuffer(getSchema());
     }
 
@@ -164,7 +168,7 @@ public abstract class Producer extends RootOperator {
    * @return write future
    * */
   protected final ChannelFuture writeMessage(final int chIdx, final Object msg) throws InterruptedException {
-    Channel ch = ioChannels[chIdx];
+    StreamOutputChannel<TransportMessage> ch = ioChannels[chIdx];
     if (nonBlockingExecution) {
       return ch.write(msg);
     } else {
@@ -190,17 +194,13 @@ public abstract class Producer extends RootOperator {
    * @return channel release future.
    * */
   protected final ChannelFuture channelEnds(final int chIdx) {
-    ChannelFuture cf = connectionPool.releaseLongTermConnection(ioChannels[chIdx]);
-    ioChannels[chIdx] = null;
-    return cf;
+    return ioChannels[chIdx].release();
   }
 
   @Override
   public final void cleanup() throws DbException {
     for (int i = 0; i < destinationWorkerIDs.length; i++) {
-      if (ioChannels[i] != null) {
-        connectionPool.releaseLongTermConnection(ioChannels[i]);
-      }
+      ioChannels[i].release();
       buffers[i] = null;
     }
     buffers = null;

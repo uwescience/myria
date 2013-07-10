@@ -415,8 +415,25 @@ public class MasterQueryPartition implements QueryPartition {
       }
     }
 
-    for (StreamIOChannelID producerID : rootTask.getOutputChannels()) {
-      producerChannelMapping.put(producerID, new StreamOutputChannel<TransportMessage>(rootTask, producerID));
+    for (final StreamIOChannelID producerID : rootTask.getOutputChannels()) {
+      StreamOutputChannel<TransportMessage> o =
+          new StreamOutputChannel<TransportMessage>(producerID, this.master.getIPCConnectionPool(), null);
+
+      o.addListener(o.outputEnabledEvent, new IPCEventListener<StreamOutputChannel<TransportMessage>>() {
+
+        @Override
+        public void triggered(final IPCEvent<StreamOutputChannel<TransportMessage>> event) {
+          rootTask.notifyOutputEnabled(producerID);
+        }
+      });
+      o.addListener(o.outputDisabledEvent, new IPCEventListener<StreamOutputChannel<TransportMessage>>() {
+
+        @Override
+        public void triggered(final IPCEvent<StreamOutputChannel<TransportMessage>> event) {
+          rootTask.notifyOutputDisabled(producerID);
+        }
+      });
+      producerChannelMapping.put(producerID, o);
     }
 
     final FlowControlHandler fch = master.getFlowControlHandler();

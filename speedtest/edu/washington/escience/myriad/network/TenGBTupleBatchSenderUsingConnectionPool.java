@@ -4,7 +4,6 @@ import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
 
 import com.google.common.collect.ImmutableList;
@@ -16,6 +15,7 @@ import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.parallel.ExchangePairID;
 import edu.washington.escience.myriad.parallel.SocketInfo;
 import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
+import edu.washington.escience.myriad.parallel.ipc.StreamOutputChannel;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.util.QueueBasedMessageHandler.TestMessageWrapper;
 import edu.washington.escience.myriad.util.TestUtils;
@@ -44,7 +44,7 @@ public class TenGBTupleBatchSenderUsingConnectionPool {
     long end = 0;
 
     final ExchangePairID eID = ExchangePairID.fromExisting(0L);
-    final Channel ch = connectionPool.reserveLongTermConnection(0, eID.getLong());
+    final StreamOutputChannel<TransportMessage> ch = connectionPool.reserveLongTermConnection(0, eID.getLong());
     start = System.currentTimeMillis();
     System.out.println("Start at " + start);
 
@@ -73,7 +73,7 @@ public class TenGBTupleBatchSenderUsingConnectionPool {
       cf = ch.write(tm);
       numSent++;
     }
-    connectionPool.releaseLongTermConnection(ch).await();
+    ch.release().await();
     numSent++;
     end = System.currentTimeMillis();
     System.out.println("Start at " + start);
