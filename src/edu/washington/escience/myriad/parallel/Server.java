@@ -4,7 +4,6 @@ import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -38,25 +37,17 @@ import edu.washington.escience.myriad.MyriaSystemConfigKeys;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
-import edu.washington.escience.myriad.column.Column;
-import edu.washington.escience.myriad.column.ColumnFactory;
 import edu.washington.escience.myriad.coordinator.catalog.Catalog;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SQLiteInsert;
-import edu.washington.escience.myriad.parallel.ExchangeData.MetaMessage;
-import edu.washington.escience.myriad.parallel.MasterDataHandler.MessageWrapper;
 import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myriad.parallel.ipc.IPCMessage;
 import edu.washington.escience.myriad.parallel.ipc.InJVMLoopbackChannelSink;
 import edu.washington.escience.myriad.parallel.ipc.QueueBasedShortMessageProcessor;
 import edu.washington.escience.myriad.parallel.ipc.ShortMessageProcessor;
-import edu.washington.escience.myriad.parallel.ipc.StreamIOChannelID;
-import edu.washington.escience.myriad.parallel.ipc.StreamInputChannel;
 import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
-import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
-import edu.washington.escience.myriad.proto.DataProto.DataMessage;
 import edu.washington.escience.myriad.proto.QueryProto.QueryMessage;
 import edu.washington.escience.myriad.proto.QueryProto.QueryReport;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
@@ -82,7 +73,7 @@ public final class Server {
     @Override
     public void run() {
       TERMINATE_MESSAGE_PROCESSING : while (true) {
-        MessageWrapper mw = null;
+        IPCMessage.Data<TransportMessage> mw = null;
         try {
           mw = messageQueue.take();
         } catch (final InterruptedException e) {
@@ -90,42 +81,10 @@ public final class Server {
           break TERMINATE_MESSAGE_PROCESSING;
         }
 
-        final TransportMessage m = mw.getMessage();
-        final int senderID = mw.getSenderID();
+        final TransportMessage m = mw.getPayload();
+        final int senderID = mw.getRemoteID();
 
         switch (m.getType()) {
-          case DATA:
-            final DataMessage data = m.getDataMessage();
-            final long exchangePairIDLong = data.getOperatorID();
-            final ExchangePairID exchangePairID = ExchangePairID.fromExisting(exchangePairIDLong);
-            StreamInputChannel<TransportMessage> cc =
-                consumerChannelMap.get(new StreamIOChannelID(exchangePairIDLong, senderID));
-            final Schema operatorSchema = cc.getOwnerConsumer().getSchema();
-            switch (data.getType()) {
-              case EOS:
-                LOGGER.debug("EOS from: " + senderID + "," + workers.get(senderID));
-                receiveData(new ExchangeData(exchangePairID, senderID, operatorSchema, MetaMessage.EOS));
-                cc.getOwnerTask().notifyNewInput();
-                break;
-              case EOI:
-                receiveData(new ExchangeData(exchangePairID, senderID, operatorSchema, MetaMessage.EOI));
-                cc.getOwnerTask().notifyNewInput();
-
-                break;
-              case NORMAL:
-                final List<ColumnMessage> columnMessages = data.getColumnsList();
-                final Column<?>[] columnArray = new Column<?>[columnMessages.size()];
-                int idx = 0;
-                for (final ColumnMessage cm : columnMessages) {
-                  columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm, data.getNumTuples());
-                }
-                final List<Column<?>> columns = Arrays.asList(columnArray);
-                receiveData((new ExchangeData(exchangePairID, senderID, columns, operatorSchema, data.getNumTuples(),
-                    data.getSeq())));
-                cc.getOwnerTask().notifyNewInput();
-                break;
-            }
-            break;
           case CONTROL:
             final ControlMessage controlM = m.getControlMessage();
             switch (controlM.getType()) {
@@ -177,6 +136,11 @@ public final class Server {
                 break;
             }
 
+            break;
+          default:
+            if (LOGGER.isErrorEnabled()) {
+              LOGGER.error("Unknown short message received at master: " + m.getType());
+            }
             break;
         }
       }
