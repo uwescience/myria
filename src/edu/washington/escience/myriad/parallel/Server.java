@@ -46,7 +46,6 @@ import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myriad.parallel.ipc.IPCMessage;
 import edu.washington.escience.myriad.parallel.ipc.InJVMLoopbackChannelSink;
 import edu.washington.escience.myriad.parallel.ipc.QueueBasedShortMessageProcessor;
-import edu.washington.escience.myriad.parallel.ipc.ShortMessageProcessor;
 import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myriad.proto.QueryProto.QueryMessage;
 import edu.washington.escience.myriad.proto.QueryProto.QueryReport;
@@ -192,11 +191,6 @@ public final class Server {
 
   /** The Catalog stores the metadata about the Myria instance. */
   private final Catalog catalog;
-
-  /**
-   * IPC short message processor.
-   * */
-  private final ShortMessageProcessor<TransportMessage> masterShortMessageProcessor;
 
   /**
    * Default input buffer capacity for {@link Consumer} input buffers.
@@ -386,11 +380,10 @@ public final class Server {
     final Map<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>(workers);
     computingUnits.put(MyriaConstants.MASTER_ID, masterSocketInfo);
 
-    masterShortMessageProcessor = new QueueBasedShortMessageProcessor<TransportMessage>(messageQueue);
-
     connectionPool =
         new IPCConnectionPool(MyriaConstants.MASTER_ID, computingUnits, IPCConfigurations
-            .createMasterIPCServerBootstrap(this), IPCConfigurations.createMasterIPCClientBootstrap(this));
+            .createMasterIPCServerBootstrap(this), IPCConfigurations.createMasterIPCClientBootstrap(this),
+            new TransportMessageSerializer(), new QueueBasedShortMessageProcessor<TransportMessage>(messageQueue));
 
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_IPC_CONNECTION_POOL, connectionPool);
 
@@ -592,8 +585,7 @@ public final class Server {
         new IPCPipelineFactories.MasterInJVMPipelineFactory(connectionPool);
 
     connectionPool.start(serverChannelFactory, serverPipelineFactory, clientChannelFactory, clientPipelineFactory,
-        masterInJVMPipelineFactory, new InJVMLoopbackChannelSink(), masterShortMessageProcessor,
-        new TransportMessageSerializer());
+        masterInJVMPipelineFactory, new InJVMLoopbackChannelSink());
 
     messageProcessingExecutor.submit(new MessageProcessor());
     LOGGER.info("Server started on {}", masterSocketInfo.toString());

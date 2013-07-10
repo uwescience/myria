@@ -29,7 +29,6 @@ import edu.washington.escience.myriad.parallel.ipc.IPCMessage;
 import edu.washington.escience.myriad.parallel.ipc.InJVMLoopbackChannelSink;
 import edu.washington.escience.myriad.parallel.ipc.PayloadSerializer;
 import edu.washington.escience.myriad.parallel.ipc.QueueBasedShortMessageProcessor;
-import edu.washington.escience.myriad.parallel.ipc.ShortMessageProcessor;
 import edu.washington.escience.myriad.systemtest.SystemTestBase;
 import edu.washington.escience.myriad.systemtest.SystemTestBase.Tuple;
 
@@ -473,7 +472,8 @@ public final class TestUtils {
       final LinkedBlockingQueue<IPCMessage.Data<PAYLOAD>> shortMessageQueue, final PayloadSerializer ps)
       throws Exception {
     final IPCConnectionPool connectionPool =
-        new IPCConnectionPool(myID, computingUnits, new ServerBootstrap(), new ClientBootstrap());
+        new IPCConnectionPool(myID, computingUnits, new ServerBootstrap(), new ClientBootstrap(), ps,
+            new QueueBasedShortMessageProcessor<PAYLOAD>(shortMessageQueue));
 
     ExecutorService bossExecutor = Executors.newCachedThreadPool();
     ExecutorService workerExecutor = Executors.newCachedThreadPool();
@@ -487,8 +487,6 @@ public final class TestUtils {
         new NioServerSocketChannelFactory(bossExecutor, workerExecutor,
             Runtime.getRuntime().availableProcessors() * 2 + 1);
 
-    ShortMessageProcessor<PAYLOAD> h = new QueueBasedShortMessageProcessor<PAYLOAD>(shortMessageQueue);
-
     ChannelPipelineFactory serverPipelineFactory =
         new TestIPCPipelineFactories.ServerPipelineFactory(connectionPool, null);
     ChannelPipelineFactory clientPipelineFactory = new TestIPCPipelineFactories.ClientPipelineFactory(connectionPool);
@@ -496,7 +494,7 @@ public final class TestUtils {
     ChannelPipelineFactory inJVMPipelineFactory = new TestIPCPipelineFactories.InJVMPipelineFactory(connectionPool);
 
     connectionPool.start(serverChannelFactory, serverPipelineFactory, clientChannelFactory, clientPipelineFactory,
-        inJVMPipelineFactory, new InJVMLoopbackChannelSink(), h, ps);
+        inJVMPipelineFactory, new InJVMLoopbackChannelSink());
     return connectionPool;
   }
 

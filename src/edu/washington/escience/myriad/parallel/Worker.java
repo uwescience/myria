@@ -36,7 +36,6 @@ import edu.washington.escience.myriad.coordinator.catalog.WorkerCatalog;
 import edu.washington.escience.myriad.parallel.ipc.FlowControlBagInputBuffer;
 import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myriad.parallel.ipc.InJVMLoopbackChannelSink;
-import edu.washington.escience.myriad.parallel.ipc.ShortMessageProcessor;
 import edu.washington.escience.myriad.parallel.ipc.StreamOutputChannel;
 import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
@@ -269,11 +268,6 @@ public final class Worker {
   private final ConcurrentHashMap<Long, WorkerQueryPartition> activeQueries;
 
   /**
-   * My message handler.
-   * */
-  private final ShortMessageProcessor<TransportMessage> workerShortMessageProcessor;
-
-  /**
    * timer task executor.
    * */
   private ScheduledExecutorService scheduledTaskExecutor;
@@ -490,7 +484,6 @@ public final class Worker {
     queryQueue = new PriorityBlockingQueue<WorkerQueryPartition>();
 
     masterSocketInfo = catalog.getMasters().get(0);
-    workerShortMessageProcessor = new WorkerShortMessageProcessor(this);
 
     final Map<Integer, SocketInfo> workers = catalog.getWorkers();
     final Map<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
@@ -499,7 +492,8 @@ public final class Worker {
 
     connectionPool =
         new IPCConnectionPool(myID, computingUnits, IPCConfigurations.createWorkerIPCServerBootstrap(this),
-            IPCConfigurations.createWorkerIPCClientBootstrap(this));
+            IPCConfigurations.createWorkerIPCClientBootstrap(this), new TransportMessageSerializer(),
+            new WorkerShortMessageProcessor(this));
     activeQueries = new ConcurrentHashMap<Long, WorkerQueryPartition>();
 
     inputBufferCapacity =
@@ -677,8 +671,7 @@ public final class Worker {
         new IPCPipelineFactories.WorkerInJVMPipelineFactory(connectionPool);
 
     connectionPool.start(serverChannelFactory, serverPipelineFactory, clientChannelFactory, clientPipelineFactory,
-        workerInJVMPipelineFactory, new InJVMLoopbackChannelSink(), workerShortMessageProcessor,
-        new TransportMessageSerializer());
+        workerInJVMPipelineFactory, new InJVMLoopbackChannelSink());
 
     if (queryExecutionMode == QueryExecutionMode.NON_BLOCKING) {
       int numCPU = Runtime.getRuntime().availableProcessors();

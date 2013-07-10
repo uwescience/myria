@@ -116,13 +116,13 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
   /**
    * payload serializer/deserializer.
    * */
-  private final PayloadSerializer s = null;
+  private final PayloadSerializer payloadSerializer;
 
   /**
    * @return the payload serializer/deserializer
    * */
   public PayloadSerializer getPayloadSerializer() {
-    return s;
+    return payloadSerializer;
   }
 
   /**
@@ -444,12 +444,14 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
    * @param remoteAddresses remote address mappings.
    * @param serverBootstrap IPC server bootstrap
    * @param clientBootstrap IPC client bootstrap
+   * @param payloadSerializer the payload serializer
+   * @param mp short message processor
    * */
-  public IPCConnectionPool(final int myID, final Map<Integer, SocketInfo> remoteAddresses// ,
-      , final ServerBootstrap serverBootstrap, final ClientBootstrap clientBootstrap) {
+  public IPCConnectionPool(final int myID,
+      final Map<Integer, SocketInfo> remoteAddresses// ,
+      , final ServerBootstrap serverBootstrap, final ClientBootstrap clientBootstrap,
+      final PayloadSerializer payloadSerializer, final ShortMessageProcessor<?> mp) {
     this.myID = myID;
-    // inJVMShortMessageChannel = new InJVMChannel(myID, messageHandler);
-    // this.messageHandler = messageHandler;
     myIDMsg = new IPCMessage.Meta.CONNECT(myID);
     myIPCServerAddress = remoteAddresses.get(myID).getBindAddress();
     this.clientBootstrap = clientBootstrap;
@@ -476,6 +478,8 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
     ipcEventProcessor =
         new OrderedExecutorService<Object>(1, Runtime.getRuntime().availableProcessors(), new RenamingThreadFactory(
             "IPC connection pool event processor"));
+    this.payloadSerializer = payloadSerializer;
+    shortMessageProcessor = mp;
   }
 
   /**
@@ -1132,7 +1136,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
   /**
    * Short message processor.
    * */
-  private volatile ShortMessageProcessor<?> shortMessageProcessor;
+  private final ShortMessageProcessor<?> shortMessageProcessor;
 
   /**
    * This method will always return the same Future instance for an IPCConnectionPool.
@@ -1267,15 +1271,12 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
    * @param clientPipelineFactory IPC client pipeline factory
    * @param localInJVMPipelineFactory IPC in JVM channel pipeline factory
    * @param localInJVMChannelSink IPC in JVM channel sink.
-   * @param mp short message processor
-   * @param payloadSerializer the payload serializer
    * 
    * @throws Exception if any error occurs.
    * */
   public void start(final ChannelFactory serverChannelFactory, final ChannelPipelineFactory serverPipelineFactory,
       final ChannelFactory clientChannelFactory, final ChannelPipelineFactory clientPipelineFactory,
-      final ChannelPipelineFactory localInJVMPipelineFactory, final ChannelSink localInJVMChannelSink,
-      final ShortMessageProcessor<?> mp, final PayloadSerializer payloadSerializer) throws Exception {
+      final ChannelPipelineFactory localInJVMPipelineFactory, final ChannelSink localInJVMChannelSink) throws Exception {
 
     serverBootstrap.setFactory(serverChannelFactory);
     serverBootstrap.setPipelineFactory(serverPipelineFactory);
@@ -1314,7 +1315,6 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
     scheduledTaskExecutor.scheduleAtFixedRate(idChecker,
         (int) ((1 + Math.random()) * CONNECTION_ID_CHECK_TIMEOUT_IN_MS / 2), CONNECTION_ID_CHECK_TIMEOUT_IN_MS / 2,
         TimeUnit.MILLISECONDS);
-    shortMessageProcessor = mp;
   }
 
   /**
