@@ -25,7 +25,6 @@ import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.parallel.ipc.IPCEvent;
 import edu.washington.escience.myriad.parallel.ipc.IPCEventListener;
 import edu.washington.escience.myriad.parallel.ipc.StreamIOChannelID;
-import edu.washington.escience.myriad.parallel.ipc.StreamInputChannel;
 import edu.washington.escience.myriad.parallel.ipc.StreamOutputChannel;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.util.DateTimeUtils;
@@ -240,18 +239,6 @@ public class MasterQueryPartition implements QueryPartition {
   }
 
   /**
-   * Consumer channel mapping of current active queries.
-   * */
-  private final ConcurrentHashMap<StreamIOChannelID, StreamInputChannel<TransportMessage>> consumerChannelMapping;
-
-  /**
-   * @return all consumer channel mapping in this query partition.
-   * */
-  final Map<StreamIOChannelID, StreamInputChannel<TransportMessage>> getConsumerChannelMapping() {
-    return consumerChannelMapping;
-  }
-
-  /**
    * The future listener for processing the complete events of the execution of the master task.
    * */
   private final QueryFutureListener taskExecutionListener = new QueryFutureListener() {
@@ -406,39 +393,13 @@ public class MasterQueryPartition implements QueryPartition {
     workerExecutionInfo.put(MyriaConstants.MASTER_ID, masterPart);
 
     producerChannelMapping = new ConcurrentHashMap<StreamIOChannelID, StreamOutputChannel<TransportMessage>>();
-    consumerChannelMapping = new ConcurrentHashMap<StreamIOChannelID, StreamInputChannel<TransportMessage>>();
     rootTask = new QuerySubTreeTask(MyriaConstants.MASTER_ID, this, root, master.getQueryExecutor());
     rootTask.getExecutionFuture().addListener(taskExecutionListener);
-    for (Consumer c : rootTask.getInputChannels().values()) {
-      for (StreamInputChannel<TransportMessage> cc : c.getExchangeChannels()) {
-        consumerChannelMapping.putIfAbsent(cc.getID(), cc);
-      }
-    }
-
-    for (final StreamIOChannelID producerID : rootTask.getOutputChannels()) {
-      StreamOutputChannel<TransportMessage> o =
-          new StreamOutputChannel<TransportMessage>(producerID, this.master.getIPCConnectionPool(), null);
-
-      o.addListener(StreamOutputChannel.OUTPUT_RECOVERED, new IPCEventListener() {
-
-        @Override
-        public void triggered(final IPCEvent event) {
-          rootTask.notifyOutputEnabled(producerID);
-        }
-      });
-      o.addListener(StreamOutputChannel.OUTPUT_DISABLED, new IPCEventListener() {
-
-        @Override
-        public void triggered(final IPCEvent event) {
-          rootTask.notifyOutputDisabled(producerID);
-        }
-      });
-      producerChannelMapping.put(producerID, o);
-    }
+    HashSet<Consumer> consumerSet = new HashSet<Consumer>();
+    consumerSet.addAll(rootTask.getInputChannels().values());
 
     final FlowControlHandler fch = master.getFlowControlHandler();
-    for (StreamInputChannel<TransportMessage> cChannel : consumerChannelMapping.values()) {
-      final Consumer operator = cChannel.getOwnerConsumer();
+    for (final Consumer operator : consumerSet) {
 
       FlowControlInputBuffer<ExchangeData> inputBuffer =
           new FlowControlInputBuffer<ExchangeData>(master.getInputBufferCapacity());
@@ -475,6 +436,27 @@ public class MasterQueryPartition implements QueryPartition {
       });
       operator.setInputBuffer(inputBuffer);
       master.getDataBuffer().put(operator.getOperatorID(), inputBuffer);
+    }
+
+    for (final StreamIOChannelID producerID : rootTask.getOutputChannels()) {
+      StreamOutputChannel<TransportMessage> o =
+          new StreamOutputChannel<TransportMessage>(producerID, this.master.getIPCConnectionPool(), null);
+
+      o.addListener(StreamOutputChannel.OUTPUT_RECOVERED, new IPCEventListener() {
+
+        @Override
+        public void triggered(final IPCEvent event) {
+          rootTask.notifyOutputEnabled(producerID);
+        }
+      });
+      o.addListener(StreamOutputChannel.OUTPUT_DISABLED, new IPCEventListener() {
+
+        @Override
+        public void triggered(final IPCEvent event) {
+          rootTask.notifyOutputDisabled(producerID);
+        }
+      });
+      producerChannelMapping.put(producerID, o);
     }
 
   }

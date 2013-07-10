@@ -278,11 +278,6 @@ public final class Server {
   private final ConcurrentHashMap<StreamIOChannelID, StreamOutputChannel<TransportMessage>> producerChannelMap;
 
   /**
-   * Consumer channel mapping of current active queries.
-   * */
-  private final ConcurrentHashMap<StreamIOChannelID, StreamInputChannel<TransportMessage>> consumerChannelMap;
-
-  /**
    * max number of seconds for elegant cleanup.
    * */
   public static final int NUM_SECONDS_FOR_ELEGANT_CLEANUP = 10;
@@ -454,8 +449,7 @@ public final class Server {
 
     masterDataHandler = new MasterDataHandler(messageQueue);
     producerChannelMap = new ConcurrentHashMap<StreamIOChannelID, StreamOutputChannel<TransportMessage>>();
-    consumerChannelMap = new ConcurrentHashMap<StreamIOChannelID, StreamInputChannel<TransportMessage>>();
-    flowController = new FlowControlHandler(consumerChannelMap, producerChannelMap);
+    flowController = new FlowControlHandler(null, producerChannelMap);
 
     connectionPool =
         new IPCConnectionPool(MyriaConstants.MASTER_ID, computingUnits, IPCConfigurations
@@ -765,7 +759,6 @@ public final class Server {
     workerPlans.remove(MyriaConstants.MASTER_ID);
     final long queryID = catalog.newQuery(rawQuery, logicalRa);
     final MasterQueryPartition mqp = new MasterQueryPartition(masterPlan, workerPlans, queryID, this);
-    consumerChannelMap.putAll(mqp.getConsumerChannelMapping());
     producerChannelMap.putAll(mqp.getProducerChannelMapping());
 
     activeQueries.put(queryID, mqp);
@@ -775,9 +768,6 @@ public final class Server {
       public void operationComplete(final QueryFuture future) throws Exception {
 
         activeQueries.remove(mqp.getQueryID());
-        for (StreamIOChannelID consumerChannelID : mqp.getConsumerChannelMapping().keySet()) {
-          consumerChannelMap.remove(consumerChannelID);
-        }
 
         for (StreamIOChannelID producerChannelID : mqp.getProducerChannelMapping().keySet()) {
           producerChannelMap.remove(producerChannelID);

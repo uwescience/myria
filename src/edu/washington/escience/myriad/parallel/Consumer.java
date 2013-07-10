@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.MyriaConstants;
@@ -14,8 +15,7 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.operator.LeafOperator;
 import edu.washington.escience.myriad.parallel.Worker.QueryExecutionMode;
-import edu.washington.escience.myriad.parallel.ipc.StreamInputChannel;
-import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
+import edu.washington.escience.myriad.parallel.ipc.StreamIOChannelID;
 import gnu.trove.impl.unmodifiable.TUnmodifiableIntIntMap;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;
@@ -64,27 +64,24 @@ public class Consumer extends LeafOperator {
   private final int[] sourceWorkers;
 
   /**
-   * the consumer channels, for recording the mapping between ExchangeChannelIDs to a Consumer instances.
-   * */
-  private transient StreamInputChannel<TransportMessage>[] exchangeChannels;
-
-  /**
    * if current query execution is in non-blocking mode.
    * */
   private transient boolean nonBlockingExecution;
 
   /**
    * @return my exchange channels.
+   * @param myWorkerID for parsing self-references.
    */
-  public final StreamInputChannel<TransportMessage>[] getExchangeChannels() {
-    return exchangeChannels;
-  }
-
-  /**
-   * @param exchangeChannels my exchange channels.
-   */
-  public final void setInputChannels(final StreamInputChannel<TransportMessage>[] exchangeChannels) {
-    this.exchangeChannels = exchangeChannels;
+  public final ImmutableSet<StreamIOChannelID> getExchangeChannels(final int myWorkerID) {
+    ImmutableSet.Builder<StreamIOChannelID> ecB = ImmutableSet.builder();
+    for (int wID : sourceWorkers) {
+      if (wID < 0) {
+        ecB.add(new StreamIOChannelID(operatorID.getLong(), myWorkerID));
+      } else {
+        ecB.add(new StreamIOChannelID(operatorID.getLong(), wID));
+      }
+    }
+    return ecB.build();
   }
 
   /**

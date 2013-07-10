@@ -17,7 +17,6 @@ import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.parallel.ipc.IPCEvent;
 import edu.washington.escience.myriad.parallel.ipc.IPCEventListener;
 import edu.washington.escience.myriad.parallel.ipc.StreamIOChannelID;
-import edu.washington.escience.myriad.parallel.ipc.StreamInputChannel;
 import edu.washington.escience.myriad.parallel.ipc.StreamOutputChannel;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.util.DateTimeUtils;
@@ -134,18 +133,6 @@ public class WorkerQueryPartition implements QueryPartition {
   }
 
   /**
-   * Consumer channel mapping of current active queries.
-   * */
-  private final ConcurrentHashMap<StreamIOChannelID, StreamInputChannel<TransportMessage>> consumerChannelMapping;
-
-  /**
-   * @return all consumer channel mapping in this query partition.
-   * */
-  final Map<StreamIOChannelID, StreamInputChannel<TransportMessage>> getConsumerChannelMapping() {
-    return consumerChannelMapping;
-  }
-
-  /**
    * @param operators the operators belonging to this query partition.
    * @param queryID the id of the query.
    * @param ownerWorker the worker on which this query partition is going to run
@@ -156,7 +143,6 @@ public class WorkerQueryPartition implements QueryPartition {
     numFinishedTasks = new AtomicInteger(0);
     this.ownerWorker = ownerWorker;
     producerChannelMapping = new ConcurrentHashMap<StreamIOChannelID, StreamOutputChannel<TransportMessage>>();
-    consumerChannelMapping = new ConcurrentHashMap<StreamIOChannelID, StreamInputChannel<TransportMessage>>();
     for (final RootOperator taskRootOp : operators) {
       final QuerySubTreeTask drivingTask =
           new QuerySubTreeTask(ownerWorker.getIPCConnectionPool().getMyIPCID(), this, taskRootOp, ownerWorker
@@ -166,10 +152,45 @@ public class WorkerQueryPartition implements QueryPartition {
 
       tasks.add(drivingTask);
 
-      for (Consumer c : drivingTask.getInputChannels().values()) {
-        for (StreamInputChannel<TransportMessage> cc : c.getExchangeChannels()) {
-          consumerChannelMapping.putIfAbsent(cc.getID(), cc);
-        }
+      HashSet<Consumer> consumerSet = new HashSet<Consumer>();
+      consumerSet.addAll(drivingTask.getInputChannels().values());
+
+      final FlowControlHandler fch = ownerWorker.getFlowControlHandler();
+      for (final Consumer c : consumerSet) {
+        FlowControlInputBuffer<ExchangeData> inputBuffer =
+            new FlowControlInputBuffer<ExchangeData>(ownerWorker.getInputBufferCapacity());
+        inputBuffer.attach(c.getOperatorID());
+        inputBuffer.addListener(FlowControlInputBuffer.BUFFER_FULL, new IPCEventListener() {
+          @Override
+          public void triggered(final IPCEvent e) {
+            @SuppressWarnings("unchecked")
+            FlowControlInputBuffer<ExchangeData> f = (FlowControlInputBuffer<ExchangeData>) e.getAttachment();
+            if (f.remainingCapacity() <= 0) {
+              fch.pauseRead(c).awaitUninterruptibly();
+            }
+          }
+        });
+        inputBuffer.addListener(FlowControlInputBuffer.BUFFER_RECOVER, new IPCEventListener() {
+          @Override
+          public void triggered(final IPCEvent e) {
+            @SuppressWarnings("unchecked")
+            FlowControlInputBuffer<ExchangeData> f = (FlowControlInputBuffer<ExchangeData>) e.getAttachment();
+            if (f.remainingCapacity() > 0) {
+              fch.resumeRead(c).awaitUninterruptibly();
+            }
+          }
+        });
+        inputBuffer.addListener(FlowControlInputBuffer.BUFFER_EMPTY, new IPCEventListener() {
+          @Override
+          public void triggered(final IPCEvent e) {
+            @SuppressWarnings("unchecked")
+            FlowControlInputBuffer<ExchangeData> f = (FlowControlInputBuffer<ExchangeData>) e.getAttachment();
+            if (f.remainingCapacity() > 0) {
+              fch.resumeRead(c).awaitUninterruptibly();
+            }
+          }
+        });
+        c.setInputBuffer(inputBuffer);
       }
 
       for (final StreamIOChannelID producerID : drivingTask.getOutputChannels()) {
@@ -195,46 +216,6 @@ public class WorkerQueryPartition implements QueryPartition {
 
     }
 
-    final FlowControlHandler fch = ownerWorker.getFlowControlHandler();
-    for (StreamInputChannel<TransportMessage> cChannel : consumerChannelMapping.values()) {
-      // setup input buffers.
-      final Consumer operator = cChannel.getOwnerConsumer();
-
-      FlowControlInputBuffer<ExchangeData> inputBuffer =
-          new FlowControlInputBuffer<ExchangeData>(ownerWorker.getInputBufferCapacity());
-      inputBuffer.attach(operator.getOperatorID());
-      inputBuffer.addListener(FlowControlInputBuffer.BUFFER_FULL, new IPCEventListener() {
-        @Override
-        public void triggered(final IPCEvent e) {
-          @SuppressWarnings("unchecked")
-          FlowControlInputBuffer<ExchangeData> f = (FlowControlInputBuffer<ExchangeData>) e.getAttachment();
-          if (f.remainingCapacity() <= 0) {
-            fch.pauseRead(operator).awaitUninterruptibly();
-          }
-        }
-      });
-      inputBuffer.addListener(FlowControlInputBuffer.BUFFER_RECOVER, new IPCEventListener() {
-        @Override
-        public void triggered(final IPCEvent e) {
-          @SuppressWarnings("unchecked")
-          FlowControlInputBuffer<ExchangeData> f = (FlowControlInputBuffer<ExchangeData>) e.getAttachment();
-          if (f.remainingCapacity() > 0) {
-            fch.resumeRead(operator).awaitUninterruptibly();
-          }
-        }
-      });
-      inputBuffer.addListener(FlowControlInputBuffer.BUFFER_EMPTY, new IPCEventListener() {
-        @Override
-        public void triggered(final IPCEvent e) {
-          @SuppressWarnings("unchecked")
-          FlowControlInputBuffer<ExchangeData> f = (FlowControlInputBuffer<ExchangeData>) e.getAttachment();
-          if (f.remainingCapacity() > 0) {
-            fch.resumeRead(operator).awaitUninterruptibly();
-          }
-        }
-      });
-      operator.setInputBuffer(inputBuffer);
-    }
   }
 
   /**

@@ -1,7 +1,6 @@
 package edu.washington.escience.myriad.parallel.ipc;
 
 import edu.washington.escience.myriad.parallel.Consumer;
-import edu.washington.escience.myriad.parallel.QuerySubTreeTask;
 
 /**
  * 
@@ -15,51 +14,28 @@ public class StreamInputChannel<PAYLOAD> extends StreamIOChannel {
   static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(StreamInputChannel.class.getName());
 
   /**
-   * @param ownerTask the task who owns the output channel.
-   * @param consumer the owner consumer operator.
-   * @param remoteID from which worker the input data comes.
+   * The input buffer into which the messages from this channel should be pushed.
    * */
-  public StreamInputChannel(final QuerySubTreeTask ownerTask, final Consumer consumer, final int remoteID) {
-    this(ownerTask, consumer, new StreamIOChannelID(consumer.getOperatorID().getLong(), remoteID));
-  }
+  private final StreamInputBuffer<PAYLOAD> inputBuffer;
 
   /**
-   * @param ownerTask the task who owns the output channel.
-   * @param consumer the owner consumer operator.
-   * @param ecID ID.
+   * @param ib the destination input buffer.
+   * @param ecID exchange channel ID.
    * */
-  public StreamInputChannel(final QuerySubTreeTask ownerTask, final Consumer consumer, final StreamIOChannelID ecID) {
+  StreamInputChannel(final StreamIOChannelID ecID, final StreamInputBuffer<PAYLOAD> ib) {
     super(ecID);
-    this.ownerTask = ownerTask;
-    op = consumer;
-  }
-
-  /**
-   * the operator to whom this channel serves as an input.
-   * */
-  private final Consumer op;
-
-  /**
-   * owner task.
-   * */
-  private final QuerySubTreeTask ownerTask;
-
-  /**
-   * @return the owner task
-   * */
-  public final QuerySubTreeTask getOwnerTask() {
-    return ownerTask;
-  }
-
-  /**
-   * @return the owner task
-   * */
-  public final Consumer getOwnerConsumer() {
-    return op;
+    inputBuffer = ib;
   }
 
   @Override
   public final String toString() {
-    return "ConsumerChannel{ ID: " + getID() + ",Op: " + op + ",IOChannel: " + getIOChannel() + " }";
+    return "StreamInput{ ID: " + getID() + ", IOChannel: " + getIOChannel() + " }";
+  }
+
+  /**
+   * @return the destination input buffer.
+   * */
+  final StreamInputBuffer<PAYLOAD> getInputBuffer() {
+    return inputBuffer;
   }
 }

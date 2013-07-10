@@ -36,7 +36,6 @@ import edu.washington.escience.myriad.coordinator.catalog.WorkerCatalog;
 import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myriad.parallel.ipc.InJVMLoopbackChannelSink;
 import edu.washington.escience.myriad.parallel.ipc.StreamIOChannelID;
-import edu.washington.escience.myriad.parallel.ipc.StreamInputChannel;
 import edu.washington.escience.myriad.parallel.ipc.StreamOutputChannel;
 import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
@@ -334,11 +333,6 @@ public final class Worker {
   private final ConcurrentHashMap<StreamIOChannelID, StreamOutputChannel<TransportMessage>> producerChannelMapping;
 
   /**
-   * Consumer channel mapping of current active queries.
-   * */
-  private final ConcurrentHashMap<StreamIOChannelID, StreamInputChannel<TransportMessage>> consumerChannelMapping;
-
-  /**
    * {@link ExecutorService} for Netty pipelines.
    * */
   private volatile OrderedMemoryAwareThreadPoolExecutor pipelineExecutor;
@@ -518,8 +512,7 @@ public final class Worker {
             IPCConfigurations.createWorkerIPCClientBootstrap(this));
     activeQueries = new ConcurrentHashMap<Long, WorkerQueryPartition>();
     producerChannelMapping = new ConcurrentHashMap<StreamIOChannelID, StreamOutputChannel<TransportMessage>>();
-    consumerChannelMapping = new ConcurrentHashMap<StreamIOChannelID, StreamInputChannel<TransportMessage>>();
-    flowController = new FlowControlHandler(consumerChannelMapping, producerChannelMapping);
+    flowController = new FlowControlHandler(null, producerChannelMapping);
 
     inputBufferCapacity =
         Integer.valueOf(catalog.getConfigurationValue(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY));
@@ -568,7 +561,6 @@ public final class Worker {
     if (LOGGER.isInfoEnabled()) {
       LOGGER.info("Query received" + query.getQueryID());
     }
-    consumerChannelMapping.putAll(query.getConsumerChannelMapping());
     producerChannelMapping.putAll(query.getProducerChannelMapping());
 
     activeQueries.put(query.getQueryID(), query);
@@ -577,9 +569,6 @@ public final class Worker {
       @Override
       public void operationComplete(final QueryFuture future) throws Exception {
         activeQueries.remove(query.getQueryID());
-        for (StreamIOChannelID consumerChannelID : query.getConsumerChannelMapping().keySet()) {
-          consumerChannelMapping.remove(consumerChannelID);
-        }
 
         for (StreamIOChannelID producerChannelID : query.getProducerChannelMapping().keySet()) {
           producerChannelMapping.remove(producerChannelID);
