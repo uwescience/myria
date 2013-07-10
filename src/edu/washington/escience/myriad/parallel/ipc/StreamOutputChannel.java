@@ -52,11 +52,11 @@ public class StreamOutputChannel<PAYLOAD> extends StreamIOChannel {
   private ChannelFuture releaseFuture = null;
 
   /**
-   * @param ecID exchange channel ID.StreamIOChannelID ecID
+   * @param ecID stream output channel ID
    * @param ownerPool the owner of this output channel.
    * @param initialPhysicalChannel the physical channel associated to this output channel in the beginning
    * */
-  public StreamOutputChannel(final StreamIOChannelID ecID, final IPCConnectionPool ownerPool,
+  StreamOutputChannel(final StreamIOChannelID ecID, final IPCConnectionPool ownerPool,
       final Channel initialPhysicalChannel) {
     super(ecID);
     outputDisableListeners = new ConcurrentLinkedQueue<IPCEventListener>();

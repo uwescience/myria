@@ -16,9 +16,6 @@ import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.parallel.ipc.FlowControlBagInputBuffer;
 import edu.washington.escience.myriad.parallel.ipc.IPCEvent;
 import edu.washington.escience.myriad.parallel.ipc.IPCEventListener;
-import edu.washington.escience.myriad.parallel.ipc.StreamIOChannelID;
-import edu.washington.escience.myriad.parallel.ipc.StreamOutputChannel;
-import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.util.DateTimeUtils;
 
 /**
@@ -145,7 +142,7 @@ public class WorkerQueryPartition implements QueryPartition {
       for (final Consumer c : consumerSet) {
         FlowControlBagInputBuffer<TupleBatch> inputBuffer =
             new FlowControlBagInputBuffer<TupleBatch>(ownerWorker.getIPCConnectionPool(), c
-                .getExchangeChannels(ownerWorker.getIPCConnectionPool().getMyIPCID()), ownerWorker
+                .getInputChannelIDs(ownerWorker.getIPCConnectionPool().getMyIPCID()), ownerWorker
                 .getInputBufferCapacity(), ownerWorker.getInputBufferRecoverTrigger(), this.ownerWorker
                 .getIPCConnectionPool());
 
@@ -157,26 +154,6 @@ public class WorkerQueryPartition implements QueryPartition {
           }
         });
         c.setInputBuffer(inputBuffer);
-      }
-
-      for (final StreamIOChannelID producerID : drivingTask.getOutputChannels()) {
-        StreamOutputChannel<TransportMessage> o =
-            new StreamOutputChannel<TransportMessage>(producerID, this.ownerWorker.getIPCConnectionPool(), null);
-
-        o.addListener(StreamOutputChannel.OUTPUT_RECOVERED, new IPCEventListener() {
-
-          @Override
-          public void triggered(final IPCEvent event) {
-            drivingTask.notifyOutputEnabled(producerID);
-          }
-        });
-        o.addListener(StreamOutputChannel.OUTPUT_DISABLED, new IPCEventListener() {
-
-          @Override
-          public void triggered(final IPCEvent event) {
-            drivingTask.notifyOutputDisabled(producerID);
-          }
-        });
       }
 
     }

@@ -75,7 +75,7 @@ public class Consumer extends LeafOperator {
    * @return my exchange channels.
    * @param myWorkerID for parsing self-references.
    */
-  public final ImmutableSet<StreamIOChannelID> getExchangeChannels(final int myWorkerID) {
+  public final ImmutableSet<StreamIOChannelID> getInputChannelIDs(final int myWorkerID) {
     ImmutableSet.Builder<StreamIOChannelID> ecB = ImmutableSet.builder();
     for (int wID : sourceWorkers) {
       if (wID < 0) {

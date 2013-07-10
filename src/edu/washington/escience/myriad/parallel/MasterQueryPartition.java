@@ -26,9 +26,6 @@ import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.parallel.ipc.FlowControlBagInputBuffer;
 import edu.washington.escience.myriad.parallel.ipc.IPCEvent;
 import edu.washington.escience.myriad.parallel.ipc.IPCEventListener;
-import edu.washington.escience.myriad.parallel.ipc.StreamIOChannelID;
-import edu.washington.escience.myriad.parallel.ipc.StreamOutputChannel;
-import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.util.DateTimeUtils;
 import edu.washington.escience.myriad.util.IPCUtils;
 
@@ -390,7 +387,7 @@ public class MasterQueryPartition implements QueryPartition {
     for (final Consumer operator : consumerSet) {
       FlowControlBagInputBuffer<TupleBatch> inputBuffer =
           new FlowControlBagInputBuffer<TupleBatch>(this.master.getIPCConnectionPool(), operator
-              .getExchangeChannels(this.master.getIPCConnectionPool().getMyIPCID()), master.getInputBufferCapacity(),
+              .getInputChannelIDs(this.master.getIPCConnectionPool().getMyIPCID()), master.getInputBufferCapacity(),
               master.getInputBufferRecoverTrigger(), this.master.getIPCConnectionPool());
       operator.setInputBuffer(inputBuffer);
       inputBuffer.addListener(FlowControlBagInputBuffer.NEW_INPUT_DATA, new IPCEventListener() {
@@ -398,26 +395,6 @@ public class MasterQueryPartition implements QueryPartition {
         @Override
         public void triggered(final IPCEvent event) {
           rootTask.notifyNewInput();
-        }
-      });
-    }
-
-    for (final StreamIOChannelID producerID : rootTask.getOutputChannels()) {
-      StreamOutputChannel<TransportMessage> o =
-          new StreamOutputChannel<TransportMessage>(producerID, this.master.getIPCConnectionPool(), null);
-
-      o.addListener(StreamOutputChannel.OUTPUT_RECOVERED, new IPCEventListener() {
-
-        @Override
-        public void triggered(final IPCEvent event) {
-          rootTask.notifyOutputEnabled(producerID);
-        }
-      });
-      o.addListener(StreamOutputChannel.OUTPUT_DISABLED, new IPCEventListener() {
-
-        @Override
-        public void triggered(final IPCEvent event) {
-          rootTask.notifyOutputDisabled(producerID);
         }
       });
     }
