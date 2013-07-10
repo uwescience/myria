@@ -50,6 +50,7 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
   public Map<String, String> getMasterConfigurations() {
     HashMap<String, String> masterConfigurations = new HashMap<String, String>();
     masterConfigurations.put(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY, "100");
+    masterConfigurations.put(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER, "80");
     masterConfigurations.put(MyriaSystemConfigKeys.IPC_SERVER_PORT, "20001");
     return masterConfigurations;
   }
@@ -58,6 +59,7 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
   public Map<String, String> getWorkerConfigurations() {
     HashMap<String, String> workerConfigurations = new HashMap<String, String>();
     workerConfigurations.put(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY, "100");
+    workerConfigurations.put(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER, "80");
     workerConfigurations.put(MyriaSystemConfigKeys.IPC_SERVER_PORT, "20101");
     return workerConfigurations;
   }

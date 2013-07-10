@@ -30,14 +30,16 @@ public class FlowControlTest extends SystemTestBase {
   @Override
   public Map<String, String> getMasterConfigurations() {
     HashMap<String, String> masterConfigurations = new HashMap<String, String>();
-    masterConfigurations.put(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY, "1");
+    masterConfigurations.put(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY, "2");
+    masterConfigurations.put(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER, "1");
     return masterConfigurations;
   }
 
   @Override
   public Map<String, String> getWorkerConfigurations() {
     HashMap<String, String> workerConfigurations = new HashMap<String, String>();
-    workerConfigurations.put(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY, "1");
+    workerConfigurations.put(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY, "2");
+    workerConfigurations.put(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER, "1");
     return workerConfigurations;
   }
 
@@ -52,7 +54,6 @@ public class FlowControlTest extends SystemTestBase {
         new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
-    TupleBatch tb = null;
     for (int i = 0; i < numTuples; i++) {
       tbb.put(0, TestUtils.randomLong(0, 100000, 1)[0]);
       tbb.put(1, TestUtils.randomFixedLengthNumericString(0, 100000, 1, 20)[0]);
