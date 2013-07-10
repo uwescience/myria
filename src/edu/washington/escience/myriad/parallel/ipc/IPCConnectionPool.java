@@ -43,6 +43,7 @@ import edu.washington.escience.myriad.parallel.RenamingThreadFactory;
 import edu.washington.escience.myriad.parallel.SocketInfo;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.util.IPCUtils;
+import edu.washington.escience.myriad.util.OrderedExecutorService;
 
 /**
  * IPCConnectionPool is the hub of inter-process communication. It is consisted of an IPC server (typically a server
@@ -412,6 +413,18 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
   private volatile boolean shareConnections = false;
 
   /**
+   * IPC event processor. All IPC events will be executed by this executor service.
+   * */
+  private final OrderedExecutorService<Object> ipcEventProcessor;
+
+  /**
+   * @return the event processor.
+   * */
+  OrderedExecutorService<Object> getIPCEventProcessor() {
+    return ipcEventProcessor;
+  }
+
+  /**
    * Construct a connection pool.
    * 
    * @param myID self id.
@@ -447,6 +460,9 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
     allAcceptedRemoteChannels = new DefaultChannelGroup();
     shutdownFuture = new ConditionChannelGroupFuture();
     consumerChannelMap = new ConcurrentHashMap<StreamIOChannelID, StreamInputBuffer<?>>();
+    ipcEventProcessor =
+        new OrderedExecutorService<Object>(1, Runtime.getRuntime().availableProcessors(), new RenamingThreadFactory(
+            "IPC connection pool event processor"));
   }
 
   /**
@@ -1069,6 +1085,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
 
     // shutdown timer tasks, take over all the controls.
     scheduledTaskExecutor.shutdown();
+    ipcEventProcessor.shutdownNow();
     synchronized (idChecker) {
       synchronized (disconnecter) {
         synchronized (recycler) {
@@ -1159,6 +1176,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
 
     // ipcGlobalTimer.cancel(); // shutdown timer tasks, take over all the controls.
     scheduledTaskExecutor.shutdown();
+    ipcEventProcessor.shutdown();
     synchronized (idChecker) {
       synchronized (disconnecter) {
         synchronized (recycler) {
