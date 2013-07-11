@@ -224,10 +224,11 @@ public final class SQLiteAccessMethod implements AccessMethod {
     try {
       sqliteAccessMethod = new SQLiteAccessMethod(SQLiteInfo.of(pathToSQLiteDb), schema, true);
       return sqliteAccessMethod.tupleBatchIteratorFromQuery(queryString);
-    } finally {
+    } catch (DbException e) {
       if (sqliteAccessMethod != null) {
         sqliteAccessMethod.close();
       }
+      throw e;
     }
   }
 }
