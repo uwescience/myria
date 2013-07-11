@@ -8,6 +8,7 @@ import edu.washington.escience.myriad.operator.ApplyTest;
 import edu.washington.escience.myriad.operator.apply.ConstantMultiplicationIFunctionTest;
 import edu.washington.escience.myriad.operator.apply.PowIFunctionTest;
 import edu.washington.escience.myriad.operator.apply.SqrtIFunctionTest;
+import edu.washington.escience.myriad.systemtest.BroadcastTest;
 import edu.washington.escience.myriad.systemtest.CollectTest;
 import edu.washington.escience.myriad.systemtest.FlowControlTest;
 import edu.washington.escience.myriad.systemtest.IterativeSelfJoinTest;
@@ -40,6 +41,7 @@ import edu.washington.escience.myriad.systemtest.SplitDataTest;
     SplitDataTest.class, //
     QueryKillTest.class, //
     QueryFailureTest.class, //
+    BroadcastTest.class, //
 })
 public class NonIterativeSystemTests {
 

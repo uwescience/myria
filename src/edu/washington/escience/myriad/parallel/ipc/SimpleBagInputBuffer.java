@@ -90,7 +90,7 @@ public class SimpleBagInputBuffer<PAYLOAD> extends BagInputBufferAdapter<PAYLOAD
   /**
    * {@inheritDoc}.
    * 
-   * No events are supported
+   * Only new data events is supported
    * */
   @Override
   public final void addListener(final EventType t, final IPCEventListener l) {

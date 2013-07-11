@@ -222,7 +222,6 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
           new ChannelPrioritySet(POOL_SIZE_LOWERBOUND, POOL_SIZE_LOWERBOUND, POOL_SIZE_UPPERBOUND,
               new LastIOTimeAscendingComparator());
       this.bootstrap = bootstrap;
-      // bootstrap = ParallelUtility.createIPCClient(clientChannelFactory, clientPipelineFactory);
     }
 
     @Override
@@ -1270,7 +1269,6 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
 
     final Collection<ChannelFuture> allConnectionCloseFutures = new LinkedList<ChannelFuture>();
 
-    // ipcGlobalTimer.cancel(); // shutdown timer tasks, take over all the controls.
     scheduledTaskExecutor.shutdown();
     ipcEventProcessor.shutdown();
     synchronized (idChecker) {
