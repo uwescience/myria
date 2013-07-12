@@ -13,6 +13,11 @@ import edu.washington.escience.myriad.util.ImmutableBitSet;
  */
 public class ExchangeTupleBatch extends TupleBatch {
   /**
+   * 
+   */
+  private static final long serialVersionUID = -2482302493089301646L;
+
+  /**
    * The seq num of the first tuple in this TB.
    * */
   private final long startingSeqNum;
@@ -38,12 +43,13 @@ public class ExchangeTupleBatch extends TupleBatch {
    * @param startingTupleSeqNum of the tuples in this TB.
    * @param lsn log sequence number, for fault tolerance
    * @param sourceWorkerID which worker the TB from
+   * @param isEOI is EOI TB
    */
   private ExchangeTupleBatch(final Schema schema, final ImmutableList<Column<?>> columns,
       final ImmutableBitSet validTuples, final int[] validIndices, final long startingTupleSeqNum, final long lsn,
-      final int sourceWorkerID) {
+      final int sourceWorkerID, final boolean isEOI) {
     /** For a private copy constructor, no data checks are needed. Checks are only needed in the public constructor. */
-    super(schema, columns, validTuples, validIndices);
+    super(schema, columns, validTuples, validIndices, isEOI);
     startingSeqNum = startingTupleSeqNum;
     this.lsn = lsn;
     this.sourceWorkerID = sourceWorkerID;
@@ -68,10 +74,27 @@ public class ExchangeTupleBatch extends TupleBatch {
     this.sourceWorkerID = sourceWorkerID;
   }
 
+  /**
+   * wrap a TB in ExchangeTupleBatch.
+   * 
+   * @param data the TB data.
+   * @param sourceWorkerID which worker the TB from
+   * @return a wrapped ETB
+   */
+  public static final ExchangeTupleBatch wrap(final TupleBatch data, final int sourceWorkerID) {
+    if (data instanceof ExchangeTupleBatch) {
+      return (ExchangeTupleBatch) data;
+    } else {
+      return new ExchangeTupleBatch(data.getSchema(), data.getDataColumns(), data.getValidTuples(), data
+          .getValidIndices(), -1, -1, sourceWorkerID, data.isEOI());
+    }
+  }
+
   @Override
   protected final TupleBatch shallowCopy(final Schema schema, final ImmutableList<Column<?>> columns,
-      final ImmutableBitSet validTuples, final int[] validIndices) {
-    return new ExchangeTupleBatch(schema, columns, validTuples, validIndices, startingSeqNum, lsn, sourceWorkerID);
+      final ImmutableBitSet validTuples, final int[] validIndices, final boolean isEOI) {
+    return new ExchangeTupleBatch(schema, columns, validTuples, validIndices, startingSeqNum, lsn, sourceWorkerID,
+        isEOI);
   }
 
   /**

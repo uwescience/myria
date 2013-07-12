@@ -1,8 +1,5 @@
 package edu.washington.escience.myriad.parallel;
 
-import java.util.Arrays;
-
-import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
 
 import com.google.common.base.Preconditions;
@@ -10,12 +7,17 @@ import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.MyriaConstants;
+import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.parallel.Worker.QueryExecutionMode;
 import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
-import edu.washington.escience.myriad.util.IPCUtils;
+import edu.washington.escience.myriad.parallel.ipc.IPCEvent;
+import edu.washington.escience.myriad.parallel.ipc.IPCEventListener;
+import edu.washington.escience.myriad.parallel.ipc.StreamIOChannelID;
+import edu.washington.escience.myriad.parallel.ipc.StreamOutputChannel;
+import edu.washington.escience.myriad.util.ArrayUtils;
 
 /**
  * A Producer is the counterpart of a consumer. It dispatch data using IPC channels to Consumers. Like network socket,
@@ -34,7 +36,7 @@ public abstract class Producer extends RootOperator {
   /**
    * the netty channels doing the true IPC IO.
    * */
-  private transient Channel[] ioChannels;
+  private transient StreamOutputChannel<TupleBatch>[] ioChannels;
 
   /**
    * output buffers.
@@ -42,14 +44,14 @@ public abstract class Producer extends RootOperator {
   private transient TupleBatchBuffer[] buffers;
 
   /**
-   * IPC Operator IDs.
+   * output channel IDs.
    * */
-  private final ExchangePairID[] operatorIDs;
+  private final StreamIOChannelID[] outputIDs;
 
   /**
-   * Destination workers.
+   * localized output stream channel IDs, with self references dereferenced.
    * */
-  private final int[] destinationWorkerIDs;
+  private transient StreamIOChannelID[] localizedOutputIDs;
 
   /**
    * if current query execution is in non-blocking mode.
@@ -63,7 +65,7 @@ public abstract class Producer extends RootOperator {
    * @param oIDs operator IDs.
    * */
   public Producer(final Operator child, final ExchangePairID[] oIDs) {
-    this(child, oIDs, arrayFillAndReturn(new int[oIDs.length], -1), true);
+    this(child, oIDs, ArrayUtils.arrayFillAndReturn(new int[oIDs.length], IPCConnectionPool.SELF_IPC_ID), true);
   }
 
   /**
@@ -75,7 +77,7 @@ public abstract class Producer extends RootOperator {
    * 
    * */
   public Producer(final Operator child, final ExchangePairID oID, final int[] destinationWorkerIDs) {
-    this(child, (ExchangePairID[]) arrayFillAndReturn(new ExchangePairID[destinationWorkerIDs.length], oID),
+    this(child, (ExchangePairID[]) ArrayUtils.arrayFillAndReturn(new ExchangePairID[destinationWorkerIDs.length], oID),
         destinationWorkerIDs, true);
   }
 
@@ -87,7 +89,7 @@ public abstract class Producer extends RootOperator {
    * @param destinationWorkerID the worker ID.
    * */
   public Producer(final Operator child, final ExchangePairID[] oIDs, final int destinationWorkerID) {
-    this(child, oIDs, arrayFillAndReturn(new int[oIDs.length], Integer.valueOf(destinationWorkerID)), true);
+    this(child, oIDs, ArrayUtils.arrayFillAndReturn(new int[oIDs.length], Integer.valueOf(destinationWorkerID)), true);
   }
 
   /**
@@ -128,35 +130,56 @@ public abstract class Producer extends RootOperator {
     if (isOne2OneMapping) {
       // oID and worker pairs. each ( oIDs[i], destinationWorkerIDs[i] ) pair is a logical channel.
       Preconditions.checkArgument(oIDs.length == destinationWorkerIDs.length);
-      operatorIDs = oIDs;
-      this.destinationWorkerIDs = destinationWorkerIDs;
+      outputIDs = new StreamIOChannelID[oIDs.length];
+      for (int i = 0; i < oIDs.length; i++) {
+        outputIDs[i] = new StreamIOChannelID(oIDs[i].getLong(), destinationWorkerIDs[i]);
+      }
     } else {
-      operatorIDs = new ExchangePairID[oIDs.length * destinationWorkerIDs.length];
-      this.destinationWorkerIDs = new int[oIDs.length * destinationWorkerIDs.length];
+      outputIDs = new StreamIOChannelID[oIDs.length * destinationWorkerIDs.length];
       int idx = 0;
       for (int wID : destinationWorkerIDs) {
         for (ExchangePairID oID : oIDs) {
-          operatorIDs[idx] = oID;
-          this.destinationWorkerIDs[idx] = wID;
+          outputIDs[idx] = new StreamIOChannelID(oID.getLong(), wID);
           idx++;
         }
       }
     }
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     connectionPool = (IPCConnectionPool) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_IPC_CONNECTION_POOL);
-    ioChannels = new Channel[operatorIDs.length];
-    buffers = new TupleBatchBuffer[operatorIDs.length];
-    for (int i = 0; i < operatorIDs.length; i++) {
-      ioChannels[i] = connectionPool.reserveLongTermConnection(destinationWorkerIDs[i]);
-      try {
-        writeMessage(ioChannels[i], IPCUtils.bosTM(operatorIDs[i]));
-      } catch (InterruptedException e) {
-        throw new DbException(e);
+    drivingTask = (QuerySubTreeTask) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DRIVING_TASK);
+    ioChannels = new StreamOutputChannel[outputIDs.length];
+    buffers = new TupleBatchBuffer[outputIDs.length];
+    localizedOutputIDs = new StreamIOChannelID[outputIDs.length];
+    for (int i = 0; i < outputIDs.length; i++) {
+      if (outputIDs[i].getRemoteID() == IPCConnectionPool.SELF_IPC_ID) {
+        localizedOutputIDs[i] = new StreamIOChannelID(outputIDs[i].getStreamID(), connectionPool.getMyIPCID());
+      } else {
+        localizedOutputIDs[i] = outputIDs[i];
       }
+    }
+    for (int i = 0; i < localizedOutputIDs.length; i++) {
+      final int j = i;
+      ioChannels[i] =
+          connectionPool.reserveLongTermConnection(localizedOutputIDs[i].getRemoteID(), localizedOutputIDs[i]
+              .getStreamID());
+      ioChannels[i].addListener(StreamOutputChannel.OUTPUT_DISABLED, new IPCEventListener() {
 
+        @Override
+        public void triggered(final IPCEvent event) {
+          drivingTask.notifyOutputDisabled(localizedOutputIDs[j]);
+        }
+      });
+      ioChannels[i].addListener(StreamOutputChannel.OUTPUT_RECOVERED, new IPCEventListener() {
+
+        @Override
+        public void triggered(final IPCEvent event) {
+          drivingTask.notifyOutputEnabled(localizedOutputIDs[j]);
+        }
+      });
       buffers[i] = new TupleBatchBuffer(getSchema());
     }
 
@@ -165,17 +188,18 @@ public abstract class Producer extends RootOperator {
   }
 
   /**
-   * @param ch the channel to write
+   * @param chIdx the channel to write
    * @param msg the message.
    * @throws InterruptedException if interrupted
    * @return write future
    * */
-  protected final ChannelFuture writeMessage(final Channel ch, final Object msg) throws InterruptedException {
+  protected final ChannelFuture writeMessage(final int chIdx, final TupleBatch msg) throws InterruptedException {
+    StreamOutputChannel<TupleBatch> ch = ioChannels[chIdx];
     if (nonBlockingExecution) {
       return ch.write(msg);
     } else {
       int sleepTime = 1;
-      int maxSleepTime = 100;
+      int maxSleepTime = MyriaConstants.SHORT_WAITING_INTERVAL_MS;
       while (true) {
         if (ch.isWritable()) {
           return ch.write(msg);
@@ -191,10 +215,18 @@ public abstract class Producer extends RootOperator {
     }
   }
 
+  /**
+   * @param chIdx the channel to write
+   * @return channel release future.
+   * */
+  protected final ChannelFuture channelEnds(final int chIdx) {
+    return ioChannels[chIdx].release();
+  }
+
   @Override
   public final void cleanup() throws DbException {
-    for (int i = 0; i < destinationWorkerIDs.length; i++) {
-      connectionPool.releaseLongTermConnection(ioChannels[i]);
+    for (int i = 0; i < localizedOutputIDs.length; i++) {
+      ioChannels[i].release();
       buffers[i] = null;
     }
     buffers = null;
@@ -209,24 +241,22 @@ public abstract class Producer extends RootOperator {
   }
 
   /**
-   * @return destination operatorIds.
+   * The driving task of this operator.
    * */
-  public final ExchangePairID[] operatorIDs() {
-    return operatorIDs;
-  }
+  private transient QuerySubTreeTask drivingTask;
 
   /**
    * @param myWorkerID for parsing self-references.
    * @return destination worker IDs.
    * */
-  public final int[] getDestinationWorkerIDs(final int myWorkerID) {
-    int[] result = new int[destinationWorkerIDs.length];
+  public final StreamIOChannelID[] getOutputChannelIDs(final int myWorkerID) {
+    StreamIOChannelID[] result = new StreamIOChannelID[outputIDs.length];
     int idx = 0;
-    for (int workerID : destinationWorkerIDs) {
-      if (workerID >= 0) {
-        result[idx++] = workerID;
+    for (StreamIOChannelID ecID : outputIDs) {
+      if (ecID.getRemoteID() != IPCConnectionPool.SELF_IPC_ID) {
+        result[idx++] = ecID;
       } else {
-        result[idx++] = myWorkerID;
+        result[idx++] = new StreamIOChannelID(ecID.getStreamID(), myWorkerID);
       }
     }
 
@@ -234,34 +264,10 @@ public abstract class Producer extends RootOperator {
   }
 
   /**
-   * Fill object array.
-   * 
-   * @return the filled array.
-   * @param arr the array to fill
-   * @param e the element to fill.
+   * @return number of output channels.
    * */
-  private static Object[] arrayFillAndReturn(final Object[] arr, final Object e) {
-    Arrays.fill(arr, e);
-    return arr;
-  }
-
-  /**
-   * Fill int array.
-   * 
-   * @return the filled array.
-   * @param arr the array to fill
-   * @param e the element to fill.
-   * */
-  private static int[] arrayFillAndReturn(final int[] arr, final int e) {
-    Arrays.fill(arr, e);
-    return arr;
-  }
-
-  /**
-   * @return the IO channels.
-   * */
-  protected final Channel[] getChannels() {
-    return ioChannels;
+  public final int numChannels() {
+    return ioChannels.length;
   }
 
   /**
@@ -271,10 +277,4 @@ public abstract class Producer extends RootOperator {
     return buffers;
   }
 
-  /**
-   * @return the destination operator IDs.
-   * */
-  protected final ExchangePairID[] getOperatorIDs() {
-    return operatorIDs;
-  }
 }

@@ -163,10 +163,18 @@ public abstract class Operator implements Serializable {
     }
 
     TupleBatch result = null;
-    result = fetchNextReady();
-    while (result != null && result.numTuples() <= 0) {
-      // XXX while or not while? For a single thread operator, while sounds more efficient generally
+    try {
       result = fetchNextReady();
+      while (result != null && result.numTuples() <= 0) {
+        // XXX while or not while? For a single thread operator, while sounds more efficient generally
+        result = fetchNextReady();
+      }
+    } catch (Exception e) {
+      if (e instanceof RuntimeException) {
+        throw (RuntimeException) e;
+      } else {
+        throw new DbException(e);
+      }
     }
 
     if (result == null) {
@@ -254,11 +262,11 @@ public abstract class Operator implements Serializable {
    * 
    * Do not block the execution thread in this method, including sleep, wait on locks, etc.
    * 
-   * @throws DbException if any error occurs
+   * @throws Exception if any error occurs
    * 
    * @return next ready output TupleBatch. null if either EOS or no output TupleBatch can be generated currently.
    * */
-  protected abstract TupleBatch fetchNextReady() throws DbException;
+  protected abstract TupleBatch fetchNextReady() throws Exception;
 
   /**
    * Explicitly set EOS for this operator.

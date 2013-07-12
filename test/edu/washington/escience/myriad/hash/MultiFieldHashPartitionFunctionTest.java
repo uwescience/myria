@@ -1,4 +1,4 @@
-package edu.washington.escience.myriad.systemtest;
+package edu.washington.escience.myriad.hash;
 
 import static org.junit.Assert.assertEquals;
 

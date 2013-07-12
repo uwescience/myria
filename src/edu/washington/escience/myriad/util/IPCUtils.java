@@ -13,8 +13,8 @@ import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.operator.RootOperator;
-import edu.washington.escience.myriad.parallel.ExchangePairID;
 import edu.washington.escience.myriad.parallel.QueryExecutionStatistics;
+import edu.washington.escience.myriad.parallel.ipc.StreamOutputChannel;
 import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myriad.proto.DataProto.DataMessage;
@@ -102,38 +102,6 @@ public final class IPCUtils {
       };
 
   /**
-   * Thread local EOS DataMessage builder. May reduce the cost of creating builder instances.
-   * 
-   * @return builder.
-   * */
-  protected static final ThreadLocal<DataMessage.Builder> EOS_DATAMESSAGE_BUILDER =
-      new ThreadLocal<DataMessage.Builder>() {
-        @Override
-        protected DataMessage.Builder initialValue() {
-          return DataMessage.newBuilder().setType(DataMessage.Type.EOS);
-        }
-      };
-
-  /**
-   * Thread local EOS DataMessage builder. May reduce the cost of creating builder instances.
-   * 
-   * @return builder.
-   * */
-  protected static final ThreadLocal<DataMessage.Builder> BOS_DATAMESSAGE_BUILDER =
-      new ThreadLocal<DataMessage.Builder>() {
-        @Override
-        protected DataMessage.Builder initialValue() {
-          return DataMessage.newBuilder().setType(DataMessage.Type.BOS);
-        }
-      };
-
-  /**
-   * EOS TM.
-   * */
-  public static final TransportMessage EOS = TransportMessage.newBuilder().setType(TransportMessage.Type.DATA)
-      .setDataMessage(DataMessage.newBuilder().setType(DataMessage.Type.EOS)).build();
-
-  /**
    * EOI TM.
    * */
   public static final TransportMessage EOI = TransportMessage.newBuilder().setType(TransportMessage.Type.DATA)
@@ -157,45 +125,10 @@ public final class IPCUtils {
       TransportMessage.Type.CONTROL).setControlMessage(
       ControlMessage.newBuilder().setType(ControlMessage.Type.SHUTDOWN)).build();
 
-  /**
-   * disconnect TM.
-   * */
-  public static final TransportMessage CONTROL_DISCONNECT = TransportMessage.newBuilder().setType(
-      TransportMessage.Type.CONTROL).setControlMessage(
-      ControlMessage.newBuilder().setType(ControlMessage.Type.DISCONNECT)).build();
-
   /** Control message sent from a worker to tell the master that it is alive. */
   public static final TransportMessage CONTROL_WORKER_ALIVE = TransportMessage.newBuilder().setType(
       TransportMessage.Type.CONTROL).setControlMessage(
       ControlMessage.newBuilder().setType(ControlMessage.Type.WORKER_ALIVE)).build();
-
-  /**
-   * Check if the message is a CONNECT message.
-   * 
-   * @return null if it's not, or the remoteID if it is.
-   * @param message the message to check
-   * */
-  public static Integer checkConnectTM(final TransportMessage message) {
-    if (message == null) {
-      return null;
-    }
-    if ((message.getType() == TransportMessage.Type.CONTROL)
-        && (ControlMessage.Type.CONNECT == message.getControlMessage().getType())) {
-      return message.getControlMessage().getRemoteId();
-    }
-    return null;
-  }
-
-  /**
-   * Only connectTm needs the RemoteID field.
-   * 
-   * @param myID my IPC ID.
-   * @return a connect TM.
-   * */
-  public static TransportMessage connectTM(final int myID) {
-    return CONTROL_TM_BUILDER.get().setControlMessage(
-        ControlMessage.newBuilder().setType(ControlMessage.Type.CONNECT).setRemoteId(myID)).build();
-  }
 
   /**
    * @param queryId .
@@ -266,11 +199,16 @@ public final class IPCUtils {
   }
 
   /**
-   * @return create an BOS data message.
-   * @param epID BOS for this operator ID.
+   * Check if the remote side of the channel is still connected.
+   * 
+   * @param ch the channel to check.
+   * @return true if the remote side is still connected, false otherwise.
    * */
-  public static TransportMessage bosTM(final ExchangePairID epID) {
-    return DATA_TM_BUILDER.get().setDataMessage(BOS_DATAMESSAGE_BUILDER.get().setOperatorID(epID.getLong())).build();
+  public static boolean isRemoteConnected(final StreamOutputChannel<?> ch) {
+    if (ch == null) {
+      return false;
+    }
+    return isRemoteConnected(ch.getIOChannel());
   }
 
   /**

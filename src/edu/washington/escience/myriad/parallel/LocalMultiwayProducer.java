@@ -1,13 +1,8 @@
 package edu.washington.escience.myriad.parallel;
 
-import org.jboss.netty.channel.Channel;
-
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.TupleBatch;
-import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
-import edu.washington.escience.myriad.util.IPCUtils;
 
 /**
  * The producer part of the Collect Exchange operator.
@@ -30,63 +25,32 @@ public final class LocalMultiwayProducer extends Producer {
 
   @Override
   protected void consumeTuples(final TupleBatch tup) throws DbException {
-    TupleBatchBuffer[] buffers = getBuffers();
-    Channel[] ioChannels = getChannels();
-    TransportMessage dm = null;
-    tup.compactInto(buffers[0]);
-    while ((dm = buffers[0].popAnyAsTMUsingTimeout()) != null) {
-      for (Channel ch : ioChannels) {
-        try {
-          writeMessage(ch, dm);
-        } catch (InterruptedException e) {
-          throw new DbException(e);
-        }
+    for (int i = 0; i < numChannels(); i++) {
+      try {
+        writeMessage(i, tup);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        return;
       }
     }
   }
 
   @Override
   protected void childEOS() throws DbException {
-    TransportMessage dm = null;
-    TupleBatchBuffer[] buffers = getBuffers();
-    Channel[] ioChannels = getChannels();
-    while ((dm = buffers[0].popAnyAsTM()) != null) {
-      for (Channel ch : ioChannels) {
-        try {
-          writeMessage(ch, dm);
-        } catch (InterruptedException e) {
-          throw new DbException(e);
-        }
-      }
-    }
-    for (Channel channel : ioChannels) {
-      try {
-        writeMessage(channel, IPCUtils.EOS);
-      } catch (InterruptedException e) {
-        throw new DbException(e);
-      }
+    for (int i = 0; i < numChannels(); i++) {
+      super.channelEnds(i);
     }
   }
 
   @Override
   protected void childEOI() throws DbException {
-    TransportMessage dm = null;
-    TupleBatchBuffer[] buffers = getBuffers();
-    Channel[] ioChannels = getChannels();
-    while ((dm = buffers[0].popAnyAsTM()) != null) {
-      for (Channel ch : ioChannels) {
-        try {
-          writeMessage(ch, dm);
-        } catch (InterruptedException e) {
-          throw new DbException(e);
-        }
-      }
-    }
-    for (Channel channel : ioChannels) {
+    TupleBatch eoiTB = TupleBatch.eoiTupleBatch(getSchema());
+    for (int i = 0; i < numChannels(); i++) {
       try {
-        writeMessage(channel, IPCUtils.EOI);
+        writeMessage(i, eoiTB);
       } catch (InterruptedException e) {
-        throw new DbException(e);
+        Thread.currentThread().interrupt();
+        return;
       }
     }
   }

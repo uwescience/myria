@@ -13,12 +13,14 @@ import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelSink;
 import org.jboss.netty.channel.Channels;
+import org.jboss.netty.channel.local.LocalAddress;
+import org.jboss.netty.channel.local.LocalChannel;
 import org.slf4j.LoggerFactory;
 
 /**
  * The Channel used when the sender and the receiver are actually in the same JVM.
  * */
-public class InJVMChannel extends AbstractChannel {
+public class InJVMChannel extends AbstractChannel implements LocalChannel {
 
   /** The logger for this class. */
   protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(InJVMChannel.class.getName());
@@ -32,8 +34,19 @@ public class InJVMChannel extends AbstractChannel {
    * */
   public InJVMChannel(final ChannelPipeline localInJVMPipeline, final ChannelSink localInJVMChannelSink) {
     super(null, null, localInJVMPipeline, localInJVMChannelSink);
+    localAddr = new LocalAddress(LocalAddress.EPHEMERAL);
     Channels.fireChannelOpen(this);
   }
+
+  /**
+   * The pseudo local address of this channel.
+   * */
+  private final LocalAddress localAddr;
+
+  /**
+   * A pseudo server address for use as the server address of all {@link InJVMChannel}s.
+   * */
+  static final LocalAddress PSEUDO_SERVER_ADDRESS = new LocalAddress(LocalAddress.EPHEMERAL);
 
   @Override
   public final ChannelFuture bind(final SocketAddress localAddress) {
@@ -111,13 +124,13 @@ public class InJVMChannel extends AbstractChannel {
   }
 
   @Override
-  public final SocketAddress getLocalAddress() {
-    return null;
+  public final LocalAddress getLocalAddress() {
+    return localAddr;
   }
 
   @Override
-  public final SocketAddress getRemoteAddress() {
-    return null;
+  public final LocalAddress getRemoteAddress() {
+    return PSEUDO_SERVER_ADDRESS;
   }
 
 }

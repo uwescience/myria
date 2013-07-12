@@ -4,7 +4,6 @@ import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -37,21 +36,17 @@ import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.MyriaSystemConfigKeys;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
-import edu.washington.escience.myriad.TupleBatch;
-import edu.washington.escience.myriad.column.Column;
-import edu.washington.escience.myriad.column.ColumnFactory;
-import edu.washington.escience.myriad.coordinator.catalog.MasterCatalog;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
+import edu.washington.escience.myriad.coordinator.catalog.MasterCatalog;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SQLiteInsert;
-import edu.washington.escience.myriad.parallel.ExchangeData.MetaMessage;
-import edu.washington.escience.myriad.parallel.MasterDataHandler.MessageWrapper;
+import edu.washington.escience.myriad.parallel.ipc.FlowControlBagInputBuffer;
 import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
+import edu.washington.escience.myriad.parallel.ipc.IPCMessage;
 import edu.washington.escience.myriad.parallel.ipc.InJVMLoopbackChannelSink;
+import edu.washington.escience.myriad.parallel.ipc.QueueBasedShortMessageProcessor;
 import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
-import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
-import edu.washington.escience.myriad.proto.DataProto.DataMessage;
 import edu.washington.escience.myriad.proto.QueryProto.QueryMessage;
 import edu.washington.escience.myriad.proto.QueryProto.QueryReport;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
@@ -77,7 +72,7 @@ public final class Server {
     @Override
     public void run() {
       TERMINATE_MESSAGE_PROCESSING : while (true) {
-        MessageWrapper mw = null;
+        IPCMessage.Data<TransportMessage> mw = null;
         try {
           mw = messageQueue.take();
         } catch (final InterruptedException e) {
@@ -85,52 +80,15 @@ public final class Server {
           break TERMINATE_MESSAGE_PROCESSING;
         }
 
-        final TransportMessage m = mw.getMessage();
-        final int senderID = mw.getSenderID();
+        final TransportMessage m = mw.getPayload();
+        final int senderID = mw.getRemoteID();
 
         switch (m.getType()) {
-          case DATA:
-            final DataMessage data = m.getDataMessage();
-            final long exchangePairIDLong = data.getOperatorID();
-            final ExchangePairID exchangePairID = ExchangePairID.fromExisting(exchangePairIDLong);
-            ConsumerChannel cc = consumerChannelMap.get(new ExchangeChannelID(exchangePairIDLong, senderID));
-            final Schema operatorSchema = cc.getOwnerConsumer().getSchema();
-            switch (data.getType()) {
-              case EOS:
-                LOGGER.debug("EOS from: " + senderID + "," + workers.get(senderID));
-                receiveData(new ExchangeData(exchangePairID, senderID, operatorSchema, MetaMessage.EOS));
-                cc.getOwnerTask().notifyNewInput();
-                break;
-              case EOI:
-                receiveData(new ExchangeData(exchangePairID, senderID, operatorSchema, MetaMessage.EOI));
-                cc.getOwnerTask().notifyNewInput();
-
-                break;
-              case NORMAL:
-                final List<ColumnMessage> columnMessages = data.getColumnsList();
-                final Column<?>[] columnArray = new Column<?>[columnMessages.size()];
-                int idx = 0;
-                for (final ColumnMessage cm : columnMessages) {
-                  columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm, data.getNumTuples());
-                }
-                final List<Column<?>> columns = Arrays.asList(columnArray);
-                receiveData((new ExchangeData(exchangePairID, senderID, columns, operatorSchema, data.getNumTuples(),
-                    data.getSeq())));
-                cc.getOwnerTask().notifyNewInput();
-                break;
-              case BOS:
-                /* ignored */
-                break;
-            }
-            break;
           case CONTROL:
             final ControlMessage controlM = m.getControlMessage();
             switch (controlM.getType()) {
               case WORKER_ALIVE:
                 aliveWorkers.add(senderID);
-                break;
-              case DISCONNECT:
-                /* TODO */
                 break;
               default:
                 if (LOGGER.isErrorEnabled()) {
@@ -176,7 +134,11 @@ public final class Server {
                 }
                 break;
             }
-
+            break;
+          default:
+            if (LOGGER.isErrorEnabled()) {
+              LOGGER.error("Unknown short message received at master: " + m.getType());
+            }
             break;
         }
       }
@@ -210,23 +172,11 @@ public final class Server {
   private final ConcurrentHashMap<String, Object> execEnvVars;
 
   /**
-   * The I/O buffer, all the ExchangeMessages sent to the server are buffered here.
-   */
-  private final ConcurrentHashMap<ExchangePairID, InputBuffer<TupleBatch, ExchangeData>> dataBuffer;
-
-  /**
-   * @return all input buffers currently in use.
-   * */
-  ConcurrentHashMap<ExchangePairID, InputBuffer<TupleBatch, ExchangeData>> getDataBuffer() {
-    return dataBuffer;
-  }
-
-  /**
    * All message queue.
    * 
    * @TODO remove this queue as in {@link Worker}s.
    * */
-  private final LinkedBlockingQueue<MasterDataHandler.MessageWrapper> messageQueue;
+  private final LinkedBlockingQueue<IPCMessage.Data<TransportMessage>> messageQueue;
 
   /**
    * The IPC Connection Pool.
@@ -242,23 +192,19 @@ public final class Server {
   private final MasterCatalog catalog;
 
   /**
-   * IPC flow controller.
-   * */
-  private final FlowControlHandler flowController;
-
-  /**
-   * IPC message handler.
-   * */
-  private final MasterDataHandler masterDataHandler;
-
-  /**
    * Default input buffer capacity for {@link Consumer} input buffers.
    * */
   private final int inputBufferCapacity;
 
   /**
+   * @return the system wide default inuput buffer recover event trigger.
+   * @see FlowControlBagInputBuffer#INPUT_BUFFER_RECOVER
+   * */
+  private final int inputBufferRecoverTrigger;
+
+  /**
    * The {@link OrderedMemoryAwareThreadPoolExecutor} who gets messages from {@link workerExecutor} and further process
-   * them using application specific message handlers, e.g. {@link MasterDataHandler}.
+   * them using application specific message handlers, e.g. {@link MasterShortMessageProcessor}.
    * */
   private volatile OrderedMemoryAwareThreadPoolExecutor ipcPipelineExecutor;
 
@@ -273,16 +219,6 @@ public final class Server {
   ExecutorService getQueryExecutor() {
     return serverQueryExecutor;
   }
-
-  /**
-   * Producer channel mapping of current active queries.
-   * */
-  private final ConcurrentHashMap<ExchangeChannelID, ProducerChannel> producerChannelMap;
-
-  /**
-   * Consumer channel mapping of current active queries.
-   * */
-  private final ConcurrentHashMap<ExchangeChannelID, ConsumerChannel> consumerChannelMap;
 
   /**
    * max number of seconds for elegant cleanup.
@@ -381,20 +317,6 @@ public final class Server {
   }
 
   /**
-   * @return my flow controller.
-   * */
-  FlowControlHandler getFlowControlHandler() {
-    return flowController;
-  }
-
-  /**
-   * @return my message processor.
-   * */
-  MasterDataHandler getDataHandler() {
-    return masterDataHandler;
-  }
-
-  /**
    * @return my connection pool for IPC.
    * */
   IPCConnectionPool getIPCConnectionPool() {
@@ -440,6 +362,10 @@ public final class Server {
 
     inputBufferCapacity =
         Integer.valueOf(catalog.getConfigurationValue(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY));
+
+    inputBufferRecoverTrigger =
+        Integer.valueOf(catalog.getConfigurationValue(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER));
+
     execEnvVars = new ConcurrentHashMap<String, Object>();
     for (Entry<String, String> cE : allConfigurations.entrySet()) {
       execEnvVars.put(cE.getKey(), cE.getValue());
@@ -448,22 +374,18 @@ public final class Server {
     aliveWorkers = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
     activeQueries = new ConcurrentHashMap<Long, MasterQueryPartition>();
 
-    dataBuffer = new ConcurrentHashMap<ExchangePairID, InputBuffer<TupleBatch, ExchangeData>>();
-    messageQueue = new LinkedBlockingQueue<MessageWrapper>();
+    messageQueue = new LinkedBlockingQueue<IPCMessage.Data<TransportMessage>>();
 
     final Map<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>(workers);
     computingUnits.put(MyriaConstants.MASTER_ID, masterSocketInfo);
 
-    masterDataHandler = new MasterDataHandler(messageQueue);
-    producerChannelMap = new ConcurrentHashMap<ExchangeChannelID, ProducerChannel>();
-    consumerChannelMap = new ConcurrentHashMap<ExchangeChannelID, ConsumerChannel>();
-    flowController = new FlowControlHandler(consumerChannelMap, producerChannelMap);
-
     connectionPool =
         new IPCConnectionPool(MyriaConstants.MASTER_ID, computingUnits, IPCConfigurations
-            .createMasterIPCServerBootstrap(this), IPCConfigurations.createMasterIPCClientBootstrap(this));
+            .createMasterIPCServerBootstrap(this), IPCConfigurations.createMasterIPCClientBootstrap(this),
+            new TransportMessageSerializer(), new QueueBasedShortMessageProcessor<TransportMessage>(messageQueue));
 
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_IPC_CONNECTION_POOL, connectionPool);
+    execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE, Worker.QueryExecutionMode.NON_BLOCKING);
 
     scheduledTaskExecutor =
         Executors.newSingleThreadScheduledExecutor(new RenamingThreadFactory("Master global timer"));
@@ -598,21 +520,6 @@ public final class Server {
   }
 
   /**
-   * Callback method when a data item is received.
-   * 
-   * @param data the data that was received.
-   */
-  private void receiveData(final ExchangeData data) {
-    InputBuffer<TupleBatch, ExchangeData> q = null;
-    q = dataBuffer.get(data.getOperatorID());
-    if (q != null) {
-      q.offer(data);
-    } else {
-      LOGGER.warn("weird: got ExchangeData (" + data + ") on null q");
-    }
-  }
-
-  /**
    * @return if a query is running.
    * @param queryId queryID.
    * */
@@ -670,9 +577,12 @@ public final class Server {
             .availableProcessors() * 2 + 1);
     // Start server with Nb of active threads = 2*NB CPU + 1 as maximum.
 
-    ChannelPipelineFactory serverPipelineFactory = new IPCPipelineFactories.MasterServerPipelineFactory(this);
-    ChannelPipelineFactory clientPipelineFactory = new IPCPipelineFactories.MasterClientPipelineFactory(this);
-    ChannelPipelineFactory masterInJVMPipelineFactory = new IPCPipelineFactories.MasterInJVMPipelineFactory(this);
+    ChannelPipelineFactory serverPipelineFactory =
+        new IPCPipelineFactories.MasterServerPipelineFactory(connectionPool, getPipelineExecutor());
+    ChannelPipelineFactory clientPipelineFactory =
+        new IPCPipelineFactories.MasterClientPipelineFactory(connectionPool, getPipelineExecutor());
+    ChannelPipelineFactory masterInJVMPipelineFactory =
+        new IPCPipelineFactories.MasterInJVMPipelineFactory(connectionPool);
 
     connectionPool.start(serverChannelFactory, serverPipelineFactory, clientChannelFactory, clientPipelineFactory,
         masterInJVMPipelineFactory, new InJVMLoopbackChannelSink());
@@ -686,6 +596,14 @@ public final class Server {
    * */
   int getInputBufferCapacity() {
     return inputBufferCapacity;
+  }
+
+  /**
+   * @return the system wide default inuput buffer recover event trigger.
+   * @see FlowControlBagInputBuffer#INPUT_BUFFER_RECOVER
+   * */
+  int getInputBufferRecoverTrigger() {
+    return inputBufferRecoverTrigger;
   }
 
   /**
@@ -767,8 +685,6 @@ public final class Server {
     workerPlans.remove(MyriaConstants.MASTER_ID);
     final long queryID = catalog.newQuery(rawQuery, logicalRa);
     final MasterQueryPartition mqp = new MasterQueryPartition(masterPlan, workerPlans, queryID, this);
-    consumerChannelMap.putAll(mqp.getConsumerChannelMapping());
-    producerChannelMap.putAll(mqp.getProducerChannelMapping());
 
     activeQueries.put(queryID, mqp);
 
@@ -777,13 +693,6 @@ public final class Server {
       public void operationComplete(final QueryFuture future) throws Exception {
 
         activeQueries.remove(mqp.getQueryID());
-        for (ExchangeChannelID consumerChannelID : mqp.getConsumerChannelMapping().keySet()) {
-          consumerChannelMap.remove(consumerChannelID);
-        }
-
-        for (ExchangeChannelID producerChannelID : mqp.getProducerChannelMapping().keySet()) {
-          producerChannelMap.remove(producerChannelID);
-        }
 
         if (future.isSuccess()) {
           if (LOGGER.isInfoEnabled()) {

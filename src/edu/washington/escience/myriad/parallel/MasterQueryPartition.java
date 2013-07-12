@@ -20,8 +20,10 @@ import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.MyriaConstants;
+import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SinkRoot;
+import edu.washington.escience.myriad.parallel.ipc.FlowControlBagInputBuffer;
 import edu.washington.escience.myriad.parallel.ipc.IPCEvent;
 import edu.washington.escience.myriad.parallel.ipc.IPCEventListener;
 import edu.washington.escience.myriad.util.DateTimeUtils;
@@ -90,38 +92,22 @@ public class MasterQueryPartition implements QueryPartition {
                 // query gets killed.
                 queryExecutionFuture.setFailure(new QueryKilledException());
               } else {
-                StringBuilder errorMessage = new StringBuilder();
-                int numStackTraceElements = 0;
-                for (Entry<Integer, Throwable> workerIDCause : failedQueryPartitions.entrySet()) {
-                  numStackTraceElements += workerIDCause.getValue().getStackTrace().length;
-                }
-                DbException currentStackTrace =
-                    new DbException("Query #" + future.getQuery().getQueryID() + " failed.\n");
-                StackTraceElement[] newStackTrace =
-                    new StackTraceElement[currentStackTrace.getStackTrace().length + numStackTraceElements];
-                System.arraycopy(currentStackTrace.getStackTrace(), 0, newStackTrace, 0, currentStackTrace
-                    .getStackTrace().length);
-                int stackTraceShift = currentStackTrace.getStackTrace().length;
-                errorMessage.append(currentStackTrace.getMessage());
+                DbException composedException =
+                    new DbException("Query #" + future.getQuery().getQueryID() + " failed.");
                 for (Entry<Integer, Throwable> workerIDCause : failedQueryPartitions.entrySet()) {
                   int failedWorkerID = workerIDCause.getKey();
                   Throwable cause = workerIDCause.getValue();
                   if (!(cause instanceof QueryKilledException)) {
                     // Only record non-killed exceptoins
-                    StackTraceElement[] e = cause.getStackTrace();
-                    System.arraycopy(e, 0, newStackTrace, stackTraceShift, e.length);
-                    stackTraceShift += e.length;
-                    errorMessage.append("\t" + cause.getClass().getName());
-                    errorMessage.append(" in worker #");
-                    errorMessage.append(failedWorkerID);
-                    errorMessage.append(", with message: [");
-                    errorMessage.append(cause.getMessage());
-                    errorMessage.append("].\n");
+                    DbException workerException =
+                        new DbException("Worker #" + failedWorkerID + " failed: " + cause.getMessage(), cause);
+                    workerException.setStackTrace(cause.getStackTrace());
+                    for (Throwable sup : cause.getSuppressed()) {
+                      workerException.addSuppressed(sup);
+                    }
+                    composedException.addSuppressed(workerException);
                   }
                 }
-                currentStackTrace.setStackTrace(newStackTrace);
-                DbException composedException = new DbException(errorMessage.toString());
-                composedException.setStackTrace(newStackTrace);
                 queryExecutionFuture.setFailure(composedException);
               }
             }
@@ -222,30 +208,6 @@ public class MasterQueryPartition implements QueryPartition {
    * */
   private final ConcurrentHashMap<Integer, Throwable> failedQueryPartitions =
       new ConcurrentHashMap<Integer, Throwable>();
-
-  /**
-   * Producer channel mapping of current active queries.
-   * */
-  private final ConcurrentHashMap<ExchangeChannelID, ProducerChannel> producerChannelMapping;
-
-  /**
-   * @return all producer channel mapping in this query partition.
-   * */
-  final Map<ExchangeChannelID, ProducerChannel> getProducerChannelMapping() {
-    return producerChannelMapping;
-  }
-
-  /**
-   * Consumer channel mapping of current active queries.
-   * */
-  private final ConcurrentHashMap<ExchangeChannelID, ConsumerChannel> consumerChannelMapping;
-
-  /**
-   * @return all consumer channel mapping in this query partition.
-   * */
-  final Map<ExchangeChannelID, ConsumerChannel> getConsumerChannelMapping() {
-    return consumerChannelMapping;
-  }
 
   /**
    * The future listener for processing the complete events of the execution of the master task.
@@ -401,53 +363,24 @@ public class MasterQueryPartition implements QueryPartition {
     WorkerExecutionInfo masterPart = new WorkerExecutionInfo(MyriaConstants.MASTER_ID, new RootOperator[] { rootOp });
     workerExecutionInfo.put(MyriaConstants.MASTER_ID, masterPart);
 
-    producerChannelMapping = new ConcurrentHashMap<ExchangeChannelID, ProducerChannel>();
-    consumerChannelMapping = new ConcurrentHashMap<ExchangeChannelID, ConsumerChannel>();
     rootTask = new QuerySubTreeTask(MyriaConstants.MASTER_ID, this, root, master.getQueryExecutor());
     rootTask.getExecutionFuture().addListener(taskExecutionListener);
-    for (Consumer c : rootTask.getInputChannels().values()) {
-      for (ConsumerChannel cc : c.getExchangeChannels()) {
-        consumerChannelMapping.putIfAbsent(cc.getExchangeChannelID(), cc);
-      }
-    }
+    HashSet<Consumer> consumerSet = new HashSet<Consumer>();
+    consumerSet.addAll(rootTask.getInputChannels().values());
 
-    for (ExchangeChannelID producerID : rootTask.getOutputChannels()) {
-      producerChannelMapping.put(producerID, new ProducerChannel(rootTask, producerID));
-    }
-
-    final FlowControlHandler fch = master.getFlowControlHandler();
-    for (ConsumerChannel cChannel : consumerChannelMapping.values()) {
-      final Consumer operator = cChannel.getOwnerConsumer();
-
-      FlowControlInputBuffer<ExchangeData> inputBuffer =
-          new FlowControlInputBuffer<ExchangeData>(master.getInputBufferCapacity());
-      inputBuffer.attach(operator.getOperatorID());
-      inputBuffer.addBufferFullListener(new IPCEventListener<FlowControlInputBuffer<ExchangeData>>() {
-        @Override
-        public void triggered(final IPCEvent<FlowControlInputBuffer<ExchangeData>> e) {
-          if (e.getAttachment().remainingCapacity() <= 0) {
-            fch.pauseRead(operator).awaitUninterruptibly();
-          }
-        }
-      });
-      inputBuffer.addBufferRecoverListener(new IPCEventListener<FlowControlInputBuffer<ExchangeData>>() {
-        @Override
-        public void triggered(final IPCEvent<FlowControlInputBuffer<ExchangeData>> e) {
-          if (e.getAttachment().remainingCapacity() > 0) {
-            fch.resumeRead(operator).awaitUninterruptibly();
-          }
-        }
-      });
-      inputBuffer.addBufferEmptyListener(new IPCEventListener<FlowControlInputBuffer<ExchangeData>>() {
-        @Override
-        public void triggered(final IPCEvent<FlowControlInputBuffer<ExchangeData>> e) {
-          if (e.getAttachment().remainingCapacity() > 0) {
-            fch.resumeRead(operator).awaitUninterruptibly();
-          }
-        }
-      });
+    for (final Consumer operator : consumerSet) {
+      FlowControlBagInputBuffer<TupleBatch> inputBuffer =
+          new FlowControlBagInputBuffer<TupleBatch>(this.master.getIPCConnectionPool(), operator
+              .getInputChannelIDs(this.master.getIPCConnectionPool().getMyIPCID()), master.getInputBufferCapacity(),
+              master.getInputBufferRecoverTrigger(), this.master.getIPCConnectionPool());
       operator.setInputBuffer(inputBuffer);
-      master.getDataBuffer().put(operator.getOperatorID(), inputBuffer);
+      inputBuffer.addListener(FlowControlBagInputBuffer.NEW_INPUT_DATA, new IPCEventListener() {
+
+        @Override
+        public void triggered(final IPCEvent event) {
+          rootTask.notifyNewInput();
+        }
+      });
     }
 
   }

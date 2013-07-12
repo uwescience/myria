@@ -8,7 +8,6 @@ import org.jboss.netty.channel.ChannelState;
 import org.jboss.netty.channel.ChannelStateEvent;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.MessageEvent;
-import org.jboss.netty.channel.local.LocalAddress;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -20,11 +19,6 @@ public class InJVMLoopbackChannelSink extends AbstractChannelSink {
 
   /** The logger for this class. */
   protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(InJVMLoopbackChannelSink.class.getName());
-
-  /**
-   * A pseudo server address for use as the server address of all {@link InJVMChannel}s.
-   * */
-  private static final LocalAddress PSEUDO_SERVER_ADDRESS = new LocalAddress(LocalAddress.EPHEMERAL);
 
   @Override
   public final void eventSunk(final ChannelPipeline pipeline, final ChannelEvent e) throws Exception {
@@ -47,7 +41,7 @@ public class InJVMLoopbackChannelSink extends AbstractChannelSink {
             break;
           case BOUND:
             if (value != null) {
-              Channels.fireChannelBound(channel, new LocalAddress(LocalAddress.EPHEMERAL));
+              Channels.fireChannelBound(channel, channel.getLocalAddress());
               future.setSuccess();
             } else {
               channel.closeNow(future);
@@ -55,7 +49,7 @@ public class InJVMLoopbackChannelSink extends AbstractChannelSink {
             break;
           case CONNECTED:
             if (value != null) {
-              Channels.fireChannelConnected(channel, PSEUDO_SERVER_ADDRESS);
+              Channels.fireChannelConnected(channel, InJVMChannel.PSEUDO_SERVER_ADDRESS);
               future.setSuccess();
             } else {
               channel.closeNow(future);

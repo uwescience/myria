@@ -22,6 +22,10 @@ import edu.washington.escience.myriad.proto.DataProto.DoubleColumnMessage;
  * 
  */
 public final class DoubleColumn implements Column<Double> {
+  /**
+   * 
+   */
+  private static final long serialVersionUID = 1L;
   /** Internal representation of the column data. */
   private final double[] data;
   /** The number of existing rows in this column. */

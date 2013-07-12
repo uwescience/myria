@@ -17,8 +17,8 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.operator.RootOperator;
-import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.operator.SinkRoot;
+import edu.washington.escience.myriad.operator.TupleSource;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
 import edu.washington.escience.myriad.parallel.ExchangePairID;
@@ -30,14 +30,16 @@ public class FlowControlTest extends SystemTestBase {
   @Override
   public Map<String, String> getMasterConfigurations() {
     HashMap<String, String> masterConfigurations = new HashMap<String, String>();
-    masterConfigurations.put(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY, "1");
+    masterConfigurations.put(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY, "2");
+    masterConfigurations.put(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER, "1");
     return masterConfigurations;
   }
 
   @Override
   public Map<String, String> getWorkerConfigurations() {
     HashMap<String, String> workerConfigurations = new HashMap<String, String>();
-    workerConfigurations.put(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY, "1");
+    workerConfigurations.put(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY, "2");
+    workerConfigurations.put(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER, "1");
     return workerConfigurations;
   }
 
@@ -46,34 +48,24 @@ public class FlowControlTest extends SystemTestBase {
     final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
     createTable(WORKER_ID[0], testtableKey, "id long, name varchar(20)");
 
-    final int numTuples = 50000;
+    final int numTuples = TupleBatch.BATCH_SIZE * 100;
 
     final Schema schema =
         new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
-    TupleBatch tb = null;
-    int numTB = 0;
     for (int i = 0; i < numTuples; i++) {
       tbb.put(0, TestUtils.randomLong(0, 100000, 1)[0]);
       tbb.put(1, TestUtils.randomFixedLengthNumericString(0, 100000, 1, 20)[0]);
-      while ((tb = tbb.popFilled()) != null) {
-        LOGGER.debug("Insert a TB into testbed. #" + numTB + ".");
-        numTB++;
-        insert(WORKER_ID[0], testtableKey, schema, tb);
-      }
     }
-    if ((tb = tbb.popAny()) != null) {
-      insert(WORKER_ID[0], testtableKey, schema, tb);
-    }
+
+    final TupleSource ts = new TupleSource(tbb);
 
     final ExchangePairID worker1ReceiveID = ExchangePairID.newID();
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
 
-    final SQLiteQueryScan scanTable = new SQLiteQueryScan(testtableKey, schema);
-
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
-    final CollectProducer cp1 = new CollectProducer(scanTable, worker1ReceiveID, WORKER_ID[1]);
+    final CollectProducer cp1 = new CollectProducer(ts, worker1ReceiveID, WORKER_ID[1]);
     workerPlans.put(WORKER_ID[0], new RootOperator[] { cp1 });
 
     final CollectConsumer cc1 = new CollectConsumer(schema, worker1ReceiveID, new int[] { WORKER_ID[0] });

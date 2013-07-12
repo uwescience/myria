@@ -67,26 +67,20 @@ public final class DataProto {
     
     public enum Type
         implements com.google.protobuf.ProtocolMessageEnum {
-      EOS(0, 0),
-      NORMAL(1, 1),
-      EOI(2, 2),
-      BOS(3, 3),
+      NORMAL(0, 1),
+      EOI(1, 2),
       ;
       
-      public static final int EOS_VALUE = 0;
       public static final int NORMAL_VALUE = 1;
       public static final int EOI_VALUE = 2;
-      public static final int BOS_VALUE = 3;
       
       
       public final int getNumber() { return value; }
       
       public static Type valueOf(int value) {
         switch (value) {
-          case 0: return EOS;
           case 1: return NORMAL;
           case 2: return EOI;
-          case 3: return BOS;
           default: return null;
         }
       }
@@ -117,7 +111,7 @@ public final class DataProto {
       }
       
       private static final Type[] VALUES = {
-        EOS, NORMAL, EOI, BOS, 
+        NORMAL, EOI, 
       };
       
       public static Type valueOf(
@@ -203,7 +197,7 @@ public final class DataProto {
     }
     
     private void initFields() {
-      type_ = edu.washington.escience.myriad.proto.DataProto.DataMessage.Type.EOS;
+      type_ = edu.washington.escience.myriad.proto.DataProto.DataMessage.Type.NORMAL;
       operatorID_ = 0L;
       columns_ = java.util.Collections.emptyList();
       numTuples_ = 0;
@@ -400,7 +394,7 @@ public final class DataProto {
       
       public Builder clear() {
         super.clear();
-        type_ = edu.washington.escience.myriad.proto.DataProto.DataMessage.Type.EOS;
+        type_ = edu.washington.escience.myriad.proto.DataProto.DataMessage.Type.NORMAL;
         bitField0_ = (bitField0_ & ~0x00000001);
         operatorID_ = 0L;
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -611,7 +605,7 @@ public final class DataProto {
       private int bitField0_;
       
       // required .DataMessage.Type type = 1;
-      private edu.washington.escience.myriad.proto.DataProto.DataMessage.Type type_ = edu.washington.escience.myriad.proto.DataProto.DataMessage.Type.EOS;
+      private edu.washington.escience.myriad.proto.DataProto.DataMessage.Type type_ = edu.washington.escience.myriad.proto.DataProto.DataMessage.Type.NORMAL;
       public boolean hasType() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
@@ -629,7 +623,7 @@ public final class DataProto {
       }
       public Builder clearType() {
         bitField0_ = (bitField0_ & ~0x00000001);
-        type_ = edu.washington.escience.myriad.proto.DataProto.DataMessage.Type.EOS;
+        type_ = edu.washington.escience.myriad.proto.DataProto.DataMessage.Type.NORMAL;
         onChanged();
         return this;
       }
@@ -4619,29 +4613,28 @@ public final class DataProto {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\014column.proto\"\263\001\n\013DataMessage\022\037\n\004type\030\001" +
+      "\n\014column.proto\"\241\001\n\013DataMessage\022\037\n\004type\030\001" +
       " \002(\0162\021.DataMessage.Type\022\022\n\noperatorID\030\002 " +
       "\001(\004\022\037\n\007columns\030\003 \003(\0132\016.ColumnMessage\022\022\n\n" +
-      "num_tuples\030\004 \001(\r\022\013\n\003seq\030\005 \001(\004\"-\n\004Type\022\007\n" +
-      "\003EOS\020\000\022\n\n\006NORMAL\020\001\022\007\n\003EOI\020\002\022\007\n\003BOS\020\003\"\201\003\n" +
-      "\rColumnMessage\022!\n\004type\030\001 \002(\0162\023.ColumnMes" +
-      "sage.Type\022%\n\nint_column\030\003 \001(\0132\021.IntColum" +
-      "nMessage\022\'\n\013long_column\030\004 \001(\0132\022.LongColu" +
-      "mnMessage\022)\n\014float_column\030\005 \001(\0132\023.FloatC" +
-      "olumnMessage\022+\n\rdouble_column\030\006 \001(\0132\024.Do",
-      "ubleColumnMessage\022+\n\rstring_column\030\007 \001(\013" +
-      "2\024.StringColumnMessage\022-\n\016boolean_column" +
-      "\030\010 \001(\0132\025.BooleanColumnMessage\"I\n\004Type\022\007\n" +
-      "\003INT\020\000\022\010\n\004LONG\020\001\022\t\n\005FLOAT\020\002\022\n\n\006DOUBLE\020\003\022" +
-      "\n\n\006STRING\020\004\022\013\n\007BOOLEAN\020\005\" \n\020IntColumnMes" +
-      "sage\022\014\n\004data\030\001 \002(\014\"!\n\021LongColumnMessage\022" +
-      "\014\n\004data\030\001 \002(\014\"\"\n\022FloatColumnMessage\022\014\n\004d" +
-      "ata\030\001 \002(\014\"#\n\023DoubleColumnMessage\022\014\n\004data" +
-      "\030\001 \002(\014\"O\n\023StringColumnMessage\022\014\n\004data\030\001 " +
-      "\002(\014\022\025\n\rstart_indices\030\002 \003(\005\022\023\n\013end_indice",
-      "s\030\003 \003(\005\"$\n\024BooleanColumnMessage\022\014\n\004data\030" +
-      "\001 \002(\014B1\n$edu.washington.escience.myriad." +
-      "protoB\tDataProto"
+      "num_tuples\030\004 \001(\r\022\013\n\003seq\030\005 \001(\004\"\033\n\004Type\022\n\n" +
+      "\006NORMAL\020\001\022\007\n\003EOI\020\002\"\201\003\n\rColumnMessage\022!\n\004" +
+      "type\030\001 \002(\0162\023.ColumnMessage.Type\022%\n\nint_c" +
+      "olumn\030\003 \001(\0132\021.IntColumnMessage\022\'\n\013long_c" +
+      "olumn\030\004 \001(\0132\022.LongColumnMessage\022)\n\014float" +
+      "_column\030\005 \001(\0132\023.FloatColumnMessage\022+\n\rdo" +
+      "uble_column\030\006 \001(\0132\024.DoubleColumnMessage\022",
+      "+\n\rstring_column\030\007 \001(\0132\024.StringColumnMes" +
+      "sage\022-\n\016boolean_column\030\010 \001(\0132\025.BooleanCo" +
+      "lumnMessage\"I\n\004Type\022\007\n\003INT\020\000\022\010\n\004LONG\020\001\022\t" +
+      "\n\005FLOAT\020\002\022\n\n\006DOUBLE\020\003\022\n\n\006STRING\020\004\022\013\n\007BOO" +
+      "LEAN\020\005\" \n\020IntColumnMessage\022\014\n\004data\030\001 \002(\014" +
+      "\"!\n\021LongColumnMessage\022\014\n\004data\030\001 \002(\014\"\"\n\022F" +
+      "loatColumnMessage\022\014\n\004data\030\001 \002(\014\"#\n\023Doubl" +
+      "eColumnMessage\022\014\n\004data\030\001 \002(\014\"O\n\023StringCo" +
+      "lumnMessage\022\014\n\004data\030\001 \002(\014\022\025\n\rstart_indic" +
+      "es\030\002 \003(\005\022\023\n\013end_indices\030\003 \003(\005\"$\n\024Boolean",
+      "ColumnMessage\022\014\n\004data\030\001 \002(\014B1\n$edu.washi" +
+      "ngton.escience.myriad.protoB\tDataProto"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {

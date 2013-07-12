@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -17,7 +18,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 import org.apache.commons.io.FilenameUtils;
-import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFactory;
 import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelFutureListener;
@@ -28,12 +28,14 @@ import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
 
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
+import com.google.common.collect.Sets;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.MyriaSystemConfigKeys;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.coordinator.catalog.WorkerCatalog;
+import edu.washington.escience.myriad.parallel.ipc.FlowControlBagInputBuffer;
 import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myriad.parallel.ipc.InJVMLoopbackChannelSink;
 import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
@@ -98,15 +100,6 @@ public final class Worker {
           try {
             while ((cm = controlMessageQueue.take()) != null) {
               switch (cm.getType()) {
-
-                case DISCONNECT:
-                case CONNECT:
-                  // DISCONNECT and CONNECT are used exclusively in IPC connection pool. They should not arrive here.
-                  if (LOGGER.isErrorEnabled()) {
-                    LOGGER
-                        .error("DISCONNECT and CONNECT are used exclusively in IPC connection pool. They should not arrive here.");
-                  }
-                  break;
 
                 case SHUTDOWN:
                   if (LOGGER.isInfoEnabled()) {
@@ -205,27 +198,14 @@ public final class Worker {
 
     @Override
     public synchronized void run() {
-      Channel serverChannel = null;
-      try {
-        serverChannel = owner.connectionPool.reserveLongTermConnection(MyriaConstants.MASTER_ID);
-        if (IPCUtils.isRemoteConnected(serverChannel)) {
-          return;
+      if (!owner.connectionPool.isRemoteAlive(MyriaConstants.MASTER_ID)) {
+        if (LOGGER.isInfoEnabled()) {
+          LOGGER.info("The Master has shutdown, I'll shutdown now.");
         }
-      } catch (Throwable ee) {
-        if (LOGGER.isErrorEnabled()) {
-          LOGGER.error("Unknown exception caught at reporter.", ee);
-        }
-      } finally {
-        if (serverChannel != null) {
-          owner.connectionPool.releaseLongTermConnection(serverChannel);
-        }
+        owner.toShutdown = true;
+        owner.abruptShutdown = true;
+        cancel();
       }
-      if (LOGGER.isInfoEnabled()) {
-        LOGGER.info("The Master has shutdown, I'll shutdown now.");
-      }
-      owner.toShutdown = true;
-      owner.abruptShutdown = true;
-      cancel();
     }
   }
 
@@ -235,16 +215,126 @@ public final class Worker {
   private class ShutdownChecker extends TimerTask {
     @Override
     public final synchronized void run() {
-      try {
-        if (toShutdown) {
-          shutdown();
+      if (toShutdown) {
+        shutdown();
+      }
+    }
+  }
+
+  /**
+   * Periodically detect whether the {@link Worker} should be shutdown.
+   * */
+  private class ShutdownThreadCleaner extends Thread {
+
+    /**
+     * In wait state for at most 5 seconds.
+     * */
+    static final int WAIT_MAXIMUM_MS = 5 * 1000;
+    /**
+     * Interrupt an unresponding thread for at most 3 times.
+     * */
+    static final int MAX_INTERRUPT_TIMES = 3;
+
+    /**
+     * for setting not daemon.
+     * */
+    ShutdownThreadCleaner() {
+      super.setDaemon(true);
+    }
+
+    /**
+     * How many milliseconds a thread have been waited to get finish.
+     * */
+    private final HashMap<Thread, Integer> waitedForMS = new HashMap<Thread, Integer>();
+    /**
+     * How many times a thread has been interrupted.
+     * */
+    private final HashMap<Thread, Integer> interruptTimes = new HashMap<Thread, Integer>();
+    /**
+     * The set of threads we have been waiting for the maximum MS, and so have decided to kill them directly.
+     * */
+    private final Set<Thread> abandonThreads = Sets.newSetFromMap(new HashMap<Thread, Boolean>());
+
+    /**
+     * utility method, add an integer v to the value of m[t] and return the new value. null key and value are taken ca
+     * of.
+     * 
+     * @return the new value
+     * @param m a map
+     * @param t a thread
+     * @param v the value
+     * */
+    private int addToMap(final Map<Thread, Integer> m, final Thread t, final int v) {
+      Integer tt = m.get(t);
+      if (tt == null) {
+        tt = 0;
+      }
+      m.put(t, tt + v);
+      return tt + v;
+    }
+
+    /**
+     * utility method, get the value of m[t] . null key and value are taken care of.
+     * 
+     * @param m a map
+     * @param t a thread
+     * @return the value
+     * */
+    private int getFromMap(final Map<Thread, Integer> m, final Thread t) {
+      Integer tt = m.get(t);
+      if (tt == null) {
+        tt = 0;
+      }
+      return tt;
+    }
+
+    @Override
+    public final void run() {
+
+      while (true) {
+        Set<Thread> allThreads = Thread.getAllStackTraces().keySet();
+        HashMap<Thread, Integer> nonSystemThreads = new HashMap<Thread, Integer>();
+        for (final Thread t : allThreads) {
+          if (t.getThreadGroup() != null && t.getThreadGroup() != mainThreadGroup
+              && t.getThreadGroup() != mainThreadGroup.getParent() && t != Thread.currentThread()
+              && !abandonThreads.contains(t)) {
+            nonSystemThreads.put(t, 0);
+          }
         }
-      } catch (Throwable ee) {
-        if (LOGGER.isErrorEnabled()) {
-          LOGGER.error("Unknown exception caught at shutdown checker.", ee);
+
+        if (nonSystemThreads.isEmpty()) {
+          if (abandonThreads.isEmpty()) {
+            return;
+          } else {
+            JVMUtils.shutdownVM();
+          }
+        }
+
+        try {
+          Thread.sleep(MyriaConstants.SHORT_WAITING_INTERVAL_100_MS);
+        } catch (InterruptedException e) {
+          JVMUtils.shutdownVM();
+        }
+
+        for (final Thread t : nonSystemThreads.keySet()) {
+          if (addToMap(waitedForMS, t, MyriaConstants.SHORT_WAITING_INTERVAL_100_MS) > WAIT_MAXIMUM_MS) {
+            waitedForMS.put(t, 0);
+            if (addToMap(interruptTimes, t, 1) > MAX_INTERRUPT_TIMES) {
+              if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Thread {} have been interrupted for {} times. Kill it directly.", t, getFromMap(
+                    interruptTimes, t) - 1);
+              }
+              abandonThreads.add(t);
+            } else {
+              if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Waited Thread {} to finish for {} seconds. I'll try interrupting it.", t,
+                    TimeUnit.MILLISECONDS.toSeconds(WAIT_MAXIMUM_MS) * getFromMap(interruptTimes, t));
+              }
+              t.interrupt();
+            }
+          }
         }
       }
-
     }
   }
 
@@ -274,16 +364,6 @@ public final class Worker {
    * current active queries. queryID -> QueryPartition
    * */
   private final ConcurrentHashMap<Long, WorkerQueryPartition> activeQueries;
-
-  /**
-   * My message handler.
-   * */
-  private final WorkerDataHandler workerDataHandler;
-
-  /**
-   * IPC flow controller.
-   * */
-  private final FlowControlHandler flowController;
 
   /**
    * timer task executor.
@@ -336,16 +416,6 @@ public final class Worker {
   private final QueryExecutionMode queryExecutionMode;
 
   /**
-   * Producer channel mapping of current active queries.
-   * */
-  private final ConcurrentHashMap<ExchangeChannelID, ProducerChannel> producerChannelMapping;
-
-  /**
-   * Consumer channel mapping of current active queries.
-   * */
-  private final ConcurrentHashMap<ExchangeChannelID, ConsumerChannel> consumerChannelMapping;
-
-  /**
    * {@link ExecutorService} for Netty pipelines.
    * */
   private volatile OrderedMemoryAwareThreadPoolExecutor pipelineExecutor;
@@ -354,6 +424,13 @@ public final class Worker {
    * The default input buffer capacity for each {@link Consumer} input buffer.
    * */
   private final int inputBufferCapacity;
+
+  /**
+   * the system wide default inuput buffer recover event trigger.
+   * 
+   * @see FlowControlBagInputBuffer#INPUT_BUFFER_RECOVER
+   * */
+  private final int inputBufferRecoverTrigger;
 
   /**
    * Current working directory. It's the logical root of the worker. All the data the worker and the operators running
@@ -365,6 +442,11 @@ public final class Worker {
    * Execution environment variables for operators.
    * */
   private final ConcurrentHashMap<String, Object> execEnvVars;
+
+  /**
+   * The thread group of the main thread.
+   * */
+  private static volatile ThreadGroup mainThreadGroup;
 
   /**
    * Worker process entry point.
@@ -381,10 +463,10 @@ public final class Worker {
         JVMUtils.shutdownVM();
       }
 
-      String workingDir = null;
+      String workingDirTmp = System.getProperty("user.dir");
       if (args.length >= 2) {
         if (args[0].equals("--workingDir")) {
-          workingDir = args[1];
+          workingDirTmp = args[1];
         } else {
           if (LOGGER.isErrorEnabled()) {
             LOGGER.error("Invalid arguments.\n" + USAGE);
@@ -393,21 +475,39 @@ public final class Worker {
         }
       }
 
+      final String workingDir = workingDirTmp;
       if (LOGGER.isInfoEnabled()) {
         LOGGER.info("workingDir: " + workingDir);
       }
-      // Instantiate a new worker
-      final Worker w = new Worker(workingDir, QueryExecutionMode.NON_BLOCKING);
-      // int port = w.port;
+      mainThreadGroup = Thread.currentThread().getThreadGroup();
+      ThreadGroup workerThreadGroup = new ThreadGroup(mainThreadGroup, "MyriaWorkerThreadGroup");
+      Thread myriaWorkerMain = new Thread(workerThreadGroup, "MyriaWorkerMain") {
 
-      // Start the actual message handler by binding
-      // the acceptor to a network socket
-      // Now the worker can accept messages
-      w.start();
+        @Override
+        public void run() {
+          try {
+            // Instantiate a new worker
+            final Worker w = new Worker(workingDir, QueryExecutionMode.NON_BLOCKING);
+            // int port = w.port;
 
-      if (LOGGER.isInfoEnabled()) {
-        LOGGER.info("Worker started at:" + w.catalog.getWorkers().get(w.myID));
-      }
+            // Start the actual message handler by binding
+            // the acceptor to a network socket
+            // Now the worker can accept messages
+            w.start();
+
+            if (LOGGER.isInfoEnabled()) {
+              LOGGER.info("Worker started at:" + w.catalog.getWorkers().get(w.myID));
+            }
+          } catch (Throwable e) {
+            if (LOGGER.isErrorEnabled()) {
+              LOGGER.error("Unknown error occurs at Worker. Quit directly.", e);
+            }
+          }
+
+        }
+      };
+      myriaWorkerMain.start();
+
     } catch (Throwable e) {
       if (LOGGER.isErrorEnabled()) {
         LOGGER.error("Unknown error occurs at Worker. Quit directly.", e);
@@ -431,20 +531,6 @@ public final class Worker {
   }
 
   /**
-   * @return my flow controller.
-   * */
-  FlowControlHandler getFlowControlHandler() {
-    return flowController;
-  }
-
-  /**
-   * @return my message processor.
-   * */
-  WorkerDataHandler getWorkerDataHandler() {
-    return workerDataHandler;
-  }
-
-  /**
    * @return my connection pool for IPC.
    * */
   IPCConnectionPool getIPCConnectionPool() {
@@ -463,6 +549,14 @@ public final class Worker {
    * */
   int getInputBufferCapacity() {
     return inputBufferCapacity;
+  }
+
+  /**
+   * @return the system wide default inuput buffer recover event trigger.
+   * @see FlowControlBagInputBuffer#INPUT_BUFFER_RECOVER
+   * */
+  int getInputBufferRecoverTrigger() {
+    return inputBufferRecoverTrigger;
   }
 
   /**
@@ -507,13 +601,10 @@ public final class Worker {
     this.workingDirectory = workingDirectory;
     myID = Integer.parseInt(catalog.getConfigurationValue(MyriaSystemConfigKeys.WORKER_IDENTIFIER));
 
-    // mySocketInfo = catalog.getWorkers().get(myID);
-
     controlMessageQueue = new LinkedBlockingQueue<ControlMessage>();
     queryQueue = new PriorityBlockingQueue<WorkerQueryPartition>();
 
     masterSocketInfo = catalog.getMasters().get(0);
-    workerDataHandler = new WorkerDataHandler(this);
 
     final Map<Integer, SocketInfo> workers = catalog.getWorkers();
     final Map<Integer, SocketInfo> computingUnits = new HashMap<Integer, SocketInfo>();
@@ -522,14 +613,16 @@ public final class Worker {
 
     connectionPool =
         new IPCConnectionPool(myID, computingUnits, IPCConfigurations.createWorkerIPCServerBootstrap(this),
-            IPCConfigurations.createWorkerIPCClientBootstrap(this));
+            IPCConfigurations.createWorkerIPCClientBootstrap(this), new TransportMessageSerializer(),
+            new WorkerShortMessageProcessor(this));
     activeQueries = new ConcurrentHashMap<Long, WorkerQueryPartition>();
-    producerChannelMapping = new ConcurrentHashMap<ExchangeChannelID, ProducerChannel>();
-    consumerChannelMapping = new ConcurrentHashMap<ExchangeChannelID, ConsumerChannel>();
-    flowController = new FlowControlHandler(consumerChannelMapping, producerChannelMapping);
 
     inputBufferCapacity =
         Integer.valueOf(catalog.getConfigurationValue(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY));
+
+    inputBufferRecoverTrigger =
+        Integer.valueOf(catalog.getConfigurationValue(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER));
+
     execEnvVars = new ConcurrentHashMap<String, Object>();
 
     for (Entry<String, String> cE : catalog.getAllConfigurations().entrySet()) {
@@ -575,8 +668,6 @@ public final class Worker {
     if (LOGGER.isInfoEnabled()) {
       LOGGER.info("Query received" + query.getQueryID());
     }
-    consumerChannelMapping.putAll(query.getConsumerChannelMapping());
-    producerChannelMapping.putAll(query.getProducerChannelMapping());
 
     activeQueries.put(query.getQueryID(), query);
     query.getExecutionFuture().addListener(new QueryFutureListener() {
@@ -584,13 +675,6 @@ public final class Worker {
       @Override
       public void operationComplete(final QueryFuture future) throws Exception {
         activeQueries.remove(query.getQueryID());
-        for (ExchangeChannelID consumerChannelID : query.getConsumerChannelMapping().keySet()) {
-          consumerChannelMapping.remove(consumerChannelID);
-        }
-
-        for (ExchangeChannelID producerChannelID : query.getProducerChannelMapping().keySet()) {
-          producerChannelMapping.remove(producerChannelID);
-        }
 
         if (future.isSuccess()) {
 
@@ -647,35 +731,40 @@ public final class Worker {
   /**
    * This method should be called whenever the system is going to shutdown.
    * 
-   * @throws InterruptedException if the shutdown process is interrupted.
    */
-  public void shutdown() throws InterruptedException {
-    if (LOGGER.isInfoEnabled()) {
-      LOGGER.info("Shutdown requested. Please wait when cleaning up...");
-    }
-    if (!connectionPool.isShutdown()) {
-      if (!abruptShutdown) {
-        connectionPool.shutdown().await();
-      } else {
-        connectionPool.shutdownNow().await();
+  void shutdown() {
+    try {
+      if (LOGGER.isInfoEnabled()) {
+        LOGGER.info("Shutdown requested. Please wait when cleaning up...");
       }
-    }
-    connectionPool.releaseExternalResources();
 
-    if (pipelineExecutor != null && !pipelineExecutor.isShutdown()) {
-      pipelineExecutor.shutdown();
-    }
+      if (!connectionPool.isShutdown()) {
+        if (!abruptShutdown) {
+          connectionPool.shutdown();
+        } else {
+          connectionPool.shutdownNow();
+        }
+      }
+      connectionPool.releaseExternalResources();
 
-    if (LOGGER.isInfoEnabled()) {
-      LOGGER.info("shutdown IPC completed");
-    }
-    // must use shutdownNow here because the query queue processor and the control message processor are both blocking.
-    // We have to interrupt them at shutdown.
-    messageProcessingExecutor.shutdownNow();
-    queryExecutor.shutdown();
-    scheduledTaskExecutor.shutdown();
-    if (LOGGER.isInfoEnabled()) {
-      LOGGER.info("Worker #" + myID + " shutdown completed");
+      if (pipelineExecutor != null && !pipelineExecutor.isShutdown()) {
+        pipelineExecutor.shutdown();
+      }
+
+      if (LOGGER.isInfoEnabled()) {
+        LOGGER.info("shutdown IPC completed");
+      }
+      // must use shutdownNow here because the query queue processor and the control message processor are both
+      // blocking.
+      // We have to interrupt them at shutdown.
+      messageProcessingExecutor.shutdownNow();
+      queryExecutor.shutdown();
+      scheduledTaskExecutor.shutdown();
+      if (LOGGER.isInfoEnabled()) {
+        LOGGER.info("Worker #" + myID + " shutdown completed");
+      }
+    } finally {
+      new Thread(mainThreadGroup, new ShutdownThreadCleaner(), "ShutdownThreadCleaner").start();
     }
   }
 
@@ -700,9 +789,12 @@ public final class Worker {
         new NioServerSocketChannelFactory(bossExecutor, workerExecutor,
             Runtime.getRuntime().availableProcessors() * 2 + 1);
 
-    ChannelPipelineFactory serverPipelineFactory = new IPCPipelineFactories.WorkerServerPipelineFactory(this);
-    ChannelPipelineFactory clientPipelineFactory = new IPCPipelineFactories.WorkerClientPipelineFactory(this);
-    ChannelPipelineFactory workerInJVMPipelineFactory = new IPCPipelineFactories.WorkerInJVMPipelineFactory(this);
+    ChannelPipelineFactory serverPipelineFactory =
+        new IPCPipelineFactories.WorkerServerPipelineFactory(connectionPool, getPipelineExecutor());
+    ChannelPipelineFactory clientPipelineFactory =
+        new IPCPipelineFactories.WorkerClientPipelineFactory(connectionPool, getPipelineExecutor());
+    ChannelPipelineFactory workerInJVMPipelineFactory =
+        new IPCPipelineFactories.WorkerInJVMPipelineFactory(connectionPool);
 
     connectionPool.start(serverChannelFactory, serverPipelineFactory, clientChannelFactory, clientPipelineFactory,
         workerInJVMPipelineFactory, new InJVMLoopbackChannelSink());

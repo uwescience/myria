@@ -5,7 +5,6 @@ import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
@@ -16,12 +15,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myriad.util.IPCUtils;
+import edu.washington.escience.myriad.util.ThreadStackDump;
 
 /**
  * Recording the various context information of a channel. The most important part of this class is the state machine of
  * a channel.
  * */
-public class ChannelContext {
+public class ChannelContext extends AttachmentableAdapter {
 
   /**
    * Channel close requested event.
@@ -252,6 +252,11 @@ public class ChannelContext {
     private final AtomicInteger numberOfReference;
 
     /**
+     * The logical I/O pair of a physical channel.
+     * */
+    private final StreamIOChannelPair ioPair;
+
+    /**
      * @param remoteID the remote IPC entity ID.
      * @param ownerChannelGroup which channel set the channel belongs.
      * */
@@ -259,6 +264,14 @@ public class ChannelContext {
       this.remoteID = remoteID;
       channelGroup = ownerChannelGroup;
       numberOfReference = new AtomicInteger(0);
+      ioPair = new StreamIOChannelPair(ChannelContext.this);
+    }
+
+    /**
+     * @return attachment.
+     * */
+    public final StreamIOChannelPair getIOPair() {
+      return ioPair;
     }
 
     /**
@@ -289,6 +302,9 @@ public class ChannelContext {
      * @return the new number of references.
      * */
     public final int incReference() {
+      if (LOGGER.isTraceEnabled()) {
+        LOGGER.trace("Inc reference for channel: " + ownerChannel, new ThreadStackDump());
+      }
       return numberOfReference.incrementAndGet();
     }
 
@@ -382,11 +398,6 @@ public class ChannelContext {
   private final Object channelRegisterLock = new Object();
 
   /**
-   * An attachment for customized extra functionality.
-   * */
-  private final AtomicReference<Object> attachment;
-
-  /**
    * last IO timestamp. 0 or negative means the channel is connected by not used. If the channel is assigned to do some
    * IO task, then this field must be updated to the timestamp of assignment. Also, each IO operation on this channel
    * should update this timestamp.
@@ -460,34 +471,6 @@ public class ChannelContext {
     registeredContext = null;
     registerConditionFutures = new HashSet<EqualityCloseFuture<Integer>>();
     delayedEvents = new ConcurrentLinkedQueue<DelayedTransitionEvent>();
-    attachment = new AtomicReference<Object>();
-  }
-
-  /**
-   * @return attachment.
-   * */
-  public final Object getAttachment() {
-    return attachment.get();
-  }
-
-  /**
-   * Set attachment to the new value and return old value.
-   * 
-   * @return the old value.
-   * @param attachment the new attachment
-   * */
-  public final Object setAttachment(final Object attachment) {
-    return this.attachment.getAndSet(attachment);
-  }
-
-  /**
-   * Set attachment to the value only if currently no attachment is set.
-   * 
-   * @return if the attachment is already set, return false, otherwise true.
-   * @param attachment the attachment to set
-   * */
-  public final boolean setAttachmentIfAbsent(final Object attachment) {
-    return this.attachment.compareAndSet(null, attachment);
   }
 
   /**
@@ -536,6 +519,42 @@ public class ChannelContext {
     if (!ccr.apply()) {
       delayedEvents.add(ccr);
     }
+  }
+
+  /**
+   * Any error encoutered, cleanup state, close the channel directly.
+   * 
+   * @param unregisteredNewChannels Set of new channels who have not identified there worker IDs yet (i.e. not
+   *          registered).
+   * 
+   * @param trashBin channel trash bin. The place where to-be-closed channels reside.
+   * @param channelPool the channel pool in which the channel resides. may be null if the channel is not registered yet
+   * @param recycleBin channel recycle bin. The place where currently-unused-but-waiting-for-possible-reuse channels
+   *          reside.
+   */
+  public final void errorEncountered(final ConcurrentHashMap<Channel, Channel> unregisteredNewChannels,
+      final ConcurrentHashMap<Channel, Channel> recycleBin, final ChannelGroup trashBin,
+      final ChannelPrioritySet channelPool) {
+    synchronized (stateMachineLock) {
+      unregisteredNewChannels.remove(ownerChannel);
+      if (channelPool != null) {
+        channelPool.remove(ownerChannel);
+      }
+      recycleBin.remove(ownerChannel);
+      trashBin.remove(ownerChannel);
+      connected = false;
+      registered = false;
+      inPool = false;
+      inRecycleBin = false;
+      inTrashBin = false;
+      newConnection = false;
+      closeRequested = false;
+      alive = false;
+      synchronized (channelRegisterLock) {
+        channelRegisterLock.notifyAll();
+      }
+    }
+    ownerChannel.close();
   }
 
   /**
@@ -737,7 +756,7 @@ public class ChannelContext {
       synchronized (stateMachineLock) {
         if (connected && registered && !inPool && !inRecycleBin && inTrashBin && !newConnection) {
           // if here is to make sure that the message gets sent only once.
-          final ChannelFuture cf = ownerChannel.write(IPCUtils.CONTROL_DISCONNECT);
+          final ChannelFuture cf = ownerChannel.write(IPCMessage.Meta.DISCONNECT);
           disconnectSent();
           cf.addListener(new ChannelFutureListener() {
 

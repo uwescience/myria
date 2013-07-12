@@ -20,9 +20,19 @@ public final class MyriaConstants {
   public static final String SYSTEM_NAME = "Myria";
 
   /**
-   * Short wait interval in milliseconds.
+   * Short wait interval 100 milliseconds.
    * */
-  public static final int SHORT_WAITING_INTERVAL_MS = 100;
+  public static final int SHORT_WAITING_INTERVAL_100_MS = 100;
+
+  /**
+   * Short wait interval default 100 milliseconds.
+   * */
+  public static final int SHORT_WAITING_INTERVAL_MS = SHORT_WAITING_INTERVAL_100_MS;
+
+  /**
+   * Short wait interval 10 milliseconds.
+   * */
+  public static final int SHORT_WAITING_INTERVAL_10_MS = 10;
 
   /**
    * Short wait interval in milliseconds.
@@ -80,6 +90,11 @@ public final class MyriaConstants {
   public static final int OPERATOR_INPUT_BUFFER_CAPACITY_DEFAULT_VALUE = 100;
 
   /**
+   * Default value for {@link MyriaSystemConfigKeys#OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER}.
+   * */
+  public static final int OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER_DEFAULT_VALUE = 80;
+
+  /**
    * Default value for {@link MyriaSystemConfigKeys#TCP_SEND_BUFFER_SIZE_BYTES}.
    * */
   public static final int TCP_SEND_BUFFER_SIZE_BYTES_DEFAULT_VALUE = 5 * MyriaConstants.MB;
@@ -108,6 +123,11 @@ public final class MyriaConstants {
    * ipc connection pool exec var name.
    * */
   public static final String EXEC_ENV_VAR_IPC_CONNECTION_POOL = "ipcConnectionPool";
+
+  /**
+   * Driving task.
+   * */
+  public static final String EXEC_ENV_VAR_DRIVING_TASK = "drivingTask";
 
   /**
    * query execution mode.
