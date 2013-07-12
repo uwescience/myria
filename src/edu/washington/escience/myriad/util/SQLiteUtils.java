@@ -1,9 +1,15 @@
 package edu.washington.escience.myriad.util;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.LoggerFactory;
+
+import com.almworks.sqlite4java.SQLiteConnection;
+import com.almworks.sqlite4java.SQLiteException;
+import com.almworks.sqlite4java.SQLiteStatement;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.MyriaConstants;
@@ -154,5 +160,73 @@ public final class SQLiteUtils {
       LOGGER.debug("Drop if exists: " + sb.toString());
     }
     return sb.toString();
+  }
+
+  /**
+   * Create a SQLite table. This method always creates an empty table, so if the table already exists, all its contents
+   * will be removed.
+   * 
+   * @throws SQLiteException if SQLite error occur
+   * @throws IOException if any IO error occur
+   * @param dbFileAbsolutePath the SQLite file absolute path
+   * @param relationKey the relation key to create
+   * @param sqlSchemaString schema as a string
+   * @param replaceExisting replace existing table with a new empty table
+   * @param swipeData swipe existing data in the table.
+   * */
+  public static void createTable(final String dbFileAbsolutePath, final RelationKey relationKey,
+      final String sqlSchemaString, final boolean replaceExisting, final boolean swipeData) throws IOException,
+      SQLiteException {
+    SQLiteConnection sqliteConnection = null;
+    SQLiteStatement statement = null;
+    try {
+      final File f = new File(dbFileAbsolutePath);
+
+      if (!f.getParentFile().exists()) {
+        f.getParentFile().mkdirs();
+      }
+
+      /* Connect to the database */
+      sqliteConnection = new SQLiteConnection(f);
+      sqliteConnection.open(true);
+
+      statement = sqliteConnection.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?");
+      statement.bind(1, relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE));
+      if (statement.step()) {
+        // existing
+        statement.dispose();
+        if (replaceExisting) {
+          statement = sqliteConnection.prepare("Drop table ? ");
+          statement.bind(1, relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE));
+          statement.step();
+          statement.dispose();
+        } else if (swipeData) {
+          /* Clear table data in case it already exists */
+          statement =
+              sqliteConnection.prepare("delete from " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE));
+          statement.step();
+          statement.reset();
+          return;
+        } else {
+          return;
+        }
+      }
+      statement.dispose();
+      /* Create the table if not exist */
+      statement =
+          sqliteConnection.prepare("create table " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE) + " ("
+              + sqlSchemaString + ");");
+
+      statement.step();
+      statement.reset();
+
+    } finally {
+      if (statement != null) {
+        statement.dispose();
+      }
+      if (sqliteConnection != null) {
+        sqliteConnection.dispose();
+      }
+    }
   }
 }

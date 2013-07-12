@@ -325,6 +325,11 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
       if (m instanceof IPCMessage.Meta) {
         codedMsg = ((IPCMessage.Meta) m).serialize();
       } else {
+        /*
+         * m could be: 1. a TupleBatch (corresponds to IPCMessage.StreamData), 2. TransportMessage.QUERY or a
+         * TransportMessage.CONTROL (corresponds to IPCMessage.Data but not StreamData). In both cases m is going to be
+         * serialized as an IPCMessage.Data, with the header.
+         */
         codedMsg =
             ChannelBuffers.wrappedBuffer(IPCMessage.Data.SERIALIZE_HEAD, ownerConnectionPool.getPayloadSerializer()
                 .serialize(m));

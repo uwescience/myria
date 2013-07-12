@@ -37,9 +37,14 @@ public class TransportMessageSerializer implements PayloadSerializer {
   @Override
   public final ChannelBuffer serialize(final Object m) {
     Preconditions.checkNotNull(m);
+    // m has only 3 possibilities:
     if (m instanceof TransportMessage) {
+      // case 1: TransportMessage.QUERY
+      // case 2: TransportMessage.CONTROL
+      // TransportMessage.DATA is not possible to occur here
       return ChannelBuffers.wrappedBuffer(((TransportMessage) m).toByteArray());
     } else if (m instanceof TupleBatch) {
+      // case 3: TupleBatch
       TupleBatch tb = (TupleBatch) m;
       if (!tb.isEOI()) {
         return ChannelBuffers.wrappedBuffer(((TupleBatch) m).toTransportMessage().toByteArray());

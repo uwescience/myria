@@ -26,9 +26,7 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.slf4j.LoggerFactory;
 
-import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
-import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.DbException;
@@ -159,46 +157,10 @@ public class SystemTestBase {
 
   public static void createTable(final int workerID, final RelationKey relationKey, final String sqlSchemaString)
       throws IOException, CatalogException {
-    createTable(getAbsoluteDBFile(workerID).getAbsolutePath(), relationKey, sqlSchemaString);
-  }
-
-  public static void createTable(final String dbFileAbsolutePath, final RelationKey relationKey,
-      final String sqlSchemaString) throws IOException, CatalogException {
-    SQLiteConnection sqliteConnection = null;
-    SQLiteStatement statement = null;
     try {
-      final File f = new File(dbFileAbsolutePath);
-
-      if (!f.getParentFile().exists()) {
-        f.getParentFile().mkdirs();
-      }
-
-      /* Connect to the database */
-      sqliteConnection = new SQLiteConnection(f);
-      sqliteConnection.open(true);
-
-      /* Create the table if not exist */
-      statement =
-          sqliteConnection.prepare("create table if not exists "
-              + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE) + " (" + sqlSchemaString + ");");
-
-      statement.step();
-      statement.reset();
-
-      /* Clear table data in case it already exists */
-      statement = sqliteConnection.prepare("delete from " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE));
-      statement.step();
-      statement.reset();
-
-    } catch (final SQLiteException e) {
+      SQLiteUtils.createTable(getAbsoluteDBFile(workerID).getAbsolutePath(), relationKey, sqlSchemaString, true, true);
+    } catch (SQLiteException e) {
       throw new CatalogException(e);
-    } finally {
-      if (statement != null) {
-        statement.dispose();
-      }
-      if (sqliteConnection != null) {
-        sqliteConnection.dispose();
-      }
     }
   }
 
@@ -221,7 +183,9 @@ public class SystemTestBase {
           t.join();
         }
       } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
         e.printStackTrace();
+        return;
       }
     }
 
@@ -248,7 +212,9 @@ public class SystemTestBase {
       }
     }
     if (!finishClean) {
-      LOGGER.warn("did not finish clean!");
+      throw new IllegalStateException("did not finish clean!");
+    } else {
+      LOGGER.warn("Finish SystemTestBase cleanup.");
     }
   }
 

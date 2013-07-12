@@ -1,7 +1,6 @@
 package edu.washington.escience.myriad.accessmethod;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -24,17 +23,15 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.SQLiteInsert;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
-import edu.washington.escience.myriad.systemtest.SystemTestBase;
 import edu.washington.escience.myriad.util.FSUtils;
 import edu.washington.escience.myriad.util.SQLiteUtils;
 import edu.washington.escience.myriad.util.TestUtils;
 
 public class SQLiteAccessMethodTest {
   @Test
-  public void testConcurrentReadingATable() throws IOException, CatalogException, InterruptedException, DbException {
+  public void testConcurrentReadingATable() throws Exception {
 
     final Random r = new Random();
 
@@ -47,7 +44,8 @@ public class SQLiteAccessMethodTest {
     final String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, numTuplesEach, 20);
     final long[] ids = TestUtils.randomLong(1000, 1005, names.length);
 
-    final Schema schema = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+    final Schema schema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
@@ -57,7 +55,7 @@ public class SQLiteAccessMethodTest {
 
     Path tempDir = Files.createTempDirectory(MyriaConstants.SYSTEM_NAME + "_sqlite_access_method_test");
     final File dbFile = new File(tempDir.toString(), "sqlite.db");
-    SystemTestBase.createTable(dbFile.getAbsolutePath(), testtableKey, "id long, name varchar(20)");
+    SQLiteUtils.createTable(dbFile.getAbsolutePath(), testtableKey, "id long, name varchar(20)", true, true);
 
     TupleBatch tb = null;
     while ((tb = tbb.popAny()) != null) {
@@ -71,8 +69,9 @@ public class SQLiteAccessMethodTest {
         @Override
         public void run() {
           try {
-            final Iterator<TupleBatch> it = SQLiteAccessMethod.tupleBatchIteratorFromQuery(dbFile.getAbsolutePath(),
-                "select * from " + testtableKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), schema);
+            final Iterator<TupleBatch> it =
+                SQLiteAccessMethod.tupleBatchIteratorFromQuery(dbFile.getAbsolutePath(), "select * from "
+                    + testtableKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), schema);
             while (it.hasNext()) {
               it.next();
             }
@@ -94,8 +93,7 @@ public class SQLiteAccessMethodTest {
   }
 
   @Test
-  public void testConcurrentReadingTwoTablesInSameDBFile() throws IOException, CatalogException, InterruptedException,
-      DbException {
+  public void testConcurrentReadingTwoTablesInSameDBFile() throws Exception {
 
     final Random r = new Random();
 
@@ -113,7 +111,8 @@ public class SQLiteAccessMethodTest {
     final String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, numTuplesEach, 20);
     final long[] ids = TestUtils.randomLong(1000, 1005, names.length);
 
-    final Schema schema = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+    final Schema schema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
@@ -123,8 +122,8 @@ public class SQLiteAccessMethodTest {
 
     Path tempDir = Files.createTempDirectory(MyriaConstants.SYSTEM_NAME + "_sqlite_access_method_test");
     final File dbFile = new File(tempDir.toString(), "sqlite.db");
-    SystemTestBase.createTable(dbFile.getAbsolutePath(), testtable0Key, "id long, name varchar(20)");
-    SystemTestBase.createTable(dbFile.getAbsolutePath(), testtable1Key, "id long, name varchar(20)");
+    SQLiteUtils.createTable(dbFile.getAbsolutePath(), testtable0Key, "id long, name varchar(20)", true, true);
+    SQLiteUtils.createTable(dbFile.getAbsolutePath(), testtable1Key, "id long, name varchar(20)", true, true);
 
     TupleBatch tb = null;
     final String insertTemplate0 = SQLiteUtils.insertStatementFromSchema(schema, testtable0Key);
@@ -141,8 +140,9 @@ public class SQLiteAccessMethodTest {
         @Override
         public void run() {
           try {
-            final Iterator<TupleBatch> it = SQLiteAccessMethod.tupleBatchIteratorFromQuery(dbFile.getAbsolutePath(),
-                "select * from " + testtableKeys.get(j % 2).toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), schema);
+            final Iterator<TupleBatch> it =
+                SQLiteAccessMethod.tupleBatchIteratorFromQuery(dbFile.getAbsolutePath(), "select * from "
+                    + testtableKeys.get(j % 2).toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), schema);
 
             while (it.hasNext()) {
               it.next();
@@ -165,7 +165,7 @@ public class SQLiteAccessMethodTest {
   }
 
   @Test
-  public void concurrentlyReadAndWriteTest() throws DbException, CatalogException, IOException {
+  public void concurrentlyReadAndWriteTest() throws Exception {
 
     final int numTuples = 1000000;
 
@@ -195,7 +195,7 @@ public class SQLiteAccessMethodTest {
     conn.dispose();
 
     final RelationKey inputKey = RelationKey.of("test", "testWrite", "input");
-    SystemTestBase.createTable(dbFile.getAbsolutePath(), inputKey, "follower long, followee long");
+    SQLiteUtils.createTable(dbFile.getAbsolutePath(), inputKey, "follower long, followee long", true, true);
 
     final String insertString = SQLiteUtils.insertStatementFromSchema(tableSchema, inputKey);
     TupleBatch tb = null;

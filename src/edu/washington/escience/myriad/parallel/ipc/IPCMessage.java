@@ -5,32 +5,30 @@ import org.jboss.netty.buffer.ChannelBuffers;
 
 import com.google.common.base.Preconditions;
 
-import edu.washington.escience.myriad.parallel.ipc.IPCMessage.Meta.MetaType;
-
 /**
  * All IPCMessages derived from this class.
  * */
 public interface IPCMessage {
 
   /**
-   * Meta IPCMessages, used inside the IPC module only.
+   * Header of IPCMessages in serialized version.
+   * */
+  enum Header {
+    /***/
+    EOS, BOS, CONNECT, DISCONNECT, PING, DATA
+  }
+
+  /**
+   * Meta IPCMessages, used inside the IPC module only. It has the following cases: EOS, BOS, CONNECT, DISCONNECT, PING.
    * */
   abstract class Meta implements IPCMessage {
-
-    /**
-     * Type of Meta IPCMessage.
-     * */
-    enum MetaType {
-      /***/
-      EOS, BOS, CONNECT, DISCONNECT, DATA, PING
-    }
 
     /**
      * EOS.
      * */
     static final Meta EOS = new Meta() {
 
-      private final ChannelBuffer serializeValue = ChannelBuffers.wrappedBuffer(new byte[] { (byte) MetaType.EOS
+      private final ChannelBuffer serializeValue = ChannelBuffers.wrappedBuffer(new byte[] { (byte) Header.EOS
           .ordinal() });
 
       @Override
@@ -50,7 +48,7 @@ public interface IPCMessage {
      * */
     static final Meta DISCONNECT = new Meta() {
 
-      private final ChannelBuffer serializeValue = ChannelBuffers.wrappedBuffer(new byte[] { (byte) MetaType.DISCONNECT
+      private final ChannelBuffer serializeValue = ChannelBuffers.wrappedBuffer(new byte[] { (byte) Header.DISCONNECT
           .ordinal() });
 
       @Override
@@ -83,7 +81,7 @@ public interface IPCMessage {
       public BOS(final long streamID) {
         this.streamID = streamID;
         ChannelBuffer bb = ChannelBuffers.buffer(1 + Long.SIZE / Byte.SIZE);
-        bb.writeByte((byte) MetaType.BOS.ordinal());
+        bb.writeByte((byte) Header.BOS.ordinal());
         bb.writeLong(streamID);
         serializeValue = ChannelBuffers.unmodifiableBuffer(bb);
       }
@@ -134,7 +132,7 @@ public interface IPCMessage {
       public CONNECT(final int remoteID) {
         this.remoteID = remoteID;
         ChannelBuffer bb = ChannelBuffers.buffer(1 + Integer.SIZE / Byte.SIZE);
-        bb.writeByte((byte) MetaType.CONNECT.ordinal());
+        bb.writeByte((byte) Header.CONNECT.ordinal());
         bb.writeInt(remoteID);
         serializeValue = ChannelBuffers.unmodifiableBuffer(bb);
       }
@@ -171,7 +169,7 @@ public interface IPCMessage {
      * */
     static final Meta PING = new Meta() {
 
-      private final ChannelBuffer serializeValue = ChannelBuffers.wrappedBuffer(new byte[] { (byte) MetaType.PING
+      private final ChannelBuffer serializeValue = ChannelBuffers.wrappedBuffer(new byte[] { (byte) Header.PING
           .ordinal() });
 
       @Override
@@ -199,15 +197,15 @@ public interface IPCMessage {
      * */
     public static Meta deSerialize(final ChannelBuffer bb) {
       byte type = bb.readByte();
-      if (type == MetaType.BOS.ordinal()) {
+      if (type == Header.BOS.ordinal()) {
         return BOS.deSerialize(bb);
-      } else if (type == MetaType.CONNECT.ordinal()) {
+      } else if (type == Header.CONNECT.ordinal()) {
         return CONNECT.deSerialize(bb);
-      } else if (type == MetaType.DISCONNECT.ordinal()) {
+      } else if (type == Header.DISCONNECT.ordinal()) {
         return DISCONNECT;
-      } else if (type == MetaType.EOS.ordinal()) {
+      } else if (type == Header.EOS.ordinal()) {
         return EOS;
-      } else if (type == MetaType.PING.ordinal()) {
+      } else if (type == Header.PING.ordinal()) {
         return PING;
       } else {
         return null;
@@ -219,7 +217,8 @@ public interface IPCMessage {
   /**
    * Unit of IPC transmission.
    * 
-   * @param <PAYLOAD> the type of payload.
+   * @param <PAYLOAD> the type of payload. Currently, this PAYLOAD could only be: TransportMessage.QUERY,
+   *          TransportMessage.CONTROL.
    * */
   public class Data<PAYLOAD> implements IPCMessage {
 
@@ -258,8 +257,8 @@ public interface IPCMessage {
     /**
      * serialize head.
      * */
-    static final ChannelBuffer SERIALIZE_HEAD = ChannelBuffers.wrappedBuffer(new byte[] { (byte) MetaType.DATA
-        .ordinal() });
+    static final ChannelBuffer SERIALIZE_HEAD = ChannelBuffers
+        .wrappedBuffer(new byte[] { (byte) Header.DATA.ordinal() });
 
     /**
      * @param sourceRemote the source remote id.
@@ -285,7 +284,7 @@ public interface IPCMessage {
   /**
    * Unit of IPC Stream.
    * 
-   * @param <PAYLOAD> the type of payload.
+   * @param <PAYLOAD> the type of payload. Currently, this PAYLOAD could only be TupleBatch.
    * */
   public final class StreamData<PAYLOAD> extends Data<PAYLOAD> {
 
@@ -332,7 +331,7 @@ public interface IPCMessage {
 
     /**
      * @param sourceRemote the source remote id.
-     * @param maybePayload either a paylod or a Data instance.
+     * @param maybePayload either a paylod or a StreamData instance.
      * @param <PAYLOAD> the payload type.
      * @param streamID stream ID.
      * @return the wrapped StreamData message.
