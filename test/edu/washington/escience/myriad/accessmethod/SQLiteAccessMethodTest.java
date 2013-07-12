@@ -55,7 +55,7 @@ public class SQLiteAccessMethodTest {
 
     Path tempDir = Files.createTempDirectory(MyriaConstants.SYSTEM_NAME + "_sqlite_access_method_test");
     final File dbFile = new File(tempDir.toString(), "sqlite.db");
-    SQLiteUtils.createTable(dbFile.getAbsolutePath(), testtableKey, "id long, name varchar(20)");
+    SQLiteUtils.createTable(dbFile.getAbsolutePath(), testtableKey, "id long, name varchar(20)", true, true);
 
     TupleBatch tb = null;
     while ((tb = tbb.popAny()) != null) {
@@ -122,8 +122,8 @@ public class SQLiteAccessMethodTest {
 
     Path tempDir = Files.createTempDirectory(MyriaConstants.SYSTEM_NAME + "_sqlite_access_method_test");
     final File dbFile = new File(tempDir.toString(), "sqlite.db");
-    SQLiteUtils.createTable(dbFile.getAbsolutePath(), testtable0Key, "id long, name varchar(20)");
-    SQLiteUtils.createTable(dbFile.getAbsolutePath(), testtable1Key, "id long, name varchar(20)");
+    SQLiteUtils.createTable(dbFile.getAbsolutePath(), testtable0Key, "id long, name varchar(20)", true, true);
+    SQLiteUtils.createTable(dbFile.getAbsolutePath(), testtable1Key, "id long, name varchar(20)", true, true);
 
     TupleBatch tb = null;
     final String insertTemplate0 = SQLiteUtils.insertStatementFromSchema(schema, testtable0Key);
@@ -195,7 +195,7 @@ public class SQLiteAccessMethodTest {
     conn.dispose();
 
     final RelationKey inputKey = RelationKey.of("test", "testWrite", "input");
-    SQLiteUtils.createTable(dbFile.getAbsolutePath(), inputKey, "follower long, followee long");
+    SQLiteUtils.createTable(dbFile.getAbsolutePath(), inputKey, "follower long, followee long", true, true);
 
     final String insertString = SQLiteUtils.insertStatementFromSchema(tableSchema, inputKey);
     TupleBatch tb = null;

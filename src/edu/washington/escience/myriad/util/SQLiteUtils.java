@@ -170,9 +170,12 @@ public final class SQLiteUtils {
    * @param dbFileAbsolutePath the SQLite file absolute path
    * @param relationKey the relation key to create
    * @param sqlSchemaString schema as a string
+   * @param replaceExisting replace existing table with a new empty table
+   * @param swipeData swipe existing data in the table.
    * */
   public static void createTable(final String dbFileAbsolutePath, final RelationKey relationKey,
-      final String sqlSchemaString) throws IOException, SQLiteException {
+      final String sqlSchemaString, final boolean replaceExisting, final boolean swipeData) throws IOException,
+      SQLiteException {
     SQLiteConnection sqliteConnection = null;
     SQLiteStatement statement = null;
     try {
@@ -186,16 +189,33 @@ public final class SQLiteUtils {
       sqliteConnection = new SQLiteConnection(f);
       sqliteConnection.open(true);
 
+      statement = sqliteConnection.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?");
+      statement.bind(1, relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE));
+      if (statement.step()) {
+        // existing
+        statement.dispose();
+        if (replaceExisting) {
+          statement = sqliteConnection.prepare("Drop table ? ");
+          statement.bind(1, relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE));
+          statement.step();
+          statement.dispose();
+        } else if (swipeData) {
+          /* Clear table data in case it already exists */
+          statement =
+              sqliteConnection.prepare("delete from " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE));
+          statement.step();
+          statement.reset();
+          return;
+        } else {
+          return;
+        }
+      }
+      statement.dispose();
       /* Create the table if not exist */
       statement =
-          sqliteConnection.prepare("create table if not exists "
-              + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE) + " (" + sqlSchemaString + ");");
+          sqliteConnection.prepare("create table " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE) + " ("
+              + sqlSchemaString + ");");
 
-      statement.step();
-      statement.reset();
-
-      /* Clear table data in case it already exists */
-      statement = sqliteConnection.prepare("delete from " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE));
       statement.step();
       statement.reset();
 

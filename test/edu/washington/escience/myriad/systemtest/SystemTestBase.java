@@ -158,7 +158,7 @@ public class SystemTestBase {
   public static void createTable(final int workerID, final RelationKey relationKey, final String sqlSchemaString)
       throws IOException, CatalogException {
     try {
-      SQLiteUtils.createTable(getAbsoluteDBFile(workerID).getAbsolutePath(), relationKey, sqlSchemaString);
+      SQLiteUtils.createTable(getAbsoluteDBFile(workerID).getAbsolutePath(), relationKey, sqlSchemaString, true, true);
     } catch (SQLiteException e) {
       throw new CatalogException(e);
     }

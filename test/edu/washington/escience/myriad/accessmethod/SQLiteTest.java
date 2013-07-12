@@ -43,7 +43,7 @@ public class SQLiteTest {
     final String tempDirPath =
         Files.createTempDirectory(MyriaConstants.SYSTEM_NAME + "_SQLiteTest").toFile().getAbsolutePath();
     final String dbAbsolutePath = FilenameUtils.concat(tempDirPath, "sqlite_testtable.db");
-    SQLiteUtils.createTable(dbAbsolutePath, testtableKey, "id long,name varchar(20)");
+    SQLiteUtils.createTable(dbAbsolutePath, testtableKey, "id long,name varchar(20)", true, true);
 
     final String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, 200, 20);
     final long[] ids = TestUtils.randomLong(1000, 1005, names.length);
