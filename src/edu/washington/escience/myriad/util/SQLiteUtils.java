@@ -163,7 +163,8 @@ public final class SQLiteUtils {
   }
 
   /**
-   * Create a SQLite table.
+   * Create a SQLite table. This method always creates an empty table, so if the table already exists, all its contents
+   * will be removed.
    * 
    * @throws SQLiteException if SQLite error occur
    * @throws IOException if any IO error occur
