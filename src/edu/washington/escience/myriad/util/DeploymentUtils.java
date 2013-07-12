@@ -9,6 +9,7 @@ import java.util.Map;
 
 import org.slf4j.LoggerFactory;
 
+import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.tool.MyriaConfigurationReader;
 
 /**
@@ -205,8 +206,10 @@ public final class DeploymentUtils {
         // pass
       }
       try {
-        Thread.sleep(10);
+        Thread.sleep(MyriaConstants.SHORT_WAITING_INTERVAL_10_MS);
       } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        break;
       }
       if (System.currentTimeMillis() - start > 20000) {
         throw new RuntimeException("after 20s master " + address + " is not alive");

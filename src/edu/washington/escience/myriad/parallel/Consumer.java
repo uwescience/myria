@@ -7,13 +7,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.ExchangeTupleBatch;
 import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.operator.LeafOperator;
 import edu.washington.escience.myriad.parallel.Worker.QueryExecutionMode;
+import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
+import edu.washington.escience.myriad.parallel.ipc.IPCMessage;
+import edu.washington.escience.myriad.parallel.ipc.StreamIOChannelID;
+import edu.washington.escience.myriad.parallel.ipc.StreamInputBuffer;
+import edu.washington.escience.myriad.util.ArrayUtils;
 import gnu.trove.impl.unmodifiable.TUnmodifiableIntIntMap;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;
@@ -29,11 +36,11 @@ public class Consumer extends LeafOperator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
+
   /**
-   * The buffer for receiving ExchangeMessages. This buffer should be assigned by the Worker. Basically, buffer =
-   * Worker.inBuffer.get(this.getOperatorID())
+   * The buffer for receiving input data.
    */
-  private transient volatile InputBuffer<TupleBatch, ExchangeData> inputBuffer;
+  private transient volatile StreamInputBuffer<TupleBatch> inputBuffer;
 
   /**
    * The operatorID of this Consumer.
@@ -59,12 +66,7 @@ public class Consumer extends LeafOperator {
   /**
    * From which workers to receive data.
    * */
-  private final int[] sourceWorkers;
-
-  /**
-   * the consumer channels, for recording the mapping between ExchangeChannelIDs to a Consumer instances.
-   * */
-  private transient ConsumerChannel[] exchangeChannels;
+  private final ImmutableSet<Integer> sourceWorkers;
 
   /**
    * if current query execution is in non-blocking mode.
@@ -73,16 +75,18 @@ public class Consumer extends LeafOperator {
 
   /**
    * @return my exchange channels.
+   * @param myWorkerID for parsing self-references.
    */
-  public final ConsumerChannel[] getExchangeChannels() {
-    return exchangeChannels;
-  }
-
-  /**
-   * @param exchangeChannels my exchange channels.
-   */
-  public final void setExchangeChannels(final ConsumerChannel[] exchangeChannels) {
-    this.exchangeChannels = exchangeChannels;
+  public final ImmutableSet<StreamIOChannelID> getInputChannelIDs(final int myWorkerID) {
+    ImmutableSet.Builder<StreamIOChannelID> ecB = ImmutableSet.builder();
+    for (int wID : sourceWorkers) {
+      if (wID == IPCConnectionPool.SELF_IPC_ID) {
+        ecB.add(new StreamIOChannelID(operatorID.getLong(), myWorkerID));
+      } else {
+        ecB.add(new StreamIOChannelID(operatorID.getLong(), wID));
+      }
+    }
+    return ecB.build();
   }
 
   /**
@@ -91,6 +95,15 @@ public class Consumer extends LeafOperator {
    * @param workerIDs {@link Consumer#sourceWorkers}
    * */
   public Consumer(final Schema schema, final ExchangePairID operatorID, final int[] workerIDs) {
+    this(schema, operatorID, ArrayUtils.checkSet(org.apache.commons.lang3.ArrayUtils.toObject(workerIDs)));
+  }
+
+  /**
+   * @param schema output schema.
+   * @param operatorID {@link Consumer#operatorID}
+   * @param workerIDs {@link Consumer#sourceWorkers}
+   * */
+  public Consumer(final Schema schema, final ExchangePairID operatorID, final ImmutableSet<Integer> workerIDs) {
     this.operatorID = operatorID;
     this.schema = schema;
     sourceWorkers = workerIDs;
@@ -102,10 +115,7 @@ public class Consumer extends LeafOperator {
    * @param operatorID {@link Consumer#operatorID}
    * */
   public Consumer(final Schema schema, final ExchangePairID operatorID) {
-    this.operatorID = operatorID;
-    this.schema = schema;
-    sourceWorkers = new int[] { -1 };
-    LOGGER.trace("created Consumer for ExchangePairId=" + operatorID);
+    this(schema, operatorID, ImmutableSet.of(IPCConnectionPool.SELF_IPC_ID));
   }
 
   @Override
@@ -117,8 +127,8 @@ public class Consumer extends LeafOperator {
 
   @Override
   protected final void init(final ImmutableMap<String, Object> execUnitEnv) throws DbException {
-    workerEOS = new BitSet(sourceWorkers.length);
-    workerEOI = new BitSet(sourceWorkers.length);
+    workerEOS = new BitSet(sourceWorkers.size());
+    workerEOI = new BitSet(sourceWorkers.size());
 
     TIntIntMap tmp = new TIntIntHashMap();
     int idx = 0;
@@ -150,25 +160,30 @@ public class Consumer extends LeafOperator {
       timeToWait = 0;
     }
 
-    ExchangeData tb = null;
+    IPCMessage.StreamData<TupleBatch> tb = null;
     TupleBatch result = null;
     while ((tb = take(timeToWait)) != null) {
-      int sourceWorkerIdx = workerIdToIndex.get(tb.getSourceIPCID());
+      int sourceWorkerIdx = workerIdToIndex.get(tb.getRemoteID());
+      TupleBatch ttbb = tb.getPayload();
+      if (ttbb != null) {
+        ttbb = ExchangeTupleBatch.wrap(ttbb, tb.getRemoteID());
+      }
 
-      if (tb.isEos()) {
+      if (ttbb == null) {
+        // EOS
         workerEOS.set(sourceWorkerIdx);
         checkEOSAndEOI();
         if (eos() || eoi()) {
           break;
         }
-      } else if (tb.isEoi()) {
+      } else if (ttbb.isEOI()) {
         workerEOI.set(sourceWorkerIdx);
         checkEOSAndEOI();
         if (eos() || eoi()) {
           break;
         }
       } else {
-        result = tb.getData();
+        result = ttbb;
         break;
       }
     }
@@ -179,14 +194,14 @@ public class Consumer extends LeafOperator {
   @Override
   public final void checkEOSAndEOI() {
 
-    if (workerEOS.nextClearBit(0) >= sourceWorkers.length) {
+    if (workerEOS.nextClearBit(0) >= sourceWorkers.size()) {
       setEOS();
       return;
     }
     BitSet tmp = (BitSet) workerEOI.clone();
     tmp.or(workerEOS);
     // EOS could be used as an EOI
-    if (tmp.nextClearBit(0) >= sourceWorkers.length) {
+    if (tmp.nextClearBit(0) >= sourceWorkers.size()) {
       setEOI(true);
       workerEOI.clear();
     }
@@ -204,10 +219,10 @@ public class Consumer extends LeafOperator {
    * @return source worker IDs with self-reference parsed.
    * */
   public final int[] getSourceWorkers(final int myWorkerID) {
-    int[] result = new int[sourceWorkers.length];
+    int[] result = new int[sourceWorkers.size()];
     int idx = 0;
     for (int workerID : sourceWorkers) {
-      if (workerID >= 0) {
+      if (workerID != IPCConnectionPool.SELF_IPC_ID) {
         result[idx++] = workerID;
       } else {
         result[idx++] = myWorkerID;
@@ -222,13 +237,15 @@ public class Consumer extends LeafOperator {
    * 
    * @param buffer my input buffer.
    * */
-  public final void setInputBuffer(final InputBuffer<TupleBatch, ExchangeData> buffer) {
+  public final void setInputBuffer(final StreamInputBuffer<TupleBatch> buffer) {
     if (inputBuffer != null) {
-      inputBuffer.detached();
+      inputBuffer.clear();
+      inputBuffer.getOwnerConnectionPool().deRegisterStreamInput(inputBuffer);
       inputBuffer = null;
     }
     if (buffer != null) {
-      buffer.attach(operatorID);
+      buffer.setAttachment(schema);
+      buffer.start(this);
       inputBuffer = buffer;
     }
   }
@@ -236,7 +253,7 @@ public class Consumer extends LeafOperator {
   /**
    * @return my input buffer.
    * */
-  public final InputBuffer<TupleBatch, ExchangeData> getInputBuffer() {
+  public final StreamInputBuffer<TupleBatch> getInputBuffer() {
     return inputBuffer;
   }
 
@@ -247,8 +264,8 @@ public class Consumer extends LeafOperator {
    * @return received data.
    * @throws InterruptedException if interrupted.
    */
-  private ExchangeData take(final int timeout) throws InterruptedException {
-    ExchangeData result = null;
+  private IPCMessage.StreamData<TupleBatch> take(final int timeout) throws InterruptedException {
+    IPCMessage.StreamData<TupleBatch> result = null;
     if (timeout == 0) {
       result = inputBuffer.poll();
     } else if (timeout > 0) {

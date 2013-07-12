@@ -3,14 +3,12 @@ package edu.washington.escience.myriad.systemtest;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myriad.MyriaSystemConfigKeys;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -45,22 +43,6 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
   private final int MaxID = 400;
   private final int numTbl1Worker1 = 50;
   private final int numTbl1Worker2 = 60;
-
-  @Override
-  public Map<String, String> getMasterConfigurations() {
-    HashMap<String, String> masterConfigurations = new HashMap<String, String>();
-    masterConfigurations.put(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY, "100");
-    masterConfigurations.put(MyriaSystemConfigKeys.IPC_SERVER_PORT, "20001");
-    return masterConfigurations;
-  }
-
-  @Override
-  public Map<String, String> getWorkerConfigurations() {
-    HashMap<String, String> workerConfigurations = new HashMap<String, String>();
-    workerConfigurations.put(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_CAPACITY, "100");
-    workerConfigurations.put(MyriaSystemConfigKeys.IPC_SERVER_PORT, "20101");
-    return workerConfigurations;
-  }
 
   public boolean[][] allNodeTransitiveClosure(TupleBatchBuffer table1, Schema schema) {
     // a brute force check

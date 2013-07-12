@@ -4,14 +4,10 @@ option java_outer_classname = "ControlProto";
 message ControlMessage {
   enum Type {
     
-    CONNECT = 0; // create an IPC connection between two workers, used only in the IPC module. Do not process it elsewhere.
-    DISCONNECT = 4; //disconnect an IPC connection, used only in he IPC module. Do not process it elsewhere.
-
     SHUTDOWN = 3; // master -> workers
     WORKER_ALIVE = 5; // worker -> master
   }
 
   required ControlMessage.Type type = 1;		// See enum above
-  optional int32 remote_id = 2; //Should be set only in CONNECT/DISCONNECT
 }
 

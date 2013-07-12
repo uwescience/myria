@@ -5,8 +5,8 @@ import java.util.Map;
 import org.jboss.netty.channel.socket.nio.NioSocketChannelConfig;
 
 import edu.washington.escience.myriad.parallel.Consumer;
-import edu.washington.escience.myriad.parallel.FlowControlInputBuffer;
-import edu.washington.escience.myriad.parallel.InputBuffer;
+import edu.washington.escience.myriad.parallel.ipc.FlowControlBagInputBuffer;
+import edu.washington.escience.myriad.parallel.ipc.StreamInputBuffer;
 
 /**
  * Myria system configuration keys.
@@ -20,11 +20,17 @@ public final class MyriaSystemConfigKeys {
   }
 
   /**
-   * The max number of data messages that the {@link InputBuffer} of each {@link Consumer} operator should hold. It's
-   * not a restrict upper bound. Different implementations of {@link InputBuffer} may restrict the size differently. For
-   * example, a {@link FlowControlInputBuffer} use the upper bound as a soft restriction.
+   * The max number of data messages that the {@link StreamInputBuffer} of each {@link Consumer} operator should hold.
+   * It's not a restrict upper bound. Different implementations of {@link StreamInputBuffer} may restrict the size
+   * differently. For example, a {@link FlowControlBagInputBuffer} use the upper bound as a soft restriction.
    * */
   public static final String OPERATOR_INPUT_BUFFER_CAPACITY = "operator.consumer.inputbuffer.capacity";
+
+  /**
+   * After an input buffer full event, if the size of the input buffer reduced to the recover_trigger, the input buffer
+   * recover event should be issued.
+   * */
+  public static final String OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER = "operator.consumer.inputbuffer.recover.trigger";
 
   /**
    * .
@@ -101,6 +107,10 @@ public final class MyriaSystemConfigKeys {
     }
     if (!config.containsKey(OPERATOR_INPUT_BUFFER_CAPACITY)) {
       config.put(OPERATOR_INPUT_BUFFER_CAPACITY, MyriaConstants.OPERATOR_INPUT_BUFFER_CAPACITY_DEFAULT_VALUE + "");
+    }
+    if (!config.containsKey(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER)) {
+      config.put(OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER,
+          MyriaConstants.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER_DEFAULT_VALUE + "");
     }
     if (!config.containsKey(TCP_CONNECTION_TIMEOUT_MILLIS)) {
       config.put(TCP_CONNECTION_TIMEOUT_MILLIS, MyriaConstants.TCP_CONNECTION_TIMEOUT_MILLIS_DEFAULT_VALUE + "");

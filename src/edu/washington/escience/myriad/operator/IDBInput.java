@@ -5,7 +5,6 @@ import java.util.BitSet;
 import java.util.HashMap;
 import java.util.List;
 
-import org.jboss.netty.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,7 +21,7 @@ import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.parallel.Consumer;
 import edu.washington.escience.myriad.parallel.ExchangePairID;
 import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
-import edu.washington.escience.myriad.util.IPCUtils;
+import edu.washington.escience.myriad.parallel.ipc.StreamOutputChannel;
 
 /**
  * Together with the EOSController, the IDBInput controls what to serve into an iteration and when to stop an iteration.
@@ -88,7 +87,7 @@ public class IDBInput extends Operator {
   /**
    * The IPC channel for EOI report.
    * */
-  private transient Channel eoiReportChannel;
+  private transient StreamOutputChannel<TupleBatch> eoiReportChannel;
 
   /**
    * The logger for this class.
@@ -223,16 +222,15 @@ public class IDBInput extends Operator {
 
         if (eosControllerInput.eos()) {
           setEOS();
-          eoiReportChannel.write(IPCUtils.EOS);
+          eoiReportChannel.release();
           // notify the EOSController to end.
         } else if (iterationInput.eoi()) {
           iterationInput.setEOI(false);
           setEOI(true);
           final TupleBatchBuffer buffer = new TupleBatchBuffer(EOI_REPORT_SCHEMA);
-          // buffer.put(0, eosControllerInput.getOperatorID().getLong());
           buffer.put(0, selfIDBIdx);
           buffer.put(1, emptyDelta);
-          eoiReportChannel.write(buffer.popAnyAsTM());
+          eoiReportChannel.write(buffer.popAny());
           emptyDelta = true;
         }
       } catch (DbException e) {
@@ -272,8 +270,7 @@ public class IDBInput extends Operator {
     uniqueTupleIndices = new HashMap<Integer, List<Integer>>();
     uniqueTuples = new TupleBatchBuffer(getSchema());
     connectionPool = (IPCConnectionPool) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_IPC_CONNECTION_POOL);
-    eoiReportChannel = connectionPool.reserveLongTermConnection(controllerWorkerID);
-    eoiReportChannel.write(IPCUtils.bosTM(controllerOpID));
+    eoiReportChannel = connectionPool.reserveLongTermConnection(controllerWorkerID, controllerOpID.getLong());
   }
 
   @Override
@@ -292,9 +289,7 @@ public class IDBInput extends Operator {
   protected final void cleanup() throws DbException {
     uniqueTupleIndices = null;
     uniqueTuples = null;
-    if (eoiReportChannel != null) {
-      connectionPool.releaseLongTermConnection(eoiReportChannel);
-    }
+    eoiReportChannel.release();
     eoiReportChannel = null;
     connectionPool = null;
   }

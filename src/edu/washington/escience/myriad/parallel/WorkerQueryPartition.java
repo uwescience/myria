@@ -1,9 +1,7 @@
 package edu.washington.escience.myriad.parallel;
 
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -13,7 +11,9 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableMap;
 
+import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.operator.RootOperator;
+import edu.washington.escience.myriad.parallel.ipc.FlowControlBagInputBuffer;
 import edu.washington.escience.myriad.parallel.ipc.IPCEvent;
 import edu.washington.escience.myriad.parallel.ipc.IPCEventListener;
 import edu.washington.escience.myriad.util.DateTimeUtils;
@@ -100,8 +100,13 @@ public class WorkerQueryPartition implements QueryPartition {
         if (failTasks.isEmpty()) {
           executionFuture.setSuccess();
         } else {
-          // TODO currently use the cause of the first failed task as the case of the failure of the whole query.
-          executionFuture.setFailure(failTasks.peek().getExecutionFuture().getCause());
+          Throwable existingCause = executionFuture.getCause();
+          Throwable newCause = failTasks.peek().getExecutionFuture().getCause();
+          if (existingCause == null) {
+            executionFuture.setFailure(newCause);
+          } else {
+            existingCause.addSuppressed(newCause);
+          }
         }
       } else {
         if (LOGGER.isDebugEnabled()) {
@@ -118,30 +123,6 @@ public class WorkerQueryPartition implements QueryPartition {
   private final QueryExecutionStatistics queryStatistics = new QueryExecutionStatistics();
 
   /**
-   * Producer channel mapping of current active queries.
-   * */
-  private final ConcurrentHashMap<ExchangeChannelID, ProducerChannel> producerChannelMapping;
-
-  /**
-   * @return all producer channel mapping in this query partition.
-   * */
-  final Map<ExchangeChannelID, ProducerChannel> getProducerChannelMapping() {
-    return producerChannelMapping;
-  }
-
-  /**
-   * Consumer channel mapping of current active queries.
-   * */
-  private final ConcurrentHashMap<ExchangeChannelID, ConsumerChannel> consumerChannelMapping;
-
-  /**
-   * @return all consumer channel mapping in this query partition.
-   * */
-  final Map<ExchangeChannelID, ConsumerChannel> getConsumerChannelMapping() {
-    return consumerChannelMapping;
-  }
-
-  /**
    * @param operators the operators belonging to this query partition.
    * @param queryID the id of the query.
    * @param ownerWorker the worker on which this query partition is going to run
@@ -151,8 +132,6 @@ public class WorkerQueryPartition implements QueryPartition {
     tasks = new HashSet<QuerySubTreeTask>(operators.length);
     numFinishedTasks = new AtomicInteger(0);
     this.ownerWorker = ownerWorker;
-    producerChannelMapping = new ConcurrentHashMap<ExchangeChannelID, ProducerChannel>();
-    consumerChannelMapping = new ConcurrentHashMap<ExchangeChannelID, ConsumerChannel>();
     for (final RootOperator taskRootOp : operators) {
       final QuerySubTreeTask drivingTask =
           new QuerySubTreeTask(ownerWorker.getIPCConnectionPool().getMyIPCID(), this, taskRootOp, ownerWorker
@@ -162,52 +141,28 @@ public class WorkerQueryPartition implements QueryPartition {
 
       tasks.add(drivingTask);
 
-      for (Consumer c : drivingTask.getInputChannels().values()) {
-        for (ConsumerChannel cc : c.getExchangeChannels()) {
-          consumerChannelMapping.putIfAbsent(cc.getExchangeChannelID(), cc);
-        }
-      }
+      HashSet<Consumer> consumerSet = new HashSet<Consumer>();
+      consumerSet.addAll(drivingTask.getInputChannels().values());
 
-      for (ExchangeChannelID producerID : drivingTask.getOutputChannels()) {
-        producerChannelMapping.put(producerID, new ProducerChannel(drivingTask, producerID));
+      for (final Consumer c : consumerSet) {
+        FlowControlBagInputBuffer<TupleBatch> inputBuffer =
+            new FlowControlBagInputBuffer<TupleBatch>(ownerWorker.getIPCConnectionPool(), c
+                .getInputChannelIDs(ownerWorker.getIPCConnectionPool().getMyIPCID()), ownerWorker
+                .getInputBufferCapacity(), ownerWorker.getInputBufferRecoverTrigger(), this.ownerWorker
+                .getIPCConnectionPool());
+
+        inputBuffer.addListener(FlowControlBagInputBuffer.NEW_INPUT_DATA, new IPCEventListener() {
+
+          @Override
+          public void triggered(final IPCEvent event) {
+            drivingTask.notifyNewInput();
+          }
+        });
+        c.setInputBuffer(inputBuffer);
       }
 
     }
 
-    final FlowControlHandler fch = ownerWorker.getFlowControlHandler();
-    for (ConsumerChannel cChannel : consumerChannelMapping.values()) {
-      // setup input buffers.
-      final Consumer operator = cChannel.getOwnerConsumer();
-
-      FlowControlInputBuffer<ExchangeData> inputBuffer =
-          new FlowControlInputBuffer<ExchangeData>(ownerWorker.getInputBufferCapacity());
-      inputBuffer.attach(operator.getOperatorID());
-      inputBuffer.addBufferFullListener(new IPCEventListener<FlowControlInputBuffer<ExchangeData>>() {
-        @Override
-        public void triggered(final IPCEvent<FlowControlInputBuffer<ExchangeData>> e) {
-          if (e.getAttachment().remainingCapacity() <= 0) {
-            fch.pauseRead(operator).awaitUninterruptibly();
-          }
-        }
-      });
-      inputBuffer.addBufferRecoverListener(new IPCEventListener<FlowControlInputBuffer<ExchangeData>>() {
-        @Override
-        public void triggered(final IPCEvent<FlowControlInputBuffer<ExchangeData>> e) {
-          if (e.getAttachment().remainingCapacity() > 0) {
-            fch.resumeRead(operator).awaitUninterruptibly();
-          }
-        }
-      });
-      inputBuffer.addBufferEmptyListener(new IPCEventListener<FlowControlInputBuffer<ExchangeData>>() {
-        @Override
-        public void triggered(final IPCEvent<FlowControlInputBuffer<ExchangeData>> e) {
-          if (e.getAttachment().remainingCapacity() > 0) {
-            fch.resumeRead(operator).awaitUninterruptibly();
-          }
-        }
-      });
-      operator.setInputBuffer(inputBuffer);
-    }
   }
 
   /**

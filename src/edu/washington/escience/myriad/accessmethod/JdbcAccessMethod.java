@@ -62,7 +62,7 @@ public final class JdbcAccessMethod implements AccessMethod {
       Class.forName(jdbcInfo.getDriverClass());
       jdbcConnection = DriverManager.getConnection(jdbcInfo.getConnectionString(), jdbcInfo.getProperties());
     } catch (ClassNotFoundException | SQLException e) {
-      LOGGER.error(e.getMessage());
+      LOGGER.error(e.getMessage(), e);
       throw new DbException(e);
     }
   }
@@ -76,7 +76,7 @@ public final class JdbcAccessMethod implements AccessMethod {
         jdbcConnection.setReadOnly(readOnly);
       }
     } catch (SQLException e) {
-      LOGGER.error(e.getMessage());
+      LOGGER.error(e.getMessage(), e);
       throw new DbException(e);
     }
   }
@@ -93,8 +93,8 @@ public final class JdbcAccessMethod implements AccessMethod {
       statement.executeBatch();
       statement.close();
     } catch (final SQLException e) {
-      LOGGER.error(e.getMessage());
-      throw new RuntimeException(e.getMessage());
+      LOGGER.error(e.getMessage(), e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -109,7 +109,7 @@ public final class JdbcAccessMethod implements AccessMethod {
 
       return new JdbcTupleBatchIterator(resultSet, Schema.fromResultSetMetaData(resultSetMetaData));
     } catch (final SQLException e) {
-      LOGGER.error(e.getMessage());
+      LOGGER.error(e.getMessage(), e);
       throw new DbException(e);
     }
   }
@@ -120,7 +120,7 @@ public final class JdbcAccessMethod implements AccessMethod {
     try {
       jdbcConnection.close();
     } catch (SQLException e) {
-      LOGGER.error(e.getMessage());
+      LOGGER.error(e.getMessage(), e);
       throw new DbException(e);
     }
   }
@@ -133,7 +133,7 @@ public final class JdbcAccessMethod implements AccessMethod {
       statement = jdbcConnection.createStatement();
       statement.execute(ddlCommand);
     } catch (SQLException e) {
-      LOGGER.error(e.getMessage());
+      LOGGER.error(e.getMessage(), e);
       throw new DbException(e);
     }
   }
@@ -281,8 +281,8 @@ class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
         }
       }
     } catch (final SQLException e) {
-      LOGGER.error("Got SQLException:" + e + "in JdbcTupleBatchIterator.next()");
-      throw new RuntimeException(e.getMessage());
+      LOGGER.error("Got SQLException:" + e + "in JdbcTupleBatchIterator.next()", e);
+      throw new RuntimeException(e);
     }
 
     List<Column<?>> columns = new ArrayList<Column<?>>(columnBuilders.size());

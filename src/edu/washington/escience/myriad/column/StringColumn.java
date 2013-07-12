@@ -21,6 +21,10 @@ import edu.washington.escience.myriad.util.TypeFunnel;
  * 
  */
 public final class StringColumn implements Column<String> {
+  /**
+   * 
+   */
+  private static final long serialVersionUID = 1L;
   /** Contains the packed character data. */
   private final String[] data;
   /** Number of elements in this column. */

@@ -2,8 +2,6 @@ package edu.washington.escience.myriad.parallel;
 
 import java.util.ArrayList;
 
-import org.jboss.netty.channel.Channel;
-
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.ExchangeTupleBatch;
 import edu.washington.escience.myriad.Schema;
@@ -11,7 +9,6 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.operator.IDBInput;
 import edu.washington.escience.myriad.operator.Merge;
 import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.util.IPCUtils;
 import gnu.trove.impl.unmodifiable.TUnmodifiableIntIntMap;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;
@@ -104,9 +101,8 @@ public class EOSController extends Producer {
       } else if (tmp >= 0) {
         zeroCol.set(numEOI[idbIdx][workerIdx], tmp + 1);
         if (tmp + 1 == eosZeroColValue) {
-          final Channel[] channels = super.getChannels();
-          for (Channel ch : channels) {
-            ch.write(IPCUtils.EOS); // directly emit an EOS makes more sense.
+          for (int j = 0; j < super.numChannels(); j++) {
+            super.channelEnds(j); // directly emit an EOS makes more sense.
           }
           isEOSSent = true;
           return;

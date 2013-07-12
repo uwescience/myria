@@ -1,5 +1,6 @@
 package edu.washington.escience.myriad;
 
+import java.io.Serializable;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Arrays;
@@ -29,6 +30,8 @@ import edu.washington.escience.myriad.column.IntColumn;
 import edu.washington.escience.myriad.column.LongColumn;
 import edu.washington.escience.myriad.column.StringColumn;
 import edu.washington.escience.myriad.parallel.PartitionFunction;
+import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
+import edu.washington.escience.myriad.util.IPCUtils;
 import edu.washington.escience.myriad.util.ImmutableBitSet;
 
 /**
@@ -37,14 +40,18 @@ import edu.washington.escience.myriad.util.ImmutableBitSet;
  * @author dhalperi
  * 
  */
-public class TupleBatch {
+public class TupleBatch implements Serializable {
+  /**
+   * 
+   */
+  private static final long serialVersionUID = 1L;
+
   /** The hard-coded number of tuples in a batch. */
   public static final int BATCH_SIZE = 10 * 1000;
   /** Class-specific magic number used to generate the hash code. */
   private static final int MAGIC_HASHCODE = 243;
   /** The hash function for this class. */
   private static final HashFunction HASH_FUNCTION = Hashing.murmur3_32(MAGIC_HASHCODE);
-
   /** Schema of tuples in this batch. */
   private final Schema schema;
   /** Tuple data stored as columns in this batch. */
@@ -55,6 +62,10 @@ public class TupleBatch {
   private final ImmutableBitSet validTuples;
   /** An ImmutableList<Integer> view of the indices of validTuples. */
   private int[] validIndices;
+  /**
+   * If this TB is an EOI TB.
+   * */
+  private final boolean isEOI;
 
   /** Identity mapping. */
   protected static final int[] IDENTITY_MAPPING;
@@ -74,18 +85,38 @@ public class TupleBatch {
    * @param columns contains the column-stored data. Must match schema.
    * @param validTuples BitSet determines which tuples are valid tuples in this batch.
    * @param validIndices valid tuple indices.
+   * @param isEOI eoi TB.
    */
   protected TupleBatch(final Schema schema, final ImmutableList<Column<?>> columns, final ImmutableBitSet validTuples,
-      final int[] validIndices) {
+      final int[] validIndices, final boolean isEOI) {
     /** For a private copy constructor, no data checks are needed. Checks are only needed in the public constructor. */
     this.schema = schema;
     this.columns = columns;
-
     numValidTuples = validTuples.cardinality();
-
     this.validTuples = validTuples;
-
     this.validIndices = validIndices;
+    this.isEOI = isEOI;
+  }
+
+  /**
+   * EOI TB constructor.
+   * 
+   * @param schema schema of the tuples in this batch. Must match columns.
+   * */
+  private TupleBatch(final Schema schema) {
+    validTuples = new ImmutableBitSet(new BitSet());
+    this.schema = schema;
+    numValidTuples = 0;
+    ImmutableList.Builder<Column<?>> b = ImmutableList.builder();
+    columns = b.build();
+    isEOI = true;
+  }
+
+  /**
+   * @return if this TB is compact.
+   * */
+  public final boolean isCompact() {
+    return validTuples.nextClearBit(0) == numValidTuples;
   }
 
   /**
@@ -95,11 +126,12 @@ public class TupleBatch {
    * @param columns contains the column-stored data. Must match schema.
    * @param validTuples BitSet determines which tuples are valid tuples in this batch.
    * @param validIndices valid tuple indices.
+   * @param isEOI if is EOI
    * @return shallow copy
    */
   protected TupleBatch shallowCopy(final Schema schema, final ImmutableList<Column<?>> columns,
-      final ImmutableBitSet validTuples, final int[] validIndices) {
-    return new TupleBatch(schema, columns, validTuples, validIndices);
+      final ImmutableBitSet validTuples, final int[] validIndices, final boolean isEOI) {
+    return new TupleBatch(schema, columns, validTuples, validIndices, isEOI);
   }
 
   /**
@@ -121,13 +153,14 @@ public class TupleBatch {
       this.columns = ImmutableList.copyOf(columns);
     }
     Preconditions.checkArgument(numTuples >= 0 && numTuples <= BATCH_SIZE,
-        "numTuples must be at least 1 and no more than TupleBatch.BATCH_SIZE");
+        "numTuples must be non negative and no more than TupleBatch.BATCH_SIZE");
     numValidTuples = numTuples;
     validIndices = Arrays.copyOfRange(IDENTITY_MAPPING, 0, numTuples);
     /* All tuples are valid */
     final BitSet tmp = new BitSet(numTuples);
     tmp.set(0, numTuples);
     validTuples = new ImmutableBitSet(tmp);
+    isEOI = false;
   }
 
   /**
@@ -150,6 +183,7 @@ public class TupleBatch {
     }
     numValidTuples = validTuples.cardinality();
     this.validTuples = validTuples;
+    isEOI = false;
   }
 
   /**
@@ -197,7 +231,7 @@ public class TupleBatch {
     }
 
     if (newValidTuples != null && newValidTuples.cardinality() != validTuples.cardinality()) {
-      return shallowCopy(schema, columns, new ImmutableBitSet(newValidTuples), null);
+      return shallowCopy(schema, columns, new ImmutableBitSet(newValidTuples), null, isEOI);
     }
 
     /* If no tuples are filtered, new TupleBatch instance is not needed */
@@ -436,6 +470,41 @@ public class TupleBatch {
   }
 
   /**
+   * Partition this TB using the partition function. The method is implemented by shallow copy of TupleBatches.
+   * 
+   * @return an array of TBs. The length of the array is the same as the number of partitions. If no tuple presents in a
+   *         partition, say the i'th partition, the i'th element in the result array is null.
+   * @param pf the partition function.
+   * */
+  public final TupleBatch[] partition(final PartitionFunction<?, ?> pf) {
+    TupleBatch[] result = new TupleBatch[pf.numPartition()];
+    if (isEOI) {
+      Arrays.fill(result, this);
+      return result;
+    }
+
+    final int[] partitions = pf.partition(this);
+    final int[] mapping = getValidIndices();
+
+    BitSet[] resultBitSet = new BitSet[result.length];
+    for (int i = 0; i < partitions.length; i++) {
+      int p = partitions[i];
+      int actualRow = mapping[i];
+      if (resultBitSet[p] == null) {
+        resultBitSet[p] = new BitSet(actualRow + 1);
+      }
+      resultBitSet[p].set(actualRow);
+    }
+
+    for (int i = 0; i < result.length; i++) {
+      if (resultBitSet[i] != null) {
+        result[i] = shallowCopy(schema, columns, new ImmutableBitSet(resultBitSet[i]), null, isEOI);
+      }
+    }
+    return result;
+  }
+
+  /**
    * Hash the valid tuples in this batch and partition them into the supplied TupleBatchBuffers. This is a useful helper
    * primitive for, e.g., the Scatter operator.
    * 
@@ -473,7 +542,7 @@ public class TupleBatch {
       newTypes.add(schema.getColumnType(i));
       newNames.add(schema.getColumnName(i));
     }
-    return shallowCopy(new Schema(newTypes, newNames), newColumns.build(), validTuples, validIndices);
+    return shallowCopy(new Schema(newTypes, newNames), newColumns.build(), validTuples, validIndices, isEOI);
   }
 
   /**
@@ -500,7 +569,7 @@ public class TupleBatch {
       newValidTuples.clear(mapping[i]);
     }
     if (newValidTuples.cardinality() != numValidTuples) {
-      return shallowCopy(schema, columns, new ImmutableBitSet(newValidTuples), null);
+      return shallowCopy(schema, columns, new ImmutableBitSet(newValidTuples), null, isEOI);
     } else {
       return this;
     }
@@ -508,6 +577,9 @@ public class TupleBatch {
 
   @Override
   public final String toString() {
+    if (isEOI) {
+      return "EOI";
+    }
     final List<Type> columnTypes = schema.getColumnTypes();
     final StringBuilder sb = new StringBuilder();
     for (final int i : getValidIndices()) {
@@ -535,12 +607,13 @@ public class TupleBatch {
       return validIndices;
     }
 
-    validIndices = new int[numValidTuples];
+    int[] validIndicesTmp = new int[numValidTuples];
     int i = 0;
     for (int valid = validTuples.nextSetBit(0); valid >= 0; valid = validTuples.nextSetBit(valid + 1)) {
-      validIndices[i] = valid;
+      validIndicesTmp[i] = valid;
       i++;
     }
+    validIndices = validIndicesTmp;
     return validIndices;
   }
 
@@ -580,4 +653,33 @@ public class TupleBatch {
     return true;
   }
 
+  /**
+   * @return a TransportMessage encoding the TupleBatch.
+   * */
+  public final TransportMessage toTransportMessage() {
+    if (isCompact()) {
+      return IPCUtils.normalDataMessage(columns, numValidTuples);
+    } else {
+      TupleBatchBuffer tbb = new TupleBatchBuffer(getSchema());
+      compactInto(tbb);
+      return IPCUtils.normalDataMessage(tbb.popAnyAsRawColumn(), numValidTuples);
+    }
+  }
+
+  /**
+   * Create an EOI TupleBatch.
+   * 
+   * @param schema schema.
+   * @return EOI TB for the schema.
+   * */
+  public static final TupleBatch eoiTupleBatch(final Schema schema) {
+    return new TupleBatch(schema);
+  }
+
+  /**
+   * @return if the TupleBatch is an EOI.
+   * */
+  public final boolean isEOI() {
+    return isEOI;
+  }
 }
