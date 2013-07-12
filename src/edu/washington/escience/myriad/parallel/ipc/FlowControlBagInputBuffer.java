@@ -82,8 +82,9 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
    * @param softCapacity soft upper bound of the buffer size.
    * 
    * */
-  public FlowControlBagInputBuffer(final IPCConnectionPool owner, final ImmutableSet<StreamIOChannelID> remoteChannelIDs,
-      final int softCapacity, final int recoverEventTrigger, final IPCConnectionPool ownerCP) {
+  public FlowControlBagInputBuffer(final IPCConnectionPool owner,
+      final ImmutableSet<StreamIOChannelID> remoteChannelIDs, final int softCapacity, final int recoverEventTrigger,
+      final IPCConnectionPool ownerCP) {
     super(owner, remoteChannelIDs);
     bufferEmptyListeners = new ConcurrentLinkedQueue<IPCEventListener>();
     bufferFullListeners = new ConcurrentLinkedQueue<IPCEventListener>();
@@ -94,6 +95,24 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
     this.recoverEventTrigger = recoverEventTrigger;
   }
 
+  @Override
+  public String toString() {
+    StringBuilder toStringBuilder = new StringBuilder();
+    toStringBuilder.append(this.getClass().getSimpleName());
+    toStringBuilder.append("[Processor: ");
+    toStringBuilder.append(getProcessor());
+    toStringBuilder.append("]");
+    toStringBuilder.append("InputChannels: {\n");
+    ImmutableSet<StreamIOChannelID> inputs = getSourceChannels();
+    for (StreamIOChannelID id : inputs) {
+      toStringBuilder.append("    ");
+      toStringBuilder.append(getInputChannel(id));
+      toStringBuilder.append("\n");
+    }
+    toStringBuilder.append("}");
+    return toStringBuilder.toString();
+  }
+
   /**
    * Resume the read of all IO channels that are inputs of this input buffer.
    * 
@@ -102,12 +121,7 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
   public ChannelGroupFuture resumeRead() {
 
     if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug("Resume read for operator {}, IO Channels are {", getProcessor());
-      for (final StreamIOChannelID inputID : getSourceChannels()) {
-        Channel ch = getInputChannel(inputID).getIOChannel();
-        LOGGER.debug("{}", ch);
-      }
-      LOGGER.debug("}");
+      LOGGER.debug(this.toString());
     }
 
     LinkedList<ChannelFuture> allResumeFutures = new LinkedList<ChannelFuture>();
@@ -142,14 +156,7 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
    * */
   public ChannelGroupFuture pauseRead() {
     if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug("Pause read for operator {}, IO Channels are {", getProcessor());
-      for (final StreamIOChannelID inputID : getSourceChannels()) {
-        Channel ch = getInputChannel(inputID).getIOChannel();
-        // here ch may be null, it means an EOS message is already received, the IO Channel is already detached from
-        // this ConsumerChannel. No flow control is needed. Just ignore it.
-        LOGGER.debug("{}", ch);
-      }
-      LOGGER.debug("}");
+      LOGGER.debug(this.toString());
     }
 
     LinkedList<ChannelFuture> allPauseFutures = new LinkedList<ChannelFuture>();
@@ -395,7 +402,7 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
   protected void fireBufferEmpty() {
     previousEvent = INPUT_BUFFER_EMPTY;
     if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace("Input buffer empty triggered", new ThreadStackDump());
+      LOGGER.trace("Input buffer empty triggered in " + this, new ThreadStackDump());
     }
     getOwnerConnectionPool().getIPCEventProcessor().execute(
         new OrderedExecutorService.KeyRunnable<StreamInputBuffer<PAYLOAD>>() {
@@ -423,7 +430,7 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
   protected void fireBufferFull() {
     previousEvent = INPUT_BUFFER_FULL;
     if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace("Input buffer full triggered", new ThreadStackDump());
+      LOGGER.trace("Input buffer full triggered in " + this, new ThreadStackDump());
     }
     getOwnerConnectionPool().getIPCEventProcessor().execute(
         new OrderedExecutorService.KeyRunnable<StreamInputBuffer<PAYLOAD>>() {
@@ -452,7 +459,7 @@ public final class FlowControlBagInputBuffer<PAYLOAD> extends BagInputBufferAdap
   protected void fireBufferRecover() {
     previousEvent = INPUT_BUFFER_RECOVER;
     if (LOGGER.isTraceEnabled()) {
-      LOGGER.trace("Input buffer recover triggered", new ThreadStackDump());
+      LOGGER.trace("Input buffer recover triggered in " + this, new ThreadStackDump());
     }
     getOwnerConnectionPool().getIPCEventProcessor().execute(
         new OrderedExecutorService.KeyRunnable<StreamInputBuffer<PAYLOAD>>() {

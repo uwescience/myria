@@ -607,12 +607,13 @@ public class TupleBatch implements Serializable {
       return validIndices;
     }
 
-    validIndices = new int[numValidTuples];
+    int[] validIndicesTmp = new int[numValidTuples];
     int i = 0;
     for (int valid = validTuples.nextSetBit(0); valid >= 0; valid = validTuples.nextSetBit(valid + 1)) {
-      validIndices[i] = valid;
+      validIndicesTmp[i] = valid;
       i++;
     }
+    validIndices = validIndicesTmp;
     return validIndices;
   }
 

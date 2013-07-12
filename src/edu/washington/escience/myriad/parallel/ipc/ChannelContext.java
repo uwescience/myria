@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myriad.util.IPCUtils;
+import edu.washington.escience.myriad.util.ThreadStackDump;
 
 /**
  * Recording the various context information of a channel. The most important part of this class is the state machine of
@@ -301,6 +302,9 @@ public class ChannelContext extends AttachmentableAdapter {
      * @return the new number of references.
      * */
     public final int incReference() {
+      if (LOGGER.isTraceEnabled()) {
+        LOGGER.trace("Inc reference for channel: " + ownerChannel, new ThreadStackDump());
+      }
       return numberOfReference.incrementAndGet();
     }
 
