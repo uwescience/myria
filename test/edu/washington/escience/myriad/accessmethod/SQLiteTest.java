@@ -1,6 +1,5 @@
 package edu.washington.escience.myriad.accessmethod;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -14,14 +13,12 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
-import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.systemtest.SystemTestBase;
@@ -35,7 +32,7 @@ public class SQLiteTest {
   private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(SQLiteTest.class);
 
   @Test
-  public void sqliteTest() throws DbException, IOException, CatalogException, InterruptedException {
+  public void sqliteTest() throws Exception {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
     Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
     final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
@@ -46,7 +43,7 @@ public class SQLiteTest {
     final String tempDirPath =
         Files.createTempDirectory(MyriaConstants.SYSTEM_NAME + "_SQLiteTest").toFile().getAbsolutePath();
     final String dbAbsolutePath = FilenameUtils.concat(tempDirPath, "sqlite_testtable.db");
-    SystemTestBase.createTable(dbAbsolutePath, testtableKey, "id long,name varchar(20)");
+    SQLiteUtils.createTable(dbAbsolutePath, testtableKey, "id long,name varchar(20)");
 
     final String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, 200, 20);
     final long[] ids = TestUtils.randomLong(1000, 1005, names.length);
