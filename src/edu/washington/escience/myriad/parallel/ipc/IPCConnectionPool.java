@@ -454,9 +454,8 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
    * @param payloadSerializer the payload serializer
    * @param mp short message processor
    * */
-  public IPCConnectionPool(final int myID,
-      final Map<Integer, SocketInfo> remoteAddresses// ,
-      , final ServerBootstrap serverBootstrap, final ClientBootstrap clientBootstrap,
+  public IPCConnectionPool(final int myID, final Map<Integer, SocketInfo> remoteAddresses,
+      final ServerBootstrap serverBootstrap, final ClientBootstrap clientBootstrap,
       final PayloadSerializer payloadSerializer, final ShortMessageProcessor<?> mp) {
     this.myID = myID;
     myIDMsg = new IPCMessage.Meta.CONNECT(myID);
