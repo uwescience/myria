@@ -19,7 +19,7 @@ public interface IPCMessage {
   }
 
   /**
-   * Meta IPCMessages, used inside the IPC module only.
+   * Meta IPCMessages, used inside the IPC module only. It has the following cases: EOS, BOS, CONNECT, DISCONNECT, PING.
    * */
   abstract class Meta implements IPCMessage {
 
@@ -217,7 +217,8 @@ public interface IPCMessage {
   /**
    * Unit of IPC transmission.
    * 
-   * @param <PAYLOAD> the type of payload.
+   * @param <PAYLOAD> the type of payload. Currently, this PAYLOAD could only be: TransportMessage.QUERY,
+   *          TransportMessage.CONTROL.
    * */
   public class Data<PAYLOAD> implements IPCMessage {
 
@@ -283,7 +284,7 @@ public interface IPCMessage {
   /**
    * Unit of IPC Stream.
    * 
-   * @param <PAYLOAD> the type of payload.
+   * @param <PAYLOAD> the type of payload. Currently, this PAYLOAD could only be TupleBatch.
    * */
   public final class StreamData<PAYLOAD> extends Data<PAYLOAD> {
 
@@ -330,7 +331,7 @@ public interface IPCMessage {
 
     /**
      * @param sourceRemote the source remote id.
-     * @param maybePayload either a paylod or a Data instance.
+     * @param maybePayload either a paylod or a StreamData instance.
      * @param <PAYLOAD> the payload type.
      * @param streamID stream ID.
      * @return the wrapped StreamData message.
