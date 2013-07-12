@@ -75,6 +75,11 @@ public final class MyriaConstants {
   public static final String EXEC_ENV_VAR_SQLITE_FILE = "sqliteFile";
 
   /**
+   * Vertica storage.
+   * */
+  public static final String STORAGE_SYSTEM_VERTICA = "vertica";
+
+  /**
    * Monetdb storage.
    * */
   public static final String STORAGE_SYSTEM_MONETDB = "monetdb";
