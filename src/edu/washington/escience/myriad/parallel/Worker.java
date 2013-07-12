@@ -649,6 +649,9 @@ public final class Worker {
       case MyriaConstants.STORAGE_SYSTEM_MONETDB:
         /* TODO fill this in. */
         break;
+      case MyriaConstants.STORAGE_SYSTEM_VERTICA:
+        /* TODO fill this in if necessary. */
+        break;
       default:
         throw new CatalogException("Unknown worker type: " + databaseType);
     }

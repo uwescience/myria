@@ -20,11 +20,7 @@ import edu.washington.escience.myriad.operator.JdbcInsert;
 import edu.washington.escience.myriad.operator.JdbcQueryScan;
 import edu.washington.escience.myriad.operator.TupleSource;
 
-/**
- * @author dhalperi
- * 
- */
-public class MonetDbJdbcAccessMethodTest {
+public class VerticaJdbcAccessMethodTest {
 
   /* Test data */
   private TupleBatchBuffer buffer;
@@ -33,13 +29,13 @@ public class MonetDbJdbcAccessMethodTest {
   private final static int NUM_TUPLES = 2 * TupleBatch.BATCH_SIZE + 1;
 
   /* Connection information */
-  private final String host = "54.245.108.198";
-  private final int port = 50000;
-  private final String user = "myria";
-  private final String password = "nays26[shark";
-  private final String dbms = MyriaConstants.STORAGE_SYSTEM_MONETDB;
-  private final String databaseName = "myria-test";
-  private final String jdbcDriverName = "nl.cwi.monetdb.jdbc.MonetDriver";
+  private final String host = "dbserver01.cs.washington.edu";
+  private final int port = 15433;
+  private final String user = "dbadmin";
+  private final String password = "mrbenchmarks";
+  private final String dbms = MyriaConstants.STORAGE_SYSTEM_VERTICA;
+  private final String databaseName = "mrbenchmarks";
+  private final String jdbcDriverName = "com.vertica.jdbc.Driver";
   private final JdbcInfo jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, databaseName, user, password);
 
   @Before

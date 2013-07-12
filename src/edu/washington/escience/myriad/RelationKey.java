@@ -118,9 +118,15 @@ public final class RelationKey implements Serializable {
       case MyriaConstants.STORAGE_SYSTEM_MYSQL:
         return toString('[', '#', ']');
       case MyriaConstants.STORAGE_SYSTEM_MONETDB:
+      case MyriaConstants.STORAGE_SYSTEM_VERTICA:
         return toString('\"', ' ', '\"');
       default:
         throw new IllegalArgumentException("Unsupported dbms " + dbms);
     }
+  }
+
+  public static void main(String[] args) {
+    RelationKey r = RelationKey.of("test", "prog", "tablename");
+    System.out.println(r.toString(MyriaConstants.STORAGE_SYSTEM_VERTICA));
   }
 }

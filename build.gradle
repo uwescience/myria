@@ -57,6 +57,13 @@ tasks.eclipseClasspath.dependsOn cleanEclipseClasspath
 repositories {
   mavenCentral() /* The standard Java Maven repository. */
   maven { url "http://clojars.org/repo" } /* Clojars, for MonetDB */
+  flatDir {
+    name 'localRepository'
+  }
+}
+
+repositories.localRepository {
+  dirs './lib'
 }
 
 /* List constants that we use in multiple places. */
@@ -91,6 +98,8 @@ dependencies {
 
   runtime "monetdb:monetdb-jdbc:2.8"
   runtime "mysql:mysql-connector-java:5.1.24"
+  runtime "vertica:vertica-jdk5:6.1.2-0"
+
 
   testCompile "junit:junit:4.11"
 
