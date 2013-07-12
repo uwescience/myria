@@ -46,7 +46,7 @@ public class SimpleBagInputBuffer<PAYLOAD> extends BagInputBufferAdapter<PAYLOAD
   };
 
   /**
-   * Fire a buffer empty event. All the buffer empty event listeners will be notified.
+   * Fire a new input event. All the new arrival event listeners will be notified.
    * 
    * New input event listeners are executed by trigger threads.
    * */

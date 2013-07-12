@@ -178,7 +178,7 @@ public class OrderedExecutorService<KEY> extends ThreadPoolExecutor {
   /**
    * @return key -> pseudo executor map.
    * */
-  protected ConcurrentMap<Object, Executor> newChildExecutorMap() {
+  protected final ConcurrentMap<Object, Executor> newChildExecutorMap() {
     return new ConcurrentIdentityWeakKeyHashMap<Object, Executor>();
   }
 

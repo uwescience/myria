@@ -327,7 +327,7 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
       } else {
         codedMsg =
             ChannelBuffers.wrappedBuffer(IPCMessage.Data.SERIALIZE_HEAD, ownerConnectionPool.getPayloadSerializer()
-                .serialize(e.getMessage()));
+                .serialize(m));
       }
       ctx.sendDownstream(new DownstreamMessageEvent(ch, e.getFuture(), codedMsg, e.getRemoteAddress()));
     }
