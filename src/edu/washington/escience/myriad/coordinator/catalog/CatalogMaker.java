@@ -230,8 +230,7 @@ public final class CatalogMaker {
       MyriaSystemConfigKeys.addDefaultConfigKeys(configurationValues);
 
       /* Three worker-specific values. */
-
-      String description = config.get("deployment").get("description");
+      String description = config.get("deployment").get("name");
       String sqliteDbName = "";
       if (description != null) {
         sqliteDbName = FilenameUtils.concat(description, "worker_" + workerId);
