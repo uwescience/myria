@@ -35,8 +35,9 @@ public final class DeploymentUtils {
     if (args.length != 2) {
       System.out.println(USAGE);
     }
+    final String configFileName = args[0];
 
-    Map<String, HashMap<String, String>> config = READER.load(args[0]);
+    Map<String, HashMap<String, String>> config = READER.load(configFileName);
     String description = config.get("deployment").get("name");
     String username = config.get("deployment").get("username");
 
@@ -80,6 +81,8 @@ public final class DeploymentUtils {
         rsyncFileToRemote("libs", hostname, remotePath);
         rsyncFileToRemote("conf", hostname, remotePath);
         rsyncFileToRemote("sqlite4java-282", hostname, remotePath);
+        // server needs the config file to create catalogs for new workers
+        rsyncFileToRemote(configFileName, hostname, remotePath);
       }
       HashMap<String, String> workers = config.get("workers");
       for (String workerId : workers.keySet()) {
