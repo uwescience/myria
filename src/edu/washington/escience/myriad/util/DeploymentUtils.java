@@ -150,7 +150,7 @@ public final class DeploymentUtils {
     builder.append("ssh " + address);
     builder.append(" cd " + workingDir + "/" + description + "-files;");
     builder.append(" nohup java -cp 'libs/*'");
-    builder.append(" -Djava.util.logging.config.file=conf/logging.properties");
+    builder.append(" -Djava.util.logging.config.file=logging.properties");
     builder.append(" -Dlog4j.configuration=log4j.properties");
     builder.append(" -Djava.library.path=sqlite4java-282");
     builder.append(" " + maxHeapSize);
@@ -179,7 +179,7 @@ public final class DeploymentUtils {
     builder.append("ssh " + address);
     builder.append(" cd " + workingDir + "/" + description + "-files;");
     builder.append(" nohup java -cp 'libs/*'");
-    builder.append(" -Djava.util.logging.config.file=conf/logging.properties");
+    builder.append(" -Djava.util.logging.config.file=logging.properties");
     builder.append(" -Dlog4j.configuration=log4j.properties");
     builder.append(" -Djava.library.path=sqlite4java-282");
     builder.append(" " + maxHeapSize);
