@@ -55,6 +55,8 @@ public final class DeploymentUtils {
         String localPath = description + "/" + "master.catalog";
         mkdir(hostname, remotePath);
         rsyncFileToRemote(localPath, hostname, remotePath);
+        rmFile(hostname, remotePath + "/master.catalog-shm");
+        rmFile(hostname, remotePath + "/master.catalog-wal");
       }
     } else if (action.equals("-copy_worker_catalogs")) {
       HashMap<String, String> workers = config.get("workers");
@@ -68,6 +70,8 @@ public final class DeploymentUtils {
         String localPath = description + "/" + "worker_" + workerId;
         mkdir(hostname, remotePath);
         rsyncFileToRemote(localPath, hostname, remotePath);
+        rmFile(hostname, remotePath + "/worker.catalog-shm");
+        rmFile(hostname, remotePath + "/worker.catalog-wal");
       }
     } else if (action.equals("-copy_distribution")) {
       String workingDir = config.get("deployment").get("path");
@@ -248,6 +252,21 @@ public final class DeploymentUtils {
     builder.append(" -aLvz");
     builder.append(" " + localPath);
     builder.append(" " + address + ":" + remotePath);
+    startAProcess(builder.toString());
+  }
+
+  /**
+   * Remove a file on a remote machine.
+   * 
+   * @param address e.g. beijing.cs.washington.edu.
+   * @param path the path to the file.
+   */
+  public static void rmFile(final String address, final String path) {
+    StringBuilder builder = new StringBuilder();
+    builder.append("ssh");
+    builder.append(" " + address);
+    builder.append(" rm -rf");
+    builder.append(" " + path);
     startAProcess(builder.toString());
   }
 
