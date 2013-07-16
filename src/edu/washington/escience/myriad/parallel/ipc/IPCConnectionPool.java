@@ -1,5 +1,6 @@
 package edu.washington.escience.myriad.parallel.ipc;
 
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.Arrays;
@@ -851,13 +852,19 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
     if (remoteIDP == SELF_IPC_ID) {
       remoteID = myID;
     }
-    final IPCRemote remote = channelPool.get(remoteID);
+    IPCRemote remote = channelPool.get(remoteID);
     if (remote == null) {
       final String msg = "Unknown remote, id: " + remoteID + " address: " + channel.getRemoteAddress();
       if (LOGGER.isWarnEnabled()) {
         LOGGER.warn(msg);
       }
-      throw new IllegalStateException(msg);
+      /*
+       * instead of throwing IllegalStateException, it is allowed to have an unknown remote now. Add it into
+       * connectionPool by putRemote() then get remote.
+       */
+      InetSocketAddress tmp = (InetSocketAddress) (channel.getRemoteAddress());
+      putRemote(remoteIDP, new SocketInfo(tmp.getAddress().toString(), tmp.getPort()));
+      remote = channelPool.get(remoteID);
     }
 
     if (channel.getParent() != serverChannel) {

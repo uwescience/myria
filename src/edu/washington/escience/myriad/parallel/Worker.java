@@ -112,6 +112,9 @@ public final class Worker {
                 case REMOVE_WORKER:
                   connectionPool.removeRemote(cm.getWorkerId()).await();
                   break;
+                case ADD_WORKER:
+                  connectionPool.putRemote(cm.getWorkerId(), SocketInfo.fromProtobuf(cm.getRemoteAddress()));
+                  break;
                 default:
                   if (LOGGER.isErrorEnabled()) {
                     LOGGER.error("Unexpected control message received at worker: " + cm.getType());

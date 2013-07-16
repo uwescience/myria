@@ -93,6 +93,14 @@ public final class Server {
             switch (controlM.getType()) {
               case WORKER_HEARTBEAT:
                 LOGGER.debug("getting heartbeat from worker " + senderID);
+                if (scheduledWorkers.containsKey(senderID)) {
+                  SocketInfo newWorker = scheduledWorkers.get(senderID);
+                  scheduledWorkers.remove(senderID);
+                  connectionPool.putRemote(senderID, newWorker);
+                  for (int aliveWorkerId : aliveWorkers.keySet()) {
+                    connectionPool.sendShortMessage(aliveWorkerId, IPCUtils.addWorkerTM(senderID, newWorker));
+                  }
+                }
                 aliveWorkers.put(senderID, System.currentTimeMillis());
                 break;
               default:
@@ -490,7 +498,65 @@ public final class Server {
           for (int aliveWorkerId : aliveWorkers.keySet()) {
             connectionPool.sendShortMessage(aliveWorkerId, IPCUtils.removeWorkerTM(workerId));
           }
+
+          /* start a thread to launch the new worker. */
+          new Thread(new NewWorkerScheduler(newWorkerId, newAddress, newPort)).start();
+
+          // TODO: let SPs resend buffered data
         }
+      }
+    }
+  }
+
+  /** The reader. */
+  private static final MyriaConfigurationReader READER = new MyriaConfigurationReader();
+
+  /**
+   * The class to launch a new worker during recovery.
+   */
+  class NewWorkerScheduler implements Runnable {
+    /** the new worker's worker id. */
+    private final int workerId;
+    /** the new worker's port number id. */
+    private final int port;
+    /** the new worker's hostname. */
+    private final String address;
+
+    /**
+     * constructor.
+     * 
+     * @param workerId worker id.
+     * @param address hostname.
+     * @param port port number.
+     */
+    NewWorkerScheduler(final int workerId, final String address, final int port) {
+      this.workerId = workerId;
+      this.address = address;
+      this.port = port;
+    }
+
+    @Override
+    public void run() {
+      try {
+        final String temp = Files.createTempDirectory(null).toAbsolutePath().toString();
+        Map<String, String> tmpMap = Collections.emptyMap();
+        String configFileName = catalog.getConfigurationValue(MyriaSystemConfigKeys.CONFIG_FILE);
+        Map<String, HashMap<String, String>> config = READER.load(configFileName);
+        CatalogMaker.makeOneWorkerCatalog(workerId + "", temp, config, tmpMap, true);
+
+        final String workingDir = config.get("paths").get(workerId + "");
+        final String description = catalog.getConfigurationValue(MyriaSystemConfigKeys.DESCRIPTION);
+        final String remotePath = workingDir + "/" + description + "-files/" + description;
+        DeploymentUtils.mkdir(address, remotePath);
+        String localPath = temp + "/" + "worker_" + workerId;
+        DeploymentUtils.rsyncFileToRemote(localPath, address, remotePath);
+        final String maxHeapSize = catalog.getConfigurationValue(MyriaSystemConfigKeys.MAX_HEAP_SIZE);
+        LOGGER.info("starting new worker " + address + ":" + port + ".");
+        DeploymentUtils.startWorker(address, workingDir, description, maxHeapSize, workerId + "");
+      } catch (CatalogException e) {
+        throw new RuntimeException(e);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
       }
     }
   }
