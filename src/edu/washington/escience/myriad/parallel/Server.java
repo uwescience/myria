@@ -454,16 +454,11 @@ public final class Server {
    * */
   public class WorkerLivenessChecker extends TimerTask {
 
-    /** How long do we wait for next check, in milliseconds. */
-    public static final long INTERVAL = 1000;
-    /** How long do we treat a worker as dead, in milliseconds. */
-    public static final long WORKER_IS_DEAD_INTERVAL = 5000;
-
     @Override
     public final synchronized void run() {
       long currentTime = System.currentTimeMillis();
       for (Integer workerId : aliveWorkers.keySet()) {
-        if (currentTime - aliveWorkers.get(workerId) >= WORKER_IS_DEAD_INTERVAL) {
+        if (currentTime - aliveWorkers.get(workerId) >= MyriaConstants.WORKER_IS_DEAD_INTERVAL) {
           /* scheduleAtFixedRate() is not accurate at all, use isRemoteAlive() to make sure the connection is lost. */
           if (connectionPool.isRemoteAlive(workerId)) {
             continue;
@@ -677,8 +672,9 @@ public final class Server {
 
     scheduledTaskExecutor.scheduleAtFixedRate(new DebugHelper(), DebugHelper.INTERVAL, DebugHelper.INTERVAL,
         TimeUnit.MILLISECONDS);
-    scheduledTaskExecutor.scheduleAtFixedRate(new WorkerLivenessChecker(), WorkerLivenessChecker.INTERVAL,
-        WorkerLivenessChecker.INTERVAL, TimeUnit.MILLISECONDS);
+    scheduledTaskExecutor.scheduleAtFixedRate(new WorkerLivenessChecker(),
+        MyriaConstants.WORKER_LIVENESS_CHECKER_INTERVAL, MyriaConstants.WORKER_LIVENESS_CHECKER_INTERVAL,
+        TimeUnit.MILLISECONDS);
 
     messageProcessingExecutor = Executors.newCachedThreadPool(new RenamingThreadFactory("Master message processor"));
     serverQueryExecutor = Executors.newCachedThreadPool(new RenamingThreadFactory("Master query executor"));

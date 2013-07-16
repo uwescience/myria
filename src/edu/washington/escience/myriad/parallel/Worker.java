@@ -799,15 +799,11 @@ public final class Worker {
     // is still running. IF the server goes down, the
     // worker will stop itself
     scheduledTaskExecutor = Executors.newScheduledThreadPool(2, new RenamingThreadFactory("Worker global timer"));
-    scheduledTaskExecutor.scheduleAtFixedRate(new ShutdownChecker(), SHUTDOWN_CHECKER_INTERVAL_MS,
-        SHUTDOWN_CHECKER_INTERVAL_MS, TimeUnit.MILLISECONDS);
-    scheduledTaskExecutor.scheduleAtFixedRate(new HeartbeatReporter(), 0, HEARTBEAT_INTERVAL, TimeUnit.MILLISECONDS);
+    scheduledTaskExecutor.scheduleAtFixedRate(new ShutdownChecker(), MyriaConstants.WORKER_SHUTDOWN_CHECKER_INTERVAL,
+        MyriaConstants.WORKER_SHUTDOWN_CHECKER_INTERVAL, TimeUnit.MILLISECONDS);
+    scheduledTaskExecutor.scheduleAtFixedRate(new HeartbeatReporter(), 0, MyriaConstants.HEARTBEAT_INTERVAL,
+        TimeUnit.MILLISECONDS);
   }
-
-  /** The time interval in milliseconds for check if the worker should be shutdown. */
-  static final int SHUTDOWN_CHECKER_INTERVAL_MS = 1000;
-  /** Time interval between two heartbeats. */
-  static final int HEARTBEAT_INTERVAL = 1000;
 
   /**
    * @param configKey config key.
