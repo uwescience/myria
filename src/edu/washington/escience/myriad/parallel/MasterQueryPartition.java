@@ -75,7 +75,6 @@ public class MasterQueryPartition implements QueryPartition {
 
               // if any worker fails because of some exception, kill the query.
               kill();
-
             }
           }
           if (current >= total) {
