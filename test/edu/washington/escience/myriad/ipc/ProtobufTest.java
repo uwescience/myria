@@ -617,7 +617,7 @@ public class ProtobufTest {
     final AtomicInteger numSent = new AtomicInteger();
     try {
       for (int i = 0; i < numTuplesEach; i++) {
-        connectionPool.sendShortMessage(serverID, IPCUtils.CONTROL_WORKER_ALIVE);
+        connectionPool.sendShortMessage(serverID, IPCUtils.CONTROL_WORKER_HEARTBEAT);
         numSent.incrementAndGet();
       }
     } finally {
@@ -636,7 +636,7 @@ public class ProtobufTest {
       }
       TransportMessage tm = tmw.getPayload();
       if (tm.getType() == TransportMessage.Type.CONTROL
-          && tm.getControlMessage().getType() == ControlMessage.Type.WORKER_ALIVE) {
+          && tm.getControlMessage().getType() == ControlMessage.Type.WORKER_HEARTBEAT) {
         numReceived++;
       }
     }

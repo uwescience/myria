@@ -46,11 +46,11 @@ public final class ControlProto {
     public enum Type
         implements com.google.protobuf.ProtocolMessageEnum {
       SHUTDOWN(0, 3),
-      WORKER_ALIVE(1, 5),
+      WORKER_HEARTBEAT(1, 5),
       ;
       
       public static final int SHUTDOWN_VALUE = 3;
-      public static final int WORKER_ALIVE_VALUE = 5;
+      public static final int WORKER_HEARTBEAT_VALUE = 5;
       
       
       public final int getNumber() { return value; }
@@ -58,7 +58,7 @@ public final class ControlProto {
       public static Type valueOf(int value) {
         switch (value) {
           case 3: return SHUTDOWN;
-          case 5: return WORKER_ALIVE;
+          case 5: return WORKER_HEARTBEAT;
           default: return null;
         }
       }
@@ -89,7 +89,7 @@ public final class ControlProto {
       }
       
       private static final Type[] VALUES = {
-        SHUTDOWN, WORKER_ALIVE, 
+        SHUTDOWN, WORKER_HEARTBEAT, 
       };
       
       public static Type valueOf(
@@ -446,11 +446,11 @@ public final class ControlProto {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\rcontrol.proto\"\\\n\016ControlMessage\022\"\n\004typ" +
-      "e\030\001 \002(\0162\024.ControlMessage.Type\"&\n\004Type\022\014\n" +
-      "\010SHUTDOWN\020\003\022\020\n\014WORKER_ALIVE\020\005B4\n$edu.was" +
-      "hington.escience.myriad.protoB\014ControlPr" +
-      "oto"
+      "\n\rcontrol.proto\"`\n\016ControlMessage\022\"\n\004typ" +
+      "e\030\001 \002(\0162\024.ControlMessage.Type\"*\n\004Type\022\014\n" +
+      "\010SHUTDOWN\020\003\022\024\n\020WORKER_HEARTBEAT\020\005B4\n$edu" +
+      ".washington.escience.myriad.protoB\014Contr" +
+      "olProto"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {

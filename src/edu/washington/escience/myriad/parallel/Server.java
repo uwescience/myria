@@ -87,7 +87,7 @@ public final class Server {
           case CONTROL:
             final ControlMessage controlM = m.getControlMessage();
             switch (controlM.getType()) {
-              case WORKER_ALIVE:
+              case WORKER_HEARTBEAT:
                 aliveWorkers.add(senderID);
                 break;
               default:

@@ -3,9 +3,8 @@ option java_outer_classname = "ControlProto";
 
 message ControlMessage {
   enum Type {
-    
     SHUTDOWN = 3; // master -> workers
-    WORKER_ALIVE = 5; // worker -> master
+    WORKER_HEARTBEAT = 5; // worker -> master
   }
 
   required ControlMessage.Type type = 1;		// See enum above

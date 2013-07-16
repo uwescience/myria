@@ -125,10 +125,10 @@ public final class IPCUtils {
       TransportMessage.Type.CONTROL).setControlMessage(
       ControlMessage.newBuilder().setType(ControlMessage.Type.SHUTDOWN)).build();
 
-  /** Control message sent from a worker to tell the master that it is alive. */
-  public static final TransportMessage CONTROL_WORKER_ALIVE = TransportMessage.newBuilder().setType(
+  /** Heartbeat message sent from a worker to tell the master that it is alive. */
+  public static final TransportMessage CONTROL_WORKER_HEARTBEAT = TransportMessage.newBuilder().setType(
       TransportMessage.Type.CONTROL).setControlMessage(
-      ControlMessage.newBuilder().setType(ControlMessage.Type.WORKER_ALIVE)).build();
+      ControlMessage.newBuilder().setType(ControlMessage.Type.WORKER_HEARTBEAT)).build();
 
   /**
    * @param queryId .

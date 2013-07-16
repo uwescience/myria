@@ -11,7 +11,7 @@ from google.protobuf import descriptor_pb2
 DESCRIPTOR = descriptor.FileDescriptor(
   name='control.proto',
   package='',
-  serialized_pb='\n\rcontrol.proto\"\\\n\x0e\x43ontrolMessage\x12\"\n\x04type\x18\x01 \x02(\x0e\x32\x14.ControlMessage.Type\"&\n\x04Type\x12\x0c\n\x08SHUTDOWN\x10\x03\x12\x10\n\x0cWORKER_ALIVE\x10\x05\x42\x34\n$edu.washington.escience.myriad.protoB\x0c\x43ontrolProto')
+  serialized_pb='\n\rcontrol.proto\"`\n\x0e\x43ontrolMessage\x12\"\n\x04type\x18\x01 \x02(\x0e\x32\x14.ControlMessage.Type\"*\n\x04Type\x12\x0c\n\x08SHUTDOWN\x10\x03\x12\x14\n\x10WORKER_HEARTBEAT\x10\x05\x42\x34\n$edu.washington.escience.myriad.protoB\x0c\x43ontrolProto')
 
 
 
@@ -26,14 +26,14 @@ _CONTROLMESSAGE_TYPE = descriptor.EnumDescriptor(
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='WORKER_ALIVE', index=1, number=5,
+      name='WORKER_HEARTBEAT', index=1, number=5,
       options=None,
       type=None),
   ],
   containing_type=None,
   options=None,
   serialized_start=71,
-  serialized_end=109,
+  serialized_end=113,
 )
 
 
@@ -62,7 +62,7 @@ _CONTROLMESSAGE = descriptor.Descriptor(
   is_extendable=False,
   extension_ranges=[],
   serialized_start=17,
-  serialized_end=109,
+  serialized_end=113,
 )
 
 _CONTROLMESSAGE.fields_by_name['type'].enum_type = _CONTROLMESSAGE_TYPE
