@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.nio.file.Files;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -37,6 +38,7 @@ import edu.washington.escience.myriad.MyriaSystemConfigKeys;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
+import edu.washington.escience.myriad.coordinator.catalog.CatalogMaker;
 import edu.washington.escience.myriad.coordinator.catalog.MasterCatalog;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.RootOperator;
@@ -50,7 +52,9 @@ import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myriad.proto.QueryProto.QueryMessage;
 import edu.washington.escience.myriad.proto.QueryProto.QueryReport;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
+import edu.washington.escience.myriad.tool.MyriaConfigurationReader;
 import edu.washington.escience.myriad.util.DateTimeUtils;
+import edu.washington.escience.myriad.util.DeploymentUtils;
 import edu.washington.escience.myriad.util.IPCUtils;
 import edu.washington.escience.myriad.util.MyriaUtils;
 
@@ -88,7 +92,8 @@ public final class Server {
             final ControlMessage controlM = m.getControlMessage();
             switch (controlM.getType()) {
               case WORKER_HEARTBEAT:
-                aliveWorkers.add(senderID);
+                LOGGER.debug("getting heartbeat from worker " + senderID);
+                aliveWorkers.put(senderID, System.currentTimeMillis());
                 break;
               default:
                 if (LOGGER.isErrorEnabled()) {
@@ -164,7 +169,12 @@ public final class Server {
   /**
    * Current alive worker set.
    * */
-  private final Set<Integer> aliveWorkers;
+  private final ConcurrentHashMap<Integer, Long> aliveWorkers;
+
+  /**
+   * Scheduled new workers, when a scheduled worker sends the first heartbeat, it'll be removed from this set.
+   * */
+  private final ConcurrentHashMap<Integer, SocketInfo> scheduledWorkers;
 
   /**
    * Execution environment variables for operators.
@@ -371,7 +381,9 @@ public final class Server {
       execEnvVars.put(cE.getKey(), cE.getValue());
     }
 
-    aliveWorkers = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
+    aliveWorkers = new ConcurrentHashMap<Integer, Long>();
+    scheduledWorkers = new ConcurrentHashMap<Integer, SocketInfo>();
+
     activeQueries = new ConcurrentHashMap<Long, MasterQueryPartition>();
 
     messageQueue = new LinkedBlockingQueue<IPCMessage.Data<TransportMessage>>();
@@ -429,6 +441,61 @@ public final class Server {
   }
 
   /**
+   * Check worker livenesses periodically. If a worker is detected as dead, its queries will be notified, it will be
+   * removed from connection pools, and a new worker will be scheduled.
+   * */
+  public class WorkerLivenessChecker extends TimerTask {
+
+    /** How long do we wait for next check, in milliseconds. */
+    public static final long INTERVAL = 1000;
+    /** How long do we treat a worker as dead, in milliseconds. */
+    public static final long WORKER_IS_DEAD_INTERVAL = 5000;
+
+    @Override
+    public final synchronized void run() {
+      long currentTime = System.currentTimeMillis();
+      for (Integer workerId : aliveWorkers.keySet()) {
+        if (currentTime - aliveWorkers.get(workerId) >= WORKER_IS_DEAD_INTERVAL) {
+          /* scheduleAtFixedRate() is not accurate at all, use isRemoteAlive() to make sure the connection is lost. */
+          if (connectionPool.isRemoteAlive(workerId)) {
+            continue;
+          }
+
+          LOGGER.info("worker " + workerId + " doesn't have heartbeats, treat it as dead.");
+          aliveWorkers.remove(workerId);
+
+          for (long queryId : activeQueries.keySet()) {
+            MasterQueryPartition mqp = activeQueries.get(queryId);
+            /* for each alive query that the failed worker is assigned to, tell the query that the worker failed. */
+            if (mqp.getWorkerAssigned().contains(workerId)) {
+              mqp.workerFail(workerId, new LostHeartbeatException());
+            }
+          }
+
+          /* Temporary solution: using exactly the same hostname:port. One good thing is the data is still there. */
+          /* Temporary solution: using exactly the same worker id. */
+          String newAddress = workers.get(workerId).getHost();
+          int newPort = workers.get(workerId).getPort();
+          int newWorkerId = workerId;
+
+          /* a new worker will be launched, put its information in scheduledWorkers. */
+          scheduledWorkers.put(newWorkerId, new SocketInfo(newAddress, newPort));
+          try {
+            /* remove the failed worker from the connectionPool. */
+            connectionPool.removeRemote(workerId).await();
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+          }
+          /* tell other workers to remove it too. */
+          for (int aliveWorkerId : aliveWorkers.keySet()) {
+            connectionPool.sendShortMessage(aliveWorkerId, IPCUtils.removeWorkerTM(workerId));
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * Master cleanup.
    * */
   private void cleanup() {
@@ -441,7 +508,7 @@ public final class Server {
     messageProcessingExecutor.shutdownNow();
     scheduledTaskExecutor.shutdownNow();
     if (!connectionPool.isShutdown()) {
-      for (final Integer workerId : aliveWorkers) {
+      for (final Integer workerId : aliveWorkers.keySet()) {
         SocketInfo workerAddr = workers.get(workerId);
         if (LOGGER.isInfoEnabled()) {
           LOGGER.info("Shutting down #{} : {}", workerId, workerAddr);
@@ -503,7 +570,7 @@ public final class Server {
     mqp.queryReceivedByWorker(MyriaConstants.MASTER_ID);
     for (final Map.Entry<Integer, RootOperator[]> e : mqp.getWorkerPlans().entrySet()) {
       final Integer workerID = e.getKey();
-      while (!aliveWorkers.contains(workerID)) {
+      while (!aliveWorkers.containsKey(workerID)) {
         try {
           Thread.sleep(MyriaConstants.SHORT_WAITING_INTERVAL_MS);
         } catch (InterruptedException e1) {
@@ -544,6 +611,8 @@ public final class Server {
 
     scheduledTaskExecutor.scheduleAtFixedRate(new DebugHelper(), DebugHelper.INTERVAL, DebugHelper.INTERVAL,
         TimeUnit.MILLISECONDS);
+    scheduledTaskExecutor.scheduleAtFixedRate(new WorkerLivenessChecker(), WorkerLivenessChecker.INTERVAL,
+        WorkerLivenessChecker.INTERVAL, TimeUnit.MILLISECONDS);
 
     messageProcessingExecutor = Executors.newCachedThreadPool(new RenamingThreadFactory("Master message processor"));
     serverQueryExecutor = Executors.newCachedThreadPool(new RenamingThreadFactory("Master query executor"));
@@ -738,7 +807,7 @@ public final class Server {
    * @return the set of workers that are currently alive.
    */
   public Set<Integer> getAliveWorkers() {
-    return ImmutableSet.copyOf(aliveWorkers);
+    return ImmutableSet.copyOf(aliveWorkers.keySet());
   }
 
   /**
