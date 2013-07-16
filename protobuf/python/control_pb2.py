@@ -11,7 +11,7 @@ from google.protobuf import descriptor_pb2
 DESCRIPTOR = descriptor.FileDescriptor(
   name='control.proto',
   package='',
-  serialized_pb='\n\rcontrol.proto\"`\n\x0e\x43ontrolMessage\x12\"\n\x04type\x18\x01 \x02(\x0e\x32\x14.ControlMessage.Type\"*\n\x04Type\x12\x0c\n\x08SHUTDOWN\x10\x03\x12\x14\n\x10WORKER_HEARTBEAT\x10\x05\x42\x34\n$edu.washington.escience.myriad.protoB\x0c\x43ontrolProto')
+  serialized_pb='\n\rcontrol.proto\"\xbb\x01\n\x0e\x43ontrolMessage\x12\"\n\x04type\x18\x01 \x02(\x0e\x32\x14.ControlMessage.Type\x12\x11\n\tworker_id\x18\x02 \x01(\x05\x12#\n\x0eremote_address\x18\x03 \x01(\x0b\x32\x0b.SocketInfo\"M\n\x04Type\x12\x0c\n\x08SHUTDOWN\x10\x01\x12\x14\n\x10WORKER_HEARTBEAT\x10\x02\x12\x11\n\rREMOVE_WORKER\x10\x03\x12\x0e\n\nADD_WORKER\x10\x04\"(\n\nSocketInfo\x12\x0c\n\x04host\x18\x01 \x02(\t\x12\x0c\n\x04port\x18\x02 \x02(\x05\x42\x34\n$edu.washington.escience.myriad.protoB\x0c\x43ontrolProto')
 
 
 
@@ -22,18 +22,26 @@ _CONTROLMESSAGE_TYPE = descriptor.EnumDescriptor(
   file=DESCRIPTOR,
   values=[
     descriptor.EnumValueDescriptor(
-      name='SHUTDOWN', index=0, number=3,
+      name='SHUTDOWN', index=0, number=1,
       options=None,
       type=None),
     descriptor.EnumValueDescriptor(
-      name='WORKER_HEARTBEAT', index=1, number=5,
+      name='WORKER_HEARTBEAT', index=1, number=2,
+      options=None,
+      type=None),
+    descriptor.EnumValueDescriptor(
+      name='REMOVE_WORKER', index=2, number=3,
+      options=None,
+      type=None),
+    descriptor.EnumValueDescriptor(
+      name='ADD_WORKER', index=3, number=4,
       options=None,
       type=None),
   ],
   containing_type=None,
   options=None,
-  serialized_start=71,
-  serialized_end=113,
+  serialized_start=128,
+  serialized_end=205,
 )
 
 
@@ -47,7 +55,21 @@ _CONTROLMESSAGE = descriptor.Descriptor(
     descriptor.FieldDescriptor(
       name='type', full_name='ControlMessage.type', index=0,
       number=1, type=14, cpp_type=8, label=2,
-      has_default_value=False, default_value=3,
+      has_default_value=False, default_value=1,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    descriptor.FieldDescriptor(
+      name='worker_id', full_name='ControlMessage.worker_id', index=1,
+      number=2, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    descriptor.FieldDescriptor(
+      name='remote_address', full_name='ControlMessage.remote_address', index=2,
+      number=3, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
@@ -61,18 +83,61 @@ _CONTROLMESSAGE = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=17,
-  serialized_end=113,
+  serialized_start=18,
+  serialized_end=205,
+)
+
+
+_SOCKETINFO = descriptor.Descriptor(
+  name='SocketInfo',
+  full_name='SocketInfo',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    descriptor.FieldDescriptor(
+      name='host', full_name='SocketInfo.host', index=0,
+      number=1, type=9, cpp_type=9, label=2,
+      has_default_value=False, default_value=unicode("", "utf-8"),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    descriptor.FieldDescriptor(
+      name='port', full_name='SocketInfo.port', index=1,
+      number=2, type=5, cpp_type=1, label=2,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=207,
+  serialized_end=247,
 )
 
 _CONTROLMESSAGE.fields_by_name['type'].enum_type = _CONTROLMESSAGE_TYPE
+_CONTROLMESSAGE.fields_by_name['remote_address'].message_type = _SOCKETINFO
 _CONTROLMESSAGE_TYPE.containing_type = _CONTROLMESSAGE;
 DESCRIPTOR.message_types_by_name['ControlMessage'] = _CONTROLMESSAGE
+DESCRIPTOR.message_types_by_name['SocketInfo'] = _SOCKETINFO
 
 class ControlMessage(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
   DESCRIPTOR = _CONTROLMESSAGE
   
   # @@protoc_insertion_point(class_scope:ControlMessage)
+
+class SocketInfo(message.Message):
+  __metaclass__ = reflection.GeneratedProtocolMessageType
+  DESCRIPTOR = _SOCKETINFO
+  
+  # @@protoc_insertion_point(class_scope:SocketInfo)
 
 # @@protoc_insertion_point(module_scope)

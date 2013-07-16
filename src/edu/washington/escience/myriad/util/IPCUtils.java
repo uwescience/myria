@@ -14,6 +14,7 @@ import com.google.protobuf.ByteString;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.parallel.QueryExecutionStatistics;
+import edu.washington.escience.myriad.parallel.SocketInfo;
 import edu.washington.escience.myriad.parallel.ipc.StreamOutputChannel;
 import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
@@ -129,6 +130,26 @@ public final class IPCUtils {
   public static final TransportMessage CONTROL_WORKER_HEARTBEAT = TransportMessage.newBuilder().setType(
       TransportMessage.Type.CONTROL).setControlMessage(
       ControlMessage.newBuilder().setType(ControlMessage.Type.WORKER_HEARTBEAT)).build();
+
+  /**
+   * @param workerId the id of the worker to be removed.
+   * @return the remove worker TM.
+   * */
+  public static TransportMessage removeWorkerTM(final int workerId) {
+    return TransportMessage.newBuilder().setType(TransportMessage.Type.CONTROL).setControlMessage(
+        ControlMessage.newBuilder().setType(ControlMessage.Type.REMOVE_WORKER).setWorkerId(workerId)).build();
+  }
+
+  /**
+   * @param workerId the id of the worker to be added.
+   * @param socketinfo the SocketInfo of the worker to be added.
+   * @return the add worker TM.
+   * */
+  public static TransportMessage addWorkerTM(final int workerId, final SocketInfo socketinfo) {
+    return TransportMessage.newBuilder().setType(TransportMessage.Type.CONTROL).setControlMessage(
+        ControlMessage.newBuilder().setType(ControlMessage.Type.ADD_WORKER).setWorkerId(workerId).setRemoteAddress(
+            socketinfo.toProtobuf())).build();
+  }
 
   /**
    * @param queryId .

@@ -14,6 +14,15 @@ public final class ControlProto {
     // required .ControlMessage.Type type = 1;
     boolean hasType();
     edu.washington.escience.myriad.proto.ControlProto.ControlMessage.Type getType();
+    
+    // optional int32 worker_id = 2;
+    boolean hasWorkerId();
+    int getWorkerId();
+    
+    // optional .SocketInfo remote_address = 3;
+    boolean hasRemoteAddress();
+    edu.washington.escience.myriad.proto.ControlProto.SocketInfo getRemoteAddress();
+    edu.washington.escience.myriad.proto.ControlProto.SocketInfoOrBuilder getRemoteAddressOrBuilder();
   }
   public static final class ControlMessage extends
       com.google.protobuf.GeneratedMessage
@@ -45,20 +54,26 @@ public final class ControlProto {
     
     public enum Type
         implements com.google.protobuf.ProtocolMessageEnum {
-      SHUTDOWN(0, 3),
-      WORKER_HEARTBEAT(1, 5),
+      SHUTDOWN(0, 1),
+      WORKER_HEARTBEAT(1, 2),
+      REMOVE_WORKER(2, 3),
+      ADD_WORKER(3, 4),
       ;
       
-      public static final int SHUTDOWN_VALUE = 3;
-      public static final int WORKER_HEARTBEAT_VALUE = 5;
+      public static final int SHUTDOWN_VALUE = 1;
+      public static final int WORKER_HEARTBEAT_VALUE = 2;
+      public static final int REMOVE_WORKER_VALUE = 3;
+      public static final int ADD_WORKER_VALUE = 4;
       
       
       public final int getNumber() { return value; }
       
       public static Type valueOf(int value) {
         switch (value) {
-          case 3: return SHUTDOWN;
-          case 5: return WORKER_HEARTBEAT;
+          case 1: return SHUTDOWN;
+          case 2: return WORKER_HEARTBEAT;
+          case 3: return REMOVE_WORKER;
+          case 4: return ADD_WORKER;
           default: return null;
         }
       }
@@ -89,7 +104,7 @@ public final class ControlProto {
       }
       
       private static final Type[] VALUES = {
-        SHUTDOWN, WORKER_HEARTBEAT, 
+        SHUTDOWN, WORKER_HEARTBEAT, REMOVE_WORKER, ADD_WORKER, 
       };
       
       public static Type valueOf(
@@ -123,8 +138,33 @@ public final class ControlProto {
       return type_;
     }
     
+    // optional int32 worker_id = 2;
+    public static final int WORKER_ID_FIELD_NUMBER = 2;
+    private int workerId_;
+    public boolean hasWorkerId() {
+      return ((bitField0_ & 0x00000002) == 0x00000002);
+    }
+    public int getWorkerId() {
+      return workerId_;
+    }
+    
+    // optional .SocketInfo remote_address = 3;
+    public static final int REMOTE_ADDRESS_FIELD_NUMBER = 3;
+    private edu.washington.escience.myriad.proto.ControlProto.SocketInfo remoteAddress_;
+    public boolean hasRemoteAddress() {
+      return ((bitField0_ & 0x00000004) == 0x00000004);
+    }
+    public edu.washington.escience.myriad.proto.ControlProto.SocketInfo getRemoteAddress() {
+      return remoteAddress_;
+    }
+    public edu.washington.escience.myriad.proto.ControlProto.SocketInfoOrBuilder getRemoteAddressOrBuilder() {
+      return remoteAddress_;
+    }
+    
     private void initFields() {
       type_ = edu.washington.escience.myriad.proto.ControlProto.ControlMessage.Type.SHUTDOWN;
+      workerId_ = 0;
+      remoteAddress_ = edu.washington.escience.myriad.proto.ControlProto.SocketInfo.getDefaultInstance();
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -135,6 +175,12 @@ public final class ControlProto {
         memoizedIsInitialized = 0;
         return false;
       }
+      if (hasRemoteAddress()) {
+        if (!getRemoteAddress().isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+      }
       memoizedIsInitialized = 1;
       return true;
     }
@@ -144,6 +190,12 @@ public final class ControlProto {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         output.writeEnum(1, type_.getNumber());
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        output.writeInt32(2, workerId_);
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        output.writeMessage(3, remoteAddress_);
       }
       getUnknownFields().writeTo(output);
     }
@@ -157,6 +209,14 @@ public final class ControlProto {
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         size += com.google.protobuf.CodedOutputStream
           .computeEnumSize(1, type_.getNumber());
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt32Size(2, workerId_);
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(3, remoteAddress_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -274,6 +334,7 @@ public final class ControlProto {
       }
       private void maybeForceBuilderInitialization() {
         if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          getRemoteAddressFieldBuilder();
         }
       }
       private static Builder create() {
@@ -284,6 +345,14 @@ public final class ControlProto {
         super.clear();
         type_ = edu.washington.escience.myriad.proto.ControlProto.ControlMessage.Type.SHUTDOWN;
         bitField0_ = (bitField0_ & ~0x00000001);
+        workerId_ = 0;
+        bitField0_ = (bitField0_ & ~0x00000002);
+        if (remoteAddressBuilder_ == null) {
+          remoteAddress_ = edu.washington.escience.myriad.proto.ControlProto.SocketInfo.getDefaultInstance();
+        } else {
+          remoteAddressBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000004);
         return this;
       }
       
@@ -326,6 +395,18 @@ public final class ControlProto {
           to_bitField0_ |= 0x00000001;
         }
         result.type_ = type_;
+        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+          to_bitField0_ |= 0x00000002;
+        }
+        result.workerId_ = workerId_;
+        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+          to_bitField0_ |= 0x00000004;
+        }
+        if (remoteAddressBuilder_ == null) {
+          result.remoteAddress_ = remoteAddress_;
+        } else {
+          result.remoteAddress_ = remoteAddressBuilder_.build();
+        }
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -345,6 +426,12 @@ public final class ControlProto {
         if (other.hasType()) {
           setType(other.getType());
         }
+        if (other.hasWorkerId()) {
+          setWorkerId(other.getWorkerId());
+        }
+        if (other.hasRemoteAddress()) {
+          mergeRemoteAddress(other.getRemoteAddress());
+        }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
       }
@@ -353,6 +440,12 @@ public final class ControlProto {
         if (!hasType()) {
           
           return false;
+        }
+        if (hasRemoteAddress()) {
+          if (!getRemoteAddress().isInitialized()) {
+            
+            return false;
+          }
         }
         return true;
       }
@@ -391,6 +484,20 @@ public final class ControlProto {
               }
               break;
             }
+            case 16: {
+              bitField0_ |= 0x00000002;
+              workerId_ = input.readInt32();
+              break;
+            }
+            case 26: {
+              edu.washington.escience.myriad.proto.ControlProto.SocketInfo.Builder subBuilder = edu.washington.escience.myriad.proto.ControlProto.SocketInfo.newBuilder();
+              if (hasRemoteAddress()) {
+                subBuilder.mergeFrom(getRemoteAddress());
+              }
+              input.readMessage(subBuilder, extensionRegistry);
+              setRemoteAddress(subBuilder.buildPartial());
+              break;
+            }
           }
         }
       }
@@ -421,6 +528,117 @@ public final class ControlProto {
         return this;
       }
       
+      // optional int32 worker_id = 2;
+      private int workerId_ ;
+      public boolean hasWorkerId() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
+      }
+      public int getWorkerId() {
+        return workerId_;
+      }
+      public Builder setWorkerId(int value) {
+        bitField0_ |= 0x00000002;
+        workerId_ = value;
+        onChanged();
+        return this;
+      }
+      public Builder clearWorkerId() {
+        bitField0_ = (bitField0_ & ~0x00000002);
+        workerId_ = 0;
+        onChanged();
+        return this;
+      }
+      
+      // optional .SocketInfo remote_address = 3;
+      private edu.washington.escience.myriad.proto.ControlProto.SocketInfo remoteAddress_ = edu.washington.escience.myriad.proto.ControlProto.SocketInfo.getDefaultInstance();
+      private com.google.protobuf.SingleFieldBuilder<
+          edu.washington.escience.myriad.proto.ControlProto.SocketInfo, edu.washington.escience.myriad.proto.ControlProto.SocketInfo.Builder, edu.washington.escience.myriad.proto.ControlProto.SocketInfoOrBuilder> remoteAddressBuilder_;
+      public boolean hasRemoteAddress() {
+        return ((bitField0_ & 0x00000004) == 0x00000004);
+      }
+      public edu.washington.escience.myriad.proto.ControlProto.SocketInfo getRemoteAddress() {
+        if (remoteAddressBuilder_ == null) {
+          return remoteAddress_;
+        } else {
+          return remoteAddressBuilder_.getMessage();
+        }
+      }
+      public Builder setRemoteAddress(edu.washington.escience.myriad.proto.ControlProto.SocketInfo value) {
+        if (remoteAddressBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          remoteAddress_ = value;
+          onChanged();
+        } else {
+          remoteAddressBuilder_.setMessage(value);
+        }
+        bitField0_ |= 0x00000004;
+        return this;
+      }
+      public Builder setRemoteAddress(
+          edu.washington.escience.myriad.proto.ControlProto.SocketInfo.Builder builderForValue) {
+        if (remoteAddressBuilder_ == null) {
+          remoteAddress_ = builderForValue.build();
+          onChanged();
+        } else {
+          remoteAddressBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00000004;
+        return this;
+      }
+      public Builder mergeRemoteAddress(edu.washington.escience.myriad.proto.ControlProto.SocketInfo value) {
+        if (remoteAddressBuilder_ == null) {
+          if (((bitField0_ & 0x00000004) == 0x00000004) &&
+              remoteAddress_ != edu.washington.escience.myriad.proto.ControlProto.SocketInfo.getDefaultInstance()) {
+            remoteAddress_ =
+              edu.washington.escience.myriad.proto.ControlProto.SocketInfo.newBuilder(remoteAddress_).mergeFrom(value).buildPartial();
+          } else {
+            remoteAddress_ = value;
+          }
+          onChanged();
+        } else {
+          remoteAddressBuilder_.mergeFrom(value);
+        }
+        bitField0_ |= 0x00000004;
+        return this;
+      }
+      public Builder clearRemoteAddress() {
+        if (remoteAddressBuilder_ == null) {
+          remoteAddress_ = edu.washington.escience.myriad.proto.ControlProto.SocketInfo.getDefaultInstance();
+          onChanged();
+        } else {
+          remoteAddressBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000004);
+        return this;
+      }
+      public edu.washington.escience.myriad.proto.ControlProto.SocketInfo.Builder getRemoteAddressBuilder() {
+        bitField0_ |= 0x00000004;
+        onChanged();
+        return getRemoteAddressFieldBuilder().getBuilder();
+      }
+      public edu.washington.escience.myriad.proto.ControlProto.SocketInfoOrBuilder getRemoteAddressOrBuilder() {
+        if (remoteAddressBuilder_ != null) {
+          return remoteAddressBuilder_.getMessageOrBuilder();
+        } else {
+          return remoteAddress_;
+        }
+      }
+      private com.google.protobuf.SingleFieldBuilder<
+          edu.washington.escience.myriad.proto.ControlProto.SocketInfo, edu.washington.escience.myriad.proto.ControlProto.SocketInfo.Builder, edu.washington.escience.myriad.proto.ControlProto.SocketInfoOrBuilder> 
+          getRemoteAddressFieldBuilder() {
+        if (remoteAddressBuilder_ == null) {
+          remoteAddressBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              edu.washington.escience.myriad.proto.ControlProto.SocketInfo, edu.washington.escience.myriad.proto.ControlProto.SocketInfo.Builder, edu.washington.escience.myriad.proto.ControlProto.SocketInfoOrBuilder>(
+                  remoteAddress_,
+                  getParentForChildren(),
+                  isClean());
+          remoteAddress_ = null;
+        }
+        return remoteAddressBuilder_;
+      }
+      
       // @@protoc_insertion_point(builder_scope:ControlMessage)
     }
     
@@ -432,11 +650,464 @@ public final class ControlProto {
     // @@protoc_insertion_point(class_scope:ControlMessage)
   }
   
+  public interface SocketInfoOrBuilder
+      extends com.google.protobuf.MessageOrBuilder {
+    
+    // required string host = 1;
+    boolean hasHost();
+    String getHost();
+    
+    // required int32 port = 2;
+    boolean hasPort();
+    int getPort();
+  }
+  public static final class SocketInfo extends
+      com.google.protobuf.GeneratedMessage
+      implements SocketInfoOrBuilder {
+    // Use SocketInfo.newBuilder() to construct.
+    private SocketInfo(Builder builder) {
+      super(builder);
+    }
+    private SocketInfo(boolean noInit) {}
+    
+    private static final SocketInfo defaultInstance;
+    public static SocketInfo getDefaultInstance() {
+      return defaultInstance;
+    }
+    
+    public SocketInfo getDefaultInstanceForType() {
+      return defaultInstance;
+    }
+    
+    public static final com.google.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return edu.washington.escience.myriad.proto.ControlProto.internal_static_SocketInfo_descriptor;
+    }
+    
+    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return edu.washington.escience.myriad.proto.ControlProto.internal_static_SocketInfo_fieldAccessorTable;
+    }
+    
+    private int bitField0_;
+    // required string host = 1;
+    public static final int HOST_FIELD_NUMBER = 1;
+    private java.lang.Object host_;
+    public boolean hasHost() {
+      return ((bitField0_ & 0x00000001) == 0x00000001);
+    }
+    public String getHost() {
+      java.lang.Object ref = host_;
+      if (ref instanceof String) {
+        return (String) ref;
+      } else {
+        com.google.protobuf.ByteString bs = 
+            (com.google.protobuf.ByteString) ref;
+        String s = bs.toStringUtf8();
+        if (com.google.protobuf.Internal.isValidUtf8(bs)) {
+          host_ = s;
+        }
+        return s;
+      }
+    }
+    private com.google.protobuf.ByteString getHostBytes() {
+      java.lang.Object ref = host_;
+      if (ref instanceof String) {
+        com.google.protobuf.ByteString b = 
+            com.google.protobuf.ByteString.copyFromUtf8((String) ref);
+        host_ = b;
+        return b;
+      } else {
+        return (com.google.protobuf.ByteString) ref;
+      }
+    }
+    
+    // required int32 port = 2;
+    public static final int PORT_FIELD_NUMBER = 2;
+    private int port_;
+    public boolean hasPort() {
+      return ((bitField0_ & 0x00000002) == 0x00000002);
+    }
+    public int getPort() {
+      return port_;
+    }
+    
+    private void initFields() {
+      host_ = "";
+      port_ = 0;
+    }
+    private byte memoizedIsInitialized = -1;
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized != -1) return isInitialized == 1;
+      
+      if (!hasHost()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!hasPort()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      memoizedIsInitialized = 1;
+      return true;
+    }
+    
+    public void writeTo(com.google.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      getSerializedSize();
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        output.writeBytes(1, getHostBytes());
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        output.writeInt32(2, port_);
+      }
+      getUnknownFields().writeTo(output);
+    }
+    
+    private int memoizedSerializedSize = -1;
+    public int getSerializedSize() {
+      int size = memoizedSerializedSize;
+      if (size != -1) return size;
+    
+      size = 0;
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(1, getHostBytes());
+      }
+      if (((bitField0_ & 0x00000002) == 0x00000002)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeInt32Size(2, port_);
+      }
+      size += getUnknownFields().getSerializedSize();
+      memoizedSerializedSize = size;
+      return size;
+    }
+    
+    private static final long serialVersionUID = 0L;
+    @java.lang.Override
+    protected java.lang.Object writeReplace()
+        throws java.io.ObjectStreamException {
+      return super.writeReplace();
+    }
+    
+    public static edu.washington.escience.myriad.proto.ControlProto.SocketInfo parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data).buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.ControlProto.SocketInfo parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data, extensionRegistry)
+               .buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.ControlProto.SocketInfo parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data).buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.ControlProto.SocketInfo parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data, extensionRegistry)
+               .buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.ControlProto.SocketInfo parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input).buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.ControlProto.SocketInfo parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input, extensionRegistry)
+               .buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.ControlProto.SocketInfo parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      Builder builder = newBuilder();
+      if (builder.mergeDelimitedFrom(input)) {
+        return builder.buildParsed();
+      } else {
+        return null;
+      }
+    }
+    public static edu.washington.escience.myriad.proto.ControlProto.SocketInfo parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      Builder builder = newBuilder();
+      if (builder.mergeDelimitedFrom(input, extensionRegistry)) {
+        return builder.buildParsed();
+      } else {
+        return null;
+      }
+    }
+    public static edu.washington.escience.myriad.proto.ControlProto.SocketInfo parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input).buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.ControlProto.SocketInfo parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input, extensionRegistry)
+               .buildParsed();
+    }
+    
+    public static Builder newBuilder() { return Builder.create(); }
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder(edu.washington.escience.myriad.proto.ControlProto.SocketInfo prototype) {
+      return newBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() { return newBuilder(this); }
+    
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessage.Builder<Builder>
+       implements edu.washington.escience.myriad.proto.ControlProto.SocketInfoOrBuilder {
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return edu.washington.escience.myriad.proto.ControlProto.internal_static_SocketInfo_descriptor;
+      }
+      
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return edu.washington.escience.myriad.proto.ControlProto.internal_static_SocketInfo_fieldAccessorTable;
+      }
+      
+      // Construct using edu.washington.escience.myriad.proto.ControlProto.SocketInfo.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+      
+      private Builder(BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        }
+      }
+      private static Builder create() {
+        return new Builder();
+      }
+      
+      public Builder clear() {
+        super.clear();
+        host_ = "";
+        bitField0_ = (bitField0_ & ~0x00000001);
+        port_ = 0;
+        bitField0_ = (bitField0_ & ~0x00000002);
+        return this;
+      }
+      
+      public Builder clone() {
+        return create().mergeFrom(buildPartial());
+      }
+      
+      public com.google.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return edu.washington.escience.myriad.proto.ControlProto.SocketInfo.getDescriptor();
+      }
+      
+      public edu.washington.escience.myriad.proto.ControlProto.SocketInfo getDefaultInstanceForType() {
+        return edu.washington.escience.myriad.proto.ControlProto.SocketInfo.getDefaultInstance();
+      }
+      
+      public edu.washington.escience.myriad.proto.ControlProto.SocketInfo build() {
+        edu.washington.escience.myriad.proto.ControlProto.SocketInfo result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+      
+      private edu.washington.escience.myriad.proto.ControlProto.SocketInfo buildParsed()
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        edu.washington.escience.myriad.proto.ControlProto.SocketInfo result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(
+            result).asInvalidProtocolBufferException();
+        }
+        return result;
+      }
+      
+      public edu.washington.escience.myriad.proto.ControlProto.SocketInfo buildPartial() {
+        edu.washington.escience.myriad.proto.ControlProto.SocketInfo result = new edu.washington.escience.myriad.proto.ControlProto.SocketInfo(this);
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+          to_bitField0_ |= 0x00000001;
+        }
+        result.host_ = host_;
+        if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
+          to_bitField0_ |= 0x00000002;
+        }
+        result.port_ = port_;
+        result.bitField0_ = to_bitField0_;
+        onBuilt();
+        return result;
+      }
+      
+      public Builder mergeFrom(com.google.protobuf.Message other) {
+        if (other instanceof edu.washington.escience.myriad.proto.ControlProto.SocketInfo) {
+          return mergeFrom((edu.washington.escience.myriad.proto.ControlProto.SocketInfo)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+      
+      public Builder mergeFrom(edu.washington.escience.myriad.proto.ControlProto.SocketInfo other) {
+        if (other == edu.washington.escience.myriad.proto.ControlProto.SocketInfo.getDefaultInstance()) return this;
+        if (other.hasHost()) {
+          setHost(other.getHost());
+        }
+        if (other.hasPort()) {
+          setPort(other.getPort());
+        }
+        this.mergeUnknownFields(other.getUnknownFields());
+        return this;
+      }
+      
+      public final boolean isInitialized() {
+        if (!hasHost()) {
+          
+          return false;
+        }
+        if (!hasPort()) {
+          
+          return false;
+        }
+        return true;
+      }
+      
+      public Builder mergeFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+          com.google.protobuf.UnknownFieldSet.newBuilder(
+            this.getUnknownFields());
+        while (true) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              this.setUnknownFields(unknownFields.build());
+              onChanged();
+              return this;
+            default: {
+              if (!parseUnknownField(input, unknownFields,
+                                     extensionRegistry, tag)) {
+                this.setUnknownFields(unknownFields.build());
+                onChanged();
+                return this;
+              }
+              break;
+            }
+            case 10: {
+              bitField0_ |= 0x00000001;
+              host_ = input.readBytes();
+              break;
+            }
+            case 16: {
+              bitField0_ |= 0x00000002;
+              port_ = input.readInt32();
+              break;
+            }
+          }
+        }
+      }
+      
+      private int bitField0_;
+      
+      // required string host = 1;
+      private java.lang.Object host_ = "";
+      public boolean hasHost() {
+        return ((bitField0_ & 0x00000001) == 0x00000001);
+      }
+      public String getHost() {
+        java.lang.Object ref = host_;
+        if (!(ref instanceof String)) {
+          String s = ((com.google.protobuf.ByteString) ref).toStringUtf8();
+          host_ = s;
+          return s;
+        } else {
+          return (String) ref;
+        }
+      }
+      public Builder setHost(String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000001;
+        host_ = value;
+        onChanged();
+        return this;
+      }
+      public Builder clearHost() {
+        bitField0_ = (bitField0_ & ~0x00000001);
+        host_ = getDefaultInstance().getHost();
+        onChanged();
+        return this;
+      }
+      void setHost(com.google.protobuf.ByteString value) {
+        bitField0_ |= 0x00000001;
+        host_ = value;
+        onChanged();
+      }
+      
+      // required int32 port = 2;
+      private int port_ ;
+      public boolean hasPort() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
+      }
+      public int getPort() {
+        return port_;
+      }
+      public Builder setPort(int value) {
+        bitField0_ |= 0x00000002;
+        port_ = value;
+        onChanged();
+        return this;
+      }
+      public Builder clearPort() {
+        bitField0_ = (bitField0_ & ~0x00000002);
+        port_ = 0;
+        onChanged();
+        return this;
+      }
+      
+      // @@protoc_insertion_point(builder_scope:SocketInfo)
+    }
+    
+    static {
+      defaultInstance = new SocketInfo(true);
+      defaultInstance.initFields();
+    }
+    
+    // @@protoc_insertion_point(class_scope:SocketInfo)
+  }
+  
   private static com.google.protobuf.Descriptors.Descriptor
     internal_static_ControlMessage_descriptor;
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_ControlMessage_fieldAccessorTable;
+  private static com.google.protobuf.Descriptors.Descriptor
+    internal_static_SocketInfo_descriptor;
+  private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_SocketInfo_fieldAccessorTable;
   
   public static com.google.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
@@ -446,11 +1117,14 @@ public final class ControlProto {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\rcontrol.proto\"`\n\016ControlMessage\022\"\n\004typ" +
-      "e\030\001 \002(\0162\024.ControlMessage.Type\"*\n\004Type\022\014\n" +
-      "\010SHUTDOWN\020\003\022\024\n\020WORKER_HEARTBEAT\020\005B4\n$edu" +
-      ".washington.escience.myriad.protoB\014Contr" +
-      "olProto"
+      "\n\rcontrol.proto\"\273\001\n\016ControlMessage\022\"\n\004ty" +
+      "pe\030\001 \002(\0162\024.ControlMessage.Type\022\021\n\tworker" +
+      "_id\030\002 \001(\005\022#\n\016remote_address\030\003 \001(\0132\013.Sock" +
+      "etInfo\"M\n\004Type\022\014\n\010SHUTDOWN\020\001\022\024\n\020WORKER_H" +
+      "EARTBEAT\020\002\022\021\n\rREMOVE_WORKER\020\003\022\016\n\nADD_WOR" +
+      "KER\020\004\"(\n\nSocketInfo\022\014\n\004host\030\001 \002(\t\022\014\n\004por" +
+      "t\030\002 \002(\005B4\n$edu.washington.escience.myria" +
+      "d.protoB\014ControlProto"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -462,9 +1136,17 @@ public final class ControlProto {
           internal_static_ControlMessage_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_ControlMessage_descriptor,
-              new java.lang.String[] { "Type", },
+              new java.lang.String[] { "Type", "WorkerId", "RemoteAddress", },
               edu.washington.escience.myriad.proto.ControlProto.ControlMessage.class,
               edu.washington.escience.myriad.proto.ControlProto.ControlMessage.Builder.class);
+          internal_static_SocketInfo_descriptor =
+            getDescriptor().getMessageTypes().get(1);
+          internal_static_SocketInfo_fieldAccessorTable = new
+            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_SocketInfo_descriptor,
+              new java.lang.String[] { "Host", "Port", },
+              edu.washington.escience.myriad.proto.ControlProto.SocketInfo.class,
+              edu.washington.escience.myriad.proto.ControlProto.SocketInfo.Builder.class);
           return null;
         }
       };
