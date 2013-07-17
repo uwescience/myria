@@ -96,7 +96,6 @@ public final class Server {
                 if (scheduledWorkers.containsKey(senderID)) {
                   SocketInfo newWorker = scheduledWorkers.remove(senderID);
                   if (newWorker != null) {
-                    connectionPool.putRemote(senderID, newWorker);
                     for (int aliveWorkerId : aliveWorkers.keySet()) {
                       connectionPool.sendShortMessage(aliveWorkerId, IPCUtils.addWorkerTM(senderID, newWorker));
                     }
@@ -487,6 +486,7 @@ public final class Server {
           try {
             /* remove the failed worker from the connectionPool. */
             connectionPool.removeRemote(workerId).await();
+            connectionPool.putRemote(newWorkerId, new SocketInfo(newAddress, newPort));
           } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
           }
