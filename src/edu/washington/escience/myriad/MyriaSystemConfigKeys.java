@@ -91,7 +91,7 @@ public final class MyriaSystemConfigKeys {
   /** */
   public static final String MAX_HEAP_SIZE = "max.heap.size";
   /** */
-  public static final String CONFIG_FILE = "configuration.file";
+  public static final String DEPLOYMENT_FILE = "deployment.file";
 
   /**
    * Add default configurations into a configuraion.

@@ -94,11 +94,12 @@ public final class Server {
               case WORKER_HEARTBEAT:
                 LOGGER.debug("getting heartbeat from worker " + senderID);
                 if (scheduledWorkers.containsKey(senderID)) {
-                  SocketInfo newWorker = scheduledWorkers.get(senderID);
-                  scheduledWorkers.remove(senderID);
-                  connectionPool.putRemote(senderID, newWorker);
-                  for (int aliveWorkerId : aliveWorkers.keySet()) {
-                    connectionPool.sendShortMessage(aliveWorkerId, IPCUtils.addWorkerTM(senderID, newWorker));
+                  SocketInfo newWorker = scheduledWorkers.remove(senderID);
+                  if (newWorker != null) {
+                    connectionPool.putRemote(senderID, newWorker);
+                    for (int aliveWorkerId : aliveWorkers.keySet()) {
+                      connectionPool.sendShortMessage(aliveWorkerId, IPCUtils.addWorkerTM(senderID, newWorker));
+                    }
                   }
                 }
                 aliveWorkers.put(senderID, System.currentTimeMillis());
@@ -535,7 +536,7 @@ public final class Server {
       try {
         final String temp = Files.createTempDirectory(null).toAbsolutePath().toString();
         Map<String, String> tmpMap = Collections.emptyMap();
-        String configFileName = catalog.getConfigurationValue(MyriaSystemConfigKeys.CONFIG_FILE);
+        String configFileName = catalog.getConfigurationValue(MyriaSystemConfigKeys.DEPLOYMENT_FILE);
         Map<String, HashMap<String, String>> config = READER.load(configFileName);
         CatalogMaker.makeOneWorkerCatalog(workerId + "", temp, config, tmpMap, true);
 

@@ -158,7 +158,7 @@ public final class CatalogMaker {
       MyriaSystemConfigKeys.addDefaultConfigKeys(configurationValues);
 
       /* The master-specific values. */
-      configurationValues.put(MyriaSystemConfigKeys.CONFIG_FILE, configFileName);
+      configurationValues.put(MyriaSystemConfigKeys.DEPLOYMENT_FILE, configFileName);
 
       c.setAllConfigurationValues(configurationValues);
 
