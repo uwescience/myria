@@ -20,6 +20,10 @@ public final class MyriaConstants {
   public static final String SYSTEM_NAME = "Myria";
 
   /**
+   * Timeout for master process startup.
+   * */
+  public static final int MASTER_START_UP_TIMEOUT_IN_SECOND = 20;
+  /**
    * Short wait interval 100 milliseconds.
    * */
   public static final int SHORT_WAITING_INTERVAL_100_MS = 100;
@@ -142,4 +146,15 @@ public final class MyriaConstants {
   /** timeout of returning a tuple batch even not filled. */
   public static final long PUSHING_TB_TIMEOUT = 1000000000;
 
+  /** How long do we wait for next worker liveness check, in milliseconds. */
+  public static final long WORKER_LIVENESS_CHECKER_INTERVAL = 1000;
+
+  /** How long do we treat a worker as dead, in milliseconds. */
+  public static final long WORKER_IS_DEAD_INTERVAL = 5000;
+
+  /** The time interval in milliseconds for check if the worker should be shutdown. */
+  public static final int WORKER_SHUTDOWN_CHECKER_INTERVAL = 1000;
+
+  /** Time interval between two heartbeats. */
+  public static final int HEARTBEAT_INTERVAL = 1000;
 }

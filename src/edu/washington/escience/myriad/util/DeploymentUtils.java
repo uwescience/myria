@@ -6,6 +6,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.LoggerFactory;
 
@@ -35,8 +36,9 @@ public final class DeploymentUtils {
     if (args.length != 2) {
       System.out.println(USAGE);
     }
+    final String configFileName = args[0];
 
-    Map<String, HashMap<String, String>> config = READER.load(args[0]);
+    Map<String, HashMap<String, String>> config = READER.load(configFileName);
     String description = config.get("deployment").get("name");
     String username = config.get("deployment").get("username");
 
@@ -54,6 +56,8 @@ public final class DeploymentUtils {
         String localPath = description + "/" + "master.catalog";
         mkdir(hostname, remotePath);
         rsyncFileToRemote(localPath, hostname, remotePath);
+        rmFile(hostname, remotePath + "/master.catalog-shm");
+        rmFile(hostname, remotePath + "/master.catalog-wal");
       }
     } else if (action.equals("-copy_worker_catalogs")) {
       HashMap<String, String> workers = config.get("workers");
@@ -67,6 +71,8 @@ public final class DeploymentUtils {
         String localPath = description + "/" + "worker_" + workerId;
         mkdir(hostname, remotePath);
         rsyncFileToRemote(localPath, hostname, remotePath);
+        rmFile(hostname, remotePath + "/worker.catalog-shm");
+        rmFile(hostname, remotePath + "/worker.catalog-wal");
       }
     } else if (action.equals("-copy_distribution")) {
       String workingDir = config.get("deployment").get("path");
@@ -80,6 +86,8 @@ public final class DeploymentUtils {
         rsyncFileToRemote("libs", hostname, remotePath);
         rsyncFileToRemote("conf", hostname, remotePath);
         rsyncFileToRemote("sqlite4java-282", hostname, remotePath);
+        // server needs the config file to create catalogs for new workers
+        rsyncFileToRemote(configFileName, hostname, remotePath);
       }
       HashMap<String, String> workers = config.get("workers");
       for (String workerId : workers.keySet()) {
@@ -143,7 +151,7 @@ public final class DeploymentUtils {
     builder.append("ssh " + address);
     builder.append(" cd " + workingDir + "/" + description + "-files;");
     builder.append(" nohup java -cp 'libs/*'");
-    builder.append(" -Djava.util.logging.config.file=conf/logging.properties");
+    builder.append(" -Djava.util.logging.config.file=logging.properties");
     builder.append(" -Dlog4j.configuration=log4j.properties");
     builder.append(" -Djava.library.path=sqlite4java-282");
     builder.append(" " + maxHeapSize);
@@ -172,7 +180,7 @@ public final class DeploymentUtils {
     builder.append("ssh " + address);
     builder.append(" cd " + workingDir + "/" + description + "-files;");
     builder.append(" nohup java -cp 'libs/*'");
-    builder.append(" -Djava.util.logging.config.file=conf/logging.properties");
+    builder.append(" -Djava.util.logging.config.file=logging.properties");
     builder.append(" -Dlog4j.configuration=log4j.properties");
     builder.append(" -Djava.library.path=sqlite4java-282");
     builder.append(" " + maxHeapSize);
@@ -199,11 +207,11 @@ public final class DeploymentUtils {
     while (true) {
       try {
         HttpURLConnection request = (HttpURLConnection) masterAliveUrl.openConnection();
-        if (request.getResponseCode() == 200) {
+        if (request.getResponseCode() == HttpURLConnection.HTTP_OK) {
           break;
         }
       } catch (IOException e) {
-        // pass
+        e.printStackTrace();
       }
       try {
         Thread.sleep(MyriaConstants.SHORT_WAITING_INTERVAL_10_MS);
@@ -211,8 +219,9 @@ public final class DeploymentUtils {
         Thread.currentThread().interrupt();
         break;
       }
-      if (System.currentTimeMillis() - start > 20000) {
-        throw new RuntimeException("after 20s master " + address + " is not alive");
+      int elapse = (int) TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - start);
+      if (elapse > MyriaConstants.MASTER_START_UP_TIMEOUT_IN_SECOND) {
+        throw new RuntimeException("After " + elapse + "s master " + address + " is not alive");
       }
     }
   }
@@ -245,6 +254,21 @@ public final class DeploymentUtils {
     builder.append(" -aLvz");
     builder.append(" " + localPath);
     builder.append(" " + address + ":" + remotePath);
+    startAProcess(builder.toString());
+  }
+
+  /**
+   * Remove a file on a remote machine.
+   * 
+   * @param address e.g. beijing.cs.washington.edu.
+   * @param path the path to the file.
+   */
+  public static void rmFile(final String address, final String path) {
+    StringBuilder builder = new StringBuilder();
+    builder.append("ssh");
+    builder.append(" " + address);
+    builder.append(" rm -rf");
+    builder.append(" " + path);
     startAProcess(builder.toString());
   }
 

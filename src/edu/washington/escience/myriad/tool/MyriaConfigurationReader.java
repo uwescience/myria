@@ -40,9 +40,13 @@ public final class MyriaConfigurationReader extends ConfigParser {
    * @throws IOException if anything during parsing happened.
    * */
   public Map<String, HashMap<String, String>> load(final String filename) throws IOException {
+    File f = new File(filename);
+    if (!f.exists()) {
+      throw new RuntimeException("config file " + filename + " doesn't exist!");
+    }
     Map<String, HashMap<String, String>> ans = new HashMap<String, HashMap<String, String>>();
     try {
-      this.read(new File(filename));
+      this.read(f);
       List<String> sections = sections();
       for (String section : sections) {
         ans.put(section, new HashMap<String, String>());
@@ -57,7 +61,6 @@ public final class MyriaConfigurationReader extends ConfigParser {
     String defaultPath = ans.get("deployment").get("path");
     HashMap<String, String> workers = ans.get("workers");
     HashMap<String, String> paths = new HashMap<String, String>();
-    ans.put("paths", paths);
     for (String workerId : workers.keySet()) {
       String[] tmp = workers.get(workerId).split(":");
       workers.put(workerId, tmp[0] + ":" + tmp[1]);
@@ -67,6 +70,7 @@ public final class MyriaConfigurationReader extends ConfigParser {
         paths.put(workerId, defaultPath);
       }
     }
+    ans.put("paths", paths);
     return ans;
   }
 }

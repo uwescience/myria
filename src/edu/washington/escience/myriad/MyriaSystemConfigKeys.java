@@ -90,6 +90,8 @@ public final class MyriaSystemConfigKeys {
   public static final String USERNAME = "username";
   /** */
   public static final String MAX_HEAP_SIZE = "max.heap.size";
+  /** */
+  public static final String DEPLOYMENT_FILE = "deployment.file";
 
   /**
    * Add default configurations into a configuraion.
@@ -135,7 +137,7 @@ public final class MyriaSystemConfigKeys {
       config.put(WORKING_DIRECTORY, deployment.get("path"));
     }
     if (!config.containsKey(DESCRIPTION)) {
-      config.put(DESCRIPTION, deployment.get("description"));
+      config.put(DESCRIPTION, deployment.get("name"));
     }
     if (!config.containsKey(USERNAME)) {
       config.put(USERNAME, deployment.get("username"));

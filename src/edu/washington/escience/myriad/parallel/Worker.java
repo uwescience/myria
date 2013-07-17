@@ -100,7 +100,6 @@ public final class Worker {
           try {
             while ((cm = controlMessageQueue.take()) != null) {
               switch (cm.getType()) {
-
                 case SHUTDOWN:
                   if (LOGGER.isInfoEnabled()) {
                     if (LOGGER.isInfoEnabled()) {
@@ -109,6 +108,12 @@ public final class Worker {
                   }
                   toShutdown = true;
                   abruptShutdown = false;
+                  break;
+                case REMOVE_WORKER:
+                  connectionPool.removeRemote(cm.getWorkerId()).await();
+                  break;
+                case ADD_WORKER:
+                  connectionPool.putRemote(cm.getWorkerId(), SocketInfo.fromProtobuf(cm.getRemoteAddress()));
                   break;
                 default:
                   if (LOGGER.isErrorEnabled()) {
@@ -130,7 +135,7 @@ public final class Worker {
   }
 
   /**
-   * The non-blocking query driver. It calls root.nextReady() to start a qurey.
+   * The non-blocking query driver. It calls root.nextReady() to start a query.
    */
   private class QueryMessageProcessor implements Runnable {
 
@@ -167,54 +172,31 @@ public final class Worker {
 
   }
 
-  /**
-   * The controller class which decides whether this worker should shutdown or not. 1) it detects whether the server is
-   * still alive. If the server got killed because of any reason, the workers will be terminated. 2) it detects whether
-   * a shutdown message is received.
-   */
-  static final class Reporter extends TimerTask {
-
-    /**
-     * Delay of the first check. 3 seconds to 5 seconds.
-     * */
-    public static final int INITIAL_DELAY_IN_MS = (3000 + (int) (2000 * Math.random()));
-
-    /**
-     * Time interval between two checks. 2.4 seconds to 2.9 seconds.
-     * */
-    public static final int INTERVAL = (2400 + (int) (500 * Math.random()));
-
-    /**
-     * the owner worker.
-     * */
-    private final Worker owner;
-
-    /**
-     * @param owner the owner worker.
-     * */
-    Reporter(final Worker owner) {
-      this.owner = owner;
-    }
-
+  /** Send heartbeats to server periodically. */
+  private class HeartbeatReporter extends TimerTask {
     @Override
     public synchronized void run() {
-      if (!owner.connectionPool.isRemoteAlive(MyriaConstants.MASTER_ID)) {
-        if (LOGGER.isInfoEnabled()) {
-          LOGGER.info("The Master has shutdown, I'll shutdown now.");
-        }
-        owner.toShutdown = true;
-        owner.abruptShutdown = true;
-        cancel();
-      }
+      LOGGER.debug("sending heartbeat to server");
+      sendMessageToMaster(IPCUtils.CONTROL_WORKER_HEARTBEAT).awaitUninterruptibly();
     }
   }
 
   /**
-   * Periodically detect whether the {@link Worker} should be shutdown.
+   * Periodically detect whether the {@link Worker} should be shutdown. 1) it detects whether the server is still alive.
+   * If the server got killed because of any reason, the workers will be terminated. 2) it detects whether a shutdown
+   * message is received.
    * */
   private class ShutdownChecker extends TimerTask {
     @Override
     public final synchronized void run() {
+      if (!connectionPool.isRemoteAlive(MyriaConstants.MASTER_ID)) {
+        if (LOGGER.isInfoEnabled()) {
+          LOGGER.info("The Master has shutdown, I'll shutdown now.");
+        }
+        toShutdown = true;
+        abruptShutdown = true;
+        cancel();
+      }
       if (toShutdown) {
         shutdown();
       }
@@ -366,7 +348,7 @@ public final class Worker {
   private final ConcurrentHashMap<Long, WorkerQueryPartition> activeQueries;
 
   /**
-   * timer task executor.
+   * shutdown checker executor.
    * */
   private ScheduledExecutorService scheduledTaskExecutor;
 
@@ -669,7 +651,7 @@ public final class Worker {
    */
   public void receiveQuery(final WorkerQueryPartition query) throws DbException {
     if (LOGGER.isInfoEnabled()) {
-      LOGGER.info("Query received" + query.getQueryID());
+      LOGGER.info("Query received " + query.getQueryID());
     }
 
     activeQueries.put(query.getQueryID(), query);
@@ -819,20 +801,12 @@ public final class Worker {
     // Periodically detect if the server (i.e., coordinator)
     // is still running. IF the server goes down, the
     // worker will stop itself
-    scheduledTaskExecutor =
-        Executors.newSingleThreadScheduledExecutor(new RenamingThreadFactory("Worker global timer"));
-    scheduledTaskExecutor.scheduleAtFixedRate(new ShutdownChecker(), SHUTDOWN_CHECKER_INTERVAL_MS,
-        SHUTDOWN_CHECKER_INTERVAL_MS, TimeUnit.MILLISECONDS);
-    scheduledTaskExecutor.scheduleAtFixedRate(new Reporter(this), Reporter.INITIAL_DELAY_IN_MS, Reporter.INTERVAL,
+    scheduledTaskExecutor = Executors.newScheduledThreadPool(2, new RenamingThreadFactory("Worker global timer"));
+    scheduledTaskExecutor.scheduleAtFixedRate(new ShutdownChecker(), MyriaConstants.WORKER_SHUTDOWN_CHECKER_INTERVAL,
+        MyriaConstants.WORKER_SHUTDOWN_CHECKER_INTERVAL, TimeUnit.MILLISECONDS);
+    scheduledTaskExecutor.scheduleAtFixedRate(new HeartbeatReporter(), 0, MyriaConstants.HEARTBEAT_INTERVAL,
         TimeUnit.MILLISECONDS);
-    /* Tell the master we're alive. */
-    sendMessageToMaster(IPCUtils.CONTROL_WORKER_ALIVE).awaitUninterruptibly();
   }
-
-  /**
-   * The time interval in milliseconds for check if the worker should be shutdown.
-   * */
-  static final int SHUTDOWN_CHECKER_INTERVAL_MS = 500;
 
   /**
    * @param configKey config key.
