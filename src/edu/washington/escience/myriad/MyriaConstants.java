@@ -20,6 +20,10 @@ public final class MyriaConstants {
   public static final String SYSTEM_NAME = "Myria";
 
   /**
+   * Timeout for master process startup.
+   * */
+  public static final int MASTER_START_UP_TIMEOUT_IN_SECOND = 20;
+  /**
    * Short wait interval 100 milliseconds.
    * */
   public static final int SHORT_WAITING_INTERVAL_100_MS = 100;
