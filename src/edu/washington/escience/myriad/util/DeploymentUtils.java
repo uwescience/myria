@@ -6,6 +6,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.LoggerFactory;
 
@@ -206,11 +207,11 @@ public final class DeploymentUtils {
     while (true) {
       try {
         HttpURLConnection request = (HttpURLConnection) masterAliveUrl.openConnection();
-        if (request.getResponseCode() == 200) {
+        if (request.getResponseCode() == HttpURLConnection.HTTP_OK) {
           break;
         }
       } catch (IOException e) {
-        // pass
+        e.printStackTrace();
       }
       try {
         Thread.sleep(MyriaConstants.SHORT_WAITING_INTERVAL_10_MS);
@@ -218,8 +219,9 @@ public final class DeploymentUtils {
         Thread.currentThread().interrupt();
         break;
       }
-      if (System.currentTimeMillis() - start > 20000) {
-        throw new RuntimeException("after 20s master " + address + " is not alive");
+      int elapse = (int) TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - start);
+      if (elapse > MyriaConstants.MASTER_START_UP_TIMEOUT_IN_SECOND) {
+        throw new RuntimeException("After " + elapse + "s master " + address + " is not alive");
       }
     }
   }

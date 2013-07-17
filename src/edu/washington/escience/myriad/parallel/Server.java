@@ -489,6 +489,7 @@ public final class Server {
             connectionPool.putRemote(newWorkerId, new SocketInfo(newAddress, newPort));
           } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            return;
           }
           /* tell other workers to remove it too. */
           for (int aliveWorkerId : aliveWorkers.keySet()) {
@@ -510,7 +511,7 @@ public final class Server {
   /**
    * The class to launch a new worker during recovery.
    */
-  class NewWorkerScheduler implements Runnable {
+  private class NewWorkerScheduler implements Runnable {
     /** the new worker's worker id. */
     private final int workerId;
     /** the new worker's port number id. */
@@ -547,7 +548,9 @@ public final class Server {
         String localPath = temp + "/" + "worker_" + workerId;
         DeploymentUtils.rsyncFileToRemote(localPath, address, remotePath);
         final String maxHeapSize = catalog.getConfigurationValue(MyriaSystemConfigKeys.MAX_HEAP_SIZE);
-        LOGGER.info("starting new worker " + address + ":" + port + ".");
+        if (LOGGER.isInfoEnabled()) {
+          LOGGER.info("starting new worker " + address + ":" + port + ".");
+        }
         DeploymentUtils.startWorker(address, workingDir, description, maxHeapSize, workerId + "");
       } catch (CatalogException e) {
         throw new RuntimeException(e);
@@ -669,7 +672,9 @@ public final class Server {
    * @throws Exception if any error occurs.
    */
   public void start() throws Exception {
-    LOGGER.info("Server starting on {}", masterSocketInfo.toString());
+    if (LOGGER.isInfoEnabled()) {
+      LOGGER.info("Server starting on {}", masterSocketInfo.toString());
+    }
 
     scheduledTaskExecutor.scheduleAtFixedRate(new DebugHelper(), DebugHelper.INTERVAL, DebugHelper.INTERVAL,
         TimeUnit.MILLISECONDS);
@@ -720,7 +725,9 @@ public final class Server {
         masterInJVMPipelineFactory, new InJVMLoopbackChannelSink());
 
     messageProcessingExecutor.submit(new MessageProcessor());
-    LOGGER.info("Server started on {}", masterSocketInfo.toString());
+    if (LOGGER.isInfoEnabled()) {
+      LOGGER.info("Server started on {}", masterSocketInfo.toString());
+    }
   }
 
   /**
