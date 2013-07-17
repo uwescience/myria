@@ -143,6 +143,12 @@ public final class MyriaConstants {
   /** How long do we treat a worker as dead, in milliseconds. */
   public static final long WORKER_IS_DEAD_INTERVAL = 5000;
 
+  /** How long do we treat a scheduled new worker as failed to start, in milliseconds. */
+  public static final long SCHEDULED_WORKER_FAILED_TO_START = 5000;
+
+  /** How long do we treat a scheduled new worker as unable to start, in milliseconds. */
+  public static final long SCHEDULED_WORKER_UNABLE_TO_START = 15000;
+
   /** The time interval in milliseconds for check if the worker should be shutdown. */
   public static final int WORKER_SHUTDOWN_CHECKER_INTERVAL = 1000;
 
