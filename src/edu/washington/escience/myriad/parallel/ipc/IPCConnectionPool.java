@@ -993,13 +993,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
       cgf.addListener(new ChannelGroupFutureListener() {
         @Override
         public void operationComplete(final ChannelGroupFuture future) throws Exception {
-          Thread rt = new Thread("Remote remover") {
-            @Override
-            public void run() {
-              channelPool.remove(remoteID);
-            }
-          };
-          rt.start();
+          channelPool.remove(remoteID, old);
         }
       });
       return cgf;
