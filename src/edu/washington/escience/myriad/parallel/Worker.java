@@ -601,6 +601,7 @@ public final class Worker {
       execEnvVars.put(cE.getKey(), cE.getValue());
     }
     final String databaseSystem = catalog.getConfigurationValue(MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_SYSTEM);
+    execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_SYSTEM, databaseSystem);
     switch (databaseSystem) {
       case MyriaConstants.STORAGE_SYSTEM_SQLITE:
         String sqliteFilePath = catalog.getConfigurationValue(MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_NAME);
