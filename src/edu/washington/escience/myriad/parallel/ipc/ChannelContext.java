@@ -559,6 +559,58 @@ class ChannelContext extends AttachmentableAdapter {
   }
 
   /**
+   * Callback if the owner channel is closed.
+   * 
+   * @param unregisteredNewChannels Set of new channels who have not identified there worker IDs yet (i.e. not
+   *          registered).
+   * 
+   * @param trashBin channel trash bin. The place where to-be-closed channels reside.
+   * @param channelPool the channel pool in which the channel resides. may be null if the channel is not registered yet
+   * @param recycleBin channel recycle bin. The place where currently-unused-but-waiting-for-possible-reuse channels
+   *          reside.
+   */
+  final void closed(final ConcurrentHashMap<Channel, Channel> unregisteredNewChannels,
+      final ConcurrentHashMap<Channel, Channel> recycleBin, final ChannelGroup trashBin,
+      final ChannelPrioritySet channelPool) {
+    synchronized (stateMachineLock) {
+      if (connected) {
+        // it's an abnormal disconnect
+        RegisteredChannelContext rcc = getRegisteredChannelContext();
+        if (rcc != null) {
+          // clear the number of reference
+          rcc.numberOfReference.set(0);
+        }
+        connected = false;
+
+        unregisteredNewChannels.remove(ownerChannel);
+        if (channelPool != null) {
+          channelPool.remove(ownerChannel);
+        }
+        recycleBin.remove(ownerChannel);
+        trashBin.remove(ownerChannel);
+        connected = false;
+        registered = false;
+        inPool = false;
+        inRecycleBin = false;
+        inTrashBin = false;
+        newConnection = false;
+        closeRequested = false;
+        alive = false;
+
+        if (ownerChannel.getParent() == null) {
+          synchronized (channelRegisterLock) {
+            channelRegisterLock.notifyAll();
+          }
+          synchronized (remoteReplyLock) {
+            remoteReplyLock.notifyAll();
+          }
+        }
+
+      }
+    }
+  }
+
+  /**
    * Callback when the owner channel is connected.
    * */
   final void connected() {
