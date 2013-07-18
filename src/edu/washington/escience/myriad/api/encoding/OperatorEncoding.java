@@ -46,7 +46,9 @@ import edu.washington.escience.myriad.parallel.Server;
     @Type(name = "SQLiteQueryScan", value = SQLiteQueryScanEncoding.class),
     @Type(name = "Filter", value = FilterEncoding.class),
     @Type(name = "BroadcastProducer", value = BroadcastProducerEncoding.class),
-    @Type(name = "BroadcastConsumer", value = BroadcastConsumerEncoding.class) })
+    @Type(name = "BroadcastConsumer", value = BroadcastConsumerEncoding.class),
+    @Type(name = "JdbcScan", value = JdbcScanEncoding.class),
+    @Type(name = "JdbcQueryScan", value = JdbcQueryScanEncoding.class) })
 public abstract class OperatorEncoding<T extends Operator> extends MyriaApiEncoding {
 
   public String opName;
