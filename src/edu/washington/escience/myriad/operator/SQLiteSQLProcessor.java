@@ -127,7 +127,7 @@ public class SQLiteSQLProcessor extends Operator {
 
   @Override
   public final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    final String sqliteDatabaseFilename = (String) execEnvVars.get("sqliteFile");
+    final String sqliteDatabaseFilename = (String) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_NAME);
     if (sqliteDatabaseFilename == null) {
       throw new DbException("Unable to instantiate SQLiteQueryScan on non-sqlite worker");
     }

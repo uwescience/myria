@@ -569,7 +569,7 @@ public final class Worker {
   /**
    * @return the working directory of the worker.
    * */
-  String getWorkingDirectory() {
+  public String getWorkingDirectory() {
     return workingDirectory;
   }
 
@@ -628,11 +628,11 @@ public final class Worker {
     for (Entry<String, String> cE : catalog.getAllConfigurations().entrySet()) {
       execEnvVars.put(cE.getKey(), cE.getValue());
     }
-    final String databaseType = catalog.getConfigurationValue(MyriaSystemConfigKeys.WORKER_STORAGE_SYSTEM_TYPE);
-    switch (databaseType) {
+    final String databaseSystem = catalog.getConfigurationValue(MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_SYSTEM);
+    switch (databaseSystem) {
       case MyriaConstants.STORAGE_SYSTEM_SQLITE:
-        String sqliteFilePath = catalog.getConfigurationValue(MyriaSystemConfigKeys.WORKER_DATA_SQLITE_DB);
-        execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_SQLITE_FILE, sqliteFilePath);
+        String sqliteFilePath = catalog.getConfigurationValue(MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_NAME);
+        execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_NAME, sqliteFilePath);
         SQLiteConnection conn = new SQLiteConnection(new File(sqliteFilePath));
         try {
           conn.open(true);
@@ -653,7 +653,7 @@ public final class Worker {
         /* TODO fill this in if necessary. */
         break;
       default:
-        throw new CatalogException("Unknown worker type: " + databaseType);
+        throw new CatalogException("Unknown worker type: " + databaseSystem);
     }
 
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_IPC_CONNECTION_POOL, connectionPool);
