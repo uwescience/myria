@@ -121,8 +121,7 @@ public class SimplePredicate implements Serializable, Predicate {
     if (tb.numTuples() > 0) {
       final Column<?> columnValues = tb.getDataColumns().get(getField());
       final Type columnType = tb.getSchema().getColumnType(getField());
-      final int[] validIndices = tb.getValidIndices();
-      for (final int validIdx : validIndices) {
+      for (final int validIdx : tb.getValidIndices()) {
         if (columnType.filter(getOp(), columnValues, validIdx, getOperand())) {
           newValidTuples.set(validIdx);
         }

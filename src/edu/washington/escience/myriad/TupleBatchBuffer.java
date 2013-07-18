@@ -395,11 +395,11 @@ public class TupleBatchBuffer {
   public final void put(final TupleBatch leftTb, final int leftIdx, final int[] leftAnswerColumns,
       final TupleBatch rightTb, final int rightIdx, final int[] rightAnswerColumns) {
     for (int i = 0; i < leftAnswerColumns.length; ++i) {
-      leftTb.getDataColumns().get(leftAnswerColumns[i]).append(leftTb.getValidIndices()[leftIdx],
+      leftTb.getDataColumns().get(leftAnswerColumns[i]).append(leftTb.getValidIndices().get(leftIdx),
           currentBuildingColumns.get(i));
     }
     for (int i = 0; i < rightAnswerColumns.length; ++i) {
-      rightTb.getDataColumns().get(rightAnswerColumns[i]).append(rightTb.getValidIndices()[rightIdx],
+      rightTb.getDataColumns().get(rightAnswerColumns[i]).append(rightTb.getValidIndices().get(rightIdx),
           currentBuildingColumns.get(i + leftAnswerColumns.length));
     }
     currentInProgressTuples++;
@@ -423,4 +423,5 @@ public class TupleBatchBuffer {
   private long getElapsedTime() {
     return System.nanoTime() - lastPoppedTime;
   }
+
 }

@@ -12,6 +12,7 @@ import edu.washington.escience.myriad.column.IntColumn;
 import edu.washington.escience.myriad.column.LongColumn;
 import edu.washington.escience.myriad.column.StringColumn;
 import edu.washington.escience.myriad.util.ImmutableBitSet;
+import edu.washington.escience.myriad.util.ImmutableIntArray;
 
 /**
  * A predicate for filtering x != y. x and y must have the same type.
@@ -43,7 +44,7 @@ public class NotEqualsPredicate implements Predicate {
   public final ImmutableBitSet filter(final TupleBatch tb) {
     Preconditions.checkNotNull(tb);
     ImmutableList<Column<?>> columns = tb.getDataColumns();
-    final int[] validIndices = tb.getValidIndices();
+    final ImmutableIntArray validIndices = tb.getValidIndices();
     Schema schema = tb.getSchema();
     BitSet result = new BitSet();
 

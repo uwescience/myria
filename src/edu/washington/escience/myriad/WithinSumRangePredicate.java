@@ -12,6 +12,7 @@ import edu.washington.escience.myriad.column.FloatColumn;
 import edu.washington.escience.myriad.column.IntColumn;
 import edu.washington.escience.myriad.column.LongColumn;
 import edu.washington.escience.myriad.util.ImmutableBitSet;
+import edu.washington.escience.myriad.util.ImmutableIntArray;
 
 /**
  * A predicate for filtering x - y < target < x + y. Assuming both the columns have the same type
@@ -42,15 +43,17 @@ public class WithinSumRangePredicate implements Predicate {
   public final ImmutableBitSet filter(final TupleBatch tb) {
     Preconditions.checkNotNull(tb);
     ImmutableList<Column<?>> columns = tb.getDataColumns();
-    final int[] validIndices = tb.getValidIndices();
     Schema schema = tb.getSchema();
     BitSet result = new BitSet();
+    ImmutableIntArray validIndices = tb.getValidIndices();
     if (schema.getColumnType(compareIndex) == Type.INT_TYPE) {
       // the column is an int type
       IntColumn c1 = (IntColumn) columns.get(indices.get(0));
       IntColumn c2 = (IntColumn) columns.get(indices.get(1));
       IntColumn compareColumn = (IntColumn) columns.get(compareIndex);
-      for (Integer idx : validIndices) {
+
+      for (int i = 0; i < validIndices.length(); i++) {
+        int idx = validIndices.get(i);
         if (c1.getInt(idx) + c2.getInt(idx) > compareColumn.getInt(idx)
             && c1.getInt(idx) - c2.getInt(idx) < compareColumn.getInt(idx)) {
           result.set(idx);
@@ -61,7 +64,8 @@ public class WithinSumRangePredicate implements Predicate {
       DoubleColumn c1 = (DoubleColumn) columns.get(indices.get(0));
       DoubleColumn c2 = (DoubleColumn) columns.get(indices.get(1));
       DoubleColumn compareColumn = (DoubleColumn) columns.get(compareIndex);
-      for (Integer idx : validIndices) {
+      for (int i = 0; i < validIndices.length(); i++) {
+        int idx = validIndices.get(i);
         if (Double.compare(c1.getDouble(idx) + c2.getDouble(idx), compareColumn.getDouble(idx)) > 0
             && Double.compare(c1.getDouble(idx) - c2.getDouble(idx), compareColumn.getDouble(idx)) < 0) {
           result.set(idx);
@@ -72,7 +76,8 @@ public class WithinSumRangePredicate implements Predicate {
       FloatColumn c1 = (FloatColumn) columns.get(indices.get(0));
       FloatColumn c2 = (FloatColumn) columns.get(indices.get(1));
       FloatColumn compareColumn = (FloatColumn) columns.get(compareIndex);
-      for (Integer idx : validIndices) {
+      for (int i = 0; i < validIndices.length(); i++) {
+        int idx = validIndices.get(i);
         if (Float.compare(c1.getFloat(idx) + c2.getFloat(idx), compareColumn.getFloat(idx)) > 0
             && Float.compare(c1.getFloat(idx) - c2.getFloat(idx), compareColumn.getFloat(idx)) < 0) {
           result.set(idx);
@@ -83,7 +88,8 @@ public class WithinSumRangePredicate implements Predicate {
       LongColumn c1 = (LongColumn) columns.get(indices.get(0));
       LongColumn c2 = (LongColumn) columns.get(indices.get(1));
       LongColumn compareColumn = (LongColumn) columns.get(compareIndex);
-      for (Integer idx : validIndices) {
+      for (int i = 0; i < validIndices.length(); i++) {
+        int idx = validIndices.get(i);
         if (c1.getLong(idx) + c2.getLong(idx) > compareColumn.getLong(idx)
             && c1.getLong(idx) - c2.getLong(idx) < compareColumn.getLong(idx)) {
           result.set(idx);
