@@ -19,8 +19,8 @@ import edu.washington.escience.myriad.operator.DupElim;
 import edu.washington.escience.myriad.operator.LocalJoin;
 import edu.washington.escience.myriad.operator.Merge;
 import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.operator.QueryScan;
 import edu.washington.escience.myriad.operator.RootOperator;
-import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.operator.TBQueueExporter;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
@@ -121,8 +121,8 @@ public class MultithreadScanTest extends SystemTestBase {
       insert(WORKER_ID[1], testtableKey, tableSchema, tb);
     }
 
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan(testtableKey, tableSchema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan(testtableKey, tableSchema);
+    final QueryScan scan1 = new QueryScan(testtableKey, tableSchema);
+    final QueryScan scan2 = new QueryScan(testtableKey, tableSchema);
     final LocalJoin localjoin =
         new LocalJoin(scan1, scan2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
     final DupElim de = new DupElim(localjoin);
@@ -185,13 +185,13 @@ public class MultithreadScanTest extends SystemTestBase {
       insert(WORKER_ID[1], testtableKey, tableSchema, tb);
     }
 
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan(testtableKey, tableSchema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan(testtableKey, tableSchema);
+    final QueryScan scan1 = new QueryScan(testtableKey, tableSchema);
+    final QueryScan scan2 = new QueryScan(testtableKey, tableSchema);
     final LocalJoin localjoin1 =
         new LocalJoin(scan1, scan2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
     final DupElim de1 = new DupElim(localjoin1);
-    final SQLiteQueryScan scan3 = new SQLiteQueryScan(testtableKey, tableSchema);
-    final SQLiteQueryScan scan4 = new SQLiteQueryScan(testtableKey, tableSchema);
+    final QueryScan scan3 = new QueryScan(testtableKey, tableSchema);
+    final QueryScan scan4 = new QueryScan(testtableKey, tableSchema);
     final LocalJoin localjoin2 =
         new LocalJoin(scan3, scan4, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
     final DupElim de2 = new DupElim(localjoin2);

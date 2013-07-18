@@ -61,28 +61,20 @@ public final class SQLiteAccessMethod extends AccessMethod {
     this.readOnly = readOnly;
     sqliteInfo = (SQLiteInfo) connectionInfo;
 
-    LOGGER.info("DB open: " + sqliteInfo.getDatabase());
-
     File dbFile = new File(sqliteInfo.getDatabase());
     if (!dbFile.exists()) {
       throw new DbException("Database file " + sqliteInfo.getDatabase() + " does not exist!");
-    } else {
-      LOGGER.info("Database file " + sqliteInfo.getDatabase() + " exists");
     }
 
     sqliteConnection = null;
     try {
       sqliteConnection = new SQLiteConnection(new File(sqliteInfo.getDatabase()));
-      LOGGER.info("before open");
       if (readOnly) {
         sqliteConnection.openReadonly();
       } else {
         sqliteConnection.open(false);
       }
-      LOGGER.info("after open");
-      LOGGER.info("before setBusyTimeout");
       sqliteConnection.setBusyTimeout(SQLiteAccessMethod.DEFAULT_BUSY_TIMEOUT);
-      LOGGER.info("after setBusyTimeout");
     } catch (final SQLiteException e) {
       LOGGER.error(e.getErrorCode() + "-" + e.getMessage());
       throw new DbException(e.getErrorCode() + "-" + e.getMessage() + " filename: " + sqliteInfo.getDatabase());
@@ -199,20 +191,18 @@ public final class SQLiteAccessMethod extends AccessMethod {
   /**
    * Inserts a TupleBatch into the SQLite database.
    * 
-   * @param pathToSQLiteDb filename of the SQLite database
+   * @param sqliteInfo SQLite connection information
    * @param insertString parameterized string used to insert tuples
    * @param tupleBatch TupleBatch that contains the data to be inserted
    * @throws DbException if there is an error in the database.
    */
-  public static synchronized void tupleBatchInsert(final String pathToSQLiteDb, final String insertString,
+  public static synchronized void tupleBatchInsert(final SQLiteInfo sqliteInfo, final String insertString,
       final TupleBatch tupleBatch) throws DbException {
 
     SQLiteAccessMethod sqliteAccessMethod = null;
     try {
-      sqliteAccessMethod = new SQLiteAccessMethod(SQLiteInfo.of(pathToSQLiteDb), false);
-      // sqliteAccessMethod.execute("BEGIN TRANSACTION");
+      sqliteAccessMethod = new SQLiteAccessMethod(sqliteInfo, false);
       sqliteAccessMethod.tupleBatchInsert(insertString, tupleBatch);
-      // sqliteAccessMethod.execute("COMMIT TRANSACTION");
     } catch (DbException e) {
       throw e;
     } finally {
@@ -225,18 +215,18 @@ public final class SQLiteAccessMethod extends AccessMethod {
   /**
    * Create a SQLite Connection and then expose the results as an Iterator<TupleBatch>.
    * 
-   * @param pathToSQLiteDb filename of the SQLite database
+   * @param sqliteInfo the SQLite database connection information
    * @param queryString string containing the SQLite query to be executed
    * @param schema the Schema describing the format of the TupleBatch containing these results.
    * @return an Iterator<TupleBatch> containing the results of the query
    * @throws DbException if there is an error in the database.
    */
-  public static Iterator<TupleBatch> tupleBatchIteratorFromQuery(final String pathToSQLiteDb, final String queryString,
+  public static Iterator<TupleBatch> tupleBatchIteratorFromQuery(final SQLiteInfo sqliteInfo, final String queryString,
       final Schema schema) throws DbException {
 
     SQLiteAccessMethod sqliteAccessMethod = null;
     try {
-      sqliteAccessMethod = new SQLiteAccessMethod(SQLiteInfo.of(pathToSQLiteDb), true);
+      sqliteAccessMethod = new SQLiteAccessMethod(sqliteInfo, true);
       return sqliteAccessMethod.tupleBatchIteratorFromQuery(queryString, schema);
     } catch (DbException e) {
       if (sqliteAccessMethod != null) {

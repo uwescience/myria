@@ -9,8 +9,8 @@ import com.google.common.collect.ImmutableList;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
+import edu.washington.escience.myriad.operator.QueryScan;
 import edu.washington.escience.myriad.operator.RootOperator;
-import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.operator.agg.Aggregator;
 import edu.washington.escience.myriad.operator.agg.SingleGroupByAggregateNoBuffer;
@@ -41,11 +41,10 @@ public class AggregateQuerySQLiteMyriaAggregate implements QueryPlanGenerator {
   @Override
   public Map<Integer, RootOperator[]> getWorkerPlan(int[] allWorkers) throws Exception {
 
-    final SQLiteQueryScan localScan = new SQLiteQueryScan("select sourceIPAddr, adRevenue from UserVisits", scanSchema);
+    final QueryScan localScan = new QueryScan("select sourceIPAddr, adRevenue from UserVisits", scanSchema);
 
     final SingleGroupByAggregateNoBuffer localAgg =
-        new SingleGroupByAggregateNoBuffer(localScan, new int[] { 1 }, 0,
-            new int[] { Aggregator.AGG_OP_SUM });
+        new SingleGroupByAggregateNoBuffer(localScan, new int[] { 1 }, 0, new int[] { Aggregator.AGG_OP_SUM });
 
     final ExchangePairID shuffleLocalGroupByID = ExchangePairID.newID();
 

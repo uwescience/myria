@@ -10,8 +10,8 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.operator.LocalJoin;
+import edu.washington.escience.myriad.operator.QueryScan;
 import edu.washington.escience.myriad.operator.RootOperator;
-import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.operator.TBQueueExporter;
 import edu.washington.escience.myriad.operator.agg.Aggregate;
@@ -36,8 +36,8 @@ public class CountStar implements QueryPlanGenerator {
   public Map<Integer, RootOperator[]> getWorkerPlan(int[] allWorkers) throws Exception {
     final ExchangePairID collectCountID = ExchangePairID.newID();
 
-    final SQLiteQueryScan countDictionary = new SQLiteQueryScan("select count(*),0 from Dictionary", countSchema);
-    final SQLiteQueryScan countTriples = new SQLiteQueryScan("select count(*),0 from Triples", countSchema);
+    final QueryScan countDictionary = new QueryScan("select count(*),0 from Dictionary", countSchema);
+    final QueryScan countTriples = new QueryScan("select count(*),0 from Triples", countSchema);
 
     final LocalJoin countMergeJoin = new LocalJoin(countDictionary, countTriples, new int[] { 1 }, new int[] { 1 });
 

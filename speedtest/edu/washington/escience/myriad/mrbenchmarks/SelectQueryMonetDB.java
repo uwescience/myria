@@ -10,7 +10,7 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.accessmethod.JdbcInfo;
-import edu.washington.escience.myriad.operator.JdbcQueryScan;
+import edu.washington.escience.myriad.operator.QueryScan;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
@@ -43,8 +43,8 @@ public class SelectQueryMonetDB implements QueryPlanGenerator {
   public Map<Integer, RootOperator[]> getWorkerPlan(int[] allWorkers) throws Exception {
 
     // SELECT pageURL, pageRank FROM Rankings WHERE pageRank > X;
-    JdbcQueryScan selectPageRank =
-        new JdbcQueryScan(jdbcInfo, "select pageURL, pageRank from Rankings where pageRank > 10 ", outputSchema);
+    QueryScan selectPageRank =
+        new QueryScan("select pageURL, pageRank from Rankings where pageRank > 10 ", outputSchema);
     // final SQLiteQueryScan selectPageRank =
     // new SQLiteQueryScan("select pageURL, pageRank from Rankings where pageRank > 10 ", outputSchema);
 

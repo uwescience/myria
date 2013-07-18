@@ -23,8 +23,8 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
+import edu.washington.escience.myriad.operator.QueryScan;
 import edu.washington.escience.myriad.operator.SQLiteInsert;
-import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.util.FSUtils;
 import edu.washington.escience.myriad.util.SQLiteUtils;
 import edu.washington.escience.myriad.util.TestUtils;
@@ -60,7 +60,7 @@ public class SQLiteAccessMethodTest {
     TupleBatch tb = null;
     while ((tb = tbb.popAny()) != null) {
       final String insertTemplate = SQLiteUtils.insertStatementFromSchema(schema, testtableKey);
-      SQLiteAccessMethod.tupleBatchInsert(dbFile.getAbsolutePath(), insertTemplate, tb);
+      SQLiteAccessMethod.tupleBatchInsert(SQLiteInfo.of(dbFile.getAbsolutePath()), insertTemplate, tb);
     }
 
     final Thread[] threads = new Thread[numThreads];
@@ -70,8 +70,8 @@ public class SQLiteAccessMethodTest {
         public void run() {
           try {
             final Iterator<TupleBatch> it =
-                SQLiteAccessMethod.tupleBatchIteratorFromQuery(dbFile.getAbsolutePath(), "select * from "
-                    + testtableKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), schema);
+                SQLiteAccessMethod.tupleBatchIteratorFromQuery(SQLiteInfo.of(dbFile.getAbsolutePath()),
+                    "select * from " + testtableKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), schema);
             while (it.hasNext()) {
               it.next();
             }
@@ -129,8 +129,8 @@ public class SQLiteAccessMethodTest {
     final String insertTemplate0 = SQLiteUtils.insertStatementFromSchema(schema, testtable0Key);
     final String insertTemplate1 = SQLiteUtils.insertStatementFromSchema(schema, testtable1Key);
     while ((tb = tbb.popAny()) != null) {
-      SQLiteAccessMethod.tupleBatchInsert(dbFile.getAbsolutePath(), insertTemplate0, tb);
-      SQLiteAccessMethod.tupleBatchInsert(dbFile.getAbsolutePath(), insertTemplate1, tb);
+      SQLiteAccessMethod.tupleBatchInsert(SQLiteInfo.of(dbFile.getAbsolutePath()), insertTemplate0, tb);
+      SQLiteAccessMethod.tupleBatchInsert(SQLiteInfo.of(dbFile.getAbsolutePath()), insertTemplate1, tb);
     }
 
     final Thread[] threads = new Thread[numThreads];
@@ -141,8 +141,8 @@ public class SQLiteAccessMethodTest {
         public void run() {
           try {
             final Iterator<TupleBatch> it =
-                SQLiteAccessMethod.tupleBatchIteratorFromQuery(dbFile.getAbsolutePath(), "select * from "
-                    + testtableKeys.get(j % 2).toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), schema);
+                SQLiteAccessMethod.tupleBatchIteratorFromQuery(SQLiteInfo.of(dbFile.getAbsolutePath()),
+                    "select * from " + testtableKeys.get(j % 2).toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), schema);
 
             while (it.hasNext()) {
               it.next();
@@ -200,16 +200,17 @@ public class SQLiteAccessMethodTest {
     final String insertString = SQLiteUtils.insertStatementFromSchema(tableSchema, inputKey);
     TupleBatch tb = null;
     while ((tb = tbl1.popAny()) != null) {
-      SQLiteAccessMethod.tupleBatchInsert(dbFile.getAbsolutePath(), insertString, tb);
+      SQLiteAccessMethod.tupleBatchInsert(SQLiteInfo.of(dbFile.getAbsolutePath()), insertString, tb);
     }
 
     final RelationKey outputKey = RelationKey.of("test", "testWrite", "output");
-    final SQLiteQueryScan scan = new SQLiteQueryScan(inputKey, tableSchema);
+    final QueryScan scan = new QueryScan(inputKey, tableSchema);
     final SQLiteInsert insert = new SQLiteInsert(scan, outputKey, true);
 
-    HashMap<String, Object> sqliteFilename = new HashMap<String, Object>();
-    sqliteFilename.put("sqliteFile", dbFile.getAbsolutePath());
-    final ImmutableMap<String, Object> execEnvVars = ImmutableMap.copyOf(sqliteFilename);
+    HashMap<String, Object> localEnvVars = new HashMap<String, Object>();
+    localEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_SYSTEM, MyriaConstants.STORAGE_SYSTEM_SQLITE);
+    localEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO, SQLiteInfo.of(dbFile.getAbsolutePath()));
+    final ImmutableMap<String, Object> execEnvVars = ImmutableMap.copyOf(localEnvVars);
 
     insert.open(execEnvVars);
     while (!insert.eos()) {
