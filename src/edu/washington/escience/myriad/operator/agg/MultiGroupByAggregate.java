@@ -271,29 +271,26 @@ public final class MultiGroupByAggregate extends Operator {
       switch (childSchema.getColumnType(afield)) {
         case BOOLEAN_TYPE:
           agg[idx] = new BooleanAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
           break;
         case INT_TYPE:
           agg[idx] = new IntegerAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
           break;
         case LONG_TYPE:
           agg[idx] = new LongAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
           break;
         case FLOAT_TYPE:
           agg[idx] = new FloatAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
           break;
         case DOUBLE_TYPE:
           agg[idx] = new DoubleAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
           break;
         case STRING_TYPE:
           agg[idx] = new StringAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
           break;
+        default:
+          throw new IllegalArgumentException("unsupported type: " + childSchema.getColumnType(afield));
       }
+      outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
       idx++;
     }
     return outputSchema;

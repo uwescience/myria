@@ -36,7 +36,7 @@ public final class LongColumn implements Column<Long> {
    * @param data the data
    * @param numData number of tuples.
    * */
-  public LongColumn(final long[] data, final int numData) {
+  LongColumn(final long[] data, final int numData) {
     this.data = data;
     position = numData;
   }

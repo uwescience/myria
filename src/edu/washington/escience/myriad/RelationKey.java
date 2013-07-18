@@ -124,9 +124,4 @@ public final class RelationKey implements Serializable {
         throw new IllegalArgumentException("Unsupported dbms " + dbms);
     }
   }
-
-  public static void main(String[] args) {
-    RelationKey r = RelationKey.of("test", "prog", "tablename");
-    System.out.println(r.toString(MyriaConstants.STORAGE_SYSTEM_VERTICA));
-  }
 }
