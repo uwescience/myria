@@ -211,10 +211,10 @@ public final class DeploymentUtils {
           break;
         }
       } catch (IOException e) {
-        e.printStackTrace();
+        // e.printStackTrace();
       }
       try {
-        Thread.sleep(MyriaConstants.SHORT_WAITING_INTERVAL_10_MS);
+        Thread.sleep(TimeUnit.SECONDS.toMillis(MyriaConstants.MASTER_START_UP_TIMEOUT_IN_SECOND) / 10);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         break;
