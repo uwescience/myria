@@ -959,6 +959,32 @@ public final class Server {
   }
 
   /**
+   * @param relationKey the relationalKey of the dataset to import
+   * @param schema the schema of the dataset to import
+   * @param workersToImportFrom the set of workers
+   * @throws DbException if there is an error
+   */
+  public void importDataset(final RelationKey relationKey, final Schema schema, final Set<Integer> workersToImportFrom)
+      throws DbException {
+
+    /* Figure out the workers we will use. If workersToIngest is null, use all active workers. */
+    Set<Integer> actualWorkers = workersToImportFrom;
+    if (workersToImportFrom == null) {
+      actualWorkers = getAliveWorkers();
+    }
+
+    try {
+      /* Now that the query has finished, add the metadata about this relation to the dataset. */
+      catalog.addRelationMetadata(relationKey, schema);
+      /* Add the round robin-partitioned shard. */
+      catalog.addStoredRelation(relationKey, actualWorkers, "RoundRobin");
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+
+  }
+
+  /**
    * @param relationKey the key of the desired relation.
    * @return the schema of the specified relation, or null if not found.
    * @throws CatalogException if there is an error getting the Schema out of the catalog.
