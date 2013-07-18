@@ -118,7 +118,8 @@ public final class CatalogMaker {
       final Map<String, String> workerConfigurations) throws IOException {
 
     /* The server configuration. */
-    Map<String, HashMap<String, String>> config = READER.load(args[0]);
+    final String configFileName = args[0];
+    Map<String, HashMap<String, String>> config = READER.load(configFileName);
     MasterCatalog c = null;
     try {
       String catalogLocation;
@@ -156,6 +157,9 @@ public final class CatalogMaker {
       /* Add all missing default configuration values to the map. */
       MyriaSystemConfigKeys.addDefaultConfigKeys(configurationValues);
 
+      /* The master-specific values. */
+      configurationValues.put(MyriaSystemConfigKeys.DEPLOYMENT_FILE, configFileName);
+
       c.setAllConfigurationValues(configurationValues);
 
       /* Each worker's configuration. */
@@ -185,13 +189,12 @@ public final class CatalogMaker {
    * @param config the parsed configuration.
    * @param workerConfigurations worker configuration.
    * @param overwrite true/false if want to overwrite old catalog.
-   * @throws CatalogException if can't get information from the master catalog.
    */
   public static void makeOneWorkerCatalog(final String workerId, final String catalogLocation,
       final Map<String, HashMap<String, String>> config, final Map<String, String> workerConfigurations,
-      final boolean overwrite) throws CatalogException {
-    /* Start by making the directory for the worker */
+      final boolean overwrite) {
 
+    /* Start by making the directory for the worker */
     final String dirName = FilenameUtils.concat(catalogLocation, "worker_" + workerId);
     final File dir = new File(dirName);
     while (!dir.exists()) {
@@ -227,8 +230,7 @@ public final class CatalogMaker {
       MyriaSystemConfigKeys.addDefaultConfigKeys(configurationValues);
 
       /* Three worker-specific values. */
-
-      String description = config.get("deployment").get("description");
+      String description = config.get("deployment").get("name");
       String sqliteDbName = "";
       if (description != null) {
         sqliteDbName = FilenameUtils.concat(description, "worker_" + workerId);

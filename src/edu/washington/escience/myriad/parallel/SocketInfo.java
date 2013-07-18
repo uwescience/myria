@@ -6,6 +6,8 @@ import java.util.Objects;
 
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
+import edu.washington.escience.myriad.proto.ControlProto;
+
 /**
  * A simple wrapper that wraps the socket information of both workers and the server (coordinator).
  */
@@ -126,5 +128,20 @@ public final class SocketInfo implements Serializable {
       hostPortString = host + ":" + port;
     }
     return hostPortString;
+  }
+
+  /**
+   * @return the protobuf message representation of this class.
+   * */
+  public ControlProto.SocketInfo toProtobuf() {
+    return ControlProto.SocketInfo.newBuilder().setHost(host).setPort(port).build();
+  }
+
+  /**
+   * @param socketinfo the protobuf version of socket info.
+   * @return a SocketInfo object translated from protobuf.
+   * */
+  public static SocketInfo fromProtobuf(final ControlProto.SocketInfo socketinfo) {
+    return new SocketInfo(socketinfo.getHost(), socketinfo.getPort());
   }
 }
