@@ -74,9 +74,14 @@ public final class MyriaConstants {
   public static final String STORAGE_SYSTEM_MYSQL = "mysql";
 
   /**
-   * Execution environment variable, the sqlite file path.
+   * Execution environment variable, the database name.
    * */
-  public static final String EXEC_ENV_VAR_SQLITE_FILE = "sqliteFile";
+  public static final String EXEC_ENV_VAR_DATABASE_NAME = "execEnvVar.database.name";
+
+  /**
+   * Execution environment variable, the database system.
+   * */
+  public static final String EXEC_ENV_VAR_DATABASE_SYSTEM = "execEnvVar.database.system";
 
   /**
    * Vertica storage.
@@ -158,4 +163,7 @@ public final class MyriaConstants {
 
   /** Time interval between two heartbeats. */
   public static final int HEARTBEAT_INTERVAL = 1000;
+
+  /** the database name. */
+  public static final String STORAGE_DATABASE_NAME = "myria.db";
 }

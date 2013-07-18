@@ -60,17 +60,17 @@ public final class MyriaSystemConfigKeys {
   /**
    * .
    * */
-  public static final String WORKER_STORAGE_SYSTEM_TYPE = "worker.storage.system";
+  public static final String WORKER_STORAGE_DATABASE_SYSTEM = "worker.storage.database.type";
+
+  /**
+   * .
+   * */
+  public static final String WORKER_STORAGE_DATABASE_NAME = "worker.storage.database.name";
 
   /**
    * .
    * */
   public static final String WORKER_IDENTIFIER = "worker.identifier";
-
-  /**
-   * .
-   * */
-  public static final String WORKER_DATA_SQLITE_DB = "worker.data.sqlite.db";
 
   /**
    * .

@@ -171,7 +171,7 @@ public class SystemTestBase {
   public static File getAbsoluteDBFile(final int workerID) throws CatalogException, FileNotFoundException {
     final String workerDir = FilenameUtils.concat(workerTestBaseFolder, "worker_" + workerID);
     final WorkerCatalog wc = WorkerCatalog.open(FilenameUtils.concat(workerDir, "worker.catalog"));
-    final File ret = new File(wc.getConfigurationValue(MyriaSystemConfigKeys.WORKER_DATA_SQLITE_DB));
+    final File ret = new File(wc.getConfigurationValue(MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_NAME));
     wc.close();
     return ret;
   }

@@ -230,17 +230,18 @@ public final class CatalogMaker {
       MyriaSystemConfigKeys.addDefaultConfigKeys(configurationValues);
 
       /* Three worker-specific values. */
-      String description = config.get("deployment").get("name");
-      String sqliteDbName = "";
+      String description = config.get("deployment").get("description");
+      String databaseName = "";
       if (description != null) {
-        sqliteDbName = FilenameUtils.concat(description, "worker_" + workerId);
-        sqliteDbName = FilenameUtils.concat(sqliteDbName, "worker_" + workerId + "_data.db");
+        databaseName = FilenameUtils.concat(description, "worker_" + workerId);
+        databaseName = FilenameUtils.concat(databaseName, "worker_" + workerId + "_data.db");
       } else {
-        sqliteDbName = FilenameUtils.concat(dirName, "worker_" + workerId + "_data.db");
+        databaseName = FilenameUtils.concat(dirName, "worker_" + workerId + "_data.db");
       }
       configurationValues.put(MyriaSystemConfigKeys.WORKER_IDENTIFIER, "" + workerId);
-      configurationValues.put(MyriaSystemConfigKeys.WORKER_STORAGE_SYSTEM_TYPE, MyriaConstants.STORAGE_SYSTEM_SQLITE);
-      configurationValues.put(MyriaSystemConfigKeys.WORKER_DATA_SQLITE_DB, sqliteDbName);
+      configurationValues.put(MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_SYSTEM,
+          MyriaConstants.STORAGE_SYSTEM_SQLITE);
+      configurationValues.put(MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_NAME, databaseName);
 
       /* Set them all in the worker catalog. */
       wc.setAllConfigurationValues(configurationValues);
