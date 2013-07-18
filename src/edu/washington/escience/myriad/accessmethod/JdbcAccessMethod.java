@@ -29,7 +29,7 @@ import edu.washington.escience.myriad.util.JdbcUtils;
  * @author dhalperi
  * 
  */
-public final class JdbcAccessMethod implements AccessMethod {
+public final class JdbcAccessMethod extends AccessMethod {
 
   /** The logger for this class. */
   private static final Logger LOGGER = LoggerFactory.getLogger(JdbcAccessMethod.class);
@@ -61,7 +61,7 @@ public final class JdbcAccessMethod implements AccessMethod {
       Class.forName(jdbcInfo.getDriverClass());
       jdbcConnection = DriverManager.getConnection(jdbcInfo.getConnectionString(), jdbcInfo.getProperties());
     } catch (ClassNotFoundException | SQLException e) {
-      LOGGER.error(e.getMessage(), e);
+      LOGGER.error(e.getMessage());
       throw new DbException(e);
     }
   }
@@ -75,7 +75,7 @@ public final class JdbcAccessMethod implements AccessMethod {
         jdbcConnection.setReadOnly(readOnly);
       }
     } catch (SQLException e) {
-      LOGGER.error(e.getMessage(), e);
+      LOGGER.error(e.getMessage());
       throw new DbException(e);
     }
   }
@@ -92,8 +92,8 @@ public final class JdbcAccessMethod implements AccessMethod {
       statement.executeBatch();
       statement.close();
     } catch (final SQLException e) {
-      LOGGER.error(e.getMessage(), e);
-      throw new RuntimeException(e);
+      LOGGER.error(e.getMessage());
+      throw new RuntimeException(e.getMessage());
     }
   }
 
@@ -107,7 +107,7 @@ public final class JdbcAccessMethod implements AccessMethod {
       final ResultSet resultSet = statement.executeQuery(queryString);
       return new JdbcTupleBatchIterator(resultSet, schema);
     } catch (final SQLException e) {
-      LOGGER.error(e.getMessage(), e);
+      LOGGER.error(e.getMessage());
       throw new DbException(e);
     }
   }
@@ -118,7 +118,7 @@ public final class JdbcAccessMethod implements AccessMethod {
     try {
       jdbcConnection.close();
     } catch (SQLException e) {
-      LOGGER.error(e.getMessage(), e);
+      LOGGER.error(e.getMessage());
       throw new DbException(e);
     }
   }
@@ -131,7 +131,7 @@ public final class JdbcAccessMethod implements AccessMethod {
       statement = jdbcConnection.createStatement();
       statement.execute(ddlCommand);
     } catch (SQLException e) {
-      LOGGER.error(e.getMessage(), e);
+      LOGGER.error(e.getMessage());
       throw new DbException(e);
     }
   }
@@ -229,14 +229,12 @@ public final class JdbcAccessMethod implements AccessMethod {
  * 
  */
 class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
+  /** The logger for this class, uses JdbcAccessMethod settings. */
+  private static final Logger LOGGER = LoggerFactory.getLogger(JdbcAccessMethod.class);
   /** The results from a JDBC query that will be returned in TupleBatches by this Iterator. */
   private final ResultSet resultSet;
   /** The Schema of the TupleBatches returned by this Iterator. */
   private final Schema schema;
-  /** Next TB. */
-  private TupleBatch nextTB = null;
-  /** statement is closed or not. */
-  private boolean statementClosed = false;
 
   /**
    * Constructs a JdbcTupleBatchIterator from the given ResultSet and Schema objects.
@@ -251,60 +249,49 @@ class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
 
   @Override
   public boolean hasNext() {
-    if (nextTB != null) {
-      return true;
-    } else {
-      try {
-        nextTB = getNextTB();
-        return null != nextTB;
-      } catch (final SQLException e) {
-        e.printStackTrace();
-        throw new RuntimeException(e);
-      }
-    }
-  }
-
-  /**
-   * @return next TupleBatch, null if no more
-   * @throws SQLException if any DB system errors
-   * */
-  private TupleBatch getNextTB() throws SQLException {
-    if (statementClosed) {
-      return null;
-    }
-    final int numFields = schema.numColumns();
-    final List<ColumnBuilder<?>> columnBuilders = ColumnFactory.allocateColumns(schema);
-    int numTuples = 0;
-    for (numTuples = 0; numTuples < TupleBatch.BATCH_SIZE; ++numTuples) {
-      if (!resultSet.next()) {
-        final Connection connection = resultSet.getStatement().getConnection();
-        resultSet.getStatement().close();
-        connection.close(); /* Also closes the resultSet */
-        statementClosed = true;
-        break;
-      }
-      for (int colIdx = 0; colIdx < numFields; ++colIdx) {
-        /* Warning: JDBC is 1-indexed */
-        columnBuilders.get(colIdx).appendFromJdbc(resultSet, colIdx + 1);
-      }
-    }
-    if (numTuples > 0) {
-      List<Column<?>> columns = new ArrayList<Column<?>>(columnBuilders.size());
-      for (ColumnBuilder<?> cb : columnBuilders) {
-        columns.add(cb.build());
-      }
-
-      return new TupleBatch(schema, columns, numTuples);
-    } else {
-      return null;
+    try {
+      return !(resultSet.isClosed() || resultSet.isLast());
+    } catch (final SQLException e) {
+      LOGGER.error("Dropping SQLException:" + e);
+      return false;
     }
   }
 
   @Override
   public TupleBatch next() {
-    TupleBatch tmp = nextTB;
-    nextTB = null;
-    return tmp;
+    /* Allocate TupleBatch parameters */
+    final int numFields = schema.numColumns();
+    final List<ColumnBuilder<?>> columnBuilders = ColumnFactory.allocateColumns(schema);
+
+    /**
+     * Loop through resultSet, adding one row at a time. Stop when numTuples hits BATCH_SIZE or there are no more
+     * results.
+     */
+    int numTuples;
+    try {
+      for (numTuples = 0; numTuples < TupleBatch.BATCH_SIZE; ++numTuples) {
+        if (!resultSet.next()) {
+          final Connection connection = resultSet.getStatement().getConnection();
+          resultSet.getStatement().close();
+          connection.close(); /* Also closes the resultSet */
+          break;
+        }
+        for (int colIdx = 0; colIdx < numFields; ++colIdx) {
+          /* Warning: JDBC is 1-indexed */
+          columnBuilders.get(colIdx).appendFromJdbc(resultSet, colIdx + 1);
+        }
+      }
+    } catch (final SQLException e) {
+      LOGGER.error("Got SQLException:" + e + "in JdbcTupleBatchIterator.next()");
+      throw new RuntimeException(e.getMessage());
+    }
+
+    List<Column<?>> columns = new ArrayList<Column<?>>(columnBuilders.size());
+    for (ColumnBuilder<?> cb : columnBuilders) {
+      columns.add(cb.build());
+    }
+
+    return new TupleBatch(schema, columns, numTuples);
   }
 
   @Override

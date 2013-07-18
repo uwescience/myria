@@ -6,6 +6,7 @@ package edu.washington.escience.myriad.accessmethod;
 import java.util.Iterator;
 
 import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 
@@ -15,7 +16,28 @@ import edu.washington.escience.myriad.TupleBatch;
  * @author valmeida
  * 
  */
-public interface AccessMethod {
+public abstract class AccessMethod {
+
+  /**
+   * Factory.
+   * 
+   * @param dbms the DBMS
+   * @param connectionInfo the connection info
+   * @param readOnly the flag for read-only
+   * @return the object of type AccessMethod
+   * @throws DbException if anything goes wrong on connecting
+   */
+  public static AccessMethod of(final String dbms, final ConnectionInfo connectionInfo, final Boolean readOnly)
+      throws DbException {
+    switch (dbms) {
+      case MyriaConstants.STORAGE_SYSTEM_SQLITE:
+        return new SQLiteAccessMethod((SQLiteInfo) connectionInfo, readOnly);
+      case MyriaConstants.STORAGE_SYSTEM_MONETDB:
+      case MyriaConstants.STORAGE_SYSTEM_MYSQL:
+        return new JdbcAccessMethod((JdbcInfo) connectionInfo, readOnly);
+    }
+    return null;
+  }
 
   /**
    * Connects with the database.
@@ -24,7 +46,7 @@ public interface AccessMethod {
    * @param readOnly whether read-only connection or not
    * @throws DbException if there is an error making the connection.
    */
-  void connect(final ConnectionInfo connectionInfo, final Boolean readOnly) throws DbException;
+  abstract void connect(final ConnectionInfo connectionInfo, final Boolean readOnly) throws DbException;
 
   /**
    * Sets the connection to be read-only or writable.
@@ -32,7 +54,7 @@ public interface AccessMethod {
    * @param readOnly whether read-only connection or not
    * @throws DbException if there is an error making the connection.
    */
-  void setReadOnly(final Boolean readOnly) throws DbException;
+  abstract void setReadOnly(final Boolean readOnly) throws DbException;
 
   /**
    * Insert the tuples in this TupleBatch into the database.
@@ -41,17 +63,18 @@ public interface AccessMethod {
    * @param tupleBatch the tupleBatch to be inserted
    * @throws DbException if there is an error inserting the tuples.
    */
-  void tupleBatchInsert(final String insertString, final TupleBatch tupleBatch) throws DbException;
+  public abstract void tupleBatchInsert(final String insertString, final TupleBatch tupleBatch) throws DbException;
 
   /**
    * Runs a query and expose the results as an Iterator<TupleBatch>.
    * 
    * @param queryString the query
-   * @param schema the Schema of the tuples to be returned.
+   * @param schema the output schema (with SQLite we are not able to reconstruct the schema from the API)
    * @return an Iterator<TupleBatch> containing the results.
    * @throws DbException if there is an error getting tuples.
    */
-  Iterator<TupleBatch> tupleBatchIteratorFromQuery(final String queryString, final Schema schema) throws DbException;
+  public abstract Iterator<TupleBatch> tupleBatchIteratorFromQuery(final String queryString, final Schema schema)
+      throws DbException;
 
   /**
    * Executes a DDL command.
@@ -59,13 +82,13 @@ public interface AccessMethod {
    * @param ddlCommand the DDL command
    * @throws DbException if there is an error in the database.
    */
-  void execute(final String ddlCommand) throws DbException;
+  abstract void execute(final String ddlCommand) throws DbException;
 
   /**
    * Closes the database connection.
    * 
    * @throws DbException if there is an error in the database.
    */
-  void close() throws DbException;
+  abstract void close() throws DbException;
 
 }

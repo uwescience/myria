@@ -2,7 +2,6 @@ package edu.washington.escience.myriad.accessmethod;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -15,7 +14,6 @@ import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 
 import edu.washington.escience.myriad.DbException;
-import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.column.Column;
@@ -28,7 +26,7 @@ import edu.washington.escience.myriad.column.ColumnFactory;
  * @author dhalperi
  * 
  */
-public final class SQLiteAccessMethod implements AccessMethod {
+public final class SQLiteAccessMethod extends AccessMethod {
 
   /** Default busy timeout is one second. */
   private static final long DEFAULT_BUSY_TIMEOUT = 1000;
@@ -62,19 +60,44 @@ public final class SQLiteAccessMethod implements AccessMethod {
 
     this.readOnly = readOnly;
     sqliteInfo = (SQLiteInfo) connectionInfo;
+
+    LOGGER.info("DB open: " + sqliteInfo.getDatabase());
+
+    File dbFile = new File(sqliteInfo.getDatabase());
+    if (!dbFile.exists()) {
+      throw new DbException("Database file " + sqliteInfo.getDatabase() + " does not exist!");
+    } else {
+      LOGGER.info("Database file " + sqliteInfo.getDatabase() + " exists");
+    }
+
     sqliteConnection = null;
     try {
-      sqliteConnection = new SQLiteConnection(new File(connectionInfo.getDatabase()));
+      sqliteConnection = new SQLiteConnection(new File(sqliteInfo.getDatabase()));
+      LOGGER.info("before open");
       if (readOnly) {
         sqliteConnection.openReadonly();
       } else {
         sqliteConnection.open(false);
       }
+      LOGGER.info("after open");
+      LOGGER.info("before setBusyTimeout");
       sqliteConnection.setBusyTimeout(SQLiteAccessMethod.DEFAULT_BUSY_TIMEOUT);
+      LOGGER.info("after setBusyTimeout");
     } catch (final SQLiteException e) {
-      LOGGER.error(e.getMessage(), e);
-      throw new DbException(e);
+      LOGGER.error(e.getErrorCode() + "-" + e.getMessage());
+      throw new DbException(e.getErrorCode() + "-" + e.getMessage() + " filename: " + sqliteInfo.getDatabase());
     }
+  }
+
+  /**
+   * Initialization function.
+   * 
+   * TODO: refactor to put this funcion up in the class hierarchy.
+   * 
+   * @throws DbException in case of database errors.
+   */
+  public void init() throws DbException {
+    execute("PRAGMA journal_mode=WAL;");
   }
 
   @Override
@@ -105,8 +128,8 @@ public final class SQLiteAccessMethod implements AccessMethod {
       sqliteConnection.exec("COMMIT TRANSACTION");
 
     } catch (final SQLiteException e) {
-      LOGGER.error(e.getMessage(), e);
-      throw new DbException(e);
+      LOGGER.error(e.getMessage());
+      throw new DbException(e.getMessage());
     } finally {
       if (statement != null && !statement.isDisposed()) {
         statement.dispose();
@@ -145,10 +168,9 @@ public final class SQLiteAccessMethod implements AccessMethod {
           throw new DbException(e);
         }
         try {
-          Thread.sleep(MyriaConstants.SHORT_WAITING_INTERVAL_10_MS);
+          Thread.sleep(10);
         } catch (InterruptedException e1) {
-          Thread.currentThread().interrupt();
-          return Collections.<TupleBatch> emptyList().iterator();
+          e1.printStackTrace();
         }
       }
     }
@@ -157,7 +179,7 @@ public final class SQLiteAccessMethod implements AccessMethod {
       /* Step the statement once so we can figure out the Schema */
       statement.step();
     } catch (final SQLiteException e) {
-      LOGGER.error(e.getMessage(), e);
+      LOGGER.error(e.getMessage());
       throw new DbException(e);
     }
 
@@ -171,8 +193,8 @@ public final class SQLiteAccessMethod implements AccessMethod {
     try {
       sqliteConnection.exec(ddlCommand);
     } catch (final SQLiteException e) {
-      LOGGER.error(e.getMessage(), e);
-      throw new DbException(e);
+      LOGGER.error(e.getMessage());
+      throw new DbException(e.getMessage());
     }
   }
 
@@ -180,6 +202,7 @@ public final class SQLiteAccessMethod implements AccessMethod {
   public void close() throws DbException {
     if (sqliteConnection != null) {
       sqliteConnection.dispose();
+      sqliteConnection = null;
     }
   }
 
@@ -200,6 +223,8 @@ public final class SQLiteAccessMethod implements AccessMethod {
       // sqliteAccessMethod.execute("BEGIN TRANSACTION");
       sqliteAccessMethod.tupleBatchInsert(insertString, tupleBatch);
       // sqliteAccessMethod.execute("COMMIT TRANSACTION");
+    } catch (DbException e) {
+      throw e;
     } finally {
       if (sqliteAccessMethod != null) {
         sqliteAccessMethod.close();
@@ -278,7 +303,7 @@ class SQLiteTupleBatchIterator implements Iterator<TupleBatch> {
       }
       this.schema = schema;
     } catch (final SQLiteException e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException(e.getMessage());
     }
   }
 
@@ -311,8 +336,8 @@ class SQLiteTupleBatchIterator implements Iterator<TupleBatch> {
         statement.step();
       }
     } catch (final SQLiteException e) {
-      LOGGER.error("Got in TupleBatchIterator.next()", e);
-      throw new RuntimeException(e);
+      LOGGER.error("Got SQLiteException:" + e + "in TupleBatchIterator.next()");
+      throw new RuntimeException(e.getMessage());
     }
 
     List<Column<?>> columns = new ArrayList<Column<?>>(columnBuilders.size());
