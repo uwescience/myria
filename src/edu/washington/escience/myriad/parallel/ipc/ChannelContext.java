@@ -525,26 +525,34 @@ class ChannelContext extends AttachmentableAdapter {
    * @param recycleBin channel recycle bin. The place where currently-unused-but-waiting-for-possible-reuse channels
    *          reside.
    */
-  public final void errorEncountered(final ConcurrentHashMap<Channel, Channel> unregisteredNewChannels,
+  final void errorEncountered(final ConcurrentHashMap<Channel, Channel> unregisteredNewChannels,
       final ConcurrentHashMap<Channel, Channel> recycleBin, final ChannelGroup trashBin,
       final ChannelPrioritySet channelPool) {
     synchronized (stateMachineLock) {
-      unregisteredNewChannels.remove(ownerChannel);
-      if (channelPool != null) {
-        channelPool.remove(ownerChannel);
-      }
-      recycleBin.remove(ownerChannel);
-      trashBin.remove(ownerChannel);
-      connected = false;
-      registered = false;
-      inPool = false;
-      inRecycleBin = false;
-      inTrashBin = false;
-      newConnection = false;
-      closeRequested = false;
-      alive = false;
-      synchronized (channelRegisterLock) {
-        channelRegisterLock.notifyAll();
+      if (connected) {
+        unregisteredNewChannels.remove(ownerChannel);
+        if (channelPool != null) {
+          channelPool.remove(ownerChannel);
+        }
+        recycleBin.remove(ownerChannel);
+        trashBin.remove(ownerChannel);
+        connected = false;
+        registered = false;
+        inPool = false;
+        inRecycleBin = false;
+        inTrashBin = false;
+        newConnection = false;
+        closeRequested = false;
+        alive = false;
+        if (ownerChannel.getParent() == null) {
+          synchronized (channelRegisterLock) {
+            channelRegisterLock.notifyAll();
+          }
+
+          synchronized (remoteReplyLock) {
+            remoteReplyLock.notifyAll();
+          }
+        }
       }
     }
     ownerChannel.close();
