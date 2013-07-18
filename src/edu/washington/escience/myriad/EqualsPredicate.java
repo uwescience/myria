@@ -43,7 +43,7 @@ public class EqualsPredicate implements Predicate {
   public final ImmutableBitSet filter(final TupleBatch tb) {
     Preconditions.checkNotNull(tb);
     ImmutableList<Column<?>> columns = tb.getDataColumns();
-    final int[] validIndices = tb.getValidIndices();
+
     Schema schema = tb.getSchema();
     BitSet result = new BitSet();
 
@@ -51,7 +51,7 @@ public class EqualsPredicate implements Predicate {
     if (type == Type.INT_TYPE) {
       // the column is an int type
       IntColumn compareColumn = (IntColumn) columns.get(compareIndex);
-      for (int idx : validIndices) {
+      for (int idx : tb.getValidIndices()) {
         if (compareColumn.getInt(idx) == Integer.valueOf(compareValue)) {
           result.set(idx);
         }
@@ -59,7 +59,7 @@ public class EqualsPredicate implements Predicate {
     } else if (type == Type.DOUBLE_TYPE) {
       // the column is a double type
       DoubleColumn compareColumn = (DoubleColumn) columns.get(compareIndex);
-      for (int idx : validIndices) {
+      for (int idx : tb.getValidIndices()) {
         if (Double.compare(Double.valueOf(compareValue), compareColumn.getDouble(idx)) == 0) {
           result.set(idx);
         }
@@ -67,7 +67,7 @@ public class EqualsPredicate implements Predicate {
     } else if (type == Type.FLOAT_TYPE) {
       // the column is a float type
       FloatColumn compareColumn = (FloatColumn) columns.get(compareIndex);
-      for (int idx : validIndices) {
+      for (int idx : tb.getValidIndices()) {
         if (Float.compare(Float.valueOf(compareValue), compareColumn.getFloat(idx)) == 0) {
           result.set(idx);
         }
@@ -75,7 +75,7 @@ public class EqualsPredicate implements Predicate {
     } else if (type == Type.LONG_TYPE) {
       // the column is a long type
       LongColumn compareColumn = (LongColumn) columns.get(compareIndex);
-      for (int idx : validIndices) {
+      for (int idx : tb.getValidIndices()) {
         if (compareColumn.getLong(idx) == Long.valueOf(compareValue)) {
           result.set(idx);
         }
@@ -83,7 +83,7 @@ public class EqualsPredicate implements Predicate {
     } else if (type == Type.STRING_TYPE) {
       // the column is a string type
       StringColumn compareColumn = (StringColumn) columns.get(compareIndex);
-      for (int idx : validIndices) {
+      for (int idx : tb.getValidIndices()) {
         if (compareColumn.getString(idx).equals(compareValue)) {
           result.set(idx);
         }

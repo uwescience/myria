@@ -82,7 +82,7 @@ public class SingleGroupByAggregateNoBuffer extends Operator {
    * The buffer storing in-progress group by results. {groupby-column-value -> Aggregator Array} when the group key is
    * String
    * */
-  private transient HashMap<String, Aggregator<?>[]> groupAggs;
+  private transient HashMap<String, Aggregator<?>[]> groupAggsString;
 
   /**
    * he buffer stroing in-progress group by results when the group key is int.
@@ -149,29 +149,27 @@ public class SingleGroupByAggregateNoBuffer extends Operator {
       switch (aColumnTypes[idx]) {
         case BOOLEAN_TYPE:
           agg[idx] = new BooleanAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
           break;
         case INT_TYPE:
           agg[idx] = new IntegerAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
           break;
         case LONG_TYPE:
           agg[idx] = new LongAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
           break;
         case FLOAT_TYPE:
           agg[idx] = new FloatAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
           break;
         case DOUBLE_TYPE:
           agg[idx] = new DoubleAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
           break;
         case STRING_TYPE:
           agg[idx] = new StringAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
           break;
+        default:
+          throw new IllegalArgumentException("Unknown column type: " + aColumnTypes[idx]);
       }
+
+      outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
       idx++;
     }
     schema = outputSchema;
@@ -187,7 +185,7 @@ public class SingleGroupByAggregateNoBuffer extends Operator {
   @Override
   protected final void cleanup() throws DbException {
 
-    groupAggs = null;
+    groupAggsString = null;
     groupAggsDouble = null;
     groupAggsFloat = null;
     groupAggsInt = null;
@@ -261,13 +259,13 @@ public class SingleGroupByAggregateNoBuffer extends Operator {
       case STRING_TYPE:
         for (int i = 0; i < tb.numTuples(); i++) {
           String groupByKey = tb.getString(gColumn, i);
-          Aggregator<?>[] groupAgg = groupAggs.get(groupByKey);
+          Aggregator<?>[] groupAgg = groupAggsString.get(groupByKey);
           if (groupAgg == null) {
             groupAgg = new Aggregator<?>[agg.length];
             for (int j = 0; j < agg.length; j++) {
               groupAgg[j] = agg[j].freshCopyYourself();
             }
-            groupAggs.put(groupByKey, groupAgg);
+            groupAggsString.put(groupByKey, groupAgg);
           }
           for (int j = 0; j < afields.length; j++) {
             addValue2Group(tb, i, afields[j], aColumnTypes[j], groupAgg[j]);
@@ -369,7 +367,7 @@ public class SingleGroupByAggregateNoBuffer extends Operator {
         }
         break;
       case STRING_TYPE:
-        for (final Map.Entry<String, Aggregator<?>[]> e : groupAggs.entrySet()) {
+        for (final Map.Entry<String, Aggregator<?>[]> e : groupAggsString.entrySet()) {
           final String groupByValue = e.getKey();
           final Aggregator<?>[] aggLocal = e.getValue();
           resultBuffer.put(0, groupByValue);
@@ -504,7 +502,7 @@ public class SingleGroupByAggregateNoBuffer extends Operator {
         groupAggsDouble = new TDoubleObjectHashMap<Aggregator<?>[]>();
         break;
       case STRING_TYPE:
-        groupAggs = new HashMap<String, Aggregator<?>[]>();
+        groupAggsString = new HashMap<String, Aggregator<?>[]>();
         break;
     }
     resultBuffer = new TupleBatchBuffer(schema);

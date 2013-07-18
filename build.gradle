@@ -71,6 +71,7 @@ ext.slf4jVersion = "1.7.5"
 ext.jerseyVersion = "1.17.1"
 
 dependencies {
+  compile "net.jcip:jcip-annotations:1.0"
   compile "org.ini4j:ini4j:0.5.2"
   compile "com.carrotsearch:hppc:0.4.3"
   compile "com.almworks.sqlite4java:sqlite4java:0.282"
