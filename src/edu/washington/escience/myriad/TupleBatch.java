@@ -11,6 +11,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import net.jcip.annotations.ThreadSafe;
+
 import org.apache.commons.lang3.tuple.Pair;
 
 import com.almworks.sqlite4java.SQLiteException;
@@ -32,8 +34,8 @@ import edu.washington.escience.myriad.column.StringColumn;
 import edu.washington.escience.myriad.parallel.PartitionFunction;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.util.IPCUtils;
-import edu.washington.escience.myriad.util.ImmutableIntArray;
 import edu.washington.escience.myriad.util.ImmutableBitSet;
+import edu.washington.escience.myriad.util.ImmutableIntArray;
 
 /**
  * Container class for a batch of tuples. The goal is to amortize memory management overhead.
@@ -41,6 +43,7 @@ import edu.washington.escience.myriad.util.ImmutableBitSet;
  * @author dhalperi
  * 
  */
+@ThreadSafe
 public class TupleBatch implements Serializable {
   /**
    * 
