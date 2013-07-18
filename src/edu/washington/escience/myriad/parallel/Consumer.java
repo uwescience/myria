@@ -136,9 +136,8 @@ public class Consumer extends LeafOperator {
     }
     workerIdToIndex = new TUnmodifiableIntIntMap(tmp);
 
-    QueryExecutionMode executionMode = (QueryExecutionMode) execUnitEnv.get(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE);
-    nonBlockingExecution = (executionMode == QueryExecutionMode.NON_BLOCKING);
-
+    TaskResourceManager qem = (TaskResourceManager) execUnitEnv.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER);
+    nonBlockingExecution = qem.getExecutionMode() == QueryExecutionMode.NON_BLOCKING;
   }
 
   /**

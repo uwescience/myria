@@ -357,6 +357,10 @@ public final class Server {
     return execEnvVars;
   }
 
+  QueryExecutionMode getExecutionMode() {
+    return QueryExecutionMode.NON_BLOCKING;
+  }
+
   /**
    * Construct a server object, with configuration stored in the specified catalog file.
    * 
@@ -403,9 +407,6 @@ public final class Server {
         new IPCConnectionPool(MyriaConstants.MASTER_ID, computingUnits, IPCConfigurations
             .createMasterIPCServerBootstrap(this), IPCConfigurations.createMasterIPCClientBootstrap(this),
             new TransportMessageSerializer(), new QueueBasedShortMessageProcessor<TransportMessage>(messageQueue));
-
-    execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_IPC_CONNECTION_POOL, connectionPool);
-    execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE, QueryExecutionMode.NON_BLOCKING);
 
     scheduledTaskExecutor =
         Executors.newSingleThreadScheduledExecutor(new RenamingThreadFactory("Master global timer"));

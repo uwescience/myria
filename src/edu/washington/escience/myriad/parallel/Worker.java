@@ -622,9 +622,6 @@ public final class Worker {
         throw new CatalogException("Unknown worker type: " + databaseType);
     }
 
-    execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_IPC_CONNECTION_POOL, connectionPool);
-    execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE, queryExecutionMode);
-
   }
 
   /**

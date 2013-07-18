@@ -494,7 +494,10 @@ public class MasterQueryPartition implements QueryPartition {
 
   @Override
   public final void init() {
-    rootTask.init(ImmutableMap.copyOf(master.getExecEnvVars()));
+    ImmutableMap.Builder<String, Object> b = ImmutableMap.builder();
+    TaskResourceManager resourceManager =
+        new TaskResourceManager(master.getIPCConnectionPool(), rootTask, master.getExecutionMode());
+    rootTask.init(resourceManager, b.putAll(master.getExecEnvVars()).build());
   }
 
   @Override

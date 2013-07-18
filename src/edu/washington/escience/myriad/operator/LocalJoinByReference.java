@@ -17,6 +17,7 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.parallel.QueryExecutionMode;
+import edu.washington.escience.myriad.parallel.TaskResourceManager;
 import edu.washington.escience.myriad.util.MyriaUtils;
 
 /**
@@ -417,8 +418,8 @@ public final class LocalJoinByReference extends Operator {
     leftHashTable = new IntObjectOpenHashMap<List<IndexedTuple>>();
     rightHashTable = new IntObjectOpenHashMap<List<IndexedTuple>>();
     ans = new TupleBatchBuffer(outputSchema);
-    QueryExecutionMode qem = (QueryExecutionMode) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE);
-    nonBlocking = qem == QueryExecutionMode.NON_BLOCKING;
+    TaskResourceManager qem = (TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER);
+    nonBlocking = qem.getExecutionMode() == QueryExecutionMode.NON_BLOCKING;
   }
 
   /**

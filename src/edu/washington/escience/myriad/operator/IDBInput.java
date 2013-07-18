@@ -20,7 +20,7 @@ import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.parallel.Consumer;
 import edu.washington.escience.myriad.parallel.ExchangePairID;
-import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
+import edu.washington.escience.myriad.parallel.TaskResourceManager;
 import edu.washington.escience.myriad.parallel.ipc.StreamOutputChannel;
 
 /**
@@ -75,7 +75,7 @@ public class IDBInput extends Operator {
   /**
    * For IPC communication. Specifically, for doing EOI report.
    * */
-  private transient IPCConnectionPool connectionPool;
+  private transient TaskResourceManager resourceManager;
   /**
    * The same as in DupElim.
    * */
@@ -269,8 +269,8 @@ public class IDBInput extends Operator {
     emptyDelta = true;
     uniqueTupleIndices = new HashMap<Integer, List<Integer>>();
     uniqueTuples = new TupleBatchBuffer(getSchema());
-    connectionPool = (IPCConnectionPool) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_IPC_CONNECTION_POOL);
-    eoiReportChannel = connectionPool.reserveLongTermConnection(controllerWorkerID, controllerOpID.getLong());
+    resourceManager = (TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER);
+    eoiReportChannel = resourceManager.startAStream(controllerWorkerID, controllerOpID);
   }
 
   @Override
@@ -291,7 +291,7 @@ public class IDBInput extends Operator {
     uniqueTuples = null;
     eoiReportChannel.release();
     eoiReportChannel = null;
-    connectionPool = null;
+    resourceManager = null;
   }
 
   /**

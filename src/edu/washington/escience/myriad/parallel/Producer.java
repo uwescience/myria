@@ -31,7 +31,7 @@ public abstract class Producer extends RootOperator {
    * The worker this operator is located at.
    * 
    */
-  private transient IPCConnectionPool connectionPool;
+  private transient TaskResourceManager taskResourceManager;
   /**
    * the netty channels doing the true IPC IO.
    * */
@@ -148,14 +148,13 @@ public abstract class Producer extends RootOperator {
   @SuppressWarnings("unchecked")
   @Override
   public final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    connectionPool = (IPCConnectionPool) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_IPC_CONNECTION_POOL);
-    drivingTask = (QuerySubTreeTask) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DRIVING_TASK);
+    taskResourceManager = (TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER);
     ioChannels = new StreamOutputChannel[outputIDs.length];
     buffers = new TupleBatchBuffer[outputIDs.length];
     localizedOutputIDs = new StreamIOChannelID[outputIDs.length];
     for (int i = 0; i < outputIDs.length; i++) {
       if (outputIDs[i].getRemoteID() == IPCConnectionPool.SELF_IPC_ID) {
-        localizedOutputIDs[i] = new StreamIOChannelID(outputIDs[i].getStreamID(), connectionPool.getMyIPCID());
+        localizedOutputIDs[i] = new StreamIOChannelID(outputIDs[i].getStreamID(), taskResourceManager.getMyWorkerID());
       } else {
         localizedOutputIDs[i] = outputIDs[i];
       }
@@ -163,27 +162,25 @@ public abstract class Producer extends RootOperator {
     for (int i = 0; i < localizedOutputIDs.length; i++) {
       final int j = i;
       ioChannels[i] =
-          connectionPool.reserveLongTermConnection(localizedOutputIDs[i].getRemoteID(), localizedOutputIDs[i]
-              .getStreamID());
+          taskResourceManager.startAStream(localizedOutputIDs[i].getRemoteID(), localizedOutputIDs[i].getStreamID());
       ioChannels[i].addListener(StreamOutputChannel.OUTPUT_DISABLED, new IPCEventListener() {
 
         @Override
         public void triggered(final IPCEvent event) {
-          drivingTask.notifyOutputDisabled(localizedOutputIDs[j]);
+          taskResourceManager.getOwnerTask().notifyOutputDisabled(localizedOutputIDs[j]);
         }
       });
       ioChannels[i].addListener(StreamOutputChannel.OUTPUT_RECOVERED, new IPCEventListener() {
 
         @Override
         public void triggered(final IPCEvent event) {
-          drivingTask.notifyOutputEnabled(localizedOutputIDs[j]);
+          taskResourceManager.getOwnerTask().notifyOutputEnabled(localizedOutputIDs[j]);
         }
       });
       buffers[i] = new TupleBatchBuffer(getSchema());
     }
 
-    QueryExecutionMode executionMode = (QueryExecutionMode) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE);
-    nonBlockingExecution = (executionMode == QueryExecutionMode.NON_BLOCKING);
+    nonBlockingExecution = (taskResourceManager.getExecutionMode() == QueryExecutionMode.NON_BLOCKING);
   }
 
   /**
@@ -231,18 +228,6 @@ public abstract class Producer extends RootOperator {
     buffers = null;
     ioChannels = null;
   }
-
-  /**
-   * @return my connection pool.
-   * */
-  protected final IPCConnectionPool getConnectionPool() {
-    return connectionPool;
-  }
-
-  /**
-   * The driving task of this operator.
-   * */
-  private transient QuerySubTreeTask drivingTask;
 
   /**
    * @param myWorkerID for parsing self-references.

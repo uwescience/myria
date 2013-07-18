@@ -99,6 +99,8 @@ public final class QuerySubTreeTask {
    * */
   private final Object executionLock = new Object();
 
+  private volatile TaskResourceManager resourceManager;
+
   /**
    * @return the task execution future.
    */
@@ -433,7 +435,6 @@ public final class QuerySubTreeTask {
         taskExecutionFuture.setFailure(failureCause);
       } else if (root.eos()) {
         AtomicUtils.setBitByValue(executionCondition, STATE_EOS);
-
         cleanup(false);
         taskExecutionFuture.setSuccess();
       } else if ((executionCondition.get() & STATE_KILLED) == STATE_KILLED) {
@@ -543,6 +544,10 @@ public final class QuerySubTreeTask {
         if (!failed) {
           taskExecutionFuture.setFailure(ee);
         }
+      } finally {
+        if (resourceManager != null) {
+          resourceManager.cleanup();
+        }
       }
     }
   }
@@ -597,11 +602,14 @@ public final class QuerySubTreeTask {
    * 
    * @param execEnvVars execution environment variable.
    * */
-  public void init(final ImmutableMap<String, Object> execEnvVars) {
+  public void init(final TaskResourceManager resourceManager, final ImmutableMap<String, Object> execEnvVars) {
     try {
       synchronized (executionLock) {
         ImmutableMap.Builder<String, Object> b = ImmutableMap.builder();
-        root.open(b.putAll(execEnvVars).put(MyriaConstants.EXEC_ENV_VAR_DRIVING_TASK, this).build());
+        b.put(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER, resourceManager);
+        b.putAll(execEnvVars);
+        this.resourceManager = resourceManager;
+        root.open(b.build());
       }
       AtomicUtils.setBitByValue(executionCondition, STATE_INITIALIZED);
     } catch (Throwable e) {
@@ -613,5 +621,4 @@ public final class QuerySubTreeTask {
       taskExecutionFuture.setFailure(e);
     }
   }
-
 }
