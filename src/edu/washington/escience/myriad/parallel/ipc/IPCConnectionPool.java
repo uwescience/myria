@@ -90,10 +90,10 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
           if (ecc.numReferenced() <= 0) {
             // only close the connection if no one is using the connection.
             // And the connections are closed by the server side.
-            if (!cc.isClientChannel() && !c.isReadable()) {
+            if (c.getParent() != null && !c.isReadable()) {
               IPCUtils.resumeRead(c);
             }
-            if (cc.isClientChannel() || (cc.isCloseRequested())) {
+            if (c.getParent() == null || (cc.isCloseRequested())) {
               final ChannelFuture cf = cc.getMostRecentWriteFuture();
               if (cf != null) {
                 cf.addListener(new ChannelFutureListener() {
@@ -648,7 +648,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
     if (connected) {
       final Channel channel = c.getChannel();
       if (channel.isConnected()) {
-        final ChannelContext cc = new ChannelContext(channel, true);
+        final ChannelContext cc = new ChannelContext(channel);
         channel.setAttachment(cc);
         cc.connected();
         final ChannelFuture idWriteFuture = channel.write(myIDMsg);
@@ -709,7 +709,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
     if (ipcID == myID) {
       try {
         InJVMChannel ch = new InJVMChannel(localInJVMPipelineFactory.getPipeline(), localInJVMChannelSink);
-        final ChannelContext cc = new ChannelContext(ch, true);
+        final ChannelContext cc = new ChannelContext(ch);
         ch.setAttachment(cc);
         cc.connected();
         cc.registerNormal(myID, remote.registeredChannels, unregisteredChannels);
@@ -811,7 +811,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
     }
     allPossibleChannels.add(newChannel);
     allAcceptedRemoteChannels.add(newChannel);
-    newChannel.setAttachment(new ChannelContext(newChannel, false));
+    newChannel.setAttachment(new ChannelContext(newChannel));
     synchronized (unregisteredChannelSetLock) {
       unregisteredChannels.put(newChannel, newChannel);
     }
@@ -1371,7 +1371,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
     this.localInJVMPipelineFactory = localInJVMPipelineFactory;
 
     inJVMShortMessageChannel = new InJVMChannel(localInJVMPipelineFactory.getPipeline(), localInJVMChannelSink);
-    final ChannelContext cc = new ChannelContext(inJVMShortMessageChannel, true);
+    final ChannelContext cc = new ChannelContext(inJVMShortMessageChannel);
     inJVMShortMessageChannel.setAttachment(cc);
     cc.connected();
     cc.registerNormal(myID, myself.registeredChannels, unregisteredChannels);
