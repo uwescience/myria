@@ -92,17 +92,10 @@ public final class Server {
             final ControlMessage controlM = m.getControlMessage();
             switch (controlM.getType()) {
               case WORKER_HEARTBEAT:
-                LOGGER.debug("getting heartbeat from worker " + senderID);
-                if (scheduledWorkers.containsKey(senderID)) {
-                  SocketInfo newWorker = scheduledWorkers.remove(senderID);
-                  scheduledWorkersTime.remove(senderID);
-                  if (newWorker != null) {
-                    for (int aliveWorkerId : aliveWorkers.keySet()) {
-                      connectionPool.sendShortMessage(aliveWorkerId, IPCUtils.addWorkerTM(senderID, newWorker));
-                    }
-                  }
+                if (LOGGER.isDebugEnabled()) {
+                  LOGGER.debug("getting heartbeat from worker " + senderID);
                 }
-                aliveWorkers.put(senderID, System.currentTimeMillis());
+                updateHeartbeat(senderID);
                 break;
               default:
                 if (LOGGER.isErrorEnabled()) {
@@ -427,39 +420,40 @@ public final class Server {
   /**
    * This class presents only for the purpose of debugging. No other usage.
    * */
-  public class DebugHelper extends TimerTask {
+  private class DebugHelper extends TimerTask {
 
     /**
      * Interval of execution.
      * */
     public static final int INTERVAL = MyriaConstants.WAITING_INTERVAL_1_SECOND_IN_MS;
-    /**
-     * No use. only for debugging.
-     * */
-    private int i;
-
-    /**
-     * for removing the damn check style warning.
-     * 
-     * @return meaningless integer.
-     * */
-    public final int getI() {
-      return i;
-    }
 
     @Override
     public final synchronized void run() {
-      if (System.currentTimeMillis() > 0) {
-        i++;
+      System.currentTimeMillis();
+    }
+  }
+
+  /**
+   * @param workerID the worker to get updated
+   * */
+  private void updateHeartbeat(final int workerID) {
+    if (scheduledWorkers.containsKey(workerID)) {
+      SocketInfo newWorker = scheduledWorkers.remove(workerID);
+      scheduledWorkersTime.remove(workerID);
+      if (newWorker != null) {
+        for (int aliveWorkerId : aliveWorkers.keySet()) {
+          connectionPool.sendShortMessage(aliveWorkerId, IPCUtils.addWorkerTM(workerID, newWorker));
+        }
       }
     }
+    aliveWorkers.put(workerID, System.currentTimeMillis());
   }
 
   /**
    * Check worker livenesses periodically. If a worker is detected as dead, its queries will be notified, it will be
    * removed from connection pools, and a new worker will be scheduled.
    * */
-  public class WorkerLivenessChecker extends TimerTask {
+  private class WorkerLivenessChecker extends TimerTask {
 
     @Override
     public final synchronized void run() {
@@ -468,10 +462,13 @@ public final class Server {
         if (currentTime - aliveWorkers.get(workerId) >= MyriaConstants.WORKER_IS_DEAD_INTERVAL) {
           /* scheduleAtFixedRate() is not accurate at all, use isRemoteAlive() to make sure the connection is lost. */
           if (connectionPool.isRemoteAlive(workerId)) {
+            updateHeartbeat(workerId);
             continue;
           }
 
-          LOGGER.info("worker " + workerId + " doesn't have heartbeats, treat it as dead.");
+          if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("worker " + workerId + " doesn't have heartbeats, treat it as dead.");
+          }
           aliveWorkers.remove(workerId);
 
           for (long queryId : activeQueries.keySet()) {
@@ -515,12 +512,16 @@ public final class Server {
         long time = scheduledWorkersTime.get(workerId);
         /* Had several trials and may need to change hostname:port of the scheduled new worker. */
         if (currentTime - time >= MyriaConstants.SCHEDULED_WORKER_UNABLE_TO_START) {
-          scheduledWorkers.remove(workerId);
+          SocketInfo si = scheduledWorkers.remove(workerId);
           scheduledWorkersTime.remove(workerId);
+          connectionPool.removeRemote(workerId);
+          if (LOGGER.isErrorEnabled()) {
+            LOGGER.error("Worker #" + workerId + "(" + si + ") failed to start. Give up.");
+          }
           continue;
           // Temporary solution: simply giving up launching this new worker
           // TODO: find a new set of hostname:port for this scheduled worker
-        }
+        } else
         /* Haven't heard heartbeats from the scheduled worker, try to launch it again. */
         if (currentTime - time >= MyriaConstants.SCHEDULED_WORKER_FAILED_TO_START) {
           SocketInfo info = scheduledWorkers.get(workerId);
