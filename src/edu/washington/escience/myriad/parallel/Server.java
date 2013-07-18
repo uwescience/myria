@@ -405,7 +405,7 @@ public final class Server {
             new TransportMessageSerializer(), new QueueBasedShortMessageProcessor<TransportMessage>(messageQueue));
 
     execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_IPC_CONNECTION_POOL, connectionPool);
-    execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE, Worker.QueryExecutionMode.NON_BLOCKING);
+    execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE, QueryExecutionMode.NON_BLOCKING);
 
     scheduledTaskExecutor =
         Executors.newSingleThreadScheduledExecutor(new RenamingThreadFactory("Master global timer"));

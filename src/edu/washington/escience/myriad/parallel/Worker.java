@@ -67,22 +67,6 @@ public final class Worker {
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Worker.class.getName());
 
   /**
-   * query execution mode, blocking or non-blocking. Always use the NON_BLOCKING mode. The BLOCKING mode may not work
-   * and may get abandoned.
-   * */
-  public static enum QueryExecutionMode {
-    /**
-     * blocking execution, call next() and fetchNext().
-     * */
-    BLOCKING,
-
-    /**
-     * non-blocking execution, call nextReady() and fetchNextReady().
-     * */
-    NON_BLOCKING;
-  }
-
-  /**
    * Control message processor.
    * */
   private final class ControlMessageProcessor implements Runnable {

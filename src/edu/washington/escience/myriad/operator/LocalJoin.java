@@ -16,7 +16,7 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.parallel.Worker.QueryExecutionMode;
+import edu.washington.escience.myriad.parallel.QueryExecutionMode;
 
 /**
  * This is an implementation of hash equal join. The same as in DupElim, this implementation does not keep the

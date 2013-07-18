@@ -1,8 +1,8 @@
 package edu.washington.escience.myriad.cmd;
 
 import edu.washington.escience.myriad.daemon.MasterDaemon;
+import edu.washington.escience.myriad.parallel.QueryExecutionMode;
 import edu.washington.escience.myriad.parallel.Worker;
-import edu.washington.escience.myriad.parallel.Worker.QueryExecutionMode;
 
 /**
  * A simple utility class. Modify it when you want to run both the Master and the Worker in the same process for
