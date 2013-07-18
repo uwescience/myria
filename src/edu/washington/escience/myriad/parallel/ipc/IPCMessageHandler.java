@@ -67,7 +67,6 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
       throws InterruptedException {
     if (metaMessage instanceof IPCMessage.Meta.CONNECT) {
       int remoteID = ((IPCMessage.Meta.CONNECT) metaMessage).getRemoteID();
-
       if (ch.getParent() != null) {
         // server channel
         ch.write(ownerConnectionPool.getMyIDAsMsg()).await(); // await to finish channel registering
@@ -76,7 +75,6 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
         // client channel
         cc.setRemoteReplyID(remoteID);
       }
-
       return;
     }
 
@@ -98,15 +96,12 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
       // At the beginning of a stream, record the operator id.
       final long streamID = ((IPCMessage.Meta.BOS) metaMessage).getStreamID();
       if (existingIChannel != null) {
-        // throw new IllegalStateException(
         LOGGER
             .error(String
                 .format(
                     "Duplicate BOS received from a stream channel. Existing Stream: (RemoteID:%1$s, StreamID:%2$d), new BOS: (RemoteID:%1$s, StreamID:%3$d). Dropped.",
                     remoteID, existingIChannel.getID().getStreamID(), streamID));
-        // );
       } else {
-
         StreamIOChannelID ecID = new StreamIOChannelID(streamID, remoteID);
         StreamInputBuffer<Object> ib = ownerConnectionPool.getInputBuffer(ecID);
         if (ib == null) {
@@ -121,9 +116,7 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
       return;
     } else if (metaMessage == IPCMessage.Meta.EOS) {
       if (existingIChannel == null) {
-        // throw new IllegalStateException(
         LOGGER.error(String.format("EOS received from a non-stream channel. From RemoteID:%1$s.", remoteID));
-        // );
       } else {
         receiveRegisteredData(ch, cc, IPCMessage.StreamData.eos(remoteID, cc.getRegisteredChannelContext().getIOPair()
             .getInputChannel().getID().getStreamID()));
@@ -132,12 +125,9 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
       return;
     } else if (metaMessage == IPCMessage.Meta.DISCONNECT) {
       if (existingIChannel != null) {
-        // throw new IllegalStateException(
         LOGGER.error(String.format("DISCONNECT received when the channel is still in use as a stream input: %1$s.",
             existingIChannel.getID()));
-        // );
       } else {
-
         if (ch.getParent() != null) {
           // serverChannel
           ownerConnectionPool.closeChannelRequested(ch);

@@ -851,13 +851,13 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
     if (remoteIDP == SELF_IPC_ID) {
       remoteID = myID;
     }
-    final IPCRemote remote = channelPool.get(remoteID);
+    IPCRemote remote = channelPool.get(remoteID);
     if (remote == null) {
       final String msg = "Unknown remote, id: " + remoteID + " address: " + channel.getRemoteAddress();
       if (LOGGER.isWarnEnabled()) {
         LOGGER.warn(msg);
       }
-      throw new IllegalStateException(msg);
+      throw new IllegalStateException();
     }
 
     if (channel.getParent() != serverChannel) {
@@ -993,13 +993,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
       cgf.addListener(new ChannelGroupFutureListener() {
         @Override
         public void operationComplete(final ChannelGroupFuture future) throws Exception {
-          Thread rt = new Thread("Remote remover") {
-            @Override
-            public void run() {
-              channelPool.remove(remoteID);
-            }
-          };
-          rt.start();
+          channelPool.remove(remoteID, old);
         }
       });
       return cgf;

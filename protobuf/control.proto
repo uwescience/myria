@@ -3,11 +3,20 @@ option java_outer_classname = "ControlProto";
 
 message ControlMessage {
   enum Type {
-    
-    SHUTDOWN = 3; // master -> workers
-    WORKER_ALIVE = 5; // worker -> master
+    SHUTDOWN = 1; // master -> workers
+    WORKER_HEARTBEAT = 2; // worker -> master
+	REMOVE_WORKER = 3; // master -> workers
+	ADD_WORKER = 4; // master -> workers
   }
 
   required ControlMessage.Type type = 1;		// See enum above
+  optional int32 worker_id = 2;
+  optional SocketInfo remote_address = 3;
 }
+
+message SocketInfo {
+  required string host = 1; 
+  required int32 port = 2; 
+}
+
 

@@ -12,6 +12,8 @@ public final class ArrayUtils extends org.apache.commons.lang3.ArrayUtils {
 
   /**
    * Utility classes should not be instantiated.
+   * 
+   * Not a bug. Bugfix has a false alert. Just ignore it.
    */
   private ArrayUtils() {
   }

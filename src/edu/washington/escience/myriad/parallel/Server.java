@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
+import java.nio.file.Files;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -37,6 +38,7 @@ import edu.washington.escience.myriad.MyriaSystemConfigKeys;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
+import edu.washington.escience.myriad.coordinator.catalog.CatalogMaker;
 import edu.washington.escience.myriad.coordinator.catalog.MasterCatalog;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.RootOperator;
@@ -50,7 +52,9 @@ import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myriad.proto.QueryProto.QueryMessage;
 import edu.washington.escience.myriad.proto.QueryProto.QueryReport;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
+import edu.washington.escience.myriad.tool.MyriaConfigurationReader;
 import edu.washington.escience.myriad.util.DateTimeUtils;
+import edu.washington.escience.myriad.util.DeploymentUtils;
 import edu.washington.escience.myriad.util.IPCUtils;
 import edu.washington.escience.myriad.util.MyriaUtils;
 
@@ -87,8 +91,11 @@ public final class Server {
           case CONTROL:
             final ControlMessage controlM = m.getControlMessage();
             switch (controlM.getType()) {
-              case WORKER_ALIVE:
-                aliveWorkers.add(senderID);
+              case WORKER_HEARTBEAT:
+                if (LOGGER.isDebugEnabled()) {
+                  LOGGER.debug("getting heartbeat from worker " + senderID);
+                }
+                updateHeartbeat(senderID);
                 break;
               default:
                 if (LOGGER.isErrorEnabled()) {
@@ -164,7 +171,17 @@ public final class Server {
   /**
    * Current alive worker set.
    * */
-  private final Set<Integer> aliveWorkers;
+  private final ConcurrentHashMap<Integer, Long> aliveWorkers;
+
+  /**
+   * Scheduled new workers, when a scheduled worker sends the first heartbeat, it'll be removed from this set.
+   * */
+  private final ConcurrentHashMap<Integer, SocketInfo> scheduledWorkers;
+
+  /**
+   * The time when new workers were scheduled.
+   * */
+  private final ConcurrentHashMap<Integer, Long> scheduledWorkersTime;
 
   /**
    * Execution environment variables for operators.
@@ -371,7 +388,10 @@ public final class Server {
       execEnvVars.put(cE.getKey(), cE.getValue());
     }
 
-    aliveWorkers = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
+    aliveWorkers = new ConcurrentHashMap<Integer, Long>();
+    scheduledWorkers = new ConcurrentHashMap<Integer, SocketInfo>();
+    scheduledWorkersTime = new ConcurrentHashMap<Integer, Long>();
+
     activeQueries = new ConcurrentHashMap<Long, MasterQueryPartition>();
 
     messageQueue = new LinkedBlockingQueue<IPCMessage.Data<TransportMessage>>();
@@ -400,30 +420,168 @@ public final class Server {
   /**
    * This class presents only for the purpose of debugging. No other usage.
    * */
-  public class DebugHelper extends TimerTask {
+  private class DebugHelper extends TimerTask {
 
     /**
      * Interval of execution.
      * */
     public static final int INTERVAL = MyriaConstants.WAITING_INTERVAL_1_SECOND_IN_MS;
-    /**
-     * No use. only for debugging.
-     * */
-    private int i;
-
-    /**
-     * for removing the damn check style warning.
-     * 
-     * @return meaningless integer.
-     * */
-    public final int getI() {
-      return i;
-    }
 
     @Override
     public final synchronized void run() {
-      if (System.currentTimeMillis() > 0) {
-        i++;
+      System.currentTimeMillis();
+    }
+  }
+
+  /**
+   * @param workerID the worker to get updated
+   * */
+  private void updateHeartbeat(final int workerID) {
+    if (scheduledWorkers.containsKey(workerID)) {
+      SocketInfo newWorker = scheduledWorkers.remove(workerID);
+      scheduledWorkersTime.remove(workerID);
+      if (newWorker != null) {
+        for (int aliveWorkerId : aliveWorkers.keySet()) {
+          connectionPool.sendShortMessage(aliveWorkerId, IPCUtils.addWorkerTM(workerID, newWorker));
+        }
+      }
+    }
+    aliveWorkers.put(workerID, System.currentTimeMillis());
+  }
+
+  /**
+   * Check worker livenesses periodically. If a worker is detected as dead, its queries will be notified, it will be
+   * removed from connection pools, and a new worker will be scheduled.
+   * */
+  private class WorkerLivenessChecker extends TimerTask {
+
+    @Override
+    public final synchronized void run() {
+      for (Integer workerId : aliveWorkers.keySet()) {
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - aliveWorkers.get(workerId) >= MyriaConstants.WORKER_IS_DEAD_INTERVAL) {
+          /* scheduleAtFixedRate() is not accurate at all, use isRemoteAlive() to make sure the connection is lost. */
+          if (connectionPool.isRemoteAlive(workerId)) {
+            updateHeartbeat(workerId);
+            continue;
+          }
+
+          if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("worker " + workerId + " doesn't have heartbeats, treat it as dead.");
+          }
+          aliveWorkers.remove(workerId);
+
+          for (long queryId : activeQueries.keySet()) {
+            MasterQueryPartition mqp = activeQueries.get(queryId);
+            /* for each alive query that the failed worker is assigned to, tell the query that the worker failed. */
+            if (mqp.getWorkerAssigned().contains(workerId)) {
+              mqp.workerFail(workerId, new LostHeartbeatException());
+            }
+          }
+
+          /* Temporary solution: using exactly the same hostname:port. One good thing is the data is still there. */
+          /* Temporary solution: using exactly the same worker id. */
+          String newAddress = workers.get(workerId).getHost();
+          int newPort = workers.get(workerId).getPort();
+          int newWorkerId = workerId;
+
+          /* a new worker will be launched, put its information in scheduledWorkers. */
+          scheduledWorkers.put(newWorkerId, new SocketInfo(newAddress, newPort));
+          scheduledWorkersTime.put(newWorkerId, currentTime);
+          try {
+            /* remove the failed worker from the connectionPool. */
+            connectionPool.removeRemote(workerId).await();
+            connectionPool.putRemote(newWorkerId, new SocketInfo(newAddress, newPort));
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return;
+          }
+          /* tell other workers to remove it too. */
+          for (int aliveWorkerId : aliveWorkers.keySet()) {
+            connectionPool.sendShortMessage(aliveWorkerId, IPCUtils.removeWorkerTM(workerId));
+          }
+
+          /* start a thread to launch the new worker. */
+          new Thread(new NewWorkerScheduler(newWorkerId, newAddress, newPort)).start();
+
+          // TODO: let SPs resend buffered data
+        }
+      }
+      for (Integer workerId : scheduledWorkers.keySet()) {
+        long currentTime = System.currentTimeMillis();
+        long time = scheduledWorkersTime.get(workerId);
+        /* Had several trials and may need to change hostname:port of the scheduled new worker. */
+        if (currentTime - time >= MyriaConstants.SCHEDULED_WORKER_UNABLE_TO_START) {
+          SocketInfo si = scheduledWorkers.remove(workerId);
+          scheduledWorkersTime.remove(workerId);
+          connectionPool.removeRemote(workerId);
+          if (LOGGER.isErrorEnabled()) {
+            LOGGER.error("Worker #" + workerId + "(" + si + ") failed to start. Give up.");
+          }
+          continue;
+          // Temporary solution: simply giving up launching this new worker
+          // TODO: find a new set of hostname:port for this scheduled worker
+        } else
+        /* Haven't heard heartbeats from the scheduled worker, try to launch it again. */
+        if (currentTime - time >= MyriaConstants.SCHEDULED_WORKER_FAILED_TO_START) {
+          SocketInfo info = scheduledWorkers.get(workerId);
+          new Thread(new NewWorkerScheduler(workerId, info.getHost(), info.getPort())).start();
+        }
+      }
+    }
+  }
+
+  /** The reader. */
+  private static final MyriaConfigurationReader READER = new MyriaConfigurationReader();
+
+  /**
+   * The class to launch a new worker during recovery.
+   */
+  private class NewWorkerScheduler implements Runnable {
+    /** the new worker's worker id. */
+    private final int workerId;
+    /** the new worker's port number id. */
+    private final int port;
+    /** the new worker's hostname. */
+    private final String address;
+
+    /**
+     * constructor.
+     * 
+     * @param workerId worker id.
+     * @param address hostname.
+     * @param port port number.
+     */
+    NewWorkerScheduler(final int workerId, final String address, final int port) {
+      this.workerId = workerId;
+      this.address = address;
+      this.port = port;
+    }
+
+    @Override
+    public void run() {
+      try {
+        final String temp = Files.createTempDirectory(null).toAbsolutePath().toString();
+        Map<String, String> tmpMap = Collections.emptyMap();
+        String configFileName = catalog.getConfigurationValue(MyriaSystemConfigKeys.DEPLOYMENT_FILE);
+        Map<String, HashMap<String, String>> config = READER.load(configFileName);
+        CatalogMaker.makeOneWorkerCatalog(workerId + "", temp, config, tmpMap, true);
+
+        final String workingDir = config.get("paths").get(workerId + "");
+        final String description = catalog.getConfigurationValue(MyriaSystemConfigKeys.DESCRIPTION);
+        final String remotePath = workingDir + "/" + description + "-files/" + description;
+        DeploymentUtils.mkdir(address, remotePath);
+        String localPath = temp + "/" + "worker_" + workerId;
+        DeploymentUtils.rsyncFileToRemote(localPath, address, remotePath);
+        final String maxHeapSize = catalog.getConfigurationValue(MyriaSystemConfigKeys.MAX_HEAP_SIZE);
+        if (LOGGER.isInfoEnabled()) {
+          LOGGER.info("starting new worker " + address + ":" + port + ".");
+        }
+        DeploymentUtils.startWorker(address, workingDir, description, maxHeapSize, workerId + "");
+      } catch (CatalogException e) {
+        throw new RuntimeException(e);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
       }
     }
   }
@@ -441,7 +599,7 @@ public final class Server {
     messageProcessingExecutor.shutdownNow();
     scheduledTaskExecutor.shutdownNow();
     if (!connectionPool.isShutdown()) {
-      for (final Integer workerId : aliveWorkers) {
+      for (final Integer workerId : aliveWorkers.keySet()) {
         SocketInfo workerAddr = workers.get(workerId);
         if (LOGGER.isInfoEnabled()) {
           LOGGER.info("Shutting down #{} : {}", workerId, workerAddr);
@@ -503,7 +661,7 @@ public final class Server {
     mqp.queryReceivedByWorker(MyriaConstants.MASTER_ID);
     for (final Map.Entry<Integer, RootOperator[]> e : mqp.getWorkerPlans().entrySet()) {
       final Integer workerID = e.getKey();
-      while (!aliveWorkers.contains(workerID)) {
+      while (!aliveWorkers.containsKey(workerID)) {
         try {
           Thread.sleep(MyriaConstants.SHORT_WAITING_INTERVAL_MS);
         } catch (InterruptedException e1) {
@@ -540,9 +698,14 @@ public final class Server {
    * @throws Exception if any error occurs.
    */
   public void start() throws Exception {
-    LOGGER.info("Server starting on {}", masterSocketInfo.toString());
+    if (LOGGER.isInfoEnabled()) {
+      LOGGER.info("Server starting on {}", masterSocketInfo.toString());
+    }
 
     scheduledTaskExecutor.scheduleAtFixedRate(new DebugHelper(), DebugHelper.INTERVAL, DebugHelper.INTERVAL,
+        TimeUnit.MILLISECONDS);
+    scheduledTaskExecutor.scheduleAtFixedRate(new WorkerLivenessChecker(),
+        MyriaConstants.WORKER_LIVENESS_CHECKER_INTERVAL, MyriaConstants.WORKER_LIVENESS_CHECKER_INTERVAL,
         TimeUnit.MILLISECONDS);
 
     messageProcessingExecutor = Executors.newCachedThreadPool(new RenamingThreadFactory("Master message processor"));
@@ -588,7 +751,9 @@ public final class Server {
         masterInJVMPipelineFactory, new InJVMLoopbackChannelSink());
 
     messageProcessingExecutor.submit(new MessageProcessor());
-    LOGGER.info("Server started on {}", masterSocketInfo.toString());
+    if (LOGGER.isInfoEnabled()) {
+      LOGGER.info("Server started on {}", masterSocketInfo.toString());
+    }
   }
 
   /**
@@ -738,7 +903,7 @@ public final class Server {
    * @return the set of workers that are currently alive.
    */
   public Set<Integer> getAliveWorkers() {
-    return ImmutableSet.copyOf(aliveWorkers);
+    return ImmutableSet.copyOf(aliveWorkers.keySet());
   }
 
   /**
