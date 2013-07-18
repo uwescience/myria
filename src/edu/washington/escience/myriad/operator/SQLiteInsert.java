@@ -15,6 +15,7 @@ import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.TupleBatch;
+import edu.washington.escience.myriad.accessmethod.SQLiteInfo;
 import edu.washington.escience.myriad.util.SQLiteUtils;
 
 /**
@@ -27,8 +28,8 @@ public final class SQLiteInsert extends RootOperator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
-  /** The SQLite Database that they will be inserted into. */
-  private String pathToSQLiteDb;
+  /** The SQLite connection information. */
+  private SQLiteInfo sqliteInfo;
   /** The name of the table the tuples should be inserted into. */
   private final RelationKey relationKey;
   /** Whether to overwrite an existing table or not. */
@@ -87,9 +88,7 @@ public final class SQLiteInsert extends RootOperator {
       protected Object job(final SQLiteConnection sqliteConnection) throws SQLiteException {
         /* BEGIN TRANSACTION */
         sqliteConnection.exec("BEGIN TRANSACTION");
-
         SQLiteStatement insertStatement = sqliteConnection.prepare(insertString);
-
         tupleBatch.getIntoSQLite(insertStatement);
 
         /* COMMIT TRANSACTION */
@@ -115,13 +114,12 @@ public final class SQLiteInsert extends RootOperator {
 
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    final String sqliteDatabaseFilename = (String) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_NAME);
-    if (sqliteDatabaseFilename == null) {
+    sqliteInfo = (SQLiteInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
+    if (sqliteInfo == null) {
       throw new DbException("Unable to instantiate SQLiteQueryScan on non-sqlite worker");
     }
-    pathToSQLiteDb = sqliteDatabaseFilename;
 
-    final File dbFile = new File(pathToSQLiteDb);
+    final File dbFile = new File(sqliteInfo.getDatabase());
 
     /* Open a connection to that SQLite database. */
     queue = new SQLiteQueue(dbFile);

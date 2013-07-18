@@ -20,8 +20,8 @@ import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.operator.DupElim;
 import edu.washington.escience.myriad.operator.LocalCountingJoin;
 import edu.washington.escience.myriad.operator.LocalJoin;
+import edu.washington.escience.myriad.operator.QueryScan;
 import edu.washington.escience.myriad.operator.RootOperator;
-import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.operator.TBQueueExporter;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
@@ -72,7 +72,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final PartitionFunction<String, Integer> pf = new SingleFieldHashPartitionFunction(numPartition);
     pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1); // partition by id
 
-    final SQLiteQueryScan scanTable = new SQLiteQueryScan(testtableKey, schema);
+    final QueryScan scanTable = new QueryScan(testtableKey, schema);
 
     final DupElim dupElimOnScan = new DupElim(scanTable);
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
@@ -131,7 +131,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final PartitionFunction<String, Integer> pf = new SingleFieldHashPartitionFunction(numPartition);
     pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1); // partition by id
 
-    final SQLiteQueryScan scanTable = new SQLiteQueryScan(testtableKey, schema);
+    final QueryScan scanTable = new QueryScan(testtableKey, schema);
 
     final DupElim dupElimOnScan = new DupElim(scanTable);
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
@@ -175,8 +175,8 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final ImmutableList<String> outputColumnNames = ImmutableList.of("id1", "name1", "id2", "name2");
     final Schema outputSchema = new Schema(outputTypes, outputColumnNames);
 
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA);
+    final QueryScan scan1 = new QueryScan(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA);
+    final QueryScan scan2 = new QueryScan(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA);
 
     final ShuffleProducer sp1 =
         new ShuffleProducer(scan1, table1ShuffleID, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf);
@@ -228,8 +228,8 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(2);
     pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
 
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA);
+    final QueryScan scan1 = new QueryScan(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA);
+    final QueryScan scan2 = new QueryScan(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA);
 
     final ShuffleProducer sp1 =
         new ShuffleProducer(scan1, table1ShuffleID, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf);
@@ -285,8 +285,8 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(2);
     pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
 
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA);
+    final QueryScan scan1 = new QueryScan(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA);
+    final QueryScan scan2 = new QueryScan(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA);
 
     final ShuffleProducer sp1 =
         new ShuffleProducer(scan1, table1ShuffleID, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf);

@@ -18,6 +18,7 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.accessmethod.SQLiteAccessMethod;
+import edu.washington.escience.myriad.accessmethod.SQLiteInfo;
 
 /**
  * Util methods for SQLite.
@@ -79,8 +80,8 @@ public final class SQLiteUtils {
    * @param data the data.
    * @throws DbException if there is an error in the database.
    * */
-  public static void insertIntoSQLite(final Schema inputSchema, final RelationKey relationKey, final String dbFilePath,
-      final TupleBatch data) throws DbException {
+  public static void insertIntoSQLite(final Schema inputSchema, final RelationKey relationKey,
+      final SQLiteInfo sqliteInfo, final TupleBatch data) throws DbException {
 
     final List<String> fieldNames = inputSchema.getColumnNames();
     final String[] placeHolders = new String[inputSchema.numColumns()];
@@ -88,7 +89,7 @@ public final class SQLiteUtils {
       placeHolders[i] = "?";
     }
 
-    SQLiteAccessMethod.tupleBatchInsert(dbFilePath, "insert into "
+    SQLiteAccessMethod.tupleBatchInsert(sqliteInfo, "insert into "
         + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE) + " ([" + StringUtils.join(fieldNames, "],[")
         + "] ) values ( " + StringUtils.join(placeHolders, ',') + " )", data);
   }

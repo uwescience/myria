@@ -9,8 +9,8 @@ import com.google.common.collect.ImmutableList;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
+import edu.washington.escience.myriad.operator.QueryScan;
 import edu.washington.escience.myriad.operator.RootOperator;
-import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.operator.agg.Aggregator;
 import edu.washington.escience.myriad.operator.agg.SingleGroupByAggregateNoBuffer;
@@ -37,8 +37,8 @@ public class AggregateQueryVariantSQLite implements QueryPlanGenerator {
   @Override
   public Map<Integer, RootOperator[]> getWorkerPlan(int[] allWorkers) throws Exception {
 
-    final SQLiteQueryScan localGroupBy =
-        new SQLiteQueryScan(
+    final QueryScan localGroupBy =
+        new QueryScan(
             "select substr(sourceIPAddr, 1, 7), SUM(adRevenue) from UserVisits group by substr(sourceIPAddr, 1, 7)",
             outputSchema);
 

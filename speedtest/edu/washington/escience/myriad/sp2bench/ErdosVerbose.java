@@ -14,8 +14,8 @@ import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.operator.DupElim;
 import edu.washington.escience.myriad.operator.LocalJoin;
 import edu.washington.escience.myriad.operator.Project;
+import edu.washington.escience.myriad.operator.QueryScan;
 import edu.washington.escience.myriad.operator.RootOperator;
-import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.operator.TBQueueExporter;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
@@ -52,7 +52,7 @@ public class ErdosVerbose {
     final ExchangePairID coAuthorShuffleID = ExchangePairID.newID();
     final ExchangePairID allPubsShuffleID = ExchangePairID.newID();
 
-    final SQLiteQueryScan paulErdoesPubs = new SQLiteQueryScan(//
+    final QueryScan paulErdoesPubs = new QueryScan(//
         "select distinct pubName.val " + //
             "from Triples pubs " + //
             "join Dictionary pe on pubs.object=pe.id " + //
@@ -69,7 +69,7 @@ public class ErdosVerbose {
         new ShuffleConsumer(paulErdoesPubsShuffleP.getSchema(), paulErdoesPubsShuffleID, allWorkers);
     // schema: (pubName string)
 
-    final SQLiteQueryScan allPubs = new SQLiteQueryScan(//
+    final QueryScan allPubs = new QueryScan(//
         "select pubName.val,authorName.val " + //
             "from Triples authors " + //
             "join Dictionary creator on authors.predicate=creator.id " + //
@@ -113,7 +113,7 @@ public class ErdosVerbose {
     pfOn0.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
     pfOn1.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1);
 
-    final SQLiteQueryScan allPubs2 = new SQLiteQueryScan(//
+    final QueryScan allPubs2 = new QueryScan(//
         "select pubName.val, authorName.val " + //
             "from Triples authors " + //
             "join Dictionary creator on authors.predicate=creator.id " + //
@@ -150,7 +150,7 @@ public class ErdosVerbose {
     final DupElim coAuthorPubsGlobalDE = new DupElim(coAuthorPubsShuffleC); // local dupelim
     // schema: (pubName string)
 
-    final SQLiteQueryScan allPubsAuthorNames = new SQLiteQueryScan(//
+    final QueryScan allPubsAuthorNames = new QueryScan(//
         "select pubName.val ,names.val as authorName " + //
             "from Triples authors " + //
             "join Dictionary creator on authors.predicate=creator.id " + //

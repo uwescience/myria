@@ -20,7 +20,7 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.operator.SQLiteQueryScan;
+import edu.washington.escience.myriad.operator.QueryScan;
 import edu.washington.escience.myriad.systemtest.SystemTestBase;
 import edu.washington.escience.myriad.systemtest.SystemTestBase.Tuple;
 import edu.washington.escience.myriad.util.FSUtils;
@@ -56,17 +56,18 @@ public class SQLiteTest {
 
     for (final TupleBatch tb : tbb.getAll()) {
       final String insertTemplate = SQLiteUtils.insertStatementFromSchema(outputSchema, testtableKey);
-      SQLiteAccessMethod.tupleBatchInsert(dbAbsolutePath, insertTemplate, tb);
+      SQLiteAccessMethod.tupleBatchInsert(SQLiteInfo.of(dbAbsolutePath), insertTemplate, tb);
     }
 
     final HashMap<Tuple, Integer> expectedResult = TestUtils.tupleBatchToTupleBag(tbb);
 
     /* Scan the testtable in database */
-    final SQLiteQueryScan scan = new SQLiteQueryScan(testtableKey, outputSchema);
+    final QueryScan scan = new QueryScan(testtableKey, outputSchema);
 
-    HashMap<String, Object> sqliteFilename = new HashMap<String, Object>();
-    sqliteFilename.put("sqliteFile", dbAbsolutePath);
-    final ImmutableMap<String, Object> execEnvVars = ImmutableMap.copyOf(sqliteFilename);
+    HashMap<String, Object> localEnvVars = new HashMap<String, Object>();
+    localEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_SYSTEM, MyriaConstants.STORAGE_SYSTEM_SQLITE);
+    localEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO, SQLiteInfo.of(dbAbsolutePath));
+    final ImmutableMap<String, Object> execEnvVars = ImmutableMap.copyOf(localEnvVars);
 
     /* Filter on first column INTEGER >= 50 */
     // Filter filter1 = new Filter(Predicate.Op.GREATER_THAN_OR_EQ, 0, new Long(50), scan);

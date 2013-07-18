@@ -13,8 +13,8 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
+import edu.washington.escience.myriad.operator.QueryScan;
 import edu.washington.escience.myriad.operator.RootOperator;
-import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
@@ -59,7 +59,7 @@ public class QueryFailureTest extends SystemTestBase {
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
 
-    final SQLiteQueryScan scanTable = new SQLiteQueryScan(testtableKey, schema);
+    final QueryScan scanTable = new QueryScan(testtableKey, schema);
 
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
 
@@ -120,7 +120,7 @@ public class QueryFailureTest extends SystemTestBase {
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
 
-    final SQLiteQueryScan scanTable = new SQLiteQueryScan(testtableKey, schema);
+    final QueryScan scanTable = new QueryScan(testtableKey, schema);
 
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
     final DelayInjector di = new DelayInjector(10, TimeUnit.SECONDS, scanTable); // totally delay 100 seconds.
@@ -178,7 +178,7 @@ public class QueryFailureTest extends SystemTestBase {
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
 
-    final SQLiteQueryScan scanTable = new SQLiteQueryScan(testtableKey, schema);
+    final QueryScan scanTable = new QueryScan(testtableKey, schema);
 
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
     final DelayInjector di = new DelayInjector(10, TimeUnit.SECONDS, scanTable); // totally delay 100 seconds.
@@ -242,7 +242,7 @@ public class QueryFailureTest extends SystemTestBase {
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
 
-    final SQLiteQueryScan scanTable = new SQLiteQueryScan(testtableKey, schema);
+    final QueryScan scanTable = new QueryScan(testtableKey, schema);
 
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
     final DelayInjector di = new DelayInjector(10, TimeUnit.SECONDS, scanTable); // totally delay 100 seconds.
@@ -303,7 +303,7 @@ public class QueryFailureTest extends SystemTestBase {
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
 
-    final SQLiteQueryScan scanTable = new SQLiteQueryScan(testtableKey, schema);
+    final QueryScan scanTable = new QueryScan(testtableKey, schema);
 
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
 
@@ -361,7 +361,7 @@ public class QueryFailureTest extends SystemTestBase {
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
 
-    final SQLiteQueryScan scanTable = new SQLiteQueryScan(testtableKey, schema);
+    final QueryScan scanTable = new QueryScan(testtableKey, schema);
 
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
     final DelayInjector di = new DelayInjector(10, TimeUnit.SECONDS, scanTable); // totally delay 100 seconds.
@@ -425,7 +425,7 @@ public class QueryFailureTest extends SystemTestBase {
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
 
-    final SQLiteQueryScan scanTable = new SQLiteQueryScan(testtableKey, schema);
+    final QueryScan scanTable = new QueryScan(testtableKey, schema);
 
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
     final DelayInjector di = new DelayInjector(10, TimeUnit.SECONDS, scanTable); // totally delay 100 seconds.
@@ -487,7 +487,7 @@ public class QueryFailureTest extends SystemTestBase {
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
 
-    final SQLiteQueryScan scanTable = new SQLiteQueryScan(testtableKey, schema);
+    final QueryScan scanTable = new QueryScan(testtableKey, schema);
 
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
     final DelayInjector di = new DelayInjector(1, TimeUnit.SECONDS, scanTable); // totally delay 10 seconds.

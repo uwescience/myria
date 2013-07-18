@@ -9,7 +9,7 @@ import com.google.common.collect.ImmutableList;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.operator.JdbcQueryScan;
+import edu.washington.escience.myriad.operator.QueryScan;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.operator.agg.Aggregator;
@@ -37,9 +37,8 @@ public class AggregateQueryVariantPostgres implements QueryPlanGenerator {
   @Override
   public Map<Integer, RootOperator[]> getWorkerPlan(int[] allWorkers) throws Exception {
 
-    final JdbcQueryScan localGroupBy =
-        new JdbcQueryScan(
-            SelectQueryPostgres.jdbcInfo,
+    final QueryScan localGroupBy =
+        new QueryScan(
             "select substring(sourceIPAddr, 1, 7), SUM(adRevenue) from UserVisits group by substring(sourceIPAddr, 1, 7)",
             outputSchema);
 

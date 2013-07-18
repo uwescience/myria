@@ -76,7 +76,7 @@ public final class MyriaConstants {
   /**
    * Execution environment variable, the database name.
    * */
-  public static final String EXEC_ENV_VAR_DATABASE_NAME = "execEnvVar.database.name";
+  public static final String EXEC_ENV_VAR_DATABASE_CONN_INFO = "execEnvVar.database.conn.info";
 
   /**
    * Execution environment variable, the database system.
@@ -127,6 +127,11 @@ public final class MyriaConstants {
    * Default value for {@link MyriaSystemConfigKeys#TCP_CONNECTION_TIMEOUT_MILLIS}.
    * */
   public static final int TCP_CONNECTION_TIMEOUT_MILLIS_DEFAULT_VALUE = 3000;
+
+  /**
+   * Default value for {@link MyriaSystemConfigKeys#WORKER_STORAGE_DATABASE_SYSTEM}.
+   * */
+  public static final String WORKER_STORAGE_DATABASE_SYSTEM_DEFAULT_VALUE = MyriaConstants.STORAGE_SYSTEM_SQLITE;
 
   /**
    * If a thread in a thread pool is idle, how long it should wait before terminates itself. Currently, 5 minutes.

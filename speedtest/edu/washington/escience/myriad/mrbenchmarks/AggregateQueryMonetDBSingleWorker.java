@@ -9,7 +9,7 @@ import com.google.common.collect.ImmutableList;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.operator.JdbcQueryScan;
+import edu.washington.escience.myriad.operator.QueryScan;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
@@ -32,9 +32,8 @@ public class AggregateQueryMonetDBSingleWorker implements QueryPlanGenerator {
   @Override
   public Map<Integer, RootOperator[]> getWorkerPlan(int[] allWorkers) throws Exception {
 
-    final JdbcQueryScan localGroupBy =
-        new JdbcQueryScan(SelectQueryMonetDB.jdbcInfo,
-            "select sourceIPAddr, SUM(adRevenue) from UserVisits group by sourceIPAddr", outputSchema);
+    final QueryScan localGroupBy =
+        new QueryScan("select sourceIPAddr, SUM(adRevenue) from UserVisits group by sourceIPAddr", outputSchema);
 
     final CollectProducer sendToMaster = new CollectProducer(localGroupBy, sendToMasterID, 0);
 

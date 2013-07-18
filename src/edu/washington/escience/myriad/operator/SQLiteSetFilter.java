@@ -14,6 +14,7 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.accessmethod.SQLiteAccessMethod;
+import edu.washington.escience.myriad.accessmethod.SQLiteInfo;
 
 /**
  * This operator implements set selection from a underlying database.<br>
@@ -48,9 +49,9 @@ public class SQLiteSetFilter extends Operator {
   private transient Iterator<TupleBatch> tuples;
 
   /**
-   * SQLite DB filename.
+   * SQLite connection information.
    * */
-  private transient String databaseFilename;
+  private transient SQLiteInfo sqliteInfo;
 
   /**
    * @param child child.
@@ -76,11 +77,10 @@ public class SQLiteSetFilter extends Operator {
 
   @Override
   protected final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    final String sqliteDatabaseFilename = (String) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_NAME);
-    if (sqliteDatabaseFilename == null) {
+    sqliteInfo = (SQLiteInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
+    if (sqliteInfo == null) {
       throw new DbException("Unable to instantiate SQLiteQueryScan on non-sqlite worker");
     }
-    databaseFilename = sqliteDatabaseFilename;
     tuples = null;
   }
 
@@ -118,8 +118,8 @@ public class SQLiteSetFilter extends Operator {
         setValues.add(v);
       }
       tuples =
-          SQLiteAccessMethod.tupleBatchIteratorFromQuery(databaseFilename, sqlTemplate
-              + StringUtils.join(setValues, ",") + ")", outputSchema);
+          SQLiteAccessMethod.tupleBatchIteratorFromQuery(sqliteInfo, sqlTemplate + StringUtils.join(setValues, ",")
+              + ")", outputSchema);
       if (tuples.hasNext()) {
         return tuples.next();
       }

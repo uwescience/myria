@@ -9,6 +9,7 @@ import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.accessmethod.SQLiteAccessMethod;
+import edu.washington.escience.myriad.accessmethod.SQLiteInfo;
 
 /**
  * Wait the children to finish and retrieve data from SQLite.
@@ -41,7 +42,7 @@ public class SQLiteSQLProcessor extends Operator {
   /**
    * The SQLite DB filepath.
    * */
-  private String databaseFilename;
+  private SQLiteInfo sqliteInfo;
 
   /**
    * Construct a new SQLiteQueryScan object.
@@ -98,7 +99,7 @@ public class SQLiteSQLProcessor extends Operator {
    * */
   protected final TupleBatch fetchNext() throws DbException {
     if (tuples == null) {
-      tuples = SQLiteAccessMethod.tupleBatchIteratorFromQuery(databaseFilename, baseSQL, schema);
+      tuples = SQLiteAccessMethod.tupleBatchIteratorFromQuery(sqliteInfo, baseSQL, schema);
     }
     if (tuples.hasNext()) {
       return tuples.next();
@@ -127,11 +128,10 @@ public class SQLiteSQLProcessor extends Operator {
 
   @Override
   public final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    final String sqliteDatabaseFilename = (String) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_NAME);
-    if (sqliteDatabaseFilename == null) {
+    sqliteInfo = (SQLiteInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
+    if (sqliteInfo == null) {
       throw new DbException("Unable to instantiate SQLiteQueryScan on non-sqlite worker");
     }
-    databaseFilename = sqliteDatabaseFilename;
     tuples = null;
   }
 

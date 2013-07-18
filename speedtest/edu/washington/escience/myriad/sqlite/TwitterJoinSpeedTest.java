@@ -19,8 +19,8 @@ import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.operator.DupElim;
 import edu.washington.escience.myriad.operator.LocalJoin;
 import edu.washington.escience.myriad.operator.Project;
+import edu.washington.escience.myriad.operator.QueryScan;
 import edu.washington.escience.myriad.operator.RootOperator;
-import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.operator.TBQueueExporter;
 import edu.washington.escience.myriad.operator.agg.Aggregate;
@@ -73,8 +73,8 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
 
     /* Read the data from the file. */
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan("select * from testtable", tableSchema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan("select * from testtable", tableSchema);
+    final QueryScan scan1 = new QueryScan("select * from testtable", tableSchema);
+    final QueryScan scan2 = new QueryScan("select * from testtable", tableSchema);
 
     /*
      * One worker partitions on the follower, the other worker partitions on the followee. In this way, we can do a
@@ -140,8 +140,8 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
 
     /* Read the data from the file. */
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan("select * from testtable", tableSchema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan("select * from testtable", tableSchema);
+    final QueryScan scan1 = new QueryScan("select * from testtable", tableSchema);
+    final QueryScan scan2 = new QueryScan("select * from testtable", tableSchema);
 
     /*
      * One worker partitions on the follower, the other worker partitions on the followee. In this way, we can do a
@@ -204,8 +204,8 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
 
     /* Read the data from the file. */
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan("select * from testtable", tableSchema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan("select * from testtable", tableSchema);
+    final QueryScan scan1 = new QueryScan("select * from testtable", tableSchema);
+    final QueryScan scan2 = new QueryScan("select * from testtable", tableSchema);
 
     /*
      * One worker partitions on the follower, the other worker partitions on the followee. In this way, we can do a

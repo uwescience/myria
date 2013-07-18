@@ -11,8 +11,8 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.operator.LocalJoin;
 import edu.washington.escience.myriad.operator.Project;
+import edu.washington.escience.myriad.operator.QueryScan;
 import edu.washington.escience.myriad.operator.RootOperator;
-import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.operator.TBQueueExporter;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
@@ -52,17 +52,17 @@ public class Q4 implements QueryPlanGenerator {
 
     final Schema subjectYearSchema = new Schema(subjectYearTypes, subjectYearColumnNames);
 
-    final SQLiteQueryScan allJournals =
-        new SQLiteQueryScan(
+    final QueryScan allJournals =
+        new QueryScan(
             "select t.subject from Triples t,Dictionary dtype, Dictionary djournal where t.predicate=dtype.ID and dtype.val='rdf:type' and t.object=djournal.ID and djournal.val='bench:Journal'",
             subjectSchema);
-    final SQLiteQueryScan allWithTheTitle =
-        new SQLiteQueryScan(
+    final QueryScan allWithTheTitle =
+        new QueryScan(
             "select t.subject from Triples t,Dictionary dtype, Dictionary dtitle  where t.predicate=dtype.ID and dtype.val='dc:title' and t.object = dtitle.ID and dtitle.val='\"Journal 1 (1940)\"^^xsd:string';",
             subjectSchema);
 
-    final SQLiteQueryScan allIssuedYear =
-        new SQLiteQueryScan(
+    final QueryScan allIssuedYear =
+        new QueryScan(
             "select t.subject,dyear.val from Triples t, Dictionary dtype, Dictionary dyear where t.predicate=dtype.ID and dtype.val='dcterms:issued' and t.object=dyear.ID;",
             subjectYearSchema);
 

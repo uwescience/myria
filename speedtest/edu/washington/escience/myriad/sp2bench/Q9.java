@@ -14,8 +14,8 @@ import edu.washington.escience.myriad.operator.LocalJoin;
 import edu.washington.escience.myriad.operator.Merge;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.Project;
+import edu.washington.escience.myriad.operator.QueryScan;
 import edu.washington.escience.myriad.operator.RootOperator;
-import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.operator.TBQueueExporter;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
@@ -50,7 +50,7 @@ public class Q9 implements QueryPlanGenerator {
     final SingleFieldHashPartitionFunction pfOn1 = new SingleFieldHashPartitionFunction(allWorkers.length);
     pfOn1.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1);
 
-    final SQLiteQueryScan allPersons = new SQLiteQueryScan(//
+    final QueryScan allPersons = new QueryScan(//
         "SELECT distinct t.subject AS person FROM Triples t " + //
             "JOIN Dictionary dp1 ON t.predicate=dp1.ID " + //
             "JOIN Dictionary d2  ON t.object=d2.ID" + //
@@ -75,8 +75,8 @@ public class Q9 implements QueryPlanGenerator {
     final ImmutableList<String> triplesColumnNames = ImmutableList.of("subject", "predicateName", "object");
     final Schema triplesSchema = new Schema(triplesTypes, triplesColumnNames);
 
-    final SQLiteQueryScan allTriples =
-        new SQLiteQueryScan("SELECT t.subject,d.val,t.object FROM Triples t,Dictionary d where t.predicate=d.ID",
+    final QueryScan allTriples =
+        new QueryScan("SELECT t.subject,d.val,t.object FROM Triples t,Dictionary d where t.predicate=d.ID",
             triplesSchema);
     // schema: (subject long, predicateName string, object long)
 
