@@ -11,7 +11,10 @@ import org.jboss.netty.channel.ChannelFuture;
 
 import com.google.protobuf.ByteString;
 
+import edu.washington.escience.myriad.Schema;
+import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.column.Column;
+import edu.washington.escience.myriad.column.ColumnFactory;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.parallel.QueryExecutionStatistics;
 import edu.washington.escience.myriad.parallel.SocketInfo;
@@ -248,6 +251,29 @@ public final class IPCUtils {
     return DATA_TM_BUILDER.get().setDataMessage(
         NORMAL_DATAMESSAGE_BUILDER.get().clearColumns().addAllColumns(Arrays.asList(columnProtos)).setNumTuples(
             numTuples)).build();
+  }
+
+  /**
+   * @return a {@link TupleBatch} created from a data protobuf.
+   * @param dm data message
+   * @param s schema
+   * */
+  public static TupleBatch tmToTupleBatch(final DataMessage dm, final Schema s) {
+    switch (dm.getType()) {
+      case NORMAL:
+        final List<ColumnMessage> columnMessages = dm.getColumnsList();
+        final Column<?>[] columnArray = new Column<?>[columnMessages.size()];
+        int idx = 0;
+        for (final ColumnMessage cm : columnMessages) {
+          columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm, dm.getNumTuples());
+        }
+        final List<Column<?>> columns = Arrays.asList(columnArray);
+        return new TupleBatch(s, columns, dm.getNumTuples());
+      case EOI:
+        return TupleBatch.eoiTupleBatch(s);
+      default:
+        throw new IllegalArgumentException("Unknown DATA message type: " + dm.getType());
+    }
   }
 
   /**
