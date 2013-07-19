@@ -46,7 +46,11 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
       final ChannelContext cs = ChannelContext.getChannelContext(e.getChannel());
       cs.connected();
     }
-    ctx.sendUpstream(e);
+  }
+
+  @Override
+  public void channelDisconnected(final ChannelHandlerContext ctx, final ChannelStateEvent e) throws Exception {
+    ownerConnectionPool.channelDisconnected(ctx.getChannel());
   }
 
   @Override
@@ -54,7 +58,6 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
     if (ctx.getChannel().getParent() != null) {
       ownerConnectionPool.newAcceptedRemoteChannel(e.getChannel());
     }
-    ctx.sendUpstream(e);
   }
 
   /**
@@ -236,7 +239,6 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
         receiveRegisteredData(ch, cc, msg);
       }
     }
-    ctx.sendUpstream(e);
   }
 
   /**
@@ -296,7 +298,6 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
   public void writeComplete(final ChannelHandlerContext ctx, final WriteCompletionEvent e) throws Exception {
     final ChannelContext cs = ChannelContext.getChannelContext(e.getChannel());
     cs.updateLastIOTimestamp();
-    ctx.sendUpstream(e);
   }
 
   @Override
@@ -342,6 +343,5 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
         LOGGER.debug("Channel {} is changed to be unreadable.", ioChannel);
       }
     }
-    ctx.sendUpstream(e);
   }
 }

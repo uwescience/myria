@@ -1293,6 +1293,26 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
    * Callback if error encountered for a channel.
    * 
    * @param ch the error channel
+   * */
+  void channelDisconnected(final Channel ch) {
+    ChannelContext cc = ChannelContext.getChannelContext(ch);
+    if (cc != null) {
+      RegisteredChannelContext rcc = cc.getRegisteredChannelContext();
+      if (rcc != null) {
+        IPCRemote remote = channelPool.get(rcc.getRemoteID());
+        if (remote != null) {
+          cc.closed(unregisteredChannels, recyclableRegisteredChannels, channelTrashBin, remote.registeredChannels);
+        }
+      } else {
+        cc.closed(unregisteredChannels, recyclableRegisteredChannels, channelTrashBin, null);
+      }
+    }
+  }
+
+  /**
+   * Callback if error encountered for a channel.
+   * 
+   * @param ch the error channel
    * @param cause the cause of the error.
    * */
   void errorEncountered(final Channel ch, final Throwable cause) {
