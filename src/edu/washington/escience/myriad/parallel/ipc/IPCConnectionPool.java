@@ -1466,34 +1466,24 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
    * */
   @Override
   public void releaseExternalResources() {
-    if (!shutdown.get()) {
-      try {
-        shutdown().await();
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
+    shutdown().addListener(new ChannelGroupFutureListener() {
+      @Override
+      public void operationComplete(final ChannelGroupFuture future) throws Exception {
         if (LOGGER.isDebugEnabled()) {
-          LOGGER.debug("IPC connection pool shutdown interrupted.");
+          LOGGER.debug("pre release resources");
+        }
+        Thread t = new Thread("IPC resource releaser") {
+          @Override
+          public void run() {
+            serverBootstrap.releaseExternalResources();
+            clientBootstrap.releaseExternalResources();
+          }
+        };
+        t.start();
+        if (LOGGER.isDebugEnabled()) {
+          LOGGER.debug("post release resources");
         }
       }
-    }
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug("pre release resources");
-    }
-    /**
-     * shutdown the resources used by this pool.
-     * */
-
-    try {
-      connectionCleaner.join();
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-    }
-
-    serverBootstrap.releaseExternalResources();
-    clientBootstrap.releaseExternalResources();
-
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug("post release resources");
-    }
+    });
   }
 }
