@@ -669,7 +669,7 @@ class ChannelContext extends AttachmentableAdapter {
    * */
   final void disconnectSent() {
     // undelayed, must apply
-    assert ownerChannel.getParent() != null;
+    assert ownerChannel.getParent() == null;
     applyDelayedTransitionEvents();
     // client channel
     synchronized (stateMachineLock) {
