@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 
+import net.jcip.annotations.Immutable;
+
 import com.almworks.sqlite4java.SQLiteConstants;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
@@ -19,6 +21,7 @@ import com.google.common.collect.ImmutableList;
 /**
  * Schema describes the schema of a tuple.
  */
+@Immutable
 public final class Schema implements Serializable {
 
   /** Required for Java serialization. */
@@ -64,6 +67,9 @@ public final class Schema implements Serializable {
         case java.sql.Types.VARCHAR:
         case java.sql.Types.CHAR:
           columnTypes.add(Type.STRING_TYPE);
+          break;
+        case java.sql.Types.TIMESTAMP:
+          columnTypes.add(Type.DATETIME_TYPE);
           break;
         default:
           throw new UnsupportedOperationException("JDBC type (java.SQL.Types) of " + type + " is not supported");

@@ -6,12 +6,15 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.column.Column;
+import edu.washington.escience.myriad.column.DateTimeColumn;
 import edu.washington.escience.myriad.column.DoubleColumn;
 import edu.washington.escience.myriad.column.FloatColumn;
 import edu.washington.escience.myriad.column.IntColumn;
 import edu.washington.escience.myriad.column.LongColumn;
 import edu.washington.escience.myriad.column.StringColumn;
+import edu.washington.escience.myriad.util.DateTimeUtils;
 import edu.washington.escience.myriad.util.ImmutableBitSet;
+import edu.washington.escience.myriad.util.ImmutableIntArray;
 
 /**
  * A predicate for filtering x != y. x and y must have the same type.
@@ -43,7 +46,7 @@ public class NotEqualsPredicate implements Predicate {
   public final ImmutableBitSet filter(final TupleBatch tb) {
     Preconditions.checkNotNull(tb);
     ImmutableList<Column<?>> columns = tb.getDataColumns();
-    final int[] validIndices = tb.getValidIndices();
+    final ImmutableIntArray validIndices = tb.getValidIndices();
     Schema schema = tb.getSchema();
     BitSet result = new BitSet();
 
@@ -85,6 +88,14 @@ public class NotEqualsPredicate implements Predicate {
       StringColumn compareColumn = (StringColumn) columns.get(compareIndex);
       for (int idx : validIndices) {
         if (!compareColumn.getString(idx).equals(compareValue)) {
+          result.set(idx);
+        }
+      }
+    } else if (type == Type.DATETIME_TYPE) {
+      // the column is a string type
+      DateTimeColumn compareColumn = (DateTimeColumn) columns.get(compareIndex);
+      for (int idx : validIndices) {
+        if (!compareColumn.getDateTime(idx).equals(DateTimeUtils.parse(compareValue))) {
           result.set(idx);
         }
       }

@@ -3,6 +3,9 @@ package edu.washington.escience.myriad.column;
 import java.nio.ByteBuffer;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+
+import org.joda.time.DateTime;
 
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
@@ -12,21 +15,20 @@ import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
-import edu.washington.escience.myriad.proto.DataProto.LongColumnMessage;
+import edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage;
+import edu.washington.escience.myriad.util.TypeFunnel;
 
 /**
- * A column of Long values.
- * 
- * @author dhalperi
+ * A column of Date values.
  * 
  */
-public final class LongColumn implements Column<Long> {
+public final class DateTimeColumn implements Column<DateTime> {
   /**
    * 
    */
-  private static final long serialVersionUID = 1L;
+  private static final long serialVersionUID = -6748591038891797523L;
   /** Internal representation of the column data. */
-  private final long[] data;
+  private final DateTime[] data;
   /** The number of existing rows in this column. */
   private final int position;
 
@@ -36,25 +38,25 @@ public final class LongColumn implements Column<Long> {
    * @param data the data
    * @param numData number of tuples.
    * */
-  LongColumn(final long[] data, final int numData) {
+  DateTimeColumn(final DateTime[] data, final int numData) {
     this.data = data;
     position = numData;
   }
 
   @Override
-  public Long get(final int row) {
-    return Long.valueOf(getLong(row));
+  public DateTime get(final int row) {
+    return getDateTime(row);
   }
 
   @Override
   public void getIntoJdbc(final int row, final PreparedStatement statement, final int jdbcIndex) throws SQLException {
-    statement.setLong(jdbcIndex, getLong(row));
+    statement.setTimestamp(jdbcIndex, new Timestamp(getDateTime(row).getMillis()));
   }
 
   @Override
   public void getIntoSQLite(final int row, final SQLiteStatement statement, final int sqliteIndex)
       throws SQLiteException {
-    statement.bind(sqliteIndex, getLong(row));
+    statement.bind(sqliteIndex, getDateTime(row).getMillis()); // SQLite long
   }
 
   /**
@@ -63,27 +65,28 @@ public final class LongColumn implements Column<Long> {
    * @param row row of element to return.
    * @return the element at the specified row in this column.
    */
-  public long getLong(final int row) {
+  public DateTime getDateTime(final int row) {
     Preconditions.checkElementIndex(row, position);
     return data[row];
   }
 
   @Override
   public Type getType() {
-    return Type.LONG_TYPE;
+    return Type.DATETIME_TYPE;
   }
 
   @Override
   public ColumnMessage serializeToProto() {
     ByteBuffer dataBytes = ByteBuffer.allocate(position * Long.SIZE / Byte.SIZE);
     for (int i = 0; i < position; i++) {
-      dataBytes.putLong(data[i]);
+      dataBytes.putLong(data[i].getMillis());
     }
 
     dataBytes.flip();
-    final LongColumnMessage.Builder inner = LongColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
+    final DateTimeColumnMessage.Builder inner =
+        DateTimeColumnMessage.newBuilder().setData(ByteString.copyFrom(dataBytes));
 
-    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.LONG).setLongColumn(inner).build();
+    return ColumnMessage.newBuilder().setType(ColumnMessage.Type.DATETIME).setDateColumn(inner).build();
   }
 
   @Override
@@ -107,16 +110,16 @@ public final class LongColumn implements Column<Long> {
 
   @Override
   public boolean equals(final int leftIdx, final Column<?> rightColumn, final int rightIdx) {
-    return getLong(leftIdx) == ((LongColumn) rightColumn).getLong(rightIdx);
+    return getDateTime(leftIdx).equals(rightColumn.get(rightIdx));
   }
 
   @Override
   public void append(final int index, final ColumnBuilder<?> columnBuilder) {
-    ((LongColumnBuilder) columnBuilder).append(getLong(index));
+    ((DateTimeColumnBuilder) columnBuilder).append(getDateTime(index));
   }
 
   @Override
   public void addToHasher(final int row, final Hasher hasher) {
-    hasher.putLong(getLong(row));
+    hasher.putObject(getDateTime(row), TypeFunnel.INSTANCE);
   }
 }

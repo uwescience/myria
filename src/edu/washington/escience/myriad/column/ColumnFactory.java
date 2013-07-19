@@ -60,6 +60,9 @@ public final class ColumnFactory {
         case STRING_TYPE:
           columns.add(new StringColumnBuilder());
           break;
+        case DATETIME_TYPE:
+          columns.add(new DateTimeColumnBuilder());
+          break;
       }
     }
     return columns;
@@ -86,6 +89,8 @@ public final class ColumnFactory {
         return LongColumnBuilder.buildFromProtobuf(message, numTuples);
       case STRING:
         return StringColumnBuilder.buildFromProtobuf(message, numTuples);
+      case DATETIME:
+        return DateTimeColumnBuilder.buildFromProtobuf(message, numTuples);
     }
     return null;
   }

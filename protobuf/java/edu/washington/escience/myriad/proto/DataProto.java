@@ -924,6 +924,11 @@ public final class DataProto {
     boolean hasBooleanColumn();
     edu.washington.escience.myriad.proto.DataProto.BooleanColumnMessage getBooleanColumn();
     edu.washington.escience.myriad.proto.DataProto.BooleanColumnMessageOrBuilder getBooleanColumnOrBuilder();
+    
+    // optional .DateTimeColumnMessage date_column = 9;
+    boolean hasDateColumn();
+    edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage getDateColumn();
+    edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessageOrBuilder getDateColumnOrBuilder();
   }
   public static final class ColumnMessage extends
       com.google.protobuf.GeneratedMessage
@@ -961,6 +966,7 @@ public final class DataProto {
       DOUBLE(3, 3),
       STRING(4, 4),
       BOOLEAN(5, 5),
+      DATETIME(6, 6),
       ;
       
       public static final int INT_VALUE = 0;
@@ -969,6 +975,7 @@ public final class DataProto {
       public static final int DOUBLE_VALUE = 3;
       public static final int STRING_VALUE = 4;
       public static final int BOOLEAN_VALUE = 5;
+      public static final int DATETIME_VALUE = 6;
       
       
       public final int getNumber() { return value; }
@@ -981,6 +988,7 @@ public final class DataProto {
           case 3: return DOUBLE;
           case 4: return STRING;
           case 5: return BOOLEAN;
+          case 6: return DATETIME;
           default: return null;
         }
       }
@@ -1011,7 +1019,7 @@ public final class DataProto {
       }
       
       private static final Type[] VALUES = {
-        INT, LONG, FLOAT, DOUBLE, STRING, BOOLEAN, 
+        INT, LONG, FLOAT, DOUBLE, STRING, BOOLEAN, DATETIME, 
       };
       
       public static Type valueOf(
@@ -1123,6 +1131,19 @@ public final class DataProto {
       return booleanColumn_;
     }
     
+    // optional .DateTimeColumnMessage date_column = 9;
+    public static final int DATE_COLUMN_FIELD_NUMBER = 9;
+    private edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage dateColumn_;
+    public boolean hasDateColumn() {
+      return ((bitField0_ & 0x00000080) == 0x00000080);
+    }
+    public edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage getDateColumn() {
+      return dateColumn_;
+    }
+    public edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessageOrBuilder getDateColumnOrBuilder() {
+      return dateColumn_;
+    }
+    
     private void initFields() {
       type_ = edu.washington.escience.myriad.proto.DataProto.ColumnMessage.Type.INT;
       intColumn_ = edu.washington.escience.myriad.proto.DataProto.IntColumnMessage.getDefaultInstance();
@@ -1131,6 +1152,7 @@ public final class DataProto {
       doubleColumn_ = edu.washington.escience.myriad.proto.DataProto.DoubleColumnMessage.getDefaultInstance();
       stringColumn_ = edu.washington.escience.myriad.proto.DataProto.StringColumnMessage.getDefaultInstance();
       booleanColumn_ = edu.washington.escience.myriad.proto.DataProto.BooleanColumnMessage.getDefaultInstance();
+      dateColumn_ = edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage.getDefaultInstance();
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -1177,6 +1199,12 @@ public final class DataProto {
           return false;
         }
       }
+      if (hasDateColumn()) {
+        if (!getDateColumn().isInitialized()) {
+          memoizedIsInitialized = 0;
+          return false;
+        }
+      }
       memoizedIsInitialized = 1;
       return true;
     }
@@ -1204,6 +1232,9 @@ public final class DataProto {
       }
       if (((bitField0_ & 0x00000040) == 0x00000040)) {
         output.writeMessage(8, booleanColumn_);
+      }
+      if (((bitField0_ & 0x00000080) == 0x00000080)) {
+        output.writeMessage(9, dateColumn_);
       }
       getUnknownFields().writeTo(output);
     }
@@ -1241,6 +1272,10 @@ public final class DataProto {
       if (((bitField0_ & 0x00000040) == 0x00000040)) {
         size += com.google.protobuf.CodedOutputStream
           .computeMessageSize(8, booleanColumn_);
+      }
+      if (((bitField0_ & 0x00000080) == 0x00000080)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(9, dateColumn_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -1364,6 +1399,7 @@ public final class DataProto {
           getDoubleColumnFieldBuilder();
           getStringColumnFieldBuilder();
           getBooleanColumnFieldBuilder();
+          getDateColumnFieldBuilder();
         }
       }
       private static Builder create() {
@@ -1410,6 +1446,12 @@ public final class DataProto {
           booleanColumnBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000040);
+        if (dateColumnBuilder_ == null) {
+          dateColumn_ = edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage.getDefaultInstance();
+        } else {
+          dateColumnBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000080);
         return this;
       }
       
@@ -1500,6 +1542,14 @@ public final class DataProto {
         } else {
           result.booleanColumn_ = booleanColumnBuilder_.build();
         }
+        if (((from_bitField0_ & 0x00000080) == 0x00000080)) {
+          to_bitField0_ |= 0x00000080;
+        }
+        if (dateColumnBuilder_ == null) {
+          result.dateColumn_ = dateColumn_;
+        } else {
+          result.dateColumn_ = dateColumnBuilder_.build();
+        }
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -1536,6 +1586,9 @@ public final class DataProto {
         }
         if (other.hasBooleanColumn()) {
           mergeBooleanColumn(other.getBooleanColumn());
+        }
+        if (other.hasDateColumn()) {
+          mergeDateColumn(other.getDateColumn());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -1578,6 +1631,12 @@ public final class DataProto {
         }
         if (hasBooleanColumn()) {
           if (!getBooleanColumn().isInitialized()) {
+            
+            return false;
+          }
+        }
+        if (hasDateColumn()) {
+          if (!getDateColumn().isInitialized()) {
             
             return false;
           }
@@ -1671,6 +1730,15 @@ public final class DataProto {
               }
               input.readMessage(subBuilder, extensionRegistry);
               setBooleanColumn(subBuilder.buildPartial());
+              break;
+            }
+            case 74: {
+              edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage.Builder subBuilder = edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage.newBuilder();
+              if (hasDateColumn()) {
+                subBuilder.mergeFrom(getDateColumn());
+              }
+              input.readMessage(subBuilder, extensionRegistry);
+              setDateColumn(subBuilder.buildPartial());
               break;
             }
           }
@@ -2241,6 +2309,96 @@ public final class DataProto {
           booleanColumn_ = null;
         }
         return booleanColumnBuilder_;
+      }
+      
+      // optional .DateTimeColumnMessage date_column = 9;
+      private edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage dateColumn_ = edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage.getDefaultInstance();
+      private com.google.protobuf.SingleFieldBuilder<
+          edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage, edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage.Builder, edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessageOrBuilder> dateColumnBuilder_;
+      public boolean hasDateColumn() {
+        return ((bitField0_ & 0x00000080) == 0x00000080);
+      }
+      public edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage getDateColumn() {
+        if (dateColumnBuilder_ == null) {
+          return dateColumn_;
+        } else {
+          return dateColumnBuilder_.getMessage();
+        }
+      }
+      public Builder setDateColumn(edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage value) {
+        if (dateColumnBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          dateColumn_ = value;
+          onChanged();
+        } else {
+          dateColumnBuilder_.setMessage(value);
+        }
+        bitField0_ |= 0x00000080;
+        return this;
+      }
+      public Builder setDateColumn(
+          edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage.Builder builderForValue) {
+        if (dateColumnBuilder_ == null) {
+          dateColumn_ = builderForValue.build();
+          onChanged();
+        } else {
+          dateColumnBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00000080;
+        return this;
+      }
+      public Builder mergeDateColumn(edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage value) {
+        if (dateColumnBuilder_ == null) {
+          if (((bitField0_ & 0x00000080) == 0x00000080) &&
+              dateColumn_ != edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage.getDefaultInstance()) {
+            dateColumn_ =
+              edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage.newBuilder(dateColumn_).mergeFrom(value).buildPartial();
+          } else {
+            dateColumn_ = value;
+          }
+          onChanged();
+        } else {
+          dateColumnBuilder_.mergeFrom(value);
+        }
+        bitField0_ |= 0x00000080;
+        return this;
+      }
+      public Builder clearDateColumn() {
+        if (dateColumnBuilder_ == null) {
+          dateColumn_ = edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage.getDefaultInstance();
+          onChanged();
+        } else {
+          dateColumnBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000080);
+        return this;
+      }
+      public edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage.Builder getDateColumnBuilder() {
+        bitField0_ |= 0x00000080;
+        onChanged();
+        return getDateColumnFieldBuilder().getBuilder();
+      }
+      public edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessageOrBuilder getDateColumnOrBuilder() {
+        if (dateColumnBuilder_ != null) {
+          return dateColumnBuilder_.getMessageOrBuilder();
+        } else {
+          return dateColumn_;
+        }
+      }
+      private com.google.protobuf.SingleFieldBuilder<
+          edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage, edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage.Builder, edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessageOrBuilder> 
+          getDateColumnFieldBuilder() {
+        if (dateColumnBuilder_ == null) {
+          dateColumnBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage, edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage.Builder, edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessageOrBuilder>(
+                  dateColumn_,
+                  getParentForChildren(),
+                  isClean());
+          dateColumn_ = null;
+        }
+        return dateColumnBuilder_;
       }
       
       // @@protoc_insertion_point(builder_scope:ColumnMessage)
@@ -4564,6 +4722,355 @@ public final class DataProto {
     // @@protoc_insertion_point(class_scope:BooleanColumnMessage)
   }
   
+  public interface DateTimeColumnMessageOrBuilder
+      extends com.google.protobuf.MessageOrBuilder {
+    
+    // required bytes data = 1;
+    boolean hasData();
+    com.google.protobuf.ByteString getData();
+  }
+  public static final class DateTimeColumnMessage extends
+      com.google.protobuf.GeneratedMessage
+      implements DateTimeColumnMessageOrBuilder {
+    // Use DateTimeColumnMessage.newBuilder() to construct.
+    private DateTimeColumnMessage(Builder builder) {
+      super(builder);
+    }
+    private DateTimeColumnMessage(boolean noInit) {}
+    
+    private static final DateTimeColumnMessage defaultInstance;
+    public static DateTimeColumnMessage getDefaultInstance() {
+      return defaultInstance;
+    }
+    
+    public DateTimeColumnMessage getDefaultInstanceForType() {
+      return defaultInstance;
+    }
+    
+    public static final com.google.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return edu.washington.escience.myriad.proto.DataProto.internal_static_DateTimeColumnMessage_descriptor;
+    }
+    
+    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return edu.washington.escience.myriad.proto.DataProto.internal_static_DateTimeColumnMessage_fieldAccessorTable;
+    }
+    
+    private int bitField0_;
+    // required bytes data = 1;
+    public static final int DATA_FIELD_NUMBER = 1;
+    private com.google.protobuf.ByteString data_;
+    public boolean hasData() {
+      return ((bitField0_ & 0x00000001) == 0x00000001);
+    }
+    public com.google.protobuf.ByteString getData() {
+      return data_;
+    }
+    
+    private void initFields() {
+      data_ = com.google.protobuf.ByteString.EMPTY;
+    }
+    private byte memoizedIsInitialized = -1;
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized != -1) return isInitialized == 1;
+      
+      if (!hasData()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      memoizedIsInitialized = 1;
+      return true;
+    }
+    
+    public void writeTo(com.google.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      getSerializedSize();
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        output.writeBytes(1, data_);
+      }
+      getUnknownFields().writeTo(output);
+    }
+    
+    private int memoizedSerializedSize = -1;
+    public int getSerializedSize() {
+      int size = memoizedSerializedSize;
+      if (size != -1) return size;
+    
+      size = 0;
+      if (((bitField0_ & 0x00000001) == 0x00000001)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBytesSize(1, data_);
+      }
+      size += getUnknownFields().getSerializedSize();
+      memoizedSerializedSize = size;
+      return size;
+    }
+    
+    private static final long serialVersionUID = 0L;
+    @java.lang.Override
+    protected java.lang.Object writeReplace()
+        throws java.io.ObjectStreamException {
+      return super.writeReplace();
+    }
+    
+    public static edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data).buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data, extensionRegistry)
+               .buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data).buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return newBuilder().mergeFrom(data, extensionRegistry)
+               .buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input).buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input, extensionRegistry)
+               .buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      Builder builder = newBuilder();
+      if (builder.mergeDelimitedFrom(input)) {
+        return builder.buildParsed();
+      } else {
+        return null;
+      }
+    }
+    public static edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      Builder builder = newBuilder();
+      if (builder.mergeDelimitedFrom(input, extensionRegistry)) {
+        return builder.buildParsed();
+      } else {
+        return null;
+      }
+    }
+    public static edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input).buildParsed();
+    }
+    public static edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return newBuilder().mergeFrom(input, extensionRegistry)
+               .buildParsed();
+    }
+    
+    public static Builder newBuilder() { return Builder.create(); }
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder(edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage prototype) {
+      return newBuilder().mergeFrom(prototype);
+    }
+    public Builder toBuilder() { return newBuilder(this); }
+    
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessage.Builder<Builder>
+       implements edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessageOrBuilder {
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return edu.washington.escience.myriad.proto.DataProto.internal_static_DateTimeColumnMessage_descriptor;
+      }
+      
+      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return edu.washington.escience.myriad.proto.DataProto.internal_static_DateTimeColumnMessage_fieldAccessorTable;
+      }
+      
+      // Construct using edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage.newBuilder()
+      private Builder() {
+        maybeForceBuilderInitialization();
+      }
+      
+      private Builder(BuilderParent parent) {
+        super(parent);
+        maybeForceBuilderInitialization();
+      }
+      private void maybeForceBuilderInitialization() {
+        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        }
+      }
+      private static Builder create() {
+        return new Builder();
+      }
+      
+      public Builder clear() {
+        super.clear();
+        data_ = com.google.protobuf.ByteString.EMPTY;
+        bitField0_ = (bitField0_ & ~0x00000001);
+        return this;
+      }
+      
+      public Builder clone() {
+        return create().mergeFrom(buildPartial());
+      }
+      
+      public com.google.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage.getDescriptor();
+      }
+      
+      public edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage getDefaultInstanceForType() {
+        return edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage.getDefaultInstance();
+      }
+      
+      public edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage build() {
+        edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+      
+      private edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage buildParsed()
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(
+            result).asInvalidProtocolBufferException();
+        }
+        return result;
+      }
+      
+      public edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage buildPartial() {
+        edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage result = new edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage(this);
+        int from_bitField0_ = bitField0_;
+        int to_bitField0_ = 0;
+        if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
+          to_bitField0_ |= 0x00000001;
+        }
+        result.data_ = data_;
+        result.bitField0_ = to_bitField0_;
+        onBuilt();
+        return result;
+      }
+      
+      public Builder mergeFrom(com.google.protobuf.Message other) {
+        if (other instanceof edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage) {
+          return mergeFrom((edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+      
+      public Builder mergeFrom(edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage other) {
+        if (other == edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage.getDefaultInstance()) return this;
+        if (other.hasData()) {
+          setData(other.getData());
+        }
+        this.mergeUnknownFields(other.getUnknownFields());
+        return this;
+      }
+      
+      public final boolean isInitialized() {
+        if (!hasData()) {
+          
+          return false;
+        }
+        return true;
+      }
+      
+      public Builder mergeFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
+          com.google.protobuf.UnknownFieldSet.newBuilder(
+            this.getUnknownFields());
+        while (true) {
+          int tag = input.readTag();
+          switch (tag) {
+            case 0:
+              this.setUnknownFields(unknownFields.build());
+              onChanged();
+              return this;
+            default: {
+              if (!parseUnknownField(input, unknownFields,
+                                     extensionRegistry, tag)) {
+                this.setUnknownFields(unknownFields.build());
+                onChanged();
+                return this;
+              }
+              break;
+            }
+            case 10: {
+              bitField0_ |= 0x00000001;
+              data_ = input.readBytes();
+              break;
+            }
+          }
+        }
+      }
+      
+      private int bitField0_;
+      
+      // required bytes data = 1;
+      private com.google.protobuf.ByteString data_ = com.google.protobuf.ByteString.EMPTY;
+      public boolean hasData() {
+        return ((bitField0_ & 0x00000001) == 0x00000001);
+      }
+      public com.google.protobuf.ByteString getData() {
+        return data_;
+      }
+      public Builder setData(com.google.protobuf.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  bitField0_ |= 0x00000001;
+        data_ = value;
+        onChanged();
+        return this;
+      }
+      public Builder clearData() {
+        bitField0_ = (bitField0_ & ~0x00000001);
+        data_ = getDefaultInstance().getData();
+        onChanged();
+        return this;
+      }
+      
+      // @@protoc_insertion_point(builder_scope:DateTimeColumnMessage)
+    }
+    
+    static {
+      defaultInstance = new DateTimeColumnMessage(true);
+      defaultInstance.initFields();
+    }
+    
+    // @@protoc_insertion_point(class_scope:DateTimeColumnMessage)
+  }
+  
   private static com.google.protobuf.Descriptors.Descriptor
     internal_static_DataMessage_descriptor;
   private static
@@ -4604,6 +5111,11 @@ public final class DataProto {
   private static
     com.google.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_BooleanColumnMessage_fieldAccessorTable;
+  private static com.google.protobuf.Descriptors.Descriptor
+    internal_static_DateTimeColumnMessage_descriptor;
+  private static
+    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      internal_static_DateTimeColumnMessage_fieldAccessorTable;
   
   public static com.google.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
@@ -4617,7 +5129,7 @@ public final class DataProto {
       " \002(\0162\021.DataMessage.Type\022\022\n\noperatorID\030\002 " +
       "\001(\004\022\037\n\007columns\030\003 \003(\0132\016.ColumnMessage\022\022\n\n" +
       "num_tuples\030\004 \001(\r\022\013\n\003seq\030\005 \001(\004\"\033\n\004Type\022\n\n" +
-      "\006NORMAL\020\001\022\007\n\003EOI\020\002\"\201\003\n\rColumnMessage\022!\n\004" +
+      "\006NORMAL\020\001\022\007\n\003EOI\020\002\"\274\003\n\rColumnMessage\022!\n\004" +
       "type\030\001 \002(\0162\023.ColumnMessage.Type\022%\n\nint_c" +
       "olumn\030\003 \001(\0132\021.IntColumnMessage\022\'\n\013long_c" +
       "olumn\030\004 \001(\0132\022.LongColumnMessage\022)\n\014float" +
@@ -4625,16 +5137,19 @@ public final class DataProto {
       "uble_column\030\006 \001(\0132\024.DoubleColumnMessage\022",
       "+\n\rstring_column\030\007 \001(\0132\024.StringColumnMes" +
       "sage\022-\n\016boolean_column\030\010 \001(\0132\025.BooleanCo" +
-      "lumnMessage\"I\n\004Type\022\007\n\003INT\020\000\022\010\n\004LONG\020\001\022\t" +
-      "\n\005FLOAT\020\002\022\n\n\006DOUBLE\020\003\022\n\n\006STRING\020\004\022\013\n\007BOO" +
-      "LEAN\020\005\" \n\020IntColumnMessage\022\014\n\004data\030\001 \002(\014" +
-      "\"!\n\021LongColumnMessage\022\014\n\004data\030\001 \002(\014\"\"\n\022F" +
-      "loatColumnMessage\022\014\n\004data\030\001 \002(\014\"#\n\023Doubl" +
-      "eColumnMessage\022\014\n\004data\030\001 \002(\014\"O\n\023StringCo" +
-      "lumnMessage\022\014\n\004data\030\001 \002(\014\022\025\n\rstart_indic" +
-      "es\030\002 \003(\005\022\023\n\013end_indices\030\003 \003(\005\"$\n\024Boolean",
-      "ColumnMessage\022\014\n\004data\030\001 \002(\014B1\n$edu.washi" +
-      "ngton.escience.myriad.protoB\tDataProto"
+      "lumnMessage\022+\n\013date_column\030\t \001(\0132\026.DateT" +
+      "imeColumnMessage\"W\n\004Type\022\007\n\003INT\020\000\022\010\n\004LON" +
+      "G\020\001\022\t\n\005FLOAT\020\002\022\n\n\006DOUBLE\020\003\022\n\n\006STRING\020\004\022\013" +
+      "\n\007BOOLEAN\020\005\022\014\n\010DATETIME\020\006\" \n\020IntColumnMe" +
+      "ssage\022\014\n\004data\030\001 \002(\014\"!\n\021LongColumnMessage" +
+      "\022\014\n\004data\030\001 \002(\014\"\"\n\022FloatColumnMessage\022\014\n\004" +
+      "data\030\001 \002(\014\"#\n\023DoubleColumnMessage\022\014\n\004dat" +
+      "a\030\001 \002(\014\"O\n\023StringColumnMessage\022\014\n\004data\030\001",
+      " \002(\014\022\025\n\rstart_indices\030\002 \003(\005\022\023\n\013end_indic" +
+      "es\030\003 \003(\005\"$\n\024BooleanColumnMessage\022\014\n\004data" +
+      "\030\001 \002(\014\"%\n\025DateTimeColumnMessage\022\014\n\004data\030" +
+      "\001 \002(\014B1\n$edu.washington.escience.myriad." +
+      "protoB\tDataProto"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -4654,7 +5169,7 @@ public final class DataProto {
           internal_static_ColumnMessage_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_ColumnMessage_descriptor,
-              new java.lang.String[] { "Type", "IntColumn", "LongColumn", "FloatColumn", "DoubleColumn", "StringColumn", "BooleanColumn", },
+              new java.lang.String[] { "Type", "IntColumn", "LongColumn", "FloatColumn", "DoubleColumn", "StringColumn", "BooleanColumn", "DateColumn", },
               edu.washington.escience.myriad.proto.DataProto.ColumnMessage.class,
               edu.washington.escience.myriad.proto.DataProto.ColumnMessage.Builder.class);
           internal_static_IntColumnMessage_descriptor =
@@ -4705,6 +5220,14 @@ public final class DataProto {
               new java.lang.String[] { "Data", },
               edu.washington.escience.myriad.proto.DataProto.BooleanColumnMessage.class,
               edu.washington.escience.myriad.proto.DataProto.BooleanColumnMessage.Builder.class);
+          internal_static_DateTimeColumnMessage_descriptor =
+            getDescriptor().getMessageTypes().get(8);
+          internal_static_DateTimeColumnMessage_fieldAccessorTable = new
+            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+              internal_static_DateTimeColumnMessage_descriptor,
+              new java.lang.String[] { "Data", },
+              edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage.class,
+              edu.washington.escience.myriad.proto.DataProto.DateTimeColumnMessage.Builder.class);
           return null;
         }
       };

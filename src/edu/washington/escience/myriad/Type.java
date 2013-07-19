@@ -2,8 +2,11 @@ package edu.washington.escience.myriad;
 
 import java.io.Serializable;
 
+import org.joda.time.DateTime;
+
 import edu.washington.escience.myriad.column.BooleanColumn;
 import edu.washington.escience.myriad.column.Column;
+import edu.washington.escience.myriad.column.DateTimeColumn;
 import edu.washington.escience.myriad.column.DoubleColumn;
 import edu.washington.escience.myriad.column.FloatColumn;
 import edu.washington.escience.myriad.column.IntColumn;
@@ -300,6 +303,50 @@ public enum Type implements Serializable {
     public String toString(final Column<?> column, final int tupleIndex) {
       return "" + ((LongColumn) column).getLong(tupleIndex);
     }
+  },
+
+  /**
+   * date type.
+   * */
+  DATETIME_TYPE() {
+    /**
+     * @return true if valueInTuple op operand.
+     * @param op the operation
+     * @param valueInTuple the value to be compared in a tuple
+     * @param operand the operand
+     * */
+    public boolean compare(final SimplePredicate.Op op, final DateTime valueInTuple, final DateTime operand) {
+      switch (op) {
+        case EQUALS:
+          return valueInTuple.equals(operand);
+        case NOT_EQUALS:
+          return !valueInTuple.equals(operand);
+        case GREATER_THAN:
+          return valueInTuple.compareTo(operand) > 0;
+        case GREATER_THAN_OR_EQ:
+          return valueInTuple.compareTo(operand) >= 0;
+        case LESS_THAN:
+          return valueInTuple.compareTo(operand) < 0;
+        case LESS_THAN_OR_EQ:
+          return valueInTuple.compareTo(operand) <= 0;
+        case LIKE:
+          return valueInTuple.equals(operand);
+      }
+
+      return false;
+    }
+
+    @Override
+    public boolean filter(final SimplePredicate.Op op, final Column<?> dateColumn, final int tupleIndex,
+        final Object operand) {
+      final DateTime v = ((DateTimeColumn) dateColumn).getDateTime(tupleIndex);
+      return compare(op, v, (DateTime) operand);
+    }
+
+    @Override
+    public String toString(final Column<?> column, final int tupleIndex) {
+      return "" + ((DateTimeColumn) column).getDateTime(tupleIndex);
+    }
 
   };
 
@@ -318,4 +365,5 @@ public enum Type implements Serializable {
    * @param tupleIndex the index
    * */
   public abstract String toString(final Column<?> column, final int tupleIndex);
+
 }
