@@ -294,14 +294,14 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
   public static final int MAX_NUM_RETRY = 3;
 
   /**
-   * data transfer timeout 30 seconds.Should be moved to the system configuration in the future.
+   * data transfer timeout 3 seconds.Should be moved to the system configuration in the future.
    */
-  public static final int DATA_TRANSFER_TIMEOUT_IN_MS = 30000;
+  public static final int DATA_TRANSFER_TIMEOUT_IN_MS = 3000;
 
   /**
-   * connection wait 10 seconds. Should be moved to the system configuration in the future.
+   * connection wait 3 seconds. Should be moved to the system configuration in the future.
    */
-  public static final int CONNECTION_WAIT_IN_MS = 10000;
+  public static final int CONNECTION_WAIT_IN_MS = 3000;
 
   /**
    * 10 minutes.
@@ -314,9 +314,9 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
   public static final int CONNECTION_DISCONNECT_INTERVAL_IN_MS = 10000;
 
   /**
-   * connection id check time out.
+   * connection id check time out 3s.
    * */
-  public static final int CONNECTION_ID_CHECK_TIMEOUT_IN_MS = 10000;
+  public static final int CONNECTION_ID_CHECK_TIMEOUT_IN_MS = 3000;
 
   /**
    * pool of connections.
@@ -643,17 +643,13 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
       connected = false;
     }
     if (connected && c != null) {
-      int retry = 0;
       connected = false;
-      while (!connected && retry < MAX_NUM_RETRY) {
-        if (connectionTimeoutMS > 0) {
-          c.awaitUninterruptibly(connectionTimeoutMS);
-        } else {
-          c.awaitUninterruptibly();
-        }
-        connected = c.isSuccess();
-        retry++;
+      if (connectionTimeoutMS > 0) {
+        c.awaitUninterruptibly(connectionTimeoutMS);
+      } else {
+        c.awaitUninterruptibly();
       }
+      connected = c.isSuccess();
     }
     if (connected) {
       final Channel channel = c.getChannel();
@@ -662,23 +658,16 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
         channel.setAttachment(cc);
         cc.connected();
         final ChannelFuture idWriteFuture = channel.write(myIDMsg);
-        int retry = 0;
-        while (retry < MAX_NUM_RETRY && !idWriteFuture.awaitUninterruptibly(DATA_TRANSFER_TIMEOUT_IN_MS)) {
-          // tell the remote part my id
-          retry++;
-        }
-
-        if (retry >= MAX_NUM_RETRY || !idWriteFuture.isSuccess()) {
+        idWriteFuture.awaitUninterruptibly(DATA_TRANSFER_TIMEOUT_IN_MS);
+        // tell the remote part my id
+        if (!idWriteFuture.isSuccess()) {
           cc.idCheckingTimeout(unregisteredChannels);
           return null;
         }
 
-        retry = 0;
-        while (retry < MAX_NUM_RETRY && !cc.waitForRemoteReply(CONNECTION_ID_CHECK_TIMEOUT_IN_MS)) {
-          retry++;
-        }
+        cc.waitForRemoteReply(CONNECTION_ID_CHECK_TIMEOUT_IN_MS);
 
-        if (retry >= MAX_NUM_RETRY || !(remote.id == (cc.remoteReplyID()))) {
+        if (!(remote.id == (cc.remoteReplyID()))) {
           cc.idCheckingTimeout(unregisteredChannels);
           return null;
         }
@@ -694,9 +683,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
     }
     if (c != null) {
       closeUnregisteredChannel(c.getChannel());
-
       c.syncUninterruptibly();
-
     }
     return null;
   }
@@ -748,6 +735,9 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
       int retry = 0;
 
       while ((retry < MAX_NUM_RETRY) && (channel == null)) {
+        if (retry > 1 && LOGGER.isDebugEnabled()) {
+          LOGGER.debug("Retry creating a connection to id#" + ipcIDP);
+        }
         if (shareConnections) {
           // get a connection instance and reuse connections if POOL_SIZE_UPPERBOUND is reached
           channel = remote.registeredChannels.peekAndReserve();
@@ -818,8 +808,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
     if (shutdown.get()) {
       // stop accepting new connections if the connection pool is already shutdown.
       if (LOGGER.isWarnEnabled()) {
-        LOGGER.warn("Already shutdown, new remote channel directly close. Channel: "
-            + ToStringBuilder.reflectionToString(newChannel));
+        LOGGER.warn("Already shutdown, new remote channel directly close. Channel: " + newChannel);
       }
       newChannel.close();
       return;
@@ -849,11 +838,11 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
       final IPCRemote oldOne = channelPool.put(remoteID, newOne);
       if (oldOne == null) {
         if (LOGGER.isDebugEnabled()) {
-          LOGGER.debug("new IPC remote entity added: " + newOne);
+          LOGGER.debug("new IPC remote entity added: " + newOne, new ThreadStackDump());
         }
       } else {
         if (LOGGER.isDebugEnabled()) {
-          LOGGER.debug("Existing IPC remote entity changed from " + oldOne + " to " + newOne);
+          LOGGER.debug("Existing IPC remote entity changed from " + oldOne + " to " + newOne, new ThreadStackDump());
         }
       }
     } finally {
@@ -1047,24 +1036,18 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
     if (LOGGER.isTraceEnabled()) {
       LOGGER.trace("reserve long term connection for (" + id + "," + streamID + ")", new ThreadStackDump());
     }
-
     shutdownLock.readLock().lock();
-
     try {
       Channel ch = getAConnection(id);
       if (ch != null) {
         ch.write(new IPCMessage.Meta.BOS(streamID));
-
         ChannelContext cc = ((ChannelContext) (ch.getAttachment()));
-
         int remoteID = cc.getRegisteredChannelContext().getRemoteID();
         if (LOGGER.isDebugEnabled()) {
           LOGGER.debug("New data connection, setup flow control context.");
         }
-
         return new StreamOutputChannel<PAYLOAD>(new StreamIOChannelID(streamID, remoteID), this, ch);
       }
-
     } catch (ChannelException e) {
       if (LOGGER.isErrorEnabled()) {
         LOGGER.error("Unable to connect to remote. Cause is: ", e);
@@ -1429,44 +1412,49 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
   public void start(final ChannelFactory serverChannelFactory, final ChannelPipelineFactory serverPipelineFactory,
       final ChannelFactory clientChannelFactory, final ChannelPipelineFactory clientPipelineFactory,
       final ChannelPipelineFactory localInJVMPipelineFactory, final ChannelSink localInJVMChannelSink) throws Exception {
-
-    serverBootstrap.setFactory(serverChannelFactory);
-    serverBootstrap.setPipelineFactory(serverPipelineFactory);
-    serverChannel = serverBootstrap.bind(myIPCServerAddress);
-
-    clientBootstrap.setFactory(clientChannelFactory);
-    clientBootstrap.setPipelineFactory(clientPipelineFactory);
-
-    for (final Integer id : intialRemoteAddresses.keySet()) {
-      channelPool.put(id, new IPCRemote(id, intialRemoteAddresses.get(id), clientBootstrap));
+    if (!shutdown.compareAndSet(true, false)) {
+      throw new IllegalStateException("Connection pool already started.");
     }
-    IPCRemote myself = channelPool.get(myID);
-    if (myself == null) {
-      myself = new IPCRemote(myID, intialRemoteAddresses.get(myID), clientBootstrap);
-      IPCRemote old = channelPool.putIfAbsent(myID, myself);
-      if (old != null) {
-        myself = old;
+    shutdownLock.writeLock().lock();
+    try {
+      serverBootstrap.setFactory(serverChannelFactory);
+      serverBootstrap.setPipelineFactory(serverPipelineFactory);
+      serverChannel = serverBootstrap.bind(myIPCServerAddress);
+
+      clientBootstrap.setFactory(clientChannelFactory);
+      clientBootstrap.setPipelineFactory(clientPipelineFactory);
+
+      for (final Integer id : intialRemoteAddresses.keySet()) {
+        channelPool.put(id, new IPCRemote(id, intialRemoteAddresses.get(id), clientBootstrap));
       }
+      IPCRemote myself = channelPool.get(myID);
+      if (myself == null) {
+        myself = new IPCRemote(myID, intialRemoteAddresses.get(myID), clientBootstrap);
+        IPCRemote old = channelPool.putIfAbsent(myID, myself);
+        if (old != null) {
+          myself = old;
+        }
+      }
+
+      this.localInJVMChannelSink = localInJVMChannelSink;
+      this.localInJVMPipelineFactory = localInJVMPipelineFactory;
+
+      inJVMShortMessageChannel = new InJVMChannel(localInJVMPipelineFactory.getPipeline(), localInJVMChannelSink);
+      final ChannelContext cc = new ChannelContext(inJVMShortMessageChannel);
+      inJVMShortMessageChannel.setAttachment(cc);
+      cc.connected();
+      cc.registerNormal(myID, myself.registeredChannels, unregisteredChannels);
+
+      allPossibleChannels.add(serverChannel);
+      scheduledTaskExecutor.scheduleAtFixedRate(recycler, (int) ((1 + Math.random())
+          * CONNECTION_RECYCLE_INTERVAL_IN_MS / 2), CONNECTION_RECYCLE_INTERVAL_IN_MS / 2, TimeUnit.MILLISECONDS);
+      scheduledTaskExecutor.scheduleAtFixedRate(disconnecter, (int) ((1 + Math.random())
+          * CONNECTION_DISCONNECT_INTERVAL_IN_MS / 2), CONNECTION_DISCONNECT_INTERVAL_IN_MS / 2, TimeUnit.MILLISECONDS);
+      scheduledTaskExecutor.scheduleAtFixedRate(idChecker, (int) ((1 + Math.random())
+          * CONNECTION_ID_CHECK_TIMEOUT_IN_MS / 2), CONNECTION_ID_CHECK_TIMEOUT_IN_MS / 2, TimeUnit.MILLISECONDS);
+    } finally {
+      shutdownLock.writeLock().unlock();
     }
-
-    this.localInJVMChannelSink = localInJVMChannelSink;
-    this.localInJVMPipelineFactory = localInJVMPipelineFactory;
-
-    inJVMShortMessageChannel = new InJVMChannel(localInJVMPipelineFactory.getPipeline(), localInJVMChannelSink);
-    final ChannelContext cc = new ChannelContext(inJVMShortMessageChannel);
-    inJVMShortMessageChannel.setAttachment(cc);
-    cc.connected();
-    cc.registerNormal(myID, myself.registeredChannels, unregisteredChannels);
-
-    allPossibleChannels.add(serverChannel);
-    scheduledTaskExecutor.scheduleAtFixedRate(recycler,
-        (int) ((1 + Math.random()) * CONNECTION_RECYCLE_INTERVAL_IN_MS / 2), CONNECTION_RECYCLE_INTERVAL_IN_MS / 2,
-        TimeUnit.MILLISECONDS);
-    scheduledTaskExecutor.scheduleAtFixedRate(disconnecter, (int) ((1 + Math.random())
-        * CONNECTION_DISCONNECT_INTERVAL_IN_MS / 2), CONNECTION_DISCONNECT_INTERVAL_IN_MS / 2, TimeUnit.MILLISECONDS);
-    scheduledTaskExecutor.scheduleAtFixedRate(idChecker,
-        (int) ((1 + Math.random()) * CONNECTION_ID_CHECK_TIMEOUT_IN_MS / 2), CONNECTION_ID_CHECK_TIMEOUT_IN_MS / 2,
-        TimeUnit.MILLISECONDS);
   }
 
   /**
