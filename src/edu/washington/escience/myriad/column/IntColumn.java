@@ -36,7 +36,7 @@ public final class IntColumn implements Column<Integer> {
    * @param data the data
    * @param numData number of tuples.
    * */
-  public IntColumn(final int[] data, final int numData) {
+  IntColumn(final int[] data, final int numData) {
     this.data = data;
     position = numData;
   }

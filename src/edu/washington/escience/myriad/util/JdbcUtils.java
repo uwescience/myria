@@ -110,6 +110,8 @@ public final class JdbcUtils {
         return "INTEGER";
       case STRING_TYPE:
         return "TEXT";
+      case DATETIME_TYPE:
+        return "TIMESTAMP";
       default:
         throw new UnsupportedOperationException("Type " + type + " is not supported");
     }

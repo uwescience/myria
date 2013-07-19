@@ -21,6 +21,7 @@ message ColumnMessage {
     DOUBLE	= 3;
     STRING	= 4;
     BOOLEAN	= 5;
+    DATETIME	= 6;
   }
 
   required ColumnMessage.Type type = 1;		// See enum above
@@ -31,6 +32,7 @@ message ColumnMessage {
   optional DoubleColumnMessage double_column = 6; 
   optional StringColumnMessage string_column = 7; 
   optional BooleanColumnMessage boolean_column = 8; 
+  optional DateTimeColumnMessage date_column = 9; 
 }
 
 message IntColumnMessage {
@@ -56,5 +58,9 @@ message StringColumnMessage {
 }
 
 message BooleanColumnMessage {
+  required bytes data = 1;
+}
+
+message DateTimeColumnMessage {
   required bytes data = 1;
 }

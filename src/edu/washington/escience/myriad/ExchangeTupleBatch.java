@@ -5,6 +5,7 @@ import java.util.List;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.column.Column;
+import edu.washington.escience.myriad.util.ImmutableIntArray;
 import edu.washington.escience.myriad.util.ImmutableBitSet;
 
 /**
@@ -46,8 +47,8 @@ public class ExchangeTupleBatch extends TupleBatch {
    * @param isEOI is EOI TB
    */
   private ExchangeTupleBatch(final Schema schema, final ImmutableList<Column<?>> columns,
-      final ImmutableBitSet validTuples, final int[] validIndices, final long startingTupleSeqNum, final long lsn,
-      final int sourceWorkerID, final boolean isEOI) {
+      final ImmutableBitSet validTuples, final ImmutableIntArray validIndices, final long startingTupleSeqNum,
+      final long lsn, final int sourceWorkerID, final boolean isEOI) {
     /** For a private copy constructor, no data checks are needed. Checks are only needed in the public constructor. */
     super(schema, columns, validTuples, validIndices, isEOI);
     startingSeqNum = startingTupleSeqNum;
@@ -92,7 +93,7 @@ public class ExchangeTupleBatch extends TupleBatch {
 
   @Override
   protected final TupleBatch shallowCopy(final Schema schema, final ImmutableList<Column<?>> columns,
-      final ImmutableBitSet validTuples, final int[] validIndices, final boolean isEOI) {
+      final ImmutableBitSet validTuples, final ImmutableIntArray validIndices, final boolean isEOI) {
     return new ExchangeTupleBatch(schema, columns, validTuples, validIndices, startingSeqNum, lsn, sourceWorkerID,
         isEOI);
   }

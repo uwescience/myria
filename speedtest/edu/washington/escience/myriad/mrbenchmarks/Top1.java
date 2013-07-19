@@ -1,5 +1,7 @@
 package edu.washington.escience.myriad.mrbenchmarks;
 
+import org.joda.time.DateTime;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
@@ -29,18 +31,6 @@ public class Top1 extends Operator {
   @Override
   protected void init(ImmutableMap<String, Object> execEnvVars) throws DbException {
     compareType = child.getSchema().getColumnType(toCompareColumnIdx);
-    switch (compareType) {
-      case INT_TYPE:
-        break;
-      case LONG_TYPE:
-        break;
-      case FLOAT_TYPE:
-        break;
-      case DOUBLE_TYPE:
-        break;
-      case STRING_TYPE:
-        break;
-    }
   }
 
   @Override
@@ -98,6 +88,20 @@ public class Top1 extends Operator {
               currentTopIdx = i;
             }
             break;
+          case DATETIME_TYPE:
+            DateTime tt = tb.getDateTime(toCompareColumnIdx, i);
+            if (currentTopDate == null) {
+              currentTopDate = tt;
+              currentTopTB = tb;
+              currentTopIdx = i;
+            } else if (currentTopDate.compareTo(tt) > 0) {
+              currentTopDate = tt;
+              currentTopTB = tb;
+              currentTopIdx = i;
+            }
+            break;
+          default:
+            throw new UnsupportedOperationException("Not supported for type: " + compareType);
         }
       }
     }
@@ -143,4 +147,5 @@ public class Top1 extends Operator {
   private double currentTopDouble = Double.MAX_VALUE;
   private float currentTopFloat = Float.MAX_VALUE;
   private String currentTopString = null;
+  private DateTime currentTopDate = null;
 }

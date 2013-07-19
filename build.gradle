@@ -71,6 +71,7 @@ ext.slf4jVersion = "1.7.5"
 ext.jerseyVersion = "1.17.1"
 
 dependencies {
+  compile "net.jcip:jcip-annotations:1.0"
   compile "org.ini4j:ini4j:0.5.2"
   compile "com.carrotsearch:hppc:0.4.3"
   compile "com.almworks.sqlite4java:sqlite4java:0.282"
@@ -80,6 +81,8 @@ dependencies {
 
   compile "io.netty:netty:3.6.5.Final"
   compile "net.sf.trove4j:trove4j:3.0.3"
+
+  compile "joda-time:joda-time:2.2"
 
   compile "commons-io:commons-io:2.4"
   compile "org.apache.commons:commons-lang3:3.1"

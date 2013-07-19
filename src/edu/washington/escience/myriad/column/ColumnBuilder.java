@@ -12,9 +12,8 @@ import edu.washington.escience.myriad.Type;
 /**
  * @param <T> type of the objects in this column.
  * 
- * 
  */
-public interface ColumnBuilder<T extends Comparable<T>> {
+public interface ColumnBuilder<T extends Comparable<?>> {
 
   /**
    * @return a Myria {@link Type} object explaining what type of data is in this column.

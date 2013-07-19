@@ -108,6 +108,9 @@ public class SQLiteSetFilter extends Operator {
           case STRING_TYPE:
             v = "'" + tb.getString(0, i) + "'";
             break;
+          case DATETIME_TYPE:
+            v = "'" + tb.getDateTime(0, i) + "'";
+            break;
           default:
             v = tb.getObject(0, i);
         }
