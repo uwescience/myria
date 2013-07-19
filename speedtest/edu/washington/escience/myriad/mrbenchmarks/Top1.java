@@ -100,6 +100,8 @@ public class Top1 extends Operator {
               currentTopIdx = i;
             }
             break;
+          default:
+            throw new UnsupportedOperationException("Not supported for type: " + compareType);
         }
       }
     }
