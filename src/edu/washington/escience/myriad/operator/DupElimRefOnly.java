@@ -71,6 +71,8 @@ public final class DupElimRefOnly extends Operator {
           return tb.getLong(colIndx, rowIndx1) == another.tb.getLong(colIndx, rowIndx2);
         case STRING_TYPE:
           return tb.getString(colIndx, rowIndx1).equals(another.tb.getString(colIndx, rowIndx2));
+        case DATETIME_TYPE:
+          return tb.getDateTime(colIndx, rowIndx1).equals(another.tb.getDateTime(colIndx, rowIndx2));
       }
       return false;
     }

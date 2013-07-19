@@ -6,11 +6,13 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.column.Column;
+import edu.washington.escience.myriad.column.DateTimeColumn;
 import edu.washington.escience.myriad.column.DoubleColumn;
 import edu.washington.escience.myriad.column.FloatColumn;
 import edu.washington.escience.myriad.column.IntColumn;
 import edu.washington.escience.myriad.column.LongColumn;
 import edu.washington.escience.myriad.column.StringColumn;
+import edu.washington.escience.myriad.util.DateTimeUtils;
 import edu.washington.escience.myriad.util.ImmutableBitSet;
 
 /**
@@ -85,6 +87,14 @@ public class EqualsPredicate implements Predicate {
       StringColumn compareColumn = (StringColumn) columns.get(compareIndex);
       for (int idx : tb.getValidIndices()) {
         if (compareColumn.getString(idx).equals(compareValue)) {
+          result.set(idx);
+        }
+      }
+    } else if (type == Type.DATETIME_TYPE) {
+      // the column is a string type
+      DateTimeColumn compareColumn = (DateTimeColumn) columns.get(compareIndex);
+      for (int idx : tb.getValidIndices()) {
+        if (compareColumn.getDateTime(idx).equals(DateTimeUtils.parse(compareValue))) {
           result.set(idx);
         }
       }

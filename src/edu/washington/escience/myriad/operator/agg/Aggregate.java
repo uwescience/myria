@@ -178,6 +178,9 @@ public final class Aggregate extends Operator {
         case STRING_TYPE:
           agg[idx] = new StringAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
           break;
+        case DATETIME_TYPE:
+          agg[idx] = new DateTimeAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
+          break;
       }
       gTypes.addAll(agg[idx].getResultSchema().getColumnTypes());
       gNames.addAll(agg[idx].getResultSchema().getColumnNames());

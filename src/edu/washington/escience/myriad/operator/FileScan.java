@@ -16,6 +16,7 @@ import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
+import edu.washington.escience.myriad.util.DateTimeUtils;
 
 /**
  * Reads data from a file.
@@ -142,9 +143,12 @@ public final class FileScan extends LeafOperator {
             case STRING_TYPE:
               buffer.put(count, scanner.next());
               break;
+            case DATETIME_TYPE:
+              buffer.put(count, DateTimeUtils.parse(scanner.next()));
+              break;
           }
         } catch (final InputMismatchException e) {
-          throw new DbException("Error parsing column " + count + " of row " + lineNumber + ": " + e.toString());
+          throw new DbException("Error parsing column " + count + " of row " + lineNumber + ": ", e);
         }
       }
       final String rest = scanner.nextLine().trim();

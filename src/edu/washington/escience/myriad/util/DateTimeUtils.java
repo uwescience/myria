@@ -2,6 +2,10 @@ package edu.washington.escience.myriad.util;
 
 import java.util.concurrent.TimeUnit;
 
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+
 /**
  * Utility functions about date time.
  * */
@@ -58,6 +62,33 @@ public final class DateTimeUtils {
       elapseFormat = SECOND_ELAPSE_FORMAT;
     }
     return String.format(elapseFormat, day, hour, minute, second, nanoElapseLocal);
+  }
+
+  /**
+   * SQL language defined date time format.
+   * */
+  public static final DateTimeFormatter SQL_DATETIME_FORMAT = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
+
+  /**
+   * SQL language defined date format.
+   * */
+  public static final DateTimeFormatter SQL_DATE_FORMAT = DateTimeFormat.forPattern("yyyy-MM-dd");
+
+  /**
+   * @return a parsed {@link DateTime} object. Support both SQL date time format and SQL date format
+   * @param datetime string
+   * @throws IllegalArgumentException if the argument cannot be parsed.
+   * */
+  public static DateTime parse(final String datetime) throws IllegalArgumentException {
+    try {
+      return DateTime.parse(datetime, SQL_DATETIME_FORMAT);
+    } catch (Throwable e) {
+      try {
+        return DateTime.parse(datetime, SQL_DATE_FORMAT);
+      } catch (Throwable ee) {
+        throw new IllegalArgumentException("Not a valid SQL datetime/date format, caused by: " + datetime);
+      }
+    }
   }
 
 }

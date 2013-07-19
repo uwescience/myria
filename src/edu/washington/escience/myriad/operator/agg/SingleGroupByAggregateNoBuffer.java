@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+import org.joda.time.DateTime;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
@@ -83,6 +85,12 @@ public class SingleGroupByAggregateNoBuffer extends Operator {
    * String
    * */
   private transient HashMap<String, Aggregator<?>[]> groupAggsString;
+
+  /**
+   * The buffer storing in-progress group by results. {groupby-column-value -> Aggregator Array} when the group key is
+   * DateTime.
+   * */
+  private transient HashMap<DateTime, Aggregator<?>[]> groupAggsDatetime;
 
   /**
    * he buffer stroing in-progress group by results when the group key is int.
@@ -223,6 +231,10 @@ public class SingleGroupByAggregateNoBuffer extends Operator {
       case STRING_TYPE:
         ((StringAggregator) agg).add(tb.getString(aggFieldIdx, row));
         break;
+      case DATETIME_TYPE:
+        ((DateTimeAggregator) agg).add(tb.getDateTime(aggFieldIdx, row));
+        break;
+
     }
   }
 
@@ -266,6 +278,22 @@ public class SingleGroupByAggregateNoBuffer extends Operator {
               groupAgg[j] = agg[j].freshCopyYourself();
             }
             groupAggsString.put(groupByKey, groupAgg);
+          }
+          for (int j = 0; j < afields.length; j++) {
+            addValue2Group(tb, i, afields[j], aColumnTypes[j], groupAgg[j]);
+          }
+        }
+        break;
+      case DATETIME_TYPE:
+        for (int i = 0; i < tb.numTuples(); i++) {
+          DateTime groupByKey = tb.getDateTime(gColumn, i);
+          Aggregator<?>[] groupAgg = groupAggsDatetime.get(groupByKey);
+          if (groupAgg == null) {
+            groupAgg = new Aggregator<?>[agg.length];
+            for (int j = 0; j < agg.length; j++) {
+              groupAgg[j] = agg[j].freshCopyYourself();
+            }
+            groupAggsDatetime.put(groupByKey, groupAgg);
           }
           for (int j = 0; j < afields.length; j++) {
             addValue2Group(tb, i, afields[j], aColumnTypes[j], groupAgg[j]);
@@ -369,6 +397,18 @@ public class SingleGroupByAggregateNoBuffer extends Operator {
       case STRING_TYPE:
         for (final Map.Entry<String, Aggregator<?>[]> e : groupAggsString.entrySet()) {
           final String groupByValue = e.getKey();
+          final Aggregator<?>[] aggLocal = e.getValue();
+          resultBuffer.put(0, groupByValue);
+          int fromIndex = 1;
+          for (final Aggregator<?> element : aggLocal) {
+            element.getResult(resultBuffer, fromIndex);
+            fromIndex += element.getResultSchema().numColumns();
+          }
+        }
+        break;
+      case DATETIME_TYPE:
+        for (final Map.Entry<DateTime, Aggregator<?>[]> e : groupAggsDatetime.entrySet()) {
+          final DateTime groupByValue = e.getKey();
           final Aggregator<?>[] aggLocal = e.getValue();
           resultBuffer.put(0, groupByValue);
           int fromIndex = 1;
@@ -503,6 +543,9 @@ public class SingleGroupByAggregateNoBuffer extends Operator {
         break;
       case STRING_TYPE:
         groupAggsString = new HashMap<String, Aggregator<?>[]>();
+        break;
+      case DATETIME_TYPE:
+        groupAggsDatetime = new HashMap<DateTime, Aggregator<?>[]>();
         break;
     }
     resultBuffer = new TupleBatchBuffer(schema);

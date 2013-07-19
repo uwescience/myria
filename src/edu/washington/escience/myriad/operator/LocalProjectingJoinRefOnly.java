@@ -64,6 +64,8 @@ public final class LocalProjectingJoinRefOnly extends Operator implements Extern
           return tb.getDouble(colIndx1, rowIndx1) == another.tb.getDouble(colIndx2, rowIndx2);
         case STRING_TYPE:
           return tb.getString(colIndx1, rowIndx1).equals(another.tb.getString(colIndx2, rowIndx2));
+        case DATETIME_TYPE:
+          return tb.getDateTime(colIndx1, rowIndx1).equals(another.tb.getDateTime(colIndx2, rowIndx2));
         case FLOAT_TYPE:
           return tb.getFloat(colIndx1, rowIndx1) == another.tb.getFloat(colIndx2, rowIndx2);
         case BOOLEAN_TYPE:
