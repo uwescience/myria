@@ -1,0 +1,1 @@
+ `curl -i -XPOST dbserver01.cs.washington.edu:8759/dataset/importDataset -H "Content-type: application/json"  -d @./importRankingTable.json`

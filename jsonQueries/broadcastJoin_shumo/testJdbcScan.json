@@ -1,0 +1,82 @@
+{
+    "fragments": [
+        {
+            "operators": [
+                {
+                    "op_name": "Scan0",
+                    "op_type": "JdbcScan",
+                    "relation_key": {
+                        "program_name": "mrbenchmarks",
+                        "relation_name": "Rankings",
+                        "user_name": "slxu"
+                    }
+                },
+                {
+                    "arg_child": "Scan0",
+                    "arg_operator_id": "collect",
+                    "op_name": "Collect",
+                    "op_type": "CollectProducer"
+                }
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "arg_operator_id": "broadcast_0",
+                    "arg_schema": {
+                        "column_names": [
+                            "follower",
+                            "followee"
+                        ],
+                        "column_types": [
+                            "LONG_TYPE",
+                            "LONG_TYPE"
+                        ]
+                    },
+                    "op_name": "receive0",
+                    "op_type": "BroadcastConsumer"
+                },
+                {
+                     "op_name": "scan1",
+                     "op_type": "SQLiteScan",
+                     "relation_key": {
+                         "program_name": "broadcast_join",
+                         "relation_name": "smallTable",
+                         "user_name": "shumo_chu"
+                     }
+                 },
+                {
+                    "arg_child1": "receive0",
+                    "arg_child2": "scan1",
+                    "arg_columns1": [
+                        1
+                    ],
+                    "arg_columns2": [
+                        0
+                    ],
+                    "arg_select1": [
+                        0
+                    ],
+                    "arg_select2": [
+                        1
+                    ],
+                    "op_name": "Join",
+                    "op_type": "LocalJoin"
+                },
+                {
+                    "arg_child": "Join",
+                    "arg_overwrite_table": true,
+                    "op_name": "Insert",
+                    "op_type": "SQLiteInsert",
+                    "relation_key": {
+                        "program_name": "broadcast_join",
+                        "relation_name": "smallTable_broadcast_join_smallTable",
+                        "user_name": "shumo_chu"
+                    }
+                }
+            ]
+        }
+    ],
+    "logical_ra": "Insert(smallTable_join_smallTable)[Join(1=0; [0,3])[Shuffle(1)[Scan], Shuffle(1)[Scan]]]",
+    "raw_datalog": "smallTable_join_smallTable(x,z) :- smallTable(x,y), mallTable(y,z)"
+}

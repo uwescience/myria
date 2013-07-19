@@ -1,0 +1,12 @@
+{
+  "relation_key" : {
+    "user_name" : "slxu",
+    "program_name" : "mrbenchmarks",
+    "relation_name" : "Rankings"
+  },
+  "schema" : {
+    "column_types" : ["INT_TYPE","STRING_TYPE","INT_TYPE"],
+    "column_names" : ["pageRank","pageURL","avgDuration"]
+  },
+  "import_from_database" : true
+}

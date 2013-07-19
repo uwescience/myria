@@ -1,0 +1,12 @@
+{
+  "relation_key" : {
+    "user_name" : "slxu",
+    "program_name" : "mrbenchmarks",
+    "relation_name" : "UserVisits"
+  },
+  "schema" : {
+    "column_types" : ["STRING_TYPE","STRING_TYPE","DATE_TIME_TYPE","FLOAT_TYPE","STRING_TYPE","STRING_TYPE","STRING_TYPE","STRING_TYPE","avgTimeOnSite"],
+    "column_names" : ["sourceIPAddr","destinationURL","visitDate","adRevenue","UserAgent","cCode","lCode","sKeyword", "avgTimeOnSite"]
+  },
+  "import_from_database" : true
+}
