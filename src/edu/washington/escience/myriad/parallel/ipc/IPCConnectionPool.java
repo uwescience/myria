@@ -1367,8 +1367,11 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
     } else {
       RegisteredChannelContext rcc = cc.getRegisteredChannelContext();
       if (rcc != null) {
-        cc.errorEncountered(unregisteredChannels, recyclableRegisteredChannels, channelTrashBin, channelPool.get(rcc
-            .getRemoteID()).registeredChannels);
+        IPCRemote remote = channelPool.get(rcc.getRemoteID());
+        if (remote != null) {
+          cc.errorEncountered(unregisteredChannels, recyclableRegisteredChannels, channelTrashBin,
+              remote.registeredChannels);
+        }
       } else {
         cc.errorEncountered(unregisteredChannels, recyclableRegisteredChannels, channelTrashBin, null);
       }
