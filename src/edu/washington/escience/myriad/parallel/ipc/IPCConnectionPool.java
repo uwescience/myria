@@ -555,9 +555,13 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
           return false;
         }
         return true;
-      } catch (Throwable ee) {
-        if (LOGGER.isErrorEnabled()) {
-          LOGGER.error("Error in testing remote alive.", ee);
+      } catch (ChannelException ee) {
+        return false;
+      } catch (RuntimeException ee) {
+        throw ee;
+      } catch (Exception ee) {
+        if (LOGGER.isDebugEnabled()) {
+          LOGGER.debug("Error in testing remote alive, treat it as dead.", ee);
         }
       } finally {
         if (ch != null) {
@@ -604,33 +608,26 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
    * @return close future
    * */
   private ChannelFuture closeUnregisteredChannel(final Channel ch) {
-    if (ch != null) {
-      final ChannelContext context = ChannelContext.getChannelContext(ch);
-      if (context != null) {
-        final ChannelFuture writeFuture = context.getMostRecentWriteFuture();
-        if (writeFuture != null) {
-          writeFuture.awaitUninterruptibly();
-        }
-      }
-
-      if (ch.isConnected()) {
-        ch.disconnect();
-      }
-      if (ch.isOpen()) {
-        final ChannelFuture cf = ch.close();
-        cf.addListener(new ChannelFutureListener() {
-          @Override
-          public void operationComplete(final ChannelFuture future) throws Exception {
-            final ChannelPipeline cp = future.getChannel().getPipeline();
-            if (cp instanceof ExternalResourceReleasable) {
-              ((ExternalResourceReleasable) cp).releaseExternalResources();
-            }
-          }
-        });
-        return cf;
+    final ChannelContext context = ChannelContext.getChannelContext(ch);
+    if (context != null) {
+      final ChannelFuture writeFuture = context.getMostRecentWriteFuture();
+      if (writeFuture != null) {
+        writeFuture.awaitUninterruptibly();
       }
     }
-    return null;
+
+    if (ch.isOpen()) {
+      ch.close().addListener(new ChannelFutureListener() {
+        @Override
+        public void operationComplete(final ChannelFuture future) throws Exception {
+          final ChannelPipeline cp = future.getChannel().getPipeline();
+          if (cp instanceof ExternalResourceReleasable) {
+            ((ExternalResourceReleasable) cp).releaseExternalResources();
+          }
+        }
+      });
+    }
+    return ch.getCloseFuture();
   }
 
   /**
@@ -644,26 +641,14 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
    * */
   private Channel createANewConnection(final IPCRemote remote, final long connectionTimeoutMS, final ClientBootstrap ic)
       throws ChannelException {
-    boolean connected = true;
     ChannelFuture c = null;
-    try {
-      c = ic.connect(remote.address.getConnectAddress());
-    } catch (final Exception e) {
-      if (LOGGER.isErrorEnabled()) {
-        LOGGER.error("Error creating connection to remote " + remote.id, e);
-      }
-      connected = false;
+    c = ic.connect(remote.address.getConnectAddress());
+    if (connectionTimeoutMS > 0) {
+      c.awaitUninterruptibly(connectionTimeoutMS);
+    } else {
+      c.awaitUninterruptibly();
     }
-    if (connected && c != null) {
-      connected = false;
-      if (connectionTimeoutMS > 0) {
-        c.awaitUninterruptibly(connectionTimeoutMS);
-      } else {
-        c.awaitUninterruptibly();
-      }
-      connected = c.isSuccess();
-    }
-    if (connected) {
+    if (c.isSuccess()) {
       final Channel channel = c.getChannel();
       if (channel.isConnected()) {
         final ChannelContext cc = new ChannelContext(channel);
@@ -685,18 +670,16 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
         }
 
         cc.registerNormal(remote.id, remote.registeredChannels, unregisteredChannels);
-        if (LOGGER.isDebugEnabled()) {
-          LOGGER.debug("Created a new registered channel from: " + myID + ", to: " + remote.id + ". Channel: "
+        if (LOGGER.isTraceEnabled()) {
+          LOGGER.trace("Created a new registered channel from: " + myID + ", to: " + remote.id + ". Channel: "
               + channel);
         }
         allPossibleChannels.add(channel);
         return channel;
       }
     }
-    if (c != null) {
-      closeUnregisteredChannel(c.getChannel());
-      c.syncUninterruptibly();
-    }
+    closeUnregisteredChannel(c.getChannel());
+    c.syncUninterruptibly();
     return null;
   }
 
@@ -725,27 +708,21 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
           cc.connected();
           cc.registerNormal(myID, remote.registeredChannels, unregisteredChannels);
           return ch;
+        } catch (RuntimeException e) {
+          throw e;
         } catch (Exception e) {
-          if (LOGGER.isErrorEnabled()) {
-            LOGGER.error("Unknown error occurs when creating in JVM pipeline", e);
-          }
-          return null;
+          // error in pipeline creation
+          throw new ChannelException(e);
         }
       }
 
-      if (remote == null) {
-        // id is invalid
-        return null;
-      }
-
-      if (remote.unregisteredChannelsAtRemove != null) {
-        // remote already get removed
+      if (remote == null || remote.unregisteredChannelsAtRemove != null) {
+        // id is invalid || remote already get removed
         return null;
       }
 
       Channel channel = null;
       int retry = 0;
-
       while ((retry < MAX_NUM_RETRY) && (channel == null)) {
         if (retry > 1 && LOGGER.isDebugEnabled()) {
           LOGGER.debug("Retry creating a connection to id#" + ipcIDP);
@@ -778,7 +755,6 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
               channel = createANewConnection(remote, CONNECTION_WAIT_IN_MS, remote.bootstrap);
             }
           }
-
         }
         retry++;
       }
@@ -1091,8 +1067,8 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
         return new StreamOutputChannel<PAYLOAD>(new StreamIOChannelID(streamID, remoteID), this, ch);
       }
     } catch (ChannelException e) {
-      if (LOGGER.isErrorEnabled()) {
-        LOGGER.error("Unable to connect to remote. Cause is: ", e);
+      if (LOGGER.isWarnEnabled()) {
+        LOGGER.warn("Unable to connect to remote. Cause is: ", e);
       }
     } finally {
       shutdownLock.readLock().unlock();
@@ -1120,9 +1096,6 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
       try {
         ch = getAConnection(ipcID);
       } catch (ChannelException e) {
-        if (LOGGER.isErrorEnabled()) {
-          LOGGER.error("Unable to connect to remote. Cause is: ", e);
-        }
         DefaultChannelFuture r = new DefaultChannelFuture(null, false);
         r.setFailure(e);
         return r;
