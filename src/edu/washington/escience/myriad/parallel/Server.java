@@ -22,7 +22,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.jboss.netty.channel.ChannelFactory;
-import org.jboss.netty.channel.ChannelFuture;
 import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
@@ -357,6 +356,9 @@ public final class Server {
     return execEnvVars;
   }
 
+  /**
+   * @return execution mode.
+   * */
   QueryExecutionMode getExecutionMode() {
     return QueryExecutionMode.NON_BLOCKING;
   }
@@ -599,51 +601,41 @@ public final class Server {
     }
     messageProcessingExecutor.shutdownNow();
     scheduledTaskExecutor.shutdownNow();
-    if (!connectionPool.isShutdown()) {
+
+    while (aliveWorkers.size() > 0) {
+      // TODO add process kill
       for (final Integer workerId : aliveWorkers.keySet()) {
         SocketInfo workerAddr = workers.get(workerId);
         if (LOGGER.isInfoEnabled()) {
           LOGGER.info("Shutting down #{} : {}", workerId, workerAddr);
         }
 
-        ChannelFuture cf = null;
-        try {
-          cf = connectionPool.sendShortMessage(workerId, IPCUtils.CONTROL_SHUTDOWN);
-        } catch (IllegalStateException e) {
-          // connection pool is already shutdown.
-          cf = null;
-        }
-        if (cf == null) {
-          if (LOGGER.isErrorEnabled()) {
-            LOGGER.error("Fail to connect the worker{ id:{},address:{} }. Continue cleaning", workerId, workerAddr);
-          }
-        } else {
-          try {
-            cf.await();
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-          }
-          if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("Done for worker #{}", workerId);
-          }
-        }
-      }
-      try {
-        connectionPool.shutdown().await();
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        if (LOGGER.isDebugEnabled()) {
-          LOGGER.debug("Connection pool cleanup interrupted");
-        }
-      }
-      connectionPool.releaseExternalResources();
-      if (ipcPipelineExecutor != null && !ipcPipelineExecutor.isShutdown()) {
-        ipcPipelineExecutor.shutdown();
+        connectionPool.sendShortMessage(workerId, IPCUtils.CONTROL_SHUTDOWN);
       }
 
-      if (LOGGER.isInfoEnabled()) {
-        LOGGER.info("Master connection pool shutdown complete.");
+      for (final int workerId : aliveWorkers.keySet()) {
+        if (!connectionPool.isRemoteAlive(workerId)) {
+          aliveWorkers.remove(workerId);
+        }
       }
+      if (aliveWorkers.size() > 0) {
+        try {
+          Thread.sleep(MyriaConstants.WAITING_INTERVAL_1_SECOND_IN_MS);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+          break;
+        }
+      }
+    }
+
+    connectionPool.shutdown();
+    connectionPool.releaseExternalResources();
+    if (ipcPipelineExecutor != null && !ipcPipelineExecutor.isShutdown()) {
+      ipcPipelineExecutor.shutdown();
+    }
+
+    if (LOGGER.isInfoEnabled()) {
+      LOGGER.info("Master connection pool shutdown complete.");
     }
     catalog.close();
 
