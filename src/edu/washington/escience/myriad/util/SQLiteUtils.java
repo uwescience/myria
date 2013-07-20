@@ -136,6 +136,11 @@ public final class SQLiteUtils {
         return "INTEGER";
       case STRING_TYPE:
         return "TEXT";
+      case DATETIME_TYPE:
+        return "INTEGER"; // SQLLite does not support date type. use long to store the difference, measured in
+                          // milliseconds, between the date time and
+                          // midnight, January 1, 1970 UTC.
+
       default:
         throw new UnsupportedOperationException("Type " + type + " is not supported");
     }

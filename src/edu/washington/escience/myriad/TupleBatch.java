@@ -14,6 +14,7 @@ import java.util.Set;
 import net.jcip.annotations.ThreadSafe;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.joda.time.DateTime;
 
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
@@ -26,6 +27,7 @@ import com.google.common.primitives.Ints;
 
 import edu.washington.escience.myriad.column.BooleanColumn;
 import edu.washington.escience.myriad.column.Column;
+import edu.washington.escience.myriad.column.DateTimeColumn;
 import edu.washington.escience.myriad.column.DoubleColumn;
 import edu.washington.escience.myriad.column.FloatColumn;
 import edu.washington.escience.myriad.column.IntColumn;
@@ -360,6 +362,17 @@ public class TupleBatch implements Serializable {
    */
   public final String getString(final int column, final int row) {
     return ((StringColumn) columns.get(column)).getString(getValidIndices().get(row));
+  }
+
+  /**
+   * Returns the element at the specified column and row position.
+   * 
+   * @param column column in which the element is stored.
+   * @param row row in which the element is stored.
+   * @return the element at the specified position in this TupleBatch.
+   */
+  public final DateTime getDateTime(final int column, final int row) {
+    return ((DateTimeColumn) columns.get(column)).getDateTime(getValidIndices().get(row));
   }
 
   /**

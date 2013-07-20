@@ -19,7 +19,7 @@ import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
  * @author dhalperi
  * 
  */
-public interface Column<T extends Comparable<T>> extends Serializable {
+public interface Column<T extends Comparable<?>> extends Serializable {
 
   /**
    * Returns the element at the specified row in this column.

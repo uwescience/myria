@@ -11,7 +11,7 @@ from google.protobuf import descriptor_pb2
 DESCRIPTOR = descriptor.FileDescriptor(
   name='column.proto',
   package='',
-  serialized_pb='\n\x0c\x63olumn.proto\"\xa1\x01\n\x0b\x44\x61taMessage\x12\x1f\n\x04type\x18\x01 \x02(\x0e\x32\x11.DataMessage.Type\x12\x12\n\noperatorID\x18\x02 \x01(\x04\x12\x1f\n\x07\x63olumns\x18\x03 \x03(\x0b\x32\x0e.ColumnMessage\x12\x12\n\nnum_tuples\x18\x04 \x01(\r\x12\x0b\n\x03seq\x18\x05 \x01(\x04\"\x1b\n\x04Type\x12\n\n\x06NORMAL\x10\x01\x12\x07\n\x03\x45OI\x10\x02\"\x81\x03\n\rColumnMessage\x12!\n\x04type\x18\x01 \x02(\x0e\x32\x13.ColumnMessage.Type\x12%\n\nint_column\x18\x03 \x01(\x0b\x32\x11.IntColumnMessage\x12\'\n\x0blong_column\x18\x04 \x01(\x0b\x32\x12.LongColumnMessage\x12)\n\x0c\x66loat_column\x18\x05 \x01(\x0b\x32\x13.FloatColumnMessage\x12+\n\rdouble_column\x18\x06 \x01(\x0b\x32\x14.DoubleColumnMessage\x12+\n\rstring_column\x18\x07 \x01(\x0b\x32\x14.StringColumnMessage\x12-\n\x0e\x62oolean_column\x18\x08 \x01(\x0b\x32\x15.BooleanColumnMessage\"I\n\x04Type\x12\x07\n\x03INT\x10\x00\x12\x08\n\x04LONG\x10\x01\x12\t\n\x05\x46LOAT\x10\x02\x12\n\n\x06\x44OUBLE\x10\x03\x12\n\n\x06STRING\x10\x04\x12\x0b\n\x07\x42OOLEAN\x10\x05\" \n\x10IntColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\"!\n\x11LongColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\"\"\n\x12\x46loatColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\"#\n\x13\x44oubleColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\"O\n\x13StringColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\x12\x15\n\rstart_indices\x18\x02 \x03(\x05\x12\x13\n\x0b\x65nd_indices\x18\x03 \x03(\x05\"$\n\x14\x42ooleanColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\x42\x31\n$edu.washington.escience.myriad.protoB\tDataProto')
+  serialized_pb='\n\x0c\x63olumn.proto\"\xa1\x01\n\x0b\x44\x61taMessage\x12\x1f\n\x04type\x18\x01 \x02(\x0e\x32\x11.DataMessage.Type\x12\x12\n\noperatorID\x18\x02 \x01(\x04\x12\x1f\n\x07\x63olumns\x18\x03 \x03(\x0b\x32\x0e.ColumnMessage\x12\x12\n\nnum_tuples\x18\x04 \x01(\r\x12\x0b\n\x03seq\x18\x05 \x01(\x04\"\x1b\n\x04Type\x12\n\n\x06NORMAL\x10\x01\x12\x07\n\x03\x45OI\x10\x02\"\xbc\x03\n\rColumnMessage\x12!\n\x04type\x18\x01 \x02(\x0e\x32\x13.ColumnMessage.Type\x12%\n\nint_column\x18\x03 \x01(\x0b\x32\x11.IntColumnMessage\x12\'\n\x0blong_column\x18\x04 \x01(\x0b\x32\x12.LongColumnMessage\x12)\n\x0c\x66loat_column\x18\x05 \x01(\x0b\x32\x13.FloatColumnMessage\x12+\n\rdouble_column\x18\x06 \x01(\x0b\x32\x14.DoubleColumnMessage\x12+\n\rstring_column\x18\x07 \x01(\x0b\x32\x14.StringColumnMessage\x12-\n\x0e\x62oolean_column\x18\x08 \x01(\x0b\x32\x15.BooleanColumnMessage\x12+\n\x0b\x64\x61te_column\x18\t \x01(\x0b\x32\x16.DateTimeColumnMessage\"W\n\x04Type\x12\x07\n\x03INT\x10\x00\x12\x08\n\x04LONG\x10\x01\x12\t\n\x05\x46LOAT\x10\x02\x12\n\n\x06\x44OUBLE\x10\x03\x12\n\n\x06STRING\x10\x04\x12\x0b\n\x07\x42OOLEAN\x10\x05\x12\x0c\n\x08\x44\x41TETIME\x10\x06\" \n\x10IntColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\"!\n\x11LongColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\"\"\n\x12\x46loatColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\"#\n\x13\x44oubleColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\"O\n\x13StringColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\x12\x15\n\rstart_indices\x18\x02 \x03(\x05\x12\x13\n\x0b\x65nd_indices\x18\x03 \x03(\x05\"$\n\x14\x42ooleanColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\"%\n\x15\x44\x61teTimeColumnMessage\x12\x0c\n\x04\x64\x61ta\x18\x01 \x02(\x0c\x42\x31\n$edu.washington.escience.myriad.protoB\tDataProto')
 
 
 
@@ -66,11 +66,15 @@ _COLUMNMESSAGE_TYPE = descriptor.EnumDescriptor(
       name='BOOLEAN', index=5, number=5,
       options=None,
       type=None),
+    descriptor.EnumValueDescriptor(
+      name='DATETIME', index=6, number=6,
+      options=None,
+      type=None),
   ],
   containing_type=None,
   options=None,
-  serialized_start=493,
-  serialized_end=566,
+  serialized_start=538,
+  serialized_end=625,
 )
 
 
@@ -187,6 +191,13 @@ _COLUMNMESSAGE = descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    descriptor.FieldDescriptor(
+      name='date_column', full_name='ColumnMessage.date_column', index=7,
+      number=9, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -198,7 +209,7 @@ _COLUMNMESSAGE = descriptor.Descriptor(
   is_extendable=False,
   extension_ranges=[],
   serialized_start=181,
-  serialized_end=566,
+  serialized_end=625,
 )
 
 
@@ -225,8 +236,8 @@ _INTCOLUMNMESSAGE = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=568,
-  serialized_end=600,
+  serialized_start=627,
+  serialized_end=659,
 )
 
 
@@ -253,8 +264,8 @@ _LONGCOLUMNMESSAGE = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=602,
-  serialized_end=635,
+  serialized_start=661,
+  serialized_end=694,
 )
 
 
@@ -281,8 +292,8 @@ _FLOATCOLUMNMESSAGE = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=637,
-  serialized_end=671,
+  serialized_start=696,
+  serialized_end=730,
 )
 
 
@@ -309,8 +320,8 @@ _DOUBLECOLUMNMESSAGE = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=673,
-  serialized_end=708,
+  serialized_start=732,
+  serialized_end=767,
 )
 
 
@@ -351,8 +362,8 @@ _STRINGCOLUMNMESSAGE = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=710,
-  serialized_end=789,
+  serialized_start=769,
+  serialized_end=848,
 )
 
 
@@ -379,8 +390,36 @@ _BOOLEANCOLUMNMESSAGE = descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=791,
-  serialized_end=827,
+  serialized_start=850,
+  serialized_end=886,
+)
+
+
+_DATETIMECOLUMNMESSAGE = descriptor.Descriptor(
+  name='DateTimeColumnMessage',
+  full_name='DateTimeColumnMessage',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    descriptor.FieldDescriptor(
+      name='data', full_name='DateTimeColumnMessage.data', index=0,
+      number=1, type=12, cpp_type=9, label=2,
+      has_default_value=False, default_value="",
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  extension_ranges=[],
+  serialized_start=888,
+  serialized_end=925,
 )
 
 _DATAMESSAGE.fields_by_name['type'].enum_type = _DATAMESSAGE_TYPE
@@ -393,6 +432,7 @@ _COLUMNMESSAGE.fields_by_name['float_column'].message_type = _FLOATCOLUMNMESSAGE
 _COLUMNMESSAGE.fields_by_name['double_column'].message_type = _DOUBLECOLUMNMESSAGE
 _COLUMNMESSAGE.fields_by_name['string_column'].message_type = _STRINGCOLUMNMESSAGE
 _COLUMNMESSAGE.fields_by_name['boolean_column'].message_type = _BOOLEANCOLUMNMESSAGE
+_COLUMNMESSAGE.fields_by_name['date_column'].message_type = _DATETIMECOLUMNMESSAGE
 _COLUMNMESSAGE_TYPE.containing_type = _COLUMNMESSAGE;
 DESCRIPTOR.message_types_by_name['DataMessage'] = _DATAMESSAGE
 DESCRIPTOR.message_types_by_name['ColumnMessage'] = _COLUMNMESSAGE
@@ -402,6 +442,7 @@ DESCRIPTOR.message_types_by_name['FloatColumnMessage'] = _FLOATCOLUMNMESSAGE
 DESCRIPTOR.message_types_by_name['DoubleColumnMessage'] = _DOUBLECOLUMNMESSAGE
 DESCRIPTOR.message_types_by_name['StringColumnMessage'] = _STRINGCOLUMNMESSAGE
 DESCRIPTOR.message_types_by_name['BooleanColumnMessage'] = _BOOLEANCOLUMNMESSAGE
+DESCRIPTOR.message_types_by_name['DateTimeColumnMessage'] = _DATETIMECOLUMNMESSAGE
 
 class DataMessage(message.Message):
   __metaclass__ = reflection.GeneratedProtocolMessageType
@@ -450,5 +491,11 @@ class BooleanColumnMessage(message.Message):
   DESCRIPTOR = _BOOLEANCOLUMNMESSAGE
   
   # @@protoc_insertion_point(class_scope:BooleanColumnMessage)
+
+class DateTimeColumnMessage(message.Message):
+  __metaclass__ = reflection.GeneratedProtocolMessageType
+  DESCRIPTOR = _DATETIMECOLUMNMESSAGE
+  
+  # @@protoc_insertion_point(class_scope:DateTimeColumnMessage)
 
 # @@protoc_insertion_point(module_scope)

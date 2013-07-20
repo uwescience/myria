@@ -287,6 +287,9 @@ public final class MultiGroupByAggregate extends Operator {
         case STRING_TYPE:
           agg[idx] = new StringAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
           break;
+        case DATETIME_TYPE:
+          agg[idx] = new DateTimeAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
+          break;
         default:
           throw new IllegalArgumentException("unsupported type: " + childSchema.getColumnType(afield));
       }
