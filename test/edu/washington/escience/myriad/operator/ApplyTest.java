@@ -33,7 +33,6 @@ public class ApplyTest {
   @Test
   public void testApplySqrt() throws DbException {
     final Schema schema = new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("a"));
-    System.out.println("ApplyTest: ApplySqrt()");
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (long i = 0; i < numTuples; i++) {
       tbb.put(0, (long) Math.pow(i, 2));
@@ -48,8 +47,7 @@ public class ApplyTest {
     int resultSize = 0;
     while (!apply.eos()) {
       result = apply.nextReady();
-      if (result!=null)
-      {
+      if (result != null) {
         assertEquals(2, result.getSchema().numColumns());
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(1));
         for (int i = 0; i < result.numTuples(); i++) {
@@ -64,7 +62,6 @@ public class ApplyTest {
 
   @Test
   public void testApplyMultiFunctions() throws DbException {
-    System.out.println("ApplyTest: MultiFunctions");
     final Schema schema = new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("a"));
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
@@ -84,8 +81,7 @@ public class ApplyTest {
     int resultSize = 0;
     while (!apply.eos()) {
       result = apply.nextReady();
-      if (result!=null)
-      {
+      if (result != null) {
         assertEquals(3, result.getSchema().numColumns());
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(1));
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(2));

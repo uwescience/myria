@@ -99,6 +99,9 @@ public final class QuerySubTreeTask {
    * */
   private final Object executionLock = new Object();
 
+  /**
+   * resource manager.
+   * */
   private volatile TaskResourceManager resourceManager;
 
   /**
@@ -601,6 +604,7 @@ public final class QuerySubTreeTask {
    * Initialize the task.
    * 
    * @param execEnvVars execution environment variable.
+   * @param resourceManager resource manager.
    * */
   public void init(final TaskResourceManager resourceManager, final ImmutableMap<String, Object> execEnvVars) {
     try {

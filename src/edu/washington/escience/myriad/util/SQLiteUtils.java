@@ -43,7 +43,6 @@ public final class SQLiteUtils {
       sb.append('[').append(schema.getColumnName(i)).append("] ").append(typeToSQLiteType(schema.getColumnType(i)));
     }
     sb.append(");");
-    System.out.println(sb.toString());
     return sb.toString();
   }
 

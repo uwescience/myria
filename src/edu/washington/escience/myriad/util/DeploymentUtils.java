@@ -161,7 +161,7 @@ public final class DeploymentUtils {
     builder.append(" 1>worker_" + workerId + "_stdout");
     builder.append(" 2>worker_" + workerId + "_stderr");
     builder.append(" &");
-    System.out.println(workerId + " = " + address);
+    // System.out.println(workerId + " = " + address);
     startAProcess(builder.toString());
   }
 

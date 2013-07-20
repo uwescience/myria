@@ -277,9 +277,7 @@ public class SystemTestBase {
     }
 
     // for setting breakpoint
-    if (System.currentTimeMillis() < 0) {
-      System.out.println("Only for setting breakpoint. Never reach here");
-    }
+    System.currentTimeMillis();
   }
 
   public static void insert(final int workerID, final RelationKey relationKey, final Schema schema,
