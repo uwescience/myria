@@ -199,7 +199,12 @@ public class StreamOutputChannel<PAYLOAD> extends StreamIOChannel {
   public final ChannelFuture write(final PAYLOAD message) {
     Channel ch = getIOChannel();
     if (ch != null) {
-      return ch.write(message);
+      this.ownerPool.getShutdownLock().readLock().lock();
+      try {
+        return ch.write(message);
+      } finally {
+        this.ownerPool.getShutdownLock().readLock().unlock();
+      }
     } else {
       throw new IllegalStateException("No usable physical IO channel.");
     }

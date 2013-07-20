@@ -290,6 +290,13 @@ class ChannelContext extends AttachmentableAdapter {
     }
 
     /**
+     * Clear the reference.
+     * */
+    final void clearReference() {
+      numberOfReference.set(0);
+    }
+
+    /**
      * @return the remote IPC entity ID.
      * */
     final int getRemoteID() {
