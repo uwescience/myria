@@ -1127,7 +1127,6 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
         r.setFailure(e);
         return r;
       }
-
       final ChannelFuture cf = ch.write(message);
       cf.addListener(new ChannelFutureListener() {
 

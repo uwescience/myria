@@ -1,7 +1,5 @@
 package edu.washington.escience.myriad.parallel.ipc;
 
-import java.nio.channels.ClosedChannelException;
-
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
@@ -284,34 +282,6 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
     final Throwable cause = e.getCause();
     ChannelContext cc = ChannelContext.getChannelContext(c);
     if (cc != null) {
-      String errorMessage = cause.getMessage();
-      if (errorMessage == null) {
-        errorMessage = "";
-      }
-      if (cause instanceof java.nio.channels.NotYetConnectedException) {
-        if (LOGGER.isWarnEnabled()) {
-          LOGGER.warn("Channel " + c + ": not yet connected. " + errorMessage, cause);
-        }
-      } else if (cause instanceof java.net.ConnectException) {
-        if (LOGGER.isWarnEnabled()) {
-          LOGGER.warn("Channel " + c + ": Connection failed: " + errorMessage, cause);
-        }
-      } else if (cause instanceof java.io.IOException && errorMessage.contains("reset by peer")) {
-        if (LOGGER.isWarnEnabled()) {
-          LOGGER.warn("Channel " + c + ": Connection reset by peer: " + c.getRemoteAddress() + " " + errorMessage,
-              cause);
-        }
-      } else if (cause instanceof ClosedChannelException) {
-        if (LOGGER.isWarnEnabled()) {
-          LOGGER.warn("Channel " + c + ": Connection reset by peer: " + c.getRemoteAddress() + " " + errorMessage,
-              cause);
-        }
-      } else {
-        if (LOGGER.isWarnEnabled()) {
-          LOGGER.warn("Channel " + c + ": Unexpected exception from downstream.", cause);
-        }
-      }
-
       RegisteredChannelContext rcc = cc.getRegisteredChannelContext();
       if (rcc != null) {
         StreamIOChannelPair pair = rcc.getIOPair();
@@ -320,8 +290,8 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
       }
       ownerConnectionPool.errorEncountered(c, cause);
     } else {
-      if (LOGGER.isErrorEnabled()) {
-        LOGGER.error("Unknown error occur in unmanaged Netty Channel: " + c + ", close directly.", cause);
+      if (LOGGER.isTraceEnabled()) {
+        LOGGER.trace("Unknown error occur in unmanaged Netty Channel: " + c + ", close directly.", cause);
       }
       c.close();
     }
