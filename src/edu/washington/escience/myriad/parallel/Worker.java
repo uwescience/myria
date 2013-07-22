@@ -67,22 +67,6 @@ public final class Worker {
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Worker.class.getName());
 
   /**
-   * query execution mode, blocking or non-blocking. Always use the NON_BLOCKING mode. The BLOCKING mode may not work
-   * and may get abandoned.
-   * */
-  public static enum QueryExecutionMode {
-    /**
-     * blocking execution, call next() and fetchNext().
-     * */
-    BLOCKING,
-
-    /**
-     * non-blocking execution, call nextReady() and fetchNextReady().
-     * */
-    NON_BLOCKING;
-  }
-
-  /**
    * Control message processor.
    * */
   private final class ControlMessageProcessor implements Runnable {
@@ -189,16 +173,22 @@ public final class Worker {
   private class ShutdownChecker extends TimerTask {
     @Override
     public final synchronized void run() {
-      if (!connectionPool.isRemoteAlive(MyriaConstants.MASTER_ID)) {
-        if (LOGGER.isInfoEnabled()) {
-          LOGGER.info("The Master has shutdown, I'll shutdown now.");
+      try {
+        if (!connectionPool.isRemoteAlive(MyriaConstants.MASTER_ID)) {
+          if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("The Master has shutdown, I'll shutdown now.");
+          }
+          toShutdown = true;
+          abruptShutdown = true;
+          cancel();
         }
-        toShutdown = true;
-        abruptShutdown = true;
-        cancel();
-      }
-      if (toShutdown) {
-        shutdown();
+        if (toShutdown) {
+          shutdown();
+        }
+      } catch (Throwable e) {
+        if (LOGGER.isErrorEnabled()) {
+          LOGGER.error("Unknown error in shutdown checker", e);
+        }
       }
     }
   }
@@ -637,9 +627,6 @@ public final class Worker {
       default:
         throw new CatalogException("Unknown worker type: " + databaseType);
     }
-
-    execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_IPC_CONNECTION_POOL, connectionPool);
-    execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE, queryExecutionMode);
 
   }
 

@@ -59,13 +59,39 @@ public abstract class Operator implements Serializable {
     open = false;
     eos = true;
     eoi = false;
-    cleanup();
+    Exception errors = null;
+    try {
+      cleanup();
+    } catch (DbException | RuntimeException e) {
+      errors = e;
+    } catch (Throwable e) {
+      errors = new DbException(e);
+    }
     final Operator[] children = getChildren();
     if (children != null) {
       for (final Operator child : children) {
         if (child != null) {
-          child.close();
+          try {
+            child.close();
+          } catch (Throwable e) {
+            if (errors != null) {
+              errors.addSuppressed(e);
+            } else {
+              if (e instanceof DbException || e instanceof RuntimeException) {
+                errors = (Exception) e;
+              } else {
+                errors = new DbException(e);
+              }
+            }
+          }
         }
+      }
+    }
+    if (errors != null) {
+      if (errors instanceof RuntimeException) {
+        throw (RuntimeException) errors;
+      } else {
+        throw (DbException) errors;
       }
     }
   }
@@ -169,12 +195,10 @@ public abstract class Operator implements Serializable {
         // XXX while or not while? For a single thread operator, while sounds more efficient generally
         result = fetchNextReady();
       }
+    } catch (RuntimeException | DbException e) {
+      throw e;
     } catch (Exception e) {
-      if (e instanceof RuntimeException) {
-        throw (RuntimeException) e;
-      } else {
-        throw new DbException(e);
-      }
+      throw new DbException(e);
     }
 
     if (result == null) {
@@ -222,7 +246,13 @@ public abstract class Operator implements Serializable {
     numOutputTBs = 0;
     numOutputTuples = 0;
     // do my initialization
-    init(execEnvVars);
+    try {
+      init(execEnvVars);
+    } catch (DbException | RuntimeException e) {
+      throw e;
+    } catch (Exception e) {
+      throw new DbException(e);
+    }
     open = true;
   }
 
@@ -246,16 +276,16 @@ public abstract class Operator implements Serializable {
    * Do the initialization of this operator.
    * 
    * @param execEnvVars execution environment variables
-   * @throws DbException if any error occurs
+   * @throws Exception if any error occurs
    */
-  protected abstract void init(final ImmutableMap<String, Object> execEnvVars) throws DbException;
+  protected abstract void init(final ImmutableMap<String, Object> execEnvVars) throws Exception;
 
   /**
    * Do the clean up, release resources.
    * 
-   * @throws DbException if any error occurs
+   * @throws Exception if any error occurs
    * */
-  protected abstract void cleanup() throws DbException;
+  protected abstract void cleanup() throws Exception;
 
   /**
    * Generate next output TupleBatch if possible. Return null immediately if currently no output can be generated.

@@ -21,6 +21,7 @@ import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
@@ -163,8 +164,8 @@ public class ProtobufTest {
         @Override
         public void run() {
           final StreamOutputChannel<TupleBatch> ch =
-              connectionPool.reserveLongTermConnection(outChannelID.getRemoteID(), outChannelID.getStreamID());
-
+              Preconditions.checkNotNull(connectionPool.<TupleBatch> reserveLongTermConnection(outChannelID
+                  .getRemoteID(), outChannelID.getStreamID()));
           try {
             for (final TupleBatch tm : tbs) {
               ch.write(tm);
@@ -345,8 +346,8 @@ public class ProtobufTest {
         @Override
         public void run() {
           final StreamOutputChannel<TupleBatch> ch =
-              clientConnectionPool.reserveLongTermConnection(outputChannelID.getRemoteID(), outputChannelID
-                  .getStreamID());
+              Preconditions.checkNotNull(clientConnectionPool.<TupleBatch> reserveLongTermConnection(outputChannelID
+                  .getRemoteID(), outputChannelID.getStreamID()));
 
           try {
             for (final TupleBatch tm : tbs) {
@@ -466,7 +467,8 @@ public class ProtobufTest {
         @Override
         public void run() {
           final StreamOutputChannel<TupleBatch> ch =
-              connectionPool.reserveLongTermConnection(cID.getRemoteID(), cID.getStreamID());
+              Preconditions.checkNotNull(connectionPool.<TupleBatch> reserveLongTermConnection(cID.getRemoteID(), cID
+                  .getStreamID()));
 
           try {
             for (final TupleBatch tm : tbs) {
@@ -559,7 +561,8 @@ public class ProtobufTest {
 
     final AtomicInteger numSent = new AtomicInteger();
     final StreamOutputChannel<TupleBatch> ch =
-        connectionPool.reserveLongTermConnection(ioChannel.getRemoteID(), ioChannel.getStreamID());
+        Preconditions.checkNotNull(connectionPool.<TupleBatch> reserveLongTermConnection(ioChannel.getRemoteID(),
+            ioChannel.getStreamID()));
 
     try {
       for (final TupleBatch tm : tbs) {
@@ -696,7 +699,8 @@ public class ProtobufTest {
     inputBuffer.start(this);
 
     final StreamOutputChannel<TupleBatch> ch =
-        connectionPoolClient.reserveLongTermConnection(outputChannelID.getRemoteID(), outputChannelID.getStreamID());
+        Preconditions.checkNotNull(connectionPoolClient.<TupleBatch> reserveLongTermConnection(outputChannelID
+            .getRemoteID(), outputChannelID.getStreamID()));
 
     try {
       for (final TupleBatch tm : tbs) {
@@ -779,7 +783,8 @@ public class ProtobufTest {
 
     final AtomicInteger numSent = new AtomicInteger();
     final StreamOutputChannel<TupleBatch> ch =
-        connectionPool.reserveLongTermConnection(serverID, channelID.getStreamID());
+        Preconditions.checkNotNull(connectionPool.<TupleBatch> reserveLongTermConnection(serverID, channelID
+            .getStreamID()));
 
     try {
       for (final TupleBatch tm : tbs) {

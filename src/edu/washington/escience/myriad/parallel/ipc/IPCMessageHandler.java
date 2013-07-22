@@ -1,7 +1,5 @@
 package edu.washington.escience.myriad.parallel.ipc;
 
-import java.nio.channels.ClosedChannelException;
-
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
@@ -16,6 +14,8 @@ import org.jboss.netty.channel.WriteCompletionEvent;
 import org.jboss.netty.channel.local.LocalChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import edu.washington.escience.myriad.parallel.ipc.ChannelContext.RegisteredChannelContext;
 
 /**
  * Dealing with IPC IO messages.
@@ -44,9 +44,15 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
   public void channelConnected(final ChannelHandlerContext ctx, final ChannelStateEvent e) throws Exception {
     if (ctx.getChannel().getParent() != null) {
       final ChannelContext cs = ChannelContext.getChannelContext(e.getChannel());
-      cs.connected();
+      if (cs != null) {
+        cs.connected();
+      }
     }
-    ctx.sendUpstream(e);
+  }
+
+  @Override
+  public void channelDisconnected(final ChannelHandlerContext ctx, final ChannelStateEvent e) throws Exception {
+    ownerConnectionPool.channelDisconnected(ctx.getChannel());
   }
 
   @Override
@@ -54,7 +60,6 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
     if (ctx.getChannel().getParent() != null) {
       ownerConnectionPool.newAcceptedRemoteChannel(e.getChannel());
     }
-    ctx.sendUpstream(e);
   }
 
   /**
@@ -216,27 +221,34 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
     }
 
     final ChannelContext cc = ChannelContext.getChannelContext(ch);
-    final ChannelContext.RegisteredChannelContext ecc = cc.getRegisteredChannelContext();
+    if (cc != null) {
+      final ChannelContext.RegisteredChannelContext ecc = cc.getRegisteredChannelContext();
 
-    if (msg instanceof IPCMessage.Meta) {
-      // process meta messates
-      if (msg == IPCMessage.Meta.PING) {
-        // IPC ping, drop directly.
-        return;
-      }
-      if (ecc == null) {
-        receiveUnregisteredMeta(ch, cc, (IPCMessage.Meta) msg);
+      if (msg instanceof IPCMessage.Meta) {
+        // process meta messates
+        if (msg == IPCMessage.Meta.PING) {
+          // IPC ping, drop directly.
+          return;
+        }
+        if (ecc == null) {
+          receiveUnregisteredMeta(ch, cc, (IPCMessage.Meta) msg);
+        } else {
+          receiveRegisteredMeta(ch, cc, (IPCMessage.Meta) msg);
+        }
       } else {
-        receiveRegisteredMeta(ch, cc, (IPCMessage.Meta) msg);
+        if (ecc == null) {
+          receiveUnregisteredData(ch);
+        } else {
+          receiveRegisteredData(ch, cc, msg);
+        }
       }
     } else {
-      if (ecc == null) {
-        receiveUnregisteredData(ch);
-      } else {
-        receiveRegisteredData(ch, cc, msg);
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER
+            .debug("Channel context is null. The IPCConnectionPool must have been shutdown. Close the channel directly.");
       }
+      ch.close();
     }
-    ctx.sendUpstream(e);
   }
 
   /**
@@ -268,35 +280,27 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
   public void exceptionCaught(final ChannelHandlerContext ctx, final ExceptionEvent e) {
     final Channel c = e.getChannel();
     final Throwable cause = e.getCause();
-    String errorMessage = cause.getMessage();
-    if (errorMessage == null) {
-      errorMessage = "";
-    }
-    if (cause instanceof java.nio.channels.NotYetConnectedException) {
-      LOGGER.warn("Channel " + c + ": not yet connected. " + errorMessage, cause);
-    } else if (cause instanceof java.net.ConnectException) {
-      LOGGER.warn("Channel " + c + ": Connection failed: " + errorMessage, cause);
-    } else if (cause instanceof java.io.IOException && errorMessage.contains("reset by peer")) {
-      LOGGER.warn("Channel " + c + ": Connection reset by peer: " + c.getRemoteAddress() + " " + errorMessage, cause);
-    } else if (cause instanceof ClosedChannelException) {
-      LOGGER.warn("Channel " + c + ": Connection reset by peer: " + c.getRemoteAddress() + " " + errorMessage, cause);
-    } else {
-      LOGGER.warn("Channel " + c + ": Unexpected exception from downstream.", cause);
-    }
     ChannelContext cc = ChannelContext.getChannelContext(c);
     if (cc != null) {
-      StreamIOChannelPair pair = cc.getRegisteredChannelContext().getIOPair();
-      pair.deMapInputChannel();
-      pair.deMapOutputChannel();
+      RegisteredChannelContext rcc = cc.getRegisteredChannelContext();
+      if (rcc != null) {
+        StreamIOChannelPair pair = rcc.getIOPair();
+        pair.deMapInputChannel();
+        pair.deMapOutputChannel();
+      }
+      ownerConnectionPool.errorEncountered(c, cause);
+    } else {
+      if (LOGGER.isTraceEnabled()) {
+        LOGGER.trace("Unknown error occur in unmanaged Netty Channel: " + c + ", close directly.", cause);
+      }
+      c.close();
     }
-    ownerConnectionPool.errorEncountered(c, cause);
   }
 
   @Override
   public void writeComplete(final ChannelHandlerContext ctx, final WriteCompletionEvent e) throws Exception {
     final ChannelContext cs = ChannelContext.getChannelContext(e.getChannel());
     cs.updateLastIOTimestamp();
-    ctx.sendUpstream(e);
   }
 
   @Override
@@ -342,6 +346,5 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
         LOGGER.debug("Channel {} is changed to be unreadable.", ioChannel);
       }
     }
-    ctx.sendUpstream(e);
   }
 }
