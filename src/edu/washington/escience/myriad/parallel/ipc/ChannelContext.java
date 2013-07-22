@@ -585,7 +585,7 @@ class ChannelContext extends AttachmentableAdapter {
         RegisteredChannelContext rcc = getRegisteredChannelContext();
         if (rcc != null) {
           // clear the number of reference
-          rcc.numberOfReference.set(0);
+          rcc.clearReference();
         }
         connected = false;
 
@@ -738,6 +738,13 @@ class ChannelContext extends AttachmentableAdapter {
     if (!ipcrr.apply()) {
       delayedEvents.add(ipcrr);
     }
+  }
+
+  /**
+   * @return if the owner channel is a client channel.
+   * */
+  public final boolean isClientChannel() {
+    return ownerChannel.getParent() == null;
   }
 
   /**

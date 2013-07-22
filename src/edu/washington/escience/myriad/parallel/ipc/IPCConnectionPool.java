@@ -1133,7 +1133,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
         @Override
         public void operationComplete(final ChannelFuture future) throws Exception {
           final Channel ch = future.getChannel();
-          if (!(ch instanceof InJVMChannel)) {
+          if (!(ch instanceof InJVMChannel) && !shutdown) {
             final ChannelContext cc = ChannelContext.getChannelContext(ch);
             final ChannelContext.RegisteredChannelContext ecc = cc.getRegisteredChannelContext();
             ecc.decReference();

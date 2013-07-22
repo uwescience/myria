@@ -173,16 +173,22 @@ public final class Worker {
   private class ShutdownChecker extends TimerTask {
     @Override
     public final synchronized void run() {
-      if (!connectionPool.isRemoteAlive(MyriaConstants.MASTER_ID)) {
-        if (LOGGER.isInfoEnabled()) {
-          LOGGER.info("The Master has shutdown, I'll shutdown now.");
+      try {
+        if (!connectionPool.isRemoteAlive(MyriaConstants.MASTER_ID)) {
+          if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("The Master has shutdown, I'll shutdown now.");
+          }
+          toShutdown = true;
+          abruptShutdown = true;
+          cancel();
         }
-        toShutdown = true;
-        abruptShutdown = true;
-        cancel();
-      }
-      if (toShutdown) {
-        shutdown();
+        if (toShutdown) {
+          shutdown();
+        }
+      } catch (Throwable e) {
+        if (LOGGER.isErrorEnabled()) {
+          LOGGER.error("Unknown error in shutdown checker", e);
+        }
       }
     }
   }

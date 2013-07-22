@@ -18,6 +18,7 @@ package edu.washington.escience.myriad.parallel;
 import java.util.concurrent.TimeUnit;
 
 import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.parallel.ipc.Attachmentable;
 
 /**
  * The result of an asynchronous {@link QueryPartition} operation.
@@ -74,17 +75,12 @@ import edu.washington.escience.myriad.DbException;
  * {@link #await()}. In such a case, please make sure you do not call {@link #await()} in an query thread. Otherwise,
  * {@link IllegalStateException} will be raised to prevent a dead lock.
  */
-public interface QueryFuture {
+public interface QueryFuture extends Attachmentable {
 
   /**
    * @return the query where the query operation associated with this future takes place.
    */
   QueryPartition getQuery();
-
-  /**
-   * @return the attachment of this future.
-   * */
-  Object getAttachment();
 
   /**
    * @return {@code true} if and only if this future is complete, regardless of whether the operation was successful,
