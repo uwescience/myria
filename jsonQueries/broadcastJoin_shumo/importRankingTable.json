@@ -5,7 +5,7 @@
     "relation_name" : "Rankings"
   },
   "schema" : {
-    "column_types" : ["INT_TYPE","STRING_TYPE","INT_TYPE"],
+    "column_types" : ["LONG_TYPE","STRING_TYPE","LONG_TYPE"],
     "column_names" : ["pageRank","pageURL","avgDuration"]
   },
   "import_from_database" : true

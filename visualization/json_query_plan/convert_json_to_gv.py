@@ -25,6 +25,7 @@ children['Project'] = ['arg_child']
 children['LocalCountingJoin'] = ['arg_child1', 'arg_child2']
 children['SQLiteInsert'] = ['arg_child']
 children['BroadcastProducer'] = ['arg_child']
+children['JdbcInsert'] = ['arg_child']
 
 # Colors supported by graphviz, in some pleasing order
 colors = [

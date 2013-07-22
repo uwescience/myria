@@ -5,7 +5,7 @@
     "relation_name" : "UserVisits"
   },
   "schema" : {
-    "column_types" : ["STRING_TYPE","STRING_TYPE","DATE_TIME_TYPE","FLOAT_TYPE","STRING_TYPE","STRING_TYPE","STRING_TYPE","STRING_TYPE","avgTimeOnSite"],
+    "column_types" : ["STRING_TYPE","STRING_TYPE","DATETIME_TYPE","FLOAT_TYPE","STRING_TYPE","STRING_TYPE","STRING_TYPE","STRING_TYPE","avgTimeOnSite"],
     "column_names" : ["sourceIPAddr","destinationURL","visitDate","adRevenue","UserAgent","cCode","lCode","sKeyword", "avgTimeOnSite"]
   },
   "import_from_database" : true

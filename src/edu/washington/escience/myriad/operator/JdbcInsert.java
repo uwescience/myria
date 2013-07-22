@@ -59,7 +59,6 @@ public final class JdbcInsert extends RootOperator {
   public JdbcInsert(final Operator child, final RelationKey relationKey, final JdbcInfo jdbcInfo,
       final boolean overwriteTable) {
     super(child);
-    Objects.requireNonNull(child);
     Objects.requireNonNull(relationKey);
     Objects.requireNonNull(jdbcInfo);
     this.jdbcInfo = jdbcInfo;
