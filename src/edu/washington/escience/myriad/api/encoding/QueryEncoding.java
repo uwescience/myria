@@ -42,6 +42,8 @@ public class QueryEncoding extends MyriaApiEncoding {
   private static List<String> requiredFields = ImmutableList.of("rawDatalog", "logicalRa", "fragments");
   /** The logger for this class. */
   private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(QueryEncoding.class);
+  /** The fault-tolerance mode used in this query, default: none. */
+  public String ftMode = "none";
 
   @Override
   protected List<String> getRequiredFields() {
