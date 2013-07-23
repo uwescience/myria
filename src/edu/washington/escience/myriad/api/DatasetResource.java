@@ -147,10 +147,10 @@ public final class DatasetResource {
       throw new DbException(e);
     }
 
-    /* Moreover, check whether all requested workers are alive. */
-    if (dataset.workers != null && !server.getAliveWorkers().containsAll(dataset.workers)) {
+    /* Moreover, check whether all requested workers are valid. */
+    if (dataset.workers != null && !server.getWorkers().keySet().containsAll(dataset.workers)) {
       /* Throw a 503 (Service Unavailable) */
-      throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "Not all requested workers are alive");
+      throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "Do not specify the workers of the dataset correctly");
     }
 
     server.importDataset(dataset.relationKey, dataset.schema, dataset.workers);

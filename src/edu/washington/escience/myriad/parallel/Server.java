@@ -970,7 +970,7 @@ public final class Server {
     /* Figure out the workers we will use. If workersToIngest is null, use all active workers. */
     Set<Integer> actualWorkers = workersToImportFrom;
     if (workersToImportFrom == null) {
-      actualWorkers = getAliveWorkers();
+      actualWorkers = getWorkers().keySet();
     }
 
     try {
