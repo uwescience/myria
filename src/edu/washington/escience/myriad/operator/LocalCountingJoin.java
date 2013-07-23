@@ -15,7 +15,8 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.parallel.Worker.QueryExecutionMode;
+import edu.washington.escience.myriad.parallel.QueryExecutionMode;
+import edu.washington.escience.myriad.parallel.TaskResourceManager;
 
 /**
  * This is an implementation of hash equal join. The same as in DupElim, this implementation does not keep the
@@ -234,8 +235,8 @@ public final class LocalCountingJoin extends Operator {
     hashTable2 = new TupleBatchBuffer(child2.getSchema().getSubSchema(compareIndx2));
     ans = 0;
     ansTBB = new TupleBatchBuffer(outputSchema);
-    QueryExecutionMode qem = (QueryExecutionMode) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE);
-    nonBlocking = qem == QueryExecutionMode.NON_BLOCKING;
+    TaskResourceManager qem = (TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER);
+    nonBlocking = qem.getExecutionMode() == QueryExecutionMode.NON_BLOCKING;
   }
 
   /**

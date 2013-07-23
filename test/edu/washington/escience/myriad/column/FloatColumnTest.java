@@ -1,5 +1,7 @@
 package edu.washington.escience.myriad.column;
 
+import static org.junit.Assert.assertEquals;
+
 import java.nio.BufferOverflowException;
 
 import org.junit.Test;
@@ -16,8 +18,10 @@ public class FloatColumnTest {
     FloatColumn column = original.build();
     final ColumnMessage serialized = column.serializeToProto();
     final FloatColumn deserialized = FloatColumnBuilder.buildFromProtobuf(serialized, original.size());
-    System.out.println(original.build().toString());
-    System.out.println(deserialized.toString());
+    assertEquals(column.get(0), deserialized.get(0));
+    assertEquals(column.get(1), deserialized.get(1));
+    assertEquals(column.get(2), deserialized.get(2));
+    assertEquals(column.get(3), deserialized.get(3));
   }
 
   @Test

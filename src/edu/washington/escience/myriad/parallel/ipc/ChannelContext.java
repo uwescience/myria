@@ -21,12 +21,12 @@ import edu.washington.escience.myriad.util.ThreadStackDump;
  * Recording the various context information of a channel. The most important part of this class is the state machine of
  * a channel.
  * */
-public class ChannelContext extends AttachmentableAdapter {
+class ChannelContext extends AttachmentableAdapter {
 
   /**
    * Channel close requested event.
    * */
-  public class ChannelCloseRequested implements DelayedTransitionEvent {
+  class ChannelCloseRequested implements DelayedTransitionEvent {
     /**
      * the channel pool in which the channel resides.
      * */
@@ -48,8 +48,8 @@ public class ChannelContext extends AttachmentableAdapter {
      *          reside.
      * @param trashBin channel trash bin. The place where to-be-closed channels reside.
      * */
-    public ChannelCloseRequested(final ChannelPrioritySet channelPool,
-        final ConcurrentHashMap<Channel, Channel> recycleBin, final ChannelGroup trashBin) {
+    ChannelCloseRequested(final ChannelPrioritySet channelPool, final ConcurrentHashMap<Channel, Channel> recycleBin,
+        final ChannelGroup trashBin) {
       this.channelPool = channelPool;
       this.recycleBin = recycleBin;
       this.trashBin = trashBin;
@@ -92,7 +92,7 @@ public class ChannelContext extends AttachmentableAdapter {
   /**
    * Delayed event.
    * */
-  public interface DelayedTransitionEvent {
+  interface DelayedTransitionEvent {
     /**
      * apply the event.
      * 
@@ -104,7 +104,7 @@ public class ChannelContext extends AttachmentableAdapter {
   /**
    * ID checking timeout event.
    * */
-  public class IDCheckingTimeout implements DelayedTransitionEvent {
+  class IDCheckingTimeout implements DelayedTransitionEvent {
     /**
      * Set of new channels who have not identified there worker IDs yet (i.e. not registered).
      * */
@@ -114,13 +114,13 @@ public class ChannelContext extends AttachmentableAdapter {
      * @param unregisteredNewChannels Set of new channels who have not identified there worker IDs yet (i.e. not
      *          registered).
      * */
-    public IDCheckingTimeout(final ConcurrentHashMap<Channel, Channel> unregisteredNewChannels) {
+    IDCheckingTimeout(final ConcurrentHashMap<Channel, Channel> unregisteredNewChannels) {
       this.unregisteredNewChannels = unregisteredNewChannels;
     }
 
     @Override
     public final boolean apply() {
-      if (!isClientChannel) {
+      if (ownerChannel.getParent() != null) {
         // accepted channel
         synchronized (stateMachineLock) {
           if ((!connected && !registered && !inPool && !inRecycleBin && !inTrashBin && newConnection && !closeRequested)
@@ -163,7 +163,7 @@ public class ChannelContext extends AttachmentableAdapter {
   /**
    * IPC remote get removed event.
    * */
-  public final class IPCRemoteRemoved implements DelayedTransitionEvent {
+  final class IPCRemoteRemoved implements DelayedTransitionEvent {
     /**
      * channel recycle bin. The place where currently-unused-but-waiting-for-possible-reuse channels reside.
      * */
@@ -183,7 +183,7 @@ public class ChannelContext extends AttachmentableAdapter {
      *          reside.
      * @param trashBin channel trash bin. The place where to-be-closed channels reside.
      * */
-    public IPCRemoteRemoved(final ConcurrentHashMap<Channel, Channel> recycleBin, final ChannelGroup trashBin,
+    IPCRemoteRemoved(final ConcurrentHashMap<Channel, Channel> recycleBin, final ChannelGroup trashBin,
         final ChannelPrioritySet channelPool) {
       this.recycleBin = recycleBin;
       this.trashBin = trashBin;
@@ -192,7 +192,7 @@ public class ChannelContext extends AttachmentableAdapter {
 
     @Override
     public boolean apply() {
-      if (!isClientChannel) {
+      if (ownerChannel.getParent() != null) {
         // accepted channel
         synchronized (stateMachineLock) {
           if ((connected && registered && inPool && inRecycleBin && !inTrashBin && !newConnection && !closeRequested)
@@ -234,7 +234,7 @@ public class ChannelContext extends AttachmentableAdapter {
   /**
    * Extra state data of a registered channel.
    * */
-  public class RegisteredChannelContext {
+  class RegisteredChannelContext {
 
     /**
      * remote id.
@@ -260,7 +260,7 @@ public class ChannelContext extends AttachmentableAdapter {
      * @param remoteID the remote IPC entity ID.
      * @param ownerChannelGroup which channel set the channel belongs.
      * */
-    public RegisteredChannelContext(final int remoteID, final ChannelPrioritySet ownerChannelGroup) {
+    RegisteredChannelContext(final int remoteID, final ChannelPrioritySet ownerChannelGroup) {
       this.remoteID = remoteID;
       channelGroup = ownerChannelGroup;
       numberOfReference = new AtomicInteger(0);
@@ -270,7 +270,7 @@ public class ChannelContext extends AttachmentableAdapter {
     /**
      * @return attachment.
      * */
-    public final StreamIOChannelPair getIOPair() {
+    final StreamIOChannelPair getIOPair() {
       return ioPair;
     }
 
@@ -279,7 +279,7 @@ public class ChannelContext extends AttachmentableAdapter {
      * 
      * @return the new number of references.
      * */
-    public final int decReference() {
+    final int decReference() {
       final int newRef = numberOfReference.decrementAndGet();
       if (newRef < 0) {
         final String msg = "Number of references is negative";
@@ -290,9 +290,16 @@ public class ChannelContext extends AttachmentableAdapter {
     }
 
     /**
+     * Clear the reference.
+     * */
+    final void clearReference() {
+      numberOfReference.set(0);
+    }
+
+    /**
      * @return the remote IPC entity ID.
      * */
-    public final int getRemoteID() {
+    final int getRemoteID() {
       return remoteID;
     }
 
@@ -301,7 +308,7 @@ public class ChannelContext extends AttachmentableAdapter {
      * 
      * @return the new number of references.
      * */
-    public final int incReference() {
+    final int incReference() {
       if (LOGGER.isTraceEnabled()) {
         LOGGER.trace("Inc reference for channel: " + ownerChannel, new ThreadStackDump());
       }
@@ -311,14 +318,14 @@ public class ChannelContext extends AttachmentableAdapter {
     /**
      * @return current number of references.
      * */
-    public final int numReferenced() {
+    final int numReferenced() {
       return numberOfReference.get();
     }
 
     /**
      * @return If the owner channel group get reordered
      * */
-    public final boolean updateLastIOTimestamp() {
+    final boolean updateLastIOTimestamp() {
       if (channelGroup == null) {
         return true;
       }
@@ -334,7 +341,7 @@ public class ChannelContext extends AttachmentableAdapter {
   /**
    * The server side of a channel is disconnected.
    * */
-  public class ServerSideDisconnect implements DelayedTransitionEvent {
+  class ServerSideDisconnect implements DelayedTransitionEvent {
 
     @Override
     public final boolean apply() {
@@ -358,7 +365,7 @@ public class ChannelContext extends AttachmentableAdapter {
    * @return the channel context data structure of the given channel.
    * @param channel the owner channel
    * */
-  public static final ChannelContext getChannelContext(final Channel channel) {
+  static final ChannelContext getChannelContext(final Channel channel) {
     return (ChannelContext) channel.getAttachment();
   }
 
@@ -453,16 +460,9 @@ public class ChannelContext extends AttachmentableAdapter {
   private final ConcurrentLinkedQueue<DelayedTransitionEvent> delayedEvents;
 
   /**
-   * record if the owner channel is a client channel.
-   * */
-  private final boolean isClientChannel;
-
-  /**
    * @param channel the owner channel
-   * @param isClientChannel if the owner channel is a client channel.
    * */
-  public ChannelContext(final Channel channel, final boolean isClientChannel) {
-    this.isClientChannel = isClientChannel;
+  ChannelContext(final Channel channel) {
     lastIOTimestamp = System.currentTimeMillis();
     ownerChannel = channel;
     alive = true;
@@ -476,7 +476,7 @@ public class ChannelContext extends AttachmentableAdapter {
   /**
    * @param future the future for channel registration
    * */
-  public final void addConditionFuture(final EqualityCloseFuture<Integer> future) {
+  final void addConditionFuture(final EqualityCloseFuture<Integer> future) {
     boolean registeredLocal;
     synchronized (stateMachineLock) {
       registeredLocal = registered;
@@ -511,9 +511,9 @@ public class ChannelContext extends AttachmentableAdapter {
    *          reside.
    * @param trashBin channel trash bin. The place where to-be-closed channels reside.
    * */
-  public final void closeRequested(final ChannelPrioritySet channelPool,
-      final ConcurrentHashMap<Channel, Channel> recycleBin, final ChannelGroup trashBin) {
-    assert !isClientChannel;
+  final void closeRequested(final ChannelPrioritySet channelPool, final ConcurrentHashMap<Channel, Channel> recycleBin,
+      final ChannelGroup trashBin) {
+    assert ownerChannel.getParent() != null;
     applyDelayedTransitionEvents();
     final ChannelCloseRequested ccr = new ChannelCloseRequested(channelPool, recycleBin, trashBin);
     if (!ccr.apply()) {
@@ -532,38 +532,98 @@ public class ChannelContext extends AttachmentableAdapter {
    * @param recycleBin channel recycle bin. The place where currently-unused-but-waiting-for-possible-reuse channels
    *          reside.
    */
-  public final void errorEncountered(final ConcurrentHashMap<Channel, Channel> unregisteredNewChannels,
+  final void errorEncountered(final ConcurrentHashMap<Channel, Channel> unregisteredNewChannels,
       final ConcurrentHashMap<Channel, Channel> recycleBin, final ChannelGroup trashBin,
       final ChannelPrioritySet channelPool) {
     synchronized (stateMachineLock) {
-      unregisteredNewChannels.remove(ownerChannel);
-      if (channelPool != null) {
-        channelPool.remove(ownerChannel);
-      }
-      recycleBin.remove(ownerChannel);
-      trashBin.remove(ownerChannel);
-      connected = false;
-      registered = false;
-      inPool = false;
-      inRecycleBin = false;
-      inTrashBin = false;
-      newConnection = false;
-      closeRequested = false;
-      alive = false;
-      synchronized (channelRegisterLock) {
-        channelRegisterLock.notifyAll();
+      if (connected) {
+        unregisteredNewChannels.remove(ownerChannel);
+        if (channelPool != null) {
+          channelPool.remove(ownerChannel);
+        }
+        recycleBin.remove(ownerChannel);
+        trashBin.remove(ownerChannel);
+        connected = false;
+        registered = false;
+        inPool = false;
+        inRecycleBin = false;
+        inTrashBin = false;
+        newConnection = false;
+        closeRequested = false;
+        alive = false;
+        if (ownerChannel.getParent() == null) {
+          synchronized (channelRegisterLock) {
+            channelRegisterLock.notifyAll();
+          }
+
+          synchronized (remoteReplyLock) {
+            remoteReplyLock.notifyAll();
+          }
+        }
       }
     }
     ownerChannel.close();
   }
 
   /**
+   * Callback if the owner channel is closed.
+   * 
+   * @param unregisteredNewChannels Set of new channels who have not identified there worker IDs yet (i.e. not
+   *          registered).
+   * 
+   * @param trashBin channel trash bin. The place where to-be-closed channels reside.
+   * @param channelPool the channel pool in which the channel resides. may be null if the channel is not registered yet
+   * @param recycleBin channel recycle bin. The place where currently-unused-but-waiting-for-possible-reuse channels
+   *          reside.
+   */
+  final void closed(final ConcurrentHashMap<Channel, Channel> unregisteredNewChannels,
+      final ConcurrentHashMap<Channel, Channel> recycleBin, final ChannelGroup trashBin,
+      final ChannelPrioritySet channelPool) {
+    synchronized (stateMachineLock) {
+      if (connected) {
+        // it's an abnormal disconnect
+        RegisteredChannelContext rcc = getRegisteredChannelContext();
+        if (rcc != null) {
+          // clear the number of reference
+          rcc.clearReference();
+        }
+        connected = false;
+
+        unregisteredNewChannels.remove(ownerChannel);
+        if (channelPool != null) {
+          channelPool.remove(ownerChannel);
+        }
+        recycleBin.remove(ownerChannel);
+        trashBin.remove(ownerChannel);
+        connected = false;
+        registered = false;
+        inPool = false;
+        inRecycleBin = false;
+        inTrashBin = false;
+        newConnection = false;
+        closeRequested = false;
+        alive = false;
+
+        if (ownerChannel.getParent() == null) {
+          synchronized (channelRegisterLock) {
+            channelRegisterLock.notifyAll();
+          }
+          synchronized (remoteReplyLock) {
+            remoteReplyLock.notifyAll();
+          }
+        }
+
+      }
+    }
+  }
+
+  /**
    * Callback when the owner channel is connected.
    * */
-  public final void connected() {
+  final void connected() {
     applyDelayedTransitionEvents();
     // undelayed, must apply
-    if (!isClientChannel) {
+    if (ownerChannel.getParent() != null) {
       // accepted channel
       synchronized (stateMachineLock) {
         assert !connected && !registered && !inPool && !inRecycleBin && !inTrashBin && newConnection && !closeRequested;
@@ -583,10 +643,10 @@ public class ChannelContext extends AttachmentableAdapter {
    *          reside.
    * 
    * */
-  public final void considerRecycle(final ConcurrentHashMap<Channel, Channel> recycleBin) {
+  final void considerRecycle(final ConcurrentHashMap<Channel, Channel> recycleBin) {
     // undelayed, may not apply
     applyDelayedTransitionEvents();
-    if (!isClientChannel) {
+    if (ownerChannel.getParent() != null) {
       // accepted channel
       synchronized (stateMachineLock) {
         if (connected && registered && inPool && !inRecycleBin && !inTrashBin && !newConnection && !closeRequested) {
@@ -614,9 +674,9 @@ public class ChannelContext extends AttachmentableAdapter {
   /**
    * Callback when the owner channel has sent disconnect request to the remote part.
    * */
-  public final void disconnectSent() {
+  final void disconnectSent() {
     // undelayed, must apply
-    assert isClientChannel;
+    assert ownerChannel.getParent() == null;
     applyDelayedTransitionEvents();
     // client channel
     synchronized (stateMachineLock) {
@@ -628,28 +688,28 @@ public class ChannelContext extends AttachmentableAdapter {
   /**
    * @return my owner channel.
    * */
-  public final Channel getChannel() {
+  final Channel getChannel() {
     return ownerChannel;
   }
 
   /**
    * @return the timestamp of last IO operation.
    * */
-  public final long getLastIOTimestamp() {
+  final long getLastIOTimestamp() {
     return lastIOTimestamp;
   }
 
   /**
    * @return the write future of the most recent write action.
    * */
-  public final ChannelFuture getMostRecentWriteFuture() {
+  final ChannelFuture getMostRecentWriteFuture() {
     return mostRecentWriteFuture;
   }
 
   /**
    * @return the extra channel context data structure if the channel is registered.
    * */
-  public final RegisteredChannelContext getRegisteredChannelContext() {
+  final RegisteredChannelContext getRegisteredChannelContext() {
     return registeredContext;
   }
 
@@ -657,7 +717,7 @@ public class ChannelContext extends AttachmentableAdapter {
    * @param unregisteredNewChannels Set of new channels who have not identified there worker IDs yet (i.e. not
    *          registered).
    * */
-  public final void idCheckingTimeout(final ConcurrentHashMap<Channel, Channel> unregisteredNewChannels) {
+  final void idCheckingTimeout(final ConcurrentHashMap<Channel, Channel> unregisteredNewChannels) {
     applyDelayedTransitionEvents();
     final IDCheckingTimeout idct = new IDCheckingTimeout(unregisteredNewChannels);
     if (!idct.apply()) {
@@ -671,7 +731,7 @@ public class ChannelContext extends AttachmentableAdapter {
    *          reside.
    * @param trashBin channel trash bin. The place where to-be-closed channels reside.
    * */
-  public final void ipcRemoteRemoved(final ConcurrentHashMap<Channel, Channel> recycleBin, final ChannelGroup trashBin,
+  final void ipcRemoteRemoved(final ConcurrentHashMap<Channel, Channel> recycleBin, final ChannelGroup trashBin,
       final ChannelPrioritySet channelPool) {
     applyDelayedTransitionEvents();
     final IPCRemoteRemoved ipcrr = new IPCRemoteRemoved(recycleBin, trashBin, channelPool);
@@ -684,13 +744,13 @@ public class ChannelContext extends AttachmentableAdapter {
    * @return if the owner channel is a client channel.
    * */
   public final boolean isClientChannel() {
-    return isClientChannel;
+    return ownerChannel.getParent() == null;
   }
 
   /**
    * @return Is close requested. Only for accepted channels.
    * */
-  public final boolean isCloseRequested() {
+  final boolean isCloseRequested() {
     return closeRequested;
   }
 
@@ -698,10 +758,10 @@ public class ChannelContext extends AttachmentableAdapter {
    * @param channelPool the channel pool in which the channel resides.
    * @param trashBin channel trash bin. The place where to-be-closed channels reside.
    * */
-  public final void reachUpperbound(final ChannelGroup trashBin, final ChannelPrioritySet channelPool) {
+  final void reachUpperbound(final ChannelGroup trashBin, final ChannelPrioritySet channelPool) {
     // no delay, may not apply
     applyDelayedTransitionEvents();
-    if (!isClientChannel) {
+    if (ownerChannel.getParent() != null) {
       // accepted channel
       synchronized (stateMachineLock) {
         if (connected && registered && inPool && !inRecycleBin && !inTrashBin && !newConnection && !closeRequested) {
@@ -739,10 +799,10 @@ public class ChannelContext extends AttachmentableAdapter {
   /**
    * Callback if the channel is ready to get closed.
    * */
-  public final void readyToClose() {
+  final void readyToClose() {
     // no delay, must apply
     applyDelayedTransitionEvents();
-    if (!isClientChannel) {
+    if (ownerChannel.getParent() != null) {
       // accepted channel
       synchronized (stateMachineLock) {
         assert (connected && registered && !inPool && !inRecycleBin && inTrashBin && !newConnection && closeRequested); // {
@@ -785,7 +845,7 @@ public class ChannelContext extends AttachmentableAdapter {
    * 
    * @param e the most recent message write event.
    * */
-  public final void recordWriteFuture(final MessageEvent e) {
+  final void recordWriteFuture(final MessageEvent e) {
     mostRecentWriteFuture = e.getFuture();
   }
 
@@ -795,11 +855,11 @@ public class ChannelContext extends AttachmentableAdapter {
    *          reside.
    * @param trashBin channel trash bin. The place where to-be-closed channels reside.
    * */
-  public final void recycleTimeout(final ConcurrentHashMap<Channel, Channel> recycleBin, final ChannelGroup trashBin,
+  final void recycleTimeout(final ConcurrentHashMap<Channel, Channel> recycleBin, final ChannelGroup trashBin,
       final ChannelPrioritySet channelPool) {
     // nodelay, must apply
     applyDelayedTransitionEvents();
-    if (!isClientChannel) {
+    if (ownerChannel.getParent() != null) {
       // accepted channel
       synchronized (stateMachineLock) {
         assert (connected && registered && inPool && inRecycleBin && !inTrashBin && !newConnection && !closeRequested);
@@ -835,12 +895,12 @@ public class ChannelContext extends AttachmentableAdapter {
    *          registered).
    * @param remoteID the remote IPC entity ID.
    * */
-  public final void registerIPCRemoteRemoved(final Integer remoteID, final ChannelGroup trashBin,
+  final void registerIPCRemoteRemoved(final Integer remoteID, final ChannelGroup trashBin,
       final ConcurrentHashMap<Channel, Channel> unregisteredNewChannels) {
     // undelayed, must apply
     applyDelayedTransitionEvents();
     registeredContext = new RegisteredChannelContext(remoteID, null);
-    if (!isClientChannel) {
+    if (ownerChannel.getParent() != null) {
       // accepted channel
       synchronized (stateMachineLock) {
         assert (connected && !registered && !inPool && !inRecycleBin && !inTrashBin && newConnection && !closeRequested);
@@ -883,12 +943,12 @@ public class ChannelContext extends AttachmentableAdapter {
    *          registered).
    * @param remoteID the remote IPC entity ID.
    * */
-  public final void registerNormal(final Integer remoteID, final ChannelPrioritySet channelPool,
+  final void registerNormal(final Integer remoteID, final ChannelPrioritySet channelPool,
       final ConcurrentHashMap<Channel, Channel> unregisteredNewChannels) {
     // undelayed, must apply
     applyDelayedTransitionEvents();
     registeredContext = new RegisteredChannelContext(remoteID, channelPool);
-    if (!isClientChannel) {
+    if (ownerChannel.getParent() != null) {
       // accepted channel
       synchronized (stateMachineLock) {
         assert (connected && !registered && !inPool && !inRecycleBin && !inTrashBin && newConnection && !closeRequested);
@@ -931,7 +991,7 @@ public class ChannelContext extends AttachmentableAdapter {
    * 
    * @return the remote reply ID.
    * */
-  public final Integer remoteReplyID() {
+  final Integer remoteReplyID() {
     return remoteReplyID;
   }
 
@@ -940,10 +1000,10 @@ public class ChannelContext extends AttachmentableAdapter {
    * @param recycleBin channel recycle bin. The place where currently-unused-but-waiting-for-possible-reuse channels
    *          reside.
    * */
-  public final void reusedInRecycleTimeout(final ConcurrentHashMap<Channel, Channel> recycleBin) {
+  final void reusedInRecycleTimeout(final ConcurrentHashMap<Channel, Channel> recycleBin) {
     // nodelay, must apply
     applyDelayedTransitionEvents();
-    if (!isClientChannel) {
+    if (ownerChannel.getParent() != null) {
       // accepted channel
       synchronized (stateMachineLock) {
         assert (connected && registered && inPool && inRecycleBin && !inTrashBin && !newConnection && !closeRequested);
@@ -963,8 +1023,8 @@ public class ChannelContext extends AttachmentableAdapter {
   /**
    * Callback if the owner channel is a client channel and the remote server side has disconnected.
    * */
-  public final void serverSideDisconnect() {
-    assert isClientChannel;
+  final void serverSideDisconnect() {
+    assert ownerChannel.getParent() == null;
     applyDelayedTransitionEvents();
     final ServerSideDisconnect ssd = new ServerSideDisconnect();
     if (!ssd.apply()) {
@@ -975,7 +1035,7 @@ public class ChannelContext extends AttachmentableAdapter {
   /**
    * @param remoteID the remote IPC entity ID.
    * */
-  public final void setRemoteReplyID(final int remoteID) {
+  final void setRemoteReplyID(final int remoteID) {
     remoteReplyID = remoteID;
     synchronized (remoteReplyLock) {
       remoteReplyLock.notifyAll();
@@ -994,7 +1054,7 @@ public class ChannelContext extends AttachmentableAdapter {
   /**
    * Update moste recent IO operation on the owner Channel.
    * */
-  public final void updateLastIOTimestamp() {
+  final void updateLastIOTimestamp() {
     if (alive) {
       lastIOTimestamp = System.currentTimeMillis();
       if (registeredContext != null) {
@@ -1011,7 +1071,7 @@ public class ChannelContext extends AttachmentableAdapter {
    * @param timeoutInMillis the time out
    * @return true if remote replied in time.
    * */
-  public final boolean waitForRemoteReply(final long timeoutInMillis) {
+  final boolean waitForRemoteReply(final long timeoutInMillis) {
     if (remoteReplyID == null) {
       synchronized (remoteReplyLock) {
         try {

@@ -6,6 +6,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import org.jboss.netty.channel.ChannelFuture;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.Schema;
@@ -49,7 +50,8 @@ public class TenGBTupleBatchSenderUsingConnectionPool {
     long end = 0;
 
     final StreamOutputChannel<TupleBatch> ch =
-        connectionPool.reserveLongTermConnection(TenGBTupleBatchReceiverUsingConnectionPool.IPCID, streamID);
+        Preconditions.checkNotNull(connectionPool.<TupleBatch> reserveLongTermConnection(
+            TenGBTupleBatchReceiverUsingConnectionPool.IPCID, streamID));
     start = System.currentTimeMillis();
     System.out.println("Start at " + start);
 

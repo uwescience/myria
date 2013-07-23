@@ -15,7 +15,6 @@ import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.operator.LeafOperator;
-import edu.washington.escience.myriad.parallel.Worker.QueryExecutionMode;
 import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myriad.parallel.ipc.IPCMessage;
 import edu.washington.escience.myriad.parallel.ipc.StreamIOChannelID;
@@ -137,9 +136,8 @@ public class Consumer extends LeafOperator {
     }
     workerIdToIndex = new TUnmodifiableIntIntMap(tmp);
 
-    QueryExecutionMode executionMode = (QueryExecutionMode) execUnitEnv.get(MyriaConstants.EXEC_ENV_VAR_EXECUTION_MODE);
-    nonBlockingExecution = (executionMode == QueryExecutionMode.NON_BLOCKING);
-
+    TaskResourceManager qem = (TaskResourceManager) execUnitEnv.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER);
+    nonBlockingExecution = qem.getExecutionMode() == QueryExecutionMode.NON_BLOCKING;
   }
 
   /**

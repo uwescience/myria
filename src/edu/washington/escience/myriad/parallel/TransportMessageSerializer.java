@@ -1,8 +1,6 @@
 package edu.washington.escience.myriad.parallel;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -16,11 +14,7 @@ import com.google.protobuf.CodedInputStream;
 import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
-import edu.washington.escience.myriad.column.Column;
-import edu.washington.escience.myriad.column.ColumnFactory;
 import edu.washington.escience.myriad.parallel.ipc.PayloadSerializer;
-import edu.washington.escience.myriad.proto.DataProto.ColumnMessage;
-import edu.washington.escience.myriad.proto.DataProto.DataMessage;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.util.IPCUtils;
 
@@ -82,29 +76,13 @@ public class TransportMessageSerializer implements PayloadSerializer {
   }
 
   @Override
-  public final Object deSerialize(final ChannelBuffer buffer, final Object processor, final Object channelAttachment)
+  public final Object deSerialize(final ChannelBuffer buffer, final Object processor, final Object att)
       throws IOException {
     TransportMessage tm = deSerializeTransportMessage(buffer);
 
     switch (tm.getType()) {
       case DATA:
-        DataMessage dm = tm.getDataMessage();
-        Schema msgOwnerOpSchema = (Schema) channelAttachment;
-        switch (dm.getType()) {
-          case NORMAL:
-            final List<ColumnMessage> columnMessages = dm.getColumnsList();
-            final Column<?>[] columnArray = new Column<?>[columnMessages.size()];
-            int idx = 0;
-            for (final ColumnMessage cm : columnMessages) {
-              columnArray[idx++] = ColumnFactory.columnFromColumnMessage(cm, dm.getNumTuples());
-            }
-            final List<Column<?>> columns = Arrays.asList(columnArray);
-            return new TupleBatch(msgOwnerOpSchema, columns, dm.getNumTuples());
-          case EOI:
-            return TupleBatch.eoiTupleBatch(msgOwnerOpSchema);
-          default:
-            throw new IllegalArgumentException("Unknown DATA message type: " + dm.getType());
-        }
+        return IPCUtils.tmToTupleBatch(tm.getDataMessage(), (Schema) att);
       case QUERY:
         return tm;
       case CONTROL:
