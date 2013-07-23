@@ -4,6 +4,9 @@ import java.io.Serializable;
 import java.util.Objects;
 import java.util.Properties;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 /**
  * Holds the info for a JDBC Connection.
  * 
@@ -38,8 +41,11 @@ public final class JdbcInfo implements Serializable, ConnectionInfo {
    * @param password the password.
    * @return a new JdbcInfo containing this information.
    */
-  public static JdbcInfo of(final String driverClass, final String dbms, final String host, final int port,
-      final String database, final String username, final String password) {
+  @JsonCreator
+  public static JdbcInfo of(@JsonProperty("driver_class") final String driverClass,
+      @JsonProperty("dbms") final String dbms, @JsonProperty("host") final String host,
+      @JsonProperty("port") final int port, @JsonProperty("database") final String database,
+      @JsonProperty("username") final String username, @JsonProperty("password") final String password) {
     return new JdbcInfo(driverClass, dbms, host, port, database, username, password, null);
   }
 

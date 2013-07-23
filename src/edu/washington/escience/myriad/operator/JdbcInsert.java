@@ -40,9 +40,8 @@ public final class JdbcInsert extends RootOperator {
    * @param child the source of tuples to be inserted.
    * @param relationKey the key of the table the tuples should be inserted into.
    * @param jdbcInfo the parameters of the JDBC connection.
-   * @throws DbException if there is a problem inserting the tuples.
    */
-  public JdbcInsert(final Operator child, final RelationKey relationKey, final JdbcInfo jdbcInfo) throws DbException {
+  public JdbcInsert(final Operator child, final RelationKey relationKey, final JdbcInfo jdbcInfo) {
     this(child, relationKey, jdbcInfo, false);
   }
 
@@ -56,12 +55,10 @@ public final class JdbcInsert extends RootOperator {
    * @param relationKey the key of the table the tuples should be inserted into.
    * @param jdbcInfo the parameters of the JDBC connection.
    * @param overwriteTable whether to overwrite a table that already exists.
-   * @throws DbException if there is an error opening the Jdbc Connection.
    */
   public JdbcInsert(final Operator child, final RelationKey relationKey, final JdbcInfo jdbcInfo,
-      final boolean overwriteTable) throws DbException {
+      final boolean overwriteTable) {
     super(child);
-    Objects.requireNonNull(child);
     Objects.requireNonNull(relationKey);
     Objects.requireNonNull(jdbcInfo);
     this.jdbcInfo = jdbcInfo;

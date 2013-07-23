@@ -127,6 +127,44 @@ public final class DatasetResource {
   }
 
   /**
+   * @param dataset the dataset to be imported.
+   * @param uriInfo information about the current URL.
+   * @return created dataset resource.
+   * @throws DbException if there is an error in the database.
+   */
+  @POST
+  @Path("/importDataset")
+  @Consumes(MediaType.APPLICATION_JSON)
+  public Response importDataset(final DatasetEncoding dataset, @Context final UriInfo uriInfo) throws DbException {
+
+    /* If we already have a dataset by this name, tell the user there's a conflict. */
+    try {
+      if (server.getSchema(dataset.relationKey) != null) {
+        /* Found, throw a 409 (Conflict) */
+        throw new MyriaApiException(Status.CONFLICT, "That dataset already exists.");
+      }
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+
+    /* Moreover, check whether all requested workers are valid. */
+    if (dataset.workers != null && !server.getWorkers().keySet().containsAll(dataset.workers)) {
+      /* Throw a 503 (Service Unavailable) */
+      throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "Do not specify the workers of the dataset correctly");
+    }
+
+    server.importDataset(dataset.relationKey, dataset.schema, dataset.workers);
+
+    /* In the response, tell the client the path to the relation. */
+    UriBuilder queryUri = uriInfo.getBaseUriBuilder();
+    return Response.created(
+        queryUri.path("dataset").path("user-" + dataset.relationKey.getUserName()).path(
+            "program-" + dataset.relationKey.getProgramName())
+            .path("relation-" + dataset.relationKey.getRelationName()).build()).build();
+
+  }
+
+  /**
    * @param dataset the dataset to be ingested.
    * @param uriInfo information about the current URL.
    * @return the created dataset resource.

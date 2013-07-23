@@ -1,10 +1,12 @@
 package edu.washington.escience.myriad.operator;
 
 import java.util.Iterator;
+import java.util.Objects;
 
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.accessmethod.JdbcAccessMethod;
@@ -43,6 +45,20 @@ public class JdbcQueryScan extends LeafOperator {
     this.jdbcInfo = jdbcInfo;
     this.baseSQL = baseSQL;
     this.outputSchema = outputSchema;
+  }
+
+  /**
+   * @param jdbcInfo jdbc connection information.
+   * @param relationKey relationKey of table to be scanned.
+   * @param outputSchema output schema of this operator.
+   */
+  public JdbcQueryScan(final JdbcInfo jdbcInfo, final RelationKey relationKey, final Schema outputSchema) {
+    Objects.requireNonNull(jdbcInfo);
+    Objects.requireNonNull(relationKey);
+    Objects.requireNonNull(outputSchema);
+    this.outputSchema = outputSchema;
+    this.jdbcInfo = jdbcInfo;
+    baseSQL = "SELECT * FROM " + relationKey.toString(jdbcInfo.getDbms());
   }
 
   @Override

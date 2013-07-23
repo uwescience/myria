@@ -29,7 +29,7 @@ public class VerticaJdbcAccessMethodTest {
   private final static int NUM_TUPLES = 2 * TupleBatch.BATCH_SIZE + 1;
 
   /* Connection information */
-  private final String host = "dbserver01.cs.washington.edu";
+  private final String host = "dbserver05.cs.washington.edu";
   private final int port = 15433;
   private final String user = "dbadmin";
   private final String password = "mrbenchmarks";
@@ -41,13 +41,14 @@ public class VerticaJdbcAccessMethodTest {
   @Before
   public void createTupleBatchBuffers() {
     if (schema == null) {
-      schema = Schema.of(ImmutableList.of(Type.INT_TYPE), ImmutableList.of("value"));
+      schema = Schema.of(ImmutableList.of(Type.INT_TYPE, Type.STRING_TYPE), ImmutableList.of("value", "name"));
       relationKey = RelationKey.of("test", "test", "big");
     }
     if (buffer == null || buffer.numTuples() < NUM_TUPLES) {
       buffer = new TupleBatchBuffer(schema);
       for (int i = 0; i < NUM_TUPLES; ++i) {
         buffer.put(0, i);
+        buffer.put(1, String.valueOf(i) + " test");
       }
     }
   }

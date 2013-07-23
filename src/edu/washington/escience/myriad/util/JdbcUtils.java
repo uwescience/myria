@@ -4,6 +4,7 @@ import java.util.Objects;
 
 import org.apache.commons.lang3.StringUtils;
 
+import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.Type;
@@ -107,9 +108,13 @@ public final class JdbcUtils {
       case INT_TYPE:
         return "INTEGER";
       case LONG_TYPE:
-        return "INTEGER";
+        return "BIGINT";
       case STRING_TYPE:
-        return "TEXT";
+        if (dbms.equalsIgnoreCase(MyriaConstants.STORAGE_SYSTEM_VERTICA)) {
+          return "VARCHAR(65000)";
+        } else {
+          return "TEXT";
+        }
       case DATETIME_TYPE:
         return "TIMESTAMP";
       default:
