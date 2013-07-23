@@ -1,7 +1,6 @@
 package edu.washington.escience.myriad.column;
 
 import java.nio.BufferOverflowException;
-import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -55,12 +54,7 @@ public final class IntColumnBuilder implements ColumnBuilder<Integer> {
     if (!message.hasIntColumn()) {
       throw new IllegalArgumentException("ColumnMessage has type INT but no IntColumn");
     }
-    ByteBuffer dataBytes = message.getIntColumn().getData().asReadOnlyByteBuffer();
-    IntBuffer newData = IntBuffer.allocate(numTuples);
-    for (int i = 0; i < numTuples; i++) {
-      newData.put(dataBytes.getInt());
-    }
-    return new IntColumnBuilder(newData).build();
+    return new IntProtoColumn(message.getIntColumn());
   }
 
   @Override
@@ -115,7 +109,7 @@ public final class IntColumnBuilder implements ColumnBuilder<Integer> {
   @Override
   public IntColumn build() {
     built = true;
-    return new IntColumn(data.array(), data.position());
+    return new IntArrayColumn(data.array(), data.position());
   }
 
   @Override
