@@ -115,7 +115,7 @@ public final class IntColumnBuilder implements ColumnBuilder<Integer> {
   @Override
   public IntColumn build() {
     built = true;
-    return new IntColumn(data.array(), data.position());
+    return new IntArrayColumn(data.array(), data.position());
   }
 
   @Override
