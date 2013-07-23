@@ -1,0 +1,160 @@
+{
+    "fragments": [
+        {
+            "operators": [
+                {
+                    "op_name": "Scan1",
+                    "op_type": "JdbcScan",
+                    "relation_key": {
+                        "program_name": "mrbenchmarks",
+                        "relation_name": "Rankings",
+                        "user_name": "slxu"
+                    },
+                    "jdbc_info":{
+                        "driver_class": "com.vertica.jdbc.Driver",
+                        "dbms": "vertica",
+                        "host": "dbserver03.cs.washington.edu",
+                        "port": "15433",
+                        "username": "dbadmin",
+                        "database": "mrbenchmarks",
+                        "password": "mrbenchmarks"
+                    }
+                },
+                {
+                    "arg_child": "Scan1",
+                    "arg_operator_id": "Collect",
+                    "op_name": "CollectProducer1",
+                    "op_type": "CollectProducer"
+                }
+            ],
+            "workers": [ 1 ]
+
+        },
+        {
+             "operators": [
+                {
+                    "op_name": "Scan2",
+                    "op_type": "JdbcScan",
+                    "relation_key": {
+                        "program_name": "mrbenchmarks",
+                        "relation_name": "Rankings",
+                        "user_name": "slxu"
+                    },
+                    "jdbc_info":{
+                        "driver_class": "com.vertica.jdbc.Driver",
+                        "dbms": "vertica",
+                        "host": "dbserver04.cs.washington.edu",
+                        "port": "15433",
+                        "username": "dbadmin",
+                        "database": "mrbenchmarks",
+                        "password": "mrbenchmarks"
+                    }
+                },
+                {
+                    "arg_child": "Scan2",
+                    "arg_operator_id": "Collect",
+                    "op_name": "CollectProducer2",
+                    "op_type": "CollectProducer"
+                }
+            ],
+            "workers": [ 2 ]
+        },
+        {
+             "operators": [
+                {
+                    "op_name": "Scan3",
+                    "op_type": "JdbcScan",
+                    "relation_key": {
+                        "program_name": "mrbenchmarks",
+                        "relation_name": "Rankings",
+                        "user_name": "slxu"
+                    },
+                    "jdbc_info":{
+                        "driver_class": "com.vertica.jdbc.Driver",
+                        "dbms": "vertica",
+                        "host": "dbserver05.cs.washington.edu",
+                        "port": "15433",
+                        "username": "dbadmin",
+                        "database": "mrbenchmarks",
+                        "password": "mrbenchmarks"
+                    }
+                },
+                {
+                    "arg_child": "Scan3",
+                    "arg_operator_id": "Collect",
+                    "op_name": "CollectProducer3",
+                    "op_type": "CollectProducer"
+                }
+            ],
+            "workers": [ 3 ]
+        },
+        {
+             "operators": [
+                {
+                    "op_name": "Scan4",
+                    "op_type": "JdbcScan",
+                    "relation_key": {
+                        "program_name": "mrbenchmarks",
+                        "relation_name": "Rankings",
+                        "user_name": "slxu"
+                    },
+                    "jdbc_info":{
+                        "driver_class": "com.vertica.jdbc.Driver",
+                        "dbms": "vertica",
+                        "host": "dbserver06.cs.washington.edu",
+                        "port": "15433",
+                        "username": "dbadmin",
+                        "database": "mrbenchmarks",
+                        "password": "mrbenchmarks"
+                    }
+                },
+                {
+                    "arg_child": "Scan4",
+                    "arg_operator_id": "Collect",
+                    "op_name": "CollectProducer4",
+                    "op_type": "CollectProducer"
+                }
+            ],
+            "workers": [ 4 ]
+        },
+        {
+            "operators": [
+                {
+                    "arg_operator_id": "Collect",
+                    "arg_schema": {
+                        "column_types" : ["LONG_TYPE","STRING_TYPE","LONG_TYPE"],
+                        "column_names" : ["pageRank","pageURL","avgDuration"]
+                    },
+                    "op_name": "CollectConsumer0",
+                    "op_type": "CollectConsumer"
+                },
+            
+                 {
+                    "arg_child": "CollectConsumer0",
+                    "op_name": "Insert",
+                    "op_type": "JdbcInsert",
+                    "relation_key": {
+                        "program_name": "mrbenchmarks",
+                        "relation_name": "combinedRankings",
+                        "user_name": "slxu"
+                    },
+                    "arg_overwrite_table": true,
+                    "jdbc_info":{
+                        "driver_class": "com.vertica.jdbc.Driver",
+                        "dbms": "vertica",
+                        "host": "dbserver04.cs.washington.edu",
+                        "port": "15433",
+                        "username": "dbadmin",
+                        "database": "mrbenchmarks",
+                        "password": "mrbenchmarks"
+                    }
+                }
+            ],
+            "workers": [
+                2
+            ]
+        }
+    ],
+    "logical_ra": "",
+    "raw_datalog": ""
+}

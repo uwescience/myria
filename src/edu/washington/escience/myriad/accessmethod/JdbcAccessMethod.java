@@ -106,7 +106,6 @@ public final class JdbcAccessMethod implements AccessMethod {
       final Statement statement = jdbcConnection.createStatement();
       final ResultSet resultSet = statement.executeQuery(queryString);
       final ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-
       return new JdbcTupleBatchIterator(resultSet, Schema.fromResultSetMetaData(resultSetMetaData));
     } catch (final SQLException e) {
       LOGGER.error(e.getMessage(), e);
@@ -188,7 +187,9 @@ public final class JdbcAccessMethod implements AccessMethod {
     } catch (DbException e) {
       ; /* Skip. this is okay. */
     }
+
     execute(JdbcUtils.createStatementFromSchema(schema, relationKey, dbms));
+
   }
 
   /**

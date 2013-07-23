@@ -20,6 +20,7 @@ public class DatasetEncoding extends MyriaApiEncoding {
   public Set<Integer> workers;
   public Boolean isCommaSeparated;
   public byte[] data;
+  public Boolean importFromDatabase = false;
   private static final List<String> requiredFields = ImmutableList.of("relationKey", "schema");
 
   @Override
@@ -30,16 +31,23 @@ public class DatasetEncoding extends MyriaApiEncoding {
   @Override
   protected void validateExtra() throws MyriaApiException {
     try {
-      Preconditions.checkArgument(fileName != null || data != null);
+      Preconditions.checkArgument(fileName != null || data != null || importFromDatabase);
     } catch (final Exception e) {
       throw new MyriaApiException(Status.BAD_REQUEST, getClass().getName()
           + " has required fields: relation_key, schema, file_name | data");
     }
+    
     /*
      * Note we can only do this because we know that the operator will be run on the master. So we can't do this e.g.
      * for FileScan because that might be run on a worker.
+     *  
+     * This program will first check
+     *  1. Whether JSON file contains hard encoded data (data)
+     *  2. Whether JSON file set importFromDatabase to true 
+     *  3. If not, check the availability of input file
+     *  
      */
-    if (null == data) {
+    if (null == data && !importFromDatabase) {
       try {
         FSUtils.checkFileReadable(fileName);
       } catch (Exception e) {
