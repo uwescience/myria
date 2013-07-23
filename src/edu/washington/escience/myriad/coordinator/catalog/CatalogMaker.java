@@ -296,38 +296,6 @@ public final class CatalogMaker {
     return WorkerCatalog.create(filename, overwrite);
   }
 
-  /**
-   * Converts a small number to its English spelling, and all other numbers to Strings followed by an underscore.
-   * 
-   * @param n the number.
-   * @return its English spelling if 1 <= n <= 10. All other numbers are returned as Strings followed by an underscore.
-   */
-  private static String numberToEnglish(final int n) {
-    switch (n) {
-      case 1:
-        return "one";
-      case 2:
-        return "two";
-      case 3:
-        return "three";
-      case 4:
-        return "four";
-      case 5:
-        return "five";
-      case 6:
-        return "six";
-      case 7:
-        return "seven";
-      case 8:
-        return "eight";
-      case 9:
-        return "nine";
-      default:
-        LOGGER.warn("no english for n={}", n);
-        return n + "_";
-    }
-  }
-
   /** Inaccessible. */
   private CatalogMaker() {
   }
