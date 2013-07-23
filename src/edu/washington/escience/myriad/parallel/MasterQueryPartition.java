@@ -389,6 +389,12 @@ public class MasterQueryPartition implements QueryPartition {
       });
     }
 
+    for (final Consumer c : consumerSet) {
+      c.setOwnerTask(rootTask);
+    }
+    if (root instanceof Producer) {
+      ((Producer) root).setOwnerTask(rootTask);
+    }
   }
 
   @Override

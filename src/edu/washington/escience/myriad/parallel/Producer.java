@@ -57,6 +57,9 @@ public abstract class Producer extends RootOperator {
    * */
   private transient boolean nonBlockingExecution;
 
+  /** The task that this producer belongs to. */
+  protected QuerySubTreeTask ownerTask;
+
   /**
    * no worker means to the owner worker.
    * 
@@ -259,6 +262,20 @@ public abstract class Producer extends RootOperator {
    * */
   protected final TupleBatchBuffer[] getBuffers() {
     return buffers;
+  }
+
+  /**
+   * @param task the task that this operator belongs to.
+   */
+  public final void setOwnerTask(final QuerySubTreeTask task) {
+    ownerTask = task;
+  }
+
+  /**
+   * @return the task that this operator belongs to.
+   */
+  public final QuerySubTreeTask getOwnerTask() {
+    return ownerTask;
   }
 
 }

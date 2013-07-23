@@ -72,6 +72,9 @@ public class Consumer extends LeafOperator {
    * */
   private transient boolean nonBlockingExecution;
 
+  /** The task that this consumer belongs to. */
+  private QuerySubTreeTask ownerTask;
+
   /**
    * @return my exchange channels.
    * @param myWorkerID for parsing self-references.
@@ -295,6 +298,20 @@ public class Consumer extends LeafOperator {
   @Override
   public final Schema getSchema() {
     return schema;
+  }
+
+  /**
+   * @param task the task that this operator belongs to.
+   */
+  public final void setOwnerTask(final QuerySubTreeTask task) {
+    ownerTask = task;
+  }
+
+  /**
+   * @return the task that this operator belongs to.
+   */
+  public final QuerySubTreeTask getOwnerTask() {
+    return ownerTask;
   }
 
 }
