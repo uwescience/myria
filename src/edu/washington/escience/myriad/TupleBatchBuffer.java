@@ -324,7 +324,12 @@ public class TupleBatchBuffer {
   public final TupleBatch popFilled() {
     if (readyTuples.size() > 0) {
       updateLastPopedTime();
-      return new TupleBatch(schema, readyTuples.remove(0), TupleBatch.BATCH_SIZE);
+      List<Column<?>> cols = readyTuples.remove(0);
+      if (cols.size() > 0) {
+        return new TupleBatch(schema, cols, cols.get(0).size());
+      } else {
+        return TupleBatch.eoiTupleBatch(schema);
+      }
     }
     return null;
   }
@@ -379,6 +384,16 @@ public class TupleBatchBuffer {
         finishBatch();
       }
     }
+  }
+
+  /**
+   * Append the special EOI tuple batch.
+   * 
+   * @param eoi the EOI TB.
+   */
+  public final void putEOI(final TupleBatch eoi) {
+    finishBatch();
+    readyTuples.add(eoi.getDataColumns());
   }
 
   /**
