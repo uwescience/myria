@@ -119,6 +119,9 @@ public final class SQLiteAccessMethod implements AccessMethod {
     }
   }
 
+  /** How many times to try to open a database before we give up. Normal is 2-3, outside is 10 to 20. */
+  private static final int MAX_RETRY_ATTEMPTS = 1000;
+
   @Override
   public Iterator<TupleBatch> tupleBatchIteratorFromQuery(final String queryString) throws DbException {
     Objects.requireNonNull(sqliteConnection);
@@ -141,7 +144,7 @@ public final class SQLiteAccessMethod implements AccessMethod {
       } catch (final SQLiteException e) {
         conflict = true;
         count++;
-        if (count >= 1000) {
+        if (count >= MAX_RETRY_ATTEMPTS) {
           LOGGER.error(e.getMessage(), e);
           throw new DbException(e);
         }
