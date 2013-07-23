@@ -1,6 +1,7 @@
 package edu.washington.escience.myriad.parallel;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -203,6 +204,11 @@ public class MasterQueryPartition implements QueryPartition {
   private final QueryFuture queryExecutionFuture = new DefaultQueryFuture(this, false);
 
   /**
+   * Current alive worker set.
+   * */
+  private final Set<Integer> missingWorkers;
+
+  /**
    * Store the current pause future if the query is in pause, otherwise null.
    * */
   private final AtomicReference<QueryFuture> pauseFuture = new AtomicReference<QueryFuture>(null);
@@ -369,6 +375,8 @@ public class MasterQueryPartition implements QueryPartition {
     WorkerExecutionInfo masterPart = new WorkerExecutionInfo(MyriaConstants.MASTER_ID, masterPlan);
     workerExecutionInfo.put(MyriaConstants.MASTER_ID, masterPart);
 
+    missingWorkers = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
+
     rootTask = new QuerySubTreeTask(MyriaConstants.MASTER_ID, this, root, master.getQueryExecutor());
     rootTask.getExecutionFuture().addListener(taskExecutionListener);
     HashSet<Consumer> consumerSet = new HashSet<Consumer>();
@@ -533,5 +541,12 @@ public class MasterQueryPartition implements QueryPartition {
   @Override
   public String getFTMode() {
     return ftMode;
+  }
+
+  /**
+   * @return the set of workers that are currently alive.
+   */
+  public Set<Integer> getMissingWorkers() {
+    return missingWorkers;
   }
 }

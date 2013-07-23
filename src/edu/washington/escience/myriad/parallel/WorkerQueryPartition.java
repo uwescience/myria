@@ -1,8 +1,10 @@
 package edu.washington.escience.myriad.parallel;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -75,6 +77,11 @@ public class WorkerQueryPartition implements QueryPartition {
   private final ConcurrentLinkedQueue<QuerySubTreeTask> failTasks = new ConcurrentLinkedQueue<QuerySubTreeTask>();
 
   /**
+   * Current alive worker set.
+   * */
+  private final Set<Integer> missingWorkers;
+
+  /**
    * The future listener for processing the complete events of the execution of all the query's tasks.
    * */
   private final QueryFutureListener taskExecutionListener = new QueryFutureListener() {
@@ -140,6 +147,7 @@ public class WorkerQueryPartition implements QueryPartition {
     tasks = new HashSet<QuerySubTreeTask>(operators.size());
     numFinishedTasks = new AtomicInteger(0);
     this.ownerWorker = ownerWorker;
+    missingWorkers = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
     for (final RootOperator taskRootOp : operators) {
       final QuerySubTreeTask drivingTask =
           new QuerySubTreeTask(ownerWorker.getIPCConnectionPool().getMyIPCID(), this, taskRootOp, ownerWorker
@@ -301,5 +309,12 @@ public class WorkerQueryPartition implements QueryPartition {
   @Override
   public String getFTMode() {
     return ftMode;
+  }
+
+  /**
+   * @return the set of workers that are currently alive.
+   */
+  public Set<Integer> getMissingWorkers() {
+    return missingWorkers;
   }
 }

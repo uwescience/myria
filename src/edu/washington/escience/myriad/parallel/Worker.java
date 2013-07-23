@@ -81,6 +81,7 @@ public final class Worker {
           ControlMessage cm = null;
           try {
             while ((cm = controlMessageQueue.take()) != null) {
+              int workerId = cm.getWorkerId();
               switch (cm.getType()) {
                 case SHUTDOWN:
                   if (LOGGER.isInfoEnabled()) {
@@ -92,10 +93,16 @@ public final class Worker {
                   abruptShutdown = false;
                   break;
                 case REMOVE_WORKER:
-                  connectionPool.removeRemote(cm.getWorkerId()).await();
+                  connectionPool.removeRemote(workerId).await();
+                  for (Long id : activeQueries.keySet()) {
+                    WorkerQueryPartition wqp = activeQueries.get(id);
+                    if (wqp.getFTMode().equals("abandon")) {
+                      wqp.getMissingWorkers().add(workerId);
+                    }
+                  }
                   break;
                 case ADD_WORKER:
-                  connectionPool.putRemote(cm.getWorkerId(), SocketInfo.fromProtobuf(cm.getRemoteAddress()));
+                  connectionPool.putRemote(workerId, SocketInfo.fromProtobuf(cm.getRemoteAddress()));
                   break;
                 default:
                   if (LOGGER.isErrorEnabled()) {

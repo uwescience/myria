@@ -487,6 +487,9 @@ public final class Server {
             if (mqp.getWorkerAssigned().contains(workerId)) {
               mqp.workerFail(workerId, new LostHeartbeatException());
             }
+            if (mqp.getFTMode().equals("abandon")) {
+              mqp.getMissingWorkers().add(workerId);
+            }
           }
 
           /* Temporary solution: using exactly the same hostname:port. One good thing is the data is still there. */
