@@ -22,6 +22,7 @@ import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.ExchangePairID;
 import edu.washington.escience.myriad.parallel.Server;
+import edu.washington.escience.myriad.parallel.SingleQueryPlanWithArgs;
 import edu.washington.escience.myriad.util.MyriaUtils;
 
 /**
@@ -57,30 +58,25 @@ public class QueryEncoding extends MyriaApiEncoding {
     }
   }
 
-  public Map<Integer, RootOperator[]> instantiate(final Server server) throws CatalogException {
+  public Map<Integer, SingleQueryPlanWithArgs> instantiate(final Server server) throws CatalogException {
     /* First, we need to know which workers run on each plan. */
     setupWorkersForFragments(server);
     /* Next, we need to know which pipes (operators) are produced and consumed on which workers. */
     setupWorkerNetworkOperators();
-    Map<Integer, List<RootOperator>> plan = new HashMap<Integer, List<RootOperator>>();
+    Map<Integer, SingleQueryPlanWithArgs> plan = new HashMap<Integer, SingleQueryPlanWithArgs>();
     for (PlanFragmentEncoding fragment : fragments) {
       RootOperator op = instantiatePlanFragment(fragment.operators, server);
       for (Integer worker : fragment.workers) {
-        List<RootOperator> workerPlan = plan.get(worker);
+        SingleQueryPlanWithArgs workerPlan = plan.get(worker);
         if (workerPlan == null) {
-          workerPlan = new ArrayList<RootOperator>();
+          workerPlan = new SingleQueryPlanWithArgs();
+          workerPlan.setFTMode(ftMode);
           plan.put(worker, workerPlan);
         }
-        workerPlan.add(op);
+        workerPlan.addRootOp(op);
       }
     }
-    /* Stupid array conversion. */
-    Map<Integer, RootOperator[]> ret = new HashMap<Integer, RootOperator[]>();
-    for (int worker : plan.keySet()) {
-      List<RootOperator> workerPlan = plan.get(worker);
-      ret.put(worker, workerPlan.toArray(new RootOperator[workerPlan.size()]));
-    }
-    return ret;
+    return plan;
   }
 
   /**

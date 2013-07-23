@@ -1,6 +1,7 @@
 package edu.washington.escience.myriad.parallel;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -123,13 +124,14 @@ public class WorkerQueryPartition implements QueryPartition {
   private final QueryExecutionStatistics queryStatistics = new QueryExecutionStatistics();
 
   /**
-   * @param operators the operators belonging to this query partition.
+   * @param plan the plan of this query partition.
    * @param queryID the id of the query.
    * @param ownerWorker the worker on which this query partition is going to run
    * */
-  public WorkerQueryPartition(final RootOperator[] operators, final long queryID, final Worker ownerWorker) {
+  public WorkerQueryPartition(final SingleQueryPlanWithArgs plan, final long queryID, final Worker ownerWorker) {
     this.queryID = queryID;
-    tasks = new HashSet<QuerySubTreeTask>(operators.length);
+    List<RootOperator> operators = plan.getRootOps();
+    tasks = new HashSet<QuerySubTreeTask>(operators.size());
     numFinishedTasks = new AtomicInteger(0);
     this.ownerWorker = ownerWorker;
     for (final RootOperator taskRootOp : operators) {

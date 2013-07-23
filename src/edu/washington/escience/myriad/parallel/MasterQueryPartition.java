@@ -44,7 +44,7 @@ public class MasterQueryPartition implements QueryPartition {
      * @param workerID owner worker id of the partition.
      * @param workerPlan the query plan of this partition.
      * */
-    WorkerExecutionInfo(final int workerID, final RootOperator[] workerPlan) {
+    WorkerExecutionInfo(final int workerID, final SingleQueryPlanWithArgs workerPlan) {
       this.workerID = workerID;
       this.workerPlan = workerPlan;
       workerReceiveQuery = new DefaultQueryFuture(MasterQueryPartition.this, false);
@@ -124,7 +124,7 @@ public class MasterQueryPartition implements QueryPartition {
     /**
      * The query plan that's assigned to the worker.
      * */
-    private final RootOperator[] workerPlan;
+    private final SingleQueryPlanWithArgs workerPlan;
 
     /**
      * The future denoting the status of query partition dispatching to the worker event.
@@ -247,8 +247,9 @@ public class MasterQueryPartition implements QueryPartition {
   /**
    * @return worker plans.
    * */
-  final Map<Integer, RootOperator[]> getWorkerPlans() {
-    Map<Integer, RootOperator[]> result = new HashMap<Integer, RootOperator[]>(workerExecutionInfo.size());
+  final Map<Integer, SingleQueryPlanWithArgs> getWorkerPlans() {
+    Map<Integer, SingleQueryPlanWithArgs> result =
+        new HashMap<Integer, SingleQueryPlanWithArgs>(workerExecutionInfo.size());
     for (Entry<Integer, WorkerExecutionInfo> e : workerExecutionInfo.entrySet()) {
       if (e.getKey() != MyriaConstants.MASTER_ID) {
         result.put(e.getKey(), e.getValue().workerPlan);
@@ -344,22 +345,22 @@ public class MasterQueryPartition implements QueryPartition {
   }
 
   /**
-   * @param rootOp the root operator of the master query.
+   * @param masterPlan the master plan.
    * @param workerPlans the worker plans.
    * @param queryID queryID.
    * @param master the master on which the query partition is running.
    * */
-  public MasterQueryPartition(final RootOperator rootOp, final Map<Integer, RootOperator[]> workerPlans,
-      final long queryID, final Server master) {
-    root = rootOp;
+  public MasterQueryPartition(final SingleQueryPlanWithArgs masterPlan,
+      final Map<Integer, SingleQueryPlanWithArgs> workerPlans, final long queryID, final Server master) {
+    root = masterPlan.getRootOps().get(0);
     this.queryID = queryID;
     this.master = master;
     workerExecutionInfo = new ConcurrentHashMap<Integer, WorkerExecutionInfo>(workerPlans.size());
 
-    for (Entry<Integer, RootOperator[]> workerInfo : workerPlans.entrySet()) {
+    for (Entry<Integer, SingleQueryPlanWithArgs> workerInfo : workerPlans.entrySet()) {
       workerExecutionInfo.put(workerInfo.getKey(), new WorkerExecutionInfo(workerInfo.getKey(), workerInfo.getValue()));
     }
-    WorkerExecutionInfo masterPart = new WorkerExecutionInfo(MyriaConstants.MASTER_ID, new RootOperator[] { rootOp });
+    WorkerExecutionInfo masterPart = new WorkerExecutionInfo(MyriaConstants.MASTER_ID, masterPlan);
     workerExecutionInfo.put(MyriaConstants.MASTER_ID, masterPart);
 
     rootTask = new QuerySubTreeTask(MyriaConstants.MASTER_ID, this, root, master.getQueryExecutor());

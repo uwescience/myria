@@ -659,7 +659,7 @@ public final class Server {
   private QueryFuture dispatchWorkerQueryPlans(final MasterQueryPartition mqp) throws DbException {
     // directly set the master part as already received.
     mqp.queryReceivedByWorker(MyriaConstants.MASTER_ID);
-    for (final Map.Entry<Integer, RootOperator[]> e : mqp.getWorkerPlans().entrySet()) {
+    for (final Map.Entry<Integer, SingleQueryPlanWithArgs> e : mqp.getWorkerPlans().entrySet()) {
       final Integer workerID = e.getKey();
       while (!aliveWorkers.containsKey(workerID)) {
         try {
@@ -810,34 +810,20 @@ public final class Server {
   /**
    * 
    * @return true if the query plan is accepted and scheduled for execution.
-   * @param masterPlan the master part of the plan
-   * @param workerPlans the worker part of the plan, {workerID -> RootOperator[]}
+   * @param masterRoot the root operator of the master plan
+   * @param workerRoots the roots of the worker part of the plan, {workerID -> RootOperator[]}
    * @throws DbException if any error occurs.
    * @throws CatalogException catalog errors.
    * */
-  public QueryFuture submitQueryPlan(final RootOperator masterPlan, final Map<Integer, RootOperator[]> workerPlans)
+  public QueryFuture submitQueryPlan(final RootOperator masterRoot, final Map<Integer, RootOperator[]> workerRoots)
       throws DbException, CatalogException {
-    String catalogInfoPlaceHolder = "MasterPlan: " + masterPlan + "; WorkerPlan: " + workerPlans;
-    return submitQuery(catalogInfoPlaceHolder, catalogInfoPlaceHolder, masterPlan, workerPlans);
-  }
-
-  /**
-   * Submit a query for execution. The plans may be removed in the future if the query compiler and schedulers are ready
-   * such that the plan can be generated from either the rawQuery or the logicalRa.
-   * 
-   * @param rawQuery the raw user-defined query. E.g., the source Datalog program.
-   * @param logicalRa the logical relational algebra of the compiled plan.
-   * @param plans the physical parallel plan fragments for each worker and the master.
-   * @throws DbException if any error in non-catalog data processing
-   * @throws CatalogException if any error in processing catalog
-   * @return the query future from which the query status can be looked up.
-   * */
-  public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final Map<Integer, RootOperator[]> plans)
-      throws DbException, CatalogException {
-    RootOperator masterPlan = plans.get(MyriaConstants.MASTER_ID)[0];
-    Map<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>(plans);
-    workerPlans.remove(MyriaConstants.MASTER_ID);
-    return this.submitQuery(rawQuery, logicalRa, masterPlan, workerPlans);
+    String catalogInfoPlaceHolder = "MasterPlan: " + masterRoot + "; WorkerPlan: " + workerRoots;
+    Map<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
+    for (Entry<Integer, RootOperator[]> entry : workerRoots.entrySet()) {
+      workerPlans.put(entry.getKey(), new SingleQueryPlanWithArgs(entry.getValue()));
+    }
+    return submitQuery(catalogInfoPlaceHolder, catalogInfoPlaceHolder, new SingleQueryPlanWithArgs(masterRoot),
+        workerPlans);
   }
 
   /**
@@ -852,8 +838,9 @@ public final class Server {
    * @throws CatalogException if any error in processing catalog
    * @return the query future from which the query status can be looked up.
    * */
-  public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final RootOperator masterPlan,
-      final Map<Integer, RootOperator[]> workerPlans) throws DbException, CatalogException {
+  public QueryFuture submitQuery(final String rawQuery, final String logicalRa,
+      final SingleQueryPlanWithArgs masterPlan, final Map<Integer, SingleQueryPlanWithArgs> workerPlans)
+      throws DbException, CatalogException {
     workerPlans.remove(MyriaConstants.MASTER_ID);
     final long queryID = catalog.newQuery(rawQuery, logicalRa);
     final MasterQueryPartition mqp = new MasterQueryPartition(masterPlan, workerPlans, queryID, this);
@@ -949,15 +936,15 @@ public final class Server {
     /* The workers' plan */
     ShuffleConsumer gather = new ShuffleConsumer(source.getSchema(), scatterId, new int[] { MyriaConstants.MASTER_ID });
     DbInsert insert = new DbInsert(gather, relationKey, true);
-    Map<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
+    Map<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
     for (Integer workerId : workersArray) {
-      workerPlans.put(workerId, new RootOperator[] { insert });
+      workerPlans.put(workerId, new SingleQueryPlanWithArgs(insert));
     }
 
     try {
       /* Start the workers */
-      submitQuery("ingest " + relationKey.toString("sqlite"), "ingest " + relationKey.toString("sqlite"), scatter,
-          workerPlans).sync();
+      submitQuery("ingest " + relationKey.toString("sqlite"), "ingest " + relationKey.toString("sqlite"),
+          new SingleQueryPlanWithArgs(scatter), workerPlans).sync();
       /* Now that the query has finished, add the metadata about this relation to the dataset. */
       catalog.addRelationMetadata(relationKey, source.getSchema());
 
