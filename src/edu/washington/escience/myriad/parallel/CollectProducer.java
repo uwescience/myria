@@ -2,6 +2,7 @@ package edu.washington.escience.myriad.parallel;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.TupleBatch;
+import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.operator.Operator;
 
 /**
@@ -28,10 +29,9 @@ public final class CollectProducer extends Producer {
   protected void consumeTuples(final TupleBatch tb) throws DbException {
     TupleBatch dm = null;
     tb.compactInto(getBuffers()[0]);
-
     while ((dm = getBuffers()[0].popAnyUsingTimeout()) != null) {
       try {
-        writeMessage(0, dm);
+        writeMessage(0, dm, getBuffers()[0]);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         return;
@@ -44,7 +44,7 @@ public final class CollectProducer extends Producer {
     TupleBatch dm = null;
     while ((dm = getBuffers()[0].popAny()) != null) {
       try {
-        writeMessage(0, dm);
+        writeMessage(0, dm, getBuffers()[0]);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         return;
@@ -56,20 +56,15 @@ public final class CollectProducer extends Producer {
   @Override
   protected void childEOI() throws DbException {
     TupleBatch dm = null;
-    while ((dm = getBuffers()[0].popAny()) != null) {
+    TupleBatchBuffer tbb = getBuffers()[0];
+    TupleBatch.eoiTupleBatch(getSchema()).compactInto(tbb);
+    while ((dm = tbb.popAny()) != null) {
       try {
-        writeMessage(0, dm);
+        writeMessage(0, dm, getBuffers()[0]);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         return;
       }
     }
-    try {
-      writeMessage(0, TupleBatch.eoiTupleBatch(getSchema()));
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      return;
-    }
   }
-
 }

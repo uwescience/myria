@@ -216,6 +216,28 @@ public abstract class Producer extends RootOperator {
 
   /**
    * @param chIdx the channel to write
+   * @param msg the message.
+   * @param tbb the tuple batch buffer, may need to write the msg back if necessary.
+   * @throws InterruptedException if interrupted
+   * @return write future
+   * */
+  protected final ChannelFuture writeMessage(final int chIdx, final TupleBatch msg, final TupleBatchBuffer tbb)
+      throws InterruptedException {
+    ChannelFuture ret = null;
+    try {
+      ret = writeMessage(chIdx, msg);
+    } catch (IllegalStateException e) {
+      if (ownerTask.getOwnerQuery().getFTMode().equals("abandon")) {
+        // abandon, do nothing
+      } else {
+        throw e;
+      }
+    }
+    return ret;
+  }
+
+  /**
+   * @param chIdx the channel to write
    * @return channel release future.
    * */
   protected final ChannelFuture channelEnds(final int chIdx) {
