@@ -1,6 +1,8 @@
 package edu.washington.escience.myriad.parallel;
 
 import java.util.BitSet;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -195,14 +197,27 @@ public class Consumer extends LeafOperator {
   @Override
   public final void checkEOSAndEOI() {
 
-    if (workerEOS.nextClearBit(0) >= sourceWorkers.size()) {
+    int numExpecting = sourceWorkers.size();
+
+    if (ownerTask.getOwnerQuery().getFTMode().equals("abandon")) {
+      Set<Integer> expectingWorkers = new HashSet<Integer>();
+      expectingWorkers.addAll(sourceWorkers);
+      if (ownerTask.getOwnerQuery() instanceof WorkerQueryPartition) {
+        expectingWorkers.removeAll(((WorkerQueryPartition) ownerTask.getOwnerQuery()).getMissingWorkers());
+      } else {
+        expectingWorkers.removeAll(((MasterQueryPartition) ownerTask.getOwnerQuery()).getMissingWorkers());
+      }
+      numExpecting = expectingWorkers.size();
+    }
+
+    if (workerEOS.cardinality() >= numExpecting) {
       setEOS();
       return;
     }
     BitSet tmp = (BitSet) workerEOI.clone();
     tmp.or(workerEOS);
     // EOS could be used as an EOI
-    if (tmp.nextClearBit(0) >= sourceWorkers.size()) {
+    if (tmp.cardinality() >= numExpecting) {
       setEOI(true);
       workerEOI.clear();
     }
@@ -303,7 +318,7 @@ public class Consumer extends LeafOperator {
   /**
    * @param task the task that this operator belongs to.
    */
-  public final void setOwnerTask(final QuerySubTreeTask task) {
+  public final void setOwnerTask(QuerySubTreeTask task) {
     ownerTask = task;
   }
 
