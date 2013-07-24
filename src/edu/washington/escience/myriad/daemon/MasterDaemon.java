@@ -27,7 +27,10 @@ public final class MasterDaemon {
    * @throws Exception if the Restlet server can't start.
    */
   public static void main(final String[] args) throws Exception {
-    final MasterDaemon md = new MasterDaemon(args);
+    processArguments(args);
+    String catalogDirPath = args[0];
+    int apiPort = Integer.parseInt(args[1]);
+    final MasterDaemon md = new MasterDaemon(catalogDirPath, apiPort);
     md.start();
   }
 
@@ -39,13 +42,13 @@ public final class MasterDaemon {
   /**
    * Instantiates a MasterDaemon object. Includes the API server and the Myriad server.
    * 
-   * @param args the command-line arguments. Right now, args[0] must be the Catalog file.
+   * @param catalogDirPath the dir where the Catalog file resides.
+   * @param apiPort api server port.
    * @throws Exception if there are issues loading the Catalog or instantiating the servers.
    */
-  public MasterDaemon(final String[] args) throws Exception {
-    processArguments(args);
-    server = new Server(FilenameUtils.concat(args[0], "master.catalog"));
-    apiServer = new MasterApiServer(server, this, Integer.parseInt(args[1]));
+  public MasterDaemon(final String catalogDirPath, final int apiPort) throws Exception {
+    server = new Server(FilenameUtils.concat(catalogDirPath, "master.catalog"));
+    apiServer = new MasterApiServer(server, this, apiPort);
   }
 
   /**
@@ -53,7 +56,7 @@ public final class MasterDaemon {
    * @throws CatalogException if the Catalog cannot be opened.
    * @throws FileNotFoundException if the catalogFile does not exist.
    */
-  private void processArguments(final String[] args) throws FileNotFoundException, CatalogException {
+  private static void processArguments(final String[] args) throws FileNotFoundException, CatalogException {
     /* Check length. */
     if (args.length != 2) {
       throw new IllegalArgumentException(USAGE_STRING);
@@ -93,6 +96,13 @@ public final class MasterDaemon {
   public void stop() throws Exception {
     apiServer.stop();
     server.shutdown();
+  }
+
+  /**
+   * @return the cluster master
+   * */
+  public Server getClusterMaster() {
+    return server;
   }
 
 }

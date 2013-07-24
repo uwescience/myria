@@ -103,7 +103,7 @@ public final class DeploymentUtils {
       }
     } else if (action.equals("-start_master")) {
       String workingDir = config.get("deployment").get("path");
-      String restPort = config.get("deployment").get("rest_port");
+      int restPort = Integer.parseInt(config.get("deployment").get("rest_port"));
       String maxHeapSize = config.get("deployment").get("max_heap_size");
       if (maxHeapSize == null) {
         maxHeapSize = "";
@@ -175,7 +175,7 @@ public final class DeploymentUtils {
    * @param restPort the port number for restlet.
    */
   public static void startMaster(final String address, final String workingDir, final String description,
-      final String maxHeapSize, final String restPort) {
+      final String maxHeapSize, final int restPort) {
     StringBuilder builder = new StringBuilder();
     builder.append("ssh " + address);
     builder.append(" cd " + workingDir + "/" + description + "-files;");
@@ -192,24 +192,43 @@ public final class DeploymentUtils {
     builder.append(" &");
     System.out.println(address);
     startAProcess(builder.toString());
-
     String hostname = address;
     if (hostname.indexOf('@') != -1) {
       hostname = address.substring(hostname.indexOf('@') + 1);
     }
+    ensureMasterStart(hostname, restPort);
+
+  }
+
+  /**
+   * Ensure that the master is alive. Wait for some time if necessary.
+   * 
+   * @param hostname the hostname of the master
+   * @param restPort the port number of the rest api master
+   * */
+  public static void ensureMasterStart(final String hostname, final int restPort) {
+
     URL masterAliveUrl;
     try {
       masterAliveUrl = new URL("http://" + hostname + ":" + restPort + "/workers/alive");
     } catch (MalformedURLException e) {
       throw new RuntimeException(e);
     }
+
     long start = System.currentTimeMillis();
     while (true) {
       try {
         HttpURLConnection request = (HttpURLConnection) masterAliveUrl.openConnection();
-        if (request.getResponseCode() == HttpURLConnection.HTTP_OK) {
-          break;
+        try {
+          if (request.getResponseCode() == HttpURLConnection.HTTP_OK) {
+            break;
+          }
+        } finally {
+          if (request != null) {
+            request.disconnect();
+          }
         }
+
       } catch (IOException e) {
         // e.printStackTrace();
       }
@@ -221,7 +240,7 @@ public final class DeploymentUtils {
       }
       int elapse = (int) TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - start);
       if (elapse > MyriaConstants.MASTER_START_UP_TIMEOUT_IN_SECOND) {
-        throw new RuntimeException("After " + elapse + "s master " + address + " is not alive");
+        throw new RuntimeException("After " + elapse + "s master " + hostname + ":" + restPort + " is not alive");
       }
     }
   }
