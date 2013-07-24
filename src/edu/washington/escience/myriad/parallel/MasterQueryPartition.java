@@ -75,7 +75,11 @@ public class MasterQueryPartition implements QueryPartition {
               failedQueryPartitions.put(workerID, future.getCause());
 
               // if any worker fails because of some exception, kill the query.
-              kill();
+              if (ftMode.equals("none")) {
+                kill();
+              } else if (ftMode.equals("abandon")) {
+                // do nothing
+              }
             }
           }
           if (current >= total) {
