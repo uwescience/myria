@@ -202,11 +202,7 @@ public class Consumer extends LeafOperator {
     if (ownerTask.getOwnerQuery().getFTMode().equals("abandon")) {
       Set<Integer> expectingWorkers = new HashSet<Integer>();
       expectingWorkers.addAll(sourceWorkers);
-      if (ownerTask.getOwnerQuery() instanceof WorkerQueryPartition) {
-        expectingWorkers.removeAll(((WorkerQueryPartition) ownerTask.getOwnerQuery()).getMissingWorkers());
-      } else {
-        expectingWorkers.removeAll(((MasterQueryPartition) ownerTask.getOwnerQuery()).getMissingWorkers());
-      }
+      expectingWorkers.removeAll(ownerTask.getOwnerQuery().getMissingWorkers());
       numExpecting = expectingWorkers.size();
     }
 

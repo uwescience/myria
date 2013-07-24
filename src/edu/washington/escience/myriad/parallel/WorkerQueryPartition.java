@@ -311,9 +311,7 @@ public class WorkerQueryPartition implements QueryPartition {
     return ftMode;
   }
 
-  /**
-   * @return the set of workers that are currently alive.
-   */
+  @Override
   public Set<Integer> getMissingWorkers() {
     return missingWorkers;
   }
