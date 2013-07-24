@@ -96,6 +96,7 @@ public final class Server {
                   LOGGER.debug("getting heartbeat from worker " + senderID);
                 }
                 updateHeartbeat(senderID);
+                // TODO: tell rejoin queries to update worker list
                 break;
               default:
                 if (LOGGER.isErrorEnabled()) {
@@ -492,19 +493,9 @@ public final class Server {
             }
           }
 
-          /* Temporary solution: using exactly the same hostname:port. One good thing is the data is still there. */
-          /* Temporary solution: using exactly the same worker id. */
-          String newAddress = workers.get(workerId).getHost();
-          int newPort = workers.get(workerId).getPort();
-          int newWorkerId = workerId;
-
-          /* a new worker will be launched, put its information in scheduledWorkers. */
-          scheduledWorkers.put(newWorkerId, new SocketInfo(newAddress, newPort));
-          scheduledWorkersTime.put(newWorkerId, currentTime);
           try {
             /* remove the failed worker from the connectionPool. */
             connectionPool.removeRemote(workerId).await();
-            connectionPool.putRemote(newWorkerId, new SocketInfo(newAddress, newPort));
           } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return;
@@ -514,10 +505,21 @@ public final class Server {
             connectionPool.sendShortMessage(aliveWorkerId, IPCUtils.removeWorkerTM(workerId));
           }
 
+          /* Temporary solution: using exactly the same hostname:port. One good thing is the data is still there. */
+          /* Temporary solution: using exactly the same worker id. */
+          String newAddress = workers.get(workerId).getHost();
+          int newPort = workers.get(workerId).getPort();
+          int newWorkerId = workerId;
+
+          /* a new worker will be launched, put its information in scheduledWorkers. */
+          scheduledWorkers.put(newWorkerId, new SocketInfo(newAddress, newPort));
+          scheduledWorkersTime.put(newWorkerId, currentTime);
+
+          connectionPool.putRemote(newWorkerId, new SocketInfo(newAddress, newPort));
           /* start a thread to launch the new worker. */
           new Thread(new NewWorkerScheduler(newWorkerId, newAddress, newPort)).start();
 
-          // TODO: let SPs resend buffered data
+          // TODO: rejoin
         }
       }
       for (Integer workerId : scheduledWorkers.keySet()) {
