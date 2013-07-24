@@ -34,6 +34,7 @@ public final class Schema implements Serializable {
    * @return the output Schema.
    * @throws SQLException if JDBC throws a SQLException.
    */
+  @Deprecated
   public static Schema fromResultSetMetaData(final ResultSetMetaData rsmd) throws SQLException {
     /* How many columns in this result set? */
     final int columnCount = rsmd.getColumnCount();
@@ -88,6 +89,7 @@ public final class Schema implements Serializable {
    * @return the output Schema.
    * @throws SQLiteException if SQLite throws an exception.
    */
+  @Deprecated
   public static Schema fromSQLiteStatement(final SQLiteStatement statement) throws SQLiteException {
     assert (statement.hasStepped());
 

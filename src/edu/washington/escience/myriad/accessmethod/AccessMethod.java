@@ -6,6 +6,7 @@ package edu.washington.escience.myriad.accessmethod;
 import java.util.Iterator;
 
 import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 
 /**
@@ -46,10 +47,11 @@ public interface AccessMethod {
    * Runs a query and expose the results as an Iterator<TupleBatch>.
    * 
    * @param queryString the query
+   * @param schema the Schema of the tuples to be returned.
    * @return an Iterator<TupleBatch> containing the results.
    * @throws DbException if there is an error getting tuples.
    */
-  Iterator<TupleBatch> tupleBatchIteratorFromQuery(final String queryString) throws DbException;
+  Iterator<TupleBatch> tupleBatchIteratorFromQuery(final String queryString, final Schema schema) throws DbException;
 
   /**
    * Executes a DDL command.

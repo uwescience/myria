@@ -83,7 +83,7 @@ public class JdbcQueryScan extends LeafOperator {
 
   @Override
   protected final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    tuples = JdbcAccessMethod.tupleBatchIteratorFromQuery(jdbcInfo, baseSQL);
+    tuples = JdbcAccessMethod.tupleBatchIteratorFromQuery(jdbcInfo, baseSQL, outputSchema);
   }
 
 }
