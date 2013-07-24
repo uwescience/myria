@@ -19,7 +19,7 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.operator.JdbcInsert;
+import edu.washington.escience.myriad.operator.DbInsert;
 import edu.washington.escience.myriad.operator.QueryScan;
 import edu.washington.escience.myriad.operator.TupleSource;
 
@@ -60,7 +60,7 @@ public class VerticaJdbcAccessMethodTest {
   public void testCreateTableAndCountMultipleBatches() throws Exception {
     /* Insert the NUM_TUPLES tuples */
     TupleSource source = new TupleSource(buffer);
-    JdbcInsert insert = new JdbcInsert(source, relationKey, jdbcInfo);
+    DbInsert insert = new DbInsert(source, relationKey, jdbcInfo);
     insert.open(null);
     while (!insert.eos()) {
       insert.nextReady();

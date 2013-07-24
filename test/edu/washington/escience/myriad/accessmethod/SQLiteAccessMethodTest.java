@@ -23,8 +23,8 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
+import edu.washington.escience.myriad.operator.DbInsert;
 import edu.washington.escience.myriad.operator.QueryScan;
-import edu.washington.escience.myriad.operator.SQLiteInsert;
 import edu.washington.escience.myriad.util.FSUtils;
 import edu.washington.escience.myriad.util.SQLiteUtils;
 import edu.washington.escience.myriad.util.TestUtils;
@@ -205,7 +205,7 @@ public class SQLiteAccessMethodTest {
 
     final RelationKey outputKey = RelationKey.of("test", "testWrite", "output");
     final QueryScan scan = new QueryScan(inputKey, tableSchema);
-    final SQLiteInsert insert = new SQLiteInsert(scan, outputKey, true);
+    final DbInsert insert = new DbInsert(scan, outputKey, true);
 
     HashMap<String, Object> localEnvVars = new HashMap<String, Object>();
     localEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_SYSTEM, MyriaConstants.STORAGE_SYSTEM_SQLITE);

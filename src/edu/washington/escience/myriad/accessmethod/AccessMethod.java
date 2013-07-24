@@ -7,6 +7,7 @@ import java.util.Iterator;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.MyriaConstants;
+import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 
@@ -90,6 +91,40 @@ public abstract class AccessMethod {
    * 
    * @throws DbException if there is an error in the database.
    */
-  abstract void close() throws DbException;
+  public abstract void close() throws DbException;
 
+  /**
+   * Perform some initialization steps for the specific database system.
+   * 
+   * @throws DbException if there is an error in the database.
+   */
+  public abstract void init() throws DbException;
+
+  /**
+   * Generates the insert statement string for a relation in the database.
+   * 
+   * @param schema the relation schema
+   * @param relationKey the relation name
+   * @return the insert statement string
+   */
+  public abstract String insertStatementFromSchema(Schema schema, RelationKey relationKey);
+
+  /**
+   * Generates the create table statement string for a relation in the database.
+   * 
+   * @param schema the relation schema
+   * @param relationKey the relation name
+   * @return the create table statement string
+   */
+  public abstract String createStatementFromSchema(Schema schema, RelationKey relationKey);
+
+  /**
+   * Creates a table into the database.
+   * 
+   * @param relationKey the relation name
+   * @param schema the relation schema
+   * @param overwriteTable a flag to overwrite the table or not
+   * @throws DbException if anything goes wrong
+   */
+  public abstract void createTable(RelationKey relationKey, Schema schema, boolean overwriteTable) throws DbException;
 }
