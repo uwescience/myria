@@ -36,8 +36,6 @@ public final class SQLiteAccessMethod implements AccessMethod {
   private static final Logger LOGGER = LoggerFactory.getLogger(SQLiteAccessMethod.class);
   /** The database connection. **/
   private SQLiteConnection sqliteConnection;
-  /** The database schema. **/
-  private final Schema schema;
   /** The connection information. **/
   private SQLiteInfo sqliteInfo;
   /** Flag that identifies the connection type (read-only or not). **/
@@ -47,16 +45,13 @@ public final class SQLiteAccessMethod implements AccessMethod {
    * The constructor. Creates an object and connects with the database
    * 
    * @param sqliteInfo connection information
-   * @param schema the database schema
    * @param readOnly whether read-only connection or not
    * @throws DbException if there is an error making the connection.
    */
-  public SQLiteAccessMethod(final SQLiteInfo sqliteInfo, final Schema schema, final Boolean readOnly)
-      throws DbException {
+  public SQLiteAccessMethod(final SQLiteInfo sqliteInfo, final Boolean readOnly) throws DbException {
     Objects.requireNonNull(sqliteInfo);
 
     this.sqliteInfo = sqliteInfo;
-    this.schema = schema;
     this.readOnly = readOnly;
     connect(sqliteInfo, readOnly);
   }
@@ -123,7 +118,8 @@ public final class SQLiteAccessMethod implements AccessMethod {
   private static final int MAX_RETRY_ATTEMPTS = 1000;
 
   @Override
-  public Iterator<TupleBatch> tupleBatchIteratorFromQuery(final String queryString) throws DbException {
+  public Iterator<TupleBatch> tupleBatchIteratorFromQuery(final String queryString, final Schema schema)
+      throws DbException {
     Objects.requireNonNull(sqliteConnection);
     Objects.requireNonNull(schema);
 
@@ -200,7 +196,7 @@ public final class SQLiteAccessMethod implements AccessMethod {
 
     SQLiteAccessMethod sqliteAccessMethod = null;
     try {
-      sqliteAccessMethod = new SQLiteAccessMethod(SQLiteInfo.of(pathToSQLiteDb), null, false);
+      sqliteAccessMethod = new SQLiteAccessMethod(SQLiteInfo.of(pathToSQLiteDb), false);
       // sqliteAccessMethod.execute("BEGIN TRANSACTION");
       sqliteAccessMethod.tupleBatchInsert(insertString, tupleBatch);
       // sqliteAccessMethod.execute("COMMIT TRANSACTION");
@@ -225,8 +221,8 @@ public final class SQLiteAccessMethod implements AccessMethod {
 
     SQLiteAccessMethod sqliteAccessMethod = null;
     try {
-      sqliteAccessMethod = new SQLiteAccessMethod(SQLiteInfo.of(pathToSQLiteDb), schema, true);
-      return sqliteAccessMethod.tupleBatchIteratorFromQuery(queryString);
+      sqliteAccessMethod = new SQLiteAccessMethod(SQLiteInfo.of(pathToSQLiteDb), true);
+      return sqliteAccessMethod.tupleBatchIteratorFromQuery(queryString, schema);
     } catch (DbException e) {
       if (sqliteAccessMethod != null) {
         sqliteAccessMethod.close();

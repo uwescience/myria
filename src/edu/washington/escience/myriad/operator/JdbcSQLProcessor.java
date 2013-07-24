@@ -108,7 +108,7 @@ public class JdbcSQLProcessor extends Operator {
    * */
   protected final TupleBatch fetchNext() throws DbException {
     if (tuples == null) {
-      tuples = JdbcAccessMethod.tupleBatchIteratorFromQuery(jdbcInfo, baseSQL);
+      tuples = JdbcAccessMethod.tupleBatchIteratorFromQuery(jdbcInfo, baseSQL, schema);
     }
     if (tuples.hasNext()) {
       return tuples.next();

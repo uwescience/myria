@@ -4,7 +4,6 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -99,14 +98,14 @@ public final class JdbcAccessMethod implements AccessMethod {
   }
 
   @Override
-  public Iterator<TupleBatch> tupleBatchIteratorFromQuery(final String queryString) throws DbException {
+  public Iterator<TupleBatch> tupleBatchIteratorFromQuery(final String queryString, final Schema schema)
+      throws DbException {
     Objects.requireNonNull(jdbcConnection);
     try {
       /* Set up and execute the query */
       final Statement statement = jdbcConnection.createStatement();
       final ResultSet resultSet = statement.executeQuery(queryString);
-      final ResultSetMetaData resultSetMetaData = resultSet.getMetaData();
-      return new JdbcTupleBatchIterator(resultSet, Schema.fromResultSetMetaData(resultSetMetaData));
+      return new JdbcTupleBatchIterator(resultSet, schema);
     } catch (final SQLException e) {
       LOGGER.error(e.getMessage(), e);
       throw new DbException(e);
@@ -156,14 +155,15 @@ public final class JdbcAccessMethod implements AccessMethod {
    * Create a JDBC Connection and then expose the results as an Iterator<TupleBatch>.
    * 
    * @param jdbcInfo the JDBC connection information.
-   * @param queryString the query
+   * @param queryString the query.
+   * @param schema the schema of the returned tuples.
    * @return an Iterator<TupleBatch> containing the results.
    * @throws DbException if there is an error getting tuples.
    */
-  public static Iterator<TupleBatch> tupleBatchIteratorFromQuery(final JdbcInfo jdbcInfo, final String queryString)
-      throws DbException {
+  public static Iterator<TupleBatch> tupleBatchIteratorFromQuery(final JdbcInfo jdbcInfo, final String queryString,
+      final Schema schema) throws DbException {
     JdbcAccessMethod jdbcAccessMethod = new JdbcAccessMethod(jdbcInfo, true);
-    return jdbcAccessMethod.tupleBatchIteratorFromQuery(queryString);
+    return jdbcAccessMethod.tupleBatchIteratorFromQuery(queryString, schema);
   }
 
   /**
