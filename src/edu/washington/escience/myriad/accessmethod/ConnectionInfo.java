@@ -22,8 +22,7 @@ public abstract class ConnectionInfo {
    * Creates a connection info.
    * 
    * @param dbms the DBMS
-   * @param workingDir the working directory
-   * @param database the database name
+   * @param jsonConnInfo the connection info packed into a json string
    * @return the connection info
    */
   public static ConnectionInfo of(final String dbms, final String jsonConnInfo) {
@@ -40,6 +39,11 @@ public abstract class ConnectionInfo {
     return null;
   }
 
+  /*
+   * Returns a json string representation of the connection info.
+   * 
+   * @return the json representation
+   */
   public String toJson() {
     Gson gson = new Gson();
     return gson.toJson(this);
@@ -74,6 +78,7 @@ public abstract class ConnectionInfo {
         final String jdbcDriverName = "nl.cwi.monetdb.jdbc.MonetDriver";
         final JdbcInfo jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, myDatabaseName, user, password);
         result = gson.toJson(jdbcInfo);
+        break;
 
       case MyriaConstants.STORAGE_SYSTEM_MYSQL:
         result = "";

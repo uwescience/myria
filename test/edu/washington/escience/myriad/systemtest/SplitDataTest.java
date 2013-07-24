@@ -15,9 +15,9 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
+import edu.washington.escience.myriad.operator.DbInsert;
 import edu.washington.escience.myriad.operator.QueryScan;
 import edu.washington.escience.myriad.operator.RootOperator;
-import edu.washington.escience.myriad.operator.SQLiteInsert;
 import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.operator.TBQueueExporter;
 import edu.washington.escience.myriad.operator.TupleSource;
@@ -57,7 +57,7 @@ public class SplitDataTest extends SystemTestBase {
     final RelationKey tuplesRRKey = RelationKey.of("test", "test", "tuples_rr");
 
     /* Create the Insert operator */
-    final SQLiteInsert insert = new SQLiteInsert(gather, tuplesRRKey, true);
+    final DbInsert insert = new DbInsert(gather, tuplesRRKey, true);
 
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
     for (final int i : WORKER_ID) {

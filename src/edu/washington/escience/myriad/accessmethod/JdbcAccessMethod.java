@@ -12,6 +12,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,6 +20,7 @@ import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
+import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnBuilder;
 import edu.washington.escience.myriad.column.ColumnFactory;
@@ -34,7 +36,8 @@ public final class JdbcAccessMethod extends AccessMethod {
 
   /** The logger for this class. */
   private static final Logger LOGGER = LoggerFactory.getLogger(JdbcAccessMethod.class);
-
+  /** The database connection information. */
+  private JdbcInfo jdbcInfo;
   /** The database connection. */
   private Connection jdbcConnection;
 
@@ -47,6 +50,7 @@ public final class JdbcAccessMethod extends AccessMethod {
    */
   public JdbcAccessMethod(final JdbcInfo jdbcInfo, final Boolean readOnly) throws DbException {
     Objects.requireNonNull(jdbcInfo);
+    this.jdbcInfo = jdbcInfo;
     connect(jdbcInfo, readOnly);
   }
 
@@ -55,7 +59,7 @@ public final class JdbcAccessMethod extends AccessMethod {
     Objects.requireNonNull(connectionInfo);
 
     jdbcConnection = null;
-    JdbcInfo jdbcInfo = (JdbcInfo) connectionInfo;
+    jdbcInfo = (JdbcInfo) connectionInfo;
     try {
       DriverManager.setLoginTimeout(5);
       /* Make sure JDBC driver is loaded */
@@ -127,6 +131,10 @@ public final class JdbcAccessMethod extends AccessMethod {
   }
 
   @Override
+  public void init() throws DbException {
+  }
+
+  @Override
   public void execute(final String ddlCommand) throws DbException {
     Objects.requireNonNull(jdbcConnection);
     Statement statement;
@@ -174,22 +182,23 @@ public final class JdbcAccessMethod extends AccessMethod {
    * 
    * @param relationKey the name of the relation.
    * @param schema the schema of the relation.
-   * @param dbms the DBMS, e.g., "mysql".
    * @param dropExisting if true, an existing relation will be dropped.
    * @throws DbException if there is an error in the database.
    */
-  public void createTable(final RelationKey relationKey, final Schema schema, final String dbms,
-      final boolean dropExisting) throws DbException {
+  @Override
+  public void createTable(final RelationKey relationKey, final Schema schema, final boolean dropExisting)
+      throws DbException {
     Objects.requireNonNull(jdbcConnection);
+    Objects.requireNonNull(jdbcInfo);
     Objects.requireNonNull(relationKey);
     Objects.requireNonNull(schema);
 
     try {
-      execute("DROP TABLE " + relationKey.toString(dbms) + ";");
+      execute("DROP TABLE " + relationKey.toString(jdbcInfo.getDbms()) + ";");
     } catch (DbException e) {
       ; /* Skip. this is okay. */
     }
-    execute(JdbcUtils.createStatementFromSchema(schema, relationKey, dbms));
+    execute(createStatementFromSchema(schema, relationKey));
   }
 
   /**
@@ -217,6 +226,63 @@ public final class JdbcAccessMethod extends AccessMethod {
     }
     jdbcAccessMethod.execute(JdbcUtils.createStatementFromSchema(schema, relationKey, dbms));
     jdbcAccessMethod.close();
+  }
+
+  @Override
+  public String insertStatementFromSchema(final Schema schema, final RelationKey relationKey) {
+    Objects.requireNonNull(schema);
+    Objects.requireNonNull(relationKey);
+    final StringBuilder sb = new StringBuilder();
+    sb.append("INSERT INTO ").append(relationKey.toString(jdbcInfo.getDbms())).append(" (");
+    sb.append(StringUtils.join(schema.getColumnNames(), ','));
+    sb.append(") VALUES (");
+    for (int i = 0; i < schema.numColumns(); ++i) {
+      if (i > 0) {
+        sb.append(',');
+      }
+      sb.append('?');
+    }
+    sb.append(");");
+    return sb.toString();
+  }
+
+  @Override
+  public String createStatementFromSchema(final Schema schema, final RelationKey relationKey) {
+    final StringBuilder sb = new StringBuilder();
+    sb.append("CREATE TABLE ").append(relationKey.toString(jdbcInfo.getDbms())).append(" (");
+    for (int i = 0; i < schema.numColumns(); ++i) {
+      if (i > 0) {
+        sb.append(", ");
+      }
+      sb.append(schema.getColumnName(i)).append(" ").append(typeToDbmsType(schema.getColumnType(i)));
+    }
+    sb.append(");");
+    return sb.toString();
+  }
+
+  /**
+   * Helper utility for creating JDBC CREATE TABLE statements.
+   * 
+   * @param type a Myriad column type.
+   * @return the name of the DBMS type that matches the given Myriad type.
+   */
+  public static String typeToDbmsType(final Type type) {
+    switch (type) {
+      case BOOLEAN_TYPE:
+        return "BOOLEAN";
+      case DOUBLE_TYPE:
+        return "DOUBLE";
+      case FLOAT_TYPE:
+        return "DOUBLE";
+      case INT_TYPE:
+        return "INTEGER";
+      case LONG_TYPE:
+        return "INTEGER";
+      case STRING_TYPE:
+        return "TEXT";
+      default:
+        throw new UnsupportedOperationException("Type " + type + " is not supported");
+    }
   }
 }
 

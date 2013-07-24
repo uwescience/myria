@@ -6,15 +6,15 @@ import java.util.Map;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.RelationKey;
+import edu.washington.escience.myriad.operator.DbInsert;
 import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.operator.SQLiteInsert;
 import edu.washington.escience.myriad.parallel.Server;
 
 /**
  * A JSON-able wrapper for the expected wire message for a new dataset.
  * 
  */
-public class SQLiteInsertEncoding extends OperatorEncoding<SQLiteInsert> {
+public class DbInsertEncoding extends OperatorEncoding<DbInsert> {
   /** The name under which the dataset will be stored. */
   public RelationKey relationKey;
   /** The source of tuples to be inserted. */
@@ -29,11 +29,12 @@ public class SQLiteInsertEncoding extends OperatorEncoding<SQLiteInsert> {
   }
 
   @Override
-  public SQLiteInsert construct(Server server) {
+  public DbInsert construct(Server server) {
     if (argOverwriteTable != null) {
-      return new SQLiteInsert(null, relationKey, argOverwriteTable);
+      return new DbInsert(null, relationKey, argOverwriteTable);
     }
-    return new SQLiteInsert(null, relationKey);
+    // TODO check to do perform the same as before
+    return new DbInsert(null, relationKey, false);
   }
 
   @Override
