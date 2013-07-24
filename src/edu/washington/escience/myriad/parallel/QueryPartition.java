@@ -6,6 +6,11 @@ package edu.washington.escience.myriad.parallel;
 public interface QueryPartition extends Comparable<QueryPartition> {
 
   /**
+   * get the ftMode.
+   * */
+  String getFTMode();
+
+  /**
    * @return The query ID.
    * */
   long getQueryID();

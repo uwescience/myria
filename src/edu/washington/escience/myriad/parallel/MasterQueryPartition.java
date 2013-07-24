@@ -168,6 +168,11 @@ public class MasterQueryPartition implements QueryPartition {
   private final Server master;
 
   /**
+   * The FT mode.
+   * */
+  private final String ftMode;
+
+  /**
    * The priority.
    * */
   private volatile int priority;
@@ -355,6 +360,7 @@ public class MasterQueryPartition implements QueryPartition {
     root = masterPlan.getRootOps().get(0);
     this.queryID = queryID;
     this.master = master;
+    ftMode = masterPlan.getFTMode();
     workerExecutionInfo = new ConcurrentHashMap<Integer, WorkerExecutionInfo>(workerPlans.size());
 
     for (Entry<Integer, SingleQueryPlanWithArgs> workerInfo : workerPlans.entrySet()) {
@@ -518,4 +524,8 @@ public class MasterQueryPartition implements QueryPartition {
     return killed;
   }
 
+  @Override
+  public String getFTMode() {
+    return ftMode;
+  }
 }

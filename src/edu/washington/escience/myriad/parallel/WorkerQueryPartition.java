@@ -50,6 +50,11 @@ public class WorkerQueryPartition implements QueryPartition {
   private final Worker ownerWorker;
 
   /**
+   * The ftMode.
+   * */
+  private final String ftMode;
+
+  /**
    * priority, currently no use.
    * */
   private volatile int priority;
@@ -130,6 +135,7 @@ public class WorkerQueryPartition implements QueryPartition {
    * */
   public WorkerQueryPartition(final SingleQueryPlanWithArgs plan, final long queryID, final Worker ownerWorker) {
     this.queryID = queryID;
+    ftMode = plan.getFTMode();
     List<RootOperator> operators = plan.getRootOps();
     tasks = new HashSet<QuerySubTreeTask>(operators.size());
     numFinishedTasks = new AtomicInteger(0);
@@ -286,4 +292,8 @@ public class WorkerQueryPartition implements QueryPartition {
     return queryStatistics;
   }
 
+  @Override
+  public String getFTMode() {
+    return ftMode;
+  }
 }
