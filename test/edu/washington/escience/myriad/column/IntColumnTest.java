@@ -16,7 +16,18 @@ public class IntColumnTest {
     final IntColumnBuilder original = new IntColumnBuilder();
     original.append(1).append(2).append(5).append(11);
     final ColumnMessage serialized = original.build().serializeToProto();
+    assertTrue(serialized.getType() == ColumnMessage.Type.INT);
     final IntColumn deserialized = IntColumnBuilder.buildFromProtobuf(serialized, original.size());
+    assertTrue(original.build().toString().equals(deserialized.toString()));
+  }
+
+  @Test
+  public void testIntProtoColumn() {
+    final IntColumnBuilder original = new IntColumnBuilder();
+    original.append(1).append(2).append(5).append(11).append(17);
+    final ColumnMessage serialized = original.build().serializeToProto();
+    assertTrue(serialized.getType() == ColumnMessage.Type.INT);
+    final IntProtoColumn deserialized = new IntProtoColumn(serialized.getIntColumn());
     assertTrue(original.build().toString().equals(deserialized.toString()));
   }
 
