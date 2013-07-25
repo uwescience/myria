@@ -72,10 +72,9 @@ public class MasterQueryPartition implements QueryPartition {
           if (!future.isSuccess()) {
             if (!(future.getCause() instanceof QueryKilledException)) {
               // Only record non-killed exceptions
-              failedQueryPartitions.put(workerID, future.getCause());
-
-              // if any worker fails because of some exception, kill the query.
               if (ftMode.equals("none")) {
+                failedQueryPartitions.put(workerID, future.getCause());
+                // if any worker fails because of some exception, kill the query.
                 kill();
               } else if (ftMode.equals("abandon")) {
                 // do nothing
@@ -353,8 +352,8 @@ public class MasterQueryPartition implements QueryPartition {
       return;
     }
 
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug("Received query complete (fail) message from worker: {}", workerID);
+    if (LOGGER.isInfoEnabled()) {
+      LOGGER.info("Received query complete (fail) message from worker: {}, cause: {}", workerID, cause.toString());
     }
     wei.workerCompleteQuery.setFailure(cause);
   }
