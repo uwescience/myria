@@ -490,6 +490,7 @@ public final class Server {
             }
             if (mqp.getFTMode().equals("abandon")) {
               mqp.getMissingWorkers().add(workerId);
+              mqp.triggerTasks();
             }
           }
 

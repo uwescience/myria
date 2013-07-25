@@ -85,19 +85,19 @@ public final class Worker {
               switch (cm.getType()) {
                 case SHUTDOWN:
                   if (LOGGER.isInfoEnabled()) {
-                    if (LOGGER.isInfoEnabled()) {
-                      LOGGER.info("shutdown requested");
-                    }
+                    LOGGER.info("shutdown requested");
                   }
                   toShutdown = true;
                   abruptShutdown = false;
                   break;
                 case REMOVE_WORKER:
                   connectionPool.removeRemote(workerId).await();
+                  LOGGER.info("received REMOVE_WORKER " + workerId);
                   for (Long id : activeQueries.keySet()) {
                     WorkerQueryPartition wqp = activeQueries.get(id);
                     if (wqp.getFTMode().equals("abandon")) {
                       wqp.getMissingWorkers().add(workerId);
+                      wqp.triggerTasks();
                     }
                   }
                   break;

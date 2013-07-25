@@ -315,4 +315,14 @@ public class WorkerQueryPartition implements QueryPartition {
   public Set<Integer> getMissingWorkers() {
     return missingWorkers;
   }
+
+  /**
+   * when a REMOVE_WORKER message is received, give tasks another chance to decide if they are ready to generate
+   * EOS/EOI.
+   */
+  public void triggerTasks() {
+    for (QuerySubTreeTask task : tasks) {
+      task.notifyNewInput();
+    }
+  }
 }
