@@ -230,6 +230,7 @@ public final class DeploymentUtils {
         }
 
       } catch (IOException e) {
+        // expected for the first few trials
         // e.printStackTrace();
       }
       try {
