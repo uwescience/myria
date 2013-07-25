@@ -41,6 +41,7 @@ import edu.washington.escience.myriad.accessmethod.SQLiteAccessMethod;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogMaker;
 import edu.washington.escience.myriad.coordinator.catalog.WorkerCatalog;
+import edu.washington.escience.myriad.daemon.MasterDaemon;
 import edu.washington.escience.myriad.parallel.Server;
 import edu.washington.escience.myriad.parallel.Worker;
 import edu.washington.escience.myriad.util.FSUtils;
@@ -141,8 +142,11 @@ public class SystemTestBase {
 
   public static final int DEFAULT_MASTER_PORT_ = 8001;
 
+  public static final int DEFAULT_REST_PORT = 8753;
+
   public volatile int masterPort;
   public volatile int[] workerPorts;
+  public volatile int masterDaemonPort = DEFAULT_REST_PORT;
 
   public static final int[] WORKER_ID = { 1, 2 };
 
@@ -173,8 +177,9 @@ public class SystemTestBase {
   }
 
   @After
-  public void globalCleanup() throws IOException {
-    server.shutdown();
+  public void globalCleanup() throws Exception {
+    masterDaemon.stop();
+    masterDaemon = null;
     server = null;
 
     for (final Thread t : workerStdoutReader) {
@@ -194,6 +199,7 @@ public class SystemTestBase {
     boolean finishClean = false;
     while (!finishClean) {
       finishClean = AvailablePortFinder.available(masterPort);
+      finishClean = finishClean && AvailablePortFinder.available(masterDaemonPort);
       for (final int workerPort : workerPorts) {
         finishClean = finishClean && AvailablePortFinder.available(workerPort);
       }
@@ -257,6 +263,9 @@ public class SystemTestBase {
 
     if (!AvailablePortFinder.available(masterPort)) {
       throw new RuntimeException("Unable to start master, port " + masterPort + " is taken");
+    }
+    if (!AvailablePortFinder.available(masterDaemonPort)) {
+      throw new RuntimeException("Unable to start master api server, port " + masterDaemonPort + " is taken");
     }
     for (final int port : workerPorts) {
       if (!AvailablePortFinder.available(port)) {
@@ -452,21 +461,12 @@ public class SystemTestBase {
   /** The Server being run for the system test. */
   protected volatile static Server server;
 
-  static Server startMaster() throws Exception {
-    final String catalogFileName = FilenameUtils.concat(workerTestBaseFolder, "master.catalog");
-    server = new Server(catalogFileName);
+  protected volatile static MasterDaemon masterDaemon;
+
+  void startMaster() throws Exception {
+    masterDaemon = new MasterDaemon(workerTestBaseFolder, masterDaemonPort);
+    server = masterDaemon.getClusterMaster();
     server.start();
-    // new Thread("Master main thread") {
-    // @Override
-    // public void run() {
-    // try {
-    // } catch (final Exception e) {
-    // e.printStackTrace();
-    // throw new RuntimeException(e);
-    // }
-    // }
-    // }.start();
-    return server;
   }
 
   /**

@@ -41,7 +41,7 @@ public class MasterDaemonTest {
       Set<Thread> startThreads = ThreadUtils.getCurrentThreads();
 
       /* Start the master. */
-      MasterDaemon md = new MasterDaemon(new String[] { tmpFolder.getAbsolutePath(), Integer.toString(REST_PORT) });
+      MasterDaemon md = new MasterDaemon(tmpFolder.getAbsolutePath(), REST_PORT);
       md.start();
 
       /* Stop the master. */
@@ -77,7 +77,7 @@ public class MasterDaemonTest {
       Set<Thread> startThreads = ThreadUtils.getCurrentThreads();
 
       /* Start the master. */
-      MasterDaemon md = new MasterDaemon(new String[] { tmpFolder.getAbsolutePath(), Integer.toString(REST_PORT) });
+      MasterDaemon md = new MasterDaemon(tmpFolder.getAbsolutePath(), REST_PORT);
       md.start();
 
       /* Allocate the client that we'll use to make requests. */
