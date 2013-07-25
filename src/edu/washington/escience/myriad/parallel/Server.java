@@ -585,7 +585,10 @@ public final class Server {
 
         final String workingDir = config.get("paths").get(workerId + "");
         final String description = catalog.getConfigurationValue(MyriaSystemConfigKeys.DESCRIPTION);
-        final String remotePath = workingDir + "/" + description + "-files/" + description;
+        String remotePath = workingDir;
+        if (description != null) {
+          remotePath += "/" + description + "-files" + "/" + description;
+        }
         DeploymentUtils.mkdir(address, remotePath);
         String localPath = temp + "/" + "worker_" + workerId;
         DeploymentUtils.rsyncFileToRemote(localPath, address, remotePath);
