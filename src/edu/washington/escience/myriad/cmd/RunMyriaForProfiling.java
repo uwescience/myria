@@ -22,7 +22,7 @@ public final class RunMyriaForProfiling {
    * @throws Exception exception.
    */
   public static void main(final String[] args) throws Exception {
-    MasterDaemon daemon = new MasterDaemon(new String[] { "leelee", "8753" });
+    MasterDaemon daemon = new MasterDaemon("leelee", 8753);
     daemon.start();
     Worker worker = new Worker("leelee/worker_1", QueryExecutionMode.NON_BLOCKING);
     worker.start();
