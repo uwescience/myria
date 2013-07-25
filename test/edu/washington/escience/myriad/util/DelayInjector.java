@@ -24,6 +24,12 @@ public class DelayInjector extends Operator {
    * */
   private final long delayInMS;
 
+  /** if delay in fetchNextReady() for only one time. */
+  private final boolean onetime;
+
+  /** if it's the first time to call fetchNextReady(). */
+  private boolean firsttime = true;
+
   /**
    * @param delay the delay
    * @param unit time unit of the delay
@@ -31,6 +37,19 @@ public class DelayInjector extends Operator {
    * */
   public DelayInjector(final long delay, final TimeUnit unit, final Operator child) {
     this.child = child;
+    onetime = false;
+    delayInMS = unit.toMillis(delay);
+  }
+
+  /**
+   * @param delay the delay
+   * @param unit time unit of the delay
+   * @param child the child.
+   * @param onetime if delay only at the first time of fetchNextReady.
+   * */
+  public DelayInjector(final long delay, final TimeUnit unit, final Operator child, final boolean onetime) {
+    this.child = child;
+    this.onetime = onetime;
     delayInMS = unit.toMillis(delay);
   }
 
@@ -56,7 +75,10 @@ public class DelayInjector extends Operator {
   protected final TupleBatch fetchNextReady() throws DbException {
     TupleBatch tb = child.nextReady();
     try {
-      Thread.sleep(delayInMS);
+      if (onetime && firsttime || !onetime) {
+        Thread.sleep(delayInMS);
+        firsttime = false;
+      }
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
     }
