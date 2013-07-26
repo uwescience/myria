@@ -169,7 +169,7 @@ public final class Server {
   private final ConcurrentHashMap<Long, MasterQueryPartition> activeQueries;
 
   /**
-   * Results of succeeded queries, currently the number of tuples received by the SonkRoot.
+   * Results of succeeded queries, currently the number of tuples received by the SinkRoot.
    * */
   private final ConcurrentHashMap<Long, Long> succeededQueryResults;
 

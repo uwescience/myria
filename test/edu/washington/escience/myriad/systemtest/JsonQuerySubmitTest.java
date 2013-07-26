@@ -62,8 +62,10 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     }
     assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
     LOGGER.info(new String(IOUtils.readFully(conn.getInputStream(), -1, true)));
-    /* make sure the ingesting is done. */
-    Thread.sleep(200);
+    /* make sure the ingestion is done. */
+    while (!server.queryCompleted(1)) {
+      Thread.sleep(100);
+    }
 
     conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingestB0);
     if (null != conn.getErrorStream()) {
@@ -71,7 +73,9 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     }
     assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
     LOGGER.info(new String(IOUtils.readFully(conn.getInputStream(), -1, true)));
-    Thread.sleep(200);
+    while (!server.queryCompleted(2)) {
+      Thread.sleep(100);
+    }
 
     conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingestC0);
     if (null != conn.getErrorStream()) {
@@ -79,7 +83,9 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     }
     assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
     LOGGER.info(new String(IOUtils.readFully(conn.getInputStream(), -1, true)));
-    Thread.sleep(200);
+    while (!server.queryCompleted(3)) {
+      Thread.sleep(100);
+    }
 
     conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingestR);
     if (null != conn.getErrorStream()) {
@@ -87,7 +93,9 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     }
     assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
     LOGGER.info(new String(IOUtils.readFully(conn.getInputStream(), -1, true)));
-    Thread.sleep(200);
+    while (!server.queryCompleted(4)) {
+      Thread.sleep(100);
+    }
 
     File queryJson = new File("./jsonQueries/multiIDB_jwang/joinChain.json");
     conn = JsonAPIUtils.submitQuery("localhost", masterDaemonPort, queryJson);
@@ -96,8 +104,7 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     }
     assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
     LOGGER.info(new String(IOUtils.readFully(conn.getInputStream(), -1, true)));
-
-    while (!server.allQueriesCompleted()) {
+    while (!server.queryCompleted(5)) {
       Thread.sleep(100);
     }
     Long result = server.getQueryResult(5);
