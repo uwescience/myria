@@ -23,7 +23,7 @@
 			{
 				"op_name" : "eoiReceiverA",
 				"op_type" : "Consumer",
-				"arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
+				"arg_schema" : {"column_types":["INT_TYPE","BOOLEAN_TYPE"],"column_names":["idbID","isDeltaEmpty"]},
 				"arg_operator_id" : "0"
 			},
 			{
@@ -98,13 +98,13 @@
 				"op_name" : "sc2a",
 				"op_type" : "ShuffleConsumer",
 				"arg_operator_id" : "2",
-				"arg_schema" : {"column_types":["LONG_TYPE"],"column_names":["follower"]}
+				"arg_schema" : {"column_types":["LONG_TYPE"],"column_names":["followee"]}
 			},
 			{
 				"op_name" : "sc3a",
 				"op_type" : "ShuffleConsumer",
 				"arg_operator_id" : "4",
-				"arg_schema" : {"column_types":["LONG_TYPE"],"column_names":["follower"]}
+				"arg_schema" : {"column_types":["LONG_TYPE"],"column_names":["followee"]}
 			},
 			{
 				"op_name" : "eosReceivera",
@@ -136,7 +136,7 @@
 				"op_name" : "send2joina",
 				"op_type" : "LocalMultiwayConsumer",
 				"arg_operator_id" : "5",
-				"arg_schema" : {"column_types":["LONG_TYPE"],"column_names":["follower"]}
+				"arg_schema" : {"column_types":["LONG_TYPE"],"column_names":["followee"]}
 			},
 			{
 				"op_name" : "sc1g",
@@ -173,7 +173,7 @@
 				"op_name" : "send2server",
 				"op_type" : "LocalMultiwayConsumer",
 				"arg_operator_id" : "6",
-				"arg_schema" : {"column_types":["LONG_TYPE"],"column_names":["follower"]}
+				"arg_schema" : {"column_types":["LONG_TYPE"],"column_names":["followee"]}
 			},
 			{
 				"op_name" : "count",
