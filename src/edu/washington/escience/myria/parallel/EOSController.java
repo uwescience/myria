@@ -9,6 +9,7 @@ import org.apache.commons.lang.ArrayUtils;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.ExchangeTupleBatch;
+import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.operator.IDBInput;
@@ -93,7 +94,7 @@ public class EOSController extends Producer {
     }
 
     int numExpecting = eosZeroColValue;
-    if (getTaskResourceManager().getOwnerTask().getOwnerQuery().getFTMode().equals("abandon")) {
+    if (getTaskResourceManager().getOwnerTask().getOwnerQuery().getFTMode().equals(FTMODE.abandon)) {
       Set<Integer> missingWorkers = getTaskResourceManager().getOwnerTask().getOwnerQuery().getMissingWorkers();
       for (Integer id : missingWorkers) {
         if (workerIdToIndex.containsKey(id)) {

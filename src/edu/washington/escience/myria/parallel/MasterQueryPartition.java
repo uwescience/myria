@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
@@ -72,11 +73,11 @@ public class MasterQueryPartition implements QueryPartition {
           if (!future.isSuccess()) {
             if (!(future.getCause() instanceof QueryKilledException)) {
               // Only record non-killed exceptions
-              if (ftMode.equals("none")) {
+              if (ftMode.equals(FTMODE.none)) {
                 failedQueryPartitions.put(workerID, future.getCause());
                 // if any worker fails because of some exception, kill the query.
                 kill();
-              } else if (ftMode.equals("abandon")) {
+              } else if (ftMode.equals(FTMODE.abandon)) {
                 // do nothing
               }
             }
@@ -174,7 +175,7 @@ public class MasterQueryPartition implements QueryPartition {
   /**
    * The FT mode.
    * */
-  private final String ftMode;
+  private final FTMODE ftMode;
 
   /**
    * The priority.
@@ -533,7 +534,7 @@ public class MasterQueryPartition implements QueryPartition {
   }
 
   @Override
-  public String getFTMode() {
+  public FTMODE getFTMode() {
     return ftMode;
   }
 
@@ -542,7 +543,7 @@ public class MasterQueryPartition implements QueryPartition {
     return missingWorkers;
   }
 
-  /*
+  /**
    * when a REMOVE_WORKER message is received, give tasks another chance to decide if they are ready to generate
    * EOS/EOI.
    */

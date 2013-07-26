@@ -29,6 +29,7 @@ import com.google.common.collect.Sets;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
@@ -98,7 +99,7 @@ public final class Worker {
                   LOGGER.info("received REMOVE_WORKER " + workerId);
                   for (Long id : activeQueries.keySet()) {
                     WorkerQueryPartition wqp = activeQueries.get(id);
-                    if (wqp.getFTMode().equals("abandon")) {
+                    if (wqp.getFTMode().equals(FTMODE.abandon)) {
                       wqp.getMissingWorkers().add(workerId);
                       wqp.triggerTasks();
                     }

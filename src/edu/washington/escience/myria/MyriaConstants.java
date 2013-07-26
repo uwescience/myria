@@ -176,4 +176,9 @@ public final class MyriaConstants {
   /** Private constructor to disallow building utility class. */
   private MyriaConstants() {
   }
+
+  /** available fault-tolerance mode for each query in Myria. */
+  public static enum FTMODE {
+    none, abandon, rejoin
+  };
 }

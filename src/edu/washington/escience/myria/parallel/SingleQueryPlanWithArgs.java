@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
+import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.operator.RootOperator;
 
 /**
@@ -20,7 +21,7 @@ public class SingleQueryPlanWithArgs implements Serializable {
   private final List<RootOperator> rootOps;
 
   /** FT mode, default: none. */
-  private String ftMode = "none";
+  private FTMODE ftMode = FTMODE.valueOf("none");
 
   /** Constructor. */
   public SingleQueryPlanWithArgs() {
@@ -81,7 +82,7 @@ public class SingleQueryPlanWithArgs implements Serializable {
    * 
    * @param ftMode the mode.
    * */
-  public void setFTMode(final String ftMode) {
+  public void setFTMode(final FTMODE ftMode) {
     this.ftMode = ftMode;
   }
 
@@ -90,7 +91,7 @@ public class SingleQueryPlanWithArgs implements Serializable {
    * 
    * @return the ft mode.
    * */
-  public String getFTMode() {
+  public FTMODE getFTMode() {
     return ftMode;
   }
 }

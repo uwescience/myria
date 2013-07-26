@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableMap;
 
+import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.parallel.ipc.FlowControlBagInputBuffer;
@@ -54,7 +55,7 @@ public class WorkerQueryPartition implements QueryPartition {
   /**
    * The ftMode.
    * */
-  private final String ftMode;
+  private final FTMODE ftMode;
 
   /**
    * priority, currently no use.
@@ -300,7 +301,7 @@ public class WorkerQueryPartition implements QueryPartition {
   }
 
   @Override
-  public String getFTMode() {
+  public FTMODE getFTMode() {
     return ftMode;
   }
 

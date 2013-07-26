@@ -7,6 +7,7 @@ import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.operator.Operator;
@@ -225,7 +226,7 @@ public abstract class Producer extends RootOperator {
     try {
       ret = writeMessage(chIdx, msg);
     } catch (IllegalStateException e) {
-      if (taskResourceManager.getOwnerTask().getOwnerQuery().getFTMode().equals("abandon")) {
+      if (taskResourceManager.getOwnerTask().getOwnerQuery().getFTMode().equals(FTMODE.abandon)) {
         // abandon, do nothing
       } else {
         throw e;

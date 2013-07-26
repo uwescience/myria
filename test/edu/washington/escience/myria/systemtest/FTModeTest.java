@@ -15,6 +15,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
@@ -387,8 +388,8 @@ public class FTModeTest extends SystemTestBase {
     HashMap<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
     workerPlans.put(workerIDs[0], new SingleQueryPlanWithArgs());
     workerPlans.put(workerIDs[1], new SingleQueryPlanWithArgs());
-    workerPlans.get(workerIDs[0]).setFTMode("abandon");
-    workerPlans.get(workerIDs[1]).setFTMode("abandon");
+    workerPlans.get(workerIDs[0]).setFTMode(FTMODE.valueOf("abandon"));
+    workerPlans.get(workerIDs[1]).setFTMode(FTMODE.valueOf("abandon"));
     for (int i = 0; i < workerPlan.get(0).size(); ++i) {
       workerPlans.get(workerIDs[0]).addRootOp(workerPlan.get(0).get(i));
     }
@@ -400,7 +401,7 @@ public class FTModeTest extends SystemTestBase {
     final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
     SingleQueryPlanWithArgs serverPlan = new SingleQueryPlanWithArgs(new SinkRoot(queueStore));
-    serverPlan.setFTMode("abandon");
+    serverPlan.setFTMode(FTMODE.valueOf("abandon"));
 
     QueryFuture qf = server.submitQuery("", "", serverPlan, workerPlans);
     Thread.sleep(2000);

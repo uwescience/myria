@@ -33,6 +33,7 @@ import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
@@ -489,7 +490,7 @@ public final class Server {
             if (mqp.getWorkerAssigned().contains(workerId)) {
               mqp.workerFail(workerId, new LostHeartbeatException());
             }
-            if (mqp.getFTMode().equals("abandon")) {
+            if (mqp.getFTMode().equals(FTMODE.abandon)) {
               mqp.getMissingWorkers().add(workerId);
               mqp.triggerTasks();
             }
