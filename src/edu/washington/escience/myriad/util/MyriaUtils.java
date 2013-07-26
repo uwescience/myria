@@ -3,6 +3,7 @@ package edu.washington.escience.myriad.util;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 import com.google.common.base.Preconditions;
 
@@ -29,6 +30,23 @@ public final class MyriaUtils {
     Objects.requireNonNull(input);
     Preconditions.checkArgument(input.size() == 1, "list must contain a single element");
     return input.get(0);
+  }
+
+  /**
+   * Get the only element in single-element set.
+   * 
+   * @param input a non-null set of a single object.
+   * @param <T> the type of the objects in the set.
+   * @return the object.
+   */
+  public static <T> T getSingleElement(final Set<T> input) {
+    Objects.requireNonNull(input);
+    Preconditions.checkArgument(input.size() == 1, "list must contain a single element");
+    for (T e : input) {
+      /* return only one time with the first element */
+      return e;
+    }
+    return null;
   }
 
   /**
@@ -60,5 +78,4 @@ public final class MyriaUtils {
     }
     return ret;
   }
-
 }
