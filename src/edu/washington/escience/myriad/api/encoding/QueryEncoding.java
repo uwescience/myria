@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.api.MyriaApiException;
@@ -163,7 +164,18 @@ public class QueryEncoding extends MyriaApiEncoding {
     /* Pass 2: Populate the right fields in producers and consumers. */
     for (PlanFragmentEncoding fragment : fragments) {
       for (OperatorEncoding<?> operator : fragment.operators) {
-        if (operator instanceof ExchangeEncoding) {
+        if (operator instanceof EOSControllerEncoding) {
+          /*
+           * for EOSController, we need a set of workers, not a list. e.g. 2 IDBs, 2 workers, if we use ImmutableList,
+           * we will have 4 worker IDs in the list.
+           */
+          ExchangeEncoding<?> exchange = (ExchangeEncoding<?>) operator;
+          ImmutableSet.Builder<Integer> workers = ImmutableSet.builder();
+          for (ExchangePairID id : exchange.getRealOperatorIds()) {
+            workers.addAll(consumerMap.get(id));
+          }
+          exchange.setRealWorkerIds(workers.build().asList());
+        } else if (operator instanceof ExchangeEncoding) {
           ExchangeEncoding<?> exchange = (ExchangeEncoding<?>) operator;
           ImmutableList.Builder<Integer> workers = ImmutableList.builder();
           for (ExchangePairID id : exchange.getRealOperatorIds()) {
