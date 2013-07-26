@@ -31,6 +31,11 @@ public abstract class Operator implements Serializable {
   private static final long serialVersionUID = 1L;
 
   /**
+   * the name of the operator from json queries (or set from hand-constructed query plans).
+   * */
+  private String opName = "";
+
+  /**
    * A bit denoting whether the operator is open (initialized).
    * */
   private boolean open = false;
@@ -345,5 +350,23 @@ public abstract class Operator implements Serializable {
    * For use in leaf operators.
    * */
   protected static final Operator[] NO_CHILDREN = new Operator[] {};
+
+  /**
+   * set op name.
+   * 
+   * @param name op name
+   */
+  public void setOpName(final String name) {
+    opName = name;
+  }
+
+  /**
+   * get op name.
+   * 
+   * @return op name
+   */
+  protected String getOpName() {
+    return opName;
+  }
 
 }

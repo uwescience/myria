@@ -212,7 +212,10 @@ public class QueryEncoding extends MyriaApiEncoding {
 
     /* Instantiate all the operators. */
     for (OperatorEncoding<?> encoding : planFragment) {
-      operators.put(encoding.opName, encoding.construct(server));
+      Operator op = encoding.construct(server);
+      /* helpful for debugging. */
+      op.setOpName(encoding.opName);
+      operators.put(encoding.opName, op);
     }
     /* Connect all the operators. */
     for (OperatorEncoding<?> encoding : planFragment) {
