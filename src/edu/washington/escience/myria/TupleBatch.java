@@ -210,20 +210,18 @@ public class TupleBatch implements Serializable {
   }
 
   /**
-   * put the valid tuples into tbb.
+   * put the tuple batch into TBB by smashing it into cells and putting them one by one.
    * 
    * @param tbb the TBB buffer.
    * */
   public final void compactInto(final TupleBatchBuffer tbb) {
-    if (isEOI) {
-      tbb.putEOI(this);
-    } else {
-      final int numColumns = columns.size();
-      ImmutableIntArray indices = getValidIndices();
-      for (int i = 0; i < indices.length(); i++) {
-        for (int column = 0; column < numColumns; column++) {
-          tbb.put(column, columns.get(column).get(indices.get(i)));
-        }
+    /* EOI TB doesn't have any data, so calling compactInto() won't do the job. */
+    Preconditions.checkArgument(!isEOI());
+    final int numColumns = columns.size();
+    ImmutableIntArray indices = getValidIndices();
+    for (int i = 0; i < indices.length(); i++) {
+      for (int column = 0; column < numColumns; column++) {
+        tbb.put(column, columns.get(column).get(indices.get(i)));
       }
     }
   }

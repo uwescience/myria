@@ -82,12 +82,11 @@ public class ShuffleProducer extends Producer {
 
   @Override
   protected final void childEOI() throws DbException {
-    TupleBatch dm = null;
     TupleBatchBuffer[] buffers = getBuffers();
-    TupleBatch eoiTB = TupleBatch.eoiTupleBatch(getSchema());
     for (int i = 0; i < numChannels(); i++) {
-      eoiTB.compactInto(buffers[i]);
+      buffers[i].appendTB(TupleBatch.eoiTupleBatch(getSchema()));
     }
+    TupleBatch dm = null;
     for (int i = 0; i < numChannels(); i++) {
       while ((dm = buffers[i].popAny()) != null) {
         try {

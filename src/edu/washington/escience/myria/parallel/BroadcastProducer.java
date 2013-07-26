@@ -29,12 +29,10 @@ public class BroadcastProducer extends Producer {
 
   @Override
   protected final void consumeTuples(final TupleBatch tuples) throws DbException {
-
-    TupleBatch dm = null;
     tuples.compactInto(getBuffers()[0]);
 
+    TupleBatch dm = null;
     while ((dm = getBuffers()[0].popAnyUsingTimeout()) != null) {
-
       /* broadcast message to multiple workers */
       for (int i = 0; i < numChannels(); i++) {
         try {
@@ -76,11 +74,8 @@ public class BroadcastProducer extends Producer {
 
   @Override
   protected final void childEOI() throws DbException {
-
+    getBuffers()[0].appendTB(TupleBatch.eoiTupleBatch(getSchema()));
     TupleBatch dm = null;
-    TupleBatch eoiTB = TupleBatch.eoiTupleBatch(getSchema());
-    TupleBatch.eoiTupleBatch(getSchema()).compactInto(getBuffers()[0]);
-
     /* BroadcastProducer only uses getBuffers()[0] */
     while ((dm = getBuffers()[0].popAny()) != null) {
       for (int i = 0; i < numChannels(); i++) {

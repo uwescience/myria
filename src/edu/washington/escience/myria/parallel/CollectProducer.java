@@ -57,7 +57,7 @@ public final class CollectProducer extends Producer {
   protected void childEOI() throws DbException {
     TupleBatch dm = null;
     TupleBatchBuffer tbb = getBuffers()[0];
-    TupleBatch.eoiTupleBatch(getSchema()).compactInto(tbb);
+    tbb.appendTB(TupleBatch.eoiTupleBatch(getSchema()));
     while ((dm = tbb.popAny()) != null) {
       try {
         writeMessage(0, dm, getBuffers()[0]);
