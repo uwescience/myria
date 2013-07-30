@@ -77,7 +77,7 @@ public final class SQLiteUtils {
    * 
    * @param inputSchema the schema of the input TupleBatch
    * @param relationKey the relation to insert into
-   * @param dbFilePath the location of the SQLite DB file
+   * @param sqliteInfo the database connection information
    * @param data the data.
    * @throws DbException if there is an error in the database.
    * */

@@ -42,7 +42,7 @@ public final class SQLiteAccessMethod extends AccessMethod {
   private static final Logger LOGGER = LoggerFactory.getLogger(SQLiteAccessMethod.class);
   /** The database connection. **/
   private SQLiteConnection sqliteConnection;
-  /** The database queue, for updates */
+  /** The database queue, for database updates. */
   private SQLiteQueue sqliteQueue;
   /** The connection information. **/
   private SQLiteInfo sqliteInfo;
