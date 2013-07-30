@@ -7,15 +7,16 @@ import java.util.Set;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.operator.Operator;
+import edu.washington.escience.myria.parallel.GenericShuffleProducer;
 import edu.washington.escience.myria.parallel.Server;
-import edu.washington.escience.myria.parallel.ShuffleProducer;
+import edu.washington.escience.myria.util.ArrayUtils;
 import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
  * A JSON-able wrapper for the expected wire message for a new dataset.
  * 
  */
-public class ShuffleProducerEncoding extends AbstractProducerEncoding<ShuffleProducer> {
+public class ShuffleProducerEncoding extends AbstractProducerEncoding<GenericShuffleProducer> {
   public String argChild;
   public String argOperatorId;
   public PartitionFunctionEncoding<?> argPf;
@@ -27,10 +28,10 @@ public class ShuffleProducerEncoding extends AbstractProducerEncoding<ShufflePro
   }
 
   @Override
-  public ShuffleProducer construct(Server server) {
+  public GenericShuffleProducer construct(Server server) {
     Set<Integer> workerIds = getRealWorkerIds();
-    return new ShuffleProducer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), MyriaUtils
-        .integerCollectionToIntArray(workerIds), argPf.construct(workerIds.size()));
+    return new GenericShuffleProducer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), ArrayUtils
+        .get2DArray(MyriaUtils.integerCollectionToIntArray(workerIds)), argPf.construct(workerIds.size()));
   }
 
   @Override

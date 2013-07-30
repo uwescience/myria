@@ -1,8 +1,8 @@
 {
   "relation_key" : {
-    "user_name" : "slxu",
-    "program_name" : "mrbenchmarks",
-    "relation_name" : "Rankings"
+    "user_name" : "shumochu",
+    "program_name" : "broadcastjoin",
+    "relation_name" : "RankBase"
   },
   "schema" : {
     "column_types" : ["LONG_TYPE","STRING_TYPE","LONG_TYPE"],

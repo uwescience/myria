@@ -43,6 +43,44 @@ public final class ArrayUtils extends org.apache.commons.lang3.ArrayUtils {
   }
 
   /**
+   * Flatten a 2D arrary into a 1D arrary.
+   * 
+   * @param arr input 2D array
+   * @return the flattened 1D arrary ()
+   */
+  public static int[] arrayFlatten(final int[][] arr) {
+    int size = 0;
+    for (int[] e : arr) {
+      size += e.length;
+    }
+
+    int[] result = new int[size];
+    int i = 0;
+    for (int[] e : arr) {
+      for (int v : e) {
+        result[i] = v;
+        i++;
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * convert a 1D array into a 2D arrary.
+   * 
+   * @param arr input 1D array.
+   * @return 2D array returned.
+   * */
+  public static int[][] get2DArray(final int[] arr) {
+    int[][] result = new int[arr.length][];
+    for (int i = 0; i < arr.length; i++) {
+      result[i] = new int[] { arr[i] };
+    }
+    return result;
+  }
+
+  /**
    * @param maybeSetArray data array
    * @return An ImmutableSet of the data array if the data array is actually a set
    * @throws IllegalArgumentException if the data array is not a set.

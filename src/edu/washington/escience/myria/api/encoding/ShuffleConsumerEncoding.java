@@ -7,15 +7,15 @@ import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.operator.Operator;
+import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
 import edu.washington.escience.myria.parallel.Server;
-import edu.washington.escience.myria.parallel.ShuffleConsumer;
 import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
  * A JSON-able wrapper for the expected wire message for a new dataset.
  * 
  */
-public class ShuffleConsumerEncoding extends AbstractConsumerEncoding<ShuffleConsumer> {
+public class ShuffleConsumerEncoding extends AbstractConsumerEncoding<GenericShuffleConsumer> {
   public Schema argSchema;
   public String argOperatorId;
   private static final List<String> requiredArguments = ImmutableList.of("argSchema", "argOperatorId");
@@ -26,8 +26,8 @@ public class ShuffleConsumerEncoding extends AbstractConsumerEncoding<ShuffleCon
   }
 
   @Override
-  public ShuffleConsumer construct(Server server) {
-    return new ShuffleConsumer(argSchema, MyriaUtils.getSingleElement(getRealOperatorIds()), MyriaUtils
+  public GenericShuffleConsumer construct(Server server) {
+    return new GenericShuffleConsumer(argSchema, MyriaUtils.getSingleElement(getRealOperatorIds()), MyriaUtils
         .integerCollectionToIntArray(getRealWorkerIds()));
   }
 

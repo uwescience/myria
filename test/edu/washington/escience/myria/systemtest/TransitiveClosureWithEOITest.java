@@ -30,11 +30,11 @@ import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.Consumer;
 import edu.washington.escience.myria.parallel.EOSController;
 import edu.washington.escience.myria.parallel.ExchangePairID;
+import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
+import edu.washington.escience.myria.parallel.GenericShuffleProducer;
 import edu.washington.escience.myria.parallel.LocalMultiwayConsumer;
 import edu.washington.escience.myria.parallel.LocalMultiwayProducer;
 import edu.washington.escience.myria.parallel.PartitionFunction;
-import edu.washington.escience.myria.parallel.ShuffleConsumer;
-import edu.washington.escience.myria.parallel.ShuffleProducer;
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.util.TestUtils;
 
@@ -141,19 +141,28 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     pf1.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1);
 
     ExchangePairID joinArray1ID = ExchangePairID.newID();
-    final ShuffleProducer sp1 = new ShuffleProducer(scan1, joinArray1ID, workerIDs, pf1);
-    final ShuffleConsumer sc1 = new ShuffleConsumer(tableSchema, joinArray1ID, workerIDs);
+
+    final GenericShuffleProducer sp1 =
+        new GenericShuffleProducer(scan1, joinArray1ID, new int[][] { { workerIDs[0] }, { workerIDs[1] } }, pf1);
+    final GenericShuffleConsumer sc1 =
+        new GenericShuffleConsumer(tableSchema, joinArray1ID, new int[] { workerIDs[0], workerIDs[1] });
 
     ExchangePairID beforeIngress1 = ExchangePairID.newID();
-    final ShuffleProducer sp2 = new ShuffleProducer(scan2, beforeIngress1, workerIDs, pf0);
-    final ShuffleConsumer sc2 = new ShuffleConsumer(tableSchema, beforeIngress1, workerIDs);
+    final GenericShuffleProducer sp2 =
+        new GenericShuffleProducer(scan2, beforeIngress1, new int[][] { { workerIDs[0] }, { workerIDs[1] } }, pf0);
+    final GenericShuffleConsumer sc2 =
+        new GenericShuffleConsumer(tableSchema, beforeIngress1, new int[] { workerIDs[0], workerIDs[1] });
 
     ExchangePairID beforeIngress2 = ExchangePairID.newID();
-    final ShuffleProducer sp3_worker1 = new ShuffleProducer(null, beforeIngress2, workerIDs, pf0);
-    final ShuffleProducer sp3_worker2 = new ShuffleProducer(null, beforeIngress2, workerIDs, pf0);
+    final GenericShuffleProducer sp3_worker1 =
+        new GenericShuffleProducer(null, beforeIngress2, new int[][] { { workerIDs[0] }, { workerIDs[1] } }, pf0);
+    final GenericShuffleProducer sp3_worker2 =
+        new GenericShuffleProducer(null, beforeIngress2, new int[][] { { workerIDs[0] }, { workerIDs[1] } }, pf0);
     // set their children later
-    final ShuffleConsumer sc3_worker1 = new ShuffleConsumer(tableSchema, beforeIngress2, workerIDs);
-    final ShuffleConsumer sc3_worker2 = new ShuffleConsumer(tableSchema, beforeIngress2, workerIDs);
+    final GenericShuffleConsumer sc3_worker1 =
+        new GenericShuffleConsumer(tableSchema, beforeIngress2, new int[] { workerIDs[0], workerIDs[1] });
+    final GenericShuffleConsumer sc3_worker2 =
+        new GenericShuffleConsumer(tableSchema, beforeIngress2, new int[] { workerIDs[0], workerIDs[1] });
 
     final ExchangePairID eosReceiverOpID = ExchangePairID.newID();
     final ExchangePairID eoiReceiverOpID = ExchangePairID.newID();
@@ -279,17 +288,25 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     ExchangePairID joinArray1ID, joinArray2ID;
     joinArray1ID = ExchangePairID.newID();
     joinArray2ID = ExchangePairID.newID();
-    final ShuffleProducer sp1 = new ShuffleProducer(scan1, joinArray1ID, new int[] { workerIDs[0] }, pf1);
-    final ShuffleProducer sp2 = new ShuffleProducer(idbinput, joinArray2ID, new int[] { workerIDs[0] }, pf0);
-    final ShuffleConsumer sc1 = new ShuffleConsumer(sp1.getSchema(), joinArray1ID, new int[] { workerIDs[0] });
-    final ShuffleConsumer sc2 = new ShuffleConsumer(sp2.getSchema(), joinArray2ID, new int[] { workerIDs[0] });
+
+    final GenericShuffleProducer sp1 =
+        new GenericShuffleProducer(scan1, joinArray1ID, new int[][] { { workerIDs[0] } }, pf1);
+    final GenericShuffleProducer sp2 =
+        new GenericShuffleProducer(idbinput, joinArray2ID, new int[][] { { workerIDs[0] } }, pf0);
+    final GenericShuffleConsumer sc1 =
+        new GenericShuffleConsumer(sp1.getSchema(), joinArray1ID, new int[] { workerIDs[0] });
+    final GenericShuffleConsumer sc2 =
+        new GenericShuffleConsumer(sp2.getSchema(), joinArray2ID, new int[] { workerIDs[0] });
 
     final List<String> joinOutputColumns = ImmutableList.of("follower1", "followee1", "follower2", "followee2");
     final LocalJoin join = new LocalJoin(joinOutputColumns, sc1, sc2, new int[] { 0 }, new int[] { 1 });
     final Project proj = new Project(new int[] { 2, 1 }, join);
     ExchangePairID beforeDE = ExchangePairID.newID();
-    final ShuffleProducer sp3 = new ShuffleProducer(proj, beforeDE, new int[] { workerIDs[0] }, pf0);
-    final ShuffleConsumer sc3 = new ShuffleConsumer(sp3.getSchema(), beforeDE, new int[] { workerIDs[0] });
+
+    final GenericShuffleProducer sp3 =
+        new GenericShuffleProducer(proj, beforeDE, new int[][] { { workerIDs[0] } }, pf0);
+    final GenericShuffleConsumer sc3 =
+        new GenericShuffleConsumer(sp3.getSchema(), beforeDE, new int[] { workerIDs[0] });
     final DupElim dupelim = new DupElim(sc3);
     final LocalMultiwayProducer multiProducer =
         new LocalMultiwayProducer(dupelim, new ExchangePairID[] { consumerID1, consumerID2 });

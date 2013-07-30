@@ -25,9 +25,9 @@ import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
+import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
+import edu.washington.escience.myria.parallel.GenericShuffleProducer;
 import edu.washington.escience.myria.parallel.PartitionFunction;
-import edu.washington.escience.myria.parallel.ShuffleConsumer;
-import edu.washington.escience.myria.parallel.ShuffleProducer;
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.util.TestUtils;
 
@@ -152,31 +152,34 @@ public class IterativeSelfJoinTest extends SystemTestBase {
     pf1.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1); // partition by 2nd column
 
     ArrayList<RootOperator> subqueries = new ArrayList<RootOperator>();
-    final ShuffleProducer sp0[] = new ShuffleProducer[numIteration];
-    final ShuffleProducer sp1[] = new ShuffleProducer[numIteration];
-    final ShuffleProducer sp2[] = new ShuffleProducer[numIteration];
-    final ShuffleConsumer sc0[] = new ShuffleConsumer[numIteration];
-    final ShuffleConsumer sc1[] = new ShuffleConsumer[numIteration];
-    final ShuffleConsumer sc2[] = new ShuffleConsumer[numIteration];
+    final GenericShuffleProducer sp0[] = new GenericShuffleProducer[numIteration];
+    final GenericShuffleProducer sp1[] = new GenericShuffleProducer[numIteration];
+    final GenericShuffleProducer sp2[] = new GenericShuffleProducer[numIteration];
+    final GenericShuffleConsumer sc0[] = new GenericShuffleConsumer[numIteration];
+    final GenericShuffleConsumer sc1[] = new GenericShuffleConsumer[numIteration];
+    final GenericShuffleConsumer sc2[] = new GenericShuffleConsumer[numIteration];
     final LocalJoin localjoin[] = new LocalJoin[numIteration];
     final DupElim dupelim[] = new DupElim[numIteration];
     final DbQueryScan scan[] = new DbQueryScan[numIteration];
     ExchangePairID arrayID1, arrayID2, arrayID0;
     arrayID1 = ExchangePairID.newID();
     arrayID2 = ExchangePairID.newID();
-    sp1[0] = new ShuffleProducer(scan1, arrayID1, workerIDs, pf1);
-    sp2[0] = new ShuffleProducer(scan2, arrayID2, workerIDs, pf0);
+
+    sp1[0] = new GenericShuffleProducer(scan1, arrayID1, new int[][] { { workerIDs[0] }, { workerIDs[1] } }, pf1);
+    sp2[0] = new GenericShuffleProducer(scan2, arrayID2, new int[][] { { workerIDs[0] }, { workerIDs[1] } }, pf0);
     subqueries.add(sp1[0]);
     subqueries.add(sp2[0]);
 
     for (int i = 1; i < numIteration; ++i) {
-      sc1[i] = new ShuffleConsumer(sp1[i - 1].getSchema(), arrayID1, workerIDs);
-      sc2[i] = new ShuffleConsumer(sp2[i - 1].getSchema(), arrayID2, workerIDs);
+
+      sc1[i] = new GenericShuffleConsumer(sp1[i - 1].getSchema(), arrayID1, new int[] { workerIDs[0], workerIDs[1] });
+      sc2[i] = new GenericShuffleConsumer(sp2[i - 1].getSchema(), arrayID2, new int[] { workerIDs[0], workerIDs[1] });
       localjoin[i] = new LocalJoin(sc1[i], sc2[i], new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
       arrayID0 = ExchangePairID.newID();
-      sp0[i] = new ShuffleProducer(localjoin[i], arrayID0, workerIDs, pf0);
+      sp0[i] =
+          new GenericShuffleProducer(localjoin[i], arrayID0, new int[][] { { workerIDs[0] }, { workerIDs[1] } }, pf0);
       subqueries.add(sp0[i]);
-      sc0[i] = new ShuffleConsumer(sp0[i].getSchema(), arrayID0, workerIDs);
+      sc0[i] = new GenericShuffleConsumer(sp0[i].getSchema(), arrayID0, new int[] { workerIDs[0], workerIDs[1] });
       dupelim[i] = new DupElim(sc0[i]);
       if (i == numIteration - 1) {
         break;
@@ -184,8 +187,10 @@ public class IterativeSelfJoinTest extends SystemTestBase {
       scan[i] = new DbQueryScan(testtableKeys.get(i), tableSchema);
       arrayID1 = ExchangePairID.newID();
       arrayID2 = ExchangePairID.newID();
-      sp1[i] = new ShuffleProducer(scan[i], arrayID1, workerIDs, pf1);
-      sp2[i] = new ShuffleProducer(dupelim[i], arrayID2, workerIDs, pf0);
+
+      sp1[i] = new GenericShuffleProducer(scan[i], arrayID1, new int[][] { { workerIDs[0] }, { workerIDs[1] } }, pf1);
+      sp2[i] =
+          new GenericShuffleProducer(dupelim[i], arrayID2, new int[][] { { workerIDs[0] }, { workerIDs[1] } }, pf0);
       subqueries.add(sp1[i]);
       subqueries.add(sp2[i]);
     }

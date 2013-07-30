@@ -26,9 +26,9 @@ import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
+import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
+import edu.washington.escience.myria.parallel.GenericShuffleProducer;
 import edu.washington.escience.myria.parallel.PartitionFunction;
-import edu.washington.escience.myria.parallel.ShuffleConsumer;
-import edu.washington.escience.myria.parallel.ShuffleProducer;
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.util.TestUtils;
 
@@ -203,12 +203,15 @@ public class MultithreadScanTest extends SystemTestBase {
     ExchangePairID arrayID1, arrayID2;
     arrayID1 = ExchangePairID.newID();
     arrayID2 = ExchangePairID.newID();
-    final ShuffleProducer sp1 = new ShuffleProducer(de1, arrayID1, new int[] { workerIDs[0], workerIDs[1] }, pf0);
-    final ShuffleProducer sp2 = new ShuffleProducer(de2, arrayID2, new int[] { workerIDs[0], workerIDs[1] }, pf0);
-    final ShuffleConsumer sc1 =
-        new ShuffleConsumer(sp1.getSchema(), arrayID1, new int[] { workerIDs[0], workerIDs[1] });
-    final ShuffleConsumer sc2 =
-        new ShuffleConsumer(sp2.getSchema(), arrayID2, new int[] { workerIDs[0], workerIDs[1] });
+
+    final GenericShuffleProducer sp1 =
+        new GenericShuffleProducer(de1, arrayID1, new int[][] { { workerIDs[0] }, { workerIDs[1] } }, pf0);
+    final GenericShuffleProducer sp2 =
+        new GenericShuffleProducer(de2, arrayID2, new int[][] { { workerIDs[0] }, { workerIDs[1] } }, pf0);
+    final GenericShuffleConsumer sc1 =
+        new GenericShuffleConsumer(sp1.getSchema(), arrayID1, new int[] { workerIDs[0], workerIDs[1] });
+    final GenericShuffleConsumer sc2 =
+        new GenericShuffleConsumer(sp2.getSchema(), arrayID2, new int[] { workerIDs[0], workerIDs[1] });
     final Merge merge = new Merge(new Operator[] { sc1, sc2 });
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();

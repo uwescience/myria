@@ -7,7 +7,7 @@ import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.operator.Operator;
-import edu.washington.escience.myria.parallel.BroadcastConsumer;
+import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
 import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.util.MyriaUtils;
 
@@ -18,7 +18,7 @@ import edu.washington.escience.myria.util.MyriaUtils;
  * @author Shumo Chu <chushumo@cs.washington.edu>
  * 
  */
-public class BroadcastConsumerEncoding extends AbstractConsumerEncoding<BroadcastConsumer> {
+public class BroadcastConsumerEncoding extends AbstractConsumerEncoding<GenericShuffleConsumer> {
 
   public Schema argSchema;
   public String argOperatorId;
@@ -30,8 +30,8 @@ public class BroadcastConsumerEncoding extends AbstractConsumerEncoding<Broadcas
   }
 
   @Override
-  public BroadcastConsumer construct(Server server) {
-    return new BroadcastConsumer(argSchema, MyriaUtils.getSingleElement(getRealOperatorIds()), MyriaUtils
+  public GenericShuffleConsumer construct(Server server) {
+    return new GenericShuffleConsumer(argSchema, MyriaUtils.getSingleElement(getRealOperatorIds()), MyriaUtils
         .integerCollectionToIntArray(getRealWorkerIds()));
   }
 

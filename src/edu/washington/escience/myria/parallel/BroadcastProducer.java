@@ -10,8 +10,9 @@ import edu.washington.escience.myria.operator.Operator;
  * BroadcastProducer send multiple copies of tuples to a set of workers. Each worker will receive the same tuples.
  * 
  * @author Shumo Chu (chushumo@cs.washington.edu)
- * 
+ * @deprecated
  */
+@Deprecated
 public class BroadcastProducer extends Producer {
 
   /** Required for Java serialization. */
@@ -52,11 +53,15 @@ public class BroadcastProducer extends Producer {
     TupleBatch dm = null;
     int numChannels = super.numChannels();
 
+    System.out.println("num channels:" + numChannels());
+    System.out.println("buffer length:" + getBuffers().length);
+
     /* BroadcastProducer only uses getBuffers()[0] */
     while ((dm = getBuffers()[0].popAny()) != null) {
       for (int i = 0; i < numChannels(); i++) {
         try {
           writeMessage(i, dm);
+          System.out.println("i :" + i);
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
           return;

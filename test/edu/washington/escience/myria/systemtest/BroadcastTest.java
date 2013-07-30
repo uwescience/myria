@@ -17,11 +17,12 @@ import edu.washington.escience.myria.operator.LocalJoin;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.TBQueueExporter;
-import edu.washington.escience.myria.parallel.BroadcastConsumer;
-import edu.washington.escience.myria.parallel.BroadcastProducer;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
+import edu.washington.escience.myria.parallel.FixValuePartitionFunction;
+import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
+import edu.washington.escience.myria.parallel.GenericShuffleProducer;
 import edu.washington.escience.myria.util.TestUtils;
 
 /**
@@ -57,10 +58,13 @@ public class BroadcastTest extends SystemTestBase {
 
     /* Set producer */
     final DbQueryScan scan1 = new DbQueryScan(testtable1Key, schema);
-    final BroadcastProducer bp = new BroadcastProducer(scan1, broadcastID, workerIDs);
+    final GenericShuffleProducer bp =
+        new GenericShuffleProducer(scan1, broadcastID, new int[][] { { workerIDs[0], workerIDs[1] } },
+            new FixValuePartitionFunction(0));
 
     /* Set consumer */
-    final BroadcastConsumer bs = new BroadcastConsumer(schema, broadcastID, workerIDs);
+    final GenericShuffleConsumer bs =
+        new GenericShuffleConsumer(schema, broadcastID, new int[] { workerIDs[0], workerIDs[1] });
 
     /* Set collect producer which will send data inner-joined */
     final DbQueryScan scan2 = new DbQueryScan(testtable2Key, schema);

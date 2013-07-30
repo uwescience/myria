@@ -4,17 +4,16 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.operator.Operator;
+import edu.washington.escience.myria.util.ArrayUtils;
 
 /**
- * The producer part of the Shuffle Exchange operator.
+ * GenericShuffleProducer, which support json encoding of 1. Broadcast Shuffle 2. One to one Shuffle (Shuffle) 3. Hyper
+ * Cube Join Shuffle (HyperJoinShuffle)
  * 
- * ShuffleProducer distributes tuples to the workers according to some partition function (provided as a
- * PartitionFunction object during the ShuffleProducer's instantiation).
+ * @author Shumo Chu <chushumo@cs.washington.edu>
  * 
- * @deprecated
  */
-@Deprecated
-public class ShuffleProducer extends Producer {
+public class GenericShuffleProducer extends Producer {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -25,19 +24,25 @@ public class ShuffleProducer extends Producer {
   private final PartitionFunction<?, ?> partitionFunction;
 
   /**
+   * partition of cells.
+   */
+  private final int[][] cellPartition;
+
+  /**
    * @param child the child who provides data for this producer to distribute.
    * @param operatorID destination operators the data goes
-   * @param workerIDs destination workers the data goes.
+   * @param cellPartition buckets of destination workers the data goes.
    * @param pf the partition function
    * */
-  public ShuffleProducer(final Operator child, final ExchangePairID operatorID, final int[] workerIDs,
+  public GenericShuffleProducer(final Operator child, final ExchangePairID operatorID, final int[][] cellPartition,
       final PartitionFunction<?, ?> pf) {
-    super(child, operatorID, workerIDs);
+    super(child, operatorID, ArrayUtils.arrayFlatten(cellPartition));
     partitionFunction = pf;
+    this.cellPartition = cellPartition;
   }
 
   /**
-   * @return the partition function I'm using.
+   * @return return partition function.
    * */
   public final PartitionFunction<?, ?> getPartitionFunction() {
     return partitionFunction;
@@ -48,36 +53,44 @@ public class ShuffleProducer extends Producer {
     TupleBatchBuffer[] buffers = getBuffers();
     tup.partition(partitionFunction, buffers);
     TupleBatch dm = null;
-    for (int i = 0; i < numChannels(); i++) {
+    for (int i = 0; i < cellPartition.length; i++) {
       final TupleBatchBuffer etb = buffers[i];
       while ((dm = etb.popAnyUsingTimeout()) != null) {
-        try {
-          writeMessage(i, dm, etb);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          return;
+        for (int j : cellPartition[i]) {
+          try {
+            writeMessage(j - 1, dm);
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return;
+          }
         }
       }
     }
+
   }
 
   @Override
   protected final void childEOS() throws DbException {
     TupleBatch dm = null;
     TupleBatchBuffer[] buffers = getBuffers();
-    for (int i = 0; i < numChannels(); i++) {
+
+    for (int i = 0; i < cellPartition.length; i++) {
       while ((dm = buffers[i].popAny()) != null) {
-        try {
-          writeMessage(i, dm, buffers[i]);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          return;
+        for (int j : cellPartition[i]) {
+          try {
+            writeMessage(j - 1, dm);
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return;
+          }
         }
       }
     }
+
     for (int p = 0; p < numChannels(); p++) {
       super.channelEnds(p);
     }
+
   }
 
   @Override
@@ -85,18 +98,32 @@ public class ShuffleProducer extends Producer {
     TupleBatch dm = null;
     TupleBatchBuffer[] buffers = getBuffers();
     TupleBatch eoiTB = TupleBatch.eoiTupleBatch(getSchema());
-    for (int i = 0; i < numChannels(); i++) {
-      eoiTB.compactInto(buffers[i]);
-    }
-    for (int i = 0; i < numChannels(); i++) {
+
+    for (int i = 0; i < cellPartition.length; i++) {
       while ((dm = buffers[i].popAny()) != null) {
+        for (int j : cellPartition[i]) {
+          try {
+            writeMessage(j - 1, dm);
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return;
+          }
+
+        }
+      }
+    }
+
+    for (int[] element : cellPartition) {
+      for (int j : element) {
         try {
-          writeMessage(i, dm, buffers[i]);
+          writeMessage(j - 1, eoiTB);
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
           return;
         }
       }
     }
+
   }
+
 }

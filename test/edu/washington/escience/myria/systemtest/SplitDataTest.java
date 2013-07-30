@@ -26,9 +26,9 @@ import edu.washington.escience.myria.operator.agg.Aggregator;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
+import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
+import edu.washington.escience.myria.parallel.GenericShuffleProducer;
 import edu.washington.escience.myria.parallel.RoundRobinPartitionFunction;
-import edu.washington.escience.myria.parallel.ShuffleConsumer;
-import edu.washington.escience.myria.parallel.ShuffleProducer;
 
 public class SplitDataTest extends SystemTestBase {
 
@@ -48,11 +48,13 @@ public class SplitDataTest extends SystemTestBase {
     /*** TEST PHASE 1: Insert all the tuples. ***/
     /* Create the shuffle producer. */
     final ExchangePairID shuffleId = ExchangePairID.newID();
-    final ShuffleProducer scatter =
-        new ShuffleProducer(source, shuffleId, workerIDs, new RoundRobinPartitionFunction(workerIDs.length));
+
+    final GenericShuffleProducer scatter =
+        new GenericShuffleProducer(source, shuffleId, new int[][] { { workerIDs[0] }, { workerIDs[1] } },
+            new RoundRobinPartitionFunction(workerIDs.length));
 
     /* ... and the corresponding shuffle consumer. */
-    final ShuffleConsumer gather = new ShuffleConsumer(schema, shuffleId, new int[] { MASTER_ID });
+    final GenericShuffleConsumer gather = new GenericShuffleConsumer(schema, shuffleId, new int[] { MASTER_ID });
 
     final RelationKey tuplesRRKey = RelationKey.of("test", "test", "tuples_rr");
 

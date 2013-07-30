@@ -53,6 +53,7 @@ import edu.washington.escience.myria.proto.QueryProto.QueryMessage;
 import edu.washington.escience.myria.proto.QueryProto.QueryReport;
 import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myria.tool.MyriaConfigurationReader;
+import edu.washington.escience.myria.util.ArrayUtils;
 import edu.washington.escience.myria.util.DateTimeUtils;
 import edu.washington.escience.myria.util.DeploymentUtils;
 import edu.washington.escience.myria.util.IPCUtils;
@@ -940,11 +941,14 @@ public final class Server {
 
     /* The master plan: send the tuples out. */
     ExchangePairID scatterId = ExchangePairID.newID();
-    ShuffleProducer scatter =
-        new ShuffleProducer(source, scatterId, workersArray, new RoundRobinPartitionFunction(workersArray.length));
+    GenericShuffleProducer scatter =
+        new GenericShuffleProducer(source, scatterId, ArrayUtils.get2DArray(workersArray),
+            new RoundRobinPartitionFunction(workersArray.length));
 
     /* The workers' plan */
-    ShuffleConsumer gather = new ShuffleConsumer(source.getSchema(), scatterId, new int[] { MyriaConstants.MASTER_ID });
+
+    GenericShuffleConsumer gather =
+        new GenericShuffleConsumer(source.getSchema(), scatterId, new int[] { MyriaConstants.MASTER_ID });
     DbInsert insert = new DbInsert(gather, relationKey, true);
     Map<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
     for (Integer workerId : workersArray) {
