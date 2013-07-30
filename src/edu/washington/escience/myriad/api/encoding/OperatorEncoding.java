@@ -41,7 +41,7 @@ import edu.washington.escience.myriad.parallel.Server;
     @Type(name = "IDBInput", value = IDBInputEncoding.class),
     @Type(name = "Aggregate", value = AggregateEncoding.class), @Type(name = "Merge", value = MergeEncoding.class),
     @Type(name = "TableScan", value = TableScanEncoding.class), @Type(name = "Project", value = ProjectEncoding.class),
-    @Type(name = "Apply", value = ApplyEncoding.class), @Type(name = "QueryScan", value = QueryScanEncoding.class),
+    @Type(name = "Apply", value = ApplyEncoding.class), @Type(name = "DbQueryScan", value = QueryScanEncoding.class),
     @Type(name = "Filter", value = FilterEncoding.class),
     @Type(name = "BroadcastProducer", value = BroadcastProducerEncoding.class),
     @Type(name = "BroadcastConsumer", value = BroadcastConsumerEncoding.class) })

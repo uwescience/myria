@@ -26,7 +26,7 @@ import edu.washington.escience.myriad.operator.IDBInput;
 import edu.washington.escience.myriad.operator.LocalJoin;
 import edu.washington.escience.myriad.operator.Merge;
 import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.operator.QueryScan;
+import edu.washington.escience.myriad.operator.DbQueryScan;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.operator.TBQueueExporter;
@@ -184,7 +184,7 @@ public class IterativeFlowControlTest extends SystemTestBase {
     ShuffleConsumer sc1;
     if (isHead) {
       ExchangePairID joinArrayID = ExchangePairID.newID();
-      final QueryScan scan1 = new QueryScan(RelationKey.of("test", "test", "r"), tableSchema);
+      final DbQueryScan scan1 = new DbQueryScan(RelationKey.of("test", "test", "r"), tableSchema);
       final ShuffleProducer sp1 = new ShuffleProducer(scan1, joinArrayID, WORKER_ID, pf1);
       sc1 = new ShuffleConsumer(tableSchema, joinArrayID, WORKER_ID);
       workerPlan.get(0).add(sp1);
@@ -192,7 +192,7 @@ public class IterativeFlowControlTest extends SystemTestBase {
     } else {
       sc1 = new ShuffleConsumer(tableSchema, receivingOpID, WORKER_ID);
     }
-    final QueryScan scan2 = new QueryScan(RelationKey.of("test", "test", initName), tableSchema);
+    final DbQueryScan scan2 = new DbQueryScan(RelationKey.of("test", "test", initName), tableSchema);
     final ExchangePairID beforeIngress1 = ExchangePairID.newID();
     final ShuffleProducer sp2 = new ShuffleProducer(scan2, beforeIngress1, WORKER_ID, pf0);
     final ShuffleConsumer sc2 = new ShuffleConsumer(tableSchema, beforeIngress1, WORKER_ID);

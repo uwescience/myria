@@ -16,7 +16,7 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.operator.DbInsert;
-import edu.washington.escience.myriad.operator.QueryScan;
+import edu.washington.escience.myriad.operator.DbQueryScan;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.operator.TBQueueExporter;
@@ -67,10 +67,10 @@ public class SplitDataTest extends SystemTestBase {
     server.submitQueryPlan(scatter, workerPlans).sync();
 
     /*** TEST PHASE 2: Count them up, make sure the answer agrees. ***/
-    /* Create the worker plan: QueryScan with count, then send it to master. */
+    /* Create the worker plan: DbQueryScan with count, then send it to master. */
     Schema countResultSchema = new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("localCount"));
-    final QueryScan scanCount =
-        new QueryScan("SELECT COUNT(*) FROM " + tuplesRRKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE),
+    final DbQueryScan scanCount =
+        new DbQueryScan("SELECT COUNT(*) FROM " + tuplesRRKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE),
             countResultSchema);
 
     final ExchangePairID collectId = ExchangePairID.newID();

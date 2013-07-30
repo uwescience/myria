@@ -14,7 +14,7 @@ import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.operator.Merge;
 import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.operator.QueryScan;
+import edu.washington.escience.myriad.operator.DbQueryScan;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.operator.TBQueueExporter;
@@ -76,7 +76,7 @@ public class LocalMultiwayProducerTest extends SystemTestBase {
       insert(WORKER_ID[1], testtableKey, tableSchema, tb);
     }
 
-    final QueryScan scan1 = new QueryScan(testtableKey, tableSchema);
+    final DbQueryScan scan1 = new DbQueryScan(testtableKey, tableSchema);
     final ExchangePairID consumerID1 = ExchangePairID.newID();
     final ExchangePairID consumerID2 = ExchangePairID.newID();
     final LocalMultiwayProducer multiProducer1 =

@@ -14,7 +14,7 @@ import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.operator.DupElim;
 import edu.washington.escience.myriad.operator.LocalJoin;
 import edu.washington.escience.myriad.operator.Project;
-import edu.washington.escience.myriad.operator.QueryScan;
+import edu.washington.escience.myriad.operator.DbQueryScan;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.operator.TBQueueExporter;
@@ -52,7 +52,7 @@ public class ErdosVerbose {
     final ExchangePairID coAuthorShuffleID = ExchangePairID.newID();
     final ExchangePairID allPubsShuffleID = ExchangePairID.newID();
 
-    final QueryScan paulErdoesPubs = new QueryScan(//
+    final DbQueryScan paulErdoesPubs = new DbQueryScan(//
         "select distinct pubName.val " + //
             "from Triples pubs " + //
             "join Dictionary pe on pubs.object=pe.id " + //
@@ -69,7 +69,7 @@ public class ErdosVerbose {
         new ShuffleConsumer(paulErdoesPubsShuffleP.getSchema(), paulErdoesPubsShuffleID, allWorkers);
     // schema: (pubName string)
 
-    final QueryScan allPubs = new QueryScan(//
+    final DbQueryScan allPubs = new DbQueryScan(//
         "select pubName.val,authorName.val " + //
             "from Triples authors " + //
             "join Dictionary creator on authors.predicate=creator.id " + //
@@ -113,7 +113,7 @@ public class ErdosVerbose {
     pfOn0.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
     pfOn1.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1);
 
-    final QueryScan allPubs2 = new QueryScan(//
+    final DbQueryScan allPubs2 = new DbQueryScan(//
         "select pubName.val, authorName.val " + //
             "from Triples authors " + //
             "join Dictionary creator on authors.predicate=creator.id " + //
@@ -150,7 +150,7 @@ public class ErdosVerbose {
     final DupElim coAuthorPubsGlobalDE = new DupElim(coAuthorPubsShuffleC); // local dupelim
     // schema: (pubName string)
 
-    final QueryScan allPubsAuthorNames = new QueryScan(//
+    final DbQueryScan allPubsAuthorNames = new DbQueryScan(//
         "select pubName.val ,names.val as authorName " + //
             "from Triples authors " + //
             "join Dictionary creator on authors.predicate=creator.id " + //

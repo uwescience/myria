@@ -15,7 +15,7 @@ import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.operator.Merge;
 import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.operator.QueryScan;
+import edu.washington.escience.myriad.operator.DbQueryScan;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
@@ -65,8 +65,8 @@ public class MergeTest extends SystemTestBase {
       insert(WORKER_ID[0], testtable1Key, tableSchema, tb);
     }
 
-    final QueryScan scan1 = new QueryScan(testtable0Key, tableSchema);
-    final QueryScan scan2 = new QueryScan(testtable1Key, tableSchema);
+    final DbQueryScan scan1 = new DbQueryScan(testtable0Key, tableSchema);
+    final DbQueryScan scan2 = new DbQueryScan(testtable1Key, tableSchema);
     final Merge merge = new Merge(new Operator[] { scan1, scan2 });
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final CollectProducer cp = new CollectProducer(merge, serverReceiveID, MASTER_ID);

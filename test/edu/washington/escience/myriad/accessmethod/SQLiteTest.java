@@ -11,7 +11,6 @@ import org.junit.Test;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.RelationKey;
@@ -19,8 +18,8 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
+import edu.washington.escience.myriad.operator.DbQueryScan;
 import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.operator.QueryScan;
 import edu.washington.escience.myriad.systemtest.SystemTestBase;
 import edu.washington.escience.myriad.systemtest.SystemTestBase.Tuple;
 import edu.washington.escience.myriad.util.FSUtils;
@@ -62,12 +61,7 @@ public class SQLiteTest {
     final HashMap<Tuple, Integer> expectedResult = TestUtils.tupleBatchToTupleBag(tbb);
 
     /* Scan the testtable in database */
-    final QueryScan scan = new QueryScan(testtableKey, outputSchema);
-
-    HashMap<String, Object> localEnvVars = new HashMap<String, Object>();
-    localEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_SYSTEM, MyriaConstants.STORAGE_SYSTEM_SQLITE);
-    localEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO, SQLiteInfo.of(dbAbsolutePath));
-    final ImmutableMap<String, Object> execEnvVars = ImmutableMap.copyOf(localEnvVars);
+    final DbQueryScan scan = new DbQueryScan(SQLiteInfo.of(dbAbsolutePath), testtableKey, outputSchema);
 
     /* Filter on first column INTEGER >= 50 */
     // Filter filter1 = new Filter(Predicate.Op.GREATER_THAN_OR_EQ, 0, new Long(50), scan);
@@ -83,7 +77,7 @@ public class SQLiteTest {
 
     /* Project is the output operator */
     final Operator root = scan;
-    root.open(execEnvVars);
+    root.open(null);
 
     /* For debugging purposes, print Schema */
     final Schema schema = root.getSchema();

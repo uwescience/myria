@@ -10,7 +10,7 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.operator.LocalJoin;
-import edu.washington.escience.myriad.operator.QueryScan;
+import edu.washington.escience.myriad.operator.DbQueryScan;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.operator.TBQueueExporter;
@@ -41,13 +41,13 @@ public class Q3 implements QueryPlanGenerator {
     final ExchangePairID allSwrcPagesShuffleID = ExchangePairID.newID();
     final ExchangePairID collectCountID = ExchangePairID.newID();
 
-    final QueryScan allArticles =
-        new QueryScan(
+    final DbQueryScan allArticles =
+        new DbQueryScan(
             "select t.subject from Triples t, Dictionary dtype, Dictionary darticle where t.predicate=dtype.id and t.object=darticle.id and darticle.val='bench:Article' and dtype.val='rdf:type';",
             subjectSchema);
 
-    final QueryScan allWithSwrcPages =
-        new QueryScan(
+    final DbQueryScan allWithSwrcPages =
+        new DbQueryScan(
             "select t.subject from Triples t,Dictionary dtype where t.predicate=dtype.ID and dtype.val='swrc:pages';",
             subjectSchema);
 

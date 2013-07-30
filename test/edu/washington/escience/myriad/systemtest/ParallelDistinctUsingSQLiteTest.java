@@ -15,7 +15,7 @@ import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.operator.BlockingSQLiteDataReceiver;
 import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.operator.QueryScan;
+import edu.washington.escience.myriad.operator.DbQueryScan;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SQLiteSQLProcessor;
 import edu.washington.escience.myriad.operator.SinkRoot;
@@ -60,8 +60,8 @@ public class ParallelDistinctUsingSQLiteTest extends SystemTestBase {
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final ExchangePairID worker2ReceiveID = ExchangePairID.newID();
 
-    final QueryScan scan =
-        new QueryScan("select distinct * from " + testtableKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), schema);
+    final DbQueryScan scan =
+        new DbQueryScan("select distinct * from " + testtableKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), schema);
     final CollectProducer cp = new CollectProducer(scan, worker2ReceiveID, WORKER_ID[1]);
 
     // CollectProducer child, ParallelOperatorID operatorID, SocketInfo[] workers

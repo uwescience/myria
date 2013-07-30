@@ -5,19 +5,15 @@ package edu.washington.escience.myriad.accessmethod;
 
 import static org.junit.Assert.assertTrue;
 
-import java.util.HashMap;
-
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.DbException;
-import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.operator.QueryScan;
+import edu.washington.escience.myriad.operator.DbQueryScan;
 
 /**
  * @author dhalperi
@@ -43,15 +39,9 @@ public class MysqlJdbcAccessMethodTest {
     final ImmutableList<String> columnNames = ImmutableList.of("value");
     final Schema schema = new Schema(types, columnNames);
 
-    /* Build up the QueryScan parameters and open the scan */
-    final QueryScan scan = new QueryScan(query, schema);
-
-    HashMap<String, Object> localEnvVars = new HashMap<String, Object>();
-    localEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_SYSTEM, MyriaConstants.STORAGE_SYSTEM_MYSQL);
-    localEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO, jdbcInfo);
-    final ImmutableMap<String, Object> execEnvVars = ImmutableMap.copyOf(localEnvVars);
-
-    scan.open(execEnvVars);
+    /* Build up the DbQueryScan parameters and open the scan */
+    final DbQueryScan scan = new DbQueryScan(jdbcInfo, query, schema);
+    scan.open(null);
 
     /* Count up the results and assert they match expectations */
     int count = 0;
