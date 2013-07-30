@@ -9,7 +9,7 @@ import com.google.common.collect.ImmutableList;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.operator.QueryScan;
+import edu.washington.escience.myriad.operator.DbQueryScan;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.operator.agg.Aggregator;
@@ -41,8 +41,8 @@ public class AggregateQueryVariantSQLiteMyriaAggregate implements QueryPlanGener
   @Override
   public Map<Integer, RootOperator[]> getWorkerPlan(int[] allWorkers) throws Exception {
 
-    final QueryScan localScan =
-        new QueryScan("select substr(sourceIPAddr, 1, 7), adRevenue from UserVisits", scanSchema);
+    final DbQueryScan localScan =
+        new DbQueryScan("select substr(sourceIPAddr, 1, 7), adRevenue from UserVisits", scanSchema);
 
     final SingleGroupByAggregateNoBuffer localAgg =
         new SingleGroupByAggregateNoBuffer(localScan, new int[] { 1 }, 0, new int[] { Aggregator.AGG_OP_SUM });

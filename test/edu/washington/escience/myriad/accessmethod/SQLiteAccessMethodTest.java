@@ -4,7 +4,6 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
@@ -14,7 +13,6 @@ import org.junit.Test;
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.MyriaConstants;
@@ -24,7 +22,7 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.operator.DbInsert;
-import edu.washington.escience.myriad.operator.QueryScan;
+import edu.washington.escience.myriad.operator.DbQueryScan;
 import edu.washington.escience.myriad.util.FSUtils;
 import edu.washington.escience.myriad.util.SQLiteUtils;
 import edu.washington.escience.myriad.util.TestUtils;
@@ -204,15 +202,10 @@ public class SQLiteAccessMethodTest {
     }
 
     final RelationKey outputKey = RelationKey.of("test", "testWrite", "output");
-    final QueryScan scan = new QueryScan(inputKey, tableSchema);
-    final DbInsert insert = new DbInsert(scan, outputKey, true);
-
-    HashMap<String, Object> localEnvVars = new HashMap<String, Object>();
-    localEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_SYSTEM, MyriaConstants.STORAGE_SYSTEM_SQLITE);
-    localEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO, SQLiteInfo.of(dbFile.getAbsolutePath()));
-    final ImmutableMap<String, Object> execEnvVars = ImmutableMap.copyOf(localEnvVars);
-
-    insert.open(execEnvVars);
+    final SQLiteInfo sqliteInfo = SQLiteInfo.of(dbFile.getAbsolutePath());
+    final DbQueryScan scan = new DbQueryScan(sqliteInfo, inputKey, tableSchema);
+    final DbInsert insert = new DbInsert(scan, outputKey, sqliteInfo, true);
+    insert.open(null);
     while (!insert.eos()) {
       insert.nextReady();
     }

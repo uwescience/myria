@@ -13,7 +13,7 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.operator.QueryScan;
+import edu.washington.escience.myriad.operator.DbQueryScan;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
@@ -57,7 +57,7 @@ public class QueryKillTest extends SystemTestBase {
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
 
-    final QueryScan scanTable = new QueryScan(testtableKey, schema);
+    final DbQueryScan scanTable = new DbQueryScan(testtableKey, schema);
 
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
     final CollectProducer cp1 = new CollectProducer(scanTable, serverReceiveID, MASTER_ID);

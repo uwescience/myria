@@ -15,7 +15,7 @@ import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.operator.BlockingSQLiteDataReceiver;
 import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.operator.QueryScan;
+import edu.washington.escience.myriad.operator.DbQueryScan;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SQLiteSQLProcessor;
 import edu.washington.escience.myriad.operator.SinkRoot;
@@ -72,8 +72,8 @@ public class ShuffleSQLiteTest extends SystemTestBase {
     pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1); // partition by name
 
     /* Set shuffle producers, sp1, sp2 , which load data from scan1, scan 2 */
-    final QueryScan scan1 = new QueryScan(testtable1Key, schema);
-    final QueryScan scan2 = new QueryScan(testtable2Key, schema);
+    final DbQueryScan scan1 = new DbQueryScan(testtable1Key, schema);
+    final DbQueryScan scan2 = new DbQueryScan(testtable2Key, schema);
     final ShuffleProducer sp1 = new ShuffleProducer(scan1, shuffle1ID, WORKER_ID, pf);
     final ShuffleProducer sp2 = new ShuffleProducer(scan2, shuffle2ID, WORKER_ID, pf);
 

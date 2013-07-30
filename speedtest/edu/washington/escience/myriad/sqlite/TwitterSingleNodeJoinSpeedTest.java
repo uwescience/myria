@@ -18,7 +18,7 @@ import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.DupElim;
 import edu.washington.escience.myriad.operator.LocalJoin;
 import edu.washington.escience.myriad.operator.Project;
-import edu.washington.escience.myriad.operator.QueryScan;
+import edu.washington.escience.myriad.operator.DbQueryScan;
 
 public class TwitterSingleNodeJoinSpeedTest {
   /**
@@ -50,8 +50,8 @@ public class TwitterSingleNodeJoinSpeedTest {
     final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
 
     /* Read the data from the file. */
-    final QueryScan scan1 = new QueryScan("select * from twitter_subset", tableSchema);
-    final QueryScan scan2 = new QueryScan("select * from twitter_subset", tableSchema);
+    final DbQueryScan scan1 = new DbQueryScan("select * from twitter_subset", tableSchema);
+    final DbQueryScan scan2 = new DbQueryScan("select * from twitter_subset", tableSchema);
 
     // Join on SC1.followee=SC2.follower
     final LocalJoin localJoin =
@@ -85,8 +85,8 @@ public class TwitterSingleNodeJoinSpeedTest {
     final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
 
     /* Read the data from the file. */
-    final QueryScan scan1 = new QueryScan("select * from twitter_subset", tableSchema);
-    final QueryScan scan2 = new QueryScan("select * from twitter_subset", tableSchema);
+    final DbQueryScan scan1 = new DbQueryScan("select * from twitter_subset", tableSchema);
+    final DbQueryScan scan2 = new DbQueryScan("select * from twitter_subset", tableSchema);
 
     // Join on SC1.followee=SC2.follower
     final LocalJoin localProjJoin =

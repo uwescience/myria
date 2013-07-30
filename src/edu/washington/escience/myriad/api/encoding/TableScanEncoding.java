@@ -13,10 +13,10 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.api.MyriaApiException;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.operator.QueryScan;
+import edu.washington.escience.myriad.operator.DbQueryScan;
 import edu.washington.escience.myriad.parallel.Server;
 
-public class TableScanEncoding extends OperatorEncoding<QueryScan> {
+public class TableScanEncoding extends OperatorEncoding<DbQueryScan> {
   /** The name of the relation to be scanned. */
   public RelationKey relationKey;
   public Integer storedRelationId;
@@ -28,7 +28,7 @@ public class TableScanEncoding extends OperatorEncoding<QueryScan> {
   }
 
   @Override
-  public QueryScan construct(final Server server) {
+  public DbQueryScan construct(final Server server) {
     Schema schema;
     try {
       schema = server.getSchema(relationKey);
@@ -39,7 +39,7 @@ public class TableScanEncoding extends OperatorEncoding<QueryScan> {
       throw new MyriaApiException(Status.BAD_REQUEST, "Specified relation "
           + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE) + " does not exist.");
     }
-    return new QueryScan(relationKey, schema);
+    return new DbQueryScan(relationKey, schema);
   }
 
   @Override

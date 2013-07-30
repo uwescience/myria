@@ -12,7 +12,7 @@ import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.operator.DupElim;
 import edu.washington.escience.myriad.operator.LocalJoin;
 import edu.washington.escience.myriad.operator.Project;
-import edu.washington.escience.myriad.operator.QueryScan;
+import edu.washington.escience.myriad.operator.DbQueryScan;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.operator.TBQueueExporter;
@@ -53,8 +53,8 @@ public class Q5A_Count implements QueryPlanGenerator {
     final SingleFieldHashPartitionFunction pfOn1 = new SingleFieldHashPartitionFunction(allWorkers.length);
     pfOn1.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1);
 
-    final QueryScan allArticles =
-        new QueryScan(
+    final DbQueryScan allArticles =
+        new DbQueryScan(
             "select t.subject from Triples t, Dictionary dtype, Dictionary darticle where t.predicate=dtype.id and t.object=darticle.id and darticle.val='bench:Article' and dtype.val='rdf:type';",
             Schemas.subjectSchema);
     // schema: (articleId long), card:971330
@@ -64,8 +64,8 @@ public class Q5A_Count implements QueryPlanGenerator {
         new ShuffleConsumer(shuffleArticlesP.getSchema(), allArticlesShuffleID, allWorkers);
     // schema: (articleId long)
 
-    final QueryScan allHasCreator =
-        new QueryScan(
+    final DbQueryScan allHasCreator =
+        new DbQueryScan(
             "select t.subject, t.object from Triples t, Dictionary dtype where t.predicate=dtype.id and dtype.val='dc:creator';",
             Schemas.subjectObjectSchema);
     // schema: (createdObjID long, creatorID long), card:10626906
@@ -95,8 +95,8 @@ public class Q5A_Count implements QueryPlanGenerator {
     final DupElim deArticleAuthorsGlobal = new DupElim(shuffleArticleCreatorsC); // local dupelim
     // schema: (articleAuthorIDs long)
 
-    final QueryScan allInProceedings =
-        new QueryScan(
+    final DbQueryScan allInProceedings =
+        new DbQueryScan(
             "select t.subject from Triples t, Dictionary dtype, Dictionary dproceedings where t.predicate=dtype.id and t.object=dproceedings.id and dproceedings.val='bench:Inproceedings' and dtype.val='rdf:type';",
             Schemas.subjectSchema);
     // schema: (proceedingId long), card:2916364
@@ -107,8 +107,8 @@ public class Q5A_Count implements QueryPlanGenerator {
         new ShuffleConsumer(shuffleProceedingsP.getSchema(), allProceedingsShuffleID, allWorkers);
     // schema: (proceedingId long)
 
-    final QueryScan allHasCreator2 =
-        new QueryScan(
+    final DbQueryScan allHasCreator2 =
+        new DbQueryScan(
             "select t.subject, t.object from Triples t, Dictionary dtype where t.predicate=dtype.id and dtype.val='dc:creator';",
             Schemas.subjectObjectSchema);
     // schema: (createdObjectID long, creatorId long), card: 10626906
@@ -139,8 +139,8 @@ public class Q5A_Count implements QueryPlanGenerator {
         new LocalJoin(deArticleAuthorsGlobal, deProceedingAuthorsGlobal, new int[] { 0 }, new int[] { 0 });
     // schema: (articleProceedingAuthorID long, articleProceedingAuthorID long)
 
-    final QueryScan allFOAF2 =
-        new QueryScan(
+    final DbQueryScan allFOAF2 =
+        new DbQueryScan(
             "select t.subject,t.object from Triples t, Dictionary dtype where t.predicate=dtype.id and dtype.val='foaf:name';",
             Schemas.subjectObjectSchema);
     // schema: (foafSubjID long, foafObjID long)

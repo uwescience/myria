@@ -13,7 +13,7 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.operator.QueryScan;
+import edu.washington.escience.myriad.operator.DbQueryScan;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.operator.agg.Aggregator;
@@ -48,8 +48,8 @@ public class JoinQueryMonetDB implements QueryPlanGenerator, Serializable {
   @Override
   public Map<Integer, RootOperator[]> getWorkerPlan(int[] allWorkers) throws Exception {
 
-    final QueryScan localScan =
-        new QueryScan( //
+    final DbQueryScan localScan =
+        new DbQueryScan( //
             "select sourceIPAddr, sum(adRevenue) as sumAdRevenue, sum(pageRank) as sumPageRank, count(pageRank) as countPageRank"
                 + //
                 "  from UserVisits, Rankings" + //

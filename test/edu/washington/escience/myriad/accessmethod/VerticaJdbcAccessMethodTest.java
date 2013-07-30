@@ -5,13 +5,10 @@ package edu.washington.escience.myriad.accessmethod;
 
 import static org.junit.Assert.assertTrue;
 
-import java.util.HashMap;
-
 import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.RelationKey;
@@ -20,7 +17,7 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.operator.DbInsert;
-import edu.washington.escience.myriad.operator.QueryScan;
+import edu.washington.escience.myriad.operator.DbQueryScan;
 import edu.washington.escience.myriad.operator.TupleSource;
 
 public class VerticaJdbcAccessMethodTest {
@@ -68,16 +65,11 @@ public class VerticaJdbcAccessMethodTest {
     insert.close();
 
     /* Count them and make sure we got the right count. */
-    QueryScan count =
-        new QueryScan("SELECT COUNT(*) FROM " + relationKey.toString(jdbcInfo.getDbms()), Schema.of(ImmutableList
-            .of(Type.LONG_TYPE), ImmutableList.of("count")));
+    DbQueryScan count =
+        new DbQueryScan(jdbcInfo, "SELECT COUNT(*) FROM " + relationKey.toString(jdbcInfo.getDbms()), Schema.of(
+            ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("count")));
+    count.open(null);
 
-    HashMap<String, Object> localEnvVars = new HashMap<String, Object>();
-    localEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_SYSTEM, MyriaConstants.STORAGE_SYSTEM_MONETDB);
-    localEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO, jdbcInfo);
-    final ImmutableMap<String, Object> execEnvVars = ImmutableMap.copyOf(localEnvVars);
-
-    count.open(execEnvVars);
     TupleBatch result = count.nextReady();
     assertTrue(result != null);
     assertTrue(result.getLong(0, 0) == NUM_TUPLES);
