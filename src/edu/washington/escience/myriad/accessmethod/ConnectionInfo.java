@@ -39,7 +39,7 @@ public abstract class ConnectionInfo {
     return null;
   }
 
-  /*
+  /**
    * Returns a json string representation of the connection info.
    * 
    * @return the json representation
@@ -49,6 +49,16 @@ public abstract class ConnectionInfo {
     return gson.toJson(this);
   }
 
+  /**
+   * Constructs a database connection information from the input and returns its json string representation.
+   * 
+   * @param dbms the database system.
+   * @param hostName the host name.
+   * @param description the description of the myria system.
+   * @param dirName the working directory.
+   * @param workerId the worker identification.
+   * @return the json string representation of the connection information.
+   */
   public static String toJson(final String dbms, final String hostName, final String description, final String dirName,
       final String workerId) {
     Objects.requireNonNull(dbms);
