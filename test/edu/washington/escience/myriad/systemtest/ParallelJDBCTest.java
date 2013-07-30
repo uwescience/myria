@@ -13,9 +13,9 @@ import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.accessmethod.JdbcInfo;
 import edu.washington.escience.myriad.operator.BlockingJDBCDataReceiver;
+import edu.washington.escience.myriad.operator.DbQueryScan;
 import edu.washington.escience.myriad.operator.JdbcSQLProcessor;
 import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.operator.DbQueryScan;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.operator.TBQueueExporter;
@@ -45,11 +45,11 @@ public class ParallelJDBCTest extends SystemTestBase {
     final ImmutableList<String> columnNames = ImmutableList.of("id", "name");
     final Schema schema = new Schema(types, columnNames);
 
-    final DbQueryScan scan1 = new DbQueryScan("select distinct * from testtable3", schema);
+    final DbQueryScan scan1 = new DbQueryScan(jdbcInfo, "select distinct * from testtable3", schema);
 
     final CollectProducer cp1 = new CollectProducer(scan1, worker2ReceiveID, WORKER_ID[1]);
 
-    final DbQueryScan scan2 = new DbQueryScan("select distinct * from testtable4", schema);
+    final DbQueryScan scan2 = new DbQueryScan(jdbcInfo, "select distinct * from testtable4", schema);
 
     final CollectProducer cp2 = new CollectProducer(scan2, worker2ReceiveID, WORKER_ID[1]);
     final CollectConsumer cc2 =
