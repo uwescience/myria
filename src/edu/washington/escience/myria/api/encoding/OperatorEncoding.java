@@ -44,7 +44,9 @@ import edu.washington.escience.myria.parallel.Server;
     @Type(name = "Apply", value = ApplyEncoding.class), @Type(name = "DbQueryScan", value = QueryScanEncoding.class),
     @Type(name = "Filter", value = FilterEncoding.class),
     @Type(name = "BroadcastProducer", value = BroadcastProducerEncoding.class),
-    @Type(name = "BroadcastConsumer", value = BroadcastConsumerEncoding.class) })
+    @Type(name = "BroadcastConsumer", value = BroadcastConsumerEncoding.class),
+    @Type(name = "HyperShuffleProducer", value = HyperShuffleProducerEncoding.class),
+    @Type(name = "HyperShuffleConsumer", value = HyperShuffleConsumerEncoding.class) })
 public abstract class OperatorEncoding<T extends Operator> extends MyriaApiEncoding {
 
   public String opName;

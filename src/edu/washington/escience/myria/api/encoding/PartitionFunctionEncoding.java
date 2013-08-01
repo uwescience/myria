@@ -17,4 +17,5 @@ public abstract class PartitionFunctionEncoding<T extends PartitionFunction<?, ?
    * @return the instantiated partition function.
    */
   public abstract T construct(int numPartitions);
+
 }

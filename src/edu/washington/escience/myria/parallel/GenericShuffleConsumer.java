@@ -44,6 +44,6 @@ public class GenericShuffleConsumer extends Consumer {
   public GenericShuffleConsumer(final Schema schema, final ExchangePairID operatorID,
       final ImmutableSet<Integer> workerIDs) {
     super(schema, operatorID, workerIDs);
-    LOGGER.trace("created ShuffleConsumer for ExchangePairId=" + operatorID);
+    LOGGER.trace("created GenericShuffleConsumer for ExchangePairId=" + operatorID);
   }
 }

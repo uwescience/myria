@@ -2,7 +2,7 @@
   "relation_key" : {
     "user_name" : "shumochu",
     "program_name" : "broadcastjoin",
-    "relation_name" : "RankBase"
+    "relation_name" : "RankBase2x"
   },
   "schema" : {
     "column_types" : ["LONG_TYPE","STRING_TYPE","LONG_TYPE"],
