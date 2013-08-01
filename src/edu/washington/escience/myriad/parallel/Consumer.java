@@ -74,8 +74,11 @@ public class Consumer extends LeafOperator {
    * */
   private transient boolean nonBlockingExecution;
 
-  /** The task that this consumer belongs to. */
-  private QuerySubTreeTask ownerTask;
+  /**
+   * The worker this operator is located at.
+   * 
+   */
+  private transient TaskResourceManager taskResourceManager;
 
   /**
    * @return my exchange channels.
@@ -141,8 +144,8 @@ public class Consumer extends LeafOperator {
     }
     workerIdToIndex = new TUnmodifiableIntIntMap(tmp);
 
-    TaskResourceManager qem = (TaskResourceManager) execUnitEnv.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER);
-    nonBlockingExecution = qem.getExecutionMode() == QueryExecutionMode.NON_BLOCKING;
+    taskResourceManager = (TaskResourceManager) execUnitEnv.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER);
+    nonBlockingExecution = taskResourceManager.getExecutionMode() == QueryExecutionMode.NON_BLOCKING;
   }
 
   /**
@@ -199,10 +202,10 @@ public class Consumer extends LeafOperator {
 
     int numExpecting = sourceWorkers.size();
 
-    if (ownerTask.getOwnerQuery().getFTMode().equals("abandon")) {
+    if (taskResourceManager.getOwnerTask().getOwnerQuery().getFTMode().equals("abandon")) {
       Set<Integer> expectingWorkers = new HashSet<Integer>();
       expectingWorkers.addAll(sourceWorkers);
-      expectingWorkers.removeAll(ownerTask.getOwnerQuery().getMissingWorkers());
+      expectingWorkers.removeAll(taskResourceManager.getOwnerTask().getOwnerQuery().getMissingWorkers());
       numExpecting = expectingWorkers.size();
     }
 
@@ -309,20 +312,6 @@ public class Consumer extends LeafOperator {
   @Override
   public final Schema getSchema() {
     return schema;
-  }
-
-  /**
-   * @param task the task that this operator belongs to.
-   */
-  public final void setOwnerTask(QuerySubTreeTask task) {
-    ownerTask = task;
-  }
-
-  /**
-   * @return the task that this operator belongs to.
-   */
-  public final QuerySubTreeTask getOwnerTask() {
-    return ownerTask;
   }
 
 }

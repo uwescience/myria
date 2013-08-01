@@ -32,6 +32,7 @@ public abstract class Producer extends RootOperator {
    * 
    */
   private transient TaskResourceManager taskResourceManager;
+
   /**
    * the netty channels doing the true IPC IO.
    * */
@@ -56,9 +57,6 @@ public abstract class Producer extends RootOperator {
    * if current query execution is in non-blocking mode.
    * */
   private transient boolean nonBlockingExecution;
-
-  /** The task that this producer belongs to. */
-  protected QuerySubTreeTask ownerTask;
 
   /**
    * no worker means to the owner worker.
@@ -227,7 +225,7 @@ public abstract class Producer extends RootOperator {
     try {
       ret = writeMessage(chIdx, msg);
     } catch (IllegalStateException e) {
-      if (ownerTask.getOwnerQuery().getFTMode().equals("abandon")) {
+      if (taskResourceManager.getOwnerTask().getOwnerQuery().getFTMode().equals("abandon")) {
         // abandon, do nothing
       } else {
         throw e;
@@ -287,17 +285,10 @@ public abstract class Producer extends RootOperator {
   }
 
   /**
-   * @param task the task that this operator belongs to.
-   */
-  public final void setOwnerTask(final QuerySubTreeTask task) {
-    ownerTask = task;
-  }
-
-  /**
-   * @return the task that this operator belongs to.
-   */
-  public final QuerySubTreeTask getOwnerTask() {
-    return ownerTask;
+   * @return The resource manager of the running task.
+   * */
+  protected TaskResourceManager getTaskResourceManager() {
+    return taskResourceManager;
   }
 
 }

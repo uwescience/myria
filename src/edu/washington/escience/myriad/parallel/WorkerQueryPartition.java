@@ -176,13 +176,6 @@ public class WorkerQueryPartition implements QueryPartition {
         });
         c.setInputBuffer(inputBuffer);
       }
-
-      for (final Consumer c : consumerSet) {
-        c.setOwnerTask(drivingTask);
-      }
-      if (taskRootOp instanceof Producer) {
-        ((Producer) taskRootOp).setOwnerTask(drivingTask);
-      }
     }
 
   }
