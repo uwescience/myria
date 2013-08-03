@@ -102,9 +102,17 @@ public final class JdbcUtils {
       case BOOLEAN_TYPE:
         return "BOOLEAN";
       case DOUBLE_TYPE:
-        return "DOUBLE";
+        if (dbms.equalsIgnoreCase(MyriaConstants.STORAGE_SYSTEM_VERTICA)) {
+          return "DOUBLE PRECISION";
+        } else {
+          return "DOUBLE";
+        }
       case FLOAT_TYPE:
-        return "DOUBLE";
+        if (dbms.equalsIgnoreCase(MyriaConstants.STORAGE_SYSTEM_VERTICA)) {
+          return "FLOAT";
+        } else {
+          return "DOUBLE";
+        }
       case INT_TYPE:
         return "INTEGER";
       case LONG_TYPE:
