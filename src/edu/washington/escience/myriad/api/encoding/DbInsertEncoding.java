@@ -33,7 +33,6 @@ public class DbInsertEncoding extends OperatorEncoding<DbInsert> {
     if (argOverwriteTable != null) {
       return new DbInsert(null, relationKey, argOverwriteTable);
     }
-    // TODO check to do perform the same as before
     return new DbInsert(null, relationKey, false);
   }
 

@@ -12,7 +12,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.commons.io.FilenameUtils;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -32,9 +31,6 @@ import edu.washington.escience.myriad.tool.MyriaConfigurationReader;
  * 
  */
 public final class CatalogMaker {
-  /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(CatalogMaker.class);
-
   /** The reader. */
   private static final MyriaConfigurationReader READER = new MyriaConfigurationReader();
 

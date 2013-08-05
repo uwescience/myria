@@ -77,7 +77,6 @@ public class DbInsert extends RootOperator {
   public DbInsert(final Operator child, final RelationKey relationKey, final ConnectionInfo connectionInfo,
       final boolean overwriteTable) {
     super(child);
-    Objects.requireNonNull(child);
     Objects.requireNonNull(relationKey);
     this.connectionInfo = connectionInfo;
     this.relationKey = relationKey;
