@@ -96,10 +96,10 @@ public abstract class ConnectionInfo {
         // Now it is hardcoded to use a specific connection info, which allows only one
         // myria instance per machine in the cluster
         final String host = hostName;
-        final int port = 50000;
-        final String user = "monetdb";
-        final String password = "monetdb";
-        final String myDatabaseName = "myria";
+        final int port = 50001;
+        final String user = "uwdb";
+        final String password = "PaulAllenCenter";
+        final String myDatabaseName = "myria1";
         final String jdbcDriverName = "nl.cwi.monetdb.jdbc.MonetDriver";
         final JdbcInfo jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, myDatabaseName, user, password);
         try {
