@@ -3,6 +3,7 @@ package edu.washington.escience.myriad.accessmethod;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -97,8 +98,8 @@ public final class SQLiteAccessMethod extends AccessMethod {
 
       }
     } catch (final SQLiteException e) {
-      LOGGER.error(e.getErrorCode() + "-" + e.getMessage());
-      throw new DbException(e.getErrorCode() + "-" + e.getMessage() + " filename: " + sqliteInfo.getDatabase());
+      LOGGER.error(e.getMessage(), e);
+      throw new DbException(e);
     }
   }
 
@@ -183,9 +184,10 @@ public final class SQLiteAccessMethod extends AccessMethod {
           throw new DbException(e);
         }
         try {
-          Thread.sleep(10);
+          Thread.sleep(MyriaConstants.SHORT_WAITING_INTERVAL_10_MS);
         } catch (InterruptedException e1) {
-          e1.printStackTrace();
+          Thread.currentThread().interrupt();
+          return Collections.<TupleBatch> emptyList().iterator();
         }
       }
     }
@@ -194,7 +196,7 @@ public final class SQLiteAccessMethod extends AccessMethod {
       /* Step the statement once so we can figure out the Schema */
       statement.step();
     } catch (final SQLiteException e) {
-      LOGGER.error(e.getMessage());
+      LOGGER.error(e.getMessage(), e);
       throw new DbException(e);
     }
 
@@ -212,7 +214,7 @@ public final class SQLiteAccessMethod extends AccessMethod {
           try {
             sqliteConnection.exec(ddlCommand);
           } catch (final SQLiteException e) {
-            LOGGER.error(e.getMessage());
+            LOGGER.error(e.getMessage(), e);
             throw new DbException(e);
           }
           return null;
