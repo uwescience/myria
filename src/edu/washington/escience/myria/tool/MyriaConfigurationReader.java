@@ -59,18 +59,26 @@ public final class MyriaConfigurationReader extends ConfigParser {
       throw new IOException(e);
     }
     String defaultPath = ans.get("deployment").get("path");
+    String defaultDatabaseName = ans.get("deployment").get("database_name");
     Map<String, String> workers = ans.get("workers");
     HashMap<String, String> paths = new HashMap<String, String>();
+    HashMap<String, String> databaseNames = new HashMap<String, String>();
     for (String workerId : workers.keySet()) {
       String[] tmp = workers.get(workerId).split(":");
       workers.put(workerId, tmp[0] + ":" + tmp[1]);
-      if (tmp.length == 3) {
+      if (tmp.length >= 3) {
         paths.put(workerId, tmp[2]);
       } else {
         paths.put(workerId, defaultPath);
       }
+      if (tmp.length == 4) {
+        databaseNames.put(workerId, tmp[3]);
+      } else {
+        databaseNames.put(workerId, defaultDatabaseName);
+      }
     }
     ans.put("paths", paths);
+    ans.put("databaseNames", databaseNames);
     if (ans.get("deployment").get("debug_mode") == null) {
       /* default: false */
       ans.get("deployment").put("debug_mode", "false");

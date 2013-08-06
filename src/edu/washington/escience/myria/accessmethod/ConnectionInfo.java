@@ -35,6 +35,7 @@ public abstract class ConnectionInfo {
           return mapper.readValue(jsonConnInfo, SQLiteInfo.class);
         case MyriaConstants.STORAGE_SYSTEM_MONETDB:
         case MyriaConstants.STORAGE_SYSTEM_MYSQL:
+        case MyriaConstants.STORAGE_SYSTEM_POSTGRESQL:
           return mapper.readValue(jsonConnInfo, JdbcInfo.class);
       }
     } catch (IOException e) {
@@ -65,52 +66,70 @@ public abstract class ConnectionInfo {
    * @param description the description of the myria system.
    * @param dirName the working directory.
    * @param workerId the worker identification.
+   * @param databaseName the database name for JDBC databases; ignored for non-JDBC
+   * @param databasePassword the database password for JDBC databases; ignored for non-JDBC
    * @return the JSON string representation of the connection information.
    */
   public static String toJson(final String dbms, final String hostName, final String description, final String dirName,
-      final String workerId) {
+      final String workerId, final String databaseName, final String databasePassword) {
     Objects.requireNonNull(dbms);
-    ObjectMapper mapper = MyriaJsonMapperProvider.newMapper();
     String result = "";
+    String host;
+    int port;
+    String user;
+    String jdbcDriverName;
+    JdbcInfo jdbcInfo;
+
     switch (dbms) {
       case MyriaConstants.STORAGE_SYSTEM_SQLITE:
-        String databaseName = "";
+        Objects.requireNonNull(workerId);
+        String fileName = "";
         if (description != null) {
           /* created from deployment.cfg, use relative path */
-          databaseName = FilenameUtils.concat(description, "worker_" + workerId);
-          databaseName = FilenameUtils.concat(databaseName, "worker_" + workerId + "_data.db");
+          fileName = FilenameUtils.concat(Objects.requireNonNull(description), "worker_" + workerId);
+          fileName = FilenameUtils.concat(fileName, "worker_" + workerId + "_data.db");
         } else {
           /* created from SystemTestBase, use absolute path */
-          databaseName = FilenameUtils.concat(dirName, "worker_" + workerId);
-          databaseName = FilenameUtils.concat(databaseName, "worker_" + workerId + "_data.db");
+          fileName = FilenameUtils.concat(Objects.requireNonNull(dirName), "worker_" + workerId);
+          fileName = FilenameUtils.concat(fileName, "worker_" + workerId + "_data.db");
         }
-        SQLiteInfo sqliteInfo = SQLiteInfo.of(databaseName);
-        try {
-          result = mapper.writeValueAsString(sqliteInfo);
-        } catch (JsonProcessingException e) {
-          throw new RuntimeException(e);
-        }
+        SQLiteInfo sqliteInfo = SQLiteInfo.of(fileName);
+        result = sqliteInfo.toJson();
         break;
       case MyriaConstants.STORAGE_SYSTEM_MONETDB:
         // TODO: Allow using the parameters to create the connection info.
         // Now it is hardcoded to use a specific connection info, which allows only one
         // myria instance per machine in the cluster
-        final String host = hostName;
-        final int port = 50000;
-        final String user = "monetdb";
-        final String password = "monetdb";
-        final String myDatabaseName = "myria";
-        final String jdbcDriverName = "nl.cwi.monetdb.jdbc.MonetDriver";
-        final JdbcInfo jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, myDatabaseName, user, password);
-        try {
-          result = mapper.writeValueAsString(jdbcInfo);
-        } catch (JsonProcessingException e) {
-          throw new RuntimeException(e);
-        }
+        host = hostName;
+        port = MyriaConstants.STORAGE_MONETDB_PORT;
+        user = MyriaConstants.STORAGE_JDBC_USERNAME;
+        jdbcDriverName = "nl.cwi.monetdb.jdbc.MonetDriver";
+        jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, databaseName, user, databasePassword);
+        result = jdbcInfo.toJson();
+        break;
+
+      case MyriaConstants.STORAGE_SYSTEM_POSTGRESQL:
+        // TODO: Allow using the parameters to craete the connection info.
+        // Now it is hardcoded to use a specific connection info, which allows only one
+        // myria instance per machine in the cluster
+        host = hostName;
+        port = MyriaConstants.STORAGE_POSTGRESQL_PORT;
+        user = MyriaConstants.STORAGE_JDBC_USERNAME;
+        jdbcDriverName = "org.postgresql.Driver";
+        jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, databaseName, user, databasePassword);
+        result = jdbcInfo.toJson();
         break;
 
       case MyriaConstants.STORAGE_SYSTEM_MYSQL:
-        result = "";
+        // TODO: Allow using the parameters to craete the connection info.
+        // Now it is hardcoded to use a specific connection info, which allows only one
+        // myria instance per machine in the cluster
+        host = hostName;
+        port = MyriaConstants.STORAGE_MYSQL_PORT;
+        user = MyriaConstants.STORAGE_JDBC_USERNAME;
+        jdbcDriverName = "com.mysql.jdbc.Driver";
+        jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, databaseName, user, databasePassword);
+        result = jdbcInfo.toJson();
         break;
     }
     return result;
