@@ -105,11 +105,13 @@ public final class RelationKey implements Serializable {
   public String toString(final String dbms) {
     switch (dbms) {
       case MyriaConstants.STORAGE_SYSTEM_SQLITE:
-      case MyriaConstants.STORAGE_SYSTEM_MYSQL:
         return toString('[', '#', ']');
+      case MyriaConstants.STORAGE_SYSTEM_POSTGRESQL:
       case MyriaConstants.STORAGE_SYSTEM_MONETDB:
       case MyriaConstants.STORAGE_SYSTEM_VERTICA:
         return toString('\"', ' ', '\"');
+      case MyriaConstants.STORAGE_SYSTEM_MYSQL:
+        return toString('`', ' ', '`');
       default:
         throw new IllegalArgumentException("Unsupported dbms " + dbms);
     }

@@ -135,6 +135,11 @@ public final class MyriaConstants {
   public static final String STORAGE_SYSTEM_VERTICA = "vertica";
 
   /**
+   * PostgreSQL storage.
+   * */
+  public static final String STORAGE_SYSTEM_POSTGRESQL = "postgresql";
+
+  /**
    * Default value for {@link MyriaSystemConfigKeys#TCP_CONNECTION_TIMEOUT_MILLIS}.
    * */
   public static final int TCP_CONNECTION_TIMEOUT_MILLIS_DEFAULT_VALUE = 3000;

@@ -11,6 +11,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -54,11 +56,15 @@ public class BenchmarkTest {
   private TupleBatchBuffer buffer;
   private Schema schema;
   private RelationKey relationKey;
-  private final static int NUM_TUPLES = 5 * TupleBatch.BATCH_SIZE + 1;
+  private final static int NUM_TUPLES = 101 * TupleBatch.BATCH_SIZE + 1;
+  private final static int NUM_RUNS = 5;
   private List<ConnectionInfo> connections = null;
 
   @Before
   public void init() {
+    Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
+    Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
+
     if (schema == null) {
       schema = Schema.of(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE), ImmutableList.of("i1", "i2"));
       relationKey = RelationKey.of("test", "test", "big");
@@ -82,7 +88,19 @@ public class BenchmarkTest {
               tempFilePath.toFile().getAbsolutePath(), "0");
       connections.add(ConnectionInfo.of("sqlite", jsonConnInfo));
 
-      /* The SQLite connection */
+      /* The MonetDB connection */
+      jsonConnInfo =
+          ConnectionInfo.toJson(MyriaConstants.STORAGE_SYSTEM_MONETDB, BENCHMARKTEST_HOSTNAME, BENCHMARKTEST_NAME,
+              tempFilePath.toFile().getAbsolutePath(), "0");
+      connections.add(ConnectionInfo.of(MyriaConstants.STORAGE_SYSTEM_MONETDB, jsonConnInfo));
+
+      /* The PostgreSQL connection */
+      jsonConnInfo =
+          ConnectionInfo.toJson(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL, BENCHMARKTEST_HOSTNAME, BENCHMARKTEST_NAME,
+              tempFilePath.toFile().getAbsolutePath(), "0");
+      connections.add(ConnectionInfo.of(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL, jsonConnInfo));
+
+      /* The MySQL connection */
       jsonConnInfo =
           ConnectionInfo.toJson(MyriaConstants.STORAGE_SYSTEM_MONETDB, BENCHMARKTEST_HOSTNAME, BENCHMARKTEST_NAME,
               tempFilePath.toFile().getAbsolutePath(), "0");
@@ -94,10 +112,11 @@ public class BenchmarkTest {
   }
 
   @Test
-  public void testBenchmark() throws Exception {
-
+  public void benchmarkInsertTest() throws Exception {
+    double t1 = 0, t2 = 0;
     for (ConnectionInfo conn : connections) {
-      /* Insert the NUM_TUPLES tuples */
+      LOGGER.info("Starting insert tests with DBMS: {}", conn.getDbms());
+      t1 = System.nanoTime();
       TupleSource source = new TupleSource(buffer);
       DbInsert insert = new DbInsert(source, relationKey, conn);
       insert.open(null);
@@ -105,20 +124,155 @@ public class BenchmarkTest {
         insert.nextReady();
       }
       insert.close();
+      t2 = System.nanoTime();
+      LOGGER.info("Insertion time: {}s", (t2 - t1) / 1000000000.0);
+    }
+  }
 
-      /* Count them and make sure we got the right count. */
-      DbQueryScan count =
-          new DbQueryScan(conn, "SELECT COUNT(*) FROM " + relationKey.toString(conn.getDbms()), Schema.of(ImmutableList
-              .of(Type.LONG_TYPE), ImmutableList.of("count")));
-      count.open(null);
+  @Test
+  public void benchmarkSelectStarTest() throws Exception {
+    for (ConnectionInfo conn : connections) {
+      LOGGER.info("Starting SELECT * tests with DBMS: {}", conn.getDbms());
+      double t1 = System.nanoTime();
+      double t2 = 0;
+      for (int i = 0; i < NUM_RUNS; i++) {
+        DbQueryScan scan =
+            new DbQueryScan(conn, "SELECT * FROM " + relationKey.toString(conn.getDbms()), Schema.of(ImmutableList
+                .of(Type.LONG_TYPE), ImmutableList.of("count")));
+        scan.open(null);
+        int count = 0;
+        TupleBatch tb = null;
+        while (!scan.eos()) {
+          tb = scan.nextReady();
+          if (tb != null) {
+            count += tb.numTuples();
+          }
+        }
+        assertTrue(count == NUM_TUPLES);
+        scan.close();
+      }
+      t2 = System.nanoTime();
+      LOGGER.info("Runtime: {}s", (t2 - t1) / (NUM_RUNS * 1000000000.0));
+    }
+  }
 
-      TupleBatch result = count.nextReady();
-      assertTrue(result != null);
-      assertTrue(result.getLong(0, 0) == NUM_TUPLES);
-      result = count.nextReady();
-      assertTrue(result == null);
-      assertTrue(count.eos());
-      count.close();
+  @Test
+  public void benchmarkSelectProjectTest() throws Exception {
+    for (ConnectionInfo conn : connections) {
+      LOGGER.info("Starting Project tests with DBMS: {}", conn.getDbms());
+      double t1 = System.nanoTime();
+      double t2 = 0;
+      for (int i = 0; i < NUM_RUNS; i++) {
+        DbQueryScan scan =
+            new DbQueryScan(conn, "SELECT I1 FROM " + relationKey.toString(conn.getDbms()), Schema.of(ImmutableList
+                .of(Type.LONG_TYPE), ImmutableList.of("count")));
+        scan.open(null);
+        int count = 0;
+        TupleBatch tb = null;
+        while (!scan.eos()) {
+          tb = scan.nextReady();
+          if (tb != null) {
+            count += tb.numTuples();
+          }
+        }
+        assertTrue(count == NUM_TUPLES);
+        scan.close();
+      }
+      t2 = System.nanoTime();
+      LOGGER.info("Runtime: {}s", (t2 - t1) / (NUM_RUNS * 1000000000.0));
+    }
+  }
+
+  @Test
+  public void benchmarkSelectOrderByTest() throws Exception {
+    for (ConnectionInfo conn : connections) {
+      LOGGER.info("Starting ORDER BY tests with DBMS: {}", conn.getDbms());
+      double t1 = System.nanoTime();
+      double t2 = 0;
+      for (int i = 0; i < NUM_RUNS; i++) {
+        DbQueryScan scan =
+            new DbQueryScan(conn, "SELECT * FROM " + relationKey.toString(conn.getDbms()) + " ORDER BY I1", Schema.of(
+                ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("count")));
+        scan.open(null);
+        int count = 0;
+        TupleBatch tb = null;
+        while (!scan.eos()) {
+          tb = scan.nextReady();
+          if (tb != null) {
+            count += tb.numTuples();
+          }
+        }
+        assertTrue(count == NUM_TUPLES);
+        scan.close();
+      }
+      t2 = System.nanoTime();
+      LOGGER.info("Runtime: {}s", (t2 - t1) / (NUM_RUNS * 1000000000.0));
+    }
+  }
+
+  @Test
+  public void benchmarkSelectSmallJoinTest() throws Exception {
+    Integer numExpectedTuples = null;
+    for (ConnectionInfo conn : connections) {
+      LOGGER.info("Starting JOIN (1%) tests with DBMS: {}", conn.getDbms());
+      double t1 = System.nanoTime();
+      double t2 = 0;
+      for (int i = 0; i < NUM_RUNS; i++) {
+        DbQueryScan scan =
+            new DbQueryScan(conn, "SELECT * FROM " + relationKey.toString(conn.getDbms()) + " R1, "
+                + relationKey.toString(conn.getDbms()) + " R2 WHERE R1.I2 < 10000 AND R1.I1 = R2.I2", Schema.of(
+                ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("count")));
+        scan.open(null);
+        int count = 0;
+        TupleBatch tb = null;
+        while (!scan.eos()) {
+          tb = scan.nextReady();
+          if (tb != null) {
+            count += tb.numTuples();
+          }
+        }
+        if (numExpectedTuples == null) {
+          numExpectedTuples = count;
+        } else {
+          assertTrue(count == numExpectedTuples);
+        }
+        scan.close();
+      }
+      t2 = System.nanoTime();
+      LOGGER.info("Runtime: {}s", (t2 - t1) / (NUM_RUNS * 1000000000.0));
+    }
+  }
+
+  @Test
+  public void benchmarkSelectSelfJoinTest() throws Exception {
+    Integer numExpectedTuples = null;
+    for (ConnectionInfo conn : connections) {
+      LOGGER.info("Starting JOIN (1%) tests with DBMS: {}", conn.getDbms());
+      double t1 = System.nanoTime();
+      double t2 = 0;
+      for (int i = 0; i < NUM_RUNS; i++) {
+        DbQueryScan scan =
+            new DbQueryScan(conn, "SELECT * FROM " + relationKey.toString(conn.getDbms()) + " R1, "
+                + relationKey.toString(conn.getDbms()) + " R2 WHERE R1.I1 = R2.I2", Schema.of(ImmutableList
+                .of(Type.LONG_TYPE), ImmutableList.of("count")));
+        scan.open(null);
+        int count = 0;
+        TupleBatch tb = null;
+        while (!scan.eos()) {
+          tb = scan.nextReady();
+          if (tb != null) {
+            count += tb.numTuples();
+          }
+        }
+        if (numExpectedTuples == null) {
+          numExpectedTuples = count;
+        } else {
+          assertTrue(count == numExpectedTuples);
+        }
+        scan.close();
+      }
+      t2 = System.nanoTime();
+      LOGGER.info("Runtime: {}", (t2 - t1) / (NUM_RUNS * 1000000000.0));
     }
   }
 }
