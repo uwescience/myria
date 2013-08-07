@@ -16,24 +16,32 @@ def get_host_port_path(node, default_path):
         (hostname, port, path) = node
     return (hostname, port, path)
 
-def get_logs_from_worker(hostname, dirname, username, worker_id):
-    print hostname
-    args = ["scp", "%s@%s:%s/worker_%s_stdout" % (username, hostname, dirname,worker_id), "./worker_%s_stdout" % (worker_id,)]
+def mkdir_if_not_exists(description):
+    args = ["mkdir", "-p", description]
     return subprocess.call(args)
 
-def get_error_logs_from_worker(hostname, dirname, username, worker_id):
+def get_logs_from_worker(hostname, dirname, username, worker_id, description):
     print hostname
-    args = ["scp", "%s@%s:%s/worker_%s_stderr" % (username, hostname, dirname,worker_id), "./worker_%s_stderr" % (worker_id,)]
+    mkdir_if_not_exists(description)
+    args = ["scp", "%s@%s:%s/worker_%s_stdout" % (username, hostname, dirname, worker_id), "%s/worker_%s_stdout" % (description, worker_id,)]
     return subprocess.call(args)
 
-def get_logs_from_master(hostname, dirname, username):
+def get_error_logs_from_worker(hostname, dirname, username, worker_id, description):
     print hostname
-    args = ["scp", "%s@%s:%s/master_stdout" % (username, hostname, dirname), "./master_stdout" ]
+    mkdir_if_not_exists(description)
+    args = ["scp", "%s@%s:%s/worker_%s_stderr" % (username, hostname, dirname, worker_id), "%s/worker_%s_stderr" % (description, worker_id,)]
     return subprocess.call(args)
 
-def get_error_logs_from_master(hostname, dirname, username):
+def get_logs_from_master(hostname, dirname, username, description):
     print hostname
-    args = ["scp", "%s@%s:%s/master_stderr" % (username, hostname, dirname), "./master_stderr" ]
+    mkdir_if_not_exists(description)
+    args = ["scp", "%s@%s:%s/master_stdout" % (username, hostname, dirname), "%s/master_stdout" % (description)]
+    return subprocess.call(args)
+
+def get_error_logs_from_master(hostname, dirname, username, description):
+    print hostname
+    mkdir_if_not_exists(description)
+    args = ["scp", "%s@%s:%s/master_stderr" % (username, hostname, dirname), "%s/master_stderr" % (description)]
     return subprocess.call(args)
 
 
@@ -48,12 +56,12 @@ def getlog(config):
     # get logs from master
     (hostname, _, path) = get_host_port_path(master, default_path)
     if get_logs_from_master(hostname, "%s/%s-files" \
-            % (path, description), username):
+            % (path, description), username, description):
         raise Exception("Error on getting logs from master %s" \
                 % (hostname,))
 
     if get_error_logs_from_master(hostname, "%s/%s-files" \
-            % (path, description), username):
+            % (path, description), username, description):
         raise Exception("Error on getting error logs from master %s" \
                 % (hostname,))
 
@@ -64,11 +72,11 @@ def getlog(config):
         # get logs from workers
         (hostname, _, path) = get_host_port_path(worker, default_path)
         if get_logs_from_worker(hostname, "%s/%s-files" \
-                % (path, description), username, worker_id):
+                % (path, description), username, worker_id, description):
             raise Exception("Error on getting logs from worker %d %s" \
                     % (worker_id, hostname))
         if get_error_logs_from_worker(hostname, "%s/%s-files" \
-                % (path, description), username, worker_id):
+                % (path, description), username, worker_id, description):
             raise Exception("Error on getting error logs from worker %d %s" \
                     % (worker_id, hostname))    
 
@@ -78,6 +86,7 @@ def main(argv):
     if len(argv) != 2:
         print >> sys.stderr, "Usage: %s <deployment.cfg>" % (argv[0])
         print >> sys.stderr, "       deployment.cfg: a configuration file modeled after deployment.cfg.sample"
+        print >> sys.stderr, "       logs will be put in the directory named after \"description\" in .cfg."
         sys.exit(1)
 
     config = myriadeploy.read_config_file(argv[1])
