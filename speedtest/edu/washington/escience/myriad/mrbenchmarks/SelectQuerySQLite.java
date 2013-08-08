@@ -9,8 +9,8 @@ import com.google.common.collect.ImmutableList;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
+import edu.washington.escience.myriad.operator.DbQueryScan;
 import edu.washington.escience.myriad.operator.RootOperator;
-import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.CollectProducer;
@@ -32,8 +32,8 @@ public class SelectQuerySQLite implements QueryPlanGenerator {
   public Map<Integer, RootOperator[]> getWorkerPlan(int[] allWorkers) throws Exception {
 
     // SELECT pageURL, pageRank FROM Rankings WHERE pageRank > X;
-    final SQLiteQueryScan selectPageRank =
-        new SQLiteQueryScan("select pageURL, pageRank from Rankings where pageRank > 10 ", outputSchema);
+    final DbQueryScan selectPageRank =
+        new DbQueryScan("select pageURL, pageRank from Rankings where pageRank > 10 ", outputSchema);
 
     final CollectProducer sendToMaster = new CollectProducer(selectPageRank, sendToMasterID, 0);
 

@@ -12,8 +12,8 @@ import com.google.common.collect.ImmutableList;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.operator.JdbcQueryScan;
 import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.operator.DbQueryScan;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
@@ -42,9 +42,8 @@ public class JoinQueryMonetDBSingleWorker implements QueryPlanGenerator, Seriali
   @Override
   public Map<Integer, RootOperator[]> getWorkerPlan(int[] allWorkers) throws Exception {
 
-    final JdbcQueryScan localScan =
-        new JdbcQueryScan( //
-            SelectQueryMonetDB.jdbcInfo, //
+    final DbQueryScan localScan =
+        new DbQueryScan( //
             "select sourceIPAddr, sum(adRevenue) as sumAdRevenue, sum(pageRank) as sumPageRank, count(pageRank) as countPageRank"
                 + //
                 "  from UserVisits, Rankings" + //

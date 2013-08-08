@@ -5,7 +5,6 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -17,13 +16,13 @@ import org.junit.Test;
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
+import edu.washington.escience.myriad.accessmethod.SQLiteInfo;
 import edu.washington.escience.myriad.util.FSUtils;
 
 public class SQLiteInsertTest {
@@ -47,6 +46,10 @@ public class SQLiteInsertTest {
     /* Make a temporary file for the database and create a new SQLite database there. */
     tempDir = Files.createTempDirectory(MyriaConstants.SYSTEM_NAME + "_SQLiteInsertTest");
     tempFile = new File(tempDir.toString(), "SQLiteInsertTest.db");
+    if (!tempFile.exists()) {
+      tempFile.createNewFile();
+    }
+    assertTrue(tempFile.exists());
 
     /* Create the data needed for the tests in this file. */
     schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.STRING_TYPE));
@@ -65,11 +68,8 @@ public class SQLiteInsertTest {
     final RelationKey tuplesKey = RelationKey.of("test", "test", "my_tuples");
 
     final TupleSource source = new TupleSource(data);
-    HashMap<String, Object> sqliteFile = new HashMap<String, Object>();
-    sqliteFile.put("sqliteFile", tempFile.getAbsolutePath());
-    final ImmutableMap<String, Object> execEnvVars = ImmutableMap.copyOf(sqliteFile);
-    final SQLiteInsert insert = new SQLiteInsert(source, tuplesKey, true);
-    insert.open(execEnvVars);
+    final DbInsert insert = new DbInsert(source, tuplesKey, SQLiteInfo.of(tempFile.getAbsolutePath()));
+    insert.open(null);
     while (!insert.eos()) {
       insert.nextReady();
     }

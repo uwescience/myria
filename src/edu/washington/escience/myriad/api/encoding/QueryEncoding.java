@@ -96,8 +96,8 @@ public class QueryEncoding extends MyriaApiEncoding {
       List<Integer> workers = new ArrayList<Integer>();
       /* If the plan has scans, it has to run on all of those workers. */
       for (OperatorEncoding<?> operator : fragment.operators) {
-        if (operator instanceof SQLiteScanEncoding) {
-          SQLiteScanEncoding scan = ((SQLiteScanEncoding) operator);
+        if (operator instanceof TableScanEncoding) {
+          TableScanEncoding scan = ((TableScanEncoding) operator);
           List<Integer> scanWorkers = server.getWorkersForRelation(scan.relationKey, scan.storedRelationId);
           if (scanWorkers == null) {
             throw new MyriaApiException(Status.BAD_REQUEST, "Unable to find workers that store "

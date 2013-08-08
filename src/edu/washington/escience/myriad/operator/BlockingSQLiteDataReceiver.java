@@ -3,9 +3,11 @@ package edu.washington.escience.myriad.operator;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
+import edu.washington.escience.myriad.accessmethod.SQLiteInfo;
 import edu.washington.escience.myriad.util.SQLiteUtils;
 
 /**
@@ -20,9 +22,9 @@ public final class BlockingSQLiteDataReceiver extends Operator {
    * */
   private Operator child;
   /**
-   * Path to Sqlite db file.
+   * SQLite connection info.
    * */
-  private String pathToSQLiteDb;
+  private SQLiteInfo sqliteInfo;
 
   /**
    * the relation for querying data from.
@@ -47,7 +49,7 @@ public final class BlockingSQLiteDataReceiver extends Operator {
     TupleBatch tb = null;
     tb = child.nextReady();
     while (tb != null) {
-      SQLiteUtils.insertIntoSQLite(child.getSchema(), relationKey, pathToSQLiteDb, tb);
+      SQLiteUtils.insertIntoSQLite(child.getSchema(), relationKey, sqliteInfo, tb);
       tb = child.nextReady();
     }
     return null;
@@ -65,11 +67,10 @@ public final class BlockingSQLiteDataReceiver extends Operator {
 
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    final String sqliteDatabaseFilename = (String) execEnvVars.get("sqliteFile");
-    if (sqliteDatabaseFilename == null) {
+    sqliteInfo = (SQLiteInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
+    if (sqliteInfo == null) {
       throw new DbException("Unable to instantiate SQLiteQueryScan on non-sqlite worker");
     }
-    pathToSQLiteDb = sqliteDatabaseFilename;
   }
 
   @Override

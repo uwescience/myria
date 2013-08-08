@@ -13,7 +13,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * @author dhalperi
  * 
  */
-public final class JdbcInfo implements Serializable, ConnectionInfo {
+public final class JdbcInfo extends ConnectionInfo implements Serializable {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** The classname of the JDBC driver. */
@@ -171,5 +171,14 @@ public final class JdbcInfo implements Serializable, ConnectionInfo {
   @Override
   public String getConnectionString() {
     return "jdbc:" + dbms + "://" + host + ":" + port + "/" + database;
+  }
+
+  /**
+   * @return a JSON string format.
+   */
+  @Override
+  public String toString() {
+    return "{dbms:" + dbms + ",host:" + host + ",port:" + port + ",database:" + database + ",user:" + getUsername()
+        + ",password:" + getPassword() + "}";
   }
 }

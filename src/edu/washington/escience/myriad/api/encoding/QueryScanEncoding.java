@@ -7,17 +7,17 @@ import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.operator.SQLiteQueryScan;
+import edu.washington.escience.myriad.operator.DbQueryScan;
 import edu.washington.escience.myriad.parallel.Server;
 
-public class SQLiteQueryScanEncoding extends OperatorEncoding<SQLiteQueryScan> {
+public class QueryScanEncoding extends OperatorEncoding<DbQueryScan> {
   public Schema schema;
   public String sql;
   private static final List<String> requiredArguments = ImmutableList.of("schema", "sql");
 
   @Override
-  public SQLiteQueryScan construct(final Server server) {
-    return new SQLiteQueryScan(sql, schema);
+  public DbQueryScan construct(final Server server) {
+    return new DbQueryScan(sql, schema);
   }
 
   @Override

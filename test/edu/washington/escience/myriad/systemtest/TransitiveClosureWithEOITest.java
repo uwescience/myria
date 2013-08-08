@@ -21,8 +21,8 @@ import edu.washington.escience.myriad.operator.LocalJoin;
 import edu.washington.escience.myriad.operator.Merge;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.Project;
+import edu.washington.escience.myriad.operator.DbQueryScan;
 import edu.washington.escience.myriad.operator.RootOperator;
-import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.operator.TBQueueExporter;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
@@ -131,8 +131,8 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     final HashMap<Tuple, Integer> expectedResult = TestUtils.tupleBatchToTupleBag(expectedTBB);
 
     // parallel query generation, duplicate db files
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan(testtableKey, tableSchema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan(testtableKey, tableSchema);
+    final DbQueryScan scan1 = new DbQueryScan(testtableKey, tableSchema);
+    final DbQueryScan scan2 = new DbQueryScan(testtableKey, tableSchema);
 
     final int numPartition = 2;
     final PartitionFunction<String, Integer> pf0 = new SingleFieldHashPartitionFunction(numPartition);
@@ -254,8 +254,8 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     final HashMap<Tuple, Integer> expectedResult = TestUtils.tupleBatchToTupleBag(expectedTBB);
 
     // parallel query generation, duplicate db files
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan(testtableKey, tableSchema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan(seedKey, tableSchema);
+    final DbQueryScan scan1 = new DbQueryScan(testtableKey, tableSchema);
+    final DbQueryScan scan2 = new DbQueryScan(seedKey, tableSchema);
     final ExchangePairID consumerID1 = ExchangePairID.newID();
     final ExchangePairID consumerID2 = ExchangePairID.newID();
     final ExchangePairID eoiReceiverOpID = ExchangePairID.newID();

@@ -15,9 +15,9 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
+import edu.washington.escience.myriad.operator.DbInsert;
+import edu.washington.escience.myriad.operator.DbQueryScan;
 import edu.washington.escience.myriad.operator.RootOperator;
-import edu.washington.escience.myriad.operator.SQLiteInsert;
-import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.operator.TBQueueExporter;
 import edu.washington.escience.myriad.operator.TupleSource;
@@ -57,7 +57,7 @@ public class SplitDataTest extends SystemTestBase {
     final RelationKey tuplesRRKey = RelationKey.of("test", "test", "tuples_rr");
 
     /* Create the Insert operator */
-    final SQLiteInsert insert = new SQLiteInsert(gather, tuplesRRKey, true);
+    final DbInsert insert = new DbInsert(gather, tuplesRRKey, true);
 
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
     for (final int i : WORKER_ID) {
@@ -67,10 +67,10 @@ public class SplitDataTest extends SystemTestBase {
     server.submitQueryPlan(scatter, workerPlans).sync();
 
     /*** TEST PHASE 2: Count them up, make sure the answer agrees. ***/
-    /* Create the worker plan: QueryScan with count, then send it to master. */
+    /* Create the worker plan: DbQueryScan with count, then send it to master. */
     Schema countResultSchema = new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("localCount"));
-    final SQLiteQueryScan scanCount =
-        new SQLiteQueryScan("SELECT COUNT(*) FROM " + tuplesRRKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE),
+    final DbQueryScan scanCount =
+        new DbQueryScan("SELECT COUNT(*) FROM " + tuplesRRKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE),
             countResultSchema);
 
     final ExchangePairID collectId = ExchangePairID.newID();

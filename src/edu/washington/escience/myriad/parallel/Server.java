@@ -39,9 +39,9 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogMaker;
 import edu.washington.escience.myriad.coordinator.catalog.MasterCatalog;
+import edu.washington.escience.myriad.operator.DbInsert;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.RootOperator;
-import edu.washington.escience.myriad.operator.SQLiteInsert;
 import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.parallel.ipc.FlowControlBagInputBuffer;
 import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
@@ -948,7 +948,7 @@ public final class Server {
 
     /* The workers' plan */
     ShuffleConsumer gather = new ShuffleConsumer(source.getSchema(), scatterId, new int[] { MyriaConstants.MASTER_ID });
-    SQLiteInsert insert = new SQLiteInsert(gather, relationKey, true);
+    DbInsert insert = new DbInsert(gather, relationKey, true);
     Map<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
     for (Integer workerId : workersArray) {
       workerPlans.put(workerId, new RootOperator[] { insert });

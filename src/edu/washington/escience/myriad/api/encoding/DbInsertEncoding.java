@@ -6,25 +6,22 @@ import java.util.Map;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myriad.RelationKey;
-import edu.washington.escience.myriad.accessmethod.JdbcInfo;
-import edu.washington.escience.myriad.operator.JdbcInsert;
+import edu.washington.escience.myriad.operator.DbInsert;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.parallel.Server;
 
-public class JdbcInsertEncoding extends OperatorEncoding<JdbcInsert> {
+/**
+ * A JSON-able wrapper for the expected wire message for a new dataset.
+ * 
+ */
+public class DbInsertEncoding extends OperatorEncoding<DbInsert> {
   /** The name under which the dataset will be stored. */
   public RelationKey relationKey;
-
   /** The source of tuples to be inserted. */
   public String argChild;
-
   /** Whether to overwrite an existing dataset. */
   public Boolean argOverwriteTable;
-
-  /** JdbcInfo of this connection. */
-  public JdbcInfo jdbcInfo;
-
-  private static final List<String> requiredArguments = ImmutableList.of("relationKey", "argChild", "jdbcInfo");
+  private static final List<String> requiredArguments = ImmutableList.of("relationKey", "argChild");
 
   @Override
   public void connect(final Operator current, final Map<String, Operator> operators) {
@@ -32,11 +29,11 @@ public class JdbcInsertEncoding extends OperatorEncoding<JdbcInsert> {
   }
 
   @Override
-  public JdbcInsert construct(Server server) {
+  public DbInsert construct(Server server) {
     if (argOverwriteTable != null) {
-      return new JdbcInsert(null, relationKey, jdbcInfo, argOverwriteTable);
+      return new DbInsert(null, relationKey, argOverwriteTable);
     }
-    return new JdbcInsert(null, relationKey, jdbcInfo);
+    return new DbInsert(null, relationKey, false);
   }
 
   @Override

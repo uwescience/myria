@@ -12,16 +12,15 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.commons.io.FilenameUtils;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.MyriaSystemConfigKeys;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.Type;
+import edu.washington.escience.myriad.accessmethod.ConnectionInfo;
 import edu.washington.escience.myriad.tool.MyriaConfigurationReader;
 
 /**
@@ -32,9 +31,6 @@ import edu.washington.escience.myriad.tool.MyriaConfigurationReader;
  * 
  */
 public final class CatalogMaker {
-  /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(CatalogMaker.class);
-
   /** The reader. */
   private static final MyriaConfigurationReader READER = new MyriaConfigurationReader();
 
@@ -230,17 +226,14 @@ public final class CatalogMaker {
       MyriaSystemConfigKeys.addDefaultConfigKeys(configurationValues);
 
       /* Three worker-specific values. */
-      String description = config.get("deployment").get("name");
-      String sqliteDbName = "";
-      if (description != null) {
-        sqliteDbName = FilenameUtils.concat(description, "worker_" + workerId);
-        sqliteDbName = FilenameUtils.concat(sqliteDbName, "worker_" + workerId + "_data.db");
-      } else {
-        sqliteDbName = FilenameUtils.concat(dirName, "worker_" + workerId + "_data.db");
-      }
       configurationValues.put(MyriaSystemConfigKeys.WORKER_IDENTIFIER, "" + workerId);
-      configurationValues.put(MyriaSystemConfigKeys.WORKER_STORAGE_SYSTEM_TYPE, MyriaConstants.STORAGE_SYSTEM_SQLITE);
-      configurationValues.put(MyriaSystemConfigKeys.WORKER_DATA_SQLITE_DB, sqliteDbName);
+
+      // TODO: move this code to the ConnectionInfo class, passing the dbms as a parameter
+      final String dbms = configurationValues.get(MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_SYSTEM);
+      final String description = config.get("deployment").get("description");
+      final String host = wc.getWorkers().get(Integer.parseInt(workerId)).getHost();
+      final String jsonConnInfo = ConnectionInfo.toJson(dbms, host, description, dirName, workerId);
+      configurationValues.put(MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_CONN_INFO, jsonConnInfo);
 
       /* Set them all in the worker catalog. */
       wc.setAllConfigurationValues(configurationValues);
