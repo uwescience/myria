@@ -1,3 +1,4 @@
+START TRANSACTION;
 DROP TABLE IF EXISTS testtablebig;
 CREATE TABLE testtablebig (value INTEGER);
 INSERT INTO testtablebig VALUES(0);
@@ -250,3 +251,4 @@ INSERT INTO testtablebig VALUES(246);
 INSERT INTO testtablebig VALUES(247);
 INSERT INTO testtablebig VALUES(248);
 INSERT INTO testtablebig VALUES(249);
+COMMIT;
