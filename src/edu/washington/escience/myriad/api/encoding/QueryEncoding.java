@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.api.MyriaApiException;
@@ -165,7 +166,7 @@ public class QueryEncoding extends MyriaApiEncoding {
       for (OperatorEncoding<?> operator : fragment.operators) {
         if (operator instanceof ExchangeEncoding) {
           ExchangeEncoding<?> exchange = (ExchangeEncoding<?>) operator;
-          ImmutableList.Builder<Integer> workers = ImmutableList.builder();
+          ImmutableSet.Builder<Integer> workers = ImmutableSet.builder();
           for (ExchangePairID id : exchange.getRealOperatorIds()) {
             if (exchange instanceof AbstractConsumerEncoding) {
               workers.addAll(producerMap.get(id));
@@ -200,7 +201,10 @@ public class QueryEncoding extends MyriaApiEncoding {
 
     /* Instantiate all the operators. */
     for (OperatorEncoding<?> encoding : planFragment) {
-      operators.put(encoding.opName, encoding.construct(server));
+      Operator op = encoding.construct(server);
+      /* helpful for debugging. */
+      op.setOpName(encoding.opName);
+      operators.put(encoding.opName, op);
     }
     /* Connect all the operators. */
     for (OperatorEncoding<?> encoding : planFragment) {
