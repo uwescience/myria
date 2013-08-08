@@ -26,7 +26,7 @@
             "operators": [
                 {
                     "op_name": "SCAN1",
-                    "op_type": "SQLiteScan",
+                    "op_type": "TableScan",
                     "relation_key": {
                         "program_name": "global_join",
                         "relation_name": "smallTable",
@@ -49,7 +49,7 @@
             "operators": [
                 {
                     "op_name": "SCAN2",
-                    "op_type": "SQLiteScan",
+                    "op_type": "TableScan",
                     "relation_key": {
                         "program_name": "global_join",
                         "relation_name": "smallTable",

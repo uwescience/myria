@@ -97,7 +97,7 @@
             "operators": [
                 {
                     "op_name": "scan2a",
-                    "op_type": "SQLiteScan",
+                    "op_type": "TableScan",
                     "relation_key": {
                         "program_name": "multiIDB",
                         "relation_name": "a0",
@@ -185,7 +185,7 @@
             "operators": [
                 {
                     "op_name": "scanr",
-                    "op_type": "SQLiteScan",
+                    "op_type": "TableScan",
                     "relation_key": {
                         "program_name": "multiIDB",
                         "relation_name": "r",
@@ -299,7 +299,7 @@
             "operators": [
                 {
                     "op_name": "scan2b",
-                    "op_type": "SQLiteScan",
+                    "op_type": "TableScan",
                     "relation_key": {
                         "program_name": "multiIDB",
                         "relation_name": "b0",
@@ -478,7 +478,7 @@
             "operators": [
                 {
                     "op_name": "scan2c",
-                    "op_type": "SQLiteScan",
+                    "op_type": "TableScan",
                     "relation_key": {
                         "program_name": "multiIDB",
                         "relation_name": "c0",
