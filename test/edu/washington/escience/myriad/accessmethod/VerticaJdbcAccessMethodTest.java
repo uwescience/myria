@@ -16,8 +16,8 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.operator.JdbcInsert;
-import edu.washington.escience.myriad.operator.JdbcQueryScan;
+import edu.washington.escience.myriad.operator.DbInsert;
+import edu.washington.escience.myriad.operator.DbQueryScan;
 import edu.washington.escience.myriad.operator.TupleSource;
 
 public class VerticaJdbcAccessMethodTest {
@@ -57,7 +57,7 @@ public class VerticaJdbcAccessMethodTest {
   public void testCreateTableAndCountMultipleBatches() throws Exception {
     /* Insert the NUM_TUPLES tuples */
     TupleSource source = new TupleSource(buffer);
-    JdbcInsert insert = new JdbcInsert(source, relationKey, jdbcInfo);
+    DbInsert insert = new DbInsert(source, relationKey, jdbcInfo);
     insert.open(null);
     while (!insert.eos()) {
       insert.nextReady();
@@ -65,10 +65,11 @@ public class VerticaJdbcAccessMethodTest {
     insert.close();
 
     /* Count them and make sure we got the right count. */
-    JdbcQueryScan count =
-        new JdbcQueryScan(jdbcInfo, "SELECT COUNT(*) FROM " + relationKey.toString(jdbcInfo.getDbms()), Schema.of(
+    DbQueryScan count =
+        new DbQueryScan(jdbcInfo, "SELECT COUNT(*) FROM " + relationKey.toString(jdbcInfo.getDbms()), Schema.of(
             ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("count")));
     count.open(null);
+
     TupleBatch result = count.nextReady();
     assertTrue(result != null);
     assertTrue(result.getLong(0, 0) == NUM_TUPLES);

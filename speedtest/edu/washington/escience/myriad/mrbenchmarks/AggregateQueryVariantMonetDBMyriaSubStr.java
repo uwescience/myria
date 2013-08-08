@@ -9,8 +9,8 @@ import com.google.common.collect.ImmutableList;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.operator.JdbcQueryScan;
 import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.operator.DbQueryScan;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.operator.agg.Aggregator;
@@ -37,9 +37,8 @@ public class AggregateQueryVariantMonetDBMyriaSubStr implements QueryPlanGenerat
   @Override
   public Map<Integer, RootOperator[]> getWorkerPlan(int[] allWorkers) throws Exception {
 
-    final JdbcQueryScan localScan =
-        new JdbcQueryScan(SelectQueryMonetDB.jdbcInfo,
-            "select sourceIPAddr, SUM(adRevenue) from UserVisits group by sourceIPAddr", outputSchema);
+    final DbQueryScan localScan =
+        new DbQueryScan("select sourceIPAddr, SUM(adRevenue) from UserVisits group by sourceIPAddr", outputSchema);
 
     final int NUM_LOCAL_TASKS = 5;
 

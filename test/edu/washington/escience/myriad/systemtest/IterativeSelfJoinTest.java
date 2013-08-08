@@ -18,8 +18,8 @@ import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.operator.DupElim;
 import edu.washington.escience.myriad.operator.LocalJoin;
+import edu.washington.escience.myriad.operator.DbQueryScan;
 import edu.washington.escience.myriad.operator.RootOperator;
-import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.operator.TBQueueExporter;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
@@ -142,8 +142,8 @@ public class IterativeSelfJoinTest extends SystemTestBase {
     }
 
     // parallel query generation, duplicate db files
-    final SQLiteQueryScan scan1 = new SQLiteQueryScan(testtableKeys.get(0), tableSchema);
-    final SQLiteQueryScan scan2 = new SQLiteQueryScan(testtableKeys.get(0), tableSchema);
+    final DbQueryScan scan1 = new DbQueryScan(testtableKeys.get(0), tableSchema);
+    final DbQueryScan scan2 = new DbQueryScan(testtableKeys.get(0), tableSchema);
 
     final int numPartition = 2;
     final PartitionFunction<String, Integer> pf0 = new SingleFieldHashPartitionFunction(numPartition); // 2 workers
@@ -160,7 +160,7 @@ public class IterativeSelfJoinTest extends SystemTestBase {
     final ShuffleConsumer sc2[] = new ShuffleConsumer[numIteration];
     final LocalJoin localjoin[] = new LocalJoin[numIteration];
     final DupElim dupelim[] = new DupElim[numIteration];
-    final SQLiteQueryScan scan[] = new SQLiteQueryScan[numIteration];
+    final DbQueryScan scan[] = new DbQueryScan[numIteration];
     ExchangePairID arrayID1, arrayID2, arrayID0;
     arrayID1 = ExchangePairID.newID();
     arrayID2 = ExchangePairID.newID();
@@ -181,7 +181,7 @@ public class IterativeSelfJoinTest extends SystemTestBase {
       if (i == numIteration - 1) {
         break;
       }
-      scan[i] = new SQLiteQueryScan(testtableKeys.get(i), tableSchema);
+      scan[i] = new DbQueryScan(testtableKeys.get(i), tableSchema);
       arrayID1 = ExchangePairID.newID();
       arrayID2 = ExchangePairID.newID();
       sp1[i] = new ShuffleProducer(scan[i], arrayID1, WORKER_ID, pf1);

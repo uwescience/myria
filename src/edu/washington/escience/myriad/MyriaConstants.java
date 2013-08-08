@@ -74,9 +74,14 @@ public final class MyriaConstants {
   public static final String STORAGE_SYSTEM_MYSQL = "mysql";
 
   /**
-   * Execution environment variable, the sqlite file path.
+   * Execution environment variable, the database name.
    * */
-  public static final String EXEC_ENV_VAR_SQLITE_FILE = "sqliteFile";
+  public static final String EXEC_ENV_VAR_DATABASE_CONN_INFO = "execEnvVar.database.conn.info";
+
+  /**
+   * Execution environment variable, the database system.
+   * */
+  public static final String EXEC_ENV_VAR_DATABASE_SYSTEM = "execEnvVar.database.system";
 
   /**
    * Vertica storage.
@@ -124,6 +129,11 @@ public final class MyriaConstants {
   public static final int TCP_CONNECTION_TIMEOUT_MILLIS_DEFAULT_VALUE = 3000;
 
   /**
+   * Default value for {@link MyriaSystemConfigKeys#WORKER_STORAGE_DATABASE_SYSTEM}.
+   * */
+  public static final String WORKER_STORAGE_DATABASE_SYSTEM_DEFAULT_VALUE = MyriaConstants.STORAGE_SYSTEM_SQLITE;
+
+  /**
    * If a thread in a thread pool is idle, how long it should wait before terminates itself. Currently, 5 minutes.
    */
   public static final int THREAD_POOL_KEEP_ALIVE_TIME_IN_MS = 1000 * 60 * 5;
@@ -158,4 +168,7 @@ public final class MyriaConstants {
 
   /** Time interval between two heartbeats. */
   public static final int HEARTBEAT_INTERVAL = 1000;
+
+  /** the database name. */
+  public static final String STORAGE_DATABASE_NAME = "myria.db";
 }

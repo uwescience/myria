@@ -13,7 +13,7 @@ import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.operator.JdbcQueryScan;
+import edu.washington.escience.myriad.operator.DbQueryScan;
 
 /**
  * @author dhalperi
@@ -39,9 +39,8 @@ public class MysqlJdbcAccessMethodTest {
     final ImmutableList<String> columnNames = ImmutableList.of("value");
     final Schema schema = new Schema(types, columnNames);
 
-    /* Build up the QueryScan parameters and open the scan */
-    final JdbcQueryScan scan = new JdbcQueryScan(jdbcInfo, query, schema);
-
+    /* Build up the DbQueryScan parameters and open the scan */
+    final DbQueryScan scan = new DbQueryScan(jdbcInfo, query, schema);
     scan.open(null);
 
     /* Count up the results and assert they match expectations */
