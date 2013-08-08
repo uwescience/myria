@@ -28,12 +28,12 @@ public class ParallelJDBCTest extends SystemTestBase {
 
   @Test
   public void parallelTestJDBC() throws Exception {
-    final String host = "54.245.108.198";
+    final String host = "54.213.118.143";
     final int port = 3306;
-    final String username = "myriad";
+    final String username = "myria";
     final String password = "nays26[shark";
     final String dbms = "mysql";
-    final String databaseName = "myriad_test";
+    final String databaseName = "myria_test";
 
     final String driverClass = "com.mysql.jdbc.Driver";
     final JdbcInfo jdbcInfo = JdbcInfo.of(driverClass, dbms, host, port, databaseName, username, password);
