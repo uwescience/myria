@@ -2,6 +2,7 @@ package edu.washington.escience.myriad.api.encoding;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
 
@@ -27,7 +28,7 @@ public class ShuffleProducerEncoding extends AbstractProducerEncoding<ShufflePro
 
   @Override
   public ShuffleProducer construct(Server server) {
-    List<Integer> workerIds = getRealWorkerIds();
+    Set<Integer> workerIds = getRealWorkerIds();
     return new ShuffleProducer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), MyriaUtils
         .integerCollectionToIntArray(workerIds), argPf.construct(workerIds.size()));
   }

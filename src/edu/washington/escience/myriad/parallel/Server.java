@@ -42,6 +42,7 @@ import edu.washington.escience.myriad.coordinator.catalog.MasterCatalog;
 import edu.washington.escience.myriad.operator.DbInsert;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.RootOperator;
+import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.parallel.ipc.FlowControlBagInputBuffer;
 import edu.washington.escience.myriad.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myriad.parallel.ipc.IPCMessage;
@@ -166,6 +167,11 @@ public final class Server {
    * Queries currently in execution.
    * */
   private final ConcurrentHashMap<Long, MasterQueryPartition> activeQueries;
+
+  /**
+   * Results of succeeded queries, currently the number of tuples received by the SinkRoot.
+   * */
+  private final ConcurrentHashMap<Long, Long> succeededQueryResults;
 
   /**
    * Current alive worker set.
@@ -399,6 +405,7 @@ public final class Server {
     scheduledWorkersTime = new ConcurrentHashMap<Integer, Long>();
 
     activeQueries = new ConcurrentHashMap<Long, MasterQueryPartition>();
+    succeededQueryResults = new ConcurrentHashMap<Long, Long>();
 
     messageQueue = new LinkedBlockingQueue<IPCMessage.Data<TransportMessage>>();
 
@@ -679,6 +686,13 @@ public final class Server {
   }
 
   /**
+   * @return if no query is running.
+   * */
+  public boolean allQueriesCompleted() {
+    return activeQueries.isEmpty();
+  }
+
+  /**
    * Shutdown the master.
    * */
   public void shutdown() {
@@ -857,6 +871,9 @@ public final class Server {
             LOGGER.info("The query #{} succeeds. Time elapse: {}.", queryID, DateTimeUtils
                 .nanoElapseToHumanReadable(mqp.getExecutionStatistics().getQueryExecutionElapse()));
           }
+          if (mqp.getRootOperator() instanceof SinkRoot) {
+            succeededQueryResults.put(queryID, ((SinkRoot) mqp.getRootOperator()).getCount());
+          }
           // TODO success management.
         } else {
           if (LOGGER.isInfoEnabled()) {
@@ -1017,5 +1034,13 @@ public final class Server {
    */
   protected SocketInfo getSocketInfo() {
     return masterSocketInfo;
+  }
+
+  /**
+   * @return the result of the query.
+   * @param id the query id.
+   */
+  public Long getQueryResult(final long id) {
+    return succeededQueryResults.get(id);
   }
 }
