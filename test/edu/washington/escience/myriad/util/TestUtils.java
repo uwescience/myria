@@ -425,6 +425,16 @@ public final class TestUtils {
     return result;
   }
 
+  public static float[] randomFloat(final float min, final float max, final int size) {
+    final float[] result = new float[size];
+    final Random r = new Random();
+    final float range = max - min;
+    for (int i = 0; i < size; i++) {
+      result[i] = r.nextFloat() * range + min;
+    }
+    return result;
+  }
+
   public static HashMap<Tuple, Integer> tupleBatchToTupleBag(final TupleBatchBuffer tbb) {
     final HashMap<Tuple, Integer> result = new HashMap<Tuple, Integer>();
     final Iterator<List<Column<?>>> it = tbb.getAllAsRawColumn().iterator();
