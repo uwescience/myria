@@ -1,23 +1,30 @@
 package edu.washington.escience.myriad.accessmethod;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ExecutionException;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
+import com.almworks.sqlite4java.SQLiteJob;
+import com.almworks.sqlite4java.SQLiteQueue;
 import com.almworks.sqlite4java.SQLiteStatement;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.MyriaConstants;
+import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
+import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnBuilder;
 import edu.washington.escience.myriad.column.ColumnFactory;
@@ -28,7 +35,7 @@ import edu.washington.escience.myriad.column.ColumnFactory;
  * @author dhalperi
  * 
  */
-public final class SQLiteAccessMethod implements AccessMethod {
+public final class SQLiteAccessMethod extends AccessMethod {
 
   /** Default busy timeout is one second. */
   private static final long DEFAULT_BUSY_TIMEOUT = 1000;
@@ -36,6 +43,8 @@ public final class SQLiteAccessMethod implements AccessMethod {
   private static final Logger LOGGER = LoggerFactory.getLogger(SQLiteAccessMethod.class);
   /** The database connection. **/
   private SQLiteConnection sqliteConnection;
+  /** The database queue, for database updates. */
+  private SQLiteQueue sqliteQueue;
   /** The connection information. **/
   private SQLiteInfo sqliteInfo;
   /** Flag that identifies the connection type (read-only or not). **/
@@ -62,19 +71,41 @@ public final class SQLiteAccessMethod implements AccessMethod {
 
     this.readOnly = readOnly;
     sqliteInfo = (SQLiteInfo) connectionInfo;
-    sqliteConnection = null;
-    try {
-      sqliteConnection = new SQLiteConnection(new File(connectionInfo.getDatabase()));
-      if (readOnly) {
-        sqliteConnection.openReadonly();
-      } else {
-        sqliteConnection.open(false);
+
+    File dbFile = new File(sqliteInfo.getDatabase());
+    if (!readOnly) {
+      try {
+        dbFile.createNewFile();
+      } catch (IOException e) {
+        throw new DbException("Could not create database file");
       }
-      sqliteConnection.setBusyTimeout(SQLiteAccessMethod.DEFAULT_BUSY_TIMEOUT);
+    }
+
+    if (!dbFile.exists()) {
+      throw new DbException("Database file " + sqliteInfo.getDatabase() + " does not exist!");
+    }
+
+    sqliteConnection = null;
+    sqliteQueue = null;
+
+    try {
+      if (readOnly) {
+        sqliteConnection = new SQLiteConnection(new File(sqliteInfo.getDatabase()));
+        sqliteConnection.openReadonly();
+        sqliteConnection.setBusyTimeout(SQLiteAccessMethod.DEFAULT_BUSY_TIMEOUT);
+      } else {
+        sqliteQueue = new SQLiteQueue(new File(sqliteInfo.getDatabase())).start();
+
+      }
     } catch (final SQLiteException e) {
       LOGGER.error(e.getMessage(), e);
       throw new DbException(e);
     }
+  }
+
+  @Override
+  public void init() throws DbException {
+    execute("PRAGMA journal_mode=WAL;");
   }
 
   @Override
@@ -90,28 +121,36 @@ public final class SQLiteAccessMethod implements AccessMethod {
 
   @Override
   public void tupleBatchInsert(final String insertString, final TupleBatch tupleBatch) throws DbException {
-    Objects.requireNonNull(sqliteConnection);
+    Objects.requireNonNull(sqliteQueue);
 
-    SQLiteStatement statement = null;
     try {
-      /* BEGIN TRANSACTION */
-      sqliteConnection.exec("BEGIN TRANSACTION");
-
-      /* Set up and execute the query */
-      statement = sqliteConnection.prepare(insertString);
-      tupleBatch.getIntoSQLite(statement);
-
-      /* COMMIT TRANSACTION */
-      sqliteConnection.exec("COMMIT TRANSACTION");
-
-    } catch (final SQLiteException e) {
-      LOGGER.error(e.getMessage(), e);
+      sqliteQueue.execute(new SQLiteJob<Object>() {
+        @Override
+        protected Object job(final SQLiteConnection sqliteConnection) throws DbException {
+          SQLiteStatement statement = null;
+          try {
+            /* BEGIN TRANSACTION */
+            sqliteConnection.exec("BEGIN TRANSACTION");
+            /* Set up and execute the query */
+            statement = sqliteConnection.prepare(insertString);
+            tupleBatch.getIntoSQLite(statement);
+            /* COMMIT TRANSACTION */
+            sqliteConnection.exec("COMMIT TRANSACTION");
+          } catch (final SQLiteException e) {
+            LOGGER.error(e.getMessage());
+            throw new DbException(e);
+          } finally {
+            if (statement != null && !statement.isDisposed()) {
+              statement.dispose();
+            }
+          }
+          return null;
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
       throw new DbException(e);
-    } finally {
-      if (statement != null && !statement.isDisposed()) {
-        statement.dispose();
-      }
     }
+
   }
 
   /** How many times to try to open a database before we give up. Normal is 2-3, outside is 10 to 20. */
@@ -166,12 +205,22 @@ public final class SQLiteAccessMethod implements AccessMethod {
 
   @Override
   public void execute(final String ddlCommand) throws DbException {
-    Objects.requireNonNull(sqliteConnection);
+    Objects.requireNonNull(sqliteQueue);
 
     try {
-      sqliteConnection.exec(ddlCommand);
-    } catch (final SQLiteException e) {
-      LOGGER.error(e.getMessage(), e);
+      sqliteQueue.execute(new SQLiteJob<Object>() {
+        @Override
+        protected Object job(final SQLiteConnection sqliteConnection) throws DbException {
+          try {
+            sqliteConnection.exec(ddlCommand);
+          } catch (final SQLiteException e) {
+            LOGGER.error(e.getMessage(), e);
+            throw new DbException(e);
+          }
+          return null;
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
       throw new DbException(e);
     }
   }
@@ -180,26 +229,35 @@ public final class SQLiteAccessMethod implements AccessMethod {
   public void close() throws DbException {
     if (sqliteConnection != null) {
       sqliteConnection.dispose();
+      sqliteConnection = null;
+    }
+    if (sqliteQueue != null) {
+      try {
+        sqliteQueue.stop(true).join();
+        sqliteQueue = null;
+      } catch (InterruptedException e) {
+        throw new DbException(e);
+      }
     }
   }
 
   /**
    * Inserts a TupleBatch into the SQLite database.
    * 
-   * @param pathToSQLiteDb filename of the SQLite database
+   * @param sqliteInfo SQLite connection information
    * @param insertString parameterized string used to insert tuples
    * @param tupleBatch TupleBatch that contains the data to be inserted
    * @throws DbException if there is an error in the database.
    */
-  public static synchronized void tupleBatchInsert(final String pathToSQLiteDb, final String insertString,
+  public static synchronized void tupleBatchInsert(final SQLiteInfo sqliteInfo, final String insertString,
       final TupleBatch tupleBatch) throws DbException {
 
     SQLiteAccessMethod sqliteAccessMethod = null;
     try {
-      sqliteAccessMethod = new SQLiteAccessMethod(SQLiteInfo.of(pathToSQLiteDb), false);
-      // sqliteAccessMethod.execute("BEGIN TRANSACTION");
+      sqliteAccessMethod = new SQLiteAccessMethod(sqliteInfo, false);
       sqliteAccessMethod.tupleBatchInsert(insertString, tupleBatch);
-      // sqliteAccessMethod.execute("COMMIT TRANSACTION");
+    } catch (DbException e) {
+      throw e;
     } finally {
       if (sqliteAccessMethod != null) {
         sqliteAccessMethod.close();
@@ -210,18 +268,18 @@ public final class SQLiteAccessMethod implements AccessMethod {
   /**
    * Create a SQLite Connection and then expose the results as an Iterator<TupleBatch>.
    * 
-   * @param pathToSQLiteDb filename of the SQLite database
+   * @param sqliteInfo the SQLite database connection information
    * @param queryString string containing the SQLite query to be executed
    * @param schema the Schema describing the format of the TupleBatch containing these results.
    * @return an Iterator<TupleBatch> containing the results of the query
    * @throws DbException if there is an error in the database.
    */
-  public static Iterator<TupleBatch> tupleBatchIteratorFromQuery(final String pathToSQLiteDb, final String queryString,
+  public static Iterator<TupleBatch> tupleBatchIteratorFromQuery(final SQLiteInfo sqliteInfo, final String queryString,
       final Schema schema) throws DbException {
 
     SQLiteAccessMethod sqliteAccessMethod = null;
     try {
-      sqliteAccessMethod = new SQLiteAccessMethod(SQLiteInfo.of(pathToSQLiteDb), true);
+      sqliteAccessMethod = new SQLiteAccessMethod(sqliteInfo, true);
       return sqliteAccessMethod.tupleBatchIteratorFromQuery(queryString, schema);
     } catch (DbException e) {
       if (sqliteAccessMethod != null) {
@@ -229,6 +287,77 @@ public final class SQLiteAccessMethod implements AccessMethod {
       }
       throw e;
     }
+  }
+
+  @Override
+  public String insertStatementFromSchema(final Schema schema, final RelationKey relationKey) {
+    final StringBuilder sb = new StringBuilder();
+    sb.append("INSERT INTO ").append(relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE)).append(" ([");
+    sb.append(StringUtils.join(schema.getColumnNames(), "],["));
+    sb.append("]) VALUES (");
+    for (int i = 0; i < schema.numColumns(); ++i) {
+      if (i > 0) {
+        sb.append(',');
+      }
+      sb.append('?');
+    }
+    sb.append(");");
+    return sb.toString();
+  }
+
+  @Override
+  public String createStatementFromSchema(final Schema schema, final RelationKey relationKey) {
+    final StringBuilder sb = new StringBuilder();
+    sb.append("CREATE TABLE ").append(relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE)).append(" (");
+    for (int i = 0; i < schema.numColumns(); ++i) {
+      if (i > 0) {
+        sb.append(", ");
+      }
+      sb.append('[').append(schema.getColumnName(i)).append("] ").append(typeToSQLiteType(schema.getColumnType(i)));
+    }
+    sb.append(");");
+    return sb.toString();
+  }
+
+  /**
+   * Helper utility for creating SQLite CREATE TABLE statements.
+   * 
+   * @param type a Myriad column type.
+   * @return the name of the SQLite type that matches the given Myriad type.
+   */
+  public static String typeToSQLiteType(final Type type) {
+    switch (type) {
+      case BOOLEAN_TYPE:
+        return "BOOLEAN";
+      case DOUBLE_TYPE:
+        return "DOUBLE";
+      case FLOAT_TYPE:
+        return "DOUBLE";
+      case INT_TYPE:
+        return "INTEGER";
+      case LONG_TYPE:
+        return "INTEGER";
+      case STRING_TYPE:
+        return "TEXT";
+      default:
+        throw new UnsupportedOperationException("Type " + type + " is not supported");
+    }
+  }
+
+  @Override
+  public void createTable(final RelationKey relationKey, final Schema schema, final boolean overwriteTable)
+      throws DbException {
+    Objects.requireNonNull(sqliteQueue);
+    Objects.requireNonNull(sqliteInfo);
+    Objects.requireNonNull(relationKey);
+    Objects.requireNonNull(schema);
+
+    try {
+      execute("DROP TABLE " + relationKey.toString(sqliteInfo.getDbms()) + ";");
+    } catch (DbException e) {
+      ; /* Skip. this is okay. */
+    }
+    execute(createStatementFromSchema(schema, relationKey));
   }
 }
 
@@ -278,7 +407,7 @@ class SQLiteTupleBatchIterator implements Iterator<TupleBatch> {
       }
       this.schema = schema;
     } catch (final SQLiteException e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException(e.getMessage());
     }
   }
 
@@ -311,8 +440,8 @@ class SQLiteTupleBatchIterator implements Iterator<TupleBatch> {
         statement.step();
       }
     } catch (final SQLiteException e) {
-      LOGGER.error("Got in TupleBatchIterator.next()", e);
-      throw new RuntimeException(e);
+      LOGGER.error("Got SQLiteException:" + e + "in TupleBatchIterator.next()");
+      throw new RuntimeException(e.getMessage());
     }
 
     List<Column<?>> columns = new ArrayList<Column<?>>(columnBuilders.size());

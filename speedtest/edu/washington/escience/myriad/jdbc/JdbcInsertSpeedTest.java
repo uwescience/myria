@@ -16,7 +16,7 @@ import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.accessmethod.JdbcAccessMethod;
 import edu.washington.escience.myriad.accessmethod.JdbcInfo;
-import edu.washington.escience.myriad.operator.JdbcQueryScan;
+import edu.washington.escience.myriad.operator.DbQueryScan;
 import edu.washington.escience.myriad.util.JdbcUtils;
 
 /**
@@ -79,7 +79,7 @@ public class JdbcInsertSpeedTest {
       final ImmutableList<Type> countTypes = ImmutableList.of(Type.INT_TYPE);
       final ImmutableList<String> countColumnNames = ImmutableList.of("value");
       final Schema countSchema = new Schema(countTypes, countColumnNames);
-      final JdbcQueryScan validateScan = new JdbcQueryScan(jdbcInfo, countQuery, countSchema);
+      final DbQueryScan validateScan = new DbQueryScan(countQuery, countSchema);
 
       try {
         validateScan.open(null);

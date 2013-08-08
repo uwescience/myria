@@ -37,7 +37,9 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
+import edu.washington.escience.myriad.accessmethod.ConnectionInfo;
 import edu.washington.escience.myriad.accessmethod.SQLiteAccessMethod;
+import edu.washington.escience.myriad.accessmethod.SQLiteInfo;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogMaker;
 import edu.washington.escience.myriad.coordinator.catalog.WorkerCatalog;
@@ -171,7 +173,10 @@ public class SystemTestBase {
   public static File getAbsoluteDBFile(final int workerID) throws CatalogException, FileNotFoundException {
     final String workerDir = FilenameUtils.concat(workerTestBaseFolder, "worker_" + workerID);
     final WorkerCatalog wc = WorkerCatalog.open(FilenameUtils.concat(workerDir, "worker.catalog"));
-    final File ret = new File(wc.getConfigurationValue(MyriaSystemConfigKeys.WORKER_DATA_SQLITE_DB));
+    final SQLiteInfo sqliteInfo =
+        (SQLiteInfo) ConnectionInfo.of(MyriaConstants.STORAGE_SYSTEM_SQLITE, wc
+            .getConfigurationValue(MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_CONN_INFO));
+    final File ret = new File(sqliteInfo.getDatabase());
     wc.close();
     return ret;
   }
@@ -292,7 +297,8 @@ public class SystemTestBase {
   public static void insert(final int workerID, final RelationKey relationKey, final Schema schema,
       final TupleBatch data) throws CatalogException, FileNotFoundException, DbException {
     final String insertTemplate = SQLiteUtils.insertStatementFromSchema(schema, relationKey);
-    SQLiteAccessMethod.tupleBatchInsert(getAbsoluteDBFile(workerID).getAbsolutePath(), insertTemplate, data);
+    SQLiteAccessMethod.tupleBatchInsert(SQLiteInfo.of(getAbsoluteDBFile(workerID).getAbsolutePath()), insertTemplate,
+        data);
   }
 
   public static HashMap<Tuple, Integer> simpleRandomJoinTestBase() throws CatalogException, IOException, DbException {
