@@ -113,7 +113,7 @@ public class VerticaJdbcAccessMethodTest {
 
     /* insert tuples. */
     TupleSource source = new TupleSource(floatTestTb);
-    JdbcInsert insert = new JdbcInsert(source, floatTestRelationKey, jdbcInfo);
+    DbInsert insert = new DbInsert(source, floatTestRelationKey, jdbcInfo);
     insert.open(null);
     while (!insert.eos()) {
       insert.nextReady();
@@ -121,8 +121,8 @@ public class VerticaJdbcAccessMethodTest {
     insert.close();
 
     /* read back. */
-    JdbcQueryScan scan =
-        new JdbcQueryScan(jdbcInfo, "SELECT * FROM " + floatTestRelationKey.toString(jdbcInfo.getDbms()), Schema.of(
+    DbQueryScan scan =
+        new DbQueryScan(jdbcInfo, "SELECT * FROM " + floatTestRelationKey.toString(jdbcInfo.getDbms()), Schema.of(
             ImmutableList.of(Type.STRING_TYPE, Type.FLOAT_TYPE), ImmutableList.of("name", "height")));
     TupleBatchBuffer resultTbb = new TupleBatchBuffer(floatTestSchema);
     scan.open(null);

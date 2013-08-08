@@ -17,7 +17,6 @@ import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.accessmethod.JdbcAccessMethod;
 import edu.washington.escience.myriad.accessmethod.JdbcInfo;
 import edu.washington.escience.myriad.operator.DbQueryScan;
-import edu.washington.escience.myriad.util.JdbcUtils;
 
 /**
  * Test the insertion speed of specified databases.
@@ -100,8 +99,8 @@ public class JdbcInsertSpeedTest {
       // Create the queries
       final String dropQuery = "DROP TABLE " + table;
       final String createQuery =
-          "CREATE TABLE " + table + " (k " + JdbcUtils.typeToDbmsType(Type.INT_TYPE, jdbcInfo.getDbms()) + ", v "
-              + JdbcUtils.typeToDbmsType(Type.STRING_TYPE, jdbcInfo.getDbms()) + ")";
+          "CREATE TABLE " + table + " (k " + JdbcAccessMethod.typeToDbmsType(Type.INT_TYPE, jdbcInfo.getDbms())
+              + ", v " + JdbcAccessMethod.typeToDbmsType(Type.STRING_TYPE, jdbcInfo.getDbms()) + ")";
       final String insertQuery = "INSERT INTO " + table + " VALUES(?, ?)";
       final String countQuery = "SELECT COUNT(*) FROM " + table;
 

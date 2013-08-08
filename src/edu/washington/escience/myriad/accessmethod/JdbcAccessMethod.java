@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myriad.DbException;
+import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.RelationKey;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
@@ -23,7 +24,6 @@ import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnBuilder;
 import edu.washington.escience.myriad.column.ColumnFactory;
-import edu.washington.escience.myriad.util.JdbcUtils;
 
 /**
  * Access method for a JDBC database. Exposes data as TupleBatches.
@@ -222,7 +222,7 @@ public final class JdbcAccessMethod extends AccessMethod {
     } catch (DbException e) {
       ; /* Skip. this is okay. */
     }
-    jdbcAccessMethod.execute(JdbcUtils.createStatementFromSchema(schema, relationKey, dbms));
+    jdbcAccessMethod.execute(createStatementFromSchema(schema, relationKey, dbms));
     jdbcAccessMethod.close();
   }
 
@@ -244,6 +244,27 @@ public final class JdbcAccessMethod extends AccessMethod {
     return sb.toString();
   }
 
+  /**
+   * Generates the create table statement string for a relation in the database.
+   * 
+   * @param schema the relation schema
+   * @param relationKey the relation name
+   * @param dbms the DBMS on which the table will be created
+   * @return the create table statement string
+   */
+  public static String createStatementFromSchema(final Schema schema, final RelationKey relationKey, final String dbms) {
+    final StringBuilder sb = new StringBuilder();
+    sb.append("CREATE TABLE ").append(relationKey.toString(dbms)).append(" (");
+    for (int i = 0; i < schema.numColumns(); ++i) {
+      if (i > 0) {
+        sb.append(", ");
+      }
+      sb.append(schema.getColumnName(i)).append(" ").append(typeToDbmsType(schema.getColumnType(i), dbms));
+    }
+    sb.append(");");
+    return sb.toString();
+  }
+
   @Override
   public String createStatementFromSchema(final Schema schema, final RelationKey relationKey) {
     final StringBuilder sb = new StringBuilder();
@@ -252,36 +273,63 @@ public final class JdbcAccessMethod extends AccessMethod {
       if (i > 0) {
         sb.append(", ");
       }
-      sb.append(schema.getColumnName(i)).append(" ").append(typeToDbmsType(schema.getColumnType(i)));
+      sb.append(schema.getColumnName(i)).append(" ")
+          .append(typeToDbmsType(schema.getColumnType(i), jdbcInfo.getDbms()));
     }
     sb.append(");");
     return sb.toString();
   }
 
   /**
-   * Helper utility for creating JDBC CREATE TABLE statements.
+   * Generate a JDBC CREATE TABLE statement for the given table using the configured ConnectionInfo.
    * 
    * @param type a Myriad column type.
    * @return the name of the DBMS type that matches the given Myriad type.
    */
-  public static String typeToDbmsType(final Type type) {
+  public String typeToDbmsType(final Type type) {
+    return typeToDbmsType(type, jdbcInfo.getDbms());
+  }
+
+  /**
+   * Helper utility for creating JDBC CREATE TABLE statements.
+   * 
+   * @param type a Myriad column type.
+   * @param dbms the description of the DBMS, e.g., "mysql".
+   * @return the name of the DBMS type that matches the given Myriad type.
+   */
+  public static String typeToDbmsType(final Type type, final String dbms) {
     switch (type) {
       case BOOLEAN_TYPE:
         return "BOOLEAN";
       case DOUBLE_TYPE:
-        return "DOUBLE";
+        if (dbms.equalsIgnoreCase(MyriaConstants.STORAGE_SYSTEM_VERTICA)) {
+          return "DOUBLE PRECISION";
+        } else {
+          return "DOUBLE";
+        }
       case FLOAT_TYPE:
-        return "DOUBLE";
+        if (dbms.equalsIgnoreCase(MyriaConstants.STORAGE_SYSTEM_VERTICA)) {
+          return "FLOAT";
+        } else {
+          return "DOUBLE";
+        }
       case INT_TYPE:
         return "INTEGER";
       case LONG_TYPE:
-        return "INTEGER";
+        return "BIGINT";
       case STRING_TYPE:
-        return "TEXT";
+        if (dbms.equalsIgnoreCase(MyriaConstants.STORAGE_SYSTEM_VERTICA)) {
+          return "VARCHAR(65000)";
+        } else {
+          return "TEXT";
+        }
+      case DATETIME_TYPE:
+        return "TIMESTAMP";
       default:
         throw new UnsupportedOperationException("Type " + type + " is not supported");
     }
   }
+
 }
 
 /**
