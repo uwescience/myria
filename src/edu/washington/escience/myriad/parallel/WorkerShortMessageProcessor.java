@@ -9,7 +9,6 @@ import org.jboss.netty.channel.ChannelHandler.Sharable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.parallel.ipc.AttachmentableAdapter;
 import edu.washington.escience.myriad.parallel.ipc.IPCMessage;
 import edu.washington.escience.myriad.parallel.ipc.ShortMessageProcessor;
@@ -101,7 +100,7 @@ public final class WorkerShortMessageProcessor extends AttachmentableAdapter imp
         ObjectInputStream osis = null;
         try {
           osis = new ObjectInputStream(new ByteArrayInputStream(qm.getQuery().getQuery().toByteArray()));
-          final RootOperator[] operators = (RootOperator[]) (osis.readObject());
+          final SingleQueryPlanWithArgs operators = (SingleQueryPlanWithArgs) (osis.readObject());
           q = new WorkerQueryPartition(operators, queryId, ownerWorker);
           result = ownerWorker.getQueryQueue().offer(q);
           if (!result) {

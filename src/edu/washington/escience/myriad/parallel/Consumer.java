@@ -1,6 +1,8 @@
 package edu.washington.escience.myriad.parallel;
 
 import java.util.BitSet;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -73,6 +75,12 @@ public class Consumer extends LeafOperator {
   private transient boolean nonBlockingExecution;
 
   /**
+   * The worker this operator is located at.
+   * 
+   */
+  private transient TaskResourceManager taskResourceManager;
+
+  /**
    * @return my exchange channels.
    * @param myWorkerID for parsing self-references.
    */
@@ -136,8 +144,8 @@ public class Consumer extends LeafOperator {
     }
     workerIdToIndex = new TUnmodifiableIntIntMap(tmp);
 
-    TaskResourceManager qem = (TaskResourceManager) execUnitEnv.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER);
-    nonBlockingExecution = qem.getExecutionMode() == QueryExecutionMode.NON_BLOCKING;
+    taskResourceManager = (TaskResourceManager) execUnitEnv.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER);
+    nonBlockingExecution = taskResourceManager.getExecutionMode() == QueryExecutionMode.NON_BLOCKING;
   }
 
   /**
@@ -192,14 +200,23 @@ public class Consumer extends LeafOperator {
   @Override
   public final void checkEOSAndEOI() {
 
-    if (workerEOS.nextClearBit(0) >= sourceWorkers.size()) {
+    int numExpecting = sourceWorkers.size();
+
+    if (taskResourceManager.getOwnerTask().getOwnerQuery().getFTMode().equals("abandon")) {
+      Set<Integer> expectingWorkers = new HashSet<Integer>();
+      expectingWorkers.addAll(sourceWorkers);
+      expectingWorkers.removeAll(taskResourceManager.getOwnerTask().getOwnerQuery().getMissingWorkers());
+      numExpecting = expectingWorkers.size();
+    }
+
+    if (workerEOS.cardinality() >= numExpecting) {
       setEOS();
       return;
     }
     BitSet tmp = (BitSet) workerEOI.clone();
     tmp.or(workerEOS);
     // EOS could be used as an EOI
-    if (tmp.nextClearBit(0) >= sourceWorkers.size()) {
+    if (tmp.cardinality() >= numExpecting) {
       setEOI(true);
       workerEOI.clear();
     }

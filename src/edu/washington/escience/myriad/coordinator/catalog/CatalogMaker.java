@@ -87,6 +87,7 @@ public final class CatalogMaker {
     BufferedWriter writer = new BufferedWriter(new FileWriter(temp));
     writer.write("[deployment]\n");
     writer.write("path = " + directoryName + "\n");
+    /* make description = null to distinguish with deploying using deployment.cfg. */
     writer.write("[master]\n");
     writer.write("0 = localhost:" + masterConfigurations.get(MyriaSystemConfigKeys.IPC_SERVER_PORT) + "\n");
     writer.write("[workers]\n");

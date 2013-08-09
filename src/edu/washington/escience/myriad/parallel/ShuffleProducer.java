@@ -50,7 +50,7 @@ public class ShuffleProducer extends Producer {
       final TupleBatchBuffer etb = buffers[i];
       while ((dm = etb.popAnyUsingTimeout()) != null) {
         try {
-          writeMessage(i, dm);
+          writeMessage(i, dm, etb);
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
           return;
@@ -66,7 +66,7 @@ public class ShuffleProducer extends Producer {
     for (int i = 0; i < numChannels(); i++) {
       while ((dm = buffers[i].popAny()) != null) {
         try {
-          writeMessage(i, dm);
+          writeMessage(i, dm, buffers[i]);
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
           return;
@@ -76,7 +76,6 @@ public class ShuffleProducer extends Producer {
     for (int p = 0; p < numChannels(); p++) {
       super.channelEnds(p);
     }
-
   }
 
   @Override
@@ -85,21 +84,16 @@ public class ShuffleProducer extends Producer {
     TupleBatchBuffer[] buffers = getBuffers();
     TupleBatch eoiTB = TupleBatch.eoiTupleBatch(getSchema());
     for (int i = 0; i < numChannels(); i++) {
+      eoiTB.compactInto(buffers[i]);
+    }
+    for (int i = 0; i < numChannels(); i++) {
       while ((dm = buffers[i].popAny()) != null) {
         try {
-          writeMessage(i, dm);
+          writeMessage(i, dm, buffers[i]);
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
           return;
         }
-      }
-    }
-    for (int i = 0; i < numChannels(); i++) {
-      try {
-        writeMessage(i, eoiTB);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        return;
       }
     }
   }
