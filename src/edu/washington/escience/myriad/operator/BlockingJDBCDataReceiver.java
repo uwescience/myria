@@ -15,15 +15,10 @@ import edu.washington.escience.myriad.accessmethod.JdbcInfo;
 /**
  * Blocking when receiving data from children.
  * */
-public final class BlockingJDBCDataReceiver extends Operator {
+public final class BlockingJDBCDataReceiver extends UnaryOperator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
-
-  /**
-   * the child.
-   * */
-  private Operator child;
 
   /**
    * JDBC info.
@@ -51,8 +46,8 @@ public final class BlockingJDBCDataReceiver extends Operator {
    * @param child the child.
    * */
   public BlockingJDBCDataReceiver(final String tableName, final JdbcInfo jdbcInfo, final Operator child) {
+    super(child);
     this.tableName = tableName;
-    this.child = child;
     this.jdbcInfo = jdbcInfo;
     final Schema s = child.getSchema();
     columnNames = s.getColumnNames();
@@ -68,6 +63,7 @@ public final class BlockingJDBCDataReceiver extends Operator {
 
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
+    final Operator child = getChild();
     TupleBatch tb = null;
     tb = child.nextReady();
     while (tb != null) {
@@ -79,22 +75,12 @@ public final class BlockingJDBCDataReceiver extends Operator {
   }
 
   @Override
-  public Operator[] getChildren() {
-    return new Operator[] { child };
-  }
-
-  @Override
   public Schema getSchema() {
-    return child.getSchema();
+    return getChild().getSchema();
   }
 
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-  }
-
-  @Override
-  public void setChildren(final Operator[] children) {
-    child = children[0];
   }
 
 }

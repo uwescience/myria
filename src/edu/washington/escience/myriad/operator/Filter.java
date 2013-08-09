@@ -12,7 +12,7 @@ import edu.washington.escience.myriad.TupleBatch;
 /**
  * Filter is an operator that implements a relational select.
  */
-public final class Filter extends Operator {
+public final class Filter extends UnaryOperator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -20,10 +20,6 @@ public final class Filter extends Operator {
    * The operator.
    * */
   private final Predicate predicate;
-  /**
-   * the child.
-   * */
-  private Operator child;
 
   /**
    * Constructor accepts a predicate to apply and a child operator to read tuples to filter from.
@@ -32,8 +28,8 @@ public final class Filter extends Operator {
    * @param child The child operator
    */
   public Filter(final Predicate predicate, final Operator child) {
+    super(child);
     this.predicate = predicate;
-    this.child = child;
   }
 
   @Override
@@ -44,36 +40,25 @@ public final class Filter extends Operator {
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
     TupleBatch tmp = null;
-    tmp = child.nextReady();
+    tmp = getChild().nextReady();
     while (tmp != null) {
       // tmp = child.next();
       tmp = tmp.filter(predicate);
       if (tmp.numTuples() > 0) {
         return tmp;
       }
-      tmp = child.nextReady();
+      tmp = getChild().nextReady();
     }
     return null;
   }
 
   @Override
-  public Operator[] getChildren() {
-    return new Operator[] { child };
-  }
-
-  @Override
   public Schema getSchema() {
-    return child.getSchema();
+    return getChild().getSchema();
   }
 
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException, NoSuchElementException {
     // need no init
   }
-
-  @Override
-  public void setChildren(final Operator[] children) {
-    child = children[0];
-  }
-
 }

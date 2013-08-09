@@ -16,11 +16,12 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.operator.UnaryOperator;
 
 /**
  * The Aggregation operator that computes an aggregate (e.g., sum, avg, max, min) with a single group by column.
  */
-public class SingleGroupByAggregate extends Operator {
+public class SingleGroupByAggregate extends UnaryOperator {
 
   /**
    * default serialization ID.
@@ -31,10 +32,6 @@ public class SingleGroupByAggregate extends Operator {
    * result schema.
    * */
   private Schema schema;
-  /**
-   * the child.
-   * */
-  private Operator child;
 
   /**
    * compute multiple aggregates in the same time. The columns to compute the aggregates are
@@ -80,18 +77,17 @@ public class SingleGroupByAggregate extends Operator {
    * @param aggOps The aggregation operator to use
    */
   public SingleGroupByAggregate(final Operator child, final int[] afields, final int gfield, final int[] aggOps) {
+    super(child);
     Objects.requireNonNull(afields);
     if (afields.length == 0) {
       throw new IllegalArgumentException("aggregation fields must not be empty");
     }
 
-    this.child = child;
     this.afields = afields;
     gColumn = gfield;
     this.aggOps = aggOps;
     agg = new Aggregator<?>[aggOps.length];
     groupAggs = new HashMap<Object, Aggregator<?>[]>();
-    schema = generateSchema(child, groupAggs, gColumn, afields, agg, aggOps);
   }
 
   /**
@@ -188,6 +184,7 @@ public class SingleGroupByAggregate extends Operator {
   @Override
   protected final TupleBatch fetchNextReady() throws DbException {
     TupleBatch tb = null;
+    final Operator child = getChild();
 
     if (resultBuffer.numTuples() > 0) {
       return resultBuffer.popAny();
@@ -209,11 +206,6 @@ public class SingleGroupByAggregate extends Operator {
   }
 
   @Override
-  public final Operator[] getChildren() {
-    return new Operator[] { child };
-  }
-
-  @Override
   public final Schema getSchema() {
     return schema;
   }
@@ -227,20 +219,14 @@ public class SingleGroupByAggregate extends Operator {
 
   @Override
   protected final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+    schema = generateSchema(getChild(), groupAggs, gColumn, afields, agg, aggOps);
     groupAggs = new HashMap<Object, Aggregator<?>[]>();
     groupedTupleBatches = new HashMap<Object, Pair<Object, TupleBatchBuffer>>();
     resultBuffer = new TupleBatchBuffer(schema);
-
-  }
-
-  @Override
-  public final void setChildren(final Operator[] children) {
-    child = children[0];
-    schema = generateSchema(child, groupAggs, gColumn, afields, agg, aggOps);
   }
 
   /**
-   * Generates the schema for MultiGroupByAggregate.
+   * Generates the schema for SingleGroupByAggregate.
    * 
    * @param child the child operator
    * @param groupAggs the aggregator for each grouping

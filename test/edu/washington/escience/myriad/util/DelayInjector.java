@@ -8,16 +8,12 @@ import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.operator.UnaryOperator;
 
 /**
  * Inject delay in processing each TupleBatch.
  * */
-public class DelayInjector extends Operator {
-
-  /**
-   * child.
-   * */
-  private Operator child;
+public class DelayInjector extends UnaryOperator {
 
   /**
    * Delay in milliseconds.
@@ -36,9 +32,7 @@ public class DelayInjector extends Operator {
    * @param child the child.
    * */
   public DelayInjector(final long delay, final TimeUnit unit, final Operator child) {
-    this.child = child;
-    onetime = false;
-    delayInMS = unit.toMillis(delay);
+    this(delay, unit, child, false);
   }
 
   /**
@@ -48,7 +42,7 @@ public class DelayInjector extends Operator {
    * @param onetime if delay only at the first time of fetchNextReady.
    * */
   public DelayInjector(final long delay, final TimeUnit unit, final Operator child, final boolean onetime) {
-    this.child = child;
+    super(child);
     this.onetime = onetime;
     delayInMS = unit.toMillis(delay);
   }
@@ -57,11 +51,6 @@ public class DelayInjector extends Operator {
    * 
    */
   private static final long serialVersionUID = 1L;
-
-  @Override
-  public final Operator[] getChildren() {
-    return new Operator[] { child };
-  }
 
   @Override
   protected final void init(final ImmutableMap<String, Object> initProperties) throws DbException {
@@ -73,7 +62,7 @@ public class DelayInjector extends Operator {
 
   @Override
   protected final TupleBatch fetchNextReady() throws DbException {
-    TupleBatch tb = child.nextReady();
+    TupleBatch tb = getChild().nextReady();
     try {
       if (onetime && firsttime || !onetime) {
         Thread.sleep(delayInMS);
@@ -87,12 +76,7 @@ public class DelayInjector extends Operator {
 
   @Override
   public final Schema getSchema() {
-    return child.getSchema();
-  }
-
-  @Override
-  public final void setChildren(final Operator[] children) {
-    child = children[0];
+    return getChild().getSchema();
   }
 
 }
