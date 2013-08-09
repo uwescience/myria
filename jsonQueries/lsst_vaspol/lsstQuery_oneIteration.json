@@ -4,7 +4,7 @@
             "operators": [
                 {
                     "op_name": "SCAN1",
-                    "op_type": "SQLiteScan",
+                    "op_type": "TableScan",
                     "relation_key": {
                         "program_name": "LSST_useCase",
                         "relation_name": "testtable",
@@ -35,7 +35,7 @@
             "operators": [
                 {
                     "op_name": "SCAN2",
-                    "op_type": "SQLiteScan",
+                    "op_type": "TableScan",
                     "relation_key": {
                         "program_name": "LSST_useCase",
                         "relation_name": "testtable",
@@ -198,7 +198,7 @@
                 {
                     "arg_child": "CC1",
                     "op_name": "INSERT",
-                    "op_type": "SQLiteInsert",
+                    "op_type": "DbInsert",
                     "relation_key": {
                         "program_name": "LSST_useCase",
                         "relation_name": "queryResult3",

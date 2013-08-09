@@ -143,7 +143,7 @@ public final class MyriaSystemConfigKeys {
       config.put(WORKING_DIRECTORY, deployment.get("path"));
     }
     if (!config.containsKey(DESCRIPTION) || config.get(DESCRIPTION) == null) {
-      config.put(DESCRIPTION, deployment.get("description"));
+      config.put(DESCRIPTION, deployment.get("name"));
     }
     if (!config.containsKey(USERNAME) || config.get(USERNAME) == null) {
       config.put(USERNAME, deployment.get("username"));
