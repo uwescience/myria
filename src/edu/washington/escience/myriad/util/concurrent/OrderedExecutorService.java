@@ -13,7 +13,7 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package edu.washington.escience.myriad.util;
+package edu.washington.escience.myriad.util.concurrent;
 
 import java.util.IdentityHashMap;
 import java.util.Queue;

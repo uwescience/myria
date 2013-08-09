@@ -42,6 +42,7 @@ import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.util.IPCUtils;
 import edu.washington.escience.myriad.util.JVMUtils;
+import edu.washington.escience.myriad.util.concurrent.RenamingThreadFactory;
 
 /**
  * Workers do the real query execution. A query received by the server will be pre-processed and then dispatched to the

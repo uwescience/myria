@@ -1,4 +1,4 @@
-package edu.washington.escience.myriad.parallel;
+package edu.washington.escience.myriad.util.concurrent;
 
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;

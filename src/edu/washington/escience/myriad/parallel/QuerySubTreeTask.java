@@ -19,7 +19,7 @@ import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.parallel.ipc.StreamIOChannelID;
 import edu.washington.escience.myriad.util.AtomicUtils;
-import edu.washington.escience.myriad.util.ReentrantSpinLock;
+import edu.washington.escience.myriad.util.concurrent.ReentrantSpinLock;
 
 /**
  * Non-blocking driving code of a sub-query.

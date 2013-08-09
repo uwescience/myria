@@ -15,7 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myriad.util.IPCUtils;
-import edu.washington.escience.myriad.util.ThreadStackDump;
+import edu.washington.escience.myriad.util.concurrent.ThreadStackDump;
 
 /**
  * Recording the various context information of a channel. The most important part of this class is the state machine of

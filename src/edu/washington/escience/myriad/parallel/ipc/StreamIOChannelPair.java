@@ -7,7 +7,7 @@ import com.google.common.base.Preconditions;
 import edu.washington.escience.myriad.parallel.Consumer;
 import edu.washington.escience.myriad.parallel.Producer;
 import edu.washington.escience.myriad.util.IPCUtils;
-import edu.washington.escience.myriad.util.ReentrantSpinLock;
+import edu.washington.escience.myriad.util.concurrent.ReentrantSpinLock;
 
 /**
  * The data structure recording the logical role of {@link StreamInputChannel} and {@link StreamOutputChannel} that an

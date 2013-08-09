@@ -1,4 +1,4 @@
-package edu.washington.escience.myriad.util;
+package edu.washington.escience.myriad.util.concurrent;
 
 /**
  * Dump thread stack.
