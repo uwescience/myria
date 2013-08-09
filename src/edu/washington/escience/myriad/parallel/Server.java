@@ -96,6 +96,7 @@ public final class Server {
                   LOGGER.debug("getting heartbeat from worker " + senderID);
                 }
                 updateHeartbeat(senderID);
+                // TODO: tell rejoin queries to update worker list
                 break;
               default:
                 if (LOGGER.isErrorEnabled()) {
@@ -487,6 +488,22 @@ public final class Server {
             if (mqp.getWorkerAssigned().contains(workerId)) {
               mqp.workerFail(workerId, new LostHeartbeatException());
             }
+            if (mqp.getFTMode().equals("abandon")) {
+              mqp.getMissingWorkers().add(workerId);
+              mqp.triggerTasks();
+            }
+          }
+
+          try {
+            /* remove the failed worker from the connectionPool. */
+            connectionPool.removeRemote(workerId).await();
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return;
+          }
+          /* tell other workers to remove it too. */
+          for (int aliveWorkerId : aliveWorkers.keySet()) {
+            connectionPool.sendShortMessage(aliveWorkerId, IPCUtils.removeWorkerTM(workerId));
           }
 
           /* Temporary solution: using exactly the same hostname:port. One good thing is the data is still there. */
@@ -498,23 +515,12 @@ public final class Server {
           /* a new worker will be launched, put its information in scheduledWorkers. */
           scheduledWorkers.put(newWorkerId, new SocketInfo(newAddress, newPort));
           scheduledWorkersTime.put(newWorkerId, currentTime);
-          try {
-            /* remove the failed worker from the connectionPool. */
-            connectionPool.removeRemote(workerId).await();
-            connectionPool.putRemote(newWorkerId, new SocketInfo(newAddress, newPort));
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return;
-          }
-          /* tell other workers to remove it too. */
-          for (int aliveWorkerId : aliveWorkers.keySet()) {
-            connectionPool.sendShortMessage(aliveWorkerId, IPCUtils.removeWorkerTM(workerId));
-          }
 
+          connectionPool.putRemote(newWorkerId, new SocketInfo(newAddress, newPort));
           /* start a thread to launch the new worker. */
           new Thread(new NewWorkerScheduler(newWorkerId, newAddress, newPort)).start();
 
-          // TODO: let SPs resend buffered data
+          // TODO: rejoin
         }
       }
       for (Integer workerId : scheduledWorkers.keySet()) {
@@ -579,7 +585,10 @@ public final class Server {
 
         final String workingDir = config.get("paths").get(workerId + "");
         final String description = catalog.getConfigurationValue(MyriaSystemConfigKeys.DESCRIPTION);
-        final String remotePath = workingDir + "/" + description + "-files/" + description;
+        String remotePath = workingDir;
+        if (description != null) {
+          remotePath += "/" + description + "-files" + "/" + description;
+        }
         DeploymentUtils.mkdir(address, remotePath);
         String localPath = temp + "/" + "worker_" + workerId;
         DeploymentUtils.rsyncFileToRemote(localPath, address, remotePath);
@@ -659,7 +668,7 @@ public final class Server {
   private QueryFuture dispatchWorkerQueryPlans(final MasterQueryPartition mqp) throws DbException {
     // directly set the master part as already received.
     mqp.queryReceivedByWorker(MyriaConstants.MASTER_ID);
-    for (final Map.Entry<Integer, RootOperator[]> e : mqp.getWorkerPlans().entrySet()) {
+    for (final Map.Entry<Integer, SingleQueryPlanWithArgs> e : mqp.getWorkerPlans().entrySet()) {
       final Integer workerID = e.getKey();
       while (!aliveWorkers.containsKey(workerID)) {
         try {
@@ -810,34 +819,20 @@ public final class Server {
   /**
    * 
    * @return true if the query plan is accepted and scheduled for execution.
-   * @param masterPlan the master part of the plan
-   * @param workerPlans the worker part of the plan, {workerID -> RootOperator[]}
+   * @param masterRoot the root operator of the master plan
+   * @param workerRoots the roots of the worker part of the plan, {workerID -> RootOperator[]}
    * @throws DbException if any error occurs.
    * @throws CatalogException catalog errors.
    * */
-  public QueryFuture submitQueryPlan(final RootOperator masterPlan, final Map<Integer, RootOperator[]> workerPlans)
+  public QueryFuture submitQueryPlan(final RootOperator masterRoot, final Map<Integer, RootOperator[]> workerRoots)
       throws DbException, CatalogException {
-    String catalogInfoPlaceHolder = "MasterPlan: " + masterPlan + "; WorkerPlan: " + workerPlans;
-    return submitQuery(catalogInfoPlaceHolder, catalogInfoPlaceHolder, masterPlan, workerPlans);
-  }
-
-  /**
-   * Submit a query for execution. The plans may be removed in the future if the query compiler and schedulers are ready
-   * such that the plan can be generated from either the rawQuery or the logicalRa.
-   * 
-   * @param rawQuery the raw user-defined query. E.g., the source Datalog program.
-   * @param logicalRa the logical relational algebra of the compiled plan.
-   * @param plans the physical parallel plan fragments for each worker and the master.
-   * @throws DbException if any error in non-catalog data processing
-   * @throws CatalogException if any error in processing catalog
-   * @return the query future from which the query status can be looked up.
-   * */
-  public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final Map<Integer, RootOperator[]> plans)
-      throws DbException, CatalogException {
-    RootOperator masterPlan = plans.get(MyriaConstants.MASTER_ID)[0];
-    Map<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>(plans);
-    workerPlans.remove(MyriaConstants.MASTER_ID);
-    return this.submitQuery(rawQuery, logicalRa, masterPlan, workerPlans);
+    String catalogInfoPlaceHolder = "MasterPlan: " + masterRoot + "; WorkerPlan: " + workerRoots;
+    Map<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
+    for (Entry<Integer, RootOperator[]> entry : workerRoots.entrySet()) {
+      workerPlans.put(entry.getKey(), new SingleQueryPlanWithArgs(entry.getValue()));
+    }
+    return submitQuery(catalogInfoPlaceHolder, catalogInfoPlaceHolder, new SingleQueryPlanWithArgs(masterRoot),
+        workerPlans);
   }
 
   /**
@@ -852,8 +847,9 @@ public final class Server {
    * @throws CatalogException if any error in processing catalog
    * @return the query future from which the query status can be looked up.
    * */
-  public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final RootOperator masterPlan,
-      final Map<Integer, RootOperator[]> workerPlans) throws DbException, CatalogException {
+  public QueryFuture submitQuery(final String rawQuery, final String logicalRa,
+      final SingleQueryPlanWithArgs masterPlan, final Map<Integer, SingleQueryPlanWithArgs> workerPlans)
+      throws DbException, CatalogException {
     workerPlans.remove(MyriaConstants.MASTER_ID);
     final long queryID = catalog.newQuery(rawQuery, logicalRa);
     final MasterQueryPartition mqp = new MasterQueryPartition(masterPlan, workerPlans, queryID, this);
@@ -949,15 +945,15 @@ public final class Server {
     /* The workers' plan */
     ShuffleConsumer gather = new ShuffleConsumer(source.getSchema(), scatterId, new int[] { MyriaConstants.MASTER_ID });
     DbInsert insert = new DbInsert(gather, relationKey, true);
-    Map<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
+    Map<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
     for (Integer workerId : workersArray) {
-      workerPlans.put(workerId, new RootOperator[] { insert });
+      workerPlans.put(workerId, new SingleQueryPlanWithArgs(insert));
     }
 
     try {
       /* Start the workers */
-      submitQuery("ingest " + relationKey.toString("sqlite"), "ingest " + relationKey.toString("sqlite"), scatter,
-          workerPlans).sync();
+      submitQuery("ingest " + relationKey.toString("sqlite"), "ingest " + relationKey.toString("sqlite"),
+          new SingleQueryPlanWithArgs(scatter), workerPlans).sync();
       /* Now that the query has finished, add the metadata about this relation to the dataset. */
       catalog.addRelationMetadata(relationKey, source.getSchema());
 

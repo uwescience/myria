@@ -348,7 +348,7 @@ public interface IPCMessage {
 
     @Override
     public String toString() {
-      return String.format("IPCMessage.StreamData(from:%1$d,stream:%1$d,payload:%3$s)", getRemoteID(), streamID,
+      return String.format("IPCMessage.StreamData(from:%1$d,stream:%2$d,payload:%3$s)", getRemoteID(), streamID,
           getPayload());
     }
   }

@@ -1,6 +1,7 @@
 package edu.washington.escience.myriad.parallel;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -44,7 +45,7 @@ public class MasterQueryPartition implements QueryPartition {
      * @param workerID owner worker id of the partition.
      * @param workerPlan the query plan of this partition.
      * */
-    WorkerExecutionInfo(final int workerID, final RootOperator[] workerPlan) {
+    WorkerExecutionInfo(final int workerID, final SingleQueryPlanWithArgs workerPlan) {
       this.workerID = workerID;
       this.workerPlan = workerPlan;
       workerReceiveQuery = new DefaultQueryFuture(MasterQueryPartition.this, false);
@@ -71,10 +72,13 @@ public class MasterQueryPartition implements QueryPartition {
           if (!future.isSuccess()) {
             if (!(future.getCause() instanceof QueryKilledException)) {
               // Only record non-killed exceptions
-              failedQueryPartitions.put(workerID, future.getCause());
-
-              // if any worker fails because of some exception, kill the query.
-              kill();
+              if (ftMode.equals("none")) {
+                failedQueryPartitions.put(workerID, future.getCause());
+                // if any worker fails because of some exception, kill the query.
+                kill();
+              } else if (ftMode.equals("abandon")) {
+                // do nothing
+              }
             }
           }
           if (current >= total) {
@@ -124,7 +128,7 @@ public class MasterQueryPartition implements QueryPartition {
     /**
      * The query plan that's assigned to the worker.
      * */
-    private final RootOperator[] workerPlan;
+    private final SingleQueryPlanWithArgs workerPlan;
 
     /**
      * The future denoting the status of query partition dispatching to the worker event.
@@ -168,6 +172,11 @@ public class MasterQueryPartition implements QueryPartition {
   private final Server master;
 
   /**
+   * The FT mode.
+   * */
+  private final String ftMode;
+
+  /**
    * The priority.
    * */
   private volatile int priority;
@@ -196,6 +205,11 @@ public class MasterQueryPartition implements QueryPartition {
    * The future object denoting the query execution progress.
    * */
   private final QueryFuture queryExecutionFuture = new DefaultQueryFuture(this, false);
+
+  /**
+   * Current alive worker set.
+   * */
+  private final Set<Integer> missingWorkers;
 
   /**
    * Store the current pause future if the query is in pause, otherwise null.
@@ -247,8 +261,9 @@ public class MasterQueryPartition implements QueryPartition {
   /**
    * @return worker plans.
    * */
-  final Map<Integer, RootOperator[]> getWorkerPlans() {
-    Map<Integer, RootOperator[]> result = new HashMap<Integer, RootOperator[]>(workerExecutionInfo.size());
+  final Map<Integer, SingleQueryPlanWithArgs> getWorkerPlans() {
+    Map<Integer, SingleQueryPlanWithArgs> result =
+        new HashMap<Integer, SingleQueryPlanWithArgs>(workerExecutionInfo.size());
     for (Entry<Integer, WorkerExecutionInfo> e : workerExecutionInfo.entrySet()) {
       if (e.getKey() != MyriaConstants.MASTER_ID) {
         result.put(e.getKey(), e.getValue().workerPlan);
@@ -337,30 +352,33 @@ public class MasterQueryPartition implements QueryPartition {
       return;
     }
 
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug("Received query complete (fail) message from worker: {}", workerID);
+    if (LOGGER.isInfoEnabled()) {
+      LOGGER.info("Received query complete (fail) message from worker: {}, cause: {}", workerID, cause.toString());
     }
     wei.workerCompleteQuery.setFailure(cause);
   }
 
   /**
-   * @param rootOp the root operator of the master query.
+   * @param masterPlan the master plan.
    * @param workerPlans the worker plans.
    * @param queryID queryID.
    * @param master the master on which the query partition is running.
    * */
-  public MasterQueryPartition(final RootOperator rootOp, final Map<Integer, RootOperator[]> workerPlans,
-      final long queryID, final Server master) {
-    root = rootOp;
+  public MasterQueryPartition(final SingleQueryPlanWithArgs masterPlan,
+      final Map<Integer, SingleQueryPlanWithArgs> workerPlans, final long queryID, final Server master) {
+    root = masterPlan.getRootOps().get(0);
     this.queryID = queryID;
     this.master = master;
+    ftMode = masterPlan.getFTMode();
     workerExecutionInfo = new ConcurrentHashMap<Integer, WorkerExecutionInfo>(workerPlans.size());
 
-    for (Entry<Integer, RootOperator[]> workerInfo : workerPlans.entrySet()) {
+    for (Entry<Integer, SingleQueryPlanWithArgs> workerInfo : workerPlans.entrySet()) {
       workerExecutionInfo.put(workerInfo.getKey(), new WorkerExecutionInfo(workerInfo.getKey(), workerInfo.getValue()));
     }
-    WorkerExecutionInfo masterPart = new WorkerExecutionInfo(MyriaConstants.MASTER_ID, new RootOperator[] { rootOp });
+    WorkerExecutionInfo masterPart = new WorkerExecutionInfo(MyriaConstants.MASTER_ID, masterPlan);
     workerExecutionInfo.put(MyriaConstants.MASTER_ID, masterPart);
+
+    missingWorkers = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
 
     rootTask = new QuerySubTreeTask(MyriaConstants.MASTER_ID, this, root, master.getQueryExecutor());
     rootTask.getExecutionFuture().addListener(taskExecutionListener);
@@ -381,7 +399,6 @@ public class MasterQueryPartition implements QueryPartition {
         }
       });
     }
-
   }
 
   @Override
@@ -517,4 +534,21 @@ public class MasterQueryPartition implements QueryPartition {
     return killed;
   }
 
+  @Override
+  public String getFTMode() {
+    return ftMode;
+  }
+
+  @Override
+  public Set<Integer> getMissingWorkers() {
+    return missingWorkers;
+  }
+
+  /*
+   * when a REMOVE_WORKER message is received, give tasks another chance to decide if they are ready to generate
+   * EOS/EOI.
+   */
+  public void triggerTasks() {
+    rootTask.notifyNewInput();
+  }
 }

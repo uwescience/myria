@@ -148,15 +148,29 @@ public final class DeploymentUtils {
   public static void startWorker(final String address, final String workingDir, final String description,
       final String maxHeapSize, final String workerId) {
     StringBuilder builder = new StringBuilder();
+    String path = workingDir + "/" + description + "-files";
+    String workerDir = description + "/" + "worker_" + workerId;;
+    String classpath = "'libs/*'";
+    String librarypath = "sqlite4java-282";
+    String heapSize = maxHeapSize;
+    if (description == null) {
+      /* built in system test */
+      path = workingDir;
+      workerDir = "worker_" + workerId;
+      classpath = System.getProperty("java.class.path");
+      librarypath = System.getProperty("java.library.path");
+      heapSize = "";
+    }
+
     builder.append("ssh " + address);
-    builder.append(" cd " + workingDir + "/" + description + "-files;");
-    builder.append(" nohup java -cp 'libs/*'");
+    builder.append(" cd " + path + ";");
+    builder.append(" nohup java -cp " + classpath);
     builder.append(" -Djava.util.logging.config.file=logging.properties");
     builder.append(" -Dlog4j.configuration=log4j.properties");
-    builder.append(" -Djava.library.path=sqlite4java-282");
-    builder.append(" " + maxHeapSize);
+    builder.append(" -Djava.library.path=" + librarypath);
+    builder.append(" " + heapSize);
     builder.append(" edu.washington.escience.myriad.parallel.Worker");
-    builder.append(" --workingDir " + description + "/worker_" + workerId);
+    builder.append(" --workingDir " + workerDir);
     builder.append(" 0</dev/null");
     builder.append(" 1>worker_" + workerId + "_stdout");
     builder.append(" 2>worker_" + workerId + "_stderr");
@@ -298,7 +312,7 @@ public final class DeploymentUtils {
    * @param cmd the command.
    */
   private static void startAProcess(final String cmd) {
-    LOGGER.debug(cmd);
+    LOGGER.info(cmd);
     try {
       new ProcessBuilder().inheritIO().command(cmd.split(" ")).start();
     } catch (IOException e) {
