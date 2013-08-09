@@ -353,7 +353,7 @@ public final class SQLiteAccessMethod extends AccessMethod {
     Objects.requireNonNull(schema);
 
     try {
-      execute("DROP TABLE " + relationKey.toString(sqliteInfo.getDbms()) + ";");
+      execute("DROP TABLE IF EXISTS " + relationKey.toString(sqliteInfo.getDbms()) + ";");
     } catch (DbException e) {
       ; /* Skip. this is okay. */
     }

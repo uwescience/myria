@@ -48,7 +48,7 @@
 			[
 			{
 				"op_name" : "scan2a",
-				"op_type" : "SQLiteScan",
+				"op_type" : "TableScan",
 				"relation_key" : {
 					"user_name" : "jwang",
 					"program_name" : "reachability",
@@ -72,7 +72,7 @@
 			[
 			{
 				"op_name" : "scan2g",
-				"op_type" : "SQLiteScan",
+				"op_type" : "TableScan",
 				"relation_key" : {
 					"user_name" : "jwang",
 					"program_name" : "reachability",
