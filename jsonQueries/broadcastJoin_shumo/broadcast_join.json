@@ -4,7 +4,7 @@
             "operators": [
                 {
                     "op_name": "Scan0",
-                    "op_type": "SQLiteScan",
+                    "op_type": "TableScan",
                     "relation_key": {
                         "program_name": "broadcast_join",
                         "relation_name": "smallTable",
@@ -38,7 +38,7 @@
                 },
                 {
                      "op_name": "scan1",
-                     "op_type": "SQLiteScan",
+                     "op_type": "TableScan",
                      "relation_key": {
                          "program_name": "broadcast_join",
                          "relation_name": "smallTable",
@@ -67,7 +67,7 @@
                     "arg_child": "Join",
                     "arg_overwrite_table": true,
                     "op_name": "Insert",
-                    "op_type": "SQLiteInsert",
+                    "op_type": "DbInsert",
                     "relation_key": {
                         "program_name": "broadcast_join",
                         "relation_name": "smallTable_broadcast_join_smallTable",

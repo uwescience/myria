@@ -4,7 +4,7 @@
             "operators": [
                 {
                     "op_name": "Scan_base",
-                    "op_type": "SQLiteQueryScan",
+                    "op_type": "QueryScan",
                     "schema": {
                         "column_names": [
                             "iOrder",
@@ -33,7 +33,7 @@
             "operators": [
                 {
                     "op_name": "Scan_pgtr",
-                    "op_type": "SQLiteQueryScan",
+                    "op_type": "QueryScan",
                     "schema": {
                         "column_names": [
                             "iOrder",
@@ -125,7 +125,7 @@
             "operators": [
                 {
                     "op_name": "Scan_grps_of_interest",
-                    "op_type": "SQLiteScan",
+                    "op_type": "TableScan",
                     "relation_key": {
                         "program_name": "astro",
                         "relation_name": "grps_of_interest",
@@ -264,7 +264,7 @@
             "operators": [
                 {
                     "op_name": "Scan_masstable",
-                    "op_type": "SQLiteScan",
+                    "op_type": "TableScan",
                     "relation_key": {
                         "program_name": "astro",
                         "relation_name": "masstable",
@@ -407,7 +407,7 @@
                     "arg_child": "result",
                     "arg_overwrite_table": true,
                     "op_name": "INSERT",
-                    "op_type": "SQLiteInsert",
+                    "op_type": "DbInsert",
                     "relation_key": {
                         "program_name": "astro",
                         "relation_name": "progenitor512-512",

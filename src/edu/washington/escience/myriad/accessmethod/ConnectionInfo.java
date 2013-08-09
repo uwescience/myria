@@ -68,16 +68,19 @@ public abstract class ConnectionInfo {
       case MyriaConstants.STORAGE_SYSTEM_SQLITE:
         String databaseName = "";
         if (description != null) {
+          /* created from deployment.cfg, use relative path */
           databaseName = FilenameUtils.concat(description, "worker_" + workerId);
           databaseName = FilenameUtils.concat(databaseName, "worker_" + workerId + "_data.db");
         } else {
-          databaseName = FilenameUtils.concat(dirName, "worker_" + workerId + "_data.db");
+          /* created from SystemTestBase, use absolute path */
+          databaseName = FilenameUtils.concat(dirName, "worker_" + workerId);
+          databaseName = FilenameUtils.concat(databaseName, "worker_" + workerId + "_data.db");
         }
         SQLiteInfo sqliteInfo = SQLiteInfo.of(databaseName);
         result = gson.toJson(sqliteInfo);
         break;
       case MyriaConstants.STORAGE_SYSTEM_MONETDB:
-        // TODO: Allow using the parameters to craete the connection info.
+        // TODO: Allow using the parameters to create the connection info.
         // Now it is hardcoded to use a specific connection info, which allows only one
         // myria instance per machine in the cluster
         final String host = hostName;

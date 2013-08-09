@@ -219,9 +219,14 @@ public final class CatalogMaker {
         wc.addWorker(Integer.parseInt(id), workers.get(id));
       }
 
+      /*
+       * the working directory of this worker. Note: it may not be the same as dirName, which means where the catalog is
+       * created.
+       */
+      String workerWorkingDir = config.get("paths").get(workerId);
       /* Build up a map of the worker configuration variables. */
       HashMap<String, String> configurationValues = new HashMap<String, String>(workerConfigurations);
-      configurationValues.put(MyriaSystemConfigKeys.WORKING_DIRECTORY, config.get("paths").get(workerId));
+      configurationValues.put(MyriaSystemConfigKeys.WORKING_DIRECTORY, workerWorkingDir);
       MyriaSystemConfigKeys.addDeploymentKeysFromConfigFile(configurationValues, config.get("deployment"));
 
       /* Add all missing default configuration values to the map. */
@@ -232,9 +237,9 @@ public final class CatalogMaker {
 
       // TODO: move this code to the ConnectionInfo class, passing the dbms as a parameter
       final String dbms = configurationValues.get(MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_SYSTEM);
-      final String description = config.get("deployment").get("description");
+      final String description = config.get("deployment").get("name");
       final String host = wc.getWorkers().get(Integer.parseInt(workerId)).getHost();
-      final String jsonConnInfo = ConnectionInfo.toJson(dbms, host, description, dirName, workerId);
+      final String jsonConnInfo = ConnectionInfo.toJson(dbms, host, description, workerWorkingDir, workerId);
       configurationValues.put(MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_CONN_INFO, jsonConnInfo);
 
       /* Set them all in the worker catalog. */

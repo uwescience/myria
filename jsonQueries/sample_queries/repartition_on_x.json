@@ -4,7 +4,7 @@
             "operators": [
                 {
                     "op_name": "Scan",
-                    "op_type": "SQLiteScan",
+                    "op_type": "TableScan",
                     "relation_key": {
                         "program_name": "global_join",
                         "relation_name": "smallTable",
@@ -44,7 +44,7 @@
                     "arg_child": "Gather",
                     "arg_overwrite_table": true,
                     "op_name": "Insert",
-                    "op_type": "SQLiteInsert",
+                    "op_type": "DbInsert",
                     "relation_key": {
                         "program_name": "global_join",
                         "relation_name": "smallTable_hash_follower",
