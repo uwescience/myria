@@ -68,7 +68,7 @@ public final class LocalCountingJoin extends Operator {
   /**
    * Construct a LocalCountingJoin operator with schema specified.
    * 
-   * @param outputSchema the Schema of the output table.
+   * @param outputColumnName the name of the column of the output table.
    * @param child1 the left child.
    * @param child2 the right child.
    * @param compareIndx1 the columns of the left child to be compared with the right. Order matters.
@@ -76,15 +76,16 @@ public final class LocalCountingJoin extends Operator {
    * @throw IllegalArgumentException if there are duplicated column names in <tt>outputSchema</tt>, or if
    *        <tt>outputSchema</tt> does not have the correct number of columns and column types.
    */
-  public LocalCountingJoin(final Schema outputSchema, final Operator child1, final Operator child2,
+  public LocalCountingJoin(final String outputColumnName, final Operator child1, final Operator child2,
       final int[] compareIndx1, final int[] compareIndx2) {
-    if (outputSchema == null) {
-      this.outputSchema = getSchema();
+    ImmutableList<Type> types = ImmutableList.of(Type.LONG_TYPE);
+    ImmutableList<String> names;
+    if (outputColumnName == null) {
+      names = ImmutableList.of("count");
     } else {
-      Preconditions.checkArgument(outputSchema.numColumns() == 1);
-      Preconditions.checkArgument(outputSchema.getColumnType(0) == Type.LONG_TYPE);
-      this.outputSchema = outputSchema;
+      names = ImmutableList.of(outputColumnName);
     }
+    outputSchema = Schema.of(types, names);
     this.child1 = child1;
     this.child2 = child2;
     this.compareIndx1 = compareIndx1;
@@ -214,14 +215,7 @@ public final class LocalCountingJoin extends Operator {
 
   @Override
   public Schema getSchema() {
-    if (outputSchema != null) {
-      return outputSchema;
-    }
-    final ImmutableList.Builder<Type> types = ImmutableList.builder();
-    final ImmutableList.Builder<String> names = ImmutableList.builder();
-    types.add(Type.LONG_TYPE);
-    names.add("count");
-    return new Schema(types, names);
+    return outputSchema;
   }
 
   @Override

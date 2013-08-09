@@ -9,6 +9,7 @@ import com.carrotsearch.hppc.IntObjectOpenHashMap;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.MyriaConstants;
@@ -84,8 +85,12 @@ public final class LocalJoinByReference extends Operator {
   private Operator child1, child2;
   /**
    * The result schema.
-   * */
+   */
   private Schema outputSchema;
+  /**
+   * The column names of the result.
+   * */
+  private final ImmutableList<String> outputColumns;
   /**
    * The column indices for comparing of child 1.
    * */
@@ -123,7 +128,7 @@ public final class LocalJoinByReference extends Operator {
    */
   public LocalJoinByReference(final Operator child1, final Operator child2, final int[] compareIndx1,
       final int[] compareIndx2) {
-    this(Schema.merge(child1.getSchema(), child2.getSchema()), child1, child2, compareIndx1, compareIndx2);
+    this(null, child1, child2, compareIndx1, compareIndx2);
   }
 
   /**
@@ -141,41 +146,51 @@ public final class LocalJoinByReference extends Operator {
    */
   public LocalJoinByReference(final Operator child1, final Operator child2, final int[] compareIndx1,
       final int[] compareIndx2, final int[] answerColumns1, final int[] answerColumns2) {
-    this(mergeFilter(child1, child2, answerColumns1, answerColumns2), child1, child2, compareIndx1, compareIndx2,
-        answerColumns1, answerColumns2);
+    this(null, child1, child2, compareIndx1, compareIndx2, answerColumns1, answerColumns2);
   }
 
   /**
    * Construct an EquiJoin operator. It returns the specified columns from both children when the corresponding columns
    * in compareIndx1 and compareIndx2 match.
    * 
-   * @param outputSchema the Schema of the output table.
+   * @param outputColumns the column names of the output table.
    * @param child1 the left child.
    * @param child2 the right child.
    * @param compareIndx1 the columns of the left child to be compared with the right. Order matters.
    * @param compareIndx2 the columns of the right child to be compared with the left. Order matters.
    * @param answerColumns1 the columns of the left child to be returned. Order matters.
    * @param answerColumns2 the columns of the right child to be returned. Order matters.
-   * @throw IllegalArgumentException if there are duplicated column names in <tt>outputSchema</tt>, or if
-   *        <tt>outputSchema</tt> does not have the correct number of columns and column types.
+   * @throw IllegalArgumentException if there are duplicated column names in <tt>outputColumns</tt>, or if
+   *        <tt>outputColumns</tt> does not have the correct number of columns.
    */
-  private LocalJoinByReference(final Schema outputSchema, final Operator child1, final Operator child2,
+  public LocalJoinByReference(final List<String> outputColumns, final Operator child1, final Operator child2,
       final int[] compareIndx1, final int[] compareIndx2, final int[] answerColumns1, final int[] answerColumns2) {
     Preconditions.checkArgument(compareIndx1.length == compareIndx2.length);
-    this.outputSchema = outputSchema;
+    if (outputColumns != null) {
+      Preconditions.checkArgument(outputColumns.size() == answerColumns1.length + answerColumns2.length,
+          "length mismatch between output column names and columns selected for output");
+      Preconditions.checkArgument(ImmutableSet.copyOf(outputColumns).size() == outputColumns.size(),
+          "duplicate column names in outputColumns");
+      this.outputColumns = ImmutableList.copyOf(outputColumns);
+    } else {
+      this.outputColumns = null;
+    }
     this.child1 = child1;
     this.child2 = child2;
     this.compareIndx1 = compareIndx1;
     this.compareIndx2 = compareIndx2;
     this.answerColumns1 = answerColumns1;
     this.answerColumns2 = answerColumns2;
+    if (child1 != null && child2 != null) {
+      generateSchema();
+    }
   }
 
   /**
    * Construct an EquiJoin operator. It returns all columns from both children when the corresponding columns in
    * compareIndx1 and compareIndx2 match.
    * 
-   * @param outputSchema the Schema of the output table.
+   * @param outputColumns the names of the columns of the output table.
    * @param child1 the left child.
    * @param child2 the right child.
    * @param compareIndx1 the columns of the left child to be compared with the right. Order matters.
@@ -183,38 +198,34 @@ public final class LocalJoinByReference extends Operator {
    * @throw IllegalArgumentException if there are duplicated column names in <tt>outputSchema</tt>, or if
    *        <tt>outputSchema</tt> does not have the correct number of columns and column types.
    */
-  private LocalJoinByReference(final Schema outputSchema, final Operator child1, final Operator child2,
+  private LocalJoinByReference(final List<String> outputColumns, final Operator child1, final Operator child2,
       final int[] compareIndx1, final int[] compareIndx2) {
-    this(outputSchema, child1, child2, compareIndx1, compareIndx2, MyriaUtils.range(child1.getSchema().numColumns()),
+    this(outputColumns, child1, child2, compareIndx1, compareIndx2, MyriaUtils.range(child1.getSchema().numColumns()),
         MyriaUtils.range(child2.getSchema().numColumns()));
   }
 
   /**
-   * Helper function to generate the proper output schema merging two parts of two schemas.
-   * 
-   * @param child1 the left child.
-   * @param child2 the right child.
-   * @param answerColumns1 the selected columns of the left schema.
-   * @param answerColumns2 the selected columns of the right schema.
-   * @return a schema that contains the chosen columns of the left and right schema.
+   * Generate the proper output schema from the parameters.
    */
-  private static Schema mergeFilter(final Operator child1, final Operator child2, final int[] answerColumns1,
-      final int[] answerColumns2) {
-    if (child1 == null || child2 == null) {
-      return null;
-    }
+  private void generateSchema() {
     ImmutableList.Builder<Type> types = ImmutableList.builder();
     ImmutableList.Builder<String> names = ImmutableList.builder();
+
     for (int i : answerColumns1) {
       types.add(child1.getSchema().getColumnType(i));
       names.add(child1.getSchema().getColumnName(i));
     }
+
     for (int i : answerColumns2) {
       types.add(child2.getSchema().getColumnType(i));
       names.add(child2.getSchema().getColumnName(i));
     }
 
-    return new Schema(types, names);
+    if (outputColumns != null) {
+      outputSchema = new Schema(types.build(), outputColumns);
+    } else {
+      outputSchema = new Schema(types, names);
+    }
   }
 
   /**
@@ -471,6 +482,6 @@ public final class LocalJoinByReference extends Operator {
     Preconditions.checkArgument(children.length == 2, "LocalJoin must have exactly 2 children.");
     child1 = Objects.requireNonNull(children[0], "LocalJoin.setChildren called with null left child.");
     child2 = Objects.requireNonNull(children[1], "LocalJoin.setChildren called with null right child.");
-    outputSchema = mergeFilter(child1, child2, answerColumns1, answerColumns2);
+    generateSchema();
   }
 }
