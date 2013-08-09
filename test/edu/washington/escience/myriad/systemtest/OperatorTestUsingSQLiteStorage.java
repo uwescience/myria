@@ -3,6 +3,7 @@ package edu.washington.escience.myriad.systemtest;
 import static org.junit.Assert.assertTrue;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -17,10 +18,10 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
+import edu.washington.escience.myriad.operator.DbQueryScan;
 import edu.washington.escience.myriad.operator.DupElim;
 import edu.washington.escience.myriad.operator.LocalCountingJoin;
 import edu.washington.escience.myriad.operator.LocalJoin;
-import edu.washington.escience.myriad.operator.DbQueryScan;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.operator.TBQueueExporter;
@@ -188,7 +189,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final ShuffleConsumer sc2 =
         new ShuffleConsumer(sp2.getSchema(), table2ShuffleID, new int[] { WORKER_ID[0], WORKER_ID[1] });
 
-    final LocalJoin localjoin = new LocalJoin(sc1, sc2, new int[] { 0 }, new int[] { 0 });
+    final LocalJoin localjoin = new LocalJoin(outputColumnNames, sc1, sc2, new int[] { 0 }, new int[] { 0 });
 
     final CollectProducer cp1 = new CollectProducer(localjoin, serverReceiveID, MASTER_ID);
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
@@ -241,7 +242,8 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final ShuffleConsumer sc2 =
         new ShuffleConsumer(sp2.getSchema(), table2ShuffleID, new int[] { WORKER_ID[0], WORKER_ID[1] });
 
-    final LocalJoin localjoin = new LocalJoin(sc1, sc2, new int[] { 0 }, new int[] { 0 });
+    final List<String> joinOutputColumnNames = ImmutableList.of("id_1", "name_1", "id_2", "name_2");
+    final LocalJoin localjoin = new LocalJoin(joinOutputColumnNames, sc1, sc2, new int[] { 0 }, new int[] { 0 });
 
     final CollectProducer cp1 = new CollectProducer(localjoin, serverReceiveID, MASTER_ID);
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
