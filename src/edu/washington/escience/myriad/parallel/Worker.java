@@ -13,7 +13,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
@@ -43,6 +42,7 @@ import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myriad.util.IPCUtils;
 import edu.washington.escience.myriad.util.JVMUtils;
 import edu.washington.escience.myriad.util.concurrent.RenamingThreadFactory;
+import edu.washington.escience.myriad.util.concurrent.ThreadAffinityFixedRoundRobinExecutionPool;
 
 /**
  * Workers do the real query execution. A query received by the server will be pre-processed and then dispatched to the
@@ -319,7 +319,7 @@ public final class Worker {
   /**
    * {@link ExecutorService} for query executions.
    * */
-  private volatile ThreadPoolExecutor queryExecutor;
+  private volatile ExecutorService queryExecutor;
 
   /**
    * @return the query executor used in this worker.
@@ -775,12 +775,13 @@ public final class Worker {
     if (queryExecutionMode == QueryExecutionMode.NON_BLOCKING) {
       int numCPU = Runtime.getRuntime().availableProcessors();
       queryExecutor =
-          new ThreadPoolExecutor(numCPU, numCPU, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(),
+      // new ThreadPoolExecutor(numCPU, numCPU, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(),
+      // new RenamingThreadFactory("Nonblocking query executor"));
+          new ThreadAffinityFixedRoundRobinExecutionPool(numCPU,
               new RenamingThreadFactory("Nonblocking query executor"));
     } else {
       // blocking query execution
-      queryExecutor =
-          (ThreadPoolExecutor) Executors.newCachedThreadPool(new RenamingThreadFactory("Blocking query executor"));
+      queryExecutor = Executors.newCachedThreadPool(new RenamingThreadFactory("Blocking query executor"));
     }
     messageProcessingExecutor =
         Executors.newCachedThreadPool(new RenamingThreadFactory("Control/Query message processor"));
