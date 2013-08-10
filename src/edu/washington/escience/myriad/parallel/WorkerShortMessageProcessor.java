@@ -10,12 +10,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myriad.operator.RootOperator;
-import edu.washington.escience.myriad.parallel.ipc.AttachmentableAdapter;
 import edu.washington.escience.myriad.parallel.ipc.IPCMessage;
 import edu.washington.escience.myriad.parallel.ipc.ShortMessageProcessor;
 import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myriad.proto.QueryProto.QueryMessage;
 import edu.washington.escience.myriad.proto.TransportProto.TransportMessage;
+import edu.washington.escience.myriad.util.AttachmentableAdapter;
 
 /**
  * Message handler for workers.

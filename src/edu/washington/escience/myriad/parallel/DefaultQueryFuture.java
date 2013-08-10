@@ -23,7 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myriad.DbException;
-import edu.washington.escience.myriad.parallel.ipc.AttachmentableAdapter;
+import edu.washington.escience.myriad.util.AttachmentableAdapter;
 
 /**
  * The default {@link QueryFuture} implementation.

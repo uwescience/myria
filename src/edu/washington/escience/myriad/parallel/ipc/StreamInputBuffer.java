@@ -6,6 +6,7 @@ import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myriad.parallel.Consumer;
 import edu.washington.escience.myriad.parallel.ipc.IPCEvent.EventType;
+import edu.washington.escience.myriad.util.Attachmentable;
 
 /**
  * The interface represents an input buffer for a {@link Consumer} operator. All the messages that can be put into the

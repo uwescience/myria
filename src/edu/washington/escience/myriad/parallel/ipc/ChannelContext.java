@@ -14,6 +14,7 @@ import org.jboss.netty.channel.group.ChannelGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import edu.washington.escience.myriad.util.AttachmentableAdapter;
 import edu.washington.escience.myriad.util.IPCUtils;
 import edu.washington.escience.myriad.util.concurrent.ThreadStackDump;
 

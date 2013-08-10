@@ -18,7 +18,7 @@ package edu.washington.escience.myriad.parallel;
 import java.util.concurrent.TimeUnit;
 
 import edu.washington.escience.myriad.DbException;
-import edu.washington.escience.myriad.parallel.ipc.Attachmentable;
+import edu.washington.escience.myriad.util.Attachmentable;
 
 /**
  * The result of an asynchronous {@link QueryPartition} operation.
