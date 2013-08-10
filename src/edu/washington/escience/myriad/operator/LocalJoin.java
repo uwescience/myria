@@ -9,6 +9,7 @@ import java.util.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.MyriaConstants;
@@ -22,46 +23,50 @@ import edu.washington.escience.myriad.parallel.TaskResourceManager;
 /**
  * This is an implementation of hash equal join. The same as in DupElim, this implementation does not keep the
  * references to the incoming TupleBatches in order to get better memory performance.
- * */
+ */
 public final class LocalJoin extends Operator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   /**
    * The two children.
-   * */
+   */
   private Operator child1, child2;
   /**
    * The result schema.
-   * */
+   */
   private Schema outputSchema;
   /**
    * The column indices for comparing of child 1.
-   * */
+   */
   private final int[] compareIndx1;
   /**
+   * The names of the output columns.
+   */
+  private final ImmutableList<String> outputColumns;
+  /**
    * The column indices for comparing of child 2.
-   * */
+   */
   private final int[] compareIndx2;
   /**
    * A hash table for tuples from child 1. {Hashcode -> List of tuple indices with the same hash code}
-   * */
+   */
   private transient HashMap<Integer, List<Integer>> hashTable1Indices;
   /**
    * A hash table for tuples from child 2. {Hashcode -> List of tuple indices with the same hash code}
-   * */
+   */
   private transient HashMap<Integer, List<Integer>> hashTable2Indices;
   /**
    * The buffer holding the valid tuples from child1.
-   * */
+   */
   private transient TupleBatchBuffer hashTable1;
   /**
    * The buffer holding the valid tuples from child2.
-   * */
+   */
   private transient TupleBatchBuffer hashTable2;
   /**
    * The buffer holding the results.
-   * */
+   */
   private transient TupleBatchBuffer ans;
   /** Which columns in the left child are to be output. */
   private final int[] answerColumns1;
@@ -79,7 +84,7 @@ public final class LocalJoin extends Operator {
    * @throw IllegalArgumentException if there are duplicated column names from the children.
    */
   public LocalJoin(final Operator child1, final Operator child2, final int[] compareIndx1, final int[] compareIndx2) {
-    this(Schema.merge(child1.getSchema(), child2.getSchema()), child1, child2, compareIndx1, compareIndx2);
+    this(null, child1, child2, compareIndx1, compareIndx2);
   }
 
   /**
@@ -97,41 +102,53 @@ public final class LocalJoin extends Operator {
    */
   public LocalJoin(final Operator child1, final Operator child2, final int[] compareIndx1, final int[] compareIndx2,
       final int[] answerColumns1, final int[] answerColumns2) {
-    this(mergeFilter(child1, child2, answerColumns1, answerColumns2), child1, child2, compareIndx1, compareIndx2,
-        answerColumns1, answerColumns2);
+    this(null, child1, child2, compareIndx1, compareIndx2, answerColumns1, answerColumns2);
   }
 
   /**
    * Construct an EquiJoin operator. It returns the specified columns from both children when the corresponding columns
    * in compareIndx1 and compareIndx2 match.
    * 
-   * @param outputSchema the Schema of the output table.
+   * @param outputColumns the names of the columns in the output schema. If null, the corresponding columns will be
+   *          copied from the children.
    * @param child1 the left child.
    * @param child2 the right child.
    * @param compareIndx1 the columns of the left child to be compared with the right. Order matters.
    * @param compareIndx2 the columns of the right child to be compared with the left. Order matters.
    * @param answerColumns1 the columns of the left child to be returned. Order matters.
    * @param answerColumns2 the columns of the right child to be returned. Order matters.
-   * @throw IllegalArgumentException if there are duplicated column names in <tt>outputSchema</tt>, or if
-   *        <tt>outputSchema</tt> does not have the correct number of columns and column types.
+   * @throw IllegalArgumentException if there are duplicated column names in <tt>outputColumns</tt>, or if
+   *        <tt>outputColumns</tt> does not have the correct number of columns and column types.
    */
-  private LocalJoin(final Schema outputSchema, final Operator child1, final Operator child2, final int[] compareIndx1,
-      final int[] compareIndx2, final int[] answerColumns1, final int[] answerColumns2) {
+  public LocalJoin(final List<String> outputColumns, final Operator child1, final Operator child2,
+      final int[] compareIndx1, final int[] compareIndx2, final int[] answerColumns1, final int[] answerColumns2) {
     Preconditions.checkArgument(compareIndx1.length == compareIndx2.length);
-    this.outputSchema = outputSchema;
+    if (outputColumns != null) {
+      Preconditions.checkArgument(outputColumns.size() == answerColumns1.length + answerColumns2.length,
+          "length mismatch between output column names and columns selected for output");
+      Preconditions.checkArgument(ImmutableSet.copyOf(outputColumns).size() == outputColumns.size(),
+          "duplicate column names in outputColumns");
+      this.outputColumns = ImmutableList.copyOf(outputColumns);
+    } else {
+      this.outputColumns = null;
+    }
     this.child1 = child1;
     this.child2 = child2;
     this.compareIndx1 = compareIndx1;
     this.compareIndx2 = compareIndx2;
     this.answerColumns1 = answerColumns1;
     this.answerColumns2 = answerColumns2;
+    if (child1 != null && child2 != null) {
+      generateSchema();
+    }
   }
 
   /**
    * Construct an EquiJoin operator. It returns all columns from both children when the corresponding columns in
    * compareIndx1 and compareIndx2 match.
    * 
-   * @param outputSchema the Schema of the output table.
+   * @param outputColumns the names of the columns in the output schema. If null, the corresponding columns will be
+   *          copied from the children.
    * @param child1 the left child.
    * @param child2 the right child.
    * @param compareIndx1 the columns of the left child to be compared with the right. Order matters.
@@ -139,10 +156,10 @@ public final class LocalJoin extends Operator {
    * @throw IllegalArgumentException if there are duplicated column names in <tt>outputSchema</tt>, or if
    *        <tt>outputSchema</tt> does not have the correct number of columns and column types.
    */
-  private LocalJoin(final Schema outputSchema, final Operator child1, final Operator child2, final int[] compareIndx1,
-      final int[] compareIndx2) {
-    this(outputSchema, child1, child2, compareIndx1, compareIndx2, range(child1.getSchema().numColumns()), range(child2
-        .getSchema().numColumns()));
+  public LocalJoin(final List<String> outputColumns, final Operator child1, final Operator child2,
+      final int[] compareIndx1, final int[] compareIndx2) {
+    this(outputColumns, child1, child2, compareIndx1, compareIndx2, range(child1.getSchema().numColumns()),
+        range(child2.getSchema().numColumns()));
   }
 
   /**
@@ -160,31 +177,27 @@ public final class LocalJoin extends Operator {
   }
 
   /**
-   * Helper function to generate the proper output schema merging two parts of two schemas.
-   * 
-   * @param child1 the left child.
-   * @param child2 the right child.
-   * @param answerColumns1 the selected columns of the left schema.
-   * @param answerColumns2 the selected columns of the right schema.
-   * @return a schema that contains the chosen columns of the left and right schema.
+   * Generate the proper output schema from the parameters.
    */
-  private static Schema mergeFilter(final Operator child1, final Operator child2, final int[] answerColumns1,
-      final int[] answerColumns2) {
-    if (child1 == null || child2 == null) {
-      return null;
-    }
+  private void generateSchema() {
     ImmutableList.Builder<Type> types = ImmutableList.builder();
     ImmutableList.Builder<String> names = ImmutableList.builder();
+
     for (int i : answerColumns1) {
       types.add(child1.getSchema().getColumnType(i));
       names.add(child1.getSchema().getColumnName(i));
     }
+
     for (int i : answerColumns2) {
       types.add(child2.getSchema().getColumnType(i));
       names.add(child2.getSchema().getColumnName(i));
     }
 
-    return new Schema(types, names);
+    if (outputColumns != null) {
+      outputSchema = new Schema(types.build(), outputColumns);
+    } else {
+      outputSchema = new Schema(types, names);
+    }
   }
 
   /**
@@ -224,7 +237,7 @@ public final class LocalJoin extends Operator {
    * 
    * @return result TB.
    * @throws DbException if any error occurs.
-   * */
+   */
   private TupleBatch fetchNextReadySynchronousEOI() throws DbException {
     TupleBatch nexttb = ans.popFilled();
     while (nexttb == null) {
@@ -287,7 +300,7 @@ public final class LocalJoin extends Operator {
 
   /**
    * Recording the EOI status of the children.
-   * */
+   */
   private final boolean[] childrenEOI = new boolean[2];
 
   @Override
@@ -403,7 +416,7 @@ public final class LocalJoin extends Operator {
 
   /**
    * The query execution mode is nonBlocking.
-   * */
+   */
   private transient boolean nonBlocking = true;
 
   /**
@@ -415,7 +428,7 @@ public final class LocalJoin extends Operator {
    * @param compareIndx1 the comparing list of columns of cntTuple
    * @param compareIndx2 the comparing list of columns of hashTable
    * @return true if equals.
-   * */
+   */
   private boolean tupleEquals(final List<Object> cntTuple, final TupleBatchBuffer hashTable, final int index,
       final int[] compareIndx1, final int[] compareIndx2) {
     if (compareIndx1.length != compareIndx2.length) {
@@ -432,7 +445,7 @@ public final class LocalJoin extends Operator {
   /**
    * @param tb the incoming TupleBatch for processing join.
    * @param fromChild1 if the tb is from child1.
-   * */
+   */
   protected void processChildTB(final TupleBatch tb, final boolean fromChild1) {
 
     TupleBatchBuffer hashTable1Local = hashTable1;
@@ -481,6 +494,6 @@ public final class LocalJoin extends Operator {
     Preconditions.checkArgument(children.length == 2, "LocalJoin must have exactly 2 children.");
     child1 = Objects.requireNonNull(children[0], "LocalJoin.setChildren called with null left child.");
     child2 = Objects.requireNonNull(children[1], "LocalJoin.setChildren called with null right child.");
-    outputSchema = mergeFilter(child1, child2, answerColumns1, answerColumns2);
+    generateSchema();
   }
 }
