@@ -92,7 +92,7 @@ public final class QuerySubTreeTask {
   /**
    * Future for the task execution.
    * */
-  private final DefaultQueryFuture taskExecutionFuture;
+  private final DefaultTaskFuture taskExecutionFuture;
 
   /**
    * The lock mainly to make operator memory consistency.
@@ -107,7 +107,7 @@ public final class QuerySubTreeTask {
   /**
    * @return the task execution future.
    */
-  QueryFuture getExecutionFuture() {
+  TaskFuture getExecutionFuture() {
     return taskExecutionFuture;
   }
 
@@ -124,8 +124,7 @@ public final class QuerySubTreeTask {
     this.root = root;
     myExecutor = executor;
     this.ownerQuery = ownerQuery;
-    taskExecutionFuture = new DefaultQueryFuture(this.ownerQuery, true);
-    taskExecutionFuture.setAttachment(this);
+    taskExecutionFuture = new DefaultTaskFuture(this, true);
     idbInputSet = new HashSet<IDBInput>();
     HashSet<StreamIOChannelID> outputChannelSet = new HashSet<StreamIOChannelID>();
     collectDownChannels(root, outputChannelSet);

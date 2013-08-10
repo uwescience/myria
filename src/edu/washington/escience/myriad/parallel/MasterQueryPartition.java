@@ -211,11 +211,10 @@ public class MasterQueryPartition implements QueryPartition {
   /**
    * The future listener for processing the complete events of the execution of the master task.
    * */
-  private final QueryFutureListener taskExecutionListener = new QueryFutureListener() {
+  private final TaskFutureListener taskExecutionListener = new TaskFutureListener() {
 
     @Override
-    public void operationComplete(final QueryFuture future) throws Exception {
-
+    public void operationComplete(final TaskFuture future) throws Exception {
       if (future.isSuccess()) {
         if (root instanceof SinkRoot) {
           if (LOGGER.isInfoEnabled()) {
@@ -226,7 +225,6 @@ public class MasterQueryPartition implements QueryPartition {
       } else {
         workerExecutionInfo.get(MyriaConstants.MASTER_ID).workerCompleteQuery.setFailure(future.getCause());
       }
-
     }
 
   };
