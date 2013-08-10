@@ -14,7 +14,8 @@
  */
 package edu.washington.escience.myriad.parallel;
 
-import java.util.EventListener;
+import edu.washington.escience.myriad.util.concurrent.OperationFuture;
+import edu.washington.escience.myriad.util.concurrent.OperationFutureListener;
 
 /**
  * Listens to the result of a {@link QueryFuture}. The result of the asynchronous {@link Channel} query operation is
@@ -26,7 +27,7 @@ import java.util.EventListener;
  * task or a blocking operation in the handler method can cause an unexpected pause during query. If you need to perform
  * a blocking operation on query completion, try to execute the operation in a different thread using a thread pool.
  */
-public interface QueryFutureListener extends EventListener {
+public abstract class QueryFutureListener implements OperationFutureListener {
 
   /**
    * Invoked when the query operation associated with the {@link QueryFuture} has been completed.
@@ -35,6 +36,11 @@ public interface QueryFutureListener extends EventListener {
    * @throws Exception if any error occurs. But note that any uncaught exception caused by this method will be discarded
    *           silently. Do the exception handling in the code by yourself.
    */
-  void operationComplete(QueryFuture future) throws Exception;
+  public abstract void operationComplete(QueryFuture future) throws Exception;
+
+  @Override
+  public final void operationComplete(final OperationFuture future) throws Exception {
+    this.operationComplete((QueryFuture) future);
+  }
 
 }

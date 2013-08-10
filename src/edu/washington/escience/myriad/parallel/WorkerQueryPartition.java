@@ -61,7 +61,7 @@ public class WorkerQueryPartition implements QueryPartition {
   /**
    * the future for the query's execution.
    * */
-  private final QueryFuture executionFuture = new DefaultQueryFuture(this, true);
+  private final DefaultQueryFuture executionFuture = new DefaultQueryFuture(this, true);
 
   /**
    * record all failed tasks.
@@ -252,7 +252,7 @@ public class WorkerQueryPartition implements QueryPartition {
   @Override
   public final QueryFuture resume() {
     QueryFuture pf = pauseFuture.getAndSet(null);
-    QueryFuture rf = new DefaultQueryFuture(this, true);
+    DefaultQueryFuture rf = new DefaultQueryFuture(this, true);
 
     if (pf == null) {
       // query is not in pause, return success directly.

@@ -129,12 +129,12 @@ public class MasterQueryPartition implements QueryPartition {
     /**
      * The future denoting the status of query partition dispatching to the worker event.
      * */
-    private final QueryFuture workerReceiveQuery;
+    private final DefaultQueryFuture workerReceiveQuery;
 
     /**
      * The future denoting the status of query partition execution on the worker.
      * */
-    private final QueryFuture workerCompleteQuery;
+    private final DefaultQueryFuture workerCompleteQuery;
   }
 
   /**
@@ -190,12 +190,12 @@ public class MasterQueryPartition implements QueryPartition {
   /**
    * The future object denoting the worker receive query plan operation.
    * */
-  private final QueryFuture workerReceiveFuture = new DefaultQueryFuture(this, false);
+  private final DefaultQueryFuture workerReceiveFuture = new DefaultQueryFuture(this, false);
 
   /**
    * The future object denoting the query execution progress.
    * */
-  private final QueryFuture queryExecutionFuture = new DefaultQueryFuture(this, false);
+  private final DefaultQueryFuture queryExecutionFuture = new DefaultQueryFuture(this, false);
 
   /**
    * Store the current pause future if the query is in pause, otherwise null.
@@ -447,7 +447,7 @@ public class MasterQueryPartition implements QueryPartition {
   @Override
   public final QueryFuture resume() {
     QueryFuture pf = pauseFuture.getAndSet(null);
-    QueryFuture rf = new DefaultQueryFuture(this, true);
+    DefaultQueryFuture rf = new DefaultQueryFuture(this, true);
 
     if (pf == null) {
       rf.setSuccess();
