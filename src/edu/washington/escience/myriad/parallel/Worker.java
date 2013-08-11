@@ -424,71 +424,108 @@ public final class Worker {
   private static volatile ThreadGroup mainThreadGroup;
 
   /**
+   * @param args command line arguments
+   * @return options parsed from command line.
+   * */
+  private static HashMap<String, Object> processArgs(final String[] args) {
+    HashMap<String, Object> options = new HashMap<String, Object>();
+    if (args.length > 2) {
+      LOGGER.warn("Invalid number of arguments.\n" + USAGE);
+      JVMUtils.shutdownVM();
+    }
+
+    String workingDirTmp = System.getProperty("user.dir");
+    if (args.length >= 2) {
+      if (args[0].equals("--workingDir")) {
+        workingDirTmp = args[1];
+      } else {
+        if (LOGGER.isErrorEnabled()) {
+          LOGGER.error("Invalid arguments.\n" + USAGE);
+        }
+        JVMUtils.shutdownVM();
+      }
+    }
+    options.put("workingDir", workingDirTmp);
+    return options;
+  }
+
+  /**
+   * Setup system properties.
+   * 
+   * @param cmdlineOptions command line options
+   * */
+  private static void systemSetup(final HashMap<String, Object> cmdlineOptions) {
+    java.util.logging.Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
+    java.util.logging.Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
+
+    Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+      @Override
+      public void uncaughtException(final Thread t, final Throwable e) {
+        if (LOGGER.isErrorEnabled()) {
+          LOGGER.error("Uncaught exception in thread: " + t, e);
+        }
+        if (e instanceof OutOfMemoryError) {
+          JVMUtils.shutdownVM();
+        }
+      }
+    });
+
+    mainThreadGroup = Thread.currentThread().getThreadGroup();
+  }
+
+  /**
+   * @param cmdlineOptions command line options
+   * */
+  private static void bootupWorker(final HashMap<String, Object> cmdlineOptions) {
+    final String workingDir = (String) cmdlineOptions.get("workingDir");
+    if (LOGGER.isInfoEnabled()) {
+      LOGGER.info("workingDir: " + workingDir);
+    }
+
+    ThreadGroup workerThreadGroup = new ThreadGroup(mainThreadGroup, "MyriaWorkerThreadGroup");
+    Thread myriaWorkerMain = new Thread(workerThreadGroup, "MyriaWorkerMain") {
+      @Override
+      public void run() {
+        try {
+          // Instantiate a new worker
+          final Worker w = new Worker(workingDir, QueryExecutionMode.NON_BLOCKING);
+          // int port = w.port;
+
+          // Start the actual message handler by binding
+          // the acceptor to a network socket
+          // Now the worker can accept messages
+          w.start();
+
+          if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("Worker started at:" + w.catalog.getWorkers().get(w.myID));
+          }
+        } catch (Throwable e) {
+          if (LOGGER.isErrorEnabled()) {
+            LOGGER.error("Unknown error occurs at Worker. Quit directly.", e);
+          }
+          JVMUtils.shutdownVM();
+        }
+      }
+    };
+    myriaWorkerMain.start();
+  }
+
+  /**
    * Worker process entry point.
    * 
    * @param args command line arguments.
    * */
   public static void main(final String[] args) {
     try {
-      java.util.logging.Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
-      java.util.logging.Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
-
-      if (args.length > 2) {
-        LOGGER.warn("Invalid number of arguments.\n" + USAGE);
-        JVMUtils.shutdownVM();
-      }
-
-      String workingDirTmp = System.getProperty("user.dir");
-      if (args.length >= 2) {
-        if (args[0].equals("--workingDir")) {
-          workingDirTmp = args[1];
-        } else {
-          if (LOGGER.isErrorEnabled()) {
-            LOGGER.error("Invalid arguments.\n" + USAGE);
-          }
-          JVMUtils.shutdownVM();
-        }
-      }
-
-      final String workingDir = workingDirTmp;
-      if (LOGGER.isInfoEnabled()) {
-        LOGGER.info("workingDir: " + workingDir);
-      }
-      mainThreadGroup = Thread.currentThread().getThreadGroup();
-      ThreadGroup workerThreadGroup = new ThreadGroup(mainThreadGroup, "MyriaWorkerThreadGroup");
-      Thread myriaWorkerMain = new Thread(workerThreadGroup, "MyriaWorkerMain") {
-
-        @Override
-        public void run() {
-          try {
-            // Instantiate a new worker
-            final Worker w = new Worker(workingDir, QueryExecutionMode.NON_BLOCKING);
-            // int port = w.port;
-
-            // Start the actual message handler by binding
-            // the acceptor to a network socket
-            // Now the worker can accept messages
-            w.start();
-
-            if (LOGGER.isInfoEnabled()) {
-              LOGGER.info("Worker started at:" + w.catalog.getWorkers().get(w.myID));
-            }
-          } catch (Throwable e) {
-            if (LOGGER.isErrorEnabled()) {
-              LOGGER.error("Unknown error occurs at Worker. Quit directly.", e);
-            }
-          }
-
-        }
-      };
-      myriaWorkerMain.start();
-
+      HashMap<String, Object> cmdlineOptions = processArgs(args);
+      systemSetup(cmdlineOptions);
+      bootupWorker(cmdlineOptions);
     } catch (Throwable e) {
       if (LOGGER.isErrorEnabled()) {
         LOGGER.error("Unknown error occurs at Worker. Quit directly.", e);
       }
+      JVMUtils.shutdownVM();
     }
-
   }
 
   /**
