@@ -41,6 +41,7 @@ import edu.washington.escience.myriad.util.IPCUtils;
 import edu.washington.escience.myriad.util.JVMUtils;
 import edu.washington.escience.myriad.util.concurrent.RenamingThreadFactory;
 import edu.washington.escience.myriad.util.concurrent.ThreadAffinityFixedRoundRobinExecutionPool;
+import edu.washington.escience.myriad.util.concurrent.TimerTaskThreadFactory;
 
 /**
  * Workers do the real query execution. A query received by the server will be pre-processed and then dispatched to the
@@ -776,7 +777,7 @@ public final class Worker {
     // Periodically detect if the server (i.e., coordinator)
     // is still running. IF the server goes down, the
     // worker will stop itself
-    scheduledTaskExecutor = Executors.newScheduledThreadPool(2, new RenamingThreadFactory("Worker global timer"));
+    scheduledTaskExecutor = Executors.newScheduledThreadPool(2, new TimerTaskThreadFactory("Worker global timer"));
     scheduledTaskExecutor.scheduleAtFixedRate(new ShutdownChecker(), MyriaConstants.WORKER_SHUTDOWN_CHECKER_INTERVAL,
         MyriaConstants.WORKER_SHUTDOWN_CHECKER_INTERVAL, TimeUnit.MILLISECONDS);
     scheduledTaskExecutor.scheduleAtFixedRate(new HeartbeatReporter(), 0, MyriaConstants.HEARTBEAT_INTERVAL,
