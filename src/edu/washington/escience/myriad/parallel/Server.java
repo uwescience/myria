@@ -93,8 +93,8 @@ public final class Server {
             final ControlMessage controlM = m.getControlMessage();
             switch (controlM.getType()) {
               case WORKER_HEARTBEAT:
-                if (LOGGER.isDebugEnabled()) {
-                  LOGGER.debug("getting heartbeat from worker " + senderID);
+                if (LOGGER.isTraceEnabled()) {
+                  LOGGER.trace("getting heartbeat from worker " + senderID);
                 }
                 updateHeartbeat(senderID);
                 // TODO: tell rejoin queries to update worker list
