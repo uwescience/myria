@@ -4,7 +4,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jboss.netty.channel.Channel;
 import org.jboss.netty.channel.ChannelFuture;
@@ -250,7 +249,7 @@ class ChannelContext extends AttachmentableAdapter {
     /**
      * number of references.
      * */
-    private final AtomicInteger numberOfReference;
+    private volatile int numberOfReference;
 
     /**
      * The logical I/O pair of a physical channel.
@@ -264,7 +263,7 @@ class ChannelContext extends AttachmentableAdapter {
     RegisteredChannelContext(final int remoteID, final ChannelPrioritySet ownerChannelGroup) {
       this.remoteID = remoteID;
       channelGroup = ownerChannelGroup;
-      numberOfReference = new AtomicInteger(0);
+      numberOfReference = 0;
       ioPair = new StreamIOChannelPair(ChannelContext.this);
     }
 
@@ -281,11 +280,21 @@ class ChannelContext extends AttachmentableAdapter {
      * @return the new number of references.
      * */
     final int decReference() {
-      final int newRef = numberOfReference.decrementAndGet();
+      int newRef = 0;
+      synchronized (stateMachineLock) {
+        if (numberOfReference <= 0) {
+          newRef = -1;
+          numberOfReference = 0;
+        } else {
+          int tmp = numberOfReference;
+          numberOfReference = tmp - 1;
+          newRef = numberOfReference;
+        }
+      }
       if (newRef < 0) {
         final String msg = "Number of references is negative";
-        LOGGER.warn(msg);
-        throw new IllegalStateException(msg);
+        LOGGER.warn(msg, new ThreadStackDump());
+        return 0;
       }
       return newRef;
     }
@@ -294,7 +303,9 @@ class ChannelContext extends AttachmentableAdapter {
      * Clear the reference.
      * */
     final void clearReference() {
-      numberOfReference.set(0);
+      synchronized (stateMachineLock) {
+        numberOfReference = 0;
+      }
     }
 
     /**
@@ -313,14 +324,29 @@ class ChannelContext extends AttachmentableAdapter {
       if (LOGGER.isTraceEnabled()) {
         LOGGER.trace("Inc reference for channel: " + ownerChannel, new ThreadStackDump());
       }
-      return numberOfReference.incrementAndGet();
+      int newRef = 0;
+      synchronized (stateMachineLock) {
+        if (numberOfReference < 0) {
+          newRef = -1;
+          numberOfReference = 1;
+        } else {
+          int tmp = numberOfReference;
+          numberOfReference = tmp + 1;
+        }
+      }
+      if (newRef < 0) {
+        final String msg = "Number of references is negative";
+        LOGGER.warn(msg, new ThreadStackDump());
+        return 1;
+      }
+      return newRef;
     }
 
     /**
      * @return current number of references.
      * */
     final int numReferenced() {
-      return numberOfReference.get();
+      return numberOfReference;
     }
 
     /**
