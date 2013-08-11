@@ -5,7 +5,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
@@ -22,12 +21,10 @@ import edu.washington.escience.myriad.parallel.TaskResourceManager;
  * This is an implementation of hash equal join. The same as in DupElim, this implementation does not keep the
  * references to the incoming TupleBatches in order to get better memory performance.
  * */
-public final class LocalCountingJoin extends Operator {
+public final class LocalCountingJoin extends BinaryOperator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
-  /** The two children. */
-  private Operator child1, child2;
   /** The result schema. */
   private final Schema outputSchema;
   /** The column indices for comparing of child 1. */
@@ -38,13 +35,13 @@ public final class LocalCountingJoin extends Operator {
   private transient HashMap<Integer, List<Integer>> hashTable1Indices;
   /** A hash table for tuples from child 2. {Hashcode -> List of tuple indices with the same hash code} */
   private transient HashMap<Integer, List<Integer>> hashTable2Indices;
-  /** The buffer holding the valid tuples from child1. */
+  /** The buffer holding the valid tuples from left. */
   private transient TupleBatchBuffer hashTable1;
-  /** The buffer holding the valid tuples from child2. */
+  /** The buffer holding the valid tuples from right. */
   private transient TupleBatchBuffer hashTable2;
-  /** How many times each key occurred from child1. */
+  /** How many times each key occurred from left. */
   private transient List<Integer> occurredTimes1;
-  /** How many times each key occurred from child2. */
+  /** How many times each key occurred from right. */
   private transient List<Integer> occurredTimes2;
   /** The number of join output tuples so far. */
   private long ans;
@@ -54,30 +51,30 @@ public final class LocalCountingJoin extends Operator {
   /**
    * Construct an LocalCountingJoin operator.
    * 
-   * @param child1 the left child.
-   * @param child2 the right child.
+   * @param left the left child.
+   * @param right the right child.
    * @param compareIndx1 the columns of the left child to be compared with the right. Order matters.
    * @param compareIndx2 the columns of the right child to be compared with the left. Order matters.
    * @throw IllegalArgumentException if there are duplicated column names from the children.
    */
-  public LocalCountingJoin(final Operator child1, final Operator child2, final int[] compareIndx1,
-      final int[] compareIndx2) {
-    this(null, child1, child2, compareIndx1, compareIndx2);
+  public LocalCountingJoin(final Operator left, final Operator right, final int[] compareIndx1, final int[] compareIndx2) {
+    this(null, left, right, compareIndx1, compareIndx2);
   }
 
   /**
    * Construct a LocalCountingJoin operator with schema specified.
    * 
    * @param outputColumnName the name of the column of the output table.
-   * @param child1 the left child.
-   * @param child2 the right child.
+   * @param left the left child.
+   * @param right the right child.
    * @param compareIndx1 the columns of the left child to be compared with the right. Order matters.
    * @param compareIndx2 the columns of the right child to be compared with the left. Order matters.
    * @throw IllegalArgumentException if there are duplicated column names in <tt>outputSchema</tt>, or if
    *        <tt>outputSchema</tt> does not have the correct number of columns and column types.
    */
-  public LocalCountingJoin(final String outputColumnName, final Operator child1, final Operator child2,
+  public LocalCountingJoin(final String outputColumnName, final Operator left, final Operator right,
       final int[] compareIndx1, final int[] compareIndx2) {
+    super(left, right);
     ImmutableList<Type> types = ImmutableList.of(Type.LONG_TYPE);
     ImmutableList<String> names;
     if (outputColumnName == null) {
@@ -86,8 +83,6 @@ public final class LocalCountingJoin extends Operator {
       names = ImmutableList.of(outputColumnName);
     }
     outputSchema = Schema.of(types, names);
-    this.child1 = child1;
-    this.child2 = child2;
     this.compareIndx1 = compareIndx1;
     this.compareIndx2 = compareIndx2;
   }
@@ -101,13 +96,15 @@ public final class LocalCountingJoin extends Operator {
 
   @Override
   public void checkEOSAndEOI() {
-    if (child1.eos() && child2.eos()) {
+    final Operator left = getLeft();
+    final Operator right = getRight();
+    if (left.eos() && right.eos()) {
       setEOS();
       return;
     }
 
     // EOS could be used as an EOI
-    if ((childrenEOI[0] || child1.eos()) && (childrenEOI[1] || child2.eos())) {
+    if ((childrenEOI[0] || left.eos()) && (childrenEOI[1] || right.eos())) {
       setEOI(true);
       Arrays.fill(childrenEOI, false);
     }
@@ -125,28 +122,30 @@ public final class LocalCountingJoin extends Operator {
    * @throws DbException if any error occurs.
    * */
   private TupleBatch fetchNextReadySynchronousEOI() throws DbException {
+    final Operator left = getLeft();
+    final Operator right = getRight();
     while (true) {
       boolean hasNewTuple = false;
-      if (!child1.eos() && !childrenEOI[0]) {
-        TupleBatch tb = child1.nextReady();
+      if (!left.eos() && !childrenEOI[0]) {
+        TupleBatch tb = left.nextReady();
         if (tb != null) {
           hasNewTuple = true;
           processChildTB(tb, true);
         } else {
-          if (child1.eoi()) {
-            child1.setEOI(false);
+          if (left.eoi()) {
+            left.setEOI(false);
             childrenEOI[0] = true;
           }
         }
       }
-      if (!child2.eos() && !childrenEOI[1]) {
-        TupleBatch tb = child2.nextReady();
+      if (!right.eos() && !childrenEOI[1]) {
+        TupleBatch tb = right.nextReady();
         if (tb != null) {
           hasNewTuple = true;
           processChildTB(tb, false);
         } else {
-          if (child2.eoi()) {
-            child2.setEOI(false);
+          if (right.eoi()) {
+            right.setEOI(false);
             childrenEOI[1] = true;
           }
         }
@@ -166,30 +165,32 @@ public final class LocalCountingJoin extends Operator {
 
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
+    final Operator left = getLeft();
+    final Operator right = getRight();
     if (!nonBlocking) {
       return fetchNextReadySynchronousEOI();
     }
     TupleBatch tb;
-    if (child1.eos() && child2.eos()) {
+    if (left.eos() && right.eos()) {
       return ansTBB.popAny();
     }
-    while (!child1.eos()) {
-      while ((tb = child1.nextReady()) != null) {
+    while (!left.eos()) {
+      while ((tb = left.nextReady()) != null) {
         processChildTB(tb, true);
       }
-      if (child1.eoi()) {
-        child1.setEOI(false);
+      if (left.eoi()) {
+        left.setEOI(false);
         childrenEOI[0] = true;
       } else {
         break;
       }
     }
-    while (!child2.eos()) {
-      while ((tb = child2.nextReady()) != null) {
+    while (!right.eos()) {
+      while ((tb = right.nextReady()) != null) {
         processChildTB(tb, false);
       }
-      if (child2.eoi()) {
-        child2.setEOI(false);
+      if (right.eoi()) {
+        right.setEOI(false);
         childrenEOI[1] = true;
       } else {
         break;
@@ -209,11 +210,6 @@ public final class LocalCountingJoin extends Operator {
   private transient boolean nonBlocking = true;
 
   @Override
-  public Operator[] getChildren() {
-    return new Operator[] { child1, child2 };
-  }
-
-  @Override
   public Schema getSchema() {
     return outputSchema;
   }
@@ -225,8 +221,8 @@ public final class LocalCountingJoin extends Operator {
     occurredTimes1 = new ArrayList<Integer>();
     occurredTimes2 = new ArrayList<Integer>();
     hashTable2Indices = new HashMap<Integer, List<Integer>>();
-    hashTable1 = new TupleBatchBuffer(child1.getSchema().getSubSchema(compareIndx1));
-    hashTable2 = new TupleBatchBuffer(child2.getSchema().getSubSchema(compareIndx2));
+    hashTable1 = new TupleBatchBuffer(getLeft().getSchema().getSubSchema(compareIndx1));
+    hashTable2 = new TupleBatchBuffer(getLeft().getSchema().getSubSchema(compareIndx2));
     ans = 0;
     ansTBB = new TupleBatchBuffer(outputSchema);
     TaskResourceManager qem = (TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER);
@@ -257,9 +253,9 @@ public final class LocalCountingJoin extends Operator {
 
   /**
    * @param tb the incoming TupleBatch for processing join.
-   * @param fromChild1 if the tb is from child1.
+   * @param fromleft if the tb is from left.
    * */
-  protected void processChildTB(final TupleBatch tb, final boolean fromChild1) {
+  protected void processChildTB(final TupleBatch tb, final boolean fromleft) {
 
     TupleBatchBuffer hashTable1Local = hashTable1;
     TupleBatchBuffer hashTable2Local = hashTable2;
@@ -268,7 +264,7 @@ public final class LocalCountingJoin extends Operator {
     List<Integer> occurredTimes1Local = occurredTimes1;
     List<Integer> occurredTimes2Local = occurredTimes2;
     int[] compareIndx1Local = compareIndx1;
-    if (!fromChild1) {
+    if (!fromleft) {
       hashTable1Local = hashTable2;
       hashTable2Local = hashTable1;
       hashTable1IndicesLocal = hashTable2Indices;
@@ -316,15 +312,5 @@ public final class LocalCountingJoin extends Operator {
         occurredTimes1Local.add(1);
       }
     }
-  }
-
-  @Override
-  public void setChildren(final Operator[] children) {
-    Preconditions.checkNotNull(children);
-    Preconditions.checkArgument(children.length == 2);
-    Preconditions.checkNotNull(children[0]);
-    Preconditions.checkNotNull(children[1]);
-    child1 = children[0];
-    child2 = children[1];
   }
 }

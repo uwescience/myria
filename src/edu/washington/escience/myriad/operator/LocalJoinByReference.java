@@ -3,7 +3,6 @@ package edu.washington.escience.myriad.operator;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 
 import com.carrotsearch.hppc.IntObjectOpenHashMap;
 import com.google.common.base.Preconditions;
@@ -25,7 +24,7 @@ import edu.washington.escience.myriad.util.MyriaUtils;
  * This is an implementation of hash equal join. The same as in DupElim, this implementation does not keep the
  * references to the incoming TupleBatches in order to get better memory performance.
  * */
-public final class LocalJoinByReference extends Operator {
+public final class LocalJoinByReference extends BinaryOperator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
@@ -80,10 +79,6 @@ public final class LocalJoinByReference extends Operator {
   }
 
   /**
-   * The two children.
-   * */
-  private Operator child1, child2;
-  /**
    * The result schema.
    */
   private Schema outputSchema;
@@ -120,23 +115,23 @@ public final class LocalJoinByReference extends Operator {
    * Construct an EquiJoin operator. It returns all columns from both children when the corresponding columns in
    * compareIndx1 and compareIndx2 match.
    * 
-   * @param child1 the left child.
-   * @param child2 the right child.
+   * @param left the left child.
+   * @param right the right child.
    * @param compareIndx1 the columns of the left child to be compared with the right. Order matters.
    * @param compareIndx2 the columns of the right child to be compared with the left. Order matters.
    * @throw IllegalArgumentException if there are duplicated column names from the children.
    */
-  public LocalJoinByReference(final Operator child1, final Operator child2, final int[] compareIndx1,
+  public LocalJoinByReference(final Operator left, final Operator right, final int[] compareIndx1,
       final int[] compareIndx2) {
-    this(null, child1, child2, compareIndx1, compareIndx2);
+    this(null, left, right, compareIndx1, compareIndx2);
   }
 
   /**
    * Construct an EquiJoin operator. It returns the specified columns from both children when the corresponding columns
    * in compareIndx1 and compareIndx2 match.
    * 
-   * @param child1 the left child.
-   * @param child2 the right child.
+   * @param left the left child.
+   * @param right the right child.
    * @param compareIndx1 the columns of the left child to be compared with the right. Order matters.
    * @param compareIndx2 the columns of the right child to be compared with the left. Order matters.
    * @param answerColumns1 the columns of the left child to be returned. Order matters.
@@ -144,9 +139,9 @@ public final class LocalJoinByReference extends Operator {
    * @throw IllegalArgumentException if there are duplicated column names in <tt>outputSchema</tt>, or if
    *        <tt>outputSchema</tt> does not have the correct number of columns and column types.
    */
-  public LocalJoinByReference(final Operator child1, final Operator child2, final int[] compareIndx1,
+  public LocalJoinByReference(final Operator left, final Operator right, final int[] compareIndx1,
       final int[] compareIndx2, final int[] answerColumns1, final int[] answerColumns2) {
-    this(null, child1, child2, compareIndx1, compareIndx2, answerColumns1, answerColumns2);
+    this(null, left, right, compareIndx1, compareIndx2, answerColumns1, answerColumns2);
   }
 
   /**
@@ -154,8 +149,8 @@ public final class LocalJoinByReference extends Operator {
    * in compareIndx1 and compareIndx2 match.
    * 
    * @param outputColumns the column names of the output table.
-   * @param child1 the left child.
-   * @param child2 the right child.
+   * @param left the left child.
+   * @param right the right child.
    * @param compareIndx1 the columns of the left child to be compared with the right. Order matters.
    * @param compareIndx2 the columns of the right child to be compared with the left. Order matters.
    * @param answerColumns1 the columns of the left child to be returned. Order matters.
@@ -163,8 +158,9 @@ public final class LocalJoinByReference extends Operator {
    * @throw IllegalArgumentException if there are duplicated column names in <tt>outputColumns</tt>, or if
    *        <tt>outputColumns</tt> does not have the correct number of columns.
    */
-  public LocalJoinByReference(final List<String> outputColumns, final Operator child1, final Operator child2,
+  public LocalJoinByReference(final List<String> outputColumns, final Operator left, final Operator right,
       final int[] compareIndx1, final int[] compareIndx2, final int[] answerColumns1, final int[] answerColumns2) {
+    super(left, right);
     Preconditions.checkArgument(compareIndx1.length == compareIndx2.length);
     if (outputColumns != null) {
       Preconditions.checkArgument(outputColumns.size() == answerColumns1.length + answerColumns2.length,
@@ -175,13 +171,11 @@ public final class LocalJoinByReference extends Operator {
     } else {
       this.outputColumns = null;
     }
-    this.child1 = child1;
-    this.child2 = child2;
     this.compareIndx1 = compareIndx1;
     this.compareIndx2 = compareIndx2;
     this.answerColumns1 = answerColumns1;
     this.answerColumns2 = answerColumns2;
-    if (child1 != null && child2 != null) {
+    if (left != null && right != null) {
       generateSchema();
     }
   }
@@ -191,34 +185,36 @@ public final class LocalJoinByReference extends Operator {
    * compareIndx1 and compareIndx2 match.
    * 
    * @param outputColumns the names of the columns of the output table.
-   * @param child1 the left child.
-   * @param child2 the right child.
+   * @param left the left child.
+   * @param right the right child.
    * @param compareIndx1 the columns of the left child to be compared with the right. Order matters.
    * @param compareIndx2 the columns of the right child to be compared with the left. Order matters.
    * @throw IllegalArgumentException if there are duplicated column names in <tt>outputSchema</tt>, or if
    *        <tt>outputSchema</tt> does not have the correct number of columns and column types.
    */
-  private LocalJoinByReference(final List<String> outputColumns, final Operator child1, final Operator child2,
+  private LocalJoinByReference(final List<String> outputColumns, final Operator left, final Operator right,
       final int[] compareIndx1, final int[] compareIndx2) {
-    this(outputColumns, child1, child2, compareIndx1, compareIndx2, MyriaUtils.range(child1.getSchema().numColumns()),
-        MyriaUtils.range(child2.getSchema().numColumns()));
+    this(outputColumns, left, right, compareIndx1, compareIndx2, MyriaUtils.range(left.getSchema().numColumns()),
+        MyriaUtils.range(right.getSchema().numColumns()));
   }
 
   /**
    * Generate the proper output schema from the parameters.
    */
   private void generateSchema() {
+    final Operator left = getLeft();
+    final Operator right = getRight();
     ImmutableList.Builder<Type> types = ImmutableList.builder();
     ImmutableList.Builder<String> names = ImmutableList.builder();
 
     for (int i : answerColumns1) {
-      types.add(child1.getSchema().getColumnType(i));
-      names.add(child1.getSchema().getColumnName(i));
+      types.add(left.getSchema().getColumnType(i));
+      names.add(left.getSchema().getColumnName(i));
     }
 
     for (int i : answerColumns2) {
-      types.add(child2.getSchema().getColumnType(i));
-      names.add(child2.getSchema().getColumnName(i));
+      types.add(right.getSchema().getColumnType(i));
+      names.add(right.getSchema().getColumnName(i));
     }
 
     if (outputColumns != null) {
@@ -260,29 +256,31 @@ public final class LocalJoinByReference extends Operator {
    * @throws DbException if any error occurs.
    * */
   private TupleBatch fetchNextReadySynchronousEOI() throws DbException {
+    final Operator left = getLeft();
+    final Operator right = getRight();
     TupleBatch nexttb = ans.popFilled();
     while (nexttb == null) {
       boolean hasnewtuple = false;
-      if (!child1.eos() && !childrenEOI[0]) {
-        TupleBatch tb = child1.nextReady();
+      if (!left.eos() && !childrenEOI[0]) {
+        TupleBatch tb = left.nextReady();
         if (tb != null) {
           hasnewtuple = true;
           processChildTB(tb, true);
         } else {
-          if (child1.eoi()) {
-            child1.setEOI(false);
+          if (left.eoi()) {
+            left.setEOI(false);
             childrenEOI[0] = true;
           }
         }
       }
-      if (!child2.eos() && !childrenEOI[1]) {
-        TupleBatch tb = child2.nextReady();
+      if (!right.eos() && !childrenEOI[1]) {
+        TupleBatch tb = right.nextReady();
         if (tb != null) {
           hasnewtuple = true;
           processChildTB(tb, false);
         } else {
-          if (child2.eoi()) {
-            child2.setEOI(false);
+          if (right.eoi()) {
+            right.setEOI(false);
             childrenEOI[1] = true;
           }
         }
@@ -306,14 +304,16 @@ public final class LocalJoinByReference extends Operator {
 
   @Override
   public void checkEOSAndEOI() {
+    final Operator left = getLeft();
+    final Operator right = getRight();
 
-    if (child1.eos() && child2.eos()) {
+    if (left.eos() && right.eos()) {
       setEOS();
       return;
     }
 
     // EOS could be used as an EOI
-    if ((childrenEOI[0] || child1.eos()) && (childrenEOI[1] || child2.eos())) {
+    if ((childrenEOI[0] || left.eos()) && (childrenEOI[1] || right.eos())) {
       setEOI(true);
       Arrays.fill(childrenEOI, false);
     }
@@ -338,65 +338,67 @@ public final class LocalJoinByReference extends Operator {
       return ans.popAny();
     }
 
-    TupleBatch child1TB = null;
-    TupleBatch child2TB = null;
+    final Operator left = getLeft();
+    final Operator right = getRight();
+    TupleBatch leftTB = null;
+    TupleBatch rightTB = null;
     int numEOS = 0;
     int numNoData = 0;
 
     while (numEOS < 2 && numNoData < 2) {
 
       numEOS = 0;
-      if (child1.eos()) {
+      if (left.eos()) {
         numEOS += 1;
       }
-      if (child2.eos()) {
+      if (right.eos()) {
         numEOS += 1;
       }
       numNoData = numEOS;
 
-      child1TB = null;
-      child2TB = null;
-      if (!child1.eos()) {
-        child1TB = child1.nextReady();
-        if (child1TB != null) { // data
-          processChildTB(child1TB, true);
+      leftTB = null;
+      rightTB = null;
+      if (!left.eos()) {
+        leftTB = left.nextReady();
+        if (leftTB != null) { // data
+          processChildTB(leftTB, true);
           nexttb = ans.popAnyUsingTimeout();
           if (nexttb != null) {
             return nexttb;
           }
         } else {
           // eoi or eos or no data
-          if (child1.eoi()) {
-            child1.setEOI(false);
+          if (left.eoi()) {
+            left.setEOI(false);
             childrenEOI[0] = true;
             checkEOSAndEOI();
             if (eoi()) {
               break;
             }
-          } else if (child1.eos()) {
+          } else if (left.eos()) {
             numEOS++;
           } else {
             numNoData++;
           }
         }
       }
-      if (!child2.eos()) {
-        child2TB = child2.nextReady();
-        if (child2TB != null) {
-          processChildTB(child2TB, false);
+      if (!right.eos()) {
+        rightTB = right.nextReady();
+        if (rightTB != null) {
+          processChildTB(rightTB, false);
           nexttb = ans.popAnyUsingTimeout();
           if (nexttb != null) {
             return nexttb;
           }
         } else {
-          if (child2.eoi()) {
-            child2.setEOI(false);
+          if (right.eoi()) {
+            right.setEOI(false);
             childrenEOI[1] = true;
             checkEOSAndEOI();
             if (eoi()) {
               break;
             }
-          } else if (child2.eos()) {
+          } else if (right.eos()) {
             numEOS++;
           } else {
             numNoData++;
@@ -412,11 +414,6 @@ public final class LocalJoinByReference extends Operator {
       nexttb = ans.popAny();
     }
     return nexttb;
-  }
-
-  @Override
-  public Operator[] getChildren() {
-    return new Operator[] { child1, child2 };
   }
 
   @Override
@@ -440,15 +437,15 @@ public final class LocalJoinByReference extends Operator {
 
   /**
    * @param tb the incoming TupleBatch for processing join.
-   * @param fromChild1 if the tb is from child1.
+   * @param fromleft if the tb is from left.
    * */
-  protected void processChildTB(final TupleBatch tb, final boolean fromChild1) {
+  protected void processChildTB(final TupleBatch tb, final boolean fromleft) {
 
     IntObjectOpenHashMap<List<IndexedTuple>> hashTable1Local = leftHashTable;
     IntObjectOpenHashMap<List<IndexedTuple>> hashTable2Local = rightHashTable;
     int[] compareIndx1Local = compareIndx1;
     int[] compareIndx2Local = compareIndx2;
-    if (!fromChild1) {
+    if (!fromleft) {
       hashTable1Local = rightHashTable;
       hashTable2Local = leftHashTable;
       compareIndx1Local = compareIndx2;
@@ -461,7 +458,7 @@ public final class LocalJoinByReference extends Operator {
       if (tupleList != null) {
         for (final IndexedTuple tuple : tupleList) {
           if (tb.tupleMatches(i, compareIndx1Local, tuple.getTupleBatch(), tuple.getIndex(), compareIndx2Local)) {
-            addToAns(tb, i, tuple.getTupleBatch(), tuple.getIndex(), fromChild1);
+            addToAns(tb, i, tuple.getTupleBatch(), tuple.getIndex(), fromleft);
           }
         }
       }
@@ -474,14 +471,5 @@ public final class LocalJoinByReference extends Operator {
       }
       tupleList.add(IndexedTuple.of(tb, i));
     }
-  }
-
-  @Override
-  public void setChildren(final Operator[] children) {
-    Preconditions.checkNotNull(children, "LocalJoin.setChildren called with null argument.");
-    Preconditions.checkArgument(children.length == 2, "LocalJoin must have exactly 2 children.");
-    child1 = Objects.requireNonNull(children[0], "LocalJoin.setChildren called with null left child.");
-    child2 = Objects.requireNonNull(children[1], "LocalJoin.setChildren called with null right child.");
-    generateSchema();
   }
 }
