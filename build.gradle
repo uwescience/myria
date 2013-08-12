@@ -157,7 +157,7 @@ eclipse.classpath {
       provider -> 
       provider.asNode().findAll { it.@path.contains("sqlite") }.each { 
         it.children().each {
-          it.appendNode('attribute', [name: 'org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY', value:'myriad/lib/sqlite4java-282'])
+          it.appendNode('attribute', [name: 'org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY', value:'myria/lib/sqlite4java-282'])
         }
       }
     }
