@@ -524,6 +524,16 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
   }
 
   /**
+   * Check if the remote IPC entity is in the pool.
+   * 
+   * @param remoteID remote ID.
+   * @return true if remote is still alive, false otherwise.
+   * */
+  public boolean isRemoteValid(final int remoteID) {
+    return channelPool.containsKey(remoteID);
+  }
+
+  /**
    * Detect if the remote IPC entity is still alive or not.
    * 
    * TODO more robust dead checking
@@ -670,7 +680,9 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
           throw new ChannelException("ID checking timeout");
         }
 
-        cc.waitForRemoteReply(CONNECTION_ID_CHECK_TIMEOUT_IN_MS);
+        if (!cc.waitForRemoteReply(CONNECTION_ID_CHECK_TIMEOUT_IN_MS)) {
+          throw new ChannelException("ID checking timeout");
+        }
 
         if (!(remote.id == (cc.remoteReplyID()))) {
           cc.idCheckingTimeout(unregisteredChannels);

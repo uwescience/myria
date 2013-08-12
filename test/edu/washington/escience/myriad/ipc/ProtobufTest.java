@@ -744,6 +744,59 @@ public class ProtobufTest {
     TestUtils.assertTupleBagEqual(expected, actual);
   }
 
+  @Test(expected = NullPointerException.class)
+  public void protobufSingleThreadSeparatePoolUnknownIPCIDTest() throws Exception {
+    // The server IPC pool doesn't know the client IPC pool.
+
+    final Schema schema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+
+    final int serverID = 0;
+    final int clientID = 1;
+
+    final HashMap<Integer, SocketInfo> computingUnitsClient = new HashMap<Integer, SocketInfo>();
+    computingUnitsClient.put(serverID, new SocketInfo("localhost", 19901));
+    computingUnitsClient.put(clientID, new SocketInfo("localhost", 19902));
+
+    final HashMap<Integer, SocketInfo> computingUnitsServer = new HashMap<Integer, SocketInfo>();
+    computingUnitsServer.put(serverID, new SocketInfo("localhost", 19901));
+
+    final IPCConnectionPool connectionPoolServer =
+        TestUtils.startIPCConnectionPool(serverID, computingUnitsServer, null, new TransportMessageSerializer());
+    final IPCConnectionPool connectionPoolClient =
+        TestUtils.startIPCConnectionPool(clientID, computingUnitsClient, null, new TransportMessageSerializer());
+
+    StreamIOChannelID outputChannelID = new StreamIOChannelID(ExchangePairID.newID().getLong(), serverID);
+
+    ImmutableSet.Builder<StreamIOChannelID> inputSetBuilder = ImmutableSet.builder();
+    inputSetBuilder.add(new StreamIOChannelID(outputChannelID.getStreamID(), clientID));
+
+    final SimpleBagInputBuffer<TupleBatch> inputBuffer =
+        new SimpleBagInputBuffer<TupleBatch>(connectionPoolServer, inputSetBuilder.build());
+    inputBuffer.setAttachment(schema);
+    inputBuffer.start(this);
+
+    StreamOutputChannel<TupleBatch> ch = null;
+    try {
+      ch =
+          Preconditions.checkNotNull(connectionPoolClient.<TupleBatch> reserveLongTermConnection(outputChannelID
+              .getRemoteID(), outputChannelID.getStreamID()));
+
+    } finally {
+      if (ch != null) {
+        ch.release();
+      }
+      connectionPoolServer.deRegisterStreamInput(inputBuffer);
+      final ChannelGroupFuture cgfClient = connectionPoolClient.shutdown();
+      final ChannelGroupFuture cgfServer = connectionPoolServer.shutdown();
+      cgfClient.await();
+      cgfServer.await();
+      connectionPoolClient.releaseExternalResources();
+      connectionPoolServer.releaseExternalResources();
+    }
+
+  }
+
   @Test
   public void protobufSingleThreadTest() throws Exception {
     final int serverID = 0;
