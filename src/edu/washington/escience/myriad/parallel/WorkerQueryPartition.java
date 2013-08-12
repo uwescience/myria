@@ -1,7 +1,10 @@
 package edu.washington.escience.myriad.parallel;
 
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -49,6 +52,11 @@ public class WorkerQueryPartition implements QueryPartition {
   private final Worker ownerWorker;
 
   /**
+   * The ftMode.
+   * */
+  private final String ftMode;
+
+  /**
    * priority, currently no use.
    * */
   private volatile int priority;
@@ -67,6 +75,11 @@ public class WorkerQueryPartition implements QueryPartition {
    * record all failed tasks.
    * */
   private final ConcurrentLinkedQueue<QuerySubTreeTask> failTasks = new ConcurrentLinkedQueue<QuerySubTreeTask>();
+
+  /**
+   * Current alive worker set.
+   * */
+  private final Set<Integer> missingWorkers;
 
   /**
    * The future listener for processing the complete events of the execution of all the query's tasks.
@@ -123,15 +136,18 @@ public class WorkerQueryPartition implements QueryPartition {
   private final QueryExecutionStatistics queryStatistics = new QueryExecutionStatistics();
 
   /**
-   * @param operators the operators belonging to this query partition.
+   * @param plan the plan of this query partition.
    * @param queryID the id of the query.
    * @param ownerWorker the worker on which this query partition is going to run
    * */
-  public WorkerQueryPartition(final RootOperator[] operators, final long queryID, final Worker ownerWorker) {
+  public WorkerQueryPartition(final SingleQueryPlanWithArgs plan, final long queryID, final Worker ownerWorker) {
     this.queryID = queryID;
-    tasks = new HashSet<QuerySubTreeTask>(operators.length);
+    ftMode = plan.getFTMode();
+    List<RootOperator> operators = plan.getRootOps();
+    tasks = new HashSet<QuerySubTreeTask>(operators.size());
     numFinishedTasks = new AtomicInteger(0);
     this.ownerWorker = ownerWorker;
+    missingWorkers = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
     for (final RootOperator taskRootOp : operators) {
       final QuerySubTreeTask drivingTask =
           new QuerySubTreeTask(ownerWorker.getIPCConnectionPool().getMyIPCID(), this, taskRootOp, ownerWorker
@@ -160,7 +176,6 @@ public class WorkerQueryPartition implements QueryPartition {
         });
         c.setInputBuffer(inputBuffer);
       }
-
     }
 
   }
@@ -284,4 +299,23 @@ public class WorkerQueryPartition implements QueryPartition {
     return queryStatistics;
   }
 
+  @Override
+  public String getFTMode() {
+    return ftMode;
+  }
+
+  @Override
+  public Set<Integer> getMissingWorkers() {
+    return missingWorkers;
+  }
+
+  /**
+   * when a REMOVE_WORKER message is received, give tasks another chance to decide if they are ready to generate
+   * EOS/EOI.
+   */
+  public void triggerTasks() {
+    for (QuerySubTreeTask task : tasks) {
+      task.notifyNewInput();
+    }
+  }
 }

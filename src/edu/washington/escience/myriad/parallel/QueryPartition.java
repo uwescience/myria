@@ -1,9 +1,18 @@
 package edu.washington.escience.myriad.parallel;
 
+import java.util.Set;
+
 /**
  * A {@link QueryPartition} is a partition of a query plan at a single worker or at the master.
  * */
 public interface QueryPartition extends Comparable<QueryPartition> {
+
+  /**
+   * get the ftMode.
+   * 
+   * @return the ft mode.
+   * */
+  String getFTMode();
 
   /**
    * @return The query ID.
@@ -59,4 +68,9 @@ public interface QueryPartition extends Comparable<QueryPartition> {
    * @return the query execution statistics.
    * */
   QueryExecutionStatistics getExecutionStatistics();
+
+  /**
+   * @return the set of workers that are currently dead.
+   */
+  public Set<Integer> getMissingWorkers();
 }

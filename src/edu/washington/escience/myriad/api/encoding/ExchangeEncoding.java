@@ -1,6 +1,7 @@
 package edu.washington.escience.myriad.api.encoding;
 
 import java.util.List;
+import java.util.Set;
 
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.parallel.ExchangePairID;
@@ -8,14 +9,14 @@ import edu.washington.escience.myriad.parallel.ExchangePairID;
 public abstract class ExchangeEncoding<E extends Operator> extends OperatorEncoding<E> {
   abstract List<String> getOperatorIds();
 
-  private List<Integer> realWorkerIds;
+  private Set<Integer> realWorkerIds;
   private List<ExchangePairID> realOperatorIds;
 
-  protected final List<Integer> getRealWorkerIds() {
+  protected final Set<Integer> getRealWorkerIds() {
     return realWorkerIds;
   }
 
-  protected final void setRealWorkerIds(List<Integer> w) {
+  protected final void setRealWorkerIds(Set<Integer> w) {
     realWorkerIds = w;
   }
 

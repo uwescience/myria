@@ -32,6 +32,7 @@ public abstract class Producer extends RootOperator {
    * 
    */
   private transient TaskResourceManager taskResourceManager;
+
   /**
    * the netty channels doing the true IPC IO.
    * */
@@ -213,6 +214,28 @@ public abstract class Producer extends RootOperator {
 
   /**
    * @param chIdx the channel to write
+   * @param msg the message.
+   * @param tbb the tuple batch buffer, may need to write the msg back if necessary.
+   * @throws InterruptedException if interrupted
+   * @return write future
+   * */
+  protected final ChannelFuture writeMessage(final int chIdx, final TupleBatch msg, final TupleBatchBuffer tbb)
+      throws InterruptedException {
+    ChannelFuture ret = null;
+    try {
+      ret = writeMessage(chIdx, msg);
+    } catch (IllegalStateException e) {
+      if (taskResourceManager.getOwnerTask().getOwnerQuery().getFTMode().equals("abandon")) {
+        // abandon, do nothing
+      } else {
+        throw e;
+      }
+    }
+    return ret;
+  }
+
+  /**
+   * @param chIdx the channel to write
    * @return channel release future.
    * */
   protected final ChannelFuture channelEnds(final int chIdx) {
@@ -259,6 +282,13 @@ public abstract class Producer extends RootOperator {
    * */
   protected final TupleBatchBuffer[] getBuffers() {
     return buffers;
+  }
+
+  /**
+   * @return The resource manager of the running task.
+   * */
+  protected TaskResourceManager getTaskResourceManager() {
+    return taskResourceManager;
   }
 
 }

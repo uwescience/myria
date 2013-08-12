@@ -5,6 +5,8 @@ package edu.washington.escience.myriad.accessmethod;
 
 import static org.junit.Assert.assertTrue;
 
+import java.util.HashMap;
+
 import org.junit.Before;
 import org.junit.Test;
 
@@ -16,9 +18,11 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.operator.JdbcInsert;
-import edu.washington.escience.myriad.operator.JdbcQueryScan;
+import edu.washington.escience.myriad.operator.DbInsert;
+import edu.washington.escience.myriad.operator.DbQueryScan;
 import edu.washington.escience.myriad.operator.TupleSource;
+import edu.washington.escience.myriad.systemtest.SystemTestBase.Tuple;
+import edu.washington.escience.myriad.util.TestUtils;
 
 public class VerticaJdbcAccessMethodTest {
 
@@ -27,6 +31,9 @@ public class VerticaJdbcAccessMethodTest {
   private Schema schema;
   private RelationKey relationKey;
   private final static int NUM_TUPLES = 2 * TupleBatch.BATCH_SIZE + 1;
+  private Schema floatTestSchema;
+  private RelationKey floatTestRelationKey;
+  private TupleBatchBuffer floatTestTb;
 
   /* Connection information */
   private final String host = "dbserver05.cs.washington.edu";
@@ -53,11 +60,29 @@ public class VerticaJdbcAccessMethodTest {
     }
   }
 
+  @Before
+  public void createFloatTestTb() {
+    if (floatTestSchema == null) {
+      floatTestSchema =
+          new Schema(ImmutableList.of(Type.STRING_TYPE, Type.FLOAT_TYPE), ImmutableList.of("name", "height"));
+      floatTestRelationKey = RelationKey.of("shumochu", "verticaTest", "floatConversion");
+    }
+    if (floatTestTb == null) {
+      floatTestTb = new TupleBatchBuffer(floatTestSchema);
+      final String[] c1 = TestUtils.randomFixedLengthNumericString(1000, 2000, 500, 20);
+      final float[] c2 = TestUtils.randomFloat((float) 140.11, (float) 200.69, 500);
+      for (int i = 0; i < c1.length; i++) {
+        floatTestTb.put(0, c1[i]);
+        floatTestTb.put(1, c2[i]);
+      }
+    }
+  }
+
   @Test
   public void testCreateTableAndCountMultipleBatches() throws Exception {
     /* Insert the NUM_TUPLES tuples */
     TupleSource source = new TupleSource(buffer);
-    JdbcInsert insert = new JdbcInsert(source, relationKey, jdbcInfo);
+    DbInsert insert = new DbInsert(source, relationKey, jdbcInfo);
     insert.open(null);
     while (!insert.eos()) {
       insert.nextReady();
@@ -65,10 +90,11 @@ public class VerticaJdbcAccessMethodTest {
     insert.close();
 
     /* Count them and make sure we got the right count. */
-    JdbcQueryScan count =
-        new JdbcQueryScan(jdbcInfo, "SELECT COUNT(*) FROM " + relationKey.toString(jdbcInfo.getDbms()), Schema.of(
+    DbQueryScan count =
+        new DbQueryScan(jdbcInfo, "SELECT COUNT(*) FROM " + relationKey.toString(jdbcInfo.getDbms()), Schema.of(
             ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("count")));
     count.open(null);
+
     TupleBatch result = count.nextReady();
     assertTrue(result != null);
     assertTrue(result.getLong(0, 0) == NUM_TUPLES);
@@ -76,5 +102,40 @@ public class VerticaJdbcAccessMethodTest {
     assertTrue(result == null);
     assertTrue(count.eos());
     count.close();
+  }
+
+  /** testing the conversion of myria float and vertica float. */
+  @Test
+  public void testFloatVerticaConversion() throws Exception {
+
+    /* get expected result */
+    HashMap<Tuple, Integer> expectedResult = TestUtils.tupleBatchToTupleBag(floatTestTb);
+
+    /* insert tuples. */
+    TupleSource source = new TupleSource(floatTestTb);
+    DbInsert insert = new DbInsert(source, floatTestRelationKey, jdbcInfo);
+    insert.open(null);
+    while (!insert.eos()) {
+      insert.nextReady();
+    }
+    insert.close();
+
+    /* read back. */
+    DbQueryScan scan =
+        new DbQueryScan(jdbcInfo, "SELECT * FROM " + floatTestRelationKey.toString(jdbcInfo.getDbms()), Schema.of(
+            ImmutableList.of(Type.STRING_TYPE, Type.FLOAT_TYPE), ImmutableList.of("name", "height")));
+    TupleBatchBuffer resultTbb = new TupleBatchBuffer(floatTestSchema);
+    scan.open(null);
+    TupleBatch resultTb;
+    while ((resultTb = scan.nextReady()) != null) {
+      TupleBatchBuffer temp = new TupleBatchBuffer(floatTestSchema);
+      resultTb.compactInto(temp);
+      resultTbb.merge(temp);
+    }
+    scan.close();
+
+    /* check */
+    HashMap<Tuple, Integer> result = TestUtils.tupleBatchToTupleBag(resultTbb);
+    TestUtils.assertTupleBagEqual(expectedResult, result);
   }
 }

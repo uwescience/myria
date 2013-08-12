@@ -27,6 +27,7 @@ import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.parallel.QueryFuture;
 import edu.washington.escience.myriad.parallel.QueryFutureListener;
 import edu.washington.escience.myriad.parallel.Server;
+import edu.washington.escience.myriad.parallel.SingleQueryPlanWithArgs;
 
 /**
  * Class that handles queries.
@@ -56,7 +57,7 @@ public final class QueryResource {
     query.validate();
 
     /* Deserialize the three arguments we need */
-    Map<Integer, RootOperator[]> queryPlan;
+    Map<Integer, SingleQueryPlanWithArgs> queryPlan;
     try {
       queryPlan = query.instantiate(server);
     } catch (CatalogException e) {
@@ -80,17 +81,18 @@ public final class QueryResource {
       throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "Not all requested workers are alive");
     }
 
-    RootOperator[] masterPlan = queryPlan.get(MyriaConstants.MASTER_ID);
+    SingleQueryPlanWithArgs masterPlan = queryPlan.get(MyriaConstants.MASTER_ID);
     if (masterPlan == null) {
-      masterPlan = new RootOperator[] { new SinkRoot(new EOSSource()) };
-      queryPlan.put(MyriaConstants.MASTER_ID, masterPlan);
+      masterPlan = new SingleQueryPlanWithArgs(new SinkRoot(new EOSSource()));
+    } else {
+      queryPlan.remove(MyriaConstants.MASTER_ID);
     }
-    final RootOperator masterRoot = masterPlan[0];
+    final RootOperator masterRoot = masterPlan.getRootOps().get(0);
 
     /* Start the query, and get its Server-assigned Query ID */
     QueryFuture qf;
     try {
-      qf = server.submitQuery(query.rawDatalog, query.logicalRa, queryPlan);
+      qf = server.submitQuery(query.rawDatalog, query.logicalRa, masterPlan, queryPlan);
     } catch (DbException | CatalogException e) {
       throw new MyriaApiException(Status.INTERNAL_SERVER_ERROR, e);
     }

@@ -1,6 +1,11 @@
 package edu.washington.escience.myriad.parallel;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
+import org.apache.commons.lang.ArrayUtils;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.ExchangeTupleBatch;
@@ -86,12 +91,44 @@ public class EOSController extends Producer {
       // after eos, do nothing.
       return;
     }
+
+    int numExpecting = eosZeroColValue;
+    if (getTaskResourceManager().getOwnerTask().getOwnerQuery().getFTMode().equals("abandon")) {
+      Set<Integer> missingWorkers = getTaskResourceManager().getOwnerTask().getOwnerQuery().getMissingWorkers();
+      for (Integer id : missingWorkers) {
+        if (workerIdToIndex.containsKey(id)) {
+          int workerIdx = workerIdToIndex.get(id);
+          for (int[] numWorkerReportedEOI : numEOI) {
+            /* for this IDB, the array of the number of EOIs reported by each worker. */
+            if (numWorkerReportedEOI[workerIdx] != -1 && numWorkerReportedEOI[workerIdx] < zeroCol.size()) {
+              int tmp = zeroCol.get(numWorkerReportedEOI[workerIdx]);
+              if (tmp <= 0) {
+                /* no effect */
+                continue;
+              }
+              /* remove the report of this missing worker from the total count */
+              zeroCol.set(numWorkerReportedEOI[workerIdx], tmp - 1);
+              /* mark it as removed. */
+              numWorkerReportedEOI[workerIdx] = -1;
+            }
+          }
+        }
+      }
+      Set<Integer> expectingWorkers = new HashSet<Integer>();
+      expectingWorkers.addAll(Arrays.asList(ArrayUtils.toObject(workerIdToIndex.keySet().toArray())));
+      expectingWorkers.removeAll(missingWorkers);
+      /* only count EOI reports from alive workers. */
+      numExpecting = expectingWorkers.size() * numEOI.length;
+    }
     ExchangeTupleBatch etb = (ExchangeTupleBatch) otb;
     for (int i = 0; i < etb.numTuples(); ++i) {
-      // int idbIdx = idbIDToIndex.get(etb.getLong(0, i));
       int idbIdx = etb.getInt(0, i);
-      boolean isEmpty = etb.getBoolean(1, i);
       int workerIdx = workerIdToIndex.get(etb.getSourceWorkerID());
+      if (numEOI[idbIdx][workerIdx] == -1) {
+        /* from a removed worker */
+        continue;
+      }
+      boolean isEmpty = etb.getBoolean(1, i);
       while (numEOI[idbIdx][workerIdx] >= zeroCol.size()) {
         zeroCol.add(0);
       }
@@ -99,8 +136,9 @@ public class EOSController extends Producer {
       if (!isEmpty) {
         zeroCol.set(numEOI[idbIdx][workerIdx], -1);
       } else if (tmp >= 0) {
-        zeroCol.set(numEOI[idbIdx][workerIdx], tmp + 1);
-        if (tmp + 1 == eosZeroColValue) {
+        tmp++;
+        zeroCol.set(numEOI[idbIdx][workerIdx], tmp);
+        if (tmp == numExpecting) {
           for (int j = 0; j < super.numChannels(); j++) {
             super.channelEnds(j); // directly emit an EOS makes more sense.
           }

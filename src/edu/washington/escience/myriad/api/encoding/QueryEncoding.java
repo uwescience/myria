@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.api.MyriaApiException;
@@ -21,6 +22,7 @@ import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.parallel.CollectConsumer;
 import edu.washington.escience.myriad.parallel.ExchangePairID;
 import edu.washington.escience.myriad.parallel.Server;
+import edu.washington.escience.myriad.parallel.SingleQueryPlanWithArgs;
 import edu.washington.escience.myriad.util.MyriaUtils;
 
 /**
@@ -41,6 +43,8 @@ public class QueryEncoding extends MyriaApiEncoding {
   private static List<String> requiredFields = ImmutableList.of("rawDatalog", "logicalRa", "fragments");
   /** The logger for this class. */
   private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(QueryEncoding.class);
+  /** The fault-tolerance mode used in this query, default: none. */
+  public String ftMode = "none";
 
   @Override
   protected List<String> getRequiredFields() {
@@ -54,30 +58,25 @@ public class QueryEncoding extends MyriaApiEncoding {
     }
   }
 
-  public Map<Integer, RootOperator[]> instantiate(final Server server) throws CatalogException {
+  public Map<Integer, SingleQueryPlanWithArgs> instantiate(final Server server) throws CatalogException {
     /* First, we need to know which workers run on each plan. */
     setupWorkersForFragments(server);
     /* Next, we need to know which pipes (operators) are produced and consumed on which workers. */
     setupWorkerNetworkOperators();
-    Map<Integer, List<RootOperator>> plan = new HashMap<Integer, List<RootOperator>>();
+    Map<Integer, SingleQueryPlanWithArgs> plan = new HashMap<Integer, SingleQueryPlanWithArgs>();
     for (PlanFragmentEncoding fragment : fragments) {
       RootOperator op = instantiatePlanFragment(fragment.operators, server);
       for (Integer worker : fragment.workers) {
-        List<RootOperator> workerPlan = plan.get(worker);
+        SingleQueryPlanWithArgs workerPlan = plan.get(worker);
         if (workerPlan == null) {
-          workerPlan = new ArrayList<RootOperator>();
+          workerPlan = new SingleQueryPlanWithArgs();
+          workerPlan.setFTMode(ftMode);
           plan.put(worker, workerPlan);
         }
-        workerPlan.add(op);
+        workerPlan.addRootOp(op);
       }
     }
-    /* Stupid array conversion. */
-    Map<Integer, RootOperator[]> ret = new HashMap<Integer, RootOperator[]>();
-    for (int worker : plan.keySet()) {
-      List<RootOperator> workerPlan = plan.get(worker);
-      ret.put(worker, workerPlan.toArray(new RootOperator[workerPlan.size()]));
-    }
-    return ret;
+    return plan;
   }
 
   /**
@@ -95,8 +94,8 @@ public class QueryEncoding extends MyriaApiEncoding {
       List<Integer> workers = new ArrayList<Integer>();
       /* If the plan has scans, it has to run on all of those workers. */
       for (OperatorEncoding<?> operator : fragment.operators) {
-        if (operator instanceof SQLiteScanEncoding) {
-          SQLiteScanEncoding scan = ((SQLiteScanEncoding) operator);
+        if (operator instanceof TableScanEncoding) {
+          TableScanEncoding scan = ((TableScanEncoding) operator);
           List<Integer> scanWorkers = server.getWorkersForRelation(scan.relationKey, scan.storedRelationId);
           if (scanWorkers == null) {
             throw new MyriaApiException(Status.BAD_REQUEST, "Unable to find workers that store "
@@ -165,7 +164,7 @@ public class QueryEncoding extends MyriaApiEncoding {
       for (OperatorEncoding<?> operator : fragment.operators) {
         if (operator instanceof ExchangeEncoding) {
           ExchangeEncoding<?> exchange = (ExchangeEncoding<?>) operator;
-          ImmutableList.Builder<Integer> workers = ImmutableList.builder();
+          ImmutableSet.Builder<Integer> workers = ImmutableSet.builder();
           for (ExchangePairID id : exchange.getRealOperatorIds()) {
             if (exchange instanceof AbstractConsumerEncoding) {
               workers.addAll(producerMap.get(id));
@@ -200,7 +199,10 @@ public class QueryEncoding extends MyriaApiEncoding {
 
     /* Instantiate all the operators. */
     for (OperatorEncoding<?> encoding : planFragment) {
-      operators.put(encoding.opName, encoding.construct(server));
+      Operator op = encoding.construct(server);
+      /* helpful for debugging. */
+      op.setOpName(encoding.opName);
+      operators.put(encoding.opName, op);
     }
     /* Connect all the operators. */
     for (OperatorEncoding<?> encoding : planFragment) {

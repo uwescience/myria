@@ -1,1570 +1,663 @@
 {
-"raw_datalog" : "",
-"logical_ra" : "",
-"expected_result_size" : "4344",
-"query_plan" : {
-"0" : 
-[
-	[
+    "fragments": [
         {
-          "op_name" : "cc",
-          "op_type" : "CollectConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "22"
+            "operators": [
+                {
+                    "arg_operator_id": "22",
+                    "arg_schema": {
+                        "column_names": [
+                            "follower",
+                            "followee"
+                        ],
+                        "column_types": [
+                            "LONG_TYPE",
+                            "LONG_TYPE"
+                        ]
+                    },
+                    "op_name": "cc",
+                    "op_type": "CollectConsumer"
+                }
+            ],
+            "workers": [
+                "0"
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "arg_operator_id": "0",
+                    "arg_schema": {
+                        "column_names": [
+                            "idbID",
+                            "isDeltaEmpty"
+                        ],
+                        "column_types": [
+                            "INT_TYPE",
+                            "BOOLEAN_TYPE"
+                        ]
+                    },
+                    "op_name": "eoiReceiverA",
+                    "op_type": "Consumer"
+                },
+                {
+                    "arg_operator_id": "1",
+                    "arg_schema": {
+                        "column_names": [
+                            "idbID",
+                            "isDeltaEmpty"
+                        ],
+                        "column_types": [
+                            "INT_TYPE",
+                            "BOOLEAN_TYPE"
+                        ]
+                    },
+                    "op_name": "eoiReceiverB",
+                    "op_type": "Consumer"
+                },
+                {
+                    "arg_operator_id": "2",
+                    "arg_schema": {
+                        "column_names": [
+                            "idbID",
+                            "isDeltaEmpty"
+                        ],
+                        "column_types": [
+                            "INT_TYPE",
+                            "BOOLEAN_TYPE"
+                        ]
+                    },
+                    "op_name": "eoiReceiverC",
+                    "op_type": "Consumer"
+                },
+                {
+                    "arg_children": [
+                        "eoiReceiverA",
+                        "eoiReceiverB",
+                        "eoiReceiverC"
+                    ],
+                    "op_name": "merge",
+                    "op_type": "Merge"
+                },
+                {
+                    "arg_child": "merge",
+                    "arg_idb_operator_ids": [
+                        "3",
+                        "4",
+                        "5"
+                    ],
+                    "op_name": "eosController",
+                    "op_type": "EOSController"
+                }
+            ],
+            "workers": [
+                "1"
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "op_name": "scan2a",
+                    "op_type": "TableScan",
+                    "relation_key": {
+                        "program_name": "multiIDB",
+                        "relation_name": "a0",
+                        "user_name": "jwang"
+                    }
+                },
+                {
+                    "arg_child": "scan2a",
+                    "arg_operator_id": "6",
+                    "arg_pf": {
+                        "index": "0",
+                        "type": "SingleFieldHash"
+                    },
+                    "op_name": "sp2a",
+                    "op_type": "ShuffleProducer"
+                }
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "arg_operator_id": "6",
+                    "arg_schema": {
+                        "column_names": [
+                            "follower",
+                            "followee"
+                        ],
+                        "column_types": [
+                            "LONG_TYPE",
+                            "LONG_TYPE"
+                        ]
+                    },
+                    "op_name": "sc2a",
+                    "op_type": "ShuffleConsumer"
+                },
+                {
+                    "arg_operator_id": "7",
+                    "arg_schema": {
+                        "column_names": [
+                            "follower",
+                            "followee"
+                        ],
+                        "column_types": [
+                            "LONG_TYPE",
+                            "LONG_TYPE"
+                        ]
+                    },
+                    "op_name": "sc3a",
+                    "op_type": "ShuffleConsumer"
+                },
+                {
+                    "arg_operator_id": "3",
+                    "arg_schema": {
+                        "column_names": [
+                            "EOS"
+                        ],
+                        "column_types": [
+                            "BOOLEAN_TYPE"
+                        ]
+                    },
+                    "op_name": "eosReceivera",
+                    "op_type": "Consumer"
+                },
+                {
+                    "arg_controller_operator_id": "0",
+                    "arg_eos_controller_input": "eosReceivera",
+                    "arg_initial_input": "sc2a",
+                    "arg_iteration_input": "sc3a",
+                    "arg_self_idb_id": "0",
+                    "op_name": "idbinputa",
+                    "op_type": "IDBInput"
+                },
+                {
+                    "arg_child": "idbinputa",
+                    "arg_operator_ids": [
+                        "8",
+                        "9"
+                    ],
+                    "op_name": "mpa",
+                    "op_type": "LocalMultiwayProducer"
+                }
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "arg_operator_id": "10",
+                    "arg_schema": {
+                        "column_names": [
+                            "follower",
+                            "followee"
+                        ],
+                        "column_types": [
+                            "LONG_TYPE",
+                            "LONG_TYPE"
+                        ]
+                    },
+                    "op_name": "sc1a",
+                    "op_type": "ShuffleConsumer"
+                },
+                {
+                    "arg_operator_id": "8",
+                    "arg_schema": {
+                        "column_names": [
+                            "follower",
+                            "followee"
+                        ],
+                        "column_types": [
+                            "LONG_TYPE",
+                            "LONG_TYPE"
+                        ]
+                    },
+                    "op_name": "send2joina",
+                    "op_type": "LocalMultiwayConsumer"
+                },
+                {
+                    "arg_child1": "sc1a",
+                    "arg_child2": "send2joina",
+                    "arg_columns1": [
+                        "1"
+                    ],
+                    "arg_columns2": [
+                        "0"
+                    ],
+                    "arg_select1": [
+                        "0"
+                    ],
+                    "arg_select2": [
+                        "1"
+                    ],
+                    "op_name": "joina",
+                    "op_type": "LocalJoin"
+                },
+                {
+                    "arg_child": "joina",
+                    "arg_operator_id": "7",
+                    "arg_pf": {
+                        "index": "0",
+                        "type": "SingleFieldHash"
+                    },
+                    "op_name": "sp3a",
+                    "op_type": "ShuffleProducer"
+                }
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "arg_operator_id": "9",
+                    "arg_schema": {
+                        "column_names": [
+                            "follower",
+                            "followee"
+                        ],
+                        "column_types": [
+                            "LONG_TYPE",
+                            "LONG_TYPE"
+                        ]
+                    },
+                    "op_name": "send2othersa",
+                    "op_type": "LocalMultiwayConsumer"
+                },
+                {
+                    "arg_child": "send2othersa",
+                    "arg_operator_id": "11",
+                    "arg_pf": {
+                        "index": "1",
+                        "type": "SingleFieldHash"
+                    },
+                    "op_name": "spOthersa",
+                    "op_type": "ShuffleProducer"
+                }
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "op_name": "scan2b",
+                    "op_type": "TableScan",
+                    "relation_key": {
+                        "program_name": "multiIDB",
+                        "relation_name": "b0",
+                        "user_name": "jwang"
+                    }
+                },
+                {
+                    "arg_child": "scan2b",
+                    "arg_operator_id": "12",
+                    "arg_pf": {
+                        "index": "0",
+                        "type": "SingleFieldHash"
+                    },
+                    "op_name": "sp2b",
+                    "op_type": "ShuffleProducer"
+                }
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "arg_operator_id": "12",
+                    "arg_schema": {
+                        "column_names": [
+                            "follower",
+                            "followee"
+                        ],
+                        "column_types": [
+                            "LONG_TYPE",
+                            "LONG_TYPE"
+                        ]
+                    },
+                    "op_name": "sc2b",
+                    "op_type": "ShuffleConsumer"
+                },
+                {
+                    "arg_operator_id": "13",
+                    "arg_schema": {
+                        "column_names": [
+                            "follower",
+                            "followee"
+                        ],
+                        "column_types": [
+                            "LONG_TYPE",
+                            "LONG_TYPE"
+                        ]
+                    },
+                    "op_name": "sc3b",
+                    "op_type": "ShuffleConsumer"
+                },
+                {
+                    "arg_operator_id": "4",
+                    "arg_schema": {
+                        "column_names": [
+                            "EOS"
+                        ],
+                        "column_types": [
+                            "BOOLEAN_TYPE"
+                        ]
+                    },
+                    "op_name": "eosReceiverb",
+                    "op_type": "Consumer"
+                },
+                {
+                    "arg_controller_operator_id": "1",
+                    "arg_eos_controller_input": "eosReceiverb",
+                    "arg_initial_input": "sc2b",
+                    "arg_iteration_input": "sc3b",
+                    "arg_self_idb_id": "1",
+                    "op_name": "idbinputb",
+                    "op_type": "IDBInput"
+                },
+                {
+                    "arg_child": "idbinputb",
+                    "arg_operator_ids": [
+                        "14",
+                        "15"
+                    ],
+                    "op_name": "mpb",
+                    "op_type": "LocalMultiwayProducer"
+                }
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "arg_operator_id": "11",
+                    "arg_schema": {
+                        "column_names": [
+                            "follower",
+                            "followee"
+                        ],
+                        "column_types": [
+                            "LONG_TYPE",
+                            "LONG_TYPE"
+                        ]
+                    },
+                    "op_name": "sc1b",
+                    "op_type": "ShuffleConsumer"
+                },
+                {
+                    "arg_operator_id": "14",
+                    "arg_schema": {
+                        "column_names": [
+                            "follower",
+                            "followee"
+                        ],
+                        "column_types": [
+                            "LONG_TYPE",
+                            "LONG_TYPE"
+                        ]
+                    },
+                    "op_name": "send2joinb",
+                    "op_type": "LocalMultiwayConsumer"
+                },
+                {
+                    "arg_child1": "sc1b",
+                    "arg_child2": "send2joinb",
+                    "arg_columns1": [
+                        "1"
+                    ],
+                    "arg_columns2": [
+                        "0"
+                    ],
+                    "arg_select1": [
+                        "0"
+                    ],
+                    "arg_select2": [
+                        "1"
+                    ],
+                    "op_name": "joinb",
+                    "op_type": "LocalJoin"
+                },
+                {
+                    "arg_child": "joinb",
+                    "arg_operator_id": "13",
+                    "arg_pf": {
+                        "index": "0",
+                        "type": "SingleFieldHash"
+                    },
+                    "op_name": "sp3b",
+                    "op_type": "ShuffleProducer"
+                }
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "arg_operator_id": "15",
+                    "arg_schema": {
+                        "column_names": [
+                            "follower",
+                            "followee"
+                        ],
+                        "column_types": [
+                            "LONG_TYPE",
+                            "LONG_TYPE"
+                        ]
+                    },
+                    "op_name": "send2othersb",
+                    "op_type": "LocalMultiwayConsumer"
+                },
+                {
+                    "arg_child": "send2othersb",
+                    "arg_operator_id": "16",
+                    "arg_pf": {
+                        "index": "1",
+                        "type": "SingleFieldHash"
+                    },
+                    "op_name": "spOthersb",
+                    "op_type": "ShuffleProducer"
+                }
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "op_name": "scan2c",
+                    "op_type": "TableScan",
+                    "relation_key": {
+                        "program_name": "multiIDB",
+                        "relation_name": "c0",
+                        "user_name": "jwang"
+                    }
+                },
+                {
+                    "arg_child": "scan2c",
+                    "arg_operator_id": "17",
+                    "arg_pf": {
+                        "index": "0",
+                        "type": "SingleFieldHash"
+                    },
+                    "op_name": "sp2c",
+                    "op_type": "ShuffleProducer"
+                }
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "arg_operator_id": "17",
+                    "arg_schema": {
+                        "column_names": [
+                            "follower",
+                            "followee"
+                        ],
+                        "column_types": [
+                            "LONG_TYPE",
+                            "LONG_TYPE"
+                        ]
+                    },
+                    "op_name": "sc2c",
+                    "op_type": "ShuffleConsumer"
+                },
+                {
+                    "arg_operator_id": "18",
+                    "arg_schema": {
+                        "column_names": [
+                            "follower",
+                            "followee"
+                        ],
+                        "column_types": [
+                            "LONG_TYPE",
+                            "LONG_TYPE"
+                        ]
+                    },
+                    "op_name": "sc3c",
+                    "op_type": "ShuffleConsumer"
+                },
+                {
+                    "arg_operator_id": "5",
+                    "arg_schema": {
+                        "column_names": [
+                            "EOS"
+                        ],
+                        "column_types": [
+                            "BOOLEAN_TYPE"
+                        ]
+                    },
+                    "op_name": "eosReceiverc",
+                    "op_type": "Consumer"
+                },
+                {
+                    "arg_controller_operator_id": "2",
+                    "arg_eos_controller_input": "eosReceiverc",
+                    "arg_initial_input": "sc2c",
+                    "arg_iteration_input": "sc3c",
+                    "arg_self_idb_id": "2",
+                    "op_name": "idbinputc",
+                    "op_type": "IDBInput"
+                },
+                {
+                    "arg_child": "idbinputc",
+                    "arg_operator_ids": [
+                        "19",
+                        "20",
+                        "21"
+                    ],
+                    "op_name": "mpc",
+                    "op_type": "LocalMultiwayProducer"
+                }
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "arg_operator_id": "16",
+                    "arg_schema": {
+                        "column_names": [
+                            "follower",
+                            "followee"
+                        ],
+                        "column_types": [
+                            "LONG_TYPE",
+                            "LONG_TYPE"
+                        ]
+                    },
+                    "op_name": "sc1c",
+                    "op_type": "ShuffleConsumer"
+                },
+                {
+                    "arg_operator_id": "19",
+                    "arg_schema": {
+                        "column_names": [
+                            "follower",
+                            "followee"
+                        ],
+                        "column_types": [
+                            "LONG_TYPE",
+                            "LONG_TYPE"
+                        ]
+                    },
+                    "op_name": "send2joinc",
+                    "op_type": "LocalMultiwayConsumer"
+                },
+                {
+                    "arg_child1": "sc1c",
+                    "arg_child2": "send2joinc",
+                    "arg_columns1": [
+                        "1"
+                    ],
+                    "arg_columns2": [
+                        "0"
+                    ],
+                    "arg_select1": [
+                        "0"
+                    ],
+                    "arg_select2": [
+                        "1"
+                    ],
+                    "op_name": "joinc",
+                    "op_type": "LocalJoin"
+                },
+                {
+                    "arg_child": "joinc",
+                    "arg_operator_id": "18",
+                    "arg_pf": {
+                        "index": "0",
+                        "type": "SingleFieldHash"
+                    },
+                    "op_name": "sp3c",
+                    "op_type": "ShuffleProducer"
+                }
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "arg_operator_id": "20",
+                    "arg_schema": {
+                        "column_names": [
+                            "follower",
+                            "followee"
+                        ],
+                        "column_types": [
+                            "LONG_TYPE",
+                            "LONG_TYPE"
+                        ]
+                    },
+                    "op_name": "send2othersc",
+                    "op_type": "LocalMultiwayConsumer"
+                },
+                {
+                    "arg_child": "send2othersc",
+                    "arg_operator_id": "10",
+                    "arg_pf": {
+                        "index": "1",
+                        "type": "SingleFieldHash"
+                    },
+                    "op_name": "spOthersc",
+                    "op_type": "ShuffleProducer"
+                }
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "arg_operator_id": "21",
+                    "arg_schema": {
+                        "column_names": [
+                            "follower",
+                            "followee"
+                        ],
+                        "column_types": [
+                            "LONG_TYPE",
+                            "LONG_TYPE"
+                        ]
+                    },
+                    "op_name": "send2serverc",
+                    "op_type": "LocalMultiwayConsumer"
+                },
+                {
+                    "arg_child": "send2serverc",
+                    "arg_operator_id": "22",
+                    "op_name": "cpc",
+                    "op_type": "CollectProducer"
+                }
+            ]
         }
-	]
-],
-
-"1" : 
-[
-	[
-        {
-          "op_name" : "eoiReceiverA",
-          "op_type" : "Consumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "0"
-        },
-        {
-          "op_name" : "eoiReceiverB",
-          "op_type" : "Consumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "1"
-        },
-        {
-          "op_name" : "eoiReceiverC",
-          "op_type" : "Consumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "2"
-        },
-        {
-          "op_name" : "eosController",
-          "op_type" : "EOSController",
-          "arg_children" : ["eoiReceiverA", "eoiReceiverB", "eoiReceiverC"],
-          "arg_idb_operator_ids" : ["3", "4", "5"],
-          "arg_worker_ids" : ["1","2","3","4"]
-        }
-	],
-	[
-        {
-          "op_name" : "scan2a",
-          "op_type" : "SQLiteScan",
-          "relation_key" : {
-            "user_name" : "jwang",
-            "program_name" : "multiIDB",
-            "relation_name" : "a0"
-          }
-        },
-        {
-          "op_name" : "sp2a",
-          "op_type" : "ShuffleProducer",
-          "arg_child" : "scan2a",
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "6",
-          "arg_pf" : {
-             "type" : "SingleFieldHash",
-             "index" : "0"
-          }
-        }
-	],
-
-	[
-        {
-          "op_name" : "sc2a",
-          "op_type" : "ShuffleConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "6"
-        },
-        {
-          "op_name" : "sc3a",
-          "op_type" : "ShuffleConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "7"
-        },
-        {
-          "op_name" : "eosReceivera",
-          "op_type" : "Consumer",
-          "arg_schema" : {"column_types":["BOOLEAN_TYPE"],"column_names":["EOS"]},
-          "arg_worker_ids" : ["1"],
-          "arg_operator_id" : "3"
-        },
-        {
-          "op_name" : "idbinputa",
-          "op_type" : "IDBInput",
-          "arg_self_idb_id" : "0",
-          "arg_controller_operator_id" : "0",
-          "arg_controller_worker_id" : "1",
-          "arg_initial_input" : "sc2a",
-          "arg_iteration_input" : "sc3a",
-          "arg_eos_controller_input" : "eosReceivera"
-        },
-        {
-          "op_name" : "mpa",
-          "op_type" : "LocalMultiwayProducer",
-          "arg_child" : "idbinputa",
-          "arg_operator_ids" : ["8", "9"]
-        }
-	],
-
-	[
-        {
-          "op_name" : "sc1a",
-          "op_type" : "ShuffleConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "10"
-        },
-        {
-          "op_name" : "send2joina",
-          "op_type" : "LocalMultiwayConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_operator_id" : "8"
-        },
-        {
-          "op_name" : "joina",
-          "op_type" : "LocalJoin",
-          "arg_child1" : "sc1a",
-          "arg_child2" : "send2joina",
-          "arg_columns1" : ["1"],
-          "arg_columns2" : ["0"],
-          "arg_select1" : ["0"],
-          "arg_select2" : ["1"]
-        },
-        {
-          "op_name" : "sp3a",
-          "op_type" : "ShuffleProducer",
-          "arg_child" : "joina",
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "7",
-          "arg_pf" : {
-             "type" : "SingleFieldHash",
-             "index" : "0"
-          }
-        }
-	],
-
-	[
-        {
-          "op_name" : "send2othersa",
-          "op_type" : "LocalMultiwayConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_operator_id" : "9"
-        },
-	{
-          "op_name" : "spOthersa",
-          "op_type" : "ShuffleProducer",
-          "arg_child" : "send2othersa",
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "11",
-          "arg_pf" : {
-             "type" : "SingleFieldHash",
-             "index" : "1"
-          }
-        }
-	],
-
-
-	[
-        {
-          "op_name" : "scan2b",
-          "op_type" : "SQLiteScan",
-          "relation_key" : {
-            "user_name" : "jwang",
-            "program_name" : "multiIDB",
-            "relation_name" : "b0"
-          }
-        },
-        {
-          "op_name" : "sp2b",
-          "op_type" : "ShuffleProducer",
-          "arg_child" : "scan2b",
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "12",
-          "arg_pf" : {
-             "type" : "SingleFieldHash",
-             "index" : "0"
-          }
-        }
-	],
-
-	[
-        {
-          "op_name" : "sc2b",
-          "op_type" : "ShuffleConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "12"
-        },
-        {
-          "op_name" : "sc3b",
-          "op_type" : "ShuffleConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "13"
-        },
-        {
-          "op_name" : "eosReceiverb",
-          "op_type" : "Consumer",
-          "arg_schema" : {"column_types":["BOOLEAN_TYPE"],"column_names":["EOS"]},
-          "arg_worker_ids" : ["1"],
-          "arg_operator_id" : "4"
-        },
-        {
-          "op_name" : "idbinputb",
-          "op_type" : "IDBInput",
-          "arg_self_idb_id" : "1",
-          "arg_controller_operator_id" : "1",
-          "arg_controller_worker_id" : "1",
-          "arg_initial_input" : "sc2b",
-          "arg_iteration_input" : "sc3b",
-          "arg_eos_controller_input" : "eosReceiverb"
-        },
-        {
-          "op_name" : "mpb",
-          "op_type" : "LocalMultiwayProducer",
-          "arg_child" : "idbinputb",
-          "arg_operator_ids" : ["14", "15"]
-        }
-	],
-
-	[
-        {
-          "op_name" : "sc1b",
-          "op_type" : "ShuffleConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "11"
-        },
-        {
-          "op_name" : "send2joinb",
-          "op_type" : "LocalMultiwayConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_operator_id" : "14"
-        },
-        {
-          "op_name" : "joinb",
-          "op_type" : "LocalJoin",
-          "arg_child1" : "sc1b",
-          "arg_child2" : "send2joinb",
-          "arg_columns1" : ["1"],
-          "arg_columns2" : ["0"],
-          "arg_select1" : ["0"],
-          "arg_select2" : ["1"]
-        },
-        {
-          "op_name" : "sp3b",
-          "op_type" : "ShuffleProducer",
-          "arg_child" : "joinb",
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "13",
-          "arg_pf" : {
-             "type" : "SingleFieldHash",
-             "index" : "0"
-          }
-        }
-	],
-
-	[
-        {
-          "op_name" : "send2othersb",
-          "op_type" : "LocalMultiwayConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_operator_id" : "15"
-        },
-	{
-          "op_name" : "spOthersb",
-          "op_type" : "ShuffleProducer",
-          "arg_child" : "send2othersb",
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "16",
-          "arg_pf" : {
-             "type" : "SingleFieldHash",
-             "index" : "1"
-          }
-        }
-	],
-
-	[
-        {
-          "op_name" : "scan2c",
-          "op_type" : "SQLiteScan",
-          "relation_key" : {
-            "user_name" : "jwang",
-            "program_name" : "multiIDB",
-            "relation_name" : "c0"
-          }
-        },
-        {
-          "op_name" : "sp2c",
-          "op_type" : "ShuffleProducer",
-          "arg_child" : "scan2c",
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "17",
-          "arg_pf" : {
-             "type" : "SingleFieldHash",
-             "index" : "0"
-          }
-        }
-	],
-
-	[
-        {
-          "op_name" : "sc2c",
-          "op_type" : "ShuffleConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "17"
-        },
-        {
-          "op_name" : "sc3c",
-          "op_type" : "ShuffleConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "18"
-        },
-        {
-          "op_name" : "eosReceiverc",
-          "op_type" : "Consumer",
-          "arg_schema" : {"column_types":["BOOLEAN_TYPE"],"column_names":["EOS"]},
-          "arg_worker_ids" : ["1"],
-          "arg_operator_id" : "5"
-        },
-        {
-          "op_name" : "idbinputc",
-          "op_type" : "IDBInput",
-          "arg_self_idb_id" : "2",
-          "arg_controller_operator_id" : "2",
-          "arg_controller_worker_id" : "1",
-          "arg_initial_input" : "sc2c",
-          "arg_iteration_input" : "sc3c",
-          "arg_eos_controller_input" : "eosReceiverc"
-        },
-        {
-          "op_name" : "mpc",
-          "op_type" : "LocalMultiwayProducer",
-          "arg_child" : "idbinputc",
-          "arg_operator_ids" : ["19", "20", "21"]
-        }
-	],
-
-	[
-        {
-          "op_name" : "sc1c",
-          "op_type" : "ShuffleConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "16"
-        },
-        {
-          "op_name" : "send2joinc",
-          "op_type" : "LocalMultiwayConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_operator_id" : "19"
-        },
-        {
-          "op_name" : "joinc",
-          "op_type" : "LocalJoin",
-          "arg_child1" : "sc1c",
-          "arg_child2" : "send2joinc",
-          "arg_columns1" : ["1"],
-          "arg_columns2" : ["0"],
-          "arg_select1" : ["0"],
-          "arg_select2" : ["1"]
-        },
-        {
-          "op_name" : "sp3c",
-          "op_type" : "ShuffleProducer",
-          "arg_child" : "joinc",
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "18",
-          "arg_pf" : {
-             "type" : "SingleFieldHash",
-             "index" : "0"
-          }
-        }
-	],
-
-	[
-        {
-          "op_name" : "send2othersc",
-          "op_type" : "LocalMultiwayConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_operator_id" : "20"
-        },
-	{
-          "op_name" : "spOthersc",
-          "op_type" : "ShuffleProducer",
-          "arg_child" : "send2othersc",
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "10",
-          "arg_pf" : {
-             "type" : "SingleFieldHash",
-             "index" : "1"
-          }
-        }
-	],
-
-	[
-        {
-          "op_name" : "send2serverc",
-          "op_type" : "LocalMultiwayConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_operator_id" : "21"
-        },
-	{
-          "op_name" : "cpc",
-          "op_type" : "CollectProducer",
-          "arg_child" : "send2serverc",
-          "arg_worker_id" : "0",
-          "arg_operator_id" : "22"
-        }
-	]
-],
-
-"2" : 
-[
-	[
-        {
-          "op_name" : "scan2a",
-          "op_type" : "SQLiteScan",
-          "relation_key" : {
-            "user_name" : "jwang",
-            "program_name" : "multiIDB",
-            "relation_name" : "a0"
-          }
-        },
-        {
-          "op_name" : "sp2a",
-          "op_type" : "ShuffleProducer",
-          "arg_child" : "scan2a",
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "6",
-          "arg_pf" : {
-             "type" : "SingleFieldHash",
-             "index" : "0"
-          }
-        }
-	],
-
-	[
-        {
-          "op_name" : "sc2a",
-          "op_type" : "ShuffleConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "6"
-        },
-        {
-          "op_name" : "sc3a",
-          "op_type" : "ShuffleConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "7"
-        },
-        {
-          "op_name" : "eosReceivera",
-          "op_type" : "Consumer",
-          "arg_schema" : {"column_types":["BOOLEAN_TYPE"],"column_names":["EOS"]},
-          "arg_worker_ids" : ["1"],
-          "arg_operator_id" : "3"
-        },
-        {
-          "op_name" : "idbinputa",
-          "op_type" : "IDBInput",
-          "arg_self_idb_id" : "0",
-          "arg_controller_operator_id" : "0",
-          "arg_controller_worker_id" : "1",
-          "arg_initial_input" : "sc2a",
-          "arg_iteration_input" : "sc3a",
-          "arg_eos_controller_input" : "eosReceivera"
-        },
-        {
-          "op_name" : "mpa",
-          "op_type" : "LocalMultiwayProducer",
-          "arg_child" : "idbinputa",
-          "arg_operator_ids" : ["8", "9"]
-        }
-	],
-
-	[
-        {
-          "op_name" : "sc1a",
-          "op_type" : "ShuffleConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "10"
-        },
-        {
-          "op_name" : "send2joina",
-          "op_type" : "LocalMultiwayConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_operator_id" : "8"
-        },
-        {
-          "op_name" : "joina",
-          "op_type" : "LocalJoin",
-          "arg_child1" : "sc1a",
-          "arg_child2" : "send2joina",
-          "arg_columns1" : ["1"],
-          "arg_columns2" : ["0"],
-          "arg_select1" : ["0"],
-          "arg_select2" : ["1"]
-        },
-        {
-          "op_name" : "sp3a",
-          "op_type" : "ShuffleProducer",
-          "arg_child" : "joina",
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "7",
-          "arg_pf" : {
-             "type" : "SingleFieldHash",
-             "index" : "0"
-          }
-        }
-	],
-
-	[
-        {
-          "op_name" : "send2othersa",
-          "op_type" : "LocalMultiwayConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_operator_id" : "9"
-        },
-	{
-          "op_name" : "spOthersa",
-          "op_type" : "ShuffleProducer",
-          "arg_child" : "send2othersa",
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "11",
-          "arg_pf" : {
-             "type" : "SingleFieldHash",
-             "index" : "1"
-          }
-        }
-	],
-
-
-	[
-        {
-          "op_name" : "scan2b",
-          "op_type" : "SQLiteScan",
-          "relation_key" : {
-            "user_name" : "jwang",
-            "program_name" : "multiIDB",
-            "relation_name" : "b0"
-          }
-        },
-        {
-          "op_name" : "sp2b",
-          "op_type" : "ShuffleProducer",
-          "arg_child" : "scan2b",
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "12",
-          "arg_pf" : {
-             "type" : "SingleFieldHash",
-             "index" : "0"
-          }
-        }
-	],
-
-	[
-        {
-          "op_name" : "sc2b",
-          "op_type" : "ShuffleConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "12"
-        },
-        {
-          "op_name" : "sc3b",
-          "op_type" : "ShuffleConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "13"
-        },
-        {
-          "op_name" : "eosReceiverb",
-          "op_type" : "Consumer",
-          "arg_schema" : {"column_types":["BOOLEAN_TYPE"],"column_names":["EOS"]},
-          "arg_worker_ids" : ["1"],
-          "arg_operator_id" : "4"
-        },
-        {
-          "op_name" : "idbinputb",
-          "op_type" : "IDBInput",
-          "arg_self_idb_id" : "1",
-          "arg_controller_operator_id" : "1",
-          "arg_controller_worker_id" : "1",
-          "arg_initial_input" : "sc2b",
-          "arg_iteration_input" : "sc3b",
-          "arg_eos_controller_input" : "eosReceiverb"
-        },
-        {
-          "op_name" : "mpb",
-          "op_type" : "LocalMultiwayProducer",
-          "arg_child" : "idbinputb",
-          "arg_operator_ids" : ["14", "15"]
-        }
-	],
-
-	[
-        {
-          "op_name" : "sc1b",
-          "op_type" : "ShuffleConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "11"
-        },
-        {
-          "op_name" : "send2joinb",
-          "op_type" : "LocalMultiwayConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_operator_id" : "14"
-        },
-        {
-          "op_name" : "joinb",
-          "op_type" : "LocalJoin",
-          "arg_child1" : "sc1b",
-          "arg_child2" : "send2joinb",
-          "arg_columns1" : ["1"],
-          "arg_columns2" : ["0"],
-          "arg_select1" : ["0"],
-          "arg_select2" : ["1"]
-        },
-        {
-          "op_name" : "sp3b",
-          "op_type" : "ShuffleProducer",
-          "arg_child" : "joinb",
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "13",
-          "arg_pf" : {
-             "type" : "SingleFieldHash",
-             "index" : "0"
-          }
-        }
-	],
-
-	[
-        {
-          "op_name" : "send2othersb",
-          "op_type" : "LocalMultiwayConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_operator_id" : "15"
-        },
-	{
-          "op_name" : "spOthersb",
-          "op_type" : "ShuffleProducer",
-          "arg_child" : "send2othersb",
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "16",
-          "arg_pf" : {
-             "type" : "SingleFieldHash",
-             "index" : "1"
-          }
-        }
-	],
-
-	[
-        {
-          "op_name" : "scan2c",
-          "op_type" : "SQLiteScan",
-          "relation_key" : {
-            "user_name" : "jwang",
-            "program_name" : "multiIDB",
-            "relation_name" : "c0"
-          }
-        },
-        {
-          "op_name" : "sp2c",
-          "op_type" : "ShuffleProducer",
-          "arg_child" : "scan2c",
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "17",
-          "arg_pf" : {
-             "type" : "SingleFieldHash",
-             "index" : "0"
-          }
-        }
-	],
-
-	[
-        {
-          "op_name" : "sc2c",
-          "op_type" : "ShuffleConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "17"
-        },
-        {
-          "op_name" : "sc3c",
-          "op_type" : "ShuffleConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "18"
-        },
-        {
-          "op_name" : "eosReceiverc",
-          "op_type" : "Consumer",
-          "arg_schema" : {"column_types":["BOOLEAN_TYPE"],"column_names":["EOS"]},
-          "arg_worker_ids" : ["1"],
-          "arg_operator_id" : "5"
-        },
-        {
-          "op_name" : "idbinputc",
-          "op_type" : "IDBInput",
-          "arg_self_idb_id" : "2",
-          "arg_controller_operator_id" : "2",
-          "arg_controller_worker_id" : "1",
-          "arg_initial_input" : "sc2c",
-          "arg_iteration_input" : "sc3c",
-          "arg_eos_controller_input" : "eosReceiverc"
-        },
-        {
-          "op_name" : "mpc",
-          "op_type" : "LocalMultiwayProducer",
-          "arg_child" : "idbinputc",
-          "arg_operator_ids" : ["19", "20", "21"]
-        }
-	],
-
-	[
-        {
-          "op_name" : "sc1c",
-          "op_type" : "ShuffleConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "16"
-        },
-        {
-          "op_name" : "send2joinc",
-          "op_type" : "LocalMultiwayConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_operator_id" : "19"
-        },
-        {
-          "op_name" : "joinc",
-          "op_type" : "LocalJoin",
-          "arg_child1" : "sc1c",
-          "arg_child2" : "send2joinc",
-          "arg_columns1" : ["1"],
-          "arg_columns2" : ["0"],
-          "arg_select1" : ["0"],
-          "arg_select2" : ["1"]
-        },
-        {
-          "op_name" : "sp3c",
-          "op_type" : "ShuffleProducer",
-          "arg_child" : "joinc",
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "18",
-          "arg_pf" : {
-             "type" : "SingleFieldHash",
-             "index" : "0"
-          }
-        }
-	],
-
-	[
-        {
-          "op_name" : "send2othersc",
-          "op_type" : "LocalMultiwayConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_operator_id" : "20"
-        },
-	{
-          "op_name" : "spOthersc",
-          "op_type" : "ShuffleProducer",
-          "arg_child" : "send2othersc",
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "10",
-          "arg_pf" : {
-             "type" : "SingleFieldHash",
-             "index" : "1"
-          }
-        }
-	],
-
-	[
-        {
-          "op_name" : "send2serverc",
-          "op_type" : "LocalMultiwayConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_operator_id" : "21"
-        },
-	{
-          "op_name" : "cpc",
-          "op_type" : "CollectProducer",
-          "arg_child" : "send2serverc",
-          "arg_worker_id" : "0",
-          "arg_operator_id" : "22"
-        }
-	]
-],
-
-"3" : 
-[
-	[
-        {
-          "op_name" : "scan2a",
-          "op_type" : "SQLiteScan",
-          "relation_key" : {
-            "user_name" : "jwang",
-            "program_name" : "multiIDB",
-            "relation_name" : "a0"
-          }
-        },
-        {
-          "op_name" : "sp2a",
-          "op_type" : "ShuffleProducer",
-          "arg_child" : "scan2a",
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "6",
-          "arg_pf" : {
-             "type" : "SingleFieldHash",
-             "index" : "0"
-          }
-        }
-	],
-
-	[
-        {
-          "op_name" : "sc2a",
-          "op_type" : "ShuffleConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "6"
-        },
-        {
-          "op_name" : "sc3a",
-          "op_type" : "ShuffleConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "7"
-        },
-        {
-          "op_name" : "eosReceivera",
-          "op_type" : "Consumer",
-          "arg_schema" : {"column_types":["BOOLEAN_TYPE"],"column_names":["EOS"]},
-          "arg_worker_ids" : ["1"],
-          "arg_operator_id" : "3"
-        },
-        {
-          "op_name" : "idbinputa",
-          "op_type" : "IDBInput",
-          "arg_self_idb_id" : "0",
-          "arg_controller_operator_id" : "0",
-          "arg_controller_worker_id" : "1",
-          "arg_initial_input" : "sc2a",
-          "arg_iteration_input" : "sc3a",
-          "arg_eos_controller_input" : "eosReceivera"
-        },
-        {
-          "op_name" : "mpa",
-          "op_type" : "LocalMultiwayProducer",
-          "arg_child" : "idbinputa",
-          "arg_operator_ids" : ["8", "9"]
-        }
-	],
-
-	[
-        {
-          "op_name" : "sc1a",
-          "op_type" : "ShuffleConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "10"
-        },
-        {
-          "op_name" : "send2joina",
-          "op_type" : "LocalMultiwayConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_operator_id" : "8"
-        },
-        {
-          "op_name" : "joina",
-          "op_type" : "LocalJoin",
-          "arg_child1" : "sc1a",
-          "arg_child2" : "send2joina",
-          "arg_columns1" : ["1"],
-          "arg_columns2" : ["0"],
-          "arg_select1" : ["0"],
-          "arg_select2" : ["1"]
-        },
-        {
-          "op_name" : "sp3a",
-          "op_type" : "ShuffleProducer",
-          "arg_child" : "joina",
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "7",
-          "arg_pf" : {
-             "type" : "SingleFieldHash",
-             "index" : "0"
-          }
-        }
-	],
-
-	[
-        {
-          "op_name" : "send2othersa",
-          "op_type" : "LocalMultiwayConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_operator_id" : "9"
-        },
-	{
-          "op_name" : "spOthersa",
-          "op_type" : "ShuffleProducer",
-          "arg_child" : "send2othersa",
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "11",
-          "arg_pf" : {
-             "type" : "SingleFieldHash",
-             "index" : "1"
-          }
-        }
-	],
-
-
-	[
-        {
-          "op_name" : "scan2b",
-          "op_type" : "SQLiteScan",
-          "relation_key" : {
-            "user_name" : "jwang",
-            "program_name" : "multiIDB",
-            "relation_name" : "b0"
-          }
-        },
-        {
-          "op_name" : "sp2b",
-          "op_type" : "ShuffleProducer",
-          "arg_child" : "scan2b",
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "12",
-          "arg_pf" : {
-             "type" : "SingleFieldHash",
-             "index" : "0"
-          }
-        }
-	],
-
-	[
-        {
-          "op_name" : "sc2b",
-          "op_type" : "ShuffleConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "12"
-        },
-        {
-          "op_name" : "sc3b",
-          "op_type" : "ShuffleConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "13"
-        },
-        {
-          "op_name" : "eosReceiverb",
-          "op_type" : "Consumer",
-          "arg_schema" : {"column_types":["BOOLEAN_TYPE"],"column_names":["EOS"]},
-          "arg_worker_ids" : ["1"],
-          "arg_operator_id" : "4"
-        },
-        {
-          "op_name" : "idbinputb",
-          "op_type" : "IDBInput",
-          "arg_self_idb_id" : "1",
-          "arg_controller_operator_id" : "1",
-          "arg_controller_worker_id" : "1",
-          "arg_initial_input" : "sc2b",
-          "arg_iteration_input" : "sc3b",
-          "arg_eos_controller_input" : "eosReceiverb"
-        },
-        {
-          "op_name" : "mpb",
-          "op_type" : "LocalMultiwayProducer",
-          "arg_child" : "idbinputb",
-          "arg_operator_ids" : ["14", "15"]
-        }
-	],
-
-	[
-        {
-          "op_name" : "sc1b",
-          "op_type" : "ShuffleConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "11"
-        },
-        {
-          "op_name" : "send2joinb",
-          "op_type" : "LocalMultiwayConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_operator_id" : "14"
-        },
-        {
-          "op_name" : "joinb",
-          "op_type" : "LocalJoin",
-          "arg_child1" : "sc1b",
-          "arg_child2" : "send2joinb",
-          "arg_columns1" : ["1"],
-          "arg_columns2" : ["0"],
-          "arg_select1" : ["0"],
-          "arg_select2" : ["1"]
-        },
-        {
-          "op_name" : "sp3b",
-          "op_type" : "ShuffleProducer",
-          "arg_child" : "joinb",
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "13",
-          "arg_pf" : {
-             "type" : "SingleFieldHash",
-             "index" : "0"
-          }
-        }
-	],
-
-	[
-        {
-          "op_name" : "send2othersb",
-          "op_type" : "LocalMultiwayConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_operator_id" : "15"
-        },
-	{
-          "op_name" : "spOthersb",
-          "op_type" : "ShuffleProducer",
-          "arg_child" : "send2othersb",
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "16",
-          "arg_pf" : {
-             "type" : "SingleFieldHash",
-             "index" : "1"
-          }
-        }
-	],
-
-	[
-        {
-          "op_name" : "scan2c",
-          "op_type" : "SQLiteScan",
-          "relation_key" : {
-            "user_name" : "jwang",
-            "program_name" : "multiIDB",
-            "relation_name" : "c0"
-          }
-        },
-        {
-          "op_name" : "sp2c",
-          "op_type" : "ShuffleProducer",
-          "arg_child" : "scan2c",
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "17",
-          "arg_pf" : {
-             "type" : "SingleFieldHash",
-             "index" : "0"
-          }
-        }
-	],
-
-	[
-        {
-          "op_name" : "sc2c",
-          "op_type" : "ShuffleConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "17"
-        },
-        {
-          "op_name" : "sc3c",
-          "op_type" : "ShuffleConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "18"
-        },
-        {
-          "op_name" : "eosReceiverc",
-          "op_type" : "Consumer",
-          "arg_schema" : {"column_types":["BOOLEAN_TYPE"],"column_names":["EOS"]},
-          "arg_worker_ids" : ["1"],
-          "arg_operator_id" : "5"
-        },
-        {
-          "op_name" : "idbinputc",
-          "op_type" : "IDBInput",
-          "arg_self_idb_id" : "2",
-          "arg_controller_operator_id" : "2",
-          "arg_controller_worker_id" : "1",
-          "arg_initial_input" : "sc2c",
-          "arg_iteration_input" : "sc3c",
-          "arg_eos_controller_input" : "eosReceiverc"
-        },
-        {
-          "op_name" : "mpc",
-          "op_type" : "LocalMultiwayProducer",
-          "arg_child" : "idbinputc",
-          "arg_operator_ids" : ["19", "20", "21"]
-        }
-	],
-
-	[
-        {
-          "op_name" : "sc1c",
-          "op_type" : "ShuffleConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "16"
-        },
-        {
-          "op_name" : "send2joinc",
-          "op_type" : "LocalMultiwayConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_operator_id" : "19"
-        },
-        {
-          "op_name" : "joinc",
-          "op_type" : "LocalJoin",
-          "arg_child1" : "sc1c",
-          "arg_child2" : "send2joinc",
-          "arg_columns1" : ["1"],
-          "arg_columns2" : ["0"],
-          "arg_select1" : ["0"],
-          "arg_select2" : ["1"]
-        },
-        {
-          "op_name" : "sp3c",
-          "op_type" : "ShuffleProducer",
-          "arg_child" : "joinc",
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "18",
-          "arg_pf" : {
-             "type" : "SingleFieldHash",
-             "index" : "0"
-          }
-        }
-	],
-
-	[
-        {
-          "op_name" : "send2othersc",
-          "op_type" : "LocalMultiwayConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_operator_id" : "20"
-        },
-	{
-          "op_name" : "spOthersc",
-          "op_type" : "ShuffleProducer",
-          "arg_child" : "send2othersc",
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "10",
-          "arg_pf" : {
-             "type" : "SingleFieldHash",
-             "index" : "1"
-          }
-        }
-	],
-
-	[
-        {
-          "op_name" : "send2serverc",
-          "op_type" : "LocalMultiwayConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_operator_id" : "21"
-        },
-	{
-          "op_name" : "cpc",
-          "op_type" : "CollectProducer",
-          "arg_child" : "send2serverc",
-          "arg_worker_id" : "0",
-          "arg_operator_id" : "22"
-        }
-	]
-],
-
-"4" : 
-[
-	[
-        {
-          "op_name" : "scan2a",
-          "op_type" : "SQLiteScan",
-          "relation_key" : {
-            "user_name" : "jwang",
-            "program_name" : "multiIDB",
-            "relation_name" : "a0"
-          }
-        },
-        {
-          "op_name" : "sp2a",
-          "op_type" : "ShuffleProducer",
-          "arg_child" : "scan2a",
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "6",
-          "arg_pf" : {
-             "type" : "SingleFieldHash",
-             "index" : "0"
-          }
-        }
-	],
-
-	[
-        {
-          "op_name" : "sc2a",
-          "op_type" : "ShuffleConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "6"
-        },
-        {
-          "op_name" : "sc3a",
-          "op_type" : "ShuffleConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "7"
-        },
-        {
-          "op_name" : "eosReceivera",
-          "op_type" : "Consumer",
-          "arg_schema" : {"column_types":["BOOLEAN_TYPE"],"column_names":["EOS"]},
-          "arg_worker_ids" : ["1"],
-          "arg_operator_id" : "3"
-        },
-        {
-          "op_name" : "idbinputa",
-          "op_type" : "IDBInput",
-          "arg_self_idb_id" : "0",
-          "arg_controller_operator_id" : "0",
-          "arg_controller_worker_id" : "1",
-          "arg_initial_input" : "sc2a",
-          "arg_iteration_input" : "sc3a",
-          "arg_eos_controller_input" : "eosReceivera"
-        },
-        {
-          "op_name" : "mpa",
-          "op_type" : "LocalMultiwayProducer",
-          "arg_child" : "idbinputa",
-          "arg_operator_ids" : ["8", "9"]
-        }
-	],
-
-	[
-        {
-          "op_name" : "sc1a",
-          "op_type" : "ShuffleConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "10"
-        },
-        {
-          "op_name" : "send2joina",
-          "op_type" : "LocalMultiwayConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_operator_id" : "8"
-        },
-        {
-          "op_name" : "joina",
-          "op_type" : "LocalJoin",
-          "arg_child1" : "sc1a",
-          "arg_child2" : "send2joina",
-          "arg_columns1" : ["1"],
-          "arg_columns2" : ["0"],
-          "arg_select1" : ["0"],
-          "arg_select2" : ["1"]
-        },
-        {
-          "op_name" : "sp3a",
-          "op_type" : "ShuffleProducer",
-          "arg_child" : "joina",
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "7",
-          "arg_pf" : {
-             "type" : "SingleFieldHash",
-             "index" : "0"
-          }
-        }
-	],
-
-	[
-        {
-          "op_name" : "send2othersa",
-          "op_type" : "LocalMultiwayConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_operator_id" : "9"
-        },
-	{
-          "op_name" : "spOthersa",
-          "op_type" : "ShuffleProducer",
-          "arg_child" : "send2othersa",
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "11",
-          "arg_pf" : {
-             "type" : "SingleFieldHash",
-             "index" : "1"
-          }
-        }
-	],
-
-
-	[
-        {
-          "op_name" : "scan2b",
-          "op_type" : "SQLiteScan",
-          "relation_key" : {
-            "user_name" : "jwang",
-            "program_name" : "multiIDB",
-            "relation_name" : "b0"
-          }
-        },
-        {
-          "op_name" : "sp2b",
-          "op_type" : "ShuffleProducer",
-          "arg_child" : "scan2b",
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "12",
-          "arg_pf" : {
-             "type" : "SingleFieldHash",
-             "index" : "0"
-          }
-        }
-	],
-
-	[
-        {
-          "op_name" : "sc2b",
-          "op_type" : "ShuffleConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "12"
-        },
-        {
-          "op_name" : "sc3b",
-          "op_type" : "ShuffleConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "13"
-        },
-        {
-          "op_name" : "eosReceiverb",
-          "op_type" : "Consumer",
-          "arg_schema" : {"column_types":["BOOLEAN_TYPE"],"column_names":["EOS"]},
-          "arg_worker_ids" : ["1"],
-          "arg_operator_id" : "4"
-        },
-        {
-          "op_name" : "idbinputb",
-          "op_type" : "IDBInput",
-          "arg_self_idb_id" : "1",
-          "arg_controller_operator_id" : "1",
-          "arg_controller_worker_id" : "1",
-          "arg_initial_input" : "sc2b",
-          "arg_iteration_input" : "sc3b",
-          "arg_eos_controller_input" : "eosReceiverb"
-        },
-        {
-          "op_name" : "mpb",
-          "op_type" : "LocalMultiwayProducer",
-          "arg_child" : "idbinputb",
-          "arg_operator_ids" : ["14", "15"]
-        }
-	],
-
-	[
-        {
-          "op_name" : "sc1b",
-          "op_type" : "ShuffleConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "11"
-        },
-        {
-          "op_name" : "send2joinb",
-          "op_type" : "LocalMultiwayConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_operator_id" : "14"
-        },
-        {
-          "op_name" : "joinb",
-          "op_type" : "LocalJoin",
-          "arg_child1" : "sc1b",
-          "arg_child2" : "send2joinb",
-          "arg_columns1" : ["1"],
-          "arg_columns2" : ["0"],
-          "arg_select1" : ["0"],
-          "arg_select2" : ["1"]
-        },
-        {
-          "op_name" : "sp3b",
-          "op_type" : "ShuffleProducer",
-          "arg_child" : "joinb",
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "13",
-          "arg_pf" : {
-             "type" : "SingleFieldHash",
-             "index" : "0"
-          }
-        }
-	],
-
-	[
-        {
-          "op_name" : "send2othersb",
-          "op_type" : "LocalMultiwayConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_operator_id" : "15"
-        },
-	{
-          "op_name" : "spOthersb",
-          "op_type" : "ShuffleProducer",
-          "arg_child" : "send2othersb",
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "16",
-          "arg_pf" : {
-             "type" : "SingleFieldHash",
-             "index" : "1"
-          }
-        }
-	],
-
-	[
-        {
-          "op_name" : "scan2c",
-          "op_type" : "SQLiteScan",
-          "relation_key" : {
-            "user_name" : "jwang",
-            "program_name" : "multiIDB",
-            "relation_name" : "c0"
-          }
-        },
-        {
-          "op_name" : "sp2c",
-          "op_type" : "ShuffleProducer",
-          "arg_child" : "scan2c",
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "17",
-          "arg_pf" : {
-             "type" : "SingleFieldHash",
-             "index" : "0"
-          }
-        }
-	],
-
-	[
-        {
-          "op_name" : "sc2c",
-          "op_type" : "ShuffleConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "17"
-        },
-        {
-          "op_name" : "sc3c",
-          "op_type" : "ShuffleConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "18"
-        },
-        {
-          "op_name" : "eosReceiverc",
-          "op_type" : "Consumer",
-          "arg_schema" : {"column_types":["BOOLEAN_TYPE"],"column_names":["EOS"]},
-          "arg_worker_ids" : ["1"],
-          "arg_operator_id" : "5"
-        },
-        {
-          "op_name" : "idbinputc",
-          "op_type" : "IDBInput",
-          "arg_self_idb_id" : "2",
-          "arg_controller_operator_id" : "2",
-          "arg_controller_worker_id" : "1",
-          "arg_initial_input" : "sc2c",
-          "arg_iteration_input" : "sc3c",
-          "arg_eos_controller_input" : "eosReceiverc"
-        },
-        {
-          "op_name" : "mpc",
-          "op_type" : "LocalMultiwayProducer",
-          "arg_child" : "idbinputc",
-          "arg_operator_ids" : ["19", "20", "21"]
-        }
-	],
-
-	[
-        {
-          "op_name" : "sc1c",
-          "op_type" : "ShuffleConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "16"
-        },
-        {
-          "op_name" : "send2joinc",
-          "op_type" : "LocalMultiwayConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_operator_id" : "19"
-        },
-        {
-          "op_name" : "joinc",
-          "op_type" : "LocalJoin",
-          "arg_child1" : "sc1c",
-          "arg_child2" : "send2joinc",
-          "arg_columns1" : ["1"],
-          "arg_columns2" : ["0"],
-          "arg_select1" : ["0"],
-          "arg_select2" : ["1"]
-        },
-        {
-          "op_name" : "sp3c",
-          "op_type" : "ShuffleProducer",
-          "arg_child" : "joinc",
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "18",
-          "arg_pf" : {
-             "type" : "SingleFieldHash",
-             "index" : "0"
-          }
-        }
-	],
-
-	[
-        {
-          "op_name" : "send2othersc",
-          "op_type" : "LocalMultiwayConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_operator_id" : "20"
-        },
-	{
-          "op_name" : "spOthersc",
-          "op_type" : "ShuffleProducer",
-          "arg_child" : "send2othersc",
-          "arg_worker_ids" : ["1","2","3","4"],
-          "arg_operator_id" : "10",
-          "arg_pf" : {
-             "type" : "SingleFieldHash",
-             "index" : "1"
-          }
-        }
-	],
-
-	[
-        {
-          "op_name" : "send2serverc",
-          "op_type" : "LocalMultiwayConsumer",
-          "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["follower","followee"]},
-          "arg_operator_id" : "21"
-        },
-	{
-          "op_name" : "cpc",
-          "op_type" : "CollectProducer",
-          "arg_child" : "send2serverc",
-          "arg_worker_id" : "0",
-          "arg_operator_id" : "22"
-        }
-	]
-]
-
-}
+    ],
+    "logical_ra": "",
+    "raw_datalog": "",
+	"expected_result_size" : "4344"
 }

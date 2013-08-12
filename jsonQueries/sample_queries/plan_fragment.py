@@ -7,7 +7,7 @@ def pretty_json(obj):
 
 def scan_then_insert():
     query_scan = {
-        'op_type' : 'SQLiteScan',
+        'op_type' : 'TableScan',
         'op_name' : 'Scan',
         'relation_key' : {
             'user_name' : 'jwang',
@@ -17,7 +17,7 @@ def scan_then_insert():
     }
 
     insert = {
-        'op_type' : 'SQLiteInsert',
+        'op_type' : 'DbInsert',
         'op_name' : 'Insert',
         'arg_child' : 'Scan',
         'arg_overwrite_table' : True,
@@ -29,7 +29,6 @@ def scan_then_insert():
     }
 
     fragment = {
-       'workers' : [1, 2],
        'operators' : [query_scan, insert]
     }
     whole_plan = {
@@ -41,7 +40,7 @@ def scan_then_insert():
 
 def repartition_on_x():
     query_scan = {
-        'op_type' : 'SQLiteScan',
+        'op_type' : 'TableScan',
         'op_name' : 'Scan',
         'relation_key' : {
             'user_name' : 'jwang',
@@ -69,7 +68,7 @@ def repartition_on_x():
         }
     }
     insert = {
-        'op_type' : 'SQLiteInsert',
+        'op_type' : 'DbInsert',
         'op_name' : 'Insert',
         'arg_child' : 'Gather',
         'arg_overwrite_table' : True,
@@ -95,7 +94,7 @@ def repartition_on_x():
 
 def single_join():
     scan0 = {
-        'op_type' : 'SQLiteScan',
+        'op_type' : 'TableScan',
         'op_name' : 'Scan0',
         'relation_key' : {
             'user_name' : 'jwang',
@@ -124,7 +123,7 @@ def single_join():
     }
 
     scan1 = {
-        'op_type' : 'SQLiteScan',
+        'op_type' : 'TableScan',
         'op_name' : 'Scan1',
         'relation_key' : {
             'user_name' : 'jwang',
@@ -163,7 +162,7 @@ def single_join():
         'arg_select2' : [1],
     }
     insert = {
-        'op_type' : 'SQLiteInsert',
+        'op_type' : 'DbInsert',
         'op_name' : 'Insert',
         'arg_child' : 'Join',
         'arg_overwrite_table' : True,
@@ -176,15 +175,12 @@ def single_join():
 
     fragmentLeft = {
         'operators' : [scan0, scatter0],
-        'workers' : [1, 2]
     }
     fragmentRight = {
         'operators' : [scan1, scatter1],
-        'workers' : [1, 2]
     }
     fragmentJoin = {
         'operators' : [gather0, gather1, join, insert],
-        'workers' : [3, 4]
     }
     whole_plan = {
        'raw_datalog' : 'smallTable_join_smallTable(x,z) :- smallTable(x,y), mallTable(y,z)',
@@ -228,7 +224,6 @@ def ingest_tipsy_rr():
     }
     scan_fragment = {
         'operators' : [ tipsy_scan, scatter ],
-        'workers' : [0]
     }
 
     gather = {
@@ -238,7 +233,7 @@ def ingest_tipsy_rr():
         "arg_schema" : tipsy_schema()
     }
     insert = {
-        'op_type' : 'SQLiteInsert',
+        'op_type' : 'DbInsert',
         'op_name' : 'Insert',
         'arg_child' : 'Gather',
         'arg_overwrite_table' : True,
@@ -280,7 +275,6 @@ def ingest_tipsy_hash_iorder():
     }
     scan_fragment = {
         'operators' : [ tipsy_scan, scatter ],
-        'workers' : [0]
     }
 
     gather = {
@@ -290,7 +284,7 @@ def ingest_tipsy_hash_iorder():
         "arg_schema" : tipsy_schema()
     }
     insert = {
-        'op_type' : 'SQLiteInsert',
+        'op_type' : 'DbInsert',
         'op_name' : 'Insert',
         'arg_child' : 'Gather',
         'arg_overwrite_table' : True,
@@ -311,5 +305,5 @@ def ingest_tipsy_hash_iorder():
     }
 
 #print pretty_json(repartition_on_x())
-#print pretty_json(single_join())
-print pretty_json(ingest_tipsy_hash_iorder())
+print pretty_json(single_join())
+#print pretty_json(ingest_tipsy_hash_iorder())

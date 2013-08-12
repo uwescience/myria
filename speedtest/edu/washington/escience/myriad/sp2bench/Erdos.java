@@ -15,8 +15,8 @@ import edu.washington.escience.myriad.operator.DupElim;
 import edu.washington.escience.myriad.operator.LocalJoin;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.Project;
+import edu.washington.escience.myriad.operator.DbQueryScan;
 import edu.washington.escience.myriad.operator.RootOperator;
-import edu.washington.escience.myriad.operator.SQLiteQueryScan;
 import edu.washington.escience.myriad.operator.SQLiteSetFilter;
 import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.operator.TBQueueExporter;
@@ -55,7 +55,7 @@ public class Erdos {
     final ExchangePairID coAuthorShuffleID = ExchangePairID.newID();
     final ExchangePairID allPubsShuffleID = ExchangePairID.newID();
 
-    final SQLiteQueryScan paulErdoesPubs = new SQLiteQueryScan(//
+    final DbQueryScan paulErdoesPubs = new DbQueryScan(//
         "select distinct pubs.subject " + //
             "from Triples pubs " + //
             "join Dictionary pe on pubs.object=pe.id " + //
@@ -71,7 +71,7 @@ public class Erdos {
         new ShuffleConsumer(paulErdoesPubsShuffleP.getSchema(), paulErdoesPubsShuffleID, allWorkers);
     // schema: (pubId long)
 
-    final SQLiteQueryScan allPubs = new SQLiteQueryScan(//
+    final DbQueryScan allPubs = new DbQueryScan(//
         "select authors.subject as pubId,authors.object as authorId " + //
             "from Triples authors " + //
             "join Dictionary creator on authors.predicate=creator.id " + //
@@ -113,7 +113,7 @@ public class Erdos {
     pfOn0.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
     pfOn1.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1);
 
-    final SQLiteQueryScan allPubs2 = new SQLiteQueryScan(//
+    final DbQueryScan allPubs2 = new DbQueryScan(//
         "select authors.subject as pubId, authors.object as authorId " + //
             "from Triples authors " + //
             "join Dictionary creator on authors.predicate=creator.id " + //
@@ -148,7 +148,7 @@ public class Erdos {
     final DupElim coAuthorPubsGlobalDE = new DupElim(coAuthorPubsShuffleC); // local dupelim
     // schema: (pubId long)
 
-    final SQLiteQueryScan allPubsAuthorNames = new SQLiteQueryScan(//
+    final DbQueryScan allPubsAuthorNames = new DbQueryScan(//
         "select authors.subject as pubId,authors.object as authorId " + //
             "from Triples authors " + //
             "join Dictionary creator on authors.predicate=creator.id " + //

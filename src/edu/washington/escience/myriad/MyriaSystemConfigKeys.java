@@ -60,17 +60,17 @@ public final class MyriaSystemConfigKeys {
   /**
    * .
    * */
-  public static final String WORKER_STORAGE_SYSTEM_TYPE = "worker.storage.system";
+  public static final String WORKER_STORAGE_DATABASE_SYSTEM = "worker.storage.database.type";
+
+  /**
+   * .
+   * */
+  public static final String WORKER_STORAGE_DATABASE_CONN_INFO = "worker.storage.database.conn.info";
 
   /**
    * .
    * */
   public static final String WORKER_IDENTIFIER = "worker.identifier";
-
-  /**
-   * .
-   * */
-  public static final String WORKER_DATA_SQLITE_DB = "worker.data.sqlite.db";
 
   /**
    * .
@@ -99,29 +99,35 @@ public final class MyriaSystemConfigKeys {
    * @param config the configuration.
    * */
   public static void addDefaultConfigKeys(final Map<String, String> config) {
-    if (!config.containsKey(FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES)) {
+    if (!config.containsKey(FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES)
+        || config.get(FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES) == null) {
       config.put(FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES,
           MyriaConstants.FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES_DEFAULT_VALUE + "");
     }
-    if (!config.containsKey(FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES)) {
+    if (!config.containsKey(FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES)
+        || config.get(FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES) == null) {
       config.put(FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES,
           MyriaConstants.FLOW_CONTROL_WRITE_BUFFER_LOW_MARK_BYTES_DEFAULT_VALUE + "");
     }
-    if (!config.containsKey(OPERATOR_INPUT_BUFFER_CAPACITY)) {
+    if (!config.containsKey(OPERATOR_INPUT_BUFFER_CAPACITY) || config.get(OPERATOR_INPUT_BUFFER_CAPACITY) == null) {
       config.put(OPERATOR_INPUT_BUFFER_CAPACITY, MyriaConstants.OPERATOR_INPUT_BUFFER_CAPACITY_DEFAULT_VALUE + "");
     }
-    if (!config.containsKey(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER)) {
+    if (!config.containsKey(MyriaSystemConfigKeys.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER)
+        || config.get(OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER) == null) {
       config.put(OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER,
           MyriaConstants.OPERATOR_INPUT_BUFFER_RECOVER_TRIGGER_DEFAULT_VALUE + "");
     }
-    if (!config.containsKey(TCP_CONNECTION_TIMEOUT_MILLIS)) {
+    if (!config.containsKey(TCP_CONNECTION_TIMEOUT_MILLIS) || config.get(TCP_CONNECTION_TIMEOUT_MILLIS) == null) {
       config.put(TCP_CONNECTION_TIMEOUT_MILLIS, MyriaConstants.TCP_CONNECTION_TIMEOUT_MILLIS_DEFAULT_VALUE + "");
     }
-    if (!config.containsKey(TCP_RECEIVE_BUFFER_SIZE_BYTES)) {
+    if (!config.containsKey(TCP_RECEIVE_BUFFER_SIZE_BYTES) || config.get(TCP_RECEIVE_BUFFER_SIZE_BYTES) == null) {
       config.put(TCP_RECEIVE_BUFFER_SIZE_BYTES, MyriaConstants.TCP_RECEIVE_BUFFER_SIZE_BYTES_DEFAULT_VALUE + "");
     }
-    if (!config.containsKey(TCP_SEND_BUFFER_SIZE_BYTES)) {
+    if (!config.containsKey(TCP_SEND_BUFFER_SIZE_BYTES) || config.get(TCP_SEND_BUFFER_SIZE_BYTES) == null) {
       config.put(TCP_SEND_BUFFER_SIZE_BYTES, MyriaConstants.TCP_SEND_BUFFER_SIZE_BYTES_DEFAULT_VALUE + "");
+    }
+    if (!config.containsKey(WORKER_STORAGE_DATABASE_SYSTEM) || config.get(WORKER_STORAGE_DATABASE_SYSTEM) == null) {
+      config.put(WORKER_STORAGE_DATABASE_SYSTEM, MyriaConstants.WORKER_STORAGE_DATABASE_SYSTEM_DEFAULT_VALUE + "");
     }
   }
 
@@ -133,17 +139,20 @@ public final class MyriaSystemConfigKeys {
    * */
   public static void addDeploymentKeysFromConfigFile(final Map<String, String> config,
       final Map<String, String> deployment) {
-    if (!config.containsKey(WORKING_DIRECTORY)) {
+    if (!config.containsKey(WORKING_DIRECTORY) || config.get(WORKING_DIRECTORY) == null) {
       config.put(WORKING_DIRECTORY, deployment.get("path"));
     }
-    if (!config.containsKey(DESCRIPTION)) {
+    if (!config.containsKey(DESCRIPTION) || config.get(DESCRIPTION) == null) {
       config.put(DESCRIPTION, deployment.get("name"));
     }
-    if (!config.containsKey(USERNAME)) {
+    if (!config.containsKey(USERNAME) || config.get(USERNAME) == null) {
       config.put(USERNAME, deployment.get("username"));
     }
-    if (!config.containsKey(MAX_HEAP_SIZE)) {
+    if (!config.containsKey(MAX_HEAP_SIZE) || config.get(MAX_HEAP_SIZE) == null) {
       config.put(MAX_HEAP_SIZE, deployment.get("max_heap_size"));
+    }
+    if (!config.containsKey(WORKER_STORAGE_DATABASE_SYSTEM) || config.get(WORKER_STORAGE_DATABASE_SYSTEM) == null) {
+      config.put(WORKER_STORAGE_DATABASE_SYSTEM, deployment.get("dbms"));
     }
   }
 

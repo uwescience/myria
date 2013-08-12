@@ -1,6 +1,5 @@
 package edu.washington.escience.myriad.parallel;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.HashMap;
 import java.util.Map;
@@ -25,13 +24,12 @@ import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.jboss.netty.handler.execution.OrderedMemoryAwareThreadPoolExecutor;
 
-import com.almworks.sqlite4java.SQLiteConnection;
-import com.almworks.sqlite4java.SQLiteException;
 import com.google.common.collect.Sets;
 
 import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.MyriaConstants;
 import edu.washington.escience.myriad.MyriaSystemConfigKeys;
+import edu.washington.escience.myriad.accessmethod.ConnectionInfo;
 import edu.washington.escience.myriad.coordinator.catalog.CatalogException;
 import edu.washington.escience.myriad.coordinator.catalog.WorkerCatalog;
 import edu.washington.escience.myriad.parallel.ipc.FlowControlBagInputBuffer;
@@ -84,21 +82,28 @@ public final class Worker {
           ControlMessage cm = null;
           try {
             while ((cm = controlMessageQueue.take()) != null) {
+              int workerId = cm.getWorkerId();
               switch (cm.getType()) {
                 case SHUTDOWN:
                   if (LOGGER.isInfoEnabled()) {
-                    if (LOGGER.isInfoEnabled()) {
-                      LOGGER.info("shutdown requested");
-                    }
+                    LOGGER.info("shutdown requested");
                   }
                   toShutdown = true;
                   abruptShutdown = false;
                   break;
                 case REMOVE_WORKER:
-                  connectionPool.removeRemote(cm.getWorkerId()).await();
+                  connectionPool.removeRemote(workerId).await();
+                  LOGGER.info("received REMOVE_WORKER " + workerId);
+                  for (Long id : activeQueries.keySet()) {
+                    WorkerQueryPartition wqp = activeQueries.get(id);
+                    if (wqp.getFTMode().equals("abandon")) {
+                      wqp.getMissingWorkers().add(workerId);
+                      wqp.triggerTasks();
+                    }
+                  }
                   break;
                 case ADD_WORKER:
-                  connectionPool.putRemote(cm.getWorkerId(), SocketInfo.fromProtobuf(cm.getRemoteAddress()));
+                  connectionPool.putRemote(workerId, SocketInfo.fromProtobuf(cm.getRemoteAddress()));
                   break;
                 default:
                   if (LOGGER.isErrorEnabled()) {
@@ -542,7 +547,7 @@ public final class Worker {
   /**
    * @return the working directory of the worker.
    * */
-  String getWorkingDirectory() {
+  public String getWorkingDirectory() {
     return workingDirectory;
   }
 
@@ -601,34 +606,15 @@ public final class Worker {
     for (Entry<String, String> cE : catalog.getAllConfigurations().entrySet()) {
       execEnvVars.put(cE.getKey(), cE.getValue());
     }
-    final String databaseType = catalog.getConfigurationValue(MyriaSystemConfigKeys.WORKER_STORAGE_SYSTEM_TYPE);
-    switch (databaseType) {
-      case MyriaConstants.STORAGE_SYSTEM_SQLITE:
-        String sqliteFilePath = catalog.getConfigurationValue(MyriaSystemConfigKeys.WORKER_DATA_SQLITE_DB);
-        execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_SQLITE_FILE, sqliteFilePath);
-        SQLiteConnection conn = new SQLiteConnection(new File(sqliteFilePath));
-        try {
-          conn.open(true);
-          /* By default, use WAL */
-          conn.exec("PRAGMA journal_mode=WAL;");
-        } catch (SQLiteException e) {
-          e.printStackTrace();
-        }
-        conn.dispose();
-        break;
-      case MyriaConstants.STORAGE_SYSTEM_MYSQL:
-        /* TODO fill this in. */
-        break;
-      case MyriaConstants.STORAGE_SYSTEM_MONETDB:
-        /* TODO fill this in. */
-        break;
-      case MyriaConstants.STORAGE_SYSTEM_VERTICA:
-        /* TODO fill this in if necessary. */
-        break;
-      default:
-        throw new CatalogException("Unknown worker type: " + databaseType);
+    final String databaseSystem = catalog.getConfigurationValue(MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_SYSTEM);
+    execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_SYSTEM, databaseSystem);
+    LOGGER.info("Worker: Database system " + databaseSystem);
+    String jsonConnInfo = catalog.getConfigurationValue(MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_CONN_INFO);
+    if (jsonConnInfo == null) {
+      throw new CatalogException("Missing database connection information");
     }
-
+    LOGGER.info("Worker: Connection info " + jsonConnInfo);
+    execEnvVars.put(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO, ConnectionInfo.of(databaseSystem, jsonConnInfo));
   }
 
   /**

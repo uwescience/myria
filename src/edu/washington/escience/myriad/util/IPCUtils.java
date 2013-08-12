@@ -15,8 +15,8 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.ColumnFactory;
-import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.parallel.QueryExecutionStatistics;
+import edu.washington.escience.myriad.parallel.SingleQueryPlanWithArgs;
 import edu.washington.escience.myriad.parallel.SocketInfo;
 import edu.washington.escience.myriad.parallel.ipc.StreamOutputChannel;
 import edu.washington.escience.myriad.proto.ControlProto.ControlMessage;
@@ -282,7 +282,7 @@ public final class IPCUtils {
    * @throws IOException if error occurs in encoding the query.
    * @return an encoded query TM
    */
-  public static TransportMessage queryMessage(final long queryId, final RootOperator[] query) throws IOException {
+  public static TransportMessage queryMessage(final long queryId, final SingleQueryPlanWithArgs query) throws IOException {
     final ByteArrayOutputStream inMemBuffer = new ByteArrayOutputStream();
     final ObjectOutputStream oos = new ObjectOutputStream(inMemBuffer);
     oos.writeObject(query);

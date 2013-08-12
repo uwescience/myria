@@ -623,4 +623,13 @@ public final class QuerySubTreeTask {
       taskExecutionFuture.setFailure(e);
     }
   }
+
+  /**
+   * return owner query.
+   * 
+   * @return owner query.
+   */
+  public QueryPartition getOwnerQuery() {
+    return ownerQuery;
+  }
 }
