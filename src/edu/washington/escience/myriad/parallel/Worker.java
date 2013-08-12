@@ -1,6 +1,7 @@
 package edu.washington.escience.myriad.parallel;
 
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -666,7 +667,7 @@ public final class Worker {
     query.getExecutionFuture().addListener(new QueryFutureListener() {
 
       @Override
-      public void operationComplete(final QueryFuture future) throws Exception {
+      public void operationComplete(final QueryFuture future) {
         activeQueries.remove(query.getQueryID());
 
         if (future.isSuccess()) {
@@ -693,21 +694,25 @@ public final class Worker {
             LOGGER.debug("Query failed because of exception: ", future.getCause());
           }
 
-          sendMessageToMaster(
-              IPCUtils.queryFailureTM(query.getQueryID(), future.getCause(), query.getExecutionStatistics()))
-              .addListener(new ChannelFutureListener() {
-
-                @Override
-                public void operationComplete(final ChannelFuture future) throws Exception {
-                  if (future.isSuccess()) {
-                    if (LOGGER.isDebugEnabled()) {
-                      LOGGER.debug("The query complete message is sent to the master for sure ");
-                    }
-                  }
+          TransportMessage tm = null;
+          try {
+            tm = IPCUtils.queryFailureTM(query.getQueryID(), future.getCause(), query.getExecutionStatistics());
+          } catch (IOException e) {
+            if (LOGGER.isErrorEnabled()) {
+              LOGGER.error("Unknown query failure TM creation error", e);
+            }
+            tm = IPCUtils.simpleQueryFailureTM(query.getQueryID());
+          }
+          sendMessageToMaster(tm).addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(final ChannelFuture future) throws Exception {
+              if (future.isSuccess()) {
+                if (LOGGER.isDebugEnabled()) {
+                  LOGGER.debug("The query complete message is sent to the master for sure ");
                 }
-
-              });
-
+              }
+            }
+          });
         }
       }
     });
