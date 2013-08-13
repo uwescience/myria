@@ -18,29 +18,29 @@ import edu.washington.escience.myriad.util.concurrent.OperationFuture;
 import edu.washington.escience.myriad.util.concurrent.OperationFutureListener;
 
 /**
- * Listens to the result of a {@link QueryFuture}. The result of the asynchronous {@link Channel} query operation is
- * notified once this listener is added by calling {@link QueryFuture#addListener(QueryFutureListener)}.
+ * Listens to the result of a {@link TaskFuture}. The result of the asynchronous {@link Channel} query operation is
+ * notified once this listener is added by calling {@link TaskFuture#addListener(TaskFutureListener)}.
  * 
  * <h3>Return the control to the caller quickly</h3>
  * 
- * {@link #operationComplete(QueryFuture)} is directly called by an query thread. Therefore, performing a time consuming
+ * {@link #operationComplete(TaskFuture)} is directly called by an query thread. Therefore, performing a time consuming
  * task or a blocking operation in the handler method can cause an unexpected pause during query. If you need to perform
  * a blocking operation on query completion, try to execute the operation in a different thread using a thread pool.
  */
-public abstract class QueryFutureListener implements OperationFutureListener {
+public abstract class TaskFutureListener implements OperationFutureListener {
 
   /**
-   * Invoked when the query operation associated with the {@link QueryFuture} has been completed.
+   * Invoked when the query operation associated with the {@link TaskFuture} has been completed.
    * 
-   * @param future the source {@link QueryFuture} which called this callback
+   * @param future the source {@link TaskFuture} which called this callback
    * @throws Exception if any error occurs. But note that any uncaught exception caused by this method will be discarded
    *           silently. Do the exception handling in the code by yourself.
    */
-  public abstract void operationComplete(QueryFuture future) throws Exception;
+  public abstract void operationComplete(TaskFuture future) throws Exception;
 
   @Override
   public final void operationComplete(final OperationFuture future) throws Exception {
-    this.operationComplete((QueryFuture) future);
+    this.operationComplete((TaskFuture) future);
   }
 
 }

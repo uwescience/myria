@@ -1,4 +1,4 @@
-package edu.washington.escience.myriad.util;
+package edu.washington.escience.myriad.util.concurrent;
 
 import java.util.concurrent.atomic.AtomicReference;
 

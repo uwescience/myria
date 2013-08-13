@@ -49,9 +49,9 @@ public abstract class StreamIOChannel {
   /**
    * Detach IO channel.
    * */
-  final void dettachIOChannel() {
+  final void detachIOChannel() {
     if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug(this.getClass().getSimpleName() + " ID: {} detatch from physical channel: {}", id, ioChannel);
+      LOGGER.debug(this.getClass().getSimpleName() + " ID: {} detached from physical channel: {}", id, ioChannel);
     }
     ioChannel = null;
   }

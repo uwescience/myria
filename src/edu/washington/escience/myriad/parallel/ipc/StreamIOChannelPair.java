@@ -7,7 +7,7 @@ import com.google.common.base.Preconditions;
 import edu.washington.escience.myriad.parallel.Consumer;
 import edu.washington.escience.myriad.parallel.Producer;
 import edu.washington.escience.myriad.util.IPCUtils;
-import edu.washington.escience.myriad.util.ReentrantSpinLock;
+import edu.washington.escience.myriad.util.concurrent.ReentrantSpinLock;
 
 /**
  * The data structure recording the logical role of {@link StreamInputChannel} and {@link StreamOutputChannel} that an
@@ -118,7 +118,7 @@ class StreamIOChannelPair {
           LOGGER.trace(String.format("Stream input channel %1$s disassociated from physical channel %2$s.",
               inputStreamChannel, channel));
         }
-        inputStreamChannel.dettachIOChannel();
+        inputStreamChannel.detachIOChannel();
         inputStreamChannel = null;
         if (channel != null) {
           IPCUtils.resumeRead(channel).awaitUninterruptibly();
@@ -156,7 +156,7 @@ class StreamIOChannelPair {
     outputMappingLock.lock();
     try {
       if (outputStreamChannel != null) {
-        outputStreamChannel.dettachIOChannel();
+        outputStreamChannel.detachIOChannel();
         outputStreamChannel = null;
       }
     } finally {

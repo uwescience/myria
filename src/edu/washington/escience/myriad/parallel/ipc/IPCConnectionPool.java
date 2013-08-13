@@ -45,12 +45,12 @@ import org.slf4j.LoggerFactory;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 
-import edu.washington.escience.myriad.parallel.RenamingThreadFactory;
 import edu.washington.escience.myriad.parallel.SocketInfo;
 import edu.washington.escience.myriad.parallel.ipc.ChannelContext.RegisteredChannelContext;
 import edu.washington.escience.myriad.util.IPCUtils;
-import edu.washington.escience.myriad.util.OrderedExecutorService;
-import edu.washington.escience.myriad.util.ThreadStackDump;
+import edu.washington.escience.myriad.util.concurrent.OrderedExecutorService;
+import edu.washington.escience.myriad.util.concurrent.RenamingThreadFactory;
+import edu.washington.escience.myriad.util.concurrent.ThreadStackDump;
 
 /**
  * IPCConnectionPool is the hub of inter-process communication. It is consisted of an IPC server (typically a server

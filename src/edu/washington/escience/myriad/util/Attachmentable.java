@@ -1,4 +1,4 @@
-package edu.washington.escience.myriad.parallel.ipc;
+package edu.washington.escience.myriad.util;
 
 /**
  * A utility interface denoting a class is able to attach an Object.

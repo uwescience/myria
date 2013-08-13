@@ -27,7 +27,7 @@ package edu.washington.escience.myriad.parallel;
  * can cause an unexpected pause during I/O. If you need to perform a blocking operation on I/O completion, try to
  * execute the operation in a different thread using a thread pool.
  */
-public interface QueryFutureProgressListener extends QueryFutureListener {
+public abstract class QueryFutureProgressListener extends QueryFutureListener {
 
   /**
    * Invoked when the I/O operation associated with the {@link QueryFuture} has been progressed.
@@ -38,5 +38,5 @@ public interface QueryFutureProgressListener extends QueryFutureListener {
    * @param total the total amount of work need to be completed
    * @throws Exception if any error occurs
    */
-  void operationProgressed(QueryFuture future, long amount, long current, long total) throws Exception;
+  abstract void operationProgressed(QueryFuture future, long amount, long current, long total) throws Exception;
 }

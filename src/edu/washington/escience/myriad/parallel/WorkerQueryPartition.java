@@ -69,7 +69,7 @@ public class WorkerQueryPartition implements QueryPartition {
   /**
    * the future for the query's execution.
    * */
-  private final QueryFuture executionFuture = new DefaultQueryFuture(this, true);
+  private final DefaultQueryFuture executionFuture = new DefaultQueryFuture(this, true);
 
   /**
    * record all failed tasks.
@@ -84,11 +84,11 @@ public class WorkerQueryPartition implements QueryPartition {
   /**
    * The future listener for processing the complete events of the execution of all the query's tasks.
    * */
-  private final QueryFutureListener taskExecutionListener = new QueryFutureListener() {
+  private final TaskFutureListener taskExecutionListener = new TaskFutureListener() {
 
     @Override
-    public void operationComplete(final QueryFuture future) throws Exception {
-      QuerySubTreeTask drivingTask = (QuerySubTreeTask) (future.getAttachment());
+    public void operationComplete(final TaskFuture future) throws Exception {
+      QuerySubTreeTask drivingTask = future.getTask();
       int currentNumFinished = numFinishedTasks.incrementAndGet();
 
       executionFuture.setProgress(1, currentNumFinished, tasks.size());
@@ -152,7 +152,7 @@ public class WorkerQueryPartition implements QueryPartition {
       final QuerySubTreeTask drivingTask =
           new QuerySubTreeTask(ownerWorker.getIPCConnectionPool().getMyIPCID(), this, taskRootOp, ownerWorker
               .getQueryExecutor());
-      QueryFuture taskExecutionFuture = drivingTask.getExecutionFuture();
+      TaskFuture taskExecutionFuture = drivingTask.getExecutionFuture();
       taskExecutionFuture.addListener(taskExecutionListener);
 
       tasks.add(drivingTask);
@@ -267,7 +267,7 @@ public class WorkerQueryPartition implements QueryPartition {
   @Override
   public final QueryFuture resume() {
     QueryFuture pf = pauseFuture.getAndSet(null);
-    QueryFuture rf = new DefaultQueryFuture(this, true);
+    DefaultQueryFuture rf = new DefaultQueryFuture(this, true);
 
     if (pf == null) {
       // query is not in pause, return success directly.
