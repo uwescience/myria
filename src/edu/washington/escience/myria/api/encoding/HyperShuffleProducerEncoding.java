@@ -1,4 +1,4 @@
-package edu.washington.escience.myriad.api.encoding;
+package edu.washington.escience.myria.api.encoding;
 
 import java.util.List;
 import java.util.Map;
@@ -7,13 +7,13 @@ import javax.ws.rs.core.Response.Status;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myriad.api.MyriaApiException;
-import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.parallel.GenericShuffleProducer;
-import edu.washington.escience.myriad.parallel.MFMDHashPartitionFunction;
-import edu.washington.escience.myriad.parallel.Server;
-import edu.washington.escience.myriad.parallel.SingleFieldHashPartitionFunction;
-import edu.washington.escience.myriad.util.MyriaUtils;
+import edu.washington.escience.myria.api.MyriaApiException;
+import edu.washington.escience.myria.operator.Operator;
+import edu.washington.escience.myria.parallel.GenericShuffleProducer;
+import edu.washington.escience.myria.parallel.MFMDHashPartitionFunction;
+import edu.washington.escience.myria.parallel.Server;
+import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
+import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
  * Producer part of JSON Encoding for HyperCube Join.
@@ -38,11 +38,25 @@ public class HyperShuffleProducerEncoding extends AbstractProducerEncoding<Gener
   }
 
   @Override
-  public GenericShuffleProducer construct(Server server) {
+  public GenericShuffleProducer construct(Server server) throws MyriaApiException {
 
-    /** constructing a MFMDHashPartitionFunction. */
+    /*
+     * Validate whether number of workers matches cube dimensions.
+     * 
+     * has to validate here because until now the workers has been set.
+     */
+    int numCells = 1;
+    for (int d : hyperCubeDimensions) {
+      numCells = numCells * d;
+    }
+    if (getRealWorkerIds().size() != numCells) {
+      throw new MyriaApiException(Status.BAD_REQUEST, "number of workers (" + getRealWorkerIds().size()
+          + ") is not equal to the product of hyper join dimensions (" + numCells + ")");
+    }
+
+    /* constructing a MFMDHashPartitionFunction. */
     SingleFieldHashPartitionFunction[] pfs = new SingleFieldHashPartitionFunction[argPfs.length];
-    for (int i = 0; i < cellPartition.length; i++) {
+    for (int i = 0; i < pfs.length; i++) {
       pfs[i] = argPfs[i].construct(hyperCubeDimensions[argPfs[i].index]);
     }
     MFMDHashPartitionFunction pf = new MFMDHashPartitionFunction(cellPartition.length);
@@ -58,15 +72,7 @@ public class HyperShuffleProducerEncoding extends AbstractProducerEncoding<Gener
 
   @Override
   protected void validateExtra() {
-    /** Validate whether number of workers matches cube dimensions. */
-    int numCells = 1;
-    for (int d : hyperCubeDimensions) {
-      numCells = numCells * d;
-    }
-    if (getRealWorkerIds().size() != numCells) {
-      throw new MyriaApiException(Status.BAD_REQUEST,
-          "number of workers must equal to the product of hyper join dimensions");
-    }
+
   }
 
   @Override

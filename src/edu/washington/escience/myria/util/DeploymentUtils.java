@@ -193,6 +193,7 @@ public final class DeploymentUtils {
     builder.append("ssh " + address);
     builder.append(" cd " + workingDir + "/" + description + "-files;");
     builder.append(" nohup java -cp 'libs/*'");
+    builder.append(" -Xrunjdwp:transport=dt_socket,address=" + 20345 + ",server=y,suspend=n"); // for debug
     builder.append(" -Djava.util.logging.config.file=logging.properties");
     builder.append(" -Dlog4j.configuration=log4j.properties");
     builder.append(" -Djava.library.path=sqlite4java-282");

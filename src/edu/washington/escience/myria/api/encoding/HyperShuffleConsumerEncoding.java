@@ -1,15 +1,15 @@
-package edu.washington.escience.myriad.api.encoding;
+package edu.washington.escience.myria.api.encoding;
 
 import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myriad.Schema;
-import edu.washington.escience.myriad.operator.Operator;
-import edu.washington.escience.myriad.parallel.GenericShuffleConsumer;
-import edu.washington.escience.myriad.parallel.Server;
-import edu.washington.escience.myriad.util.MyriaUtils;
+import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.operator.Operator;
+import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
+import edu.washington.escience.myria.parallel.Server;
+import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
  * Consumer part of JSON encoding for HyperCube Join.

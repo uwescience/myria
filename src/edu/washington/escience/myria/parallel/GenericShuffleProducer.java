@@ -36,7 +36,7 @@ public class GenericShuffleProducer extends Producer {
    * */
   public GenericShuffleProducer(final Operator child, final ExchangePairID operatorID, final int[][] cellPartition,
       final PartitionFunction<?, ?> pf) {
-    super(child, operatorID, ArrayUtils.arrayFlatten(cellPartition));
+    super(child, operatorID, ArrayUtils.arrayFlattenThenSort(cellPartition));
     partitionFunction = pf;
     this.cellPartition = cellPartition;
   }

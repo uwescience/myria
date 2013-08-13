@@ -1,8 +1,8 @@
-package edu.washington.escience.myriad.parallel;
+package edu.washington.escience.myria.parallel;
 
 import java.util.Arrays;
 
-import edu.washington.escience.myriad.TupleBatch;
+import edu.washington.escience.myria.TupleBatch;
 
 /**
  * Multiple field multiple dimension hash partition function for HyperCubeJoin.

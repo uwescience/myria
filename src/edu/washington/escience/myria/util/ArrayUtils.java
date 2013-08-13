@@ -43,7 +43,7 @@ public final class ArrayUtils extends org.apache.commons.lang3.ArrayUtils {
   }
 
   /**
-   * Flatten a 2D arrary into a 1D arrary.
+   * Flatten a 2D array into a 1D array.
    * 
    * @param arr input 2D array
    * @return the flattened 1D arrary ()
@@ -63,6 +63,18 @@ public final class ArrayUtils extends org.apache.commons.lang3.ArrayUtils {
       }
     }
 
+    return result;
+  }
+
+  /**
+   * Flatten a 2D array into a 1D array then sort it.
+   * 
+   * @param arr input 2D array
+   * @return the flattened and sorted array
+   */
+  public static int[] arrayFlattenThenSort(final int[][] arr) {
+    int[] result = arrayFlatten(arr);
+    Arrays.sort(result);
     return result;
   }
 
