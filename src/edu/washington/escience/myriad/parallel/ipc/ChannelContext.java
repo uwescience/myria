@@ -402,11 +402,6 @@ class ChannelContext extends AttachmentableAdapter {
   private final Channel ownerChannel;
 
   /**
-   * If the owner channel is still alive.
-   * */
-  private volatile boolean alive;
-
-  /**
    * The most recent write future.
    * */
   private volatile ChannelFuture mostRecentWriteFuture = null;
@@ -459,7 +454,7 @@ class ChannelContext extends AttachmentableAdapter {
   /**
    * Binary state variable, channel is in the ipc pool.
    * */
-  private boolean inPool = false;
+  private volatile boolean inPool = false;
   /**
    * Binary state variable, channel is in recycle bin (will be moved to trash bin if time out.).
    * */
@@ -492,7 +487,6 @@ class ChannelContext extends AttachmentableAdapter {
   ChannelContext(final Channel channel) {
     lastIOTimestamp = System.currentTimeMillis();
     ownerChannel = channel;
-    alive = true;
     closeRequested = false;
     stateMachineLock = new Object();
     registeredContext = null;
@@ -577,7 +571,6 @@ class ChannelContext extends AttachmentableAdapter {
         inTrashBin = false;
         newConnection = false;
         closeRequested = false;
-        alive = false;
         if (ownerChannel.getParent() == null) {
           synchronized (channelRegisterLock) {
             channelRegisterLock.notifyAll();
@@ -629,7 +622,6 @@ class ChannelContext extends AttachmentableAdapter {
         inTrashBin = false;
         newConnection = false;
         closeRequested = false;
-        alive = false;
 
         if (ownerChannel.getParent() == null) {
           synchronized (channelRegisterLock) {
@@ -1082,13 +1074,9 @@ class ChannelContext extends AttachmentableAdapter {
    * Update moste recent IO operation on the owner Channel.
    * */
   final void updateLastIOTimestamp() {
-    if (alive) {
+    if (inPool) {
       lastIOTimestamp = System.currentTimeMillis();
-      if (registeredContext != null) {
-        if (!registeredContext.updateLastIOTimestamp()) {
-          alive = false;
-        }
-      }
+      registeredContext.updateLastIOTimestamp();
     }
   }
 
