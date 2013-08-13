@@ -12,8 +12,8 @@ import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
-import edu.washington.escience.myriad.operator.LocalJoin;
 import edu.washington.escience.myriad.operator.DbQueryScan;
+import edu.washington.escience.myriad.operator.LocalJoin;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.operator.TBQueueExporter;
@@ -65,7 +65,8 @@ public class BroadcastTest extends SystemTestBase {
     /* Set collect producer which will send data inner-joined */
     final DbQueryScan scan2 = new DbQueryScan(testtable2Key, schema);
 
-    final LocalJoin localjoin = new LocalJoin(bs, scan2, new int[] { 0 }, new int[] { 0 });
+    final ImmutableList<String> outputColumnNames = ImmutableList.of("id1", "name1", "id2", "name2");
+    final LocalJoin localjoin = new LocalJoin(outputColumnNames, bs, scan2, new int[] { 0 }, new int[] { 0 });
 
     final CollectProducer cp = new CollectProducer(localjoin, serverReceiveID, MASTER_ID);
 

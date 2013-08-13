@@ -15,13 +15,13 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.column.Column;
+import edu.washington.escience.myriad.operator.DbQueryScan;
 import edu.washington.escience.myriad.operator.DupElim;
 import edu.washington.escience.myriad.operator.IDBInput;
 import edu.washington.escience.myriad.operator.LocalJoin;
 import edu.washington.escience.myriad.operator.Merge;
 import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.Project;
-import edu.washington.escience.myriad.operator.DbQueryScan;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.operator.SinkRoot;
 import edu.washington.escience.myriad.operator.TBQueueExporter;
@@ -284,7 +284,8 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     final ShuffleConsumer sc1 = new ShuffleConsumer(sp1.getSchema(), joinArray1ID, new int[] { WORKER_ID[0] });
     final ShuffleConsumer sc2 = new ShuffleConsumer(sp2.getSchema(), joinArray2ID, new int[] { WORKER_ID[0] });
 
-    final LocalJoin join = new LocalJoin(sc1, sc2, new int[] { 0 }, new int[] { 1 });
+    final List<String> joinOutputColumns = ImmutableList.of("follower1", "followee1", "follower2", "followee2");
+    final LocalJoin join = new LocalJoin(joinOutputColumns, sc1, sc2, new int[] { 0 }, new int[] { 1 });
     final Project proj = new Project(new int[] { 2, 1 }, join);
     ExchangePairID beforeDE = ExchangePairID.newID();
     final ShuffleProducer sp3 = new ShuffleProducer(proj, beforeDE, new int[] { WORKER_ID[0] }, pf0);

@@ -15,12 +15,13 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.operator.UnaryOperator;
 
 /**
  * The Aggregation operator that computes an aggregate (e.g., sum, avg, max, min). We support aggregates over multiple
  * columns, group by multiple columns.
  */
-public final class MultiGroupByAggregate extends Operator {
+public final class MultiGroupByAggregate extends UnaryOperator {
 
   /**
    * A simple implementation of multiple-field group key.
@@ -61,8 +62,6 @@ public final class MultiGroupByAggregate extends Operator {
   private static final long serialVersionUID = 1L;
   /** The schema after the aggregate is done. **/
   private Schema schema;
-  /** The child operator that will feed tuples in. **/
-  private Operator child;
   /** The aggregators being used. **/
   private final Aggregator<?>[] agg;
   /** Aggregate fields. **/
@@ -90,12 +89,12 @@ public final class MultiGroupByAggregate extends Operator {
    * @param aggOps The aggregation operator to use
    */
   public MultiGroupByAggregate(final Operator child, final int[] afields, final int[] gfields, final int[] aggOps) {
+    super(child);
     Objects.requireNonNull(afields);
     Objects.requireNonNull(gfields);
     Objects.requireNonNull(aggOps);
     Preconditions.checkArgument(gfields.length > 1);
     Preconditions.checkArgument(afields.length != 0, "aggregation fields must not be empty");
-    this.child = child;
     this.afields = afields;
     this.gfields = gfields;
     this.aggOps = aggOps;
@@ -127,6 +126,7 @@ public final class MultiGroupByAggregate extends Operator {
    */
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
+    final Operator child = getChild();
     if (resultBuffer.numTuples() > 0) {
       return resultBuffer.popAny();
     }
@@ -202,11 +202,6 @@ public final class MultiGroupByAggregate extends Operator {
     return resultBuffer.popAny();
   }
 
-  @Override
-  public Operator[] getChildren() {
-    return new Operator[] { child };
-  }
-
   /**
    * The schema of the aggregate output. Grouping fields first and then aggregate fields. The aggregate
    * 
@@ -225,13 +220,8 @@ public final class MultiGroupByAggregate extends Operator {
   }
 
   @Override
-  public void setChildren(final Operator[] children) {
-    child = children[0];
-    schema = generateSchema(child, groupAggs, gfields, afields, agg, aggOps);
-  }
-
-  @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+    schema = generateSchema(getChild(), groupAggs, gfields, afields, agg, aggOps);
     resultBuffer = new TupleBatchBuffer(schema);
   }
 

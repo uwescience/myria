@@ -16,7 +16,7 @@ import edu.washington.escience.myriad.Type;
  * A simple implementation of duplicate eliminate. It keeps the references to all the TupleBatches which contain unique
  * tuples.
  * */
-public final class DupElimRefOnly extends Operator {
+public final class DupElimRefOnly extends UnaryOperator {
 
   /**
    * Pointer data structure for pointing to a tuple in a TupleBatch.
@@ -107,11 +107,6 @@ public final class DupElimRefOnly extends Operator {
   private static final long serialVersionUID = 1L;
 
   /**
-   * the child.
-   * */
-  private Operator child;
-
-  /**
    * Storing the unique tuples.
    * */
   private transient HashMap<Integer, List<IndexedTuple>> uniqueTuples;
@@ -120,7 +115,7 @@ public final class DupElimRefOnly extends Operator {
    * @param child the child
    * */
   public DupElimRefOnly(final Operator child) {
-    this.child = child;
+    super(child);
   }
 
   @Override
@@ -171,30 +166,20 @@ public final class DupElimRefOnly extends Operator {
   public TupleBatch fetchNextReady() throws DbException {
 
     TupleBatch tb = null;
-    tb = child.nextReady();
+    tb = getChild().nextReady();
     while (tb != null) {
       tb = doDupElim(tb);
       if (tb.numTuples() > 0) {
         return tb;
       }
-      tb = child.nextReady();
+      tb = getChild().nextReady();
     }
     return null;
   }
 
   @Override
-  public Operator[] getChildren() {
-    return new Operator[] { child };
-  }
-
-  @Override
   public Schema getSchema() {
-    return child.getSchema();
-  }
-
-  @Override
-  public void setChildren(final Operator[] children) {
-    child = children[0];
+    return getChild().getSchema();
   }
 
   @Override

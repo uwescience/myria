@@ -11,10 +11,16 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.operator.UnaryOperator;
 
-public class Top1 extends Operator {
+public class Top1 extends UnaryOperator {
 
   public Top1(int toCompareColumnIdx) {
+    this(null, toCompareColumnIdx);
+  }
+
+  public Top1(final Operator child, final int toCompareColumnIdx) {
+    super(child);
     this.toCompareColumnIdx = toCompareColumnIdx;
   }
 
@@ -24,13 +30,14 @@ public class Top1 extends Operator {
   private static final long serialVersionUID = 191438462118946730L;
 
   @Override
-  public Operator[] getChildren() {
-    return new Operator[] { child };
-  }
-
-  @Override
   protected void init(ImmutableMap<String, Object> execEnvVars) throws DbException {
-    compareType = child.getSchema().getColumnType(toCompareColumnIdx);
+    Schema cs = getChild().getSchema();
+    ImmutableList.Builder<String> newNamesB = ImmutableList.builder();
+    newNamesB.addAll(cs.getColumnNames());
+    ImmutableList.Builder<Type> newTypesB = ImmutableList.builder();
+    newTypesB.addAll(cs.getColumnTypes());
+    s = Schema.of(newTypesB.build(), newNamesB.build());
+    compareType = cs.getColumnType(toCompareColumnIdx);
   }
 
   @Override
@@ -39,7 +46,7 @@ public class Top1 extends Operator {
 
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
-
+    final Operator child = getChild();
     TupleBatch tb = null;
     while ((tb = child.nextReady()) != null) {
       for (int i = 0; i < tb.numTuples(); i++) {
@@ -124,18 +131,6 @@ public class Top1 extends Operator {
     return s;
   }
 
-  @Override
-  public void setChildren(Operator[] children) {
-    child = children[0];
-    Schema cs = child.getSchema();
-    ImmutableList.Builder<String> newNamesB = ImmutableList.builder();
-    newNamesB.addAll(cs.getColumnNames());
-    ImmutableList.Builder<Type> newTypesB = ImmutableList.builder();
-    newTypesB.addAll(cs.getColumnTypes());
-    s = Schema.of(newTypesB.build(), newNamesB.build());
-  }
-
-  private Operator child;
   private Schema s;
   private Type compareType;
   private TupleBatch currentTopTB;

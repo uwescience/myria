@@ -9,6 +9,7 @@ import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.operator.UnaryOperator;
 
 /**
  * Inject a random failure. The injection is conducted as the following:<br/>
@@ -19,18 +20,13 @@ import edu.washington.escience.myriad.operator.Operator;
  * {@link InjectedFailureException}, according to the failure probability.</li>
  * </ul>
  * */
-public class SingleRandomFailureInjector extends Operator {
+public class SingleRandomFailureInjector extends UnaryOperator {
 
   /**
    * Logger.
    * */
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(SingleRandomFailureInjector.class
       .getName());
-
-  /**
-   * Child.
-   * */
-  private Operator child;
 
   /**
    * failure probability per second.
@@ -65,7 +61,7 @@ public class SingleRandomFailureInjector extends Operator {
    * */
   public SingleRandomFailureInjector(final long delay, final TimeUnit delayUnit,
       final double failureProbabilityPerSecond, final Operator child) {
-    this.child = child;
+    super(child);
     this.failureProbabilityPerSecond = failureProbabilityPerSecond;
     hasFailed = false;
     toFail = false;
@@ -76,11 +72,6 @@ public class SingleRandomFailureInjector extends Operator {
    * 
    */
   private static final long serialVersionUID = 1L;
-
-  @Override
-  public final Operator[] getChildren() {
-    return new Operator[] { child };
-  }
 
   @Override
   protected final void init(final ImmutableMap<String, Object> initProperties) throws DbException {
@@ -139,17 +130,12 @@ public class SingleRandomFailureInjector extends Operator {
       toFail = false;
       throw new InjectedFailureException("Failure injected by " + this);
     }
-    return child.nextReady();
+    return getChild().nextReady();
   }
 
   @Override
   public final Schema getSchema() {
-    return child.getSchema();
-  }
-
-  @Override
-  public final void setChildren(final Operator[] children) {
-    child = children[0];
+    return getChild().getSchema();
   }
 
 }

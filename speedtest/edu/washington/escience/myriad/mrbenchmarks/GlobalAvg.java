@@ -11,26 +11,33 @@ import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.DoubleColumnBuilder;
 import edu.washington.escience.myriad.column.LongColumn;
 import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.operator.UnaryOperator;
 
-public class GlobalAvg extends Operator {
+public class GlobalAvg extends UnaryOperator {
 
   public GlobalAvg(int sumIdx, int countIdx) {
+    this(null, sumIdx, countIdx);
+  }
+
+  public GlobalAvg(Operator child, int sumIdx, int countIdx) {
+    super(child);
     this.sumIdx = sumIdx;
     this.countIdx = countIdx;
   }
 
   /**
-     * 
-     */
+   * Required for Java serialization.
+   */
   private static final long serialVersionUID = 191438462118946730L;
 
   @Override
-  public Operator[] getChildren() {
-    return new Operator[] { child };
-  }
-
-  @Override
   protected void init(ImmutableMap<String, Object> execEnvVars) throws DbException {
+    Schema cs = getChild().getSchema();
+    ImmutableList.Builder<String> newNamesB = ImmutableList.builder();
+    newNamesB.addAll(cs.getColumnNames());
+    ImmutableList.Builder<Type> newTypesB = ImmutableList.builder();
+    newTypesB.addAll(cs.getColumnTypes());
+    schema = Schema.of(newTypesB.build(), newNamesB.build());
   }
 
   @Override
@@ -39,7 +46,7 @@ public class GlobalAvg extends Operator {
 
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
-
+    final Operator child = getChild();
     TupleBatch tb = child.nextReady();
     if (tb != null) {
       ImmutableList<Column<?>> inputColumns = tb.getDataColumns();
@@ -54,29 +61,17 @@ public class GlobalAvg extends Operator {
       newColumnsB.addAll(inputColumns);
       newColumnsB.add(rc.build());
 
-      tb = new TupleBatch(s, newColumnsB.build(), tb.getValidTuples());
+      tb = new TupleBatch(schema, newColumnsB.build(), tb.getValidTuples());
     }
     return tb;
   }
 
   @Override
   public Schema getSchema() {
-    return s;
+    return schema;
   }
 
-  @Override
-  public void setChildren(Operator[] children) {
-    child = children[0];
-    Schema cs = child.getSchema();
-    ImmutableList.Builder<String> newNamesB = ImmutableList.builder();
-    newNamesB.addAll(cs.getColumnNames());
-    ImmutableList.Builder<Type> newTypesB = ImmutableList.builder();
-    newTypesB.addAll(cs.getColumnTypes());
-    s = Schema.of(newTypesB.build(), newNamesB.build());
-  }
-
-  private Operator child;
-  private Schema s;
+  private Schema schema;
 
   private final int sumIdx;
   private final int countIdx;

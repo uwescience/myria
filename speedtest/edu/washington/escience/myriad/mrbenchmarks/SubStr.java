@@ -10,24 +10,23 @@ import edu.washington.escience.myriad.column.Column;
 import edu.washington.escience.myriad.column.StringColumn;
 import edu.washington.escience.myriad.column.StringColumnBuilder;
 import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.operator.UnaryOperator;
 
-public class SubStr extends Operator {
+public class SubStr extends UnaryOperator {
 
   public SubStr(final int substrColumnIdx, int fromCharIdx, int endCharIdx) {
+    this(null, substrColumnIdx, fromCharIdx, endCharIdx);
+  }
+
+  public SubStr(final Operator child, final int substrColumnIdx, int fromCharIdx, int endCharIdx) {
+    super(child);
     this.substrColumnIdx = substrColumnIdx;
     this.fromCharIdx = fromCharIdx;
     this.endCharIdx = endCharIdx;
   }
 
-  /**
-     * 
-     */
+  /** Required for Java serialization. */
   private static final long serialVersionUID = 1471148052154135619L;
-
-  @Override
-  public Operator[] getChildren() {
-    return new Operator[] { child };
-  }
 
   @Override
   protected void init(ImmutableMap<String, Object> execEnvVars) throws DbException {
@@ -39,6 +38,7 @@ public class SubStr extends Operator {
 
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
+    final Operator child = getChild();
     TupleBatch tb = child.nextReady();
     if (tb != null) {
       StringColumnBuilder builder = new StringColumnBuilder();
@@ -68,12 +68,6 @@ public class SubStr extends Operator {
     return null;
   }
 
-  @Override
-  public void setChildren(Operator[] children) {
-    child = children[0];
-  }
-
-  private Operator child;
   private final int substrColumnIdx;
   private final int fromCharIdx;
   private final int endCharIdx;
