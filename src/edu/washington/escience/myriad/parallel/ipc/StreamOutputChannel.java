@@ -7,8 +7,8 @@ import org.jboss.netty.channel.ChannelFuture;
 
 import edu.washington.escience.myriad.parallel.Producer;
 import edu.washington.escience.myriad.parallel.ipc.IPCEvent.EventType;
-import edu.washington.escience.myriad.util.OrderedExecutorService;
-import edu.washington.escience.myriad.util.ReentrantSpinLock;
+import edu.washington.escience.myriad.util.concurrent.OrderedExecutorService;
+import edu.washington.escience.myriad.util.concurrent.ReentrantSpinLock;
 
 /**
  * 

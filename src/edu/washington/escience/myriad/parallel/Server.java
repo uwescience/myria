@@ -57,6 +57,7 @@ import edu.washington.escience.myriad.util.DateTimeUtils;
 import edu.washington.escience.myriad.util.DeploymentUtils;
 import edu.washington.escience.myriad.util.IPCUtils;
 import edu.washington.escience.myriad.util.MyriaUtils;
+import edu.washington.escience.myriad.util.concurrent.RenamingThreadFactory;
 
 /**
  * The master entrance.

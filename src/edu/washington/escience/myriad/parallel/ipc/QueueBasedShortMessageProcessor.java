@@ -6,6 +6,8 @@ import org.jboss.netty.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import edu.washington.escience.myriad.util.AttachmentableAdapter;
+
 /**
  * The simplest implementation of {@link ShortMessageProcessor}. The messages are simply appended into a FIFO queue.
  * 

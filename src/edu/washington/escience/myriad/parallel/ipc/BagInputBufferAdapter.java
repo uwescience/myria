@@ -16,6 +16,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myriad.parallel.ipc.IPCMessage.StreamData;
+import edu.washington.escience.myriad.util.AttachmentableAdapter;
 
 /**
  * A simple InputBuffer implementation. The number of messages held in this InputBuffer can be as large as
@@ -96,8 +97,7 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
    * @param owner the owner IPC pool.
    * @param remoteChannelIDs from which channels, the data will input.
    * */
-  public BagInputBufferAdapter(final IPCConnectionPool owner,
-      final ImmutableSet<StreamIOChannelID> remoteChannelIDs) {
+  public BagInputBufferAdapter(final IPCConnectionPool owner, final ImmutableSet<StreamIOChannelID> remoteChannelIDs) {
     storage = new LinkedBlockingQueue<IPCMessage.StreamData<PAYLOAD>>();
     ImmutableMap.Builder<StreamIOChannelID, InputChannelState> b = ImmutableMap.builder();
     for (StreamIOChannelID ecID : remoteChannelIDs) {

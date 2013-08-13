@@ -23,27 +23,27 @@ import edu.washington.escience.myriad.util.concurrent.OperationFutureProgressLis
 /**
  * The default {@link QueryFuture} implementation.
  */
-class DefaultQueryFuture extends OperationFutureBase<Void> implements Attachmentable, QueryFuture {
+class DefaultTaskFuture extends OperationFutureBase<Void> implements Attachmentable, TaskFuture {
 
   /**
    * The owner query of this future, i.e. the future is for an operation on the query.
    * */
-  private final QueryPartition query;
+  private final QuerySubTreeTask task;
 
   /**
    * Creates a new instance.
    * 
-   * @param query the {@link Query } associated with this future
+   * @param task the {@link QuerySubTreeTask } associated with this future
    * @param cancellable {@code true} if and only if this future can be canceled
    */
-  public DefaultQueryFuture(final QueryPartition query, final boolean cancellable) {
+  public DefaultTaskFuture(final QuerySubTreeTask task, final boolean cancellable) {
     super(cancellable);
-    this.query = query;
+    this.task = task;
   }
 
   @Override
-  public final QueryPartition getQuery() {
-    return query;
+  public final QuerySubTreeTask getTask() {
+    return task;
   }
 
   /**
@@ -81,37 +81,37 @@ class DefaultQueryFuture extends OperationFutureBase<Void> implements Attachment
   }
 
   @Override
-  public QueryFuture addListener(final OperationFutureListener listener) {
+  public TaskFuture addListener(final OperationFutureListener listener) {
     super.addListener0(listener);
     return this;
   }
 
   @Override
-  public QueryFuture removeListener(final OperationFutureListener listener) {
+  public TaskFuture removeListener(final OperationFutureListener listener) {
     super.removeListener0(listener);
     return this;
   }
 
   @Override
-  public QueryFuture sync() throws InterruptedException, DbException {
+  public TaskFuture sync() throws InterruptedException, DbException {
     super.sync0();
     return this;
   }
 
   @Override
-  public QueryFuture syncUninterruptibly() throws DbException {
+  public TaskFuture syncUninterruptibly() throws DbException {
     super.syncUninterruptibly0();
     return this;
   }
 
   @Override
-  public QueryFuture await() throws InterruptedException {
+  public TaskFuture await() throws InterruptedException {
     super.await0();
     return this;
   }
 
   @Override
-  public QueryFuture awaitUninterruptibly() {
+  public TaskFuture awaitUninterruptibly() {
     super.awaitUninterruptibly0();
     return this;
   }

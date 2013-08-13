@@ -2,6 +2,8 @@ package edu.washington.escience.myriad.parallel.ipc;
 
 import org.jboss.netty.channel.Channel;
 
+import edu.washington.escience.myriad.util.Attachmentable;
+
 /**
  * Short message processor.
  * 

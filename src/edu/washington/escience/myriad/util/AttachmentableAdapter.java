@@ -1,4 +1,4 @@
-package edu.washington.escience.myriad.parallel.ipc;
+package edu.washington.escience.myriad.util;
 
 import java.util.concurrent.atomic.AtomicReference;
 

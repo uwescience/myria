@@ -17,9 +17,9 @@ import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myriad.parallel.ipc.IPCEvent.EventType;
 import edu.washington.escience.myriad.util.IPCUtils;
-import edu.washington.escience.myriad.util.OrderedExecutorService;
-import edu.washington.escience.myriad.util.ReentrantSpinLock;
-import edu.washington.escience.myriad.util.ThreadStackDump;
+import edu.washington.escience.myriad.util.concurrent.OrderedExecutorService;
+import edu.washington.escience.myriad.util.concurrent.ReentrantSpinLock;
+import edu.washington.escience.myriad.util.concurrent.ThreadStackDump;
 
 /**
  * An flow control aware InputBuffer implementation. This type of InputBuffer has a soft capacity. The number of

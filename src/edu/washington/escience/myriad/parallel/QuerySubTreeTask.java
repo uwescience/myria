@@ -19,7 +19,7 @@ import edu.washington.escience.myriad.operator.Operator;
 import edu.washington.escience.myriad.operator.RootOperator;
 import edu.washington.escience.myriad.parallel.ipc.StreamIOChannelID;
 import edu.washington.escience.myriad.util.AtomicUtils;
-import edu.washington.escience.myriad.util.ReentrantSpinLock;
+import edu.washington.escience.myriad.util.concurrent.ReentrantSpinLock;
 
 /**
  * Non-blocking driving code of a sub-query.
@@ -57,7 +57,7 @@ public final class QuerySubTreeTask {
   /**
    * Execution task.
    * */
-  private final Callable<Object> executionTask;
+  private final Callable<Void> executionTask;
 
   /**
    * The output channels belonging to this task.
@@ -82,7 +82,7 @@ public final class QuerySubTreeTask {
   /**
    * The handle for managing the execution of the task.
    * */
-  private volatile Future<Object> executionHandle;
+  private volatile Future<Void> executionHandle;
 
   /**
    * Protect the output channel status.
@@ -92,7 +92,7 @@ public final class QuerySubTreeTask {
   /**
    * Future for the task execution.
    * */
-  private final QueryFuture taskExecutionFuture;
+  private final DefaultTaskFuture taskExecutionFuture;
 
   /**
    * The lock mainly to make operator memory consistency.
@@ -107,7 +107,7 @@ public final class QuerySubTreeTask {
   /**
    * @return the task execution future.
    */
-  QueryFuture getExecutionFuture() {
+  TaskFuture getExecutionFuture() {
     return taskExecutionFuture;
   }
 
@@ -124,8 +124,7 @@ public final class QuerySubTreeTask {
     this.root = root;
     myExecutor = executor;
     this.ownerQuery = ownerQuery;
-    taskExecutionFuture = new DefaultQueryFuture(this.ownerQuery, true);
-    ((DefaultQueryFuture) taskExecutionFuture).setAttachment(this);
+    taskExecutionFuture = new DefaultTaskFuture(this, true);
     idbInputSet = new HashSet<IDBInput>();
     HashSet<StreamIOChannelID> outputChannelSet = new HashSet<StreamIOChannelID>();
     collectDownChannels(root, outputChannelSet);
@@ -138,10 +137,9 @@ public final class QuerySubTreeTask {
     for (int i = 0; i < outputChannels.length; i++) {
       outputChannelAvailable.set(i);
     }
-    // The return result means nothing here, just to make the Callable generic happy.
-    executionTask = new Callable<Object>() {
+    executionTask = new Callable<Void>() {
       @Override
-      public Object call() throws Exception {
+      public Void call() throws Exception {
         // synchronized to keep memory consistency
         if (LOGGER.isTraceEnabled()) {
           LOGGER.trace("Start task execution: " + QuerySubTreeTask.this);
@@ -571,7 +569,7 @@ public final class QuerySubTreeTask {
       if (executionCondition.compareAndSet(notKilledInExec, killed)) {
         // in execution, try to interrupt the execution thread, and let the execution thread to take care of the killing
 
-        final Future<Object> executionHandleLocal = executionHandle;
+        final Future<Void> executionHandleLocal = executionHandle;
         if (executionHandleLocal != null) {
           // Abruptly cancel the execution
           executionHandleLocal.cancel(true);

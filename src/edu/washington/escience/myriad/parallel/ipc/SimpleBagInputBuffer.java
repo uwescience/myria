@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myriad.parallel.ipc.IPCEvent.EventType;
-import edu.washington.escience.myriad.util.ReentrantSpinLock;
+import edu.washington.escience.myriad.util.concurrent.ReentrantSpinLock;
 
 /**
  * A simple InputBuffer implementation using bag semantic. The number of data held in this InputBuffer can be as large
