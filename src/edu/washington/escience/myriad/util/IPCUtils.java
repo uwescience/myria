@@ -2,6 +2,7 @@ package edu.washington.escience.myriad.util;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.NotSerializableException;
 import java.io.ObjectOutputStream;
 import java.util.Arrays;
 import java.util.List;
@@ -11,6 +12,7 @@ import org.jboss.netty.channel.ChannelFuture;
 
 import com.google.protobuf.ByteString;
 
+import edu.washington.escience.myriad.DbException;
 import edu.washington.escience.myriad.Schema;
 import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.column.Column;
@@ -175,6 +177,44 @@ public final class IPCUtils {
   }
 
   /**
+   * Make sure a {@link Throwable} is serializable. If any of the {@Throwable}s in the given err error
+   * hierarchy (The hierarchy formed by caused-by and suppressed) is not serializable, it will be replaced by a
+   * {@link DbException}. The stack trace of the original {@link Throwable} is kept.
+   * 
+   * @param err the {@link Throwable}
+   * @return A {@link Throwable} that is guaranteed to be serializable.
+   * */
+  public static Throwable wrapSerializableThrowable(final Throwable err) {
+    if (err == null) {
+      return null;
+    }
+    final ByteArrayOutputStream inMemBuffer = new ByteArrayOutputStream();
+    try {
+      final ObjectOutputStream oos = new ObjectOutputStream(inMemBuffer);
+      oos.writeObject(err);
+    } catch (NotSerializableException e) {
+      Throwable cause = err.getCause();
+      if (cause != null) {
+        cause = wrapSerializableThrowable(cause);
+      }
+      DbException ret = new DbException(err.getMessage(), cause);
+      ret.setStackTrace(err.getStackTrace());
+      Throwable[] suppressed = err.getSuppressed();
+      if (suppressed != null) {
+        for (Throwable element : suppressed) {
+          ret.addSuppressed(wrapSerializableThrowable(element));
+        }
+      }
+      return ret;
+    } catch (IOException e) {
+      DbException ret = new DbException(e);
+      ret.setStackTrace(err.getStackTrace());
+      return ret;
+    }
+    return err;
+  }
+
+  /**
    * @param queryId the completed query id.
    * @return a query complete TM.
    * @param cause the cause of the failure
@@ -185,13 +225,23 @@ public final class IPCUtils {
       final QueryExecutionStatistics statistics) throws IOException {
     final ByteArrayOutputStream inMemBuffer = new ByteArrayOutputStream();
     final ObjectOutputStream oos = new ObjectOutputStream(inMemBuffer);
-    oos.writeObject(cause);
+    oos.writeObject(wrapSerializableThrowable(cause));
     oos.flush();
     inMemBuffer.flush();
     return QUERY_TM_BUILDER.get().setQueryMessage(
         QueryMessage.newBuilder().setQueryId(queryId).setType(QueryMessage.Type.QUERY_COMPLETE).setQueryReport(
             QueryReport.newBuilder().setSuccess(false).setExecutionStatistics(statistics.toProtobuf()).setCause(
                 ByteString.copyFrom(inMemBuffer.toByteArray())))).build();
+  }
+
+  /**
+   * @param queryId the completed query id.
+   * @return a query complete TM.
+   * */
+  public static TransportMessage simpleQueryFailureTM(final long queryId) {
+    return QUERY_TM_BUILDER.get().setQueryMessage(
+        QueryMessage.newBuilder().setQueryId(queryId).setType(QueryMessage.Type.QUERY_COMPLETE).setQueryReport(
+            QueryReport.newBuilder().setSuccess(false))).build();
   }
 
   /**

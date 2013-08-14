@@ -51,6 +51,7 @@ import edu.washington.escience.myriad.util.IPCUtils;
 import edu.washington.escience.myriad.util.concurrent.OrderedExecutorService;
 import edu.washington.escience.myriad.util.concurrent.RenamingThreadFactory;
 import edu.washington.escience.myriad.util.concurrent.ThreadStackDump;
+import edu.washington.escience.myriad.util.concurrent.TimerTaskThreadFactory;
 
 /**
  * IPCConnectionPool is the hub of inter-process communication. It is consisted of an IPC server (typically a server
@@ -484,7 +485,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
     channelTrashBin = new DefaultChannelGroup();
 
     scheduledTaskExecutor =
-        Executors.newSingleThreadScheduledExecutor(new RenamingThreadFactory("IPC connection pool global timer"));
+        Executors.newSingleThreadScheduledExecutor(new TimerTaskThreadFactory("IPC connection pool global timer"));
     disconnecter = new ChannelDisconnecter();
     idChecker = new ChannelIDChecker();
     recycler = new ChannelRecycler();
@@ -520,6 +521,16 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
       }
       throw new IllegalStateException(msg);
     }
+  }
+
+  /**
+   * Check if the remote IPC entity is in the pool.
+   * 
+   * @param remoteID remote ID.
+   * @return true if remote is still alive, false otherwise.
+   * */
+  public boolean isRemoteValid(final int remoteID) {
+    return channelPool.containsKey(remoteID);
   }
 
   /**
@@ -669,7 +680,9 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
           throw new ChannelException("ID checking timeout");
         }
 
-        cc.waitForRemoteReply(CONNECTION_ID_CHECK_TIMEOUT_IN_MS);
+        if (!cc.waitForRemoteReply(CONNECTION_ID_CHECK_TIMEOUT_IN_MS)) {
+          throw new ChannelException("ID checking timeout");
+        }
 
         if (!(remote.id == (cc.remoteReplyID()))) {
           cc.idCheckingTimeout(unregisteredChannels);

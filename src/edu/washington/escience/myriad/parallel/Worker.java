@@ -1,6 +1,7 @@
 package edu.washington.escience.myriad.parallel;
 
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -41,6 +42,7 @@ import edu.washington.escience.myriad.util.IPCUtils;
 import edu.washington.escience.myriad.util.JVMUtils;
 import edu.washington.escience.myriad.util.concurrent.RenamingThreadFactory;
 import edu.washington.escience.myriad.util.concurrent.ThreadAffinityFixedRoundRobinExecutionPool;
+import edu.washington.escience.myriad.util.concurrent.TimerTaskThreadFactory;
 
 /**
  * Workers do the real query execution. A query received by the server will be pre-processed and then dispatched to the
@@ -166,7 +168,9 @@ public final class Worker {
   private class HeartbeatReporter extends TimerTask {
     @Override
     public synchronized void run() {
-      LOGGER.debug("sending heartbeat to server");
+      if (LOGGER.isTraceEnabled()) {
+        LOGGER.trace("sending heartbeat to server");
+      }
       sendMessageToMaster(IPCUtils.CONTROL_WORKER_HEARTBEAT).awaitUninterruptibly();
     }
   }
@@ -186,21 +190,34 @@ public final class Worker {
           }
           toShutdown = true;
           abruptShutdown = true;
-          cancel();
-        }
-        if (toShutdown) {
-          shutdown();
         }
       } catch (Throwable e) {
+        toShutdown = true;
+        abruptShutdown = true;
         if (LOGGER.isErrorEnabled()) {
-          LOGGER.error("Unknown error in shutdown checker", e);
+          LOGGER.error("Unknown error in " + ShutdownChecker.class.getSimpleName(), e);
+        }
+      }
+      if (toShutdown) {
+        try {
+          shutdown();
+        } catch (Throwable e) {
+          try {
+            if (LOGGER.isErrorEnabled()) {
+              LOGGER.error("Unknown error in shutdown, halt the worker directly", e);
+            }
+          } finally {
+            JVMUtils.shutdownVM();
+          }
         }
       }
     }
   }
 
   /**
-   * Periodically detect whether the {@link Worker} should be shutdown.
+   * This class manages all currently running user threads. It waits all these threads to finish within some given
+   * timeout. If timeout, try interrupting them. If any thread is interrupted for a given number of times, stop waiting
+   * and kill it directly.
    * */
   private class ShutdownThreadCleaner extends Thread {
 
@@ -427,71 +444,108 @@ public final class Worker {
   private static volatile ThreadGroup mainThreadGroup;
 
   /**
+   * @param args command line arguments
+   * @return options parsed from command line.
+   * */
+  private static HashMap<String, Object> processArgs(final String[] args) {
+    HashMap<String, Object> options = new HashMap<String, Object>();
+    if (args.length > 2) {
+      LOGGER.warn("Invalid number of arguments.\n" + USAGE);
+      JVMUtils.shutdownVM();
+    }
+
+    String workingDirTmp = System.getProperty("user.dir");
+    if (args.length >= 2) {
+      if (args[0].equals("--workingDir")) {
+        workingDirTmp = args[1];
+      } else {
+        if (LOGGER.isErrorEnabled()) {
+          LOGGER.error("Invalid arguments.\n" + USAGE);
+        }
+        JVMUtils.shutdownVM();
+      }
+    }
+    options.put("workingDir", workingDirTmp);
+    return options;
+  }
+
+  /**
+   * Setup system properties.
+   * 
+   * @param cmdlineOptions command line options
+   * */
+  private static void systemSetup(final HashMap<String, Object> cmdlineOptions) {
+    java.util.logging.Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
+    java.util.logging.Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
+
+    Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+      @Override
+      public void uncaughtException(final Thread t, final Throwable e) {
+        if (LOGGER.isErrorEnabled()) {
+          LOGGER.error("Uncaught exception in thread: " + t, e);
+        }
+        if (e instanceof OutOfMemoryError) {
+          JVMUtils.shutdownVM();
+        }
+      }
+    });
+
+    mainThreadGroup = Thread.currentThread().getThreadGroup();
+  }
+
+  /**
+   * @param cmdlineOptions command line options
+   * */
+  private static void bootupWorker(final HashMap<String, Object> cmdlineOptions) {
+    final String workingDir = (String) cmdlineOptions.get("workingDir");
+    if (LOGGER.isInfoEnabled()) {
+      LOGGER.info("workingDir: " + workingDir);
+    }
+
+    ThreadGroup workerThreadGroup = new ThreadGroup(mainThreadGroup, "MyriaWorkerThreadGroup");
+    Thread myriaWorkerMain = new Thread(workerThreadGroup, "MyriaWorkerMain") {
+      @Override
+      public void run() {
+        try {
+          // Instantiate a new worker
+          final Worker w = new Worker(workingDir, QueryExecutionMode.NON_BLOCKING);
+          // int port = w.port;
+
+          // Start the actual message handler by binding
+          // the acceptor to a network socket
+          // Now the worker can accept messages
+          w.start();
+
+          if (LOGGER.isInfoEnabled()) {
+            LOGGER.info("Worker started at:" + w.catalog.getWorkers().get(w.myID));
+          }
+        } catch (Throwable e) {
+          if (LOGGER.isErrorEnabled()) {
+            LOGGER.error("Unknown error occurs at Worker. Quit directly.", e);
+          }
+          JVMUtils.shutdownVM();
+        }
+      }
+    };
+    myriaWorkerMain.start();
+  }
+
+  /**
    * Worker process entry point.
    * 
    * @param args command line arguments.
    * */
   public static void main(final String[] args) {
     try {
-      java.util.logging.Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
-      java.util.logging.Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
-
-      if (args.length > 2) {
-        LOGGER.warn("Invalid number of arguments.\n" + USAGE);
-        JVMUtils.shutdownVM();
-      }
-
-      String workingDirTmp = System.getProperty("user.dir");
-      if (args.length >= 2) {
-        if (args[0].equals("--workingDir")) {
-          workingDirTmp = args[1];
-        } else {
-          if (LOGGER.isErrorEnabled()) {
-            LOGGER.error("Invalid arguments.\n" + USAGE);
-          }
-          JVMUtils.shutdownVM();
-        }
-      }
-
-      final String workingDir = workingDirTmp;
-      if (LOGGER.isInfoEnabled()) {
-        LOGGER.info("workingDir: " + workingDir);
-      }
-      mainThreadGroup = Thread.currentThread().getThreadGroup();
-      ThreadGroup workerThreadGroup = new ThreadGroup(mainThreadGroup, "MyriaWorkerThreadGroup");
-      Thread myriaWorkerMain = new Thread(workerThreadGroup, "MyriaWorkerMain") {
-
-        @Override
-        public void run() {
-          try {
-            // Instantiate a new worker
-            final Worker w = new Worker(workingDir, QueryExecutionMode.NON_BLOCKING);
-            // int port = w.port;
-
-            // Start the actual message handler by binding
-            // the acceptor to a network socket
-            // Now the worker can accept messages
-            w.start();
-
-            if (LOGGER.isInfoEnabled()) {
-              LOGGER.info("Worker started at:" + w.catalog.getWorkers().get(w.myID));
-            }
-          } catch (Throwable e) {
-            if (LOGGER.isErrorEnabled()) {
-              LOGGER.error("Unknown error occurs at Worker. Quit directly.", e);
-            }
-          }
-
-        }
-      };
-      myriaWorkerMain.start();
-
+      HashMap<String, Object> cmdlineOptions = processArgs(args);
+      systemSetup(cmdlineOptions);
+      bootupWorker(cmdlineOptions);
     } catch (Throwable e) {
       if (LOGGER.isErrorEnabled()) {
         LOGGER.error("Unknown error occurs at Worker. Quit directly.", e);
       }
+      JVMUtils.shutdownVM();
     }
-
   }
 
   /**
@@ -632,7 +686,7 @@ public final class Worker {
     query.getExecutionFuture().addListener(new QueryFutureListener() {
 
       @Override
-      public void operationComplete(final QueryFuture future) throws Exception {
+      public void operationComplete(final QueryFuture future) {
         activeQueries.remove(query.getQueryID());
 
         if (future.isSuccess()) {
@@ -659,21 +713,25 @@ public final class Worker {
             LOGGER.debug("Query failed because of exception: ", future.getCause());
           }
 
-          sendMessageToMaster(
-              IPCUtils.queryFailureTM(query.getQueryID(), future.getCause(), query.getExecutionStatistics()))
-              .addListener(new ChannelFutureListener() {
-
-                @Override
-                public void operationComplete(final ChannelFuture future) throws Exception {
-                  if (future.isSuccess()) {
-                    if (LOGGER.isDebugEnabled()) {
-                      LOGGER.debug("The query complete message is sent to the master for sure ");
-                    }
-                  }
+          TransportMessage tm = null;
+          try {
+            tm = IPCUtils.queryFailureTM(query.getQueryID(), future.getCause(), query.getExecutionStatistics());
+          } catch (IOException e) {
+            if (LOGGER.isErrorEnabled()) {
+              LOGGER.error("Unknown query failure TM creation error", e);
+            }
+            tm = IPCUtils.simpleQueryFailureTM(query.getQueryID());
+          }
+          sendMessageToMaster(tm).addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(final ChannelFuture future) throws Exception {
+              if (future.isSuccess()) {
+                if (LOGGER.isDebugEnabled()) {
+                  LOGGER.debug("The query complete message is sent to the master for sure ");
                 }
-
-              });
-
+              }
+            }
+          });
         }
       }
     });
@@ -776,7 +834,7 @@ public final class Worker {
     // Periodically detect if the server (i.e., coordinator)
     // is still running. IF the server goes down, the
     // worker will stop itself
-    scheduledTaskExecutor = Executors.newScheduledThreadPool(2, new RenamingThreadFactory("Worker global timer"));
+    scheduledTaskExecutor = Executors.newScheduledThreadPool(2, new TimerTaskThreadFactory("Worker global timer"));
     scheduledTaskExecutor.scheduleAtFixedRate(new ShutdownChecker(), MyriaConstants.WORKER_SHUTDOWN_CHECKER_INTERVAL,
         MyriaConstants.WORKER_SHUTDOWN_CHECKER_INTERVAL, TimeUnit.MILLISECONDS);
     scheduledTaskExecutor.scheduleAtFixedRate(new HeartbeatReporter(), 0, MyriaConstants.HEARTBEAT_INTERVAL,
