@@ -119,8 +119,8 @@ public final class SQLiteUtils {
   /**
    * Helper utility for creating SQLite CREATE TABLE statements.
    * 
-   * @param type a Myriad column type.
-   * @return the name of the SQLite type that matches the given Myriad type.
+   * @param type a Myria column type.
+   * @return the name of the SQLite type that matches the given Myria type.
    */
   public static String typeToSQLiteType(final Type type) {
     switch (type) {

@@ -30,7 +30,7 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.parallel.SocketInfo;
 
 /**
- * This class is intended to store the configuration information for a Myriad installation.
+ * This class is intended to store the configuration information for a Myria installation.
  * 
  * @author dhalperi
  * 
@@ -156,7 +156,7 @@ public final class MasterCatalog {
   }
 
   /**
-   * Opens the Myriad catalog stored as a SQLite database in the specified file.
+   * Opens the Myria catalog stored as a SQLite database in the specified file.
    * 
    * @param filename the path to the SQLite database storing the catalog.
    * @return an initialized Catalog object ready to be used for experiments.

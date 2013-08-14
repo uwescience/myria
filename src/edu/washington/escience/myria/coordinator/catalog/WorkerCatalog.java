@@ -21,7 +21,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.parallel.SocketInfo;
 
 /**
- * This class is intended to store the configuration and catalog information for a Myriad worker.
+ * This class is intended to store the configuration and catalog information for a Myria worker.
  * 
  * @author dhalperi
  * 

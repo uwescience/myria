@@ -14,7 +14,7 @@ import edu.washington.escience.myria.column.LongColumn;
 import edu.washington.escience.myria.column.StringColumn;
 
 /**
- * Class representing a type in Myriad. Types are static objects defined by this class; hence, the Type constructor is
+ * Class representing a type in Myria. Types are static objects defined by this class; hence, the Type constructor is
  * private.
  */
 public enum Type implements Serializable {

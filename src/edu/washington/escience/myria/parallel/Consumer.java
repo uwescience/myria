@@ -32,7 +32,7 @@ import gnu.trove.map.hash.TIntIntHashMap;
  * */
 public class Consumer extends LeafOperator {
 
-  /** The logger for this class. Defaults to myriad level, but could be set to a finer granularity if needed. */
+  /** The logger for this class. */
   private static final Logger LOGGER = LoggerFactory.getLogger(Consumer.class);
 
   /** Required for Java serialization. */

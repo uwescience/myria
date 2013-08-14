@@ -11,8 +11,8 @@ import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.parallel.Server;
 
 /**
- * This is the class for the main daemon for Myriad. It manages all the various services, including the API server and
- * the Myriad server.
+ * This is the class for the main daemon for Myria. It manages all the various services, including the API server and
+ * the Myria server.
  * 
  * @author dhalperi
  * 
@@ -40,7 +40,7 @@ public final class MasterDaemon {
   private final MasterApiServer apiServer;
 
   /**
-   * Instantiates a MasterDaemon object. Includes the API server and the Myriad server.
+   * Instantiates a MasterDaemon object. Includes the API server and the Myria server.
    * 
    * @param catalogDirPath the dir where the Catalog file resides.
    * @param apiPort api server port.
@@ -79,7 +79,7 @@ public final class MasterDaemon {
   }
 
   /**
-   * Start the Daemon. Namely, start the API server and the Myriad Server.
+   * Start the Daemon. Namely, start the API server and the Myria Server.
    * 
    * @throws Exception if there is an issue starting either server.
    */
@@ -89,7 +89,7 @@ public final class MasterDaemon {
   }
 
   /**
-   * Stop the Daemon. Namely, stop the API server and the Myriad Server.
+   * Stop the Daemon. Namely, stop the API server and the Myria Server.
    * 
    * @throws Exception if there is an issue stopping either server.
    */

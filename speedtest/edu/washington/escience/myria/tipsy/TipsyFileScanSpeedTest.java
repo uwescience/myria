@@ -12,7 +12,7 @@ import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.TipsyFileScan;
 
 public class TipsyFileScanSpeedTest {
-  /** The logger for this class. Defaults to myriad level, but could be set to a finer granularity if needed. */
+  /** The logger for this class. */
   private static final Logger LOGGER = LoggerFactory.getLogger(TipsyFileScanSpeedTest.class);
 
   @Test
