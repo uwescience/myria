@@ -15,6 +15,7 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.operator.UnaryOperator;
 import gnu.trove.iterator.TDoubleObjectIterator;
 import gnu.trove.iterator.TFloatObjectIterator;
 import gnu.trove.iterator.TIntObjectIterator;
@@ -31,91 +32,92 @@ import gnu.trove.map.hash.TLongObjectHashMap;
 /**
  * The Aggregation operator that computes an aggregate (e.g., sum, avg, max, min) with a single group by column.
  */
-public class SingleGroupByAggregateNoBuffer extends Operator {
+public class SingleGroupByAggregateNoBuffer extends UnaryOperator {
 
   /**
    * The Logger.
-   * */
+   */
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory
       .getLogger(SingleGroupByAggregateNoBuffer.class);
 
   /**
    * default serialization ID.
-   * */
+   */
   private static final long serialVersionUID = 1L;
 
   /**
    * result schema.
-   * */
-  private final Schema schema;
-  /**
-   * the child.
-   * */
-  private Operator child;
+   */
+  private Schema schema;
 
   /**
    * compute multiple aggregates in the same time. The columns to compute the aggregates are
    * {@link SingleGroupByAggregateNoIntermediateBuffer#afields}.
-   * */
-  private final Aggregator<?>[] agg;
+   */
+  private Aggregator<?>[] agg;
 
   /**
    * Compute aggregate on each of the {@link SingleGroupByAggregateNoIntermediateBuffer#afields}, with the corresponding
    * {@link Aggregator} in @link SingleGroupByAggregate#agg}.
-   * */
+   */
   private final int[] afields;
 
   /**
+   * The aggregate operations that will be computed.
+   */
+  private final int[] aggOps;
+
+  /**
    * The group by column.
-   * */
+   */
   private final int gColumn;
 
   /**
    * The group-by column type.
-   * */
-  private final Type gColumnType;
+   */
+  private Type gColumnType;
 
   /**
    * aggregate column types.
-   * */
-  private final Type[] aColumnTypes;
+   */
+  private Type[] aColumnTypes;
 
   /**
    * The buffer storing in-progress group by results. {groupby-column-value -> Aggregator Array} when the group key is
    * String
-   * */
+   */
   private transient HashMap<String, Aggregator<?>[]> groupAggsString;
 
   /**
    * The buffer storing in-progress group by results. {groupby-column-value -> Aggregator Array} when the group key is
    * DateTime.
-   * */
+   */
   private transient HashMap<DateTime, Aggregator<?>[]> groupAggsDatetime;
 
   /**
-   * he buffer stroing in-progress group by results when the group key is int.
-   * */
+   * The buffer storing in-progress group by results when the group key is int.
+   */
   private transient TIntObjectMap<Aggregator<?>[]> groupAggsInt;
   /**
-   * he buffer stroing in-progress group by results when the group key is boolean.
-   * */
+   * The buffer storing in-progress group by results when the group key is boolean.
+   */
   private transient Aggregator<?>[][] groupAggsBoolean;
   /**
-   * he buffer stroing in-progress group by results when the group key is long.
-   * */
+   * The buffer storing in-progress group by results when the group key is long.
+   */
   private transient TLongObjectMap<Aggregator<?>[]> groupAggsLong;
   /**
-   * he buffer stroing in-progress group by results when the group key is float.
-   * */
+   * The buffer storing in-progress group by results when the group key is float.
+   */
   private transient TFloatObjectMap<Aggregator<?>[]> groupAggsFloat;
   /**
-   * he buffer stroing in-progress group by results when the group key is double.
-   * */
+   * The buffer storing in-progress group by results when the group key is double.
+   */
   private transient TDoubleObjectMap<Aggregator<?>[]> groupAggsDouble;
 
   /**
-   * storing results after group by is done.
-   * */
+   * The buffer storing results after group by is done.
+   */
   private transient TupleBatchBuffer resultBuffer;
 
   /**
@@ -127,65 +129,19 @@ public class SingleGroupByAggregateNoBuffer extends Operator {
    * @param aggOps The aggregation operator to use
    */
   public SingleGroupByAggregateNoBuffer(final Operator child, final int[] afields, final int gfield, final int[] aggOps) {
+    super(child);
     Objects.requireNonNull(afields);
     if (afields.length == 0) {
       throw new IllegalArgumentException("aggregation fields must not be empty");
     }
-
-    final Schema childSchema = child.getSchema();
-    if (gfield < 0 || gfield >= childSchema.numColumns()) {
-      throw new IllegalArgumentException("Invalid group field");
-    }
-
-    Schema outputSchema = null;
-
-    outputSchema =
-        new Schema(ImmutableList.of(childSchema.getColumnType(gfield)), ImmutableList.of(childSchema
-            .getColumnName(gfield)));
-
-    this.child = child;
-    this.afields = afields;
     gColumn = gfield;
-    gColumnType = childSchema.getColumnType(gColumn);
-    aColumnTypes = new Type[this.afields.length];
-
-    agg = new Aggregator<?>[aggOps.length];
-
-    int idx = 0;
-    for (final int afield : afields) {
-      aColumnTypes[idx] = childSchema.getColumnType(afield);
-      switch (aColumnTypes[idx]) {
-        case BOOLEAN_TYPE:
-          agg[idx] = new BooleanAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          break;
-        case INT_TYPE:
-          agg[idx] = new IntegerAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          break;
-        case LONG_TYPE:
-          agg[idx] = new LongAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          break;
-        case FLOAT_TYPE:
-          agg[idx] = new FloatAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          break;
-        case DOUBLE_TYPE:
-          agg[idx] = new DoubleAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          break;
-        case STRING_TYPE:
-          agg[idx] = new StringAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
-          break;
-        default:
-          throw new IllegalArgumentException("Unknown column type: " + aColumnTypes[idx]);
-      }
-
-      outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
-      idx++;
-    }
-    schema = outputSchema;
+    this.afields = afields;
+    this.aggOps = aggOps;
   }
 
   /**
    * @return the aggregate field
-   * */
+   */
   public final int[] aggregateFields() {
     return afields;
   }
@@ -209,7 +165,7 @@ public class SingleGroupByAggregateNoBuffer extends Operator {
    * @param aggFieldIdx which column.
    * @param aggFieldType the type of the value
    * @param agg the aggregator.
-   * */
+   */
   public static void addValue2Group(final TupleBatch tb, final int row, final int aggFieldIdx, final Type aggFieldType,
       final Aggregator<?> agg) {
     switch (aggFieldType) {
@@ -240,7 +196,7 @@ public class SingleGroupByAggregateNoBuffer extends Operator {
 
   /**
    * @param tb the TupleBatch to be processed.
-   * */
+   */
   private void processTupleBatch(final TupleBatch tb) {
     switch (gColumnType) {
       case BOOLEAN_TYPE:
@@ -370,7 +326,7 @@ public class SingleGroupByAggregateNoBuffer extends Operator {
 
   /**
    * @param resultBuffer where the results are stored.
-   * */
+   */
   private void generateResult(final TupleBatchBuffer resultBuffer) {
 
     switch (gColumnType) {
@@ -483,6 +439,7 @@ public class SingleGroupByAggregateNoBuffer extends Operator {
   @Override
   protected final TupleBatch fetchNextReady() throws DbException {
     TupleBatch tb = null;
+    final Operator child = getChild();
 
     if (resultBuffer.numTuples() > 0) {
       return resultBuffer.popAny();
@@ -507,24 +464,20 @@ public class SingleGroupByAggregateNoBuffer extends Operator {
   }
 
   @Override
-  public final Operator[] getChildren() {
-    return new Operator[] { child };
-  }
-
-  @Override
   public final Schema getSchema() {
     return schema;
   }
 
   /**
    * @return the group by column.
-   * */
+   */
   public final int getGroupByColumn() {
     return gColumn;
   }
 
   @Override
   protected final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+    generateSchema();
     switch (gColumnType) {
       case BOOLEAN_TYPE:
         groupAggsBoolean = new Aggregator<?>[2][];
@@ -552,9 +505,55 @@ public class SingleGroupByAggregateNoBuffer extends Operator {
 
   }
 
-  @Override
-  public final void setChildren(final Operator[] children) {
-    child = children[0];
-  }
+  /**
+   * Generates the schema for SingleGroupByAggregate.
+   */
+  private void generateSchema() {
+    final Schema childSchema = getChild().getSchema();
+    if (gColumn < 0 || gColumn >= childSchema.numColumns()) {
+      throw new IllegalArgumentException("Invalid group field");
+    }
 
+    Schema outputSchema = null;
+
+    outputSchema =
+        new Schema(ImmutableList.of(childSchema.getColumnType(gColumn)), ImmutableList.of(childSchema
+            .getColumnName(gColumn)));
+
+    gColumnType = childSchema.getColumnType(gColumn);
+    aColumnTypes = new Type[afields.length];
+
+    agg = new Aggregator<?>[aggOps.length];
+
+    int idx = 0;
+    for (final int afield : afields) {
+      aColumnTypes[idx] = childSchema.getColumnType(afield);
+      switch (aColumnTypes[idx]) {
+        case BOOLEAN_TYPE:
+          agg[idx] = new BooleanAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
+          break;
+        case INT_TYPE:
+          agg[idx] = new IntegerAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
+          break;
+        case LONG_TYPE:
+          agg[idx] = new LongAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
+          break;
+        case FLOAT_TYPE:
+          agg[idx] = new FloatAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
+          break;
+        case DOUBLE_TYPE:
+          agg[idx] = new DoubleAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
+          break;
+        case STRING_TYPE:
+          agg[idx] = new StringAggregator(afield, childSchema.getColumnName(afield), aggOps[idx]);
+          break;
+        default:
+          throw new IllegalArgumentException("Unknown column type: " + aColumnTypes[idx]);
+      }
+
+      outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
+      idx++;
+    }
+    schema = outputSchema;
+  }
 }

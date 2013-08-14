@@ -22,17 +22,13 @@ import edu.washington.escience.myriad.accessmethod.SQLiteInfo;
  * 
  * Note that the result of the child must be a set. Otherwise the result may have duplicates.
  * */
-public class SQLiteSetFilter extends Operator {
+public class SQLiteSetFilter extends UnaryOperator {
 
   /**
    * 
    */
   private static final long serialVersionUID = 1L;
 
-  /**
-   * child.
-   * */
-  private Operator child;
   /**
    * SQL template.
    * */
@@ -62,17 +58,12 @@ public class SQLiteSetFilter extends Operator {
    * */
   public SQLiteSetFilter(final Operator child, final String tableName, final String setColumnName,
       final String[] resultColumnNames, final Schema outputSchema) {
+    super(child);
     Preconditions.checkArgument(child.getSchema().numColumns() == 1);
     sqlTemplate =
         String.format("select %s from %s where %s in ( ", StringUtils.join(resultColumnNames, ","), tableName,
             setColumnName);
-    this.child = child;
     this.outputSchema = outputSchema;
-  }
-
-  @Override
-  public final Operator[] getChildren() {
-    return new Operator[] { child };
   }
 
   @Override
@@ -97,6 +88,7 @@ public class SQLiteSetFilter extends Operator {
       }
       tuples = null;
     }
+    final Operator child = getChild();
 
     TupleBatch tb = child.nextReady();
     if (tb != null) {
@@ -133,11 +125,6 @@ public class SQLiteSetFilter extends Operator {
   @Override
   public final Schema getSchema() {
     return outputSchema;
-  }
-
-  @Override
-  public final void setChildren(final Operator[] children) {
-    child = children[0];
   }
 
 }

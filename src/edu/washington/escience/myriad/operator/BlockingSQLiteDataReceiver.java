@@ -13,14 +13,10 @@ import edu.washington.escience.myriad.util.SQLiteUtils;
 /**
  * Blocking when receiving data from children.
  * */
-public final class BlockingSQLiteDataReceiver extends Operator {
+public final class BlockingSQLiteDataReceiver extends UnaryOperator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
-  /**
-   * the child.
-   * */
-  private Operator child;
   /**
    * SQLite connection info.
    * */
@@ -36,7 +32,7 @@ public final class BlockingSQLiteDataReceiver extends Operator {
    * @param child the child.
    * */
   public BlockingSQLiteDataReceiver(final RelationKey relationKey, final Operator child) {
-    this.child = child;
+    super(child);
     this.relationKey = relationKey;
   }
 
@@ -46,6 +42,7 @@ public final class BlockingSQLiteDataReceiver extends Operator {
 
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
+    final Operator child = getChild();
     TupleBatch tb = null;
     tb = child.nextReady();
     while (tb != null) {
@@ -56,13 +53,8 @@ public final class BlockingSQLiteDataReceiver extends Operator {
   }
 
   @Override
-  public Operator[] getChildren() {
-    return new Operator[] { child };
-  }
-
-  @Override
   public Schema getSchema() {
-    return child.getSchema();
+    return getChild().getSchema();
   }
 
   @Override
@@ -71,10 +63,5 @@ public final class BlockingSQLiteDataReceiver extends Operator {
     if (sqliteInfo == null) {
       throw new DbException("Unable to instantiate SQLiteQueryScan on non-sqlite worker");
     }
-  }
-
-  @Override
-  public void setChildren(final Operator[] children) {
-    child = children[0];
   }
 }

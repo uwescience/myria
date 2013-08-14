@@ -11,6 +11,7 @@ import edu.washington.escience.myriad.TupleBatch;
 import edu.washington.escience.myriad.TupleBatchBuffer;
 import edu.washington.escience.myriad.Type;
 import edu.washington.escience.myriad.operator.Operator;
+import edu.washington.escience.myriad.operator.UnaryOperator;
 
 /**
  * Apply operator that will apply a math function on attributes as specified.
@@ -20,13 +21,11 @@ import edu.washington.escience.myriad.operator.Operator;
  * The column type will be the same as that of the attribute specified
  * 
  */
-public final class Apply extends Operator {
+public final class Apply extends UnaryOperator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
-  /** The child operator feeding the tuples. */
-  private Operator child;
   /** the field we want to apply the function on. */
   private final List<IFunctionCaller> callers;
   /** the resulting schema. */
@@ -44,13 +43,8 @@ public final class Apply extends Operator {
    * @param callers the fields we want to apply the operation on
    */
   public Apply(final Operator child, final List<IFunctionCaller> callers) {
-    this.child = child;
+    super(child);
     this.callers = callers;
-  }
-
-  @Override
-  public Operator[] getChildren() {
-    return new Operator[] { child };
   }
 
   @Override
@@ -62,11 +56,11 @@ public final class Apply extends Operator {
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
     TupleBatch tb = null;
-    if (child.eoi() || child.eos()) {
+    if (getChild().eoi() || getChild().eos()) {
       return resultBuffer.popAny();
     }
 
-    while ((tb = child.nextReady()) != null) {
+    while ((tb = getChild().nextReady()) != null) {
       for (int i = 0; i < tb.numTuples(); i++) {
         // put the content from the child operator first
         for (int j = 0; j < tb.numColumns(); j++) {
@@ -96,7 +90,7 @@ public final class Apply extends Operator {
         resultBuffer.popFilled();
       }
     }
-    if (child.eoi() || child.eos()) {
+    if (getChild().eoi() || getChild().eos()) {
       return resultBuffer.popAny();
     } else {
       return resultBuffer.popFilled();
@@ -109,13 +103,8 @@ public final class Apply extends Operator {
   }
 
   @Override
-  public void setChildren(final Operator[] children) {
-    child = children[0];
-  }
-
-  @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    final Schema childSchema = child.getSchema();
+    final Schema childSchema = getChild().getSchema();
 
     final ImmutableList.Builder<Type> schemaTypes = ImmutableList.builder();
     final ImmutableList.Builder<String> schemaNames = ImmutableList.builder();
@@ -128,8 +117,8 @@ public final class Apply extends Operator {
       final ImmutableList.Builder<String> names = ImmutableList.builder();
       final ImmutableList.Builder<Type> typesList = ImmutableList.builder();
       for (Integer i : applyFields) {
-        names.add(child.getSchema().getColumnName(i));
-        typesList.add(child.getSchema().getColumnType(i));
+        names.add(childSchema.getColumnName(i));
+        typesList.add(childSchema.getColumnType(i));
       }
       schemaNames.add(caller.toString(names.build()));
       schemaTypes.add(caller.getResultType(typesList.build()));

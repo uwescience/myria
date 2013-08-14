@@ -16,14 +16,10 @@ import edu.washington.escience.myriad.TupleBatchBuffer;
  * Duplicate elimination. It adds newly meet unique tuples into a buffer so that the source TupleBatches are not
  * referenced. This implementation reduces memory consumption.
  * */
-public final class DupElim extends Operator {
+public final class DupElim extends UnaryOperator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
-  /**
-   * the child.
-   * */
-  private Operator child;
 
   /**
    * Indices to unique tuples.
@@ -39,7 +35,7 @@ public final class DupElim extends Operator {
    * @param child the child.
    * */
   public DupElim(final Operator child) {
-    this.child = child;
+    super(child);
   }
 
   @Override
@@ -116,35 +112,25 @@ public final class DupElim extends Operator {
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
     TupleBatch tb = null;
-    tb = child.nextReady();
+    tb = getChild().nextReady();
     while (tb != null) {
       tb = doDupElim(tb);
       if (tb.numTuples() > 0) {
         return tb;
       }
-      tb = child.nextReady();
+      tb = getChild().nextReady();
     }
     return null;
   }
 
   @Override
-  public Operator[] getChildren() {
-    return new Operator[] { child };
-  }
-
-  @Override
   public Schema getSchema() {
-    return child.getSchema();
+    return getChild().getSchema();
   }
 
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     uniqueTupleIndices = new HashMap<Integer, List<Integer>>();
     uniqueTuples = new TupleBatchBuffer(getSchema());
-  }
-
-  @Override
-  public void setChildren(final Operator[] children) {
-    child = children[0];
   }
 }

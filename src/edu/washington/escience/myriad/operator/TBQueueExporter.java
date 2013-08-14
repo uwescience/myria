@@ -14,7 +14,7 @@ import edu.washington.escience.myriad.TupleBatchBuffer;
  * 
  * Do not use a {@link TupleBatchBuffer} here because {@link TupleBatchBuffer} is not thread safe.
  * */
-public class TBQueueExporter extends Operator {
+public class TBQueueExporter extends UnaryOperator {
 
   /**
    * 
@@ -27,22 +27,12 @@ public class TBQueueExporter extends Operator {
   private final Queue<TupleBatch> queueStore;
 
   /**
-   * child.
-   * */
-  private Operator child;
-
-  /**
    * @param queueStore the queue to store exported {@link TupleBatch}s.
    * @param child the child.
    * */
   public TBQueueExporter(final Queue<TupleBatch> queueStore, final Operator child) {
+    super(child);
     this.queueStore = queueStore;
-    this.child = child;
-  }
-
-  @Override
-  public final Operator[] getChildren() {
-    return new Operator[] { child };
   }
 
   @Override
@@ -55,7 +45,7 @@ public class TBQueueExporter extends Operator {
 
   @Override
   protected final TupleBatch fetchNextReady() throws DbException {
-    TupleBatch tb = child.nextReady();
+    TupleBatch tb = getChild().nextReady();
 
     if (tb != null) {
       queueStore.add(tb);
@@ -65,12 +55,7 @@ public class TBQueueExporter extends Operator {
 
   @Override
   public final Schema getSchema() {
-    return child.getSchema();
-  }
-
-  @Override
-  public final void setChildren(final Operator[] children) {
-    child = children[0];
+    return getChild().getSchema();
   }
 
 }
