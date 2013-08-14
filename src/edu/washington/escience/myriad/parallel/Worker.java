@@ -215,7 +215,9 @@ public final class Worker {
   }
 
   /**
-   * Periodically detect whether the {@link Worker} should be shutdown.
+   * This class manages all currently running user threads. It waits all these threads to finish within some given
+   * timeout. If timeout, try interrupting them. If any thread is interrupted for a given number of times, stop waiting
+   * and kill it directly.
    * */
   private class ShutdownThreadCleaner extends Thread {
 
