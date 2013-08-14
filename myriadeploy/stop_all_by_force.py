@@ -23,7 +23,7 @@ def stop_all(config):
 
     # Stop the Master
     hostname = get_hostname(master)
-    cmd = "ssh %s@%s $'ps aux | grep edu.washington.escience.myriad.daemon.MasterDaemon | grep %s | grep -v grep | awk \\'{print $2}\\''" % (username, hostname, username)
+    cmd = "ssh %s@%s $'ps aux | grep edu.washington.escience.myria.daemon.MasterDaemon | grep %s | grep -v grep | awk \\'{print $2}\\''" % (username, hostname, username)
     pids = subprocess.check_output(cmd, shell=True).split('\n')
     for pid in pids:
         if pid != "":
@@ -38,7 +38,7 @@ def stop_all(config):
         if hostname in done:
             continue
         done.add(hostname)
-        cmd = "ssh %s@%s $'ps aux | grep edu.washington.escience.myriad.parallel.Worker | grep %s | grep -v grep | awk \\'{print $2}\\''" % (username, hostname, username)
+        cmd = "ssh %s@%s $'ps aux | grep edu.washington.escience.myria.parallel.Worker | grep %s | grep -v grep | awk \\'{print $2}\\''" % (username, hostname, username)
         pids = subprocess.check_output(cmd, shell=True).split('\n')
         for pid in pids:
             if pid != "":
