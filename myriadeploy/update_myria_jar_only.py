@@ -46,7 +46,7 @@ def main(argv):
 
     config = myriadeploy.read_config_file(argv[1])
 
-    # Step 1: Copy over libs, "conf", myriad
+    # Step 1: Copy over libs, "conf", myria
     copy_distribution(config)
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-option java_package = "edu.washington.escience.myriad.proto";
+option java_package = "edu.washington.escience.myria.proto";
 option java_outer_classname = "ControlProto";
 
 message ControlMessage {
