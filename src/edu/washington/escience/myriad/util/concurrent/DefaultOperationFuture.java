@@ -19,9 +19,8 @@ import edu.washington.escience.myriad.DbException;
 /**
  * The default {@link OperationFuture} implementation.
  * 
- * @param <T> possible operation result when operation is successfully conducted.
  */
-public class DefaultOperationFuture<T> extends OperationFutureBase<T> {
+public class DefaultOperationFuture extends OperationFutureBase<Void> {
 
   /**
    * Creates a new instance.
@@ -66,6 +65,40 @@ public class DefaultOperationFuture<T> extends OperationFutureBase<T> {
   public OperationFuture awaitUninterruptibly() {
     super.awaitUninterruptibly0();
     return this;
+  }
+
+  /**
+   * Marks this future as a success and notifies all listeners.
+   * 
+   * @return {@code true} if and only if successfully marked this future as a success. Otherwise {@code false} because
+   *         this future is already marked as either a success or a failure.
+   */
+  public final boolean setSuccess() {
+    return super.setSuccess0(null);
+  }
+
+  /**
+   * Notifies the progress of the operation to the listeners that implements {@link OperationFutureProgressListener}.
+   * Please note that this method will not do anything and return {@code false} if this future is complete already.
+   * 
+   * @param amount the amount of progress finished between the last call of this method and the current call
+   * @param current the current finished amount
+   * @param total the total amount to finish
+   * @return {@code true} if and only if notification was made.
+   */
+  public final boolean setProgress(final long amount, final long current, final long total) {
+    return super.setProgress0(amount, current, total);
+  }
+
+  /**
+   * Marks this future as a failure and notifies all listeners.
+   * 
+   * @param cause the cause.
+   * @return {@code true} if and only if successfully marked this future as a failure. Otherwise {@code false} because
+   *         this future is already marked as either a success or a failure.
+   */
+  public final boolean setFailure(final Throwable cause) {
+    return super.setFailure0(cause);
   }
 
 }

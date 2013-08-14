@@ -72,5 +72,5 @@ public interface QueryPartition extends Comparable<QueryPartition> {
   /**
    * @return the set of workers that are currently dead.
    */
-  public Set<Integer> getMissingWorkers();
+  Set<Integer> getMissingWorkers();
 }

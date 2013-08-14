@@ -26,7 +26,7 @@ public class RenamingThreadFactory implements ThreadFactory {
   }
 
   @Override
-  public final Thread newThread(final Runnable r) {
+  public Thread newThread(final Runnable r) {
     return new Thread(prefix + "#" + seq.getAndIncrement()) {
       @Override
       public void run() {

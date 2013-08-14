@@ -3,6 +3,7 @@ package edu.washington.escience.myriad.parallel.ipc;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.channel.Channel;
+import org.jboss.netty.channel.ChannelException;
 import org.jboss.netty.channel.ChannelHandler.Sharable;
 import org.jboss.netty.channel.ChannelHandlerContext;
 import org.jboss.netty.channel.ChannelStateEvent;
@@ -72,6 +73,9 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
       throws InterruptedException {
     if (metaMessage instanceof IPCMessage.Meta.CONNECT) {
       int remoteID = ((IPCMessage.Meta.CONNECT) metaMessage).getRemoteID();
+      if (!ownerConnectionPool.isRemoteValid(remoteID)) {
+        throw new ChannelException("Unknown RemoteID: " + remoteID);
+      }
       if (ch.getParent() != null) {
         // server channel
         ch.write(ownerConnectionPool.getMyIDAsMsg()).await(); // await to finish channel registering
