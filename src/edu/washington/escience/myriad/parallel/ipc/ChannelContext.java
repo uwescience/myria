@@ -332,6 +332,7 @@ class ChannelContext extends AttachmentableAdapter {
         } else {
           int tmp = numberOfReference;
           numberOfReference = tmp + 1;
+          newRef = numberOfReference;
         }
       }
       if (newRef < 0) {
