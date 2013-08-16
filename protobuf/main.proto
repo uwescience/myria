@@ -2,7 +2,7 @@ import "column.proto";
 import "control.proto";
 import "query.proto";
 
-option java_package = "edu.washington.escience.myriad.proto";
+option java_package = "edu.washington.escience.myria.proto";
 option java_outer_classname = "TransportProto";
 
 message TransportMessage {

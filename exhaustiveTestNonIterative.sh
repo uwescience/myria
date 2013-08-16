@@ -1,9 +1,9 @@
 i=1
 classpath="$(java -cp build/main  \
-  edu.washington.escience.myriad.tool.EclipseClasspathReader \
+  edu.washington.escience.myria.tool.EclipseClasspathReader \
   .classpath)"
 libpath="$(java -cp build/main  \
-  edu.washington.escience.myriad.tool.EclipseClasspathReader \
+  edu.washington.escience.myria.tool.EclipseClasspathReader \
   .classpath lib)"
 true
 while [[ $? -eq 0 ]]
@@ -12,6 +12,6 @@ do
   java -ea -Xdebug \
   -Xrunjdwp:transport=dt_socket,address=21001,server=y,suspend=n \
   -cp "$classpath" -Djava.library.path="$libpath" org.junit.runner.JUnitCore \
-  edu.washington.escience.myriad.testsuites.NonIterativeSystemTests \
+  edu.washington.escience.myria.testsuites.NonIterativeSystemTests \
   && i=$((i+1))
 done

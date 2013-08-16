@@ -3,9 +3,9 @@ import org.gradle.plugins.ide.eclipse.model.SourceFolder
 apply plugin: "java"
 apply plugin: "eclipse"
 
-/* Set up group and version info for myriad */
-archivesBaseName = "myriad"
-group = "edu.washington.escience.myriad"
+/* Set up group and version info for myria */
+archivesBaseName = "myria"
+group = "edu.washington.escience.myria"
 version = "0.1"
 
 /* We use Java 1.7 */
@@ -78,7 +78,7 @@ dependencies {
   compile "com.almworks.sqlite4java:sqlite4java:0.282"
 
   compile "com.google.guava:guava:14.0.1"
-  compile "com.google.protobuf:protobuf-java:2.4.1"
+  compile "com.google.protobuf:protobuf-java:2.5.0"
   compile "com.google.code.gson:gson:2.2.4"
 
   compile "io.netty:netty:3.6.5.Final"
@@ -196,6 +196,6 @@ jar {
   manifest {
     attributes("Implementation-Title" : "Myria",
                "Implementation-Version": version,
-	       "Main-Class": "edu.washington.escience.myriad.daemon.MasterDaemon")
+	       "Main-Class": "edu.washington.escience.myria.daemon.MasterDaemon")
   }
 }
