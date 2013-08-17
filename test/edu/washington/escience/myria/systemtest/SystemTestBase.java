@@ -312,6 +312,10 @@ public class SystemTestBase {
         && System.currentTimeMillis() - start < milliTimeout;) {
       Thread.sleep(500);
     }
+    targetWorkers.removeAll(server.getAliveWorkers());
+    if (!targetWorkers.isEmpty()) {
+      throw new IllegalStateException("Workers: " + targetWorkers + " booting up timout");
+    }
 
     // for setting breakpoint
     System.currentTimeMillis();
