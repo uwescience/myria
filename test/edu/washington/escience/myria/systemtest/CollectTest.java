@@ -26,8 +26,8 @@ public class CollectTest extends SystemTestBase {
   @Test
   public void collectTest() throws Exception {
     final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
-    createTable(WORKER_ID[0], testtableKey, "id long, name varchar(20)");
-    createTable(WORKER_ID[1], testtableKey, "id long, name varchar(20)");
+    createTable(workerIDs[0], testtableKey, "id long, name varchar(20)");
+    createTable(workerIDs[1], testtableKey, "id long, name varchar(20)");
 
     final String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, 200, 20);
     final long[] ids = TestUtils.randomLong(1000, 1005, names.length);
@@ -48,8 +48,8 @@ public class CollectTest extends SystemTestBase {
 
     TupleBatch tb = null;
     while ((tb = tbb.popAny()) != null) {
-      insert(WORKER_ID[0], testtableKey, schema, tb);
-      insert(WORKER_ID[1], testtableKey, schema, tb);
+      insert(workerIDs[0], testtableKey, schema, tb);
+      insert(workerIDs[1], testtableKey, schema, tb);
     }
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
@@ -58,10 +58,10 @@ public class CollectTest extends SystemTestBase {
 
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
     final CollectProducer cp1 = new CollectProducer(scanTable, serverReceiveID, MASTER_ID);
-    workerPlans.put(WORKER_ID[0], new RootOperator[] { cp1 });
-    workerPlans.put(WORKER_ID[1], new RootOperator[] { cp1 });
+    workerPlans.put(workerIDs[0], new RootOperator[] { cp1 });
+    workerPlans.put(workerIDs[1], new RootOperator[] { cp1 });
 
-    final CollectConsumer serverCollect = new CollectConsumer(schema, serverReceiveID, WORKER_ID);
+    final CollectConsumer serverCollect = new CollectConsumer(schema, serverReceiveID, workerIDs);
     final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
     SinkRoot serverPlan = new SinkRoot(queueStore);

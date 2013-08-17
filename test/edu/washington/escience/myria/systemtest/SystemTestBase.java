@@ -149,15 +149,14 @@ public class SystemTestBase {
   public static final int DEFAULT_REST_PORT = 8753;
 
   public volatile int masterPort;
-  public volatile int[] workerPorts;
   public volatile int masterDaemonPort = DEFAULT_REST_PORT;
 
-  public volatile int[] WORKER_ID;
-
-  // public static final int[] DEFAULT_WORKER_PORTS = { 9001, 9002 };
   public static final int DEFAULT_WORKER_STARTING_PORT = 9001;
 
   public static Process SERVER_PROCESS;
+
+  public volatile int[] workerIDs;
+  public volatile int[] workerPorts;
   public volatile Process[] workerProcess;
   public volatile Thread[] workerStdoutReader;
 
@@ -276,14 +275,14 @@ public class SystemTestBase {
     }
 
     workerPorts = new int[workers.size()];
-    WORKER_ID = new int[workerPorts.length];
+    workerIDs = new int[workerPorts.length];
     workerProcess = new Process[workerPorts.length];
     workerStdoutReader = new Thread[workerPorts.length];
 
     int i = 0;
     for (Entry<Integer, SocketInfo> worker : workers.entrySet()) {
       workerPorts[i] = worker.getValue().getPort();
-      WORKER_ID[i] = worker.getKey();
+      workerIDs[i] = worker.getKey();
       i++;
     }
 
@@ -304,7 +303,7 @@ public class SystemTestBase {
 
     /* Wait until all the workers have connected to the master. */
     Set<Integer> targetWorkers = new HashSet<Integer>();
-    for (int j : WORKER_ID) {
+    for (int j : workerIDs) {
       targetWorkers.add(j);
     }
     while (!server.getAliveWorkers().containsAll(targetWorkers)) {
@@ -324,13 +323,13 @@ public class SystemTestBase {
 
   protected HashMap<Tuple, Integer> simpleRandomJoinTestBase() throws CatalogException, IOException, DbException {
     /* worker 1 partition of table1 */
-    createTable(WORKER_ID[0], JOIN_TEST_TABLE_1, "id long, name varchar(20)");
+    createTable(workerIDs[0], JOIN_TEST_TABLE_1, "id long, name varchar(20)");
     /* worker 1 partition of table2 */
-    createTable(WORKER_ID[0], JOIN_TEST_TABLE_2, "id long, name varchar(20)");
+    createTable(workerIDs[0], JOIN_TEST_TABLE_2, "id long, name varchar(20)");
     /* worker 2 partition of table1 */
-    createTable(WORKER_ID[1], JOIN_TEST_TABLE_1, "id long, name varchar(20)");
+    createTable(workerIDs[1], JOIN_TEST_TABLE_1, "id long, name varchar(20)");
     /* worker 2 partition of table2 */
-    createTable(WORKER_ID[1], JOIN_TEST_TABLE_2, "id long, name varchar(20)");
+    createTable(workerIDs[1], JOIN_TEST_TABLE_2, "id long, name varchar(20)");
 
     final String[] tbl1NamesWorker1 = TestUtils.randomFixedLengthNumericString(1000, 2000, 2, 20);
     final String[] tbl1NamesWorker2 = TestUtils.randomFixedLengthNumericString(1000, 2000, 2, 20);
@@ -386,16 +385,16 @@ public class SystemTestBase {
 
     TupleBatch tb = null;
     while ((tb = tbl1Worker1.popAny()) != null) {
-      insert(WORKER_ID[0], JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA, tb);
+      insert(workerIDs[0], JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA, tb);
     }
     while ((tb = tbl1Worker2.popAny()) != null) {
-      insert(WORKER_ID[1], JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA, tb);
+      insert(workerIDs[1], JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA, tb);
     }
     while ((tb = tbl2Worker1.popAny()) != null) {
-      insert(WORKER_ID[0], JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA, tb);
+      insert(workerIDs[0], JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA, tb);
     }
     while ((tb = tbl2Worker2.popAny()) != null) {
-      insert(WORKER_ID[1], JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA, tb);
+      insert(workerIDs[1], JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA, tb);
     }
 
     return expectedResult;
@@ -403,22 +402,22 @@ public class SystemTestBase {
   }
 
   protected HashMap<Tuple, Integer> simpleFixedJoinTestBase() throws CatalogException, IOException, DbException {
-    createTable(WORKER_ID[0], JOIN_TEST_TABLE_1, "id long, name varchar(20)"); // worker
+    createTable(workerIDs[0], JOIN_TEST_TABLE_1, "id long, name varchar(20)"); // worker
                                                                                // 1
                                                                                // partition
                                                                                // of
     // table1
-    createTable(WORKER_ID[0], JOIN_TEST_TABLE_2, "id long, name varchar(20)"); // worker
+    createTable(workerIDs[0], JOIN_TEST_TABLE_2, "id long, name varchar(20)"); // worker
                                                                                // 1
                                                                                // partition
                                                                                // of
     // table2
-    createTable(WORKER_ID[1], JOIN_TEST_TABLE_1, "id long, name varchar(20)");// worker
+    createTable(workerIDs[1], JOIN_TEST_TABLE_1, "id long, name varchar(20)");// worker
                                                                               // 2
                                                                               // partition
                                                                               // of
     // table1
-    createTable(WORKER_ID[1], JOIN_TEST_TABLE_2, "id long, name varchar(20)");// worker
+    createTable(workerIDs[1], JOIN_TEST_TABLE_2, "id long, name varchar(20)");// worker
                                                                               // 2
                                                                               // partition
                                                                               // of
@@ -469,16 +468,16 @@ public class SystemTestBase {
 
     TupleBatch tb = null;
     while ((tb = tbl1Worker1.popAny()) != null) {
-      insert(WORKER_ID[0], JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA, tb);
+      insert(workerIDs[0], JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA, tb);
     }
     while ((tb = tbl1Worker2.popAny()) != null) {
-      insert(WORKER_ID[1], JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA, tb);
+      insert(workerIDs[1], JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA, tb);
     }
     while ((tb = tbl2Worker1.popAny()) != null) {
-      insert(WORKER_ID[0], JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA, tb);
+      insert(workerIDs[0], JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA, tb);
     }
     while ((tb = tbl2Worker2.popAny()) != null) {
-      insert(WORKER_ID[1], JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA, tb);
+      insert(workerIDs[1], JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA, tb);
     }
 
     return expectedResult;
@@ -502,8 +501,8 @@ public class SystemTestBase {
   void startWorkers() throws IOException {
     int workerCount = 0;
 
-    for (int i = 0; i < WORKER_ID.length; i++) {
-      final int workerID = WORKER_ID[i];
+    for (int i = 0; i < workerIDs.length; i++) {
+      final int workerID = workerIDs[i];
       final String workingDir = FilenameUtils.concat(workerTestBaseFolder, "worker_" + workerID);
 
       String cp = System.getProperty("java.class.path");

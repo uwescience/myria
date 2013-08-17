@@ -112,13 +112,13 @@ public class MultithreadScanTest extends SystemTestBase {
     expectedTBBCopy.merge(expectedTBB);
     final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
 
-    createTable(WORKER_ID[0], testtableKey, "follower long, followee long");
-    createTable(WORKER_ID[1], testtableKey, "follower long, followee long");
+    createTable(workerIDs[0], testtableKey, "follower long, followee long");
+    createTable(workerIDs[1], testtableKey, "follower long, followee long");
     // }
     TupleBatch tb = null;
     while ((tb = tbl1Worker1.popAny()) != null) {
-      insert(WORKER_ID[0], testtableKey, tableSchema, tb);
-      insert(WORKER_ID[1], testtableKey, tableSchema, tb);
+      insert(workerIDs[0], testtableKey, tableSchema, tb);
+      insert(workerIDs[1], testtableKey, tableSchema, tb);
     }
 
     final DbQueryScan scan1 = new DbQueryScan(testtableKey, tableSchema);
@@ -131,11 +131,11 @@ public class MultithreadScanTest extends SystemTestBase {
     final CollectProducer cp = new CollectProducer(de, serverReceiveID, MASTER_ID);
 
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
-    workerPlans.put(WORKER_ID[0], new RootOperator[] { cp });
-    workerPlans.put(WORKER_ID[1], new RootOperator[] { cp });
+    workerPlans.put(workerIDs[0], new RootOperator[] { cp });
+    workerPlans.put(workerIDs[1], new RootOperator[] { cp });
 
     final CollectConsumer serverCollect =
-        new CollectConsumer(tableSchema, serverReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
+        new CollectConsumer(tableSchema, serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
     final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
     final SinkRoot serverPlan = new SinkRoot(queueStore);
@@ -177,12 +177,12 @@ public class MultithreadScanTest extends SystemTestBase {
 
     final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
 
-    createTable(WORKER_ID[0], testtableKey, "follower long, followee long");
-    createTable(WORKER_ID[1], testtableKey, "follower long, followee long");
+    createTable(workerIDs[0], testtableKey, "follower long, followee long");
+    createTable(workerIDs[1], testtableKey, "follower long, followee long");
     TupleBatch tb = null;
     while ((tb = tbl1Worker1.popAny()) != null) {
-      insert(WORKER_ID[0], testtableKey, tableSchema, tb);
-      insert(WORKER_ID[1], testtableKey, tableSchema, tb);
+      insert(workerIDs[0], testtableKey, tableSchema, tb);
+      insert(workerIDs[1], testtableKey, tableSchema, tb);
     }
 
     final DbQueryScan scan1 = new DbQueryScan(testtableKey, tableSchema);
@@ -203,22 +203,22 @@ public class MultithreadScanTest extends SystemTestBase {
     ExchangePairID arrayID1, arrayID2;
     arrayID1 = ExchangePairID.newID();
     arrayID2 = ExchangePairID.newID();
-    final ShuffleProducer sp1 = new ShuffleProducer(de1, arrayID1, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf0);
-    final ShuffleProducer sp2 = new ShuffleProducer(de2, arrayID2, new int[] { WORKER_ID[0], WORKER_ID[1] }, pf0);
+    final ShuffleProducer sp1 = new ShuffleProducer(de1, arrayID1, new int[] { workerIDs[0], workerIDs[1] }, pf0);
+    final ShuffleProducer sp2 = new ShuffleProducer(de2, arrayID2, new int[] { workerIDs[0], workerIDs[1] }, pf0);
     final ShuffleConsumer sc1 =
-        new ShuffleConsumer(sp1.getSchema(), arrayID1, new int[] { WORKER_ID[0], WORKER_ID[1] });
+        new ShuffleConsumer(sp1.getSchema(), arrayID1, new int[] { workerIDs[0], workerIDs[1] });
     final ShuffleConsumer sc2 =
-        new ShuffleConsumer(sp2.getSchema(), arrayID2, new int[] { WORKER_ID[0], WORKER_ID[1] });
+        new ShuffleConsumer(sp2.getSchema(), arrayID2, new int[] { workerIDs[0], workerIDs[1] });
     final Merge merge = new Merge(new Operator[] { sc1, sc2 });
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final CollectProducer cp = new CollectProducer(merge, serverReceiveID, MASTER_ID);
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
-    workerPlans.put(WORKER_ID[0], new RootOperator[] { cp, sp1, sp2 });
-    workerPlans.put(WORKER_ID[1], new RootOperator[] { cp, sp1, sp2 });
+    workerPlans.put(workerIDs[0], new RootOperator[] { cp, sp1, sp2 });
+    workerPlans.put(workerIDs[1], new RootOperator[] { cp, sp1, sp2 });
 
     final CollectConsumer serverCollect =
-        new CollectConsumer(tableSchema, serverReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
+        new CollectConsumer(tableSchema, serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
     final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
     final SinkRoot serverPlan = new SinkRoot(queueStore);

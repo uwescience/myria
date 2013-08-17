@@ -29,8 +29,8 @@ public class QueryKillTest extends SystemTestBase {
   @Test(expected = QueryKilledException.class)
   public void killQueryTest() throws Throwable {
     final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
-    createTable(WORKER_ID[0], testtableKey, "id long, name varchar(20)");
-    createTable(WORKER_ID[1], testtableKey, "id long, name varchar(20)");
+    createTable(workerIDs[0], testtableKey, "id long, name varchar(20)");
+    createTable(workerIDs[1], testtableKey, "id long, name varchar(20)");
 
     final int numTuples = TupleBatch.BATCH_SIZE * 10;
 
@@ -46,13 +46,13 @@ public class QueryKillTest extends SystemTestBase {
       while ((tb = tbb.popFilled()) != null) {
         LOGGER.debug("Insert a TB into testbed. #" + numTB + ".");
         numTB++;
-        insert(WORKER_ID[0], testtableKey, schema, tb);
-        insert(WORKER_ID[1], testtableKey, schema, tb);
+        insert(workerIDs[0], testtableKey, schema, tb);
+        insert(workerIDs[1], testtableKey, schema, tb);
       }
     }
     if ((tb = tbb.popAny()) != null) {
-      insert(WORKER_ID[0], testtableKey, schema, tb);
-      insert(WORKER_ID[1], testtableKey, schema, tb);
+      insert(workerIDs[0], testtableKey, schema, tb);
+      insert(workerIDs[1], testtableKey, schema, tb);
     }
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
@@ -61,15 +61,15 @@ public class QueryKillTest extends SystemTestBase {
 
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
     final CollectProducer cp1 = new CollectProducer(scanTable, serverReceiveID, MASTER_ID);
-    workerPlans.put(WORKER_ID[0], new RootOperator[] { cp1 });
+    workerPlans.put(workerIDs[0], new RootOperator[] { cp1 });
 
     final DelayInjector di = new DelayInjector(1, TimeUnit.SECONDS, scanTable); // totally delay 10 seconds.
     final CollectProducer cp2 = new CollectProducer(di, serverReceiveID, MASTER_ID);
 
-    workerPlans.put(WORKER_ID[1], new RootOperator[] { cp2 });
+    workerPlans.put(workerIDs[1], new RootOperator[] { cp2 });
 
     final CollectConsumer serverCollect =
-        new CollectConsumer(schema, serverReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
+        new CollectConsumer(schema, serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
 
     final SinkRoot serverPlan = new SinkRoot(serverCollect);
 

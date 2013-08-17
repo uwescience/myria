@@ -85,25 +85,25 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     final PartitionFunction<String, Integer> pf0 = new SingleFieldHashPartitionFunction(numPartition);
     pf0.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
     final ExchangePairID arrayID1 = ExchangePairID.newID();
-    final ShuffleProducer sp1 = new ShuffleProducer(scan1, arrayID1, WORKER_ID, pf0);
+    final ShuffleProducer sp1 = new ShuffleProducer(scan1, arrayID1, workerIDs, pf0);
     // PF1 : followee (field 1 of the tuple)
     final PartitionFunction<String, Integer> pf1 = new SingleFieldHashPartitionFunction(numPartition);
     pf1.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1);
     final ExchangePairID arrayID2 = ExchangePairID.newID();
-    final ShuffleProducer sp2 = new ShuffleProducer(scan2, arrayID2, WORKER_ID, pf1);
+    final ShuffleProducer sp2 = new ShuffleProducer(scan2, arrayID2, workerIDs, pf1);
 
     /* Each worker receives both partitions, then joins on them. */
     // SC1: receive based on followee (PF1, so SP2 and arrayID2)
-    final ShuffleConsumer sc1 = new ShuffleConsumer(sp2.getSchema(), arrayID2, WORKER_ID);
+    final ShuffleConsumer sc1 = new ShuffleConsumer(sp2.getSchema(), arrayID2, workerIDs);
     // SC2: receive based on follower (PF0, so SP1 and arrayID1)
-    final ShuffleConsumer sc2 = new ShuffleConsumer(sp1.getSchema(), arrayID1, WORKER_ID);
+    final ShuffleConsumer sc2 = new ShuffleConsumer(sp1.getSchema(), arrayID1, workerIDs);
     // Join on SC1.followee=SC2.follower
     final LocalJoin localProjJoin =
         new LocalJoin(sc1, sc2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
     /* Now reshuffle the results to partition based on the new followee, so that we can dupelim. */
     final ExchangePairID arrayID0 = ExchangePairID.newID();
-    final ShuffleProducer sp0 = new ShuffleProducer(localProjJoin, arrayID0, WORKER_ID, pf0);
-    final ShuffleConsumer sc0 = new ShuffleConsumer(sp0.getSchema(), arrayID0, WORKER_ID);
+    final ShuffleProducer sp0 = new ShuffleProducer(localProjJoin, arrayID0, workerIDs, pf0);
+    final ShuffleConsumer sc0 = new ShuffleConsumer(sp0.getSchema(), arrayID0, workerIDs);
     final DupElim dupelim = new DupElim(sc0);
     final Aggregate count = new Aggregate(dupelim, new int[] { 0 }, new int[] { Aggregator.AGG_OP_COUNT });
 
@@ -113,12 +113,12 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
 
     /* Send the worker plans, rooted by CP, to the workers. Note that the plans are identical. */
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
-    workerPlans.put(WORKER_ID[0], new RootOperator[] { cp, sp1, sp2, sp0 });
-    workerPlans.put(WORKER_ID[1], new RootOperator[] { cp, sp1, sp2, sp0 });
+    workerPlans.put(workerIDs[0], new RootOperator[] { cp, sp1, sp2, sp0 });
+    workerPlans.put(workerIDs[1], new RootOperator[] { cp, sp1, sp2, sp0 });
 
     /* The server plan. Basically, collect and count tuples. */
     final Schema collectSchema = new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("COUNT"));
-    final CollectConsumer collectCounts = new CollectConsumer(collectSchema, serverReceiveID, WORKER_ID);
+    final CollectConsumer collectCounts = new CollectConsumer(collectSchema, serverReceiveID, workerIDs);
     Aggregate sumCount = new Aggregate(collectCounts, new int[] { 0 }, new int[] { Aggregator.AGG_OP_SUM });
     final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
     TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, sumCount);
@@ -152,18 +152,18 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     final PartitionFunction<String, Integer> pf0 = new SingleFieldHashPartitionFunction(numPartition);
     pf0.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
     final ExchangePairID arrayID1 = ExchangePairID.newID();
-    final ShuffleProducer sp1 = new ShuffleProducer(scan1, arrayID1, WORKER_ID, pf0);
+    final ShuffleProducer sp1 = new ShuffleProducer(scan1, arrayID1, workerIDs, pf0);
     // PF1 : followee (field 1 of the tuple)
     final PartitionFunction<String, Integer> pf1 = new SingleFieldHashPartitionFunction(numPartition);
     pf1.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1);
     final ExchangePairID arrayID2 = ExchangePairID.newID();
-    final ShuffleProducer sp2 = new ShuffleProducer(scan2, arrayID2, WORKER_ID, pf1);
+    final ShuffleProducer sp2 = new ShuffleProducer(scan2, arrayID2, workerIDs, pf1);
 
     /* Each worker receives both partitions, then joins on them. */
     // SC1: receive based on followee (PF1, so SP2 and arrayID2)
-    final ShuffleConsumer sc1 = new ShuffleConsumer(sp2.getSchema(), arrayID2, WORKER_ID);
+    final ShuffleConsumer sc1 = new ShuffleConsumer(sp2.getSchema(), arrayID2, workerIDs);
     // SC2: receive based on follower (PF0, so SP1 and arrayID1)
-    final ShuffleConsumer sc2 = new ShuffleConsumer(sp1.getSchema(), arrayID1, WORKER_ID);
+    final ShuffleConsumer sc2 = new ShuffleConsumer(sp1.getSchema(), arrayID1, workerIDs);
     // Join on SC1.followee=SC2.follower
     final LocalJoin localjoin =
         new LocalJoin(sc1, sc2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
@@ -171,8 +171,8 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     final Project proj = new Project(new int[] { 0, 3 }, localjoin);
     /* Now reshuffle the results to partition based on the new followee, so that we can dupelim. */
     final ExchangePairID arrayID0 = ExchangePairID.newID();
-    final ShuffleProducer sp0 = new ShuffleProducer(proj, arrayID0, WORKER_ID, pf0);
-    final ShuffleConsumer sc0 = new ShuffleConsumer(sp0.getSchema(), arrayID0, WORKER_ID);
+    final ShuffleProducer sp0 = new ShuffleProducer(proj, arrayID0, workerIDs, pf0);
+    final ShuffleConsumer sc0 = new ShuffleConsumer(sp0.getSchema(), arrayID0, workerIDs);
     final DupElim dupelim = new DupElim(sc0);
 
     /* Finally, send (CollectProduce) all the results to the master. */
@@ -181,11 +181,11 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
 
     /* Send the worker plans, rooted by CP, to the workers. Note that the plans are identical. */
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
-    workerPlans.put(WORKER_ID[0], new RootOperator[] { cp, sp1, sp2, sp0 });
-    workerPlans.put(WORKER_ID[1], new RootOperator[] { cp, sp1, sp2, sp0 });
+    workerPlans.put(workerIDs[0], new RootOperator[] { cp, sp1, sp2, sp0 });
+    workerPlans.put(workerIDs[1], new RootOperator[] { cp, sp1, sp2, sp0 });
 
     /* The server plan. Basically, collect and count tuples. */
-    final CollectConsumer collect = new CollectConsumer(cp.getSchema(), serverReceiveID, WORKER_ID);
+    final CollectConsumer collect = new CollectConsumer(cp.getSchema(), serverReceiveID, workerIDs);
     final SinkRoot serverPlan = new SinkRoot(collect);
 
     server.submitQueryPlan(serverPlan, workerPlans).sync();
@@ -216,25 +216,25 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     final PartitionFunction<String, Integer> pf0 = new SingleFieldHashPartitionFunction(numPartition);
     pf0.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
     final ExchangePairID arrayID1 = ExchangePairID.newID();
-    final ShuffleProducer sp1 = new ShuffleProducer(scan1, arrayID1, WORKER_ID, pf0);
+    final ShuffleProducer sp1 = new ShuffleProducer(scan1, arrayID1, workerIDs, pf0);
     // PF1 : followee (field 1 of the tuple)
     final PartitionFunction<String, Integer> pf1 = new SingleFieldHashPartitionFunction(numPartition);
     pf1.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1);
     final ExchangePairID arrayID2 = ExchangePairID.newID();
-    final ShuffleProducer sp2 = new ShuffleProducer(scan2, arrayID2, WORKER_ID, pf1);
+    final ShuffleProducer sp2 = new ShuffleProducer(scan2, arrayID2, workerIDs, pf1);
 
     /* Each worker receives both partitions, then joins on them. */
     // SC1: receive based on followee (PF1, so SP2 and arrayID2)
-    final ShuffleConsumer sc1 = new ShuffleConsumer(sp2.getSchema(), arrayID2, WORKER_ID);
+    final ShuffleConsumer sc1 = new ShuffleConsumer(sp2.getSchema(), arrayID2, workerIDs);
     // SC2: receive based on follower (PF0, so SP1 and arrayID1)
-    final ShuffleConsumer sc2 = new ShuffleConsumer(sp1.getSchema(), arrayID1, WORKER_ID);
+    final ShuffleConsumer sc2 = new ShuffleConsumer(sp1.getSchema(), arrayID1, workerIDs);
     // Join on SC1.followee=SC2.follower
     final LocalJoin localProjJoin =
         new LocalJoin(sc1, sc2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
     /* Now reshuffle the results to partition based on the new followee, so that we can dupelim. */
     final ExchangePairID arrayID0 = ExchangePairID.newID();
-    final ShuffleProducer sp0 = new ShuffleProducer(localProjJoin, arrayID0, WORKER_ID, pf0);
-    final ShuffleConsumer sc0 = new ShuffleConsumer(sp0.getSchema(), arrayID0, WORKER_ID);
+    final ShuffleProducer sp0 = new ShuffleProducer(localProjJoin, arrayID0, workerIDs, pf0);
+    final ShuffleConsumer sc0 = new ShuffleConsumer(sp0.getSchema(), arrayID0, workerIDs);
     final DupElim dupelim = new DupElim(sc0);
 
     /* Finally, send (CollectProduce) all the results to the master. */
@@ -243,11 +243,11 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
 
     /* Send the worker plans, rooted by CP, to the workers. Note that the plans are identical. */
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
-    workerPlans.put(WORKER_ID[0], new RootOperator[] { cp, sp1, sp2, sp0 });
-    workerPlans.put(WORKER_ID[1], new RootOperator[] { cp, sp1, sp2, sp0 });
+    workerPlans.put(workerIDs[0], new RootOperator[] { cp, sp1, sp2, sp0 });
+    workerPlans.put(workerIDs[1], new RootOperator[] { cp, sp1, sp2, sp0 });
 
     /* The server plan. Basically, collect and count tuples. */
-    final CollectConsumer collect = new CollectConsumer(cp.getSchema(), serverReceiveID, WORKER_ID);
+    final CollectConsumer collect = new CollectConsumer(cp.getSchema(), serverReceiveID, workerIDs);
     final SinkRoot serverPlan = new SinkRoot(collect);
 
     server.submitQueryPlan(serverPlan, workerPlans).sync();
