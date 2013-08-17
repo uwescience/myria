@@ -9,10 +9,13 @@ import java.io.InputStreamReader;
 import java.lang.ProcessBuilder.Redirect;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -45,6 +48,7 @@ import edu.washington.escience.myria.coordinator.catalog.CatalogMaker;
 import edu.washington.escience.myria.coordinator.catalog.WorkerCatalog;
 import edu.washington.escience.myria.daemon.MasterDaemon;
 import edu.washington.escience.myria.parallel.Server;
+import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.parallel.Worker;
 import edu.washington.escience.myria.util.FSUtils;
 import edu.washington.escience.myria.util.SQLiteUtils;
@@ -146,18 +150,19 @@ public class SystemTestBase {
 
   public static final int DEFAULT_REST_PORT = 8753;
 
+  public int WORKER_BOOTUP_TIMEOUT_IN_SECOND = 10; // wait for 10 seconds for workers to get booted
+
   public volatile int masterPort;
-  public volatile int[] workerPorts;
   public volatile int masterDaemonPort = DEFAULT_REST_PORT;
 
-  public static final int[] WORKER_ID = { 1, 2 };
-
-  // public static final int[] DEFAULT_WORKER_PORTS = { 9001, 9002 };
   public static final int DEFAULT_WORKER_STARTING_PORT = 9001;
 
   public static Process SERVER_PROCESS;
-  public static final Process[] workerProcess = new Process[WORKER_ID.length];
-  public static final Thread[] workerStdoutReader = new Thread[WORKER_ID.length];
+
+  public volatile int[] workerIDs;
+  public volatile int[] workerPorts;
+  public volatile Process[] workerProcess;
+  public volatile Thread[] workerStdoutReader;
 
   public static String workerTestBaseFolder;
 
@@ -230,15 +235,24 @@ public class SystemTestBase {
   }
 
   public Map<String, String> getMasterConfigurations() {
-    HashMap<String, String> mc = new HashMap<String, String>();
-    mc.put(MyriaSystemConfigKeys.IPC_SERVER_PORT, DEFAULT_MASTER_PORT_ + "");
-    return mc;
+    return Collections.<String, String> emptyMap();
   }
 
   public Map<String, String> getWorkerConfigurations() {
-    HashMap<String, String> wc = new HashMap<String, String>();
-    wc.put(MyriaSystemConfigKeys.IPC_SERVER_PORT, DEFAULT_WORKER_STARTING_PORT + "");
-    return wc;
+    return Collections.<String, String> emptyMap();
+  }
+
+  public Map<Integer, SocketInfo> getMasters() {
+    HashMap<Integer, SocketInfo> m = new HashMap<Integer, SocketInfo>();
+    m.put(MyriaConstants.MASTER_ID, new SocketInfo(DEFAULT_MASTER_PORT_));
+    return m;
+  }
+
+  public Map<Integer, SocketInfo> getWorkers() {
+    HashMap<Integer, SocketInfo> m = new HashMap<Integer, SocketInfo>();
+    m.put(1, new SocketInfo(DEFAULT_WORKER_STARTING_PORT));
+    m.put(2, new SocketInfo(DEFAULT_WORKER_STARTING_PORT + 1));
+    return m;
   }
 
   @Before
@@ -250,21 +264,27 @@ public class SystemTestBase {
     workerTestBaseFolder = tempFilePath.toFile().getAbsolutePath();
     Map<String, String> masterConfigs = getMasterConfigurations();
     Map<String, String> workerConfigs = getWorkerConfigurations();
-    String masterPortStr = masterConfigs.get(MyriaSystemConfigKeys.IPC_SERVER_PORT);
-    if (masterPortStr == null) {
-      masterPortStr = DEFAULT_MASTER_PORT_ + "";
-      masterConfigs.put(MyriaSystemConfigKeys.IPC_SERVER_PORT, masterPortStr);
+
+    Map<Integer, SocketInfo> masters = getMasters();
+    Map<Integer, SocketInfo> workers = getWorkers();
+
+    CatalogMaker.makeNNodesLocalParallelCatalog(workerTestBaseFolder, masters, workers, masterConfigs, workerConfigs);
+
+    for (Entry<Integer, SocketInfo> master : masters.entrySet()) {
+      masterPort = master.getValue().getPort();
     }
-    masterPort = Integer.valueOf(masterPortStr);
-    workerPorts = new int[2];
-    String workerStartingPortStr = workerConfigs.get(MyriaSystemConfigKeys.IPC_SERVER_PORT);
-    if (workerStartingPortStr == null) {
-      workerStartingPortStr = DEFAULT_WORKER_STARTING_PORT + "";
-      workerConfigs.put(MyriaSystemConfigKeys.IPC_SERVER_PORT, workerStartingPortStr);
+
+    workerPorts = new int[workers.size()];
+    workerIDs = new int[workerPorts.length];
+    workerProcess = new Process[workerPorts.length];
+    workerStdoutReader = new Thread[workerPorts.length];
+
+    int i = 0;
+    for (Entry<Integer, SocketInfo> worker : workers.entrySet()) {
+      workerPorts[i] = worker.getValue().getPort();
+      workerIDs[i] = worker.getKey();
+      i++;
     }
-    workerPorts[0] = Integer.valueOf(workerStartingPortStr);
-    workerPorts[1] = workerPorts[0] + 1;
-    CatalogMaker.makeNNodesLocalParallelCatalog(workerTestBaseFolder, 2, masterConfigs, workerConfigs);
 
     if (!AvailablePortFinder.available(masterPort)) {
       throw new RuntimeException("Unable to start master, port " + masterPort + " is taken");
@@ -283,11 +303,18 @@ public class SystemTestBase {
 
     /* Wait until all the workers have connected to the master. */
     Set<Integer> targetWorkers = new HashSet<Integer>();
-    for (int i : WORKER_ID) {
-      targetWorkers.add(i);
+    for (int j : workerIDs) {
+      targetWorkers.add(j);
     }
-    while (!server.getAliveWorkers().containsAll(targetWorkers)) {
-      Thread.sleep(10);
+
+    long milliTimeout = TimeUnit.SECONDS.toMillis(WORKER_BOOTUP_TIMEOUT_IN_SECOND);
+    for (long start = System.currentTimeMillis(); !server.getAliveWorkers().containsAll(targetWorkers)
+        && System.currentTimeMillis() - start < milliTimeout;) {
+      Thread.sleep(500);
+    }
+    targetWorkers.removeAll(server.getAliveWorkers());
+    if (!targetWorkers.isEmpty()) {
+      throw new IllegalStateException("Workers: " + targetWorkers + " booting up timout");
     }
 
     // for setting breakpoint
@@ -301,15 +328,15 @@ public class SystemTestBase {
         data);
   }
 
-  public static HashMap<Tuple, Integer> simpleRandomJoinTestBase() throws CatalogException, IOException, DbException {
+  protected HashMap<Tuple, Integer> simpleRandomJoinTestBase() throws CatalogException, IOException, DbException {
     /* worker 1 partition of table1 */
-    createTable(WORKER_ID[0], JOIN_TEST_TABLE_1, "id long, name varchar(20)");
+    createTable(workerIDs[0], JOIN_TEST_TABLE_1, "id long, name varchar(20)");
     /* worker 1 partition of table2 */
-    createTable(WORKER_ID[0], JOIN_TEST_TABLE_2, "id long, name varchar(20)");
+    createTable(workerIDs[0], JOIN_TEST_TABLE_2, "id long, name varchar(20)");
     /* worker 2 partition of table1 */
-    createTable(WORKER_ID[1], JOIN_TEST_TABLE_1, "id long, name varchar(20)");
+    createTable(workerIDs[1], JOIN_TEST_TABLE_1, "id long, name varchar(20)");
     /* worker 2 partition of table2 */
-    createTable(WORKER_ID[1], JOIN_TEST_TABLE_2, "id long, name varchar(20)");
+    createTable(workerIDs[1], JOIN_TEST_TABLE_2, "id long, name varchar(20)");
 
     final String[] tbl1NamesWorker1 = TestUtils.randomFixedLengthNumericString(1000, 2000, 2, 20);
     final String[] tbl1NamesWorker2 = TestUtils.randomFixedLengthNumericString(1000, 2000, 2, 20);
@@ -365,39 +392,39 @@ public class SystemTestBase {
 
     TupleBatch tb = null;
     while ((tb = tbl1Worker1.popAny()) != null) {
-      insert(WORKER_ID[0], JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA, tb);
+      insert(workerIDs[0], JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA, tb);
     }
     while ((tb = tbl1Worker2.popAny()) != null) {
-      insert(WORKER_ID[1], JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA, tb);
+      insert(workerIDs[1], JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA, tb);
     }
     while ((tb = tbl2Worker1.popAny()) != null) {
-      insert(WORKER_ID[0], JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA, tb);
+      insert(workerIDs[0], JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA, tb);
     }
     while ((tb = tbl2Worker2.popAny()) != null) {
-      insert(WORKER_ID[1], JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA, tb);
+      insert(workerIDs[1], JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA, tb);
     }
 
     return expectedResult;
 
   }
 
-  public static HashMap<Tuple, Integer> simpleFixedJoinTestBase() throws CatalogException, IOException, DbException {
-    createTable(WORKER_ID[0], JOIN_TEST_TABLE_1, "id long, name varchar(20)"); // worker
+  protected HashMap<Tuple, Integer> simpleFixedJoinTestBase() throws CatalogException, IOException, DbException {
+    createTable(workerIDs[0], JOIN_TEST_TABLE_1, "id long, name varchar(20)"); // worker
                                                                                // 1
                                                                                // partition
                                                                                // of
     // table1
-    createTable(WORKER_ID[0], JOIN_TEST_TABLE_2, "id long, name varchar(20)"); // worker
+    createTable(workerIDs[0], JOIN_TEST_TABLE_2, "id long, name varchar(20)"); // worker
                                                                                // 1
                                                                                // partition
                                                                                // of
     // table2
-    createTable(WORKER_ID[1], JOIN_TEST_TABLE_1, "id long, name varchar(20)");// worker
+    createTable(workerIDs[1], JOIN_TEST_TABLE_1, "id long, name varchar(20)");// worker
                                                                               // 2
                                                                               // partition
                                                                               // of
     // table1
-    createTable(WORKER_ID[1], JOIN_TEST_TABLE_2, "id long, name varchar(20)");// worker
+    createTable(workerIDs[1], JOIN_TEST_TABLE_2, "id long, name varchar(20)");// worker
                                                                               // 2
                                                                               // partition
                                                                               // of
@@ -448,16 +475,16 @@ public class SystemTestBase {
 
     TupleBatch tb = null;
     while ((tb = tbl1Worker1.popAny()) != null) {
-      insert(WORKER_ID[0], JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA, tb);
+      insert(workerIDs[0], JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA, tb);
     }
     while ((tb = tbl1Worker2.popAny()) != null) {
-      insert(WORKER_ID[1], JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA, tb);
+      insert(workerIDs[1], JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA, tb);
     }
     while ((tb = tbl2Worker1.popAny()) != null) {
-      insert(WORKER_ID[0], JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA, tb);
+      insert(workerIDs[0], JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA, tb);
     }
     while ((tb = tbl2Worker2.popAny()) != null) {
-      insert(WORKER_ID[1], JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA, tb);
+      insert(workerIDs[1], JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA, tb);
     }
 
     return expectedResult;
@@ -481,8 +508,8 @@ public class SystemTestBase {
   void startWorkers() throws IOException {
     int workerCount = 0;
 
-    for (int i = 0; i < WORKER_ID.length; i++) {
-      final int workerID = WORKER_ID[i];
+    for (int i = 0; i < workerIDs.length; i++) {
+      final int workerID = workerIDs[i];
       final String workingDir = FilenameUtils.concat(workerTestBaseFolder, "worker_" + workerID);
 
       String cp = System.getProperty("java.class.path");

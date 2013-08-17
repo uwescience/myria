@@ -72,16 +72,6 @@ public final class MyriaSystemConfigKeys {
    * */
   public static final String WORKER_IDENTIFIER = "worker.identifier";
 
-  /**
-   * .
-   * */
-  public static final String IPC_SERVER_HOSTNAME = "ipc.server.hostname";
-
-  /**
-   * .
-   * */
-  public static final String IPC_SERVER_PORT = "ipc.server.port";
-
   /** */
   public static final String WORKING_DIRECTORY = "working.directory";
   /** */

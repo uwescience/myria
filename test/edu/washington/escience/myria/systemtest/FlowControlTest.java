@@ -46,7 +46,7 @@ public class FlowControlTest extends SystemTestBase {
   @Test
   public void flowControlTest() throws Exception {
     final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
-    createTable(WORKER_ID[0], testtableKey, "id long, name varchar(20)");
+    createTable(workerIDs[0], testtableKey, "id long, name varchar(20)");
 
     final int numTuples = TupleBatch.BATCH_SIZE * 100;
 
@@ -65,17 +65,17 @@ public class FlowControlTest extends SystemTestBase {
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
 
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
-    final CollectProducer cp1 = new CollectProducer(ts, worker1ReceiveID, WORKER_ID[1]);
-    workerPlans.put(WORKER_ID[0], new RootOperator[] { cp1 });
+    final CollectProducer cp1 = new CollectProducer(ts, worker1ReceiveID, workerIDs[1]);
+    workerPlans.put(workerIDs[0], new RootOperator[] { cp1 });
 
-    final CollectConsumer cc1 = new CollectConsumer(schema, worker1ReceiveID, new int[] { WORKER_ID[0] });
+    final CollectConsumer cc1 = new CollectConsumer(schema, worker1ReceiveID, new int[] { workerIDs[0] });
     final DelayInjector di = new DelayInjector(1, TimeUnit.SECONDS, cc1);
     final CollectProducer cp2 = new CollectProducer(di, serverReceiveID, MASTER_ID);
 
-    workerPlans.put(WORKER_ID[0], new RootOperator[] { cp1 });
-    workerPlans.put(WORKER_ID[1], new RootOperator[] { cp2 });
+    workerPlans.put(workerIDs[0], new RootOperator[] { cp1 });
+    workerPlans.put(workerIDs[1], new RootOperator[] { cp2 });
 
-    final CollectConsumer serverCollect = new CollectConsumer(schema, serverReceiveID, new int[] { WORKER_ID[1] });
+    final CollectConsumer serverCollect = new CollectConsumer(schema, serverReceiveID, new int[] { workerIDs[1] });
     final SinkRoot serverPlan = new SinkRoot(serverCollect);
 
     server.submitQueryPlan(serverPlan, workerPlans).sync();

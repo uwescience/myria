@@ -49,7 +49,7 @@ public class SplitDataTest extends SystemTestBase {
     /* Create the shuffle producer. */
     final ExchangePairID shuffleId = ExchangePairID.newID();
     final ShuffleProducer scatter =
-        new ShuffleProducer(source, shuffleId, WORKER_ID, new RoundRobinPartitionFunction(WORKER_ID.length));
+        new ShuffleProducer(source, shuffleId, workerIDs, new RoundRobinPartitionFunction(workerIDs.length));
 
     /* ... and the corresponding shuffle consumer. */
     final ShuffleConsumer gather = new ShuffleConsumer(schema, shuffleId, new int[] { MASTER_ID });
@@ -60,7 +60,7 @@ public class SplitDataTest extends SystemTestBase {
     final DbInsert insert = new DbInsert(gather, tuplesRRKey, true);
 
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
-    for (final int i : WORKER_ID) {
+    for (final int i : workerIDs) {
       workerPlans.put(i, new RootOperator[] { insert });
     }
 
@@ -76,11 +76,11 @@ public class SplitDataTest extends SystemTestBase {
     final ExchangePairID collectId = ExchangePairID.newID();
     final CollectProducer send = new CollectProducer(scanCount, collectId, 0);
     workerPlans.clear();
-    for (final int i : WORKER_ID) {
+    for (final int i : workerIDs) {
       workerPlans.put(i, new RootOperator[] { send });
     }
     /* Create the Server plan: CollectConsumer and Sum. */
-    final CollectConsumer receive = new CollectConsumer(countResultSchema, collectId, WORKER_ID);
+    final CollectConsumer receive = new CollectConsumer(countResultSchema, collectId, workerIDs);
     Aggregate sumCount =
         new Aggregate(receive, new int[] { 0 }, new int[] { Aggregator.AGG_OP_SUM | Aggregator.AGG_OP_COUNT });
     final LinkedBlockingQueue<TupleBatch> aggResult = new LinkedBlockingQueue<TupleBatch>();
@@ -93,7 +93,7 @@ public class SplitDataTest extends SystemTestBase {
     TupleBatch result = aggResult.take();
 
     /* Sanity-check the results, sum them, then confirm. */
-    assertTrue(result.getLong(0, 0) == WORKER_ID.length);
+    assertTrue(result.getLong(0, 0) == workerIDs.length);
 
     LOGGER.debug("numTuplesInsert=" + numTuplesInserted + ", sum=" + result.getObject(0, 0));
     assertTrue(result.getLong(1, 0) == numTuplesInserted);

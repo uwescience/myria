@@ -1,17 +1,17 @@
 package edu.washington.escience.myria.coordinator.catalog;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.commons.io.FilenameUtils;
+import org.ini4j.Wini;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -21,6 +21,7 @@ import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
+import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.tool.MyriaConfigurationReader;
 
 /**
@@ -53,50 +54,32 @@ public final class CatalogMaker {
   }
 
   /**
-   * Creates a Catalog for an N-node parallel system on the local machine and the corresponding WorkerCatalogs.
-   * 
-   * @param directoryName the directory where all the files should be stored.
-   * @param n the number of nodes.
-   * @throws IOException if the catalog file already exists.
-   */
-  public static void makeNNodesLocalParallelCatalog(final String directoryName, final int n) throws IOException {
-    HashMap<String, String> mc = new HashMap<String, String>();
-    mc.put(MyriaSystemConfigKeys.IPC_SERVER_PORT, "8001");
-    HashMap<String, String> wc = new HashMap<String, String>();
-    wc.put(MyriaSystemConfigKeys.IPC_SERVER_PORT, "9001");
-    makeNNodesLocalParallelCatalog(directoryName, n, mc, wc);
-  }
-
-  /**
    * Creates a Catalog for an N-node parallel system on the local machine and the corresponding WorkerCatalogs with
    * worker configurations.
    * 
    * @param directoryName the directory where all the files should be stored.
-   * @param n the number of nodes.
+   * @param masters the masters
+   * @param workers the workers
    * @param masterConfigurations the configurations for the master
    * @param workerConfigurations the configurations for the worker
    * @throws IOException if the catalog file already exists.
    */
-  public static void makeNNodesLocalParallelCatalog(final String directoryName, final int n,
-      final Map<String, String> masterConfigurations, final Map<String, String> workerConfigurations)
-      throws IOException {
-
+  public static void makeNNodesLocalParallelCatalog(final String directoryName, final Map<Integer, SocketInfo> masters,
+      final Map<Integer, SocketInfo> workers, final Map<String, String> masterConfigurations,
+      final Map<String, String> workerConfigurations) throws IOException {
     final String[] args = new String[2];
     args[1] = directoryName;
-    File temp = File.createTempFile("localMyriaConfig", ".cfg");
-    BufferedWriter writer = new BufferedWriter(new FileWriter(temp));
-    writer.write("[deployment]\n");
-    writer.write("path = " + directoryName + "\n");
-    /* make description = null to distinguish with deploying using deployment.cfg. */
-    writer.write("[master]\n");
-    writer.write("0 = localhost:" + masterConfigurations.get(MyriaSystemConfigKeys.IPC_SERVER_PORT) + "\n");
-    writer.write("[workers]\n");
-    final int baseWorkerPort = Integer.valueOf(workerConfigurations.get(MyriaSystemConfigKeys.IPC_SERVER_PORT));
-    for (int i = 1; i <= n; ++i) {
-      writer.write(i + " = localhost:" + (baseWorkerPort + i) + "\n");
+    File deployFile = File.createTempFile("localMyriaConfig", ".cfg", new File(directoryName));
+    Wini confIni = new Wini(deployFile);
+    confIni.put("deployment", "path", directoryName);
+    for (Entry<Integer, SocketInfo> m : masters.entrySet()) {
+      confIni.put("master", Integer.toString(m.getKey()), m.getValue().toString());
     }
-    writer.close();
-    args[0] = temp.getAbsolutePath();
+    for (Entry<Integer, SocketInfo> w : workers.entrySet()) {
+      confIni.put("workers", Integer.toString(w.getKey()), w.getValue().toString());
+    }
+    confIni.store();
+    args[0] = deployFile.getAbsolutePath();
     makeNNodesParallelCatalog(args, masterConfigurations, workerConfigurations);
   }
 
@@ -117,7 +100,7 @@ public final class CatalogMaker {
 
     /* The server configuration. */
     final String configFileName = args[0];
-    Map<String, HashMap<String, String>> config = READER.load(configFileName);
+    Map<String, Map<String, String>> config = READER.load(configFileName);
     MasterCatalog c = null;
     try {
       String catalogLocation;
@@ -189,7 +172,7 @@ public final class CatalogMaker {
    * @param overwrite true/false if want to overwrite old catalog.
    */
   public static void makeOneWorkerCatalog(final String workerId, final String catalogLocation,
-      final Map<String, HashMap<String, String>> config, final Map<String, String> workerConfigurations,
+      final Map<String, Map<String, String>> config, final Map<String, String> workerConfigurations,
       final boolean overwrite) {
 
     /* Start by making the directory for the worker */

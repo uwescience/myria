@@ -66,14 +66,14 @@ public class LocalMultiwayProducerTest extends SystemTestBase {
       }
     }
 
-    createTable(WORKER_ID[0], testtableKey, "follower long, followee long");
-    createTable(WORKER_ID[1], testtableKey, "follower long, followee long");
+    createTable(workerIDs[0], testtableKey, "follower long, followee long");
+    createTable(workerIDs[1], testtableKey, "follower long, followee long");
     TupleBatch tb = null;
     while ((tb = tbl1.popAny()) != null) {
-      insert(WORKER_ID[0], testtableKey, tableSchema, tb);
+      insert(workerIDs[0], testtableKey, tableSchema, tb);
     }
     while ((tb = tbl2.popAny()) != null) {
-      insert(WORKER_ID[1], testtableKey, tableSchema, tb);
+      insert(workerIDs[1], testtableKey, tableSchema, tb);
     }
 
     final DbQueryScan scan1 = new DbQueryScan(testtableKey, tableSchema);
@@ -96,11 +96,11 @@ public class LocalMultiwayProducerTest extends SystemTestBase {
     final CollectProducer cp2 = new CollectProducer(merge2, serverReceiveID, MASTER_ID);
 
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
-    workerPlans.put(WORKER_ID[0], new RootOperator[] { multiProducer1, cp1 });
-    workerPlans.put(WORKER_ID[1], new RootOperator[] { multiProducer2, cp2 });
+    workerPlans.put(workerIDs[0], new RootOperator[] { multiProducer1, cp1 });
+    workerPlans.put(workerIDs[1], new RootOperator[] { multiProducer2, cp2 });
 
     final CollectConsumer serverCollect =
-        new CollectConsumer(tableSchema, serverReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
+        new CollectConsumer(tableSchema, serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
     final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
     SinkRoot serverPlan = new SinkRoot(queueStore);

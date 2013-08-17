@@ -51,10 +51,10 @@ public class ShuffleSQLiteTest extends SystemTestBase {
     final RelationKey temptable1Key = RelationKey.of("test", "test", "temptable1");
     final RelationKey temptable2Key = RelationKey.of("test", "test", "temptable2");
 
-    createTable(WORKER_ID[0], temptable1Key, "id int, name varchar(20)");
-    createTable(WORKER_ID[0], temptable2Key, "id int, name varchar(20)");
-    createTable(WORKER_ID[1], temptable1Key, "id int, name varchar(20)");
-    createTable(WORKER_ID[1], temptable2Key, "id int, name varchar(20)");
+    createTable(workerIDs[0], temptable1Key, "id int, name varchar(20)");
+    createTable(workerIDs[0], temptable2Key, "id int, name varchar(20)");
+    createTable(workerIDs[1], temptable1Key, "id int, name varchar(20)");
+    createTable(workerIDs[1], temptable2Key, "id int, name varchar(20)");
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID(); // for CollectOperator
     final ExchangePairID shuffle1ID = ExchangePairID.newID(); // for ShuffleOperator
@@ -74,14 +74,14 @@ public class ShuffleSQLiteTest extends SystemTestBase {
     /* Set shuffle producers, sp1, sp2 , which load data from scan1, scan 2 */
     final DbQueryScan scan1 = new DbQueryScan(testtable1Key, schema);
     final DbQueryScan scan2 = new DbQueryScan(testtable2Key, schema);
-    final ShuffleProducer sp1 = new ShuffleProducer(scan1, shuffle1ID, WORKER_ID, pf);
-    final ShuffleProducer sp2 = new ShuffleProducer(scan2, shuffle2ID, WORKER_ID, pf);
+    final ShuffleProducer sp1 = new ShuffleProducer(scan1, shuffle1ID, workerIDs, pf);
+    final ShuffleProducer sp2 = new ShuffleProducer(scan2, shuffle2ID, workerIDs, pf);
 
     /* Set shuffle consumers, sc1, sc2, which received data and store as new table temptable1 and 2 */
-    final ShuffleConsumer sc1 = new ShuffleConsumer(sp1.getSchema(), shuffle1ID, WORKER_ID);
+    final ShuffleConsumer sc1 = new ShuffleConsumer(sp1.getSchema(), shuffle1ID, workerIDs);
     final BlockingSQLiteDataReceiver buffer1 = new BlockingSQLiteDataReceiver(temptable1Key, sc1);
 
-    final ShuffleConsumer sc2 = new ShuffleConsumer(sp2.getSchema(), shuffle2ID, WORKER_ID);
+    final ShuffleConsumer sc2 = new ShuffleConsumer(sp2.getSchema(), shuffle2ID, workerIDs);
     final BlockingSQLiteDataReceiver buffer2 = new BlockingSQLiteDataReceiver(temptable2Key, sc2);
 
     /* Set collect producer which will send data inner-joined */
@@ -95,12 +95,12 @@ public class ShuffleSQLiteTest extends SystemTestBase {
 
     /* Set worker plans */
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
-    workerPlans.put(WORKER_ID[0], new RootOperator[] { cp, sp1, sp2 });
-    workerPlans.put(WORKER_ID[1], new RootOperator[] { cp, sp1, sp2 });
+    workerPlans.put(workerIDs[0], new RootOperator[] { cp, sp1, sp2 });
+    workerPlans.put(workerIDs[1], new RootOperator[] { cp, sp1, sp2 });
 
     /* Prepare collect consumers */
     final CollectConsumer serverCollect =
-        new CollectConsumer(outputSchema, serverReceiveID, new int[] { WORKER_ID[0], WORKER_ID[1] });
+        new CollectConsumer(outputSchema, serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
     final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
     final SinkRoot serverPlan = new SinkRoot(queueStore);

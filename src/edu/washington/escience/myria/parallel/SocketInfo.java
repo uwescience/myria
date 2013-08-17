@@ -60,6 +60,17 @@ public final class SocketInfo implements Serializable {
     this.port = port;
   }
 
+  /**
+   * Local address.
+   * 
+   * @param port as usual, 16-bit port.
+   * */
+  public SocketInfo(final int port) {
+    Objects.requireNonNull(port);
+    host = "localhost";
+    this.port = port;
+  }
+
   @Override
   public boolean equals(final Object other) {
     if (this == other) {

@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -38,7 +37,7 @@ public final class DeploymentUtils {
     }
     final String configFileName = args[0];
 
-    Map<String, HashMap<String, String>> config = READER.load(configFileName);
+    Map<String, Map<String, String>> config = READER.load(configFileName);
     String description = config.get("deployment").get("name");
     String username = config.get("deployment").get("username");
 
@@ -47,7 +46,7 @@ public final class DeploymentUtils {
       String workingDir = config.get("deployment").get("path");
       String remotePath = workingDir + "/" + description + "-files" + "/" + description;
       // Although we have only one master now
-      HashMap<String, String> masters = config.get("master");
+      Map<String, String> masters = config.get("master");
       for (String masterId : masters.keySet()) {
         String hostname = getHostname(masters.get(masterId));
         if (username != null) {
@@ -60,7 +59,7 @@ public final class DeploymentUtils {
         rmFile(hostname, remotePath + "/master.catalog-wal");
       }
     } else if (action.equals("-copy_worker_catalogs")) {
-      HashMap<String, String> workers = config.get("workers");
+      Map<String, String> workers = config.get("workers");
       for (String workerId : workers.keySet()) {
         String workingDir = config.get("paths").get(workerId);
         String remotePath = workingDir + "/" + description + "-files" + "/" + description;
@@ -77,7 +76,7 @@ public final class DeploymentUtils {
     } else if (action.equals("-copy_distribution")) {
       String workingDir = config.get("deployment").get("path");
       String remotePath = workingDir + "/" + description + "-files";
-      HashMap<String, String> masters = config.get("master");
+      Map<String, String> masters = config.get("master");
       for (String masterId : masters.keySet()) {
         String hostname = getHostname(masters.get(masterId));
         if (username != null) {
@@ -89,7 +88,7 @@ public final class DeploymentUtils {
         // server needs the config file to create catalogs for new workers
         rsyncFileToRemote(configFileName, hostname, remotePath);
       }
-      HashMap<String, String> workers = config.get("workers");
+      Map<String, String> workers = config.get("workers");
       for (String workerId : workers.keySet()) {
         workingDir = config.get("paths").get(workerId);
         remotePath = workingDir + "/" + description + "-files";
@@ -108,7 +107,7 @@ public final class DeploymentUtils {
       if (maxHeapSize == null) {
         maxHeapSize = "";
       }
-      HashMap<String, String> masters = config.get("master");
+      Map<String, String> masters = config.get("master");
       for (String masterId : masters.keySet()) {
         String hostname = getHostname(masters.get(masterId));
         if (username != null) {
@@ -122,7 +121,7 @@ public final class DeploymentUtils {
       if (maxHeapSize == null) {
         maxHeapSize = "";
       }
-      HashMap<String, String> workers = config.get("workers");
+      Map<String, String> workers = config.get("workers");
       for (String workerId : workers.keySet()) {
         String hostname = getHostname(workers.get(workerId));
         if (username != null) {

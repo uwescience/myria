@@ -140,14 +140,14 @@ public class IterativeFailureTest extends SystemTestBase {
     table1.merge(tblAWorker1);
     table1.merge(tblAWorker2);
 
-    createTable(WORKER_ID[0], tableKey, "follower long, followee long");
-    createTable(WORKER_ID[1], tableKey, "follower long, followee long");
+    createTable(workerIDs[0], tableKey, "follower long, followee long");
+    createTable(workerIDs[1], tableKey, "follower long, followee long");
     TupleBatch tb = null;
     while ((tb = tblAWorker1.popAny()) != null) {
-      insert(WORKER_ID[0], tableKey, tableSchema, tb);
+      insert(workerIDs[0], tableKey, tableSchema, tb);
     }
     while ((tb = tblAWorker2.popAny()) != null) {
-      insert(WORKER_ID[1], tableKey, tableSchema, tb);
+      insert(workerIDs[1], tableKey, tableSchema, tb);
     }
     return table1;
   }
@@ -167,28 +167,28 @@ public class IterativeFailureTest extends SystemTestBase {
     if (isHead) {
       ExchangePairID joinArrayID = ExchangePairID.newID();
       final DbQueryScan scan1 = new DbQueryScan(RelationKey.of("test", "test", "r"), tableSchema);
-      final ShuffleProducer sp1 = new ShuffleProducer(scan1, joinArrayID, WORKER_ID, pf1);
-      sc1 = new ShuffleConsumer(tableSchema, joinArrayID, WORKER_ID);
+      final ShuffleProducer sp1 = new ShuffleProducer(scan1, joinArrayID, workerIDs, pf1);
+      sc1 = new ShuffleConsumer(tableSchema, joinArrayID, workerIDs);
       workerPlan.get(0).add(sp1);
       workerPlan.get(1).add(sp1);
     } else {
-      sc1 = new ShuffleConsumer(tableSchema, receivingOpID, WORKER_ID);
+      sc1 = new ShuffleConsumer(tableSchema, receivingOpID, workerIDs);
     }
     final DbQueryScan scan2 = new DbQueryScan(RelationKey.of("test", "test", initName), tableSchema);
     final ExchangePairID beforeIngress1 = ExchangePairID.newID();
-    final ShuffleProducer sp2 = new ShuffleProducer(scan2, beforeIngress1, WORKER_ID, pf0);
-    final ShuffleConsumer sc2 = new ShuffleConsumer(tableSchema, beforeIngress1, WORKER_ID);
+    final ShuffleProducer sp2 = new ShuffleProducer(scan2, beforeIngress1, workerIDs, pf0);
+    final ShuffleConsumer sc2 = new ShuffleConsumer(tableSchema, beforeIngress1, workerIDs);
     final ExchangePairID beforeIngress2 = ExchangePairID.newID();
-    final ShuffleProducer sp3_worker1 = new ShuffleProducer(null, beforeIngress2, WORKER_ID, pf0);
-    final ShuffleProducer sp3_worker2 = new ShuffleProducer(null, beforeIngress2, WORKER_ID, pf0);
-    final ShuffleConsumer sc3_worker1 = new ShuffleConsumer(tableSchema, beforeIngress2, WORKER_ID);
-    final ShuffleConsumer sc3_worker2 = new ShuffleConsumer(tableSchema, beforeIngress2, WORKER_ID);
-    final Consumer eosReceiver = new Consumer(Schema.EMPTY_SCHEMA, eosReceiverOpID, new int[] { WORKER_ID[0] });
+    final ShuffleProducer sp3_worker1 = new ShuffleProducer(null, beforeIngress2, workerIDs, pf0);
+    final ShuffleProducer sp3_worker2 = new ShuffleProducer(null, beforeIngress2, workerIDs, pf0);
+    final ShuffleConsumer sc3_worker1 = new ShuffleConsumer(tableSchema, beforeIngress2, workerIDs);
+    final ShuffleConsumer sc3_worker2 = new ShuffleConsumer(tableSchema, beforeIngress2, workerIDs);
+    final Consumer eosReceiver = new Consumer(Schema.EMPTY_SCHEMA, eosReceiverOpID, new int[] { workerIDs[0] });
 
     final IDBInput idbinput_worker1 =
-        new IDBInput(selfIDBID, eoiReceiverOpID, WORKER_ID[0], sc2, sc3_worker1, eosReceiver);
+        new IDBInput(selfIDBID, eoiReceiverOpID, workerIDs[0], sc2, sc3_worker1, eosReceiver);
     final IDBInput idbinput_worker2 =
-        new IDBInput(selfIDBID, eoiReceiverOpID, WORKER_ID[0], sc2, sc3_worker2, eosReceiver);
+        new IDBInput(selfIDBID, eoiReceiverOpID, workerIDs[0], sc2, sc3_worker2, eosReceiver);
 
     final ExchangePairID[] consumerIDs = new ExchangePairID[] { ExchangePairID.newID(), null, null };
     if (sendingOpID != null) {
@@ -232,8 +232,8 @@ public class IterativeFailureTest extends SystemTestBase {
       workerPlan.get(1).add(cp_worker2);
     }
     if (sendingOpID != null) {
-      final ShuffleProducer sp_others_worker1 = new ShuffleProducer(send2others_worker1, sendingOpID, WORKER_ID, pf1);
-      final ShuffleProducer sp_others_worker2 = new ShuffleProducer(send2others_worker2, sendingOpID, WORKER_ID, pf1);
+      final ShuffleProducer sp_others_worker1 = new ShuffleProducer(send2others_worker1, sendingOpID, workerIDs, pf1);
+      final ShuffleProducer sp_others_worker2 = new ShuffleProducer(send2others_worker2, sendingOpID, workerIDs, pf1);
       workerPlan.get(0).add(sp_others_worker1);
       workerPlan.get(1).add(sp_others_worker2);
     }
@@ -275,13 +275,13 @@ public class IterativeFailureTest extends SystemTestBase {
     generateJoinPlan(workerPlan, tableSchema, "c0", eoiReceiverOpID3, false, null, receivingBonC, eosReceiverOpID_idb3,
         serverReceiveID, 2);
 
-    final Consumer eoiReceiver1 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID1, WORKER_ID);
-    final Consumer eoiReceiver2 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID2, WORKER_ID);
-    final Consumer eoiReceiver3 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID3, WORKER_ID);
+    final Consumer eoiReceiver1 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID1, workerIDs);
+    final Consumer eoiReceiver2 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID2, workerIDs);
+    final Consumer eoiReceiver3 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID3, workerIDs);
     final Merge merge = new Merge(new Operator[] { eoiReceiver1, eoiReceiver2, eoiReceiver3 });
     final EOSController eosController =
         new EOSController(merge, new ExchangePairID[] {
-            eosReceiverOpID_idb1, eosReceiverOpID_idb2, eosReceiverOpID_idb3 }, WORKER_ID);
+            eosReceiverOpID_idb1, eosReceiverOpID_idb2, eosReceiverOpID_idb3 }, workerIDs);
 
     for (RootOperator worker0Root : workerPlan.get(0)) {
       // Inject failure operators into each root of worker 0
@@ -298,16 +298,16 @@ public class IterativeFailureTest extends SystemTestBase {
 
     HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
 
-    workerPlans.put(WORKER_ID[0], new RootOperator[workerPlan.get(0).size()]);
-    workerPlans.put(WORKER_ID[1], new RootOperator[workerPlan.get(1).size()]);
+    workerPlans.put(workerIDs[0], new RootOperator[workerPlan.get(0).size()]);
+    workerPlans.put(workerIDs[1], new RootOperator[workerPlan.get(1).size()]);
     for (int i = 0; i < workerPlan.get(0).size(); ++i) {
-      workerPlans.get(WORKER_ID[0])[i] = workerPlan.get(0).get(i);
+      workerPlans.get(workerIDs[0])[i] = workerPlan.get(0).get(i);
     }
     for (int i = 0; i < workerPlan.get(1).size(); ++i) {
-      workerPlans.get(WORKER_ID[1])[i] = workerPlan.get(1).get(i);
+      workerPlans.get(workerIDs[1])[i] = workerPlan.get(1).get(i);
     }
 
-    final CollectConsumer serverCollect = new CollectConsumer(tableSchema, serverReceiveID, WORKER_ID);
+    final CollectConsumer serverCollect = new CollectConsumer(tableSchema, serverReceiveID, workerIDs);
     SinkRoot serverPlan = new SinkRoot(serverCollect);
 
     try {
@@ -429,27 +429,27 @@ public class IterativeFailureTest extends SystemTestBase {
     generateJoinPlan(workerPlan, tableSchema, "c0", eoiReceiverOpID3, false, null, receivingBonC, eosReceiverOpID_idb3,
         serverReceiveID, 2);
 
-    final Consumer eoiReceiver1 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID1, WORKER_ID);
-    final Consumer eoiReceiver2 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID2, WORKER_ID);
-    final Consumer eoiReceiver3 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID3, WORKER_ID);
+    final Consumer eoiReceiver1 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID1, workerIDs);
+    final Consumer eoiReceiver2 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID2, workerIDs);
+    final Consumer eoiReceiver3 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID3, workerIDs);
     final Merge merge = new Merge(new Operator[] { eoiReceiver1, eoiReceiver2, eoiReceiver3 });
     final EOSController eosController =
         new EOSController(merge, new ExchangePairID[] {
-            eosReceiverOpID_idb1, eosReceiverOpID_idb2, eosReceiverOpID_idb3 }, WORKER_ID);
+            eosReceiverOpID_idb1, eosReceiverOpID_idb2, eosReceiverOpID_idb3 }, workerIDs);
     workerPlan.get(0).add(eosController);
 
     HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
 
-    workerPlans.put(WORKER_ID[0], new RootOperator[workerPlan.get(0).size()]);
-    workerPlans.put(WORKER_ID[1], new RootOperator[workerPlan.get(1).size()]);
+    workerPlans.put(workerIDs[0], new RootOperator[workerPlan.get(0).size()]);
+    workerPlans.put(workerIDs[1], new RootOperator[workerPlan.get(1).size()]);
     for (int i = 0; i < workerPlan.get(0).size(); ++i) {
-      workerPlans.get(WORKER_ID[0])[i] = workerPlan.get(0).get(i);
+      workerPlans.get(workerIDs[0])[i] = workerPlan.get(0).get(i);
     }
     for (int i = 0; i < workerPlan.get(1).size(); ++i) {
-      workerPlans.get(WORKER_ID[1])[i] = workerPlan.get(1).get(i);
+      workerPlans.get(workerIDs[1])[i] = workerPlan.get(1).get(i);
     }
 
-    final CollectConsumer serverCollect = new CollectConsumer(tableSchema, serverReceiveID, WORKER_ID);
+    final CollectConsumer serverCollect = new CollectConsumer(tableSchema, serverReceiveID, workerIDs);
 
     final DelayInjector di = new DelayInjector(1, TimeUnit.SECONDS, serverCollect);
     // trigger a failure at the first tuple retrieval
@@ -502,13 +502,13 @@ public class IterativeFailureTest extends SystemTestBase {
     generateJoinPlan(workerPlan, tableSchema, "c0", eoiReceiverOpID3, false, receivingConA, receivingBonC,
         eosReceiverOpID_idb3, serverReceiveID, 2);
 
-    final Consumer eoiReceiver1 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID1, WORKER_ID);
-    final Consumer eoiReceiver2 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID2, WORKER_ID);
-    final Consumer eoiReceiver3 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID3, WORKER_ID);
+    final Consumer eoiReceiver1 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID1, workerIDs);
+    final Consumer eoiReceiver2 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID2, workerIDs);
+    final Consumer eoiReceiver3 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID3, workerIDs);
     final Merge merge = new Merge(new Operator[] { eoiReceiver1, eoiReceiver2, eoiReceiver3 });
     final EOSController eosController =
         new EOSController(merge, new ExchangePairID[] {
-            eosReceiverOpID_idb1, eosReceiverOpID_idb2, eosReceiverOpID_idb3 }, WORKER_ID);
+            eosReceiverOpID_idb1, eosReceiverOpID_idb2, eosReceiverOpID_idb3 }, workerIDs);
     workerPlan.get(0).add(eosController);
 
     for (RootOperator worker0Root : workerPlan.get(1)) {
@@ -523,16 +523,16 @@ public class IterativeFailureTest extends SystemTestBase {
     }
 
     HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
-    workerPlans.put(WORKER_ID[0], new RootOperator[workerPlan.get(0).size()]);
-    workerPlans.put(WORKER_ID[1], new RootOperator[workerPlan.get(1).size()]);
+    workerPlans.put(workerIDs[0], new RootOperator[workerPlan.get(0).size()]);
+    workerPlans.put(workerIDs[1], new RootOperator[workerPlan.get(1).size()]);
     for (int i = 0; i < workerPlan.get(0).size(); ++i) {
-      workerPlans.get(WORKER_ID[0])[i] = workerPlan.get(0).get(i);
+      workerPlans.get(workerIDs[0])[i] = workerPlan.get(0).get(i);
     }
     for (int i = 0; i < workerPlan.get(1).size(); ++i) {
-      workerPlans.get(WORKER_ID[1])[i] = workerPlan.get(1).get(i);
+      workerPlans.get(workerIDs[1])[i] = workerPlan.get(1).get(i);
     }
 
-    final CollectConsumer serverCollect = new CollectConsumer(tableSchema, serverReceiveID, WORKER_ID);
+    final CollectConsumer serverCollect = new CollectConsumer(tableSchema, serverReceiveID, workerIDs);
     SinkRoot serverPlan = new SinkRoot(serverCollect);
 
     try {
@@ -580,26 +580,26 @@ public class IterativeFailureTest extends SystemTestBase {
     generateJoinPlan(workerPlan, tableSchema, "c0", eoiReceiverOpID3, false, receivingConA, receivingBonC,
         eosReceiverOpID_idb3, serverReceiveID, 2);
 
-    final Consumer eoiReceiver1 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID1, WORKER_ID);
-    final Consumer eoiReceiver2 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID2, WORKER_ID);
-    final Consumer eoiReceiver3 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID3, WORKER_ID);
+    final Consumer eoiReceiver1 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID1, workerIDs);
+    final Consumer eoiReceiver2 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID2, workerIDs);
+    final Consumer eoiReceiver3 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID3, workerIDs);
     final Merge merge = new Merge(new Operator[] { eoiReceiver1, eoiReceiver2, eoiReceiver3 });
     final EOSController eosController =
         new EOSController(merge, new ExchangePairID[] {
-            eosReceiverOpID_idb1, eosReceiverOpID_idb2, eosReceiverOpID_idb3 }, WORKER_ID);
+            eosReceiverOpID_idb1, eosReceiverOpID_idb2, eosReceiverOpID_idb3 }, workerIDs);
     workerPlan.get(0).add(eosController);
 
     HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
-    workerPlans.put(WORKER_ID[0], new RootOperator[workerPlan.get(0).size()]);
-    workerPlans.put(WORKER_ID[1], new RootOperator[workerPlan.get(1).size()]);
+    workerPlans.put(workerIDs[0], new RootOperator[workerPlan.get(0).size()]);
+    workerPlans.put(workerIDs[1], new RootOperator[workerPlan.get(1).size()]);
     for (int i = 0; i < workerPlan.get(0).size(); ++i) {
-      workerPlans.get(WORKER_ID[0])[i] = workerPlan.get(0).get(i);
+      workerPlans.get(workerIDs[0])[i] = workerPlan.get(0).get(i);
     }
     for (int i = 0; i < workerPlan.get(1).size(); ++i) {
-      workerPlans.get(WORKER_ID[1])[i] = workerPlan.get(1).get(i);
+      workerPlans.get(workerIDs[1])[i] = workerPlan.get(1).get(i);
     }
 
-    final CollectConsumer serverCollect = new CollectConsumer(tableSchema, serverReceiveID, WORKER_ID);
+    final CollectConsumer serverCollect = new CollectConsumer(tableSchema, serverReceiveID, workerIDs);
     final DelayInjector di = new DelayInjector(1, TimeUnit.SECONDS, serverCollect);
     // trigger a failure at the first tuple retrieval
     final SingleRandomFailureInjector srfi = new SingleRandomFailureInjector(0, TimeUnit.SECONDS, 1.0, di);
