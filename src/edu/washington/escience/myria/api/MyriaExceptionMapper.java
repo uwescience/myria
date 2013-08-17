@@ -1,8 +1,6 @@
 package edu.washington.escience.myria.api;
 
 import java.io.EOFException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
@@ -15,6 +13,8 @@ import javax.ws.rs.ext.Provider;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.JsonMappingException;
+
+import edu.washington.escience.myria.util.ErrorUtils;
 
 /**
  * This class determines what HTTP response will be sent when a web request causes a certain exception type. The
@@ -80,10 +80,7 @@ public final class MyriaExceptionMapper implements ExceptionMapper<Exception> {
     }
     ResponseBuilder ret = Response.status(status);
     if (status.equals(Status.INTERNAL_SERVER_ERROR) || cause.getMessage() == null || cause.getMessage().length() == 0) {
-      StringWriter stringWriter = new StringWriter();
-      cause.printStackTrace(new PrintWriter(stringWriter));
-      String stackTrace = stringWriter.toString();
-      ret.entity(stackTrace);
+      ret.entity(ErrorUtils.getStackTrace(cause));
     } else {
       ret.entity(cause.getMessage());
     }

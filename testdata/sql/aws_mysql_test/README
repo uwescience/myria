@@ -8,13 +8,13 @@ Setting up a MySQL server on Ubuntu 12.04 LTS
    sudo vim /etc/mysql/my.conf, and change:
    bind-address = 0.0.0.0 (all interfaces) instead of 127.0.0.1 (only loopback)
 
-3) Add the myriad user and the test database
+3) Add the myria user and the test database
    mysql -u root -p mysql
    <type in the root password>
 
-   CREATE -- USER 'myriad'@'%' IDENTIFIED BY '<password>'; -- remove all the --
-   CREATE database myriad_test;
-   GRANT ALL PRIVILEGES ON myriad_test.* TO 'myriad'@'%' WITH GRANT OPTION;
+   CREATE -- USER 'myria'@'%' IDENTIFIED BY '<password>'; -- remove all the --
+   CREATE database myria_test;
+   GRANT ALL PRIVILEGES ON myria_test.* TO 'myria'@'%' WITH GRANT OPTION;
    FLUSH PRIVILEGES;
 
 4) run the reset_db.sh script to set up the initial table state.

@@ -1,3 +1,4 @@
+START TRANSACTION;
 DROP TABLE IF EXISTS testtable;
 CREATE TABLE testtable (value INTEGER, label VARCHAR(20));
 INSERT INTO testtable VALUES (11, "str11");
@@ -18,3 +19,4 @@ INSERT INTO testtable VALUES (155, "str155");
 
 DROP TABLE IF EXISTS testtable2;
 CREATE TABLE testtable2 (value VARCHAR(20));
+COMMIT;

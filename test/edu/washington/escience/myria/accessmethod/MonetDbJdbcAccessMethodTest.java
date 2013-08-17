@@ -34,7 +34,7 @@ public class MonetDbJdbcAccessMethodTest {
   private final static int NUM_TUPLES = 2 * TupleBatch.BATCH_SIZE + 1;
 
   /* Connection information */
-  private final String host = "54.245.108.198";
+  private final String host = "54.213.118.143";
   private final int port = 50000;
   private final String user = "myria";
   private final String password = "nays26[shark";

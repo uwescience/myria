@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.cmd;
 
+import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.daemon.MasterDaemon;
 import edu.washington.escience.myria.parallel.QueryExecutionMode;
 import edu.washington.escience.myria.parallel.Worker;
@@ -22,9 +23,9 @@ public final class RunMyriaForProfiling {
    * @throws Exception exception.
    */
   public static void main(final String[] args) throws Exception {
-    MasterDaemon daemon = new MasterDaemon("leelee", 8753);
+    MasterDaemon daemon = new MasterDaemon("twoNodeLocalParallel", MyriaConstants.DEFAULT_MYRIA_API_PORT);
     daemon.start();
-    Worker worker = new Worker("leelee/worker_1", QueryExecutionMode.NON_BLOCKING);
+    Worker worker = new Worker("twoNodeLocalParallel/worker_1", QueryExecutionMode.NON_BLOCKING);
     worker.start();
   }
 }

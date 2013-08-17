@@ -21,3 +21,5 @@ deserialize
 dataset
 payload
 deserialization
+vertica
+mysql
