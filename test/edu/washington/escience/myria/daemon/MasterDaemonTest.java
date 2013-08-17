@@ -3,7 +3,7 @@ package edu.washington.escience.myria.daemon;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Set;
 
 import javax.ws.rs.core.Response.Status;
@@ -11,14 +11,15 @@ import javax.ws.rs.core.Response.Status;
 import org.apache.mina.util.AvailablePortFinder;
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Files;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
-import edu.washington.escience.myria.MyriaSystemConfigKeys;
+import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.coordinator.catalog.CatalogMaker;
-import edu.washington.escience.myria.daemon.MasterDaemon;
+import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.util.FSUtils;
 import edu.washington.escience.myria.util.ThreadUtils;
 
@@ -32,11 +33,11 @@ public class MasterDaemonTest {
   public void testStartAndShutdown() throws Exception {
     File tmpFolder = Files.createTempDir();
     try {
-      HashMap<String, String> mc = new HashMap<String, String>();
-      mc.put(MyriaSystemConfigKeys.IPC_SERVER_PORT, "8001");
-      HashMap<String, String> wc = new HashMap<String, String>();
-      wc.put(MyriaSystemConfigKeys.IPC_SERVER_PORT, "9001");
-      CatalogMaker.makeNNodesLocalParallelCatalog(tmpFolder.getAbsolutePath(), 2, mc, wc);
+      CatalogMaker.makeNNodesLocalParallelCatalog(tmpFolder.getAbsolutePath(), ImmutableMap
+          .<Integer, SocketInfo> builder().put(MyriaConstants.MASTER_ID, new SocketInfo(8001)).build(), ImmutableMap
+          .<Integer, SocketInfo> builder().put(MyriaConstants.MASTER_ID + 1, new SocketInfo(9001)).put(
+              MyriaConstants.MASTER_ID + 2, new SocketInfo(9002)).build(), Collections.<String, String> emptyMap(),
+          Collections.<String, String> emptyMap());
 
       /* Remember which threads were there when the test starts. */
       Set<Thread> startThreads = ThreadUtils.getCurrentThreads();
@@ -68,11 +69,11 @@ public class MasterDaemonTest {
 
     File tmpFolder = Files.createTempDir();
     try {
-      HashMap<String, String> mc = new HashMap<String, String>();
-      mc.put(MyriaSystemConfigKeys.IPC_SERVER_PORT, "8001");
-      HashMap<String, String> wc = new HashMap<String, String>();
-      wc.put(MyriaSystemConfigKeys.IPC_SERVER_PORT, "9001");
-      CatalogMaker.makeNNodesLocalParallelCatalog(tmpFolder.getAbsolutePath(), 2, mc, wc);
+      CatalogMaker.makeNNodesLocalParallelCatalog(tmpFolder.getAbsolutePath(), ImmutableMap
+          .<Integer, SocketInfo> builder().put(MyriaConstants.MASTER_ID, new SocketInfo(8001)).build(), ImmutableMap
+          .<Integer, SocketInfo> builder().put(MyriaConstants.MASTER_ID + 1, new SocketInfo(9001)).put(
+              MyriaConstants.MASTER_ID + 2, new SocketInfo(9002)).build(), Collections.<String, String> emptyMap(),
+          Collections.<String, String> emptyMap());
 
       /* Remember which threads were there when the test starts. */
       Set<Thread> startThreads = ThreadUtils.getCurrentThreads();

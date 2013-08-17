@@ -6,7 +6,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -19,8 +19,9 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ImmutableMap;
+
 import edu.washington.escience.myria.MyriaConstants;
-import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.util.FSUtils;
 
@@ -90,13 +91,18 @@ public class CatalogTest {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.OFF);
     Path path = Files.createTempDirectory(MyriaConstants.SYSTEM_NAME + "_CatalogTest");
     final int numWorkers = 5;
+    ImmutableMap.Builder<Integer, SocketInfo> workersBuilder = ImmutableMap.<Integer, SocketInfo> builder();
+
+    for (int id = 1; id <= numWorkers; id++) {
+      workersBuilder.put(id, new SocketInfo(9000 + id));
+    }
+
     final String masterCatalogPath = path.toString() + File.separatorChar + "master.catalog";
 
-    HashMap<String, String> mc = new HashMap<String, String>();
-    mc.put(MyriaSystemConfigKeys.IPC_SERVER_PORT, "8001");
-    HashMap<String, String> wc = new HashMap<String, String>();
-    wc.put(MyriaSystemConfigKeys.IPC_SERVER_PORT, "9001");
-    CatalogMaker.makeNNodesLocalParallelCatalog(path.toFile().getAbsolutePath(), 5, mc, wc);
+    CatalogMaker.makeNNodesLocalParallelCatalog(path.toFile().getAbsolutePath(), ImmutableMap
+        .<Integer, SocketInfo> builder().put(MyriaConstants.MASTER_ID, new SocketInfo(8001)).build(), workersBuilder
+        .build(), Collections.<String, String> emptyMap(), Collections.<String, String> emptyMap());
+
     MasterCatalog c = MasterCatalog.open(masterCatalogPath);
     assertTrue(c.getWorkers().size() == numWorkers);
     c.close();
