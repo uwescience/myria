@@ -53,21 +53,6 @@ public final class CatalogMaker {
   }
 
   /**
-   * Creates a Catalog for an N-node parallel system on the local machine and the corresponding WorkerCatalogs.
-   * 
-   * @param directoryName the directory where all the files should be stored.
-   * @param n the number of nodes.
-   * @throws IOException if the catalog file already exists.
-   */
-  public static void makeNNodesLocalParallelCatalog(final String directoryName, final int n) throws IOException {
-    HashMap<String, String> mc = new HashMap<String, String>();
-    mc.put(MyriaSystemConfigKeys.IPC_SERVER_PORT, "8001");
-    HashMap<String, String> wc = new HashMap<String, String>();
-    wc.put(MyriaSystemConfigKeys.IPC_SERVER_PORT, "9001");
-    makeNNodesLocalParallelCatalog(directoryName, n, mc, wc);
-  }
-
-  /**
    * Creates a Catalog for an N-node parallel system on the local machine and the corresponding WorkerCatalogs with
    * worker configurations.
    * 

@@ -6,6 +6,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -19,9 +20,7 @@ import org.junit.runner.Description;
 import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myria.MyriaConstants;
-import edu.washington.escience.myria.coordinator.catalog.CatalogException;
-import edu.washington.escience.myria.coordinator.catalog.CatalogMaker;
-import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
+import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.util.FSUtils;
 
@@ -92,7 +91,12 @@ public class CatalogTest {
     Path path = Files.createTempDirectory(MyriaConstants.SYSTEM_NAME + "_CatalogTest");
     final int numWorkers = 5;
     final String masterCatalogPath = path.toString() + File.separatorChar + "master.catalog";
-    CatalogMaker.makeNNodesLocalParallelCatalog(path.toFile().getAbsolutePath(), 5);
+
+    HashMap<String, String> mc = new HashMap<String, String>();
+    mc.put(MyriaSystemConfigKeys.IPC_SERVER_PORT, "8001");
+    HashMap<String, String> wc = new HashMap<String, String>();
+    wc.put(MyriaSystemConfigKeys.IPC_SERVER_PORT, "9001");
+    CatalogMaker.makeNNodesLocalParallelCatalog(path.toFile().getAbsolutePath(), 5, mc, wc);
     MasterCatalog c = MasterCatalog.open(masterCatalogPath);
     assertTrue(c.getWorkers().size() == numWorkers);
     c.close();
