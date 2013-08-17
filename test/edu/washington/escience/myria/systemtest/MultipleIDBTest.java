@@ -95,7 +95,7 @@ public class MultipleIDBTest extends SystemTestBase {
         if (s[i][j]) {
           result.put(0, (long) i);
           result.put(1, (long) j);
-          LOGGER.debug(i + "\t" + j);
+          LOGGER.trace(i + "\t" + j);
         }
       }
     }
@@ -395,7 +395,7 @@ public class MultipleIDBTest extends SystemTestBase {
         if (s3[i][j]) {
           result.put(0, (long) i);
           result.put(1, (long) j);
-          LOGGER.debug(i + "\t" + j);
+          LOGGER.trace(i + "\t" + j);
         }
       }
     }

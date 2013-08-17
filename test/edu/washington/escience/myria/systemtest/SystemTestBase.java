@@ -9,11 +9,13 @@ import java.io.InputStreamReader;
 import java.lang.ProcessBuilder.Redirect;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -148,6 +150,8 @@ public class SystemTestBase {
 
   public static final int DEFAULT_REST_PORT = 8753;
 
+  public int WORKER_BOOTUP_TIMEOUT_IN_SECOND = 10; // wait for 10 seconds for workers to get booted
+
   public volatile int masterPort;
   public volatile int masterDaemonPort = DEFAULT_REST_PORT;
 
@@ -231,15 +235,11 @@ public class SystemTestBase {
   }
 
   public Map<String, String> getMasterConfigurations() {
-    HashMap<String, String> mc = new HashMap<String, String>();
-    mc.put(MyriaSystemConfigKeys.IPC_SERVER_PORT, DEFAULT_MASTER_PORT_ + "");
-    return mc;
+    return Collections.<String, String> emptyMap();
   }
 
   public Map<String, String> getWorkerConfigurations() {
-    HashMap<String, String> wc = new HashMap<String, String>();
-    wc.put(MyriaSystemConfigKeys.IPC_SERVER_PORT, DEFAULT_WORKER_STARTING_PORT + "");
-    return wc;
+    return Collections.<String, String> emptyMap();
   }
 
   public Map<Integer, SocketInfo> getMasters() {
@@ -306,8 +306,11 @@ public class SystemTestBase {
     for (int j : workerIDs) {
       targetWorkers.add(j);
     }
-    while (!server.getAliveWorkers().containsAll(targetWorkers)) {
-      Thread.sleep(10);
+
+    long milliTimeout = TimeUnit.SECONDS.toMillis(WORKER_BOOTUP_TIMEOUT_IN_SECOND);
+    for (long start = System.currentTimeMillis(); !server.getAliveWorkers().containsAll(targetWorkers)
+        && System.currentTimeMillis() - start < milliTimeout;) {
+      Thread.sleep(500);
     }
 
     // for setting breakpoint

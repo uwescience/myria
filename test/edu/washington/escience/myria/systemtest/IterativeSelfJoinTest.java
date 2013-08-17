@@ -84,7 +84,7 @@ public class IterativeSelfJoinTest extends SystemTestBase {
         if (cntgraph[i][j]) {
           result.put(0, (long) i);
           result.put(1, (long) j);
-          LOGGER.debug(i + "\t" + j);
+          LOGGER.trace(i + "\t" + j);
         }
       }
     }
