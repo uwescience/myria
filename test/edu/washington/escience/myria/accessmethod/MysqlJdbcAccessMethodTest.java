@@ -25,12 +25,12 @@ public class MysqlJdbcAccessMethodTest {
   @Test
   public void testNumberResultsAndMultipleBatches() throws DbException, InterruptedException {
     /* Connection information */
-    final String host = "54.245.108.198";
+    final String host = "54.213.118.143";
     final int port = 3306;
-    final String user = "myriad";
+    final String user = "myria";
     final String password = "nays26[shark";
     final String dbms = "mysql";
-    final String databaseName = "myriad_test";
+    final String databaseName = "myria_test";
     final String jdbcDriverName = "com.mysql.jdbc.Driver";
     final int expectedNumResults = 250; /* Hardcoded in setup_testtablebig.sql */
     final JdbcInfo jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, databaseName, user, password);

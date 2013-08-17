@@ -17,6 +17,7 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.accessmethod.JdbcAccessMethod;
 import edu.washington.escience.myria.accessmethod.JdbcInfo;
 import edu.washington.escience.myria.operator.DbQueryScan;
+import edu.washington.escience.myria.util.ErrorUtils;
 
 /**
  * Test the insertion speed of specified databases.
@@ -89,7 +90,7 @@ public class JdbcInsertSpeedTest {
           throw new DbException("Error reading results from query: " + countQuery);
         }
       } catch (final DbException e) {
-        System.err.println(e.getMessage());
+        System.err.println(ErrorUtils.getStackTrace(e));
         return -1;
       }
     }
@@ -109,7 +110,7 @@ public class JdbcInsertSpeedTest {
         jdbcAccessMethod = new JdbcAccessMethod(jdbcInfo, false);
       } catch (final DbException e) {
         error = true;
-        errorMessage = e.getMessage();
+        errorMessage = ErrorUtils.getStackTrace(e);
         return;
       }
 
@@ -165,10 +166,10 @@ public class JdbcInsertSpeedTest {
 
       } catch (final DbException e) {
         error = true;
-        errorMessage = e.getMessage();
+        errorMessage = ErrorUtils.getStackTrace(e);
       } catch (final Exception e) {
         error = true;
-        errorMessage = e.getMessage();
+        errorMessage = ErrorUtils.getStackTrace(e);
       }
     }
 
@@ -258,7 +259,7 @@ public class JdbcInsertSpeedTest {
 
     // Set up connection data for the databases to be tested
 
-    host = "54.245.108.198";
+    host = "54.213.118.143";
     port = 50000;
     user = "myria";
     password = "nays26[shark";
@@ -269,12 +270,12 @@ public class JdbcInsertSpeedTest {
     table = "speedtesttable";
     tests.add(new SpeedTestData(jdbcInfo, table));
 
-    host = "54.245.108.198";
+    host = "54.213.118.143";
     port = 3306;
-    user = "myriad";
+    user = "myria";
     password = "nays26[shark";
     dbms = "mysql";
-    databaseName = "myriad_test";
+    databaseName = "myria_test";
     jdbcDriverName = "com.mysql.jdbc.Driver";
     Properties properties = new Properties();
     properties.setProperty("rewriteBatchedStatements", "true");
