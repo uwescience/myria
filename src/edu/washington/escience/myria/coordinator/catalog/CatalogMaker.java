@@ -117,7 +117,7 @@ public final class CatalogMaker {
 
     /* The server configuration. */
     final String configFileName = args[0];
-    Map<String, HashMap<String, String>> config = READER.load(configFileName);
+    Map<String, Map<String, String>> config = READER.load(configFileName);
     MasterCatalog c = null;
     try {
       String catalogLocation;
@@ -189,7 +189,7 @@ public final class CatalogMaker {
    * @param overwrite true/false if want to overwrite old catalog.
    */
   public static void makeOneWorkerCatalog(final String workerId, final String catalogLocation,
-      final Map<String, HashMap<String, String>> config, final Map<String, String> workerConfigurations,
+      final Map<String, Map<String, String>> config, final Map<String, String> workerConfigurations,
       final boolean overwrite) {
 
     /* Start by making the directory for the worker */

@@ -581,7 +581,7 @@ public final class Server {
         final String temp = Files.createTempDirectory(null).toAbsolutePath().toString();
         Map<String, String> tmpMap = Collections.emptyMap();
         String configFileName = catalog.getConfigurationValue(MyriaSystemConfigKeys.DEPLOYMENT_FILE);
-        Map<String, HashMap<String, String>> config = READER.load(configFileName);
+        Map<String, Map<String, String>> config = READER.load(configFileName);
         CatalogMaker.makeOneWorkerCatalog(workerId + "", temp, config, tmpMap, true);
 
         final String workingDir = config.get("paths").get(workerId + "");
