@@ -185,6 +185,17 @@ public final class IPCUtils {
   }
 
   /**
+   * @param queryId .
+   * @param workerId .
+   * @return a query recover TM.
+   * */
+  public static TransportMessage recoverQueryTM(final Long queryId, final int workerId) {
+    return QUERY_TM_BUILDER.get().setQueryMessage(
+        QueryMessage.newBuilder().setType(QueryMessage.Type.QUERY_RECOVER).setQueryId(queryId).setWorkerId(workerId))
+        .build();
+  }
+
+  /**
    * @param queryId the completed query id.
    * @return a query complete TM.
    * @param statistics query execution statistics
