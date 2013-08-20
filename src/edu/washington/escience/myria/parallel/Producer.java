@@ -410,4 +410,28 @@ public abstract class Producer extends RootOperator {
   public QuerySubTreeTask getOwnerTask() {
     return ownerTask;
   }
+
+  /**
+   * process EOS and EOI logic.
+   * */
+  @Override
+  protected final void checkEOSAndEOI() {
+    Operator child = getChild();
+    if (child.eoi()) {
+      setEOI(true);
+      child.setEOI(false);
+    } else if (child.eos()) {
+      if (getOwnerTask().getOwnerQuery().getFTMode().equals(FTMODE.rejoin)) {
+        for (TupleBatchBuffer tbb : buffers) {
+          if (tbb.numTuples() > 0) {
+            // due to failure, buffers are not empty, this task needs to be executed again to push these TBs out when
+            // channels are available
+            return;
+          }
+        }
+      }
+      // all buffers are empty, ready to end this task
+      setEOS();
+    }
+  }
 }
