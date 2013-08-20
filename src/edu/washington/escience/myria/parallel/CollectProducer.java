@@ -15,6 +15,9 @@ public class CollectProducer extends Producer {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
+  /** The logger for this class. */
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(CollectProducer.class.getName());
+
   /**
    * @param child the child who provides data for this producer to distribute.
    * @param operatorID destination operator the data goes

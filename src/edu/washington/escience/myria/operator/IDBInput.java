@@ -5,9 +5,6 @@ import java.util.BitSet;
 import java.util.HashMap;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -30,6 +27,9 @@ public class IDBInput extends Operator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
+
+  /** The logger for this class. */
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(IDBInput.class.getName());
 
   /**
    * Initial IDB input.
@@ -88,11 +88,6 @@ public class IDBInput extends Operator {
    * The IPC channel for EOI report.
    * */
   private transient StreamOutputChannel<TupleBatch> eoiReportChannel;
-
-  /**
-   * The logger for this class.
-   * */
-  private static final Logger LOGGER = LoggerFactory.getLogger(IDBInput.class.getName());
 
   /**
    * @param selfIDBIdx see the corresponding field comment.

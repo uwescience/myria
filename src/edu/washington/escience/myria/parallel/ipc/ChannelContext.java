@@ -292,7 +292,7 @@ class ChannelContext extends AttachmentableAdapter {
         }
       }
       if (newRef < 0) {
-        final String msg = "Number of references is negative";
+        final String msg = "Number of references is negative, channel: " + ownerChannel;
         LOGGER.warn(msg, new ThreadStackDump());
         return 0;
       }
@@ -336,7 +336,7 @@ class ChannelContext extends AttachmentableAdapter {
         }
       }
       if (newRef < 0) {
-        final String msg = "Number of references is negative";
+        final String msg = "Number of references is negative, channel: " + ownerChannel;
         LOGGER.warn(msg, new ThreadStackDump());
         return 1;
       }

@@ -101,6 +101,10 @@ public class WorkerQueryPartition implements QueryPartition {
         failTasks.add(drivingTask);
         if (!(failureReason instanceof QueryKilledException)) {
           // The task is a failure, not killed.
+          if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("got a failed task, root op = " + drivingTask.getRootOp().getOpName() + ", cause ",
+                failureReason);
+          }
           for (QuerySubTreeTask t : tasks) {
             // kill other tasks
             t.kill();

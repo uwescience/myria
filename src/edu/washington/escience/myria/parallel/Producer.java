@@ -31,9 +31,10 @@ public abstract class Producer extends RootOperator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
+  /** The logger for this class. */
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Producer.class.getName());
   /**
    * The worker this operator is located at.
-   * 
    */
   private transient TaskResourceManager taskResourceManager;
 

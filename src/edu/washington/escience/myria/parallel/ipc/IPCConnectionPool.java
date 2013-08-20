@@ -677,16 +677,16 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
         // tell the remote part my id
         if (!idWriteFuture.isSuccess()) {
           cc.idCheckingTimeout(unregisteredChannels);
-          throw new ChannelException("ID checking timeout");
+          throw new ChannelException("ID checking timeout, failed to write my ID");
         }
 
         if (!cc.waitForRemoteReply(CONNECTION_ID_CHECK_TIMEOUT_IN_MS)) {
-          throw new ChannelException("ID checking timeout");
+          throw new ChannelException("ID checking timeout, failed to get the remote ID");
         }
 
-        if (!(remote.id == (cc.remoteReplyID()))) {
+        if (cc.remoteReplyID() == null || !(remote.id == (cc.remoteReplyID()))) {
           cc.idCheckingTimeout(unregisteredChannels);
-          throw new ChannelException("ID checking timeout");
+          throw new ChannelException("ID checking timeout, remote ID doesn't match");
         }
 
         cc.registerNormal(remote.id, remote.registeredChannels, unregisteredChannels);
@@ -1104,6 +1104,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
     try {
       checkShutdown();
       Channel ch = getAConnection(id);
+      // write bos even a recovery channel otherwise EOS from a non-stream
       ch.write(new IPCMessage.Meta.BOS(streamID));
       ChannelContext cc = ((ChannelContext) (ch.getAttachment()));
       int remoteID = cc.getRegisteredChannelContext().getRemoteID();
@@ -1148,7 +1149,6 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
       }
       final ChannelFuture cf = ch.write(message);
       cf.addListener(new ChannelFutureListener() {
-
         @Override
         public void operationComplete(final ChannelFuture future) throws Exception {
           final Channel ch = future.getChannel();

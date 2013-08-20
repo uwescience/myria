@@ -31,6 +31,8 @@ public class EOSController extends Producer {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
+  /** The logger for this class. */
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(EOSController.class.getName());
   /**
    * Recording the number of EOI received from each controlled {@link IDBInput}.
    * */
@@ -142,6 +144,9 @@ public class EOSController extends Producer {
         if (tmp == numExpecting) {
           for (int j = 0; j < super.numChannels(); j++) {
             super.channelEnds(j); // directly emit an EOS makes more sense.
+          }
+          if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace("EOSC has sent EOS!");
           }
           isEOSSent = true;
           return;
