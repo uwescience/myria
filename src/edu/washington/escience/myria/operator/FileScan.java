@@ -1,13 +1,18 @@
 package edu.washington.escience.myria.operator;
 
 import java.io.BufferedReader;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URI;
 import java.util.InputMismatchException;
 import java.util.Objects;
 import java.util.Scanner;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
@@ -44,6 +49,8 @@ public final class FileScan extends LeafOperator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
+
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(FileScan.class);
 
   /**
    * Construct a new FileScan object to read from the specified file. This file is assumed to be whitespace-separated
@@ -115,8 +122,11 @@ public final class FileScan extends LeafOperator {
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
     /* Let's assume that the scanner always starts at the beginning of a line. */
+    int lineNumberBegin = lineNumber;
+
     while (scanner.hasNext() && (buffer.numTuples() < TupleBatch.BATCH_SIZE)) {
       lineNumber++;
+
       for (int count = 0; count < schema.numColumns(); ++count) {
         /* Make sure the schema matches. */
         try {
@@ -156,6 +166,9 @@ public final class FileScan extends LeafOperator {
         throw new DbException("Unexpected output at the end of line " + lineNumber + ": " + rest);
       }
     }
+
+    LOGGER.info("Scanned " + (lineNumber - lineNumberBegin) + " input lines");
+
     return buffer.popAny();
   }
 
@@ -168,11 +181,14 @@ public final class FileScan extends LeafOperator {
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     buffer = new TupleBatchBuffer(getSchema());
     if (filename != null) {
+      // Use Hadoop's URI parsing machinery to extract an input stream for the underlying "file"
+      Configuration conf = new Configuration();
       try {
-        inputStream = new FileInputStream(filename);
-      } catch (FileNotFoundException e) {
-        e.printStackTrace();
-        return;
+        LOGGER.info("Creating inputStream from file URI: " + filename);
+        FileSystem fs = FileSystem.get(URI.create(filename), conf);
+        inputStream = fs.open(new Path(filename));
+      } catch (IOException ex) {
+        throw new DbException(ex);
       }
     }
     Preconditions.checkArgument(inputStream != null, "FileScan input stream has not been set!");
