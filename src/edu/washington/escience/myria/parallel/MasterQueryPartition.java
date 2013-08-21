@@ -542,7 +542,7 @@ public class MasterQueryPartition implements QueryPartition {
     return missingWorkers;
   }
 
-  /*
+  /**
    * when a REMOVE_WORKER message is received, give tasks another chance to decide if they are ready to generate
    * EOS/EOI.
    */
