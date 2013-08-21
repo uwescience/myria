@@ -747,6 +747,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
         if (retry > 1 && LOGGER.isDebugEnabled()) {
           LOGGER.debug("Retry creating a connection to id#" + ipcIDP);
         }
+        failure = null;
         try {
           if (shareConnections) {
             // get a connection instance and reuse connections if POOL_SIZE_UPPERBOUND is reached
@@ -772,6 +773,11 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
               final ChannelContext cc = ChannelContext.getChannelContext(channel);
               final ChannelContext.RegisteredChannelContext ecc = cc.getRegisteredChannelContext();
               if (ecc.numReferenced() > 1) {
+                /*
+                 * otherwise if createANewConnetion throws an exception, channel is still not null outside of this while
+                 * loop.
+                 */
+                channel = null;
                 ecc.decReference();
                 channel = createANewConnection(remote, CONNECTION_WAIT_IN_MS, remote.bootstrap);
               }
@@ -789,14 +795,14 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
         retry++;
       }
 
+      if (failure != null) {
+        throw failure;
+      }
       if (channel == null) {
         // fail to connect
-        if (failure != null) {
-          throw failure;
-        } else {
-          throw new ChannelException("Fail to connect to " + ipcIDP + "");
-        }
+        throw new ChannelException("Fail to connect to " + ipcIDP + "");
       }
+
       ChannelContext.getChannelContext(channel).updateLastIOTimestamp();
       channel.setReadable(true);
       return channel;
