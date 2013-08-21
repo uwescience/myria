@@ -940,11 +940,14 @@ public final class Server {
 
     /* The master plan: send the tuples out. */
     ExchangePairID scatterId = ExchangePairID.newID();
-    ShuffleProducer scatter =
-        new ShuffleProducer(source, scatterId, workersArray, new RoundRobinPartitionFunction(workersArray.length));
+    GenericShuffleProducer scatter =
+        new GenericShuffleProducer(source, scatterId, workersArray,
+            new RoundRobinPartitionFunction(workersArray.length));
 
     /* The workers' plan */
-    ShuffleConsumer gather = new ShuffleConsumer(source.getSchema(), scatterId, new int[] { MyriaConstants.MASTER_ID });
+
+    GenericShuffleConsumer gather =
+        new GenericShuffleConsumer(source.getSchema(), scatterId, new int[] { MyriaConstants.MASTER_ID });
     DbInsert insert = new DbInsert(gather, relationKey, true);
     Map<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
     for (Integer workerId : workersArray) {

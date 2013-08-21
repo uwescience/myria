@@ -32,11 +32,11 @@ import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.Consumer;
 import edu.washington.escience.myria.parallel.EOSController;
 import edu.washington.escience.myria.parallel.ExchangePairID;
+import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
+import edu.washington.escience.myria.parallel.GenericShuffleProducer;
 import edu.washington.escience.myria.parallel.LocalMultiwayConsumer;
 import edu.washington.escience.myria.parallel.LocalMultiwayProducer;
 import edu.washington.escience.myria.parallel.PartitionFunction;
-import edu.washington.escience.myria.parallel.ShuffleConsumer;
-import edu.washington.escience.myria.parallel.ShuffleProducer;
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.util.DelayInjector;
 import edu.washington.escience.myria.util.SingleRandomFailureInjector;
@@ -163,26 +163,36 @@ public class IterativeFailureTest extends SystemTestBase {
     final PartitionFunction<String, Integer> pf1 = new SingleFieldHashPartitionFunction(numPartition);
     pf1.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1);
 
-    ShuffleConsumer sc1;
+    GenericShuffleConsumer sc1;
     if (isHead) {
       ExchangePairID joinArrayID = ExchangePairID.newID();
       final DbQueryScan scan1 = new DbQueryScan(RelationKey.of("test", "test", "r"), tableSchema);
-      final ShuffleProducer sp1 = new ShuffleProducer(scan1, joinArrayID, workerIDs, pf1);
-      sc1 = new ShuffleConsumer(tableSchema, joinArrayID, workerIDs);
+      final GenericShuffleProducer sp1 =
+
+      new GenericShuffleProducer(scan1, joinArrayID, new int[] { workerIDs[0], workerIDs[1] }, pf1);
+      sc1 = new GenericShuffleConsumer(tableSchema, joinArrayID, new int[] { workerIDs[0], workerIDs[1] });
       workerPlan.get(0).add(sp1);
       workerPlan.get(1).add(sp1);
     } else {
-      sc1 = new ShuffleConsumer(tableSchema, receivingOpID, workerIDs);
+      sc1 = new GenericShuffleConsumer(tableSchema, receivingOpID, new int[] { workerIDs[0], workerIDs[1] });
     }
     final DbQueryScan scan2 = new DbQueryScan(RelationKey.of("test", "test", initName), tableSchema);
     final ExchangePairID beforeIngress1 = ExchangePairID.newID();
-    final ShuffleProducer sp2 = new ShuffleProducer(scan2, beforeIngress1, workerIDs, pf0);
-    final ShuffleConsumer sc2 = new ShuffleConsumer(tableSchema, beforeIngress1, workerIDs);
+    final GenericShuffleProducer sp2 =
+
+    new GenericShuffleProducer(scan2, beforeIngress1, new int[] { workerIDs[0], workerIDs[1] }, pf0);
+    final GenericShuffleConsumer sc2 =
+        new GenericShuffleConsumer(tableSchema, beforeIngress1, new int[] { workerIDs[0], workerIDs[1] });
     final ExchangePairID beforeIngress2 = ExchangePairID.newID();
-    final ShuffleProducer sp3_worker1 = new ShuffleProducer(null, beforeIngress2, workerIDs, pf0);
-    final ShuffleProducer sp3_worker2 = new ShuffleProducer(null, beforeIngress2, workerIDs, pf0);
-    final ShuffleConsumer sc3_worker1 = new ShuffleConsumer(tableSchema, beforeIngress2, workerIDs);
-    final ShuffleConsumer sc3_worker2 = new ShuffleConsumer(tableSchema, beforeIngress2, workerIDs);
+    final GenericShuffleProducer sp3_worker1 =
+
+    new GenericShuffleProducer(null, beforeIngress2, new int[] { workerIDs[0], workerIDs[1] }, pf0);
+    final GenericShuffleProducer sp3_worker2 =
+        new GenericShuffleProducer(null, beforeIngress2, new int[] { workerIDs[0], workerIDs[1] }, pf0);
+    final GenericShuffleConsumer sc3_worker1 =
+        new GenericShuffleConsumer(tableSchema, beforeIngress2, new int[] { workerIDs[0], workerIDs[1] });
+    final GenericShuffleConsumer sc3_worker2 =
+        new GenericShuffleConsumer(tableSchema, beforeIngress2, new int[] { workerIDs[0], workerIDs[1] });
     final Consumer eosReceiver = new Consumer(Schema.EMPTY_SCHEMA, eosReceiverOpID, new int[] { workerIDs[0] });
 
     final IDBInput idbinput_worker1 =
@@ -232,8 +242,12 @@ public class IterativeFailureTest extends SystemTestBase {
       workerPlan.get(1).add(cp_worker2);
     }
     if (sendingOpID != null) {
-      final ShuffleProducer sp_others_worker1 = new ShuffleProducer(send2others_worker1, sendingOpID, workerIDs, pf1);
-      final ShuffleProducer sp_others_worker2 = new ShuffleProducer(send2others_worker2, sendingOpID, workerIDs, pf1);
+
+      final GenericShuffleProducer sp_others_worker1 =
+
+      new GenericShuffleProducer(send2others_worker1, sendingOpID, new int[] { workerIDs[0], workerIDs[1] }, pf1);
+      final GenericShuffleProducer sp_others_worker2 =
+          new GenericShuffleProducer(send2others_worker2, sendingOpID, new int[] { workerIDs[0], workerIDs[1] }, pf1);
       workerPlan.get(0).add(sp_others_worker1);
       workerPlan.get(1).add(sp_others_worker2);
     }

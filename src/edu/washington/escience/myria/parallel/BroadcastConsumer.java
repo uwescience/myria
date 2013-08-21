@@ -12,9 +12,11 @@ import edu.washington.escience.myria.Schema;
  * BroadcastProducer send multiple copies of tuples to a set of workers. Each worker will receive the same tuples
  * 
  * @author Shumo Chu (chushumo@cs.washington.edu)
+ * @deprecated
  * 
  */
 
+@Deprecated
 public final class BroadcastConsumer extends Consumer {
 
   /** The logger for this class. */
