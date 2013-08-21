@@ -13,7 +13,7 @@ from google.protobuf import descriptor_pb2
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='control.proto',
   package='',
-  serialized_pb='\n\rcontrol.proto\"\xbb\x01\n\x0e\x43ontrolMessage\x12\"\n\x04type\x18\x01 \x02(\x0e\x32\x14.ControlMessage.Type\x12\x11\n\tworker_id\x18\x02 \x01(\x05\x12#\n\x0eremote_address\x18\x03 \x01(\x0b\x32\x0b.SocketInfo\"M\n\x04Type\x12\x0c\n\x08SHUTDOWN\x10\x01\x12\x14\n\x10WORKER_HEARTBEAT\x10\x02\x12\x11\n\rREMOVE_WORKER\x10\x03\x12\x0e\n\nADD_WORKER\x10\x04\"(\n\nSocketInfo\x12\x0c\n\x04host\x18\x01 \x02(\t\x12\x0c\n\x04port\x18\x02 \x02(\x05\x42\x33\n#edu.washington.escience.myria.protoB\x0c\x43ontrolProto')
+  serialized_pb='\n\rcontrol.proto\"\xe6\x01\n\x0e\x43ontrolMessage\x12\"\n\x04type\x18\x01 \x02(\x0e\x32\x14.ControlMessage.Type\x12\x11\n\tworker_id\x18\x02 \x01(\x05\x12#\n\x0eremote_address\x18\x03 \x01(\x0b\x32\x0b.SocketInfo\"x\n\x04Type\x12\x0c\n\x08SHUTDOWN\x10\x01\x12\x14\n\x10WORKER_HEARTBEAT\x10\x02\x12\x11\n\rREMOVE_WORKER\x10\x03\x12\x0e\n\nADD_WORKER\x10\x04\x12\x15\n\x11REMOVE_WORKER_ACK\x10\x05\x12\x12\n\x0e\x41\x44\x44_WORKER_ACK\x10\x06\"(\n\nSocketInfo\x12\x0c\n\x04host\x18\x01 \x02(\t\x12\x0c\n\x04port\x18\x02 \x02(\x05\x42\x33\n#edu.washington.escience.myria.protoB\x0c\x43ontrolProto')
 
 
 
@@ -39,11 +39,15 @@ _CONTROLMESSAGE_TYPE = _descriptor.EnumDescriptor(
       name='ADD_WORKER', index=3, number=4,
       options=None,
       type=None),
+    _descriptor.EnumValueDescriptor(
+      name='REMOVE_WORKER_ACK', index=4, number=5,
+      options=None,
+      type=None),
   ],
   containing_type=None,
   options=None,
   serialized_start=128,
-  serialized_end=205,
+  serialized_end=248,
 )
 
 
@@ -86,7 +90,7 @@ _CONTROLMESSAGE = _descriptor.Descriptor(
   is_extendable=False,
   extension_ranges=[],
   serialized_start=18,
-  serialized_end=205,
+  serialized_end=248,
 )
 
 
@@ -120,8 +124,8 @@ _SOCKETINFO = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=207,
-  serialized_end=247,
+  serialized_start=250,
+  serialized_end=290,
 )
 
 _CONTROLMESSAGE.fields_by_name['type'].enum_type = _CONTROLMESSAGE_TYPE

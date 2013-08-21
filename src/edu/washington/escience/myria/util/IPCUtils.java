@@ -146,6 +146,15 @@ public final class IPCUtils {
   }
 
   /**
+   * @param workerId the id of the worker to be removed.
+   * @return the remove worker TM.
+   * */
+  public static TransportMessage removeWorkerAckTM(final int workerId) {
+    return TransportMessage.newBuilder().setType(TransportMessage.Type.CONTROL).setControlMessage(
+        ControlMessage.newBuilder().setType(ControlMessage.Type.REMOVE_WORKER_ACK).setWorkerId(workerId)).build();
+  }
+
+  /**
    * @param workerId the id of the worker to be added.
    * @param socketinfo the SocketInfo of the worker to be added.
    * @return the add worker TM.

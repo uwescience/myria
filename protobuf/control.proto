@@ -5,8 +5,9 @@ message ControlMessage {
   enum Type {
     SHUTDOWN = 1; // master -> workers
     WORKER_HEARTBEAT = 2; // worker -> master
-	REMOVE_WORKER = 3; // master -> workers
-	ADD_WORKER = 4; // master -> workers
+    REMOVE_WORKER = 3; // master -> workers
+    ADD_WORKER = 4; // master -> workers
+    REMOVE_WORKER_ACK = 5; // worker -> master
   }
 
   required ControlMessage.Type type = 1;		// See enum above
