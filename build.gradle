@@ -27,6 +27,11 @@ sourceSets {
     java.srcDir 'test'
     output.classesDir = 'build/test'
   }
+  /* Code for systemtests */
+  systemtest {
+    java.srcDir 'systemtest'
+    output.classesDir = 'build/systemtest'
+  }
   /* Code for speedtests */
   speedtest {
     java.srcDir 'speedtest'
@@ -42,6 +47,7 @@ sourceSets {
 
 /* Compile, but don't run the speed tests when building the project. */
 check.dependsOn speedtestClasses
+check.dependsOn systemtestClasses
 check.dependsOn testsuitesClasses
 /* Build the Eclipse .classpath file first, because if Gradle's build fails
  * we'll want to use Eclipse to debug it. */
@@ -108,15 +114,20 @@ dependencies {
 
   testCompile "junit:junit:4.11"
 
+  systemtestCompile sourceSets.main.output
+  systemtestCompile configurations.testCompile
+  systemtestCompile sourceSets.test.output
+  systemtestRuntime configurations.testRuntime
+
   speedtestCompile sourceSets.main.output
-  speedtestCompile configurations.testCompile
-  speedtestCompile sourceSets.test.output
-  speedtestRuntime configurations.testRuntime
+  speedtestCompile configurations.systemtestCompile
+  speedtestCompile sourceSets.systemtest.output
+  speedtestRuntime configurations.systemtestRuntime
 
   testsuitesCompile sourceSets.main.output
-  testsuitesCompile configurations.testCompile
-  testsuitesCompile sourceSets.test.output
-  testsuitesRuntime configurations.testRuntime
+  testsuitesCompile configurations.systemtestCompile
+  testsuitesCompile sourceSets.systemtest.output
+  testsuitesRuntime configurations.systemtestRuntime
 }
 
 /* Tell Java to emit all compiler warnings. */
@@ -129,7 +140,11 @@ tasks.withType(Test) {
   systemProperty "java.library.path", file("lib/sqlite4java-282")
 }
 
-/* Tell gradle where speedtest & testsuites should look for its classes. */
+/* Tell gradle where additional tests & testsuites should look for classes. */
+task systemtest(type: Test) {
+  testClassesDir = sourceSets.systemtest.output.classesDir
+  classpath = sourceSets.systemtest.runtimeClasspath
+}
 task speedtest(type: Test) {
   testClassesDir = sourceSets.speedtest.output.classesDir
   classpath = sourceSets.speedtest.runtimeClasspath
@@ -169,6 +184,7 @@ eclipse.classpath {
       cp.entries.findAll { it instanceof SourceFolder && it.path.startsWith("protobuf") }*.output = "build/main"
       cp.entries.findAll { it instanceof SourceFolder && it.path.startsWith("third-party-src") }*.output = "build/main"
       cp.entries.findAll { it instanceof SourceFolder && it.path.startsWith("test") }*.output = "build/test"
+      cp.entries.findAll { it instanceof SourceFolder && it.path.startsWith("systemtest") }*.output = "build/systemtest"
       cp.entries.findAll { it instanceof SourceFolder && it.path.startsWith("speedtest") }*.output = "build/speedtest"
       cp.entries.findAll { it instanceof SourceFolder && it.path.startsWith("testsuites") }*.output = "build/testsuites"
     }
