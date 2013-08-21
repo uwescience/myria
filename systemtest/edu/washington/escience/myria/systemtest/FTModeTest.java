@@ -30,6 +30,7 @@ import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.TBQueueExporter;
+import edu.washington.escience.myria.operator.failures.DelayInjector;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.Consumer;
@@ -43,7 +44,6 @@ import edu.washington.escience.myria.parallel.ShuffleConsumer;
 import edu.washington.escience.myria.parallel.ShuffleProducer;
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
-import edu.washington.escience.myria.util.DelayInjector;
 import edu.washington.escience.myria.util.TestUtils;
 
 public class FTModeTest extends SystemTestBase {

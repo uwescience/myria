@@ -16,14 +16,14 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
+import edu.washington.escience.myria.operator.failures.CleanupFailureInjector;
+import edu.washington.escience.myria.operator.failures.DelayInjector;
+import edu.washington.escience.myria.operator.failures.InitFailureInjector;
+import edu.washington.escience.myria.operator.failures.SingleRandomFailureInjector;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.QueryFuture;
-import edu.washington.escience.myria.util.CleanupFailureInjector;
-import edu.washington.escience.myria.util.DelayInjector;
-import edu.washington.escience.myria.util.InitFailureInjector;
-import edu.washington.escience.myria.util.SingleRandomFailureInjector;
 import edu.washington.escience.myria.util.TestUtils;
 
 public class QueryFailureTest extends SystemTestBase {

@@ -1,4 +1,4 @@
-package edu.washington.escience.myria.util;
+package edu.washington.escience.myria.ipc;
 
 import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.channel.ChannelPipelineFactory;

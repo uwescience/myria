@@ -20,6 +20,7 @@ import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.util.TestUtils;
+import edu.washington.escience.myria.util.Tuple;
 
 public class CollectTest extends SystemTestBase {
 

@@ -24,6 +24,7 @@ import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.LocalMultiwayConsumer;
 import edu.washington.escience.myria.parallel.LocalMultiwayProducer;
 import edu.washington.escience.myria.util.TestUtils;
+import edu.washington.escience.myria.util.Tuple;
 
 public class LocalMultiwayProducerTest extends SystemTestBase {
 

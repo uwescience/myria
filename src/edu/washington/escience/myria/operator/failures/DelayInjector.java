@@ -1,4 +1,4 @@
-package edu.washington.escience.myria.util;
+package edu.washington.escience.myria.operator.failures;
 
 import java.util.concurrent.TimeUnit;
 

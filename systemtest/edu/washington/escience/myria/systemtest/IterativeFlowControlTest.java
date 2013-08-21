@@ -42,6 +42,7 @@ import edu.washington.escience.myria.parallel.LocalMultiwayProducer;
 import edu.washington.escience.myria.parallel.PartitionFunction;
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.util.TestUtils;
+import edu.washington.escience.myria.util.Tuple;
 
 public class IterativeFlowControlTest extends SystemTestBase {
   // change configuration here

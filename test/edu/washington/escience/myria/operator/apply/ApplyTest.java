@@ -1,4 +1,4 @@
-package edu.washington.escience.myria.operator;
+package edu.washington.escience.myria.operator.apply;
 
 import static org.junit.Assert.assertEquals;
 

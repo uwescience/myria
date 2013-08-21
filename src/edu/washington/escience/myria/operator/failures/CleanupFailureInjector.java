@@ -1,4 +1,4 @@
-package edu.washington.escience.myria.util;
+package edu.washington.escience.myria.operator.failures;
 
 import com.google.common.collect.ImmutableMap;
 
@@ -9,32 +9,29 @@ import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.UnaryOperator;
 
 /**
- * Injects an {@link InjectedFailureException} during initialization. </ul>
+ * Injects an {@link InjectedFailureException} during cleanup.
  */
-public class InitFailureInjector extends UnaryOperator {
+public class CleanupFailureInjector extends UnaryOperator {
 
   /**
-   * @param delay the delay
-   * @param delayUnit the timeunit of the delay
-   * @param failureProbabilityPerSecond per second failure probability.
    * @param child the child operator.
-   * */
-  public InitFailureInjector(final Operator child) {
+   */
+  public CleanupFailureInjector(final Operator child) {
     super(child);
   }
 
   /**
-   * 
+   * Required for Java serialization.
    */
   private static final long serialVersionUID = 1L;
 
   @Override
   protected final void init(final ImmutableMap<String, Object> initProperties) throws DbException {
-    throw new InjectedFailureException("Failure in init.");
   }
 
   @Override
   protected final void cleanup() throws DbException {
+    throw new InjectedFailureException("Failure in cleanup.");
   }
 
   @Override
@@ -46,5 +43,4 @@ public class InitFailureInjector extends UnaryOperator {
   public final Schema getSchema() {
     return getChild().getSchema();
   }
-
 }

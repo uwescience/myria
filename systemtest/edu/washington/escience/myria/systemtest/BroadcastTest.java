@@ -24,6 +24,7 @@ import edu.washington.escience.myria.parallel.FixValuePartitionFunction;
 import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
 import edu.washington.escience.myria.parallel.GenericShuffleProducer;
 import edu.washington.escience.myria.util.TestUtils;
+import edu.washington.escience.myria.util.Tuple;
 
 /**
  * 

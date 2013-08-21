@@ -21,8 +21,8 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.TupleSource;
-import edu.washington.escience.myria.systemtest.SystemTestBase.Tuple;
 import edu.washington.escience.myria.util.TestUtils;
+import edu.washington.escience.myria.util.Tuple;
 
 public class VerticaJdbcAccessMethodTest {
 

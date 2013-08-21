@@ -27,6 +27,8 @@ import edu.washington.escience.myria.operator.Merge;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
+import edu.washington.escience.myria.operator.failures.DelayInjector;
+import edu.washington.escience.myria.operator.failures.SingleRandomFailureInjector;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.Consumer;
@@ -38,8 +40,6 @@ import edu.washington.escience.myria.parallel.LocalMultiwayConsumer;
 import edu.washington.escience.myria.parallel.LocalMultiwayProducer;
 import edu.washington.escience.myria.parallel.PartitionFunction;
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
-import edu.washington.escience.myria.util.DelayInjector;
-import edu.washington.escience.myria.util.SingleRandomFailureInjector;
 import edu.washington.escience.myria.util.TestUtils;
 
 public class IterativeFailureTest extends SystemTestBase {

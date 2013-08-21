@@ -1,4 +1,4 @@
-package edu.washington.escience.myria.util;
+package edu.washington.escience.myria.operator.failures;
 
 import edu.washington.escience.myria.DbException;
 

@@ -22,11 +22,10 @@ import edu.washington.escience.myria.accessmethod.SQLiteAccessMethod;
 import edu.washington.escience.myria.accessmethod.SQLiteInfo;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.Operator;
-import edu.washington.escience.myria.systemtest.SystemTestBase;
-import edu.washington.escience.myria.systemtest.SystemTestBase.Tuple;
 import edu.washington.escience.myria.util.FSUtils;
 import edu.washington.escience.myria.util.SQLiteUtils;
 import edu.washington.escience.myria.util.TestUtils;
+import edu.washington.escience.myria.util.Tuple;
 
 public class SQLiteTest {
   /** The logger for this class. */
@@ -103,7 +102,7 @@ public class SQLiteTest {
     /* Cleanup */
     root.close();
 
-    final HashMap<SystemTestBase.Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(result);
+    final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(result);
 
     TestUtils.assertTupleBagEqual(expectedResult, resultBag);
 
