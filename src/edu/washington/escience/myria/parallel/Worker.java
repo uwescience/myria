@@ -105,6 +105,8 @@ public final class Worker {
                     if (wqp.getFTMode().equals(FTMODE.abandon)) {
                       wqp.getMissingWorkers().add(workerId);
                       wqp.triggerTasks();
+                    } else if (wqp.getFTMode().equals(FTMODE.rejoin)) {
+                      wqp.getMissingWorkers().add(workerId);
                     }
                   }
                   break;

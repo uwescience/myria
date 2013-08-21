@@ -79,6 +79,8 @@ public class MasterQueryPartition implements QueryPartition {
                 kill();
               } else if (ftMode.equals(FTMODE.abandon)) {
                 // do nothing
+              } else if (ftMode.equals(FTMODE.rejoin)) {
+                // do nothing
               }
             }
           }
@@ -353,6 +355,10 @@ public class MasterQueryPartition implements QueryPartition {
 
     if (LOGGER.isInfoEnabled()) {
       LOGGER.info("Received query complete (fail) message from worker: {}, cause: {}", workerID, cause.toString());
+    }
+    if (ftMode.equals(FTMODE.rejoin) && cause.toString().endsWith("LostHeartbeatException")) {
+      /* for rejoin, don't set it to be completed since this worker is expected to be launched again. */
+      return;
     }
     wei.workerCompleteQuery.setFailure(cause);
   }
