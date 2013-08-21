@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -250,8 +251,9 @@ public class SystemTestBase {
 
   public Map<Integer, SocketInfo> getWorkers() {
     HashMap<Integer, SocketInfo> m = new HashMap<Integer, SocketInfo>();
-    m.put(1, new SocketInfo(DEFAULT_WORKER_STARTING_PORT));
-    m.put(2, new SocketInfo(DEFAULT_WORKER_STARTING_PORT + 1));
+    Random r = new Random();
+    m.put(MyriaConstants.MASTER_ID + r.nextInt(100) + 1, new SocketInfo(DEFAULT_WORKER_STARTING_PORT));
+    m.put(MyriaConstants.MASTER_ID + r.nextInt(100) + 101, new SocketInfo(DEFAULT_WORKER_STARTING_PORT + 1));
     return m;
   }
 
