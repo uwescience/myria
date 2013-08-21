@@ -57,10 +57,10 @@ public class BroadcastTest extends SystemTestBase {
 
     /* Set producer */
     final DbQueryScan scan1 = new DbQueryScan(testtable1Key, schema);
-    final BroadcastProducer bp = new BroadcastProducer(scan1, broadcastID, WORKER_ID);
+    final BroadcastProducer bp = new BroadcastProducer(scan1, broadcastID, workerIDs);
 
     /* Set consumer */
-    final BroadcastConsumer bs = new BroadcastConsumer(schema, broadcastID, WORKER_ID);
+    final BroadcastConsumer bs = new BroadcastConsumer(schema, broadcastID, workerIDs);
 
     /* Set collect producer which will send data inner-joined */
     final DbQueryScan scan2 = new DbQueryScan(testtable2Key, schema);
@@ -72,10 +72,10 @@ public class BroadcastTest extends SystemTestBase {
 
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
 
-    workerPlans.put(WORKER_ID[0], new RootOperator[] { cp, bp });
-    workerPlans.put(WORKER_ID[1], new RootOperator[] { cp, bp });
+    workerPlans.put(workerIDs[0], new RootOperator[] { cp, bp });
+    workerPlans.put(workerIDs[1], new RootOperator[] { cp, bp });
 
-    final CollectConsumer serverCollect = new CollectConsumer(cp.getSchema(), serverReceiveID, WORKER_ID);
+    final CollectConsumer serverCollect = new CollectConsumer(cp.getSchema(), serverReceiveID, workerIDs);
     final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
     SinkRoot serverPlan = new SinkRoot(queueStore);

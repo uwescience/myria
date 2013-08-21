@@ -36,10 +36,10 @@ public class ParallelDistinctUsingSQLiteTest extends SystemTestBase {
     final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
     final RelationKey temptableKey = RelationKey.of("test", "test", "temptable");
 
-    createTable(WORKER_ID[0], testtableKey, "id int, name varchar(20)");
-    createTable(WORKER_ID[1], testtableKey, "id int, name varchar(20)");
-    createTable(WORKER_ID[0], temptableKey, "id int, name varchar(20)");
-    createTable(WORKER_ID[1], temptableKey, "id int, name varchar(20)");
+    createTable(workerIDs[0], testtableKey, "id int, name varchar(20)");
+    createTable(workerIDs[1], testtableKey, "id int, name varchar(20)");
+    createTable(workerIDs[0], temptableKey, "id int, name varchar(20)");
+    createTable(workerIDs[1], temptableKey, "id int, name varchar(20)");
 
     final String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, 20, 20);
     final long[] ids = TestUtils.randomLong(1000, 1005, names.length);
@@ -53,8 +53,8 @@ public class ParallelDistinctUsingSQLiteTest extends SystemTestBase {
 
     TupleBatch tb = null;
     while ((tb = tbb.popAny()) != null) {
-      insert(WORKER_ID[0], testtableKey, schema, tb);
-      insert(WORKER_ID[1], testtableKey, schema, tb);
+      insert(workerIDs[0], testtableKey, schema, tb);
+      insert(workerIDs[1], testtableKey, schema, tb);
     }
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
@@ -62,10 +62,10 @@ public class ParallelDistinctUsingSQLiteTest extends SystemTestBase {
 
     final DbQueryScan scan =
         new DbQueryScan("select distinct * from " + testtableKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), schema);
-    final CollectProducer cp = new CollectProducer(scan, worker2ReceiveID, WORKER_ID[1]);
+    final CollectProducer cp = new CollectProducer(scan, worker2ReceiveID, workerIDs[1]);
 
     // CollectProducer child, ParallelOperatorID operatorID, SocketInfo[] workers
-    final CollectConsumer cc = new CollectConsumer(cp.getSchema(), worker2ReceiveID, WORKER_ID);
+    final CollectConsumer cc = new CollectConsumer(cp.getSchema(), worker2ReceiveID, workerIDs);
     final BlockingSQLiteDataReceiver block2 =
         new BlockingSQLiteDataReceiver(RelationKey.of("test", "test", "temptable"), cc);
     final SQLiteSQLProcessor scan22 =
@@ -73,10 +73,10 @@ public class ParallelDistinctUsingSQLiteTest extends SystemTestBase {
             schema, new Operator[] { block2 });
     final CollectProducer cp22 = new CollectProducer(scan22, serverReceiveID, MASTER_ID);
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
-    workerPlans.put(WORKER_ID[0], new RootOperator[] { cp });
-    workerPlans.put(WORKER_ID[1], new RootOperator[] { cp, cp22 });
+    workerPlans.put(workerIDs[0], new RootOperator[] { cp });
+    workerPlans.put(workerIDs[1], new RootOperator[] { cp, cp22 });
 
-    final CollectConsumer serverCollect = new CollectConsumer(schema, serverReceiveID, new int[] { WORKER_ID[1] });
+    final CollectConsumer serverCollect = new CollectConsumer(schema, serverReceiveID, new int[] { workerIDs[1] });
     final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
     final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
     final SinkRoot serverPlan = new SinkRoot(queueStore);

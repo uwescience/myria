@@ -55,14 +55,14 @@ public class MergeTest extends SystemTestBase {
     final RelationKey testtable0Key = RelationKey.of("test", "test", "testtable0");
     final RelationKey testtable1Key = RelationKey.of("test", "test", "testtable1");
 
-    createTable(WORKER_ID[0], testtable0Key, "follower long, followee long");
-    createTable(WORKER_ID[0], testtable1Key, "follower long, followee long");
+    createTable(workerIDs[0], testtable0Key, "follower long, followee long");
+    createTable(workerIDs[0], testtable1Key, "follower long, followee long");
     TupleBatch tb = null;
     while ((tb = tbl1.popAny()) != null) {
-      insert(WORKER_ID[0], testtable0Key, tableSchema, tb);
+      insert(workerIDs[0], testtable0Key, tableSchema, tb);
     }
     while ((tb = tbl2.popAny()) != null) {
-      insert(WORKER_ID[0], testtable1Key, tableSchema, tb);
+      insert(workerIDs[0], testtable1Key, tableSchema, tb);
     }
 
     final DbQueryScan scan1 = new DbQueryScan(testtable0Key, tableSchema);
@@ -72,9 +72,9 @@ public class MergeTest extends SystemTestBase {
     final CollectProducer cp = new CollectProducer(merge, serverReceiveID, MASTER_ID);
 
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
-    workerPlans.put(WORKER_ID[0], new RootOperator[] { cp });
+    workerPlans.put(workerIDs[0], new RootOperator[] { cp });
 
-    final CollectConsumer serverCollect = new CollectConsumer(tableSchema, serverReceiveID, new int[] { WORKER_ID[0] });
+    final CollectConsumer serverCollect = new CollectConsumer(tableSchema, serverReceiveID, new int[] { workerIDs[0] });
 
     final SinkRoot serverPlan = new SinkRoot(serverCollect);
 
