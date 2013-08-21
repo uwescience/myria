@@ -9,7 +9,6 @@ import com.google.common.collect.ImmutableList;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.parallel.GenericShuffleProducer;
 import edu.washington.escience.myria.parallel.Server;
-import edu.washington.escience.myria.util.ArrayUtils;
 import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
@@ -30,8 +29,8 @@ public class ShuffleProducerEncoding extends AbstractProducerEncoding<GenericShu
   @Override
   public GenericShuffleProducer construct(Server server) {
     Set<Integer> workerIds = getRealWorkerIds();
-    return new GenericShuffleProducer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), ArrayUtils
-        .get2DArray(MyriaUtils.integerCollectionToIntArray(workerIds)), argPf.construct(workerIds.size()));
+    return new GenericShuffleProducer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), MyriaUtils
+        .integerCollectionToIntArray(workerIds), argPf.construct(workerIds.size()));
   }
 
   @Override

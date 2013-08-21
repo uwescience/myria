@@ -168,7 +168,8 @@ public class IterativeFailureTest extends SystemTestBase {
       ExchangePairID joinArrayID = ExchangePairID.newID();
       final DbQueryScan scan1 = new DbQueryScan(RelationKey.of("test", "test", "r"), tableSchema);
       final GenericShuffleProducer sp1 =
-          new GenericShuffleProducer(scan1, joinArrayID, new int[][] { { workerIDs[0] }, { workerIDs[1] } }, pf1);
+
+      new GenericShuffleProducer(scan1, joinArrayID, new int[] { workerIDs[0], workerIDs[1] }, pf1);
       sc1 = new GenericShuffleConsumer(tableSchema, joinArrayID, new int[] { workerIDs[0], workerIDs[1] });
       workerPlan.get(0).add(sp1);
       workerPlan.get(1).add(sp1);
@@ -178,14 +179,16 @@ public class IterativeFailureTest extends SystemTestBase {
     final DbQueryScan scan2 = new DbQueryScan(RelationKey.of("test", "test", initName), tableSchema);
     final ExchangePairID beforeIngress1 = ExchangePairID.newID();
     final GenericShuffleProducer sp2 =
-        new GenericShuffleProducer(scan2, beforeIngress1, new int[][] { { workerIDs[0] }, { workerIDs[1] } }, pf0);
+
+    new GenericShuffleProducer(scan2, beforeIngress1, new int[] { workerIDs[0], workerIDs[1] }, pf0);
     final GenericShuffleConsumer sc2 =
         new GenericShuffleConsumer(tableSchema, beforeIngress1, new int[] { workerIDs[0], workerIDs[1] });
     final ExchangePairID beforeIngress2 = ExchangePairID.newID();
     final GenericShuffleProducer sp3_worker1 =
-        new GenericShuffleProducer(null, beforeIngress2, new int[][] { { workerIDs[0] }, { workerIDs[1] } }, pf0);
+
+    new GenericShuffleProducer(null, beforeIngress2, new int[] { workerIDs[0], workerIDs[1] }, pf0);
     final GenericShuffleProducer sp3_worker2 =
-        new GenericShuffleProducer(null, beforeIngress2, new int[][] { { workerIDs[0] }, { workerIDs[1] } }, pf0);
+        new GenericShuffleProducer(null, beforeIngress2, new int[] { workerIDs[0], workerIDs[1] }, pf0);
     final GenericShuffleConsumer sc3_worker1 =
         new GenericShuffleConsumer(tableSchema, beforeIngress2, new int[] { workerIDs[0], workerIDs[1] });
     final GenericShuffleConsumer sc3_worker2 =
@@ -241,11 +244,10 @@ public class IterativeFailureTest extends SystemTestBase {
     if (sendingOpID != null) {
 
       final GenericShuffleProducer sp_others_worker1 =
-          new GenericShuffleProducer(send2others_worker1, sendingOpID,
-              new int[][] { { workerIDs[0] }, { workerIDs[1] } }, pf1);
+
+      new GenericShuffleProducer(send2others_worker1, sendingOpID, new int[] { workerIDs[0], workerIDs[1] }, pf1);
       final GenericShuffleProducer sp_others_worker2 =
-          new GenericShuffleProducer(send2others_worker2, sendingOpID,
-              new int[][] { { workerIDs[0] }, { workerIDs[1] } }, pf1);
+          new GenericShuffleProducer(send2others_worker2, sendingOpID, new int[] { workerIDs[0], workerIDs[1] }, pf1);
       workerPlan.get(0).add(sp_others_worker1);
       workerPlan.get(1).add(sp_others_worker2);
     }

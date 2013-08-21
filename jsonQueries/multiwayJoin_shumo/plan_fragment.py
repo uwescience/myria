@@ -33,7 +33,7 @@ def scan_R_then_shuffle():
             }
         ],
         "hyper_cube_dimensions" : [2,2],
-        "cell_partition": [ [1,2],[3,4] ]           
+        "cell_partition": [ [0,1],[2,3] ]           
     }
 
     fragment = {
@@ -61,7 +61,7 @@ def scan_S_then_shuffle():
             }
         ],
         "hyper_cube_dimensions" : [2,2],
-        "cell_partition": [ [1,3],[2,4] ]           
+        "cell_partition": [ [0,2],[1,3] ]           
     }
     fragment = {
         "operators" : [scan, hyper_shuffle]

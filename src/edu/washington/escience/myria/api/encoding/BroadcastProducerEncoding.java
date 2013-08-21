@@ -32,8 +32,14 @@ public class BroadcastProducerEncoding extends AbstractProducerEncoding<GenericS
 
   @Override
   public GenericShuffleProducer construct(Server server) {
-    return new GenericShuffleProducer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), new int[][] { MyriaUtils
-        .integerCollectionToIntArray(getRealWorkerIds()) }, new FixValuePartitionFunction(0));
+    int[][] cellPartition = new int[1][];
+    int[] allCells = new int[getRealWorkerIds().size()];
+    for (int i = 0; i < getRealWorkerIds().size(); i++) {
+      allCells[i] = i;
+    }
+    cellPartition[0] = allCells;
+    return new GenericShuffleProducer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), cellPartition,
+        MyriaUtils.integerCollectionToIntArray(getRealWorkerIds()), new FixValuePartitionFunction(0));
   }
 
   @Override

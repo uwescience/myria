@@ -53,7 +53,6 @@ import edu.washington.escience.myria.proto.QueryProto.QueryMessage;
 import edu.washington.escience.myria.proto.QueryProto.QueryReport;
 import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myria.tool.MyriaConfigurationReader;
-import edu.washington.escience.myria.util.ArrayUtils;
 import edu.washington.escience.myria.util.DateTimeUtils;
 import edu.washington.escience.myria.util.DeploymentUtils;
 import edu.washington.escience.myria.util.IPCUtils;
@@ -942,7 +941,7 @@ public final class Server {
     /* The master plan: send the tuples out. */
     ExchangePairID scatterId = ExchangePairID.newID();
     GenericShuffleProducer scatter =
-        new GenericShuffleProducer(source, scatterId, ArrayUtils.get2DArray(workersArray),
+        new GenericShuffleProducer(source, scatterId, workersArray,
             new RoundRobinPartitionFunction(workersArray.length));
 
     /* The workers' plan */

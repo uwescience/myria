@@ -50,7 +50,7 @@ public class SplitDataTest extends SystemTestBase {
     final ExchangePairID shuffleId = ExchangePairID.newID();
 
     final GenericShuffleProducer scatter =
-        new GenericShuffleProducer(source, shuffleId, new int[][] { { workerIDs[0] }, { workerIDs[1] } },
+        new GenericShuffleProducer(source, shuffleId, new int[] { workerIDs[0], workerIDs[1] },
             new RoundRobinPartitionFunction(workerIDs.length));
 
     /* ... and the corresponding shuffle consumer. */

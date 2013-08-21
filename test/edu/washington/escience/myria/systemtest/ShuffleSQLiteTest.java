@@ -76,9 +76,9 @@ public class ShuffleSQLiteTest extends SystemTestBase {
     final DbQueryScan scan2 = new DbQueryScan(testtable2Key, schema);
 
     final GenericShuffleProducer sp1 =
-        new GenericShuffleProducer(scan1, shuffle1ID, new int[][] { { workerIDs[0] }, { workerIDs[1] } }, pf);
+        new GenericShuffleProducer(scan1, shuffle1ID, new int[] { workerIDs[0], workerIDs[1] }, pf);
     final GenericShuffleProducer sp2 =
-        new GenericShuffleProducer(scan2, shuffle2ID, new int[][] { { workerIDs[0] }, { workerIDs[1] } }, pf);
+        new GenericShuffleProducer(scan2, shuffle2ID, new int[] { workerIDs[0], workerIDs[1] }, pf);
 
     /* Set shuffle consumers, sc1, sc2, which received data and store as new table temptable1 and 2 */
     final GenericShuffleConsumer sc1 =

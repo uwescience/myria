@@ -180,12 +180,11 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final DbQueryScan scan2 = new DbQueryScan(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA);
 
     final GenericShuffleProducer sp1 =
-        new GenericShuffleProducer(scan1, table1ShuffleID, new int[][] { { workerIDs[0] }, { workerIDs[1] } }, pf);
+        new GenericShuffleProducer(scan1, table1ShuffleID, new int[] { workerIDs[0], workerIDs[1] }, pf);
     final GenericShuffleConsumer sc1 =
         new GenericShuffleConsumer(sp1.getSchema(), table1ShuffleID, new int[] { workerIDs[0], workerIDs[1] });
-
     final GenericShuffleProducer sp2 =
-        new GenericShuffleProducer(scan2, table2ShuffleID, new int[][] { { workerIDs[0] }, { workerIDs[1] } }, pf);
+        new GenericShuffleProducer(scan2, table2ShuffleID, new int[] { workerIDs[0], workerIDs[1] }, pf);
     final GenericShuffleConsumer sc2 =
         new GenericShuffleConsumer(sp2.getSchema(), table2ShuffleID, new int[] { workerIDs[0], workerIDs[1] });
 
@@ -233,12 +232,12 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final DbQueryScan scan2 = new DbQueryScan(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA);
 
     final GenericShuffleProducer sp1 =
-        new GenericShuffleProducer(scan1, table1ShuffleID, new int[][] { { workerIDs[0] }, { workerIDs[1] } }, pf);
+        new GenericShuffleProducer(scan1, table1ShuffleID, new int[] { workerIDs[0], workerIDs[1] }, pf);
     final GenericShuffleConsumer sc1 =
         new GenericShuffleConsumer(sp1.getSchema(), table1ShuffleID, new int[] { workerIDs[0], workerIDs[1] });
 
     final GenericShuffleProducer sp2 =
-        new GenericShuffleProducer(scan2, table2ShuffleID, new int[][] { { workerIDs[0] }, { workerIDs[1] } }, pf);
+        new GenericShuffleProducer(scan2, table2ShuffleID, new int[] { workerIDs[0], workerIDs[1] }, pf);
     final GenericShuffleConsumer sc2 =
         new GenericShuffleConsumer(sp2.getSchema(), table2ShuffleID, new int[] { workerIDs[0], workerIDs[1] });
 
@@ -291,12 +290,13 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final DbQueryScan scan2 = new DbQueryScan(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA);
 
     final GenericShuffleProducer sp1 =
-        new GenericShuffleProducer(scan1, table1ShuffleID, new int[][] { { workerIDs[0] }, { workerIDs[1] } }, pf);
+
+    new GenericShuffleProducer(scan1, table1ShuffleID, new int[] { workerIDs[0], workerIDs[1] }, pf);
     final GenericShuffleConsumer sc1 =
         new GenericShuffleConsumer(sp1.getSchema(), table1ShuffleID, new int[] { workerIDs[0], workerIDs[1] });
 
     final GenericShuffleProducer sp2 =
-        new GenericShuffleProducer(scan2, table2ShuffleID, new int[][] { { workerIDs[0] }, { workerIDs[1] } }, pf);
+        new GenericShuffleProducer(scan2, table2ShuffleID, new int[] { workerIDs[0], workerIDs[1] }, pf);
     final GenericShuffleConsumer sc2 =
         new GenericShuffleConsumer(sp2.getSchema(), table2ShuffleID, new int[] { workerIDs[0], workerIDs[1] });
 

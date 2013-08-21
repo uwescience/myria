@@ -205,9 +205,9 @@ public class MultithreadScanTest extends SystemTestBase {
     arrayID2 = ExchangePairID.newID();
 
     final GenericShuffleProducer sp1 =
-        new GenericShuffleProducer(de1, arrayID1, new int[][] { { workerIDs[0] }, { workerIDs[1] } }, pf0);
+        new GenericShuffleProducer(de1, arrayID1, new int[] { workerIDs[0], workerIDs[1] }, pf0);
     final GenericShuffleProducer sp2 =
-        new GenericShuffleProducer(de2, arrayID2, new int[][] { { workerIDs[0] }, { workerIDs[1] } }, pf0);
+        new GenericShuffleProducer(de2, arrayID2, new int[] { workerIDs[0], workerIDs[1] }, pf0);
     final GenericShuffleConsumer sc1 =
         new GenericShuffleConsumer(sp1.getSchema(), arrayID1, new int[] { workerIDs[0], workerIDs[1] });
     final GenericShuffleConsumer sc2 =

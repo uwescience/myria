@@ -165,8 +165,8 @@ public class IterativeSelfJoinTest extends SystemTestBase {
     arrayID1 = ExchangePairID.newID();
     arrayID2 = ExchangePairID.newID();
 
-    sp1[0] = new GenericShuffleProducer(scan1, arrayID1, new int[][] { { workerIDs[0] }, { workerIDs[1] } }, pf1);
-    sp2[0] = new GenericShuffleProducer(scan2, arrayID2, new int[][] { { workerIDs[0] }, { workerIDs[1] } }, pf0);
+    sp1[0] = new GenericShuffleProducer(scan1, arrayID1, new int[] { workerIDs[0], workerIDs[1] }, pf1);
+    sp2[0] = new GenericShuffleProducer(scan2, arrayID2, new int[] { workerIDs[0], workerIDs[1] }, pf0);
     subqueries.add(sp1[0]);
     subqueries.add(sp2[0]);
 
@@ -176,8 +176,8 @@ public class IterativeSelfJoinTest extends SystemTestBase {
       sc2[i] = new GenericShuffleConsumer(sp2[i - 1].getSchema(), arrayID2, new int[] { workerIDs[0], workerIDs[1] });
       localjoin[i] = new LocalJoin(sc1[i], sc2[i], new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
       arrayID0 = ExchangePairID.newID();
-      sp0[i] =
-          new GenericShuffleProducer(localjoin[i], arrayID0, new int[][] { { workerIDs[0] }, { workerIDs[1] } }, pf0);
+
+      sp0[i] = new GenericShuffleProducer(localjoin[i], arrayID0, new int[] { workerIDs[0], workerIDs[1] }, pf0);
       subqueries.add(sp0[i]);
       sc0[i] = new GenericShuffleConsumer(sp0[i].getSchema(), arrayID0, new int[] { workerIDs[0], workerIDs[1] });
       dupelim[i] = new DupElim(sc0[i]);
@@ -188,9 +188,8 @@ public class IterativeSelfJoinTest extends SystemTestBase {
       arrayID1 = ExchangePairID.newID();
       arrayID2 = ExchangePairID.newID();
 
-      sp1[i] = new GenericShuffleProducer(scan[i], arrayID1, new int[][] { { workerIDs[0] }, { workerIDs[1] } }, pf1);
-      sp2[i] =
-          new GenericShuffleProducer(dupelim[i], arrayID2, new int[][] { { workerIDs[0] }, { workerIDs[1] } }, pf0);
+      sp1[i] = new GenericShuffleProducer(scan[i], arrayID1, new int[] { workerIDs[0], workerIDs[1] }, pf1);
+      sp2[i] = new GenericShuffleProducer(dupelim[i], arrayID2, new int[] { workerIDs[0], workerIDs[1] }, pf0);
       subqueries.add(sp1[i]);
       subqueries.add(sp2[i]);
     }

@@ -29,14 +29,30 @@ public class GenericShuffleProducer extends Producer {
   private final int[][] cellPartition;
 
   /**
+   * one to one shuffle.
+   * 
+   * @param child the child who provides data for this producer to distribute.
+   * @param operatorID destination operators the data goes
+   * @param workerIDs set of destination workers
+   * @param pf the partition function
+   */
+  public GenericShuffleProducer(final Operator child, final ExchangePairID operatorID, final int[] workerIDs,
+      final PartitionFunction<?, ?> pf) {
+    this(child, operatorID, ArrayUtils.create2DIndex(workerIDs.length), workerIDs, pf);
+  }
+
+  /**
+   * one to many shuffle.
+   * 
    * @param child the child who provides data for this producer to distribute.
    * @param operatorID destination operators the data goes
    * @param cellPartition buckets of destination workers the data goes.
+   * @param workerIDs set of destination workers
    * @param pf the partition function
    * */
   public GenericShuffleProducer(final Operator child, final ExchangePairID operatorID, final int[][] cellPartition,
-      final PartitionFunction<?, ?> pf) {
-    super(child, operatorID, ArrayUtils.arrayFlattenThenSort(cellPartition));
+      final int[] workerIDs, final PartitionFunction<?, ?> pf) {
+    super(child, operatorID, workerIDs);
     partitionFunction = pf;
     this.cellPartition = cellPartition;
   }
@@ -58,7 +74,7 @@ public class GenericShuffleProducer extends Producer {
       while ((dm = etb.popAnyUsingTimeout()) != null) {
         for (int j : cellPartition[i]) {
           try {
-            writeMessage(j - 1, dm);
+            writeMessage(j, dm);
           } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return;
@@ -78,7 +94,7 @@ public class GenericShuffleProducer extends Producer {
       while ((dm = buffers[i].popAny()) != null) {
         for (int j : cellPartition[i]) {
           try {
-            writeMessage(j - 1, dm);
+            writeMessage(j, dm);
           } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return;
@@ -103,7 +119,7 @@ public class GenericShuffleProducer extends Producer {
       while ((dm = buffers[i].popAny()) != null) {
         for (int j : cellPartition[i]) {
           try {
-            writeMessage(j - 1, dm);
+            writeMessage(j, dm);
           } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return;
@@ -116,7 +132,7 @@ public class GenericShuffleProducer extends Producer {
     for (int[] element : cellPartition) {
       for (int j : element) {
         try {
-          writeMessage(j - 1, eoiTB);
+          writeMessage(j, eoiTB);
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
           return;
