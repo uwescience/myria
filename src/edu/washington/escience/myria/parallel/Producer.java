@@ -52,6 +52,11 @@ public abstract class Producer extends RootOperator {
   private transient TupleBatchBuffer[] buffers;
 
   /**
+   * output buffers.
+   * */
+  private transient List<List<TupleBatch>> backupBuffers;
+
+  /**
    * output channel IDs.
    * */
   private final StreamIOChannelID[] outputIDs;
@@ -161,6 +166,7 @@ public abstract class Producer extends RootOperator {
     ioChannels = new StreamOutputChannel[outputIDs.length];
     ioChannelsAvail = new boolean[outputIDs.length];
     buffers = new TupleBatchBuffer[outputIDs.length];
+    backupBuffers = new ArrayList<List<TupleBatch>>();
     localizedOutputIDs = new StreamIOChannelID[outputIDs.length];
     for (int i = 0; i < outputIDs.length; i++) {
       if (outputIDs[i].getRemoteID() == IPCConnectionPool.SELF_IPC_ID) {
@@ -197,6 +203,7 @@ public abstract class Producer extends RootOperator {
     });
     buffers[i] = new TupleBatchBuffer(getSchema());
     ioChannelsAvail[i] = true;
+    backupBuffers.add(i, new ArrayList<TupleBatch>());
   }
 
   /**
@@ -251,6 +258,10 @@ public abstract class Producer extends RootOperator {
         }
         if (tb == null) {
           break;
+        }
+        if (mode.equals(FTMODE.rejoin)) {
+          // rejoin, append the TB into the backup buffer in case of recovering
+          backupBuffers.get(i).add(tb);
         }
         try {
           writeMessage(i, tb);
@@ -343,11 +354,20 @@ public abstract class Producer extends RootOperator {
   }
 
   /**
+   * return the backup buffers.
+   * 
+   * @return backup buffers.
+   */
+  public final List<List<TupleBatch>> getBackupBuffers() {
+    return backupBuffers;
+  }
+
+  /**
    * return the indices of the channels that belong to the worker.
    * 
    * @param workerId the id of the worker.
    * @return the list of channel indices.
-   */
+   * */
   public final List<Integer> getChannelIndicesOfAWorker(final int workerId) {
     List<Integer> ret = new ArrayList<Integer>();
     for (int i = 0; i < numChannels(); ++i) {
