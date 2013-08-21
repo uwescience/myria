@@ -6,7 +6,8 @@ import java.util.Map;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.operator.Operator;
-import edu.washington.escience.myria.parallel.BroadcastProducer;
+import edu.washington.escience.myria.parallel.FixValuePartitionFunction;
+import edu.washington.escience.myria.parallel.GenericShuffleProducer;
 import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.util.MyriaUtils;
 
@@ -17,7 +18,7 @@ import edu.washington.escience.myria.util.MyriaUtils;
  * @author Shumo Chu <chushumo@cs.washington.edu>
  * 
  */
-public class BroadcastProducerEncoding extends AbstractProducerEncoding<BroadcastProducer> {
+public class BroadcastProducerEncoding extends AbstractProducerEncoding<GenericShuffleProducer> {
 
   public String argChild;
   public String argOperatorId;
@@ -30,9 +31,15 @@ public class BroadcastProducerEncoding extends AbstractProducerEncoding<Broadcas
   }
 
   @Override
-  public BroadcastProducer construct(Server server) {
-    return new BroadcastProducer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), MyriaUtils
-        .integerCollectionToIntArray(getRealWorkerIds()));
+  public GenericShuffleProducer construct(Server server) {
+    int[][] cellPartition = new int[1][];
+    int[] allCells = new int[getRealWorkerIds().size()];
+    for (int i = 0; i < getRealWorkerIds().size(); i++) {
+      allCells[i] = i;
+    }
+    cellPartition[0] = allCells;
+    return new GenericShuffleProducer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), cellPartition,
+        MyriaUtils.integerCollectionToIntArray(getRealWorkerIds()), new FixValuePartitionFunction(0));
   }
 
   @Override

@@ -23,9 +23,9 @@ import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
+import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
+import edu.washington.escience.myria.parallel.GenericShuffleProducer;
 import edu.washington.escience.myria.parallel.PartitionFunction;
-import edu.washington.escience.myria.parallel.ShuffleConsumer;
-import edu.washington.escience.myria.parallel.ShuffleProducer;
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.util.TestUtils;
 
@@ -74,14 +74,19 @@ public class ShuffleSQLiteTest extends SystemTestBase {
     /* Set shuffle producers, sp1, sp2 , which load data from scan1, scan 2 */
     final DbQueryScan scan1 = new DbQueryScan(testtable1Key, schema);
     final DbQueryScan scan2 = new DbQueryScan(testtable2Key, schema);
-    final ShuffleProducer sp1 = new ShuffleProducer(scan1, shuffle1ID, workerIDs, pf);
-    final ShuffleProducer sp2 = new ShuffleProducer(scan2, shuffle2ID, workerIDs, pf);
+
+    final GenericShuffleProducer sp1 =
+        new GenericShuffleProducer(scan1, shuffle1ID, new int[] { workerIDs[0], workerIDs[1] }, pf);
+    final GenericShuffleProducer sp2 =
+        new GenericShuffleProducer(scan2, shuffle2ID, new int[] { workerIDs[0], workerIDs[1] }, pf);
 
     /* Set shuffle consumers, sc1, sc2, which received data and store as new table temptable1 and 2 */
-    final ShuffleConsumer sc1 = new ShuffleConsumer(sp1.getSchema(), shuffle1ID, workerIDs);
+    final GenericShuffleConsumer sc1 =
+        new GenericShuffleConsumer(sp1.getSchema(), shuffle1ID, new int[] { workerIDs[0], workerIDs[1] });
     final BlockingSQLiteDataReceiver buffer1 = new BlockingSQLiteDataReceiver(temptable1Key, sc1);
 
-    final ShuffleConsumer sc2 = new ShuffleConsumer(sp2.getSchema(), shuffle2ID, workerIDs);
+    final GenericShuffleConsumer sc2 =
+        new GenericShuffleConsumer(sp2.getSchema(), shuffle2ID, new int[] { workerIDs[0], workerIDs[1] });
     final BlockingSQLiteDataReceiver buffer2 = new BlockingSQLiteDataReceiver(temptable2Key, sc2);
 
     /* Set collect producer which will send data inner-joined */

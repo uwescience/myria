@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.collect.ImmutableList;
 
+import edu.washington.escience.myria.api.MyriaApiException;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.parallel.Server;
 
@@ -44,7 +45,9 @@ import edu.washington.escience.myria.parallel.Server;
     @Type(name = "Apply", value = ApplyEncoding.class), @Type(name = "DbQueryScan", value = QueryScanEncoding.class),
     @Type(name = "Filter", value = FilterEncoding.class),
     @Type(name = "BroadcastProducer", value = BroadcastProducerEncoding.class),
-    @Type(name = "BroadcastConsumer", value = BroadcastConsumerEncoding.class) })
+    @Type(name = "BroadcastConsumer", value = BroadcastConsumerEncoding.class),
+    @Type(name = "HyperShuffleProducer", value = HyperShuffleProducerEncoding.class),
+    @Type(name = "HyperShuffleConsumer", value = HyperShuffleConsumerEncoding.class) })
 public abstract class OperatorEncoding<T extends Operator> extends MyriaApiEncoding {
 
   public String opName;
@@ -58,7 +61,7 @@ public abstract class OperatorEncoding<T extends Operator> extends MyriaApiEncod
    * @param server the Myria server for which this operator will be used.
    * @return an instantiated operator.
    */
-  public abstract T construct(Server server);
+  public abstract T construct(Server server) throws MyriaApiException;
 
   /**
    * @return the list of arguments required for this OperatorEncoding.

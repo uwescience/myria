@@ -9,29 +9,30 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.util.ArrayUtils;
 
 /**
- * The consumer part of the Shuffle Exchange operator.
+ * Generic Shuffle Consumer, which supports the encoding of
  * 
- * A ShuffleProducer operator sends tuples to all the workers according to some PartitionFunction, while the
- * ShuffleConsumer (this class) encapsulates the methods to collect the tuples received at the worker from multiple
- * source workers' ShuffleProducer.
+ * 1. BroadcastConsumer
  * 
- * @deprecated
+ * 2. ShuffleConsumer
+ * 
+ * 3.HyperJoinShuffleConsumer
+ * 
+ * @author Shumo Chu <chushumo@cs.washington.edu>
+ * 
  */
-@Deprecated
-public final class ShuffleConsumer extends Consumer {
-
+public class GenericShuffleConsumer extends Consumer {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   /** The logger for this class. */
-  static final Logger LOGGER = LoggerFactory.getLogger(ShuffleConsumer.class);
+  static final Logger LOGGER = LoggerFactory.getLogger(GenericShuffleConsumer.class);
 
   /**
    * @param schema input/output data schema
    * @param operatorID my operatorID
    * @param workerIDs from which workers the data will come.
    * */
-  public ShuffleConsumer(final Schema schema, final ExchangePairID operatorID, final int[] workerIDs) {
+  public GenericShuffleConsumer(final Schema schema, final ExchangePairID operatorID, final int[] workerIDs) {
     this(schema, operatorID, ArrayUtils.checkSet(org.apache.commons.lang3.ArrayUtils.toObject(workerIDs)));
   }
 
@@ -40,9 +41,9 @@ public final class ShuffleConsumer extends Consumer {
    * @param operatorID my operatorID
    * @param workerIDs from which workers the data will come.
    * */
-  public ShuffleConsumer(final Schema schema, final ExchangePairID operatorID, final ImmutableSet<Integer> workerIDs) {
+  public GenericShuffleConsumer(final Schema schema, final ExchangePairID operatorID,
+      final ImmutableSet<Integer> workerIDs) {
     super(schema, operatorID, workerIDs);
-    LOGGER.trace("created ShuffleConsumer for ExchangePairId=" + operatorID);
+    LOGGER.trace("created GenericShuffleConsumer for ExchangePairId=" + operatorID);
   }
-
 }

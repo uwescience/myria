@@ -1,0 +1,13 @@
+{
+  "relation_key" : {
+    "user_name" : "chushumo",
+    "program_name" : "multiway_join",
+    "relation_name" : "twitter_small"
+  },
+  "schema" : {
+    "column_types" : ["LONG_TYPE", "LONG_TYPE"],
+    "column_names" : ["follower", "followee"]
+  },
+  "file_name" : "/Users/steve/Dropbox/My_Work/Multiway_Join/data/twitter_rv.615784",
+  "is_comma_separated" : false
+}

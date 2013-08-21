@@ -11,7 +11,9 @@ import edu.washington.escience.myria.operator.Operator;
  * ShuffleProducer distributes tuples to the workers according to some partition function (provided as a
  * PartitionFunction object during the ShuffleProducer's instantiation).
  * 
+ * @deprecated
  */
+@Deprecated
 public class ShuffleProducer extends Producer {
 
   /** Required for Java serialization. */

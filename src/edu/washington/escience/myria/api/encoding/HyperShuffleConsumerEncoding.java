@@ -12,13 +12,12 @@ import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
- * 
- * JSON wrapper for BroadcastConsumer
+ * Consumer part of JSON encoding for HyperCube Join.
  * 
  * @author Shumo Chu <chushumo@cs.washington.edu>
  * 
  */
-public class BroadcastConsumerEncoding extends AbstractConsumerEncoding<GenericShuffleConsumer> {
+public class HyperShuffleConsumerEncoding extends AbstractConsumerEncoding<GenericShuffleConsumer> {
 
   public Schema argSchema;
   public String argOperatorId;

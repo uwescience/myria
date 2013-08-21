@@ -1,0 +1,158 @@
+{
+    "fragments": [
+        {
+            "operators": [
+                {
+                    "jdbc_info": {
+                        "database": "mrbenchmarks",
+                        "dbms": "vertica",
+                        "driver_class": "com.vertica.jdbc.Driver",
+                        "host": "localhost",
+                        "password": "mrbenchmarks",
+                        "port": "15433",
+                        "username": "dbadmin"
+                    },
+                    "op_name": "Scan(R)",
+                    "op_type": "JdbcScan",
+                    "relation_key": {
+                        "program_name": "broadcastjoin",
+                        "relation_name": "RankBase32x",
+                        "user_name": "shumochu"
+                    }
+                },
+                {
+                    "arg_child": "Scan(R)",
+                    "arg_operator_id": "Shuffle(R)",
+                    "arg_pf": {
+                        "index": 1,
+                        "type": "SingleFieldHash"
+                    },
+                    "op_name": "Shuffle(R)",
+                    "op_type": "ShuffleProducer"
+                }
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "jdbc_info": {
+                        "database": "mrbenchmarks",
+                        "dbms": "vertica",
+                        "driver_class": "com.vertica.jdbc.Driver",
+                        "host": "localhost",
+                        "password": "mrbenchmarks",
+                        "port": "15433",
+                        "username": "dbadmin"
+                    },
+                    "op_name": "Scan(S)",
+                    "op_type": "JdbcScan",
+                    "relation_key": {
+                        "program_name": "broadcastjoin",
+                        "relation_name": "UserBase",
+                        "user_name": "shumochu"
+                    }
+                },
+                {
+                    "arg_child": "Scan(S)",
+                    "arg_operator_id": "Shuffle(S)",
+                    "arg_pf": {
+                        "index": 1,
+                        "type": "SingleFieldHash"
+                    },
+                    "op_name": "Shuffle(S)",
+                    "op_type": "ShuffleProducer"
+                }
+            ]
+        },
+        {
+            "operators": [
+                {
+                    "arg_operator_id": "Shuffle(R)",
+                    "arg_schema": {
+                        "column_names": [
+                            "pageRank",
+                            "pageURL",
+                            "avgDuration"
+                        ],
+                        "column_types": [
+                            "LONG_TYPE",
+                            "STRING_TYPE",
+                            "LONG_TYPE"
+                        ]
+                    },
+                    "op_name": "Gather(R)",
+                    "op_type": "ShuffleConsumer"
+                },
+                {
+                    "arg_operator_id": "Shuffle(S)",
+                    "arg_schema": {
+                        "column_names": [
+                            "sourceIPAddr",
+                            "destinationURL",
+                            "visitDate",
+                            "adRevenue",
+                            "UserAgent",
+                            "cCode",
+                            "lCode",
+                            "sKeyword",
+                            "avgTimeOnSite"
+                        ],
+                        "column_types": [
+                            "STRING_TYPE",
+                            "STRING_TYPE",
+                            "DATETIME_TYPE",
+                            "FLOAT_TYPE",
+                            "STRING_TYPE",
+                            "STRING_TYPE",
+                            "STRING_TYPE",
+                            "STRING_TYPE",
+                            "LONG_TYPE"
+                        ]
+                    },
+                    "op_name": "Gather(S)",
+                    "op_type": "ShuffleConsumer"
+                },
+                {
+                    "arg_child1": "Gather(R)",
+                    "arg_child2": "Gather(S)",
+                    "arg_columns1": [
+                        1
+                    ],
+                    "arg_columns2": [
+                        1
+                    ],
+                    "arg_select1": [
+                        0
+                    ],
+                    "arg_select2": [
+                        1
+                    ],
+                    "op_name": "Join",
+                    "op_type": "LocalJoin"
+                },
+                {
+                    "arg_child": "Join",
+                    "arg_overwrite_table": true,
+                    "jdbc_info": {
+                        "database": "mrbenchmarks",
+                        "dbms": "vertica",
+                        "driver_class": "com.vertica.jdbc.Driver",
+                        "host": "localhost",
+                        "password": "mrbenchmarks",
+                        "port": "15433",
+                        "username": "dbadmin"
+                    },
+                    "op_name": "InsertResult",
+                    "op_type": "JdbcInsert",
+                    "relation_key": {
+                        "program_name": "broadcastjoin",
+                        "relation_name": "newPartitonJoinResult32x",
+                        "user_name": "shumochu"
+                    }
+                }
+            ]
+        }
+    ],
+    "logical_ra": "partiton join",
+    "raw_datalog": "partition join"
+}
