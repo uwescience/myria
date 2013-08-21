@@ -30,33 +30,13 @@ public class BroadcastProducer extends Producer {
   @Override
   protected final void consumeTuples(final TupleBatch tuples) throws DbException {
     tuples.compactInto(getBuffers()[0]);
-
-    TupleBatch dm = null;
-    while ((dm = getBuffers()[0].popAnyUsingTimeout()) != null) {
-      /* broadcast message to multiple workers */
-      for (int i = 0; i < numChannels(); i++) {
-        writeMessage(i, dm);
-      }
-    }
+    popTBsFromBuffersAndWrite(true);
   }
 
   @Override
   protected final void childEOS() throws DbException {
-
-    TupleBatch dm = null;
-    int numChannels = super.numChannels();
-
-    System.out.println("num channels:" + numChannels());
-    System.out.println("buffer length:" + getBuffers().length);
-
-    /* BroadcastProducer only uses getBuffers()[0] */
-    while ((dm = getBuffers()[0].popAny()) != null) {
-      for (int i = 0; i < numChannels(); i++) {
-        writeMessage(i, dm);
-      }
-    }
-
-    for (int i = 0; i < numChannels; i++) {
+    popTBsFromBuffersAndWrite(false);
+    for (int i = 0; i < numChannels(); i++) {
       super.channelEnds(i);
     }
   }
@@ -64,12 +44,6 @@ public class BroadcastProducer extends Producer {
   @Override
   protected final void childEOI() throws DbException {
     getBuffers()[0].appendTB(TupleBatch.eoiTupleBatch(getSchema()));
-    TupleBatch dm = null;
-    /* BroadcastProducer only uses getBuffers()[0] */
-    while ((dm = getBuffers()[0].popAny()) != null) {
-      for (int i = 0; i < numChannels(); i++) {
-        writeMessage(i, dm);
-      }
-    }
+    popTBsFromBuffersAndWrite(false);
   }
 }

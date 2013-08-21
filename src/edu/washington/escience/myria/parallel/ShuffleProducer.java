@@ -47,34 +47,12 @@ public class ShuffleProducer extends Producer {
   protected final void consumeTuples(final TupleBatch tup) throws DbException {
     TupleBatchBuffer[] buffers = getBuffers();
     tup.partition(partitionFunction, buffers);
-    TupleBatch dm = null;
-    for (int i = 0; i < numChannels(); i++) {
-      final TupleBatchBuffer etb = buffers[i];
-      while ((dm = etb.popAnyUsingTimeout()) != null) {
-        try {
-          writeMessage(i, dm, etb);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          return;
-        }
-      }
-    }
+    popTBsFromBuffersAndWrite(true);
   }
 
   @Override
   protected final void childEOS() throws DbException {
-    TupleBatch dm = null;
-    TupleBatchBuffer[] buffers = getBuffers();
-    for (int i = 0; i < numChannels(); i++) {
-      while ((dm = buffers[i].popAny()) != null) {
-        try {
-          writeMessage(i, dm, buffers[i]);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          return;
-        }
-      }
-    }
+    popTBsFromBuffersAndWrite(false);
     for (int p = 0; p < numChannels(); p++) {
       super.channelEnds(p);
     }
@@ -86,16 +64,6 @@ public class ShuffleProducer extends Producer {
     for (int i = 0; i < numChannels(); i++) {
       buffers[i].appendTB(TupleBatch.eoiTupleBatch(getSchema()));
     }
-    TupleBatch dm = null;
-    for (int i = 0; i < numChannels(); i++) {
-      while ((dm = buffers[i].popAny()) != null) {
-        try {
-          writeMessage(i, dm, buffers[i]);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          return;
-        }
-      }
-    }
+    popTBsFromBuffersAndWrite(false);
   }
 }

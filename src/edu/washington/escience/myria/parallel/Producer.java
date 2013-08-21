@@ -216,25 +216,35 @@ public abstract class Producer extends RootOperator {
   }
 
   /**
-   * @param chIdx the channel to write
-   * @param msg the message.
-   * @param tbb the tuple batch buffer, may need to write the msg back if necessary.
-   * @throws InterruptedException if interrupted
-   * @return write future
+   * Pop tuple batches from each of the buffers and try to write them to corresponding channels, if possible.
+   * 
+   * @param usingTimeout use popAny() or popAnyUsingTimeout() when poping
    * */
-  protected final ChannelFuture writeMessage(final int chIdx, final TupleBatch msg, final TupleBatchBuffer tbb)
-      throws InterruptedException {
-    ChannelFuture ret = null;
-    try {
-      ret = writeMessage(chIdx, msg);
-    } catch (IllegalStateException e) {
-      if (taskResourceManager.getOwnerTask().getOwnerQuery().getFTMode().equals(FTMODE.abandon)) {
-        // abandon, do nothing
-      } else {
-        throw e;
+  protected final void popTBsFromBuffersAndWrite(final boolean usingTimeout) {
+    final TupleBatchBuffer[] tbb = getBuffers();
+    FTMODE mode = ownerTask.getOwnerQuery().getFTMode();
+    for (int i = 0; i < numChannels(); i++) {
+      while (true) {
+        TupleBatch tb = null;
+        if (usingTimeout) {
+          tb = tbb[i].popAnyUsingTimeout();
+        } else {
+          tb = tbb[i].popAny();
+        }
+        if (tb == null) {
+          break;
+        }
+        try {
+          writeMessage(i, tb);
+        } catch (IllegalStateException e) {
+          if (mode.equals(FTMODE.abandon)) {
+            break;
+          } else {
+            throw e;
+          }
+        }
       }
     }
-    return ret;
   }
 
   /**
