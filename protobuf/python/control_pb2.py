@@ -43,6 +43,10 @@ _CONTROLMESSAGE_TYPE = _descriptor.EnumDescriptor(
       name='REMOVE_WORKER_ACK', index=4, number=5,
       options=None,
       type=None),
+    _descriptor.EnumValueDescriptor(
+      name='ADD_WORKER_ACK', index=5, number=6,
+      options=None,
+      type=None),
   ],
   containing_type=None,
   options=None,

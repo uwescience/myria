@@ -226,6 +226,14 @@ public final class ControlProto {
        * </pre>
        */
       REMOVE_WORKER_ACK(4, 5),
+      /**
+       * <code>ADD_WORKER_ACK = 6;</code>
+       * 
+       * <pre>
+       * worker -&gt; master
+       * </pre>
+       */
+      ADD_WORKER_ACK(5, 6), ;
 
       /**
        * <code>SHUTDOWN = 1;</code>
@@ -267,6 +275,14 @@ public final class ControlProto {
        * </pre>
        */
       public static final int REMOVE_WORKER_ACK_VALUE = 5;
+      /**
+       * <code>ADD_WORKER_ACK = 6;</code>
+       * 
+       * <pre>
+       * worker -&gt; master
+       * </pre>
+       */
+      public static final int ADD_WORKER_ACK_VALUE = 6;
 
       @Override
       public final int getNumber() {
@@ -285,6 +301,8 @@ public final class ControlProto {
             return ADD_WORKER;
           case 5:
             return REMOVE_WORKER_ACK;
+          case 6:
+            return ADD_WORKER_ACK;
           default:
             return null;
         }
