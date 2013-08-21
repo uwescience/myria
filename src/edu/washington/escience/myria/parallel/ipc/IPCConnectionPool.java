@@ -319,7 +319,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
   /**
    * connection id check time out 3s.
    * */
-  public static final int CONNECTION_ID_CHECK_TIMEOUT_IN_MS = 3000;
+  public static final int CONNECTION_ID_CHECK_TIMEOUT_IN_MS = 6000;
 
   /**
    * pool of connections.
