@@ -5,12 +5,16 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.SequenceInputStream;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.InputMismatchException;
+import java.util.List;
 import java.util.Objects;
 import java.util.Scanner;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 
@@ -184,9 +188,21 @@ public final class FileScan extends LeafOperator {
       // Use Hadoop's URI parsing machinery to extract an input stream for the underlying "file"
       Configuration conf = new Configuration();
       try {
-        LOGGER.info("Creating inputStream from file URI: " + filename);
         FileSystem fs = FileSystem.get(URI.create(filename), conf);
-        inputStream = fs.open(new Path(filename));
+        Path rootPath = new Path(filename);
+        FileStatus[] statii = fs.globStatus(rootPath);
+
+        if (statii == null || statii.length == 0) {
+          throw new FileNotFoundException(filename);
+        }
+
+        List<InputStream> streams = new ArrayList<InputStream>();
+        for (FileStatus status : statii) {
+          Path path = status.getPath();
+          streams.add(fs.open(path));
+        }
+
+        inputStream = new SequenceInputStream(java.util.Collections.enumeration(streams));
       } catch (IOException ex) {
         throw new DbException(ex);
       }

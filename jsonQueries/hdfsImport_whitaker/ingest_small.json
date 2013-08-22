@@ -8,5 +8,5 @@
     "column_types" : ["STRING_TYPE", "STRING_TYPE"],
     "column_names" : ["source", "dest"]
   },
-  "file_name" : "hdfs://vega.cs.washington.edu:8020//whitaker/outputG/part-m-00000"
+  "file_name" : "hdfs://vega.cs.washington.edu:8020//whitaker/outputG/*"
 }
