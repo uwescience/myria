@@ -256,7 +256,21 @@ public class MasterQueryPartition implements QueryPartition {
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("Worker #{} received query#{}", workerID, queryID);
     }
-    wei.workerReceiveQuery.setSuccess();
+    if (wei.workerReceiveQuery.isSuccess()) {
+      /* a recovery worker */
+      master.getIPCConnectionPool().sendShortMessage(workerID, IPCUtils.startQueryTM(queryID));
+      for (Entry<Integer, WorkerExecutionInfo> e : workerExecutionInfo.entrySet()) {
+        if (e.getKey() == workerID) {
+          /* the new worker doesn't need to start recovery tasks */
+          continue;
+        }
+        if (!e.getValue().workerCompleteQuery.isDone() && e.getKey() != MyriaConstants.MASTER_ID) {
+          master.getIPCConnectionPool().sendShortMessage(e.getKey(), IPCUtils.recoverQueryTM(queryID, workerID));
+        }
+      }
+    } else {
+      wei.workerReceiveQuery.setSuccess();
+    }
   }
 
   /**
@@ -335,7 +349,6 @@ public class MasterQueryPartition implements QueryPartition {
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("Received query complete (succeed) message from worker: {}", workerID);
     }
-
     wei.workerCompleteQuery.setSuccess();
   }
 
@@ -403,6 +416,9 @@ public class MasterQueryPartition implements QueryPartition {
           rootTask.notifyNewInput();
         }
       });
+    }
+    if (root instanceof Producer) {
+      ((Producer) root).setOwnerTask(rootTask);
     }
   }
 

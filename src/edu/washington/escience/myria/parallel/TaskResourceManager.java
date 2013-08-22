@@ -81,6 +81,17 @@ public final class TaskResourceManager {
   }
 
   /**
+   * remove an output channel from outputChannels. Need it when a recovery task is finished and needs to detach & attach
+   * its channel to the original producer. In this case, the channel shouldn't be released when the cleanup() method of
+   * the recovery task is called.
+   * 
+   * @param channel the channel to be removed.
+   * */
+  public void removeOutputChannel(final StreamOutputChannel<TupleBatch> channel) {
+    outputChannels.remove(channel);
+  }
+
+  /**
    * clean up, release all resources.
    * */
   public void cleanup() {

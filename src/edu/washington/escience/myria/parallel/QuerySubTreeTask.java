@@ -644,4 +644,22 @@ public final class QuerySubTreeTask {
       ((Producer) root).updateChannelAvailability(workerId, enable);
     }
   }
+
+  /**
+   * return the root operator of this task.
+   * 
+   * @return the root operator
+   */
+  public RootOperator getRootOp() {
+    return root;
+  }
+
+  /**
+   * return the resource manager of this task.
+   * 
+   * @return the resource manager.
+   */
+  public TaskResourceManager getResourceManager() {
+    return resourceManager;
+  }
 }

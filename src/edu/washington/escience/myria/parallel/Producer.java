@@ -294,11 +294,13 @@ public abstract class Producer extends RootOperator {
   @Override
   public final void cleanup() throws DbException {
     for (int i = 0; i < localizedOutputIDs.length; i++) {
-      ioChannels[i].release();
       buffers[i] = null;
+      if (ioChannels[i] != null) {
+        /* RecoverProducer may detach & set its channel to be null, shouldn't call release here */
+        ioChannels[i].release();
+      }
     }
     buffers = null;
-    ioChannels = null;
   }
 
   /**
@@ -383,5 +385,29 @@ public abstract class Producer extends RootOperator {
    */
   public boolean[] getChannelsAvail() {
     return ioChannelsAvail;
+  }
+
+  /**
+   * @return the channel array.
+   */
+  public StreamOutputChannel<TupleBatch>[] getChannels() {
+    return ioChannels;
+  }
+
+  /** the task that this producer belongs to. */
+  private QuerySubTreeTask ownerTask;
+
+  /**
+   * @param drivingTask the owner task to be set.
+   */
+  public void setOwnerTask(final QuerySubTreeTask drivingTask) {
+    ownerTask = drivingTask;
+  }
+
+  /**
+   * @return the owner task.
+   */
+  public QuerySubTreeTask getOwnerTask() {
+    return ownerTask;
   }
 }
