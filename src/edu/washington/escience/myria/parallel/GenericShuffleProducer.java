@@ -68,55 +68,23 @@ public class GenericShuffleProducer extends Producer {
   protected final void consumeTuples(final TupleBatch tup) throws DbException {
     TupleBatchBuffer[] buffers = getBuffers();
     tup.partition(partitionFunction, buffers);
-    TupleBatch dm = null;
-    for (int i = 0; i < cellPartition.length; i++) {
-      final TupleBatchBuffer etb = buffers[i];
-      while ((dm = etb.popAnyUsingTimeout()) != null) {
-        for (int j : cellPartition[i]) {
-          writeMessage(j, dm);
-        }
-      }
-    }
-
+    popTBsFromBuffersAndWrite(true, cellPartition);
   }
 
   @Override
   protected final void childEOS() throws DbException {
-    TupleBatch dm = null;
-    TupleBatchBuffer[] buffers = getBuffers();
-
-    for (int i = 0; i < cellPartition.length; i++) {
-      while ((dm = buffers[i].popAny()) != null) {
-        for (int j : cellPartition[i]) {
-          writeMessage(j, dm);
-        }
-      }
-    }
-
+    popTBsFromBuffersAndWrite(false, cellPartition);
     for (int p = 0; p < numChannels(); p++) {
       super.channelEnds(p);
     }
-
   }
 
   @Override
   protected final void childEOI() throws DbException {
-    TupleBatch dm = null;
     TupleBatchBuffer[] buffers = getBuffers();
-    TupleBatch eoiTB = TupleBatch.eoiTupleBatch(getSchema());
-
-    for (int i = 0; i < cellPartition.length; i++) {
-      while ((dm = buffers[i].popAny()) != null) {
-        for (int j : cellPartition[i]) {
-          writeMessage(j, dm);
-        }
-      }
+    for (int i = 0; i < numChannels(); i++) {
+      buffers[i].appendTB(TupleBatch.eoiTupleBatch(getSchema()));
     }
-
-    for (int[] element : cellPartition) {
-      for (int j : element) {
-        writeMessage(j, eoiTB);
-      }
-    }
+    popTBsFromBuffersAndWrite(false, cellPartition);
   }
 }

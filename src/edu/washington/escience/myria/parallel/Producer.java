@@ -244,6 +244,15 @@ public abstract class Producer extends RootOperator {
    * @param usingTimeout use popAny() or popAnyUsingTimeout() when poping
    * */
   protected final void popTBsFromBuffersAndWrite(final boolean usingTimeout) {
+    popTBsFromBuffersAndWrite(usingTimeout, ArrayUtils.create2DIndex(numChannels()));
+  }
+
+  /**
+   * Pop tuple batches from each of the buffers and try to write them to corresponding channels, if possible.
+   * 
+   * @param usingTimeout use popAny() or popAnyUsingTimeout() when poping
+   * */
+  protected final void popTBsFromBuffersAndWrite(final boolean usingTimeout, final int[][] channelIndices) {
     final TupleBatchBuffer[] tbb = getBuffers();
     FTMODE mode = ownerTask.getOwnerQuery().getFTMode();
     for (int i = 0; i < numChannels(); i++) {
@@ -260,21 +269,24 @@ public abstract class Producer extends RootOperator {
         if (tb == null) {
           break;
         }
-        if (mode.equals(FTMODE.rejoin)) {
-          // rejoin, append the TB into the backup buffer in case of recovering
-          backupBuffers.get(i).add(tb);
-        }
-        try {
-          writeMessage(i, tb);
-        } catch (IllegalStateException e) {
-          if (mode.equals(FTMODE.abandon)) {
-            ioChannelsAvail[i] = false;
-            break;
-          } else if (mode.equals(FTMODE.rejoin)) {
-            ioChannelsAvail[i] = false;
-            break;
-          } else {
-            throw e;
+
+        for (int j : channelIndices[i]) {
+          if (mode.equals(FTMODE.rejoin)) {
+            // rejoin, append the TB into the backup buffer in case of recovering
+            backupBuffers.get(j).add(tb);
+          }
+          try {
+            writeMessage(j, tb);
+          } catch (IllegalStateException e) {
+            if (mode.equals(FTMODE.abandon)) {
+              ioChannelsAvail[j] = false;
+              break;
+            } else if (mode.equals(FTMODE.rejoin)) {
+              ioChannelsAvail[j] = false;
+              break;
+            } else {
+              throw e;
+            }
           }
         }
       }
