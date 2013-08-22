@@ -181,17 +181,15 @@ public abstract class Producer extends RootOperator {
       });
       buffers[i] = new TupleBatchBuffer(getSchema());
     }
-
     nonBlockingExecution = (taskResourceManager.getExecutionMode() == QueryExecutionMode.NON_BLOCKING);
   }
 
   /**
    * @param chIdx the channel to write
    * @param msg the message.
-   * @throws InterruptedException if interrupted
    * @return write future
    * */
-  protected final ChannelFuture writeMessage(final int chIdx, final TupleBatch msg) throws InterruptedException {
+  protected final ChannelFuture writeMessage(final int chIdx, final TupleBatch msg) {
     StreamOutputChannel<TupleBatch> ch = ioChannels[chIdx];
     if (nonBlockingExecution) {
       return ch.write(msg);
@@ -206,7 +204,11 @@ public abstract class Producer extends RootOperator {
           if (maxSleepTime < sleepTime) {
             toSleep = maxSleepTime;
           }
-          Thread.sleep(toSleep);
+          try {
+            Thread.sleep(toSleep);
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+          }
           sleepTime *= 2;
         }
       }

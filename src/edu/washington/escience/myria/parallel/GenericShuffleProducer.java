@@ -73,12 +73,7 @@ public class GenericShuffleProducer extends Producer {
       final TupleBatchBuffer etb = buffers[i];
       while ((dm = etb.popAnyUsingTimeout()) != null) {
         for (int j : cellPartition[i]) {
-          try {
-            writeMessage(j, dm);
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return;
-          }
+          writeMessage(j, dm);
         }
       }
     }
@@ -93,12 +88,7 @@ public class GenericShuffleProducer extends Producer {
     for (int i = 0; i < cellPartition.length; i++) {
       while ((dm = buffers[i].popAny()) != null) {
         for (int j : cellPartition[i]) {
-          try {
-            writeMessage(j, dm);
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return;
-          }
+          writeMessage(j, dm);
         }
       }
     }
@@ -118,28 +108,15 @@ public class GenericShuffleProducer extends Producer {
     for (int i = 0; i < cellPartition.length; i++) {
       while ((dm = buffers[i].popAny()) != null) {
         for (int j : cellPartition[i]) {
-          try {
-            writeMessage(j, dm);
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return;
-          }
-
+          writeMessage(j, dm);
         }
       }
     }
 
     for (int[] element : cellPartition) {
       for (int j : element) {
-        try {
-          writeMessage(j, eoiTB);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          return;
-        }
+        writeMessage(j, eoiTB);
       }
     }
-
   }
-
 }

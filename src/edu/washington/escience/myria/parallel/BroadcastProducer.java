@@ -35,12 +35,7 @@ public class BroadcastProducer extends Producer {
     while ((dm = getBuffers()[0].popAnyUsingTimeout()) != null) {
       /* broadcast message to multiple workers */
       for (int i = 0; i < numChannels(); i++) {
-        try {
-          writeMessage(i, dm);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          return;
-        }
+        writeMessage(i, dm);
       }
     }
   }
@@ -57,13 +52,7 @@ public class BroadcastProducer extends Producer {
     /* BroadcastProducer only uses getBuffers()[0] */
     while ((dm = getBuffers()[0].popAny()) != null) {
       for (int i = 0; i < numChannels(); i++) {
-        try {
-          writeMessage(i, dm);
-          System.out.println("i :" + i);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          return;
-        }
+        writeMessage(i, dm);
       }
     }
 
@@ -79,12 +68,7 @@ public class BroadcastProducer extends Producer {
     /* BroadcastProducer only uses getBuffers()[0] */
     while ((dm = getBuffers()[0].popAny()) != null) {
       for (int i = 0; i < numChannels(); i++) {
-        try {
-          writeMessage(i, dm);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
-          return;
-        }
+        writeMessage(i, dm);
       }
     }
   }

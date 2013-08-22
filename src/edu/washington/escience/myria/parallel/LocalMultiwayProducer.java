@@ -26,12 +26,7 @@ public final class LocalMultiwayProducer extends Producer {
   @Override
   protected void consumeTuples(final TupleBatch tup) throws DbException {
     for (int i = 0; i < numChannels(); i++) {
-      try {
-        writeMessage(i, tup);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        return;
-      }
+      writeMessage(i, tup);
     }
   }
 
@@ -46,12 +41,7 @@ public final class LocalMultiwayProducer extends Producer {
   protected void childEOI() throws DbException {
     TupleBatch eoiTB = TupleBatch.eoiTupleBatch(getSchema());
     for (int i = 0; i < numChannels(); i++) {
-      try {
-        writeMessage(i, eoiTB);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        return;
-      }
+      writeMessage(i, eoiTB);
     }
   }
 }
