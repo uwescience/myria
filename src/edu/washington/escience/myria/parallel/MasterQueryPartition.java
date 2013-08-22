@@ -556,4 +556,14 @@ public class MasterQueryPartition implements QueryPartition {
   public void triggerTasks() {
     rootTask.notifyNewInput();
   }
+
+  /**
+   * enable/disable output channels of the root(producer) of each task.
+   * 
+   * @param workerId the worker that changed its status.
+   * @param enable enable/disable all the channels that belong to the worker.
+   * */
+  public void updateProducerChannels(final int workerId, final boolean enable) {
+    rootTask.updateProducerChannels(workerId, enable);
+  }
 }

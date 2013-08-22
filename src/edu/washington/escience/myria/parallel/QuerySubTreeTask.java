@@ -632,4 +632,16 @@ public final class QuerySubTreeTask {
   public QueryPartition getOwnerQuery() {
     return ownerQuery;
   }
+
+  /**
+   * enable/disable output channels of the root(producer) of this task.
+   * 
+   * @param workerId the worker that changed its status.
+   * @param enable enable/disable all the channels that belong to the worker.
+   * */
+  public void updateProducerChannels(final int workerId, final boolean enable) {
+    if (root instanceof Producer) {
+      ((Producer) root).updateChannelAvailability(workerId, enable);
+    }
+  }
 }
