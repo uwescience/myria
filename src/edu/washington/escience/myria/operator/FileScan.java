@@ -171,7 +171,7 @@ public final class FileScan extends LeafOperator {
       }
     }
 
-    LOGGER.info("Scanned " + (lineNumber - lineNumberBegin) + " input lines");
+    LOGGER.debug("Scanned " + (lineNumber - lineNumberBegin) + " input lines");
 
     return buffer.popAny();
   }
@@ -199,6 +199,8 @@ public final class FileScan extends LeafOperator {
         List<InputStream> streams = new ArrayList<InputStream>();
         for (FileStatus status : statii) {
           Path path = status.getPath();
+
+          LOGGER.debug("Incorporating input file: " + path);
           streams.add(fs.open(path));
         }
 
