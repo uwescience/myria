@@ -2,6 +2,7 @@ package edu.washington.escience.myria.sp2bench;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -84,8 +85,9 @@ public class Erdos {
         new ShuffleConsumer(allPubsShuffleP.getSchema(), allPubsShuffleID, allWorkers);
     // schema: (pubId long, authorId long)
 
+    final List<String> joinColumnNames = ImmutableList.of("pubId1", "pubId2", "authorId");
     final LocalJoin joinCoAuthors =
-        new LocalJoin(paulErdoesPubsShuffleC, allPubsShuffleC, new int[] { 0 }, new int[] { 0 });
+        new LocalJoin(joinColumnNames, paulErdoesPubsShuffleC, allPubsShuffleC, new int[] { 0 }, new int[] { 0 });
     // schema: (pubId long, pubId long, authorId long)
 
     final Project projCoAuthorID = new Project(new int[] { 2 }, joinCoAuthors);

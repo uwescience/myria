@@ -48,7 +48,7 @@ public final class TaskResourceManager {
    * @param ownerTask owner task
    * @param executionMode the task execution mode.
    */
-  TaskResourceManager(final IPCConnectionPool connectionPool, final QuerySubTreeTask ownerTask,
+  public TaskResourceManager(final IPCConnectionPool connectionPool, final QuerySubTreeTask ownerTask,
       final QueryExecutionMode executionMode) {
     ipcPool = connectionPool;
     outputChannels = Sets.newSetFromMap(new ConcurrentHashMap<StreamOutputChannel<TupleBatch>, Boolean>());
