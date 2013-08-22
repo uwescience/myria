@@ -103,6 +103,23 @@ public final class Server {
                 int workerID = controlM.getWorkerId();
                 removeWorkerAckReceived.get(workerID).add(senderID);
                 break;
+              case ADD_WORKER_ACK:
+                workerID = controlM.getWorkerId();
+                addWorkerAckReceived.get(workerID).add(senderID);
+                for (Long id : activeQueries.keySet()) {
+                  MasterQueryPartition mqp = activeQueries.get(id);
+                  if (mqp.getFTMode().equals(FTMODE.rejoin) && mqp.getMissingWorkers().contains(workerID)
+                      && addWorkerAckReceived.get(workerID).containsAll(mqp.getWorkerAssigned())) {
+                    /* so a following ADD_WORKER_ACK won't cause queryMessage to be sent again */
+                    mqp.getMissingWorkers().remove(workerID);
+                    try {
+                      connectionPool.sendShortMessage(workerID, IPCUtils.queryMessage(mqp.getQueryID(), mqp
+                          .getWorkerPlans().get(workerID)));
+                    } catch (final IOException e) {
+                      throw new RuntimeException(e);
+                    }
+                  }
+                }
                 break;
               default:
                 if (LOGGER.isErrorEnabled()) {
@@ -253,6 +270,8 @@ public final class Server {
   public static final int NUM_SECONDS_FOR_ELEGANT_CLEANUP = 10;
 
   private final Map<Integer, Set<Integer>> removeWorkerAckReceived;
+  private final Map<Integer, Set<Integer>> addWorkerAckReceived;
+
   /**
    * Entry point for the Master.
    * 
@@ -411,6 +430,7 @@ public final class Server {
     scheduledWorkersTime = new ConcurrentHashMap<Integer, Long>();
 
     removeWorkerAckReceived = new ConcurrentHashMap<Integer, Set<Integer>>();
+    addWorkerAckReceived = new ConcurrentHashMap<Integer, Set<Integer>>();
 
     activeQueries = new ConcurrentHashMap<Long, MasterQueryPartition>();
     succeededQueryResults = new ConcurrentHashMap<Long, Long>();
@@ -533,6 +553,9 @@ public final class Server {
           }
 
           removeWorkerAckReceived.put(workerId, Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>()));
+          addWorkerAckReceived.put(workerId, Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>()));
+          /* for using containsAll() later */
+          addWorkerAckReceived.get(workerId).add(workerId);
           try {
             /* remove the failed worker from the connectionPool. */
             connectionPool.removeRemote(workerId).await();

@@ -109,7 +109,11 @@ public final class Worker {
                   }
                   break;
                 case ADD_WORKER:
+                  if (LOGGER.isInfoEnabled()) {
+                    LOGGER.info("received ADD_WORKER " + workerId);
+                  }
                   connectionPool.putRemote(workerId, SocketInfo.fromProtobuf(cm.getRemoteAddress()));
+                  sendMessageToMaster(IPCUtils.addWorkerAckTM(workerId));
                   break;
                 default:
                   if (LOGGER.isErrorEnabled()) {
