@@ -98,7 +98,11 @@ public final class Server {
                   LOGGER.trace("getting heartbeat from worker " + senderID);
                 }
                 updateHeartbeat(senderID);
-                // TODO: tell rejoin queries to update worker list
+                break;
+              case REMOVE_WORKER_ACK:
+                int workerID = controlM.getWorkerId();
+                removeWorkerAckReceived.get(workerID).add(senderID);
+                break;
                 break;
               default:
                 if (LOGGER.isErrorEnabled()) {
@@ -131,11 +135,9 @@ public final class Server {
                     }
                   }
                   mqp.workerFail(senderID, cause);
-
                   if (LOGGER.isErrorEnabled()) {
                     LOGGER.error("Worker #{} failed in executing query #{}.", senderID, queryId, cause);
                   }
-
                 }
                 break;
               default:
@@ -250,6 +252,7 @@ public final class Server {
    * */
   public static final int NUM_SECONDS_FOR_ELEGANT_CLEANUP = 10;
 
+  private final Map<Integer, Set<Integer>> removeWorkerAckReceived;
   /**
    * Entry point for the Master.
    * 
@@ -407,6 +410,8 @@ public final class Server {
     scheduledWorkers = new ConcurrentHashMap<Integer, SocketInfo>();
     scheduledWorkersTime = new ConcurrentHashMap<Integer, Long>();
 
+    removeWorkerAckReceived = new ConcurrentHashMap<Integer, Set<Integer>>();
+
     activeQueries = new ConcurrentHashMap<Long, MasterQueryPartition>();
     succeededQueryResults = new ConcurrentHashMap<Long, Long>();
 
@@ -446,6 +451,39 @@ public final class Server {
     }
   }
 
+  private Thread sendAddWorker = null;
+
+  private class SendAddWorker implements Runnable {
+
+    private final int workerID;
+    private int numOfAck;
+    private final SocketInfo socketInfo;
+
+    SendAddWorker(final int workerID, final SocketInfo socketInfo, final int numOfAck) {
+      this.workerID = workerID;
+      this.socketInfo = socketInfo;
+      this.numOfAck = numOfAck;
+    }
+
+    @Override
+    public void run() {
+      while (numOfAck > 0) {
+        for (int aliveWorkerId : aliveWorkers.keySet()) {
+          if (removeWorkerAckReceived.get(workerID).contains(aliveWorkerId)) {
+            numOfAck--;
+            removeWorkerAckReceived.get(workerID).remove(aliveWorkerId);
+            connectionPool.sendShortMessage(aliveWorkerId, IPCUtils.addWorkerTM(workerID, socketInfo));
+          }
+        }
+        try {
+          Thread.sleep(100);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
+      }
+    }
+  }
+
   /**
    * @param workerID the worker to get updated
    * */
@@ -454,9 +492,7 @@ public final class Server {
       SocketInfo newWorker = scheduledWorkers.remove(workerID);
       scheduledWorkersTime.remove(workerID);
       if (newWorker != null) {
-        for (int aliveWorkerId : aliveWorkers.keySet()) {
-          connectionPool.sendShortMessage(aliveWorkerId, IPCUtils.addWorkerTM(workerID, newWorker));
-        }
+        sendAddWorker.start();
       }
     }
     aliveWorkers.put(workerID, System.currentTimeMillis());
@@ -496,6 +532,7 @@ public final class Server {
             }
           }
 
+          removeWorkerAckReceived.put(workerId, Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>()));
           try {
             /* remove the failed worker from the connectionPool. */
             connectionPool.removeRemote(workerId).await();
@@ -518,7 +555,10 @@ public final class Server {
           scheduledWorkers.put(newWorkerId, new SocketInfo(newAddress, newPort));
           scheduledWorkersTime.put(newWorkerId, currentTime);
 
+          sendAddWorker =
+              new Thread(new SendAddWorker(newWorkerId, new SocketInfo(newAddress, newPort), aliveWorkers.size()));
           connectionPool.putRemote(newWorkerId, new SocketInfo(newAddress, newPort));
+
           /* start a thread to launch the new worker. */
           new Thread(new NewWorkerScheduler(newWorkerId, newAddress, newPort)).start();
 

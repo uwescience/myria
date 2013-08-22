@@ -95,8 +95,11 @@ public final class Worker {
                   abruptShutdown = false;
                   break;
                 case REMOVE_WORKER:
+                  if (LOGGER.isInfoEnabled()) {
+                    LOGGER.info("received REMOVE_WORKER " + workerId);
+                  }
                   connectionPool.removeRemote(workerId).await();
-                  LOGGER.info("received REMOVE_WORKER " + workerId);
+                  sendMessageToMaster(IPCUtils.removeWorkerAckTM(workerId));
                   for (Long id : activeQueries.keySet()) {
                     WorkerQueryPartition wqp = activeQueries.get(id);
                     if (wqp.getFTMode().equals(FTMODE.abandon)) {
