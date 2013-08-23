@@ -32,8 +32,6 @@ import edu.washington.escience.myria.tool.MyriaConfigurationReader;
  * 
  */
 public final class CatalogMaker {
-  /** The reader. */
-  private static final MyriaConfigurationReader READER = new MyriaConfigurationReader();
 
   /**
    * Used in Catalog creation. args[0]: directory name args[1]: path to the config file.
@@ -100,7 +98,7 @@ public final class CatalogMaker {
 
     /* The server configuration. */
     final String configFileName = args[0];
-    Map<String, Map<String, String>> config = READER.load(configFileName);
+    Map<String, Map<String, String>> config = new MyriaConfigurationReader().load(configFileName);
     MasterCatalog c = null;
     try {
       String catalogLocation;
