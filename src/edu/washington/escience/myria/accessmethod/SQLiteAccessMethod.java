@@ -72,7 +72,7 @@ public final class SQLiteAccessMethod extends AccessMethod {
     this.readOnly = readOnly;
     sqliteInfo = (SQLiteInfo) connectionInfo;
 
-    File dbFile = new File(sqliteInfo.getDatabase());
+    File dbFile = new File(sqliteInfo.getDatabaseFilename());
     if (!readOnly) {
       try {
         dbFile.createNewFile();
@@ -82,7 +82,7 @@ public final class SQLiteAccessMethod extends AccessMethod {
     }
 
     if (!dbFile.exists()) {
-      throw new DbException("Database file " + sqliteInfo.getDatabase() + " does not exist!");
+      throw new DbException("Database file " + sqliteInfo.getDatabaseFilename() + " does not exist!");
     }
 
     sqliteConnection = null;
@@ -90,11 +90,11 @@ public final class SQLiteAccessMethod extends AccessMethod {
 
     try {
       if (readOnly) {
-        sqliteConnection = new SQLiteConnection(new File(sqliteInfo.getDatabase()));
+        sqliteConnection = new SQLiteConnection(new File(sqliteInfo.getDatabaseFilename()));
         sqliteConnection.openReadonly();
         sqliteConnection.setBusyTimeout(SQLiteAccessMethod.DEFAULT_BUSY_TIMEOUT);
       } else {
-        sqliteQueue = new SQLiteQueue(new File(sqliteInfo.getDatabase())).start();
+        sqliteQueue = new SQLiteQueue(new File(sqliteInfo.getDatabaseFilename())).start();
 
       }
     } catch (final SQLiteException e) {

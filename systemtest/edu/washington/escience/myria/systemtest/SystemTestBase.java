@@ -114,7 +114,7 @@ public class SystemTestBase {
     final SQLiteInfo sqliteInfo =
         (SQLiteInfo) ConnectionInfo.of(MyriaConstants.STORAGE_SYSTEM_SQLITE, wc
             .getConfigurationValue(MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_CONN_INFO));
-    final File ret = new File(sqliteInfo.getDatabase());
+    final File ret = new File(sqliteInfo.getDatabaseFilename());
     wc.close();
     return ret;
   }
