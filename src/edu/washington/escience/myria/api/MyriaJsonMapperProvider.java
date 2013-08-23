@@ -24,22 +24,31 @@ public class MyriaJsonMapperProvider extends JacksonJaxbJsonProvider {
   /** Get (or create) the custom ObjectMapper and then set it in the parent. */
   public MyriaJsonMapperProvider() {
     if (commonMapper == null) {
-      ObjectMapper mapper = new ObjectMapper();
-
-      /*
-       * These are recommended by Swagger devs but I want to hold and see what we want. Leaving the code here for future
-       * use.
-       */
-      // mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-      // mapper.setSerializationInclusion(JsonInclude.Include.NON_DEFAULT);
-      // mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-      // mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-
-      /* Use the Web's property naming strategy. */
-      mapper.setPropertyNamingStrategy(PropertyNamingStrategy.CAMEL_CASE_TO_LOWER_CASE_WITH_UNDERSCORES);
-
-      commonMapper = mapper;
+      commonMapper = newMapper();
     }
     super.setMapper(commonMapper);
+  }
+
+  /**
+   * Create the standard Myria custom ObjectMapper.
+   * 
+   * @return the standard Myria custom ObjectMapper.
+   */
+  public static ObjectMapper newMapper() {
+    ObjectMapper mapper = new ObjectMapper();
+
+    /*
+     * These are recommended by Swagger devs but I want to hold and see what we want. Leaving the code here for future
+     * use.
+     */
+    // mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+    // mapper.setSerializationInclusion(JsonInclude.Include.NON_DEFAULT);
+    // mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+    // mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+    /* Use the Web's property naming strategy. */
+    mapper.setPropertyNamingStrategy(PropertyNamingStrategy.CAMEL_CASE_TO_LOWER_CASE_WITH_UNDERSCORES);
+
+    return mapper;
   }
 }
