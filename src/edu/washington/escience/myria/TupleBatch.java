@@ -215,8 +215,11 @@ public class TupleBatch implements Serializable {
    * @param tbb the TBB buffer.
    * */
   public final void compactInto(final TupleBatchBuffer tbb) {
-    /* EOI TB doesn't have any data, so calling compactInto() won't do the job. */
-    Preconditions.checkArgument(!isEOI());
+    if (isEOI()) {
+      /* an EOI TB has no data */
+      tbb.appendTB(this);
+      return;
+    }
     final int numColumns = columns.size();
     ImmutableIntArray indices = getValidIndices();
     for (int i = 0; i < indices.length(); i++) {
