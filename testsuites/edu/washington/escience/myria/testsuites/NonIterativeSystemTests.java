@@ -4,7 +4,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
-import edu.washington.escience.myria.operator.ApplyTest;
+import edu.washington.escience.myria.operator.apply.ApplyTest;
 import edu.washington.escience.myria.operator.apply.ConstantMultiplicationIFunctionTest;
 import edu.washington.escience.myria.operator.apply.PowIFunctionTest;
 import edu.washington.escience.myria.operator.apply.SqrtIFunctionTest;

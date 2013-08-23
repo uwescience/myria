@@ -13,6 +13,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.ipc.IPCTestUtil;
 import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.parallel.TransportMessageSerializer;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
@@ -42,7 +43,7 @@ public class TenGBTupleBatchSenderUsingConnectionPool {
     computingUnits.put(IPCID, new SocketInfo(InetAddress.getLocalHost().getHostName(), PORT));
 
     final IPCConnectionPool connectionPool =
-        TestUtils.startIPCConnectionPool(1, computingUnits, new LinkedBlockingQueue<IPCMessage.Data<TupleBatch>>(),
+        IPCTestUtil.startIPCConnectionPool(1, computingUnits, new LinkedBlockingQueue<IPCMessage.Data<TupleBatch>>(),
             new TransportMessageSerializer());
 
     long numSent = 0;

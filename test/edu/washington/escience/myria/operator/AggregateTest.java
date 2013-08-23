@@ -20,8 +20,8 @@ import edu.washington.escience.myria.operator.agg.Aggregate;
 import edu.washington.escience.myria.operator.agg.Aggregator;
 import edu.washington.escience.myria.operator.agg.MultiGroupByAggregate;
 import edu.washington.escience.myria.operator.agg.SingleGroupByAggregate;
-import edu.washington.escience.myria.systemtest.SystemTestBase;
 import edu.washington.escience.myria.util.TestUtils;
+import edu.washington.escience.myria.util.Tuple;
 
 public class AggregateTest {
 
@@ -292,8 +292,8 @@ public class AggregateTest {
       }
     }
     agg.close();
-    final HashMap<SystemTestBase.Tuple, Integer> actualResult = TestUtils.tupleBatchToTupleBag(result);
-    final HashMap<SystemTestBase.Tuple, Integer> expected = TestUtils.groupByCount(testBase, 0);
+    final HashMap<Tuple, Integer> actualResult = TestUtils.tupleBatchToTupleBag(result);
+    final HashMap<Tuple, Integer> expected = TestUtils.groupByCount(testBase, 0);
     TestUtils.assertTupleBagEqual(expected, actualResult);
   }
 
@@ -316,7 +316,7 @@ public class AggregateTest {
       }
     }
     agg.close();
-    final HashMap<SystemTestBase.Tuple, Integer> actualResult = TestUtils.tupleBatchToTupleBag(result);
+    final HashMap<Tuple, Integer> actualResult = TestUtils.tupleBatchToTupleBag(result);
     TestUtils.assertTupleBagEqual(TestUtils.groupByAvgLongColumn(testBase, 1, 0), actualResult);
   }
 
@@ -338,7 +338,7 @@ public class AggregateTest {
       }
     }
     agg.close();
-    final HashMap<SystemTestBase.Tuple, Integer> actualResult = TestUtils.tupleBatchToTupleBag(result);
+    final HashMap<Tuple, Integer> actualResult = TestUtils.tupleBatchToTupleBag(result);
     TestUtils.assertTupleBagEqual(TestUtils.groupByAvgLongColumn(testBase, 1, 0), actualResult);
   }
 
@@ -361,7 +361,7 @@ public class AggregateTest {
       }
     }
     agg.close();
-    HashMap<SystemTestBase.Tuple, Integer> actualResult = TestUtils.tupleBatchToTupleBag(result);
+    HashMap<Tuple, Integer> actualResult = TestUtils.tupleBatchToTupleBag(result);
     TestUtils.assertTupleBagEqual(TestUtils.groupByMax(testBase, 1, 0), actualResult);
 
     agg =
@@ -398,7 +398,7 @@ public class AggregateTest {
       }
     }
     agg.close();
-    HashMap<SystemTestBase.Tuple, Integer> actualResult = TestUtils.tupleBatchToTupleBag(result);
+    HashMap<Tuple, Integer> actualResult = TestUtils.tupleBatchToTupleBag(result);
     TestUtils.assertTupleBagEqual(TestUtils.groupByMax(testBase, 1, 0), actualResult);
 
     agg =
@@ -435,7 +435,7 @@ public class AggregateTest {
       }
     }
     agg.close();
-    HashMap<SystemTestBase.Tuple, Integer> actualResult = TestUtils.tupleBatchToTupleBag(result);
+    HashMap<Tuple, Integer> actualResult = TestUtils.tupleBatchToTupleBag(result);
     TestUtils.assertTupleBagEqual(TestUtils.groupByMin(testBase, 1, 0), actualResult);
 
     agg =
@@ -472,7 +472,7 @@ public class AggregateTest {
       }
     }
     agg.close();
-    HashMap<SystemTestBase.Tuple, Integer> actualResult = TestUtils.tupleBatchToTupleBag(result);
+    HashMap<Tuple, Integer> actualResult = TestUtils.tupleBatchToTupleBag(result);
     TestUtils.assertTupleBagEqual(TestUtils.groupByMin(testBase, 1, 0), actualResult);
 
     agg =
@@ -509,7 +509,7 @@ public class AggregateTest {
       }
     }
     agg.close();
-    final HashMap<SystemTestBase.Tuple, Integer> actualResult = TestUtils.tupleBatchToTupleBag(result);
+    final HashMap<Tuple, Integer> actualResult = TestUtils.tupleBatchToTupleBag(result);
     TestUtils.assertTupleBagEqual(TestUtils.groupBySumLongColumn(testBase, 1, 0), actualResult);
   }
 
@@ -531,7 +531,7 @@ public class AggregateTest {
       }
     }
     agg.close();
-    final HashMap<SystemTestBase.Tuple, Integer> actualResult = TestUtils.tupleBatchToTupleBag(result);
+    final HashMap<Tuple, Integer> actualResult = TestUtils.tupleBatchToTupleBag(result);
     TestUtils.assertTupleBagEqual(TestUtils.groupBySumLongColumn(testBase, 1, 0), actualResult);
   }
 

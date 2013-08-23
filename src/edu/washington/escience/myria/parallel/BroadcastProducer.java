@@ -78,7 +78,6 @@ public class BroadcastProducer extends Producer {
   protected final void childEOI() throws DbException {
 
     TupleBatch dm = null;
-    TupleBatch eoiTB = TupleBatch.eoiTupleBatch(getSchema());
     TupleBatch.eoiTupleBatch(getSchema()).compactInto(getBuffers()[0]);
 
     /* BroadcastProducer only uses getBuffers()[0] */
