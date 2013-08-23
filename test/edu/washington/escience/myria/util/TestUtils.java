@@ -7,30 +7,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
 
-import org.jboss.netty.bootstrap.ClientBootstrap;
-import org.jboss.netty.bootstrap.ServerBootstrap;
-import org.jboss.netty.channel.ChannelFactory;
-import org.jboss.netty.channel.ChannelPipelineFactory;
-import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
-import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
 import org.junit.Assert;
 
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.column.Column;
-import edu.washington.escience.myria.parallel.SocketInfo;
-import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
-import edu.washington.escience.myria.parallel.ipc.IPCMessage;
-import edu.washington.escience.myria.parallel.ipc.InJVMLoopbackChannelSink;
-import edu.washington.escience.myria.parallel.ipc.PayloadSerializer;
-import edu.washington.escience.myria.parallel.ipc.QueueBasedShortMessageProcessor;
-import edu.washington.escience.myria.systemtest.SystemTestBase;
-import edu.washington.escience.myria.systemtest.SystemTestBase.Tuple;
 
 public final class TestUtils {
 
@@ -203,7 +186,7 @@ public final class TestUtils {
 
   }
 
-  public static HashMap<SystemTestBase.Tuple, Integer> groupByAvgLongColumn(final TupleBatchBuffer source,
+  public static HashMap<Tuple, Integer> groupByAvgLongColumn(final TupleBatchBuffer source,
       final int groupByColumn, final int aggColumn) {
     final List<List<Column<?>>> tbs = source.getAllAsRawColumn();
     final HashMap<Object, Long> sum = new HashMap<Object, Long>();
@@ -223,12 +206,12 @@ public final class TestUtils {
         sum.put(groupByValue, currentSum + aggValue);
       }
     }
-    final HashMap<SystemTestBase.Tuple, Integer> result = new HashMap<SystemTestBase.Tuple, Integer>();
+    final HashMap<Tuple, Integer> result = new HashMap<Tuple, Integer>();
 
     for (final Map.Entry<Object, Long> e : sum.entrySet()) {
       final Object gValue = e.getKey();
       final Long sumV = e.getValue();
-      final SystemTestBase.Tuple t = new SystemTestBase.Tuple(2);
+      final Tuple t = new Tuple(2);
       t.set(0, (Comparable<?>) gValue);
       t.set(1, sumV * 1.0 / count.get(gValue));
       result.put(t, 1);
@@ -236,7 +219,7 @@ public final class TestUtils {
     return result;
   }
 
-  public static HashMap<SystemTestBase.Tuple, Integer> groupByCount(final TupleBatchBuffer source,
+  public static HashMap<Tuple, Integer> groupByCount(final TupleBatchBuffer source,
       final int groupByColumn) {
     final List<List<Column<?>>> tbs = source.getAllAsRawColumn();
     final HashMap<Object, Long> count = new HashMap<Object, Long>();
@@ -251,12 +234,12 @@ public final class TestUtils {
         count.put(groupByValue, ++currentCount);
       }
     }
-    final HashMap<SystemTestBase.Tuple, Integer> result = new HashMap<SystemTestBase.Tuple, Integer>();
+    final HashMap<Tuple, Integer> result = new HashMap<Tuple, Integer>();
 
     for (final Map.Entry<Object, Long> e : count.entrySet()) {
       final Object gValue = e.getKey();
       final Long countV = e.getValue();
-      final SystemTestBase.Tuple t = new SystemTestBase.Tuple(2);
+      final Tuple t = new Tuple(2);
       t.set(0, (Comparable<?>) gValue);
       t.set(1, countV);
       result.put(t, 1);
@@ -264,7 +247,7 @@ public final class TestUtils {
     return result;
   }
 
-  public static <T extends Comparable<T>> HashMap<SystemTestBase.Tuple, Integer> groupByMax(
+  public static <T extends Comparable<T>> HashMap<Tuple, Integer> groupByMax(
       final TupleBatchBuffer source, final int groupByColumn, final int aggColumn) {
     final List<List<Column<?>>> tbs = source.getAllAsRawColumn();
     final HashMap<Object, T> max = new HashMap<Object, T>();
@@ -282,12 +265,12 @@ public final class TestUtils {
         }
       }
     }
-    final HashMap<SystemTestBase.Tuple, Integer> result = new HashMap<SystemTestBase.Tuple, Integer>();
+    final HashMap<Tuple, Integer> result = new HashMap<Tuple, Integer>();
 
     for (final Map.Entry<Object, T> e : max.entrySet()) {
       final Object gValue = e.getKey();
       final T maxV = e.getValue();
-      final SystemTestBase.Tuple t = new SystemTestBase.Tuple(2);
+      final Tuple t = new Tuple(2);
       t.set(0, (Comparable<?>) gValue);
       t.set(1, maxV);
       result.put(t, 1);
@@ -295,7 +278,7 @@ public final class TestUtils {
     return result;
   }
 
-  public static <T extends Comparable<T>> HashMap<SystemTestBase.Tuple, Integer> groupByMin(
+  public static <T extends Comparable<T>> HashMap<Tuple, Integer> groupByMin(
       final TupleBatchBuffer source, final int groupByColumn, final int aggColumn) {
     final List<List<Column<?>>> tbs = source.getAllAsRawColumn();
     final HashMap<Object, T> min = new HashMap<Object, T>();
@@ -313,12 +296,12 @@ public final class TestUtils {
         }
       }
     }
-    final HashMap<SystemTestBase.Tuple, Integer> result = new HashMap<SystemTestBase.Tuple, Integer>();
+    final HashMap<Tuple, Integer> result = new HashMap<Tuple, Integer>();
 
     for (final Map.Entry<Object, T> e : min.entrySet()) {
       final Object gValue = e.getKey();
       final T minV = e.getValue();
-      final SystemTestBase.Tuple t = new SystemTestBase.Tuple(2);
+      final Tuple t = new Tuple(2);
       t.set(0, (Comparable<?>) gValue);
       t.set(1, minV);
       result.put(t, 1);
@@ -326,7 +309,7 @@ public final class TestUtils {
     return result;
   }
 
-  public static HashMap<SystemTestBase.Tuple, Integer> groupBySumLongColumn(final TupleBatchBuffer source,
+  public static HashMap<Tuple, Integer> groupBySumLongColumn(final TupleBatchBuffer source,
       final int groupByColumn, final int aggColumn) {
     final List<List<Column<?>>> tbs = source.getAllAsRawColumn();
     final HashMap<Object, Long> sum = new HashMap<Object, Long>();
@@ -342,12 +325,12 @@ public final class TestUtils {
         sum.put(groupByValue, currentSum + aggValue);
       }
     }
-    final HashMap<SystemTestBase.Tuple, Integer> result = new HashMap<SystemTestBase.Tuple, Integer>();
+    final HashMap<Tuple, Integer> result = new HashMap<Tuple, Integer>();
 
     for (final Map.Entry<Object, Long> e : sum.entrySet()) {
       final Object gValue = e.getKey();
       final Long sumV = e.getValue();
-      final SystemTestBase.Tuple t = new SystemTestBase.Tuple(2);
+      final Tuple t = new Tuple(2);
       t.set(0, (Comparable<?>) gValue);
       t.set(1, sumV);
       result.put(t, 1);
@@ -475,37 +458,6 @@ public final class TestUtils {
       }
     }
     return result;
-  }
-
-  public final static <PAYLOAD> IPCConnectionPool startIPCConnectionPool(final int myID,
-      final HashMap<Integer, SocketInfo> computingUnits,
-      final LinkedBlockingQueue<IPCMessage.Data<PAYLOAD>> shortMessageQueue, final PayloadSerializer ps)
-      throws Exception {
-    final IPCConnectionPool connectionPool =
-        new IPCConnectionPool(myID, computingUnits, new ServerBootstrap(), new ClientBootstrap(), ps,
-            new QueueBasedShortMessageProcessor<PAYLOAD>(shortMessageQueue));
-
-    ExecutorService bossExecutor = Executors.newCachedThreadPool();
-    ExecutorService workerExecutor = Executors.newCachedThreadPool();
-
-    ChannelFactory clientChannelFactory =
-        new NioClientSocketChannelFactory(bossExecutor, workerExecutor,
-            Runtime.getRuntime().availableProcessors() * 2 + 1);
-
-    // Start server with Nb of active threads = 2*NB CPU + 1 as maximum.
-    ChannelFactory serverChannelFactory =
-        new NioServerSocketChannelFactory(bossExecutor, workerExecutor,
-            Runtime.getRuntime().availableProcessors() * 2 + 1);
-
-    ChannelPipelineFactory serverPipelineFactory =
-        new TestIPCPipelineFactories.ServerPipelineFactory(connectionPool, null);
-    ChannelPipelineFactory clientPipelineFactory = new TestIPCPipelineFactories.ClientPipelineFactory(connectionPool);
-
-    ChannelPipelineFactory inJVMPipelineFactory = new TestIPCPipelineFactories.InJVMPipelineFactory(connectionPool);
-
-    connectionPool.start(serverChannelFactory, serverPipelineFactory, clientChannelFactory, clientPipelineFactory,
-        inJVMPipelineFactory, new InJVMLoopbackChannelSink());
-    return connectionPool;
   }
 
   public static ImmutableList.Builder<Number> generateListBuilderWithElement(long element) {
