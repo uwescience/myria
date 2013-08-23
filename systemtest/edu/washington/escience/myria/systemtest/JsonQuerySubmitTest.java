@@ -4,7 +4,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -14,11 +18,20 @@ import sun.misc.IOUtils;
 
 import com.google.common.base.Preconditions;
 
+import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.util.JsonAPIUtils;
 
 public class JsonQuerySubmitTest extends SystemTestBase {
 
   static Logger LOGGER = LoggerFactory.getLogger(JsonQuerySubmitTest.class);
+
+  @Override
+  public Map<Integer, SocketInfo> getWorkers() {
+    HashMap<Integer, SocketInfo> m = new HashMap<Integer, SocketInfo>();
+    m.put(1, new SocketInfo(DEFAULT_WORKER_STARTING_PORT));
+    m.put(2, new SocketInfo(DEFAULT_WORKER_STARTING_PORT + 1));
+    return m;
+  }
 
   @Test
   public void jsonQuerySubmitTest() throws Exception {
@@ -29,21 +42,43 @@ public class JsonQuerySubmitTest extends SystemTestBase {
 
     HttpURLConnection conn = JsonAPIUtils.submitQuery("localhost", masterDaemonPort, queryJson);
     assertNotEquals(conn.getResponseCode(), HttpURLConnection.HTTP_OK);
-    LOGGER.error(new String(IOUtils.readFully(conn.getErrorStream(), -1, true)));
+    LOGGER.error(getContents(conn));
 
     conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingestJson);
     if (null != conn.getErrorStream()) {
-      throw new IllegalStateException(new String(IOUtils.readFully(conn.getInputStream(), -1, true)));
+      throw new IllegalStateException(getContents(conn));
     }
     assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
-    LOGGER.info(new String(IOUtils.readFully(conn.getInputStream(), -1, true)));
+    LOGGER.info(getContents(conn));
 
     conn = JsonAPIUtils.submitQuery("localhost", masterDaemonPort, queryJson);
     if (null != conn.getErrorStream()) {
-      throw new IllegalStateException(new String(IOUtils.readFully(conn.getInputStream(), -1, true)));
+      throw new IllegalStateException(getContents(conn));
     }
     assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
-    LOGGER.info(new String(IOUtils.readFully(conn.getInputStream(), -1, true)));
+    LOGGER.info(getContents(conn));
+  }
+
+  private String getContents(HttpURLConnection conn) {
+    byte[] input = new byte[0];
+    byte[] error = new byte[0];
+    try {
+      InputStream is = conn.getInputStream();
+      if (is != null) {
+        input = IOUtils.readFully(is, -1, true);
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    try {
+      InputStream is = conn.getErrorStream();
+      if (is != null) {
+        error = IOUtils.readFully(is, -1, true);
+      }
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    return "Content: \n" + new String(input) + "\nError: \n" + new String(error);
   }
 
   @Test
@@ -58,10 +93,10 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     HttpURLConnection conn;
     conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingestA0);
     if (null != conn.getErrorStream()) {
-      throw new IllegalStateException(new String(IOUtils.readFully(conn.getInputStream(), -1, true)));
+      throw new IllegalStateException(getContents(conn));
     }
     assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
-    LOGGER.info(new String(IOUtils.readFully(conn.getInputStream(), -1, true)));
+    LOGGER.info(getContents(conn));
     /* make sure the ingestion is done. */
     while (!server.queryCompleted(1)) {
       Thread.sleep(100);
@@ -69,30 +104,30 @@ public class JsonQuerySubmitTest extends SystemTestBase {
 
     conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingestB0);
     if (null != conn.getErrorStream()) {
-      throw new IllegalStateException(new String(IOUtils.readFully(conn.getInputStream(), -1, true)));
+      throw new IllegalStateException(getContents(conn));
     }
     assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
-    LOGGER.info(new String(IOUtils.readFully(conn.getInputStream(), -1, true)));
+    LOGGER.info(getContents(conn));
     while (!server.queryCompleted(2)) {
       Thread.sleep(100);
     }
 
     conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingestC0);
     if (null != conn.getErrorStream()) {
-      throw new IllegalStateException(new String(IOUtils.readFully(conn.getInputStream(), -1, true)));
+      throw new IllegalStateException(getContents(conn));
     }
     assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
-    LOGGER.info(new String(IOUtils.readFully(conn.getInputStream(), -1, true)));
+    LOGGER.info(getContents(conn));
     while (!server.queryCompleted(3)) {
       Thread.sleep(100);
     }
 
     conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingestR);
     if (null != conn.getErrorStream()) {
-      throw new IllegalStateException(new String(IOUtils.readFully(conn.getInputStream(), -1, true)));
+      throw new IllegalStateException(getContents(conn));
     }
     assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
-    LOGGER.info(new String(IOUtils.readFully(conn.getInputStream(), -1, true)));
+    LOGGER.info(getContents(conn));
     while (!server.queryCompleted(4)) {
       Thread.sleep(100);
     }
@@ -100,10 +135,10 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     File queryJson = new File("./jsonQueries/multiIDB_jwang/joinChain.json");
     conn = JsonAPIUtils.submitQuery("localhost", masterDaemonPort, queryJson);
     if (null != conn.getErrorStream()) {
-      throw new IllegalStateException(new String(IOUtils.readFully(conn.getInputStream(), -1, true)));
+      throw new IllegalStateException(getContents(conn));
     }
     assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
-    LOGGER.info(new String(IOUtils.readFully(conn.getInputStream(), -1, true)));
+    LOGGER.info(getContents(conn));
     while (!server.queryCompleted(5)) {
       Thread.sleep(100);
     }
