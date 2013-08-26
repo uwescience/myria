@@ -664,11 +664,7 @@ public final class Server {
           LOGGER.info("starting new worker " + address + ":" + port + ".");
         }
         boolean debug = config.get("deployment").get("debug_mode").equals("true");
-        if (debug) {
-          DeploymentUtils.startWorker(address, workingDir, description, maxHeapSize, workerId + "", port + "");
-        } else {
-          DeploymentUtils.startWorker(address, workingDir, description, maxHeapSize, workerId + "", null);
-        }
+        DeploymentUtils.startWorker(address, workingDir, description, maxHeapSize, workerId + "", port, debug);
       } catch (CatalogException e) {
         throw new RuntimeException(e);
       } catch (IOException e) {

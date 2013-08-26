@@ -129,12 +129,8 @@ public final class DeploymentUtils {
           hostname = username + "@" + hostname;
         }
         String workingDir = config.get("paths").get(workerId);
-        if (debug) {
-          String port = getPort(workers.get(workerId));
-          startWorker(hostname, workingDir, description, maxHeapSize, workerId, port);
-        } else {
-          startWorker(hostname, workingDir, description, maxHeapSize, workerId, null);
-        }
+        int port = getPort(workers.get(workerId));
+        startWorker(hostname, workingDir, description, maxHeapSize, workerId, port, debug);
       }
     } else {
       System.out.println(USAGE);
@@ -150,9 +146,10 @@ public final class DeploymentUtils {
    * @param maxHeapSize the same meaning as max_heap_size in deployment.cfg
    * @param workerId the worker id.
    * @param port the worker port number, need it to infer the port number used in debug mode.
+   * @param debug if launch the worker in debug mode.
    */
   public static void startWorker(final String address, final String workingDir, final String description,
-      final String maxHeapSize, final String workerId, final String port) {
+      final String maxHeapSize, final String workerId, final int port, final boolean debug) {
     StringBuilder builder = new StringBuilder();
     String path = workingDir + "/" + description + "-files";
     String workerDir = description + "/" + "worker_" + workerId;;
@@ -175,12 +172,11 @@ public final class DeploymentUtils {
     builder.append(" -Djava.util.logging.config.file=logging.properties");
     builder.append(" -Dlog4j.configuration=log4j.properties");
     builder.append(" -Djava.library.path=" + librarypath);
-    if (port != null) {
+    if (debug) {
       // required to run in debug mode
       builder.append(" -Dorg.jboss.netty.debug");
       builder.append(" -Xdebug");
-      builder.append(" -Xrunjdwp:transport=dt_socket,address=" + (Integer.parseInt(port) + 1000)
-          + ",server=y,suspend=n");
+      builder.append(" -Xrunjdwp:transport=dt_socket,address=" + (port + 1000) + ",server=y,suspend=n");
     }
     builder.append(" " + heapSize);
     builder.append(" edu.washington.escience.myria.parallel.Worker");
@@ -351,8 +347,8 @@ public final class DeploymentUtils {
    * @param s the string hostname:port
    * @return the port number.
    * */
-  private static String getPort(final String s) {
-    return s.split(":")[1];
+  private static int getPort(final String s) {
+    return Integer.parseInt(s.split(":")[1]);
   }
 
   /**
