@@ -21,8 +21,8 @@ import edu.washington.escience.myria.operator.agg.Aggregator;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
-import edu.washington.escience.myria.parallel.ShuffleConsumer;
-import edu.washington.escience.myria.parallel.ShuffleProducer;
+import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
+import edu.washington.escience.myria.parallel.GenericShuffleProducer;
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.parallel.WholeTupleHashPartitionFunction;
 
@@ -59,9 +59,10 @@ public class Q5A_Count implements QueryPlanGenerator {
             Schemas.subjectSchema);
     // schema: (articleId long), card:971330
 
-    final ShuffleProducer shuffleArticlesP = new ShuffleProducer(allArticles, allArticlesShuffleID, allWorkers, pfOn0);
-    final ShuffleConsumer shuffleArticlesC =
-        new ShuffleConsumer(shuffleArticlesP.getSchema(), allArticlesShuffleID, allWorkers);
+    final GenericShuffleProducer shuffleArticlesP =
+        new GenericShuffleProducer(allArticles, allArticlesShuffleID, allWorkers, pfOn0);
+    final GenericShuffleConsumer shuffleArticlesC =
+        new GenericShuffleConsumer(shuffleArticlesP.getSchema(), allArticlesShuffleID, allWorkers);
     // schema: (articleId long)
 
     final DbQueryScan allHasCreator =
@@ -70,10 +71,10 @@ public class Q5A_Count implements QueryPlanGenerator {
             Schemas.subjectObjectSchema);
     // schema: (createdObjID long, creatorID long), card:10626906
 
-    final ShuffleProducer shuffleCreatorsP =
-        new ShuffleProducer(allHasCreator, allCreatorsShuffleID, allWorkers, pfOn0);
-    final ShuffleConsumer shuffleCreatorsC =
-        new ShuffleConsumer(shuffleCreatorsP.getSchema(), allCreatorsShuffleID, allWorkers);
+    final GenericShuffleProducer shuffleCreatorsP =
+        new GenericShuffleProducer(allHasCreator, allCreatorsShuffleID, allWorkers, pfOn0);
+    final GenericShuffleConsumer shuffleCreatorsC =
+        new GenericShuffleConsumer(shuffleCreatorsP.getSchema(), allCreatorsShuffleID, allWorkers);
     // schema: (createdObjID long, creatorID long)
 
     final LocalJoin joinArticleCreator =
@@ -86,10 +87,10 @@ public class Q5A_Count implements QueryPlanGenerator {
     final DupElim deArticleAuthors = new DupElim(projArticleCreatorsID); // local dupelim
     // schema: (articleAuthorIDs long)
 
-    final ShuffleProducer shuffleArticleCreatorsP =
-        new ShuffleProducer(deArticleAuthors, articleCreatorsShuffleID, allWorkers, pfOn0);
-    final ShuffleConsumer shuffleArticleCreatorsC =
-        new ShuffleConsumer(shuffleArticleCreatorsP.getSchema(), articleCreatorsShuffleID, allWorkers);
+    final GenericShuffleProducer shuffleArticleCreatorsP =
+        new GenericShuffleProducer(deArticleAuthors, articleCreatorsShuffleID, allWorkers, pfOn0);
+    final GenericShuffleConsumer shuffleArticleCreatorsC =
+        new GenericShuffleConsumer(shuffleArticleCreatorsP.getSchema(), articleCreatorsShuffleID, allWorkers);
     // schema: (articleAuthorIDs long)
 
     final DupElim deArticleAuthorsGlobal = new DupElim(shuffleArticleCreatorsC); // local dupelim
@@ -101,10 +102,10 @@ public class Q5A_Count implements QueryPlanGenerator {
             Schemas.subjectSchema);
     // schema: (proceedingId long), card:2916364
 
-    final ShuffleProducer shuffleProceedingsP =
-        new ShuffleProducer(allInProceedings, allProceedingsShuffleID, allWorkers, pfOn0);
-    final ShuffleConsumer shuffleProceedingsC =
-        new ShuffleConsumer(shuffleProceedingsP.getSchema(), allProceedingsShuffleID, allWorkers);
+    final GenericShuffleProducer shuffleProceedingsP =
+        new GenericShuffleProducer(allInProceedings, allProceedingsShuffleID, allWorkers, pfOn0);
+    final GenericShuffleConsumer shuffleProceedingsC =
+        new GenericShuffleConsumer(shuffleProceedingsP.getSchema(), allProceedingsShuffleID, allWorkers);
     // schema: (proceedingId long)
 
     final DbQueryScan allHasCreator2 =
@@ -113,10 +114,10 @@ public class Q5A_Count implements QueryPlanGenerator {
             Schemas.subjectObjectSchema);
     // schema: (createdObjectID long, creatorId long), card: 10626906
 
-    final ShuffleProducer shuffleCreators2P =
-        new ShuffleProducer(allHasCreator2, allCreators2ShuffleID, allWorkers, pfOn0);
-    final ShuffleConsumer shuffleCreators2C =
-        new ShuffleConsumer(shuffleCreators2P.getSchema(), allCreators2ShuffleID, allWorkers);
+    final GenericShuffleProducer shuffleCreators2P =
+        new GenericShuffleProducer(allHasCreator2, allCreators2ShuffleID, allWorkers, pfOn0);
+    final GenericShuffleConsumer shuffleCreators2C =
+        new GenericShuffleConsumer(shuffleCreators2P.getSchema(), allCreators2ShuffleID, allWorkers);
 
     final LocalJoin joinProceedingsCreator =
         new LocalJoin(shuffleProceedingsC, shuffleCreators2C, new int[] { 0 }, new int[] { 0 });
@@ -127,10 +128,10 @@ public class Q5A_Count implements QueryPlanGenerator {
 
     final DupElim deProceedingAuthors = new DupElim(projProceedingsID); // local dupelim
 
-    final ShuffleProducer shuffleProceedingsCreatorsP =
-        new ShuffleProducer(deProceedingAuthors, proceedingsCreatorsShuffleID, allWorkers, pfOn0);
-    final ShuffleConsumer shuffleProceedingsCreatorsC =
-        new ShuffleConsumer(shuffleProceedingsCreatorsP.getSchema(), proceedingsCreatorsShuffleID, allWorkers);
+    final GenericShuffleProducer shuffleProceedingsCreatorsP =
+        new GenericShuffleProducer(deProceedingAuthors, proceedingsCreatorsShuffleID, allWorkers, pfOn0);
+    final GenericShuffleConsumer shuffleProceedingsCreatorsC =
+        new GenericShuffleConsumer(shuffleProceedingsCreatorsP.getSchema(), proceedingsCreatorsShuffleID, allWorkers);
     // schema: (proceedingAuthorID long)
 
     final DupElim deProceedingAuthorsGlobal = new DupElim(shuffleProceedingsCreatorsC); // local dupelim
@@ -145,8 +146,10 @@ public class Q5A_Count implements QueryPlanGenerator {
             Schemas.subjectObjectSchema);
     // schema: (foafSubjID long, foafObjID long)
 
-    final ShuffleProducer shuffleFOAF2P = new ShuffleProducer(allFOAF2, allFOAF2ShuffleID, allWorkers, pfOn0);
-    final ShuffleConsumer shuffleFOAF2C = new ShuffleConsumer(shuffleFOAF2P.getSchema(), allFOAF2ShuffleID, allWorkers);
+    final GenericShuffleProducer shuffleFOAF2P =
+        new GenericShuffleProducer(allFOAF2, allFOAF2ShuffleID, allWorkers, pfOn0);
+    final GenericShuffleConsumer shuffleFOAF2C =
+        new GenericShuffleConsumer(shuffleFOAF2P.getSchema(), allFOAF2ShuffleID, allWorkers);
     // schema: (foafSubjID long, foafObjID long)
 
     final LocalJoin articleProceedingsCreatorFOAFJoin =
@@ -156,11 +159,11 @@ public class Q5A_Count implements QueryPlanGenerator {
     final Project finalProject = new Project(new int[] { 1, 2 }, articleProceedingsCreatorFOAFJoin);
     // schema: (articleProceedingAuthorID long, foafNameID long)
 
-    final ShuffleProducer forDupElimShuffleP =
-        new ShuffleProducer(finalProject, forDupElimShuffleID, allWorkers, new WholeTupleHashPartitionFunction(
+    final GenericShuffleProducer forDupElimShuffleP =
+        new GenericShuffleProducer(finalProject, forDupElimShuffleID, allWorkers, new WholeTupleHashPartitionFunction(
             allWorkers.length));
-    final ShuffleConsumer forDupElimShuffleC =
-        new ShuffleConsumer(forDupElimShuffleP.getSchema(), forDupElimShuffleID, allWorkers);
+    final GenericShuffleConsumer forDupElimShuffleC =
+        new GenericShuffleConsumer(forDupElimShuffleP.getSchema(), forDupElimShuffleID, allWorkers);
 
     final DupElim dupElim = new DupElim(forDupElimShuffleC);
 
