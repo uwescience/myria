@@ -21,9 +21,9 @@ import edu.washington.escience.myria.operator.agg.SingleGroupByAggregateNoBuffer
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
+import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
+import edu.washington.escience.myria.parallel.GenericShuffleProducer;
 import edu.washington.escience.myria.parallel.PartitionFunction;
-import edu.washington.escience.myria.parallel.ShuffleConsumer;
-import edu.washington.escience.myria.parallel.ShuffleProducer;
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
 
 public class JoinQueryPostgres implements QueryPlanGenerator, Serializable {
@@ -66,8 +66,9 @@ public class JoinQueryPostgres implements QueryPlanGenerator, Serializable {
     PartitionFunction<String, Integer> pf = new SingleFieldHashPartitionFunction(allWorkers.length);
     pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
 
-    final ShuffleProducer spLocalScan = new ShuffleProducer(localScan, localScanID, allWorkers, pf);
-    final ShuffleConsumer scLocalScan = new ShuffleConsumer(spLocalScan.getSchema(), localScanID, allWorkers);
+    final GenericShuffleProducer spLocalScan = new GenericShuffleProducer(localScan, localScanID, allWorkers, pf);
+    final GenericShuffleConsumer scLocalScan =
+        new GenericShuffleConsumer(spLocalScan.getSchema(), localScanID, allWorkers);
 
     final SingleGroupByAggregateNoBuffer globalAgg =
         new SingleGroupByAggregateNoBuffer(scLocalScan, new int[] { 1, 2, 3 }, 0, new int[] {

@@ -59,6 +59,11 @@ public abstract class Producer extends RootOperator {
   private transient boolean nonBlockingExecution;
 
   /**
+   * The Logger for debug and info messages in this class.
+   */
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Producer.class);
+
+  /**
    * no worker means to the owner worker.
    * 
    * @param child the child providing data.
@@ -226,7 +231,8 @@ public abstract class Producer extends RootOperator {
       ret = writeMessage(chIdx, msg);
     } catch (IllegalStateException e) {
       if (taskResourceManager.getOwnerTask().getOwnerQuery().getFTMode().equals("abandon")) {
-        // abandon, do nothing
+        LOGGER.debug("(Abandon) dropping message with {} tuples on query #{}", msg.numTuples(), taskResourceManager
+            .getOwnerTask().getOwnerQuery().getQueryID());
       } else {
         throw e;
       }

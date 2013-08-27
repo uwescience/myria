@@ -21,10 +21,10 @@ import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
+import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
+import edu.washington.escience.myria.parallel.GenericShuffleProducer;
 import edu.washington.escience.myria.parallel.LocalMultiwayConsumer;
 import edu.washington.escience.myria.parallel.LocalMultiwayProducer;
-import edu.washington.escience.myria.parallel.ShuffleConsumer;
-import edu.washington.escience.myria.parallel.ShuffleProducer;
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
 
 public class Q9 implements QueryPlanGenerator {
@@ -58,9 +58,10 @@ public class Q9 implements QueryPlanGenerator {
         Schemas.subjectSchema);
     // schema: (personID long)
 
-    final ShuffleProducer shuffleAllPersonsP = new ShuffleProducer(allPersons, allPersonsShuffleID, allWorkers, pfOn0);
-    final ShuffleConsumer shuffleAllPersonsC =
-        new ShuffleConsumer(shuffleAllPersonsP.getSchema(), allPersonsShuffleID, allWorkers);
+    final GenericShuffleProducer shuffleAllPersonsP =
+        new GenericShuffleProducer(allPersons, allPersonsShuffleID, allWorkers, pfOn0);
+    final GenericShuffleConsumer shuffleAllPersonsC =
+        new GenericShuffleConsumer(shuffleAllPersonsP.getSchema(), allPersonsShuffleID, allWorkers);
     // schema: (personID long)
 
     final LocalMultiwayProducer multiPersonProducer =

@@ -54,6 +54,9 @@ public final class FileScan extends LeafOperator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
+  /**
+   * The logger for debug, trace, etc. messages in this class.
+   */
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(FileScan.class);
 
   /**

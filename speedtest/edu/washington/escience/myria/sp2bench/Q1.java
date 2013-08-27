@@ -18,8 +18,8 @@ import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
-import edu.washington.escience.myria.parallel.ShuffleConsumer;
-import edu.washington.escience.myria.parallel.ShuffleProducer;
+import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
+import edu.washington.escience.myria.parallel.GenericShuffleProducer;
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
 
 public class Q1 implements QueryPlanGenerator {
@@ -62,19 +62,20 @@ public class Q1 implements QueryPlanGenerator {
     final SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(allWorkers.length);
     pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
 
-    final ShuffleProducer shuffleJournalsP = new ShuffleProducer(allJournals, allJournalsShuffleID, allWorkers, pf);
-    final ShuffleConsumer shuffleJournalsC =
-        new ShuffleConsumer(shuffleJournalsP.getSchema(), allJournalsShuffleID, allWorkers);
+    final GenericShuffleProducer shuffleJournalsP =
+        new GenericShuffleProducer(allJournals, allJournalsShuffleID, allWorkers, pf);
+    final GenericShuffleConsumer shuffleJournalsC =
+        new GenericShuffleConsumer(shuffleJournalsP.getSchema(), allJournalsShuffleID, allWorkers);
 
-    final ShuffleProducer shuffleWithTitleP =
-        new ShuffleProducer(allWithTheTitle, allWithTitleShuffleID, allWorkers, pf);
-    final ShuffleConsumer shuffleWithTitleC =
-        new ShuffleConsumer(shuffleWithTitleP.getSchema(), allWithTitleShuffleID, allWorkers);
+    final GenericShuffleProducer shuffleWithTitleP =
+        new GenericShuffleProducer(allWithTheTitle, allWithTitleShuffleID, allWorkers, pf);
+    final GenericShuffleConsumer shuffleWithTitleC =
+        new GenericShuffleConsumer(shuffleWithTitleP.getSchema(), allWithTitleShuffleID, allWorkers);
 
-    final ShuffleProducer shuffleIssuedYearP =
-        new ShuffleProducer(allIssuedYear, allIssuedYearShuffleID, allWorkers, pf);
-    final ShuffleConsumer shuffleIssuedYearC =
-        new ShuffleConsumer(shuffleIssuedYearP.getSchema(), allIssuedYearShuffleID, allWorkers);
+    final GenericShuffleProducer shuffleIssuedYearP =
+        new GenericShuffleProducer(allIssuedYear, allIssuedYearShuffleID, allWorkers, pf);
+    final GenericShuffleConsumer shuffleIssuedYearC =
+        new GenericShuffleConsumer(shuffleIssuedYearP.getSchema(), allIssuedYearShuffleID, allWorkers);
 
     final LocalJoin joinJournalTitle =
         new LocalJoin(shuffleJournalsC, shuffleWithTitleC, new int[] { 0 }, new int[] { 0 });

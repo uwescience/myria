@@ -18,11 +18,11 @@ import edu.washington.escience.myria.operator.agg.SingleGroupByAggregateNoBuffer
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
+import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
+import edu.washington.escience.myria.parallel.GenericShuffleProducer;
 import edu.washington.escience.myria.parallel.LocalShuffleConsumer;
 import edu.washington.escience.myria.parallel.LocalShuffleProducer;
 import edu.washington.escience.myria.parallel.PartitionFunction;
-import edu.washington.escience.myria.parallel.ShuffleConsumer;
-import edu.washington.escience.myria.parallel.ShuffleProducer;
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
 
 public class AggregateQueryVariantMonetDBMyriaSubStr implements QueryPlanGenerator {
@@ -55,7 +55,7 @@ public class AggregateQueryVariantMonetDBMyriaSubStr implements QueryPlanGenerat
     LocalShuffleProducer localsp = new LocalShuffleProducer(localScan, localShuffleIDs, pfLocal0);
 
     LocalShuffleConsumer[] lsc = new LocalShuffleConsumer[localShuffleIDs.length];
-    final ShuffleProducer[] shuffleLocalGroupBys = new ShuffleProducer[lsc.length];
+    final GenericShuffleProducer[] shuffleLocalGroupBys = new GenericShuffleProducer[lsc.length];
     final ExchangePairID shuffleLocalGroupByID = ExchangePairID.newID();
 
     for (int i = 0; i < lsc.length; i++) {
@@ -67,11 +67,11 @@ public class AggregateQueryVariantMonetDBMyriaSubStr implements QueryPlanGenerat
       final SingleGroupByAggregateNoBuffer localAgg =
           new SingleGroupByAggregateNoBuffer(ss, new int[] { 0 }, 1, new int[] { Aggregator.AGG_OP_SUM });
 
-      shuffleLocalGroupBys[i] = new ShuffleProducer(localAgg, shuffleLocalGroupByID, allWorkers, pf0);
+      shuffleLocalGroupBys[i] = new GenericShuffleProducer(localAgg, shuffleLocalGroupByID, allWorkers, pf0);
     }
 
-    final ShuffleConsumer sc =
-        new ShuffleConsumer(shuffleLocalGroupBys[0].getSchema(), shuffleLocalGroupByID, allWorkers);
+    final GenericShuffleConsumer sc =
+        new GenericShuffleConsumer(shuffleLocalGroupBys[0].getSchema(), shuffleLocalGroupByID, allWorkers);
 
     final SingleGroupByAggregateNoBuffer agg =
         new SingleGroupByAggregateNoBuffer(sc, new int[] { 1 }, 0, new int[] { Aggregator.AGG_OP_SUM });
