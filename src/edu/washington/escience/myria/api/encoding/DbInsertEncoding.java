@@ -6,6 +6,7 @@ import java.util.Map;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.RelationKey;
+import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.parallel.Server;
@@ -21,6 +22,11 @@ public class DbInsertEncoding extends OperatorEncoding<DbInsert> {
   public String argChild;
   /** Whether to overwrite an existing dataset. */
   public Boolean argOverwriteTable;
+  /**
+   * The ConnectionInfo struct determines what database the data will be written to. If null, the worker's default
+   * database will be used.
+   */
+  public ConnectionInfo connectionInfo;
   private static final List<String> requiredArguments = ImmutableList.of("relationKey", "argChild");
 
   @Override
@@ -30,10 +36,10 @@ public class DbInsertEncoding extends OperatorEncoding<DbInsert> {
 
   @Override
   public DbInsert construct(Server server) {
-    if (argOverwriteTable != null) {
-      return new DbInsert(null, relationKey, argOverwriteTable);
+    if (argOverwriteTable == null) {
+      argOverwriteTable = Boolean.FALSE;
     }
-    return new DbInsert(null, relationKey, false);
+    return new DbInsert(null, relationKey, connectionInfo, argOverwriteTable);
   }
 
   @Override
