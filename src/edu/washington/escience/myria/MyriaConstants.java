@@ -173,6 +173,11 @@ public final class MyriaConstants {
    * */
   public static final String WORKER_STORAGE_DATABASE_SYSTEM_DEFAULT_VALUE = STORAGE_SYSTEM_SQLITE;
 
+  /**
+   * Query ID.
+   */
+  public static final String QUERY_ID = "query_id";
+
   /** Private constructor to disallow building utility class. */
   private MyriaConstants() {
   }

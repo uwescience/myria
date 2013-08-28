@@ -6,6 +6,7 @@ import java.util.Arrays;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 
@@ -41,6 +42,11 @@ public abstract class Operator implements Serializable {
   private boolean open = false;
 
   /**
+   * A bit denoting whether the operator has began to consume tuples.
+   */
+  private boolean startProcessing = false;
+
+  /**
    * EOS. Initially set it as true;
    * */
   private volatile boolean eos = true;
@@ -49,6 +55,11 @@ public abstract class Operator implements Serializable {
    * End of iteration.
    * */
   private boolean eoi = false;
+
+  /**
+   * Environmental variables during execution.
+   */
+  private ImmutableMap<String, Object> execEnvVars;
 
   /**
    * Closes this iterator.
@@ -195,6 +206,14 @@ public abstract class Operator implements Serializable {
 
     TupleBatch result = null;
     try {
+      if (!startProcessing) {
+        if (LOGGER.isDebugEnabled()) {
+          LOGGER.debug("[" + MyriaConstants.QUERY_ID + "#" + execEnvVars.get(MyriaConstants.QUERY_ID) + "]" + this
+              + ":" + "begin to process");
+        }
+        startProcessing = true;
+      }
+
       result = fetchNextReady();
       while (result != null && result.numTuples() <= 0) {
         // XXX while or not while? For a single thread operator, while sounds more efficient generally
@@ -238,6 +257,7 @@ public abstract class Operator implements Serializable {
       // XXX Do some error handling to multi-open?
       throw new DbException("Operator already open.");
     }
+    this.execEnvVars = execEnvVars;
     final Operator[] children = getChildren();
     if (children != null) {
       for (final Operator child : children) {
@@ -309,8 +329,9 @@ public abstract class Operator implements Serializable {
    * Operators should not be able to unset an already set EOS except reopen it.
    */
   protected final void setEOS() {
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug("Operator EOS: " + this);
+    if ((!eos) && LOGGER.isDebugEnabled()) {
+      LOGGER.debug("[" + MyriaConstants.QUERY_ID + "#" + execEnvVars.get(MyriaConstants.QUERY_ID) + "]" + this
+          + ":End of Processing (EOS)");
     }
     eos = true;
   }
