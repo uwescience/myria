@@ -19,8 +19,8 @@ import edu.washington.escience.myria.operator.agg.Aggregator;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
-import edu.washington.escience.myria.parallel.ShuffleConsumer;
-import edu.washington.escience.myria.parallel.ShuffleProducer;
+import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
+import edu.washington.escience.myria.parallel.GenericShuffleProducer;
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
 
 public class Q3 implements QueryPlanGenerator {
@@ -54,14 +54,15 @@ public class Q3 implements QueryPlanGenerator {
     final SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(allWorkers.length);
     pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
 
-    final ShuffleProducer shuffleArticlesP = new ShuffleProducer(allArticles, allArticlesShuffleID, allWorkers, pf);
-    final ShuffleConsumer shuffleArticlesC =
-        new ShuffleConsumer(shuffleArticlesP.getSchema(), allArticlesShuffleID, allWorkers);
+    final GenericShuffleProducer shuffleArticlesP =
+        new GenericShuffleProducer(allArticles, allArticlesShuffleID, allWorkers, pf);
+    final GenericShuffleConsumer shuffleArticlesC =
+        new GenericShuffleConsumer(shuffleArticlesP.getSchema(), allArticlesShuffleID, allWorkers);
 
-    final ShuffleProducer shuffleSwrcPagesP =
-        new ShuffleProducer(allWithSwrcPages, allSwrcPagesShuffleID, allWorkers, pf);
-    final ShuffleConsumer shuffleSwrcPagesC =
-        new ShuffleConsumer(shuffleSwrcPagesP.getSchema(), allSwrcPagesShuffleID, allWorkers);
+    final GenericShuffleProducer shuffleSwrcPagesP =
+        new GenericShuffleProducer(allWithSwrcPages, allSwrcPagesShuffleID, allWorkers, pf);
+    final GenericShuffleConsumer shuffleSwrcPagesC =
+        new GenericShuffleConsumer(shuffleSwrcPagesP.getSchema(), allSwrcPagesShuffleID, allWorkers);
 
     final LocalJoin joinArticleSwrcPages =
         new LocalJoin(shuffleArticlesC, shuffleSwrcPagesC, new int[] { 0 }, new int[] { 0 });

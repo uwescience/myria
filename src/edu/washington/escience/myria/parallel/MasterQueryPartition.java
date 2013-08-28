@@ -77,7 +77,7 @@ public class MasterQueryPartition implements QueryPartition {
                 // if any worker fails because of some exception, kill the query.
                 kill();
               } else if (ftMode.equals("abandon")) {
-                // do nothing
+                LOGGER.debug("(Abandon) ignoring failed query future on query #{}", queryID);
               }
             }
           }

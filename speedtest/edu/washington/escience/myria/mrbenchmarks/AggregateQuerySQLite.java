@@ -17,9 +17,9 @@ import edu.washington.escience.myria.operator.agg.SingleGroupByAggregateNoBuffer
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
+import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
+import edu.washington.escience.myria.parallel.GenericShuffleProducer;
 import edu.washington.escience.myria.parallel.PartitionFunction;
-import edu.washington.escience.myria.parallel.ShuffleConsumer;
-import edu.washington.escience.myria.parallel.ShuffleProducer;
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
 
 public class AggregateQuerySQLite implements QueryPlanGenerator {
@@ -45,9 +45,10 @@ public class AggregateQuerySQLite implements QueryPlanGenerator {
     PartitionFunction<String, Integer> pf = new SingleFieldHashPartitionFunction(allWorkers.length);
     pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
 
-    final ShuffleProducer shuffleLocalGroupBy =
-        new ShuffleProducer(localGroupBy, shuffleLocalGroupByID, allWorkers, pf);
-    final ShuffleConsumer sc = new ShuffleConsumer(shuffleLocalGroupBy.getSchema(), shuffleLocalGroupByID, allWorkers);
+    final GenericShuffleProducer shuffleLocalGroupBy =
+        new GenericShuffleProducer(localGroupBy, shuffleLocalGroupByID, allWorkers, pf);
+    final GenericShuffleConsumer sc =
+        new GenericShuffleConsumer(shuffleLocalGroupBy.getSchema(), shuffleLocalGroupByID, allWorkers);
 
     final SingleGroupByAggregateNoBuffer agg =
         new SingleGroupByAggregateNoBuffer(sc, new int[] { 1 }, 0, new int[] { Aggregator.AGG_OP_SUM });
