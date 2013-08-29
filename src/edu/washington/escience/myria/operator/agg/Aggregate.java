@@ -111,7 +111,7 @@ public final class Aggregate extends UnaryOperator {
     TupleBatch tb = null;
     final Operator child = getChild();
 
-    if (child.eos() || child.eoi()) {
+    if (child.eos()) {
       return aggBuffer.popAny();
     }
 
@@ -121,7 +121,7 @@ public final class Aggregate extends UnaryOperator {
       }
     }
 
-    if (child.eos() || child.eoi()) {
+    if (child.eos()) {
       int fromIndex = 0;
       for (final Aggregator<?> element : agg) {
         element.getResult(aggBuffer, fromIndex);
