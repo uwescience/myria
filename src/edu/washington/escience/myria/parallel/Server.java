@@ -37,6 +37,8 @@ import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
+import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.coordinator.catalog.CatalogMaker;
 import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
@@ -947,12 +949,25 @@ public final class Server {
       @Override
       public void operationComplete(final QueryFuture future) throws Exception {
 
-        activeQueries.remove(mqp.getQueryID());
+        /* Before removing this query from the list of active queries, update it in the Catalog. */
+        final QueryExecutionStatistics stats = mqp.getExecutionStatistics();
+        final String startTime = stats.getStartTime();
+        final String endTime = stats.getEndTime();
+        final long elapsedNanos = stats.getQueryExecutionElapse();
+        final QueryStatusEncoding.Status status;
+        if (mqp.isKilled()) {
+          /* This is a catch-all for both ERROR and KILLED, right? */
+          status = Status.KILLED;
+        } else {
+          status = Status.SUCCESS;
+        }
+        catalog.queryFinished(queryID, startTime, endTime, elapsedNanos, status);
+        activeQueries.remove(queryID);
 
         if (future.isSuccess()) {
           if (LOGGER.isInfoEnabled()) {
             LOGGER.info("The query #{} succeeds. Time elapse: {}.", queryID, DateTimeUtils
-                .nanoElapseToHumanReadable(mqp.getExecutionStatistics().getQueryExecutionElapse()));
+                .nanoElapseToHumanReadable(elapsedNanos));
           }
           if (mqp.getRootOperator() instanceof SinkRoot) {
             succeededQueryResults.put(queryID, ((SinkRoot) mqp.getRootOperator()).getCount());
@@ -961,7 +976,7 @@ public final class Server {
         } else {
           if (LOGGER.isInfoEnabled()) {
             LOGGER.info("The query #{} failes. Time elapse: {}. Failure cause is {}.", queryID, DateTimeUtils
-                .nanoElapseToHumanReadable(mqp.getExecutionStatistics().getQueryExecutionElapse()), future.getCause());
+                .nanoElapseToHumanReadable(elapsedNanos), future.getCause());
           }
           // TODO failure management.
         }
@@ -1128,5 +1143,39 @@ public final class Server {
    */
   public Long getQueryResult(final long id) {
     return succeededQueryResults.get(id);
+  }
+
+  /**
+   * Computes and returns the status of the requested query, or null if the query does not exist.
+   * 
+   * @param queryId the identifier of the query.
+   * @throws CatalogException if there is an error in the catalog.
+   * @return the status of this query.
+   */
+  public QueryStatusEncoding getQueryStatus(final long queryId) throws CatalogException {
+    /* Get the stored data for this query, e.g., the submitted program. */
+    QueryStatusEncoding queryStatus = catalog.getQuery(queryId);
+    MasterQueryPartition mqp = activeQueries.get(queryId);
+    if (mqp == null) {
+      /* The query isn't active any more, so queryStatus already contains the final status. */
+      return queryStatus;
+    }
+
+    queryStatus.startTime = mqp.getExecutionStatistics().getStartTime();
+    queryStatus.finishTime = mqp.getExecutionStatistics().getEndTime();
+    if (queryStatus.finishTime != null) {
+      queryStatus.elapsedNanos = mqp.getExecutionStatistics().getQueryExecutionElapse();
+    }
+    /* TODO(dhalperi) get status in a better way. */
+    if (mqp.isPaused()) {
+      queryStatus.status = QueryStatusEncoding.Status.PAUSED;
+    } else if (mqp.isKilled()) {
+      queryStatus.status = QueryStatusEncoding.Status.KILLED;
+    } else if (queryStatus.startTime != null) {
+      queryStatus.status = QueryStatusEncoding.Status.RUNNING;
+    } else {
+      queryStatus.status = QueryStatusEncoding.Status.ACCEPTED;
+    }
+    return queryStatus;
   }
 }
