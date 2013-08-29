@@ -471,14 +471,32 @@ public final class Server {
     }
   }
 
+  /**
+   * The thread to check received REMOVE_WORKER_ACK and send ADD_WORKER to each worker. It's a temporary solution to
+   * guarantee message synchronization. Once we have a generalized design in the IPC layer in the future, it can be
+   * removed.
+   */
   private Thread sendAddWorker = null;
 
+  /**
+   * The thread to check received REMOVE_WORKER_ACK and send ADD_WORKER to each worker.
+   */
   private class SendAddWorker implements Runnable {
 
+    /** the worker id that was removed. */
     private final int workerID;
+    /** the expected number of REMOVE_WORKER_ACK messages to receive. */
     private int numOfAck;
+    /** the socket info of the new worker. */
     private final SocketInfo socketInfo;
 
+    /**
+     * constructor.
+     * 
+     * @param workerID the removed worker id.
+     * @param socketInfo the new worker's socket info.
+     * @param numOfAck the number of REMOVE_WORKER_ACK to receive.
+     * */
     SendAddWorker(final int workerID, final SocketInfo socketInfo, final int numOfAck) {
       this.workerID = workerID;
       this.socketInfo = socketInfo;
@@ -489,9 +507,8 @@ public final class Server {
     public void run() {
       while (numOfAck > 0) {
         for (int aliveWorkerId : aliveWorkers.keySet()) {
-          if (removeWorkerAckReceived.get(workerID).contains(aliveWorkerId)) {
+          if (removeWorkerAckReceived.get(workerID).remove(aliveWorkerId)) {
             numOfAck--;
-            removeWorkerAckReceived.get(workerID).remove(aliveWorkerId);
             connectionPool.sendShortMessage(aliveWorkerId, IPCUtils.addWorkerTM(workerID, socketInfo));
           }
         }

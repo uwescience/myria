@@ -231,6 +231,7 @@ public abstract class Producer extends RootOperator {
             Thread.sleep(toSleep);
           } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            return null;
           }
           sleepTime *= 2;
         }
