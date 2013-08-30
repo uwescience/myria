@@ -17,6 +17,7 @@ import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.Project;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
+import edu.washington.escience.myria.operator.StreamingAggregateAdaptor;
 import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
@@ -106,7 +107,7 @@ public class Q9 implements QueryPlanGenerator {
     final Merge union = new Merge(new Operator[] { projInPredicates, projOutPredicates });
     // schema: (predicateName string)
 
-    final DupElim localDE = new DupElim(union); // local dupelim
+    final StreamingAggregateAdaptor localDE = new StreamingAggregateAdaptor(union, new DupElim());
     // schema: (predicateName string)
 
     final CollectProducer sendToMaster = new CollectProducer(localDE, sendToMasterID, 0);
