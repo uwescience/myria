@@ -22,6 +22,7 @@ import edu.washington.escience.myria.operator.IDBInput;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
+import edu.washington.escience.myria.operator.StreamingAggregateAdaptor;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.operator.UnionAll;
@@ -167,8 +168,10 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     final ExchangePairID eoiReceiverOpID = ExchangePairID.newID();
     final Consumer eosReceiver = new Consumer(Schema.EMPTY_SCHEMA, eosReceiverOpID, new int[] { workerIDs[0] });
 
-    final IDBInput idbinput_worker1 = new IDBInput(0, eoiReceiverOpID, workerIDs[0], sc2, sc3_worker1, eosReceiver);
-    final IDBInput idbinput_worker2 = new IDBInput(0, eoiReceiverOpID, workerIDs[0], sc2, sc3_worker2, eosReceiver);
+    final IDBInput idbinput_worker1 =
+        new IDBInput(0, eoiReceiverOpID, workerIDs[0], sc2, sc3_worker1, eosReceiver, new DupElim());
+    final IDBInput idbinput_worker2 =
+        new IDBInput(0, eoiReceiverOpID, workerIDs[0], sc2, sc3_worker2, eosReceiver, new DupElim());
 
     final ExchangePairID consumerID1 = ExchangePairID.newID();
     final ExchangePairID consumerID2 = ExchangePairID.newID();
@@ -275,7 +278,8 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     final LocalMultiwayConsumer send2server = new LocalMultiwayConsumer(tableSchema, consumerID2);
     final Consumer eosReceiver = new Consumer(Schema.EMPTY_SCHEMA, eosReceiverOpID, new int[] { workerIDs[0] });
 
-    final IDBInput idbinput = new IDBInput(0, eoiReceiverOpID, workerIDs[0], scan2, sendBack, eosReceiver);
+    final IDBInput idbinput =
+        new IDBInput(0, eoiReceiverOpID, workerIDs[0], scan2, sendBack, eosReceiver, new DupElim());
 
     final Consumer eoiReceiver = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID, new int[] { workerIDs[0] });
     final UnionAll unionAll = new UnionAll(new Operator[] { eoiReceiver });
@@ -305,7 +309,7 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     final GenericShuffleProducer sp3 = new GenericShuffleProducer(proj, beforeDE, new int[] { workerIDs[0] }, pf0);
     final GenericShuffleConsumer sc3 =
         new GenericShuffleConsumer(sp3.getSchema(), beforeDE, new int[] { workerIDs[0] });
-    final DupElim dupelim = new DupElim(sc3);
+    final StreamingAggregateAdaptor dupelim = new StreamingAggregateAdaptor(sc3, new DupElim());
     final LocalMultiwayProducer multiProducer =
         new LocalMultiwayProducer(dupelim, new ExchangePairID[] { consumerID1, consumerID2 });
 

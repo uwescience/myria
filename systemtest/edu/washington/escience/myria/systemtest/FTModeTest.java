@@ -25,6 +25,7 @@ import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
+import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.EOSSource;
 import edu.washington.escience.myria.operator.IDBInput;
 import edu.washington.escience.myria.operator.Operator;
@@ -189,10 +190,10 @@ public class FTModeTest extends SystemTestBase {
     eosReceiver.setOpName("eosReceiver_" + initName);
 
     final IDBInput idbinput_worker1 =
-        new IDBInput(selfIDBID, eoiReceiverOpID, workerIDs[0], sc2, sc3_worker1, eosReceiver);
+        new IDBInput(selfIDBID, eoiReceiverOpID, workerIDs[0], sc2, sc3_worker1, eosReceiver, new DupElim());
     idbinput_worker1.setOpName("idbinput_worker1_" + initName);
     final IDBInput idbinput_worker2 =
-        new IDBInput(selfIDBID, eoiReceiverOpID, workerIDs[0], sc2, sc3_worker2, eosReceiver);
+        new IDBInput(selfIDBID, eoiReceiverOpID, workerIDs[0], sc2, sc3_worker2, eosReceiver, new DupElim());
     idbinput_worker2.setOpName("idbinput_worker2_" + initName);
 
     final ExchangePairID[] consumerIDs = new ExchangePairID[] { ExchangePairID.newID(), null, null };

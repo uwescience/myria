@@ -21,6 +21,7 @@ import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
+import edu.washington.escience.myria.operator.StreamingAggregateAdaptor;
 import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.operator.UnionAll;
 import edu.washington.escience.myria.parallel.CollectConsumer;
@@ -126,7 +127,7 @@ public class MultithreadScanTest extends SystemTestBase {
     final DbQueryScan scan2 = new DbQueryScan(testtableKey, tableSchema);
     final SymmetricHashJoin localjoin =
         new SymmetricHashJoin(scan1, scan2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
-    final DupElim de = new DupElim(localjoin);
+    final StreamingAggregateAdaptor de = new StreamingAggregateAdaptor(localjoin, new DupElim());
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final CollectProducer cp = new CollectProducer(de, serverReceiveID, MASTER_ID);
@@ -190,12 +191,12 @@ public class MultithreadScanTest extends SystemTestBase {
     final DbQueryScan scan2 = new DbQueryScan(testtableKey, tableSchema);
     final SymmetricHashJoin localjoin1 =
         new SymmetricHashJoin(scan1, scan2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
-    final DupElim de1 = new DupElim(localjoin1);
+    final StreamingAggregateAdaptor de1 = new StreamingAggregateAdaptor(localjoin1, new DupElim());
     final DbQueryScan scan3 = new DbQueryScan(testtableKey, tableSchema);
     final DbQueryScan scan4 = new DbQueryScan(testtableKey, tableSchema);
     final SymmetricHashJoin localjoin2 =
         new SymmetricHashJoin(scan3, scan4, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
-    final DupElim de2 = new DupElim(localjoin2);
+    final StreamingAggregateAdaptor de2 = new StreamingAggregateAdaptor(localjoin2, new DupElim());
 
     final int numPartition = 2;
     final PartitionFunction pf0 = new SingleFieldHashPartitionFunction(numPartition, 0); // 2 workers

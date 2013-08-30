@@ -16,6 +16,7 @@ import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
+import edu.washington.escience.myria.operator.StreamingAggregateAdaptor;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.parallel.CollectConsumer;
@@ -42,7 +43,7 @@ public class ErdosExtraVerbose {
 
   final static ExchangePairID sendToMasterID = ExchangePairID.newID();
 
-  public static DupElim erdosOne(int[] allWorkers, ArrayList<Producer> producers) throws DbException {
+  public static StreamingAggregateAdaptor erdosOne(int[] allWorkers, ArrayList<Producer> producers) throws DbException {
     final SingleFieldHashPartitionFunction pfOn0 = new SingleFieldHashPartitionFunction(allWorkers.length, 0);
     final SingleFieldHashPartitionFunction pfOn2 = new SingleFieldHashPartitionFunction(allWorkers.length, 2);
 
@@ -103,11 +104,11 @@ public class ErdosExtraVerbose {
     producers.add(allPubsShuffleP);
     producers.add(paulErdoesPubsShuffleP);
     // schema: (authorName string)
-    return new DupElim(projCoAuthorID);
+    return new StreamingAggregateAdaptor(projCoAuthorID, new DupElim());
   }
 
-  public static DupElim erdosN(DupElim erdosNMinus1, int[] allWorkers, ArrayList<Producer> producers)
-      throws DbException {
+  public static StreamingAggregateAdaptor erdosN(StreamingAggregateAdaptor erdosNMinus1, int[] allWorkers,
+      ArrayList<Producer> producers) throws DbException {
 
     final SingleFieldHashPartitionFunction pfOn0 = new SingleFieldHashPartitionFunction(allWorkers.length, 0);
     final SingleFieldHashPartitionFunction pfOn1 = new SingleFieldHashPartitionFunction(allWorkers.length, 1);
@@ -149,7 +150,8 @@ public class ErdosExtraVerbose {
     final ColumnSelect projCoAuthorPubsID = new ColumnSelect(new int[] { 1 }, coAuthorPubsShuffleC);
     // schema: (pubName string)
 
-    final DupElim coAuthorPubsGlobalDE = new DupElim(projCoAuthorPubsID); // local dupelim
+    final StreamingAggregateAdaptor coAuthorPubsGlobalDE =
+        new StreamingAggregateAdaptor(projCoAuthorPubsID, new DupElim());
     // schema: (pubName string)
 
     final DbQueryScan allPubsAuthorNames = new DbQueryScan(//
@@ -191,16 +193,17 @@ public class ErdosExtraVerbose {
     producers.add(coAuthorNamesPubsShuffleP);
     producers.add(coAuthorPubsShuffleP);
     producers.add(allPubsShuffleByAuthorP);
-    return new DupElim(projCoCoAuthorName); // local dupelim
+    return new StreamingAggregateAdaptor(projCoCoAuthorName, new DupElim()); // local dupelim
     // schema: (authorName string)
   }
 
-  public static DupElim erdosN(int n, int[] allWorkers, ArrayList<Producer> producers) throws DbException {
-    DupElim erdos1 = erdosOne(allWorkers, producers);
+  public static StreamingAggregateAdaptor erdosN(int n, int[] allWorkers, ArrayList<Producer> producers)
+      throws DbException {
+    StreamingAggregateAdaptor erdos1 = erdosOne(allWorkers, producers);
     if (n <= 1) {
       return erdos1;
     } else {
-      DupElim erdosNMinus1 = erdos1;
+      StreamingAggregateAdaptor erdosNMinus1 = erdos1;
       for (int i = 1; i < n; i++) {
         erdosNMinus1 = erdosN(erdosNMinus1, allWorkers, producers);
       }
@@ -208,8 +211,8 @@ public class ErdosExtraVerbose {
     }
   }
 
-  public static Map<Integer, RootOperator[]> getWorkerPlan(int[] allWorkers, DupElim de, ArrayList<Producer> producers)
-      throws Exception {
+  public static Map<Integer, RootOperator[]> getWorkerPlan(int[] allWorkers, StreamingAggregateAdaptor de,
+      ArrayList<Producer> producers) throws Exception {
 
     final CollectProducer sendToMaster = new CollectProducer(de, sendToMasterID, 0);
 

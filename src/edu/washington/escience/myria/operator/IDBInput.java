@@ -10,7 +10,6 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.operator.agg.StreamingAggregate;
 import edu.washington.escience.myria.parallel.Consumer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.TaskResourceManager;

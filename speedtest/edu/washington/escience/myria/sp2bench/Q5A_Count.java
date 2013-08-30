@@ -14,6 +14,7 @@ import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
+import edu.washington.escience.myria.operator.StreamingAggregateAdaptor;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.operator.agg.Aggregate;
@@ -80,7 +81,8 @@ public class Q5A_Count implements QueryPlanGenerator {
     final ColumnSelect projArticleCreatorsID = new ColumnSelect(new int[] { 2 }, joinArticleCreator);
     // schema: (articleAuthorIDs long)
 
-    final DupElim deArticleAuthors = new DupElim(projArticleCreatorsID); // local dupelim
+    final StreamingAggregateAdaptor deArticleAuthors =
+        new StreamingAggregateAdaptor(projArticleCreatorsID, new DupElim());
     // schema: (articleAuthorIDs long)
 
     final GenericShuffleProducer shuffleArticleCreatorsP =
@@ -89,7 +91,9 @@ public class Q5A_Count implements QueryPlanGenerator {
         new GenericShuffleConsumer(shuffleArticleCreatorsP.getSchema(), articleCreatorsShuffleID, allWorkers);
     // schema: (articleAuthorIDs long)
 
-    final DupElim deArticleAuthorsGlobal = new DupElim(shuffleArticleCreatorsC); // local dupelim
+    final StreamingAggregateAdaptor deArticleAuthorsGlobal =
+        new StreamingAggregateAdaptor(shuffleArticleCreatorsC, new DupElim()); // local
+    // dupelim
     // schema: (articleAuthorIDs long)
 
     final DbQueryScan allInProceedings =
@@ -122,7 +126,8 @@ public class Q5A_Count implements QueryPlanGenerator {
     final ColumnSelect projProceedingsID = new ColumnSelect(new int[] { 2 }, joinProceedingsCreator);
     // schema: (proceedingAuthorID long)
 
-    final DupElim deProceedingAuthors = new DupElim(projProceedingsID); // local dupelim
+    final StreamingAggregateAdaptor deProceedingAuthors =
+        new StreamingAggregateAdaptor(projProceedingsID, new DupElim());
 
     final GenericShuffleProducer shuffleProceedingsCreatorsP =
         new GenericShuffleProducer(deProceedingAuthors, proceedingsCreatorsShuffleID, allWorkers, pfOn0);
@@ -130,7 +135,8 @@ public class Q5A_Count implements QueryPlanGenerator {
         new GenericShuffleConsumer(shuffleProceedingsCreatorsP.getSchema(), proceedingsCreatorsShuffleID, allWorkers);
     // schema: (proceedingAuthorID long)
 
-    final DupElim deProceedingAuthorsGlobal = new DupElim(shuffleProceedingsCreatorsC); // local dupelim
+    final StreamingAggregateAdaptor deProceedingAuthorsGlobal =
+        new StreamingAggregateAdaptor(shuffleProceedingsCreatorsC, new DupElim());
 
     final SymmetricHashJoin articleProceedingsCreatorJoin =
         new SymmetricHashJoin(deArticleAuthorsGlobal, deProceedingAuthorsGlobal, new int[] { 0 }, new int[] { 0 });
@@ -161,7 +167,7 @@ public class Q5A_Count implements QueryPlanGenerator {
     final GenericShuffleConsumer forDupElimShuffleC =
         new GenericShuffleConsumer(forDupElimShuffleP.getSchema(), forDupElimShuffleID, allWorkers);
 
-    final DupElim dupElim = new DupElim(forDupElimShuffleC);
+    final StreamingAggregateAdaptor dupElim = new StreamingAggregateAdaptor(forDupElimShuffleC, new DupElim());
 
     final Aggregate agg = new Aggregate(dupElim, new int[] { 0 }, new int[] { Aggregator.AGG_OP_COUNT });
 
