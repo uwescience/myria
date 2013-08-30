@@ -20,7 +20,7 @@ import edu.washington.escience.myria.parallel.ipc.IPCEvent;
 import edu.washington.escience.myria.parallel.ipc.IPCEventListener;
 import edu.washington.escience.myria.parallel.ipc.StreamIOChannelID;
 import edu.washington.escience.myria.parallel.ipc.StreamOutputChannel;
-import edu.washington.escience.myria.util.ArrayUtils;
+import edu.washington.escience.myria.util.MyriaArrayUtils;
 
 /**
  * A Producer is the counterpart of a consumer. It dispatch data using IPC channels to Consumers. Like network socket,
@@ -79,7 +79,7 @@ public abstract class Producer extends RootOperator {
    * @param oIDs operator IDs.
    * */
   public Producer(final Operator child, final ExchangePairID[] oIDs) {
-    this(child, oIDs, ArrayUtils.arrayFillAndReturn(new int[oIDs.length], IPCConnectionPool.SELF_IPC_ID), true);
+    this(child, oIDs, MyriaArrayUtils.arrayFillAndReturn(new int[oIDs.length], IPCConnectionPool.SELF_IPC_ID), true);
   }
 
   /**
@@ -91,8 +91,8 @@ public abstract class Producer extends RootOperator {
    * 
    * */
   public Producer(final Operator child, final ExchangePairID oID, final int[] destinationWorkerIDs) {
-    this(child, (ExchangePairID[]) ArrayUtils.arrayFillAndReturn(new ExchangePairID[destinationWorkerIDs.length], oID),
-        destinationWorkerIDs, true);
+    this(child, (ExchangePairID[]) MyriaArrayUtils.arrayFillAndReturn(new ExchangePairID[destinationWorkerIDs.length],
+        oID), destinationWorkerIDs, true);
   }
 
   /**
@@ -103,7 +103,8 @@ public abstract class Producer extends RootOperator {
    * @param destinationWorkerID the worker ID.
    * */
   public Producer(final Operator child, final ExchangePairID[] oIDs, final int destinationWorkerID) {
-    this(child, oIDs, ArrayUtils.arrayFillAndReturn(new int[oIDs.length], Integer.valueOf(destinationWorkerID)), true);
+    this(child, oIDs, MyriaArrayUtils.arrayFillAndReturn(new int[oIDs.length], Integer.valueOf(destinationWorkerID)),
+        true);
   }
 
   /**
@@ -245,7 +246,7 @@ public abstract class Producer extends RootOperator {
    * @param usingTimeout use popAny() or popAnyUsingTimeout() when poping
    * */
   protected final void popTBsFromBuffersAndWrite(final boolean usingTimeout) {
-    popTBsFromBuffersAndWrite(usingTimeout, ArrayUtils.create2DIndex(numChannels()));
+    popTBsFromBuffersAndWrite(usingTimeout, MyriaArrayUtils.create2DIndex(numChannels()));
   }
 
   /**
