@@ -57,6 +57,11 @@ public abstract class Operator implements Serializable {
   private boolean eoi = false;
 
   /**
+   * Actual execution time.
+   */
+  private long executionTime = 0;
+
+  /**
    * Environmental variables during execution.
    */
   private ImmutableMap<String, Object> execEnvVars;
@@ -204,6 +209,9 @@ public abstract class Operator implements Serializable {
       return null;
     }
 
+    // record start time
+    long startTime = System.currentTimeMillis();
+
     TupleBatch result = null;
     try {
       if (!startProcessing) {
@@ -230,6 +238,7 @@ public abstract class Operator implements Serializable {
     } else {
       numOutputTBs++;
       numOutputTuples += result.numTuples();
+      executionTime += System.currentTimeMillis() - startTime;
     }
     return result;
   }
@@ -332,6 +341,8 @@ public abstract class Operator implements Serializable {
     if ((!eos) && LOGGER.isDebugEnabled()) {
       LOGGER.debug("[" + MyriaConstants.QUERY_ID + "#" + execEnvVars.get(MyriaConstants.QUERY_ID) + "]" + this
           + ":End of Processing (EOS)");
+      LOGGER.debug("[" + MyriaConstants.QUERY_ID + "#" + execEnvVars.get(MyriaConstants.QUERY_ID) + "]" + this
+          + ": execution time " + executionTime + " ms");
     }
     eos = true;
   }
