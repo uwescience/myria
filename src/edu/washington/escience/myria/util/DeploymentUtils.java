@@ -149,7 +149,7 @@ public final class DeploymentUtils {
     StringBuilder builder = new StringBuilder();
     String path = workingDir + "/" + description + "-files";
     String workerDir = description + "/" + "worker_" + workerId;;
-    String classpath = "'libs/*'";
+    String classpath = "'conf:libs/*'";
     String librarypath = "sqlite4java-282";
     String heapSize = maxHeapSize;
     if (description == null) {
@@ -192,7 +192,7 @@ public final class DeploymentUtils {
     StringBuilder builder = new StringBuilder();
     builder.append("ssh " + address);
     builder.append(" cd " + workingDir + "/" + description + "-files;");
-    builder.append(" nohup java -cp 'libs/*'");
+    builder.append(" nohup java -cp 'conf:libs/*'");
     builder.append(" -Djava.util.logging.config.file=logging.properties");
     builder.append(" -Dlog4j.configuration=log4j.properties");
     builder.append(" -Djava.library.path=sqlite4java-282");
@@ -313,8 +313,8 @@ public final class DeploymentUtils {
   private static void startAProcess(final String cmd) {
     LOGGER.info(cmd);
     try {
-      new ProcessBuilder().inheritIO().command(cmd.split(" ")).start();
-    } catch (IOException e) {
+      new ProcessBuilder().inheritIO().command(cmd.split(" ")).start().waitFor();
+    } catch (IOException | InterruptedException e) {
       e.printStackTrace();
       throw new RuntimeException(e);
     }
