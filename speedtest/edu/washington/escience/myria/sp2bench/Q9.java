@@ -9,12 +9,13 @@ import com.google.common.collect.ImmutableList;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.operator.ColumnSelect;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.Operator;
-import edu.washington.escience.myria.operator.ColumnSelect;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
+import edu.washington.escience.myria.operator.StreamingAggregateAdaptor;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.operator.UnionAll;
@@ -106,7 +107,7 @@ public class Q9 implements QueryPlanGenerator {
     final UnionAll union = new UnionAll(new Operator[] { projInPredicates, projOutPredicates });
     // schema: (predicateName string)
 
-    final DupElim localDE = new DupElim(union); // local dupelim
+    final StreamingAggregateAdaptor localDE = new StreamingAggregateAdaptor(union, new DupElim());
     // schema: (predicateName string)
 
     final CollectProducer sendToMaster = new CollectProducer(localDE, sendToMasterID, 0);

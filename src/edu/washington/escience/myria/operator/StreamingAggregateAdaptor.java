@@ -1,12 +1,9 @@
-package edu.washington.escience.myria.operator.agg;
+package edu.washington.escience.myria.operator;
 
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.operator.Operator;
-import edu.washington.escience.myria.operator.StreamingStateUpdater;
-import edu.washington.escience.myria.operator.UnaryOperator;
 
 /**
  */
@@ -63,7 +60,10 @@ public class StreamingAggregateAdaptor extends UnaryOperator implements Streamin
   }
 
   @Override
-  public Schema getSchema() {
+  public Schema generateSchema() {
+    if (getChild() == null) {
+      return null;
+    }
     return getChild().getSchema();
   }
 }

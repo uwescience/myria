@@ -21,6 +21,7 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.operator.DbQueryScan;
+import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.IDBInput;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
@@ -198,9 +199,9 @@ public class MultipleIDBTest extends SystemTestBase {
     final Consumer eosReceiver = new Consumer(Schema.EMPTY_SCHEMA, eosReceiverOpID, new int[] { workerIDs[0] });
 
     final IDBInput idbinput_worker1 =
-        new IDBInput(selfIDBID, eoiReceiverOpID, workerIDs[0], sc2, sc3_worker1, eosReceiver);
+        new IDBInput(selfIDBID, eoiReceiverOpID, workerIDs[0], sc2, sc3_worker1, eosReceiver, new DupElim());
     final IDBInput idbinput_worker2 =
-        new IDBInput(selfIDBID, eoiReceiverOpID, workerIDs[0], sc2, sc3_worker2, eosReceiver);
+        new IDBInput(selfIDBID, eoiReceiverOpID, workerIDs[0], sc2, sc3_worker2, eosReceiver, new DupElim());
 
     final ExchangePairID[] consumerIDs = new ExchangePairID[] { ExchangePairID.newID(), null, null };
     if (sendingOpID != null) {
