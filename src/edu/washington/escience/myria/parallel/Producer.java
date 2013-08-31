@@ -255,7 +255,7 @@ public abstract class Producer extends RootOperator {
    * */
   protected final void popTBsFromBuffersAndWrite(final boolean usingTimeout, final int[][] channelIndices) {
     final TupleBatchBuffer[] tbb = getBuffers();
-    FTMODE mode = ownerTask.getOwnerQuery().getFTMode();
+    FTMODE mode = taskResourceManager.getOwnerTask().getOwnerQuery().getFTMode();
     for (int i = 0; i < numChannels(); i++) {
       if (!ioChannelsAvail[i] && (mode.equals(FTMODE.abandon) || mode.equals(FTMODE.rejoin))) {
         continue;
@@ -408,23 +408,6 @@ public abstract class Producer extends RootOperator {
     return ioChannels;
   }
 
-  /** the task that this producer belongs to. */
-  private QuerySubTreeTask ownerTask;
-
-  /**
-   * @param drivingTask the owner task to be set.
-   */
-  public void setOwnerTask(final QuerySubTreeTask drivingTask) {
-    ownerTask = drivingTask;
-  }
-
-  /**
-   * @return the owner task.
-   */
-  public QuerySubTreeTask getOwnerTask() {
-    return ownerTask;
-  }
-
   /**
    * process EOS and EOI logic.
    * */
@@ -435,7 +418,7 @@ public abstract class Producer extends RootOperator {
       setEOI(true);
       child.setEOI(false);
     } else if (child.eos()) {
-      if (getOwnerTask().getOwnerQuery().getFTMode().equals(FTMODE.rejoin)) {
+      if (taskResourceManager.getOwnerTask().getOwnerQuery().getFTMode().equals(FTMODE.rejoin)) {
         for (TupleBatchBuffer tbb : buffers) {
           if (tbb.numTuples() > 0) {
             // due to failure, buffers are not empty, this task needs to be executed again to push these TBs out when

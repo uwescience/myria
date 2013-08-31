@@ -192,9 +192,6 @@ public class WorkerQueryPartition implements QueryPartition {
       c.setInputBuffer(inputBuffer);
     }
 
-    if (root instanceof Producer) {
-      ((Producer) root).setOwnerTask(drivingTask);
-    }
     return drivingTask;
   }
 

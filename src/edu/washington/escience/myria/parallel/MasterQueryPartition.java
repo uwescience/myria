@@ -417,9 +417,6 @@ public class MasterQueryPartition implements QueryPartition {
         }
       });
     }
-    if (root instanceof Producer) {
-      ((Producer) root).setOwnerTask(rootTask);
-    }
   }
 
   @Override

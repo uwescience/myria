@@ -53,15 +53,15 @@ public final class RecoverProducer extends CollectProducer {
       }
       oriProducer.getChannels()[channelIndx] = tmp;
       /* have to do this otherwise the channel will be released in resourceManager.cleanup() */
-      getOwnerTask().getResourceManager().removeOutputChannel(tmp);
+      getTaskResourceManager().removeOutputChannel(tmp);
       /* have to do this otherwise the channel will be released in Producer.cleanup() */
       getChannels()[0] = null;
       /* set the channel to be available again */
       oriProducer.getChannelsAvail()[channelIndx] = true;
       /* if the channel was disabled before crash, need to give the task a chance to enable it. */
-      oriProducer.getOwnerTask().notifyOutputEnabled(tmp.getID());
+      oriProducer.getTaskResourceManager().getOwnerTask().notifyOutputEnabled(tmp.getID());
       /* if the task has no new input, but needs to produce potential EOSs & push TBs in its buffers out. */
-      oriProducer.getOwnerTask().notifyNewInput();
+      oriProducer.getTaskResourceManager().getOwnerTask().notifyNewInput();
     } else {
       channelEnds(0);
     }
