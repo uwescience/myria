@@ -27,7 +27,7 @@ public final class TupleSource extends LeafOperator {
    * */
   private int index;
   /** The Schema of the tuples that this operator serves. */
-  private final Schema schema;
+  private Schema schema;
 
   /**
    * Constructs a TupleSource operator that will serve the tuples in the given TupleBatchBuffer.
@@ -39,6 +39,16 @@ public final class TupleSource extends LeafOperator {
     schema = data.getSchema();
   }
 
+  /**
+   * Constructs a TupleSource operator that will serve the tuples in the given List<TupleBatch>.
+   * 
+   * @param data the tuples that this operator will serve.
+   */
+
+  public TupleSource(final List<TupleBatch> data) {
+    this.data = data;
+  }
+
   @Override
   protected void cleanup() throws DbException {
     index = 0;
@@ -48,9 +58,15 @@ public final class TupleSource extends LeafOperator {
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
     if (index >= data.size()) {
+      setEOS();
       return null;
     }
-    return data.get(index++);
+    TupleBatch ret = data.get(index++);
+    if (ret.isEOI()) {
+      setEOI(true);
+      return null;
+    }
+    return ret;
   }
 
   @Override
@@ -63,4 +79,8 @@ public final class TupleSource extends LeafOperator {
     index = 0;
   }
 
+  /** @param schema the schema to be set . */
+  public void setSchema(final Schema schema) {
+    this.schema = schema;
+  }
 }

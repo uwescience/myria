@@ -14,6 +14,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.api.MyriaApiException;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.operator.Operator;
@@ -70,7 +71,7 @@ public class QueryEncoding extends MyriaApiEncoding {
         SingleQueryPlanWithArgs workerPlan = plan.get(worker);
         if (workerPlan == null) {
           workerPlan = new SingleQueryPlanWithArgs();
-          workerPlan.setFTMode(ftMode);
+          workerPlan.setFTMode(FTMODE.valueOf(ftMode));
           plan.put(worker, workerPlan);
         }
         workerPlan.addRootOp(op);

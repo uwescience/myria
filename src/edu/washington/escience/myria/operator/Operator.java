@@ -365,7 +365,7 @@ public abstract class Operator implements Serializable {
    * 
    * @return op name
    */
-  protected String getOpName() {
+  public String getOpName() {
     return opName;
   }
 

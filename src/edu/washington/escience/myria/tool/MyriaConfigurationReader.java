@@ -71,6 +71,10 @@ public final class MyriaConfigurationReader extends ConfigParser {
       }
     }
     ans.put("paths", paths);
+    if (ans.get("deployment").get("debug_mode") == null) {
+      /* default: false */
+      ans.get("deployment").put("debug_mode", "false");
+    }
     return ans;
   }
 }

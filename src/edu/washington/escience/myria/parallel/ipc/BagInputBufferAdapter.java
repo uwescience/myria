@@ -197,11 +197,19 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
   /**
    * @param ics input channel state
    * @param e the input data.
+   * @return false if it's an EOS, true if it's not.
    * */
-  private void checkNotEOS(final InputChannelState ics, final IPCMessage.StreamData<PAYLOAD> e) {
+  private boolean checkNotEOS(final InputChannelState ics, final IPCMessage.StreamData<PAYLOAD> e) {
     if (ics.eos.get()) {
-      throw new IllegalStateException("Message received from an already EOS channele: " + e);
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug("Message received from an already EOS channele from remote " + e.getRemoteID() + " streamID "
+            + e.getStreamID() + " " + ics.inputChannel);
+      }
+      /* temp solution, better to check if it's from a recover worker */
+      return false;
+      // throw new IllegalStateException("Message received from an already EOS channele: " + e);
     }
+    return true;
   }
 
   /**
@@ -229,7 +237,9 @@ public abstract class BagInputBufferAdapter<PAYLOAD> extends AttachmentableAdapt
     Preconditions.checkNotNull(msg);
     checkAttached();
     InputChannelState ics = checkValidInputChannel(msg);
-    checkNotEOS(ics, msg);
+    if (!checkNotEOS(ics, msg)) {
+      return true;
+    }
     preOffer(msg);
 
     if (msg.getPayload() == null) { // EOS msg

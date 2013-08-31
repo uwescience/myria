@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.parallel;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -14,11 +15,14 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableMap;
 
+import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.operator.RootOperator;
+import edu.washington.escience.myria.operator.TupleSource;
 import edu.washington.escience.myria.parallel.ipc.FlowControlBagInputBuffer;
 import edu.washington.escience.myria.parallel.ipc.IPCEvent;
 import edu.washington.escience.myria.parallel.ipc.IPCEventListener;
+import edu.washington.escience.myria.parallel.ipc.StreamOutputChannel;
 import edu.washington.escience.myria.util.DateTimeUtils;
 
 /**
@@ -54,7 +58,7 @@ public class WorkerQueryPartition implements QueryPartition {
   /**
    * The ftMode.
    * */
-  private final String ftMode;
+  private final FTMODE ftMode;
 
   /**
    * priority, currently no use.
@@ -97,6 +101,10 @@ public class WorkerQueryPartition implements QueryPartition {
         failTasks.add(drivingTask);
         if (!(failureReason instanceof QueryKilledException)) {
           // The task is a failure, not killed.
+          if (LOGGER.isDebugEnabled()) {
+            LOGGER.debug("got a failed task, root op = " + drivingTask.getRootOp().getOpName() + ", cause ",
+                failureReason);
+          }
           for (QuerySubTreeTask t : tasks) {
             // kill other tasks
             t.kill();
@@ -149,35 +157,42 @@ public class WorkerQueryPartition implements QueryPartition {
     this.ownerWorker = ownerWorker;
     missingWorkers = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
     for (final RootOperator taskRootOp : operators) {
-      final QuerySubTreeTask drivingTask =
-          new QuerySubTreeTask(ownerWorker.getIPCConnectionPool().getMyIPCID(), this, taskRootOp, ownerWorker
-              .getQueryExecutor());
-      TaskFuture taskExecutionFuture = drivingTask.getExecutionFuture();
-      taskExecutionFuture.addListener(taskExecutionListener);
+      createTask(taskRootOp);
+    }
+  }
 
-      tasks.add(drivingTask);
+  /**
+   * create a task.
+   * 
+   * @param root the root operator of this task.
+   * @return the task.
+   */
+  public QuerySubTreeTask createTask(final RootOperator root) {
+    final QuerySubTreeTask drivingTask =
+        new QuerySubTreeTask(ownerWorker.getIPCConnectionPool().getMyIPCID(), this, root, ownerWorker
+            .getQueryExecutor());
+    TaskFuture taskExecutionFuture = drivingTask.getExecutionFuture();
+    taskExecutionFuture.addListener(taskExecutionListener);
 
-      HashSet<Consumer> consumerSet = new HashSet<Consumer>();
-      consumerSet.addAll(drivingTask.getInputChannels().values());
+    tasks.add(drivingTask);
 
-      for (final Consumer c : consumerSet) {
-        FlowControlBagInputBuffer<TupleBatch> inputBuffer =
-            new FlowControlBagInputBuffer<TupleBatch>(ownerWorker.getIPCConnectionPool(), c
-                .getInputChannelIDs(ownerWorker.getIPCConnectionPool().getMyIPCID()), ownerWorker
-                .getInputBufferCapacity(), ownerWorker.getInputBufferRecoverTrigger(), this.ownerWorker
-                .getIPCConnectionPool());
-
-        inputBuffer.addListener(FlowControlBagInputBuffer.NEW_INPUT_DATA, new IPCEventListener() {
-
-          @Override
-          public void triggered(final IPCEvent event) {
-            drivingTask.notifyNewInput();
-          }
-        });
-        c.setInputBuffer(inputBuffer);
-      }
+    HashSet<Consumer> consumerSet = new HashSet<Consumer>();
+    consumerSet.addAll(drivingTask.getInputChannels().values());
+    for (final Consumer c : consumerSet) {
+      FlowControlBagInputBuffer<TupleBatch> inputBuffer =
+          new FlowControlBagInputBuffer<TupleBatch>(ownerWorker.getIPCConnectionPool(), c
+              .getInputChannelIDs(ownerWorker.getIPCConnectionPool().getMyIPCID()), ownerWorker
+              .getInputBufferCapacity(), ownerWorker.getInputBufferRecoverTrigger(), ownerWorker.getIPCConnectionPool());
+      inputBuffer.addListener(FlowControlBagInputBuffer.NEW_INPUT_DATA, new IPCEventListener() {
+        @Override
+        public void triggered(final IPCEvent event) {
+          drivingTask.notifyNewInput();
+        }
+      });
+      c.setInputBuffer(inputBuffer);
     }
 
+    return drivingTask;
   }
 
   /**
@@ -189,14 +204,21 @@ public class WorkerQueryPartition implements QueryPartition {
 
   @Override
   public final void init() {
-
     for (QuerySubTreeTask t : tasks) {
-      ImmutableMap.Builder<String, Object> b = ImmutableMap.builder();
-      TaskResourceManager resourceManager =
-          new TaskResourceManager(ownerWorker.getIPCConnectionPool(), t, ownerWorker.getQueryExecutionMode());
-      t.init(resourceManager, b.putAll(ownerWorker.getExecEnvVars()).build());
+      init(t);
     }
+  }
 
+  /**
+   * initialize a task.
+   * 
+   * @param t the task
+   * */
+  public final void init(final QuerySubTreeTask t) {
+    TaskResourceManager resourceManager =
+        new TaskResourceManager(ownerWorker.getIPCConnectionPool(), t, ownerWorker.getQueryExecutionMode());
+    ImmutableMap.Builder<String, Object> b = ImmutableMap.builder();
+    t.init(resourceManager, b.putAll(ownerWorker.getExecEnvVars()).build());
   }
 
   @Override
@@ -300,7 +322,7 @@ public class WorkerQueryPartition implements QueryPartition {
   }
 
   @Override
-  public String getFTMode() {
+  public FTMODE getFTMode() {
     return ftMode;
   }
 
@@ -317,5 +339,74 @@ public class WorkerQueryPartition implements QueryPartition {
     for (QuerySubTreeTask task : tasks) {
       task.notifyNewInput();
     }
+  }
+
+  /**
+   * enable/disable output channels of the root(producer) of each task.
+   * 
+   * @param workerId the worker that changed its status.
+   * @param enable enable/disable all the channels that belong to the worker.
+   * */
+  public void updateProducerChannels(final int workerId, final boolean enable) {
+    for (QuerySubTreeTask task : tasks) {
+      task.updateProducerChannels(workerId, enable);
+    }
+  }
+
+  /**
+   * add a recovery task for the failed worker.
+   * 
+   * @param workerId the id of the failed worker.
+   */
+  public void addRecoveryTasks(final int workerId) {
+    List<RootOperator> recoveryTasks = new ArrayList<RootOperator>();
+    for (QuerySubTreeTask task : tasks) {
+      if (task.getRootOp() instanceof Producer) {
+        if (LOGGER.isTraceEnabled()) {
+          LOGGER.trace("adding recovery task for " + task.getRootOp().getOpName());
+        }
+        List<List<TupleBatch>> buffers = ((Producer) task.getRootOp()).getBackupBuffers();
+        List<Integer> indices = ((Producer) task.getRootOp()).getChannelIndicesOfAWorker(workerId);
+        StreamOutputChannel<TupleBatch>[] channels = ((Producer) task.getRootOp()).getChannels();
+        for (int i = 0; i < indices.size(); ++i) {
+          int j = indices.get(i);
+          TupleSource scan = new TupleSource(buffers.get(j));
+          /* buffers.get(j) might be an empty List<TupleBatch>, so need to set its schema explicitly. */
+          scan.setSchema(task.getRootOp().getSchema());
+          scan.setOpName("tuplesource for " + task.getRootOp().getOpName() + channels[j].getID());
+          RecoverProducer rp =
+              new RecoverProducer(scan, ExchangePairID.fromExisting(channels[j].getID().getStreamID()), channels[j]
+                  .getID().getRemoteID(), (Producer) task.getRootOp(), j);
+          rp.setOpName("recProducer for " + task.getRootOp().getOpName() + channels[j].getID());
+          recoveryTasks.add(rp);
+        }
+      }
+    }
+    final List<QuerySubTreeTask> list = new ArrayList<QuerySubTreeTask>();
+    for (RootOperator cp : recoveryTasks) {
+      QuerySubTreeTask recoveryTask = createTask(cp);
+      list.add(recoveryTask);
+    }
+    new Thread() {
+      @Override
+      public void run() {
+        while (true) {
+          if (ownerWorker.getIPCConnectionPool().isRemoteAlive(workerId)) {
+            /* waiting for ADD_WORKER to be received */
+            for (QuerySubTreeTask task : list) {
+              init(task);
+              /* input might be null but we still need it to run */
+              task.notifyNewInput();
+            }
+            break;
+          }
+          try {
+            Thread.sleep(100);
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+          }
+        }
+      }
+    }.start();
   }
 }
