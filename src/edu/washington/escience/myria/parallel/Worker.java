@@ -29,6 +29,7 @@ import com.google.common.collect.Sets;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
@@ -94,18 +95,28 @@ public final class Worker {
                   abruptShutdown = false;
                   break;
                 case REMOVE_WORKER:
+                  if (LOGGER.isInfoEnabled()) {
+                    LOGGER.info("received REMOVE_WORKER " + workerId);
+                  }
                   connectionPool.removeRemote(workerId).await();
-                  LOGGER.info("received REMOVE_WORKER " + workerId);
+                  sendMessageToMaster(IPCUtils.removeWorkerAckTM(workerId));
                   for (Long id : activeQueries.keySet()) {
                     WorkerQueryPartition wqp = activeQueries.get(id);
-                    if (wqp.getFTMode().equals("abandon")) {
+                    if (wqp.getFTMode().equals(FTMODE.abandon)) {
                       wqp.getMissingWorkers().add(workerId);
+                      wqp.updateProducerChannels(workerId, false);
                       wqp.triggerTasks();
+                    } else if (wqp.getFTMode().equals(FTMODE.rejoin)) {
+                      wqp.getMissingWorkers().add(workerId);
                     }
                   }
                   break;
                 case ADD_WORKER:
+                  if (LOGGER.isInfoEnabled()) {
+                    LOGGER.info("received ADD_WORKER " + workerId);
+                  }
                   connectionPool.putRemote(workerId, SocketInfo.fromProtobuf(cm.getRemoteAddress()));
+                  sendMessageToMaster(IPCUtils.addWorkerAckTM(workerId));
                   break;
                 default:
                   if (LOGGER.isErrorEnabled()) {

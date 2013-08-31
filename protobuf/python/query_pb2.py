@@ -13,7 +13,7 @@ from google.protobuf import descriptor_pb2
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='query.proto',
   package='',
-  serialized_pb='\n\x0bquery.proto\"\x90\x02\n\x0cQueryMessage\x12\x10\n\x08query_id\x18\x01 \x02(\x04\x12 \n\x04type\x18\x02 \x02(\x0e\x32\x12.QueryMessage.Type\x12\"\n\x0cquery_report\x18\x03 \x01(\x0b\x32\x0c.QueryReport\x12\x15\n\x05query\x18\x04 \x01(\x0b\x32\x06.Query\"\x90\x01\n\x04Type\x12\x14\n\x10QUERY_DISTRIBUTE\x10\x00\x12\x0f\n\x0bQUERY_START\x10\x01\x12\x0f\n\x0bQUERY_PAUSE\x10\x07\x12\x10\n\x0cQUERY_RESUME\x10\x08\x12\x0e\n\nQUERY_KILL\x10\t\x12\x1a\n\x16QUERY_READY_TO_EXECUTE\x10\x02\x12\x12\n\x0eQUERY_COMPLETE\x10\x06\"\x16\n\x05Query\x12\r\n\x05query\x18\x01 \x02(\x0c\"a\n\x0bQueryReport\x12\x0f\n\x07success\x18\x01 \x02(\x08\x12\x32\n\x14\x65xecution_statistics\x18\x02 \x02(\x0b\x32\x14.ExecutionStatistics\x12\r\n\x05\x63\x61use\x18\x03 \x01(\x0c\"%\n\x13\x45xecutionStatistics\x12\x0e\n\x06\x65lapse\x18\x02 \x02(\x04\x42\x31\n#edu.washington.escience.myria.protoB\nQueryProto')
+  serialized_pb='\n\x0bquery.proto\"\xb6\x02\n\x0cQueryMessage\x12\x10\n\x08query_id\x18\x01 \x02(\x04\x12 \n\x04type\x18\x02 \x02(\x0e\x32\x12.QueryMessage.Type\x12\"\n\x0cquery_report\x18\x03 \x01(\x0b\x32\x0c.QueryReport\x12\x15\n\x05query\x18\x04 \x01(\x0b\x32\x06.Query\x12\x11\n\tworker_id\x18\x05 \x01(\x05\"\xa3\x01\n\x04Type\x12\x14\n\x10QUERY_DISTRIBUTE\x10\x00\x12\x0f\n\x0bQUERY_START\x10\x01\x12\x0f\n\x0bQUERY_PAUSE\x10\x07\x12\x10\n\x0cQUERY_RESUME\x10\x08\x12\x0e\n\nQUERY_KILL\x10\t\x12\x1a\n\x16QUERY_READY_TO_EXECUTE\x10\x02\x12\x12\n\x0eQUERY_COMPLETE\x10\x06\x12\x11\n\rQUERY_RECOVER\x10\x03\"\x16\n\x05Query\x12\r\n\x05query\x18\x01 \x02(\x0c\"a\n\x0bQueryReport\x12\x0f\n\x07success\x18\x01 \x02(\x08\x12\x32\n\x14\x65xecution_statistics\x18\x02 \x02(\x0b\x32\x14.ExecutionStatistics\x12\r\n\x05\x63\x61use\x18\x03 \x01(\x0c\"%\n\x13\x45xecutionStatistics\x12\x0e\n\x06\x65lapse\x18\x02 \x02(\x04\x42\x31\n#edu.washington.escience.myria.protoB\nQueryProto')
 
 
 
@@ -51,11 +51,15 @@ _QUERYMESSAGE_TYPE = _descriptor.EnumDescriptor(
       name='QUERY_COMPLETE', index=6, number=6,
       options=None,
       type=None),
+    _descriptor.EnumValueDescriptor(
+      name='QUERY_RECOVER', index=7, number=3,
+      options=None,
+      type=None),
   ],
   containing_type=None,
   options=None,
-  serialized_start=144,
-  serialized_end=288,
+  serialized_start=163,
+  serialized_end=326,
 )
 
 
@@ -94,6 +98,13 @@ _QUERYMESSAGE = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='worker_id', full_name='QueryMessage.worker_id', index=4,
+      number=5, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -105,7 +116,7 @@ _QUERYMESSAGE = _descriptor.Descriptor(
   is_extendable=False,
   extension_ranges=[],
   serialized_start=16,
-  serialized_end=288,
+  serialized_end=326,
 )
 
 
@@ -132,8 +143,8 @@ _QUERY = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=290,
-  serialized_end=312,
+  serialized_start=328,
+  serialized_end=350,
 )
 
 
@@ -174,8 +185,8 @@ _QUERYREPORT = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=314,
-  serialized_end=411,
+  serialized_start=352,
+  serialized_end=449,
 )
 
 
@@ -202,8 +213,8 @@ _EXECUTIONSTATISTICS = _descriptor.Descriptor(
   options=None,
   is_extendable=False,
   extension_ranges=[],
-  serialized_start=413,
-  serialized_end=450,
+  serialized_start=451,
+  serialized_end=488,
 )
 
 _QUERYMESSAGE.fields_by_name['type'].enum_type = _QUERYMESSAGE_TYPE

@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
@@ -72,12 +73,16 @@ public class MasterQueryPartition implements QueryPartition {
           if (!future.isSuccess()) {
             if (!(future.getCause() instanceof QueryKilledException)) {
               // Only record non-killed exceptions
-              if (ftMode.equals("none")) {
+              if (ftMode.equals(FTMODE.none)) {
                 failedQueryPartitions.put(workerID, future.getCause());
                 // if any worker fails because of some exception, kill the query.
                 kill();
-              } else if (ftMode.equals("abandon")) {
+              } else if (ftMode.equals(FTMODE.abandon)) {
                 LOGGER.debug("(Abandon) ignoring failed query future on query #{}", queryID);
+                // do nothing
+              } else if (ftMode.equals(FTMODE.rejoin)) {
+                LOGGER.debug("(Rejoin) ignoring failed query future on query #{}", queryID);
+                // do nothing
               }
             }
           }
@@ -174,7 +179,7 @@ public class MasterQueryPartition implements QueryPartition {
   /**
    * The FT mode.
    * */
-  private final String ftMode;
+  private final FTMODE ftMode;
 
   /**
    * The priority.
@@ -253,7 +258,21 @@ public class MasterQueryPartition implements QueryPartition {
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("Worker #{} received query#{}", workerID, queryID);
     }
-    wei.workerReceiveQuery.setSuccess();
+    if (wei.workerReceiveQuery.isSuccess()) {
+      /* a recovery worker */
+      master.getIPCConnectionPool().sendShortMessage(workerID, IPCUtils.startQueryTM(queryID));
+      for (Entry<Integer, WorkerExecutionInfo> e : workerExecutionInfo.entrySet()) {
+        if (e.getKey() == workerID) {
+          /* the new worker doesn't need to start recovery tasks */
+          continue;
+        }
+        if (!e.getValue().workerCompleteQuery.isDone() && e.getKey() != MyriaConstants.MASTER_ID) {
+          master.getIPCConnectionPool().sendShortMessage(e.getKey(), IPCUtils.recoverQueryTM(queryID, workerID));
+        }
+      }
+    } else {
+      wei.workerReceiveQuery.setSuccess();
+    }
   }
 
   /**
@@ -332,7 +351,6 @@ public class MasterQueryPartition implements QueryPartition {
     if (LOGGER.isDebugEnabled()) {
       LOGGER.debug("Received query complete (succeed) message from worker: {}", workerID);
     }
-
     wei.workerCompleteQuery.setSuccess();
   }
 
@@ -352,6 +370,10 @@ public class MasterQueryPartition implements QueryPartition {
 
     if (LOGGER.isInfoEnabled()) {
       LOGGER.info("Received query complete (fail) message from worker: {}, cause: {}", workerID, cause.toString());
+    }
+    if (ftMode.equals(FTMODE.rejoin) && cause.toString().endsWith("LostHeartbeatException")) {
+      /* for rejoin, don't set it to be completed since this worker is expected to be launched again. */
+      return;
     }
     wei.workerCompleteQuery.setFailure(cause);
   }
@@ -533,7 +555,7 @@ public class MasterQueryPartition implements QueryPartition {
   }
 
   @Override
-  public String getFTMode() {
+  public FTMODE getFTMode() {
     return ftMode;
   }
 
@@ -548,5 +570,15 @@ public class MasterQueryPartition implements QueryPartition {
    */
   public void triggerTasks() {
     rootTask.notifyNewInput();
+  }
+
+  /**
+   * enable/disable output channels of the root(producer) of each task.
+   * 
+   * @param workerId the worker that changed its status.
+   * @param enable enable/disable all the channels that belong to the worker.
+   * */
+  public void updateProducerChannels(final int workerId, final boolean enable) {
+    rootTask.updateProducerChannels(workerId, enable);
   }
 }

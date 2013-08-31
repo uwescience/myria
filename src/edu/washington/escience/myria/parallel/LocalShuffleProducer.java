@@ -42,13 +42,8 @@ public class LocalShuffleProducer extends Producer {
   protected final void consumeTuples(final TupleBatch tup) throws DbException {
     TupleBatch[] tbs = tup.partition(partitionFunction);
     for (int p = 0; p < tbs.length; p++) {
-      try {
-        if (tbs[p] != null) {
-          writeMessage(p, tbs[p]);
-        }
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        return;
+      if (tbs[p] != null) {
+        writeMessage(p, tbs[p]);
       }
     }
   }
@@ -64,12 +59,7 @@ public class LocalShuffleProducer extends Producer {
   protected final void childEOI() throws DbException {
     TupleBatch eoiTB = TupleBatch.eoiTupleBatch(getSchema());
     for (int i = 0; i < numChannels(); i++) {
-      try {
-        writeMessage(i, eoiTB);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        return;
-      }
+      writeMessage(i, eoiTB);
     }
   }
 }

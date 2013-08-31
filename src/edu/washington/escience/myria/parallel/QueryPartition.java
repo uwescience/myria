@@ -2,6 +2,8 @@ package edu.washington.escience.myria.parallel;
 
 import java.util.Set;
 
+import edu.washington.escience.myria.MyriaConstants.FTMODE;
+
 /**
  * A {@link QueryPartition} is a partition of a query plan at a single worker or at the master.
  * */
@@ -12,7 +14,7 @@ public interface QueryPartition extends Comparable<QueryPartition> {
    * 
    * @return the ft mode.
    * */
-  String getFTMode();
+  FTMODE getFTMode();
 
   /**
    * @return The query ID.

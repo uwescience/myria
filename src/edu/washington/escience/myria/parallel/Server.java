@@ -33,6 +33,7 @@ import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
@@ -97,7 +98,28 @@ public final class Server {
                   LOGGER.trace("getting heartbeat from worker " + senderID);
                 }
                 updateHeartbeat(senderID);
-                // TODO: tell rejoin queries to update worker list
+                break;
+              case REMOVE_WORKER_ACK:
+                int workerID = controlM.getWorkerId();
+                removeWorkerAckReceived.get(workerID).add(senderID);
+                break;
+              case ADD_WORKER_ACK:
+                workerID = controlM.getWorkerId();
+                addWorkerAckReceived.get(workerID).add(senderID);
+                for (Long id : activeQueries.keySet()) {
+                  MasterQueryPartition mqp = activeQueries.get(id);
+                  if (mqp.getFTMode().equals(FTMODE.rejoin) && mqp.getMissingWorkers().contains(workerID)
+                      && addWorkerAckReceived.get(workerID).containsAll(mqp.getWorkerAssigned())) {
+                    /* so a following ADD_WORKER_ACK won't cause queryMessage to be sent again */
+                    mqp.getMissingWorkers().remove(workerID);
+                    try {
+                      connectionPool.sendShortMessage(workerID, IPCUtils.queryMessage(mqp.getQueryID(), mqp
+                          .getWorkerPlans().get(workerID)));
+                    } catch (final IOException e) {
+                      throw new RuntimeException(e);
+                    }
+                  }
+                }
                 break;
               default:
                 if (LOGGER.isErrorEnabled()) {
@@ -130,11 +152,9 @@ public final class Server {
                     }
                   }
                   mqp.workerFail(senderID, cause);
-
                   if (LOGGER.isErrorEnabled()) {
                     LOGGER.error("Worker #{} failed in executing query #{}.", senderID, queryId, cause);
                   }
-
                 }
                 break;
               default:
@@ -248,6 +268,11 @@ public final class Server {
    * max number of seconds for elegant cleanup.
    * */
   public static final int NUM_SECONDS_FOR_ELEGANT_CLEANUP = 10;
+
+  /** for each worker id, record the set of workers which REMOVE_WORKER_ACK have been received. */
+  private final Map<Integer, Set<Integer>> removeWorkerAckReceived;
+  /** for each worker id, record the set of workers which ADD_WORKER_ACK have been received. */
+  private final Map<Integer, Set<Integer>> addWorkerAckReceived;
 
   /**
    * Entry point for the Master.
@@ -406,6 +431,9 @@ public final class Server {
     scheduledWorkers = new ConcurrentHashMap<Integer, SocketInfo>();
     scheduledWorkersTime = new ConcurrentHashMap<Integer, Long>();
 
+    removeWorkerAckReceived = new ConcurrentHashMap<Integer, Set<Integer>>();
+    addWorkerAckReceived = new ConcurrentHashMap<Integer, Set<Integer>>();
+
     activeQueries = new ConcurrentHashMap<Long, MasterQueryPartition>();
     succeededQueryResults = new ConcurrentHashMap<Long, Long>();
 
@@ -446,6 +474,56 @@ public final class Server {
   }
 
   /**
+   * The thread to check received REMOVE_WORKER_ACK and send ADD_WORKER to each worker. It's a temporary solution to
+   * guarantee message synchronization. Once we have a generalized design in the IPC layer in the future, it can be
+   * removed.
+   */
+  private Thread sendAddWorker = null;
+
+  /**
+   * The thread to check received REMOVE_WORKER_ACK and send ADD_WORKER to each worker.
+   */
+  private class SendAddWorker implements Runnable {
+
+    /** the worker id that was removed. */
+    private final int workerID;
+    /** the expected number of REMOVE_WORKER_ACK messages to receive. */
+    private int numOfAck;
+    /** the socket info of the new worker. */
+    private final SocketInfo socketInfo;
+
+    /**
+     * constructor.
+     * 
+     * @param workerID the removed worker id.
+     * @param socketInfo the new worker's socket info.
+     * @param numOfAck the number of REMOVE_WORKER_ACK to receive.
+     * */
+    SendAddWorker(final int workerID, final SocketInfo socketInfo, final int numOfAck) {
+      this.workerID = workerID;
+      this.socketInfo = socketInfo;
+      this.numOfAck = numOfAck;
+    }
+
+    @Override
+    public void run() {
+      while (numOfAck > 0) {
+        for (int aliveWorkerId : aliveWorkers.keySet()) {
+          if (removeWorkerAckReceived.get(workerID).remove(aliveWorkerId)) {
+            numOfAck--;
+            connectionPool.sendShortMessage(aliveWorkerId, IPCUtils.addWorkerTM(workerID, socketInfo));
+          }
+        }
+        try {
+          Thread.sleep(100);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        }
+      }
+    }
+  }
+
+  /**
    * @param workerID the worker to get updated
    * */
   private void updateHeartbeat(final int workerID) {
@@ -453,9 +531,7 @@ public final class Server {
       SocketInfo newWorker = scheduledWorkers.remove(workerID);
       scheduledWorkersTime.remove(workerID);
       if (newWorker != null) {
-        for (int aliveWorkerId : aliveWorkers.keySet()) {
-          connectionPool.sendShortMessage(aliveWorkerId, IPCUtils.addWorkerTM(workerID, newWorker));
-        }
+        sendAddWorker.start();
       }
     }
     aliveWorkers.put(workerID, System.currentTimeMillis());
@@ -489,12 +565,20 @@ public final class Server {
             if (mqp.getWorkerAssigned().contains(workerId)) {
               mqp.workerFail(workerId, new LostHeartbeatException());
             }
-            if (mqp.getFTMode().equals("abandon")) {
+            if (mqp.getFTMode().equals(FTMODE.abandon)) {
               mqp.getMissingWorkers().add(workerId);
+              mqp.updateProducerChannels(workerId, false);
               mqp.triggerTasks();
+            } else if (mqp.getFTMode().equals(FTMODE.rejoin)) {
+              mqp.getMissingWorkers().add(workerId);
+              mqp.updateProducerChannels(workerId, false);
             }
           }
 
+          removeWorkerAckReceived.put(workerId, Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>()));
+          addWorkerAckReceived.put(workerId, Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>()));
+          /* for using containsAll() later */
+          addWorkerAckReceived.get(workerId).add(workerId);
           try {
             /* remove the failed worker from the connectionPool. */
             connectionPool.removeRemote(workerId).await();
@@ -517,11 +601,12 @@ public final class Server {
           scheduledWorkers.put(newWorkerId, new SocketInfo(newAddress, newPort));
           scheduledWorkersTime.put(newWorkerId, currentTime);
 
+          sendAddWorker =
+              new Thread(new SendAddWorker(newWorkerId, new SocketInfo(newAddress, newPort), aliveWorkers.size()));
           connectionPool.putRemote(newWorkerId, new SocketInfo(newAddress, newPort));
+
           /* start a thread to launch the new worker. */
           new Thread(new NewWorkerScheduler(newWorkerId, newAddress, newPort)).start();
-
-          // TODO: rejoin
         }
       }
       for (Integer workerId : scheduledWorkers.keySet()) {
@@ -597,7 +682,8 @@ public final class Server {
         if (LOGGER.isInfoEnabled()) {
           LOGGER.info("starting new worker " + address + ":" + port + ".");
         }
-        DeploymentUtils.startWorker(address, workingDir, description, maxHeapSize, workerId + "");
+        boolean debug = config.get("deployment").get("debug_mode").equals("true");
+        DeploymentUtils.startWorker(address, workingDir, description, maxHeapSize, workerId + "", port, debug);
       } catch (CatalogException e) {
         throw new RuntimeException(e);
       } catch (IOException e) {

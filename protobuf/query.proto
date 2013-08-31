@@ -11,12 +11,14 @@ message QueryMessage {
     QUERY_KILL = 9; // master -> worker
     QUERY_READY_TO_EXECUTE = 2;  // worker -> master
     QUERY_COMPLETE = 6; // worker -> master  
+    QUERY_RECOVER = 3; // master -> worker  
   }
   
   required uint64 query_id = 1;
   required QueryMessage.Type type = 2;
   optional QueryReport query_report = 3; //Report of the query execution. when type is QUERY_COMPLETE
   optional Query query = 4; // query data, when type is QUERY_DISTRIBUTE 
+  optional int32 worker_id = 5; // worker id, when type is QUERY_RECOVER
 }
 
 message Query {

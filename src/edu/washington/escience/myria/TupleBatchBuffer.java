@@ -38,6 +38,8 @@ public class TupleBatchBuffer {
 
   /** The last time this operator returned a TupleBatch. */
   private long lastPoppedTime;
+  /** the total number of tuples in readyTuples. */
+  private int readyTuplesNum;
 
   /**
    * Constructs an empty TupleBatchBuffer to hold tuples matching the specified Schema.
@@ -53,6 +55,7 @@ public class TupleBatchBuffer {
     numColumnsReady = 0;
     currentInProgressTuples = 0;
     lastPoppedTime = System.nanoTime();
+    readyTuplesNum = 0;
   }
 
   /**
@@ -64,6 +67,7 @@ public class TupleBatchBuffer {
     currentInProgressTuples = 0;
     numColumnsReady = 0;
     readyTuples.clear();
+    readyTuplesNum = 0;
   }
 
   /**
@@ -96,6 +100,9 @@ public class TupleBatchBuffer {
       buildingColumns.add(cb.build());
     }
     readyTuples.add(buildingColumns);
+    if (buildingColumns.size() > 0) {
+      readyTuplesNum += buildingColumns.get(0).size();
+    }
     currentBuildingColumns = ColumnFactory.allocateColumns(schema);
     currentInProgressTuples = 0;
     return true;
@@ -170,6 +177,7 @@ public class TupleBatchBuffer {
    * */
   public final void merge(final TupleBatchBuffer another) {
     readyTuples.addAll(another.readyTuples);
+    readyTuplesNum += another.getReadyTuplesNum();
     if (another.currentInProgressTuples > 0) {
       for (int row = 0; row < another.currentInProgressTuples; row++) {
         int column = 0;
@@ -182,10 +190,17 @@ public class TupleBatchBuffer {
   }
 
   /**
+   * @return the number of ready tuples.
+   */
+  public final int getReadyTuplesNum() {
+    return readyTuplesNum;
+  }
+
+  /**
    * @return the number of complete tuples stored in this TupleBatchBuffer.
    */
   public final int numTuples() {
-    return readyTuples.size() * TupleBatch.BATCH_SIZE + currentInProgressTuples;
+    return readyTuplesNum + currentInProgressTuples;
   }
 
   /**
@@ -228,6 +243,7 @@ public class TupleBatchBuffer {
         final int size = currentInProgressTuples;
         finishBatch();
         updateLastPopedTime();
+        readyTuplesNum -= size;
         return new TupleBatch(schema, readyTuples.remove(0), size);
       } else {
         return null;
@@ -248,6 +264,7 @@ public class TupleBatchBuffer {
         final int size = currentInProgressTuples;
         finishBatch();
         updateLastPopedTime();
+        readyTuplesNum -= size;
         return new TupleBatch(schema, readyTuples.remove(0), size);
       } else {
         return null;
@@ -267,6 +284,7 @@ public class TupleBatchBuffer {
       if (currentInProgressTuples > 0) {
         finishBatch();
         updateLastPopedTime();
+        readyTuplesNum -= currentInProgressTuples;
         return readyTuples.remove(0);
       } else {
         return null;
@@ -286,6 +304,7 @@ public class TupleBatchBuffer {
       if (currentInProgressTuples > 0) {
         int numTuples = currentInProgressTuples;
         finishBatch();
+        readyTuplesNum -= numTuples;
         final List<Column<?>> columns = readyTuples.remove(0);
         updateLastPopedTime();
         return IPCUtils.normalDataMessage(columns, numTuples);
@@ -307,6 +326,7 @@ public class TupleBatchBuffer {
       if (currentInProgressTuples > 0 && getElapsedTime() >= MyriaConstants.PUSHING_TB_TIMEOUT) {
         int numTuples = currentInProgressTuples;
         finishBatch();
+        readyTuplesNum -= numTuples;
         final List<Column<?>> columns = readyTuples.remove(0);
         updateLastPopedTime();
         return IPCUtils.normalDataMessage(columns, numTuples);
@@ -324,6 +344,9 @@ public class TupleBatchBuffer {
   public final TupleBatch popFilled() {
     if (readyTuples.size() > 0) {
       updateLastPopedTime();
+      if (readyTuples.get(0).size() > 0) {
+        readyTuplesNum -= readyTuples.get(0).get(0).size();
+      }
       List<Column<?>> cols = readyTuples.remove(0);
       if (cols.size() > 0) {
         return new TupleBatch(schema, cols, cols.get(0).size());
@@ -342,6 +365,9 @@ public class TupleBatchBuffer {
   public final List<Column<?>> popFilledAsRawColumn() {
     if (readyTuples.size() > 0) {
       updateLastPopedTime();
+      if (readyTuples.get(0).size() > 0) {
+        readyTuplesNum -= readyTuples.get(0).get(0).size();
+      }
       return readyTuples.remove(0);
     }
     return null;
@@ -355,6 +381,9 @@ public class TupleBatchBuffer {
    * */
   public final TransportMessage popFilledAsTM() {
     if (readyTuples.size() > 0) {
+      if (readyTuples.get(0).size() > 0) {
+        readyTuplesNum -= readyTuples.get(0).get(0).size();
+      }
       final List<Column<?>> columns = readyTuples.remove(0);
       updateLastPopedTime();
       return IPCUtils.normalDataMessage(columns, TupleBatch.BATCH_SIZE);
@@ -387,13 +416,14 @@ public class TupleBatchBuffer {
   }
 
   /**
-   * Append the special EOI tuple batch.
+   * Append the tuple batch directly into readTuples.
    * 
-   * @param eoi the EOI TB.
+   * @param tb the TB.
    */
-  public final void putEOI(final TupleBatch eoi) {
+  public final void appendTB(final TupleBatch tb) {
     finishBatch();
-    readyTuples.add(eoi.getDataColumns());
+    readyTuplesNum += tb.numTuples();
+    readyTuples.add(tb.getDataColumns());
   }
 
   /**

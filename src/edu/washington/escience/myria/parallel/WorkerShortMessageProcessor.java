@@ -9,6 +9,7 @@ import org.jboss.netty.channel.ChannelHandler.Sharable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.parallel.ipc.IPCMessage;
 import edu.washington.escience.myria.parallel.ipc.ShortMessageProcessor;
 import edu.washington.escience.myria.proto.ControlProto.ControlMessage;
@@ -69,6 +70,7 @@ public final class WorkerShortMessageProcessor extends AttachmentableAdapter imp
       case QUERY_PAUSE:
       case QUERY_RESUME:
       case QUERY_KILL:
+      case QUERY_RECOVER:
         q = ownerWorker.getActiveQueries().get(queryId);
         if (q == null) {
           if (LOGGER.isErrorEnabled()) {
@@ -90,6 +92,11 @@ public final class WorkerShortMessageProcessor extends AttachmentableAdapter imp
               break;
             case QUERY_KILL:
               q.kill();
+              break;
+            case QUERY_RECOVER:
+              if (q.getFTMode().equals(FTMODE.rejoin)) {
+                q.addRecoveryTasks(qm.getWorkerId());
+              }
               break;
             default:
               break;
