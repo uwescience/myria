@@ -252,6 +252,7 @@ public abstract class Producer extends RootOperator {
    * Pop tuple batches from each of the buffers and try to write them to corresponding channels, if possible.
    * 
    * @param usingTimeout use popAny() or popAnyUsingTimeout() when poping
+   * @param channelIndices the same as GenericShuffleProducer's cellPartition
    * */
   protected final void popTBsFromBuffersAndWrite(final boolean usingTimeout, final int[][] channelIndices) {
     final TupleBatchBuffer[] tbb = getBuffers();

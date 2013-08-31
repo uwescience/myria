@@ -353,6 +353,11 @@ public class WorkerQueryPartition implements QueryPartition {
     }
   }
 
+  /**
+   * add a recovery task for the failed worker.
+   * 
+   * @param workerId the id of the failed worker.
+   */
   public void addRecoveryTasks(final int workerId) {
     List<RootOperator> recoveryTasks = new ArrayList<RootOperator>();
     for (QuerySubTreeTask task : tasks) {

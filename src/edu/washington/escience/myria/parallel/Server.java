@@ -269,7 +269,9 @@ public final class Server {
    * */
   public static final int NUM_SECONDS_FOR_ELEGANT_CLEANUP = 10;
 
+  /** for each worker id, record the set of workers which REMOVE_WORKER_ACK have been received. */
   private final Map<Integer, Set<Integer>> removeWorkerAckReceived;
+  /** for each worker id, record the set of workers which ADD_WORKER_ACK have been received. */
   private final Map<Integer, Set<Integer>> addWorkerAckReceived;
 
   /**

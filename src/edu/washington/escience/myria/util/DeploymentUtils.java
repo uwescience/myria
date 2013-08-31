@@ -255,7 +255,9 @@ public final class DeploymentUtils {
 
       } catch (IOException e) {
         // expected for the first few trials
-        // e.printStackTrace();
+        if (LOGGER.isTraceEnabled()) {
+          LOGGER.trace(e.toString());
+        }
       }
       try {
         Thread.sleep(TimeUnit.SECONDS.toMillis(MyriaConstants.MASTER_START_UP_TIMEOUT_IN_SECOND) / 10);

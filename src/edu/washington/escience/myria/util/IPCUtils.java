@@ -21,10 +21,10 @@ import edu.washington.escience.myria.parallel.QueryExecutionStatistics;
 import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.parallel.ipc.StreamOutputChannel;
-import edu.washington.escience.myria.proto.QueryProto;
 import edu.washington.escience.myria.proto.ControlProto.ControlMessage;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.DataMessage;
+import edu.washington.escience.myria.proto.QueryProto;
 import edu.washington.escience.myria.proto.QueryProto.QueryMessage;
 import edu.washington.escience.myria.proto.QueryProto.QueryReport;
 import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
@@ -167,7 +167,6 @@ public final class IPCUtils {
 
   /**
    * @param workerId the id of the worker to be added.
-   * @param socketinfo the SocketInfo of the worker to be added.
    * @return the add worker TM.
    * */
   public static TransportMessage addWorkerAckTM(final int workerId) {
@@ -362,7 +361,8 @@ public final class IPCUtils {
    * @throws IOException if error occurs in encoding the query.
    * @return an encoded query TM
    */
-  public static TransportMessage queryMessage(final long queryId, final SingleQueryPlanWithArgs query) throws IOException {
+  public static TransportMessage queryMessage(final long queryId, final SingleQueryPlanWithArgs query)
+      throws IOException {
     final ByteArrayOutputStream inMemBuffer = new ByteArrayOutputStream();
     final ObjectOutputStream oos = new ObjectOutputStream(inMemBuffer);
     oos.writeObject(query);
