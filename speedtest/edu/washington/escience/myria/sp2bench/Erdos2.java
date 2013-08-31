@@ -61,7 +61,7 @@ public class Erdos2 implements QueryPlanGenerator {
   }
 
   @Test
-  public void test(String[] args) throws Exception {
+  public void test() throws Exception {
     System.out.println(new Erdos2().getWorkerPlan(new int[] { 0, 1, 2, 3, 4 }).get(0)[0]);
   }
 

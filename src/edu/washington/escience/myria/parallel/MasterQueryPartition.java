@@ -78,8 +78,10 @@ public class MasterQueryPartition implements QueryPartition {
                 // if any worker fails because of some exception, kill the query.
                 kill();
               } else if (ftMode.equals(FTMODE.abandon)) {
+                LOGGER.debug("(Abandon) ignoring failed query future on query #{}", queryID);
                 // do nothing
               } else if (ftMode.equals(FTMODE.rejoin)) {
+                LOGGER.debug("(Rejoin) ignoring failed query future on query #{}", queryID);
                 // do nothing
               }
             }

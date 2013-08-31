@@ -280,5 +280,5 @@ def partition_join():
     return whole_plan
 
 
-print pretty_json(two_dimension_multiway_join())
-#print pretty_json(partition_join())
+#print pretty_json(two_dimension_multiway_join())
+print pretty_json(partition_join())

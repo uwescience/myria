@@ -2,6 +2,7 @@ package edu.washington.escience.myria.sp2bench;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -24,9 +25,9 @@ import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.Consumer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
+import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
+import edu.washington.escience.myria.parallel.GenericShuffleProducer;
 import edu.washington.escience.myria.parallel.Producer;
-import edu.washington.escience.myria.parallel.ShuffleConsumer;
-import edu.washington.escience.myria.parallel.ShuffleProducer;
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
 
 public class Erdos {
@@ -65,10 +66,10 @@ public class Erdos {
         Schemas.subjectSchema);
     // schema: (pubId long)
 
-    final ShuffleProducer paulErdoesPubsShuffleP =
-        new ShuffleProducer(paulErdoesPubs, paulErdoesPubsShuffleID, allWorkers, pfOn0);
-    final ShuffleConsumer paulErdoesPubsShuffleC =
-        new ShuffleConsumer(paulErdoesPubsShuffleP.getSchema(), paulErdoesPubsShuffleID, allWorkers);
+    final GenericShuffleProducer paulErdoesPubsShuffleP =
+        new GenericShuffleProducer(paulErdoesPubs, paulErdoesPubsShuffleID, allWorkers, pfOn0);
+    final GenericShuffleConsumer paulErdoesPubsShuffleC =
+        new GenericShuffleConsumer(paulErdoesPubsShuffleP.getSchema(), paulErdoesPubsShuffleID, allWorkers);
     // schema: (pubId long)
 
     final DbQueryScan allPubs = new DbQueryScan(//
@@ -79,13 +80,15 @@ public class Erdos {
         Schemas.subjectObjectSchema);
     // schema: (pubId long, authorId long)
 
-    final ShuffleProducer allPubsShuffleP = new ShuffleProducer(allPubs, allPubsShuffleID, allWorkers, pfOn0);
-    final ShuffleConsumer allPubsShuffleC =
-        new ShuffleConsumer(allPubsShuffleP.getSchema(), allPubsShuffleID, allWorkers);
+    final GenericShuffleProducer allPubsShuffleP =
+        new GenericShuffleProducer(allPubs, allPubsShuffleID, allWorkers, pfOn0);
+    final GenericShuffleConsumer allPubsShuffleC =
+        new GenericShuffleConsumer(allPubsShuffleP.getSchema(), allPubsShuffleID, allWorkers);
     // schema: (pubId long, authorId long)
 
+    final List<String> joinColumnNames = ImmutableList.of("pubId1", "pubId2", "authorId");
     final LocalJoin joinCoAuthors =
-        new LocalJoin(paulErdoesPubsShuffleC, allPubsShuffleC, new int[] { 0 }, new int[] { 0 });
+        new LocalJoin(joinColumnNames, paulErdoesPubsShuffleC, allPubsShuffleC, new int[] { 0 }, new int[] { 0 });
     // schema: (pubId long, pubId long, authorId long)
 
     final Project projCoAuthorID = new Project(new int[] { 2 }, joinCoAuthors);
@@ -93,10 +96,10 @@ public class Erdos {
     final DupElim localDECoAuthorID = new DupElim(projCoAuthorID); // local dupelim
     // schema: (authorId long)
 
-    final ShuffleProducer coAuthorShuffleP =
-        new ShuffleProducer(localDECoAuthorID, coAuthorShuffleID, allWorkers, pfOn0);
-    final ShuffleConsumer coAuthorShuffleC =
-        new ShuffleConsumer(coAuthorShuffleP.getSchema(), coAuthorShuffleID, allWorkers);
+    final GenericShuffleProducer coAuthorShuffleP =
+        new GenericShuffleProducer(localDECoAuthorID, coAuthorShuffleID, allWorkers, pfOn0);
+    final GenericShuffleConsumer coAuthorShuffleC =
+        new GenericShuffleConsumer(coAuthorShuffleP.getSchema(), coAuthorShuffleID, allWorkers);
     // schema: (authorId long)
     producers.add(coAuthorShuffleP);
     producers.add(allPubsShuffleP);
@@ -122,10 +125,10 @@ public class Erdos {
     // schema: (pubId long, authorId long)
 
     ExchangePairID allPubsShuffleByAuthorID = ExchangePairID.newID();
-    final ShuffleProducer allPubsShuffleByAuthorP =
-        new ShuffleProducer(allPubs2, allPubsShuffleByAuthorID, allWorkers, pfOn1);
-    final ShuffleConsumer allPubsShuffleByAuthorC =
-        new ShuffleConsumer(allPubsShuffleByAuthorP.getSchema(), allPubsShuffleByAuthorID, allWorkers);
+    final GenericShuffleProducer allPubsShuffleByAuthorP =
+        new GenericShuffleProducer(allPubs2, allPubsShuffleByAuthorID, allWorkers, pfOn1);
+    final GenericShuffleConsumer allPubsShuffleByAuthorC =
+        new GenericShuffleConsumer(allPubsShuffleByAuthorP.getSchema(), allPubsShuffleByAuthorID, allWorkers);
     // schema: (pubId long, authorId long)
 
     final LocalJoin joinCoAuthorPubs =
@@ -139,10 +142,10 @@ public class Erdos {
     // schema: (pubId long)
 
     ExchangePairID coAuthorPubsShuffleID = ExchangePairID.newID();
-    final ShuffleProducer coAuthorPubsShuffleP =
-        new ShuffleProducer(coAuthorPubsLocalDE, coAuthorPubsShuffleID, allWorkers, pfOn0);
-    final ShuffleConsumer coAuthorPubsShuffleC =
-        new ShuffleConsumer(coAuthorPubsShuffleP.getSchema(), coAuthorPubsShuffleID, allWorkers);
+    final GenericShuffleProducer coAuthorPubsShuffleP =
+        new GenericShuffleProducer(coAuthorPubsLocalDE, coAuthorPubsShuffleID, allWorkers, pfOn0);
+    final GenericShuffleConsumer coAuthorPubsShuffleC =
+        new GenericShuffleConsumer(coAuthorPubsShuffleP.getSchema(), coAuthorPubsShuffleID, allWorkers);
     // schema: (pubId long)
 
     final DupElim coAuthorPubsGlobalDE = new DupElim(coAuthorPubsShuffleC); // local dupelim
@@ -157,10 +160,10 @@ public class Erdos {
     // schema: (pubId long, authorId long)
 
     ExchangePairID coAuthorNamesPubsShuffleID = ExchangePairID.newID();
-    final ShuffleProducer coAuthorNamesPubsShuffleP =
-        new ShuffleProducer(allPubsAuthorNames, coAuthorNamesPubsShuffleID, allWorkers, pfOn0);
-    final ShuffleConsumer coAuthorNamesPubsShuffleC =
-        new ShuffleConsumer(coAuthorNamesPubsShuffleP.getSchema(), coAuthorNamesPubsShuffleID, allWorkers);
+    final GenericShuffleProducer coAuthorNamesPubsShuffleP =
+        new GenericShuffleProducer(allPubsAuthorNames, coAuthorNamesPubsShuffleID, allWorkers, pfOn0);
+    final GenericShuffleConsumer coAuthorNamesPubsShuffleC =
+        new GenericShuffleConsumer(coAuthorNamesPubsShuffleP.getSchema(), coAuthorNamesPubsShuffleID, allWorkers);
     // schema: (pubId long, authorId long)
 
     final LocalJoin joinCoCoAuthorPubs =
@@ -174,10 +177,10 @@ public class Erdos {
     // schema: (authorId long)
 
     ExchangePairID coCoAuthorNameShuffleID = ExchangePairID.newID();
-    final ShuffleProducer coCoAuthorNameShuffleP =
-        new ShuffleProducer(coCoAuthorNameLocalDE, coCoAuthorNameShuffleID, allWorkers, pfOn0);
-    final ShuffleConsumer coCoAuthorNameShuffleC =
-        new ShuffleConsumer(coCoAuthorNameShuffleP.getSchema(), coCoAuthorNameShuffleID, allWorkers);
+    final GenericShuffleProducer coCoAuthorNameShuffleP =
+        new GenericShuffleProducer(coCoAuthorNameLocalDE, coCoAuthorNameShuffleID, allWorkers, pfOn0);
+    final GenericShuffleConsumer coCoAuthorNameShuffleC =
+        new GenericShuffleConsumer(coCoAuthorNameShuffleP.getSchema(), coCoAuthorNameShuffleID, allWorkers);
     // schema: (authorId long)
 
     producers.add(coCoAuthorNameShuffleP);

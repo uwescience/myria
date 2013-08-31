@@ -14,5 +14,6 @@
     <filter-data value="test"/>
     <filter-data value="speedtest"/>
     <filter-data value="testsuites"/>
+    <filter-data value="systemtest"/>
   </filter>
 </fileset-config>

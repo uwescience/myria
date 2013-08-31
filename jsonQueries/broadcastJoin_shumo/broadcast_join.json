@@ -3,18 +3,27 @@
         {
             "operators": [
                 {
-                    "op_name": "Scan0",
+                    "connection_info": {
+                        "database": "mrbenchmarks",
+                        "dbms": "vertica",
+                        "driver_class": "com.vertica.jdbc.Driver",
+                        "host": "localhost",
+                        "password": "mrbenchmarks",
+                        "port": "15433",
+                        "username": "dbadmin"
+                    },
+                    "op_name": "ScanR",
                     "op_type": "TableScan",
                     "relation_key": {
-                        "program_name": "broadcast_join",
-                        "relation_name": "smallTable",
-                        "user_name": "shumo_chu"
+                        "program_name": "broadcastjoin",
+                        "relation_name": "RankBase2x",
+                        "user_name": "shumochu"
                     }
                 },
                 {
-                    "arg_child": "Scan0",
-                    "arg_operator_id": "broadcast_0",
-                    "op_name": "broadcast0",
+                    "arg_child": "ScanR",
+                    "arg_operator_id": "broadcast",
+                    "op_name": "broadcast",
                     "op_type": "BroadcastProducer"
                 }
             ]
@@ -22,37 +31,48 @@
         {
             "operators": [
                 {
-                    "arg_operator_id": "broadcast_0",
+                    "connection_info": {
+                        "database": "mrbenchmarks",
+                        "dbms": "vertica",
+                        "driver_class": "com.vertica.jdbc.Driver",
+                        "host": "localhost",
+                        "password": "mrbenchmarks",
+                        "port": "15433",
+                        "username": "dbadmin"
+                    },
+                    "op_name": "ScanU",
+                    "op_type": "TableScan",
+                    "relation_key": {
+                        "program_name": "broadcastjoin",
+                        "relation_name": "UserBase",
+                        "user_name": "shumochu"
+                    }
+                },
+                {
+                    "arg_operator_id": "broadcast",
                     "arg_schema": {
                         "column_names": [
-                            "follower",
-                            "followee"
+                            "pageRank",
+                            "pageURL",
+                            "avgDuration"
                         ],
                         "column_types": [
                             "LONG_TYPE",
+                            "STRING_TYPE",
                             "LONG_TYPE"
                         ]
                     },
-                    "op_name": "receive0",
+                    "op_name": "receive",
                     "op_type": "BroadcastConsumer"
                 },
                 {
-                     "op_name": "scan1",
-                     "op_type": "TableScan",
-                     "relation_key": {
-                         "program_name": "broadcast_join",
-                         "relation_name": "smallTable",
-                         "user_name": "shumo_chu"
-                     }
-                 },
-                {
-                    "arg_child1": "receive0",
-                    "arg_child2": "scan1",
+                    "arg_child1": "receive",
+                    "arg_child2": "ScanU",
                     "arg_columns1": [
                         1
                     ],
                     "arg_columns2": [
-                        0
+                        1
                     ],
                     "arg_select1": [
                         0
@@ -66,17 +86,18 @@
                 {
                     "arg_child": "Join",
                     "arg_overwrite_table": true,
+                    "connection_info": "localhost",
                     "op_name": "Insert",
                     "op_type": "DbInsert",
                     "relation_key": {
-                        "program_name": "broadcast_join",
-                        "relation_name": "smallTable_broadcast_join_smallTable",
-                        "user_name": "shumo_chu"
+                        "program_name": "broadcastjoin",
+                        "relation_name": "result2x",
+                        "user_name": "shumochu"
                     }
                 }
             ]
         }
     ],
-    "logical_ra": "Insert(smallTable_join_smallTable)[Join(1=0; [0,3])[Shuffle(1)[Scan], Shuffle(1)[Scan]]]",
-    "raw_datalog": "smallTable_join_smallTable(x,z) :- smallTable(x,y), mallTable(y,z)"
+    "logical_ra": "broadcast join",
+    "raw_datalog": "broadcast join"
 }

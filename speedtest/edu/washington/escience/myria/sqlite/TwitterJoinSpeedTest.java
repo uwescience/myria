@@ -6,9 +6,10 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -28,9 +29,9 @@ import edu.washington.escience.myria.operator.agg.Aggregator;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
+import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
+import edu.washington.escience.myria.parallel.GenericShuffleProducer;
 import edu.washington.escience.myria.parallel.PartitionFunction;
-import edu.washington.escience.myria.parallel.ShuffleConsumer;
-import edu.washington.escience.myria.parallel.ShuffleProducer;
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.systemtest.SystemTestBase;
 
@@ -42,21 +43,20 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
   // the paths here
   private final static String[] srcPath = {
       "data_nocommit/speedtest/twitter/test_worker1.db", "data_nocommit/speedtest/twitter/test_worker2.db" };
-  private final static String[] dstName = { "testtable0.db", "testtable0.db" };
+  private final static String[] dstName = { "worker_1_data.db", "worker_2_data.db" };
 
   /* Whether we were able to copy the data. */
   private static boolean successfulSetup = false;
 
-  @BeforeClass
-  public static void loadSpecificTestData() {
+  @Before
+  public void loadSpecificTestData() {
     for (int i = 0; i < srcPath.length; ++i) {
       final Path src = FileSystems.getDefault().getPath(srcPath[i]);
-      final Path dst =
-          FileSystems.getDefault().getPath(workerTestBaseFolder + "/worker_" + (i + 1) + "/sqlite_dbs/" + dstName[i]);
+      final Path dst = FileSystems.getDefault().getPath(workerTestBaseFolder + "/worker_" + (i + 1) + "/" + dstName[i]);
       try {
         Files.copy(src, dst);
       } catch (final Exception e) {
-        throw new RuntimeException("unable to copy files from " + srcPath[i] + " to " + dstName[i]
+        throw new RuntimeException("unable to copy files from " + src.toAbsolutePath() + " to " + dst.toAbsolutePath()
             + ". you can find the dataset at /projects/db7/dataset/twitter/speedtest.");
       }
     }
@@ -85,25 +85,25 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     final PartitionFunction<String, Integer> pf0 = new SingleFieldHashPartitionFunction(numPartition);
     pf0.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
     final ExchangePairID arrayID1 = ExchangePairID.newID();
-    final ShuffleProducer sp1 = new ShuffleProducer(scan1, arrayID1, workerIDs, pf0);
+    final GenericShuffleProducer sp1 = new GenericShuffleProducer(scan1, arrayID1, workerIDs, pf0);
     // PF1 : followee (field 1 of the tuple)
     final PartitionFunction<String, Integer> pf1 = new SingleFieldHashPartitionFunction(numPartition);
     pf1.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1);
     final ExchangePairID arrayID2 = ExchangePairID.newID();
-    final ShuffleProducer sp2 = new ShuffleProducer(scan2, arrayID2, workerIDs, pf1);
+    final GenericShuffleProducer sp2 = new GenericShuffleProducer(scan2, arrayID2, workerIDs, pf1);
 
     /* Each worker receives both partitions, then joins on them. */
     // SC1: receive based on followee (PF1, so SP2 and arrayID2)
-    final ShuffleConsumer sc1 = new ShuffleConsumer(sp2.getSchema(), arrayID2, workerIDs);
+    final GenericShuffleConsumer sc1 = new GenericShuffleConsumer(sp2.getSchema(), arrayID2, workerIDs);
     // SC2: receive based on follower (PF0, so SP1 and arrayID1)
-    final ShuffleConsumer sc2 = new ShuffleConsumer(sp1.getSchema(), arrayID1, workerIDs);
+    final GenericShuffleConsumer sc2 = new GenericShuffleConsumer(sp1.getSchema(), arrayID1, workerIDs);
     // Join on SC1.followee=SC2.follower
     final LocalJoin localProjJoin =
         new LocalJoin(sc1, sc2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
     /* Now reshuffle the results to partition based on the new followee, so that we can dupelim. */
     final ExchangePairID arrayID0 = ExchangePairID.newID();
-    final ShuffleProducer sp0 = new ShuffleProducer(localProjJoin, arrayID0, workerIDs, pf0);
-    final ShuffleConsumer sc0 = new ShuffleConsumer(sp0.getSchema(), arrayID0, workerIDs);
+    final GenericShuffleProducer sp0 = new GenericShuffleProducer(localProjJoin, arrayID0, workerIDs, pf0);
+    final GenericShuffleConsumer sc0 = new GenericShuffleConsumer(sp0.getSchema(), arrayID0, workerIDs);
     final DupElim dupelim = new DupElim(sc0);
     final Aggregate count = new Aggregate(dupelim, new int[] { 0 }, new int[] { Aggregator.AGG_OP_COUNT });
 
@@ -152,27 +152,27 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     final PartitionFunction<String, Integer> pf0 = new SingleFieldHashPartitionFunction(numPartition);
     pf0.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
     final ExchangePairID arrayID1 = ExchangePairID.newID();
-    final ShuffleProducer sp1 = new ShuffleProducer(scan1, arrayID1, workerIDs, pf0);
+    final GenericShuffleProducer sp1 = new GenericShuffleProducer(scan1, arrayID1, workerIDs, pf0);
     // PF1 : followee (field 1 of the tuple)
     final PartitionFunction<String, Integer> pf1 = new SingleFieldHashPartitionFunction(numPartition);
     pf1.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1);
     final ExchangePairID arrayID2 = ExchangePairID.newID();
-    final ShuffleProducer sp2 = new ShuffleProducer(scan2, arrayID2, workerIDs, pf1);
+    final GenericShuffleProducer sp2 = new GenericShuffleProducer(scan2, arrayID2, workerIDs, pf1);
 
     /* Each worker receives both partitions, then joins on them. */
     // SC1: receive based on followee (PF1, so SP2 and arrayID2)
-    final ShuffleConsumer sc1 = new ShuffleConsumer(sp2.getSchema(), arrayID2, workerIDs);
+    final GenericShuffleConsumer sc1 = new GenericShuffleConsumer(sp2.getSchema(), arrayID2, workerIDs);
     // SC2: receive based on follower (PF0, so SP1 and arrayID1)
-    final ShuffleConsumer sc2 = new ShuffleConsumer(sp1.getSchema(), arrayID1, workerIDs);
+    final GenericShuffleConsumer sc2 = new GenericShuffleConsumer(sp1.getSchema(), arrayID1, workerIDs);
     // Join on SC1.followee=SC2.follower
-    final LocalJoin localjoin =
-        new LocalJoin(sc1, sc2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
+    final List<String> joinSchema = ImmutableList.of("follower", "joinL", "joinR", "followee");
+    final LocalJoin localjoin = new LocalJoin(joinSchema, sc1, sc2, new int[] { 1 }, new int[] { 0 });
     /* Project down to only the two columns of interest: SC1.follower now transitively follows SC2.followee. */
     final Project proj = new Project(new int[] { 0, 3 }, localjoin);
     /* Now reshuffle the results to partition based on the new followee, so that we can dupelim. */
     final ExchangePairID arrayID0 = ExchangePairID.newID();
-    final ShuffleProducer sp0 = new ShuffleProducer(proj, arrayID0, workerIDs, pf0);
-    final ShuffleConsumer sc0 = new ShuffleConsumer(sp0.getSchema(), arrayID0, workerIDs);
+    final GenericShuffleProducer sp0 = new GenericShuffleProducer(proj, arrayID0, workerIDs, pf0);
+    final GenericShuffleConsumer sc0 = new GenericShuffleConsumer(sp0.getSchema(), arrayID0, workerIDs);
     final DupElim dupelim = new DupElim(sc0);
 
     /* Finally, send (CollectProduce) all the results to the master. */
@@ -216,25 +216,25 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     final PartitionFunction<String, Integer> pf0 = new SingleFieldHashPartitionFunction(numPartition);
     pf0.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
     final ExchangePairID arrayID1 = ExchangePairID.newID();
-    final ShuffleProducer sp1 = new ShuffleProducer(scan1, arrayID1, workerIDs, pf0);
+    final GenericShuffleProducer sp1 = new GenericShuffleProducer(scan1, arrayID1, workerIDs, pf0);
     // PF1 : followee (field 1 of the tuple)
     final PartitionFunction<String, Integer> pf1 = new SingleFieldHashPartitionFunction(numPartition);
     pf1.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1);
     final ExchangePairID arrayID2 = ExchangePairID.newID();
-    final ShuffleProducer sp2 = new ShuffleProducer(scan2, arrayID2, workerIDs, pf1);
+    final GenericShuffleProducer sp2 = new GenericShuffleProducer(scan2, arrayID2, workerIDs, pf1);
 
     /* Each worker receives both partitions, then joins on them. */
     // SC1: receive based on followee (PF1, so SP2 and arrayID2)
-    final ShuffleConsumer sc1 = new ShuffleConsumer(sp2.getSchema(), arrayID2, workerIDs);
+    final GenericShuffleConsumer sc1 = new GenericShuffleConsumer(sp2.getSchema(), arrayID2, workerIDs);
     // SC2: receive based on follower (PF0, so SP1 and arrayID1)
-    final ShuffleConsumer sc2 = new ShuffleConsumer(sp1.getSchema(), arrayID1, workerIDs);
+    final GenericShuffleConsumer sc2 = new GenericShuffleConsumer(sp1.getSchema(), arrayID1, workerIDs);
     // Join on SC1.followee=SC2.follower
     final LocalJoin localProjJoin =
         new LocalJoin(sc1, sc2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
     /* Now reshuffle the results to partition based on the new followee, so that we can dupelim. */
     final ExchangePairID arrayID0 = ExchangePairID.newID();
-    final ShuffleProducer sp0 = new ShuffleProducer(localProjJoin, arrayID0, workerIDs, pf0);
-    final ShuffleConsumer sc0 = new ShuffleConsumer(sp0.getSchema(), arrayID0, workerIDs);
+    final GenericShuffleProducer sp0 = new GenericShuffleProducer(localProjJoin, arrayID0, workerIDs, pf0);
+    final GenericShuffleConsumer sc0 = new GenericShuffleConsumer(sp0.getSchema(), arrayID0, workerIDs);
     final DupElim dupelim = new DupElim(sc0);
 
     /* Finally, send (CollectProduce) all the results to the master. */

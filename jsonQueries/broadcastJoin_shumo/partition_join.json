@@ -3,7 +3,7 @@
         {
             "operators": [
                 {
-                    "jdbc_info": {
+                    "connection_info": {
                         "database": "mrbenchmarks",
                         "dbms": "vertica",
                         "driver_class": "com.vertica.jdbc.Driver",
@@ -13,10 +13,10 @@
                         "username": "dbadmin"
                     },
                     "op_name": "Scan(R)",
-                    "op_type": "JdbcScan",
+                    "op_type": "TableScan",
                     "relation_key": {
                         "program_name": "broadcastjoin",
-                        "relation_name": "RankBase32x",
+                        "relation_name": "RankBase2x",
                         "user_name": "shumochu"
                     }
                 },
@@ -35,7 +35,7 @@
         {
             "operators": [
                 {
-                    "jdbc_info": {
+                    "connection_info": {
                         "database": "mrbenchmarks",
                         "dbms": "vertica",
                         "driver_class": "com.vertica.jdbc.Driver",
@@ -45,7 +45,7 @@
                         "username": "dbadmin"
                     },
                     "op_name": "Scan(S)",
-                    "op_type": "JdbcScan",
+                    "op_type": "TableScan",
                     "relation_key": {
                         "program_name": "broadcastjoin",
                         "relation_name": "UserBase",
@@ -133,7 +133,7 @@
                 {
                     "arg_child": "Join",
                     "arg_overwrite_table": true,
-                    "jdbc_info": {
+                    "connection_info": {
                         "database": "mrbenchmarks",
                         "dbms": "vertica",
                         "driver_class": "com.vertica.jdbc.Driver",
@@ -143,10 +143,10 @@
                         "username": "dbadmin"
                     },
                     "op_name": "InsertResult",
-                    "op_type": "JdbcInsert",
+                    "op_type": "DbInsert",
                     "relation_key": {
                         "program_name": "broadcastjoin",
-                        "relation_name": "newPartitonJoinResult32x",
+                        "relation_name": "PartitonJoinResult2x",
                         "user_name": "shumochu"
                     }
                 }
