@@ -18,7 +18,7 @@ import com.google.common.collect.ImmutableMap;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.operator.RootOperator;
-import edu.washington.escience.myria.operator.TupleBatchListScan;
+import edu.washington.escience.myria.operator.TupleSource;
 import edu.washington.escience.myria.parallel.ipc.FlowControlBagInputBuffer;
 import edu.washington.escience.myria.parallel.ipc.IPCEvent;
 import edu.washington.escience.myria.parallel.ipc.IPCEventListener;
@@ -368,11 +368,13 @@ public class WorkerQueryPartition implements QueryPartition {
         StreamOutputChannel<TupleBatch>[] channels = ((Producer) task.getRootOp()).getChannels();
         for (int i = 0; i < indices.size(); ++i) {
           int j = indices.get(i);
-          TupleBatchListScan scan = new TupleBatchListScan(j, buffers.get(j), (Producer) task.getRootOp());
-          scan.setOpName("tblistScan for " + task.getRootOp().getOpName() + channels[j].getID());
+          TupleSource scan = new TupleSource(buffers.get(j));
+          /* buffers.get(j) might be an empty List<TupleBatch>, so need to set its schema explicitly. */
+          scan.setSchema(task.getRootOp().getSchema());
+          scan.setOpName("tuplesource for " + task.getRootOp().getOpName() + channels[j].getID());
           RecoverProducer rp =
               new RecoverProducer(scan, ExchangePairID.fromExisting(channels[j].getID().getStreamID()), channels[j]
-                  .getID().getRemoteID());
+                  .getID().getRemoteID(), (Producer) task.getRootOp(), j);
           rp.setOpName("recProducer for " + task.getRootOp().getOpName() + channels[j].getID());
           recoveryTasks.add(rp);
         }

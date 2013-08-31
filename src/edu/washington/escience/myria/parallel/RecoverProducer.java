@@ -5,7 +5,7 @@ import com.google.common.base.Preconditions;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.operator.Operator;
-import edu.washington.escience.myria.operator.TupleBatchListScan;
+import edu.washington.escience.myria.operator.TupleSource;
 import edu.washington.escience.myria.parallel.ipc.StreamOutputChannel;
 
 /**
@@ -22,34 +22,42 @@ public final class RecoverProducer extends CollectProducer {
   /** The logger for this class. */
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(RecoverProducer.class.getName());
 
+  /** the original producer. */
+  private final Producer oriProducer;
+  /** the channel index that this operator is recovering for. */
+  private final int channelIndx;
+
   /**
    * @param child the child who provides data for this producer to distribute.
    * @param operatorID destination operator the data goes
    * @param collectConsumerWorkerID destination worker the data goes.
+   * @param oriProducer the original producer.
+   * @param channelIndx the channel index that this operator is recovering for. *
    * */
-  public RecoverProducer(final Operator child, final ExchangePairID operatorID, final int collectConsumerWorkerID) {
+  public RecoverProducer(final Operator child, final ExchangePairID operatorID, final int collectConsumerWorkerID,
+      final Producer oriProducer, final int channelIndx) {
     super(child, operatorID, collectConsumerWorkerID);
+    this.oriProducer = oriProducer;
+    this.channelIndx = channelIndx;
   }
 
   @Override
   protected void childEOS() throws DbException {
     popTBsFromBuffersAndWrite(false);
-    Preconditions.checkArgument(getChild() instanceof TupleBatchListScan);
-    Producer oriProducer = ((TupleBatchListScan) getChild()).getOriProducer();
+    Preconditions.checkArgument(getChild() instanceof TupleSource);
     if (!oriProducer.eos()) {
-      int indx = ((TupleBatchListScan) getChildren()[0]).getChannelIndx();
       StreamOutputChannel<TupleBatch> tmp = getChannels()[0];
       if (LOGGER.isTraceEnabled()) {
         LOGGER.trace("recovery task " + getOpName() + " detach & attach channel " + tmp.getID() + " old channel "
-            + oriProducer.getChannels()[indx] + " new channel " + tmp);
+            + oriProducer.getChannels()[channelIndx] + " new channel " + tmp);
       }
-      oriProducer.getChannels()[indx] = tmp;
+      oriProducer.getChannels()[channelIndx] = tmp;
       /* have to do this otherwise the channel will be released in resourceManager.cleanup() */
       getOwnerTask().getResourceManager().removeOutputChannel(tmp);
       /* have to do this otherwise the channel will be released in Producer.cleanup() */
       getChannels()[0] = null;
       /* set the channel to be available again */
-      oriProducer.getChannelsAvail()[indx] = true;
+      oriProducer.getChannelsAvail()[channelIndx] = true;
       /* if the channel was disabled before crash, need to give the task a chance to enable it. */
       oriProducer.getOwnerTask().notifyOutputEnabled(tmp.getID());
       /* if the task has no new input, but needs to produce potential EOSs & push TBs in its buffers out. */
