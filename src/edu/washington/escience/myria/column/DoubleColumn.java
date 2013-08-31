@@ -121,4 +121,10 @@ public final class DoubleColumn implements Column<Double> {
   public void addToHasher(final int row, final Hasher hasher) {
     hasher.putDouble(getDouble(row));
   }
+
+  @Override
+  public void replace(final int index, final Object value) {
+    Preconditions.checkElementIndex(index, size());
+    data[index] = (double) value;
+  }
 }

@@ -152,4 +152,10 @@ public final class DoubleColumnBuilder implements ColumnBuilder<Double> {
     System.arraycopy(data.array(), 0, arr, 0, data.position());
     return new DoubleColumnBuilder((DoubleBuffer) DoubleBuffer.wrap(arr).position(data.position()).limit(data.limit()));
   }
+
+  @Override
+  public void replace(final int index, final Object value) {
+    Preconditions.checkElementIndex(index, size());
+    data.put(index, (Double) value);
+  }
 }

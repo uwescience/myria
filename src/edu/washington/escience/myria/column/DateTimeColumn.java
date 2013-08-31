@@ -122,4 +122,10 @@ public final class DateTimeColumn implements Column<DateTime> {
   public void addToHasher(final int row, final Hasher hasher) {
     hasher.putObject(getDateTime(row), TypeFunnel.INSTANCE);
   }
+
+  @Override
+  public void replace(final int index, final Object value) {
+    Preconditions.checkElementIndex(index, size());
+    data[index] = (DateTime) value;
+  }
 }

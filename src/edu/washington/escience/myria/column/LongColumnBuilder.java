@@ -152,4 +152,10 @@ public final class LongColumnBuilder implements ColumnBuilder<Long> {
     System.arraycopy(data.array(), 0, arr, 0, arr.length);
     return new LongColumnBuilder((LongBuffer) LongBuffer.wrap(arr).position(data.position()).limit(data.limit()));
   }
+
+  @Override
+  public void replace(final int index, final Object value) {
+    Preconditions.checkElementIndex(index, size());
+    data.put(index, (Long) value);
+  }
 }

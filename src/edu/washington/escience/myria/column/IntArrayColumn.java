@@ -64,4 +64,10 @@ public final class IntArrayColumn extends IntColumn {
   public int size() {
     return position;
   }
+
+  @Override
+  public void replace(final int index, final Object value) {
+    Preconditions.checkElementIndex(index, size());
+    data[index] = (int) value;
+  }
 }

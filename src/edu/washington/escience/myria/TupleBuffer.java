@@ -246,4 +246,26 @@ public class TupleBuffer {
       }
     }
   }
+
+  /**
+   * @param colIndex column index
+   * @param rowIndex row index
+   * @param value the new value
+   * @throws IndexOutOfBoundsException if indices are out of bounds.
+   * */
+  public final void replace(final int colIndex, final int rowIndex, final Object value)
+      throws IndexOutOfBoundsException {
+    int tupleBatchIndex = rowIndex / TupleBatch.BATCH_SIZE;
+    int tupleIndex = rowIndex % TupleBatch.BATCH_SIZE;
+    if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
+        && tupleIndex >= currentInProgressTuples) {
+      throw new IndexOutOfBoundsException();
+    }
+    if (tupleBatchIndex < readyTuples.size()) {
+      readyTuples.get(tupleBatchIndex).get(colIndex).replace(tupleIndex, value);
+    } else {
+      currentBuildingColumns.get(colIndex).replace(tupleIndex, value);
+    }
+  }
+
 }

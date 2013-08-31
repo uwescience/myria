@@ -166,4 +166,10 @@ public final class BooleanColumnBuilder implements ColumnBuilder<Boolean> {
   public BooleanColumnBuilder forkNewBuilder() {
     return new BooleanColumnBuilder(capacity, BitSet.valueOf(data.toByteArray()), numBits);
   }
+
+  @Override
+  public void replace(final int index, final Object value) {
+    Preconditions.checkElementIndex(index, size());
+    data.set(index, (boolean) value);
+  }
 }
