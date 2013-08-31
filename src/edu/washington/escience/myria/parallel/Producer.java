@@ -258,9 +258,6 @@ public abstract class Producer extends RootOperator {
     final TupleBatchBuffer[] tbb = getBuffers();
     FTMODE mode = taskResourceManager.getOwnerTask().getOwnerQuery().getFTMode();
     for (int i = 0; i < numChannels(); i++) {
-      if (!ioChannelsAvail[i] && (mode.equals(FTMODE.abandon) || mode.equals(FTMODE.rejoin))) {
-        continue;
-      }
       while (true) {
         TupleBatch tb = null;
         if (usingTimeout) {
@@ -276,6 +273,9 @@ public abstract class Producer extends RootOperator {
           if (mode.equals(FTMODE.rejoin)) {
             // rejoin, append the TB into the backup buffer in case of recovering
             backupBuffers.get(j).add(tb);
+          }
+          if (!ioChannelsAvail[j] && (mode.equals(FTMODE.abandon) || mode.equals(FTMODE.rejoin))) {
+            continue;
           }
           try {
             writeMessage(j, tb);
