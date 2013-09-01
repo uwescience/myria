@@ -216,8 +216,8 @@ public abstract class Operator implements Serializable {
     try {
       if (!startProcessing) {
         if (LOGGER.isDebugEnabled()) {
-          LOGGER.debug("[" + MyriaConstants.QUERY_ID + "#" + execEnvVars.get(MyriaConstants.QUERY_ID) + "]" + this
-              + ":" + "begin to process");
+          LOGGER.debug("[" + MyriaConstants.QUERY_ID + "#" + execEnvVars.get(MyriaConstants.QUERY_ID) + "]"
+              + getOpName() + "[" + this + "]:" + "begin to process");
         }
         startProcessing = true;
       }
@@ -339,10 +339,10 @@ public abstract class Operator implements Serializable {
    */
   protected final void setEOS() {
     if ((!eos) && LOGGER.isDebugEnabled()) {
-      LOGGER.debug("[" + MyriaConstants.QUERY_ID + "#" + execEnvVars.get(MyriaConstants.QUERY_ID) + "]" + this
-          + ":End of Processing (EOS)");
-      LOGGER.debug("[" + MyriaConstants.QUERY_ID + "#" + execEnvVars.get(MyriaConstants.QUERY_ID) + "]" + this
-          + ": execution time " + executionTime + " ms");
+      LOGGER.debug("[" + MyriaConstants.QUERY_ID + "#" + execEnvVars.get(MyriaConstants.QUERY_ID) + "]" + getOpName()
+          + "[" + this + "]:End of Processing (EOS)");
+      LOGGER.debug("[" + MyriaConstants.QUERY_ID + "#" + execEnvVars.get(MyriaConstants.QUERY_ID) + "]" + getOpName()
+          + "[" + this + "]: execution time " + executionTime + " ms");
     }
     eos = true;
   }
