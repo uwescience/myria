@@ -2,8 +2,10 @@ package edu.washington.escience.myria.api.encoding;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.ws.rs.core.Response.Status;
 
@@ -54,8 +56,16 @@ public class QueryEncoding extends MyriaApiEncoding {
 
   @Override
   protected void validateExtra() throws MyriaApiException {
+    Set<String> operators = new HashSet<String>();
     for (final PlanFragmentEncoding fragment : fragments) {
       fragment.validate();
+      for (final OperatorEncoding<?> op : fragment.operators) {
+        if (!operators.contains(op.opName)) {
+          operators.add(op.opName);
+        } else {
+          throw new MyriaApiException(Status.BAD_REQUEST, "duplicate operator name: " + op.opName);
+        }
+      }
     }
   }
 
