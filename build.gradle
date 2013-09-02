@@ -88,7 +88,6 @@ dependencies {
 
   compile "com.google.guava:guava:14.0.1"
   compile "com.google.protobuf:protobuf-java:2.5.0"
-  compile "com.google.code.gson:gson:2.2.4"
 
   compile "io.netty:netty:3.6.5.Final"
   compile "net.sf.trove4j:trove4j:3.0.3"

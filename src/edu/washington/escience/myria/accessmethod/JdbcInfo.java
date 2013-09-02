@@ -109,9 +109,6 @@ public final class JdbcInfo extends ConnectionInfo implements Serializable {
     return driverClass;
   }
 
-  /**
-   * @return the DBMS, e.g., "mysql".
-   */
   @Override
   public String getDbms() {
     return dbms;
@@ -120,7 +117,6 @@ public final class JdbcInfo extends ConnectionInfo implements Serializable {
   /**
    * @return the hostname/IP.
    */
-  @Override
   public String getHost() {
     return host;
   }
@@ -128,7 +124,6 @@ public final class JdbcInfo extends ConnectionInfo implements Serializable {
   /**
    * @return the port.
    */
-  @Override
   public int getPort() {
     return port;
   }
@@ -136,7 +131,6 @@ public final class JdbcInfo extends ConnectionInfo implements Serializable {
   /**
    * @return the database to connect to.
    */
-  @Override
   public String getDatabase() {
     return database;
   }
@@ -144,7 +138,6 @@ public final class JdbcInfo extends ConnectionInfo implements Serializable {
   /**
    * @return the username.
    */
-  @Override
   public String getUsername() {
     return properties.getProperty("user");
   }
@@ -152,7 +145,6 @@ public final class JdbcInfo extends ConnectionInfo implements Serializable {
   /**
    * @return the password.
    */
-  @Override
   public String getPassword() {
     return properties.getProperty("password");
   }
@@ -160,7 +152,6 @@ public final class JdbcInfo extends ConnectionInfo implements Serializable {
   /**
    * @return the properties.
    */
-  @Override
   public Properties getProperties() {
     return properties;
   }
@@ -168,17 +159,7 @@ public final class JdbcInfo extends ConnectionInfo implements Serializable {
   /**
    * @return the JDBC connection string.
    */
-  @Override
   public String getConnectionString() {
     return "jdbc:" + dbms + "://" + host + ":" + port + "/" + database;
-  }
-
-  /**
-   * @return a JSON string format.
-   */
-  @Override
-  public String toString() {
-    return "{dbms:" + dbms + ",host:" + host + ",port:" + port + ",database:" + database + ",user:" + getUsername()
-        + ",password:" + getPassword() + "}";
   }
 }
