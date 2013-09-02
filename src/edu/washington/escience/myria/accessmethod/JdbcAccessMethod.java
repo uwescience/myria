@@ -97,7 +97,7 @@ public final class JdbcAccessMethod extends AccessMethod {
       statement.close();
     } catch (final SQLException e) {
       LOGGER.error(e.getMessage(), e);
-      throw new DbException(e.getMessage());
+      throw new DbException(e);
     }
   }
 
