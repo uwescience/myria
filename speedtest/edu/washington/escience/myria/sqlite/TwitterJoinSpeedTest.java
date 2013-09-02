@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import org.junit.Before;
+import org.apache.commons.io.FilenameUtils;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -43,21 +43,23 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
   // the paths here
   private final static String[] srcPath = {
       "data_nocommit/speedtest/twitter/test_worker1.db", "data_nocommit/speedtest/twitter/test_worker2.db" };
-  private final static String[] dstName = { "worker_1_data.db", "worker_2_data.db" };
 
   /* Whether we were able to copy the data. */
   private static boolean successfulSetup = false;
 
-  @Before
-  public void loadSpecificTestData() {
+  @Override
+  public void before() {
+    /* Load specific test data. */
     for (int i = 0; i < srcPath.length; ++i) {
       final Path src = FileSystems.getDefault().getPath(srcPath[i]);
-      final Path dst = FileSystems.getDefault().getPath(workerTestBaseFolder + "/worker_" + (i + 1) + "/" + dstName[i]);
+      final Path dst =
+          FileSystems.getDefault().getPath(
+              FilenameUtils.concat(getWorkerFolder(workerIDs[i]), "worker_" + workerIDs[i] + "_data.db"));
       try {
         Files.copy(src, dst);
       } catch (final Exception e) {
         throw new RuntimeException("unable to copy files from " + src.toAbsolutePath() + " to " + dst.toAbsolutePath()
-            + ". you can find the dataset at /projects/db7/dataset/twitter/speedtest.");
+            + ". you can find the dataset at /projects/db7/dataset/twitter/speedtest.", e);
       }
     }
     successfulSetup = true;

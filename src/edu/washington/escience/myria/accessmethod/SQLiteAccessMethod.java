@@ -77,7 +77,7 @@ public final class SQLiteAccessMethod extends AccessMethod {
       try {
         dbFile.createNewFile();
       } catch (IOException e) {
-        throw new DbException("Could not create database file");
+        throw new DbException("Could not create database file", e);
       }
     }
 
@@ -407,7 +407,7 @@ class SQLiteTupleBatchIterator implements Iterator<TupleBatch> {
       }
       this.schema = schema;
     } catch (final SQLiteException e) {
-      throw new RuntimeException(e.getMessage());
+      throw new RuntimeException(e);
     }
   }
 
@@ -441,7 +441,7 @@ class SQLiteTupleBatchIterator implements Iterator<TupleBatch> {
       }
     } catch (final SQLiteException e) {
       LOGGER.error("Got SQLiteException:" + e + "in TupleBatchIterator.next()");
-      throw new RuntimeException(e.getMessage());
+      throw new RuntimeException(e);
     }
 
     List<Column<?>> columns = new ArrayList<Column<?>>(columnBuilders.size());

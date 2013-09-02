@@ -45,6 +45,9 @@ public class DbQueryScan extends LeafOperator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
+  /** The logger for debug, trace, etc. messages in this class. */
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(DbQueryScan.class);
+
   /**
    * Constructor.
    * 
@@ -120,6 +123,7 @@ public class DbQueryScan extends LeafOperator {
     }
     if (tuples.hasNext()) {
       final TupleBatch tb = tuples.next();
+      LOGGER.trace("Got {} tuples", tb.numTuples());
       return tb;
     } else {
       return null;

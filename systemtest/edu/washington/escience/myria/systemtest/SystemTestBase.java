@@ -7,6 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.ProcessBuilder.Redirect;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -96,7 +97,7 @@ public class SystemTestBase {
   public volatile Process[] workerProcess;
   public volatile Thread[] workerStdoutReader;
 
-  public static String workerTestBaseFolder;
+  public volatile static String workerTestBaseFolder;
 
   public static void createTable(final int workerID, final RelationKey relationKey, final String sqlSchemaString)
       throws IOException, CatalogException {
@@ -108,7 +109,7 @@ public class SystemTestBase {
   }
 
   public static File getAbsoluteDBFile(final int workerID) throws CatalogException, FileNotFoundException {
-    final String workerDir = FilenameUtils.concat(workerTestBaseFolder, "worker_" + workerID);
+    final String workerDir = getWorkerFolder(workerID);
     final WorkerCatalog wc = WorkerCatalog.open(FilenameUtils.concat(workerDir, "worker.catalog"));
     final SQLiteInfo sqliteInfo =
         (SQLiteInfo) ConnectionInfo.of(MyriaConstants.STORAGE_SYSTEM_SQLITE, wc
@@ -116,6 +117,12 @@ public class SystemTestBase {
     final File ret = new File(sqliteInfo.getDatabase());
     wc.close();
     return ret;
+  }
+
+  /**
+   * Override this if you want to run some code after each system test.
+   */
+  public void after() throws Exception {
   }
 
   @After
@@ -164,6 +171,8 @@ public class SystemTestBase {
     } else {
       LOGGER.warn("Finish SystemTestBase cleanup.");
     }
+
+    after();
   }
 
   public Map<String, String> getMasterConfigurations() {
@@ -186,6 +195,12 @@ public class SystemTestBase {
     m.put(MyriaConstants.MASTER_ID + r.nextInt(100) + 1, new SocketInfo(DEFAULT_WORKER_STARTING_PORT));
     m.put(MyriaConstants.MASTER_ID + r.nextInt(100) + 101, new SocketInfo(DEFAULT_WORKER_STARTING_PORT + 1));
     return m;
+  }
+
+  /**
+   * Override this if you want to run some code before each system test.
+   */
+  public void before() throws Exception {
   }
 
   @Before
@@ -216,6 +231,9 @@ public class SystemTestBase {
     for (Entry<Integer, SocketInfo> worker : workers.entrySet()) {
       workerPorts[i] = worker.getValue().getPort();
       workerIDs[i] = worker.getKey();
+      /** Make the worker folder. */
+      Path workerPath = FileSystems.getDefault().getPath(getWorkerFolder(workerIDs[i]));
+      Files.createDirectories(workerPath);
       i++;
     }
 
@@ -252,6 +270,8 @@ public class SystemTestBase {
 
     // for setting breakpoint
     System.currentTimeMillis();
+
+    before();
   }
 
   public static void insert(final int workerID, final RelationKey relationKey, final Schema schema,
@@ -436,6 +456,14 @@ public class SystemTestBase {
   }
 
   /**
+   * @param workerId the id of the worker
+   * @return the folder containing that worker's files.
+   */
+  public static String getWorkerFolder(final int workerId) {
+    return FilenameUtils.concat(workerTestBaseFolder, "worker_" + workerId);
+  }
+
+  /**
    * Start workers in separate processes.
    * */
   void startWorkers() throws IOException {
@@ -443,7 +471,7 @@ public class SystemTestBase {
 
     for (int i = 0; i < workerIDs.length; i++) {
       final int workerID = workerIDs[i];
-      final String workingDir = FilenameUtils.concat(workerTestBaseFolder, "worker_" + workerID);
+      final String workingDir = getWorkerFolder(workerID);
 
       String cp = System.getProperty("java.class.path");
       String lp = System.getProperty("java.library.path");
