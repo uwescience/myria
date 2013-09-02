@@ -122,13 +122,15 @@ public final class DeploymentUtils {
         maxHeapSize = "";
       }
       Map<String, String> workers = config.get("workers");
+      boolean debug = config.get("deployment").get("debug_mode").equals("true");
       for (String workerId : workers.keySet()) {
         String hostname = getHostname(workers.get(workerId));
         if (username != null) {
           hostname = username + "@" + hostname;
         }
         String workingDir = config.get("paths").get(workerId);
-        startWorker(hostname, workingDir, description, maxHeapSize, workerId);
+        int port = getPort(workers.get(workerId));
+        startWorker(hostname, workingDir, description, maxHeapSize, workerId, port, debug);
       }
     } else {
       System.out.println(USAGE);
@@ -143,13 +145,15 @@ public final class DeploymentUtils {
    * @param description the same meaning as name in deployment.cfg
    * @param maxHeapSize the same meaning as max_heap_size in deployment.cfg
    * @param workerId the worker id.
+   * @param port the worker port number, need it to infer the port number used in debug mode.
+   * @param debug if launch the worker in debug mode.
    */
   public static void startWorker(final String address, final String workingDir, final String description,
-      final String maxHeapSize, final String workerId) {
+      final String maxHeapSize, final String workerId, final int port, final boolean debug) {
     StringBuilder builder = new StringBuilder();
     String path = workingDir + "/" + description + "-files";
     String workerDir = description + "/" + "worker_" + workerId;;
-    String classpath = "'libs/*'";
+    String classpath = "'conf:libs/*'";
     String librarypath = "sqlite4java-282";
     String heapSize = maxHeapSize;
     if (description == null) {
@@ -163,10 +167,17 @@ public final class DeploymentUtils {
 
     builder.append("ssh " + address);
     builder.append(" cd " + path + ";");
-    builder.append(" nohup java -cp " + classpath);
+    builder.append(" nohup java -ea");
+    builder.append(" -cp " + classpath);
     builder.append(" -Djava.util.logging.config.file=logging.properties");
     builder.append(" -Dlog4j.configuration=log4j.properties");
     builder.append(" -Djava.library.path=" + librarypath);
+    if (debug) {
+      // required to run in debug mode
+      builder.append(" -Dorg.jboss.netty.debug");
+      builder.append(" -Xdebug");
+      builder.append(" -Xrunjdwp:transport=dt_socket,address=" + (port + 1000) + ",server=y,suspend=n");
+    }
     builder.append(" " + heapSize);
     builder.append(" edu.washington.escience.myria.parallel.Worker");
     builder.append(" --workingDir " + workerDir);
@@ -192,7 +203,7 @@ public final class DeploymentUtils {
     StringBuilder builder = new StringBuilder();
     builder.append("ssh " + address);
     builder.append(" cd " + workingDir + "/" + description + "-files;");
-    builder.append(" nohup java -cp 'libs/*'");
+    builder.append(" nohup java -cp 'conf:libs/*'");
     builder.append(" -Djava.util.logging.config.file=logging.properties");
     builder.append(" -Dlog4j.configuration=log4j.properties");
     builder.append(" -Djava.library.path=sqlite4java-282");
@@ -244,7 +255,9 @@ public final class DeploymentUtils {
 
       } catch (IOException e) {
         // expected for the first few trials
-        // e.printStackTrace();
+        if (LOGGER.isTraceEnabled()) {
+          LOGGER.trace(e.toString());
+        }
       }
       try {
         Thread.sleep(TimeUnit.SECONDS.toMillis(MyriaConstants.MASTER_START_UP_TIMEOUT_IN_SECOND) / 10);
@@ -311,10 +324,10 @@ public final class DeploymentUtils {
    * @param cmd the command.
    */
   private static void startAProcess(final String cmd) {
-    LOGGER.info(cmd);
+    LOGGER.debug(cmd);
     try {
-      new ProcessBuilder().inheritIO().command(cmd.split(" ")).start();
-    } catch (IOException e) {
+      new ProcessBuilder().inheritIO().command(cmd.split(" ")).start().waitFor();
+    } catch (IOException | InterruptedException e) {
       e.printStackTrace();
       throw new RuntimeException(e);
     }
@@ -328,6 +341,16 @@ public final class DeploymentUtils {
    * */
   private static String getHostname(final String s) {
     return s.split(":")[0];
+  }
+
+  /**
+   * Helper function to get the port number from hostname:port.
+   * 
+   * @param s the string hostname:port
+   * @return the port number.
+   * */
+  private static int getPort(final String s) {
+    return Integer.parseInt(s.split(":")[1]);
   }
 
   /**

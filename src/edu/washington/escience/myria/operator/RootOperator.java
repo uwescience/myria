@@ -95,7 +95,7 @@ public abstract class RootOperator extends Operator {
    * process EOS and EOI logic.
    * */
   @Override
-  protected final void checkEOSAndEOI() {
+  protected void checkEOSAndEOI() {
     if (child.eos()) {
       setEOS();
     } else if (child.eoi()) {

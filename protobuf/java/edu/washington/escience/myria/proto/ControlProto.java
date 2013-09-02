@@ -217,7 +217,23 @@ public final class ControlProto {
        * master -&gt; workers
        * </pre>
        */
-      ADD_WORKER(3, 4), ;
+      ADD_WORKER(3, 4),
+      /**
+       * <code>REMOVE_WORKER_ACK = 5;</code>
+       * 
+       * <pre>
+       * worker -&gt; master
+       * </pre>
+       */
+      REMOVE_WORKER_ACK(4, 5),
+      /**
+       * <code>ADD_WORKER_ACK = 6;</code>
+       * 
+       * <pre>
+       * worker -&gt; master
+       * </pre>
+       */
+      ADD_WORKER_ACK(5, 6), ;
 
       /**
        * <code>SHUTDOWN = 1;</code>
@@ -251,6 +267,22 @@ public final class ControlProto {
        * </pre>
        */
       public static final int ADD_WORKER_VALUE = 4;
+      /**
+       * <code>REMOVE_WORKER_ACK = 5;</code>
+       * 
+       * <pre>
+       * worker -&gt; master
+       * </pre>
+       */
+      public static final int REMOVE_WORKER_ACK_VALUE = 5;
+      /**
+       * <code>ADD_WORKER_ACK = 6;</code>
+       * 
+       * <pre>
+       * worker -&gt; master
+       * </pre>
+       */
+      public static final int ADD_WORKER_ACK_VALUE = 6;
 
       @Override
       public final int getNumber() {
@@ -267,6 +299,10 @@ public final class ControlProto {
             return REMOVE_WORKER;
           case 4:
             return ADD_WORKER;
+          case 5:
+            return REMOVE_WORKER_ACK;
+          case 6:
+            return ADD_WORKER_ACK;
           default:
             return null;
         }
@@ -1571,13 +1607,14 @@ public final class ControlProto {
   private static com.google.protobuf.Descriptors.FileDescriptor descriptor;
   static {
     java.lang.String[] descriptorData =
-        { "\n\rcontrol.proto\"\273\001\n\016ControlMessage\022\"\n\004ty"
+        { "\n\rcontrol.proto\"\346\001\n\016ControlMessage\022\"\n\004ty"
             + "pe\030\001 \002(\0162\024.ControlMessage.Type\022\021\n\tworker"
             + "_id\030\002 \001(\005\022#\n\016remote_address\030\003 \001(\0132\013.Sock"
-            + "etInfo\"M\n\004Type\022\014\n\010SHUTDOWN\020\001\022\024\n\020WORKER_H"
+            + "etInfo\"x\n\004Type\022\014\n\010SHUTDOWN\020\001\022\024\n\020WORKER_H"
             + "EARTBEAT\020\002\022\021\n\rREMOVE_WORKER\020\003\022\016\n\nADD_WOR"
-            + "KER\020\004\"(\n\nSocketInfo\022\014\n\004host\030\001 \002(\t\022\014\n\004por"
-            + "t\030\002 \002(\005B3\n#edu.washington.escience.myria" + ".protoB\014ControlProto" };
+            + "KER\020\004\022\025\n\021REMOVE_WORKER_ACK\020\005\022\022\n\016ADD_WORK"
+            + "ER_ACK\020\006\"(\n\nSocketInfo\022\014\n\004host\030\001 \002(\t\022\014\n\004"
+            + "port\030\002 \002(\005B3\n#edu.washington.escience.my" + "ria.protoB\014ControlProto" };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
           @Override

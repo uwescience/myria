@@ -9,6 +9,7 @@ import org.apache.commons.lang.ArrayUtils;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.ExchangeTupleBatch;
+import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.operator.IDBInput;
@@ -30,6 +31,8 @@ public class EOSController extends Producer {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
+  /** The logger for this class. */
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(EOSController.class.getName());
   /**
    * Recording the number of EOI received from each controlled {@link IDBInput}.
    * */
@@ -93,7 +96,7 @@ public class EOSController extends Producer {
     }
 
     int numExpecting = eosZeroColValue;
-    if (getTaskResourceManager().getOwnerTask().getOwnerQuery().getFTMode().equals("abandon")) {
+    if (getTaskResourceManager().getOwnerTask().getOwnerQuery().getFTMode().equals(FTMODE.abandon)) {
       Set<Integer> missingWorkers = getTaskResourceManager().getOwnerTask().getOwnerQuery().getMissingWorkers();
       for (Integer id : missingWorkers) {
         if (workerIdToIndex.containsKey(id)) {
@@ -141,6 +144,9 @@ public class EOSController extends Producer {
         if (tmp == numExpecting) {
           for (int j = 0; j < super.numChannels(); j++) {
             super.channelEnds(j); // directly emit an EOS makes more sense.
+          }
+          if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace("EOSC has sent EOS!");
           }
           isEOSSent = true;
           return;

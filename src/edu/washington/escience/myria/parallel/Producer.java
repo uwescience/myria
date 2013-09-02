@@ -1,5 +1,8 @@
 package edu.washington.escience.myria.parallel;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.jboss.netty.channel.ChannelFuture;
 
 import com.google.common.base.Preconditions;
@@ -7,6 +10,7 @@ import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.operator.Operator;
@@ -27,9 +31,10 @@ public abstract class Producer extends RootOperator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
+  /** The logger for this class. */
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Producer.class.getName());
   /**
    * The worker this operator is located at.
-   * 
    */
   private transient TaskResourceManager taskResourceManager;
 
@@ -37,11 +42,20 @@ public abstract class Producer extends RootOperator {
    * the netty channels doing the true IPC IO.
    * */
   private transient StreamOutputChannel<TupleBatch>[] ioChannels;
+  /**
+   * if the corresponding ioChannel is available to write again.
+   * */
+  private transient boolean[] ioChannelsAvail;
 
   /**
    * output buffers.
    * */
   private transient TupleBatchBuffer[] buffers;
+
+  /**
+   * output buffers.
+   * */
+  private transient List<List<TupleBatch>> backupBuffers;
 
   /**
    * output channel IDs.
@@ -57,11 +71,6 @@ public abstract class Producer extends RootOperator {
    * if current query execution is in non-blocking mode.
    * */
   private transient boolean nonBlockingExecution;
-
-  /**
-   * The Logger for debug and info messages in this class.
-   */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Producer.class);
 
   /**
    * no worker means to the owner worker.
@@ -156,7 +165,9 @@ public abstract class Producer extends RootOperator {
   public final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     taskResourceManager = (TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER);
     ioChannels = new StreamOutputChannel[outputIDs.length];
+    ioChannelsAvail = new boolean[outputIDs.length];
     buffers = new TupleBatchBuffer[outputIDs.length];
+    backupBuffers = new ArrayList<List<TupleBatch>>();
     localizedOutputIDs = new StreamIOChannelID[outputIDs.length];
     for (int i = 0; i < outputIDs.length; i++) {
       if (outputIDs[i].getRemoteID() == IPCConnectionPool.SELF_IPC_ID) {
@@ -166,36 +177,42 @@ public abstract class Producer extends RootOperator {
       }
     }
     for (int i = 0; i < localizedOutputIDs.length; i++) {
-      final int j = i;
-      ioChannels[i] =
-          taskResourceManager.startAStream(localizedOutputIDs[i].getRemoteID(), localizedOutputIDs[i].getStreamID());
-      ioChannels[i].addListener(StreamOutputChannel.OUTPUT_DISABLED, new IPCEventListener() {
-
-        @Override
-        public void triggered(final IPCEvent event) {
-          taskResourceManager.getOwnerTask().notifyOutputDisabled(localizedOutputIDs[j]);
-        }
-      });
-      ioChannels[i].addListener(StreamOutputChannel.OUTPUT_RECOVERED, new IPCEventListener() {
-
-        @Override
-        public void triggered(final IPCEvent event) {
-          taskResourceManager.getOwnerTask().notifyOutputEnabled(localizedOutputIDs[j]);
-        }
-      });
-      buffers[i] = new TupleBatchBuffer(getSchema());
+      createANewChannel(i);
     }
-
     nonBlockingExecution = (taskResourceManager.getExecutionMode() == QueryExecutionMode.NON_BLOCKING);
+  }
+
+  /**
+   * Does all the jobs needed to create a new channel with index i.
+   * 
+   * @param i the index of the channel
+   * */
+  public void createANewChannel(final int i) {
+    ioChannels[i] =
+        taskResourceManager.startAStream(localizedOutputIDs[i].getRemoteID(), localizedOutputIDs[i].getStreamID());
+    ioChannels[i].addListener(StreamOutputChannel.OUTPUT_DISABLED, new IPCEventListener() {
+      @Override
+      public void triggered(final IPCEvent event) {
+        taskResourceManager.getOwnerTask().notifyOutputDisabled(localizedOutputIDs[i]);
+      }
+    });
+    ioChannels[i].addListener(StreamOutputChannel.OUTPUT_RECOVERED, new IPCEventListener() {
+      @Override
+      public void triggered(final IPCEvent event) {
+        taskResourceManager.getOwnerTask().notifyOutputEnabled(localizedOutputIDs[i]);
+      }
+    });
+    buffers[i] = new TupleBatchBuffer(getSchema());
+    ioChannelsAvail[i] = true;
+    backupBuffers.add(i, new ArrayList<TupleBatch>());
   }
 
   /**
    * @param chIdx the channel to write
    * @param msg the message.
-   * @throws InterruptedException if interrupted
    * @return write future
    * */
-  protected final ChannelFuture writeMessage(final int chIdx, final TupleBatch msg) throws InterruptedException {
+  protected final ChannelFuture writeMessage(final int chIdx, final TupleBatch msg) {
     StreamOutputChannel<TupleBatch> ch = ioChannels[chIdx];
     if (nonBlockingExecution) {
       return ch.write(msg);
@@ -210,7 +227,12 @@ public abstract class Producer extends RootOperator {
           if (maxSleepTime < sleepTime) {
             toSleep = maxSleepTime;
           }
-          Thread.sleep(toSleep);
+          try {
+            Thread.sleep(toSleep);
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return null;
+          }
           sleepTime *= 2;
         }
       }
@@ -218,26 +240,59 @@ public abstract class Producer extends RootOperator {
   }
 
   /**
-   * @param chIdx the channel to write
-   * @param msg the message.
-   * @param tbb the tuple batch buffer, may need to write the msg back if necessary.
-   * @throws InterruptedException if interrupted
-   * @return write future
+   * Pop tuple batches from each of the buffers and try to write them to corresponding channels, if possible.
+   * 
+   * @param usingTimeout use popAny() or popAnyUsingTimeout() when poping
    * */
-  protected final ChannelFuture writeMessage(final int chIdx, final TupleBatch msg, final TupleBatchBuffer tbb)
-      throws InterruptedException {
-    ChannelFuture ret = null;
-    try {
-      ret = writeMessage(chIdx, msg);
-    } catch (IllegalStateException e) {
-      if (taskResourceManager.getOwnerTask().getOwnerQuery().getFTMode().equals("abandon")) {
-        LOGGER.debug("(Abandon) dropping message with {} tuples on query #{}", msg.numTuples(), taskResourceManager
-            .getOwnerTask().getOwnerQuery().getQueryID());
-      } else {
-        throw e;
+  protected final void popTBsFromBuffersAndWrite(final boolean usingTimeout) {
+    popTBsFromBuffersAndWrite(usingTimeout, ArrayUtils.create2DIndex(numChannels()));
+  }
+
+  /**
+   * Pop tuple batches from each of the buffers and try to write them to corresponding channels, if possible.
+   * 
+   * @param usingTimeout use popAny() or popAnyUsingTimeout() when poping
+   * @param channelIndices the same as GenericShuffleProducer's cellPartition
+   * */
+  protected final void popTBsFromBuffersAndWrite(final boolean usingTimeout, final int[][] channelIndices) {
+    final TupleBatchBuffer[] tbb = getBuffers();
+    FTMODE mode = taskResourceManager.getOwnerTask().getOwnerQuery().getFTMode();
+    for (int i = 0; i < numChannels(); i++) {
+      while (true) {
+        TupleBatch tb = null;
+        if (usingTimeout) {
+          tb = tbb[i].popAnyUsingTimeout();
+        } else {
+          tb = tbb[i].popAny();
+        }
+        if (tb == null) {
+          break;
+        }
+
+        for (int j : channelIndices[i]) {
+          if (mode.equals(FTMODE.rejoin)) {
+            // rejoin, append the TB into the backup buffer in case of recovering
+            backupBuffers.get(j).add(tb);
+          }
+          if (!ioChannelsAvail[j] && (mode.equals(FTMODE.abandon) || mode.equals(FTMODE.rejoin))) {
+            continue;
+          }
+          try {
+            writeMessage(j, tb);
+          } catch (IllegalStateException e) {
+            if (mode.equals(FTMODE.abandon)) {
+              ioChannelsAvail[j] = false;
+              break;
+            } else if (mode.equals(FTMODE.rejoin)) {
+              ioChannelsAvail[j] = false;
+              break;
+            } else {
+              throw e;
+            }
+          }
+        }
       }
     }
-    return ret;
   }
 
   /**
@@ -245,17 +300,22 @@ public abstract class Producer extends RootOperator {
    * @return channel release future.
    * */
   protected final ChannelFuture channelEnds(final int chIdx) {
-    return ioChannels[chIdx].release();
+    if (ioChannelsAvail[chIdx]) {
+      return ioChannels[chIdx].release();
+    }
+    return null;
   }
 
   @Override
   public final void cleanup() throws DbException {
     for (int i = 0; i < localizedOutputIDs.length; i++) {
-      ioChannels[i].release();
       buffers[i] = null;
+      if (ioChannels[i] != null) {
+        /* RecoverProducer may detach & set its channel to be null, shouldn't call release here */
+        ioChannels[i].release();
+      }
     }
     buffers = null;
-    ioChannels = null;
   }
 
   /**
@@ -297,4 +357,79 @@ public abstract class Producer extends RootOperator {
     return taskResourceManager;
   }
 
+  /**
+   * enable/disable output channels that belong to the worker.
+   * 
+   * @param workerId the worker that changed its status.
+   * @param enable enable/disable all the channels that belong to the worker.
+   * */
+  public final void updateChannelAvailability(final int workerId, final boolean enable) {
+    List<Integer> indices = getChannelIndicesOfAWorker(workerId);
+    for (int i : indices) {
+      ioChannelsAvail[i] = enable;
+    }
+  }
+
+  /**
+   * return the backup buffers.
+   * 
+   * @return backup buffers.
+   */
+  public final List<List<TupleBatch>> getBackupBuffers() {
+    return backupBuffers;
+  }
+
+  /**
+   * return the indices of the channels that belong to the worker.
+   * 
+   * @param workerId the id of the worker.
+   * @return the list of channel indices.
+   * */
+  public final List<Integer> getChannelIndicesOfAWorker(final int workerId) {
+    List<Integer> ret = new ArrayList<Integer>();
+    for (int i = 0; i < numChannels(); ++i) {
+      if (ioChannels[i].getID().getRemoteID() == workerId) {
+        ret.add(i);
+      }
+    }
+    return ret;
+  }
+
+  /**
+   * @return the channel availability array.
+   */
+  public boolean[] getChannelsAvail() {
+    return ioChannelsAvail;
+  }
+
+  /**
+   * @return the channel array.
+   */
+  public StreamOutputChannel<TupleBatch>[] getChannels() {
+    return ioChannels;
+  }
+
+  /**
+   * process EOS and EOI logic.
+   * */
+  @Override
+  protected final void checkEOSAndEOI() {
+    Operator child = getChild();
+    if (child.eoi()) {
+      setEOI(true);
+      child.setEOI(false);
+    } else if (child.eos()) {
+      if (taskResourceManager.getOwnerTask().getOwnerQuery().getFTMode().equals(FTMODE.rejoin)) {
+        for (TupleBatchBuffer tbb : buffers) {
+          if (tbb.numTuples() > 0) {
+            // due to failure, buffers are not empty, this task needs to be executed again to push these TBs out when
+            // channels are available
+            return;
+          }
+        }
+      }
+      // all buffers are empty, ready to end this task
+      setEOS();
+    }
+  }
 }

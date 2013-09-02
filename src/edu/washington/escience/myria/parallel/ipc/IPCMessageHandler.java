@@ -108,8 +108,8 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
         LOGGER
             .error(String
                 .format(
-                    "Duplicate BOS received from a stream channel. Existing Stream: (RemoteID:%1$s, StreamID:%2$d), new BOS: (RemoteID:%1$s, StreamID:%3$d). Dropped.",
-                    remoteID, existingIChannel.getID().getStreamID(), streamID));
+                    "Duplicate BOS received from a stream channel %4$s. Existing Stream: (RemoteID:%1$s, StreamID:%2$d), new BOS: (RemoteID:%1$s, StreamID:%3$d). Dropped.",
+                    remoteID, existingIChannel.getID().getStreamID(), streamID, ch));
       } else {
         StreamIOChannelID ecID = new StreamIOChannelID(streamID, remoteID);
         StreamInputBuffer<Object> ib = ownerConnectionPool.getInputBuffer(ecID);
@@ -125,7 +125,7 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
       return;
     } else if (metaMessage == IPCMessage.Meta.EOS) {
       if (existingIChannel == null) {
-        LOGGER.error(String.format("EOS received from a non-stream channel. From RemoteID:%1$s.", remoteID));
+        LOGGER.error(String.format("EOS received from a non-stream channel %2$s. From RemoteID:%1$s.", remoteID, ch));
       } else {
         receiveRegisteredData(ch, cc, IPCMessage.StreamData.eos(remoteID, cc.getRegisteredChannelContext().getIOPair()
             .getInputChannel().getID().getStreamID()));
@@ -229,7 +229,7 @@ public final class IPCMessageHandler extends SimpleChannelHandler {
       final ChannelContext.RegisteredChannelContext ecc = cc.getRegisteredChannelContext();
 
       if (msg instanceof IPCMessage.Meta) {
-        // process meta messates
+        // process meta messages
         if (msg == IPCMessage.Meta.PING) {
           // IPC ping, drop directly.
           return;

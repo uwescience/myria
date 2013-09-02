@@ -319,7 +319,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
   /**
    * connection id check time out 3s.
    * */
-  public static final int CONNECTION_ID_CHECK_TIMEOUT_IN_MS = 3000;
+  public static final int CONNECTION_ID_CHECK_TIMEOUT_IN_MS = 6000;
 
   /**
    * pool of connections.
@@ -677,16 +677,16 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
         // tell the remote part my id
         if (!idWriteFuture.isSuccess()) {
           cc.idCheckingTimeout(unregisteredChannels);
-          throw new ChannelException("ID checking timeout");
+          throw new ChannelException("ID checking timeout, failed to write my ID");
         }
 
         if (!cc.waitForRemoteReply(CONNECTION_ID_CHECK_TIMEOUT_IN_MS)) {
-          throw new ChannelException("ID checking timeout");
+          throw new ChannelException("ID checking timeout, failed to get the remote ID");
         }
 
-        if (!(remote.id == (cc.remoteReplyID()))) {
+        if (cc.remoteReplyID() == null || !(remote.id == (cc.remoteReplyID()))) {
           cc.idCheckingTimeout(unregisteredChannels);
-          throw new ChannelException("ID checking timeout");
+          throw new ChannelException("ID checking timeout, remote ID doesn't match");
         }
 
         cc.registerNormal(remote.id, remote.registeredChannels, unregisteredChannels);
@@ -747,6 +747,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
         if (retry > 1 && LOGGER.isDebugEnabled()) {
           LOGGER.debug("Retry creating a connection to id#" + ipcIDP);
         }
+        failure = null;
         try {
           if (shareConnections) {
             // get a connection instance and reuse connections if POOL_SIZE_UPPERBOUND is reached
@@ -772,6 +773,11 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
               final ChannelContext cc = ChannelContext.getChannelContext(channel);
               final ChannelContext.RegisteredChannelContext ecc = cc.getRegisteredChannelContext();
               if (ecc.numReferenced() > 1) {
+                /*
+                 * otherwise if createANewConnetion throws an exception, channel is still not null outside of this while
+                 * loop.
+                 */
+                channel = null;
                 ecc.decReference();
                 channel = createANewConnection(remote, CONNECTION_WAIT_IN_MS, remote.bootstrap);
               }
@@ -789,14 +795,14 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
         retry++;
       }
 
+      if (failure != null) {
+        throw failure;
+      }
       if (channel == null) {
         // fail to connect
-        if (failure != null) {
-          throw failure;
-        } else {
-          throw new ChannelException("Fail to connect to " + ipcIDP + "");
-        }
+        throw new ChannelException("Fail to connect to " + ipcIDP + "");
       }
+
       ChannelContext.getChannelContext(channel).updateLastIOTimestamp();
       channel.setReadable(true);
       return channel;
@@ -1098,6 +1104,7 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
     try {
       checkShutdown();
       Channel ch = getAConnection(id);
+      // write bos even a recovery channel otherwise EOS from a non-stream
       ch.write(new IPCMessage.Meta.BOS(streamID));
       ChannelContext cc = ((ChannelContext) (ch.getAttachment()));
       int remoteID = cc.getRegisteredChannelContext().getRemoteID();
@@ -1142,7 +1149,6 @@ public final class IPCConnectionPool implements ExternalResourceReleasable {
       }
       final ChannelFuture cf = ch.write(message);
       cf.addListener(new ChannelFutureListener() {
-
         @Override
         public void operationComplete(final ChannelFuture future) throws Exception {
           final Channel ch = future.getChannel();

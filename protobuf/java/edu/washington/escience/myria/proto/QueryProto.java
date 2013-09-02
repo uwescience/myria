@@ -89,6 +89,25 @@ public final class QueryProto {
      * </pre>
      */
     edu.washington.escience.myria.proto.QueryProto.QueryOrBuilder getQueryOrBuilder();
+
+    // optional int32 worker_id = 5;
+    /**
+     * <code>optional int32 worker_id = 5;</code>
+     * 
+     * <pre>
+     * worker id, when type is QUERY_RECOVER
+     * </pre>
+     */
+    boolean hasWorkerId();
+
+    /**
+     * <code>optional int32 worker_id = 5;</code>
+     * 
+     * <pre>
+     * worker id, when type is QUERY_RECOVER
+     * </pre>
+     */
+    int getWorkerId();
   }
   /**
    * Protobuf type {@code QueryMessage}
@@ -189,6 +208,11 @@ public final class QueryProto {
               bitField0_ |= 0x00000008;
               break;
             }
+            case 40: {
+              bitField0_ |= 0x00000010;
+              workerId_ = input.readInt32();
+              break;
+            }
           }
         }
       } catch (com.google.protobuf.InvalidProtocolBufferException e) {
@@ -286,7 +310,15 @@ public final class QueryProto {
        * worker -&gt; master  
        * </pre>
        */
-      QUERY_COMPLETE(6, 6), ;
+      QUERY_COMPLETE(6, 6),
+      /**
+       * <code>QUERY_RECOVER = 3;</code>
+       * 
+       * <pre>
+       * master -&gt; worker  
+       * </pre>
+       */
+      QUERY_RECOVER(7, 3), ;
 
       /**
        * <code>QUERY_DISTRIBUTE = 0;</code>
@@ -344,6 +376,14 @@ public final class QueryProto {
        * </pre>
        */
       public static final int QUERY_COMPLETE_VALUE = 6;
+      /**
+       * <code>QUERY_RECOVER = 3;</code>
+       * 
+       * <pre>
+       * master -&gt; worker  
+       * </pre>
+       */
+      public static final int QUERY_RECOVER_VALUE = 3;
 
       @Override
       public final int getNumber() {
@@ -366,6 +406,8 @@ public final class QueryProto {
             return QUERY_READY_TO_EXECUTE;
           case 6:
             return QUERY_COMPLETE;
+          case 3:
+            return QUERY_RECOVER;
           default:
             return null;
         }
@@ -538,11 +580,40 @@ public final class QueryProto {
       return query_;
     }
 
+    // optional int32 worker_id = 5;
+    public static final int WORKER_ID_FIELD_NUMBER = 5;
+    private int workerId_;
+
+    /**
+     * <code>optional int32 worker_id = 5;</code>
+     * 
+     * <pre>
+     * worker id, when type is QUERY_RECOVER
+     * </pre>
+     */
+    @Override
+    public boolean hasWorkerId() {
+      return ((bitField0_ & 0x00000010) == 0x00000010);
+    }
+
+    /**
+     * <code>optional int32 worker_id = 5;</code>
+     * 
+     * <pre>
+     * worker id, when type is QUERY_RECOVER
+     * </pre>
+     */
+    @Override
+    public int getWorkerId() {
+      return workerId_;
+    }
+
     private void initFields() {
       queryId_ = 0L;
       type_ = edu.washington.escience.myria.proto.QueryProto.QueryMessage.Type.QUERY_DISTRIBUTE;
       queryReport_ = edu.washington.escience.myria.proto.QueryProto.QueryReport.getDefaultInstance();
       query_ = edu.washington.escience.myria.proto.QueryProto.Query.getDefaultInstance();
+      workerId_ = 0;
     }
 
     private byte memoizedIsInitialized = -1;
@@ -593,6 +664,9 @@ public final class QueryProto {
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         output.writeMessage(4, query_);
       }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        output.writeInt32(5, workerId_);
+      }
       getUnknownFields().writeTo(output);
     }
 
@@ -617,6 +691,9 @@ public final class QueryProto {
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         size += com.google.protobuf.CodedOutputStream.computeMessageSize(4, query_);
+      }
+      if (((bitField0_ & 0x00000010) == 0x00000010)) {
+        size += com.google.protobuf.CodedOutputStream.computeInt32Size(5, workerId_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -764,6 +841,8 @@ public final class QueryProto {
           queryBuilder_.clear();
         }
         bitField0_ = (bitField0_ & ~0x00000008);
+        workerId_ = 0;
+        bitField0_ = (bitField0_ & ~0x00000010);
         return this;
       }
 
@@ -821,6 +900,10 @@ public final class QueryProto {
         } else {
           result.query_ = queryBuilder_.build();
         }
+        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+          to_bitField0_ |= 0x00000010;
+        }
+        result.workerId_ = workerId_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -851,6 +934,9 @@ public final class QueryProto {
         }
         if (other.hasQuery()) {
           mergeQuery(other.getQuery());
+        }
+        if (other.hasWorkerId()) {
+          setWorkerId(other.getWorkerId());
         }
         mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -1301,6 +1387,61 @@ public final class QueryProto {
           query_ = null;
         }
         return queryBuilder_;
+      }
+
+      // optional int32 worker_id = 5;
+      private int workerId_;
+
+      /**
+       * <code>optional int32 worker_id = 5;</code>
+       * 
+       * <pre>
+       * worker id, when type is QUERY_RECOVER
+       * </pre>
+       */
+      @Override
+      public boolean hasWorkerId() {
+        return ((bitField0_ & 0x00000010) == 0x00000010);
+      }
+
+      /**
+       * <code>optional int32 worker_id = 5;</code>
+       * 
+       * <pre>
+       * worker id, when type is QUERY_RECOVER
+       * </pre>
+       */
+      @Override
+      public int getWorkerId() {
+        return workerId_;
+      }
+
+      /**
+       * <code>optional int32 worker_id = 5;</code>
+       * 
+       * <pre>
+       * worker id, when type is QUERY_RECOVER
+       * </pre>
+       */
+      public Builder setWorkerId(int value) {
+        bitField0_ |= 0x00000010;
+        workerId_ = value;
+        onChanged();
+        return this;
+      }
+
+      /**
+       * <code>optional int32 worker_id = 5;</code>
+       * 
+       * <pre>
+       * worker id, when type is QUERY_RECOVER
+       * </pre>
+       */
+      public Builder clearWorkerId() {
+        bitField0_ = (bitField0_ & ~0x00000010);
+        workerId_ = 0;
+        onChanged();
+        return this;
       }
 
       // @@protoc_insertion_point(builder_scope:QueryMessage)
@@ -3117,18 +3258,19 @@ public final class QueryProto {
   static {
     java.lang.String[] descriptorData =
         {
-            "\n\013query.proto\"\220\002\n\014QueryMessage\022\020\n\010query_"
+            "\n\013query.proto\"\266\002\n\014QueryMessage\022\020\n\010query_"
                 + "id\030\001 \002(\004\022 \n\004type\030\002 \002(\0162\022.QueryMessage.Ty"
                 + "pe\022\"\n\014query_report\030\003 \001(\0132\014.QueryReport\022\025"
-                + "\n\005query\030\004 \001(\0132\006.Query\"\220\001\n\004Type\022\024\n\020QUERY_"
-                + "DISTRIBUTE\020\000\022\017\n\013QUERY_START\020\001\022\017\n\013QUERY_P"
-                + "AUSE\020\007\022\020\n\014QUERY_RESUME\020\010\022\016\n\nQUERY_KILL\020\t"
-                + "\022\032\n\026QUERY_READY_TO_EXECUTE\020\002\022\022\n\016QUERY_CO"
-                + "MPLETE\020\006\"\026\n\005Query\022\r\n\005query\030\001 \002(\014\"a\n\013Quer"
-                + "yReport\022\017\n\007success\030\001 \002(\010\0222\n\024execution_st"
-                + "atistics\030\002 \002(\0132\024.ExecutionStatistics\022\r\n\005",
-            "cause\030\003 \001(\014\"%\n\023ExecutionStatistics\022\016\n\006el"
-                + "apse\030\002 \002(\004B1\n#edu.washington.escience.my" + "ria.protoB\nQueryProto" };
+                + "\n\005query\030\004 \001(\0132\006.Query\022\021\n\tworker_id\030\005 \001(\005"
+                + "\"\243\001\n\004Type\022\024\n\020QUERY_DISTRIBUTE\020\000\022\017\n\013QUERY"
+                + "_START\020\001\022\017\n\013QUERY_PAUSE\020\007\022\020\n\014QUERY_RESUM"
+                + "E\020\010\022\016\n\nQUERY_KILL\020\t\022\032\n\026QUERY_READY_TO_EX"
+                + "ECUTE\020\002\022\022\n\016QUERY_COMPLETE\020\006\022\021\n\rQUERY_REC"
+                + "OVER\020\003\"\026\n\005Query\022\r\n\005query\030\001 \002(\014\"a\n\013QueryR"
+                + "eport\022\017\n\007success\030\001 \002(\010\0222\n\024execution_stat",
+            "istics\030\002 \002(\0132\024.ExecutionStatistics\022\r\n\005ca"
+                + "use\030\003 \001(\014\"%\n\023ExecutionStatistics\022\016\n\006elap"
+                + "se\030\002 \002(\004B1\n#edu.washington.escience.myri" + "a.protoB\nQueryProto" };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
         new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
           @Override
@@ -3138,7 +3280,7 @@ public final class QueryProto {
             internal_static_QueryMessage_descriptor = getDescriptor().getMessageTypes().get(0);
             internal_static_QueryMessage_fieldAccessorTable =
                 new com.google.protobuf.GeneratedMessage.FieldAccessorTable(internal_static_QueryMessage_descriptor,
-                    new java.lang.String[] { "QueryId", "Type", "QueryReport", "Query", });
+                    new java.lang.String[] { "QueryId", "Type", "QueryReport", "Query", "WorkerId", });
             internal_static_Query_descriptor = getDescriptor().getMessageTypes().get(1);
             internal_static_Query_fieldAccessorTable =
                 new com.google.protobuf.GeneratedMessage.FieldAccessorTable(internal_static_Query_descriptor,
