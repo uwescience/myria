@@ -19,6 +19,9 @@ import javax.ws.rs.core.UriInfo;
 
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.api.encoding.QueryEncoding;
@@ -96,8 +99,11 @@ public final class QueryResource {
     /* Start the query, and get its Server-assigned Query ID */
     QueryFuture qf;
     try {
-      qf = server.submitQuery(query.rawDatalog, query.logicalRa, masterPlan, queryPlan);
-    } catch (DbException | CatalogException e) {
+      ObjectMapper mapper = MyriaJsonMapperProvider.newMapper();
+      qf =
+          server.submitQuery(query.rawDatalog, query.logicalRa, mapper.writeValueAsString(query.fragments), masterPlan,
+              queryPlan);
+    } catch (DbException | CatalogException | JsonProcessingException e) {
       throw new MyriaApiException(Status.INTERNAL_SERVER_ERROR, e);
     }
     long queryId = qf.getQuery().getQueryID();

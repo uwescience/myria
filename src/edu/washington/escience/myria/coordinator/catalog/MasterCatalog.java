@@ -100,6 +100,7 @@ public final class MasterCatalog {
     + "    query_id INTEGER NOT NULL PRIMARY KEY ASC,\n"
     + "    raw_query TEXT NOT NULL,\n"
     + "    logical_ra TEXT NOT NULL,\n"
+    + "    physical_plan TEXT NOT NULL,\n"
     + "    submit_time TEXT NOT NULL, -- DATES IN ISO8601 FORMAT \n"
     + "    start_time TEXT, -- DATES IN ISO8601 FORMAT \n"
     + "    finish_time TEXT, -- DATES IN ISO8601 FORMAT \n"
@@ -870,17 +871,20 @@ public final class MasterCatalog {
    * 
    * @param rawQuery the original user data of the query.
    * @param logicalRa the compiled logical relational algebra plan of the query.
+   * @param physicalPlan the physical execution plan for the query.
    * @return the newly generated ID of this query.
    * @throws CatalogException if there is an error adding the new query.
    */
-  public Long newQuery(final String rawQuery, final String logicalRa) throws CatalogException {
+  public Long newQuery(final String rawQuery, final String logicalRa, final String physicalPlan)
+      throws CatalogException {
     Objects.requireNonNull(rawQuery);
     Objects.requireNonNull(logicalRa);
+    Objects.requireNonNull(physicalPlan);
     if (isClosed) {
       throw new CatalogException("Catalog is closed.");
     }
 
-    final QueryStatusEncoding queryStatus = QueryStatusEncoding.submitted(rawQuery, logicalRa);
+    final QueryStatusEncoding queryStatus = QueryStatusEncoding.submitted(rawQuery, logicalRa, physicalPlan);
 
     try {
       return queue.execute(new SQLiteJob<Long>() {
@@ -889,19 +893,20 @@ public final class MasterCatalog {
           try {
             SQLiteStatement statement =
                 sqliteConnection
-                    .prepare("INSERT INTO queries (raw_query, logical_ra, submit_time, start_time, finish_time, elapsed_nanos, status) VALUES (?,?,?,?,?,?,?);");
+                    .prepare("INSERT INTO queries (raw_query, logical_ra, physical_plan, submit_time, start_time, finish_time, elapsed_nanos, status) VALUES (?,?,?,?,?,?,?,?);");
             statement.bind(1, queryStatus.rawQuery);
             statement.bind(2, queryStatus.logicalRa);
-            statement.bind(3, queryStatus.submitTime);
-            statement.bind(4, queryStatus.startTime);
-            statement.bind(5, queryStatus.finishTime);
+            statement.bind(3, queryStatus.physicalPlan);
+            statement.bind(4, queryStatus.submitTime);
+            statement.bind(5, queryStatus.startTime);
+            statement.bind(6, queryStatus.finishTime);
             if (queryStatus.elapsedNanos != null) {
-              statement.bind(6, queryStatus.elapsedNanos);
+              statement.bind(7, queryStatus.elapsedNanos);
             } else {
               /* Auto-unboxed values must be manually nulled. */
-              statement.bindNull(6);
+              statement.bindNull(7);
             }
-            statement.bind(7, queryStatus.status.toString());
+            statement.bind(8, queryStatus.status.toString());
             statement.stepThrough();
             statement.dispose();
             return sqliteConnection.getLastInsertId();
@@ -936,7 +941,7 @@ public final class MasterCatalog {
           try {
             SQLiteStatement statement =
                 sqliteConnection
-                    .prepare("SELECT raw_query,logical_ra,submit_time,start_time,finish_time,elapsed_nanos,status FROM queries WHERE query_id=?;");
+                    .prepare("SELECT raw_query,logical_ra,physical_plan,submit_time,start_time,finish_time,elapsed_nanos,status FROM queries WHERE query_id=?;");
             statement.bind(1, queryId);
             statement.step();
             if (!statement.hasRow()) {
@@ -945,13 +950,14 @@ public final class MasterCatalog {
             final QueryStatusEncoding queryStatus = new QueryStatusEncoding(queryId);
             queryStatus.rawQuery = statement.columnString(0);
             queryStatus.logicalRa = statement.columnString(1);
-            queryStatus.submitTime = statement.columnString(2);
-            queryStatus.startTime = statement.columnString(3);
-            queryStatus.finishTime = statement.columnString(4);
-            if (!statement.columnNull(5)) {
-              queryStatus.elapsedNanos = statement.columnLong(5);
+            queryStatus.physicalPlan = statement.columnString(2);
+            queryStatus.submitTime = statement.columnString(3);
+            queryStatus.startTime = statement.columnString(4);
+            queryStatus.finishTime = statement.columnString(5);
+            if (!statement.columnNull(6)) {
+              queryStatus.elapsedNanos = statement.columnLong(6);
             }
-            queryStatus.status = QueryStatusEncoding.Status.valueOf(statement.columnString(6));
+            queryStatus.status = QueryStatusEncoding.Status.valueOf(statement.columnString(7));
             statement.dispose();
             return queryStatus;
           } catch (final SQLiteException e) {

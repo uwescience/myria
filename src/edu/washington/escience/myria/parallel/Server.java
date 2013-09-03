@@ -920,8 +920,8 @@ public final class Server {
     for (Entry<Integer, RootOperator[]> entry : workerRoots.entrySet()) {
       workerPlans.put(entry.getKey(), new SingleQueryPlanWithArgs(entry.getValue()));
     }
-    return submitQuery(catalogInfoPlaceHolder, catalogInfoPlaceHolder, new SingleQueryPlanWithArgs(masterRoot),
-        workerPlans);
+    return submitQuery(catalogInfoPlaceHolder, catalogInfoPlaceHolder, catalogInfoPlaceHolder,
+        new SingleQueryPlanWithArgs(masterRoot), workerPlans);
   }
 
   /**
@@ -936,11 +936,11 @@ public final class Server {
    * @throws CatalogException if any error in processing catalog
    * @return the query future from which the query status can be looked up.
    * */
-  public QueryFuture submitQuery(final String rawQuery, final String logicalRa,
+  public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final String physicalPlan,
       final SingleQueryPlanWithArgs masterPlan, final Map<Integer, SingleQueryPlanWithArgs> workerPlans)
       throws DbException, CatalogException {
     workerPlans.remove(MyriaConstants.MASTER_ID);
-    final long queryID = catalog.newQuery(rawQuery, logicalRa);
+    final long queryID = catalog.newQuery(rawQuery, logicalRa, physicalPlan);
     final MasterQueryPartition mqp = new MasterQueryPartition(masterPlan, workerPlans, queryID, this);
 
     activeQueries.put(queryID, mqp);
@@ -1058,7 +1058,7 @@ public final class Server {
     try {
       /* Start the workers */
       submitQuery("ingest " + relationKey.toString("sqlite"), "ingest " + relationKey.toString("sqlite"),
-          new SingleQueryPlanWithArgs(scatter), workerPlans).sync();
+          "ingest " + relationKey.toString("sqlite"), new SingleQueryPlanWithArgs(scatter), workerPlans).sync();
       /* Now that the query has finished, add the metadata about this relation to the dataset. */
       catalog.addRelationMetadata(relationKey, source.getSchema());
 

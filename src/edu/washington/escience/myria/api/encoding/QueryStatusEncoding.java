@@ -22,13 +22,15 @@ public class QueryStatusEncoding {
    * 
    * @param rawQuery the raw query submitted to the system.
    * @param logicalRa the logical plan of the query.
+   * @param physicalPlan the physical execution plan.
    * @return a QueryStatusEncoding object containing the submitted query, with the submit time set to
    *         DateTimeUtils.nowInISO8601().
    */
-  public static QueryStatusEncoding submitted(final String rawQuery, final String logicalRa) {
+  public static QueryStatusEncoding submitted(final String rawQuery, final String logicalRa, final String physicalPlan) {
     QueryStatusEncoding ret = new QueryStatusEncoding();
     ret.rawQuery = rawQuery;
     ret.logicalRa = logicalRa;
+    ret.physicalPlan = physicalPlan;
     ret.submitTime = DateTimeUtils.nowInISO8601();
     ret.status = Status.ACCEPTED;
     return ret;
@@ -42,6 +44,8 @@ public class QueryStatusEncoding {
   public String rawQuery;
   /** The logical plan. */
   public String logicalRa;
+  /** The physical execution plan. */
+  public String physicalPlan;
   /** The submit time of this query. */
   public String submitTime;
   /** The start time of this query. */
