@@ -13,7 +13,7 @@ import edu.washington.escience.myria.parallel.GenericShuffleProducer;
 import edu.washington.escience.myria.parallel.MFMDHashPartitionFunction;
 import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
-import edu.washington.escience.myria.util.ArrayUtils;
+import edu.washington.escience.myria.util.MyriaArrayUtils;
 import edu.washington.escience.myria.util.MyriaUtils;
 
 /**
@@ -74,7 +74,7 @@ public class HyperShuffleProducerEncoding extends AbstractProducerEncoding<Gener
 
   @Override
   protected void validateExtra() {
-    int[] arr = ArrayUtils.arrayFlattenThenSort(cellPartition);
+    int[] arr = MyriaArrayUtils.arrayFlattenThenSort(cellPartition);
     for (int i = 0; i < arr.length; i++) {
       if (arr[i] != i) {
         throw new MyriaApiException(Status.BAD_REQUEST, "invalid cell partition");

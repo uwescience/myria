@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.util.ArrayUtils;
+import edu.washington.escience.myria.util.MyriaArrayUtils;
 
 /**
  * Generic Shuffle Consumer, which supports the encoding of
@@ -33,7 +33,7 @@ public class GenericShuffleConsumer extends Consumer {
    * @param workerIDs from which workers the data will come.
    * */
   public GenericShuffleConsumer(final Schema schema, final ExchangePairID operatorID, final int[] workerIDs) {
-    this(schema, operatorID, ArrayUtils.checkSet(org.apache.commons.lang3.ArrayUtils.toObject(workerIDs)));
+    this(schema, operatorID, MyriaArrayUtils.checkSet(org.apache.commons.lang3.ArrayUtils.toObject(workerIDs)));
   }
 
   /**

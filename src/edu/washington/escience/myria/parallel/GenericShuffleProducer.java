@@ -4,7 +4,7 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.operator.Operator;
-import edu.washington.escience.myria.util.ArrayUtils;
+import edu.washington.escience.myria.util.MyriaArrayUtils;
 
 /**
  * GenericShuffleProducer, which support json encoding of 1. Broadcast Shuffle 2. One to one Shuffle (Shuffle) 3. Hyper
@@ -38,7 +38,7 @@ public class GenericShuffleProducer extends Producer {
    */
   public GenericShuffleProducer(final Operator child, final ExchangePairID operatorID, final int[] workerIDs,
       final PartitionFunction<?, ?> pf) {
-    this(child, operatorID, ArrayUtils.create2DIndex(workerIDs.length), workerIDs, pf);
+    this(child, operatorID, MyriaArrayUtils.create2DIndex(workerIDs.length), workerIDs, pf);
   }
 
   /**

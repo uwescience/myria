@@ -22,7 +22,7 @@ import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.IPCMessage;
 import edu.washington.escience.myria.parallel.ipc.StreamIOChannelID;
 import edu.washington.escience.myria.parallel.ipc.StreamInputBuffer;
-import edu.washington.escience.myria.util.ArrayUtils;
+import edu.washington.escience.myria.util.MyriaArrayUtils;
 import gnu.trove.impl.unmodifiable.TUnmodifiableIntIntMap;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;
@@ -103,7 +103,7 @@ public class Consumer extends LeafOperator {
    * @param workerIDs {@link Consumer#sourceWorkers}
    * */
   public Consumer(final Schema schema, final ExchangePairID operatorID, final int[] workerIDs) {
-    this(schema, operatorID, ArrayUtils.checkSet(org.apache.commons.lang3.ArrayUtils.toObject(workerIDs)));
+    this(schema, operatorID, MyriaArrayUtils.checkSet(org.apache.commons.lang3.ArrayUtils.toObject(workerIDs)));
   }
 
   /**
