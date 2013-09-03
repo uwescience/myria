@@ -27,6 +27,8 @@ import com.google.common.collect.ImmutableMap;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
+import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
 import edu.washington.escience.myria.parallel.SocketInfo;
 
 /**
@@ -97,7 +99,12 @@ public final class MasterCatalog {
       "CREATE TABLE queries (\n"
     + "    query_id INTEGER NOT NULL PRIMARY KEY ASC,\n"
     + "    raw_query TEXT NOT NULL,\n"
-    + "    logical_ra TEXT NOT NULL);";
+    + "    logical_ra TEXT NOT NULL,\n"
+    + "    submit_time TEXT NOT NULL, -- DATES IN ISO8601 FORMAT \n"
+    + "    start_time TEXT, -- DATES IN ISO8601 FORMAT \n"
+    + "    finish_time TEXT, -- DATES IN ISO8601 FORMAT \n"
+    + "    elapsed_nanos INTEGER,\n"
+    + "    status TEXT NOT NULL);";
 /** CREATE TABLE statements @formatter:on */
 
   /**
@@ -360,7 +367,7 @@ public final class MasterCatalog {
             statement.dispose();
             statement = null;
 
-            /* Third, populate the Schema table. */
+            /* Second, populate the Schema table. */
             statement =
                 sqliteConnection
                     .prepare("INSERT INTO relation_schema(user_name,program_name,relation_name,col_index,col_name,col_type) "
@@ -831,7 +838,6 @@ public final class MasterCatalog {
         @Override
         protected Schema job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
           try {
-            /* First, insert the relation name. */
             SQLiteStatement statement =
                 sqliteConnection
                     .prepare("SELECT col_name,col_type FROM relation_schema WHERE user_name=? AND program_name=? AND relation_name=?; ORDER BY col_index ASC");
@@ -874,19 +880,80 @@ public final class MasterCatalog {
       throw new CatalogException("Catalog is closed.");
     }
 
+    final QueryStatusEncoding queryStatus = QueryStatusEncoding.submitted(rawQuery, logicalRa);
+
     try {
       return queue.execute(new SQLiteJob<Long>() {
         @Override
         protected Long job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
           try {
-            /* First, insert the relation name. */
             SQLiteStatement statement =
-                sqliteConnection.prepare("INSERT INTO queries (raw_query,logical_ra) VALUES (?,?);");
-            statement.bind(1, rawQuery);
-            statement.bind(2, logicalRa);
+                sqliteConnection
+                    .prepare("INSERT INTO queries (raw_query, logical_ra, submit_time, start_time, finish_time, elapsed_nanos, status) VALUES (?,?,?,?,?,?,?);");
+            statement.bind(1, queryStatus.rawQuery);
+            statement.bind(2, queryStatus.logicalRa);
+            statement.bind(3, queryStatus.submitTime);
+            statement.bind(4, queryStatus.startTime);
+            statement.bind(5, queryStatus.finishTime);
+            if (queryStatus.elapsedNanos != null) {
+              statement.bind(6, queryStatus.elapsedNanos);
+            } else {
+              /* Auto-unboxed values must be manually nulled. */
+              statement.bindNull(6);
+            }
+            statement.bind(7, queryStatus.status.toString());
             statement.stepThrough();
             statement.dispose();
             return sqliteConnection.getLastInsertId();
+          } catch (final SQLiteException e) {
+            throw new CatalogException(e);
+          }
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  /**
+   * Get the status of a query from the MasterCatalog.
+   * 
+   * @param queryId the ID of the query being retrieved.
+   * @return the status of the query.
+   * @throws CatalogException if there is an error in the MasterCatalog.
+   */
+  public QueryStatusEncoding getQuery(final Long queryId) throws CatalogException {
+    Objects.requireNonNull(queryId);
+    if (isClosed) {
+      throw new CatalogException("MasterCatalog is closed.");
+    }
+
+    try {
+      return queue.execute(new SQLiteJob<QueryStatusEncoding>() {
+        @Override
+        protected QueryStatusEncoding job(final SQLiteConnection sqliteConnection) throws CatalogException,
+            SQLiteException {
+          try {
+            SQLiteStatement statement =
+                sqliteConnection
+                    .prepare("SELECT raw_query,logical_ra,submit_time,start_time,finish_time,elapsed_nanos,status FROM queries WHERE query_id=?;");
+            statement.bind(1, queryId);
+            statement.step();
+            if (!statement.hasRow()) {
+              return null;
+            }
+            final QueryStatusEncoding queryStatus = new QueryStatusEncoding(queryId);
+            queryStatus.rawQuery = statement.columnString(0);
+            queryStatus.logicalRa = statement.columnString(1);
+            queryStatus.submitTime = statement.columnString(2);
+            queryStatus.startTime = statement.columnString(3);
+            queryStatus.finishTime = statement.columnString(4);
+            if (!statement.columnNull(5)) {
+              queryStatus.elapsedNanos = statement.columnLong(5);
+            }
+            queryStatus.status = QueryStatusEncoding.Status.valueOf(statement.columnString(6));
+            statement.dispose();
+            return queryStatus;
           } catch (final SQLiteException e) {
             throw new CatalogException(e);
           }
@@ -944,6 +1011,51 @@ public final class MasterCatalog {
               return null;
             }
             return ret;
+          } catch (final SQLiteException e) {
+            throw new CatalogException(e);
+          }
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  /**
+   * Update the status of the specified query in the MasterCatalog.
+   * 
+   * @param queryId the id of the query.
+   * @param startTime when that query started.
+   * @param endTime when that query finished.
+   * @param elapsedNanos how long the query executed for, in nanoseconds.
+   * @param status the status of the query when finished.
+   * @throws CatalogException if there is an error in the MasterCatalog.
+   */
+  public void queryFinished(final long queryId, final String startTime, final String endTime, final long elapsedNanos,
+      final Status status) throws CatalogException {
+    Objects.requireNonNull(startTime);
+    Objects.requireNonNull(endTime);
+    Objects.requireNonNull(status);
+    if (isClosed) {
+      throw new CatalogException("MasterCatalog is closed.");
+    }
+
+    try {
+      queue.execute(new SQLiteJob<Object>() {
+        @Override
+        protected Object job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+          try {
+            SQLiteStatement statement =
+                sqliteConnection
+                    .prepare("UPDATE queries SET start_time=?, finish_time=?, elapsed_nanos=?, status=? WHERE query_id=?;");
+            statement.bind(1, startTime);
+            statement.bind(2, endTime);
+            statement.bind(3, elapsedNanos);
+            statement.bind(4, status.toString());
+            statement.bind(5, queryId);
+            statement.stepThrough();
+            statement.dispose();
+            return null;
           } catch (final SQLiteException e) {
             throw new CatalogException(e);
           }
