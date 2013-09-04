@@ -930,6 +930,7 @@ public final class Server {
    * 
    * @param rawQuery the raw user-defined query. E.g., the source Datalog program.
    * @param logicalRa the logical relational algebra of the compiled plan.
+   * @param physicalPlan the Myria physical plan for the query.
    * @param workerPlans the physical parallel plan fragments for each worker.
    * @param masterPlan the physical parallel plan fragment for the master.
    * @throws DbException if any error in non-catalog data processing
