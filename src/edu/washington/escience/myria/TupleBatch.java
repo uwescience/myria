@@ -205,6 +205,16 @@ public class TupleBatch implements Serializable {
   }
 
   /**
+   * Constructor that gets the number of tuples from the columns.
+   * 
+   * @param schema schema of the tuples in this batch. Must match columns.
+   * @param columns contains the column-stored data. Must match schema.
+   */
+  public TupleBatch(final Schema schema, final List<Column<?>> columns) {
+    this(schema, columns, columns.get(0).size());
+  }
+
+  /**
    * Helper function to append the specified row into the specified TupleBatchBuffer.
    * 
    * @param mappedRow the true row in column list to append to the buffer.
