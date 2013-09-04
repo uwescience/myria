@@ -381,9 +381,8 @@ public class WorkerQueryPartition implements QueryPartition {
         StreamOutputChannel<TupleBatch>[] channels = ((Producer) task.getRootOp()).getChannels();
         for (int i = 0; i < indices.size(); ++i) {
           int j = indices.get(i);
-          TupleSource scan = new TupleSource(buffers.get(j));
           /* buffers.get(j) might be an empty List<TupleBatch>, so need to set its schema explicitly. */
-          scan.setSchema(task.getRootOp().getSchema());
+          TupleSource scan = new TupleSource(buffers.get(j), task.getRootOp().getSchema());
           scan.setOpName("tuplesource for " + task.getRootOp().getOpName() + channels[j].getID());
           RecoverProducer rp =
               new RecoverProducer(scan, ExchangePairID.fromExisting(channels[j].getID().getStreamID()), channels[j]
