@@ -5,6 +5,7 @@ import java.util.concurrent.TimeUnit;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
+import org.joda.time.format.ISODateTimeFormat;
 
 /**
  * Utility functions about date time.
@@ -89,6 +90,16 @@ public final class DateTimeUtils {
         throw new IllegalArgumentException("Not a valid SQL datetime/date format, caused by: " + datetime);
       }
     }
+  }
+
+  /** DateTimeFormatter for Joda for ISO8601 times. ThreadSafe. */
+  private static final DateTimeFormatter ISO_FORMATTER = ISODateTimeFormat.dateTime();
+
+  /**
+   * @return The current time, printed in ISO8601-compliant format. ThreadSafe.
+   */
+  public static String nowInISO8601() {
+    return ISO_FORMATTER.print(DateTime.now());
   }
 
 }

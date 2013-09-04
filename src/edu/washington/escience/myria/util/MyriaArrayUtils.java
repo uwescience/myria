@@ -8,14 +8,12 @@ import com.google.common.collect.ImmutableSet;
  * Array related utility functions.
  * 
  */
-public final class ArrayUtils extends org.apache.commons.lang3.ArrayUtils {
+public final class MyriaArrayUtils extends org.apache.commons.lang3.ArrayUtils {
 
   /**
    * Utility classes should not be instantiated.
-   * 
-   * Not a bug. Bugfix has a false alert. Just ignore it.
    */
-  private ArrayUtils() {
+  private MyriaArrayUtils() {
   }
 
   /**
@@ -46,7 +44,7 @@ public final class ArrayUtils extends org.apache.commons.lang3.ArrayUtils {
    * Flatten a 2D array into a 1D array.
    * 
    * @param arr input 2D array
-   * @return the flattened 1D arrary ()
+   * @return the flattened 1D array ()
    */
   public static int[] arrayFlatten(final int[][] arr) {
     int size = 0;
@@ -91,7 +89,7 @@ public final class ArrayUtils extends org.apache.commons.lang3.ArrayUtils {
   }
 
   /**
-   * convert a 1D array into a 2D arrary.
+   * convert a 1D array into a 2D array.
    * 
    * @param arr input 1D array.
    * @return 2D array returned.

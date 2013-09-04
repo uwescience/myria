@@ -10,6 +10,7 @@ import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.ini4j.Wini;
 
@@ -113,6 +114,12 @@ public final class CatalogMaker {
       }
       final String catalogFileName = FilenameUtils.concat(catalogLocation, "master.catalog");
       final File catalogDir = new File(catalogLocation);
+      if (overwrite && catalogDir.exists()) {
+        /* Delete the old one. */
+        FileUtils.deleteDirectory(catalogDir);
+      } else {
+        throw new IOException("Directory " + catalogDir + " already exists, but overwrite is false.");
+      }
       while (!catalogDir.exists()) {
         catalogDir.mkdirs();
       }
