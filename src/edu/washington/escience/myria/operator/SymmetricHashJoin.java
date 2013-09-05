@@ -66,6 +66,11 @@ public final class SymmetricHashJoin extends BinaryOperator {
   /** Which columns in the right child are to be output. */
   private final int[] answerColumns2;
 
+  /** if the hash table of the left child should use set semantics. */
+  private boolean setSemanticsLeft = false;
+  /** if the hash table of the right child should use set semantics. */
+  private boolean setSemanticsRight = false;
+
   /**
    * Construct an EquiJoin operator. It returns all columns from both children when the corresponding columns in
    * compareIndx1 and compareIndx2 match.
@@ -96,6 +101,54 @@ public final class SymmetricHashJoin extends BinaryOperator {
   public SymmetricHashJoin(final Operator left, final Operator right, final int[] compareIndx1,
       final int[] compareIndx2, final int[] answerColumns1, final int[] answerColumns2) {
     this(null, left, right, compareIndx1, compareIndx2, answerColumns1, answerColumns2);
+  }
+
+  /**
+   * Construct an SymmetricHashJoin operator. It returns the specified columns from both children when the corresponding
+   * columns in compareIndx1 and compareIndx2 match.
+   * 
+   * @param left the left child.
+   * @param right the right child.
+   * @param compareIndx1 the columns of the left child to be compared with the right. Order matters.
+   * @param compareIndx2 the columns of the right child to be compared with the left. Order matters.
+   * @param answerColumns1 the columns of the left child to be returned. Order matters.
+   * @param answerColumns2 the columns of the right child to be returned. Order matters.
+   * @param setSemanticsLeft if the hash table of the left child should use set semantics.
+   * @param setSemanticsRight if the hash table of the right child should use set semantics.
+   * @throw IllegalArgumentException if there are duplicated column names in <tt>outputSchema</tt>, or if
+   *        <tt>outputSchema</tt> does not have the correct number of columns and column types.
+   */
+  public SymmetricHashJoin(final Operator left, final Operator right, final int[] compareIndx1,
+      final int[] compareIndx2, final int[] answerColumns1, final int[] answerColumns2, final boolean setSemanticsLeft,
+      final boolean setSemanticsRight) {
+    this(null, left, right, compareIndx1, compareIndx2, answerColumns1, answerColumns2);
+    this.setSemanticsLeft = setSemanticsLeft;
+    this.setSemanticsRight = setSemanticsRight;
+  }
+
+  /**
+   * Construct an SymmetricHashJoin operator. It returns the specified columns from both children when the corresponding
+   * columns in compareIndx1 and compareIndx2 match.
+   * 
+   * @param outputColumns the names of the columns in the output schema. If null, the corresponding columns will be
+   *          copied from the children.
+   * @param left the left child.
+   * @param right the right child.
+   * @param compareIndx1 the columns of the left child to be compared with the right. Order matters.
+   * @param compareIndx2 the columns of the right child to be compared with the left. Order matters.
+   * @param answerColumns1 the columns of the left child to be returned. Order matters.
+   * @param answerColumns2 the columns of the right child to be returned. Order matters. * @param setSemanticsLeft if
+   *          the hash table of the left child should use set semantics.
+   * @param setSemanticsRight if the hash table of the right child should use set semantics.
+   * @throw IllegalArgumentException if there are duplicated column names in <tt>outputColumns</tt>, or if
+   *        <tt>outputColumns</tt> does not have the correct number of columns and column types.
+   */
+  public SymmetricHashJoin(final List<String> outputColumns, final Operator left, final Operator right,
+      final int[] compareIndx1, final int[] compareIndx2, final int[] answerColumns1, final int[] answerColumns2,
+      final boolean setSemanticsLeft, final boolean setSemanticsRight) {
+    this(outputColumns, left, right, compareIndx1, compareIndx2, answerColumns1, answerColumns2);
+    this.setSemanticsLeft = setSemanticsLeft;
+    this.setSemanticsRight = setSemanticsRight;
   }
 
   /**
@@ -478,10 +531,9 @@ public final class SymmetricHashJoin extends BinaryOperator {
         cntTuple.add(tb.getObject(j, i));
       }
       final int cntHashCode = tb.hashCode(i, compareIndx1Local);
-      List<Integer> indexList = hashTable2IndicesLocal.get(cntHashCode);
-
-      if (indexList != null) {
-        for (final int index : indexList) {
+      List<Integer> indexList2 = hashTable2IndicesLocal.get(cntHashCode);
+      if (indexList2 != null) {
+        for (final int index : indexList2) {
           if (tupleEquals(cntTuple, hashTable2Local, index, compareIndx1Local, compareIndx2Local)) {
             addToAns(cntTuple, hashTable2Local, index, fromleft);
           }
@@ -490,16 +542,32 @@ public final class SymmetricHashJoin extends BinaryOperator {
 
       // only build hash table on two sides if none of the children is EOS
       if (!left.eos() && !right.eos()) {
-        final int nextIndex = hashTable1Local.numTuples();
-        if (hashTable1IndicesLocal.get(cntHashCode) == null) {
-          hashTable1IndicesLocal.put(cntHashCode, new ArrayList<Integer>());
+        List<Integer> indexList1 = hashTable1IndicesLocal.get(cntHashCode);
+        if (indexList1 == null) {
+          indexList1 = new ArrayList<Integer>();
+          hashTable1IndicesLocal.put(cntHashCode, indexList1);
         }
-        hashTable1IndicesLocal.get(cntHashCode).add(nextIndex);
-        for (int j = 0; j < tb.numColumns(); ++j) {
-          hashTable1Local.put(j, cntTuple.get(j));
+        boolean needAppend = true;
+        if (fromleft && setSemanticsLeft || !fromleft && setSemanticsRight) {
+          for (final int index : indexList1) {
+            if (tupleEquals(cntTuple, hashTable1Local, index, compareIndx1Local, compareIndx1Local)) {
+              for (int j = 0; j < tb.numColumns(); ++j) {
+                hashTable1Local.replace(j, index, cntTuple.get(j));
+              }
+              needAppend = false;
+              /* assume there's always only one tuple with one key. */
+              break;
+            }
+          }
+        }
+        if (needAppend) {
+          /* not using set semantics || using set semantics but found nothing to replace (i.e. new) */
+          hashTable1IndicesLocal.get(cntHashCode).add(hashTable1Local.numTuples());
+          for (int j = 0; j < tb.numColumns(); ++j) {
+            hashTable1Local.put(j, cntTuple.get(j));
+          }
         }
       }
     }
-
   }
 }
