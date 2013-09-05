@@ -25,12 +25,15 @@ public class IDBInputEncoding extends OperatorEncoding<IDBInput> {
 
   private ExchangePairID realControllerOperatorId;
   public Integer realControllerWorkerId;
+
+  public StreamingStateUpdaterEncoding<?> argStateUpdater;
   private static final List<String> requiredArguments = ImmutableList.of("argSelfIdbId", "argInitialInput",
-      "argIterationInput", "argEosControllerInput");
+      "argIterationInput", "argEosControllerInput", "argStateUpdater");
 
   @Override
   public IDBInput construct(Server server) {
-    return new IDBInput(argSelfIdbId, realControllerOperatorId, realControllerWorkerId, null, null, null);
+    return new IDBInput(argSelfIdbId, realControllerOperatorId, realControllerWorkerId, null, null, null,
+        argStateUpdater.construct());
   }
 
   @Override
