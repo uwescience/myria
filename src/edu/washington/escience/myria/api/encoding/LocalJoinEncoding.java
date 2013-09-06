@@ -12,6 +12,7 @@ import edu.washington.escience.myria.parallel.Server;
 public class LocalJoinEncoding extends OperatorEncoding<LocalJoin> {
   public String argChild1;
   public String argChild2;
+  public List<String> argColumnNames;
   public int[] argColumns1;
   public int[] argColumns2;
   public int[] argSelect1;
@@ -26,7 +27,7 @@ public class LocalJoinEncoding extends OperatorEncoding<LocalJoin> {
 
   @Override
   public LocalJoin construct(Server server) {
-    return new LocalJoin(null, null, argColumns1, argColumns2, argSelect1, argSelect2);
+    return new LocalJoin(argColumnNames, null, null, argColumns1, argColumns2, argSelect1, argSelect2);
   }
 
   @Override
