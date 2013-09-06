@@ -114,11 +114,12 @@ public final class CatalogMaker {
       }
       final String catalogFileName = FilenameUtils.concat(catalogLocation, "master.catalog");
       final File catalogDir = new File(catalogLocation);
-      if (overwrite && catalogDir.exists()) {
-        /* Delete the old one. */
-        FileUtils.deleteDirectory(catalogDir);
-      } else {
+      if (catalogDir.exists() && !overwrite) {
         throw new IOException("Directory " + catalogDir + " already exists, but overwrite is false.");
+      }
+      if (catalogDir.exists()) {
+        /* overwrite must be true, delete the old one. */
+        FileUtils.deleteDirectory(catalogDir);
       }
       while (!catalogDir.exists()) {
         catalogDir.mkdirs();
