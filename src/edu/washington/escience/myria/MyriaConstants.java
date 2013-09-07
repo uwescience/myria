@@ -56,6 +56,17 @@ public final class MyriaConstants {
    * Task resource manager.
    * */
   public static final String EXEC_ENV_VAR_TASK_RESOURCE_MANAGER = "taskResourceManager";
+
+  /**
+   * Query ID.
+   */
+  public static final String EXEC_ENV_VAR_QUERY_ID = "query_id";
+
+  /**
+   * Profiling mode.
+   */
+  public static final String EXEC_ENV_VAR_PROFILING_MODE = "profiling_mode";
+
   /**
    * Default value for {@link MyriaSystemConfigKeys#FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES}.
    * */
@@ -172,11 +183,6 @@ public final class MyriaConstants {
    * Default value for {@link MyriaSystemConfigKeys#WORKER_STORAGE_DATABASE_SYSTEM}.
    * */
   public static final String WORKER_STORAGE_DATABASE_SYSTEM_DEFAULT_VALUE = STORAGE_SYSTEM_SQLITE;
-
-  /**
-   * Query ID.
-   */
-  public static final String QUERY_ID = "query_id";
 
   /** Private constructor to disallow building utility class. */
   private MyriaConstants() {

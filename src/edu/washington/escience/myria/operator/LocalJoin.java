@@ -5,6 +5,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
+import org.slf4j.LoggerFactory;
+
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -68,6 +70,15 @@ public final class LocalJoin extends BinaryOperator {
   private final int[] answerColumns1;
   /** Which columns in the right child are to be output. */
   private final int[] answerColumns2;
+
+  /** join computation time of local join. */
+  private long joinComputationTime = 0;
+
+  /** time of getting tuple from children. */
+  private long joinGetTupleTime = 0;
+
+  /** The logger for this class. */
+  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(LocalJoin.class);
 
   /**
    * Construct an EquiJoin operator. It returns all columns from both children when the corresponding columns in
@@ -242,7 +253,9 @@ public final class LocalJoin extends BinaryOperator {
     while (nexttb == null) {
       boolean hasnewtuple = false;
       if (!left.eos() && !childrenEOI[0]) {
+        long startTime = System.currentTimeMillis();
         TupleBatch tb = left.nextReady();
+        joinGetTupleTime += System.currentTimeMillis() - startTime;
         if (tb != null) {
           hasnewtuple = true;
           processChildTB(tb, true);
@@ -254,7 +267,9 @@ public final class LocalJoin extends BinaryOperator {
         }
       }
       if (!right.eos() && !childrenEOI[1]) {
+        long startTime = System.currentTimeMillis();
         TupleBatch tb = right.nextReady();
+        joinGetTupleTime += System.currentTimeMillis() - startTime;
         if (tb != null) {
           hasnewtuple = true;
           processChildTB(tb, false);
@@ -289,6 +304,14 @@ public final class LocalJoin extends BinaryOperator {
 
     if (left.eos() && right.eos()) {
       setEOS();
+      if ((boolean) getExecEnvVars().get(MyriaConstants.EXEC_ENV_VAR_PROFILING_MODE)) {
+        LOGGER.info("[" + MyriaConstants.EXEC_ENV_VAR_QUERY_ID + "#"
+            + getExecEnvVars().get(MyriaConstants.EXEC_ENV_VAR_QUERY_ID) + "]" + getOpName() + "[" + this
+            + "]: computation time " + joinComputationTime + " ms");
+        LOGGER.info("[" + MyriaConstants.EXEC_ENV_VAR_QUERY_ID + "#"
+            + getExecEnvVars().get(MyriaConstants.EXEC_ENV_VAR_QUERY_ID) + "]" + getOpName() + "[" + this
+            + "]: get tuple time " + joinGetTupleTime + " ms");
+      }
       return;
     }
 
@@ -339,7 +362,9 @@ public final class LocalJoin extends BinaryOperator {
       leftTB = null;
       rightTB = null;
       if (!left.eos()) {
+        long startTime = System.currentTimeMillis();
         leftTB = left.nextReady();
+        joinGetTupleTime += System.currentTimeMillis() - startTime;
         if (leftTB != null) { // data
           processChildTB(leftTB, true);
           nexttb = ans.popAnyUsingTimeout();
@@ -363,7 +388,9 @@ public final class LocalJoin extends BinaryOperator {
         }
       }
       if (!right.eos()) {
+        long startTime = System.currentTimeMillis();
         rightTB = right.nextReady();
+        joinGetTupleTime += System.currentTimeMillis() - startTime;
         if (rightTB != null) {
           processChildTB(rightTB, false);
           nexttb = ans.popAnyUsingTimeout();
@@ -451,6 +478,8 @@ public final class LocalJoin extends BinaryOperator {
    */
   protected void processChildTB(final TupleBatch tb, final boolean fromleft) {
 
+    long computeStartTime = System.currentTimeMillis();
+
     TupleBatchBuffer hashTable1Local = hashTable1;
     TupleBatchBuffer hashTable2Local = hashTable2;
     HashMap<Integer, List<Integer>> hashTable1IndicesLocal = hashTable1Indices;
@@ -489,5 +518,7 @@ public final class LocalJoin extends BinaryOperator {
         hashTable1Local.put(j, cntTuple.get(j));
       }
     }
+
+    joinComputationTime += System.currentTimeMillis() - computeStartTime;
   }
 }

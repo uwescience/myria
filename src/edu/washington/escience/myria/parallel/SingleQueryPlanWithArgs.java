@@ -23,6 +23,11 @@ public class SingleQueryPlanWithArgs implements Serializable {
   /** FT mode, default: none. */
   private FTMODE ftMode = FTMODE.valueOf("none");
 
+  /**
+   * profilingMode,default:false.
+   */
+  private boolean profilingMode = false;
+
   /** Constructor. */
   public SingleQueryPlanWithArgs() {
     rootOps = new ArrayList<RootOperator>();
@@ -93,5 +98,22 @@ public class SingleQueryPlanWithArgs implements Serializable {
    * */
   public FTMODE getFTMode() {
     return ftMode;
+  }
+
+  /**
+   * @return the profiling mode.
+   */
+  public boolean isProfilingMode() {
+    return profilingMode;
+  }
+
+  /**
+   * 
+   * Set profiling mode.
+   * 
+   * @param profilingMode the profiling mode.
+   */
+  public void setProfilingMode(final boolean profilingMode) {
+    this.profilingMode = profilingMode;
   }
 }

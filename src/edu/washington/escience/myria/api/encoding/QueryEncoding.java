@@ -40,6 +40,8 @@ public class QueryEncoding extends MyriaApiEncoding {
   public String logicalRa;
   /** The query plan encoding. */
   public List<PlanFragmentEncoding> fragments;
+  /** Set whether this query needs profiling. (default is false) */
+  public boolean profilingMode = false;
   /** The expected number of results (for testing). */
   public Long expectedResultSize;
   /** The list of required fields. */
@@ -82,6 +84,7 @@ public class QueryEncoding extends MyriaApiEncoding {
         if (workerPlan == null) {
           workerPlan = new SingleQueryPlanWithArgs();
           workerPlan.setFTMode(FTMODE.valueOf(ftMode));
+          workerPlan.setProfilingMode(profilingMode);
           plan.put(worker, workerPlan);
         }
         workerPlan.addRootOp(op);
