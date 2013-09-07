@@ -67,6 +67,13 @@ public abstract class Operator implements Serializable {
   private ImmutableMap<String, Object> execEnvVars;
 
   /**
+   * @return return environmental variables
+   */
+  public ImmutableMap<String, Object> getExecEnvVars() {
+    return execEnvVars;
+  }
+
+  /**
    * Closes this iterator.
    * 
    * @throws DbException if any errors occur
@@ -215,9 +222,10 @@ public abstract class Operator implements Serializable {
     TupleBatch result = null;
     try {
       if (!startProcessing) {
-        if (LOGGER.isDebugEnabled()) {
-          LOGGER.debug("[" + MyriaConstants.QUERY_ID + "#" + execEnvVars.get(MyriaConstants.QUERY_ID) + "]"
-              + getOpName() + "[" + this + "]:" + "begin to process");
+        if ((boolean) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_PROFILING_MODE)) {
+          LOGGER.info("[" + MyriaConstants.EXEC_ENV_VAR_QUERY_ID + "#"
+              + execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_QUERY_ID) + "]" + getOpName() + "[" + this + "]:"
+              + "begin to process");
         }
         startProcessing = true;
       }
@@ -338,11 +346,13 @@ public abstract class Operator implements Serializable {
    * Operators should not be able to unset an already set EOS except reopen it.
    */
   protected final void setEOS() {
-    if ((!eos) && LOGGER.isDebugEnabled()) {
-      LOGGER.debug("[" + MyriaConstants.QUERY_ID + "#" + execEnvVars.get(MyriaConstants.QUERY_ID) + "]" + getOpName()
-          + "[" + this + "]:End of Processing (EOS)");
-      LOGGER.debug("[" + MyriaConstants.QUERY_ID + "#" + execEnvVars.get(MyriaConstants.QUERY_ID) + "]" + getOpName()
-          + "[" + this + "]: execution time " + executionTime + " ms");
+    if (startProcessing && (boolean) getExecEnvVars().get(MyriaConstants.EXEC_ENV_VAR_PROFILING_MODE)) {
+      LOGGER.info("[" + MyriaConstants.EXEC_ENV_VAR_QUERY_ID + "#"
+          + execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_QUERY_ID) + "]" + getOpName() + "[" + this
+          + "]:End of Processing (EOS)");
+      LOGGER.info("[" + MyriaConstants.EXEC_ENV_VAR_QUERY_ID + "#"
+          + execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_QUERY_ID) + "]" + getOpName() + "[" + this
+          + "]: execution time " + executionTime + " ms");
     }
     eos = true;
   }

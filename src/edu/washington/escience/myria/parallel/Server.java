@@ -930,8 +930,8 @@ public final class Server {
    * 
    * @param rawQuery the raw user-defined query. E.g., the source Datalog program.
    * @param logicalRa the logical relational algebra of the compiled plan.
-   * @param workerPlans the physical parallel plan fragments for each worker.
    * @param masterPlan the physical parallel plan fragment for the master.
+   * @param workerPlans the physical parallel plan fragments for each worker.
    * @throws DbException if any error in non-catalog data processing
    * @throws CatalogException if any error in processing catalog
    * @return the query future from which the query status can be looked up.
@@ -942,9 +942,7 @@ public final class Server {
     workerPlans.remove(MyriaConstants.MASTER_ID);
     final long queryID = catalog.newQuery(rawQuery, logicalRa, physicalPlan);
     final MasterQueryPartition mqp = new MasterQueryPartition(masterPlan, workerPlans, queryID, this);
-
     activeQueries.put(queryID, mqp);
-
     mqp.getQueryExecutionFuture().addListener(new QueryFutureListener() {
       @Override
       public void operationComplete(final QueryFuture future) throws Exception {
