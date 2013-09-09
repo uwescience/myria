@@ -68,7 +68,7 @@ public final class CatalogMaker {
       final Map<String, String> workerConfigurations) throws IOException {
     final String[] args = new String[2];
     args[1] = directoryName;
-    File deployFile = File.createTempFile("localMyriaConfig", ".cfg", new File(directoryName));
+    File deployFile = File.createTempFile("localMyriaConfig", ".cfg");
     Wini confIni = new Wini(deployFile);
     confIni.put("deployment", "path", directoryName);
     for (Entry<Integer, SocketInfo> m : masters.entrySet()) {
@@ -118,12 +118,8 @@ public final class CatalogMaker {
         throw new IOException("Directory " + catalogDir + " already exists, but overwrite is false.");
       }
       if (catalogDir.exists()) {
-        /* overwrite must be true, delete everything in the old directory except .cfg. */
-        for (File f : catalogDir.listFiles()) {
-          if (!f.getName().endsWith(".cfg")) {
-            FileUtils.forceDelete(f);
-          }
-        }
+        /* overwrite must be true, delete the old one. */
+        FileUtils.deleteDirectory(catalogDir);
       }
       while (!catalogDir.exists()) {
         catalogDir.mkdirs();
