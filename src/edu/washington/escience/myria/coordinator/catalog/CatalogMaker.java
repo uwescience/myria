@@ -118,8 +118,12 @@ public final class CatalogMaker {
         throw new IOException("Directory " + catalogDir + " already exists, but overwrite is false.");
       }
       if (catalogDir.exists()) {
-        /* overwrite must be true, delete the old one. */
-        FileUtils.deleteDirectory(catalogDir);
+        /* overwrite must be true, delete everything in the old directory except .cfg. */
+        for (File f : catalogDir.listFiles()) {
+          if (!f.getName().endsWith(".cfg")) {
+            FileUtils.forceDelete(f);
+          }
+        }
       }
       while (!catalogDir.exists()) {
         catalogDir.mkdirs();
