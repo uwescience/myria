@@ -1,6 +1,7 @@
 package edu.washington.escience.myria.operator;
 
 import java.io.Serializable;
+import java.util.List;
 
 import com.google.common.collect.ImmutableMap;
 
@@ -49,4 +50,10 @@ public abstract class StreamingStateUpdater implements Serializable {
    * @return its output schema.
    */
   public abstract Schema getSchema();
+
+  /**
+   * 
+   * @return its internal state as tuple batch buffer.
+   */
+  public abstract List<TupleBatch> exportState();
 }
