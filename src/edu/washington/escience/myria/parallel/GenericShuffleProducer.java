@@ -71,7 +71,6 @@ public class GenericShuffleProducer extends Producer {
   @Override
   protected final void consumeTuples(final TupleBatch tup) throws DbException {
     TupleBatchBuffer[] buffers = getBuffers();
-    popTBsFromBuffersAndWrite(true, cellPartition);
 
     final int numColumns = tup.numColumns();
     int[] partitions = partitionFunction.partition(tup);
@@ -85,11 +84,12 @@ public class GenericShuffleProducer extends Producer {
         }
       }
     }
+    popTBsFromBuffersAndWrite(true);
   }
 
   @Override
   protected final void childEOS() throws DbException {
-    popTBsFromBuffersAndWrite(false, cellPartition);
+    popTBsFromBuffersAndWrite(false);
     for (int p = 0; p < numChannels(); p++) {
       super.channelEnds(p);
     }
@@ -101,6 +101,6 @@ public class GenericShuffleProducer extends Producer {
     for (int i = 0; i < numChannels(); i++) {
       buffers[i].appendTB(TupleBatch.eoiTupleBatch(getSchema()));
     }
-    popTBsFromBuffersAndWrite(false, cellPartition);
+    popTBsFromBuffersAndWrite(false);
   }
 }
