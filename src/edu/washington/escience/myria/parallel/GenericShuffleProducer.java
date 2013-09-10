@@ -1,6 +1,9 @@
 package edu.washington.escience.myria.parallel;
 
+import org.slf4j.LoggerFactory;
+
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.operator.Operator;
@@ -27,6 +30,19 @@ public class GenericShuffleProducer extends Producer {
    * partition of cells.
    */
   private final int[][] cellPartition;
+
+  /**
+   * The time spends on hashing.
+   */
+  private long shuffleComputationTime = 0;
+
+  /**
+   * The time spends on sending tuples via network.
+   */
+  private long shuffleNetworkTime = 0;
+
+  /** The logger for this class. */
+  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(GenericShuffleProducer.class);
 
   /**
    * one to one shuffle.
@@ -66,9 +82,13 @@ public class GenericShuffleProducer extends Producer {
 
   @Override
   protected final void consumeTuples(final TupleBatch tup) throws DbException {
+    long startTime = System.currentTimeMillis();
     TupleBatchBuffer[] buffers = getBuffers();
     tup.partition(partitionFunction, buffers);
+    long interTime = System.currentTimeMillis();
+    shuffleComputationTime += interTime - startTime;
     popTBsFromBuffersAndWrite(true, cellPartition);
+    shuffleNetworkTime += System.currentTimeMillis() - interTime;
   }
 
   @Override
@@ -76,6 +96,15 @@ public class GenericShuffleProducer extends Producer {
     popTBsFromBuffersAndWrite(false, cellPartition);
     for (int p = 0; p < numChannels(); p++) {
       super.channelEnds(p);
+    }
+
+    if ((boolean) getExecEnvVars().get(MyriaConstants.EXEC_ENV_VAR_PROFILING_MODE)) {
+      LOGGER.info("[" + MyriaConstants.EXEC_ENV_VAR_QUERY_ID + "#"
+          + getExecEnvVars().get(MyriaConstants.EXEC_ENV_VAR_QUERY_ID) + "]" + getOpName() + "[" + this
+          + "]: shuffle computation time " + shuffleComputationTime + " ms");
+      LOGGER.info("[" + MyriaConstants.EXEC_ENV_VAR_QUERY_ID + "#"
+          + getExecEnvVars().get(MyriaConstants.EXEC_ENV_VAR_QUERY_ID) + "]" + getOpName() + "[" + this
+          + "]: shuffle network time " + shuffleNetworkTime + " ms");
     }
   }
 
