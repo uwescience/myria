@@ -322,4 +322,37 @@ public class TupleBuffer {
       }
     }
   }
+
+  /**
+   * Return all tuples in this buffer. The data do not get removed.
+   * 
+   * @return a List<TupleBatch> containing all complete tuples that have been inserted into this buffer.
+   */
+  public final List<TupleBatch> getAll() {
+    final List<TupleBatch> output = new ArrayList<TupleBatch>();
+    for (final List<MutableColumn<?>> mutableColumns : readyTuples) {
+      List<Column<?>> columns = new ArrayList<Column<?>>();
+      for (MutableColumn<?> mutableColumn : mutableColumns) {
+        columns.add(mutableColumn);
+      }
+      output.add(new TupleBatch(schema, columns, TupleBatch.BATCH_SIZE));
+    }
+    if (currentInProgressTuples > 0) {
+      output.add(new TupleBatch(schema, getInProgressColumns(), currentInProgressTuples));
+    }
+    return output;
+  }
+
+  /**
+   * Build the in progress columns. The builders' states are untouched. They can keep building.
+   * 
+   * @return the built in progress columns.
+   * */
+  private List<Column<?>> getInProgressColumns() {
+    List<Column<?>> newColumns = new ArrayList<Column<?>>(currentBuildingColumns.size());
+    for (ColumnBuilder<?> cb : currentBuildingColumns) {
+      newColumns.add(cb.forkNewBuilder().build());
+    }
+    return newColumns;
+  }
 }

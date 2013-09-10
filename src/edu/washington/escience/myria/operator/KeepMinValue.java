@@ -170,4 +170,9 @@ public final class KeepMinValue extends StreamingStateUpdater {
     }
     return null;
   }
+
+  @Override
+  public List<TupleBatch> exportState() {
+    return uniqueTuples.getAll();
+  }
 }

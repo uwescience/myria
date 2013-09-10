@@ -50,4 +50,9 @@ public final class SimpleAppender extends StreamingStateUpdater {
     tuples.add(tb);
     return null;
   }
+
+  @Override
+  public List<TupleBatch> exportState() {
+    return tuples;
+  }
 }
