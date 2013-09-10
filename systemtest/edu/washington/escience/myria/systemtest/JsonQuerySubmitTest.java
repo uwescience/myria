@@ -55,7 +55,7 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     if (null != conn.getErrorStream()) {
       throw new IllegalStateException(getContents(conn));
     }
-    assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
+    assertEquals(HttpURLConnection.HTTP_ACCEPTED, conn.getResponseCode());
     LOGGER.info(getContents(conn));
   }
 
@@ -137,7 +137,7 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     if (null != conn.getErrorStream()) {
       throw new IllegalStateException(getContents(conn));
     }
-    assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
+    assertEquals(HttpURLConnection.HTTP_ACCEPTED, conn.getResponseCode());
     LOGGER.info(getContents(conn));
     while (!server.queryCompleted(5)) {
       Thread.sleep(100);
