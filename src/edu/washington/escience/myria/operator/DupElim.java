@@ -128,4 +128,9 @@ public final class DupElim extends StreamingStateUpdater {
     }
     return null;
   }
+
+  @Override
+  public List<TupleBatch> exportState() {
+    return uniqueTuples.getAll();
+  }
 }
