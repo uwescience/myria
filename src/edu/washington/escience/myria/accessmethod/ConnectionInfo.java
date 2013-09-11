@@ -35,6 +35,7 @@ public abstract class ConnectionInfo {
           return mapper.readValue(jsonConnInfo, SQLiteInfo.class);
         case MyriaConstants.STORAGE_SYSTEM_MONETDB:
         case MyriaConstants.STORAGE_SYSTEM_MYSQL:
+        case MyriaConstants.STORAGE_SYSTEM_POSTGRESQL:
           return mapper.readValue(jsonConnInfo, JdbcInfo.class);
       }
     } catch (IOException e) {
@@ -72,6 +73,14 @@ public abstract class ConnectionInfo {
     Objects.requireNonNull(dbms);
     ObjectMapper mapper = MyriaJsonMapperProvider.newMapper();
     String result = "";
+    String host;
+    int port;
+    String user;
+    String password;
+    String myDatabaseName;
+    String jdbcDriverName;
+    JdbcInfo jdbcInfo;
+
     switch (dbms) {
       case MyriaConstants.STORAGE_SYSTEM_SQLITE:
         String databaseName = "";
@@ -85,32 +94,48 @@ public abstract class ConnectionInfo {
           databaseName = FilenameUtils.concat(databaseName, "worker_" + workerId + "_data.db");
         }
         SQLiteInfo sqliteInfo = SQLiteInfo.of(databaseName);
-        try {
-          result = mapper.writeValueAsString(sqliteInfo);
-        } catch (JsonProcessingException e) {
-          throw new RuntimeException(e);
-        }
+        result = sqliteInfo.toJson();
         break;
       case MyriaConstants.STORAGE_SYSTEM_MONETDB:
         // TODO: Allow using the parameters to create the connection info.
         // Now it is hardcoded to use a specific connection info, which allows only one
         // myria instance per machine in the cluster
-        final String host = hostName;
-        final int port = 50000;
-        final String user = "monetdb";
-        final String password = "monetdb";
-        final String myDatabaseName = "myria";
-        final String jdbcDriverName = "nl.cwi.monetdb.jdbc.MonetDriver";
-        final JdbcInfo jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, myDatabaseName, user, password);
-        try {
-          result = mapper.writeValueAsString(jdbcInfo);
-        } catch (JsonProcessingException e) {
-          throw new RuntimeException(e);
-        }
+        host = hostName;
+        port = 50001;
+        user = "uwdb";
+        password = "PaulAllenCenter";
+        myDatabaseName = "myria1";
+        jdbcDriverName = "nl.cwi.monetdb.jdbc.MonetDriver";
+        jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, myDatabaseName, user, password);
+        result = jdbcInfo.toJson();
+        break;
+
+      case MyriaConstants.STORAGE_SYSTEM_POSTGRESQL:
+        // TODO: Allow using the parameters to craete the connection info.
+        // Now it is hardcoded to use a specific connection info, which allows only one
+        // myria instance per machine in the cluster
+        host = hostName;
+        port = 5401;
+        user = "uwdb";
+        password = "PaulAllenCenter";
+        myDatabaseName = "myria1";
+        jdbcDriverName = "org.postgresql.Driver";
+        jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, myDatabaseName, user, password);
+        result = jdbcInfo.toJson();
         break;
 
       case MyriaConstants.STORAGE_SYSTEM_MYSQL:
-        result = "";
+        // TODO: Allow using the parameters to craete the connection info.
+        // Now it is hardcoded to use a specific connection info, which allows only one
+        // myria instance per machine in the cluster
+        host = hostName;
+        port = 3301;
+        user = "uwdb";
+        password = "PaulAllenCenter";
+        myDatabaseName = "myria1";
+        jdbcDriverName = "com.mysql.jdbc.Driver";
+        jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, myDatabaseName, user, password);
+        result = jdbcInfo.toJson();
         break;
     }
     return result;
