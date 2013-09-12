@@ -130,6 +130,14 @@ public class TupleBatch implements Serializable {
   }
 
   /**
+   * @param columnNames the new column names.
+   * @return a shallow copy of the specified TupleBatch with the new column names.
+   */
+  public TupleBatch rename(final List<String> columnNames) {
+    return shallowCopy(Schema.of(getSchema().getColumnTypes(), columnNames), columns, validTuples, validIndices, isEOI);
+  }
+
+  /**
    * Call this method instead of the copy constructor for a new TupleBatch copy.
    * 
    * @param schema schema of the tuples in this batch. Must match columns.
@@ -194,6 +202,16 @@ public class TupleBatch implements Serializable {
     numValidTuples = validTuples.cardinality();
     this.validTuples = validTuples;
     isEOI = false;
+  }
+
+  /**
+   * Constructor that gets the number of tuples from the columns.
+   * 
+   * @param schema schema of the tuples in this batch. Must match columns.
+   * @param columns contains the column-stored data. Must match schema.
+   */
+  public TupleBatch(final Schema schema, final List<Column<?>> columns) {
+    this(schema, columns, columns.get(0).size());
   }
 
   /**

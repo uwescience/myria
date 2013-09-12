@@ -91,21 +91,21 @@ public final class SQLiteAccessMethod extends AccessMethod {
     try {
       if (readOnly) {
         sqliteConnection = new SQLiteConnection(new File(sqliteInfo.getDatabaseFilename()));
+        sqliteConnection.open(false);
+        sqliteConnection.setBusyTimeout(SQLiteAccessMethod.DEFAULT_BUSY_TIMEOUT);
+        sqliteConnection.exec("PRAGMA journal_mode=WAL;");
+        sqliteConnection.dispose();
+        sqliteConnection = new SQLiteConnection(new File(sqliteInfo.getDatabaseFilename()));
         sqliteConnection.openReadonly();
         sqliteConnection.setBusyTimeout(SQLiteAccessMethod.DEFAULT_BUSY_TIMEOUT);
       } else {
         sqliteQueue = new SQLiteQueue(new File(sqliteInfo.getDatabaseFilename())).start();
-
+        execute("PRAGMA journal_mode=WAL;");
       }
     } catch (final SQLiteException e) {
       LOGGER.error(e.getMessage(), e);
       throw new DbException(e);
     }
-  }
-
-  @Override
-  public void init() throws DbException {
-    execute("PRAGMA journal_mode=WAL;");
   }
 
   @Override

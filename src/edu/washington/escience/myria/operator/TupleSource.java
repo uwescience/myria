@@ -1,7 +1,9 @@
 package edu.washington.escience.myria.operator;
 
 import java.util.List;
+import java.util.Objects;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
@@ -40,13 +42,33 @@ public final class TupleSource extends LeafOperator {
   }
 
   /**
-   * Constructs a TupleSource operator that will serve the tuples in the given List<TupleBatch>.
+   * Constructs a TupleSource operator that will serve the tuples in the given List<TupleBatch>. Data must contain at
+   * least one TupleBatch.
    * 
    * @param data the tuples that this operator will serve.
    */
 
   public TupleSource(final List<TupleBatch> data) {
-    this.data = data;
+    this(data, null);
+  }
+
+  /**
+   * Constructs a TupleSource operator that will serve the tuples in the given List<TupleBatch>.
+   * 
+   * @param data the tuples that this operator will serve.
+   * @param schema the schema of the tuples.
+   */
+  public TupleSource(final List<TupleBatch> data, final Schema schema) {
+    this.data = Objects.requireNonNull(data);
+    if (data.size() == 0) {
+      this.schema = Objects.requireNonNull(schema, "either data.get(0) must be non-null, or schema must be supplied");
+    } else {
+      this.schema = data.get(0).getSchema();
+      if (schema != null) {
+        Preconditions.checkArgument(this.schema.equals(schema),
+            "supplied schema does not match the schema in data.get(0)");
+      }
+    }
   }
 
   @Override
@@ -77,10 +99,5 @@ public final class TupleSource extends LeafOperator {
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     index = 0;
-  }
-
-  /** @param schema the schema to be set . */
-  public void setSchema(final Schema schema) {
-    this.schema = schema;
   }
 }
