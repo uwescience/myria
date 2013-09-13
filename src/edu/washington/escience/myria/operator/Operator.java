@@ -283,14 +283,16 @@ public abstract class Operator implements Serializable {
    * @param execEnvVars execution environment variables
    * @throws Exception if any error occurs
    */
-  protected abstract void init(final ImmutableMap<String, Object> execEnvVars) throws Exception;
+  protected void init(final ImmutableMap<String, Object> execEnvVars) throws Exception {
+  };
 
   /**
    * Do the clean up, release resources.
    * 
    * @throws Exception if any error occurs
    * */
-  protected abstract void cleanup() throws Exception;
+  protected void cleanup() throws Exception {
+  };
 
   /**
    * Generate next output TupleBatch if possible. Return null immediately if currently no output can be generated.
@@ -326,8 +328,6 @@ public abstract class Operator implements Serializable {
    * 
    * @param children the Operators which are to be set as the children(child) of this operator
    */
-  // have we ever used this function?
-  // May be used soon after operator refactoring.
   public abstract void setChildren(Operator[] children);
 
   /**
