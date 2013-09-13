@@ -125,6 +125,7 @@ public class ConnectedComponentTest extends SystemTestBase {
         new SingleGroupByAggregateNoBuffer(mc2, new int[] { 1 }, 0, new int[] { Aggregator.AGG_OP_MIN });
     final CollectProducer cp = new CollectProducer(agg, serverOpId, MASTER_ID);
     final GenericShuffleProducer sp3 = new GenericShuffleProducer(join, joinArrayId3, workerIDs, pf0);
+    sp3.setBackupBufferAsMin(new int[] { 0 }, 1);
 
     List<RootOperator> ret = new ArrayList<RootOperator>();
     ret.add(sp1);
