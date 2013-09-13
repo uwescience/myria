@@ -8,7 +8,6 @@ import static org.junit.Assert.assertTrue;
 import java.util.HashMap;
 
 import org.junit.Before;
-import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 
@@ -24,6 +23,7 @@ import edu.washington.escience.myria.operator.TupleSource;
 import edu.washington.escience.myria.util.TestUtils;
 import edu.washington.escience.myria.util.Tuple;
 
+@Deprecated
 public class VerticaJdbcAccessMethodTest {
 
   /* Test data */
@@ -78,7 +78,7 @@ public class VerticaJdbcAccessMethodTest {
     }
   }
 
-  @Test
+  /* @Test Since we decided to not support Vertica, let's disable these tests. */
   public void testCreateTableAndCountMultipleBatches() throws Exception {
     /* Insert the NUM_TUPLES tuples */
     TupleSource source = new TupleSource(buffer);
@@ -105,7 +105,7 @@ public class VerticaJdbcAccessMethodTest {
   }
 
   /** testing the conversion of myria float and vertica float. */
-  @Test
+  /* @Test Since we decided to not support Vertica, let's disable these tests. */
   public void testFloatVerticaConversion() throws Exception {
 
     /* get expected result */
