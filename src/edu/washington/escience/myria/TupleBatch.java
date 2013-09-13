@@ -502,28 +502,6 @@ public class TupleBatch implements Serializable {
   }
 
   /**
-   * Partition this TB using the partition function.
-   * 
-   * @param pf the partition function.
-   * @param buffers the buffers storing the partitioned data.
-   * */
-  public final void partition(final PartitionFunction<?, ?> pf, final TupleBatchBuffer[] buffers) {
-    final int numColumns = numColumns();
-
-    final int[] partitions = pf.partition(this);
-
-    ImmutableIntArray indices = getValidIndices();
-
-    for (int i = 0; i < partitions.length; i++) {
-      final int pOfTuple = partitions[i];
-      final int mappedI = indices.get(i);
-      for (int j = 0; j < numColumns; j++) {
-        buffers[pOfTuple].put(j, columns.get(j).get(mappedI));
-      }
-    }
-  }
-
-  /**
    * Partition this TB using the partition function. The method is implemented by shallow copy of TupleBatches.
    * 
    * @return an array of TBs. The length of the array is the same as the number of partitions. If no tuple presents in a
