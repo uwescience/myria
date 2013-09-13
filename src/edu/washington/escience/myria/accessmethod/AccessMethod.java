@@ -35,7 +35,6 @@ public abstract class AccessMethod {
         return new SQLiteAccessMethod((SQLiteInfo) connectionInfo, readOnly);
       case MyriaConstants.STORAGE_SYSTEM_MONETDB:
       case MyriaConstants.STORAGE_SYSTEM_MYSQL:
-      case MyriaConstants.STORAGE_SYSTEM_VERTICA:
         return new JdbcAccessMethod((JdbcInfo) connectionInfo, readOnly);
     }
     return null;
