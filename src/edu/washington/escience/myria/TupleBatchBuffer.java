@@ -59,6 +59,17 @@ public class TupleBatchBuffer {
   }
 
   /**
+   * Append the tuple batch directly into readTuples.
+   * 
+   * @param tb the TB.
+   */
+  public final void appendTB(final TupleBatch tb) {
+    finishBatch();
+    readyTuplesNum += tb.numTuples();
+    readyTuples.add(tb.getDataColumns());
+  }
+
+  /**
    * clear this TBB.
    * */
   public final void clear() {
@@ -68,19 +79,6 @@ public class TupleBatchBuffer {
     numColumnsReady = 0;
     readyTuples.clear();
     readyTuplesNum = 0;
-  }
-
-  /**
-   * Build the in progress columns. The builders' states are untouched. They can keep building.
-   * 
-   * @return the built in progress columns.
-   * */
-  private List<Column<?>> getInProgressColumns() {
-    List<Column<?>> newColumns = new ArrayList<Column<?>>(currentBuildingColumns.size());
-    for (ColumnBuilder<?> cb : currentBuildingColumns) {
-      newColumns.add(cb.forkNewBuilder().build());
-    }
-    return newColumns;
   }
 
   /**
@@ -106,6 +104,26 @@ public class TupleBatchBuffer {
     currentBuildingColumns = ColumnFactory.allocateColumns(schema);
     currentInProgressTuples = 0;
     return true;
+  }
+
+  /**
+   * @param colIndex column index
+   * @param rowIndex row index
+   * @return the element at ( rowIndex, colIndex)
+   * @throws IndexOutOfBoundsException if indices are out of bounds.
+   * */
+  public final Object get(final int colIndex, final int rowIndex) throws IndexOutOfBoundsException {
+    int tupleBatchIndex = rowIndex / TupleBatch.BATCH_SIZE;
+    int tupleIndex = rowIndex % TupleBatch.BATCH_SIZE;
+    if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
+        && tupleIndex >= currentInProgressTuples) {
+      throw new IndexOutOfBoundsException();
+    }
+    if (tupleBatchIndex < readyTuples.size()) {
+      return readyTuples.get(tupleBatchIndex).get(colIndex).get(tupleIndex);
+    }
+    return currentBuildingColumns.get(colIndex).get(tupleIndex);
+
   }
 
   /**
@@ -159,6 +177,35 @@ public class TupleBatchBuffer {
   }
 
   /**
+   * Get elapsed time since the last time when a TB is poped.
+   * 
+   * @return the elapsed time from lastPopedTime to present
+   */
+  private long getElapsedTime() {
+    return System.nanoTime() - lastPoppedTime;
+  }
+
+  /**
+   * Build the in progress columns. The builders' states are untouched. They can keep building.
+   * 
+   * @return the built in progress columns.
+   * */
+  private List<Column<?>> getInProgressColumns() {
+    List<Column<?>> newColumns = new ArrayList<Column<?>>(currentBuildingColumns.size());
+    for (ColumnBuilder<?> cb : currentBuildingColumns) {
+      newColumns.add(cb.forkNewBuilder().build());
+    }
+    return newColumns;
+  }
+
+  /**
+   * @return the number of ready tuples.
+   */
+  public final int getReadyTuplesNum() {
+    return readyTuplesNum;
+  }
+
+  /**
    * @return the Schema of the tuples in this buffer.
    */
   public final Schema getSchema() {
@@ -190,10 +237,10 @@ public class TupleBatchBuffer {
   }
 
   /**
-   * @return the number of ready tuples.
-   */
-  public final int getReadyTuplesNum() {
-    return readyTuplesNum;
+   * @return num columns.
+   * */
+  public final int numColumns() {
+    return numColumns;
   }
 
   /**
@@ -201,33 +248,6 @@ public class TupleBatchBuffer {
    */
   public final int numTuples() {
     return readyTuplesNum + currentInProgressTuples;
-  }
-
-  /**
-   * @param colIndex column index
-   * @param rowIndex row index
-   * @return the element at ( rowIndex, colIndex)
-   * @throws IndexOutOfBoundsException if indices are out of bounds.
-   * */
-  public final Object get(final int colIndex, final int rowIndex) throws IndexOutOfBoundsException {
-    int tupleBatchIndex = rowIndex / TupleBatch.BATCH_SIZE;
-    int tupleIndex = rowIndex % TupleBatch.BATCH_SIZE;
-    if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
-        && tupleIndex >= currentInProgressTuples) {
-      throw new IndexOutOfBoundsException();
-    }
-    if (tupleBatchIndex < readyTuples.size()) {
-      return readyTuples.get(tupleBatchIndex).get(colIndex).get(tupleIndex);
-    }
-    return currentBuildingColumns.get(colIndex).get(tupleIndex);
-
-  }
-
-  /**
-   * @return num columns.
-   * */
-  public final int numColumns() {
-    return numColumns;
   }
 
   /**
@@ -240,27 +260,6 @@ public class TupleBatchBuffer {
       return tb;
     } else {
       if (currentInProgressTuples > 0) {
-        final int size = currentInProgressTuples;
-        finishBatch();
-        updateLastPopedTime();
-        readyTuplesNum -= size;
-        return new TupleBatch(schema, readyTuples.remove(0), size);
-      } else {
-        return null;
-      }
-    }
-  }
-
-  /**
-   * @return pop filled and non-filled TupleBatch
-   * */
-  public final TupleBatch popAnyUsingTimeout() {
-    final TupleBatch tb = popFilled();
-    if (tb != null) {
-      updateLastPopedTime();
-      return tb;
-    } else {
-      if (currentInProgressTuples > 0 && getElapsedTime() >= MyriaConstants.PUSHING_TB_TIMEOUT) {
         final int size = currentInProgressTuples;
         finishBatch();
         updateLastPopedTime();
@@ -330,6 +329,27 @@ public class TupleBatchBuffer {
         final List<Column<?>> columns = readyTuples.remove(0);
         updateLastPopedTime();
         return IPCUtils.normalDataMessage(columns, numTuples);
+      } else {
+        return null;
+      }
+    }
+  }
+
+  /**
+   * @return pop filled and non-filled TupleBatch
+   * */
+  public final TupleBatch popAnyUsingTimeout() {
+    final TupleBatch tb = popFilled();
+    if (tb != null) {
+      updateLastPopedTime();
+      return tb;
+    } else {
+      if (currentInProgressTuples > 0 && getElapsedTime() >= MyriaConstants.PUSHING_TB_TIMEOUT) {
+        final int size = currentInProgressTuples;
+        finishBatch();
+        updateLastPopedTime();
+        readyTuplesNum -= size;
+        return new TupleBatch(schema, readyTuples.remove(0), size);
       } else {
         return null;
       }
@@ -416,17 +436,6 @@ public class TupleBatchBuffer {
   }
 
   /**
-   * Append the tuple batch directly into readTuples.
-   * 
-   * @param tb the TB.
-   */
-  public final void appendTB(final TupleBatch tb) {
-    finishBatch();
-    readyTuplesNum += tb.numTuples();
-    readyTuples.add(tb.getDataColumns());
-  }
-
-  /**
    * Append a complete tuple coming from two tuple batches: left and right. Used in join operators.
    * 
    * @param leftTb the left tuple batch
@@ -458,15 +467,6 @@ public class TupleBatchBuffer {
    */
   private void updateLastPopedTime() {
     lastPoppedTime = System.nanoTime();
-  }
-
-  /**
-   * Get elapsed time since the last time when a TB is poped.
-   * 
-   * @return the elapsed time from lastPopedTime to present
-   */
-  private long getElapsedTime() {
-    return System.nanoTime() - lastPoppedTime;
   }
 
 }
