@@ -80,7 +80,7 @@ public final class MyriaArrayUtils extends org.apache.commons.lang3.ArrayUtils {
    * @param length size of 2d index
    * @return a 2D index like { {0},{1},{2},..., {n} }
    */
-  public static int[][] create2DIndex(final int length) {
+  public static int[][] create2DVerticalIndex(final int length) {
     int[][] result = new int[length][];
     for (int i = 0; i < length; i++) {
       result[i] = new int[] { i };

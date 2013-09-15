@@ -10,7 +10,6 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.operator.Operator;
-import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
 
 /**
@@ -35,7 +34,6 @@ public class GenericShuffleProducer extends Producer {
    */
   private final int[][] partitionToChannel;
 
-
   /**
 <<<<<<< HEAD
    * The time spends on sending tuples via network.
@@ -58,8 +56,8 @@ public class GenericShuffleProducer extends Producer {
    */
   public GenericShuffleProducer(final Operator child, final ExchangePairID operatorID, final int[] workerIDs,
       final PartitionFunction<?, ?> pf) {
-    this(child, new ExchangePairID[] { operatorID }, MyriaArrayUtils.create2DIndex(pf.numPartition()), workerIDs, pf,
-        false);
+    this(child, new ExchangePairID[] { operatorID }, MyriaArrayUtils.create2DVerticalIndex(pf.numPartition()),
+        workerIDs, pf, false);
     Preconditions.checkArgument(workerIDs.length == pf.numPartition());
   }
 

@@ -263,7 +263,7 @@ public abstract class Producer extends RootOperator {
    * @param partitions the list of partitions as tuple batches.
    * */
   protected final void writePartitionsIntoChannels(final boolean usingTimeout, final TupleBatch[] partitions) {
-    writePartitionsIntoChannels(usingTimeout, MyriaArrayUtils.create2DIndex(numChannels()), partitions);
+    writePartitionsIntoChannels(usingTimeout, MyriaArrayUtils.create2DVerticalIndex(numChannels()), partitions);
   }
 
   /**
