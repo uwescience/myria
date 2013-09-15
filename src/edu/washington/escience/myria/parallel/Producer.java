@@ -71,6 +71,9 @@ public abstract class Producer extends RootOperator {
    * */
   private transient boolean nonBlockingExecution;
 
+  /** number of parition, by default 1. */
+  private int numOfPartition = 1;
+
   /**
    * no worker means to the owner worker.
    * 
@@ -164,9 +167,12 @@ public abstract class Producer extends RootOperator {
   @Override
   public final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     taskResourceManager = (TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER);
+    partitionBuffers = new TupleBatchBuffer[numOfPartition];
+    for (int i = 0; i < numOfPartition; i++) {
+      partitionBuffers[i] = new TupleBatchBuffer(getSchema());
+    }
     ioChannels = new StreamOutputChannel[outputIDs.length];
     ioChannelsAvail = new boolean[outputIDs.length];
-    partitionBuffers = new TupleBatchBuffer[outputIDs.length];
     triedToSendTuples = new ArrayList<List<TupleBatch>>();
     pendingTuplesToSend = new ArrayList<LinkedList<TupleBatch>>();
     localizedOutputIDs = new StreamIOChannelID[outputIDs.length];
@@ -203,7 +209,6 @@ public abstract class Producer extends RootOperator {
         taskResourceManager.getOwnerTask().notifyOutputEnabled(localizedOutputIDs[i]);
       }
     });
-    partitionBuffers[i] = new TupleBatchBuffer(getSchema());
     ioChannelsAvail[i] = true;
     triedToSendTuples.add(i, new ArrayList<TupleBatch>());
     pendingTuplesToSend.add(i, new LinkedList<TupleBatch>());
@@ -263,13 +268,13 @@ public abstract class Producer extends RootOperator {
     FTMODE mode = taskResourceManager.getOwnerTask().getOwnerQuery().getFTMode();
 
     if (partitions != null) {
-      for (int i = 0; i < partitions.length; ++i) {
+      for (int i = 0; i < numOfPartition; ++i) {
         if (partitions[i] != null) {
           partitions[i].compactInto(partitionBuffers[i]);
         }
       }
     }
-    for (int i = 0; i < partitions.length; i++) {
+    for (int i = 0; i < numOfPartition; i++) {
       while (true) {
         TupleBatch tb = null;
         if (usingTimeout) {
@@ -330,11 +335,13 @@ public abstract class Producer extends RootOperator {
   @Override
   public final void cleanup() throws DbException {
     for (int i = 0; i < localizedOutputIDs.length; i++) {
-      partitionBuffers[i] = null;
       if (ioChannels[i] != null) {
         /* RecoverProducer may detach & set its channel to be null, shouldn't call release here */
         ioChannels[i].release();
       }
+    }
+    for (int i = 0; i < numOfPartition; i++) {
+      partitionBuffers[i] = null;
     }
     partitionBuffers = null;
   }
@@ -445,5 +452,22 @@ public abstract class Producer extends RootOperator {
       // all buffers are empty, ready to end this task
       setEOS();
     }
+  }
+
+  /**
+   * set the number of partitions.
+   * 
+   * @param num the number
+   */
+  public void setNumOfPartition(final int num) {
+    numOfPartition = num;
+  }
+
+  /**
+   * 
+   * @return the number of partitions.
+   */
+  public int getNumOfPartition() {
+    return numOfPartition;
   }
 }

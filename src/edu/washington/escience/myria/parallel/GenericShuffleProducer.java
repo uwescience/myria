@@ -95,7 +95,9 @@ public class GenericShuffleProducer extends Producer {
       final int[][] partitionToChannel, final int[] workerIDs, final PartitionFunction<?, ?> pf,
       final boolean isOneToOneMapping) {
     super(child, operatorIDs, workerIDs, isOneToOneMapping);
+    Preconditions.checkArgument(partitionToChannel.length == pf.numPartition());
     partitionFunction = pf;
+    setNumOfPartition(pf.numPartition());
     this.partitionToChannel = partitionToChannel;
   }
 
@@ -129,8 +131,8 @@ public class GenericShuffleProducer extends Producer {
 
   @Override
   protected final void childEOI() throws DbException {
-    TupleBatch[] partitions = new TupleBatch[partitionFunction.numPartition()];
-    for (int i = 0; i < partitionFunction.numPartition(); i++) {
+    TupleBatch[] partitions = new TupleBatch[getNumOfPartition()];
+    for (int i = 0; i < getNumOfPartition(); i++) {
       partitions[i] = TupleBatch.eoiTupleBatch(getSchema());
     }
     writePartitionsIntoChannels(false, partitionToChannel, partitions);
