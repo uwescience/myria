@@ -5,7 +5,6 @@ import org.slf4j.LoggerFactory;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
 
@@ -77,16 +76,15 @@ public class GenericShuffleProducer extends Producer {
 
   @Override
   protected final void consumeTuples(final TupleBatch tup) throws DbException {
-    TupleBatchBuffer[] buffers = getBuffers();
-    tup.partition(partitionFunction, buffers);
+    TupleBatch[] partitions = tup.partition(partitionFunction);
     long startTime = System.currentTimeMillis();
-    writePartitionsIntoChannels(true, cellPartition);
+    writePartitionsIntoChannels(true, cellPartition, partitions);
     shuffleNetworkTime += System.currentTimeMillis() - startTime;
   }
 
   @Override
   protected final void childEOS() throws DbException {
-    writePartitionsIntoChannels(false, cellPartition);
+    writePartitionsIntoChannels(false, cellPartition, null);
     for (int p = 0; p < numChannels(); p++) {
       super.channelEnds(p);
     }
@@ -99,10 +97,10 @@ public class GenericShuffleProducer extends Producer {
 
   @Override
   protected final void childEOI() throws DbException {
-    TupleBatchBuffer[] buffers = getBuffers();
-    for (int i = 0; i < numChannels(); i++) {
-      buffers[i].appendTB(TupleBatch.eoiTupleBatch(getSchema()));
+    TupleBatch[] partitions = new TupleBatch[partitionFunction.numPartition()];
+    for (int i = 0; i < partitionFunction.numPartition(); i++) {
+      partitions[i] = TupleBatch.eoiTupleBatch(getSchema());
     }
-    writePartitionsIntoChannels(false, cellPartition);
+    writePartitionsIntoChannels(false, cellPartition, partitions);
   }
 }

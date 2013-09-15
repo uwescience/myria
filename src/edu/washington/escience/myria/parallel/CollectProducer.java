@@ -26,19 +26,19 @@ public class CollectProducer extends Producer {
 
   @Override
   protected void consumeTuples(final TupleBatch tb) throws DbException {
-    tb.compactInto(getBuffers()[0]);
-    popTBsFromBuffersAndWrite(true);
+    // there is only one partition: tb itself
+    writePartitionsIntoChannels(true, new TupleBatch[] { tb });
   }
 
   @Override
   protected void childEOS() throws DbException {
-    popTBsFromBuffersAndWrite(false);
+    writePartitionsIntoChannels(false, null);
     super.channelEnds(0);
   }
 
   @Override
   protected void childEOI() throws DbException {
-    getBuffers()[0].appendTB(TupleBatch.eoiTupleBatch(getSchema()));
-    popTBsFromBuffersAndWrite(false);
+    TupleBatch[] partitions = new TupleBatch[] { TupleBatch.eoiTupleBatch(getSchema()) };
+    writePartitionsIntoChannels(false, partitions);
   }
 }

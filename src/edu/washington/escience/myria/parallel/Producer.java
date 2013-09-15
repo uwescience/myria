@@ -1,6 +1,7 @@
 package edu.washington.escience.myria.parallel;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.jboss.netty.channel.ChannelFuture;
@@ -242,9 +243,10 @@ public abstract class Producer extends RootOperator {
    * Pop tuple batches from each of the buffers and try to write them to corresponding channels, if possible.
    * 
    * @param usingTimeout use popAny() or popAnyUsingTimeout() when poping
+   * @param partitions the list of partitions as tuple batches.
    * */
-  protected final void popTBsFromBuffersAndWrite(final boolean usingTimeout) {
-    writePartitionsIntoChannels(usingTimeout, MyriaArrayUtils.create2DIndex(numChannels()));
+  protected final void writePartitionsIntoChannels(final boolean usingTimeout, final TupleBatch[] partitions) {
+    writePartitionsIntoChannels(usingTimeout, MyriaArrayUtils.create2DIndex(numChannels()), partitions);
   }
 
   /**
@@ -252,9 +254,10 @@ public abstract class Producer extends RootOperator {
    * 
    * @param usingTimeout use popAny() or popAnyUsingTimeout() when poping
    * @param channelIndices the same as GenericShuffleProducer's cellPartition
+   * @param partitions the list of partitions as tuple batches.
    * */
-  protected final void writePartitionsIntoChannels(final boolean usingTimeout, final int[][] channelIndices) {
-    final TupleBatchBuffer[] tbb = getBuffers();
+  protected final void writePartitionsIntoChannels(final boolean usingTimeout, final int[][] channelIndices,
+      final TupleBatch[] partitions) {
     FTMODE mode = taskResourceManager.getOwnerTask().getOwnerQuery().getFTMode();
     for (int i = 0; i < numChannels(); i++) {
       while (true) {
