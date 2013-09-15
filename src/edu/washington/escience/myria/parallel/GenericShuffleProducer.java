@@ -115,7 +115,7 @@ public class GenericShuffleProducer extends Producer {
   }
 
   @Override
-  protected final void childEOS() throws DbException {
+  protected void childEOS() throws DbException {
     writePartitionsIntoChannels(false, partitionToChannel, null);
     for (int p = 0; p < numChannels(); p++) {
       super.channelEnds(p);
