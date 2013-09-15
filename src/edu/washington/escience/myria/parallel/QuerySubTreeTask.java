@@ -609,8 +609,6 @@ public final class QuerySubTreeTask {
       synchronized (executionLock) {
         ImmutableMap.Builder<String, Object> b = ImmutableMap.builder();
         b.put(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER, resourceManager);
-        b.put(MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getOwnerQuery().getQueryID());
-        b.put(MyriaConstants.EXEC_ENV_VAR_PROFILING_MODE, getOwnerQuery().isProfilingMode());
         b.putAll(execEnvVars);
         this.resourceManager = resourceManager;
         root.open(b.build());

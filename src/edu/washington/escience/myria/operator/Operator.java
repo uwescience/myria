@@ -9,6 +9,7 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
+import edu.washington.escience.myria.parallel.TaskResourceManager;
 
 /**
  * Abstract class for implementing operators.
@@ -71,6 +72,22 @@ public abstract class Operator implements Serializable {
    */
   public ImmutableMap<String, Object> getExecEnvVars() {
     return execEnvVars;
+  }
+
+  /**
+   * @return return query id.
+   */
+  public long getQueryId() {
+    return ((TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER)).getOwnerTask()
+        .getOwnerQuery().getQueryID();
+  }
+
+  /**
+   * @return return profiling mode.
+   */
+  public boolean isProfilingMode() {
+    return ((TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER)).getOwnerTask()
+        .getOwnerQuery().isProfilingMode();
   }
 
   /**
@@ -222,10 +239,9 @@ public abstract class Operator implements Serializable {
     TupleBatch result = null;
     try {
       if (!startProcessing) {
-        if ((boolean) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_PROFILING_MODE)) {
-          LOGGER.info("[" + MyriaConstants.EXEC_ENV_VAR_QUERY_ID + "#"
-              + execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_QUERY_ID) + "]" + getOpName() + "[" + this + "]:"
-              + "begin to process");
+        if (isProfilingMode()) {
+          LOGGER.info("[{}#{}]{}[{}]:begin to process", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
+              getOpName(), this);
         }
         startProcessing = true;
       }
@@ -346,13 +362,11 @@ public abstract class Operator implements Serializable {
    * Operators should not be able to unset an already set EOS except reopen it.
    */
   protected final void setEOS() {
-    if (startProcessing && (boolean) getExecEnvVars().get(MyriaConstants.EXEC_ENV_VAR_PROFILING_MODE)) {
-      LOGGER.info("[" + MyriaConstants.EXEC_ENV_VAR_QUERY_ID + "#"
-          + execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_QUERY_ID) + "]" + getOpName() + "[" + this
-          + "]:End of Processing (EOS)");
-      LOGGER.info("[" + MyriaConstants.EXEC_ENV_VAR_QUERY_ID + "#"
-          + execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_QUERY_ID) + "]" + getOpName() + "[" + this
-          + "]: execution time " + executionTime + " ms");
+    if (startProcessing && isProfilingMode()) {
+      LOGGER.info("[{}#{}]{}[{}]:End of Processing (EOS)", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
+          getOpName(), this);
+      LOGGER.info("[{}#{}]{}[{}]: execution time {} ms", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
+          getOpName(), this, executionTime);
     }
     eos = true;
   }
