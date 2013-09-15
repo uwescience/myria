@@ -68,7 +68,7 @@ public final class CatalogMaker {
       final Map<String, String> workerConfigurations) throws IOException {
     final String[] args = new String[2];
     args[1] = directoryName;
-    File deployFile = File.createTempFile("localMyriaConfig", ".cfg", new File(directoryName));
+    File deployFile = File.createTempFile("localMyriaConfig", ".cfg");
     Wini confIni = new Wini(deployFile);
     confIni.put("deployment", "path", directoryName);
     for (Entry<Integer, SocketInfo> m : masters.entrySet()) {
