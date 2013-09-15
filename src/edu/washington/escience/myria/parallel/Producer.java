@@ -74,6 +74,9 @@ public abstract class Producer extends RootOperator {
   /** number of parition, by default 1. */
   private int numOfPartition = 1;
 
+  /** if the outgoing channels are totally local. */
+  private boolean totallyLocal;
+
   /**
    * no worker means to the owner worker.
    * 
@@ -159,6 +162,13 @@ public abstract class Producer extends RootOperator {
           outputIDs[idx] = new StreamIOChannelID(oID.getLong(), wID);
           idx++;
         }
+      }
+    }
+    totallyLocal = true;
+    for (int i : destinationWorkerIDs) {
+      if (i != IPCConnectionPool.SELF_IPC_ID) {
+        totallyLocal = false;
+        break;
       }
     }
   }
@@ -267,26 +277,38 @@ public abstract class Producer extends RootOperator {
       final TupleBatch[] partitions) {
     FTMODE mode = taskResourceManager.getOwnerTask().getOwnerQuery().getFTMode();
 
-    if (partitions != null) {
-      for (int i = 0; i < numOfPartition; ++i) {
-        if (partitions[i] != null) {
-          partitions[i].compactInto(partitionBuffers[i]);
+    if (totallyLocal) {
+      if (partitions != null) {
+        for (int i = 0; i < numOfPartition; ++i) {
+          if (partitions[i] != null) {
+            for (int j : channelIndices[i]) {
+              pendingTuplesToSend.get(j).add(partitions[i]);
+            }
+          }
         }
       }
-    }
-    for (int i = 0; i < numOfPartition; i++) {
-      while (true) {
-        TupleBatch tb = null;
-        if (usingTimeout) {
-          tb = partitionBuffers[i].popAnyUsingTimeout();
-        } else {
-          tb = partitionBuffers[i].popAny();
+    } else {
+      if (partitions != null) {
+        for (int i = 0; i < numOfPartition; ++i) {
+          if (partitions[i] != null) {
+            partitions[i].compactInto(partitionBuffers[i]);
+          }
         }
-        if (tb == null) {
-          break;
-        }
-        for (int j : channelIndices[i]) {
-          pendingTuplesToSend.get(j).add(tb);
+      }
+      for (int i = 0; i < numOfPartition; ++i) {
+        while (true) {
+          TupleBatch tb = null;
+          if (usingTimeout) {
+            tb = partitionBuffers[i].popAnyUsingTimeout();
+          } else {
+            tb = partitionBuffers[i].popAny();
+          }
+          if (tb == null) {
+            break;
+          }
+          for (int j : channelIndices[i]) {
+            pendingTuplesToSend.get(j).add(tb);
+          }
         }
       }
     }
