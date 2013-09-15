@@ -89,6 +89,18 @@ public final class MyriaArrayUtils extends org.apache.commons.lang3.ArrayUtils {
   }
 
   /**
+   * @param length size of 2d index
+   * @return a 2D index like { {0,1,2,...,n} }
+   */
+  public static int[][] create2DHorizontalIndex(final int length) {
+    int[][] result = new int[1][length];
+    for (int i = 0; i < length; i++) {
+      result[0][i] = i;
+    }
+    return result;
+  }
+
+  /**
    * convert a 1D array into a 2D array.
    * 
    * @param arr input 1D array.
