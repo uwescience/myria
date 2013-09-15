@@ -244,7 +244,7 @@ public abstract class Producer extends RootOperator {
    * @param usingTimeout use popAny() or popAnyUsingTimeout() when poping
    * */
   protected final void popTBsFromBuffersAndWrite(final boolean usingTimeout) {
-    popTBsFromBuffersAndWrite(usingTimeout, MyriaArrayUtils.create2DIndex(numChannels()));
+    writePartitionsIntoChannels(usingTimeout, MyriaArrayUtils.create2DIndex(numChannels()));
   }
 
   /**
@@ -253,7 +253,7 @@ public abstract class Producer extends RootOperator {
    * @param usingTimeout use popAny() or popAnyUsingTimeout() when poping
    * @param channelIndices the same as GenericShuffleProducer's cellPartition
    * */
-  protected final void popTBsFromBuffersAndWrite(final boolean usingTimeout, final int[][] channelIndices) {
+  protected final void writePartitionsIntoChannels(final boolean usingTimeout, final int[][] channelIndices) {
     final TupleBatchBuffer[] tbb = getBuffers();
     FTMODE mode = taskResourceManager.getOwnerTask().getOwnerQuery().getFTMode();
     for (int i = 0; i < numChannels(); i++) {

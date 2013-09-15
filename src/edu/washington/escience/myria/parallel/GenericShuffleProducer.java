@@ -80,13 +80,13 @@ public class GenericShuffleProducer extends Producer {
     TupleBatchBuffer[] buffers = getBuffers();
     tup.partition(partitionFunction, buffers);
     long startTime = System.currentTimeMillis();
-    popTBsFromBuffersAndWrite(true, cellPartition);
+    writePartitionsIntoChannels(true, cellPartition);
     shuffleNetworkTime += System.currentTimeMillis() - startTime;
   }
 
   @Override
   protected final void childEOS() throws DbException {
-    popTBsFromBuffersAndWrite(false, cellPartition);
+    writePartitionsIntoChannels(false, cellPartition);
     for (int p = 0; p < numChannels(); p++) {
       super.channelEnds(p);
     }
@@ -103,6 +103,6 @@ public class GenericShuffleProducer extends Producer {
     for (int i = 0; i < numChannels(); i++) {
       buffers[i].appendTB(TupleBatch.eoiTupleBatch(getSchema()));
     }
-    popTBsFromBuffersAndWrite(false, cellPartition);
+    writePartitionsIntoChannels(false, cellPartition);
   }
 }
