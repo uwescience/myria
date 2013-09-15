@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.parallel;
 
+import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
@@ -22,5 +23,10 @@ public final class LocalMultiwayProducer extends GenericShuffleProducer {
   public LocalMultiwayProducer(final Operator child, final ExchangePairID[] operatorIDs) {
     super(child, operatorIDs, MyriaArrayUtils.create2DHorizontalIndex(operatorIDs.length),
         new int[] { IPCConnectionPool.SELF_IPC_ID }, new FixValuePartitionFunction(0), false);
+  }
+
+  @Override
+  protected TupleBatch[] getTupleBatchPartitions(final TupleBatch tup) {
+    return new TupleBatch[] { tup };
   }
 }

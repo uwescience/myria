@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.parallel;
 
+import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.operator.Operator;
 
 /**
@@ -21,5 +22,10 @@ public class CollectProducer extends GenericShuffleProducer {
   public CollectProducer(final Operator child, final ExchangePairID operatorID, final int collectConsumerWorkerID) {
     super(child, new ExchangePairID[] { operatorID }, new int[][] { { 0 } }, new int[] { collectConsumerWorkerID },
         new FixValuePartitionFunction(0), true);
+  }
+
+  @Override
+  protected TupleBatch[] getTupleBatchPartitions(final TupleBatch tup) {
+    return new TupleBatch[] { tup };
   }
 }

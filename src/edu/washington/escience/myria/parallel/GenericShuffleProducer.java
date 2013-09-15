@@ -1,10 +1,8 @@
 package edu.washington.escience.myria.parallel;
 
-<<<<<<< HEAD
 import org.slf4j.LoggerFactory;
-=======
+
 import com.google.common.base.Preconditions;
->>>>>>> d76d2ec... Adding constructors and updating their javadocs in GenericShuffleProducer.
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
@@ -35,8 +33,7 @@ public class GenericShuffleProducer extends Producer {
   private final int[][] partitionToChannel;
 
   /**
-<<<<<<< HEAD
-   * The time spends on sending tuples via network.
+   * <<<<<<< HEAD The time spends on sending tuples via network.
    */
   private long shuffleNetworkTime = 0;
 
@@ -44,10 +41,8 @@ public class GenericShuffleProducer extends Producer {
   private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(GenericShuffleProducer.class);
 
   /**
-   * one to one shuffle.
-=======
-   * Shuffle to the same operator ID on multiple workers. (The old "ShuffleProducer")
->>>>>>> d76d2ec... Adding constructors and updating their javadocs in GenericShuffleProducer.
+   * one to one shuffle. ======= Shuffle to the same operator ID on multiple workers. (The old "ShuffleProducer")
+   * >>>>>>> d76d2ec... Adding constructors and updating their javadocs in GenericShuffleProducer.
    * 
    * @param child the child who provides data for this producer to distribute.
    * @param operatorID destination operators the data goes
@@ -108,10 +103,21 @@ public class GenericShuffleProducer extends Producer {
 
   @Override
   protected final void consumeTuples(final TupleBatch tup) throws DbException {
-    TupleBatch[] partitions = tup.partition(partitionFunction);
+    TupleBatch[] partitions = getTupleBatchPartitions(tup);
     long startTime = System.currentTimeMillis();
     writePartitionsIntoChannels(true, partitionToChannel, partitions);
     shuffleNetworkTime += System.currentTimeMillis() - startTime;
+  }
+
+  /**
+   * call partition function to partition this tuple batch as an array of shallow copies of TupleBatch. subclasses can
+   * override this method to have smarter partition approach.
+   * 
+   * @param tup the tuple batch to be partitioned.
+   * @return partitions.
+   */
+  protected TupleBatch[] getTupleBatchPartitions(final TupleBatch tup) {
+    return tup.partition(partitionFunction);
   }
 
   @Override
