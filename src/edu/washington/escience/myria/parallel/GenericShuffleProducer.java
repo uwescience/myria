@@ -32,11 +32,6 @@ public class GenericShuffleProducer extends Producer {
   private final int[][] cellPartition;
 
   /**
-   * The time spends on hashing.
-   */
-  private long shuffleComputationTime = 0;
-
-  /**
    * The time spends on sending tuples via network.
    */
   private long shuffleNetworkTime = 0;
@@ -82,13 +77,11 @@ public class GenericShuffleProducer extends Producer {
 
   @Override
   protected final void consumeTuples(final TupleBatch tup) throws DbException {
-    long startTime = System.currentTimeMillis();
     TupleBatchBuffer[] buffers = getBuffers();
     tup.partition(partitionFunction, buffers);
-    long interTime = System.currentTimeMillis();
-    shuffleComputationTime += interTime - startTime;
+    long startTime = System.currentTimeMillis();
     popTBsFromBuffersAndWrite(true, cellPartition);
-    shuffleNetworkTime += System.currentTimeMillis() - interTime;
+    shuffleNetworkTime += System.currentTimeMillis() - startTime;
   }
 
   @Override
@@ -98,13 +91,9 @@ public class GenericShuffleProducer extends Producer {
       super.channelEnds(p);
     }
 
-    if ((boolean) getExecEnvVars().get(MyriaConstants.EXEC_ENV_VAR_PROFILING_MODE)) {
-      LOGGER.info("[" + MyriaConstants.EXEC_ENV_VAR_QUERY_ID + "#"
-          + getExecEnvVars().get(MyriaConstants.EXEC_ENV_VAR_QUERY_ID) + "]" + getOpName() + "[" + this
-          + "]: shuffle computation time " + shuffleComputationTime + " ms");
-      LOGGER.info("[" + MyriaConstants.EXEC_ENV_VAR_QUERY_ID + "#"
-          + getExecEnvVars().get(MyriaConstants.EXEC_ENV_VAR_QUERY_ID) + "]" + getOpName() + "[" + this
-          + "]: shuffle network time " + shuffleNetworkTime + " ms");
+    if (isProfilingMode()) {
+      LOGGER.info("[{}#{}]{}[{}]: shuffle network time {} ms", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
+          getOpName(), shuffleNetworkTime);
     }
   }
 

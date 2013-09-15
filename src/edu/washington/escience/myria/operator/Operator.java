@@ -83,6 +83,25 @@ public abstract class Operator implements Serializable {
   }
 
   /**
+   * fragment id of this operator.
+   */
+  private long fragmentId;
+
+  /**
+   * @return fragment Id.
+   */
+  public long getFragmentId() {
+    return fragmentId;
+  }
+
+  /**
+   * @param fragmentId fragment Id.
+   */
+  public void setFragmentId(final long fragmentId) {
+    this.fragmentId = fragmentId;
+  }
+
+  /**
    * @return return profiling mode.
    */
   public boolean isProfilingMode() {
@@ -233,19 +252,18 @@ public abstract class Operator implements Serializable {
       return null;
     }
 
-    // record start time
+    if (!startProcessing) {
+      if (isProfilingMode()) {
+        LOGGER.info("[{}#{}][{}@{}][{}]:begin to process", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
+            getOpName(), getFragmentId(), this);
+      }
+      startProcessing = true;
+    }
+
     long startTime = System.currentTimeMillis();
 
     TupleBatch result = null;
     try {
-      if (!startProcessing) {
-        if (isProfilingMode()) {
-          LOGGER.info("[{}#{}]{}[{}]:begin to process", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
-              getOpName(), this);
-        }
-        startProcessing = true;
-      }
-
       result = fetchNextReady();
       while (result != null && result.numTuples() <= 0) {
         // XXX while or not while? For a single thread operator, while sounds more efficient generally
@@ -257,13 +275,15 @@ public abstract class Operator implements Serializable {
       throw new DbException(e);
     }
 
+    executionTime += System.currentTimeMillis() - startTime;
+
     if (result == null) {
       checkEOSAndEOI();
     } else {
       numOutputTBs++;
       numOutputTuples += result.numTuples();
-      executionTime += System.currentTimeMillis() - startTime;
     }
+
     return result;
   }
 
@@ -365,10 +385,10 @@ public abstract class Operator implements Serializable {
    */
   protected final void setEOS() {
     if (startProcessing && isProfilingMode()) {
-      LOGGER.info("[{}#{}]{}[{}]:End of Processing (EOS)", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
-          getOpName(), this);
-      LOGGER.info("[{}#{}]{}[{}]: execution time {} ms", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
-          getOpName(), this, executionTime);
+      LOGGER.info("[{}#{}][{}@{}][{}]:End of Processing (EOS)", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
+          getOpName(), getFragmentId(), this);
+      LOGGER.info("[{}#{}][{}@{}][{}]: executionTime {} ms", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
+          getOpName(), getFragmentId(), this, executionTime);
     }
     eos = true;
   }

@@ -5,8 +5,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
-import org.slf4j.LoggerFactory;
-
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -70,9 +68,6 @@ public final class LocalJoin extends BinaryOperator {
   private final int[] answerColumns1;
   /** Which columns in the right child are to be output. */
   private final int[] answerColumns2;
-
-  /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(LocalJoin.class);
 
   /**
    * Construct an EquiJoin operator. It returns all columns from both children when the corresponding columns in

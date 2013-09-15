@@ -2,10 +2,8 @@ package edu.washington.escience.myria.api.encoding;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.ws.rs.core.Response.Status;
 
@@ -58,16 +56,8 @@ public class QueryEncoding extends MyriaApiEncoding {
 
   @Override
   protected void validateExtra() throws MyriaApiException {
-    Set<String> operators = new HashSet<String>();
     for (final PlanFragmentEncoding fragment : fragments) {
       fragment.validate();
-      for (final OperatorEncoding<?> op : fragment.operators) {
-        if (!operators.contains(op.opName)) {
-          operators.add(op.opName);
-        } else {
-          throw new MyriaApiException(Status.BAD_REQUEST, "duplicate operator name: " + op.opName);
-        }
-      }
     }
   }
 
@@ -78,7 +68,7 @@ public class QueryEncoding extends MyriaApiEncoding {
     setupWorkerNetworkOperators();
     Map<Integer, SingleQueryPlanWithArgs> plan = new HashMap<Integer, SingleQueryPlanWithArgs>();
     for (PlanFragmentEncoding fragment : fragments) {
-      RootOperator op = instantiatePlanFragment(fragment.operators, server);
+      RootOperator op = instantiatePlanFragment(fragment.operators, fragments.indexOf(fragment), server);
       for (Integer worker : fragment.workers) {
         SingleQueryPlanWithArgs workerPlan = plan.get(worker);
         if (workerPlan == null) {
@@ -208,7 +198,8 @@ public class QueryEncoding extends MyriaApiEncoding {
    * @param planFragment the encoded plan fragment.
    * @return the actual plan fragment.
    */
-  private static RootOperator instantiatePlanFragment(final List<OperatorEncoding<?>> planFragment, final Server server) {
+  private static RootOperator instantiatePlanFragment(final List<OperatorEncoding<?>> planFragment,
+      final long fragmentId, final Server server) {
     Map<String, Operator> operators = new HashMap<String, Operator>();
 
     /* Instantiate all the operators. */
@@ -216,6 +207,7 @@ public class QueryEncoding extends MyriaApiEncoding {
       Operator op = encoding.construct(server);
       /* helpful for debugging. */
       op.setOpName(encoding.opName);
+      op.setFragmentId(fragmentId);
       operators.put(encoding.opName, op);
     }
     /* Connect all the operators. */
