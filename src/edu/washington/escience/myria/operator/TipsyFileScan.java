@@ -198,27 +198,27 @@ public class TipsyFileScan extends LeafOperator {
       lineNumber++;
       try {
         int count = 0;
-        buffer.put(count++, iOrderScanner.nextLong());
-        buffer.put(count++, dataInputForBin.readFloat());
-        buffer.put(count++, dataInputForBin.readFloat());
-        buffer.put(count++, dataInputForBin.readFloat());
-        buffer.put(count++, dataInputForBin.readFloat());
-        buffer.put(count++, dataInputForBin.readFloat());
-        buffer.put(count++, dataInputForBin.readFloat());
-        buffer.put(count++, dataInputForBin.readFloat());
-        buffer.put(count++, dataInputForBin.readFloat());
-        buffer.put(count++, dataInputForBin.readFloat());
-        buffer.put(count++, dataInputForBin.readFloat());
-        buffer.put(count++, dataInputForBin.readFloat());
+        buffer.putLong(count++, iOrderScanner.nextLong());
+        buffer.putFloat(count++, dataInputForBin.readFloat());
+        buffer.putFloat(count++, dataInputForBin.readFloat());
+        buffer.putFloat(count++, dataInputForBin.readFloat());
+        buffer.putFloat(count++, dataInputForBin.readFloat());
+        buffer.putFloat(count++, dataInputForBin.readFloat());
+        buffer.putFloat(count++, dataInputForBin.readFloat());
+        buffer.putFloat(count++, dataInputForBin.readFloat());
+        buffer.putFloat(count++, dataInputForBin.readFloat());
+        buffer.putFloat(count++, dataInputForBin.readFloat());
+        buffer.putFloat(count++, dataInputForBin.readFloat());
+        buffer.putFloat(count++, dataInputForBin.readFloat());
         /*
          * TODO(leelee): Should be null for the next two columns. Put 0 for now as TupleBatchBuffer does not support
          * null value.
          */
-        buffer.put(count++, (float) 0);
-        buffer.put(count++, (float) 0);
-        buffer.put(count++, dataInputForBin.readFloat());
-        buffer.put(count++, grpScanner.nextInt());
-        buffer.put(count++, "gas");
+        buffer.putFloat(count++, 0);
+        buffer.putFloat(count++, 0);
+        buffer.putFloat(count++, dataInputForBin.readFloat());
+        buffer.putInt(count++, grpScanner.nextInt());
+        buffer.putString(count++, "gas");
       } catch (final IOException e) {
         throw new DbException(e);
       }
@@ -246,27 +246,27 @@ public class TipsyFileScan extends LeafOperator {
       lineNumber++;
       try {
         int count = 0;
-        buffer.put(count++, iOrderScanner.nextLong());
-        buffer.put(count++, dataInputForBin.readFloat());
-        buffer.put(count++, dataInputForBin.readFloat());
-        buffer.put(count++, dataInputForBin.readFloat());
-        buffer.put(count++, dataInputForBin.readFloat());
-        buffer.put(count++, dataInputForBin.readFloat());
-        buffer.put(count++, dataInputForBin.readFloat());
-        buffer.put(count++, dataInputForBin.readFloat());
+        buffer.putLong(count++, iOrderScanner.nextLong());
+        buffer.putFloat(count++, dataInputForBin.readFloat());
+        buffer.putFloat(count++, dataInputForBin.readFloat());
+        buffer.putFloat(count++, dataInputForBin.readFloat());
+        buffer.putFloat(count++, dataInputForBin.readFloat());
+        buffer.putFloat(count++, dataInputForBin.readFloat());
+        buffer.putFloat(count++, dataInputForBin.readFloat());
+        buffer.putFloat(count++, dataInputForBin.readFloat());
         /*
          * TODO(leelee): Should be null for the next five columns. Put 0 for now as TupleBatchBuffer does not support
          * null value.
          */
-        buffer.put(count++, (float) 0);
-        buffer.put(count++, (float) 0);
-        buffer.put(count++, (float) 0);
-        buffer.put(count++, (float) 0);
-        buffer.put(count++, (float) 0);
-        buffer.put(count++, dataInputForBin.readFloat());
-        buffer.put(count++, dataInputForBin.readFloat());
-        buffer.put(count++, grpScanner.nextInt());
-        buffer.put(count++, "dark");
+        buffer.putFloat(count++, 0);
+        buffer.putFloat(count++, 0);
+        buffer.putFloat(count++, 0);
+        buffer.putFloat(count++, 0);
+        buffer.putFloat(count++, 0);
+        buffer.putFloat(count++, dataInputForBin.readFloat());
+        buffer.putFloat(count++, dataInputForBin.readFloat());
+        buffer.putInt(count++, grpScanner.nextInt());
+        buffer.putString(count++, "dark");
       } catch (final IOException e) {
         throw new DbException(e);
       }
@@ -294,27 +294,27 @@ public class TipsyFileScan extends LeafOperator {
       lineNumber++;
       try {
         int count = 0;
-        buffer.put(count++, iOrderScanner.nextLong());
-        buffer.put(count++, dataInputForBin.readFloat());
-        buffer.put(count++, dataInputForBin.readFloat());
-        buffer.put(count++, dataInputForBin.readFloat());
-        buffer.put(count++, dataInputForBin.readFloat());
-        buffer.put(count++, dataInputForBin.readFloat());
-        buffer.put(count++, dataInputForBin.readFloat());
-        buffer.put(count++, dataInputForBin.readFloat());
+        buffer.putLong(count++, iOrderScanner.nextLong());
+        buffer.putFloat(count++, dataInputForBin.readFloat());
+        buffer.putFloat(count++, dataInputForBin.readFloat());
+        buffer.putFloat(count++, dataInputForBin.readFloat());
+        buffer.putFloat(count++, dataInputForBin.readFloat());
+        buffer.putFloat(count++, dataInputForBin.readFloat());
+        buffer.putFloat(count++, dataInputForBin.readFloat());
+        buffer.putFloat(count++, dataInputForBin.readFloat());
         /*
          * TODO(leelee): Should be null for the next three columns. Put 0 for now as TupleBatchBuffer does not support
          * null value.
          */
-        buffer.put(count++, (float) 0);
-        buffer.put(count++, (float) 0);
-        buffer.put(count++, (float) 0);
-        buffer.put(count++, dataInputForBin.readFloat());
-        buffer.put(count++, dataInputForBin.readFloat());
-        buffer.put(count++, dataInputForBin.readFloat());
-        buffer.put(count++, dataInputForBin.readFloat());
-        buffer.put(count++, grpScanner.nextInt());
-        buffer.put(count++, "star");
+        buffer.putFloat(count++, 0);
+        buffer.putFloat(count++, 0);
+        buffer.putFloat(count++, 0);
+        buffer.putFloat(count++, dataInputForBin.readFloat());
+        buffer.putFloat(count++, dataInputForBin.readFloat());
+        buffer.putFloat(count++, dataInputForBin.readFloat());
+        buffer.putFloat(count++, dataInputForBin.readFloat());
+        buffer.putInt(count++, grpScanner.nextInt());
+        buffer.putString(count++, "star");
       } catch (final IOException e) {
         throw new DbException(e);
       }
