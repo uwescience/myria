@@ -61,6 +61,11 @@ public class WorkerQueryPartition implements QueryPartition {
   private final FTMODE ftMode;
 
   /**
+   * The profiling mode.
+   */
+  private final boolean profilingMode;
+
+  /**
    * priority, currently no use.
    * */
   private volatile int priority;
@@ -151,6 +156,7 @@ public class WorkerQueryPartition implements QueryPartition {
   public WorkerQueryPartition(final SingleQueryPlanWithArgs plan, final long queryID, final Worker ownerWorker) {
     this.queryID = queryID;
     ftMode = plan.getFTMode();
+    profilingMode = plan.isProfilingMode();
     List<RootOperator> operators = plan.getRootOps();
     tasks = new HashSet<QuerySubTreeTask>(operators.size());
     numFinishedTasks = new AtomicInteger(0);
@@ -324,6 +330,11 @@ public class WorkerQueryPartition implements QueryPartition {
   @Override
   public FTMODE getFTMode() {
     return ftMode;
+  }
+
+  @Override
+  public boolean isProfilingMode() {
+    return profilingMode;
   }
 
   @Override

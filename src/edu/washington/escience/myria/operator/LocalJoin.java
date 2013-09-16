@@ -489,5 +489,6 @@ public final class LocalJoin extends BinaryOperator {
         hashTable1Local.put(j, cntTuple.get(j));
       }
     }
+
   }
 }

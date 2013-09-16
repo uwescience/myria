@@ -6,8 +6,10 @@ import java.util.Arrays;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
+import edu.washington.escience.myria.parallel.TaskResourceManager;
 
 /**
  * Abstract class for implementing operators.
@@ -41,6 +43,11 @@ public abstract class Operator implements Serializable {
   private boolean open = false;
 
   /**
+   * A bit denoting whether the operator has began to consume tuples.
+   */
+  private boolean startProcessing = false;
+
+  /**
    * EOS. Initially set it as true;
    * */
   private volatile boolean eos = true;
@@ -49,6 +56,63 @@ public abstract class Operator implements Serializable {
    * End of iteration.
    * */
   private boolean eoi = false;
+
+  /**
+   * Actual execution time.
+   */
+  private long executionTime = 0;
+
+  /**
+   * Environmental variables during execution.
+   */
+  private ImmutableMap<String, Object> execEnvVars;
+
+  /**
+   * @return return environmental variables
+   */
+  public ImmutableMap<String, Object> getExecEnvVars() {
+    return execEnvVars;
+  }
+
+  /**
+   * @return return query id.
+   */
+  public long getQueryId() {
+    return ((TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER)).getOwnerTask()
+        .getOwnerQuery().getQueryID();
+  }
+
+  /**
+   * fragment id of this operator.
+   */
+  private long fragmentId;
+
+  /**
+   * @return fragment Id.
+   */
+  public long getFragmentId() {
+    return fragmentId;
+  }
+
+  /**
+   * @param fragmentId fragment Id.
+   */
+  public void setFragmentId(final long fragmentId) {
+    this.fragmentId = fragmentId;
+  }
+
+  /**
+   * @return return profiling mode.
+   */
+  public boolean isProfilingMode() {
+    // make sure hard coded test will pass
+    if (execEnvVars != null) {
+      return ((TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER)).getOwnerTask()
+          .getOwnerQuery().isProfilingMode();
+    } else {
+      return false;
+    }
+  }
 
   /**
    * Closes this iterator.
@@ -193,6 +257,16 @@ public abstract class Operator implements Serializable {
       return null;
     }
 
+    if (!startProcessing) {
+      if (isProfilingMode()) {
+        LOGGER.info("[{}#{}][{}@{}][{}]:begin to process", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
+            getOpName(), getFragmentId(), this);
+      }
+      startProcessing = true;
+    }
+
+    long startTime = System.currentTimeMillis();
+
     TupleBatch result = null;
     try {
       result = fetchNextReady();
@@ -206,12 +280,15 @@ public abstract class Operator implements Serializable {
       throw new DbException(e);
     }
 
+    executionTime += System.currentTimeMillis() - startTime;
+
     if (result == null) {
       checkEOSAndEOI();
     } else {
       numOutputTBs++;
       numOutputTuples += result.numTuples();
     }
+
     return result;
   }
 
@@ -238,6 +315,7 @@ public abstract class Operator implements Serializable {
       // XXX Do some error handling to multi-open?
       throw new DbException("Operator already open.");
     }
+    this.execEnvVars = execEnvVars;
     final Operator[] children = getChildren();
     if (children != null) {
       for (final Operator child : children) {
@@ -311,8 +389,11 @@ public abstract class Operator implements Serializable {
    * Operators should not be able to unset an already set EOS except reopen it.
    */
   protected final void setEOS() {
-    if (LOGGER.isDebugEnabled()) {
-      LOGGER.debug("Operator EOS: " + this);
+    if (startProcessing && isProfilingMode()) {
+      LOGGER.info("[{}#{}][{}@{}][{}]:End of Processing (EOS)", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
+          getOpName(), getFragmentId(), this);
+      LOGGER.info("[{}#{}][{}@{}][{}]: executionTime {} ms", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
+          getOpName(), getFragmentId(), this, executionTime);
     }
     eos = true;
   }
