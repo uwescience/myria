@@ -27,6 +27,7 @@ import com.google.common.collect.ImmutableMap;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
 import edu.washington.escience.myria.parallel.SocketInfo;
@@ -871,6 +872,56 @@ public final class MasterCatalog {
   }
 
   /**
+   * @return A list of datasets in the system.
+   * @throws CatalogException if there is an error accessing the desired Schema.
+   */
+  public List<DatasetStatus> getDatasets() throws CatalogException {
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+
+    /* Do the work */
+    try {
+      return queue.execute(new SQLiteJob<List<DatasetStatus>>() {
+        @Override
+        protected List<DatasetStatus> job(final SQLiteConnection sqliteConnection) throws CatalogException,
+            SQLiteException {
+          try {
+            SQLiteStatement statement =
+                sqliteConnection
+                    .prepare("SELECT user_name, program_name, relation_name, num_tuples, col_name, col_type FROM relations JOIN relation_schema USING (user_name, program_name, relation_name) ORDER BY user_name, program_name, relation_name, col_index ASC");
+            ImmutableList.Builder<DatasetStatus> result = ImmutableList.builder();
+            if (!statement.step()) {
+              return result.build();
+            }
+            while (statement.hasRow()) {
+              RelationKey relationKey =
+                  RelationKey.of(statement.columnString(0), statement.columnString(1), statement.columnString(2));
+              long numTuples = statement.columnLong(3);
+              ImmutableList.Builder<String> columnNames = ImmutableList.builder();
+              ImmutableList.Builder<Type> columnTypes = ImmutableList.builder();
+              while (statement.hasRow() && statement.columnString(0).equals(relationKey.getUserName())
+                  && statement.columnString(1).equals(relationKey.getProgramName())
+                  && statement.columnString(2).equals(relationKey.getRelationName())) {
+                columnNames.add(statement.columnString(4));
+                columnTypes.add(Type.valueOf(statement.columnString(5)));
+                statement.step();
+              }
+              result.add(new DatasetStatus(relationKey, new Schema(columnTypes, columnNames), numTuples));
+            }
+            statement.dispose();
+            return result.build();
+          } catch (final SQLiteException e) {
+            throw new CatalogException(e);
+          }
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  /**
    * Insert a new query into the Catalog.
    * 
    * @param rawQuery the original user data of the query.
@@ -1066,6 +1117,54 @@ public final class MasterCatalog {
             statement.stepThrough();
             statement.dispose();
             return null;
+          } catch (final SQLiteException e) {
+            throw new CatalogException(e);
+          }
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  /**
+   * Get the metadata about a relation.
+   * 
+   * @param relationKey specified which relation to get the metadata about.
+   * @return the metadata of the specified relation.
+   * @throws CatalogException if there is an error in the catalog.
+   */
+  public DatasetStatus getDatasetStatus(final RelationKey relationKey) throws CatalogException {
+    if (isClosed) {
+      throw new CatalogException("Catalog is closed.");
+    }
+
+    /* Do the work */
+    try {
+      return queue.execute(new SQLiteJob<DatasetStatus>() {
+        @Override
+        protected DatasetStatus job(final SQLiteConnection sqliteConnection) throws CatalogException, SQLiteException {
+          try {
+            SQLiteStatement statement =
+                sqliteConnection
+                    .prepare("SELECT num_tuples, col_name, col_type FROM relations JOIN relation_schema USING (user_name, program_name, relation_name) WHERE user_name=? AND program_name=? AND relation_name=? ORDER BY user_name, program_name, relation_name, col_index ASC");
+            statement.bind(1, relationKey.getUserName());
+            statement.bind(2, relationKey.getProgramName());
+            statement.bind(3, relationKey.getRelationName());
+            if (!statement.step()) {
+              return null;
+            }
+            long numTuples = statement.columnLong(0);
+            ImmutableList.Builder<String> columnNames = ImmutableList.builder();
+            ImmutableList.Builder<Type> columnTypes = ImmutableList.builder();
+            while (statement.hasRow()) {
+              columnNames.add(statement.columnString(1));
+              columnTypes.add(Type.valueOf(statement.columnString(2)));
+              statement.step();
+            }
+
+            statement.dispose();
+            return new DatasetStatus(relationKey, new Schema(columnTypes, columnNames), numTuples);
           } catch (final SQLiteException e) {
             throw new CatalogException(e);
           }

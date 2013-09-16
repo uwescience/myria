@@ -1027,11 +1027,12 @@ public final class Server {
    * @param relationKey the name of the dataset.
    * @param workersToIngest restrict the workers to ingest data (null for all)
    * @param source the source of tuples to be ingested.
+   * @return the status of the ingested dataset.
    * @throws InterruptedException interrupted
    * @throws DbException if there is an error
    */
-  public void ingestDataset(final RelationKey relationKey, final Set<Integer> workersToIngest, final Operator source)
-      throws InterruptedException, DbException {
+  public DatasetStatus ingestDataset(final RelationKey relationKey, final Set<Integer> workersToIngest,
+      final Operator source) throws InterruptedException, DbException {
     /* Figure out the workers we will use. If workersToIngest is null, use all active workers. */
     Set<Integer> actualWorkers = workersToIngest;
     if (workersToIngest == null) {
@@ -1060,10 +1061,12 @@ public final class Server {
           "ingest " + relationKey.toString("sqlite"), new SingleQueryPlanWithArgs(scatter), workerPlans).sync();
       /* Now that the query has finished, add the metadata about this relation to the dataset. */
       /* TODO(dhalperi) -- figure out how to populate the numTuples column. */
-      catalog.addRelationMetadata(relationKey, source.getSchema(), -1);
+      DatasetStatus status = new DatasetStatus(relationKey, source.getSchema(), -1);
+      catalog.addRelationMetadata(status.getRelationKey(), status.getSchema(), status.getNumTuples());
 
       /* Add the round robin-partitioned shard. */
       catalog.addStoredRelation(relationKey, actualWorkers, "RoundRobin");
+      return status;
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -1187,6 +1190,21 @@ public final class Server {
   public List<DatasetStatus> getDatasets() throws DbException {
     try {
       return catalog.getDatasets();
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+  }
+
+  /**
+   * Get the metadata about a relation.
+   * 
+   * @param relationKey specified which relation to get the metadata about.
+   * @return the metadata of the specified relation.
+   * @throws DbException if there is an error getting the status.
+   */
+  public DatasetStatus getDatasetStatus(final RelationKey relationKey) throws DbException {
+    try {
+      return catalog.getDatasetStatus(relationKey);
     } catch (CatalogException e) {
       throw new DbException(e);
     }

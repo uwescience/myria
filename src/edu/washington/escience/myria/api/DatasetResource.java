@@ -2,6 +2,8 @@ package edu.washington.escience.myria.api;
 
 import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
+import java.net.URI;
+import java.util.List;
 import java.util.Set;
 
 import javax.ws.rs.Consumes;
@@ -19,8 +21,8 @@ import javax.ws.rs.core.UriInfo;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.RelationKey;
-import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.api.encoding.DatasetEncoding;
+import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.TipsyDatasetEncoding;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.operator.FileScan;
@@ -40,37 +42,40 @@ public final class DatasetResource {
   /** The Myria server running on the master. */
   @Context
   private Server server;
+  /** Information about the URL of the request. */
+  @Context
+  private UriInfo uriInfo;
 
   /**
    * @param userName the user who owns the target relation.
    * @param programName the program to which the target relation belongs.
    * @param relationName the name of the target relation.
-   * @return the schema of the specified relation.
-   * @throws CatalogException if there is an error in the database.
+   * @return metadata about the specified relation.
+   * @throws DbException if there is an error in the database.
    */
   @GET
   @Path("/user-{user_name}/program-{program_name}/relation-{relation_name}")
-  public Schema getDataset(@PathParam("user_name") final String userName,
+  public Response getDataset(@PathParam("user_name") final String userName,
       @PathParam("program_name") final String programName, @PathParam("relation_name") final String relationName)
-      throws CatalogException {
-    Schema schema = server.getSchema(RelationKey.of(userName, programName, relationName));
-    if (schema == null) {
+      throws DbException {
+    DatasetStatus status = server.getDatasetStatus(RelationKey.of(userName, programName, relationName));
+    if (status == null) {
       /* Not found, throw a 404 (Not Found) */
       throw new MyriaApiException(Status.NOT_FOUND, "That dataset was not found");
     }
+    status.setUri(getCanonicalResourcePath(uriInfo, status.getRelationKey()));
     /* Yay, worked! */
-    return schema;
+    return Response.ok(status).build();
   }
 
   /**
    * @param dataset the dataset to be ingested.
-   * @param uriInfo information about the current URL.
    * @return the created dataset resource.
    * @throws DbException if there is an error in the database.
    */
   @POST
   @Consumes(MediaType.APPLICATION_JSON)
-  public Response newDataset(final DatasetEncoding dataset, @Context final UriInfo uriInfo) throws DbException {
+  public Response newDataset(final DatasetEncoding dataset) throws DbException {
     dataset.validate();
 
     /* If we already have a dataset by this name, tell the user there's a conflict. */
@@ -108,18 +113,17 @@ public final class DatasetResource {
         throw new MyriaApiException(Status.NOT_FOUND, e);
       }
     }
+    DatasetStatus status = null;
     try {
-      server.ingestDataset(dataset.relationKey, dataset.workers, source);
+      status = server.ingestDataset(dataset.relationKey, dataset.workers, source);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
     }
 
     /* In the response, tell the client the path to the relation. */
-    UriBuilder queryUri = uriInfo.getBaseUriBuilder();
-    return Response.created(
-        queryUri.path("dataset").path("user-" + dataset.relationKey.getUserName()).path(
-            "program-" + dataset.relationKey.getProgramName())
-            .path("relation-" + dataset.relationKey.getRelationName()).build()).build();
+    URI datasetUri = getCanonicalResourcePath(uriInfo, dataset.relationKey);
+    status.setUri(datasetUri);
+    return Response.created(datasetUri).entity(status).build();
   }
 
   /**
@@ -152,11 +156,7 @@ public final class DatasetResource {
     server.importDataset(dataset.relationKey, dataset.schema, dataset.workers);
 
     /* In the response, tell the client the path to the relation. */
-    UriBuilder queryUri = uriInfo.getBaseUriBuilder();
-    return Response.created(
-        queryUri.path("dataset").path("user-" + dataset.relationKey.getUserName()).path(
-            "program-" + dataset.relationKey.getProgramName())
-            .path("relation-" + dataset.relationKey.getRelationName()).build()).build();
+    return Response.created(getCanonicalResourcePath(uriInfo, dataset.relationKey)).build();
 
   }
 
@@ -206,10 +206,54 @@ public final class DatasetResource {
     }
 
     /* In the response, tell the client the path to the relation. */
-    UriBuilder queryUri = uriInfo.getBaseUriBuilder();
-    return Response.created(
-        queryUri.path("dataset").path("user-" + dataset.relationKey.getUserName()).path(
-            "program-" + dataset.relationKey.getProgramName())
-            .path("relation-" + dataset.relationKey.getRelationName()).build()).build();
+    return Response.created(getCanonicalResourcePath(uriInfo, dataset.relationKey)).build();
+  }
+
+  /**
+   * @return a list of datasets in the system.
+   * @throws DbException if there is an error accessing the Catalog.
+   */
+  @GET
+  public List<DatasetStatus> getDatasets() throws DbException {
+    List<DatasetStatus> datasets = server.getDatasets();
+    for (DatasetStatus status : datasets) {
+      status.setUri(getCanonicalResourcePath(uriInfo, status.getRelationKey()));
+    }
+    return datasets;
+  }
+
+  /**
+   * @param uriInfo information about the URL of the request.
+   * @return the canonical URL for this API.
+   */
+  public static URI getCanonicalResourcePath(final UriInfo uriInfo) {
+    return getCanonicalResourcePathBuilder(uriInfo).build();
+  }
+
+  /**
+   * @param uriInfo information about the URL of the request.
+   * @return a builder for the canonical URL for this API.
+   */
+  public static UriBuilder getCanonicalResourcePathBuilder(final UriInfo uriInfo) {
+    return uriInfo.getBaseUriBuilder().path("/dataset");
+  }
+
+  /**
+   * @param uriInfo information about the URL of the request.
+   * @param relationKey the key of the relation.
+   * @return the canonical URL for this API.
+   */
+  public static URI getCanonicalResourcePath(final UriInfo uriInfo, final RelationKey relationKey) {
+    return getCanonicalResourcePathBuilder(uriInfo, relationKey).build();
+  }
+
+  /**
+   * @param uriInfo information about the URL of the request.
+   * @param relationKey the key of the relation.
+   * @return a builder for the canonical URL for this API.
+   */
+  public static UriBuilder getCanonicalResourcePathBuilder(final UriInfo uriInfo, final RelationKey relationKey) {
+    return getCanonicalResourcePathBuilder(uriInfo).path("user-" + relationKey.getUserName()).path(
+        "program-" + relationKey.getProgramName()).path("relation-" + relationKey.getRelationName());
   }
 }
