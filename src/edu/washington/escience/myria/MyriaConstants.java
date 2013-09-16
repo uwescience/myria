@@ -56,6 +56,17 @@ public final class MyriaConstants {
    * Task resource manager.
    * */
   public static final String EXEC_ENV_VAR_TASK_RESOURCE_MANAGER = "taskResourceManager";
+
+  /**
+   * Query ID.
+   */
+  public static final String EXEC_ENV_VAR_QUERY_ID = "query_id";
+
+  /**
+   * Profiling mode.
+   */
+  public static final String EXEC_ENV_VAR_PROFILING_MODE = "profiling_mode";
+
   /**
    * Default value for {@link MyriaSystemConfigKeys#FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES}.
    * */

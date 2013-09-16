@@ -182,6 +182,11 @@ public class MasterQueryPartition implements QueryPartition {
   private final FTMODE ftMode;
 
   /**
+   * The profiling mode.
+   */
+  private final boolean profilingMode;
+
+  /**
    * The priority.
    * */
   private volatile int priority;
@@ -389,6 +394,7 @@ public class MasterQueryPartition implements QueryPartition {
     root = masterPlan.getRootOps().get(0);
     this.queryID = queryID;
     this.master = master;
+    profilingMode = masterPlan.isProfilingMode();
     ftMode = masterPlan.getFTMode();
     workerExecutionInfo = new ConcurrentHashMap<Integer, WorkerExecutionInfo>(workerPlans.size());
 
@@ -557,6 +563,11 @@ public class MasterQueryPartition implements QueryPartition {
   @Override
   public FTMODE getFTMode() {
     return ftMode;
+  }
+
+  @Override
+  public boolean isProfilingMode() {
+    return profilingMode;
   }
 
   @Override

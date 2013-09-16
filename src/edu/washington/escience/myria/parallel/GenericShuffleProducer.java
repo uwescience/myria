@@ -1,6 +1,9 @@
 package edu.washington.escience.myria.parallel;
 
+import org.slf4j.LoggerFactory;
+
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.operator.Operator;
@@ -27,6 +30,14 @@ public class GenericShuffleProducer extends Producer {
    * partition of cells.
    */
   private final int[][] cellPartition;
+
+  /**
+   * The time spends on sending tuples via network.
+   */
+  private long shuffleNetworkTime = 0;
+
+  /** The logger for this class. */
+  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(GenericShuffleProducer.class);
 
   /**
    * one to one shuffle.
@@ -68,7 +79,9 @@ public class GenericShuffleProducer extends Producer {
   protected final void consumeTuples(final TupleBatch tup) throws DbException {
     TupleBatchBuffer[] buffers = getBuffers();
     tup.partition(partitionFunction, buffers);
+    long startTime = System.currentTimeMillis();
     popTBsFromBuffersAndWrite(true, cellPartition);
+    shuffleNetworkTime += System.currentTimeMillis() - startTime;
   }
 
   @Override
@@ -76,6 +89,11 @@ public class GenericShuffleProducer extends Producer {
     popTBsFromBuffersAndWrite(false, cellPartition);
     for (int p = 0; p < numChannels(); p++) {
       super.channelEnds(p);
+    }
+
+    if (isProfilingMode()) {
+      LOGGER.info("[{}#{}]{}[{}]: shuffle network time {} ms", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
+          getOpName(), shuffleNetworkTime);
     }
   }
 
