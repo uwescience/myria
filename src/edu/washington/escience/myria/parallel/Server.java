@@ -37,6 +37,7 @@ import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
@@ -1045,7 +1046,6 @@ public final class Server {
             new RoundRobinPartitionFunction(workersArray.length));
 
     /* The workers' plan */
-
     GenericShuffleConsumer gather =
         new GenericShuffleConsumer(source.getSchema(), scatterId, new int[] { MyriaConstants.MASTER_ID });
     DbInsert insert = new DbInsert(gather, relationKey, true);
@@ -1059,7 +1059,8 @@ public final class Server {
       submitQuery("ingest " + relationKey.toString("sqlite"), "ingest " + relationKey.toString("sqlite"),
           "ingest " + relationKey.toString("sqlite"), new SingleQueryPlanWithArgs(scatter), workerPlans).sync();
       /* Now that the query has finished, add the metadata about this relation to the dataset. */
-      catalog.addRelationMetadata(relationKey, source.getSchema());
+      /* TODO(dhalperi) -- figure out how to populate the numTuples column. */
+      catalog.addRelationMetadata(relationKey, source.getSchema(), -1);
 
       /* Add the round robin-partitioned shard. */
       catalog.addStoredRelation(relationKey, actualWorkers, "RoundRobin");
@@ -1085,7 +1086,8 @@ public final class Server {
 
     try {
       /* Now that the query has finished, add the metadata about this relation to the dataset. */
-      catalog.addRelationMetadata(relationKey, schema);
+      /* TODO(dhalperi) -- figure out how to populate the numTuples column. */
+      catalog.addRelationMetadata(relationKey, schema, -1);
       /* Add the round robin-partitioned shard. */
       catalog.addStoredRelation(relationKey, actualWorkers, "RoundRobin");
     } catch (CatalogException e) {
@@ -1176,5 +1178,17 @@ public final class Server {
       queryStatus.status = QueryStatusEncoding.Status.ACCEPTED;
     }
     return queryStatus;
+  }
+
+  /**
+   * @return A list of datasets in the system.
+   * @throws DbException if there is an error accessing the desired Schema.
+   */
+  public List<DatasetStatus> getDatasets() throws DbException {
+    try {
+      return catalog.getDatasets();
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
   }
 }

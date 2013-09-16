@@ -67,6 +67,7 @@ public final class MasterCatalog {
     + "    user_name STRING NOT NULL,\n"
     + "    program_name STRING NOT NULL,\n"
     + "    relation_name STRING NOT NULL,\n"
+    + "    num_tuples LONG NOT NULL,\n"
     + "    PRIMARY KEY (user_name,program_name,relation_name));";
   /** Create the relation_schema table. */
   private static final String CREATE_RELATION_SCHEMA =
@@ -339,9 +340,11 @@ public final class MasterCatalog {
    * 
    * @param relation the relation to create.
    * @param schema the schema of the relation.
+   * @param numTuples the number of tuples in the relation.
    * @throws CatalogException if the relation is already in the catalog or there is an error in the database.
    */
-  public void addRelationMetadata(final RelationKey relation, final Schema schema) throws CatalogException {
+  public void addRelationMetadata(final RelationKey relation, final Schema schema, final long numTuples)
+      throws CatalogException {
     Objects.requireNonNull(relation);
     Objects.requireNonNull(schema);
     if (isClosed) {
@@ -360,10 +363,11 @@ public final class MasterCatalog {
             /* First, insert the relation name. */
             SQLiteStatement statement =
                 sqliteConnection
-                    .prepare("INSERT INTO relations (user_name,program_name,relation_name) VALUES (?,?,?);");
+                    .prepare("INSERT INTO relations (user_name,program_name,relation_name,num_tuples) VALUES (?,?,?,?);");
             statement.bind(1, relation.getUserName());
             statement.bind(2, relation.getProgramName());
             statement.bind(3, relation.getRelationName());
+            statement.bind(4, numTuples);
             statement.stepThrough();
             statement.dispose();
             statement = null;
