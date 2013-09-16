@@ -145,17 +145,14 @@ tasks.withType(Test) {
 task systemtest(type: Test) {
   testClassesDir = sourceSets.systemtest.output.classesDir
   classpath = sourceSets.systemtest.runtimeClasspath
-  dependsOn test
 }
 task speedtest(type: Test) {
   testClassesDir = sourceSets.speedtest.output.classesDir
   classpath = sourceSets.speedtest.runtimeClasspath
-  dependsOn test
 }
 task testsuites(type: Test) {
   testClassesDir = sourceSets.testsuites.output.classesDir
   classpath = sourceSets.testsuites.runtimeClasspath
-  dependsOn test
 }
 
 /* The eclipseClasspath task will build a local Eclipse .classpath file. */
@@ -216,9 +213,6 @@ task allTests
 allTests.dependsOn test
 allTests.dependsOn systemtest
 allTests.dependsOn speedtest
-
-/* Check should run both test and systemtest. */
-check.dependsOn systemtest
 
 /* Assemble the Myria jar into `build/libs` */
 jar {
