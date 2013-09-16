@@ -105,8 +105,13 @@ public abstract class Operator implements Serializable {
    * @return return profiling mode.
    */
   public boolean isProfilingMode() {
-    return ((TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER)).getOwnerTask()
-        .getOwnerQuery().isProfilingMode();
+    // make sure hard coded test will pass
+    if (execEnvVars != null) {
+      return ((TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER)).getOwnerTask()
+          .getOwnerQuery().isProfilingMode();
+    } else {
+      return false;
+    }
   }
 
   /**
