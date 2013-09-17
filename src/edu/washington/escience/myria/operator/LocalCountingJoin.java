@@ -13,6 +13,7 @@ import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
+import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.parallel.QueryExecutionMode;
 import edu.washington.escience.myria.parallel.TaskResourceManager;
@@ -36,9 +37,9 @@ public final class LocalCountingJoin extends BinaryOperator {
   /** A hash table for tuples from child 2. {Hashcode -> List of tuple indices with the same hash code} */
   private transient HashMap<Integer, List<Integer>> hashTable2Indices;
   /** The buffer holding the valid tuples from left. */
-  private transient TupleBatchBuffer hashTable1;
+  private transient TupleBuffer hashTable1;
   /** The buffer holding the valid tuples from right. */
-  private transient TupleBatchBuffer hashTable2;
+  private transient TupleBuffer hashTable2;
   /** How many times each key occurred from left. */
   private transient List<Integer> occurredTimes1;
   /** How many times each key occurred from right. */
@@ -221,8 +222,8 @@ public final class LocalCountingJoin extends BinaryOperator {
     occurredTimes1 = new ArrayList<Integer>();
     occurredTimes2 = new ArrayList<Integer>();
     hashTable2Indices = new HashMap<Integer, List<Integer>>();
-    hashTable1 = new TupleBatchBuffer(getLeft().getSchema().getSubSchema(compareIndx1));
-    hashTable2 = new TupleBatchBuffer(getLeft().getSchema().getSubSchema(compareIndx2));
+    hashTable1 = new TupleBuffer(getLeft().getSchema().getSubSchema(compareIndx1));
+    hashTable2 = new TupleBuffer(getLeft().getSchema().getSubSchema(compareIndx2));
     ans = 0;
     ansTBB = new TupleBatchBuffer(outputSchema);
     TaskResourceManager qem = (TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER);
@@ -238,7 +239,7 @@ public final class LocalCountingJoin extends BinaryOperator {
    * @param compareIndx the comparing list of columns of cntTuple
    * @return true if equals.
    * */
-  private boolean tupleEquals(final List<Object> cntTuple, final TupleBatchBuffer hashTable, final int rowIndex,
+  private boolean tupleEquals(final List<Object> cntTuple, final TupleBuffer hashTable, final int rowIndex,
       final int[] compareIndx) {
     if (compareIndx.length != hashTable.getSchema().numColumns()) {
       return false;
@@ -257,8 +258,8 @@ public final class LocalCountingJoin extends BinaryOperator {
    * */
   protected void processChildTB(final TupleBatch tb, final boolean fromleft) {
 
-    TupleBatchBuffer hashTable1Local = hashTable1;
-    TupleBatchBuffer hashTable2Local = hashTable2;
+    TupleBuffer hashTable1Local = hashTable1;
+    TupleBuffer hashTable2Local = hashTable2;
     HashMap<Integer, List<Integer>> hashTable1IndicesLocal = hashTable1Indices;
     HashMap<Integer, List<Integer>> hashTable2IndicesLocal = hashTable2Indices;
     List<Integer> occurredTimes1Local = occurredTimes1;

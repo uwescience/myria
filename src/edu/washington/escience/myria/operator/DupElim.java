@@ -10,7 +10,7 @@ import com.google.common.collect.ImmutableMap;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
+import edu.washington.escience.myria.TupleBuffer;
 
 /**
  * Duplicate elimination. It adds newly meet unique tuples into a buffer so that the source TupleBatches are not
@@ -29,7 +29,7 @@ public final class DupElim extends UnaryOperator {
   /**
    * The buffer for stroing unique tuples.
    * */
-  private transient TupleBatchBuffer uniqueTuples = null;
+  private transient TupleBuffer uniqueTuples = null;
 
   /**
    * @param child the child.
@@ -131,6 +131,6 @@ public final class DupElim extends UnaryOperator {
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     uniqueTupleIndices = new HashMap<Integer, List<Integer>>();
-    uniqueTuples = new TupleBatchBuffer(getSchema());
+    uniqueTuples = new TupleBuffer(getSchema());
   }
 }
