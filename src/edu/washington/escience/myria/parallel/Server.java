@@ -1209,4 +1209,31 @@ public final class Server {
       throw new DbException(e);
     }
   }
+
+  /**
+   * @param userName the user whose datasets we want to access.
+   * @return a list of datasets belonging to the specified user.
+   * @throws DbException if there is an error accessing the Catalog.
+   */
+  public List<DatasetStatus> getDatasetsForUser(final String userName) throws DbException {
+    try {
+      return catalog.getDatasetsForUser(userName);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+  }
+
+  /**
+   * @param userName the user whose datasets we want to access.
+   * @param programName the program by that user whose datasets we want to access.
+   * @return a list of datasets belonging to the specified program.
+   * @throws DbException if there is an error accessing the Catalog.
+   */
+  public List<DatasetStatus> getDatasetsForProgram(final String userName, final String programName) throws DbException {
+    try {
+      return catalog.getDatasetsForProgram(userName, programName);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+  }
 }

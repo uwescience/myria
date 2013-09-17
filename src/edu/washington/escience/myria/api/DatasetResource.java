@@ -31,7 +31,7 @@ import edu.washington.escience.myria.operator.TipsyFileScan;
 import edu.washington.escience.myria.parallel.Server;
 
 /**
- * This is the class that handles API calls that return relation schemas.
+ * This is the class that handles API calls to create or fetch datasets.
  * 
  * @author dhalperi
  */
@@ -216,6 +216,38 @@ public final class DatasetResource {
   @GET
   public List<DatasetStatus> getDatasets() throws DbException {
     List<DatasetStatus> datasets = server.getDatasets();
+    for (DatasetStatus status : datasets) {
+      status.setUri(getCanonicalResourcePath(uriInfo, status.getRelationKey()));
+    }
+    return datasets;
+  }
+
+  /**
+   * @param userName the user whose datasets we want to access.
+   * @return a list of datasets belonging to the specified user.
+   * @throws DbException if there is an error accessing the Catalog.
+   */
+  @GET
+  @Path("/user-{user_name}")
+  public List<DatasetStatus> getDatasetsForUser(@PathParam("user_name") final String userName) throws DbException {
+    List<DatasetStatus> datasets = server.getDatasetsForUser(userName);
+    for (DatasetStatus status : datasets) {
+      status.setUri(getCanonicalResourcePath(uriInfo, status.getRelationKey()));
+    }
+    return datasets;
+  }
+
+  /**
+   * @param userName the user whose datasets we want to access.
+   * @param programName the program owned by that user whose datasets we want to access.
+   * @return a list of datasets in the program.
+   * @throws DbException if there is an error accessing the Catalog.
+   */
+  @GET
+  @Path("/user-{user_name}/program-{program_name}")
+  public List<DatasetStatus> getDatasetsForUser(@PathParam("user_name") final String userName,
+      @PathParam("program_name") final String programName) throws DbException {
+    List<DatasetStatus> datasets = server.getDatasetsForProgram(userName, programName);
     for (DatasetStatus status : datasets) {
       status.setUri(getCanonicalResourcePath(uriInfo, status.getRelationKey()));
     }
