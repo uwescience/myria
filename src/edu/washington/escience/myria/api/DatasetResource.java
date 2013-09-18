@@ -103,11 +103,7 @@ public final class DatasetResource {
       ((FileScan) source).setInputStream(new ByteArrayInputStream(dataset.data));
     } else {
       try {
-        if (dataset.isCommaSeparated == null) {
-          source = new FileScan(dataset.fileName, dataset.schema);
-        } else {
-          source = new FileScan(dataset.fileName, dataset.schema, dataset.isCommaSeparated);
-        }
+        source = new FileScan(dataset.fileName, dataset.schema, dataset.delimiter);
       } catch (FileNotFoundException e) {
         throw new MyriaApiException(Status.NOT_FOUND, e);
       }

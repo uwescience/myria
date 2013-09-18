@@ -16,7 +16,6 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.operator.FileScan;
 
 public class FileScanTest {
 
@@ -30,7 +29,7 @@ public class FileScanTest {
    * @throws InterruptedException
    */
   private static int getRowCount(final String filename, final Schema schema) throws DbException, InterruptedException {
-    return getRowCount(filename, schema, false);
+    return getRowCount(filename, schema, null);
   }
 
   /**
@@ -38,18 +37,18 @@ public class FileScanTest {
    * 
    * @param filename the file in which the relation is stored.
    * @param schema the schema of the relation in the file.
-   * @param commaIsDelimiter true if commas should be considered delimiting characters.
+   * @param delimiter if non-null, an override file delimiter
    * @return the number of rows in the file.
    * @throws DbException if the file does not match the given Schema.
    * @throws FileNotFoundException if the specified file does not exist.
    * @throws InterruptedException
    */
-  private static int getRowCount(final String filename, final Schema schema, final boolean commaIsDelimiter)
+  private static int getRowCount(final String filename, final Schema schema, final String delimiter)
       throws DbException, InterruptedException {
     final String realFilename = "testdata" + File.separatorChar + "filescan" + File.separatorChar + filename;
     FileScan fileScan;
     try {
-      fileScan = new FileScan(realFilename, schema, commaIsDelimiter);
+      fileScan = new FileScan(realFilename, schema, delimiter);
     } catch (FileNotFoundException e) {
       throw new DbException(e);
     }
@@ -111,14 +110,14 @@ public class FileScanTest {
   public void testCommaTwoColumnIntUnix() throws DbException, InterruptedException {
     final String filename = "comma_two_col_int_unix.txt";
     final Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE));
-    assertTrue(getRowCount(filename, schema, true) == 7);
+    assertTrue(getRowCount(filename, schema, ",") == 7);
   }
 
   @Test
   public void testCommaTwoColumnIntDos() throws DbException, InterruptedException {
     final String filename = "comma_two_col_int_dos.txt";
     final Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE));
-    assertTrue(getRowCount(filename, schema, true) == 7);
+    assertTrue(getRowCount(filename, schema, ",") == 7);
   }
 
   @Test

@@ -40,8 +40,8 @@ public final class FileScan extends LeafOperator {
   private final Schema schema;
   /** Scanner used to parse the file. */
   private transient Scanner scanner = null;
-  /** Whether a comma is a delimiter in this file. */
-  private final boolean commaIsDelimiter;
+  /** A user-provided file delimiter; if null, the system uses the default whitespace delimiter. */
+  private final String delimiter;
 
   /** The filename of the input, if any. */
   private String filename = null;
@@ -68,7 +68,7 @@ public final class FileScan extends LeafOperator {
    * @throws FileNotFoundException if the given filename does not exist.
    */
   public FileScan(final String filename, final Schema schema) throws FileNotFoundException {
-    this(filename, schema, false);
+    this(filename, schema, null);
   }
 
   /**
@@ -80,12 +80,11 @@ public final class FileScan extends LeafOperator {
    * @param commaIsDelimiter whether commas are also delimiters in the file.
    * @throws FileNotFoundException if the given filename does not exist.
    */
-  public FileScan(final String filename, final Schema schema, final boolean commaIsDelimiter)
-      throws FileNotFoundException {
+  public FileScan(final String filename, final Schema schema, final String delimiter) throws FileNotFoundException {
     Objects.requireNonNull(filename);
     Objects.requireNonNull(schema);
     this.schema = schema;
-    this.commaIsDelimiter = commaIsDelimiter;
+    this.delimiter = delimiter;
     this.filename = filename;
   }
 
@@ -96,9 +95,9 @@ public final class FileScan extends LeafOperator {
    * @param schema the Schema of the relation contained in the file.
    * @param commaIsDelimiter whether commas are also delimiters in the file.
    */
-  public FileScan(final Schema schema, final boolean commaIsDelimiter) {
+  public FileScan(final Schema schema, final String delimiter) {
     this.schema = schema;
-    this.commaIsDelimiter = commaIsDelimiter;
+    this.delimiter = delimiter;
   }
 
   /**
@@ -108,7 +107,7 @@ public final class FileScan extends LeafOperator {
    * @param schema the Schema of the relation contained in the file.
    */
   public FileScan(final Schema schema) {
-    this(schema, false);
+    this(schema, null);
   }
 
   /**
@@ -214,8 +213,8 @@ public final class FileScan extends LeafOperator {
     }
     Preconditions.checkArgument(inputStream != null, "FileScan input stream has not been set!");
     scanner = new Scanner(new BufferedReader(new InputStreamReader(inputStream)));
-    if (commaIsDelimiter) {
-      scanner.useDelimiter("[(\\r\\n)\\n,]");
+    if (delimiter != null) {
+      scanner.useDelimiter("(\\r\\n)|\\n|(\\Q" + delimiter + "\\E)");
     }
     lineNumber = 0;
   }
