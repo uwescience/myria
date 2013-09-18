@@ -27,8 +27,6 @@ import edu.washington.escience.myria.column.LongColumn;
 import edu.washington.escience.myria.column.LongColumnBuilder;
 import edu.washington.escience.myria.column.StringColumn;
 import edu.washington.escience.myria.column.StringColumnBuilder;
-import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
-import edu.washington.escience.myria.util.IPCUtils;
 
 /**
  * Used for creating TupleBatch objects on the fly. A helper class used in, e.g., the Scatter operator. Currently it
@@ -186,24 +184,6 @@ public class TupleBatchBuffer {
   }
 
   /**
-   * Return all tuples in this buffer. The data do not get removed.
-   * 
-   * @return a List<TupleBatch> containing all complete tuples that have been inserted into this buffer.
-   */
-  public final List<TransportMessage> getAllAsTM() {
-    final List<TransportMessage> output = new ArrayList<TransportMessage>();
-    if (numTuples() > 0) {
-      for (final List<Column<?>> columns : readyTuples) {
-        output.add(IPCUtils.normalDataMessage(columns, TupleBatch.BATCH_SIZE));
-      }
-      if (currentInProgressTuples > 0) {
-        output.add(IPCUtils.normalDataMessage(getInProgressColumns(), currentInProgressTuples));
-      }
-    }
-    return output;
-  }
-
-  /**
    * Get elapsed time since the last time when a TB is poped.
    * 
    * @return the elapsed time from lastPopedTime to present
@@ -319,50 +299,6 @@ public class TupleBatchBuffer {
   }
 
   /**
-   * @return pop filled and non-filled TransportMessage
-   * */
-  public final TransportMessage popAnyAsTM() {
-    final TransportMessage ans = popFilledAsTM();
-    if (ans != null) {
-      updateLastPopedTime();
-      return ans;
-    } else {
-      if (currentInProgressTuples > 0) {
-        int numTuples = currentInProgressTuples;
-        finishBatch();
-        readyTuplesNum -= numTuples;
-        final List<Column<?>> columns = readyTuples.remove(0);
-        updateLastPopedTime();
-        return IPCUtils.normalDataMessage(columns, numTuples);
-      } else {
-        return null;
-      }
-    }
-  }
-
-  /**
-   * @return pop filled and non-filled TransportMessage
-   * */
-  public final TransportMessage popAnyAsTMUsingTimeout() {
-    final TransportMessage ans = popFilledAsTM();
-    if (ans != null) {
-      updateLastPopedTime();
-      return ans;
-    } else {
-      if (currentInProgressTuples > 0 && getElapsedTime() >= MyriaConstants.PUSHING_TB_TIMEOUT) {
-        int numTuples = currentInProgressTuples;
-        finishBatch();
-        readyTuplesNum -= numTuples;
-        final List<Column<?>> columns = readyTuples.remove(0);
-        updateLastPopedTime();
-        return IPCUtils.normalDataMessage(columns, numTuples);
-      } else {
-        return null;
-      }
-    }
-  }
-
-  /**
    * @return pop filled and non-filled TupleBatch
    * */
   public final TupleBatch popAnyUsingTimeout() {
@@ -416,24 +352,6 @@ public class TupleBatchBuffer {
         readyTuplesNum -= readyTuples.get(0).get(0).size();
       }
       return readyTuples.remove(0);
-    }
-    return null;
-  }
-
-  /**
-   * Pop filled as TransportMessage. Avoid the overhead of creating TupleBatch instances if the data in this TBB are to
-   * be sent to other workers.
-   * 
-   * @return TransportMessage popped or null if no filled tuples ready yet.
-   * */
-  public final TransportMessage popFilledAsTM() {
-    if (readyTuples.size() > 0) {
-      if (readyTuples.get(0).size() > 0) {
-        readyTuplesNum -= readyTuples.get(0).get(0).size();
-      }
-      final List<Column<?>> columns = readyTuples.remove(0);
-      updateLastPopedTime();
-      return IPCUtils.normalDataMessage(columns, TupleBatch.BATCH_SIZE);
     }
     return null;
   }
