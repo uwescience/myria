@@ -73,11 +73,11 @@ public final class FileScan extends LeafOperator {
 
   /**
    * Construct a new FileScan object to read from the specified file. This file is assumed to be whitespace-separated
-   * and have one record per line. If commaIsDelimiter is true, then records may be whitespace or comma-separated.
+   * and have one record per line. If delimiter is non-null, the system uses its value as a delimiter.
    * 
    * @param filename the file containing the relation.
    * @param schema the Schema of the relation contained in the file.
-   * @param commaIsDelimiter whether commas are also delimiters in the file.
+   * @param delimiter An optional override file delimiter
    * @throws FileNotFoundException if the given filename does not exist.
    */
   public FileScan(final String filename, final Schema schema, final String delimiter) throws FileNotFoundException {
