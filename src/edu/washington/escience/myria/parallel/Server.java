@@ -37,13 +37,16 @@ import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.TupleWriter;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.coordinator.catalog.CatalogMaker;
 import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
+import edu.washington.escience.myria.operator.DataOutput;
 import edu.washington.escience.myria.operator.DbInsert;
+import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
@@ -1232,6 +1235,61 @@ public final class Server {
   public List<DatasetStatus> getDatasetsForProgram(final String userName, final String programName) throws DbException {
     try {
       return catalog.getDatasetsForProgram(userName, programName);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+  }
+
+  /**
+   * Start a query that streams tuples from the specified relation to the specified {@link TupleWriter}.
+   * 
+   * @param relationKey the relation to be downloaded.
+   * @param writer the {@link TupleWriter} which will serialize the tuples.
+   * @return the query future from which the query status can be looked up.
+   * @throws DbException if there is an error in the system.
+   */
+  public QueryFuture startDataStream(final RelationKey relationKey, final TupleWriter writer) throws DbException {
+    /* Get the relation's schema, to make sure it exists. */
+    final Schema schema;
+    try {
+      schema = catalog.getSchema(relationKey);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+    if (schema == null) {
+      throw new IllegalArgumentException("the requested relation was not found.");
+    }
+
+    /* Get the workers that store it. */
+    List<Integer> scanWorkers;
+    try {
+      scanWorkers = getWorkersForRelation(relationKey, null);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+
+    /* Construct the operators that go elsewhere. */
+    DbQueryScan scan = new DbQueryScan(relationKey, schema);
+    final ExchangePairID operatorId = ExchangePairID.newID();
+    CollectProducer producer = new CollectProducer(scan, operatorId, MyriaConstants.MASTER_ID);
+
+    /* Construct the workers' {@link SingleQueryPlanWithArgs}. */
+    SingleQueryPlanWithArgs workerPlan = new SingleQueryPlanWithArgs(producer);
+    Map<Integer, SingleQueryPlanWithArgs> workerPlans =
+        new HashMap<Integer, SingleQueryPlanWithArgs>(scanWorkers.size());
+    for (Integer worker : scanWorkers) {
+      workerPlans.put(worker, workerPlan);
+    }
+
+    /* Construct the master plan. */
+    final CollectConsumer consumer = new CollectConsumer(schema, operatorId, ImmutableSet.copyOf(scanWorkers));
+    DataOutput output = new DataOutput(consumer, writer);
+    final SingleQueryPlanWithArgs masterPlan = new SingleQueryPlanWithArgs(output);
+
+    /* Submit the plan for the download. */
+    String planString = "download " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE);
+    try {
+      return submitQuery(planString, planString, planString, masterPlan, workerPlans);
     } catch (CatalogException e) {
       throw new DbException(e);
     }

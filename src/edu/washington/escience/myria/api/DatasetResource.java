@@ -2,6 +2,9 @@ package edu.washington.escience.myria.api;
 
 import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.net.URI;
 import java.util.List;
 import java.util.Set;
@@ -12,15 +15,23 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
+import com.sun.jersey.core.header.ContentDisposition;
+
+import edu.washington.escience.myria.CsvTupleWriter;
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.JsonTupleWriter;
+import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
+import edu.washington.escience.myria.TupleWriter;
 import edu.washington.escience.myria.api.encoding.DatasetEncoding;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.TipsyDatasetEncoding;
@@ -66,6 +77,105 @@ public final class DatasetResource {
     status.setUri(getCanonicalResourcePath(uriInfo, status.getRelationKey()));
     /* Yay, worked! */
     return Response.ok(status).build();
+  }
+
+  /**
+   * Helper function to parse a format string, with default value "csv".
+   * 
+   * @param format the format string, with default value "csv".
+   * @return the cleaned-up format string.
+   */
+  private String validateFormat(final String format) {
+    String cleanFormat = format;
+    if (cleanFormat == null) {
+      cleanFormat = "csv";
+    }
+    cleanFormat = cleanFormat.trim().toLowerCase();
+    /* CSV is legal */
+    if (cleanFormat.equals("csv")) {
+      return cleanFormat;
+    }
+    /* TSV is legal */
+    if (cleanFormat.equals("tsv")) {
+      return cleanFormat;
+    }
+    /* JSON is legal */
+    if (cleanFormat.equals("json")) {
+      return cleanFormat;
+    }
+    throw new MyriaApiException(Status.BAD_REQUEST, "format must be 'csv', 'tsv', or 'json'");
+  }
+
+  /**
+   * @param userName the user who owns the target relation.
+   * @param programName the program to which the target relation belongs.
+   * @param relationName the name of the target relation.
+   * @param format the format of the output data. Valid options are (case-insensitive) "csv", "tsv", and "json".
+   * @return metadata about the specified relation.
+   * @throws DbException if there is an error in the database.
+   */
+  @GET
+  @Produces({ MediaType.APPLICATION_OCTET_STREAM, MediaType.APPLICATION_JSON })
+  @Path("/user-{user_name}/program-{program_name}/relation-{relation_name}/data")
+  public Response getDatasetData(@PathParam("user_name") final String userName,
+      @PathParam("program_name") final String programName, @PathParam("relation_name") final String relationName,
+      @QueryParam("format") final String format) throws DbException {
+
+    /* Start building the response. */
+    ResponseBuilder response = Response.ok();
+
+    /* Assemble the name of the relation. */
+    RelationKey relationKey = RelationKey.of(userName, programName, relationName);
+
+    /* Validate the request format. This will throw a MyriaApiException if format is invalid. */
+    String validFormat = validateFormat(format);
+
+    /*
+     * Allocate the pipes by which the {@link DataOutput} operator will talk to the {@link StreamingOutput} object that
+     * will stream data to the client.
+     */
+    PipedOutputStream writerOutput = new PipedOutputStream();
+    PipedInputStream input;
+    try {
+      input = new PipedInputStream(writerOutput, MyriaConstants.DEFAULT_PIPED_INPUT_STREAM_SIZE);
+    } catch (IOException e) {
+      throw new DbException(e);
+    }
+
+    /* Create a {@link PipedStreamingOutput} object that will stream the serialized results to the client. */
+    PipedStreamingOutput entity = new PipedStreamingOutput(input);
+    /* .. and make it the entity of the response. */
+    response.entity(entity);
+
+    /* Set up the TupleWriter and the Response MediaType based on the format choices. */
+    TupleWriter writer;
+    if (validFormat.equals("csv") || validFormat.equals("tsv")) {
+      /* CSV or TSV : set application/octet-stream, attachment, and filename. */
+      if (validFormat.equals("csv")) {
+        writer = new CsvTupleWriter(writerOutput);
+      } else {
+        writer = new CsvTupleWriter('\t', writerOutput);
+      }
+      ContentDisposition contentDisposition =
+          ContentDisposition.type("attachment").fileName(
+              relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE) + '.' + validFormat).build();
+
+      response.header("Content-Disposition", contentDisposition);
+      response.type(MediaType.APPLICATION_OCTET_STREAM);
+    } else if (validFormat.equals("json")) {
+      /* JSON: set application/json. */
+      response.type(MediaType.APPLICATION_JSON);
+      writer = new JsonTupleWriter(writerOutput);
+    } else {
+      /* Should not be possible to get here. */
+      throw new IllegalStateException("format should have been validated by now, and yet we got here");
+    }
+
+    /* Start streaming tuples into the TupleWriter, and through the pipes to the PipedStreamingOutput. */
+    server.startDataStream(relationKey, writer);
+
+    /* Yay, worked! Ensure the file has the correct filename. */
+    return response.build();
   }
 
   /**
