@@ -13,7 +13,6 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.operator.TupleSource;
 import edu.washington.escience.myria.operator.agg.Aggregator;
 import edu.washington.escience.myria.operator.agg.MultiGroupByAggregate;
 import edu.washington.escience.myria.operator.agg.SingleGroupByAggregateNoBuffer;
@@ -400,6 +399,7 @@ public class NoBufferAggregateTest {
       }
     }
     agg.close();
-    assertEquals(expectedStdev, (double) result.get(1, 0), 0.000001);
+    tb = result.popAny();
+    assertEquals(expectedStdev, (double) tb.getObject(1, 0), 0.000001);
   }
 }

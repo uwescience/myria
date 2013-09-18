@@ -31,7 +31,8 @@ import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
 import edu.washington.escience.myria.util.IPCUtils;
 
 /**
- * Used for creating TupleBatch objects on the fly. A helper class used in, e.g., the Scatter operator.
+ * Used for creating TupleBatch objects on the fly. A helper class used in, e.g., the Scatter operator. Currently it
+ * doesn't support random access to a specific cell. Use TupleBuffer instead.
  * 
  * @author dhalperi
  * 
@@ -150,26 +151,6 @@ public class TupleBatchBuffer {
     currentBuildingColumns = ColumnFactory.allocateColumns(schema);
     currentInProgressTuples = 0;
     return true;
-  }
-
-  /**
-   * @param colIndex column index
-   * @param rowIndex row index
-   * @return the element at ( rowIndex, colIndex)
-   * @throws IndexOutOfBoundsException if indices are out of bounds.
-   * */
-  public final Object get(final int colIndex, final int rowIndex) throws IndexOutOfBoundsException {
-    int tupleBatchIndex = rowIndex / TupleBatch.BATCH_SIZE;
-    int tupleIndex = rowIndex % TupleBatch.BATCH_SIZE;
-    if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
-        && tupleIndex >= currentInProgressTuples) {
-      throw new IndexOutOfBoundsException();
-    }
-    if (tupleBatchIndex < readyTuples.size()) {
-      return readyTuples.get(tupleBatchIndex).get(colIndex).get(tupleIndex);
-    }
-    return currentBuildingColumns.get(colIndex).get(tupleIndex);
-
   }
 
   /**
