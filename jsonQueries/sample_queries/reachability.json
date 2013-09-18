@@ -119,6 +119,10 @@
 				"arg_self_idb_id" : "0",
 				"arg_initial_input" : "sc2a",
 				"arg_iteration_input" : "sc3a",
+				"arg_state_updater" : 
+				{
+					"type" : "DupElim"
+				},
 				"arg_eos_controller_input" : "eosReceivera"
 			},
 			{
