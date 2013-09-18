@@ -64,7 +64,7 @@ public final class Apply extends UnaryOperator {
       for (int i = 0; i < tb.numTuples(); i++) {
         // put the content from the child operator first
         for (int j = 0; j < tb.numColumns(); j++) {
-          resultBuffer.put(j, tb.getObject(j, i));
+          resultBuffer.put(j, tb.getDataColumns().get(j), i);
         }
         // put the result into the tbb
         for (int j = 0; j < callers.size(); j++) {

@@ -101,7 +101,7 @@ public final class BooleanAggregator implements Aggregator<Boolean> {
   public void getResult(final TupleBatchBuffer outputBuffer, final int fromIndex) {
     int idx = fromIndex;
     if ((aggOps & AGG_OP_COUNT) != 0) {
-      outputBuffer.put(idx, count);
+      outputBuffer.putLong(idx, count);
       idx++;
     }
   }
