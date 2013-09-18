@@ -175,28 +175,28 @@ public final class DoubleAggregator implements Aggregator<Double> {
   public void getResult(final TupleBatchBuffer buffer, final int fromIndex) {
     int idx = fromIndex;
     if ((aggOps & AGG_OP_COUNT) != 0) {
-      buffer.put(idx, count);
+      buffer.putLong(idx, count);
       idx++;
     }
     if ((aggOps & AGG_OP_MIN) != 0) {
-      buffer.put(idx, min);
+      buffer.putDouble(idx, min);
       idx++;
     }
     if ((aggOps & AGG_OP_MAX) != 0) {
-      buffer.put(idx, max);
+      buffer.putDouble(idx, max);
       idx++;
     }
     if ((aggOps & AGG_OP_SUM) != 0) {
-      buffer.put(idx, sum);
+      buffer.putDouble(idx, sum);
       idx++;
     }
     if ((aggOps & AGG_OP_AVG) != 0) {
-      buffer.put(idx, sum * 1.0 / count);
+      buffer.putDouble(idx, sum * 1.0 / count);
       idx++;
     }
     if ((aggOps & AGG_OP_STDEV) != 0) {
       double stdev = Math.sqrt((sumSquared / count) - ((sum) / count * sum / count));
-      buffer.put(idx, stdev);
+      buffer.putDouble(idx, stdev);
       idx++;
     }
   }

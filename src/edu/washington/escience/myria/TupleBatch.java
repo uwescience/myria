@@ -223,7 +223,7 @@ public class TupleBatch implements Serializable {
   private void appendTupleInto(final int mappedRow, final TupleBatchBuffer buffer) {
     Objects.requireNonNull(buffer);
     for (int i = 0; i < numColumns(); ++i) {
-      buffer.put(i, columns.get(i).get(mappedRow));
+      buffer.put(i, columns.get(i), mappedRow);
     }
   }
 
@@ -242,7 +242,7 @@ public class TupleBatch implements Serializable {
     ImmutableIntArray indices = getValidIndices();
     for (int i = 0; i < indices.length(); i++) {
       for (int column = 0; column < numColumns; column++) {
-        tbb.put(column, columns.get(column).get(indices.get(i)));
+        tbb.put(column, columns.get(column), indices.get(i));
       }
     }
   }
@@ -425,7 +425,7 @@ public class TupleBatch implements Serializable {
       }
       int j = 0;
       for (final Column<?> c : columns) {
-        tbb.put(j++, c.get(row));
+        tbb.put(j++, c, row);
       }
       if (tbb.hasFilledTB()) {
         if (ready == null) {
@@ -518,7 +518,7 @@ public class TupleBatch implements Serializable {
       final int pOfTuple = partitions[i];
       final int mappedI = indices.get(i);
       for (int j = 0; j < numColumns; j++) {
-        buffers[pOfTuple].put(j, columns.get(j).get(mappedI));
+        buffers[pOfTuple].put(j, columns.get(j), mappedI);
       }
     }
   }
