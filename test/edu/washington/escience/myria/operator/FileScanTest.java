@@ -148,4 +148,13 @@ public class FileScanTest {
     scanBytes.setInputStream(new ByteArrayInputStream(bytes.toByteArray()));
     assertTrue(getRowCount(scanBytes) == 2 * TupleBatch.BATCH_SIZE);
   }
+
+  @Test
+  public void testPipeDelimiter() throws Exception {
+    final String filename = "nccdc_100.txt";
+    final Schema schema =
+        new Schema(ImmutableList.of(Type.STRING_TYPE, Type.STRING_TYPE, Type.INT_TYPE, Type.INT_TYPE, Type.INT_TYPE,
+            Type.INT_TYPE, Type.INT_TYPE));
+    assertTrue(getRowCount(filename, schema, "|") == 100);
+  }
 }
