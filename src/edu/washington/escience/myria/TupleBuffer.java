@@ -10,15 +10,23 @@ import org.joda.time.DateTime;
 
 import com.google.common.base.Preconditions;
 
+import edu.washington.escience.myria.column.BooleanColumn;
 import edu.washington.escience.myria.column.BooleanColumnBuilder;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.ColumnBuilder;
 import edu.washington.escience.myria.column.ColumnFactory;
+import edu.washington.escience.myria.column.DateTimeColumn;
 import edu.washington.escience.myria.column.DateTimeColumnBuilder;
+import edu.washington.escience.myria.column.DoubleColumn;
 import edu.washington.escience.myria.column.DoubleColumnBuilder;
+import edu.washington.escience.myria.column.FloatColumn;
 import edu.washington.escience.myria.column.FloatColumnBuilder;
+import edu.washington.escience.myria.column.IntColumn;
 import edu.washington.escience.myria.column.IntColumnBuilder;
+import edu.washington.escience.myria.column.LongColumn;
 import edu.washington.escience.myria.column.LongColumnBuilder;
+import edu.washington.escience.myria.column.MutableColumn;
+import edu.washington.escience.myria.column.StringColumn;
 import edu.washington.escience.myria.column.StringColumnBuilder;
 
 /** A simplified TupleBatchBuffer which supports random access. Designed for hash tables to use. */
@@ -29,7 +37,7 @@ public class TupleBuffer {
   /** Convenience constant; must match schema.numColumns() and currentColumns.size(). */
   private final int numColumns;
   /** List of completed TupleBatch objects. */
-  private final List<List<Column<?>>> readyTuples;
+  private final List<List<MutableColumn<?>>> readyTuples;
   /** Internal state used to build up a TupleBatch. */
   private List<ColumnBuilder<?>> currentBuildingColumns;
   /** Internal state representing which columns are ready in the current tuple. */
@@ -46,7 +54,7 @@ public class TupleBuffer {
    */
   public TupleBuffer(final Schema schema) {
     this.schema = Objects.requireNonNull(schema);
-    readyTuples = new LinkedList<List<Column<?>>>();
+    readyTuples = new LinkedList<List<MutableColumn<?>>>();
     currentBuildingColumns = ColumnFactory.allocateColumns(schema);
     numColumns = schema.numColumns();
     columnsReady = new BitSet(numColumns);
@@ -72,9 +80,9 @@ public class TupleBuffer {
   private void finishBatch() {
     Preconditions.checkArgument(numColumnsReady == 0);
     Preconditions.checkArgument(currentInProgressTuples == TupleBatch.BATCH_SIZE);
-    List<Column<?>> buildingColumns = new ArrayList<Column<?>>(currentBuildingColumns.size());
+    List<MutableColumn<?>> buildingColumns = new ArrayList<MutableColumn<?>>(currentBuildingColumns.size());
     for (ColumnBuilder<?> cb : currentBuildingColumns) {
-      buildingColumns.add(cb.build());
+      buildingColumns.add((MutableColumn<?>) cb.build());
     }
     readyTuples.add(buildingColumns);
     currentBuildingColumns = ColumnFactory.allocateColumns(schema);
@@ -243,6 +251,74 @@ public class TupleBuffer {
       columnsReady.clear();
       if (currentInProgressTuples == TupleBatch.BATCH_SIZE) {
         finishBatch();
+      }
+    }
+  }
+
+  /**
+   * @param colIndex column index
+   * @param rowIndex row index
+   * @param value the new value
+   * @throws IndexOutOfBoundsException if indices are out of bounds.
+   * */
+  public final void replace(final int colIndex, final int rowIndex, final Object value)
+      throws IndexOutOfBoundsException {
+    int tupleBatchIndex = rowIndex / TupleBatch.BATCH_SIZE;
+    int tupleIndex = rowIndex % TupleBatch.BATCH_SIZE;
+    if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
+        && tupleIndex >= currentInProgressTuples) {
+      throw new IndexOutOfBoundsException();
+    }
+    if (tupleBatchIndex < readyTuples.size()) {
+      MutableColumn<?> dest = readyTuples.get(tupleBatchIndex).get(colIndex);
+      switch (dest.getType()) {
+        case BOOLEAN_TYPE:
+          ((BooleanColumn) dest).replace(tupleIndex, (Boolean) value);
+          break;
+        case DATETIME_TYPE:
+          ((DateTimeColumn) dest).replace(tupleIndex, (DateTime) value);
+          break;
+        case DOUBLE_TYPE:
+          ((DoubleColumn) dest).replace(tupleIndex, (Double) value);
+          break;
+        case FLOAT_TYPE:
+          ((FloatColumn) dest).replace(tupleIndex, (Float) value);
+          break;
+        case INT_TYPE:
+          ((IntColumn) dest).replace(tupleIndex, (Integer) value);
+          break;
+        case LONG_TYPE:
+          ((LongColumn) dest).replace(tupleIndex, (Long) value);
+          break;
+        case STRING_TYPE:
+          ((StringColumn) dest).replace(tupleIndex, (String) value);
+          break;
+      }
+    } else {
+      ColumnBuilder<?> dest = currentBuildingColumns.get(colIndex);
+      switch (dest.getType()) {
+        case BOOLEAN_TYPE:
+          // TODO: change to primitive after Shengliang's new join branch is merged
+          ((BooleanColumnBuilder) dest).replace(tupleIndex, (Boolean) value);
+          break;
+        case DATETIME_TYPE:
+          ((DateTimeColumnBuilder) dest).replace(tupleIndex, (DateTime) value);
+          break;
+        case DOUBLE_TYPE:
+          ((DoubleColumnBuilder) dest).replace(tupleIndex, (Double) value);
+          break;
+        case FLOAT_TYPE:
+          ((FloatColumnBuilder) dest).replace(tupleIndex, (Float) value);
+          break;
+        case INT_TYPE:
+          ((IntColumnBuilder) dest).replace(tupleIndex, (Integer) value);
+          break;
+        case LONG_TYPE:
+          ((LongColumnBuilder) dest).replace(tupleIndex, (Long) value);
+          break;
+        case STRING_TYPE:
+          ((StringColumnBuilder) dest).replace(tupleIndex, (String) value);
+          break;
       }
     }
   }
