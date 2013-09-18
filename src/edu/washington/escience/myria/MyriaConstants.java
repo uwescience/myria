@@ -141,11 +141,6 @@ public final class MyriaConstants {
   public static final String STORAGE_SYSTEM_SQLITE = "sqlite";
 
   /**
-   * Vertica storage.
-   * */
-  public static final String STORAGE_SYSTEM_VERTICA = "vertica";
-
-  /**
    * Default value for {@link MyriaSystemConfigKeys#TCP_CONNECTION_TIMEOUT_MILLIS}.
    * */
   public static final int TCP_CONNECTION_TIMEOUT_MILLIS_DEFAULT_VALUE = 3000;
