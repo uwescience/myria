@@ -401,6 +401,6 @@ public class NoBufferAggregateTest {
     }
     agg.close();
     tb = result.popAny();
-    assertEquals(expectedStdev, (double) tb.getObject(1, 0), 0.000001);
+    assertEquals(expectedStdev, tb.getDouble(1, 0), 0.000001);
   }
 }
