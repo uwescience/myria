@@ -9,5 +9,5 @@
     "column_names" : ["x","y","time","data"]
   },
   "file_name" : "/disk1/lsst_dataset/large.csv",
-  "is_comma_separated" : true
+  "delimiter" : ","
 }

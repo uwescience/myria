@@ -33,7 +33,7 @@ Another dataset is also available Larger dataset (50GB) (large.csv)
 
 Ingesting the Dataset
 ---------------------------
-The two dataset are delimited differently. large.csv is delimited with comma (,), and small.csv is delimited with space ( ).  It is important that you specify the “is_comma_separated” field in the ingest json when you ingest large.csv file.
+The two dataset are delimited differently. large.csv is delimited with comma (,), and small.csv is delimited with space ( ).  It is important that you specify the “delimiter” field in the ingest json when you ingest large.csv file.
 
 TODO
 ---------------------------
