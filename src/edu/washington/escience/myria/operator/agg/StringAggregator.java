@@ -190,15 +190,15 @@ public final class StringAggregator implements Aggregator<String> {
   public void getResult(final TupleBatchBuffer buffer, final int fromIndex) {
     int idx = fromIndex;
     if ((aggOps & AGG_OP_COUNT) != 0) {
-      buffer.put(idx, count);
+      buffer.putLong(idx, count);
       idx++;
     }
     if (computeMin) {
-      buffer.put(idx, min);
+      buffer.putString(idx, min);
       idx++;
     }
     if (computeMax) {
-      buffer.put(idx, max);
+      buffer.putString(idx, max);
     }
   }
 

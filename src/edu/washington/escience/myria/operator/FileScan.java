@@ -139,28 +139,28 @@ public final class FileScan extends LeafOperator {
           switch (schema.getColumnType(count)) {
             case BOOLEAN_TYPE:
               if (scanner.hasNextBoolean()) {
-                buffer.put(count, scanner.nextBoolean());
+                buffer.putBoolean(count, scanner.nextBoolean());
               } else if (scanner.hasNextFloat()) {
-                buffer.put(count, scanner.nextFloat() != 0);
+                buffer.putBoolean(count, scanner.nextFloat() != 0);
               }
               break;
             case DOUBLE_TYPE:
-              buffer.put(count, scanner.nextDouble());
+              buffer.putDouble(count, scanner.nextDouble());
               break;
             case FLOAT_TYPE:
-              buffer.put(count, scanner.nextFloat());
+              buffer.putFloat(count, scanner.nextFloat());
               break;
             case INT_TYPE:
-              buffer.put(count, scanner.nextInt());
+              buffer.putInt(count, scanner.nextInt());
               break;
             case LONG_TYPE:
-              buffer.put(count, scanner.nextLong());
+              buffer.putLong(count, scanner.nextLong());
               break;
             case STRING_TYPE:
-              buffer.put(count, scanner.next());
+              buffer.putString(count, scanner.next());
               break;
             case DATETIME_TYPE:
-              buffer.put(count, DateTimeUtils.parse(scanner.next()));
+              buffer.putDateTime(count, DateTimeUtils.parse(scanner.next()));
               break;
           }
         } catch (final InputMismatchException e) {

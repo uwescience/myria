@@ -78,21 +78,21 @@ public class BinaryFileScan extends LeafOperator {
         for (int count = 0; count < schema.numColumns(); ++count) {
           switch (schema.getColumnType(count)) {
             case DOUBLE_TYPE:
-              buffer.put(count, dataInput.readDouble());
+              buffer.putDouble(count, dataInput.readDouble());
               fileLength -= 8;
               break;
             case FLOAT_TYPE:
               float readFloat = dataInput.readFloat();
-              buffer.put(count, readFloat);
+              buffer.putFloat(count, readFloat);
               fileLength -= 4;
               break;
             case INT_TYPE:
-              buffer.put(count, dataInput.readInt());
+              buffer.putInt(count, dataInput.readInt());
               fileLength -= 4;
               break;
             case LONG_TYPE:
               long readLong = dataInput.readLong();
-              buffer.put(count, readLong);
+              buffer.putLong(count, readLong);
               fileLength -= 8;
               break;
             default:

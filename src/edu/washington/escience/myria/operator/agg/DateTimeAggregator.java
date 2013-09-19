@@ -192,15 +192,15 @@ public final class DateTimeAggregator implements Aggregator<DateTime> {
   public void getResult(final TupleBatchBuffer buffer, final int fromIndex) {
     int idx = fromIndex;
     if ((aggOps & AGG_OP_COUNT) != 0) {
-      buffer.put(idx, count);
+      buffer.putLong(idx, count);
       idx++;
     }
     if (computeMin) {
-      buffer.put(idx, min);
+      buffer.putDateTime(idx, min);
       idx++;
     }
     if (computeMax) {
-      buffer.put(idx, max);
+      buffer.putDateTime(idx, max);
     }
   }
 
