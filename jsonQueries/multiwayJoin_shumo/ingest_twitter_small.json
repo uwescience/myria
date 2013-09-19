@@ -8,6 +8,5 @@
     "column_types" : ["LONG_TYPE", "LONG_TYPE"],
     "column_names" : ["follower", "followee"]
   },
-  "file_name" : "/Users/steve/Dropbox/My_Work/Multiway_Join/data/twitter_rv.615784",
-  "is_comma_separated" : false
+  "file_name" : "/Users/steve/Dropbox/My_Work/Multiway_Join/data/twitter_rv.615784"
 }

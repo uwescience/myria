@@ -9,5 +9,5 @@
     "column_names" : ["grp", "tot_mass"]
   },
   "file_name" : "/Users/dhalperi/escience/myria/data_nocommit/tipsy/cosmo512_mass.txt",
-  "is_comma_separated" : true
+  "delimiter": ","
 }

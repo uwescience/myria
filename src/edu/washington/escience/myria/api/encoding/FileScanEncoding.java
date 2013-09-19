@@ -17,17 +17,13 @@ import edu.washington.escience.myria.parallel.Server;
 public class FileScanEncoding extends OperatorEncoding<FileScan> {
   public Schema schema;
   public String fileName;
-  public Boolean isCommaSeparated;
+  public String delimiter;
   private static final List<String> requiredArguments = ImmutableList.of("schema", "fileName");
 
   @Override
   public FileScan construct(final Server server) {
     try {
-      if (isCommaSeparated == null) {
-        return new FileScan(fileName, schema);
-      } else {
-        return new FileScan(fileName, schema, isCommaSeparated);
-      }
+      return new FileScan(fileName, schema, delimiter);
     } catch (FileNotFoundException e) {
       throw new MyriaApiException(Status.BAD_REQUEST, e);
     }
