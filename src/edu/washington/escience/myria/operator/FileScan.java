@@ -77,7 +77,7 @@ public final class FileScan extends LeafOperator {
    * 
    * @param filename the file containing the relation.
    * @param schema the Schema of the relation contained in the file.
-   * @param delimiter An optional override file delimiter
+   * @param delimiter An optional override file delimiter.
    * @throws FileNotFoundException if the given filename does not exist.
    */
   public FileScan(final String filename, final Schema schema, final String delimiter) throws FileNotFoundException {
