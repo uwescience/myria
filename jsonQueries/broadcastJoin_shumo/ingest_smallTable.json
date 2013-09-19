@@ -8,6 +8,5 @@
     "column_types" : ["LONG_TYPE", "LONG_TYPE"],
     "column_names" : ["follower", "followee"]
   },
-  "file_name" : "/Users/steve/Project/myriad/jsonQueries/broadcastJoin_shumo
-/smallTable"
+  "file_name" : "/Users/steve/Project/myriad/jsonQueries/broadcastJoin_shumo/smallTable"
 }
