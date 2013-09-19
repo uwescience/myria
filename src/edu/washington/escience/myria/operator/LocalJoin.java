@@ -15,6 +15,7 @@ import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
+import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.parallel.QueryExecutionMode;
 import edu.washington.escience.myria.parallel.TaskResourceManager;
@@ -55,11 +56,11 @@ public final class LocalJoin extends BinaryOperator {
   /**
    * The buffer holding the valid tuples from left.
    */
-  private transient TupleBatchBuffer hashTable1;
+  private transient TupleBuffer hashTable1;
   /**
    * The buffer holding the valid tuples from right.
    */
-  private transient TupleBatchBuffer hashTable2;
+  private transient TupleBuffer hashTable2;
   /**
    * The buffer holding the results.
    */
@@ -203,8 +204,7 @@ public final class LocalJoin extends BinaryOperator {
    * @param index the index of hashTable, which the cntTuple is to join with
    * @param fromleft if the tuple is from child 1
    */
-  protected void addToAns(final List<Object> cntTuple, final TupleBatchBuffer hashTable, final int index,
-      final boolean fromleft) {
+  protected void addToAns(final List<Object> cntTuple, final TupleBuffer hashTable, final int index, final boolean fromleft) {
     if (fromleft) {
       for (int i = 0; i < answerColumns1.length; ++i) {
         ans.put(i, cntTuple.get(answerColumns1[i]));
@@ -407,8 +407,8 @@ public final class LocalJoin extends BinaryOperator {
     final Operator right = getRight();
     hashTable1Indices = new HashMap<Integer, List<Integer>>();
     hashTable2Indices = new HashMap<Integer, List<Integer>>();
-    hashTable1 = new TupleBatchBuffer(left.getSchema());
-    hashTable2 = new TupleBatchBuffer(right.getSchema());
+    hashTable1 = new TupleBuffer(left.getSchema());
+    hashTable2 = new TupleBuffer(right.getSchema());
     if (outputSchema == null) {
       generateSchema();
     }
@@ -432,7 +432,7 @@ public final class LocalJoin extends BinaryOperator {
    * @param compareIndx2 the comparing list of columns of hashTable
    * @return true if equals.
    */
-  private boolean tupleEquals(final List<Object> cntTuple, final TupleBatchBuffer hashTable, final int index,
+  private boolean tupleEquals(final List<Object> cntTuple, final TupleBuffer hashTable, final int index,
       final int[] compareIndx1, final int[] compareIndx2) {
     if (compareIndx1.length != compareIndx2.length) {
       return false;
@@ -451,8 +451,8 @@ public final class LocalJoin extends BinaryOperator {
    */
   protected void processChildTB(final TupleBatch tb, final boolean fromleft) {
 
-    TupleBatchBuffer hashTable1Local = hashTable1;
-    TupleBatchBuffer hashTable2Local = hashTable2;
+    TupleBuffer hashTable1Local = hashTable1;
+    TupleBuffer hashTable2Local = hashTable2;
     HashMap<Integer, List<Integer>> hashTable1IndicesLocal = hashTable1Indices;
     HashMap<Integer, List<Integer>> hashTable2IndicesLocal = hashTable2Indices;
     int[] compareIndx1Local = compareIndx1;
