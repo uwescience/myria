@@ -225,10 +225,14 @@ public final class CatalogMaker {
       configurationValues.put(MyriaSystemConfigKeys.WORKER_IDENTIFIER, "" + workerId);
 
       // TODO: move this code to the ConnectionInfo class, passing the dbms as a parameter
-      final String dbms = configurationValues.get(MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_SYSTEM);
+      final String dbms = config.get("deployment").get("dbms");
+      configurationValues.put(MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_SYSTEM, dbms);
       final String description = config.get("deployment").get("name");
       final String host = wc.getWorkers().get(Integer.parseInt(workerId)).getHost();
-      final String jsonConnInfo = ConnectionInfo.toJson(dbms, host, description, workerWorkingDir, workerId);
+      final String databaseName = config.get("databaseNames").get(workerId);
+      final String databasePassword = config.get("deployment").get("database_password");
+      final String jsonConnInfo =
+          ConnectionInfo.toJson(dbms, host, description, workerWorkingDir, workerId, databaseName, databasePassword);
       configurationValues.put(MyriaSystemConfigKeys.WORKER_STORAGE_DATABASE_CONN_INFO, jsonConnInfo);
 
       /* Set them all in the worker catalog. */

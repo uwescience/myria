@@ -69,7 +69,7 @@ public abstract class ConnectionInfo {
    * @return the JSON string representation of the connection information.
    */
   public static String toJson(final String dbms, final String hostName, final String description, final String dirName,
-      final String workerId) {
+      final String workerId, final String databaseName, final String databasePassword) {
     Objects.requireNonNull(dbms);
     ObjectMapper mapper = MyriaJsonMapperProvider.newMapper();
     String result = "";
@@ -83,17 +83,17 @@ public abstract class ConnectionInfo {
 
     switch (dbms) {
       case MyriaConstants.STORAGE_SYSTEM_SQLITE:
-        String databaseName = "";
+        String fileName = "";
         if (description != null) {
           /* created from deployment.cfg, use relative path */
-          databaseName = FilenameUtils.concat(description, "worker_" + workerId);
-          databaseName = FilenameUtils.concat(databaseName, "worker_" + workerId + "_data.db");
+          fileName = FilenameUtils.concat(description, "worker_" + workerId);
+          fileName = FilenameUtils.concat(databaseName, "worker_" + workerId + "_data.db");
         } else {
           /* created from SystemTestBase, use absolute path */
-          databaseName = FilenameUtils.concat(dirName, "worker_" + workerId);
-          databaseName = FilenameUtils.concat(databaseName, "worker_" + workerId + "_data.db");
+          fileName = FilenameUtils.concat(dirName, "worker_" + workerId);
+          fileName = FilenameUtils.concat(databaseName, "worker_" + workerId + "_data.db");
         }
-        SQLiteInfo sqliteInfo = SQLiteInfo.of(databaseName);
+        SQLiteInfo sqliteInfo = SQLiteInfo.of(fileName);
         result = sqliteInfo.toJson();
         break;
       case MyriaConstants.STORAGE_SYSTEM_MONETDB:
@@ -103,10 +103,8 @@ public abstract class ConnectionInfo {
         host = hostName;
         port = 50001;
         user = "uwdb";
-        password = "PaulAllenCenter";
-        myDatabaseName = "myria1";
         jdbcDriverName = "nl.cwi.monetdb.jdbc.MonetDriver";
-        jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, myDatabaseName, user, password);
+        jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, databaseName, user, databasePassword);
         result = jdbcInfo.toJson();
         break;
 
@@ -117,10 +115,8 @@ public abstract class ConnectionInfo {
         host = hostName;
         port = 5401;
         user = "uwdb";
-        password = "PaulAllenCenter";
-        myDatabaseName = "myria1";
         jdbcDriverName = "org.postgresql.Driver";
-        jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, myDatabaseName, user, password);
+        jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, databaseName, user, databasePassword);
         result = jdbcInfo.toJson();
         break;
 
@@ -131,10 +127,8 @@ public abstract class ConnectionInfo {
         host = hostName;
         port = 3301;
         user = "uwdb";
-        password = "PaulAllenCenter";
-        myDatabaseName = "myria1";
         jdbcDriverName = "com.mysql.jdbc.Driver";
-        jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, myDatabaseName, user, password);
+        jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, databaseName, user, databasePassword);
         result = jdbcInfo.toJson();
         break;
     }

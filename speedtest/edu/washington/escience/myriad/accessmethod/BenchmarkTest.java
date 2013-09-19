@@ -85,25 +85,25 @@ public class BenchmarkTest {
       /* The SQLite connection */
       String jsonConnInfo =
           ConnectionInfo.toJson(MyriaConstants.STORAGE_SYSTEM_SQLITE, BENCHMARKTEST_HOSTNAME, BENCHMARKTEST_NAME,
-              tempFilePath.toFile().getAbsolutePath(), "0");
+              tempFilePath.toFile().getAbsolutePath(), "0", "myria1", "PaulAllenCenter");
       connections.add(ConnectionInfo.of("sqlite", jsonConnInfo));
 
       /* The MonetDB connection */
       jsonConnInfo =
           ConnectionInfo.toJson(MyriaConstants.STORAGE_SYSTEM_MONETDB, BENCHMARKTEST_HOSTNAME, BENCHMARKTEST_NAME,
-              tempFilePath.toFile().getAbsolutePath(), "0");
+              tempFilePath.toFile().getAbsolutePath(), "0", "myria1", "PaulAllenCenter");
       connections.add(ConnectionInfo.of(MyriaConstants.STORAGE_SYSTEM_MONETDB, jsonConnInfo));
 
       /* The PostgreSQL connection */
       jsonConnInfo =
           ConnectionInfo.toJson(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL, BENCHMARKTEST_HOSTNAME, BENCHMARKTEST_NAME,
-              tempFilePath.toFile().getAbsolutePath(), "0");
+              tempFilePath.toFile().getAbsolutePath(), "0", "myria1", "PaulAllenCenter");
       connections.add(ConnectionInfo.of(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL, jsonConnInfo));
 
       /* The MySQL connection */
       jsonConnInfo =
           ConnectionInfo.toJson(MyriaConstants.STORAGE_SYSTEM_MONETDB, BENCHMARKTEST_HOSTNAME, BENCHMARKTEST_NAME,
-              tempFilePath.toFile().getAbsolutePath(), "0");
+              tempFilePath.toFile().getAbsolutePath(), "0", "myria1", "PaulAllenCenter");
       connections.add(ConnectionInfo.of("monetdb", jsonConnInfo));
     } catch (IOException e) {
       // TODO Auto-generated catch block
