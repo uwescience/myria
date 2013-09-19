@@ -20,7 +20,7 @@ import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.operator.DbQueryScan;
-import edu.washington.escience.myria.operator.IDBInput;
+import edu.washington.escience.myria.operator.IDBController;
 import edu.washington.escience.myria.operator.KeepMinValue;
 import edu.washington.escience.myria.operator.LocalJoin;
 import edu.washington.escience.myria.operator.Merge;
@@ -107,8 +107,8 @@ public class ConnectedComponentTest extends SystemTestBase {
     final GenericShuffleConsumer sc1 = new GenericShuffleConsumer(table1Schema, joinArrayId1, workerIDs);
     final GenericShuffleConsumer sc3 = new GenericShuffleConsumer(table1Schema, joinArrayId3, workerIDs);
     final Consumer eosReceiver = new Consumer(Schema.EMPTY_SCHEMA, eosReceiverOpId, new int[] { workerIDs[0] });
-    final IDBInput idbInput =
-        new IDBInput(0, eoiReceiverOpId, workerIDs[0], sc1, sc3, eosReceiver, new KeepMinValue(new int[] { 0 }, 1));
+    final IDBController idbInput =
+        new IDBController(0, eoiReceiverOpId, workerIDs[0], sc1, sc3, eosReceiver, new KeepMinValue(new int[] { 0 }, 1));
 
     final DbQueryScan scan2 = new DbQueryScan(RelationKey.of("test", "test", "g"), table2Schema);
     final GenericShuffleProducer sp2 = new GenericShuffleProducer(scan2, joinArrayId2, workerIDs, pf1);
@@ -211,7 +211,7 @@ public class ConnectedComponentTest extends SystemTestBase {
     List<RootOperator> plan1 =
         generatePlan(table1Schema, table2Schema, joinArrayId1, joinArrayId2, joinArrayId3, eoiReceiverOpId,
             eosReceiverOpId, serverOpId);
-    final Consumer eoiReceiver = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpId, workerIDs);
+    final Consumer eoiReceiver = new Consumer(IDBController.EOI_REPORT_SCHEMA, eoiReceiverOpId, workerIDs);
     final Merge merge = new Merge(new Operator[] { eoiReceiver });
     final EOSController eosController = new EOSController(merge, new ExchangePairID[] { eosReceiverOpId }, workerIDs);
     plan1.add(eosController);

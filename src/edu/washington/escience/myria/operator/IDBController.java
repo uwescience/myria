@@ -18,13 +18,13 @@ import edu.washington.escience.myria.parallel.ipc.StreamOutputChannel;
 /**
  * Together with the EOSController, the IDBInput controls what to serve into an iteration and when to stop an iteration.
  * */
-public class IDBInput extends Operator implements StreamingAggregate {
+public class IDBController extends Operator implements StreamingAggregate {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(IDBInput.class.getName());
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(IDBController.class.getName());
 
   /**
    * Initial IDB input.
@@ -76,6 +76,7 @@ public class IDBInput extends Operator implements StreamingAggregate {
    * */
   private transient StreamOutputChannel<TupleBatch> eoiReportChannel;
 
+  /** The state updater. */
   private StreamingStateUpdater stateUpdater;
 
   /**
@@ -87,7 +88,7 @@ public class IDBInput extends Operator implements StreamingAggregate {
    * @param eosControllerInput see the corresponding field comment.
    * @param stateUpdater the thing to process state update.
    * */
-  public IDBInput(final int selfIDBIdx, final ExchangePairID controllerOpID, final int controllerWorkerID,
+  public IDBController(final int selfIDBIdx, final ExchangePairID controllerOpID, final int controllerWorkerID,
       final Operator initialIDBInput, final Operator iterationInput, final Consumer eosControllerInput,
       final StreamingStateUpdater stateUpdater) {
     Preconditions.checkNotNull(selfIDBIdx);

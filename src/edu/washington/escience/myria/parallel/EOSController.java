@@ -12,7 +12,7 @@ import edu.washington.escience.myria.ExchangeTupleBatch;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.operator.IDBInput;
+import edu.washington.escience.myria.operator.IDBController;
 import edu.washington.escience.myria.operator.Merge;
 import edu.washington.escience.myria.operator.Operator;
 import gnu.trove.impl.unmodifiable.TUnmodifiableIntIntMap;
@@ -34,7 +34,7 @@ public class EOSController extends Producer {
   /** The logger for this class. */
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(EOSController.class.getName());
   /**
-   * Recording the number of EOI received from each controlled {@link IDBInput}.
+   * Recording the number of EOI received from each controlled {@link IDBController}.
    * */
   private final int[][] numEOI;
   /**

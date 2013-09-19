@@ -17,7 +17,7 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
-import edu.washington.escience.myria.operator.IDBInput;
+import edu.washington.escience.myria.operator.IDBController;
 import edu.washington.escience.myria.operator.LocalJoin;
 import edu.washington.escience.myria.operator.Merge;
 import edu.washington.escience.myria.operator.Operator;
@@ -170,10 +170,10 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     final ExchangePairID eoiReceiverOpID = ExchangePairID.newID();
     final Consumer eosReceiver = new Consumer(Schema.EMPTY_SCHEMA, eosReceiverOpID, new int[] { workerIDs[0] });
 
-    final IDBInput idbinput_worker1 =
-        new IDBInput(0, eoiReceiverOpID, workerIDs[0], sc2, sc3_worker1, eosReceiver, new DupElim());
-    final IDBInput idbinput_worker2 =
-        new IDBInput(0, eoiReceiverOpID, workerIDs[0], sc2, sc3_worker2, eosReceiver, new DupElim());
+    final IDBController idbinput_worker1 =
+        new IDBController(0, eoiReceiverOpID, workerIDs[0], sc2, sc3_worker1, eosReceiver, new DupElim());
+    final IDBController idbinput_worker2 =
+        new IDBController(0, eoiReceiverOpID, workerIDs[0], sc2, sc3_worker2, eosReceiver, new DupElim());
 
     final ExchangePairID consumerID1 = ExchangePairID.newID();
     final ExchangePairID consumerID2 = ExchangePairID.newID();
@@ -198,7 +198,7 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     final CollectProducer cp_worker1 = new CollectProducer(send2server_worker1, serverReceiveID, MASTER_ID);
     final CollectProducer cp_worker2 = new CollectProducer(send2server_worker2, serverReceiveID, MASTER_ID);
 
-    final Consumer eoiReceiver = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID, workerIDs);
+    final Consumer eoiReceiver = new Consumer(IDBController.EOI_REPORT_SCHEMA, eoiReceiverOpID, workerIDs);
     final Merge merge = new Merge(new Operator[] { eoiReceiver });
     final EOSController eosController = new EOSController(merge, new ExchangePairID[] { eosReceiverOpID }, workerIDs);
 
@@ -277,10 +277,10 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     final LocalMultiwayConsumer send2server = new LocalMultiwayConsumer(tableSchema, consumerID2);
     final Consumer eosReceiver = new Consumer(Schema.EMPTY_SCHEMA, eosReceiverOpID, new int[] { workerIDs[0] });
 
-    final IDBInput idbinput =
-        new IDBInput(0, eoiReceiverOpID, workerIDs[0], scan2, sendBack, eosReceiver, new DupElim());
+    final IDBController idbinput =
+        new IDBController(0, eoiReceiverOpID, workerIDs[0], scan2, sendBack, eosReceiver, new DupElim());
 
-    final Consumer eoiReceiver = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID, new int[] { workerIDs[0] });
+    final Consumer eoiReceiver = new Consumer(IDBController.EOI_REPORT_SCHEMA, eoiReceiverOpID, new int[] { workerIDs[0] });
     final Merge merge = new Merge(new Operator[] { eoiReceiver });
     final EOSController eosController =
         new EOSController(merge, new ExchangePairID[] { eosReceiverOpID }, new int[] { workerIDs[0] });

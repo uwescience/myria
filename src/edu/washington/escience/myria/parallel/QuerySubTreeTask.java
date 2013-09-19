@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.MyriaConstants;
-import edu.washington.escience.myria.operator.IDBInput;
+import edu.washington.escience.myria.operator.IDBController;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.parallel.ipc.StreamIOChannelID;
@@ -72,7 +72,7 @@ public final class QuerySubTreeTask {
   /**
    * The IDBInput operators in this task.
    * */
-  private final Set<IDBInput> idbInputSet;
+  private final Set<IDBController> idbInputSet;
 
   /**
    * IPC ID of the owner {@link Worker} or {@link Server}.
@@ -125,7 +125,7 @@ public final class QuerySubTreeTask {
     myExecutor = executor;
     this.ownerQuery = ownerQuery;
     taskExecutionFuture = new DefaultTaskFuture(this, true);
-    idbInputSet = new HashSet<IDBInput>();
+    idbInputSet = new HashSet<IDBController>();
     HashSet<StreamIOChannelID> outputChannelSet = new HashSet<StreamIOChannelID>();
     collectDownChannels(root, outputChannelSet);
     outputChannels = outputChannelSet.toArray(new StreamIOChannelID[] {});
@@ -176,7 +176,7 @@ public final class QuerySubTreeTask {
   /**
    * @return all the IDBInput operators in this task.
    * */
-  Set<IDBInput> getIDBInputs() {
+  Set<IDBController> getIDBInputs() {
     return idbInputSet;
   }
 
@@ -195,8 +195,8 @@ public final class QuerySubTreeTask {
       for (StreamIOChannelID element : exCID) {
         outputExchangeChannels.add(element);
       }
-    } else if (currentOperator instanceof IDBInput) {
-      IDBInput p = (IDBInput) currentOperator;
+    } else if (currentOperator instanceof IDBController) {
+      IDBController p = (IDBController) currentOperator;
       ExchangePairID oID = p.getControllerOperatorID();
       int wID = p.getControllerWorkerID();
       outputExchangeChannels.add(new StreamIOChannelID(oID.getLong(), wID));

@@ -149,8 +149,8 @@ public class QueryEncoding extends MyriaApiEncoding {
             ids.add(id);
           }
           exchange.setRealOperatorIds(ids);
-        } else if (operator instanceof IDBInputEncoding) {
-          IDBInputEncoding idbInput = (IDBInputEncoding) operator;
+        } else if (operator instanceof IDBControllerEncoding) {
+          IDBControllerEncoding idbInput = (IDBControllerEncoding) operator;
           ExchangePairID id = operatorIdMap.get(idbInput.argControllerOperatorId);
           if (id == null) {
             id = ExchangePairID.newID();
@@ -180,8 +180,8 @@ public class QueryEncoding extends MyriaApiEncoding {
             }
           }
           exchange.setRealWorkerIds(workers.build());
-        } else if (operator instanceof IDBInputEncoding) {
-          IDBInputEncoding idbInput = (IDBInputEncoding) operator;
+        } else if (operator instanceof IDBControllerEncoding) {
+          IDBControllerEncoding idbInput = (IDBControllerEncoding) operator;
           idbInput.realControllerWorkerId =
               MyriaUtils.getSingleElement(consumerMap.get(idbInput.realControllerOperatorId));
         }

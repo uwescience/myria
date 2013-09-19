@@ -5,12 +5,12 @@ import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myria.operator.IDBInput;
+import edu.washington.escience.myria.operator.IDBController;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.Server;
 
-public class IDBInputEncoding extends OperatorEncoding<IDBInput> {
+public class IDBControllerEncoding extends OperatorEncoding<IDBController> {
   public Integer argSelfIdbId;
   public String argControllerOperatorId;
   public String argInitialInput;
@@ -24,8 +24,8 @@ public class IDBInputEncoding extends OperatorEncoding<IDBInput> {
       "argInitialInput", "argIterationInput", "argEosControllerInput", "argStateUpdater");
 
   @Override
-  public IDBInput construct(Server server) {
-    return new IDBInput(argSelfIdbId, realControllerOperatorId, realControllerWorkerId, null, null, null,
+  public IDBController construct(Server server) {
+    return new IDBController(argSelfIdbId, realControllerOperatorId, realControllerWorkerId, null, null, null,
         argStateUpdater.construct());
   }
 
