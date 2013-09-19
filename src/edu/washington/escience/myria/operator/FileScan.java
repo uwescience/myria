@@ -93,7 +93,7 @@ public final class FileScan extends LeafOperator {
    * whitespace or comma-separated. inputStream is assumed to be set later by setInputStream().
    * 
    * @param schema the Schema of the relation contained in the file.
-   * @param commaIsDelimiter whether commas are also delimiters in the file.
+   * @param delimiter An optional non-default file delimiter
    */
   public FileScan(final Schema schema, final String delimiter) {
     this.schema = schema;
