@@ -57,11 +57,11 @@ public class EOSController extends Producer {
   // private final TLongIntMap idbEOSReceiverIDToIndex;
 
   /**
-   * Each worker in workerIDs has the whole array of idbOpIDS. So the total number of IDBInput operators are
+   * Each worker in workerIDs has the whole array of idbOpIDS. So the total number of IDBController operators are
    * idbOpIDs.length*workerIDs.length.
    * 
-   * @param child The child are responsible for receiving EOI report from all controlled IDBInputs.
-   * @param workerIDs the workers where the IDBInput operators resides
+   * @param child The child are responsible for receiving EOI report from all controlled IDBControllers.
+   * @param workerIDs the workers where the IDBController operators resides
    * @param idbOpIDs the IDB operatorIDs in each Worker
    * */
   public EOSController(final Merge child, final ExchangePairID[] idbOpIDs, final int[] workerIDs) {

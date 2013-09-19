@@ -198,9 +198,9 @@ public class MultipleIDBTest extends SystemTestBase {
         new GenericShuffleConsumer(tableSchema, beforeIngress2, new int[] { workerIDs[0], workerIDs[1] });
     final Consumer eosReceiver = new Consumer(Schema.EMPTY_SCHEMA, eosReceiverOpID, new int[] { workerIDs[0] });
 
-    final IDBController idbinput_worker1 =
+    final IDBController idbController_worker1 =
         new IDBController(selfIDBID, eoiReceiverOpID, workerIDs[0], sc2, sc3_worker1, eosReceiver, new DupElim());
-    final IDBController idbinput_worker2 =
+    final IDBController idbController_worker2 =
         new IDBController(selfIDBID, eoiReceiverOpID, workerIDs[0], sc2, sc3_worker2, eosReceiver, new DupElim());
 
     final ExchangePairID[] consumerIDs = new ExchangePairID[] { ExchangePairID.newID(), null, null };
@@ -211,9 +211,9 @@ public class MultipleIDBTest extends SystemTestBase {
       consumerIDs[2] = ExchangePairID.newID();
     }
     final LocalMultiwayProducer multiProducer_worker1 =
-        new LocalMultiwayProducer(idbinput_worker1, removeNull(consumerIDs));
+        new LocalMultiwayProducer(idbController_worker1, removeNull(consumerIDs));
     final LocalMultiwayProducer multiProducer_worker2 =
-        new LocalMultiwayProducer(idbinput_worker2, removeNull(consumerIDs));
+        new LocalMultiwayProducer(idbController_worker2, removeNull(consumerIDs));
     final LocalMultiwayConsumer send2join_worker1 = new LocalMultiwayConsumer(tableSchema, consumerIDs[0]);
     final LocalMultiwayConsumer send2join_worker2 = new LocalMultiwayConsumer(tableSchema, consumerIDs[0]);
     LocalMultiwayConsumer send2others_worker1 = null;

@@ -170,18 +170,18 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     final ExchangePairID eoiReceiverOpID = ExchangePairID.newID();
     final Consumer eosReceiver = new Consumer(Schema.EMPTY_SCHEMA, eosReceiverOpID, new int[] { workerIDs[0] });
 
-    final IDBController idbinput_worker1 =
+    final IDBController idbController_worker1 =
         new IDBController(0, eoiReceiverOpID, workerIDs[0], sc2, sc3_worker1, eosReceiver, new DupElim());
-    final IDBController idbinput_worker2 =
+    final IDBController idbController_worker2 =
         new IDBController(0, eoiReceiverOpID, workerIDs[0], sc2, sc3_worker2, eosReceiver, new DupElim());
 
     final ExchangePairID consumerID1 = ExchangePairID.newID();
     final ExchangePairID consumerID2 = ExchangePairID.newID();
     final LocalMultiwayProducer multiProducer_worker1 =
 
-    new LocalMultiwayProducer(idbinput_worker1, new ExchangePairID[] { consumerID1, consumerID2 });
+    new LocalMultiwayProducer(idbController_worker1, new ExchangePairID[] { consumerID1, consumerID2 });
     final LocalMultiwayProducer multiProducer_worker2 =
-        new LocalMultiwayProducer(idbinput_worker2, new ExchangePairID[] { consumerID1, consumerID2 });
+        new LocalMultiwayProducer(idbController_worker2, new ExchangePairID[] { consumerID1, consumerID2 });
     final LocalMultiwayConsumer send2join_worker1 = new LocalMultiwayConsumer(tableSchema, consumerID1);
     final LocalMultiwayConsumer send2join_worker2 = new LocalMultiwayConsumer(tableSchema, consumerID1);
     final LocalMultiwayConsumer send2server_worker1 = new LocalMultiwayConsumer(tableSchema, consumerID2);
@@ -277,10 +277,11 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     final LocalMultiwayConsumer send2server = new LocalMultiwayConsumer(tableSchema, consumerID2);
     final Consumer eosReceiver = new Consumer(Schema.EMPTY_SCHEMA, eosReceiverOpID, new int[] { workerIDs[0] });
 
-    final IDBController idbinput =
+    final IDBController idbController =
         new IDBController(0, eoiReceiverOpID, workerIDs[0], scan2, sendBack, eosReceiver, new DupElim());
 
-    final Consumer eoiReceiver = new Consumer(IDBController.EOI_REPORT_SCHEMA, eoiReceiverOpID, new int[] { workerIDs[0] });
+    final Consumer eoiReceiver =
+        new Consumer(IDBController.EOI_REPORT_SCHEMA, eoiReceiverOpID, new int[] { workerIDs[0] });
     final Merge merge = new Merge(new Operator[] { eoiReceiver });
     final EOSController eosController =
         new EOSController(merge, new ExchangePairID[] { eosReceiverOpID }, new int[] { workerIDs[0] });
@@ -296,7 +297,7 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
 
     final GenericShuffleProducer sp1 = new GenericShuffleProducer(scan1, joinArray1ID, new int[] { workerIDs[0] }, pf1);
     final GenericShuffleProducer sp2 =
-        new GenericShuffleProducer(idbinput, joinArray2ID, new int[] { workerIDs[0] }, pf0);
+        new GenericShuffleProducer(idbController, joinArray2ID, new int[] { workerIDs[0] }, pf0);
     final GenericShuffleConsumer sc1 =
         new GenericShuffleConsumer(sp1.getSchema(), joinArray1ID, new int[] { workerIDs[0] });
     final GenericShuffleConsumer sc2 =

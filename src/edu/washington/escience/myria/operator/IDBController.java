@@ -16,7 +16,8 @@ import edu.washington.escience.myria.parallel.TaskResourceManager;
 import edu.washington.escience.myria.parallel.ipc.StreamOutputChannel;
 
 /**
- * Together with the EOSController, the IDBInput controls what to serve into an iteration and when to stop an iteration.
+ * Together with the EOSController, the IDBController controls what to serve into an iteration and when to stop an
+ * iteration.
  * */
 public class IDBController extends Operator implements StreamingAggregate {
 
@@ -52,8 +53,8 @@ public class IDBController extends Operator implements StreamingAggregate {
   private final ExchangePairID controllerOpID;
 
   /**
-   * The index of this IDBInput. This is to differentiate the IDBInput operators in the same worker. Note that this
-   * number is the index, it must start from 0 and to (The number of IDBInput operators in a worker -1)
+   * The index of this IDBController. This is to differentiate the IDBController operators in the same worker. Note that
+   * this number is the index, it must start from 0 and to (The number of IDBController operators in a worker -1)
    * */
   private final int selfIDBIdx;
 

@@ -150,16 +150,16 @@ public class QueryEncoding extends MyriaApiEncoding {
           }
           exchange.setRealOperatorIds(ids);
         } else if (operator instanceof IDBControllerEncoding) {
-          IDBControllerEncoding idbInput = (IDBControllerEncoding) operator;
-          ExchangePairID id = operatorIdMap.get(idbInput.argControllerOperatorId);
+          IDBControllerEncoding idbController = (IDBControllerEncoding) operator;
+          ExchangePairID id = operatorIdMap.get(idbController.argControllerOperatorId);
           if (id == null) {
             id = ExchangePairID.newID();
-            operatorIdMap.put(idbInput.argControllerOperatorId, id);
+            operatorIdMap.put(idbController.argControllerOperatorId, id);
             producerMap.put(id, new ArrayList<Integer>());
             consumerMap.put(id, new ArrayList<Integer>());
           }
           producerMap.get(id).addAll(fragment.workers);
-          idbInput.realControllerOperatorId = id;
+          idbController.realControllerOperatorId = id;
         }
       }
     }
@@ -181,9 +181,9 @@ public class QueryEncoding extends MyriaApiEncoding {
           }
           exchange.setRealWorkerIds(workers.build());
         } else if (operator instanceof IDBControllerEncoding) {
-          IDBControllerEncoding idbInput = (IDBControllerEncoding) operator;
-          idbInput.realControllerWorkerId =
-              MyriaUtils.getSingleElement(consumerMap.get(idbInput.realControllerOperatorId));
+          IDBControllerEncoding idbController = (IDBControllerEncoding) operator;
+          idbController.realControllerWorkerId =
+              MyriaUtils.getSingleElement(consumerMap.get(idbController.realControllerOperatorId));
         }
       }
     }

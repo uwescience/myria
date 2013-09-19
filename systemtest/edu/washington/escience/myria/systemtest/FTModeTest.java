@@ -191,12 +191,12 @@ public class FTModeTest extends SystemTestBase {
     final Consumer eosReceiver = new Consumer(Schema.EMPTY_SCHEMA, eosReceiverOpID, new int[] { workerIDs[0] });
     eosReceiver.setOpName("eosReceiver_" + initName);
 
-    final IDBController idbinput_worker1 =
+    final IDBController idbController_worker1 =
         new IDBController(selfIDBID, eoiReceiverOpID, workerIDs[0], sc2, sc3_worker1, eosReceiver, new DupElim());
-    idbinput_worker1.setOpName("idbinput_worker1_" + initName);
-    final IDBController idbinput_worker2 =
+    idbController_worker1.setOpName("idbController_worker1_" + initName);
+    final IDBController idbController_worker2 =
         new IDBController(selfIDBID, eoiReceiverOpID, workerIDs[0], sc2, sc3_worker2, eosReceiver, new DupElim());
-    idbinput_worker2.setOpName("idbinput_worker2_" + initName);
+    idbController_worker2.setOpName("idbController_worker2_" + initName);
 
     final ExchangePairID[] consumerIDs = new ExchangePairID[] { ExchangePairID.newID(), null, null };
     if (sendingOpID != null) {
@@ -206,10 +206,10 @@ public class FTModeTest extends SystemTestBase {
       consumerIDs[2] = ExchangePairID.newID();
     }
     final LocalMultiwayProducer multiProducer_worker1 =
-        new LocalMultiwayProducer(idbinput_worker1, removeNull(consumerIDs));
+        new LocalMultiwayProducer(idbController_worker1, removeNull(consumerIDs));
     multiProducer_worker1.setOpName("mp_worker1_" + initName);
     final LocalMultiwayProducer multiProducer_worker2 =
-        new LocalMultiwayProducer(idbinput_worker2, removeNull(consumerIDs));
+        new LocalMultiwayProducer(idbController_worker2, removeNull(consumerIDs));
     multiProducer_worker2.setOpName("mp_worker2_" + initName);
     final LocalMultiwayConsumer send2join_worker1 = new LocalMultiwayConsumer(tableSchema, consumerIDs[0]);
     send2join_worker1.setOpName("send2join_worker1_" + initName);

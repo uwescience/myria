@@ -70,9 +70,9 @@ public final class QuerySubTreeTask {
   private final Map<StreamIOChannelID, Consumer> inputChannels;
 
   /**
-   * The IDBInput operators in this task.
+   * The IDBController operators in this task.
    * */
-  private final Set<IDBController> idbInputSet;
+  private final Set<IDBController> idbControllerSet;
 
   /**
    * IPC ID of the owner {@link Worker} or {@link Server}.
@@ -125,7 +125,7 @@ public final class QuerySubTreeTask {
     myExecutor = executor;
     this.ownerQuery = ownerQuery;
     taskExecutionFuture = new DefaultTaskFuture(this, true);
-    idbInputSet = new HashSet<IDBController>();
+    idbControllerSet = new HashSet<IDBController>();
     HashSet<StreamIOChannelID> outputChannelSet = new HashSet<StreamIOChannelID>();
     collectDownChannels(root, outputChannelSet);
     outputChannels = outputChannelSet.toArray(new StreamIOChannelID[] {});
@@ -174,14 +174,14 @@ public final class QuerySubTreeTask {
   }
 
   /**
-   * @return all the IDBInput operators in this task.
+   * @return all the IDBController operators in this task.
    * */
-  Set<IDBController> getIDBInputs() {
-    return idbInputSet;
+  Set<IDBController> getIDBControllers() {
+    return idbControllerSet;
   }
 
   /**
-   * gather all output (Producer or IDBInput's EOI report) channel IDs.
+   * gather all output (Producer or IDBController's EOI report) channel IDs.
    * 
    * @param currentOperator current operator to check.
    * @param outputExchangeChannels the current collected output channel IDs.
@@ -200,7 +200,7 @@ public final class QuerySubTreeTask {
       ExchangePairID oID = p.getControllerOperatorID();
       int wID = p.getControllerWorkerID();
       outputExchangeChannels.add(new StreamIOChannelID(oID.getLong(), wID));
-      idbInputSet.add(p);
+      idbControllerSet.add(p);
     }
 
     final Operator[] children = currentOperator.getChildren();

@@ -107,7 +107,7 @@ public class ConnectedComponentTest extends SystemTestBase {
     final GenericShuffleConsumer sc1 = new GenericShuffleConsumer(table1Schema, joinArrayId1, workerIDs);
     final GenericShuffleConsumer sc3 = new GenericShuffleConsumer(table1Schema, joinArrayId3, workerIDs);
     final Consumer eosReceiver = new Consumer(Schema.EMPTY_SCHEMA, eosReceiverOpId, new int[] { workerIDs[0] });
-    final IDBController idbInput =
+    final IDBController idbController =
         new IDBController(0, eoiReceiverOpId, workerIDs[0], sc1, sc3, eosReceiver, new KeepMinValue(new int[] { 0 }, 1));
 
     final DbQueryScan scan2 = new DbQueryScan(RelationKey.of("test", "test", "g"), table2Schema);
@@ -116,7 +116,7 @@ public class ConnectedComponentTest extends SystemTestBase {
 
     final ExchangePairID mpId1 = ExchangePairID.newID();
     final ExchangePairID mpId2 = ExchangePairID.newID();
-    final LocalMultiwayProducer mp = new LocalMultiwayProducer(idbInput, new ExchangePairID[] { mpId1, mpId2 });
+    final LocalMultiwayProducer mp = new LocalMultiwayProducer(idbController, new ExchangePairID[] { mpId1, mpId2 });
     final LocalMultiwayConsumer mc1 = new LocalMultiwayConsumer(table1Schema, mpId1);
     final LocalMultiwayConsumer mc2 = new LocalMultiwayConsumer(table1Schema, mpId2);
     final LocalJoin join =
