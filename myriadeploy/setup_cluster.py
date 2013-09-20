@@ -2,6 +2,7 @@
 
 import myriadeploy
 
+import os
 import subprocess
 import sys
 
@@ -33,6 +34,11 @@ def main(argv):
         print >> sys.stderr, "Usage: %s <deployment.cfg>" % (argv[0])
         print >> sys.stderr, "       deployment.cfg: a configuration file modeled after deployment.cfg.sample"
         sys.exit(1)
+
+    if not os.path.exists('libs'):
+        os.symlink('../build/libs', 'libs')
+    if not os.path.exists('conf'):
+        os.symlink('../conf', 'conf')
 
     # Step 1: make the Catalog
     make_catalog(argv[1])
