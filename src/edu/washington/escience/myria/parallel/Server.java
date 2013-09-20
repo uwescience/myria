@@ -948,7 +948,16 @@ public final class Server {
     final long queryID = catalog.newQuery(rawQuery, logicalRa, physicalPlan);
     final MasterQueryPartition mqp = new MasterQueryPartition(masterPlan, workerPlans, queryID, this);
     activeQueries.put(queryID, mqp);
-    mqp.getQueryExecutionFuture().addListener(new QueryFutureListener() {
+
+    final QueryFuture queryExecutionFuture = mqp.getQueryExecutionFuture();
+
+    /*
+     * Add the DatasetMetadataUpdater, which will update the catalog with the set of workers created when the query
+     * succeeds.
+     */
+    queryExecutionFuture.addListener(new DatasetMetadataUpdater(catalog, workerPlans, queryID));
+
+    queryExecutionFuture.addListener(new QueryFutureListener() {
       @Override
       public void operationComplete(final QueryFuture future) throws Exception {
 
@@ -1059,16 +1068,14 @@ public final class Server {
     }
 
     try {
-      /* Start the workers */
-      submitQuery("ingest " + relationKey.toString("sqlite"), "ingest " + relationKey.toString("sqlite"),
-          "ingest " + relationKey.toString("sqlite"), new SingleQueryPlanWithArgs(scatter), workerPlans).sync();
-      /* Now that the query has finished, add the metadata about this relation to the dataset. */
       /* TODO(dhalperi) -- figure out how to populate the numTuples column. */
       DatasetStatus status = new DatasetStatus(relationKey, source.getSchema(), -1);
       catalog.addRelationMetadata(status.getRelationKey(), status.getSchema(), status.getNumTuples());
 
-      /* Add the round robin-partitioned shard. */
-      catalog.addStoredRelation(relationKey, actualWorkers, "RoundRobin");
+      /* Start the workers */
+      submitQuery("ingest " + relationKey.toString("sqlite"), "ingest " + relationKey.toString("sqlite"),
+          "ingest " + relationKey.toString("sqlite"), new SingleQueryPlanWithArgs(scatter), workerPlans).sync();
+
       return status;
     } catch (CatalogException e) {
       throw new DbException(e);
