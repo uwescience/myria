@@ -28,6 +28,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
+import org.junit.rules.Timeout;
 import org.junit.runner.Description;
 import org.slf4j.LoggerFactory;
 
@@ -68,6 +69,11 @@ public class SystemTestBase {
       LOGGER.warn("*********************************************");
     };
   };
+
+  /** Automatically fail system tests that take longer than this many milliseconds. */
+  private final int SYSTEM_TEST_TIMEOUT_MILLIS = 120 * 1000;
+  @Rule
+  public TestRule globalTimeout = new Timeout(SYSTEM_TEST_TIMEOUT_MILLIS);
 
   /** The logger for this class. */
   protected static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(SystemTestBase.class);
