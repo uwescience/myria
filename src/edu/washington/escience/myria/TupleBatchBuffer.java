@@ -522,4 +522,21 @@ public class TupleBatchBuffer {
     lastPoppedTime = System.nanoTime();
   }
 
+  /**
+   * Appends this tuple batch to this buffer without copying, but only if there's not a batch in progress. (If we finish
+   * the batch in progress, it could create many small batches. If we don't finish the batch in progress, we reorder the
+   * output tuples.)
+   * 
+   * @param tb the tuple batch to be appended.
+   * @return true if the batch was appended, false otherwise.
+   */
+  public boolean appendTBOnlyIfFinished(final TupleBatch tb) {
+    if (numColumnsReady != 0 || currentInProgressTuples != 0) {
+      return false;
+    }
+    readyTuplesNum += tb.numTuples();
+    readyTuples.add(tb.getDataColumns());
+    return true;
+  }
+
 }
