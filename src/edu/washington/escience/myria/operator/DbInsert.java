@@ -106,14 +106,12 @@ public class DbInsert extends RootOperator {
 
     /* retrieve connection information from the environment variables, if not already set */
     if (connectionInfo == null && execEnvVars != null) {
-      LOGGER.info("DbInsert: Retrieving connection info from environment variables");
       connectionInfo = (ConnectionInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
     }
 
     if (connectionInfo == null) {
       throw new DbException("Unable to instantiate DbInsert: connection information unknown");
     }
-    LOGGER.info("DbInsert: connection info " + connectionInfo.toJson());
 
     /* open the JDBC Connection */
     accessMethod = AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);

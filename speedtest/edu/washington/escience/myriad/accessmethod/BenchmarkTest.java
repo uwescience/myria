@@ -88,6 +88,7 @@ public class BenchmarkTest {
     try {
       BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
       jdbcPassword = br.readLine();
+      br.close();
     } catch (IOException e) {
       throw new RuntimeException("Unable to read " + JDBC_PASSWORD_PATH
           + ". Copy it from /projects/db7/passwords/jdbc_password.txt .");

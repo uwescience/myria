@@ -115,14 +115,29 @@ public final class MyriaConstants {
   public static final String STORAGE_DATABASE_NAME = "myria.db";
 
   /**
+   * JDBC username.
+   * */
+  public static final String STORAGE_JDBC_USERNAME = "uwdb";
+
+  /**
    * MonetDB storage.
    * */
   public static final String STORAGE_SYSTEM_MONETDB = "monetdb";
 
   /**
+   * MonetDB port.
+   * */
+  public static final int STORAGE_MONETDB_PORT = 50001;
+
+  /**
    * Mysql storage.
    * */
   public static final String STORAGE_SYSTEM_MYSQL = "mysql";
+
+  /**
+   * Mysql port.
+   * */
+  public static final int STORAGE_MYSQL_PORT = 3301;
 
   /**
    * SQLite storage.
@@ -138,6 +153,11 @@ public final class MyriaConstants {
    * PostgreSQL storage.
    * */
   public static final String STORAGE_SYSTEM_POSTGRESQL = "postgresql";
+
+  /**
+   * PostgreSQL port.
+   * */
+  public static final int STORAGE_POSTGRESQL_PORT = 5401;
 
   /**
    * Default value for {@link MyriaSystemConfigKeys#TCP_CONNECTION_TIMEOUT_MILLIS}.

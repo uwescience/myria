@@ -66,6 +66,8 @@ public abstract class ConnectionInfo {
    * @param description the description of the myria system.
    * @param dirName the working directory.
    * @param workerId the worker identification.
+   * @param databaseName the database name for JDBC databases; ignored for non-JDBC
+   * @param databasePassword the database password for JDBC databases; ignored for non-JDBC
    * @return the JSON string representation of the connection information.
    */
   public static String toJson(final String dbms, final String hostName, final String description, final String dirName,
@@ -101,8 +103,8 @@ public abstract class ConnectionInfo {
         // Now it is hardcoded to use a specific connection info, which allows only one
         // myria instance per machine in the cluster
         host = hostName;
-        port = 50001;
-        user = "uwdb";
+        port = MyriaConstants.STORAGE_MONETDB_PORT;
+        user = MyriaConstants.STORAGE_JDBC_USERNAME;
         jdbcDriverName = "nl.cwi.monetdb.jdbc.MonetDriver";
         jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, databaseName, user, databasePassword);
         result = jdbcInfo.toJson();
@@ -113,8 +115,8 @@ public abstract class ConnectionInfo {
         // Now it is hardcoded to use a specific connection info, which allows only one
         // myria instance per machine in the cluster
         host = hostName;
-        port = 5401;
-        user = "uwdb";
+        port = MyriaConstants.STORAGE_POSTGRESQL_PORT;
+        user = MyriaConstants.STORAGE_JDBC_USERNAME;
         jdbcDriverName = "org.postgresql.Driver";
         jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, databaseName, user, databasePassword);
         result = jdbcInfo.toJson();
@@ -125,8 +127,8 @@ public abstract class ConnectionInfo {
         // Now it is hardcoded to use a specific connection info, which allows only one
         // myria instance per machine in the cluster
         host = hostName;
-        port = 3301;
-        user = "uwdb";
+        port = MyriaConstants.STORAGE_MYSQL_PORT;
+        user = MyriaConstants.STORAGE_JDBC_USERNAME;
         jdbcDriverName = "com.mysql.jdbc.Driver";
         jdbcInfo = JdbcInfo.of(jdbcDriverName, dbms, host, port, databaseName, user, databasePassword);
         result = jdbcInfo.toJson();
