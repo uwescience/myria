@@ -2,6 +2,7 @@ package edu.washington.escience.myria.parallel;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.TupleBatch;
+import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.operator.Operator;
 
 /**
@@ -26,7 +27,16 @@ public class CollectProducer extends Producer {
 
   @Override
   protected void consumeTuples(final TupleBatch tb) throws DbException {
-    tb.compactInto(getBuffers()[0]);
+    TupleBatchBuffer buffer = getBuffers()[0];
+
+    /* You can customize the first definition of needToCompact however you like. */
+    boolean needToCompact = (tb.numTuples() < TupleBatch.BATCH_SIZE);
+    if (!needToCompact) {
+      needToCompact = !buffer.appendTBOnlyIfFinished(tb);
+    }
+    if (needToCompact) {
+      tb.compactInto(buffer);
+    }
     popTBsFromBuffersAndWrite(true);
   }
 
