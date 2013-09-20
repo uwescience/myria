@@ -5,7 +5,11 @@ package edu.washington.escience.myriad.accessmethod;
 
 import static org.junit.Assert.assertTrue;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -15,6 +19,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.LoggerFactory;
 
@@ -41,6 +46,18 @@ public class BenchmarkTest {
   private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(BenchmarkTest.class);
 
   /**
+   * The path to the dataset on your local machine. If not present, copy them from /projects/db7/passwords/jdbc_password
+   * .
+   */
+  private final static String JDBC_PASSWORD_PATH = "data_nocommit/passwords/jdbc_password.txt";
+
+  /** The JDBC password */
+  private static String jdbcPassword = null;
+
+  /** Whether we were able to copy the data. */
+  private static boolean successfulSetup = false;
+
+  /**
    * Test name.
    */
   private static final String BENCHMARKTEST_NAME = "dbmsBenchmark";
@@ -50,7 +67,7 @@ public class BenchmarkTest {
    * any change.
    * 
    */
-  private static final String BENCHMARKTEST_HOSTNAME = "betelgeuse";
+  private static final String BENCHMARKTEST_HOSTNAME = "regulus";
 
   /* Test data */
   private TupleBatchBuffer buffer;
@@ -60,8 +77,29 @@ public class BenchmarkTest {
   private final static int NUM_RUNS = 5;
   private List<ConnectionInfo> connections = null;
 
+  @BeforeClass
+  public static void loadSpecificTestData() {
+    final File file = new File(JDBC_PASSWORD_PATH);
+    if (!file.exists()) {
+      throw new RuntimeException("Unable to read " + JDBC_PASSWORD_PATH
+          + ". Copy it from /projects/db7/passwords/jdbc_password.txt .");
+    }
+
+    try {
+      BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
+      jdbcPassword = br.readLine();
+    } catch (IOException e) {
+      throw new RuntimeException("Unable to read " + JDBC_PASSWORD_PATH
+          + ". Copy it from /projects/db7/passwords/jdbc_password.txt .");
+    }
+
+    successfulSetup = true;
+  }
+
   @Before
   public void init() {
+    assertTrue(successfulSetup);
+
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
     Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
 
@@ -85,26 +123,28 @@ public class BenchmarkTest {
       /* The SQLite connection */
       String jsonConnInfo =
           ConnectionInfo.toJson(MyriaConstants.STORAGE_SYSTEM_SQLITE, BENCHMARKTEST_HOSTNAME, BENCHMARKTEST_NAME,
-              tempFilePath.toFile().getAbsolutePath(), "0", "myria1", "PaulAllenCenter");
+              tempFilePath.toFile().getAbsolutePath(), "0", "myria1", jdbcPassword);
       connections.add(ConnectionInfo.of("sqlite", jsonConnInfo));
 
       /* The MonetDB connection */
       jsonConnInfo =
-          ConnectionInfo.toJson(MyriaConstants.STORAGE_SYSTEM_MONETDB, BENCHMARKTEST_HOSTNAME, BENCHMARKTEST_NAME,
-              tempFilePath.toFile().getAbsolutePath(), "0", "myria1", "PaulAllenCenter");
-      connections.add(ConnectionInfo.of(MyriaConstants.STORAGE_SYSTEM_MONETDB, jsonConnInfo));
+          ConnectionInfo.toJson(MyriaConstants.STORAGE_SYSTEM_MYSQL, BENCHMARKTEST_HOSTNAME, BENCHMARKTEST_NAME,
+              tempFilePath.toFile().getAbsolutePath(), "0", "myria1", jdbcPassword);
+      // Uncomment the next line to add tests for MySQL. However, be sure that the MySQL service is up and running.
+      // connections.add(ConnectionInfo.of(MyriaConstants.STORAGE_SYSTEM_MYSQL, jsonConnInfo));
 
       /* The PostgreSQL connection */
       jsonConnInfo =
           ConnectionInfo.toJson(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL, BENCHMARKTEST_HOSTNAME, BENCHMARKTEST_NAME,
-              tempFilePath.toFile().getAbsolutePath(), "0", "myria1", "PaulAllenCenter");
+              tempFilePath.toFile().getAbsolutePath(), "0", "myria1", jdbcPassword);
       connections.add(ConnectionInfo.of(MyriaConstants.STORAGE_SYSTEM_POSTGRESQL, jsonConnInfo));
 
       /* The MySQL connection */
-      jsonConnInfo =
-          ConnectionInfo.toJson(MyriaConstants.STORAGE_SYSTEM_MONETDB, BENCHMARKTEST_HOSTNAME, BENCHMARKTEST_NAME,
-              tempFilePath.toFile().getAbsolutePath(), "0", "myria1", "PaulAllenCenter");
-      connections.add(ConnectionInfo.of("monetdb", jsonConnInfo));
+      // jsonConnInfo =
+      ConnectionInfo.toJson(MyriaConstants.STORAGE_SYSTEM_MONETDB, BENCHMARKTEST_HOSTNAME, BENCHMARKTEST_NAME,
+          tempFilePath.toFile().getAbsolutePath(), "0", "myria1", jdbcPassword);
+      // Uncomment the next line to add tests for MonetDB. However, be sure that the MonetDB service is up and running.
+      // connections.add(ConnectionInfo.of(MyriaConstants.STORAGE_SYSTEM_MONETDB, jsonConnInfo));
     } catch (IOException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
@@ -113,6 +153,8 @@ public class BenchmarkTest {
 
   @Test
   public void benchmarkInsertTest() throws Exception {
+    assertTrue(successfulSetup);
+
     double t1 = 0, t2 = 0;
     for (ConnectionInfo conn : connections) {
       LOGGER.info("Starting insert tests with DBMS: {}", conn.getDbms());
@@ -131,6 +173,8 @@ public class BenchmarkTest {
 
   @Test
   public void benchmarkSelectStarTest() throws Exception {
+    assertTrue(successfulSetup);
+
     for (ConnectionInfo conn : connections) {
       LOGGER.info("Starting SELECT * tests with DBMS: {}", conn.getDbms());
       double t1 = System.nanoTime();
@@ -158,6 +202,8 @@ public class BenchmarkTest {
 
   @Test
   public void benchmarkSelectProjectTest() throws Exception {
+    assertTrue(successfulSetup);
+
     for (ConnectionInfo conn : connections) {
       LOGGER.info("Starting Project tests with DBMS: {}", conn.getDbms());
       double t1 = System.nanoTime();
@@ -185,6 +231,8 @@ public class BenchmarkTest {
 
   @Test
   public void benchmarkSelectOrderByTest() throws Exception {
+    assertTrue(successfulSetup);
+
     for (ConnectionInfo conn : connections) {
       LOGGER.info("Starting ORDER BY tests with DBMS: {}", conn.getDbms());
       double t1 = System.nanoTime();
@@ -212,6 +260,8 @@ public class BenchmarkTest {
 
   @Test
   public void benchmarkSelectSmallJoinTest() throws Exception {
+    assertTrue(successfulSetup);
+
     Integer numExpectedTuples = null;
     for (ConnectionInfo conn : connections) {
       LOGGER.info("Starting JOIN (1%) tests with DBMS: {}", conn.getDbms());
@@ -245,6 +295,8 @@ public class BenchmarkTest {
 
   @Test
   public void benchmarkSelectSelfJoinTest() throws Exception {
+    assertTrue(successfulSetup);
+
     Integer numExpectedTuples = null;
     for (ConnectionInfo conn : connections) {
       LOGGER.info("Starting JOIN (1%) tests with DBMS: {}", conn.getDbms());
