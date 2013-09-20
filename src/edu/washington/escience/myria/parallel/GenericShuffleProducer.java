@@ -33,7 +33,7 @@ public class GenericShuffleProducer extends Producer {
   private final int[][] partitionToChannel;
 
   /**
-   * <<<<<<< HEAD The time spends on sending tuples via network.
+   * The time spends on sending tuples via network.
    */
   private long shuffleNetworkTime = 0;
 
@@ -41,8 +41,7 @@ public class GenericShuffleProducer extends Producer {
   private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(GenericShuffleProducer.class);
 
   /**
-   * one to one shuffle. ======= Shuffle to the same operator ID on multiple workers. (The old "ShuffleProducer")
-   * >>>>>>> d76d2ec... Adding constructors and updating their javadocs in GenericShuffleProducer.
+   * Shuffle to the same operator ID on multiple workers. (The old "ShuffleProducer")
    * 
    * @param child the child who provides data for this producer to distribute.
    * @param operatorID destination operators the data goes
