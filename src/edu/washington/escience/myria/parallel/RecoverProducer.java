@@ -43,7 +43,7 @@ public final class RecoverProducer extends CollectProducer {
 
   @Override
   protected void childEOS() throws DbException {
-    popTBsFromBuffersAndWrite(false);
+    writePartitionsIntoChannels(false, null);
     Preconditions.checkArgument(getChild() instanceof TupleSource);
     if (!oriProducer.eos()) {
       StreamOutputChannel<TupleBatch> tmp = getChannels()[0];
