@@ -33,7 +33,7 @@ def copy_distribution(config):
         else:
             remote_path = "%s/%s-files" % (path, description)
         to_copy = ["libs", "conf"]
-        args = ["rsync", "--del", "-aLvz"] + to_copy + [remote_path]
+        args = ["rsync", "--del", "-rlDLvz"] + to_copy + [remote_path]
         if subprocess.call(args):
             raise Exception("Error copying distribution to %s" % (hostname,))
 
