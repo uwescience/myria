@@ -204,7 +204,8 @@ public final class LocalJoin extends BinaryOperator {
    * @param index the index of hashTable, which the cntTuple is to join with
    * @param fromleft if the tuple is from child 1
    */
-  protected void addToAns(final List<Object> cntTuple, final TupleBuffer hashTable, final int index, final boolean fromleft) {
+  protected void addToAns(final List<Object> cntTuple, final TupleBuffer hashTable, final int index,
+      final boolean fromleft) {
     if (fromleft) {
       for (int i = 0; i < answerColumns1.length; ++i) {
         ans.put(i, cntTuple.get(answerColumns1[i]));
@@ -451,6 +452,9 @@ public final class LocalJoin extends BinaryOperator {
    */
   protected void processChildTB(final TupleBatch tb, final boolean fromleft) {
 
+    final Operator left = getLeft();
+    final Operator right = getRight();
+
     TupleBuffer hashTable1Local = hashTable1;
     TupleBuffer hashTable2Local = hashTable2;
     HashMap<Integer, List<Integer>> hashTable1IndicesLocal = hashTable1Indices;
@@ -481,12 +485,15 @@ public final class LocalJoin extends BinaryOperator {
           }
         }
       }
-      if (hashTable1IndicesLocal.get(cntHashCode) == null) {
-        hashTable1IndicesLocal.put(cntHashCode, new ArrayList<Integer>());
-      }
-      hashTable1IndicesLocal.get(cntHashCode).add(nextIndex);
-      for (int j = 0; j < tb.numColumns(); ++j) {
-        hashTable1Local.put(j, cntTuple.get(j));
+
+      if (!left.eos() && !right.eos()) {
+        if (hashTable1IndicesLocal.get(cntHashCode) == null) {
+          hashTable1IndicesLocal.put(cntHashCode, new ArrayList<Integer>());
+        }
+        hashTable1IndicesLocal.get(cntHashCode).add(nextIndex);
+        for (int j = 0; j < tb.numColumns(); ++j) {
+          hashTable1Local.put(j, cntTuple.get(j));
+        }
       }
     }
 

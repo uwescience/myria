@@ -192,7 +192,7 @@ public final class LocalJoinByReference extends BinaryOperator {
    * @throw IllegalArgumentException if there are duplicated column names in <tt>outputSchema</tt>, or if
    *        <tt>outputSchema</tt> does not have the correct number of columns and column types.
    */
-  private LocalJoinByReference(final List<String> outputColumns, final Operator left, final Operator right,
+  public LocalJoinByReference(final List<String> outputColumns, final Operator left, final Operator right,
       final int[] compareIndx1, final int[] compareIndx2) {
     this(outputColumns, left, right, compareIndx1, compareIndx2, MyriaUtils.range(left.getSchema().numColumns()),
         MyriaUtils.range(right.getSchema().numColumns()));
@@ -441,6 +441,8 @@ public final class LocalJoinByReference extends BinaryOperator {
    * */
   protected void processChildTB(final TupleBatch tb, final boolean fromleft) {
 
+    final Operator left = getLeft();
+    final Operator right = getRight();
     IntObjectOpenHashMap<List<IndexedTuple>> hashTable1Local = leftHashTable;
     IntObjectOpenHashMap<List<IndexedTuple>> hashTable2Local = rightHashTable;
     int[] compareIndx1Local = compareIndx1;
@@ -463,13 +465,15 @@ public final class LocalJoinByReference extends BinaryOperator {
         }
       }
 
-      if (hashTable1Local.containsKey(cntHashCode)) {
-        tupleList = hashTable1Local.get(cntHashCode);
-      } else {
-        tupleList = new ArrayList<IndexedTuple>();
-        hashTable1Local.put(cntHashCode, tupleList);
+      if (!left.eos() && !right.eos()) {
+        if (hashTable1Local.containsKey(cntHashCode)) {
+          tupleList = hashTable1Local.get(cntHashCode);
+        } else {
+          tupleList = new ArrayList<IndexedTuple>();
+          hashTable1Local.put(cntHashCode, tupleList);
+        }
+        tupleList.add(IndexedTuple.of(tb, i));
       }
-      tupleList.add(IndexedTuple.of(tb, i));
     }
   }
 }
