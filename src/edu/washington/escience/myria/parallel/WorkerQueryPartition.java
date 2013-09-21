@@ -376,7 +376,7 @@ public class WorkerQueryPartition implements QueryPartition {
         if (LOGGER.isTraceEnabled()) {
           LOGGER.trace("adding recovery task for " + task.getRootOp().getOpName());
         }
-        List<List<TupleBatch>> buffers = ((Producer) task.getRootOp()).getBackupBuffers();
+        List<List<TupleBatch>> buffers = ((Producer) task.getRootOp()).getTriedToSendTuples();
         List<Integer> indices = ((Producer) task.getRootOp()).getChannelIndicesOfAWorker(workerId);
         StreamOutputChannel<TupleBatch>[] channels = ((Producer) task.getRootOp()).getChannels();
         for (int i = 0; i < indices.size(); ++i) {
