@@ -71,7 +71,7 @@ public class SimplePredicate implements Serializable, Predicate {
   /** Which column of the tuple this predicate tests. */
   private final int columnIndex;
   /** The (often constant) right operand of the operator. E.g., the predicate can be "Is greater than 5". */
-  private final Object operand;
+  private final String operand;
 
   /**
    * Constructor.
@@ -80,7 +80,7 @@ public class SimplePredicate implements Serializable, Predicate {
    * @param op operation to use for comparison
    * @param operand field value to compare passed in s to
    */
-  public SimplePredicate(final int field, final Op op, final Object operand) {
+  public SimplePredicate(final int field, final Op op, final String operand) {
     columnIndex = field;
     this.op = op;
     this.operand = operand;
@@ -103,7 +103,7 @@ public class SimplePredicate implements Serializable, Predicate {
   /**
    * @return the operand
    */
-  public final Object getOperand() {
+  public final String getOperand() {
     return operand;
   }
 
@@ -121,8 +121,9 @@ public class SimplePredicate implements Serializable, Predicate {
     if (tb.numTuples() > 0) {
       final Column<?> columnValues = tb.getDataColumns().get(getField());
       final Type columnType = tb.getSchema().getColumnType(getField());
+      Object val = columnType.fromString(getOperand());
       for (final int validIdx : tb.getValidIndices()) {
-        if (columnType.filter(getOp(), columnValues, validIdx, getOperand())) {
+        if (columnType.filter(getOp(), columnValues, validIdx, val)) {
           newValidTuples.set(validIdx);
         }
       }

@@ -66,7 +66,12 @@ public enum Type implements Serializable {
       return "" + ((IntColumn) column).getInt(tupleIndex);
     }
 
+    @Override
+    public Object fromString(final String str) {
+      return Integer.valueOf(str);
+    }
   },
+
   /**
    * float type.
    * */
@@ -116,6 +121,10 @@ public enum Type implements Serializable {
       return "" + ((FloatColumn) column).getFloat(tupleIndex);
     }
 
+    @Override
+    public Object fromString(final String str) {
+      return Float.valueOf(str);
+    }
   },
   /**
    * Double type.
@@ -161,6 +170,10 @@ public enum Type implements Serializable {
       return "" + ((DoubleColumn) column).getDouble(tupleIndex);
     }
 
+    @Override
+    public Object fromString(final String str) {
+      return Double.valueOf(str);
+    }
   },
   /**
    * Boolean type.
@@ -201,6 +214,11 @@ public enum Type implements Serializable {
     @Override
     public String toString(final Column<?> column, final int tupleIndex) {
       return ((BooleanColumn) column).getBoolean(tupleIndex) + "";
+    }
+
+    @Override
+    public Object fromString(final String str) {
+      return Boolean.valueOf(str);
     }
   },
 
@@ -255,6 +273,11 @@ public enum Type implements Serializable {
     public String toString(final Column<?> column, final int tupleIndex) {
       return ((StringColumn) column).getString(tupleIndex);
     }
+
+    @Override
+    public Object fromString(final String str) {
+      return str;
+    }
   },
   /**
    * Long type.
@@ -303,6 +326,11 @@ public enum Type implements Serializable {
     public String toString(final Column<?> column, final int tupleIndex) {
       return "" + ((LongColumn) column).getLong(tupleIndex);
     }
+
+    @Override
+    public Object fromString(final String str) {
+      return Long.valueOf(str);
+    }
   },
 
   /**
@@ -348,6 +376,11 @@ public enum Type implements Serializable {
       return "" + ((DateTimeColumn) column).getDateTime(tupleIndex);
     }
 
+    @Override
+    public Object fromString(final String str) {
+      return DateTime.parse(str);
+    }
+
   };
 
   /**
@@ -366,4 +399,13 @@ public enum Type implements Serializable {
    * */
   public abstract String toString(final Column<?> column, final int tupleIndex);
 
+  /**
+   * Create an instance of Type from a String.
+   * 
+   * @param str The string to convert
+   * @return An object of an appropriate type
+   */
+  public Object fromString(final String str) {
+    throw new UnsupportedOperationException();
+  }
 }

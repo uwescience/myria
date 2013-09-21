@@ -10,6 +10,7 @@ import edu.washington.escience.myria.Predicate;
 @JsonSubTypes({
     @Type(value = WithinSumRangePredicateEncoding.class, name = "WithinSumRangePredicate"),
     @Type(value = EqualsPredicateEncoding.class, name = "EqualsPredicate"),
+    @Type(value = SimplePredicateEncoding.class, name = "SimplePredicate"),
     @Type(value = NotEqualsPredicateEncoding.class, name = "NotEqualsPredicate") })
 public abstract class PredicateEncoding<T extends Predicate> extends MyriaApiEncoding {
   /**
