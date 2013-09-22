@@ -1068,13 +1068,11 @@ public final class Server {
     }
 
     try {
-      /* TODO(dhalperi) -- figure out how to populate the numTuples column. */
-      DatasetStatus status = new DatasetStatus(relationKey, source.getSchema(), -1);
-      catalog.addRelationMetadata(status.getRelationKey(), status.getSchema(), status.getNumTuples());
-
       /* Start the workers */
-      submitQuery("ingest " + relationKey.toString("sqlite"), "ingest " + relationKey.toString("sqlite"),
+      QueryFuture qf = submitQuery("ingest " + relationKey.toString("sqlite"), "ingest " + relationKey.toString("sqlite"),
           "ingest " + relationKey.toString("sqlite"), new SingleQueryPlanWithArgs(scatter), workerPlans).sync();
+      /* TODO(dhalperi) -- figure out how to populate the numTuples column. */
+      DatasetStatus status = new DatasetStatus(relationKey, source.getSchema(), -1, qf.getQuery().getQueryID(), qf.getQuery().getExecutionStatistics().getEndTime());
 
       return status;
     } catch (CatalogException e) {
@@ -1100,7 +1098,7 @@ public final class Server {
     try {
       /* Now that the query has finished, add the metadata about this relation to the dataset. */
       /* TODO(dhalperi) -- figure out how to populate the numTuples column. */
-      catalog.addRelationMetadata(relationKey, schema, -1);
+      catalog.addRelationMetadata(relationKey, schema, -1, -1);
       /* Add the round robin-partitioned shard. */
       catalog.addStoredRelation(relationKey, actualWorkers, "RoundRobin");
     } catch (CatalogException e) {

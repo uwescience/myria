@@ -62,6 +62,18 @@ public final class MasterCatalog {
   private static final String CREATE_ALIVE_WORKERS =
       "CREATE TABLE alive_workers (\n"
     + "    worker_id INTEGER PRIMARY KEY ASC REFERENCES workers);";
+  /** Create the queries table. */
+  private static final String CREATE_QUERIES =
+      "CREATE TABLE queries (\n"
+    + "    query_id INTEGER NOT NULL PRIMARY KEY ASC,\n"
+    + "    raw_query TEXT NOT NULL,\n"
+    + "    logical_ra TEXT NOT NULL,\n"
+    + "    physical_plan TEXT NOT NULL,\n"
+    + "    submit_time TEXT NOT NULL, -- DATES IN ISO8601 FORMAT \n"
+    + "    start_time TEXT, -- DATES IN ISO8601 FORMAT \n"
+    + "    finish_time TEXT, -- DATES IN ISO8601 FORMAT \n"
+    + "    elapsed_nanos INTEGER,\n"
+    + "    status TEXT NOT NULL);";
   /** Create the relations table. */
   private static final String CREATE_RELATIONS =
       "CREATE TABLE relations (\n"
@@ -69,6 +81,7 @@ public final class MasterCatalog {
     + "    program_name STRING NOT NULL,\n"
     + "    relation_name STRING NOT NULL,\n"
     + "    num_tuples LONG NOT NULL,\n"
+    + "    query_id LONG NOT NULL REFERENCES queries(query_id),\n"
     + "    PRIMARY KEY (user_name,program_name,relation_name));";
   /** Create the relation_schema table. */
   private static final String CREATE_RELATION_SCHEMA =
@@ -96,18 +109,6 @@ public final class MasterCatalog {
     + "    stored_relation_id INTEGER NOT NULL REFERENCES stored_relations,\n"
     + "    shard_index INTEGER NOT NULL,\n"
     + "    worker_id INTEGER NOT NULL REFERENCES workers);";
-  /** Create the queries table. */
-  private static final String CREATE_QUERIES =
-      "CREATE TABLE queries (\n"
-    + "    query_id INTEGER NOT NULL PRIMARY KEY ASC,\n"
-    + "    raw_query TEXT NOT NULL,\n"
-    + "    logical_ra TEXT NOT NULL,\n"
-    + "    physical_plan TEXT NOT NULL,\n"
-    + "    submit_time TEXT NOT NULL, -- DATES IN ISO8601 FORMAT \n"
-    + "    start_time TEXT, -- DATES IN ISO8601 FORMAT \n"
-    + "    finish_time TEXT, -- DATES IN ISO8601 FORMAT \n"
-    + "    elapsed_nanos INTEGER,\n"
-    + "    status TEXT NOT NULL);";
 /** CREATE TABLE statements @formatter:on */
 
   /**
@@ -169,11 +170,11 @@ public final class MasterCatalog {
             sqliteConnection.exec(CREATE_MASTERS);
             sqliteConnection.exec(CREATE_WORKERS);
             sqliteConnection.exec(CREATE_ALIVE_WORKERS);
+            sqliteConnection.exec(CREATE_QUERIES);
             sqliteConnection.exec(CREATE_RELATIONS);
             sqliteConnection.exec(CREATE_RELATION_SCHEMA);
             sqliteConnection.exec(CREATE_STORED_RELATIONS);
             sqliteConnection.exec(CREATE_SHARDS);
-            sqliteConnection.exec(CREATE_QUERIES);
             sqliteConnection.exec("END TRANSACTION");
           } catch (final SQLiteException e) {
             sqliteConnection.exec("ROLLBACK TRANSACTION");
@@ -342,9 +343,10 @@ public final class MasterCatalog {
    * @param relation the relation to create.
    * @param schema the schema of the relation.
    * @param numTuples the number of tuples in the relation.
+   * @param queryId the query that created the relation.
    * @throws CatalogException if the relation is already in the catalog or there is an error in the database.
    */
-  public void addRelationMetadata(final RelationKey relation, final Schema schema, final long numTuples)
+  public void addRelationMetadata(final RelationKey relation, final Schema schema, final long numTuples, final long queryId)
       throws CatalogException {
     Objects.requireNonNull(relation);
     Objects.requireNonNull(schema);
@@ -364,11 +366,12 @@ public final class MasterCatalog {
             /* First, insert the relation name. */
             SQLiteStatement statement =
                 sqliteConnection
-                    .prepare("INSERT INTO relations (user_name,program_name,relation_name,num_tuples) VALUES (?,?,?,?);");
+                    .prepare("INSERT INTO relations (user_name,program_name,relation_name,num_tuples,query_id) VALUES (?,?,?,?,?);");
             statement.bind(1, relation.getUserName());
             statement.bind(2, relation.getProgramName());
             statement.bind(3, relation.getRelationName());
             statement.bind(4, numTuples);
+            statement.bind(5, queryId);
             statement.stepThrough();
             statement.dispose();
             statement = null;
@@ -889,7 +892,7 @@ public final class MasterCatalog {
           try {
             SQLiteStatement statement =
                 sqliteConnection
-                    .prepare("SELECT user_name, program_name, relation_name, num_tuples FROM relations ORDER BY user_name, program_name, relation_name ASC");
+                    .prepare("SELECT user_name, program_name, relation_name, num_tuples, query_id, finish_time FROM relations JOIN queries USING (query_id) ORDER BY user_name, program_name, relation_name ASC");
             return datasetStatusListHelper(statement, sqliteConnection);
           } catch (final SQLiteException e) {
             throw new CatalogException(e);
@@ -920,7 +923,7 @@ public final class MasterCatalog {
           try {
             SQLiteStatement statement =
                 sqliteConnection
-                    .prepare("SELECT user_name, program_name, relation_name, num_tuples FROM relations WHERE user_name=? ORDER BY user_name, program_name, relation_name ASC");
+                    .prepare("SELECT user_name, program_name, relation_name, num_tuples, query_id, finish_time FROM relations JOIN queries USING (query_id) WHERE user_name=? ORDER BY user_name, program_name, relation_name ASC");
             statement.bind(1, userName);
             return datasetStatusListHelper(statement, sqliteConnection);
           } catch (final SQLiteException e) {
@@ -954,7 +957,7 @@ public final class MasterCatalog {
           try {
             SQLiteStatement statement =
                 sqliteConnection
-                    .prepare("SELECT user_name, program_name, relation_name, num_tuples FROM relations WHERE user_name=? AND program_name=? ORDER BY user_name, program_name, relation_name ASC");
+                    .prepare("SELECT user_name, program_name, relation_name, num_tuples, query_id, finish_time FROM relations JOIN queries USING (query_id) WHERE user_name=? AND program_name=? ORDER BY user_name, program_name, relation_name ASC");
             statement.bind(1, userName);
             statement.bind(2, programName);
             return datasetStatusListHelper(statement, sqliteConnection);
@@ -984,7 +987,9 @@ public final class MasterCatalog {
         RelationKey relationKey =
             RelationKey.of(statement.columnString(0), statement.columnString(1), statement.columnString(2));
         long numTuples = statement.columnLong(3);
-        result.add(new DatasetStatus(relationKey, getDatasetSchema(connection, relationKey), numTuples));
+        long queryId = statement.columnLong(4);
+        String created = statement.columnString(5);
+        result.add(new DatasetStatus(relationKey, getDatasetSchema(connection, relationKey), numTuples, queryId, created));
       }
       statement.dispose();
       return result.build();
@@ -1254,17 +1259,19 @@ public final class MasterCatalog {
           try {
             SQLiteStatement statement =
                 sqliteConnection
-                    .prepare("SELECT num_tuples FROM relations WHERE user_name=? AND program_name=? AND relation_name=?");
+                    .prepare("SELECT num_tuples, query_id, finish_time FROM relations JOIN queries USING (query_id) WHERE user_name=? AND program_name=? AND relation_name=?");
             statement.bind(1, relationKey.getUserName());
             statement.bind(2, relationKey.getProgramName());
             statement.bind(3, relationKey.getRelationName());
             if (!statement.step()) {
               return null;
             }
-            long numTuples = statement.columnLong(0);
             Schema schema = getDatasetSchema(sqliteConnection, relationKey);
+            long numTuples = statement.columnLong(0);
+            long queryId = statement.columnLong(1);
+            String created = statement.columnString(2);
             statement.dispose();
-            return new DatasetStatus(relationKey, schema, numTuples);
+            return new DatasetStatus(relationKey, schema, numTuples, queryId, created);
           } catch (final SQLiteException e) {
             throw new CatalogException(e);
           }

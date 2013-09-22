@@ -74,7 +74,7 @@ public final class DatasetMetadataUpdater implements OperationFutureListener {
       Set<Integer> workers = meta.getWorkers();
       Schema schema = meta.getSchema();
       if (catalog.getSchema(relation) == null) {
-        catalog.addRelationMetadata(relation, schema, -1);
+        catalog.addRelationMetadata(relation, schema, -1, queryId);
       }
       catalog.addStoredRelation(relation, workers, "unknown");
       LOGGER.error("Query #{} - adding {} to store shard of {}", queryId, workers, relation
