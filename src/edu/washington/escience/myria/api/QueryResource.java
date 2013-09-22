@@ -15,6 +15,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
@@ -125,7 +126,8 @@ public final class QueryResource {
     QueryStatusEncoding qs = server.getQueryStatus(queryId);
     URI queryUri = getCanonicalResourcePath(uriInfo, queryId);
     qs.url = queryUri;
-    return Response.status(Status.ACCEPTED).location(queryUri).entity(qs).build();
+    return Response.status(Status.ACCEPTED).cacheControl(MyriaApiUtils.doNotCache()).location(queryUri).entity(qs)
+        .build();
   }
 
   /**
@@ -148,11 +150,13 @@ public final class QueryResource {
     }
     queryStatus.url = uri;
     Status httpStatus = Status.INTERNAL_SERVER_ERROR;
+    boolean cache = false;
     switch (queryStatus.status) {
       case SUCCESS:
       case ERROR:
       case KILLED:
         httpStatus = Status.OK;
+        cache = true;
         break;
       case ACCEPTED:
       case PAUSED:
@@ -160,7 +164,11 @@ public final class QueryResource {
         httpStatus = Status.ACCEPTED;
         break;
     }
-    return Response.status(httpStatus).location(uri).entity(queryStatus).build();
+    ResponseBuilder response = Response.status(httpStatus).location(uri).entity(queryStatus);
+    if (!cache) {
+      response.cacheControl(MyriaApiUtils.doNotCache());
+    }
+    return response.build();
   }
 
   /**
@@ -176,7 +184,7 @@ public final class QueryResource {
     for (QueryStatusEncoding status : queries) {
       status.url = getCanonicalResourcePath(uriInfo, status.queryId);
     }
-    return Response.ok().entity(queries).build();
+    return Response.ok().cacheControl(MyriaApiUtils.doNotCache()).entity(queries).build();
   }
 
   /**

@@ -3,7 +3,6 @@ package edu.washington.escience.myria.api;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -11,6 +10,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
 import edu.washington.escience.myria.parallel.Server;
@@ -33,8 +33,8 @@ public final class WorkerCollection {
    */
   @GET
   @Path("/alive")
-  public Set<Integer> getAliveWorkers() {
-    return server.getAliveWorkers();
+  public Response getAliveWorkers() {
+    return Response.ok(server.getAliveWorkers()).cacheControl(MyriaApiUtils.doNotCache()).build();
   }
 
   /**
@@ -63,13 +63,14 @@ public final class WorkerCollection {
    * @return the set of workers (identifier : host-port string) known by this server.
    */
   @GET
-  public Map<Integer, String> getWorkers() {
+  public Response getWorkers() {
     Map<Integer, SocketInfo> workers;
     workers = server.getWorkers();
     final Map<Integer, String> ret = new HashMap<Integer, String>();
     for (final Entry<Integer, SocketInfo> workerInfo : workers.entrySet()) {
       ret.put(workerInfo.getKey(), workerInfo.getValue().toString());
     }
-    return ret;
+    /* Don't cache the answer. */
+    return Response.ok(ret).cacheControl(MyriaApiUtils.doNotCache()).build();
   }
 }

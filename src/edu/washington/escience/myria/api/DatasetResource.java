@@ -324,12 +324,12 @@ public final class DatasetResource {
    * @throws DbException if there is an error accessing the Catalog.
    */
   @GET
-  public List<DatasetStatus> getDatasets() throws DbException {
+  public Response getDatasets() throws DbException {
     List<DatasetStatus> datasets = server.getDatasets();
     for (DatasetStatus status : datasets) {
       status.setUri(getCanonicalResourcePath(uriInfo, status.getRelationKey()));
     }
-    return datasets;
+    return Response.ok().cacheControl(MyriaApiUtils.doNotCache()).entity(datasets).build();
   }
 
   /**
