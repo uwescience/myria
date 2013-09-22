@@ -209,6 +209,9 @@ public final class MultiGroupByAggregate extends UnaryOperator {
    */
   @Override
   public Schema getSchema() {
+    if (schema == null) {
+      schema = generateSchema(getChild(), groupAggs, gfields, afields, agg, aggOps);
+    }
     return schema;
   }
 
