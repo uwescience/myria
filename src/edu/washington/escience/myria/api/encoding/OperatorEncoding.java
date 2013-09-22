@@ -25,7 +25,7 @@ import edu.washington.escience.myria.parallel.Server;
 @JsonSubTypes({
     @Type(name = "CollectConsumer", value = CollectConsumerEncoding.class),
     @Type(name = "CollectProducer", value = CollectProducerEncoding.class),
-    @Type(name = "Consumer", value = ConsumerEncoding.class),
+    @Type(name = "Consumer", value = ConsumerEncoding.class), @Type(name = "DupElim", value = DupElimEncoding.class),
     @Type(name = "ShuffleConsumer", value = ShuffleConsumerEncoding.class),
     @Type(name = "LocalMultiwayConsumer", value = LocalMultiwayConsumerEncoding.class),
     @Type(name = "ShuffleProducer", value = ShuffleProducerEncoding.class),
