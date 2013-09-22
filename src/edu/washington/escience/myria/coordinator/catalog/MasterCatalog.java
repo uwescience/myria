@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -346,8 +347,8 @@ public final class MasterCatalog {
    * @param queryId the query that created the relation.
    * @throws CatalogException if the relation is already in the catalog or there is an error in the database.
    */
-  public void addRelationMetadata(final RelationKey relation, final Schema schema, final long numTuples, final long queryId)
-      throws CatalogException {
+  public void addRelationMetadata(final RelationKey relation, final Schema schema, final long numTuples,
+      final long queryId) throws CatalogException {
     Objects.requireNonNull(relation);
     Objects.requireNonNull(schema);
     if (isClosed) {
@@ -989,7 +990,8 @@ public final class MasterCatalog {
         long numTuples = statement.columnLong(3);
         long queryId = statement.columnLong(4);
         String created = statement.columnString(5);
-        result.add(new DatasetStatus(relationKey, getDatasetSchema(connection, relationKey), numTuples, queryId, created));
+        result.add(new DatasetStatus(relationKey, getDatasetSchema(connection, relationKey), numTuples, queryId,
+            created));
       }
       statement.dispose();
       return result.build();
@@ -1108,25 +1110,75 @@ public final class MasterCatalog {
           try {
             SQLiteStatement statement =
                 sqliteConnection
-                    .prepare("SELECT raw_query,logical_ra,physical_plan,submit_time,start_time,finish_time,elapsed_nanos,status FROM queries WHERE query_id=?;");
+                    .prepare("SELECT query_id,raw_query,logical_ra,physical_plan,submit_time,start_time,finish_time,elapsed_nanos,status FROM queries WHERE query_id=?;");
             statement.bind(1, queryId);
             statement.step();
             if (!statement.hasRow()) {
               return null;
             }
-            final QueryStatusEncoding queryStatus = new QueryStatusEncoding(queryId);
-            queryStatus.rawQuery = statement.columnString(0);
-            queryStatus.logicalRa = statement.columnString(1);
-            queryStatus.physicalPlan = statement.columnString(2);
-            queryStatus.submitTime = statement.columnString(3);
-            queryStatus.startTime = statement.columnString(4);
-            queryStatus.finishTime = statement.columnString(5);
-            if (!statement.columnNull(6)) {
-              queryStatus.elapsedNanos = statement.columnLong(6);
-            }
-            queryStatus.status = QueryStatusEncoding.Status.valueOf(statement.columnString(7));
+            final QueryStatusEncoding queryStatus = queryStatusHelper(statement);
             statement.dispose();
             return queryStatus;
+          } catch (final SQLiteException e) {
+            throw new CatalogException(e);
+          }
+        }
+      }).get();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new CatalogException(e);
+    }
+  }
+
+  /**
+   * Helper function to get a {@link QueryStatusEncoding} from a query over the <code>queries</code> table..
+   * 
+   * @param statement the query over the <code>queries</code> table. Has been stepped once.
+   * @return the status of the first query in the result.
+   * @throws SQLiteException if there is an error in the database.
+   */
+  private static QueryStatusEncoding queryStatusHelper(final SQLiteStatement statement) throws SQLiteException {
+    final QueryStatusEncoding queryStatus = new QueryStatusEncoding(statement.columnLong(0));
+    queryStatus.rawQuery = statement.columnString(1);
+    queryStatus.logicalRa = statement.columnString(2);
+    queryStatus.physicalPlan = statement.columnString(3);
+    queryStatus.submitTime = statement.columnString(4);
+    queryStatus.startTime = statement.columnString(5);
+    queryStatus.finishTime = statement.columnString(6);
+    if (!statement.columnNull(7)) {
+      queryStatus.elapsedNanos = statement.columnLong(7);
+    }
+    queryStatus.status = QueryStatusEncoding.Status.valueOf(statement.columnString(8));
+    return queryStatus;
+  }
+
+  /**
+   * Get the status of all queries in the system.
+   * 
+   * @return a list of the status of all queries.
+   * @throws CatalogException if there is an error in the MasterCatalog.
+   */
+  public List<QueryStatusEncoding> getQueries() throws CatalogException {
+    if (isClosed) {
+      throw new CatalogException("MasterCatalog is closed.");
+    }
+
+    try {
+      return queue.execute(new SQLiteJob<List<QueryStatusEncoding>>() {
+        @Override
+        protected List<QueryStatusEncoding> job(final SQLiteConnection sqliteConnection) throws CatalogException,
+            SQLiteException {
+          try {
+            SQLiteStatement statement =
+                sqliteConnection
+                    .prepare("SELECT query_id, raw_query,logical_ra,physical_plan,submit_time,start_time,finish_time,elapsed_nanos,status FROM queries ORDER BY query_id DESC;");
+            statement.step();
+            List<QueryStatusEncoding> ret = new LinkedList<QueryStatusEncoding>();
+            while (statement.hasRow()) {
+              ret.add(queryStatusHelper(statement));
+              statement.step();
+            }
+            statement.dispose();
+            return ret;
           } catch (final SQLiteException e) {
             throw new CatalogException(e);
           }

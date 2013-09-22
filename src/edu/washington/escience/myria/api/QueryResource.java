@@ -2,6 +2,7 @@ package edu.washington.escience.myria.api;
 
 import java.net.URI;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -15,6 +16,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
+import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
 import org.slf4j.LoggerFactory;
@@ -119,10 +121,9 @@ public final class QueryResource {
         }
       }
     });
-    /* In the response, tell the client what ID this query was assigned. */
-    URI queryUri = uriInfo.getAbsolutePathBuilder().path("query-" + queryId).build();
     /* And return the queryStatus as it is now. */
     QueryStatusEncoding qs = server.getQueryStatus(queryId);
+    URI queryUri = getCanonicalResourcePath(uriInfo, queryId);
     qs.url = queryUri;
     return Response.status(Status.ACCEPTED).location(queryUri).entity(qs).build();
   }
@@ -160,5 +161,55 @@ public final class QueryResource {
         break;
     }
     return Response.status(httpStatus).location(uri).entity(queryStatus).build();
+  }
+
+  /**
+   * Get information about a query. This includes when it started, when it finished, its URL, etc.
+   * 
+   * @param uriInfo the URL of the current request.
+   * @return information about the query.
+   * @throws CatalogException if there is an error in the catalog.
+   */
+  @GET
+  public Response getQueries(@Context final UriInfo uriInfo) throws CatalogException {
+    List<QueryStatusEncoding> queries = server.getQueries();
+    for (QueryStatusEncoding status : queries) {
+      status.url = getCanonicalResourcePath(uriInfo, status.queryId);
+    }
+    return Response.ok().entity(queries).build();
+  }
+
+  /**
+   * @param uriInfo information about the URL of the request.
+   * @return the canonical URL for this API.
+   */
+  public static URI getCanonicalResourcePath(final UriInfo uriInfo) {
+    return getCanonicalResourcePathBuilder(uriInfo).build();
+  }
+
+  /**
+   * @param uriInfo information about the URL of the request.
+   * @return a builder for the canonical URL for this API.
+   */
+  public static UriBuilder getCanonicalResourcePathBuilder(final UriInfo uriInfo) {
+    return uriInfo.getBaseUriBuilder().path("/query");
+  }
+
+  /**
+   * @param uriInfo information about the URL of the request.
+   * @param queryId the id of the query.
+   * @return the canonical URL for this API.
+   */
+  public static URI getCanonicalResourcePath(final UriInfo uriInfo, final long queryId) {
+    return getCanonicalResourcePathBuilder(uriInfo, queryId).build();
+  }
+
+  /**
+   * @param uriInfo information about the URL of the request.
+   * @param queryId the id of the query.
+   * @return a builder for the canonical URL for this API.
+   */
+  public static UriBuilder getCanonicalResourcePathBuilder(final UriInfo uriInfo, final long queryId) {
+    return getCanonicalResourcePathBuilder(uriInfo).path("query-" + queryId);
   }
 }

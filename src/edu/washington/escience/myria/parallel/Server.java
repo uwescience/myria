@@ -7,11 +7,15 @@ import java.io.ObjectInputStream;
 import java.nio.file.Files;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.NavigableSet;
 import java.util.Set;
 import java.util.TimerTask;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -1069,10 +1073,13 @@ public final class Server {
 
     try {
       /* Start the workers */
-      QueryFuture qf = submitQuery("ingest " + relationKey.toString("sqlite"), "ingest " + relationKey.toString("sqlite"),
-          "ingest " + relationKey.toString("sqlite"), new SingleQueryPlanWithArgs(scatter), workerPlans).sync();
+      QueryFuture qf =
+          submitQuery("ingest " + relationKey.toString("sqlite"), "ingest " + relationKey.toString("sqlite"),
+              "ingest " + relationKey.toString("sqlite"), new SingleQueryPlanWithArgs(scatter), workerPlans).sync();
       /* TODO(dhalperi) -- figure out how to populate the numTuples column. */
-      DatasetStatus status = new DatasetStatus(relationKey, source.getSchema(), -1, qf.getQuery().getQueryID(), qf.getQuery().getExecutionStatistics().getEndTime());
+      DatasetStatus status =
+          new DatasetStatus(relationKey, source.getSchema(), -1, qf.getQuery().getQueryID(), qf.getQuery()
+              .getExecutionStatistics().getEndTime());
 
       return status;
     } catch (CatalogException e) {
@@ -1189,6 +1196,38 @@ public final class Server {
       queryStatus.status = QueryStatusEncoding.Status.ACCEPTED;
     }
     return queryStatus;
+  }
+
+  /**
+   * Computes and returns the status of queries that have been submitted to Myria.
+   * 
+   * @throws CatalogException if there is an error in the catalog.
+   * @return a list of the status of every query that has been submitted to Myria.
+   */
+  public List<QueryStatusEncoding> getQueries() throws CatalogException {
+    List<QueryStatusEncoding> ret = new LinkedList<QueryStatusEncoding>();
+
+    /* Begin by adding the status for all the active queries. */
+    NavigableSet<Long> activeQueryIds = new TreeSet<Long>(activeQueries.keySet());
+    final Iterator<Long> iter = activeQueryIds.descendingIterator();
+    while (iter.hasNext()) {
+      final Long queryId = iter.next();
+      final QueryStatusEncoding status = getQueryStatus(queryId);
+      if (status == null) {
+        LOGGER.warn("Weird: query status for active query {} is null.", queryId);
+        continue;
+      }
+      ret.add(status);
+    }
+
+    /* Now add in the status for all the inactive (finished, killed, etc.) queries. */
+    for (QueryStatusEncoding q : catalog.getQueries()) {
+      if (!activeQueryIds.contains(q.queryId)) {
+        ret.add(q);
+      }
+    }
+
+    return ret;
   }
 
   /**
