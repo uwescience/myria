@@ -9,6 +9,7 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
+import edu.washington.escience.myria.parallel.QuerySubTreeTask;
 import edu.washington.escience.myria.parallel.TaskResourceManager;
 
 /**
@@ -106,12 +107,18 @@ public abstract class Operator implements Serializable {
    */
   public boolean isProfilingMode() {
     // make sure hard coded test will pass
-    if (execEnvVars != null) {
-      return ((TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER)).getOwnerTask()
-          .getOwnerQuery().isProfilingMode();
-    } else {
+    if (execEnvVars == null) {
       return false;
     }
+    TaskResourceManager trm = (TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER);
+    if (trm == null) {
+      return false;
+    }
+    QuerySubTreeTask task = trm.getOwnerTask();
+    if (task == null) {
+      return false;
+    }
+    return task.getOwnerQuery().isProfilingMode();
   }
 
   /**

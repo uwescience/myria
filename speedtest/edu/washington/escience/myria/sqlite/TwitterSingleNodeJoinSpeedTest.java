@@ -14,12 +14,14 @@ import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
+import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.accessmethod.SQLiteInfo;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
+import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.LocalJoin;
@@ -72,7 +74,7 @@ public class TwitterSingleNodeJoinSpeedTest {
     final DbQueryScan scan1 = new DbQueryScan(connectionInfo, "select * from twitter_subset", tableSchema);
     final DbQueryScan scan2 = new DbQueryScan(connectionInfo, "select * from twitter_subset", tableSchema);
 
-    // Join on SC1.followee=SC2.follower
+    /* Join on SC1.followee=SC2.follower */
     final List<String> joinSchema = ImmutableList.of("follower", "joinL", "joinR", "followee");
     final LocalJoin localJoin = new LocalJoin(joinSchema, scan1, scan2, new int[] { 1 }, new int[] { 0 });
 
@@ -107,7 +109,7 @@ public class TwitterSingleNodeJoinSpeedTest {
     final DbQueryScan scan1 = new DbQueryScan(connectionInfo, "select * from twitter_subset", tableSchema);
     final DbQueryScan scan2 = new DbQueryScan(connectionInfo, "select * from twitter_subset", tableSchema);
 
-    // Join on SC1.followee=SC2.follower
+    /* Join on SC1.followee=SC2.follower */
     final LocalJoin localProjJoin =
         new LocalJoin(scan1, scan2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
     /* Now Dupelim */
@@ -122,9 +124,74 @@ public class TwitterSingleNodeJoinSpeedTest {
       }
     }
 
-    System.out.println(result + " tuples found.");
+    /* Make sure the count matches the known result. */
+    assertTrue(result == 3361461);
+  }
+
+  @Test
+  public void twitterSubsetProjectingJoinWithInsertTest() throws Exception {
+    assertTrue(successfulSetup);
+
+    final ImmutableList<Type> table1Types = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
+    final ImmutableList<String> table1ColumnNames = ImmutableList.of("follower", "followee");
+    final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
+
+    /* Read the data from the file. */
+    final DbQueryScan scan1 = new DbQueryScan(connectionInfo, "select * from twitter_subset", tableSchema);
+    final DbQueryScan scan2 = new DbQueryScan(connectionInfo, "select * from twitter_subset", tableSchema);
+
+    /* Join on SC1.followee=SC2.follower */
+    final LocalJoin localProjJoin =
+        new LocalJoin(scan1, scan2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
+    /* Now Dupelim */
+    final DupElim dupelim = new DupElim(localProjJoin);
+    final RelationKey distinctJoinStored = RelationKey.of("Speedtest", "TwitterSingleNodeJoinSpeedTest", "TwitterJoin");
+    /* .. and insert */
+    final DbInsert insert = new DbInsert(dupelim, distinctJoinStored, connectionInfo, true);
+
+    /* Run insert to completion. */
+    insert.open(execEnvVars);
+    while (!insert.eos()) {
+      insert.nextReady();
+    }
+
+    /* Cleanup and close insert. */
+    insert.cleanup();
+    insert.close();
+
+    /* Phase 2: Get the result out and verify it's what we expect. */
+    final DbQueryScan scanResult = new DbQueryScan(connectionInfo, distinctJoinStored, tableSchema);
+    scanResult.open(execEnvVars);
+    long result = 0;
+    while (!scanResult.eos()) {
+      final TupleBatch next = scanResult.nextReady();
+      if (next != null) {
+        result += next.numTuples();
+      }
+    }
 
     /* Make sure the count matches the known result. */
     assertTrue(result == 3361461);
+  }
+
+  @Test
+  public void twitterJoinInDatabaseTest() throws Exception {
+    assertTrue(successfulSetup);
+
+    final Schema resultSchema = new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("COUNT"));
+    final String query =
+        "SELECT COUNT(*) FROM (SELECT DISTINCT twitterL.follower,twitterR.followee FROM twitter_subset twitterL JOIN twitter_subset twitterR ON twitterL.followee=twitterR.follower)";
+    final DbQueryScan scanResult = new DbQueryScan(connectionInfo, query, resultSchema);
+
+    /* Run insert to completion. */
+    scanResult.open(execEnvVars);
+    TupleBatch tb = scanResult.nextReady();
+    while (!scanResult.eos() && tb == null) {
+      tb = scanResult.nextReady();
+    }
+    assertTrue(tb != null);
+
+    /* Check the result. */
+    assertTrue(tb.getLong(0, 0) == 3361461);
   }
 }
