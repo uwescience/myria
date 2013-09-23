@@ -945,7 +945,7 @@ public final class Server {
    * @throws CatalogException if any error in processing catalog
    * @return the query future from which the query status can be looked up.
    * */
-  public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final String physicalPlan,
+  public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final Object physicalPlan,
       final SingleQueryPlanWithArgs masterPlan, final Map<Integer, SingleQueryPlanWithArgs> workerPlans)
       throws DbException, CatalogException {
     workerPlans.remove(MyriaConstants.MASTER_ID);

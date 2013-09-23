@@ -22,13 +22,16 @@ import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteJob;
 import com.almworks.sqlite4java.SQLiteQueue;
 import com.almworks.sqlite4java.SQLiteStatement;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
+import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
 import edu.washington.escience.myria.parallel.SocketInfo;
@@ -1044,7 +1047,7 @@ public final class MasterCatalog {
    * @return the newly generated ID of this query.
    * @throws CatalogException if there is an error adding the new query.
    */
-  public Long newQuery(final String rawQuery, final String logicalRa, final String physicalPlan)
+  public Long newQuery(final String rawQuery, final String logicalRa, final Object physicalPlan)
       throws CatalogException {
     Objects.requireNonNull(rawQuery);
     Objects.requireNonNull(logicalRa);
@@ -1054,6 +1057,16 @@ public final class MasterCatalog {
     }
 
     final QueryStatusEncoding queryStatus = QueryStatusEncoding.submitted(rawQuery, logicalRa, physicalPlan);
+    final String physicalString;
+    if (queryStatus.physicalPlan instanceof String) {
+      physicalString = (String) queryStatus.physicalPlan;
+    } else {
+      try {
+        physicalString = MyriaJsonMapperProvider.newMapper().writeValueAsString(queryStatus.physicalPlan);
+      } catch (JsonProcessingException e) {
+        throw new CatalogException(e);
+      }
+    }
 
     try {
       return queue.execute(new SQLiteJob<Long>() {
@@ -1065,7 +1078,7 @@ public final class MasterCatalog {
                     .prepare("INSERT INTO queries (raw_query, logical_ra, physical_plan, submit_time, start_time, finish_time, elapsed_nanos, status) VALUES (?,?,?,?,?,?,?,?);");
             statement.bind(1, queryStatus.rawQuery);
             statement.bind(2, queryStatus.logicalRa);
-            statement.bind(3, queryStatus.physicalPlan);
+            statement.bind(3, physicalString);
             statement.bind(4, queryStatus.submitTime);
             statement.bind(5, queryStatus.startTime);
             statement.bind(6, queryStatus.finishTime);
@@ -1140,7 +1153,12 @@ public final class MasterCatalog {
     final QueryStatusEncoding queryStatus = new QueryStatusEncoding(statement.columnLong(0));
     queryStatus.rawQuery = statement.columnString(1);
     queryStatus.logicalRa = statement.columnString(2);
-    queryStatus.physicalPlan = statement.columnString(3);
+    String physicalString = statement.columnString(3);
+    try {
+      queryStatus.physicalPlan = MyriaJsonMapperProvider.newMapper().readValue(physicalString, QueryEncoding.class);
+    } catch (IOException e) {
+      queryStatus.physicalPlan = physicalString;
+    }
     queryStatus.submitTime = statement.columnString(4);
     queryStatus.startTime = statement.columnString(5);
     queryStatus.finishTime = statement.columnString(6);
