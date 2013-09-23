@@ -55,19 +55,19 @@ public final class DatasetMetadataUpdater implements OperationFutureListener {
     this.catalog = Objects.requireNonNull(catalog);
     this.queryId = queryId;
     relationsCreated = inferRelationsCreated(Objects.requireNonNull(workerPlans), catalog);
-    LOGGER.error("DatasetMetadatUpdater configured for query #{} with relations-worker map {}", queryId,
+    LOGGER.info("DatasetMetadatUpdater configured for query #{} with relations-worker map {}", queryId,
         relationsCreated);
   }
 
   @Override
   public void operationComplete(final OperationFuture future) throws Exception {
     if (!future.isSuccess()) {
-      LOGGER.error("Query #{} failed, so not updating the catalog metadata for relations {}.", queryId,
-          relationsCreated.keySet());
+      LOGGER.info("Query #{} failed, so not updating the catalog metadata for relations {}.", queryId, relationsCreated
+          .keySet());
       return;
     }
 
-    LOGGER.error("Query #{} succeeded, so updating the catalog metadata for relations.", queryId);
+    LOGGER.info("Query #{} succeeded, so updating the catalog metadata for relations.", queryId);
     for (Map.Entry<RelationKey, RelationMetadata> entry : relationsCreated.entrySet()) {
       RelationKey relation = entry.getKey();
       RelationMetadata meta = entry.getValue();
@@ -77,7 +77,7 @@ public final class DatasetMetadataUpdater implements OperationFutureListener {
         catalog.addRelationMetadata(relation, schema, -1, queryId);
       }
       catalog.addStoredRelation(relation, workers, "unknown");
-      LOGGER.error("Query #{} - adding {} to store shard of {}", queryId, workers, relation
+      LOGGER.info("Query #{} - adding {} to store shard of {}", queryId, workers, relation
           .toString(MyriaConstants.STORAGE_SYSTEM_SQLITE));
     }
   }
