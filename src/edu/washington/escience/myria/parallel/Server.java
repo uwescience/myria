@@ -950,65 +950,72 @@ public final class Server {
       throws DbException, CatalogException {
     workerPlans.remove(MyriaConstants.MASTER_ID);
     final long queryID = catalog.newQuery(rawQuery, logicalRa, physicalPlan);
-    final MasterQueryPartition mqp = new MasterQueryPartition(masterPlan, workerPlans, queryID, this);
-    activeQueries.put(queryID, mqp);
 
-    final QueryFuture queryExecutionFuture = mqp.getQueryExecutionFuture();
+    try {
+      final MasterQueryPartition mqp = new MasterQueryPartition(masterPlan, workerPlans, queryID, this);
+      activeQueries.put(queryID, mqp);
 
-    /*
-     * Add the DatasetMetadataUpdater, which will update the catalog with the set of workers created when the query
-     * succeeds.
-     */
-    queryExecutionFuture.addListener(new DatasetMetadataUpdater(catalog, workerPlans, queryID));
+      final QueryFuture queryExecutionFuture = mqp.getQueryExecutionFuture();
 
-    queryExecutionFuture.addListener(new QueryFutureListener() {
-      @Override
-      public void operationComplete(final QueryFuture future) throws Exception {
+      /*
+       * Add the DatasetMetadataUpdater, which will update the catalog with the set of workers created when the query
+       * succeeds.
+       */
+      queryExecutionFuture.addListener(new DatasetMetadataUpdater(catalog, workerPlans, queryID));
 
-        /* Before removing this query from the list of active queries, update it in the Catalog. */
-        final QueryExecutionStatistics stats = mqp.getExecutionStatistics();
-        final String startTime = stats.getStartTime();
-        final String endTime = stats.getEndTime();
-        final long elapsedNanos = stats.getQueryExecutionElapse();
-        final QueryStatusEncoding.Status status;
-        if (mqp.isKilled()) {
-          /* This is a catch-all for both ERROR and KILLED, right? */
-          status = Status.KILLED;
-        } else {
-          status = Status.SUCCESS;
+      queryExecutionFuture.addListener(new QueryFutureListener() {
+        @Override
+        public void operationComplete(final QueryFuture future) throws Exception {
+
+          /* Before removing this query from the list of active queries, update it in the Catalog. */
+          final QueryExecutionStatistics stats = mqp.getExecutionStatistics();
+          final String startTime = stats.getStartTime();
+          final String endTime = stats.getEndTime();
+          final long elapsedNanos = stats.getQueryExecutionElapse();
+          final QueryStatusEncoding.Status status;
+          if (mqp.isKilled()) {
+            /* This is a catch-all for both ERROR and KILLED, right? */
+            status = Status.KILLED;
+          } else {
+            status = Status.SUCCESS;
+          }
+          catalog.queryFinished(queryID, startTime, endTime, elapsedNanos, status);
+          activeQueries.remove(queryID);
+
+          if (future.isSuccess()) {
+            if (LOGGER.isInfoEnabled()) {
+              LOGGER.info("The query #{} succeeds. Time elapse: {}.", queryID, DateTimeUtils
+                  .nanoElapseToHumanReadable(elapsedNanos));
+            }
+            if (mqp.getRootOperator() instanceof SinkRoot) {
+              succeededQueryResults.put(queryID, ((SinkRoot) mqp.getRootOperator()).getCount());
+            }
+            // TODO success management.
+          } else {
+            if (LOGGER.isInfoEnabled()) {
+              LOGGER.info("The query #{} failes. Time elapse: {}. Failure cause is {}.", queryID, DateTimeUtils
+                  .nanoElapseToHumanReadable(elapsedNanos), future.getCause());
+            }
+            // TODO failure management.
+          }
         }
-        catalog.queryFinished(queryID, startTime, endTime, elapsedNanos, status);
-        activeQueries.remove(queryID);
+      });
 
-        if (future.isSuccess()) {
-          if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("The query #{} succeeds. Time elapse: {}.", queryID, DateTimeUtils
-                .nanoElapseToHumanReadable(elapsedNanos));
-          }
-          if (mqp.getRootOperator() instanceof SinkRoot) {
-            succeededQueryResults.put(queryID, ((SinkRoot) mqp.getRootOperator()).getCount());
-          }
-          // TODO success management.
-        } else {
-          if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("The query #{} failes. Time elapse: {}. Failure cause is {}.", queryID, DateTimeUtils
-                .nanoElapseToHumanReadable(elapsedNanos), future.getCause());
-          }
-          // TODO failure management.
+      dispatchWorkerQueryPlans(mqp).addListener(new QueryFutureListener() {
+        @Override
+        public void operationComplete(final QueryFuture future) throws Exception {
+          mqp.init();
+          mqp.startExecution();
+          Server.this.startWorkerQuery(future.getQuery().getQueryID());
         }
-      }
-    });
+      });
 
-    dispatchWorkerQueryPlans(mqp).addListener(new QueryFutureListener() {
-      @Override
-      public void operationComplete(final QueryFuture future) throws Exception {
-        mqp.init();
-        mqp.startExecution();
-        Server.this.startWorkerQuery(future.getQuery().getQueryID());
-      }
-    });
-
-    return mqp.getQueryExecutionFuture();
+      return mqp.getQueryExecutionFuture();
+    } catch (DbException | CatalogException | RuntimeException e) {
+      catalog.queryFinished(queryID, "error during submission", null, null, Status.KILLED);
+      activeQueries.remove(queryID);
+      throw e;
+    }
   }
 
   /**

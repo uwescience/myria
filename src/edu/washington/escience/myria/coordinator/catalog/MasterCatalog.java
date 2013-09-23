@@ -1256,10 +1256,8 @@ public final class MasterCatalog {
    * @param status the status of the query when finished.
    * @throws CatalogException if there is an error in the MasterCatalog.
    */
-  public void queryFinished(final long queryId, final String startTime, final String endTime, final long elapsedNanos,
+  public void queryFinished(final long queryId, final String startTime, final String endTime, final Long elapsedNanos,
       final Status status) throws CatalogException {
-    Objects.requireNonNull(startTime);
-    Objects.requireNonNull(endTime);
     Objects.requireNonNull(status);
     if (isClosed) {
       throw new CatalogException("MasterCatalog is closed.");
@@ -1275,7 +1273,11 @@ public final class MasterCatalog {
                     .prepare("UPDATE queries SET start_time=?, finish_time=?, elapsed_nanos=?, status=? WHERE query_id=?;");
             statement.bind(1, startTime);
             statement.bind(2, endTime);
-            statement.bind(3, elapsedNanos);
+            if (elapsedNanos == null) {
+              statement.bindNull(3);
+            } else {
+              statement.bind(3, elapsedNanos);
+            }
             statement.bind(4, status.toString());
             statement.bind(5, queryId);
             statement.stepThrough();
