@@ -1,8 +1,11 @@
 package edu.washington.escience.myria.operator;
 
+import java.io.File;
 import java.util.Iterator;
 import java.util.Objects;
 
+import com.almworks.sqlite4java.SQLiteConnection;
+import com.almworks.sqlite4java.SQLiteException;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
@@ -12,6 +15,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.accessmethod.AccessMethod;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
+import edu.washington.escience.myria.accessmethod.SQLiteInfo;
 
 /**
  * Push a select query down into a JDBC based database and scan over the query result.
@@ -157,5 +161,26 @@ public class DbQueryScan extends LeafOperator {
     if (relationKey != null) {
       baseSQL = "SELECT * FROM " + relationKey.toString(connectionInfo.getDbms());
     }
+
+    if (connectionInfo instanceof SQLiteInfo) {
+      /* Set WAL in the beginning. */
+      final File dbFile = new File(((SQLiteInfo) connectionInfo).getDatabaseFilename());
+      System.out.println(dbFile);
+      SQLiteConnection conn = new SQLiteConnection(dbFile);
+      try {
+        conn.open(true);
+        conn.exec("PRAGMA journal_mode=WAL;");
+      } catch (SQLiteException e) {
+        e.printStackTrace();
+      }
+      conn.dispose();
+    }
+  }
+
+  /**
+   * @return the connection info in this DbQueryScan.
+   */
+  public ConnectionInfo getConnectionInfo() {
+    return connectionInfo;
   }
 }
