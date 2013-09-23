@@ -475,7 +475,6 @@ public final class LocalJoin extends BinaryOperator {
       for (int j = 0; j < tb.numColumns(); ++j) {
         cntTuple.add(tb.getObject(j, i));
       }
-      final int nextIndex = hashTable1Local.numTuples();
       final int cntHashCode = tb.hashCode(i, compareIndx1Local);
       List<Integer> indexList = hashTable2IndicesLocal.get(cntHashCode);
       if (indexList != null) {
@@ -486,7 +485,9 @@ public final class LocalJoin extends BinaryOperator {
         }
       }
 
+      // release one child's hash table if it is EOS
       if (!left.eos() && !right.eos()) {
+        final int nextIndex = hashTable1Local.numTuples();
         if (hashTable1IndicesLocal.get(cntHashCode) == null) {
           hashTable1IndicesLocal.put(cntHashCode, new ArrayList<Integer>());
         }
@@ -494,6 +495,12 @@ public final class LocalJoin extends BinaryOperator {
         for (int j = 0; j < tb.numColumns(); ++j) {
           hashTable1Local.put(j, cntTuple.get(j));
         }
+      } else if (left.eos() && hashTable1Indices != null) {
+        hashTable1Indices = null;
+        hashTable1 = null;
+      } else if (right.eos() && hashTable2Indices != null) {
+        hashTable2Indices = null;
+        hashTable2 = null;
       }
     }
 
