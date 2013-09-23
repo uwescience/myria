@@ -10,8 +10,6 @@ import java.util.Random;
 
 import org.junit.Test;
 
-import com.almworks.sqlite4java.SQLiteConnection;
-import com.almworks.sqlite4java.SQLiteException;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.DbException;
@@ -21,8 +19,6 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.accessmethod.SQLiteAccessMethod;
-import edu.washington.escience.myria.accessmethod.SQLiteInfo;
 import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.util.FSUtils;
@@ -183,16 +179,6 @@ public class SQLiteAccessMethodTest {
 
     Path tempDir = Files.createTempDirectory(MyriaConstants.SYSTEM_NAME + "_sqlite_access_method_test");
     final File dbFile = new File(tempDir.toString(), "sqlite.db");
-    /* Set WAL in the beginning. */
-
-    SQLiteConnection conn = new SQLiteConnection(dbFile);
-    try {
-      conn.open(true);
-      conn.exec("PRAGMA journal_mode=WAL;");
-    } catch (SQLiteException e) {
-      e.printStackTrace();
-    }
-    conn.dispose();
 
     final RelationKey inputKey = RelationKey.of("test", "testWrite", "input");
     SQLiteUtils.createTable(dbFile.getAbsolutePath(), inputKey, "follower long, followee long", true, true);
