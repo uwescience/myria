@@ -122,7 +122,6 @@ public class DbInsert extends RootOperator {
     if (connectionInfo instanceof SQLiteInfo) {
       /* Set WAL in the beginning. */
       final File dbFile = new File(((SQLiteInfo) connectionInfo).getDatabaseFilename());
-      System.out.println(dbFile);
       SQLiteConnection conn = new SQLiteConnection(dbFile);
       try {
         conn.open(true);
