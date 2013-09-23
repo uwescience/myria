@@ -16,6 +16,7 @@ import com.almworks.sqlite4java.SQLiteConstants;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
 /**
@@ -323,7 +324,8 @@ public final class Schema implements Serializable {
   public Schema getSubSchema(final int[] index) {
     final ImmutableList.Builder<Type> types = ImmutableList.builder();
     final ImmutableList.Builder<String> names = ImmutableList.builder();
-    for (int i = 0; i < index.length; ++i) {
+    for (int i : index) {
+      Preconditions.checkElementIndex(i, numColumns());
       types.add(getColumnType(i));
       names.add(getColumnName(i));
     }
