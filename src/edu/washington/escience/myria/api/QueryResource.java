@@ -75,7 +75,7 @@ public final class QueryResource {
       throw e;
     } catch (Exception e) {
       /* Other exceptions mean that the request itself was likely bad. */
-      throw e;
+      throw new MyriaApiException(Status.BAD_REQUEST, e);
     }
 
     Set<Integer> usingWorkers = new HashSet<Integer>();
