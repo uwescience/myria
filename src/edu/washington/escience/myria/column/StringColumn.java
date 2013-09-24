@@ -124,4 +124,10 @@ public final class StringColumn implements Column<String> {
   public void addToHasher(final int row, final Hasher hasher) {
     hasher.putObject(getString(row), TypeFunnel.INSTANCE);
   }
+
+  @Override
+  public void replace(final int index, final Object value) {
+    Preconditions.checkElementIndex(index, size());
+    data[index] = (String) value;
+  }
 }

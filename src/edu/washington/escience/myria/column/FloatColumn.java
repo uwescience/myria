@@ -121,4 +121,10 @@ public final class FloatColumn implements Column<Float> {
   public void addToHasher(final int row, final Hasher hasher) {
     hasher.putFloat(getFloat(row));
   }
+
+  @Override
+  public void replace(final int index, final Object value) {
+    Preconditions.checkElementIndex(index, size());
+    data[index] = (float) value;
+  }
 }

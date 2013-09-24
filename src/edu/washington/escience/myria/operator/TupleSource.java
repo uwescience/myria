@@ -100,4 +100,14 @@ public final class TupleSource extends LeafOperator {
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     index = 0;
   }
+
+  /** @param schema the schema to be set . */
+  public void setSchema(final Schema schema) {
+    this.schema = schema;
+  }
+
+  @Override
+  protected void checkEOSAndEOI() {
+    // do nothing since already done in fetchNextReady()
+  }
 }

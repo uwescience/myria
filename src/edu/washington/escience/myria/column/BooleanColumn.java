@@ -113,4 +113,10 @@ public final class BooleanColumn implements Column<Boolean> {
   public void addToHasher(final int row, final Hasher hasher) {
     hasher.putBoolean(getBoolean(row));
   }
+
+  @Override
+  public void replace(final int index, final Object value) {
+    Preconditions.checkElementIndex(index, size());
+    data.set(index, (boolean) value);
+  }
 }

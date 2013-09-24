@@ -179,4 +179,9 @@ public final class DateTimeColumnBuilder implements ColumnBuilder<DateTime> {
     return new DateTimeColumnBuilder(newData, numDates);
   }
 
+  @Override
+  public void replace(final int index, final Object value) {
+    Preconditions.checkElementIndex(index, size());
+    data[index] = (DateTime) value;
+  }
 }

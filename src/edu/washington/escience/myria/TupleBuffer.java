@@ -246,4 +246,54 @@ public class TupleBuffer {
       }
     }
   }
+
+  /**
+   * @param colIndex column index
+   * @param rowIndex row index
+   * @param value the new value
+   * @throws IndexOutOfBoundsException if indices are out of bounds.
+   * */
+  public final void replace(final int colIndex, final int rowIndex, final Object value)
+      throws IndexOutOfBoundsException {
+    int tupleBatchIndex = rowIndex / TupleBatch.BATCH_SIZE;
+    int tupleIndex = rowIndex % TupleBatch.BATCH_SIZE;
+    if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
+        && tupleIndex >= currentInProgressTuples) {
+      throw new IndexOutOfBoundsException();
+    }
+    if (tupleBatchIndex < readyTuples.size()) {
+      readyTuples.get(tupleBatchIndex).get(colIndex).replace(tupleIndex, value);
+    } else {
+      currentBuildingColumns.get(colIndex).replace(tupleIndex, value);
+    }
+  }
+
+  /**
+   * Return all tuples in this buffer. The data do not get removed.
+   * 
+   * @return a List<TupleBatch> containing all complete tuples that have been inserted into this buffer.
+   */
+  public final List<TupleBatch> getAll() {
+    final List<TupleBatch> output = new ArrayList<TupleBatch>();
+    for (final List<Column<?>> columns : readyTuples) {
+      output.add(new TupleBatch(schema, columns, TupleBatch.BATCH_SIZE));
+    }
+    if (currentInProgressTuples > 0) {
+      output.add(new TupleBatch(schema, getInProgressColumns(), currentInProgressTuples));
+    }
+    return output;
+  }
+
+  /**
+   * Build the in progress columns. The builders' states are untouched. They can keep building.
+   * 
+   * @return the built in progress columns.
+   * */
+  private List<Column<?>> getInProgressColumns() {
+    List<Column<?>> newColumns = new ArrayList<Column<?>>(currentBuildingColumns.size());
+    for (ColumnBuilder<?> cb : currentBuildingColumns) {
+      newColumns.add(cb.forkNewBuilder().build());
+    }
+    return newColumns;
+  }
 }

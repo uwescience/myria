@@ -94,4 +94,12 @@ public interface Column<T extends Comparable<?>> extends Serializable {
    * @param hasher the hasher object to add the value
    */
   void addToHasher(final int row, final Hasher hasher);
+
+  /**
+   * replace the old value at index with the new value.
+   * 
+   * @param index the index
+   * @param value the new value
+   */
+  void replace(int index, Object value);
 }

@@ -119,4 +119,10 @@ public final class LongColumn implements Column<Long> {
   public void addToHasher(final int row, final Hasher hasher) {
     hasher.putLong(getLong(row));
   }
+
+  @Override
+  public void replace(final int index, final Object value) {
+    Preconditions.checkElementIndex(index, size());
+    data[index] = (Long) value;
+  }
 }

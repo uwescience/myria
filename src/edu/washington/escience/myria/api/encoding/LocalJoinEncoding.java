@@ -17,6 +17,8 @@ public class LocalJoinEncoding extends OperatorEncoding<LocalJoin> {
   public int[] argColumns2;
   public int[] argSelect1;
   public int[] argSelect2;
+  public boolean argSetSemanticsLeft = false;
+  public boolean argSetSemanticsRight = false;
   private static final List<String> requiredArguments = ImmutableList.of("argChild1", "argChild2", "argColumns1",
       "argColumns2", "argSelect1", "argSelect2");
 
@@ -27,7 +29,8 @@ public class LocalJoinEncoding extends OperatorEncoding<LocalJoin> {
 
   @Override
   public LocalJoin construct(Server server) {
-    return new LocalJoin(argColumnNames, null, null, argColumns1, argColumns2, argSelect1, argSelect2);
+    return new LocalJoin(argColumnNames, null, null, argColumns1, argColumns2, argSelect1, argSelect2,
+        argSetSemanticsLeft, argSetSemanticsRight);
   }
 
   @Override

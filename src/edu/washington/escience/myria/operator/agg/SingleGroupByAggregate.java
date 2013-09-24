@@ -190,7 +190,7 @@ public class SingleGroupByAggregate extends UnaryOperator {
       return resultBuffer.popAny();
     }
 
-    if (child.eos() || child.eoi()) {
+    if (child.eos()) {
       return null;
     }
 
@@ -198,7 +198,7 @@ public class SingleGroupByAggregate extends UnaryOperator {
       processTupleBatch(tb);
     }
 
-    if (child.eos() || child.eoi()) {
+    if (child.eos()) {
       processEnd();
       generateResult(resultBuffer);
     }

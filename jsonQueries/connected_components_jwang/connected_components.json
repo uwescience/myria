@@ -1,0 +1,203 @@
+{
+	"fragments": 
+	[
+		{
+			"operators": 
+			[
+			{
+			  "op_name" : "cc",
+			  "op_type" : "CollectConsumer",
+			  "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["node_id","cluster_id"]},
+			  "arg_operator_id" : "serverCollect"
+			}
+			],
+			"workers": 
+			[
+				0
+			]
+		},
+		{
+			"operators": 
+			[
+			{
+				"op_name" : "eoiReceiverA",
+				"op_type" : "Consumer",
+				"arg_schema" : {"column_types":["INT_TYPE","BOOLEAN_TYPE"],"column_names":["idbID","isDeltaEmpty"]},
+				"arg_operator_id" : "eoiReceiverOpId"
+			},
+			{
+				"op_name" : "merge",
+				"op_type" : "Merge",
+				"arg_children" : ["eoiReceiverA"]
+			},
+			{
+				"op_name" : "eosController",
+				"op_type" : "EOSController",
+				"arg_child" : "merge",
+				"arg_idb_operator_ids" : ["eosReceiverOpId"]
+			}
+			],
+			"workers": 
+			[
+				1
+			]
+		},
+		{
+			"operators": 
+			[
+			{
+				"op_name" : "scanC",
+				"op_type" : "TableScan",
+				"relation_key" : {
+					"user_name" : "jwang",
+					"program_name" : "connected_components",
+					"relation_name" : "c"
+				}
+			},
+			{
+				"op_name" : "spC",
+				"op_type" : "ShuffleProducer",
+				"arg_child" : "scanC",
+				"arg_pf" : {
+					"type" : "SingleFieldHash",
+					"index" : 0
+				},
+				"arg_operator_id" : "joinArray2"
+			}
+			]
+		},
+		{
+			"operators": 
+			[
+			{
+				"op_name" : "scanG",
+				"op_type" : "TableScan",
+				"relation_key" : {
+					"user_name" : "jwang",
+					"program_name" : "connected_components",
+					"relation_name" : "g"
+				}
+			},
+			{
+				"op_name" : "spG",
+				"op_type" : "ShuffleProducer",
+				"arg_child" : "scanG",
+				"arg_operator_id" : "joinArray1",
+				"arg_pf" : {
+					"type" : "SingleFieldHash",
+					"index" : 1
+				}
+			}
+			]
+		},
+		{
+			"operators": 
+			[
+			{
+				"op_name" : "scC",
+				"op_type" : "ShuffleConsumer",
+				"arg_operator_id" : "joinArray2",
+				"arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["node_id", "cluster_id"]}
+			},
+			{
+				"op_name" : "scJoin",
+				"op_type" : "ShuffleConsumer",
+				"arg_operator_id" : "joinResult",
+				"arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["node_id", "cluster_id"]}
+			},
+			{
+				"op_name" : "eosReceiver",
+				"op_type" : "Consumer",
+				"arg_operator_id" : "eosReceiverOpId",
+				"arg_schema" : {"column_types":["BOOLEAN_TYPE"],"column_names":["EOS"]}
+			},
+			{
+				"op_name" : "idbinput",
+				"op_type" : "IDBController",
+				"arg_controller_operator_id" : "eoiReceiverOpId",
+				"arg_self_idb_id" : "0",
+				"arg_initial_input" : "scC",
+				"arg_iteration_input" : "scJoin",
+				"arg_state_updater" : {
+					"type" : "KeepMinValue",
+					"key_col_indices" : ["0"],
+					"value_col_index" : "1"
+				},
+				"arg_eos_controller_input" : "eosReceiver"
+			},
+			{
+				"op_name" : "mp",
+				"op_type" : "LocalMultiwayProducer",
+				"arg_operator_ids" : ["mpId1", "mpId2"],
+				"arg_child" : "idbinput"
+			}
+			]
+		},
+		{
+			"operators": 
+			[
+			{
+				"op_name" : "sc1g",
+				"op_type" : "ShuffleConsumer",
+				"arg_operator_id" : "joinArray1",
+				"arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["node_id_1", "node_id_2"]}
+			},
+			{
+				"op_name" : "send2join",
+				"op_type" : "LocalMultiwayConsumer",
+				"arg_operator_id" : "mpId1",
+				"arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["node_id", "cluster_id"]}
+			},
+			{
+				"op_name" : "join",
+				"op_type" : "LocalJoin",
+				"arg_child1" : "sc1g",
+				"arg_child2" : "send2join",
+				"arg_columns1" : ["1"],
+				"arg_columns2" : ["0"],
+				"arg_select1" : ["0"],
+				"arg_select2" : ["1"],
+				"arg_set_semantics_left" : false,
+				"arg_set_semantics_right" : true
+			},
+			{
+				"op_name" : "spJoin",
+				"op_type" : "ShuffleProducer",
+				"arg_child" : "join",
+				"arg_operator_id" : "joinResult",
+				"arg_pf" : {
+					"type" : "SingleFieldHash",
+					"index" : 0
+				}
+			}
+			]
+		},
+		{
+			"operators": 
+			[
+			{
+				"op_name" : "send2server",
+				"op_type" : "LocalMultiwayConsumer",
+				"arg_operator_id" : "mpId2",
+				"arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["node_id", "cluster_id"]}
+			},
+			{
+				"op_name" : "agg",
+				"op_type" : "SingleGroupByAggregateNoBuffer",
+				"arg_child" : "send2server",
+				"arg_agg_fields" : ["1"],
+				"arg_group_field" : "0",
+				"arg_agg_operators" : [["AGG_OP_MIN"]]
+			},
+			{
+				"op_name" : "cpc",
+				"op_type" : "CollectProducer",
+				"arg_operator_id" : "serverCollect",
+				"arg_child" : "agg"
+			}
+			]
+		}
+	],
+	"logical_ra": "",
+	"raw_datalog": ""
+}

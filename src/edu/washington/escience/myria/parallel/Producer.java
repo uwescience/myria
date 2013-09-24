@@ -14,8 +14,12 @@ import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
+import edu.washington.escience.myria.operator.DupElim;
+import edu.washington.escience.myria.operator.KeepMinValue;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
+import edu.washington.escience.myria.operator.SimpleAppender;
+import edu.washington.escience.myria.operator.StreamingStateUpdater;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.IPCEvent;
 import edu.washington.escience.myria.parallel.ipc.IPCEventListener;
@@ -52,7 +56,7 @@ public abstract class Producer extends RootOperator {
   private transient TupleBatchBuffer[] partitionBuffers;
 
   /** tried to send tuples for each channel. */
-  private transient List<List<TupleBatch>> triedToSendTuples;
+  private List<StreamingStateUpdater> triedToSendTuples;
   /** pending tuples to be sent for each channel. */
   private transient List<LinkedList<TupleBatch>> pendingTuplesToSend;
 
@@ -171,6 +175,8 @@ public abstract class Producer extends RootOperator {
         break;
       }
     }
+    // the default choice.
+    setBackupBufferAsAppender();
   }
 
   @SuppressWarnings("unchecked")
@@ -183,7 +189,6 @@ public abstract class Producer extends RootOperator {
     }
     ioChannels = new StreamOutputChannel[outputIDs.length];
     ioChannelsAvail = new boolean[outputIDs.length];
-    triedToSendTuples = new ArrayList<List<TupleBatch>>();
     pendingTuplesToSend = new ArrayList<LinkedList<TupleBatch>>();
     localizedOutputIDs = new StreamIOChannelID[outputIDs.length];
     for (int i = 0; i < outputIDs.length; i++) {
@@ -195,6 +200,8 @@ public abstract class Producer extends RootOperator {
     }
     for (int i = 0; i < localizedOutputIDs.length; i++) {
       createANewChannel(i);
+      pendingTuplesToSend.add(i, new LinkedList<TupleBatch>());
+      triedToSendTuples.get(i).init(execEnvVars);
     }
     nonBlockingExecution = (taskResourceManager.getExecutionMode() == QueryExecutionMode.NON_BLOCKING);
   }
@@ -220,8 +227,38 @@ public abstract class Producer extends RootOperator {
       }
     });
     ioChannelsAvail[i] = true;
-    triedToSendTuples.add(i, new ArrayList<TupleBatch>());
-    pendingTuplesToSend.add(i, new LinkedList<TupleBatch>());
+  }
+
+  /**
+   * set backup buffers as KeepMinValue.
+   * 
+   * @param keyColIndices the same as the one in KeepMinValue
+   * @param valueCol the same as the one in KeepMinValue
+   */
+  public void setBackupBufferAsMin(final int[] keyColIndices, final int valueCol) {
+    triedToSendTuples = new ArrayList<StreamingStateUpdater>();
+    for (int i = 0; i < outputIDs.length; i++) {
+      triedToSendTuples.add(i, new KeepMinValue(keyColIndices, valueCol));
+      triedToSendTuples.get(i).setAttachedOperator(this);
+    }
+  }
+
+  /** set backup buffers as DupElim. */
+  public void setBackupBufferAsDupElim() {
+    triedToSendTuples = new ArrayList<StreamingStateUpdater>();
+    for (int i = 0; i < outputIDs.length; i++) {
+      triedToSendTuples.add(i, new DupElim());
+      triedToSendTuples.get(i).setAttachedOperator(this);
+    }
+  }
+
+  /** set backup buffers as SimpleAppender. */
+  public void setBackupBufferAsAppender() {
+    triedToSendTuples = new ArrayList<StreamingStateUpdater>();
+    for (int i = 0; i < outputIDs.length; i++) {
+      triedToSendTuples.add(i, new SimpleAppender());
+      triedToSendTuples.get(i).setAttachedOperator(this);
+    }
   }
 
   /**
@@ -324,7 +361,7 @@ public abstract class Producer extends RootOperator {
         }
         if (mode.equals(FTMODE.rejoin)) {
           // rejoin, append the TB into the backup buffer in case of recovering
-          triedToSendTuples.get(i).add(tb);
+          triedToSendTuples.get(i).update(tb);
         }
         try {
           writeMessage(i, tb);
@@ -418,7 +455,7 @@ public abstract class Producer extends RootOperator {
    * 
    * @return backup buffers.
    */
-  public final List<List<TupleBatch>> getTriedToSendTuples() {
+  public final List<StreamingStateUpdater> getTriedToSendTuples() {
     return triedToSendTuples;
   }
 

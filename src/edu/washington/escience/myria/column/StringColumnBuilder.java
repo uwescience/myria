@@ -167,4 +167,9 @@ public final class StringColumnBuilder implements ColumnBuilder<String> {
     return new StringColumnBuilder(newData, numStrings);
   }
 
+  @Override
+  public void replace(final int index, final Object value) {
+    Preconditions.checkElementIndex(index, size());
+    data[index] = (String) value;
+  }
 }

@@ -110,4 +110,12 @@ public interface ColumnBuilder<T extends Comparable<?>> {
    */
   T get(int row);
 
+  /**
+   * replace the old value at index with the new value.
+   * 
+   * @param index the index
+   * @param value the new value
+   */
+  void replace(int index, Object value);
+
 }

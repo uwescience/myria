@@ -152,4 +152,10 @@ public final class FloatColumnBuilder implements ColumnBuilder<Float> {
     System.arraycopy(data.array(), 0, arr, 0, data.position());
     return new FloatColumnBuilder((FloatBuffer) FloatBuffer.wrap(arr).position(data.position()).limit(data.limit()));
   }
+
+  @Override
+  public void replace(final int index, final Object value) {
+    Preconditions.checkElementIndex(index, size());
+    data.put(index, (Float) value);
+  }
 }

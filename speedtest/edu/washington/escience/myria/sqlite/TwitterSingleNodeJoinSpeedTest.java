@@ -26,6 +26,7 @@ import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.LocalJoin;
 import edu.washington.escience.myria.operator.Project;
+import edu.washington.escience.myria.operator.StreamingAggregateAdaptor;
 import edu.washington.escience.myria.parallel.QueryExecutionMode;
 import edu.washington.escience.myria.parallel.TaskResourceManager;
 
@@ -82,7 +83,7 @@ public class TwitterSingleNodeJoinSpeedTest {
     final Project proj = new Project(new int[] { 0, 3 }, localJoin);
 
     /* Now Dupelim */
-    final DupElim dupelim = new DupElim(proj);
+    final StreamingAggregateAdaptor dupelim = new StreamingAggregateAdaptor(proj, new DupElim());
 
     dupelim.open(execEnvVars);
     long result = 0;
@@ -113,7 +114,7 @@ public class TwitterSingleNodeJoinSpeedTest {
     final LocalJoin localProjJoin =
         new LocalJoin(scan1, scan2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
     /* Now Dupelim */
-    final DupElim dupelim = new DupElim(localProjJoin);
+    final StreamingAggregateAdaptor dupelim = new StreamingAggregateAdaptor(localProjJoin, new DupElim());
 
     dupelim.open(execEnvVars);
     long result = 0;
