@@ -8,6 +8,8 @@ import java.util.Objects;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.StreamingOutput;
 
+import org.apache.commons.io.IOUtils;
+
 import com.google.common.io.ByteStreams;
 
 /**
@@ -33,6 +35,11 @@ public final class PipedStreamingOutput implements StreamingOutput {
 
   @Override
   public void write(final OutputStream output) throws IOException, WebApplicationException {
-    ByteStreams.copy(input, output);
+    try {
+      ByteStreams.copy(input, output);
+    } finally {
+      IOUtils.closeQuietly(input);
+      IOUtils.closeQuietly(output);
+    }
   }
 }
