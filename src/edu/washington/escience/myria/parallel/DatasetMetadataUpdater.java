@@ -104,21 +104,21 @@ public final class DatasetMetadataUpdater implements OperationFutureListener {
         /* If op is a DbInsert, we are inserting tuples into a relation. */
         if (op instanceof DbInsert) {
           /* Add this worker to the set of workers storing the new copy of this relation. */
-          RelationKey rk = ((DbInsert) op).getRelationKey();
-          RelationMetadata meta = ret.get(rk);
+          RelationKey relationKey = ((DbInsert) op).getRelationKey();
+          RelationMetadata meta = ret.get(relationKey);
           if (meta == null) {
             meta = new RelationMetadata();
             meta.setWorkers(new TreeSet<Integer>());
-            ret.put(rk, meta);
+            ret.put(relationKey, meta);
           }
           meta.getWorkers().add(workerId);
           Schema newSchema = op.getSchema();
-          Schema oldSchema = catalog.getSchema(rk);
+          Schema oldSchema = catalog.getSchema(relationKey);
           /* Check if the relation already has a schema in the database and, if so, it better match! */
           if (oldSchema != null) {
             Preconditions.checkArgument(oldSchema.equals(newSchema),
-                "Data for relation {} must be inserted to match the existing Schema {} instead of the new Schema {}",
-                rk.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE), oldSchema, newSchema);
+                "Relation %s already exists with Schema %s. You cannot overwrite it with the new Schema %s", relationKey,
+                oldSchema, newSchema);
           }
           meta.setSchema(newSchema);
         }
