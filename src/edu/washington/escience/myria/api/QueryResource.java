@@ -100,6 +100,8 @@ public final class QueryResource {
     QueryFuture qf;
     try {
       qf = server.submitQuery(query.rawDatalog, query.logicalRa, query, masterPlan, queryPlan);
+    } catch (IllegalArgumentException e) {
+      throw new MyriaApiException(Status.BAD_REQUEST, e);
     } catch (DbException | CatalogException e) {
       throw new MyriaApiException(Status.INTERNAL_SERVER_ERROR, e);
     }
