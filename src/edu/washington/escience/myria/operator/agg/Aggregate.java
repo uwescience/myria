@@ -134,13 +134,15 @@ public final class Aggregate extends UnaryOperator {
 
   @Override
   public Schema getSchema() {
+    if (schema == null) {
+      generateSchema();
+    }
     return schema;
   }
 
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    generateSchema();
-    aggBuffer = new TupleBatchBuffer(schema);
+    aggBuffer = new TupleBatchBuffer(getSchema());
   }
 
   /** Generate the schema for this aggregate. */
