@@ -33,6 +33,7 @@ import edu.washington.escience.myria.parallel.Server;
     @Type(name = "LocalMultiwayProducer", value = LocalMultiwayProducerEncoding.class),
     @Type(name = "LocalJoin", value = LocalJoinEncoding.class),
     @Type(name = "LocalCountingJoin", value = LocalCountingJoinEncoding.class),
+    @Type(name = "LocalUnbalancedJoin", value = LocalUnbalancedJoinEncoding.class),
     @Type(name = "MultiGroupByAggregate", value = MultiGroupByAggregateEncoding.class),
     @Type(name = "SingleGroupByAggregate", value = SingleGroupByAggregateEncoding.class),
     @Type(name = "DbInsert", value = DbInsertEncoding.class), @Type(name = "FileScan", value = FileScanEncoding.class),

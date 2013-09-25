@@ -220,61 +220,6 @@ public final class LocalUnbalancedJoin extends BinaryOperator {
     ans = null;
   }
 
-  /**
-   * FIXME: to get right semantics
-   * 
-   * In blocking mode, asynchronous EOI semantic may make system hang. Only synchronous EOI semantic works.
-   * 
-   * @return result TB.
-   * @throws DbException if any error occurs.
-   */
-  private TupleBatch fetchNextReadySynchronousEOI() throws DbException {
-    final Operator left = getLeft();
-    final Operator right = getRight();
-    TupleBatch nexttb = ans.popFilled();
-    while (nexttb == null) {
-      boolean hasnewtuple = false;
-      if (!left.eos() && !childrenEOI[0]) {
-        TupleBatch tb = left.nextReady();
-        if (tb != null) {
-          hasnewtuple = true;
-          processLeftChildTB(tb);
-        } else {
-          if (left.eoi()) {
-            left.setEOI(false);
-            childrenEOI[0] = true;
-          }
-        }
-      }
-      if (!right.eos() && !childrenEOI[1]) {
-        TupleBatch tb = right.nextReady();
-        if (tb != null) {
-          hasnewtuple = true;
-          processRightChildTB(tb);
-        } else {
-          if (right.eoi()) {
-            right.setEOI(false);
-            childrenEOI[1] = true;
-          }
-        }
-      }
-      nexttb = ans.popFilled();
-      if (nexttb != null) {
-        return nexttb;
-      }
-      if (!hasnewtuple) {
-        break;
-      }
-    }
-    if (nexttb == null) {
-      if (ans.numTuples() > 0) {
-        nexttb = ans.popAny();
-      }
-      checkEOSAndEOI();
-    }
-    return nexttb;
-  }
-
   @Override
   public void checkEOSAndEOI() {
     final Operator left = getLeft();
@@ -300,8 +245,10 @@ public final class LocalUnbalancedJoin extends BinaryOperator {
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
     if (!nonBlocking) {
-      return fetchNextReadySynchronousEOI();
+      ;
+      // to be implemented
     }
+
     TupleBatch nexttb = ans.popFilled();
     if (nexttb != null) {
       return nexttb;
