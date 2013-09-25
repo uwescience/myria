@@ -10,27 +10,27 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 
 /**
- * Merge the output of a set of operators.
+ * Unions the output of a set of operators without eliminating duplicates.
  * */
-public final class Merge extends Operator {
+public final class UnionAll extends Operator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   /**
-   * The merge children. It is required that the schemas of all the children are the same.
+   * The union children. It is required that the schemas of all the children are the same.
    * */
   private Operator[] children;
 
   /**
    * Fairly get data from children.
    * */
-  private transient int childIdxToMerge;
+  private transient int childIdxToUnion;
 
   /**
-   * @param children the children for merging.
+   * @param children the children to be united.
    * */
-  public Merge(final Operator[] children) {
+  public UnionAll(final Operator[] children) {
     this.children = children;
   }
 
@@ -40,11 +40,9 @@ public final class Merge extends Operator {
 
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
-    int mergedCount = 0;
-    while (mergedCount < children.length) {
-      mergedCount++;
-      Operator child = children[childIdxToMerge];
-      childIdxToMerge = (childIdxToMerge + 1) % children.length;
+    for (int unionCount = 0; unionCount < children.length; unionCount++) {
+      Operator child = children[childIdxToUnion];
+      childIdxToUnion = (childIdxToUnion + 1) % children.length;
       if (child.eos()) {
         continue;
       }
@@ -69,7 +67,7 @@ public final class Merge extends Operator {
 
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    childIdxToMerge = 0;
+    childIdxToUnion = 0;
   }
 
   @Override

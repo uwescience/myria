@@ -13,7 +13,7 @@ import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.operator.IDBInput;
-import edu.washington.escience.myria.operator.Merge;
+import edu.washington.escience.myria.operator.UnionAll;
 import edu.washington.escience.myria.operator.Operator;
 import gnu.trove.impl.unmodifiable.TUnmodifiableIntIntMap;
 import gnu.trove.map.TIntIntMap;
@@ -64,7 +64,7 @@ public class EOSController extends Producer {
    * @param workerIDs the workers where the IDBInput operators resides
    * @param idbOpIDs the IDB operatorIDs in each Worker
    * */
-  public EOSController(final Merge child, final ExchangePairID[] idbOpIDs, final int[] workerIDs) {
+  public EOSController(final UnionAll child, final ExchangePairID[] idbOpIDs, final int[] workerIDs) {
     super(null, idbOpIDs, workerIDs, false);
     if (child != null) {
       setChildren(new Operator[] { child });

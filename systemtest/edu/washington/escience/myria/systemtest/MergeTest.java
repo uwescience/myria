@@ -14,7 +14,7 @@ import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.DbQueryScan;
-import edu.washington.escience.myria.operator.Merge;
+import edu.washington.escience.myria.operator.UnionAll;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
@@ -67,9 +67,9 @@ public class MergeTest extends SystemTestBase {
 
     final DbQueryScan scan1 = new DbQueryScan(testtable0Key, tableSchema);
     final DbQueryScan scan2 = new DbQueryScan(testtable1Key, tableSchema);
-    final Merge merge = new Merge(new Operator[] { scan1, scan2 });
+    final UnionAll unionAll = new UnionAll(new Operator[] { scan1, scan2 });
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
-    final CollectProducer cp = new CollectProducer(merge, serverReceiveID, MASTER_ID);
+    final CollectProducer cp = new CollectProducer(unionAll, serverReceiveID, MASTER_ID);
 
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
     workerPlans.put(workerIDs[0], new RootOperator[] { cp });

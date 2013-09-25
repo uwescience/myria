@@ -23,7 +23,7 @@ import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.IDBInput;
 import edu.washington.escience.myria.operator.LocalJoin;
-import edu.washington.escience.myria.operator.Merge;
+import edu.washington.escience.myria.operator.UnionAll;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
@@ -304,9 +304,9 @@ public class MultipleIDBTest extends SystemTestBase {
     final Consumer eoiReceiver1 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID1, workerIDs);
     final Consumer eoiReceiver2 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID2, workerIDs);
     final Consumer eoiReceiver3 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID3, workerIDs);
-    final Merge merge = new Merge(new Operator[] { eoiReceiver1, eoiReceiver2, eoiReceiver3 });
+    final UnionAll unionAll = new UnionAll(new Operator[] { eoiReceiver1, eoiReceiver2, eoiReceiver3 });
     final EOSController eosController =
-        new EOSController(merge, new ExchangePairID[] {
+        new EOSController(unionAll, new ExchangePairID[] {
             eosReceiverOpID_idb1, eosReceiverOpID_idb2, eosReceiverOpID_idb3 }, workerIDs);
     workerPlan.get(0).add(eosController);
 
@@ -466,9 +466,9 @@ public class MultipleIDBTest extends SystemTestBase {
     final Consumer eoiReceiver1 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID1, workerIDs);
     final Consumer eoiReceiver2 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID2, workerIDs);
     final Consumer eoiReceiver3 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID3, workerIDs);
-    final Merge merge = new Merge(new Operator[] { eoiReceiver1, eoiReceiver2, eoiReceiver3 });
+    final UnionAll unionAll = new UnionAll(new Operator[] { eoiReceiver1, eoiReceiver2, eoiReceiver3 });
     final EOSController eosController =
-        new EOSController(merge, new ExchangePairID[] {
+        new EOSController(unionAll, new ExchangePairID[] {
             eosReceiverOpID_idb1, eosReceiverOpID_idb2, eosReceiverOpID_idb3 }, workerIDs);
     workerPlan.get(0).add(eosController);
 

@@ -19,7 +19,7 @@ import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.IDBInput;
 import edu.washington.escience.myria.operator.LocalJoin;
-import edu.washington.escience.myria.operator.Merge;
+import edu.washington.escience.myria.operator.UnionAll;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.Project;
 import edu.washington.escience.myria.operator.RootOperator;
@@ -196,8 +196,8 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     final CollectProducer cp_worker2 = new CollectProducer(send2server_worker2, serverReceiveID, MASTER_ID);
 
     final Consumer eoiReceiver = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID, workerIDs);
-    final Merge merge = new Merge(new Operator[] { eoiReceiver });
-    final EOSController eosController = new EOSController(merge, new ExchangePairID[] { eosReceiverOpID }, workerIDs);
+    final UnionAll unionAll = new UnionAll(new Operator[] { eoiReceiver });
+    final EOSController eosController = new EOSController(unionAll, new ExchangePairID[] { eosReceiverOpID }, workerIDs);
 
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
     workerPlans.put(workerIDs[0], new RootOperator[] {
@@ -277,9 +277,9 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     final IDBInput idbinput = new IDBInput(0, eoiReceiverOpID, workerIDs[0], scan2, sendBack, eosReceiver);
 
     final Consumer eoiReceiver = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID, new int[] { workerIDs[0] });
-    final Merge merge = new Merge(new Operator[] { eoiReceiver });
+    final UnionAll unionAll = new UnionAll(new Operator[] { eoiReceiver });
     final EOSController eosController =
-        new EOSController(merge, new ExchangePairID[] { eosReceiverOpID }, new int[] { workerIDs[0] });
+        new EOSController(unionAll, new ExchangePairID[] { eosReceiverOpID }, new int[] { workerIDs[0] });
 
     final int numPartition = 1;
     final PartitionFunction<String, Integer> pf0 = new SingleFieldHashPartitionFunction(numPartition);

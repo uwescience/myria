@@ -13,7 +13,7 @@ import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.DbQueryScan;
-import edu.washington.escience.myria.operator.Merge;
+import edu.washington.escience.myria.operator.UnionAll;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
@@ -89,8 +89,8 @@ public class LocalMultiwayProducerTest extends SystemTestBase {
     final LocalMultiwayConsumer multiConsumer2_1 = new LocalMultiwayConsumer(multiProducer2.getSchema(), consumerID1);
     final LocalMultiwayConsumer multiConsumer2_2 = new LocalMultiwayConsumer(multiProducer2.getSchema(), consumerID2);
 
-    final Merge merge1 = new Merge(new Operator[] { multiConsumer1_1, multiConsumer1_2 });
-    final Merge merge2 = new Merge(new Operator[] { multiConsumer2_1, multiConsumer2_2 });
+    final UnionAll merge1 = new UnionAll(new Operator[] { multiConsumer1_1, multiConsumer1_2 });
+    final UnionAll merge2 = new UnionAll(new Operator[] { multiConsumer2_1, multiConsumer2_2 });
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final CollectProducer cp1 = new CollectProducer(merge1, serverReceiveID, MASTER_ID);
