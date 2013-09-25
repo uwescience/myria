@@ -23,7 +23,7 @@ import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.util.TestUtils;
 
-public class MergeTest extends SystemTestBase {
+public class UnionAllTest extends SystemTestBase {
 
   // change configuration here
   private final int MaxID = 100;
@@ -31,7 +31,7 @@ public class MergeTest extends SystemTestBase {
   private final int numTbl2 = 82;
 
   @Test
-  public void mergeTest() throws Exception {
+  public void unionAllTest() throws Exception {
 
     final ImmutableList<Type> table1Types = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
     final ImmutableList<String> table1ColumnNames = ImmutableList.of("follower", "followee");
