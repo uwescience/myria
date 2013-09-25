@@ -22,6 +22,7 @@ import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.LocalCountingJoin;
 import edu.washington.escience.myria.operator.LocalJoin;
+import edu.washington.escience.myria.operator.LocalUnbalancedJoin;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.TBQueueExporter;
@@ -244,6 +245,61 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
 
     final List<String> joinOutputColumnNames = ImmutableList.of("id_1", "name_1", "id_2", "name_2");
     final LocalJoin localjoin = new LocalJoin(joinOutputColumnNames, sc1, sc2, new int[] { 0 }, new int[] { 0 });
+
+    final CollectProducer cp1 = new CollectProducer(localjoin, serverReceiveID, MASTER_ID);
+    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
+    workerPlans.put(workerIDs[0], new RootOperator[] { sp1, sp2, cp1 });
+    workerPlans.put(workerIDs[1], new RootOperator[] { sp1, sp2, cp1 });
+
+    final CollectConsumer serverCollect =
+        new CollectConsumer(cp1.getSchema(), serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
+    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
+    final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
+    SinkRoot serverPlan = new SinkRoot(queueStore);
+
+    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
+    TupleBatch tb = null;
+    while (!receivedTupleBatches.isEmpty()) {
+      tb = receivedTupleBatches.poll();
+      if (tb != null) {
+        tb.compactInto(actualResult);
+      }
+    }
+    final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
+    TestUtils.assertTupleBagEqual(expectedResult, resultBag);
+
+  }
+
+  @Test
+  public void simpleUnbalancedJoinTest() throws Exception {
+    Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
+    Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
+
+    final HashMap<Tuple, Integer> expectedResult = simpleFixedJoinTestBase();
+
+    final ExchangePairID serverReceiveID = ExchangePairID.newID();
+    final ExchangePairID table1ShuffleID = ExchangePairID.newID();
+    final ExchangePairID table2ShuffleID = ExchangePairID.newID();
+    final SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(2);
+    pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
+
+    final DbQueryScan scan1 = new DbQueryScan(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA);
+    final DbQueryScan scan2 = new DbQueryScan(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA);
+
+    final GenericShuffleProducer sp1 =
+        new GenericShuffleProducer(scan1, table1ShuffleID, new int[] { workerIDs[0], workerIDs[1] }, pf);
+    final GenericShuffleConsumer sc1 =
+        new GenericShuffleConsumer(sp1.getSchema(), table1ShuffleID, new int[] { workerIDs[0], workerIDs[1] });
+
+    final GenericShuffleProducer sp2 =
+        new GenericShuffleProducer(scan2, table2ShuffleID, new int[] { workerIDs[0], workerIDs[1] }, pf);
+    final GenericShuffleConsumer sc2 =
+        new GenericShuffleConsumer(sp2.getSchema(), table2ShuffleID, new int[] { workerIDs[0], workerIDs[1] });
+
+    final List<String> joinOutputColumnNames = ImmutableList.of("id_1", "name_1", "id_2", "name_2");
+    final LocalUnbalancedJoin localjoin =
+        new LocalUnbalancedJoin(joinOutputColumnNames, sc1, sc2, new int[] { 0 }, new int[] { 0 });
 
     final CollectProducer cp1 = new CollectProducer(localjoin, serverReceiveID, MASTER_ID);
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
