@@ -476,7 +476,13 @@ public final class LocalJoin extends BinaryOperator {
         cntTuple.add(tb.getObject(j, i));
       }
       final int cntHashCode = tb.hashCode(i, compareIndx1Local);
+      if (hashTable2IndicesLocal == null) {
+        System.out.println("fromLeft:" + fromleft);
+        System.out.println("Left EOS:" + left.eos());
+        System.out.println("Right EOS:" + right.eos());
+      }
       List<Integer> indexList = hashTable2IndicesLocal.get(cntHashCode);
+
       if (indexList != null) {
         for (final int index : indexList) {
           if (tupleEquals(cntTuple, hashTable2Local, index, compareIndx1Local, compareIndx2Local)) {
@@ -496,13 +502,19 @@ public final class LocalJoin extends BinaryOperator {
           hashTable1Local.put(j, cntTuple.get(j));
         }
       } else if (left.eos() && hashTable1Indices != null) {
-        // release left child's hash table if it is EOS
-        hashTable1Indices = null;
-        hashTable1 = null;
-      } else if (right.eos() && hashTable2Indices != null) {
-        // release left child's hash table if it is EOS
+        /*
+         * release right child's hash table if the left child is EOS, since there will be no incoming tuples from right
+         * thus it is not needed
+         */
         hashTable2Indices = null;
         hashTable2 = null;
+      } else if (right.eos() && hashTable2Indices != null) {
+        /*
+         * release left child's hash table if the right child is EOS, since there will be no incoming tuples from left
+         * thus it is not needed
+         */
+        hashTable1Indices = null;
+        hashTable1 = null;
       }
     }
 
