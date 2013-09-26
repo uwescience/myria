@@ -40,9 +40,7 @@ public final class Merge extends Operator {
 
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
-    int mergedCount = 0;
-    while (mergedCount < children.length) {
-      mergedCount++;
+    for (int mergedCount = 0; mergedCount < children.length; mergedCount++) {
       Operator child = children[childIdxToMerge];
       childIdxToMerge = (childIdxToMerge + 1) % children.length;
       if (child.eos()) {
