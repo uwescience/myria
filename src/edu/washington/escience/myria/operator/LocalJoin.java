@@ -485,7 +485,7 @@ public final class LocalJoin extends BinaryOperator {
         }
       }
 
-      // release one child's hash table if it is EOS
+      // only build hash table on two sides if none of the children is EOS
       if (!left.eos() && !right.eos()) {
         final int nextIndex = hashTable1Local.numTuples();
         if (hashTable1IndicesLocal.get(cntHashCode) == null) {
@@ -496,9 +496,11 @@ public final class LocalJoin extends BinaryOperator {
           hashTable1Local.put(j, cntTuple.get(j));
         }
       } else if (left.eos() && hashTable1Indices != null) {
+        // release left child's hash table if it is EOS
         hashTable1Indices = null;
         hashTable1 = null;
       } else if (right.eos() && hashTable2Indices != null) {
+        // release left child's hash table if it is EOS
         hashTable2Indices = null;
         hashTable2 = null;
       }
