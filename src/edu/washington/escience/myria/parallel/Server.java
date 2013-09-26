@@ -690,7 +690,7 @@ public final class Server {
         DeploymentUtils.mkdir(address, remotePath);
         String localPath = temp + "/" + "worker_" + workerId;
         DeploymentUtils.rsyncFileToRemote(localPath, address, remotePath);
-        final String maxHeapSize = catalog.getConfigurationValue(MyriaSystemConfigKeys.MAX_HEAP_SIZE);
+        final String maxHeapSize = config.get("deployment").get("max_heap_size");
         if (LOGGER.isInfoEnabled()) {
           LOGGER.info("starting new worker " + address + ":" + port + ".");
         }

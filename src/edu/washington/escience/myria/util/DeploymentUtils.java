@@ -85,8 +85,6 @@ public final class DeploymentUtils {
         rsyncFileToRemote("libs", hostname, remotePath);
         rsyncFileToRemote("conf", hostname, remotePath);
         rsyncFileToRemote("sqlite4java-282", hostname, remotePath);
-        // server needs the config file to create catalogs for new workers
-        rsyncFileToRemote(configFileName, hostname, remotePath);
       }
       Map<String, String> workers = config.get("workers");
       for (String workerId : workers.keySet()) {
@@ -102,6 +100,7 @@ public final class DeploymentUtils {
       }
     } else if (action.equals("-start_master")) {
       String workingDir = config.get("deployment").get("path");
+      String remotePath = workingDir + "/" + description + "-files";
       int restPort = Integer.parseInt(config.get("deployment").get("rest_port"));
       String maxHeapSize = config.get("deployment").get("max_heap_size");
       if (maxHeapSize == null) {
@@ -113,6 +112,8 @@ public final class DeploymentUtils {
         if (username != null) {
           hostname = username + "@" + hostname;
         }
+        // server needs the config file to create catalogs for new workers
+        rsyncFileToRemote(configFileName, hostname, remotePath);
         startMaster(hostname, workingDir, description, maxHeapSize, restPort);
       }
 
