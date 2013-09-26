@@ -470,17 +470,28 @@ public final class LocalJoin extends BinaryOperator {
       compareIndx2Local = compareIndx1;
     }
 
+    if (left.eos() && !right.eos()) {
+      /*
+       * delete right child's hash table if the left child is EOS, since there will be no incoming tuples from right as
+       * it will never be probed again.
+       */
+      hashTable2Indices = null;
+      hashTable2 = null;
+    } else if (right.eos() && !left.eos()) {
+      /*
+       * delete left child's hash table if the right child is EOS, since there will be no incoming tuples from left as
+       * it will never be probed again.
+       */
+      hashTable1Indices = null;
+      hashTable1 = null;
+    }
+
     for (int i = 0; i < tb.numTuples(); ++i) {
       final List<Object> cntTuple = new ArrayList<Object>();
       for (int j = 0; j < tb.numColumns(); ++j) {
         cntTuple.add(tb.getObject(j, i));
       }
       final int cntHashCode = tb.hashCode(i, compareIndx1Local);
-      if (hashTable2IndicesLocal == null) {
-        System.out.println("fromLeft:" + fromleft);
-        System.out.println("Left EOS:" + left.eos());
-        System.out.println("Right EOS:" + right.eos());
-      }
       List<Integer> indexList = hashTable2IndicesLocal.get(cntHashCode);
 
       if (indexList != null) {
@@ -501,20 +512,6 @@ public final class LocalJoin extends BinaryOperator {
         for (int j = 0; j < tb.numColumns(); ++j) {
           hashTable1Local.put(j, cntTuple.get(j));
         }
-      } else if (left.eos() && hashTable1Indices != null) {
-        /*
-         * release right child's hash table if the left child is EOS, since there will be no incoming tuples from right
-         * thus it is not needed
-         */
-        hashTable2Indices = null;
-        hashTable2 = null;
-      } else if (right.eos() && hashTable2Indices != null) {
-        /*
-         * release left child's hash table if the right child is EOS, since there will be no incoming tuples from left
-         * thus it is not needed
-         */
-        hashTable1Indices = null;
-        hashTable1 = null;
       }
     }
 
