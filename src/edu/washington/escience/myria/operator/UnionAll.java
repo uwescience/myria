@@ -22,7 +22,7 @@ public final class UnionAll extends NAryOperator {
    * @param children the children to be united.
    * */
   public UnionAll(final Operator[] children) {
-    this.children = children;
+    setChildren(children);
   }
 
   @Override
