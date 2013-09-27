@@ -258,6 +258,9 @@ public final class LocalCountingJoin extends BinaryOperator {
    * */
   protected void processChildTB(final TupleBatch tb, final boolean fromleft) {
 
+    final Operator left = getLeft();
+    final Operator right = getRight();
+
     TupleBuffer hashTable1Local = hashTable1;
     TupleBuffer hashTable2Local = hashTable2;
     HashMap<Integer, List<Integer>> hashTable1IndicesLocal = hashTable1Indices;
@@ -275,12 +278,32 @@ public final class LocalCountingJoin extends BinaryOperator {
       occurredTimes2Local = occurredTimes1;
     }
 
+    if (left.eos() && !right.eos()) {
+      /*
+       * delete right child's hash table if the left child is EOS, since there will be no incoming tuples from right as
+       * it will never be probed again.
+       */
+      hashTable2Indices = null;
+      hashTable2 = null;
+    } else if (right.eos() && !left.eos()) {
+      /*
+       * delete left child's hash table if the right child is EOS, since there will be no incoming tuples from left as
+       * it will never be probed again.
+       */
+      hashTable1Indices = null;
+      hashTable1 = null;
+    }
+
     for (int i = 0; i < tb.numTuples(); ++i) {
+
+      /*
+       * update number of count by probing the other child's hash table.
+       */
       final List<Object> cntTuple = new ArrayList<Object>();
       for (int j = 0; j < tb.numColumns(); ++j) {
         cntTuple.add(tb.getObject(j, i));
       }
-      final int nextIndex = hashTable1Local.numTuples();
+
       final int cntHashCode = tb.hashCode(i, compareIndx1Local);
       List<Integer> indexList = hashTable2IndicesLocal.get(cntHashCode);
       if (indexList != null) {
@@ -291,26 +314,32 @@ public final class LocalCountingJoin extends BinaryOperator {
         }
       }
 
-      boolean found = false;
-      indexList = hashTable1IndicesLocal.get(cntHashCode);
-      if (indexList != null) {
-        for (final int index : indexList) {
-          if (tupleEquals(cntTuple, hashTable1Local, index, compareIndx1Local)) {
-            occurredTimes1Local.set(index, occurredTimes1Local.get(index) + 1);
-            found = true;
-            break;
+      /*
+       * update its own hash table when necessary.
+       */
+      if (!left.eos() && !right.eos()) {
+        final int nextIndex = hashTable1Local.numTuples();
+        boolean found = false;
+        indexList = hashTable1IndicesLocal.get(cntHashCode);
+        if (indexList != null) {
+          for (final int index : indexList) {
+            if (tupleEquals(cntTuple, hashTable1Local, index, compareIndx1Local)) {
+              occurredTimes1Local.set(index, occurredTimes1Local.get(index) + 1);
+              found = true;
+              break;
+            }
           }
         }
-      }
-      if (!found) {
-        if (hashTable1IndicesLocal.get(cntHashCode) == null) {
-          hashTable1IndicesLocal.put(cntHashCode, new ArrayList<Integer>());
+        if (!found) {
+          if (hashTable1IndicesLocal.get(cntHashCode) == null) {
+            hashTable1IndicesLocal.put(cntHashCode, new ArrayList<Integer>());
+          }
+          hashTable1IndicesLocal.get(cntHashCode).add(nextIndex);
+          for (int j = 0; j < compareIndx1Local.length; ++j) {
+            hashTable1Local.put(j, cntTuple.get(compareIndx1Local[j]));
+          }
+          occurredTimes1Local.add(1);
         }
-        hashTable1IndicesLocal.get(cntHashCode).add(nextIndex);
-        for (int j = 0; j < compareIndx1Local.length; ++j) {
-          hashTable1Local.put(j, cntTuple.get(compareIndx1Local[j]));
-        }
-        occurredTimes1Local.add(1);
       }
     }
   }
