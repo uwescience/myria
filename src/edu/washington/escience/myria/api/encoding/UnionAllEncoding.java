@@ -9,7 +9,7 @@ import edu.washington.escience.myria.operator.UnionAll;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.parallel.Server;
 
-public class MergeEncoding extends OperatorEncoding<UnionAll> {
+public class UnionAllEncoding extends OperatorEncoding<UnionAll> {
   public String[] argChildren;
   private static final List<String> requiredArguments = ImmutableList.of("argChildren");
 
