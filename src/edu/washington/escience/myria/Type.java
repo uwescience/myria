@@ -4,6 +4,7 @@ import java.io.Serializable;
 
 import org.joda.time.DateTime;
 
+import edu.washington.escience.myria.SimplePredicate.Op;
 import edu.washington.escience.myria.column.BooleanColumn;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.DateTimeColumn;
@@ -70,6 +71,11 @@ public enum Type implements Serializable {
     public Object fromString(final String str) {
       return Integer.valueOf(str);
     }
+
+    @Override
+    public boolean compareObjects(final Op op, final Object valueInTuple, final Object operand) {
+      return compare(op, (Integer) valueInTuple, (Integer) operand);
+    }
   },
 
   /**
@@ -125,6 +131,11 @@ public enum Type implements Serializable {
     public Object fromString(final String str) {
       return Float.valueOf(str);
     }
+
+    @Override
+    public boolean compareObjects(final Op op, final Object valueInTuple, final Object operand) {
+      return compare(op, (Float) valueInTuple, (Float) operand);
+    }
   },
   /**
    * Double type.
@@ -174,6 +185,11 @@ public enum Type implements Serializable {
     public Object fromString(final String str) {
       return Double.valueOf(str);
     }
+
+    @Override
+    public boolean compareObjects(final Op op, final Object valueInTuple, final Object operand) {
+      return compare(op, (Float) valueInTuple, (Float) operand);
+    }
   },
   /**
    * Boolean type.
@@ -219,6 +235,11 @@ public enum Type implements Serializable {
     @Override
     public Object fromString(final String str) {
       return Boolean.valueOf(str);
+    }
+
+    @Override
+    public boolean compareObjects(final Op op, final Object valueInTuple, final Object operand) {
+      return compare(op, (Boolean) valueInTuple, (Boolean) operand);
     }
   },
 
@@ -278,6 +299,11 @@ public enum Type implements Serializable {
     public Object fromString(final String str) {
       return str;
     }
+
+    @Override
+    public boolean compareObjects(final Op op, final Object valueInTuple, final Object operand) {
+      return compare(op, (String) valueInTuple, (String) operand);
+    }
   },
   /**
    * Long type.
@@ -331,6 +357,11 @@ public enum Type implements Serializable {
     public Object fromString(final String str) {
       return Long.valueOf(str);
     }
+
+    @Override
+    public boolean compareObjects(final Op op, final Object valueInTuple, final Object operand) {
+      return compare(op, (Long) valueInTuple, (Long) operand);
+    }
   },
 
   /**
@@ -381,6 +412,11 @@ public enum Type implements Serializable {
       return DateTime.parse(str);
     }
 
+    @Override
+    public boolean compareObjects(final Op op, final Object valueInTuple, final Object operand) {
+      return compare(op, (DateTime) valueInTuple, (DateTime) operand);
+    }
+
   };
 
   /**
@@ -408,4 +444,14 @@ public enum Type implements Serializable {
   public Object fromString(final String str) {
     throw new UnsupportedOperationException();
   }
+
+  /**
+   * Compares two values without type safety.
+   * 
+   * @param op the operation
+   * @param valueInTuple the value to be compared in a tuple
+   * @param operand the operand
+   * @return true if valueInTuple op operand.
+   */
+  public abstract boolean compareObjects(final SimplePredicate.Op op, final Object valueInTuple, final Object operand);
 }
