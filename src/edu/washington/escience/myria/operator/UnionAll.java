@@ -1,5 +1,8 @@
 package edu.washington.escience.myria.operator;
 
+import java.util.Objects;
+
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
@@ -49,5 +52,15 @@ public final class UnionAll extends NAryOperator {
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     childIdxToUnion = 0;
+  }
+
+  @Override
+  public void setChildren(final Operator[] children) {
+    Objects.requireNonNull(children);
+    Preconditions.checkArgument(children.length > 0);
+    for (Operator op : children) {
+      Preconditions.checkArgument(op.getSchema().equals(children[0].getSchema()));
+    }
+    this.children = children;
   }
 }

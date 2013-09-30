@@ -9,7 +9,7 @@ import edu.washington.escience.myria.Schema;
 public abstract class NAryOperator extends Operator {
 
   /**
-   * The union children. It is required that the schemas of all the children are the same.
+   * The children of the n-ary operator.
    * */
   protected Operator[] children;
 
@@ -26,9 +26,6 @@ public abstract class NAryOperator extends Operator {
   public void setChildren(final Operator[] children) {
     Objects.requireNonNull(children);
     Preconditions.checkArgument(children.length > 0);
-    for (Operator op : children) {
-      Preconditions.checkArgument(op.getSchema().equals(children[0].getSchema()));
-    }
     this.children = children;
   }
 
@@ -37,6 +34,9 @@ public abstract class NAryOperator extends Operator {
     return children[0].getSchema();
   }
 
+  /**
+   * @return number of children
+   */
   protected int numChildren() {
     return children.length;
   }

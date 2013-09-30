@@ -3,6 +3,7 @@ package edu.washington.escience.myria.operator;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
@@ -214,5 +215,15 @@ public final class Merge extends NAryOperator {
     for (int i = 0; i < numChildren(); i++) {
       tupleBuffer.add(new LinkedList<ArrayList<Object>>());
     }
+  }
+
+  @Override
+  public void setChildren(final Operator[] children) {
+    Objects.requireNonNull(children);
+    Preconditions.checkArgument(children.length > 0);
+    for (Operator op : children) {
+      Preconditions.checkArgument(op.getSchema().equals(children[0].getSchema()));
+    }
+    this.children = children;
   }
 }
