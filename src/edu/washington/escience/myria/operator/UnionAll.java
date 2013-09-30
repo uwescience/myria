@@ -31,9 +31,9 @@ public final class UnionAll extends NAryOperator {
 
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
-    for (int unionCount = 0; unionCount < children.length; unionCount++) {
+    for (int unionCount = 0; unionCount < numChildren(); unionCount++) {
       Operator child = children[childIdxToUnion];
-      childIdxToUnion = (childIdxToUnion + 1) % children.length;
+      childIdxToUnion = (childIdxToUnion + 1) % numChildren();
       if (child.eos()) {
         continue;
       }

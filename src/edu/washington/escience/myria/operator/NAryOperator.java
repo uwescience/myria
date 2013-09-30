@@ -37,4 +37,8 @@ public abstract class NAryOperator extends Operator {
     return children[0].getSchema();
   }
 
+  protected int numChildren() {
+    return children.length;
+  }
+
 }
