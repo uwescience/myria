@@ -1,6 +1,7 @@
 package edu.washington.escience.myria.operator;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -145,7 +146,7 @@ public class OperatorTest {
     Long previous = null;
     for (Long index : idCollector) {
       if (previous != null) {
-        assertEquals(true, previous <= index);
+        assertTrue(previous <= index);
       }
       previous = index;
     }
