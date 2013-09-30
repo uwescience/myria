@@ -1,0 +1,22 @@
+# Deployment configuration
+[deployment]
+path = /disk1/myria
+name = testMyriadeploy
+dbms = postgresql
+database_name = myria1
+database_password = <password>
+# Uncomment if need to set a specific username; does not work for localhost
+#username = dhalperi
+# Uncomment to set the maximum heap size of the Java processes
+#max_heap_size=-Xmx2g
+# Uncomment if want to launch workers in debug mode
+#debug_mode = true
+rest_port = 8753
+
+# Compute nodes configuration
+[master]
+0 = vega.cs.washington.edu:8091
+
+[workers]
+1 = regulus.cs.washington.edu:9091
+2 = capella.cs.washington.edu:9091

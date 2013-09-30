@@ -5,6 +5,7 @@ import java.util.Objects;
 import java.util.Properties;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
@@ -159,6 +160,7 @@ public final class JdbcInfo extends ConnectionInfo implements Serializable {
   /**
    * @return the JDBC connection string.
    */
+  @JsonIgnore
   public String getConnectionString() {
     return "jdbc:" + dbms + "://" + host + ":" + port + "/" + database;
   }
