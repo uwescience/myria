@@ -229,7 +229,7 @@ public class TupleBatchBuffer {
   /**
    * @param another TBB.
    * */
-  public final void merge(final TupleBatchBuffer another) {
+  public final void unionAll(final TupleBatchBuffer another) {
     readyTuples.addAll(another.readyTuples);
     readyTuplesNum += another.getReadyTuplesNum();
     if (another.currentInProgressTuples > 0) {

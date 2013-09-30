@@ -156,8 +156,8 @@ public class IterativeFlowControlTest extends SystemTestBase {
       tblAWorker2.put(1, tblAID2Worker2[i]);
     }
     TupleBatchBuffer table1 = new TupleBatchBuffer(tableSchema);
-    table1.merge(tblAWorker1);
-    table1.merge(tblAWorker2);
+    table1.unionAll(tblAWorker1);
+    table1.unionAll(tblAWorker2);
 
     createTable(workerIDs[0], tableKey, "follower long, followee long");
     createTable(workerIDs[1], tableKey, "follower long, followee long");

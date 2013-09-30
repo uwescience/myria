@@ -340,12 +340,12 @@ public class SystemTestBase {
     }
 
     final TupleBatchBuffer table1 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA);
-    table1.merge(tbl1Worker1);
-    table1.merge(tbl1Worker2);
+    table1.unionAll(tbl1Worker1);
+    table1.unionAll(tbl1Worker2);
 
     final TupleBatchBuffer table2 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA);
-    table2.merge(tbl2Worker1);
-    table2.merge(tbl2Worker2);
+    table2.unionAll(tbl2Worker1);
+    table2.unionAll(tbl2Worker2);
 
     final HashMap<Tuple, Integer> expectedResult = TestUtils.naturalJoin(table1, table2, 0, 0);
 
@@ -423,12 +423,12 @@ public class SystemTestBase {
     }
 
     final TupleBatchBuffer table1 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA);
-    table1.merge(tbl1Worker1);
-    table1.merge(tbl1Worker2);
+    table1.unionAll(tbl1Worker1);
+    table1.unionAll(tbl1Worker2);
 
     final TupleBatchBuffer table2 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA);
-    table2.merge(tbl2Worker1);
-    table2.merge(tbl2Worker2);
+    table2.unionAll(tbl2Worker1);
+    table2.unionAll(tbl2Worker2);
 
     final HashMap<Tuple, Integer> expectedResult = TestUtils.naturalJoin(table1, table2, 0, 0);
 

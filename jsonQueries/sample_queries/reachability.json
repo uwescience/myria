@@ -27,14 +27,14 @@
 				"arg_operator_id" : "0"
 			},
 			{
-				"op_name" : "merge",
-				"op_type" : "Merge",
+				"op_name" : "unionAll",
+				"op_type" : "UnionAll",
 				"arg_children" : ["eoiReceiverA"]
 			},
 			{
 				"op_name" : "eosController",
 				"op_type" : "EOSController",
-				"arg_child" : "merge",
+				"arg_child" : "unionAll",
 				"arg_idb_operator_ids" : ["1"]
 			}
 			],

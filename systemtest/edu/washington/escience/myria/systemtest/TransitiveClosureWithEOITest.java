@@ -104,8 +104,8 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
       tbl1Worker2.put(1, tbl1ID2Worker2[i]);
     }
     TupleBatchBuffer table1 = new TupleBatchBuffer(tableSchema);
-    table1.merge(tbl1Worker1);
-    table1.merge(tbl1Worker2);
+    table1.unionAll(tbl1Worker1);
+    table1.unionAll(tbl1Worker2);
 
     createTable(workerIDs[0], testtableKey, "follower long, followee long");
     createTable(workerIDs[1], testtableKey, "follower long, followee long");
