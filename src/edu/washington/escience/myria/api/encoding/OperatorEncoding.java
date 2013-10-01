@@ -32,6 +32,7 @@ import edu.washington.escience.myria.parallel.Server;
     @Type(name = "SinkRoot", value = SinkRootEncoding.class),
     @Type(name = "LocalMultiwayProducer", value = LocalMultiwayProducerEncoding.class),
     @Type(name = "LocalJoin", value = LocalJoinEncoding.class),
+    @Type(name = "LocalUnbalancedCountingJoin", value = LocalUnbalancedCountingJoinEncoding.class),
     @Type(name = "LocalCountingJoin", value = LocalCountingJoinEncoding.class),
     @Type(name = "LocalUnbalancedJoin", value = LocalUnbalancedJoinEncoding.class),
     @Type(name = "MultiGroupByAggregate", value = MultiGroupByAggregateEncoding.class),
