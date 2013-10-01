@@ -109,6 +109,9 @@ public class LocalUnbalancedCountingJoin extends BinaryOperator {
   @Override
   protected void cleanup() throws DbException {
     hashTable = null;
+    hashTableIndices = null;
+    occurredTimes = null;
+    ansTBB = null;
     ans = 0;
   }
 
