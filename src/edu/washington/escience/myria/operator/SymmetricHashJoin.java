@@ -24,7 +24,7 @@ import edu.washington.escience.myria.parallel.TaskResourceManager;
  * This is an implementation of hash equal join. The same as in DupElim, this implementation does not keep the
  * references to the incoming TupleBatches in order to get better memory performance.
  */
-public final class LocalJoin extends BinaryOperator {
+public final class SymmetricHashJoin extends BinaryOperator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
@@ -80,7 +80,7 @@ public final class LocalJoin extends BinaryOperator {
    * @param compareIndx2 the columns of the right child to be compared with the left. Order matters.
    * @throw IllegalArgumentException if there are duplicated column names from the children.
    */
-  public LocalJoin(final Operator left, final Operator right, final int[] compareIndx1, final int[] compareIndx2) {
+  public SymmetricHashJoin(final Operator left, final Operator right, final int[] compareIndx1, final int[] compareIndx2) {
     this(null, left, right, compareIndx1, compareIndx2);
   }
 
@@ -97,7 +97,7 @@ public final class LocalJoin extends BinaryOperator {
    * @throw IllegalArgumentException if there are duplicated column names in <tt>outputSchema</tt>, or if
    *        <tt>outputSchema</tt> does not have the correct number of columns and column types.
    */
-  public LocalJoin(final Operator left, final Operator right, final int[] compareIndx1, final int[] compareIndx2,
+  public SymmetricHashJoin(final Operator left, final Operator right, final int[] compareIndx1, final int[] compareIndx2,
       final int[] answerColumns1, final int[] answerColumns2) {
     this(null, left, right, compareIndx1, compareIndx2, answerColumns1, answerColumns2);
   }
@@ -117,7 +117,7 @@ public final class LocalJoin extends BinaryOperator {
    * @throw IllegalArgumentException if there are duplicated column names in <tt>outputColumns</tt>, or if
    *        <tt>outputColumns</tt> does not have the correct number of columns and column types.
    */
-  public LocalJoin(final List<String> outputColumns, final Operator left, final Operator right,
+  public SymmetricHashJoin(final List<String> outputColumns, final Operator left, final Operator right,
       final int[] compareIndx1, final int[] compareIndx2, final int[] answerColumns1, final int[] answerColumns2) {
     super(left, right);
     Preconditions.checkArgument(compareIndx1.length == compareIndx2.length);
@@ -152,7 +152,7 @@ public final class LocalJoin extends BinaryOperator {
    * @throw IllegalArgumentException if there are duplicated column names in <tt>outputSchema</tt>, or if
    *        <tt>outputSchema</tt> does not have the correct number of columns and column types.
    */
-  public LocalJoin(final List<String> outputColumns, final Operator left, final Operator right,
+  public SymmetricHashJoin(final List<String> outputColumns, final Operator left, final Operator right,
       final int[] compareIndx1, final int[] compareIndx2) {
     this(outputColumns, left, right, compareIndx1, compareIndx2, range(left.getSchema().numColumns()), range(right
         .getSchema().numColumns()));

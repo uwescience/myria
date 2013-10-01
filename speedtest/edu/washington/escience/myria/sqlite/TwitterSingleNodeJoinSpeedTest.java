@@ -24,7 +24,7 @@ import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
-import edu.washington.escience.myria.operator.LocalJoin;
+import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.Project;
 import edu.washington.escience.myria.parallel.QueryExecutionMode;
 import edu.washington.escience.myria.parallel.TaskResourceManager;
@@ -76,10 +76,10 @@ public class TwitterSingleNodeJoinSpeedTest {
 
     /* Join on SC1.followee=SC2.follower */
     final List<String> joinSchema = ImmutableList.of("follower", "joinL", "joinR", "followee");
-    final LocalJoin localJoin = new LocalJoin(joinSchema, scan1, scan2, new int[] { 1 }, new int[] { 0 });
+    final SymmetricHashJoin join = new SymmetricHashJoin(joinSchema, scan1, scan2, new int[] { 1 }, new int[] { 0 });
 
     /* Project down to only the two columns of interest: SC1.follower now transitively follows SC2.followee. */
-    final Project proj = new Project(new int[] { 0, 3 }, localJoin);
+    final Project proj = new Project(new int[] { 0, 3 }, join);
 
     /* Now Dupelim */
     final DupElim dupelim = new DupElim(proj);
@@ -110,8 +110,8 @@ public class TwitterSingleNodeJoinSpeedTest {
     final DbQueryScan scan2 = new DbQueryScan(connectionInfo, "select * from twitter_subset", tableSchema);
 
     /* Join on SC1.followee=SC2.follower */
-    final LocalJoin localProjJoin =
-        new LocalJoin(scan1, scan2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
+    final SymmetricHashJoin localProjJoin =
+        new SymmetricHashJoin(scan1, scan2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
     /* Now Dupelim */
     final DupElim dupelim = new DupElim(localProjJoin);
 
@@ -141,8 +141,8 @@ public class TwitterSingleNodeJoinSpeedTest {
     final DbQueryScan scan2 = new DbQueryScan(connectionInfo, "select * from twitter_subset", tableSchema);
 
     /* Join on SC1.followee=SC2.follower */
-    final LocalJoin localProjJoin =
-        new LocalJoin(scan1, scan2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
+    final SymmetricHashJoin localProjJoin =
+        new SymmetricHashJoin(scan1, scan2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
     /* Now Dupelim */
     final DupElim dupelim = new DupElim(localProjJoin);
     final RelationKey distinctJoinStored = RelationKey.of("Speedtest", "TwitterSingleNodeJoinSpeedTest", "TwitterJoin");

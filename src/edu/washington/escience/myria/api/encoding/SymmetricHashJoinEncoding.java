@@ -5,11 +5,11 @@ import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myria.operator.LocalJoin;
+import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.parallel.Server;
 
-public class LocalJoinEncoding extends OperatorEncoding<LocalJoin> {
+public class SymmetricHashJoinEncoding extends OperatorEncoding<SymmetricHashJoin> {
   public String argChild1;
   public String argChild2;
   public List<String> argColumnNames;
@@ -26,8 +26,8 @@ public class LocalJoinEncoding extends OperatorEncoding<LocalJoin> {
   }
 
   @Override
-  public LocalJoin construct(Server server) {
-    return new LocalJoin(argColumnNames, null, null, argColumns1, argColumns2, argSelect1, argSelect2);
+  public SymmetricHashJoin construct(Server server) {
+    return new SymmetricHashJoin(argColumnNames, null, null, argColumns1, argColumns2, argSelect1, argSelect2);
   }
 
   @Override

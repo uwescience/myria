@@ -10,7 +10,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.DbQueryScan;
-import edu.washington.escience.myria.operator.LocalJoin;
+import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.Project;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
@@ -77,11 +77,11 @@ public class Q1 implements QueryPlanGenerator {
     final GenericShuffleConsumer shuffleIssuedYearC =
         new GenericShuffleConsumer(shuffleIssuedYearP.getSchema(), allIssuedYearShuffleID, allWorkers);
 
-    final LocalJoin joinJournalTitle =
-        new LocalJoin(shuffleJournalsC, shuffleWithTitleC, new int[] { 0 }, new int[] { 0 });
+    final SymmetricHashJoin joinJournalTitle =
+        new SymmetricHashJoin(shuffleJournalsC, shuffleWithTitleC, new int[] { 0 }, new int[] { 0 });
 
-    final LocalJoin joinJournalTitleYear =
-        new LocalJoin(joinJournalTitle, shuffleIssuedYearC, new int[] { 0 }, new int[] { 0 });
+    final SymmetricHashJoin joinJournalTitleYear =
+        new SymmetricHashJoin(joinJournalTitle, shuffleIssuedYearC, new int[] { 0 }, new int[] { 0 });
 
     final Project finalProject = new Project(new int[] { 3 }, joinJournalTitleYear);
 

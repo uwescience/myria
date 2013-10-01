@@ -19,7 +19,7 @@ import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
-import edu.washington.escience.myria.operator.LocalJoin;
+import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.Project;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
@@ -100,8 +100,8 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     // SC2: receive based on follower (PF0, so SP1 and arrayID1)
     final GenericShuffleConsumer sc2 = new GenericShuffleConsumer(sp1.getSchema(), arrayID1, workerIDs);
     // Join on SC1.followee=SC2.follower
-    final LocalJoin localProjJoin =
-        new LocalJoin(sc1, sc2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
+    final SymmetricHashJoin localProjJoin =
+        new SymmetricHashJoin(sc1, sc2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
     /* Now reshuffle the results to partition based on the new followee, so that we can dupelim. */
     final ExchangePairID arrayID0 = ExchangePairID.newID();
     final GenericShuffleProducer sp0 = new GenericShuffleProducer(localProjJoin, arrayID0, workerIDs, pf0);
@@ -168,7 +168,7 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     final GenericShuffleConsumer sc2 = new GenericShuffleConsumer(sp1.getSchema(), arrayID1, workerIDs);
     // Join on SC1.followee=SC2.follower
     final List<String> joinSchema = ImmutableList.of("follower", "joinL", "joinR", "followee");
-    final LocalJoin localjoin = new LocalJoin(joinSchema, sc1, sc2, new int[] { 1 }, new int[] { 0 });
+    final SymmetricHashJoin localjoin = new SymmetricHashJoin(joinSchema, sc1, sc2, new int[] { 1 }, new int[] { 0 });
     /* Project down to only the two columns of interest: SC1.follower now transitively follows SC2.followee. */
     final Project proj = new Project(new int[] { 0, 3 }, localjoin);
     /* Now reshuffle the results to partition based on the new followee, so that we can dupelim. */
@@ -231,8 +231,8 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     // SC2: receive based on follower (PF0, so SP1 and arrayID1)
     final GenericShuffleConsumer sc2 = new GenericShuffleConsumer(sp1.getSchema(), arrayID1, workerIDs);
     // Join on SC1.followee=SC2.follower
-    final LocalJoin localProjJoin =
-        new LocalJoin(sc1, sc2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
+    final SymmetricHashJoin localProjJoin =
+        new SymmetricHashJoin(sc1, sc2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
     /* Now reshuffle the results to partition based on the new followee, so that we can dupelim. */
     final ExchangePairID arrayID0 = ExchangePairID.newID();
     final GenericShuffleProducer sp0 = new GenericShuffleProducer(localProjJoin, arrayID0, workerIDs, pf0);

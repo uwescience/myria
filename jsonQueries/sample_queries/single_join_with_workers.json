@@ -102,7 +102,7 @@
                         1
                     ],
                     "op_name": "Join",
-                    "op_type": "LocalJoin"
+                    "op_type": "SymmetricHashJoin"
                 },
                 {
                     "arg_child": "Join",

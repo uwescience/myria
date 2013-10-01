@@ -68,7 +68,7 @@ def scan_join(relation_key):
         "arg_select1": [ 0 ],
         "arg_select2": [ 1 ],                
         "op_name": "Join",
-        "op_type": "LocalJoin"
+        "op_type": "SymmetricHashJoin"
     }
     insert = {
         "arg_child": "Join",
@@ -175,7 +175,7 @@ def receive_and_join(relation_key):
                 1
             ],
             "op_name": "Join",
-            "op_type": "LocalJoin"
+            "op_type": "SymmetricHashJoin"
     }
     insert = {
         "arg_child": "Join",

@@ -18,13 +18,13 @@ import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.IDBInput;
-import edu.washington.escience.myria.operator.LocalJoin;
-import edu.washington.escience.myria.operator.UnionAll;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.Project;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
+import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.TBQueueExporter;
+import edu.washington.escience.myria.operator.UnionAll;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.Consumer;
@@ -184,10 +184,12 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     final LocalMultiwayConsumer send2server_worker1 = new LocalMultiwayConsumer(tableSchema, consumerID2);
     final LocalMultiwayConsumer send2server_worker2 = new LocalMultiwayConsumer(tableSchema, consumerID2);
 
-    final LocalJoin join_worker1 =
-        new LocalJoin(sc1, send2join_worker1, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
-    final LocalJoin join_worker2 =
-        new LocalJoin(sc1, send2join_worker2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
+    final SymmetricHashJoin join_worker1 =
+        new SymmetricHashJoin(sc1, send2join_worker1, new int[] { 1 }, new int[] { 0 }, new int[] { 0 },
+            new int[] { 1 });
+    final SymmetricHashJoin join_worker2 =
+        new SymmetricHashJoin(sc1, send2join_worker2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 },
+            new int[] { 1 });
     sp3_worker1.setChildren(new Operator[] { join_worker1 });
     sp3_worker2.setChildren(new Operator[] { join_worker2 });
 
@@ -197,7 +199,8 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
 
     final Consumer eoiReceiver = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID, workerIDs);
     final UnionAll unionAll = new UnionAll(new Operator[] { eoiReceiver });
-    final EOSController eosController = new EOSController(unionAll, new ExchangePairID[] { eosReceiverOpID }, workerIDs);
+    final EOSController eosController =
+        new EOSController(unionAll, new ExchangePairID[] { eosReceiverOpID }, workerIDs);
 
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
     workerPlans.put(workerIDs[0], new RootOperator[] {
@@ -299,7 +302,7 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
         new GenericShuffleConsumer(sp2.getSchema(), joinArray2ID, new int[] { workerIDs[0] });
 
     final List<String> joinOutputColumns = ImmutableList.of("follower1", "followee1", "follower2", "followee2");
-    final LocalJoin join = new LocalJoin(joinOutputColumns, sc1, sc2, new int[] { 0 }, new int[] { 1 });
+    final SymmetricHashJoin join = new SymmetricHashJoin(joinOutputColumns, sc1, sc2, new int[] { 0 }, new int[] { 1 });
     final Project proj = new Project(new int[] { 2, 1 }, join);
     ExchangePairID beforeDE = ExchangePairID.newID();
 

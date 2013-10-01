@@ -11,7 +11,7 @@ import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
-import edu.washington.escience.myria.operator.LocalJoin;
+import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.Project;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
@@ -77,8 +77,8 @@ public class Q5A_Count implements QueryPlanGenerator {
         new GenericShuffleConsumer(shuffleCreatorsP.getSchema(), allCreatorsShuffleID, allWorkers);
     // schema: (createdObjID long, creatorID long)
 
-    final LocalJoin joinArticleCreator =
-        new LocalJoin(shuffleArticlesC, shuffleCreatorsC, new int[] { 0 }, new int[] { 0 });
+    final SymmetricHashJoin joinArticleCreator =
+        new SymmetricHashJoin(shuffleArticlesC, shuffleCreatorsC, new int[] { 0 }, new int[] { 0 });
     // schema: (articleId long, articleId long, creatorID long)
 
     final Project projArticleCreatorsID = new Project(new int[] { 2 }, joinArticleCreator);
@@ -119,8 +119,8 @@ public class Q5A_Count implements QueryPlanGenerator {
     final GenericShuffleConsumer shuffleCreators2C =
         new GenericShuffleConsumer(shuffleCreators2P.getSchema(), allCreators2ShuffleID, allWorkers);
 
-    final LocalJoin joinProceedingsCreator =
-        new LocalJoin(shuffleProceedingsC, shuffleCreators2C, new int[] { 0 }, new int[] { 0 });
+    final SymmetricHashJoin joinProceedingsCreator =
+        new SymmetricHashJoin(shuffleProceedingsC, shuffleCreators2C, new int[] { 0 }, new int[] { 0 });
     // schema: (proceedingId long, proceedingId long, creatorID long)
 
     final Project projProceedingsID = new Project(new int[] { 2 }, joinProceedingsCreator);
@@ -136,8 +136,8 @@ public class Q5A_Count implements QueryPlanGenerator {
 
     final DupElim deProceedingAuthorsGlobal = new DupElim(shuffleProceedingsCreatorsC); // local dupelim
 
-    final LocalJoin articleProceedingsCreatorJoin =
-        new LocalJoin(deArticleAuthorsGlobal, deProceedingAuthorsGlobal, new int[] { 0 }, new int[] { 0 });
+    final SymmetricHashJoin articleProceedingsCreatorJoin =
+        new SymmetricHashJoin(deArticleAuthorsGlobal, deProceedingAuthorsGlobal, new int[] { 0 }, new int[] { 0 });
     // schema: (articleProceedingAuthorID long, articleProceedingAuthorID long)
 
     final DbQueryScan allFOAF2 =
@@ -152,8 +152,8 @@ public class Q5A_Count implements QueryPlanGenerator {
         new GenericShuffleConsumer(shuffleFOAF2P.getSchema(), allFOAF2ShuffleID, allWorkers);
     // schema: (foafSubjID long, foafObjID long)
 
-    final LocalJoin articleProceedingsCreatorFOAFJoin =
-        new LocalJoin(articleProceedingsCreatorJoin, shuffleFOAF2C, new int[] { 1 }, new int[] { 0 });
+    final SymmetricHashJoin articleProceedingsCreatorFOAFJoin =
+        new SymmetricHashJoin(articleProceedingsCreatorJoin, shuffleFOAF2C, new int[] { 1 }, new int[] { 0 });
     // schema: (articleProceedingAuthorID long, articleProceedingAuthorID long, foafNameID long)
 
     final Project finalProject = new Project(new int[] { 1, 2 }, articleProceedingsCreatorFOAFJoin);

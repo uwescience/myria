@@ -14,7 +14,7 @@ import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
-import edu.washington.escience.myria.operator.LocalJoin;
+import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.Project;
 import edu.washington.escience.myria.operator.RootOperator;
@@ -87,8 +87,8 @@ public class Erdos {
     // schema: (pubId long, authorId long)
 
     final List<String> joinColumnNames = ImmutableList.of("pubId1", "pubId2", "authorId");
-    final LocalJoin joinCoAuthors =
-        new LocalJoin(joinColumnNames, paulErdoesPubsShuffleC, allPubsShuffleC, new int[] { 0 }, new int[] { 0 });
+    final SymmetricHashJoin joinCoAuthors =
+        new SymmetricHashJoin(joinColumnNames, paulErdoesPubsShuffleC, allPubsShuffleC, new int[] { 0 }, new int[] { 0 });
     // schema: (pubId long, pubId long, authorId long)
 
     final Project projCoAuthorID = new Project(new int[] { 2 }, joinCoAuthors);
@@ -131,8 +131,8 @@ public class Erdos {
         new GenericShuffleConsumer(allPubsShuffleByAuthorP.getSchema(), allPubsShuffleByAuthorID, allWorkers);
     // schema: (pubId long, authorId long)
 
-    final LocalJoin joinCoAuthorPubs =
-        new LocalJoin(erdosNMinus1, allPubsShuffleByAuthorC, new int[] { 0 }, new int[] { 1 });
+    final SymmetricHashJoin joinCoAuthorPubs =
+        new SymmetricHashJoin(erdosNMinus1, allPubsShuffleByAuthorC, new int[] { 0 }, new int[] { 1 });
     // schema: (authorId long, pubId long, authorId long)
 
     final Project projCoAuthorPubsID = new Project(new int[] { 1 }, joinCoAuthorPubs);
@@ -166,8 +166,8 @@ public class Erdos {
         new GenericShuffleConsumer(coAuthorNamesPubsShuffleP.getSchema(), coAuthorNamesPubsShuffleID, allWorkers);
     // schema: (pubId long, authorId long)
 
-    final LocalJoin joinCoCoAuthorPubs =
-        new LocalJoin(coAuthorPubsGlobalDE, coAuthorNamesPubsShuffleC, new int[] { 0 }, new int[] { 0 });
+    final SymmetricHashJoin joinCoCoAuthorPubs =
+        new SymmetricHashJoin(coAuthorPubsGlobalDE, coAuthorNamesPubsShuffleC, new int[] { 0 }, new int[] { 0 });
     // schema: (pubId long, pubId long, authorId long)
 
     final Project projCoCoAuthorName = new Project(new int[] { 2 }, joinCoCoAuthorPubs);
