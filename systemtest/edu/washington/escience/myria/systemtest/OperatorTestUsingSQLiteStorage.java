@@ -20,11 +20,11 @@ import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
-import edu.washington.escience.myria.operator.LocalCountingJoin;
 import edu.washington.escience.myria.operator.LocalUnbalancedCountingJoin;
 import edu.washington.escience.myria.operator.LocalUnbalancedJoin;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
+import edu.washington.escience.myria.operator.SymmetricHashCountingJoin;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.parallel.CollectConsumer;
@@ -419,7 +419,8 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final GenericShuffleConsumer sc2 =
         new GenericShuffleConsumer(sp2.getSchema(), table2ShuffleID, new int[] { workerIDs[0], workerIDs[1] });
 
-    final LocalCountingJoin localjoin = new LocalCountingJoin(sc1, sc2, new int[] { 0 }, new int[] { 0 });
+    final SymmetricHashCountingJoin localjoin =
+        new SymmetricHashCountingJoin(sc1, sc2, new int[] { 0 }, new int[] { 0 });
 
     final CollectProducer cp1 = new CollectProducer(localjoin, serverReceiveID, MASTER_ID);
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();

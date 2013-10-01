@@ -22,7 +22,7 @@ children['Filter'] = ['arg_child']
 children['UnionAll'] = ['arg_children']
 children['Merge'] = ['arg_children']
 children['Project'] = ['arg_child']
-children['LocalCountingJoin'] = ['arg_child1', 'arg_child2']
+children['SymmetricHashCountingJoin'] = ['arg_child1', 'arg_child2']
 children['SQLiteInsert'] = ['arg_child']
 
 def read_json(filename):
