@@ -5,12 +5,12 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.junit.Test;
 
+import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Multiset;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
@@ -78,39 +78,31 @@ public class OperatorTest {
     UnionAll union = new UnionAll(children);
     union.open(null);
     TupleBatch tb;
-    HashMap<Long, Integer> actualCounts = new HashMap<Long, Integer>();
+
+    Multiset<Long> actualCounts = HashMultiset.create();
     while (!union.eos()) {
       tb = union.nextReady();
       if (tb != null) {
         for (int i = 0; i < tb.numTuples(); i++) {
           long index = tb.getLong(0, i);
-          if (actualCounts.containsKey(index)) {
-            actualCounts.put(index, actualCounts.get(index) + 1);
-          } else {
-            actualCounts.put(index, 1);
-          }
+          actualCounts.add(index);
         }
       }
     }
     union.close();
 
-    HashMap<Long, Integer> expectedCounts = new HashMap<Long, Integer>();
+    Multiset<Long> expectedCounts = HashMultiset.create();
     for (TupleBatchBuffer randomTuple : randomTuples) {
       for (TupleBatch tuples : randomTuple.getAll()) {
         for (int j = 0; j < tuples.numTuples(); j++) {
           Long index = tuples.getLong(0, j);
-          if (expectedCounts.containsKey(index)) {
-            expectedCounts.put(index, expectedCounts.get(index) + 1);
-          } else {
-            expectedCounts.put(index, 1);
-          }
+          expectedCounts.add(index);
         }
       }
     }
 
-    for (Map.Entry<Long, Integer> expectedEntry : expectedCounts.entrySet()) {
-      assertTrue(actualCounts.containsKey(expectedEntry.getKey()));
-      assertEquals(expectedEntry.getValue(), actualCounts.get(expectedEntry.getKey()));
+    for (Multiset.Entry<Long> expectedEntry : expectedCounts.entrySet()) {
+      assertEquals(expectedEntry.getCount(), actualCounts.count(expectedEntry.getElement()));
     }
   }
 
