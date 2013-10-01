@@ -243,7 +243,7 @@ public class IDBInput extends Operator {
   }
 
   @Override
-  public final Schema getSchema() {
+  public final Schema generateSchema() {
     return initialIDBInput.getSchema();
   }
 

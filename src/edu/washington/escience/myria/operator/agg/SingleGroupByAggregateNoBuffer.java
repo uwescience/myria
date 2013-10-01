@@ -46,11 +46,6 @@ public class SingleGroupByAggregateNoBuffer extends UnaryOperator {
   private static final long serialVersionUID = 1L;
 
   /**
-   * result schema.
-   */
-  private Schema schema;
-
-  /**
    * compute multiple aggregates in the same time. The columns to compute the aggregates are
    * {@link SingleGroupByAggregateNoIntermediateBuffer#afields}.
    */
@@ -463,14 +458,6 @@ public class SingleGroupByAggregateNoBuffer extends UnaryOperator {
     return resultBuffer.popAny();
   }
 
-  @Override
-  public final Schema getSchema() {
-    if (schema == null) {
-      generateSchema();
-    }
-    return schema;
-  }
-
   /**
    * @return the group by column.
    */
@@ -504,14 +491,12 @@ public class SingleGroupByAggregateNoBuffer extends UnaryOperator {
         groupAggsDatetime = new HashMap<DateTime, Aggregator<?>[]>();
         break;
     }
-    resultBuffer = new TupleBatchBuffer(schema);
+    resultBuffer = new TupleBatchBuffer(getSchema());
 
   }
 
-  /**
-   * Generates the schema for SingleGroupByAggregate.
-   */
-  private void generateSchema() {
+  @Override
+  protected Schema generateSchema() {
     final Schema childSchema = getChild().getSchema();
     if (gColumn < 0 || gColumn >= childSchema.numColumns()) {
       throw new IllegalArgumentException("Invalid group field");
@@ -557,6 +542,6 @@ public class SingleGroupByAggregateNoBuffer extends UnaryOperator {
       outputSchema = Schema.merge(outputSchema, agg[idx].getResultSchema());
       idx++;
     }
-    schema = outputSchema;
+    return outputSchema;
   }
 }

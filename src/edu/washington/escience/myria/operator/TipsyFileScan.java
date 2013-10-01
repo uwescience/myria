@@ -23,7 +23,7 @@ import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 
 /**
- * Read and merge Tipy bin file, iOrder ascii file and group number ascii file.
+ * Read and merge Tipsy bin file, iOrder ascii file and group number ascii file.
  * 
  * @author leelee
  * 
@@ -72,8 +72,8 @@ public class TipsyFileScan extends LeafOperator {
   /** Which line of the file the scanner is currently on. */
   private int lineNumber;
 
-  /** Schema for the tuple to be produced from the data. */
-  private final Schema schema = new Schema(ImmutableList.of(Type.LONG_TYPE, // iOrder
+  /** Schema for all Tipsy files. */
+  private static final Schema TIPSY_SCHEMA = new Schema(ImmutableList.of(Type.LONG_TYPE, // iOrder
       Type.FLOAT_TYPE, // mass
       Type.FLOAT_TYPE, // x
       Type.FLOAT_TYPE, // y
@@ -179,11 +179,6 @@ public class TipsyFileScan extends LeafOperator {
     while (buffer.numTuples() > 0) {
       buffer.popAny();
     }
-  }
-
-  @Override
-  public final Schema getSchema() {
-    return schema;
   }
 
   /**
@@ -328,5 +323,10 @@ public class TipsyFileScan extends LeafOperator {
       }
       nstar--;
     }
+  }
+
+  @Override
+  protected Schema generateSchema() {
+    return TIPSY_SCHEMA;
   }
 }

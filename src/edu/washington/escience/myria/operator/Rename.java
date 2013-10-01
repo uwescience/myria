@@ -3,7 +3,6 @@ package edu.washington.escience.myria.operator;
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
@@ -24,10 +23,6 @@ public class Rename extends UnaryOperator {
    * The new names of the columns in the tuples emitted by this Operator.
    */
   private final ImmutableList<String> columnNames;
-  /**
-   * The schema of the tuples emitted by this Operator.
-   */
-  private Schema schema;
 
   /**
    * Instantiate a rename operator, which renames the columns of its child.
@@ -38,9 +33,8 @@ public class Rename extends UnaryOperator {
   public Rename(final Operator child, final List<String> columnNames) {
     super(child);
     this.columnNames = ImmutableList.copyOf(columnNames);
-    if (child != null && child.getSchema() != null) {
-      schema = new Schema(child.getSchema().getColumnTypes(), columnNames);
-    }
+    /* Generate the Schema now as a way of sanity-checking the constructor arguments. */
+    getSchema();
   }
 
   /**
@@ -53,17 +47,6 @@ public class Rename extends UnaryOperator {
   }
 
   @Override
-  protected void init(final ImmutableMap<String, Object> execEnvVars) throws Exception {
-    if (schema == null) {
-      schema = new Schema(getChild().getSchema().getColumnTypes(), columnNames);
-    }
-  }
-
-  @Override
-  protected void cleanup() throws Exception {
-  }
-
-  @Override
   protected TupleBatch fetchNextReady() throws Exception {
     final TupleBatch childTuples = getChild().fetchNextReady();
     if (childTuples == null) {
@@ -73,11 +56,19 @@ public class Rename extends UnaryOperator {
   }
 
   @Override
-  public Schema getSchema() {
-    if (schema == null && getChild() != null && getChild().getSchema() != null) {
-      schema = new Schema(getChild().getSchema().getColumnTypes(), columnNames);
+  public Schema generateSchema() {
+    final Operator child = getChild();
+    if (child == null) {
+      return null;
     }
-    return schema;
+    final Schema childSchema = child.getSchema();
+    if (childSchema == null) {
+      return null;
+    }
+    if (columnNames == null) {
+      return null;
+    }
+    return new Schema(childSchema.getColumnTypes(), columnNames);
   }
 
 }

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -27,8 +28,6 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
-  /** The result schema. */
-  private final Schema outputSchema;
   /** The column indices for comparing of child 1. */
   private final int[] compareIndx1;
   /** The column indices for comparing of child 2. */
@@ -49,6 +48,8 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
   private long ans;
   /** The buffer for storing and returning answer. */
   private transient TupleBatchBuffer ansTBB;
+  /** The name of the single column output from this operator. */
+  private final String columnName;
 
   /**
    * Construct a {@link SymmetricHashCountingJoin}.
@@ -61,7 +62,7 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
    */
   public SymmetricHashCountingJoin(final Operator left, final Operator right, final int[] compareIndx1,
       final int[] compareIndx2) {
-    this(null, left, right, compareIndx1, compareIndx2);
+    this("count", left, right, compareIndx1, compareIndx2);
   }
 
   /**
@@ -78,16 +79,9 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
   public SymmetricHashCountingJoin(final String outputColumnName, final Operator left, final Operator right,
       final int[] compareIndx1, final int[] compareIndx2) {
     super(left, right);
-    ImmutableList<Type> types = ImmutableList.of(Type.LONG_TYPE);
-    ImmutableList<String> names;
-    if (outputColumnName == null) {
-      names = ImmutableList.of("count");
-    } else {
-      names = ImmutableList.of(outputColumnName);
-    }
-    outputSchema = Schema.of(types, names);
     this.compareIndx1 = compareIndx1;
     this.compareIndx2 = compareIndx2;
+    columnName = Objects.requireNonNull(outputColumnName);
   }
 
   @Override
@@ -261,11 +255,6 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
   private transient boolean nonBlocking = true;
 
   @Override
-  public Schema getSchema() {
-    return outputSchema;
-  }
-
-  @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     hashTable1Indices = new HashMap<Integer, List<Integer>>();
     hashTable2Indices = new HashMap<Integer, List<Integer>>();
@@ -274,7 +263,7 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
     hashTable1 = new TupleBuffer(getLeft().getSchema().getSubSchema(compareIndx1));
     hashTable2 = new TupleBuffer(getRight().getSchema().getSubSchema(compareIndx2));
     ans = 0;
-    ansTBB = new TupleBatchBuffer(outputSchema);
+    ansTBB = new TupleBatchBuffer(getSchema());
     TaskResourceManager qem = (TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER);
     nonBlocking = qem.getExecutionMode() == QueryExecutionMode.NON_BLOCKING;
   }
@@ -391,5 +380,10 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
         }
       }
     }
+  }
+
+  @Override
+  protected Schema generateSchema() {
+    return Schema.of(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of(columnName));
   }
 }

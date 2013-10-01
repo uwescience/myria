@@ -124,8 +124,12 @@ public final class DupElim extends UnaryOperator {
   }
 
   @Override
-  public Schema getSchema() {
-    return getChild().getSchema();
+  public Schema generateSchema() {
+    Operator child = getChild();
+    if (child == null) {
+      return null;
+    }
+    return child.getSchema();
   }
 
   @Override

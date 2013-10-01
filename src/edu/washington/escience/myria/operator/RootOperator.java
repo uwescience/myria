@@ -87,7 +87,10 @@ public abstract class RootOperator extends Operator {
   }
 
   @Override
-  public final Schema getSchema() {
+  public final Schema generateSchema() {
+    if (child == null) {
+      return null;
+    }
     return child.getSchema();
   }
 

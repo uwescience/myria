@@ -2,7 +2,6 @@ package edu.washington.escience.myria.mrbenchmarks;
 
 import org.joda.time.DateTime;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
@@ -31,13 +30,7 @@ public class Top1 extends UnaryOperator {
 
   @Override
   protected void init(ImmutableMap<String, Object> execEnvVars) throws DbException {
-    Schema cs = getChild().getSchema();
-    ImmutableList.Builder<String> newNamesB = ImmutableList.builder();
-    newNamesB.addAll(cs.getColumnNames());
-    ImmutableList.Builder<Type> newTypesB = ImmutableList.builder();
-    newTypesB.addAll(cs.getColumnTypes());
-    s = Schema.of(newTypesB.build(), newNamesB.build());
-    compareType = cs.getColumnType(toCompareColumnIdx);
+    compareType = getSchema().getColumnType(toCompareColumnIdx);
   }
 
   @Override
@@ -127,11 +120,14 @@ public class Top1 extends UnaryOperator {
   }
 
   @Override
-  public Schema getSchema() {
-    return s;
+  protected Schema generateSchema() {
+    final Operator child = getChild();
+    if (child == null) {
+      return null;
+    }
+    return child.getSchema();
   }
 
-  private Schema s;
   private Type compareType;
   private TupleBatch currentTopTB;
   private int currentTopIdx;

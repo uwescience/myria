@@ -183,11 +183,6 @@ public class LocalUnbalancedCountingJoin extends BinaryOperator {
   }
 
   @Override
-  public Schema getSchema() {
-    return outputSchema;
-  }
-
-  @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     final Operator right = getRight();
     hashTableIndices = new TIntObjectHashMap<TIntArrayList>();
@@ -285,5 +280,10 @@ public class LocalUnbalancedCountingJoin extends BinaryOperator {
         }
       }
     }
+  }
+
+  @Override
+  protected Schema generateSchema() {
+    return outputSchema;
   }
 }

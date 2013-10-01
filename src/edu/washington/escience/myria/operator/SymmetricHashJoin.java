@@ -29,10 +29,6 @@ public final class SymmetricHashJoin extends BinaryOperator {
   private static final long serialVersionUID = 1L;
 
   /**
-   * The result schema.
-   */
-  private Schema outputSchema;
-  /**
    * The names of the output columns.
    */
   private final ImmutableList<String> outputColumns;
@@ -97,8 +93,8 @@ public final class SymmetricHashJoin extends BinaryOperator {
    * @throw IllegalArgumentException if there are duplicated column names in <tt>outputSchema</tt>, or if
    *        <tt>outputSchema</tt> does not have the correct number of columns and column types.
    */
-  public SymmetricHashJoin(final Operator left, final Operator right, final int[] compareIndx1, final int[] compareIndx2,
-      final int[] answerColumns1, final int[] answerColumns2) {
+  public SymmetricHashJoin(final Operator left, final Operator right, final int[] compareIndx1,
+      final int[] compareIndx2, final int[] answerColumns1, final int[] answerColumns2) {
     this(null, left, right, compareIndx1, compareIndx2, answerColumns1, answerColumns2);
   }
 
@@ -172,10 +168,8 @@ public final class SymmetricHashJoin extends BinaryOperator {
     return ret;
   }
 
-  /**
-   * Generate the proper output schema from the parameters.
-   */
-  private void generateSchema() {
+  @Override
+  protected Schema generateSchema() {
     final Operator left = getLeft();
     final Operator right = getRight();
     ImmutableList.Builder<Type> types = ImmutableList.builder();
@@ -192,9 +186,9 @@ public final class SymmetricHashJoin extends BinaryOperator {
     }
 
     if (outputColumns != null) {
-      outputSchema = new Schema(types.build(), outputColumns);
+      return new Schema(types.build(), outputColumns);
     } else {
-      outputSchema = new Schema(types, names);
+      return new Schema(types, names);
     }
   }
 
@@ -398,14 +392,6 @@ public final class SymmetricHashJoin extends BinaryOperator {
   }
 
   @Override
-  public Schema getSchema() {
-    if (outputSchema == null) {
-      generateSchema();
-    }
-    return outputSchema;
-  }
-
-  @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     final Operator left = getLeft();
     final Operator right = getRight();
@@ -413,10 +399,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
     hashTable2Indices = new HashMap<Integer, List<Integer>>();
     hashTable1 = new TupleBuffer(left.getSchema());
     hashTable2 = new TupleBuffer(right.getSchema());
-    if (outputSchema == null) {
-      generateSchema();
-    }
-    ans = new TupleBatchBuffer(outputSchema);
+    ans = new TupleBatchBuffer(getSchema());
     TaskResourceManager qem = (TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER);
     nonBlocking = qem.getExecutionMode() == QueryExecutionMode.NON_BLOCKING;
   }

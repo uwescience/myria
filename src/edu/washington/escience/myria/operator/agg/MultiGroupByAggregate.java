@@ -60,8 +60,6 @@ public final class MultiGroupByAggregate extends UnaryOperator {
 
   /** Java requires this. **/
   private static final long serialVersionUID = 1L;
-  /** The schema after the aggregate is done. **/
-  private Schema schema;
   /** The aggregators being used. **/
   private final Aggregator<?>[] agg;
   /** Aggregate fields. **/
@@ -100,7 +98,6 @@ public final class MultiGroupByAggregate extends UnaryOperator {
     this.aggOps = aggOps;
     groupAggs = new HashMap<SimpleArrayWrapper, Aggregator<?>[]>();
     agg = new Aggregator<?>[aggOps.length];
-    schema = generateSchema(child, groupAggs, gfields, afields, agg, aggOps);
   }
 
   /**
@@ -208,11 +205,8 @@ public final class MultiGroupByAggregate extends UnaryOperator {
    * @return the resulting schema
    */
   @Override
-  public Schema getSchema() {
-    if (schema == null) {
-      schema = generateSchema(getChild(), groupAggs, gfields, afields, agg, aggOps);
-    }
-    return schema;
+  public Schema generateSchema() {
+    return generateSchema(getChild(), groupAggs, gfields, afields, agg, aggOps);
   }
 
   /**
@@ -224,8 +218,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
 
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    schema = generateSchema(getChild(), groupAggs, gfields, afields, agg, aggOps);
-    resultBuffer = new TupleBatchBuffer(schema);
+    resultBuffer = new TupleBatchBuffer(getSchema());
   }
 
   /**

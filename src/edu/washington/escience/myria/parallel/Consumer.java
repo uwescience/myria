@@ -51,7 +51,7 @@ public class Consumer extends LeafOperator {
 
   /**
    * The output schema.
-   * */
+   */
   private final Schema schema;
   /**
    * Recording the worker EOS status.
@@ -311,7 +311,7 @@ public class Consumer extends LeafOperator {
   }
 
   @Override
-  public final Schema getSchema() {
+  protected final Schema generateSchema() {
     return schema;
   }
 

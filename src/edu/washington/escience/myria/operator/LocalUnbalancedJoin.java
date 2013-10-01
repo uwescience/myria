@@ -1,13 +1,5 @@
 package edu.washington.escience.myria.operator;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
@@ -16,6 +8,14 @@ import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.Type;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.hash.TIntObjectHashMap;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 /**
  * This is an implementation of unbalanced hash join. This operator only builds hash tables for its right child, thus
@@ -31,10 +31,6 @@ public final class LocalUnbalancedJoin extends BinaryOperator {
    */
   private static final long serialVersionUID = 1L;
 
-  /**
-   * The result schema.
-   */
-  private Schema outputSchema;
   /**
    * The names of the output columns.
    */
@@ -170,10 +166,8 @@ public final class LocalUnbalancedJoin extends BinaryOperator {
     return ret;
   }
 
-  /**
-   * Generate the proper output schema from the parameters.
-   */
-  private void generateSchema() {
+  @Override
+  protected Schema generateSchema() {
     final Operator left = getLeft();
     final Operator right = getRight();
     ImmutableList.Builder<Type> types = ImmutableList.builder();
@@ -190,9 +184,9 @@ public final class LocalUnbalancedJoin extends BinaryOperator {
     }
 
     if (outputColumns != null) {
-      outputSchema = new Schema(types.build(), outputColumns);
+      return new Schema(types.build(), outputColumns);
     } else {
-      outputSchema = new Schema(types, names);
+      return new Schema(types, names);
     }
   }
 
@@ -301,19 +295,11 @@ public final class LocalUnbalancedJoin extends BinaryOperator {
   }
 
   @Override
-  public Schema getSchema() {
-    return outputSchema;
-  }
-
-  @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     final Operator right = getRight();
     hashTableIndices = new TIntObjectHashMap<TIntArrayList>();
     hashTable = new TupleBuffer(right.getSchema());
-    if (outputSchema == null) {
-      generateSchema();
-    }
-    ans = new TupleBatchBuffer(outputSchema);
+    ans = new TupleBatchBuffer(getSchema());
   }
 
   /**
