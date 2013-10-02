@@ -219,7 +219,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
   }
 
   @Test
-  public void unbalacedJoinTest() throws Exception {
+  public void unbalancedJoinTest() throws Exception {
 
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
     Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);

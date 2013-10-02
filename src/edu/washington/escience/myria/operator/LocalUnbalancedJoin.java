@@ -1,7 +1,6 @@
 package edu.washington.escience.myria.operator;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -225,106 +224,76 @@ public final class LocalUnbalancedJoin extends BinaryOperator {
     final Operator left = getLeft();
     final Operator right = getRight();
 
-    if (left.eos() && right.eos()) {
+    /* If right didn't finish yet, we cannot be EOI or EOS. */
+    if (!right.eos()) {
+      return;
+    }
+
+    /* If left has reached EOS, we are EOS. */
+    if (left.eos()) {
       setEOS();
       return;
     }
 
-    // EOS could be used as an EOI
-    if ((childrenEOI[0] || left.eos()) && (childrenEOI[1] || right.eos())) {
+    /* If left has reached EOI, we are EOI. */
+    if (left.eoi()) {
       setEOI(true);
-      Arrays.fill(childrenEOI, false);
+      left.setEOI(false);
     }
   }
-
-  /**
-   * Recording the EOI status of the children.
-   */
-  private final boolean[] childrenEOI = new boolean[2];
 
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
     if (!nonBlocking) {
+      // TODO(chushumo) to be implemented
       ;
-      // to be implemented
     }
 
-    TupleBatch nexttb = ans.popFilled();
+    /* If any full tuple batches are ready, output them. */
+    TupleBatch nexttb = ans.popAnyUsingTimeout();
     if (nexttb != null) {
       return nexttb;
     }
 
-    if (eoi()) {
-      return ans.popAny();
-    }
-
-    final Operator left = getLeft();
     final Operator right = getRight();
-    TupleBatch leftTB = null;
-    TupleBatch rightTB = null;
-    int numEOS = 0;
-    int numNoData = 0;
 
-    while (numEOS < 2 && numNoData < 2) {
-
-      numEOS = 0;
-      if (left.eos()) {
-        numEOS += 1;
-      }
-      if (right.eos()) {
-        numEOS += 1;
-      }
-      numNoData = numEOS;
-
-      leftTB = null;
-      rightTB = null;
-      if (!right.eos()) {
-        rightTB = right.nextReady();
-        if (rightTB != null) {
-          processRightChildTB(rightTB);
-        } else {
-          if (right.eoi()) {
-            right.setEOI(false);
-            childrenEOI[1] = true;
-            checkEOSAndEOI();
-            if (eoi()) {
-              break;
-            }
-          } else if (right.eos()) {
-            numEOS++;
-          } else {
-            numNoData++;
-          }
+    /* Drain the right child. */
+    while (!right.eos()) {
+      TupleBatch rightTB = right.nextReady();
+      if (rightTB == null) {
+        /* The right child may have realized it's EOS now. If so, we must move onto left child to avoid livelock. */
+        if (right.eos()) {
+          break;
         }
+        return null;
       }
-
-      if (right.eos() && !left.eos()) {
-        leftTB = left.nextReady();
-        if (leftTB != null) { // data
-          processLeftChildTB(leftTB);
-          nexttb = ans.popAnyUsingTimeout();
-          if (nexttb != null) {
-            return nexttb;
-          }
-        } else {
-          // eoi or eos or no data
-          if (left.eoi()) {
-            left.setEOI(false);
-            childrenEOI[0] = true;
-            checkEOSAndEOI();
-            if (eoi()) {
-              break;
-            }
-          } else if (left.eos()) {
-            numEOS++;
-          } else {
-            numNoData++;
-          }
-        }
-      }
+      processRightChildTB(rightTB);
     }
-    Preconditions.checkArgument(numEOS <= 2);
-    Preconditions.checkArgument(numNoData <= 2);
+
+    /* The right child is done, let's drain the left child. */
+    final Operator left = getLeft();
+    while (!left.eos()) {
+      TupleBatch leftTB = left.nextReady();
+      /*
+       * Left tuple has no data, but we may need to pop partially-full existing batches if left reached EOI/EOS. Break
+       * and check for termination.
+       */
+      if (leftTB == null) {
+        break;
+      }
+
+      /* Process the data and add new results to ans. */
+      processLeftChildTB(leftTB);
+
+      nexttb = ans.popAnyUsingTimeout();
+      if (nexttb != null) {
+        return nexttb;
+      }
+      /*
+       * We didn't time out or there is no data in ans, and there are no full tuple batches. Either way, check for more
+       * data.
+       */
+    }
 
     checkEOSAndEOI();
     if (eoi() || eos()) {
