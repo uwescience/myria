@@ -37,12 +37,16 @@ import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.TupleWriter;
+import edu.washington.escience.myria.api.encoding.DatasetStatus;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.coordinator.catalog.CatalogMaker;
 import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
+import edu.washington.escience.myria.operator.DataOutput;
 import edu.washington.escience.myria.operator.DbInsert;
+import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
@@ -1026,11 +1030,12 @@ public final class Server {
    * @param relationKey the name of the dataset.
    * @param workersToIngest restrict the workers to ingest data (null for all)
    * @param source the source of tuples to be ingested.
+   * @return the status of the ingested dataset.
    * @throws InterruptedException interrupted
    * @throws DbException if there is an error
    */
-  public void ingestDataset(final RelationKey relationKey, final Set<Integer> workersToIngest, final Operator source)
-      throws InterruptedException, DbException {
+  public DatasetStatus ingestDataset(final RelationKey relationKey, final Set<Integer> workersToIngest,
+      final Operator source) throws InterruptedException, DbException {
     /* Figure out the workers we will use. If workersToIngest is null, use all active workers. */
     Set<Integer> actualWorkers = workersToIngest;
     if (workersToIngest == null) {
@@ -1045,7 +1050,6 @@ public final class Server {
             new RoundRobinPartitionFunction(workersArray.length));
 
     /* The workers' plan */
-
     GenericShuffleConsumer gather =
         new GenericShuffleConsumer(source.getSchema(), scatterId, new int[] { MyriaConstants.MASTER_ID });
     DbInsert insert = new DbInsert(gather, relationKey, true);
@@ -1059,10 +1063,13 @@ public final class Server {
       submitQuery("ingest " + relationKey.toString("sqlite"), "ingest " + relationKey.toString("sqlite"),
           "ingest " + relationKey.toString("sqlite"), new SingleQueryPlanWithArgs(scatter), workerPlans).sync();
       /* Now that the query has finished, add the metadata about this relation to the dataset. */
-      catalog.addRelationMetadata(relationKey, source.getSchema());
+      /* TODO(dhalperi) -- figure out how to populate the numTuples column. */
+      DatasetStatus status = new DatasetStatus(relationKey, source.getSchema(), -1);
+      catalog.addRelationMetadata(status.getRelationKey(), status.getSchema(), status.getNumTuples());
 
       /* Add the round robin-partitioned shard. */
       catalog.addStoredRelation(relationKey, actualWorkers, "RoundRobin");
+      return status;
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -1085,7 +1092,8 @@ public final class Server {
 
     try {
       /* Now that the query has finished, add the metadata about this relation to the dataset. */
-      catalog.addRelationMetadata(relationKey, schema);
+      /* TODO(dhalperi) -- figure out how to populate the numTuples column. */
+      catalog.addRelationMetadata(relationKey, schema, -1);
       /* Add the round robin-partitioned shard. */
       catalog.addStoredRelation(relationKey, actualWorkers, "RoundRobin");
     } catch (CatalogException e) {
@@ -1176,5 +1184,114 @@ public final class Server {
       queryStatus.status = QueryStatusEncoding.Status.ACCEPTED;
     }
     return queryStatus;
+  }
+
+  /**
+   * @return A list of datasets in the system.
+   * @throws DbException if there is an error accessing the desired Schema.
+   */
+  public List<DatasetStatus> getDatasets() throws DbException {
+    try {
+      return catalog.getDatasets();
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+  }
+
+  /**
+   * Get the metadata about a relation.
+   * 
+   * @param relationKey specified which relation to get the metadata about.
+   * @return the metadata of the specified relation.
+   * @throws DbException if there is an error getting the status.
+   */
+  public DatasetStatus getDatasetStatus(final RelationKey relationKey) throws DbException {
+    try {
+      return catalog.getDatasetStatus(relationKey);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+  }
+
+  /**
+   * @param userName the user whose datasets we want to access.
+   * @return a list of datasets belonging to the specified user.
+   * @throws DbException if there is an error accessing the Catalog.
+   */
+  public List<DatasetStatus> getDatasetsForUser(final String userName) throws DbException {
+    try {
+      return catalog.getDatasetsForUser(userName);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+  }
+
+  /**
+   * @param userName the user whose datasets we want to access.
+   * @param programName the program by that user whose datasets we want to access.
+   * @return a list of datasets belonging to the specified program.
+   * @throws DbException if there is an error accessing the Catalog.
+   */
+  public List<DatasetStatus> getDatasetsForProgram(final String userName, final String programName) throws DbException {
+    try {
+      return catalog.getDatasetsForProgram(userName, programName);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+  }
+
+  /**
+   * Start a query that streams tuples from the specified relation to the specified {@link TupleWriter}.
+   * 
+   * @param relationKey the relation to be downloaded.
+   * @param writer the {@link TupleWriter} which will serialize the tuples.
+   * @return the query future from which the query status can be looked up.
+   * @throws DbException if there is an error in the system.
+   */
+  public QueryFuture startDataStream(final RelationKey relationKey, final TupleWriter writer) throws DbException {
+    /* Get the relation's schema, to make sure it exists. */
+    final Schema schema;
+    try {
+      schema = catalog.getSchema(relationKey);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+    if (schema == null) {
+      throw new IllegalArgumentException("the requested relation was not found.");
+    }
+
+    /* Get the workers that store it. */
+    List<Integer> scanWorkers;
+    try {
+      scanWorkers = getWorkersForRelation(relationKey, null);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+
+    /* Construct the operators that go elsewhere. */
+    DbQueryScan scan = new DbQueryScan(relationKey, schema);
+    final ExchangePairID operatorId = ExchangePairID.newID();
+    CollectProducer producer = new CollectProducer(scan, operatorId, MyriaConstants.MASTER_ID);
+
+    /* Construct the workers' {@link SingleQueryPlanWithArgs}. */
+    SingleQueryPlanWithArgs workerPlan = new SingleQueryPlanWithArgs(producer);
+    Map<Integer, SingleQueryPlanWithArgs> workerPlans =
+        new HashMap<Integer, SingleQueryPlanWithArgs>(scanWorkers.size());
+    for (Integer worker : scanWorkers) {
+      workerPlans.put(worker, workerPlan);
+    }
+
+    /* Construct the master plan. */
+    final CollectConsumer consumer = new CollectConsumer(schema, operatorId, ImmutableSet.copyOf(scanWorkers));
+    DataOutput output = new DataOutput(consumer, writer);
+    final SingleQueryPlanWithArgs masterPlan = new SingleQueryPlanWithArgs(output);
+
+    /* Submit the plan for the download. */
+    String planString = "download " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE);
+    try {
+      return submitQuery(planString, planString, planString, masterPlan, workerPlans);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
   }
 }

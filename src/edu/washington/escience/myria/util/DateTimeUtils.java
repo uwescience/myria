@@ -99,7 +99,16 @@ public final class DateTimeUtils {
    * @return The current time, printed in ISO8601-compliant format. ThreadSafe.
    */
   public static String nowInISO8601() {
-    return ISO_FORMATTER.print(DateTime.now());
+    return dateTimeToISO8601(DateTime.now());
   }
 
+  /**
+   * Converts a {@link DateTime} object to an ISO8601-compliant string.
+   * 
+   * @param dateTime the time to be converted to an ISO8601-compliant string.
+   * @return The specified DateTime, printed in ISO8601-compliant format. ThreadSafe.
+   */
+  public static String dateTimeToISO8601(final DateTime dateTime) {
+    return ISO_FORMATTER.print(dateTime);
+  }
 }
