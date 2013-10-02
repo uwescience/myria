@@ -158,4 +158,11 @@ public class DbQueryScan extends LeafOperator {
       baseSQL = "SELECT * FROM " + relationKey.toString(connectionInfo.getDbms());
     }
   }
+
+  /**
+   * @return the connection info in this DbQueryScan.
+   */
+  public ConnectionInfo getConnectionInfo() {
+    return connectionInfo;
+  }
 }
