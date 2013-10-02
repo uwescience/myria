@@ -6,8 +6,6 @@ package edu.washington.escience.myria.operator;
 import java.io.File;
 import java.util.Objects;
 
-import org.slf4j.LoggerFactory;
-
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 import com.google.common.collect.ImmutableMap;
@@ -26,8 +24,6 @@ import edu.washington.escience.myria.accessmethod.SQLiteInfo;
  */
 public class DbInsert extends RootOperator {
 
-  /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(DbInsert.class);
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** The connection to the database database. */
@@ -110,14 +106,12 @@ public class DbInsert extends RootOperator {
 
     /* retrieve connection information from the environment variables, if not already set */
     if (connectionInfo == null && execEnvVars != null) {
-      LOGGER.info("DbInsert: Retrieving connection info from environment variables");
       connectionInfo = (ConnectionInfo) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_DATABASE_CONN_INFO);
     }
 
     if (connectionInfo == null) {
       throw new DbException("Unable to instantiate DbInsert: connection information unknown");
     }
-    LOGGER.info("DbInsert: connection info " + connectionInfo.toJson());
 
     if (connectionInfo instanceof SQLiteInfo) {
       /* Set WAL in the beginning. */

@@ -73,16 +73,20 @@ public final class SQLiteAccessMethod extends AccessMethod {
     sqliteInfo = (SQLiteInfo) connectionInfo;
 
     File dbFile = new File(sqliteInfo.getDatabaseFilename());
-    if (!readOnly) {
-      try {
-        dbFile.createNewFile();
-      } catch (IOException e) {
-        throw new DbException("Could not create database file", e);
-      }
-    }
-
     if (!dbFile.exists()) {
-      throw new DbException("Database file " + sqliteInfo.getDatabaseFilename() + " does not exist!");
+      if (!readOnly) {
+        try {
+          File parent = dbFile.getParentFile();
+          if (parent != null && !parent.exists()) {
+            dbFile.getParentFile().mkdirs();
+          }
+          dbFile.createNewFile();
+        } catch (IOException e) {
+          throw new DbException("Could not create database file" + dbFile.getAbsolutePath(), e);
+        }
+      } else {
+        throw new DbException("Database file " + sqliteInfo.getDatabaseFilename() + " does not exist!");
+      }
     }
 
     sqliteConnection = null;
