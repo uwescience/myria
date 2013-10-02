@@ -12,7 +12,7 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.Operator;
-import edu.washington.escience.myria.operator.Project;
+import edu.washington.escience.myria.operator.ColumnSelect;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
@@ -93,14 +93,14 @@ public class Q9 implements QueryPlanGenerator {
         new SymmetricHashJoin(multiPersonInConsumer, multiTriplesInConsumer, new int[] { 0 }, new int[] { 2 });
     // schema: (personID long, subject long, predicateName String, personID long)
 
-    final Project projInPredicates = new Project(new int[] { 2 }, joinPersonsTriplesIn);
+    final ColumnSelect projInPredicates = new ColumnSelect(new int[] { 2 }, joinPersonsTriplesIn);
     // schema: (predicateName string)
 
     final SymmetricHashJoin joinPersonsTriplesOut =
         new SymmetricHashJoin(multiPersonOutConsumer, multiTriplesOutConsumer, new int[] { 0 }, new int[] { 0 });
     // schema: (personID long, personID long, predicateName String, object long)
 
-    final Project projOutPredicates = new Project(new int[] { 2 }, joinPersonsTriplesOut);
+    final ColumnSelect projOutPredicates = new ColumnSelect(new int[] { 2 }, joinPersonsTriplesOut);
     // schema: (predicateName String)
 
     final UnionAll union = new UnionAll(new Operator[] { projInPredicates, projOutPredicates });

@@ -16,7 +16,7 @@ import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.Operator;
-import edu.washington.escience.myria.operator.Project;
+import edu.washington.escience.myria.operator.ColumnSelect;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SQLiteSetFilter;
 import edu.washington.escience.myria.operator.SinkRoot;
@@ -91,7 +91,7 @@ public class Erdos {
         new SymmetricHashJoin(joinColumnNames, paulErdoesPubsShuffleC, allPubsShuffleC, new int[] { 0 }, new int[] { 0 });
     // schema: (pubId long, pubId long, authorId long)
 
-    final Project projCoAuthorID = new Project(new int[] { 2 }, joinCoAuthors);
+    final ColumnSelect projCoAuthorID = new ColumnSelect(new int[] { 2 }, joinCoAuthors);
     // schema: (authorId long)
     final DupElim localDECoAuthorID = new DupElim(projCoAuthorID); // local dupelim
     // schema: (authorId long)
@@ -135,7 +135,7 @@ public class Erdos {
         new SymmetricHashJoin(erdosNMinus1, allPubsShuffleByAuthorC, new int[] { 0 }, new int[] { 1 });
     // schema: (authorId long, pubId long, authorId long)
 
-    final Project projCoAuthorPubsID = new Project(new int[] { 1 }, joinCoAuthorPubs);
+    final ColumnSelect projCoAuthorPubsID = new ColumnSelect(new int[] { 1 }, joinCoAuthorPubs);
     // schema: (pubId long)
 
     final DupElim coAuthorPubsLocalDE = new DupElim(projCoAuthorPubsID); // local dupelim
@@ -170,7 +170,7 @@ public class Erdos {
         new SymmetricHashJoin(coAuthorPubsGlobalDE, coAuthorNamesPubsShuffleC, new int[] { 0 }, new int[] { 0 });
     // schema: (pubId long, pubId long, authorId long)
 
-    final Project projCoCoAuthorName = new Project(new int[] { 2 }, joinCoCoAuthorPubs);
+    final ColumnSelect projCoCoAuthorName = new ColumnSelect(new int[] { 2 }, joinCoCoAuthorPubs);
     // schema: (authorId long)
 
     final DupElim coCoAuthorNameLocalDE = new DupElim(projCoCoAuthorName); // local dupelim

@@ -11,7 +11,7 @@ import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
-import edu.washington.escience.myria.operator.Project;
+import edu.washington.escience.myria.operator.ColumnSelect;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.TBQueueExporter;
@@ -83,9 +83,9 @@ public class Q1 implements QueryPlanGenerator {
     final SymmetricHashJoin joinJournalTitleYear =
         new SymmetricHashJoin(joinJournalTitle, shuffleIssuedYearC, new int[] { 0 }, new int[] { 0 });
 
-    final Project finalProject = new Project(new int[] { 3 }, joinJournalTitleYear);
+    final ColumnSelect finalColSelect = new ColumnSelect(new int[] { 3 }, joinJournalTitleYear);
 
-    final CollectProducer sendToMaster = new CollectProducer(finalProject, sendToMasterID, 0);
+    final CollectProducer sendToMaster = new CollectProducer(finalColSelect, sendToMasterID, 0);
 
     final Map<Integer, RootOperator[]> result = new HashMap<Integer, RootOperator[]>();
     for (int worker : allWorkers) {

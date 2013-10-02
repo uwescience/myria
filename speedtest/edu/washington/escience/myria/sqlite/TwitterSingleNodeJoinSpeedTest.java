@@ -21,11 +21,11 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.accessmethod.SQLiteInfo;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
+import edu.washington.escience.myria.operator.ColumnSelect;
 import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
-import edu.washington.escience.myria.operator.Project;
 import edu.washington.escience.myria.parallel.QueryExecutionMode;
 import edu.washington.escience.myria.parallel.TaskResourceManager;
 
@@ -78,11 +78,11 @@ public class TwitterSingleNodeJoinSpeedTest {
     final List<String> joinSchema = ImmutableList.of("follower", "joinL", "joinR", "followee");
     final SymmetricHashJoin join = new SymmetricHashJoin(joinSchema, scan1, scan2, new int[] { 1 }, new int[] { 0 });
 
-    /* Project down to only the two columns of interest: SC1.follower now transitively follows SC2.followee. */
-    final Project proj = new Project(new int[] { 0, 3 }, join);
+    /* Select only the two columns of interest: SC1.follower now transitively follows SC2.followee. */
+    final ColumnSelect colSelect = new ColumnSelect(new int[] { 0, 3 }, join);
 
     /* Now Dupelim */
-    final DupElim dupelim = new DupElim(proj);
+    final DupElim dupelim = new DupElim(colSelect);
 
     dupelim.open(execEnvVars);
     long result = 0;
@@ -98,7 +98,7 @@ public class TwitterSingleNodeJoinSpeedTest {
   }
 
   @Test
-  public void twitterSubsetProjectingJoinTest() throws DbException, CatalogException, IOException, InterruptedException {
+  public void twitterSubsetColSelectJoinTest() throws DbException, CatalogException, IOException, InterruptedException {
     assertTrue(successfulSetup);
 
     final ImmutableList<Type> table1Types = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
@@ -110,10 +110,10 @@ public class TwitterSingleNodeJoinSpeedTest {
     final DbQueryScan scan2 = new DbQueryScan(connectionInfo, "select * from twitter_subset", tableSchema);
 
     /* Join on SC1.followee=SC2.follower */
-    final SymmetricHashJoin localProjJoin =
+    final SymmetricHashJoin localColSelectJoin =
         new SymmetricHashJoin(scan1, scan2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
     /* Now Dupelim */
-    final DupElim dupelim = new DupElim(localProjJoin);
+    final DupElim dupelim = new DupElim(localColSelectJoin);
 
     dupelim.open(execEnvVars);
     long result = 0;
@@ -129,7 +129,7 @@ public class TwitterSingleNodeJoinSpeedTest {
   }
 
   @Test
-  public void twitterSubsetProjectingJoinWithInsertTest() throws Exception {
+  public void twitterSubsetColSelectJoinWithInsertTest() throws Exception {
     assertTrue(successfulSetup);
 
     final ImmutableList<Type> table1Types = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
@@ -141,10 +141,10 @@ public class TwitterSingleNodeJoinSpeedTest {
     final DbQueryScan scan2 = new DbQueryScan(connectionInfo, "select * from twitter_subset", tableSchema);
 
     /* Join on SC1.followee=SC2.follower */
-    final SymmetricHashJoin localProjJoin =
+    final SymmetricHashJoin localColSelectJoin =
         new SymmetricHashJoin(scan1, scan2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
     /* Now Dupelim */
-    final DupElim dupelim = new DupElim(localProjJoin);
+    final DupElim dupelim = new DupElim(localColSelectJoin);
     final RelationKey distinctJoinStored = RelationKey.of("Speedtest", "TwitterSingleNodeJoinSpeedTest", "TwitterJoin");
     /* .. and insert */
     final DbInsert insert = new DbInsert(dupelim, distinctJoinStored, connectionInfo, true);

@@ -17,12 +17,12 @@ import com.google.common.collect.ImmutableList;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.operator.ColumnSelect;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
-import edu.washington.escience.myria.operator.SymmetricHashJoin;
-import edu.washington.escience.myria.operator.Project;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
+import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.operator.agg.Aggregate;
 import edu.washington.escience.myria.operator.agg.Aggregator;
@@ -66,7 +66,7 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
   }
 
   @Test
-  public void twitterSubsetCountProjectingJoinTest() throws Exception {
+  public void twitterSubsetCountColSelectJoinTest() throws Exception {
     assertTrue(successfulSetup);
 
     /* The Schema for the table we read from file. */
@@ -169,8 +169,8 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     // Join on SC1.followee=SC2.follower
     final List<String> joinSchema = ImmutableList.of("follower", "joinL", "joinR", "followee");
     final SymmetricHashJoin localjoin = new SymmetricHashJoin(joinSchema, sc1, sc2, new int[] { 1 }, new int[] { 0 });
-    /* Project down to only the two columns of interest: SC1.follower now transitively follows SC2.followee. */
-    final Project proj = new Project(new int[] { 0, 3 }, localjoin);
+    /* Select only the two columns of interest: SC1.follower now transitively follows SC2.followee. */
+    final ColumnSelect proj = new ColumnSelect(new int[] { 0, 3 }, localjoin);
     /* Now reshuffle the results to partition based on the new followee, so that we can dupelim. */
     final ExchangePairID arrayID0 = ExchangePairID.newID();
     final GenericShuffleProducer sp0 = new GenericShuffleProducer(proj, arrayID0, workerIDs, pf0);
@@ -197,7 +197,7 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
   }
 
   @Test
-  public void twitterSubsetProjectingJoinTest() throws Exception {
+  public void twitterSubsetColSelectJoinTest() throws Exception {
     assertTrue(successfulSetup);
 
     /* The Schema for the table we read from file. */

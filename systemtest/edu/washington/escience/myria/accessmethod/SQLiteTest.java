@@ -1,7 +1,6 @@
 package edu.washington.escience.myria.accessmethod;
 
 import java.nio.file.Files;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -18,8 +17,6 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.accessmethod.SQLiteAccessMethod;
-import edu.washington.escience.myria.accessmethod.SQLiteInfo;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.util.FSUtils;
@@ -64,19 +61,6 @@ public class SQLiteTest {
     /* Scan the testtable in database */
     final DbQueryScan scan = new DbQueryScan(SQLiteInfo.of(dbAbsolutePath), testtableKey, outputSchema);
 
-    /* Filter on first column INTEGER >= 50 */
-    // Filter filter1 = new Filter(Predicate.Op.GREATER_THAN_OR_EQ, 0, new Long(50), scan);
-    /* Filter on first column INTEGER <= 60 */
-    // Filter filter2 = new Filter(Predicate.Op.LESS_THAN_OR_EQ, 0, new Long(60), filter1);
-
-    /* Project onto second column STRING */
-    final ArrayList<Integer> fieldIdx = new ArrayList<Integer>();
-    fieldIdx.add(1);
-    final ArrayList<Type> fieldType = new ArrayList<Type>();
-    fieldType.add(Type.STRING_TYPE);
-    // Project project = new Project(fieldIdx, fieldType, filter2);
-
-    /* Project is the output operator */
     final Operator root = scan;
     root.open(null);
 
