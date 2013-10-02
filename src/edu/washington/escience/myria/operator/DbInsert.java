@@ -3,8 +3,11 @@
  */
 package edu.washington.escience.myria.operator;
 
+import java.io.File;
 import java.util.Objects;
 
+import com.almworks.sqlite4java.SQLiteConnection;
+import com.almworks.sqlite4java.SQLiteException;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
@@ -13,6 +16,7 @@ import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.accessmethod.AccessMethod;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
+import edu.washington.escience.myria.accessmethod.SQLiteInfo;
 
 /**
  * @author valmeida
@@ -107,6 +111,19 @@ public class DbInsert extends RootOperator {
 
     if (connectionInfo == null) {
       throw new DbException("Unable to instantiate DbInsert: connection information unknown");
+    }
+
+    if (connectionInfo instanceof SQLiteInfo) {
+      /* Set WAL in the beginning. */
+      final File dbFile = new File(((SQLiteInfo) connectionInfo).getDatabaseFilename());
+      SQLiteConnection conn = new SQLiteConnection(dbFile);
+      try {
+        conn.open(true);
+        conn.exec("PRAGMA journal_mode=WAL;");
+      } catch (SQLiteException e) {
+        e.printStackTrace();
+      }
+      conn.dispose();
     }
 
     /* open the JDBC Connection */
