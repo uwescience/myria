@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
@@ -173,56 +174,14 @@ public final class JdbcAccessMethod extends AccessMethod {
     return jdbcAccessMethod.tupleBatchIteratorFromQuery(queryString, schema);
   }
 
-  /**
-   * Create a table with the given name and schema in the database. If dropExisting is true, drops an existing table if
-   * it exists.
-   * 
-   * @param relationKey the name of the relation.
-   * @param schema the schema of the relation.
-   * @param dropExisting if true, an existing relation will be dropped.
-   * @throws DbException if there is an error in the database.
-   */
   @Override
-  public void createTable(final RelationKey relationKey, final Schema schema, final boolean dropExisting)
-      throws DbException {
+  public void createTableIfNotExists(final RelationKey relationKey, final Schema schema) throws DbException {
     Objects.requireNonNull(jdbcConnection);
     Objects.requireNonNull(jdbcInfo);
     Objects.requireNonNull(relationKey);
     Objects.requireNonNull(schema);
 
-    try {
-      execute("DROP TABLE " + relationKey.toString(jdbcInfo.getDbms()) + ";");
-    } catch (DbException e) {
-      ; /* Skip. this is okay. */
-    }
-    execute(createStatementFromSchema(schema, relationKey));
-  }
-
-  /**
-   * Create a table with the given name and schema in the database. If dropExisting is true, drops an existing table if
-   * it exists.
-   * 
-   * @param jdbcInfo the JDBC connection information.
-   * @param relationKey the name of the relation.
-   * @param schema the schema of the relation.
-   * @param dbms the DBMS, e.g., "mysql".
-   * @param dropExisting if true, an existing relation will be dropped.
-   * @throws DbException if there is an error in the database.
-   */
-  public static void createTable(final JdbcInfo jdbcInfo, final RelationKey relationKey, final Schema schema,
-      final String dbms, final boolean dropExisting) throws DbException {
-    Objects.requireNonNull(jdbcInfo);
-    Objects.requireNonNull(relationKey);
-    Objects.requireNonNull(schema);
-
-    JdbcAccessMethod jdbcAccessMethod = new JdbcAccessMethod(jdbcInfo, false);
-    try {
-      jdbcAccessMethod.execute("DROP TABLE " + relationKey.toString(dbms) + ";");
-    } catch (DbException e) {
-      ; /* Skip. this is okay. */
-    }
-    jdbcAccessMethod.execute(createStatementFromSchema(schema, relationKey, dbms));
-    jdbcAccessMethod.close();
+    execute(createIfNotExistsStatementFromSchema(schema, relationKey));
   }
 
   @Override
@@ -243,31 +202,22 @@ public final class JdbcAccessMethod extends AccessMethod {
     return sb.toString();
   }
 
-  /**
-   * Generates the create table statement string for a relation in the database.
-   * 
-   * @param schema the relation schema
-   * @param relationKey the relation name
-   * @param dbms the DBMS on which the table will be created
-   * @return the create table statement string
-   */
-  public static String createStatementFromSchema(final Schema schema, final RelationKey relationKey, final String dbms) {
-    final StringBuilder sb = new StringBuilder();
-    sb.append("CREATE TABLE ").append(relationKey.toString(dbms)).append(" (");
-    for (int i = 0; i < schema.numColumns(); ++i) {
-      if (i > 0) {
-        sb.append(", ");
-      }
-      sb.append(schema.getColumnName(i)).append(" ").append(typeToDbmsType(schema.getColumnType(i), dbms));
-    }
-    sb.append(");");
-    return sb.toString();
-  }
-
   @Override
-  public String createStatementFromSchema(final Schema schema, final RelationKey relationKey) {
+  public String createIfNotExistsStatementFromSchema(final Schema schema, final RelationKey relationKey) {
+    switch (jdbcInfo.getDbms()) {
+      case MyriaConstants.STORAGE_SYSTEM_MYSQL:
+      case MyriaConstants.STORAGE_SYSTEM_POSTGRESQL:
+        /* This function is supported for Postgres and Mysql. */
+        break;
+      case MyriaConstants.STORAGE_SYSTEM_MONETDB:
+        throw new UnsupportedOperationException("MonetDB cannot CREATE TABLE IF NOT EXISTS");
+      default:
+        throw new UnsupportedOperationException("Don't know whether DBMS " + jdbcInfo.getDbms()
+            + " can CREATE TABLE IF NOT EXISTS");
+    }
+
     final StringBuilder sb = new StringBuilder();
-    sb.append("CREATE TABLE ").append(relationKey.toString(jdbcInfo.getDbms())).append(" (");
+    sb.append("CREATE TABLE IF NOT EXISTS ").append(relationKey.toString(jdbcInfo.getDbms())).append(" (");
     for (int i = 0; i < schema.numColumns(); ++i) {
       if (i > 0) {
         sb.append(", ");
@@ -280,21 +230,11 @@ public final class JdbcAccessMethod extends AccessMethod {
   }
 
   /**
-   * Generate a JDBC CREATE TABLE statement for the given table using the configured ConnectionInfo.
-   * 
-   * @param type a Myriad column type.
-   * @return the name of the DBMS type that matches the given Myriad type.
-   */
-  public String typeToDbmsType(final Type type) {
-    return typeToDbmsType(type, jdbcInfo.getDbms());
-  }
-
-  /**
    * Helper utility for creating JDBC CREATE TABLE statements.
    * 
-   * @param type a Myriad column type.
+   * @param type a Myria column type.
    * @param dbms the description of the DBMS, e.g., "mysql".
-   * @return the name of the DBMS type that matches the given Myriad type.
+   * @return the name of the DBMS type that matches the given Myria type.
    */
   public static String typeToDbmsType(final Type type, final String dbms) {
     switch (type) {
@@ -313,7 +253,43 @@ public final class JdbcAccessMethod extends AccessMethod {
       case DATETIME_TYPE:
         return "TIMESTAMP";
       default:
-        throw new UnsupportedOperationException("Type " + type + " is not supported");
+        throw new UnsupportedOperationException("Type " + type + " is not supported by DBMS " + dbms);
+    }
+  }
+
+  @Override
+  public void dropAndRenameTables(final RelationKey oldRelation, final RelationKey newRelation) throws DbException {
+    Objects.requireNonNull(oldRelation);
+    Objects.requireNonNull(newRelation);
+    final String oldName = oldRelation.toString(jdbcInfo.getDbms());
+    final String newName = newRelation.toString(jdbcInfo.getDbms());
+
+    switch (jdbcInfo.getDbms()) {
+      case MyriaConstants.STORAGE_SYSTEM_MYSQL:
+        dropTableIfExists(oldRelation);
+        execute("RENAME TABLE " + newName + " TO " + oldName);
+        break;
+      case MyriaConstants.STORAGE_SYSTEM_POSTGRESQL:
+        dropTableIfExists(oldRelation);
+        execute("ALTER TABLE " + newName + " RENAME TO " + oldName);
+        break;
+      default:
+        throw new UnsupportedOperationException("Don't know how to rename tables for DBMS " + jdbcInfo.getDbms());
+    }
+  }
+
+  @Override
+  public void dropTableIfExists(final RelationKey relationKey) throws DbException {
+    switch (jdbcInfo.getDbms()) {
+      case MyriaConstants.STORAGE_SYSTEM_POSTGRESQL:
+      case MyriaConstants.STORAGE_SYSTEM_MYSQL:
+        execute("DROP TABLE IF EXISTS " + relationKey.toString(jdbcInfo.getDbms()));
+        break;
+      case MyriaConstants.STORAGE_SYSTEM_MONETDB:
+        throw new UnsupportedOperationException("MonetDB cannot DROP IF EXISTS tables");
+      default:
+        throw new UnsupportedOperationException("Don't know whether " + jdbcInfo.getDbms()
+            + " can DROP IF EXISTS a table");
     }
   }
 

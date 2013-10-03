@@ -117,15 +117,32 @@ public abstract class AccessMethod {
    * @param relationKey the relation name
    * @return the create table statement string
    */
-  public abstract String createStatementFromSchema(Schema schema, RelationKey relationKey);
+  public abstract String createIfNotExistsStatementFromSchema(Schema schema, RelationKey relationKey);
 
   /**
-   * Creates a table into the database.
+   * Creates a table in the database, if it does not already exist.
    * 
    * @param relationKey the relation name
    * @param schema the relation schema
-   * @param overwriteTable a flag to overwrite the table or not
    * @throws DbException if anything goes wrong
    */
-  public abstract void createTable(RelationKey relationKey, Schema schema, boolean overwriteTable) throws DbException;
+  public abstract void createTableIfNotExists(RelationKey relationKey, Schema schema) throws DbException;
+
+  /**
+   * Overwrite <code>oldRelation</code> with <code>newRelation</code> by dropping <code>oldRelation</code> if it exists
+   * and renaming <code>newRelation</code> to <code>oldRelation</code>.
+   * 
+   * @param oldRelation the table to be overwritten.
+   * @param newRelation the table replacing <code>old</code>.
+   * @throws DbException if there is an error during this operation.
+   */
+  public abstract void dropAndRenameTables(RelationKey oldRelation, RelationKey newRelation) throws DbException;
+
+  /**
+   * Drop the specified table, if it exists.
+   * 
+   * @param relationKey the table to be dropped.
+   * @throws DbException if there is an error dropping the table.
+   */
+  public abstract void dropTableIfExists(RelationKey relationKey) throws DbException;
 }

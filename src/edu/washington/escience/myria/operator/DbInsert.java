@@ -36,11 +36,13 @@ public class DbInsert extends RootOperator {
   private final boolean overwriteTable;
   /** The statement used to insert tuples into the database. */
   private String insertString;
+  /** The name of the table the tuples should be inserted into. */
+  private RelationKey tempRelationKey;
 
   /**
-   * Constructs an insertion operator to store the tuples from the specified child in a SQLite database in the specified
-   * file. If the table does not exist, it will be created; if it does exist then old data will persist and new data
-   * will be inserted.
+   * Constructs an insertion operator to store the tuples from the specified child into the specified database. If the
+   * table does not exist, it will be created; if it does exist then old data will persist and new data will be
+   * inserted.
    * 
    * @param child the source of tuples to be inserted.
    * @param relationKey the key of the table the tuples should be inserted into.
@@ -51,9 +53,9 @@ public class DbInsert extends RootOperator {
   }
 
   /**
-   * Constructs an insertion operator to store the tuples from the specified child in a SQLite database in the specified
-   * file. If the table does not exist, it will be created; if it does exist then old data will persist and new data
-   * will be inserted.
+   * Constructs an insertion operator to store the tuples from the specified child into the worker's default database.
+   * If the table does not exist, it will be created. If <code>overwriteTable</code> is <code>true</code>, any existing
+   * data will be dropped.
    * 
    * @param child the source of tuples to be inserted.
    * @param relationKey the key of the table the tuples should be inserted into.
@@ -64,10 +66,9 @@ public class DbInsert extends RootOperator {
   }
 
   /**
-   * Constructs an insertion operator to store the tuples from the specified child in a SQLite database in the specified
-   * file. If the table does not exist, it will be created. If the table exists and overwriteTable is true, the existing
-   * data will be dropped from the database before the new data is inserted. If overwriteTable is false, any existing
-   * data will remain and new data will be appended.
+   * Constructs an insertion operator to store the tuples from the specified child into the specified database. If the
+   * table does not exist, it will be created. If <code>overwriteTable</code> is <code>true</code>, any existing data
+   * will be dropped.
    * 
    * @param child the source of tuples to be inserted.
    * @param relationKey the key of the table the tuples should be inserted into.
@@ -126,16 +127,31 @@ public class DbInsert extends RootOperator {
       conn.dispose();
     }
 
-    /* open the JDBC Connection */
+    /* open the database connection */
     accessMethod = AccessMethod.of(connectionInfo.getDbms(), connectionInfo, false);
+
+    if (overwriteTable) {
+      /* If overwriting, we insert into a temp table and then on success we drop the old and rename. */
+      tempRelationKey = RelationKey.of(relationKey.getUserName(), "MyriaSysTemp", relationKey.getRelationName());
+      /* Drop the temp table, if it exists. */
+      accessMethod.dropTableIfExists(tempRelationKey);
+    } else {
+      /* Otherwise go ahead and write into the same table. */
+      tempRelationKey = relationKey;
+    }
+
     /* Set up the insert statement. */
-    insertString = accessMethod.insertStatementFromSchema(getSchema(), relationKey);
+    insertString = accessMethod.insertStatementFromSchema(getSchema(), tempRelationKey);
     /* create the table */
-    accessMethod.createTable(relationKey, getSchema(), overwriteTable);
+    accessMethod.createTableIfNotExists(tempRelationKey, getSchema());
   }
 
   @Override
   protected void childEOS() throws DbException {
+    /* If the child finished, we're done too. If in overwrite mode, drop the existing table and rename. */
+    if (overwriteTable) {
+      accessMethod.dropAndRenameTables(relationKey, tempRelationKey);
+    }
   }
 
   @Override
