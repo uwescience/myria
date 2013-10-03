@@ -432,6 +432,19 @@ public class TupleBatchBuffer {
   }
 
   /**
+   * Append the referenced row from the source {@link TupleBatch} to this {@link TupleBatchBuffer}.
+   * 
+   * @param sourceBatch the {@link TupleBatch} from which data will be retrieved.
+   * @param sourceRow the row in the source column from which data will be retrieved.
+   */
+  public final void put(final TupleBatch sourceBatch, final int sourceRow) {
+    List<Column<?>> sourceColumns = sourceBatch.getDataColumns();
+    for (int col = 0; col < sourceColumns.size(); ++col) {
+      put(col, sourceColumns.get(col), sourceRow);
+    }
+  }
+
+  /**
    * Append the specified value to the specified column.
    * 
    * @param column index of the column.

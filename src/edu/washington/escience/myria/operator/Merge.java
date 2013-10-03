@@ -1,9 +1,10 @@
 package edu.washington.escience.myria.operator;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.Comparator;
 import java.util.Objects;
+import java.util.PriorityQueue;
+import java.util.Queue;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
@@ -29,20 +30,104 @@ public final class Merge extends NAryOperator {
   private final int[] sortedColumns;
 
   /**
-   * Fairly get data from children.
-   * */
-  private transient int childIdxToGet;
-
-  /**
    * Contains a tuple batch for each child.
    */
-  private transient ArrayList<LinkedList<ArrayList<Object>>> tupleBuffer =
-      new ArrayList<LinkedList<ArrayList<Object>>>();;
+  private transient ArrayList<TupleBatch> childBatches = new ArrayList<TupleBatch>();
+
+  /**
+   * Index that points to the current location in the tupleBuffer of all children.
+   */
+  private transient ArrayList<Integer> pointerIntoChildBatches = new ArrayList<Integer>();
 
   /**
    * The buffer holding the results.
    */
   private transient TupleBatchBuffer ans;
+
+  /**
+   * Use a heap to find the smallest tuple (actually just the child, where the pointer points to the smallest tuple).
+   */
+  private transient Queue<Integer> heap;
+
+  /**
+   * Comparator for tuples in tuple batch.
+   * 
+   * @author dominik
+   * 
+   */
+  class TupleComparator implements Comparator<Integer> {
+    @Override
+    public int compare(final Integer left, final Integer right) {
+      // System.out.println("compare " + left + " " + right);
+      Integer leftPointer = pointerIntoChildBatches.get(left);
+      Integer rightPointer = pointerIntoChildBatches.get(right);
+      TupleBatch leftTb = childBatches.get(left);
+      TupleBatch rightTb = childBatches.get(right);
+      Preconditions.checkArgument(leftTb.numTuples() > leftPointer);
+      Preconditions.checkArgument(rightTb.numTuples() > rightPointer);
+      for (int columnIndex = 0; columnIndex < sortedColumns.length; columnIndex++) {
+        Type columnType = getSchema().getColumnType(columnIndex);
+        Op op;
+        if (ascending[columnIndex]) {
+          op = Op.GREATER_THAN;
+        } else {
+          op = Op.LESS_THAN;
+        }
+        switch (columnType) {
+          case INT_TYPE:
+            if (Type.compare(op, leftTb.getInt(columnIndex, leftPointer), rightTb.getInt(columnIndex, rightPointer))) {
+              return 1;
+            }
+            break;
+
+          case FLOAT_TYPE:
+            if (Type
+                .compare(op, leftTb.getFloat(columnIndex, leftPointer), rightTb.getFloat(columnIndex, rightPointer))) {
+              return 1;
+            }
+            break;
+
+          case LONG_TYPE:
+            if (Type.compare(op, leftTb.getLong(columnIndex, leftPointer), rightTb.getLong(columnIndex, rightPointer))) {
+              return 1;
+            }
+            break;
+
+          case DOUBLE_TYPE:
+            if (Type.compare(op, leftTb.getDouble(columnIndex, leftPointer), rightTb.getDouble(columnIndex,
+                rightPointer))) {
+              return 1;
+            }
+            break;
+
+          case BOOLEAN_TYPE:
+            if (Type.compare(op, leftTb.getBoolean(columnIndex, leftPointer), rightTb.getBoolean(columnIndex,
+                rightPointer))) {
+              return 1;
+            }
+            break;
+
+          case STRING_TYPE:
+            if (Type.compare(op, leftTb.getString(columnIndex, leftPointer), rightTb.getString(columnIndex,
+                rightPointer))) {
+              return 1;
+            }
+            break;
+
+          case DATETIME_TYPE:
+            if (Type.compare(op, leftTb.getDateTime(columnIndex, leftPointer), rightTb.getDateTime(columnIndex,
+                rightPointer))) {
+              return 1;
+            }
+            break;
+
+          default:
+            throw new UnsupportedOperationException("Unknown type " + columnType);
+        }
+      }
+      return -1;
+    }
+  }
 
   /**
    * @param children the children to be merged.
@@ -58,7 +143,7 @@ public final class Merge extends NAryOperator {
 
   @Override
   protected void cleanup() throws DbException {
-    tupleBuffer.clear();
+    childBatches.clear();
   }
 
   @Override
@@ -73,94 +158,69 @@ public final class Merge extends NAryOperator {
     while (nexttb == null) {
       // System.out.println("Size of ans " + ans.numTuples());
 
-      // index of the next tuple that is added to ans
-      int nextIndex = -1;
-
-      List<Object> nextTuple = null;
-
       numEOS = 0;
 
-      for (int numMerge = 0; numMerge < numChildren(); numMerge++) {
-        childIdxToGet = (childIdxToGet + 1) % numChildren();
-        // System.out.println("Buffer " + childIdxToGet + " " + tupleBuffer.get(childIdxToGet).size());
+      // TODO: might break if children never deliver anything
 
-        // if (tupleBuffer.get(childIdxToGet).size() > 0) {
-        // System.out.println(tupleBuffer.get(childIdxToGet).getFirst());
-        // }
-
-        Operator child = children[childIdxToGet];
-
+      // fill the buffers, if possible and necessary
+      boolean notEnoughData = false;
+      for (int childId = 0; childId < numChildren(); childId++) {
+        Operator child = children[childId];
         if (child.eos()) {
           numEOS++;
-        }
-
-        LinkedList<ArrayList<Object>> tuples = tupleBuffer.get(childIdxToGet);
-
-        if (tuples.size() == 0 && !child.eos()) {
-          TupleBatch tb = child.fetchNextReady();
-          if (tb == null) {
-            // System.out.println("Break because child cannot deliver " + childIdxToGet);
-            nextIndex = -1;
-            nextTuple = null;
-            break;
-          } else {
-            importTuplesIntoBuffer(childIdxToGet, tb);
-          }
-        }
-
-        if (tuples.size() == 0) {
           continue;
         }
-
-        ArrayList<Object> currentTuple = tuples.getFirst();
-
-        if (nextTuple != null) {
-          for (int j = 0; j < sortedColumns.length; j++) {
-            int columnIndex = sortedColumns[j];
-
-            Object valueInTuple = currentTuple.get(columnIndex);
-            Object operand = nextTuple.get(columnIndex);
-            Type columnType = getSchema().getColumnType(j);
-            Op operator = Op.GREATER_THAN;
-            if (ascending[j]) {
-              operator = Op.LESS_THAN;
-            }
-            // System.out.println("Operator: " + operator);
-            boolean isSmallest = columnType.compareObjects(operator, valueInTuple, operand);
-
-            if (isSmallest) {
-              nextTuple = currentTuple;
-              nextIndex = childIdxToGet;
-            }
+        if (childBatches.get(childId) == null) {
+          TupleBatch tb = child.fetchNextReady();
+          if (tb != null) {
+            childBatches.set(childId, tb);
+            pointerIntoChildBatches.set(childId, 0);
+            // this reads the index after we refilled the batch or
+            // when the batches are initially loaded
+            heap.add(childId);
+          } else {
+            notEnoughData = true;
+            break;
           }
-        } else {
-          nextTuple = currentTuple;
-          nextIndex = childIdxToGet;
         }
       }
 
-      if (nextIndex >= 0) {
-        // System.out.println("Take " + nextIndex);
-        addToAns(tupleBuffer.get(nextIndex).removeFirst());
-      }
-
-      nexttb = ans.popFilled();
-      if (nexttb != null) {
-        // System.out.println("Size of next" + nexttb.numTuples());
+      if (notEnoughData) {
         break;
       }
 
-      // if all buffers are empty, there is no point in
-      // continuing to fill ans
-      boolean allBuffersEmpty = true;
-      for (int i = 0; i < numChildren(); i++) {
-        if (tupleBuffer.get(i).size() > 0) {
-          allBuffersEmpty = false;
-          break;
+      // System.out.println("Size of heap " + heap.size() + " num EOS:" + numEOS + " heap " + heap);
+      for (int i = 0; i < children.length; i++) {
+        if (!children[i].eos() && (childBatches.get(i) != null)) {
+          // System.out.print(childBatches.get(i).getObject(0, pointerIntoChildBatches.get(i)) + " ");
         }
       }
-      if (allBuffersEmpty) {
-        // System.out.println("All buffers empty");
+      // System.out.println();
+
+      Integer smallestTb = heap.poll();
+      // System.out.println("Smallest " + smallestTb);
+      if (smallestTb != null) {
+        Integer positionInSmallestTb = pointerIntoChildBatches.get(smallestTb);
+        ans.put(childBatches.get(smallestTb), positionInSmallestTb);
+
+        // reset tb or increase position pointer
+        if (positionInSmallestTb == childBatches.get(smallestTb).numTuples() - 1) {
+          pointerIntoChildBatches.set(smallestTb, -1);
+          childBatches.set(smallestTb, null);
+        } else {
+          pointerIntoChildBatches.set(smallestTb, positionInSmallestTb + 1);
+          // we either re-add the index to the child here or when we fetched more data
+          // we cannot re-add it here if the data is not present
+          heap.add(smallestTb);
+        }
+        nexttb = ans.popFilled();
+      }
+
+      if (numEOS == numChildren()) {
+        setEOS();
+        Preconditions.checkArgument(heap.size() == 0);
+        // Preconditions.checkArgument(nexttb != null);
+        Preconditions.checkArgument(ans.numTuples() == 0);
         break;
       }
     }
@@ -169,52 +229,19 @@ public final class Merge extends NAryOperator {
       nexttb = ans.popAny();
     }
 
-    if (numEOS == numChildren()) {
-      setEOS();
-      Preconditions.checkArgument(nexttb != null);
-      Preconditions.checkArgument(ans.numTuples() == 0);
-    }
-
     // System.out.println("Tuple buffer " + nexttb);
     return nexttb;
   }
 
-  /**
-   * Imports all the tuples form a column stored tuple batch into tuple store.
-   * 
-   * @param childIndex which child buffer should be filled
-   * @param tb the tuple buffer to be imported
-   */
-  private void importTuplesIntoBuffer(final int childIndex, final TupleBatch tb) {
-    for (int i1 = 0; i1 < tb.numTuples(); i1++) {
-      final ArrayList<Object> tuple = new ArrayList<Object>();
-      tuple.ensureCapacity(tb.numColumns());
-      for (int j = 0; j < tb.numColumns(); j++) {
-        tuple.add(tb.getObject(j, i1));
-      }
-      tupleBuffer.get(childIndex).add(tuple);
-    }
-  }
-
-  /**
-   * Append a tuple to ans.
-   * 
-   * @param cntTuple a tuple as list of objects.
-   */
-  private void addToAns(final List<Object> cntTuple) {
-    for (int i = 0; i < getSchema().numColumns(); ++i) {
-      ans.put(i, cntTuple.get(i));
-    }
-  }
-
   @Override
-  public void init(final ImmutableMap<String, Object> execEnvVars) {
+  public void init(final ImmutableMap<String, Object> execEnvVars) throws Exception {
     ans = new TupleBatchBuffer(getSchema());
-    childIdxToGet = 0;
-
     for (int i = 0; i < numChildren(); i++) {
-      tupleBuffer.add(new LinkedList<ArrayList<Object>>());
+      childBatches.add(null);
     }
+
+    Comparator<Integer> comparator = new TupleComparator();
+    heap = new PriorityQueue<Integer>(numChildren(), comparator);
   }
 
   @Override
@@ -223,6 +250,7 @@ public final class Merge extends NAryOperator {
     Preconditions.checkArgument(children.length > 0);
     for (Operator op : children) {
       Preconditions.checkArgument(op.getSchema().equals(children[0].getSchema()));
+      pointerIntoChildBatches.add(-1);
     }
     this.children = children;
   }
