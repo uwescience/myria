@@ -109,9 +109,9 @@ public class OperatorTest {
   @Test
   public void testMergeCount() throws DbException {
     TupleSource[] children = new TupleSource[3];
-    children[0] = new TupleSource(generateRandomTuples(123, true));
-    children[1] = new TupleSource(generateRandomTuples(42, true));
-    children[2] = new TupleSource(generateRandomTuples(99, true));
+    children[0] = new TupleSource(generateRandomTuples(12300, true));
+    children[1] = new TupleSource(generateRandomTuples(4200, true));
+    children[2] = new TupleSource(generateRandomTuples(9900, true));
     NAryOperator merge = new Merge(children, new int[] { 0 }, new boolean[] { true });
     merge.open(null);
     TupleBatch tb = null;
@@ -123,15 +123,15 @@ public class OperatorTest {
       }
     }
     merge.close();
-    assertEquals(123 + 42 + 99, count);
+    assertEquals(12300 + 4200 + 9900, count);
   }
 
   @Test
   public void testMergeTuplesSorted() throws DbException {
     TupleBatchBuffer[] randomTuples = new TupleBatchBuffer[3];
-    randomTuples[0] = generateRandomTuples(123, true);
-    randomTuples[1] = generateRandomTuples(42, true);
-    randomTuples[2] = generateRandomTuples(99, true);
+    randomTuples[0] = generateRandomTuples(12300, true);
+    randomTuples[1] = generateRandomTuples(4200, true);
+    randomTuples[2] = generateRandomTuples(9900, true);
 
     TupleSource[] children = new TupleSource[3];
     children[0] = new TupleSource(randomTuples[0]);
