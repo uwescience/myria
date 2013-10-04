@@ -18,6 +18,7 @@ import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.accessmethod.SQLiteInfo;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
@@ -51,13 +52,32 @@ public class TwitterSingleNodeJoinSpeedTest {
   /** Whether we were able to copy the data. */
   private static boolean successfulSetup = false;
 
+  /** The name of the indexed twitter subset. */
+  private final static RelationKey indexedSubset = RelationKey.of("Speedtest", "Twitter", "twitter_subset_with_index");
+
   @BeforeClass
-  public static void loadSpecificTestData() {
+  public static void loadSpecificTestData() throws DbException {
     final File file = new File(DATASET_PATH);
     if (!file.exists()) {
       throw new RuntimeException("Unable to read " + DATASET_PATH
           + ". Copy it from /projects/db7/dataset/twitter/speedtest .");
     }
+
+    /* Create a version of the twitter subset that has an index. */
+    final ImmutableList<Type> table1Types = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
+    final ImmutableList<String> table1ColumnNames = ImmutableList.of("follower", "followee");
+    final Schema tableSchema = new Schema(table1Types, table1ColumnNames);
+    final DbQueryScan scan = new DbQueryScan(connectionInfo, "select * from twitter_subset", tableSchema);
+    final DbInsert insert =
+        new DbInsert(scan, indexedSubset, connectionInfo, true, ImmutableList.of((List<IndexRef>) ImmutableList.of(
+            IndexRef.of(0), IndexRef.of(1)), ImmutableList.of(IndexRef.of(1), IndexRef.of(0))));
+    insert.open(execEnvVars);
+    while (!insert.eos()) {
+      insert.nextReady();
+    }
+    insert.cleanup();
+    insert.close();
+
     successfulSetup = true;
   }
 
@@ -185,6 +205,32 @@ public class TwitterSingleNodeJoinSpeedTest {
     final Schema resultSchema = new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("COUNT"));
     final String query =
         "SELECT COUNT(*) FROM (SELECT DISTINCT twitterL.follower,twitterR.followee FROM twitter_subset twitterL JOIN twitter_subset twitterR ON twitterL.followee=twitterR.follower)";
+    final DbQueryScan scanResult = new DbQueryScan(connectionInfo, query, resultSchema);
+
+    /* Run insert to completion. */
+    scanResult.open(execEnvVars);
+    TupleBatch tb = scanResult.nextReady();
+    while (!scanResult.eos() && tb == null) {
+      tb = scanResult.nextReady();
+    }
+    assertTrue(tb != null);
+    scanResult.cleanup();
+    scanResult.close();
+
+    /* Check the result. */
+    assertTrue(tb.getLong(0, 0) == 3361461);
+  }
+
+  @Test
+  public void twitterJoinInDatabaseWithIndexTest() throws Exception {
+    assertTrue(successfulSetup);
+
+    final Schema resultSchema = new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("COUNT"));
+    final String query =
+        "SELECT COUNT(*) FROM (SELECT DISTINCT twitterL.follower,twitterR.followee FROM "
+            + indexedSubset.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE) + " twitterL JOIN "
+            + indexedSubset.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE)
+            + " twitterR ON twitterL.followee=twitterR.follower)";
     final DbQueryScan scanResult = new DbQueryScan(connectionInfo, query, resultSchema);
 
     /* Run insert to completion. */
