@@ -15,6 +15,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.base.Preconditions;
+
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
@@ -293,6 +295,103 @@ public final class JdbcAccessMethod extends AccessMethod {
     }
   }
 
+  /**
+   * @param relationKey the relation to be indexed.
+   * @param index the list of columns in the index.
+   * @return the canonical RelationKey of the index of that table on that column.
+   */
+  private RelationKey getIndexName(final RelationKey relationKey, final List<IndexRef> index) {
+    Objects.requireNonNull(relationKey);
+    Objects.requireNonNull(index);
+
+    /* All indexes go in a separate "program" that has the name "__myria_indexes" appended to it. */
+    StringBuilder name = new StringBuilder(relationKey.getProgramName()).append("__myria_indexes");
+    if (jdbcInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_MYSQL)) {
+      /* Rename is not supported, append a timestamp. */
+      name.append('_').append(System.nanoTime());
+    }
+    final String indexProgramName = name.toString();
+
+    /* Build the relation name for the index. */
+    name = new StringBuilder(relationKey.getRelationName());
+    for (IndexRef i : index) {
+      Objects.requireNonNull(i);
+      name.append('_').append(i.getColumn());
+      if (!i.isAscending()) {
+        name.append('D');
+      }
+    }
+
+    RelationKey indexRelationKey = RelationKey.of(relationKey.getUserName(), indexProgramName, name.toString());
+    return indexRelationKey;
+  }
+
+  /**
+   * @param schema the schema of the relation to be indexed.
+   * @param index the list of columns to be indexed.
+   * @return the string defining the index, e.g., "(col1, col2, col3)".
+   */
+  private String getIndexColumns(final Schema schema, final List<IndexRef> index) {
+    Objects.requireNonNull(schema);
+    Objects.requireNonNull(index);
+
+    StringBuilder columns = new StringBuilder("(");
+    boolean first = true;
+    for (IndexRef i : index) {
+      Objects.requireNonNull(i);
+      Preconditions.checkElementIndex(i.getColumn(), schema.numColumns());
+      if (!first) {
+        columns.append(',');
+      }
+      first = false;
+      columns.append(schema.getColumnName(i.getColumn()));
+      if (i.isAscending()) {
+        columns.append(" ASC");
+      } else {
+        columns.append(" DESC");
+      }
+    }
+    columns.append(')');
+
+    return columns.toString();
+  }
+
+  @Override
+  public void createIndexes(final RelationKey relationKey, final Schema schema, final List<List<IndexRef>> indexes)
+      throws DbException {
+    Objects.requireNonNull(relationKey);
+    Objects.requireNonNull(schema);
+    Objects.requireNonNull(indexes);
+
+    String sourceTableName = relationKey.toString(jdbcInfo.getDbms());
+
+    for (List<IndexRef> index : indexes) {
+      String indexName = getIndexName(relationKey, index).toString(jdbcInfo.getDbms());
+      String indexColumns = getIndexColumns(schema, index);
+
+      StringBuilder statement = new StringBuilder("CREATE INDEX ");
+      statement.append(indexName).append(" ON ").append(sourceTableName).append(indexColumns);
+
+      execute(statement.toString());
+    }
+  }
+
+  @Override
+  public void renameIndexes(final RelationKey oldRelation, final RelationKey newRelation,
+      final List<List<IndexRef>> indexes) throws DbException {
+
+    if (jdbcInfo.getDbms().equals(MyriaConstants.STORAGE_SYSTEM_MYSQL)) {
+      /* Do nothing -- rather than renaming the right way, we create every index with a different unique name. */
+      return;
+    }
+
+    for (List<IndexRef> index : indexes) {
+      String oldName = getIndexName(oldRelation, index).toString(jdbcInfo.getDbms());
+      String newName = getIndexName(newRelation, index).toString(jdbcInfo.getDbms());
+      StringBuilder statement = new StringBuilder("ALTER INDEX ").append(oldName).append(" RENAME TO ").append(newName);
+      execute(statement.toString());
+    }
+  }
 }
 
 /**

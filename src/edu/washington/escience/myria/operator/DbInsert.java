@@ -4,17 +4,22 @@
 package edu.washington.escience.myria.operator;
 
 import java.io.File;
+import java.util.List;
 import java.util.Objects;
 
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.accessmethod.AccessMethod;
+import edu.washington.escience.myria.accessmethod.AccessMethod.IndexRef;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.accessmethod.SQLiteInfo;
 
@@ -38,6 +43,8 @@ public class DbInsert extends RootOperator {
   private String insertString;
   /** The name of the table the tuples should be inserted into. */
   private RelationKey tempRelationKey;
+  /** The indexes to be created on the table. Each entry is a list of columns. */
+  private final List<List<IndexRef>> indexes;
 
   /**
    * Constructs an insertion operator to store the tuples from the specified child into the specified database. If the
@@ -77,11 +84,51 @@ public class DbInsert extends RootOperator {
    */
   public DbInsert(final Operator child, final RelationKey relationKey, final ConnectionInfo connectionInfo,
       final boolean overwriteTable) {
+    this(child, relationKey, connectionInfo, overwriteTable, null);
+  }
+
+  /**
+   * Constructs an insertion operator to store the tuples from the specified child into the specified database. If the
+   * table does not exist, it will be created. If <code>overwriteTable</code> is <code>true</code>, any existing data
+   * will be dropped.
+   * 
+   * @param child the source of tuples to be inserted.
+   * @param relationKey the key of the table the tuples should be inserted into.
+   * @param connectionInfo the parameters of the database connection.
+   * @param overwriteTable whether to overwrite a table that already exists.
+   * @param indexes the indexes to be created on the table. Each entry is a list of columns.
+   */
+  public DbInsert(final Operator child, final RelationKey relationKey, final ConnectionInfo connectionInfo,
+      final boolean overwriteTable, final List<List<IndexRef>> indexes) {
     super(child);
     Objects.requireNonNull(relationKey);
     this.connectionInfo = connectionInfo;
     this.relationKey = relationKey;
     this.overwriteTable = overwriteTable;
+    /* Sanity check arguments -- cannot create an index in append mode. */
+    Preconditions.checkArgument(overwriteTable || indexes == null || indexes.size() == 0,
+        "Cannot create indexes when appending to a relation.");
+    /*
+     * 1) construct immutable copies of the given indexes.
+     * 
+     * 2) ensure that the index requests are valid:
+     * 
+     * - lists of column references must be non-null.
+     * 
+     * - column references are unique per index.
+     */
+    if (indexes != null) {
+      ImmutableList.Builder<List<IndexRef>> index = ImmutableList.builder();
+      for (List<IndexRef> i : indexes) {
+        Objects.requireNonNull(i);
+        Preconditions.checkArgument(i.size() == ImmutableSet.copyOf(i).size(),
+            "Column references cannot be repeated in index definition: %s", i);
+        index.add(ImmutableList.copyOf(i));
+      }
+      this.indexes = index.build();
+    } else {
+      this.indexes = ImmutableList.of();
+    }
   }
 
   @Override
@@ -142,8 +189,10 @@ public class DbInsert extends RootOperator {
 
     /* Set up the insert statement. */
     insertString = accessMethod.insertStatementFromSchema(getSchema(), tempRelationKey);
-    /* create the table */
+    /* Create the table */
     accessMethod.createTableIfNotExists(tempRelationKey, getSchema());
+    /* Create indexes. */
+    accessMethod.createIndexes(tempRelationKey, getSchema(), indexes);
   }
 
   @Override
