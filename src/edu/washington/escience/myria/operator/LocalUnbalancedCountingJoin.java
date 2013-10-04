@@ -5,7 +5,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
@@ -144,80 +143,44 @@ public class LocalUnbalancedCountingJoin extends BinaryOperator {
       // to be implemented
     }
 
-    if (eoi()) {
-      ansTBB.put(0, ans);
-      return ansTBB.popAny();
-    }
-
-    final Operator left = getLeft();
     final Operator right = getRight();
-    TupleBatch leftTB = null;
-    TupleBatch rightTB = null;
-    int numEOS = 0;
-    int numNoData = 0;
 
-    while (numEOS < 2 && numNoData < 2) {
-
-      numEOS = 0;
-      if (left.eos()) {
-        numEOS += 1;
-      }
-      if (right.eos()) {
-        numEOS += 1;
-      }
-      numNoData = numEOS;
-
-      leftTB = null;
-      rightTB = null;
-      if (!right.eos()) {
-        rightTB = right.nextReady();
-        if (rightTB != null) {
-          processRightChildTB(rightTB);
-        } else {
-          if (right.eoi()) {
-            right.setEOI(false);
-            childrenEOI[1] = true;
-            checkEOSAndEOI();
-            if (eoi()) {
-              break;
-            }
-          } else if (right.eos()) {
-            numEOS++;
-          } else {
-            numNoData++;
-          }
+    /* Drain the right child. */
+    while (!right.eos()) {
+      TupleBatch rightTB = right.nextReady();
+      if (rightTB == null) {
+        /* The right child may have realized it's EOS now. If so, we must move onto left child to avoid livelock. */
+        if (right.eos()) {
+          break;
         }
+        return null;
       }
-
-      if (right.eos() && !left.eos()) {
-        leftTB = left.nextReady();
-        if (leftTB != null) { // data
-          processLeftChildTB(leftTB);
-        } else {
-          // eoi or eos or no data
-          if (left.eoi()) {
-            left.setEOI(false);
-            childrenEOI[0] = true;
-            checkEOSAndEOI();
-            if (eoi()) {
-              break;
-            }
-          } else if (left.eos()) {
-            numEOS++;
-          } else {
-            numNoData++;
-          }
-        }
-      }
+      processRightChildTB(rightTB);
     }
-    Preconditions.checkArgument(numEOS <= 2);
-    Preconditions.checkArgument(numNoData <= 2);
+
+    /* The right child is done, let's drain the left child. */
+    final Operator left = getLeft();
+    while (!left.eos()) {
+      TupleBatch leftTB = left.nextReady();
+      /*
+       * Left tuple has no data, but we may need to pop partially-full existing batches if left reached EOI/EOS. Break
+       * and check for termination.
+       */
+      if (leftTB == null) {
+        break;
+      }
+
+      /* Process the data and add new results to ans. */
+      processLeftChildTB(leftTB);
+    }
 
     checkEOSAndEOI();
-    if (eoi() || eos()) {
+    if (eos()) {
       ansTBB.put(0, ans);
       return ansTBB.popAny();
     }
+
+    /* If not eos, return null since there is no tuple can be processed right now */
     return null;
   }
 
