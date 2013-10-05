@@ -2,7 +2,6 @@ package edu.washington.escience.myria.operator;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
@@ -17,6 +16,8 @@ import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.parallel.QueryExecutionMode;
 import edu.washington.escience.myria.parallel.TaskResourceManager;
+import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.map.hash.TIntObjectHashMap;
 
 /**
  * 
@@ -46,7 +47,7 @@ public class LocalUnbalancedCountingJoin extends BinaryOperator {
   /**
    * A hash table for tuples from child 2. {Hashcode -> List of tuple indices with the same hash code}
    */
-  private transient HashMap<Integer, List<Integer>> hashTableIndices;
+  private transient TIntObjectHashMap<TIntArrayList> hashTableIndices;
 
   /**
    * The buffer holding the valid tuples from right.
@@ -55,7 +56,7 @@ public class LocalUnbalancedCountingJoin extends BinaryOperator {
   /**
    * How many times each key occurred from right.
    */
-  private transient List<Integer> occurredTimes;
+  private transient TIntArrayList occurredTimes;
   /**
    * The buffer holding the results.
    */
@@ -192,9 +193,9 @@ public class LocalUnbalancedCountingJoin extends BinaryOperator {
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     final Operator right = getRight();
-    hashTableIndices = new HashMap<Integer, List<Integer>>();
+    hashTableIndices = new TIntObjectHashMap<TIntArrayList>();
     hashTable = new TupleBuffer(right.getSchema().getSubSchema(compareIndx2));
-    occurredTimes = new ArrayList<Integer>();
+    occurredTimes = new TIntArrayList();
     ans = 0;
     ansTBB = new TupleBatchBuffer(outputSchema);
     TaskResourceManager qem = (TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER);
@@ -246,8 +247,9 @@ public class LocalUnbalancedCountingJoin extends BinaryOperator {
       boolean found = false;
       if (hashTableIndices.get(cntHashCode) != null) {
         // if there is, find if there is tuple with same key, update if so
-        List<Integer> indexList = hashTableIndices.get(cntHashCode);
-        for (final int index : indexList) {
+        TIntArrayList indexList = hashTableIndices.get(cntHashCode);
+        for (int j = 0; j < indexList.size(); j++) {
+          int index = indexList.get(j);
           if (tupleEquals(cntTuple, hashTable, index, compareIndx2)) {
             occurredTimes.set(index, occurredTimes.get(index) + 1);
             found = true;
@@ -256,7 +258,7 @@ public class LocalUnbalancedCountingJoin extends BinaryOperator {
         }
       } else {
         // create a hash table bucket if there isn't one
-        hashTableIndices.put(cntHashCode, new ArrayList<Integer>());
+        hashTableIndices.put(cntHashCode, new TIntArrayList());
       }
 
       if (!found) {
@@ -283,9 +285,10 @@ public class LocalUnbalancedCountingJoin extends BinaryOperator {
       }
 
       final int cntHashCode = tb.hashCode(i, compareIndx1);
-      List<Integer> indexList = hashTableIndices.get(cntHashCode);
+      TIntArrayList indexList = hashTableIndices.get(cntHashCode);
       if (indexList != null) {
-        for (final int index : indexList) {
+        for (int j = 0; j < indexList.size(); j++) {
+          int index = indexList.get(j);
           if (tupleEquals(cntTuple, hashTable, index, compareIndx1)) {
             ans += occurredTimes.get(index);
           }

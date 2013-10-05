@@ -1,7 +1,6 @@
 package edu.washington.escience.myria.operator;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import com.google.common.base.Preconditions;
@@ -18,6 +17,8 @@ import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.parallel.QueryExecutionMode;
 import edu.washington.escience.myria.parallel.TaskResourceManager;
+import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.map.hash.TIntObjectHashMap;
 
 /**
  * This is an implementation of unbalanced hash join. This operator only builds hash tables for its right child, thus
@@ -54,7 +55,7 @@ public final class LocalUnbalancedJoin extends BinaryOperator {
   /**
    * A hash table for tuples from child 2. {Hashcode -> List of tuple indices with the same hash code}
    */
-  private transient HashMap<Integer, List<Integer>> hashTableIndices;
+  private transient TIntObjectHashMap<TIntArrayList> hashTableIndices;
 
   /**
    * The buffer holding the valid tuples from right.
@@ -310,7 +311,7 @@ public final class LocalUnbalancedJoin extends BinaryOperator {
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     final Operator right = getRight();
-    hashTableIndices = new HashMap<Integer, List<Integer>>();
+    hashTableIndices = new TIntObjectHashMap<TIntArrayList>();
     hashTable = new TupleBuffer(right.getSchema());
     if (outputSchema == null) {
       generateSchema();
@@ -363,7 +364,7 @@ public final class LocalUnbalancedJoin extends BinaryOperator {
       final int cntHashCode = tb.hashCode(i, compareIndx2);
 
       if (hashTableIndices.get(cntHashCode) == null) {
-        hashTableIndices.put(cntHashCode, new ArrayList<Integer>());
+        hashTableIndices.put(cntHashCode, new TIntArrayList());
       }
       hashTableIndices.get(cntHashCode).add(nextIndex);
       for (int j = 0; j < tb.numColumns(); ++j) {
@@ -385,9 +386,10 @@ public final class LocalUnbalancedJoin extends BinaryOperator {
       }
 
       final int cntHashCode = tb.hashCode(i, compareIndx1);
-      List<Integer> indexList = hashTableIndices.get(cntHashCode);
+      TIntArrayList indexList = hashTableIndices.get(cntHashCode);
       if (indexList != null) {
-        for (final int index : indexList) {
+        for (int j = 0; j < indexList.size(); j++) {
+          int index = indexList.get(j);
           if (tupleEquals(cntTuple, hashTable, index, compareIndx1, compareIndx2)) {
             addToAns(cntTuple, hashTable, index);
           }
