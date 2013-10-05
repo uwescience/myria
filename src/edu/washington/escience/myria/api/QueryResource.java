@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -164,6 +165,30 @@ public final class QueryResource {
     if (!cache) {
       response.cacheControl(MyriaApiUtils.doNotCache());
     }
+    return response.build();
+  }
+
+  /**
+   * Cancel a running query.
+   * 
+   * @param queryId the query id.
+   * @param uriInfo the URL of the current request.
+   * @return whether the cancellation succeeded.
+   * @throws CatalogException if there is an error in the catalog.
+   */
+  @DELETE
+  @Path("query-{query_id}")
+  public Response cancelQuery(@PathParam("query_id") final long queryId, @Context final UriInfo uriInfo)
+      throws CatalogException {
+    try {
+      server.killQuery(queryId);
+    } catch (NullPointerException e) {
+      throw new MyriaApiException(Status.BAD_REQUEST, "That query is not running.");
+    }
+    final QueryStatusEncoding queryStatus = server.getQueryStatus(queryId);
+    final URI uri = uriInfo.getAbsolutePath();
+    queryStatus.url = uri;
+    ResponseBuilder response = Response.ok().location(uri).entity(queryStatus);
     return response.build();
   }
 
