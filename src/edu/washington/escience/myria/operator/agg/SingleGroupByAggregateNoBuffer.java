@@ -465,6 +465,9 @@ public class SingleGroupByAggregateNoBuffer extends UnaryOperator {
 
   @Override
   public final Schema getSchema() {
+    if (schema == null) {
+      generateSchema();
+    }
     return schema;
   }
 

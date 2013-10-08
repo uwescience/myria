@@ -2,6 +2,7 @@ package edu.washington.escience.myria.api;
 
 import java.net.URI;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -14,13 +15,12 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
+import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
 import org.slf4j.LoggerFactory;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
@@ -75,7 +75,7 @@ public final class QueryResource {
       throw e;
     } catch (Exception e) {
       /* Other exceptions mean that the request itself was likely bad. */
-      throw e;
+      throw new MyriaApiException(Status.BAD_REQUEST, e);
     }
 
     Set<Integer> usingWorkers = new HashSet<Integer>();
@@ -99,11 +99,10 @@ public final class QueryResource {
     /* Start the query, and get its Server-assigned Query ID */
     QueryFuture qf;
     try {
-      ObjectMapper mapper = MyriaJsonMapperProvider.newMapper();
-      qf =
-          server.submitQuery(query.rawDatalog, query.logicalRa, mapper.writeValueAsString(query.fragments), masterPlan,
-              queryPlan);
-    } catch (DbException | CatalogException | JsonProcessingException e) {
+      qf = server.submitQuery(query.rawDatalog, query.logicalRa, query, masterPlan, queryPlan);
+    } catch (IllegalArgumentException e) {
+      throw new MyriaApiException(Status.BAD_REQUEST, e);
+    } catch (DbException | CatalogException e) {
       throw new MyriaApiException(Status.INTERNAL_SERVER_ERROR, e);
     }
     long queryId = qf.getQuery().getQueryID();
@@ -119,12 +118,12 @@ public final class QueryResource {
         }
       }
     });
-    /* In the response, tell the client what ID this query was assigned. */
-    URI queryUri = uriInfo.getAbsolutePathBuilder().path("query-" + queryId).build();
     /* And return the queryStatus as it is now. */
     QueryStatusEncoding qs = server.getQueryStatus(queryId);
+    URI queryUri = getCanonicalResourcePath(uriInfo, queryId);
     qs.url = queryUri;
-    return Response.status(Status.ACCEPTED).location(queryUri).entity(qs).build();
+    return Response.status(Status.ACCEPTED).cacheControl(MyriaApiUtils.doNotCache()).location(queryUri).entity(qs)
+        .build();
   }
 
   /**
@@ -147,11 +146,13 @@ public final class QueryResource {
     }
     queryStatus.url = uri;
     Status httpStatus = Status.INTERNAL_SERVER_ERROR;
+    boolean cache = false;
     switch (queryStatus.status) {
       case SUCCESS:
       case ERROR:
       case KILLED:
         httpStatus = Status.OK;
+        cache = true;
         break;
       case ACCEPTED:
       case PAUSED:
@@ -159,6 +160,60 @@ public final class QueryResource {
         httpStatus = Status.ACCEPTED;
         break;
     }
-    return Response.status(httpStatus).location(uri).entity(queryStatus).build();
+    ResponseBuilder response = Response.status(httpStatus).location(uri).entity(queryStatus);
+    if (!cache) {
+      response.cacheControl(MyriaApiUtils.doNotCache());
+    }
+    return response.build();
+  }
+
+  /**
+   * Get information about a query. This includes when it started, when it finished, its URL, etc.
+   * 
+   * @param uriInfo the URL of the current request.
+   * @return information about the query.
+   * @throws CatalogException if there is an error in the catalog.
+   */
+  @GET
+  public Response getQueries(@Context final UriInfo uriInfo) throws CatalogException {
+    List<QueryStatusEncoding> queries = server.getQueries();
+    for (QueryStatusEncoding status : queries) {
+      status.url = getCanonicalResourcePath(uriInfo, status.queryId);
+    }
+    return Response.ok().cacheControl(MyriaApiUtils.doNotCache()).entity(queries).build();
+  }
+
+  /**
+   * @param uriInfo information about the URL of the request.
+   * @return the canonical URL for this API.
+   */
+  public static URI getCanonicalResourcePath(final UriInfo uriInfo) {
+    return getCanonicalResourcePathBuilder(uriInfo).build();
+  }
+
+  /**
+   * @param uriInfo information about the URL of the request.
+   * @return a builder for the canonical URL for this API.
+   */
+  public static UriBuilder getCanonicalResourcePathBuilder(final UriInfo uriInfo) {
+    return uriInfo.getBaseUriBuilder().path("/query");
+  }
+
+  /**
+   * @param uriInfo information about the URL of the request.
+   * @param queryId the id of the query.
+   * @return the canonical URL for this API.
+   */
+  public static URI getCanonicalResourcePath(final UriInfo uriInfo, final long queryId) {
+    return getCanonicalResourcePathBuilder(uriInfo, queryId).build();
+  }
+
+  /**
+   * @param uriInfo information about the URL of the request.
+   * @param queryId the id of the query.
+   * @return a builder for the canonical URL for this API.
+   */
+  public static UriBuilder getCanonicalResourcePathBuilder(final UriInfo uriInfo, final long queryId) {
+    return getCanonicalResourcePathBuilder(uriInfo).path("query-" + queryId);
   }
 }

@@ -50,11 +50,26 @@ public final class Project extends UnaryOperator {
 
   @Override
   public Schema getSchema() {
+    if (schema == null) {
+      schema = generateSchema();
+    }
     return schema;
   }
 
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    schema = getChild().getSchema().getSubSchema(outColumnIndices);
+    if (schema == null) {
+      schema = generateSchema();
+    }
+  }
+
+  /**
+   * @return the schema for this object.
+   */
+  private Schema generateSchema() {
+    if (getChild().getSchema() == null) {
+      return null;
+    }
+    return getChild().getSchema().getSubSchema(outColumnIndices);
   }
 }

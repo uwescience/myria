@@ -25,7 +25,7 @@ import edu.washington.escience.myria.parallel.Server;
 @JsonSubTypes({
     @Type(name = "CollectConsumer", value = CollectConsumerEncoding.class),
     @Type(name = "CollectProducer", value = CollectProducerEncoding.class),
-    @Type(name = "Consumer", value = ConsumerEncoding.class),
+    @Type(name = "Consumer", value = ConsumerEncoding.class), @Type(name = "DupElim", value = DupElimEncoding.class),
     @Type(name = "ShuffleConsumer", value = ShuffleConsumerEncoding.class),
     @Type(name = "LocalMultiwayConsumer", value = LocalMultiwayConsumerEncoding.class),
     @Type(name = "ShuffleProducer", value = ShuffleProducerEncoding.class),
@@ -35,6 +35,7 @@ import edu.washington.escience.myria.parallel.Server;
     @Type(name = "LocalCountingJoin", value = LocalCountingJoinEncoding.class),
     @Type(name = "MultiGroupByAggregate", value = MultiGroupByAggregateEncoding.class),
     @Type(name = "SingleGroupByAggregate", value = SingleGroupByAggregateEncoding.class),
+    @Type(name = "SingleGroupByAggregateNoBuffer", value = SingleGroupByAggregateNoBufferEncoding.class),
     @Type(name = "DbInsert", value = DbInsertEncoding.class), @Type(name = "FileScan", value = FileScanEncoding.class),
     @Type(name = "BinaryFileScan", value = BinaryFileScanEncoding.class),
     @Type(name = "TipsyFileScan", value = TipsyFileScanEncoding.class),
