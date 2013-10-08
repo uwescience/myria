@@ -114,8 +114,8 @@ public class IterativeSelfJoinTest extends SystemTestBase {
       tbl1Worker2.put(1, tbl1ID2Worker2[i]);
     }
     final TupleBatchBuffer table1 = new TupleBatchBuffer(tableSchema);
-    table1.merge(tbl1Worker1);
-    table1.merge(tbl1Worker2);
+    table1.unionAll(tbl1Worker1);
+    table1.unionAll(tbl1Worker2);
 
     // generate correct answer in memory
     final TupleBatchBuffer expectedTBB = getResultInMemory(table1, tableSchema, numIteration);

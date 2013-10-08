@@ -12,7 +12,7 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.LocalJoin;
-import edu.washington.escience.myria.operator.Merge;
+import edu.washington.escience.myria.operator.UnionAll;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.Project;
 import edu.washington.escience.myria.operator.RootOperator;
@@ -103,7 +103,7 @@ public class Q9 implements QueryPlanGenerator {
     final Project projOutPredicates = new Project(new int[] { 2 }, joinPersonsTriplesOut);
     // schema: (predicateName String)
 
-    final Merge union = new Merge(new Operator[] { projInPredicates, projOutPredicates });
+    final UnionAll union = new UnionAll(new Operator[] { projInPredicates, projOutPredicates });
     // schema: (predicateName string)
 
     final DupElim localDE = new DupElim(union); // local dupelim
