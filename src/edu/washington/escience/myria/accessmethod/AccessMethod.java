@@ -35,7 +35,7 @@ public abstract class AccessMethod {
         return new SQLiteAccessMethod((SQLiteInfo) connectionInfo, readOnly);
       case MyriaConstants.STORAGE_SYSTEM_MONETDB:
       case MyriaConstants.STORAGE_SYSTEM_MYSQL:
-      case MyriaConstants.STORAGE_SYSTEM_VERTICA:
+      case MyriaConstants.STORAGE_SYSTEM_POSTGRESQL:
         return new JdbcAccessMethod((JdbcInfo) connectionInfo, readOnly);
     }
     return null;
@@ -98,7 +98,8 @@ public abstract class AccessMethod {
    * 
    * @throws DbException if there is an error in the database.
    */
-  public abstract void init() throws DbException;
+  public void init() throws DbException {
+  }
 
   /**
    * Generates the insert statement string for a relation in the database.

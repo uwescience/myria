@@ -6,16 +6,31 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
+import org.joda.time.DateTime;
+
 import com.google.common.base.Preconditions;
 
+import edu.washington.escience.myria.column.BooleanColumn;
+import edu.washington.escience.myria.column.BooleanColumnBuilder;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.ColumnBuilder;
 import edu.washington.escience.myria.column.ColumnFactory;
-import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
-import edu.washington.escience.myria.util.IPCUtils;
+import edu.washington.escience.myria.column.DateTimeColumn;
+import edu.washington.escience.myria.column.DateTimeColumnBuilder;
+import edu.washington.escience.myria.column.DoubleColumn;
+import edu.washington.escience.myria.column.DoubleColumnBuilder;
+import edu.washington.escience.myria.column.FloatColumn;
+import edu.washington.escience.myria.column.FloatColumnBuilder;
+import edu.washington.escience.myria.column.IntColumn;
+import edu.washington.escience.myria.column.IntColumnBuilder;
+import edu.washington.escience.myria.column.LongColumn;
+import edu.washington.escience.myria.column.LongColumnBuilder;
+import edu.washington.escience.myria.column.StringColumn;
+import edu.washington.escience.myria.column.StringColumnBuilder;
 
 /**
- * Used for creating TupleBatch objects on the fly. A helper class used in, e.g., the Scatter operator.
+ * Used for creating TupleBatch objects on the fly. A helper class used in, e.g., the Scatter operator. Currently it
+ * doesn't support random access to a specific cell. Use TupleBuffer instead.
  * 
  * @author dhalperi
  * 
@@ -59,6 +74,29 @@ public class TupleBatchBuffer {
   }
 
   /**
+   * Append the tuple batch directly into readTuples.
+   * 
+   * @param tb the TB.
+   */
+  public final void appendTB(final TupleBatch tb) {
+    finishBatch();
+    readyTuplesNum += tb.numTuples();
+    readyTuples.add(tb.getDataColumns());
+  }
+
+  /**
+   * Helper function: checks whether the specified column can be inserted into.
+   * 
+   * @param column the column in which the value should be put.
+   */
+  private void checkPutIndex(final int column) {
+    Preconditions.checkElementIndex(column, numColumns);
+    if (columnsReady.get(column)) {
+      throw new RuntimeException("Need to fill up one row of TupleBatchBuffer before starting new one");
+    }
+  }
+
+  /**
    * clear this TBB.
    * */
   public final void clear() {
@@ -71,16 +109,21 @@ public class TupleBatchBuffer {
   }
 
   /**
-   * Build the in progress columns. The builders' states are untouched. They can keep building.
+   * Helper function to update the internal state after a value has been inserted into the specified column.
    * 
-   * @return the built in progress columns.
-   * */
-  private List<Column<?>> getInProgressColumns() {
-    List<Column<?>> newColumns = new ArrayList<Column<?>>(currentBuildingColumns.size());
-    for (ColumnBuilder<?> cb : currentBuildingColumns) {
-      newColumns.add(cb.forkNewBuilder().build());
+   * @param column the column in which the value was put.
+   */
+  private void columnPut(final int column) {
+    columnsReady.set(column, true);
+    numColumnsReady++;
+    if (numColumnsReady == numColumns) {
+      currentInProgressTuples++;
+      numColumnsReady = 0;
+      columnsReady.clear();
+      if (currentInProgressTuples == TupleBatch.BATCH_SIZE) {
+        finishBatch();
+      }
     }
-    return newColumns;
   }
 
   /**
@@ -141,21 +184,32 @@ public class TupleBatchBuffer {
   }
 
   /**
-   * Return all tuples in this buffer. The data do not get removed.
+   * Get elapsed time since the last time when a TB is poped.
    * 
-   * @return a List<TupleBatch> containing all complete tuples that have been inserted into this buffer.
+   * @return the elapsed time from lastPopedTime to present
    */
-  public final List<TransportMessage> getAllAsTM() {
-    final List<TransportMessage> output = new ArrayList<TransportMessage>();
-    if (numTuples() > 0) {
-      for (final List<Column<?>> columns : readyTuples) {
-        output.add(IPCUtils.normalDataMessage(columns, TupleBatch.BATCH_SIZE));
-      }
-      if (currentInProgressTuples > 0) {
-        output.add(IPCUtils.normalDataMessage(getInProgressColumns(), currentInProgressTuples));
-      }
+  private long getElapsedTime() {
+    return System.nanoTime() - lastPoppedTime;
+  }
+
+  /**
+   * Build the in progress columns. The builders' states are untouched. They can keep building.
+   * 
+   * @return the built in progress columns.
+   * */
+  private List<Column<?>> getInProgressColumns() {
+    List<Column<?>> newColumns = new ArrayList<Column<?>>(currentBuildingColumns.size());
+    for (ColumnBuilder<?> cb : currentBuildingColumns) {
+      newColumns.add(cb.forkNewBuilder().build());
     }
-    return output;
+    return newColumns;
+  }
+
+  /**
+   * @return the number of ready tuples.
+   */
+  public final int getReadyTuplesNum() {
+    return readyTuplesNum;
   }
 
   /**
@@ -182,7 +236,7 @@ public class TupleBatchBuffer {
       for (int row = 0; row < another.currentInProgressTuples; row++) {
         int column = 0;
         for (final Column<?> c : another.getInProgressColumns()) {
-          put(column, c.get(row));
+          put(column, c, row);
           column++;
         }
       }
@@ -190,10 +244,10 @@ public class TupleBatchBuffer {
   }
 
   /**
-   * @return the number of ready tuples.
-   */
-  public final int getReadyTuplesNum() {
-    return readyTuplesNum;
+   * @return num columns.
+   * */
+  public final int numColumns() {
+    return numColumns;
   }
 
   /**
@@ -201,33 +255,6 @@ public class TupleBatchBuffer {
    */
   public final int numTuples() {
     return readyTuplesNum + currentInProgressTuples;
-  }
-
-  /**
-   * @param colIndex column index
-   * @param rowIndex row index
-   * @return the element at ( rowIndex, colIndex)
-   * @throws IndexOutOfBoundsException if indices are out of bounds.
-   * */
-  public final Object get(final int colIndex, final int rowIndex) throws IndexOutOfBoundsException {
-    int tupleBatchIndex = rowIndex / TupleBatch.BATCH_SIZE;
-    int tupleIndex = rowIndex % TupleBatch.BATCH_SIZE;
-    if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
-        && tupleIndex >= currentInProgressTuples) {
-      throw new IndexOutOfBoundsException();
-    }
-    if (tupleBatchIndex < readyTuples.size()) {
-      return readyTuples.get(tupleBatchIndex).get(colIndex).get(tupleIndex);
-    }
-    return currentBuildingColumns.get(colIndex).get(tupleIndex);
-
-  }
-
-  /**
-   * @return num columns.
-   * */
-  public final int numColumns() {
-    return numColumns;
   }
 
   /**
@@ -240,27 +267,6 @@ public class TupleBatchBuffer {
       return tb;
     } else {
       if (currentInProgressTuples > 0) {
-        final int size = currentInProgressTuples;
-        finishBatch();
-        updateLastPopedTime();
-        readyTuplesNum -= size;
-        return new TupleBatch(schema, readyTuples.remove(0), size);
-      } else {
-        return null;
-      }
-    }
-  }
-
-  /**
-   * @return pop filled and non-filled TupleBatch
-   * */
-  public final TupleBatch popAnyUsingTimeout() {
-    final TupleBatch tb = popFilled();
-    if (tb != null) {
-      updateLastPopedTime();
-      return tb;
-    } else {
-      if (currentInProgressTuples > 0 && getElapsedTime() >= MyriaConstants.PUSHING_TB_TIMEOUT) {
         final int size = currentInProgressTuples;
         finishBatch();
         updateLastPopedTime();
@@ -293,43 +299,20 @@ public class TupleBatchBuffer {
   }
 
   /**
-   * @return pop filled and non-filled TransportMessage
+   * @return pop filled and non-filled TupleBatch
    * */
-  public final TransportMessage popAnyAsTM() {
-    final TransportMessage ans = popFilledAsTM();
-    if (ans != null) {
+  public final TupleBatch popAnyUsingTimeout() {
+    final TupleBatch tb = popFilled();
+    if (tb != null) {
       updateLastPopedTime();
-      return ans;
-    } else {
-      if (currentInProgressTuples > 0) {
-        int numTuples = currentInProgressTuples;
-        finishBatch();
-        readyTuplesNum -= numTuples;
-        final List<Column<?>> columns = readyTuples.remove(0);
-        updateLastPopedTime();
-        return IPCUtils.normalDataMessage(columns, numTuples);
-      } else {
-        return null;
-      }
-    }
-  }
-
-  /**
-   * @return pop filled and non-filled TransportMessage
-   * */
-  public final TransportMessage popAnyAsTMUsingTimeout() {
-    final TransportMessage ans = popFilledAsTM();
-    if (ans != null) {
-      updateLastPopedTime();
-      return ans;
+      return tb;
     } else {
       if (currentInProgressTuples > 0 && getElapsedTime() >= MyriaConstants.PUSHING_TB_TIMEOUT) {
-        int numTuples = currentInProgressTuples;
+        final int size = currentInProgressTuples;
         finishBatch();
-        readyTuplesNum -= numTuples;
-        final List<Column<?>> columns = readyTuples.remove(0);
         updateLastPopedTime();
-        return IPCUtils.normalDataMessage(columns, numTuples);
+        readyTuplesNum -= size;
+        return new TupleBatch(schema, readyTuples.remove(0), size);
       } else {
         return null;
       }
@@ -374,56 +357,15 @@ public class TupleBatchBuffer {
   }
 
   /**
-   * Pop filled as TransportMessage. Avoid the overhead of creating TupleBatch instances if the data in this TBB are to
-   * be sent to other workers.
-   * 
-   * @return TransportMessage popped or null if no filled tuples ready yet.
-   * */
-  public final TransportMessage popFilledAsTM() {
-    if (readyTuples.size() > 0) {
-      if (readyTuples.get(0).size() > 0) {
-        readyTuplesNum -= readyTuples.get(0).get(0).size();
-      }
-      final List<Column<?>> columns = readyTuples.remove(0);
-      updateLastPopedTime();
-      return IPCUtils.normalDataMessage(columns, TupleBatch.BATCH_SIZE);
-    }
-    return null;
-  }
-
-  /**
    * Append the specified value to the specified column.
    * 
    * @param column index of the column.
    * @param value value to be appended.
    */
   public final void put(final int column, final Object value) {
-    Preconditions.checkElementIndex(column, numColumns);
-    if (columnsReady.get(column)) {
-      throw new RuntimeException("Need to fill up one row of TupleBatchBuffer before starting new one");
-    }
+    checkPutIndex(column);
     currentBuildingColumns.get(column).appendObject(value);
-    columnsReady.set(column, true);
-    numColumnsReady++;
-    if (numColumnsReady == numColumns) {
-      currentInProgressTuples++;
-      numColumnsReady = 0;
-      columnsReady.clear();
-      if (currentInProgressTuples == TupleBatch.BATCH_SIZE) {
-        finishBatch();
-      }
-    }
-  }
-
-  /**
-   * Append the tuple batch directly into readTuples.
-   * 
-   * @param tb the TB.
-   */
-  public final void appendTB(final TupleBatch tb) {
-    finishBatch();
-    readyTuplesNum += tb.numTuples();
-    readyTuples.add(tb.getDataColumns());
+    columnPut(column);
   }
 
   /**
@@ -454,19 +396,130 @@ public class TupleBatchBuffer {
   }
 
   /**
+   * Append the specified value to the specified destination column in this TupleBatchBuffer from the source column.
+   * 
+   * @param destColumn which column in this TBB the value will be inserted.
+   * @param sourceColumn the column from which data will be retrieved.
+   * @param sourceRow the row in the source column from which data will be retrieved.
+   */
+  public final void put(final int destColumn, final Column<?> sourceColumn, final int sourceRow) {
+    checkPutIndex(destColumn);
+    ColumnBuilder<?> dest = currentBuildingColumns.get(destColumn);
+    switch (dest.getType()) {
+      case BOOLEAN_TYPE:
+        ((BooleanColumnBuilder) dest).append(((BooleanColumn) sourceColumn).getBoolean(sourceRow));
+        break;
+      case DATETIME_TYPE:
+        ((DateTimeColumnBuilder) dest).append(((DateTimeColumn) sourceColumn).getDateTime(sourceRow));
+        break;
+      case DOUBLE_TYPE:
+        ((DoubleColumnBuilder) dest).append(((DoubleColumn) sourceColumn).getDouble(sourceRow));
+        break;
+      case FLOAT_TYPE:
+        ((FloatColumnBuilder) dest).append(((FloatColumn) sourceColumn).getFloat(sourceRow));
+        break;
+      case INT_TYPE:
+        ((IntColumnBuilder) dest).append(((IntColumn) sourceColumn).getInt(sourceRow));
+        break;
+      case LONG_TYPE:
+        ((LongColumnBuilder) dest).append(((LongColumn) sourceColumn).getLong(sourceRow));
+        break;
+      case STRING_TYPE:
+        ((StringColumnBuilder) dest).append(((StringColumn) sourceColumn).getString(sourceRow));
+        break;
+    }
+    columnPut(destColumn);
+  }
+
+  /**
+   * Append the specified value to the specified column.
+   * 
+   * @param column index of the column.
+   * @param value value to be appended.
+   */
+  public final void putBoolean(final int column, final boolean value) {
+    checkPutIndex(column);
+    ((BooleanColumnBuilder) currentBuildingColumns.get(column)).append(value);
+    columnPut(column);
+  }
+
+  /**
+   * Append the specified value to the specified column.
+   * 
+   * @param column index of the column.
+   * @param value value to be appended.
+   */
+  public final void putDateTime(final int column, final DateTime value) {
+    checkPutIndex(column);
+    ((DateTimeColumnBuilder) currentBuildingColumns.get(column)).append(value);
+    columnPut(column);
+  }
+
+  /**
+   * Append the specified value to the specified column.
+   * 
+   * @param column index of the column.
+   * @param value value to be appended.
+   */
+  public final void putDouble(final int column, final double value) {
+    checkPutIndex(column);
+    ((DoubleColumnBuilder) currentBuildingColumns.get(column)).append(value);
+    columnPut(column);
+  }
+
+  /**
+   * Append the specified value to the specified column.
+   * 
+   * @param column index of the column.
+   * @param value value to be appended.
+   */
+  public final void putFloat(final int column, final float value) {
+    checkPutIndex(column);
+    ((FloatColumnBuilder) currentBuildingColumns.get(column)).append(value);
+    columnPut(column);
+  }
+
+  /**
+   * Append the specified value to the specified column.
+   * 
+   * @param column index of the column.
+   * @param value value to be appended.
+   */
+  public final void putInt(final int column, final int value) {
+    checkPutIndex(column);
+    ((IntColumnBuilder) currentBuildingColumns.get(column)).append(value);
+    columnPut(column);
+  }
+
+  /**
+   * Append the specified value to the specified column.
+   * 
+   * @param column index of the column.
+   * @param value value to be appended.
+   */
+  public final void putLong(final int column, final long value) {
+    checkPutIndex(column);
+    ((LongColumnBuilder) currentBuildingColumns.get(column)).append(value);
+    columnPut(column);
+  }
+
+  /**
+   * Append the specified value to the specified column.
+   * 
+   * @param column index of the column.
+   * @param value value to be appended.
+   */
+  public final void putString(final int column, final String value) {
+    checkPutIndex(column);
+    ((StringColumnBuilder) currentBuildingColumns.get(column)).append(value);
+    columnPut(column);
+  }
+
+  /**
    * Update lastPopedTime to be the current time.
    */
   private void updateLastPopedTime() {
     lastPoppedTime = System.nanoTime();
-  }
-
-  /**
-   * Get elapsed time since the last time when a TB is poped.
-   * 
-   * @return the elapsed time from lastPopedTime to present
-   */
-  private long getElapsedTime() {
-    return System.nanoTime() - lastPoppedTime;
   }
 
 }

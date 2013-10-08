@@ -39,6 +39,13 @@ public abstract class UnaryOperator extends Operator {
     return child;
   }
 
+  /**
+   * @param child the child.
+   */
+  public final void setChild(final Operator child) {
+    setChildren(new Operator[] { child });
+  }
+
   @Override
   public final void setChildren(final Operator[] children) {
     Preconditions.checkArgument(child == null, "called setChildren(), but children have already been set");

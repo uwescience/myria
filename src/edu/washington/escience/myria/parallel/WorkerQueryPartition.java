@@ -61,6 +61,11 @@ public class WorkerQueryPartition implements QueryPartition {
   private final FTMODE ftMode;
 
   /**
+   * The profiling mode.
+   */
+  private final boolean profilingMode;
+
+  /**
    * priority, currently no use.
    * */
   private volatile int priority;
@@ -151,6 +156,7 @@ public class WorkerQueryPartition implements QueryPartition {
   public WorkerQueryPartition(final SingleQueryPlanWithArgs plan, final long queryID, final Worker ownerWorker) {
     this.queryID = queryID;
     ftMode = plan.getFTMode();
+    profilingMode = plan.isProfilingMode();
     List<RootOperator> operators = plan.getRootOps();
     tasks = new HashSet<QuerySubTreeTask>(operators.size());
     numFinishedTasks = new AtomicInteger(0);
@@ -327,6 +333,11 @@ public class WorkerQueryPartition implements QueryPartition {
   }
 
   @Override
+  public boolean isProfilingMode() {
+    return profilingMode;
+  }
+
+  @Override
   public Set<Integer> getMissingWorkers() {
     return missingWorkers;
   }
@@ -365,14 +376,13 @@ public class WorkerQueryPartition implements QueryPartition {
         if (LOGGER.isTraceEnabled()) {
           LOGGER.trace("adding recovery task for " + task.getRootOp().getOpName());
         }
-        List<List<TupleBatch>> buffers = ((Producer) task.getRootOp()).getBackupBuffers();
+        List<List<TupleBatch>> buffers = ((Producer) task.getRootOp()).getTriedToSendTuples();
         List<Integer> indices = ((Producer) task.getRootOp()).getChannelIndicesOfAWorker(workerId);
         StreamOutputChannel<TupleBatch>[] channels = ((Producer) task.getRootOp()).getChannels();
         for (int i = 0; i < indices.size(); ++i) {
           int j = indices.get(i);
-          TupleSource scan = new TupleSource(buffers.get(j));
           /* buffers.get(j) might be an empty List<TupleBatch>, so need to set its schema explicitly. */
-          scan.setSchema(task.getRootOp().getSchema());
+          TupleSource scan = new TupleSource(buffers.get(j), task.getRootOp().getSchema());
           scan.setOpName("tuplesource for " + task.getRootOp().getOpName() + channels[j].getID());
           RecoverProducer rp =
               new RecoverProducer(scan, ExchangePairID.fromExisting(channels[j].getID().getStreamID()), channels[j]

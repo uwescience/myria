@@ -130,6 +130,14 @@ public class TupleBatch implements Serializable {
   }
 
   /**
+   * @param columnNames the new column names.
+   * @return a shallow copy of the specified TupleBatch with the new column names.
+   */
+  public TupleBatch rename(final List<String> columnNames) {
+    return shallowCopy(Schema.of(getSchema().getColumnTypes(), columnNames), columns, validTuples, validIndices, isEOI);
+  }
+
+  /**
    * Call this method instead of the copy constructor for a new TupleBatch copy.
    * 
    * @param schema schema of the tuples in this batch. Must match columns.
@@ -197,6 +205,16 @@ public class TupleBatch implements Serializable {
   }
 
   /**
+   * Constructor that gets the number of tuples from the columns.
+   * 
+   * @param schema schema of the tuples in this batch. Must match columns.
+   * @param columns contains the column-stored data. Must match schema.
+   */
+  public TupleBatch(final Schema schema, final List<Column<?>> columns) {
+    this(schema, columns, columns.get(0).size());
+  }
+
+  /**
    * Helper function to append the specified row into the specified TupleBatchBuffer.
    * 
    * @param mappedRow the true row in column list to append to the buffer.
@@ -205,7 +223,7 @@ public class TupleBatch implements Serializable {
   private void appendTupleInto(final int mappedRow, final TupleBatchBuffer buffer) {
     Objects.requireNonNull(buffer);
     for (int i = 0; i < numColumns(); ++i) {
-      buffer.put(i, columns.get(i).get(mappedRow));
+      buffer.put(i, columns.get(i), mappedRow);
     }
   }
 
@@ -224,7 +242,7 @@ public class TupleBatch implements Serializable {
     ImmutableIntArray indices = getValidIndices();
     for (int i = 0; i < indices.length(); i++) {
       for (int column = 0; column < numColumns; column++) {
-        tbb.put(column, columns.get(column).get(indices.get(i)));
+        tbb.put(column, columns.get(column), indices.get(i));
       }
     }
   }
@@ -407,7 +425,7 @@ public class TupleBatch implements Serializable {
       }
       int j = 0;
       for (final Column<?> c : columns) {
-        tbb.put(j++, c.get(row));
+        tbb.put(j++, c, row);
       }
       if (tbb.hasFilledTB()) {
         if (ready == null) {
@@ -500,7 +518,7 @@ public class TupleBatch implements Serializable {
       final int pOfTuple = partitions[i];
       final int mappedI = indices.get(i);
       for (int j = 0; j < numColumns; j++) {
-        buffers[pOfTuple].put(j, columns.get(j).get(mappedI));
+        buffers[pOfTuple].put(j, columns.get(j), mappedI);
       }
     }
   }

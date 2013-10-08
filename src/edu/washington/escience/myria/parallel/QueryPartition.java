@@ -17,6 +17,11 @@ public interface QueryPartition extends Comparable<QueryPartition> {
   FTMODE getFTMode();
 
   /**
+   * @return the profiling mode.
+   */
+  boolean isProfilingMode();
+
+  /**
    * @return The query ID.
    * */
   long getQueryID();

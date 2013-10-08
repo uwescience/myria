@@ -16,7 +16,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
@@ -302,27 +301,15 @@ public final class JdbcAccessMethod extends AccessMethod {
       case BOOLEAN_TYPE:
         return "BOOLEAN";
       case DOUBLE_TYPE:
-        if (dbms.equalsIgnoreCase(MyriaConstants.STORAGE_SYSTEM_VERTICA)) {
-          return "DOUBLE PRECISION";
-        } else {
-          return "DOUBLE";
-        }
+        return "DOUBLE";
       case FLOAT_TYPE:
-        if (dbms.equalsIgnoreCase(MyriaConstants.STORAGE_SYSTEM_VERTICA)) {
-          return "FLOAT";
-        } else {
-          return "DOUBLE";
-        }
+        return "DOUBLE";
       case INT_TYPE:
         return "INTEGER";
       case LONG_TYPE:
         return "BIGINT";
       case STRING_TYPE:
-        if (dbms.equalsIgnoreCase(MyriaConstants.STORAGE_SYSTEM_VERTICA)) {
-          return "VARCHAR(65000)";
-        } else {
-          return "TEXT";
-        }
+        return "TEXT";
       case DATETIME_TYPE:
         return "TIMESTAMP";
       default:

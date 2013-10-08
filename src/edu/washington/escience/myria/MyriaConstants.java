@@ -56,6 +56,17 @@ public final class MyriaConstants {
    * Task resource manager.
    * */
   public static final String EXEC_ENV_VAR_TASK_RESOURCE_MANAGER = "taskResourceManager";
+
+  /**
+   * Query ID.
+   */
+  public static final String EXEC_ENV_VAR_QUERY_ID = "query_id";
+
+  /**
+   * Profiling mode.
+   */
+  public static final String EXEC_ENV_VAR_PROFILING_MODE = "profiling_mode";
+
   /**
    * Default value for {@link MyriaSystemConfigKeys#FLOW_CONTROL_WRITE_BUFFER_HIGH_MARK_BYTES}.
    * */
@@ -115,9 +126,19 @@ public final class MyriaConstants {
   public static final String STORAGE_DATABASE_NAME = "myria.db";
 
   /**
+   * JDBC username.
+   * */
+  public static final String STORAGE_JDBC_USERNAME = "uwdb";
+
+  /**
    * MonetDB storage.
    * */
   public static final String STORAGE_SYSTEM_MONETDB = "monetdb";
+
+  /**
+   * MonetDB port.
+   * */
+  public static final int STORAGE_MONETDB_PORT = 50001;
 
   /**
    * Mysql storage.
@@ -125,16 +146,34 @@ public final class MyriaConstants {
   public static final String STORAGE_SYSTEM_MYSQL = "mysql";
 
   /**
+   * Mysql port.
+   * */
+  public static final int STORAGE_MYSQL_PORT = 3301;
+
+  /**
    * SQLite storage.
    * */
   public static final String STORAGE_SYSTEM_SQLITE = "sqlite";
 
   /**
+<<<<<<< HEAD
+=======
    * Vertica storage.
    * */
   public static final String STORAGE_SYSTEM_VERTICA = "vertica";
 
   /**
+   * PostgreSQL storage.
+   * */
+  public static final String STORAGE_SYSTEM_POSTGRESQL = "postgresql";
+
+  /**
+   * PostgreSQL port.
+   * */
+  public static final int STORAGE_POSTGRESQL_PORT = 5401;
+
+  /**
+>>>>>>> fbacd2e... Added the database benchmark test.
    * Default value for {@link MyriaSystemConfigKeys#TCP_CONNECTION_TIMEOUT_MILLIS}.
    * */
   public static final int TCP_CONNECTION_TIMEOUT_MILLIS_DEFAULT_VALUE = 3000;

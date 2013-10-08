@@ -169,7 +169,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
           tmpMap.put(grpFields, groupedTupleBatch);
         }
         for (int j = 0; j < child.getSchema().numColumns(); j++) {
-          groupedTupleBatch.put(j, tb.getObject(j, i));
+          groupedTupleBatch.put(j, tb.getDataColumns().get(j), i);
         }
       }
       // add the tuples into the aggregator

@@ -57,9 +57,9 @@ public class MultiFieldHashPartitionFunctionTest {
     TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < numGroups; i++) {
       for (int j = 0; j < tuplesPerGroup; j++) {
-        tbb.put(0, i);
-        tbb.put(1, i + 1);
-        tbb.put(2, rand.nextInt());
+        tbb.putInt(0, i);
+        tbb.putInt(1, i + 1);
+        tbb.putInt(2, rand.nextInt());
       }
     }
     return new TupleSource(tbb);

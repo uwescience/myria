@@ -40,8 +40,8 @@ public final class FileScan extends LeafOperator {
   private final Schema schema;
   /** Scanner used to parse the file. */
   private transient Scanner scanner = null;
-  /** Whether a comma is a delimiter in this file. */
-  private final boolean commaIsDelimiter;
+  /** A user-provided file delimiter; if null, the system uses the default whitespace delimiter. */
+  private final String delimiter;
 
   /** The filename of the input, if any. */
   private String filename = null;
@@ -68,24 +68,23 @@ public final class FileScan extends LeafOperator {
    * @throws FileNotFoundException if the given filename does not exist.
    */
   public FileScan(final String filename, final Schema schema) throws FileNotFoundException {
-    this(filename, schema, false);
+    this(filename, schema, null);
   }
 
   /**
    * Construct a new FileScan object to read from the specified file. This file is assumed to be whitespace-separated
-   * and have one record per line. If commaIsDelimiter is true, then records may be whitespace or comma-separated.
+   * and have one record per line. If delimiter is non-null, the system uses its value as a delimiter.
    * 
    * @param filename the file containing the relation.
    * @param schema the Schema of the relation contained in the file.
-   * @param commaIsDelimiter whether commas are also delimiters in the file.
+   * @param delimiter An optional override file delimiter.
    * @throws FileNotFoundException if the given filename does not exist.
    */
-  public FileScan(final String filename, final Schema schema, final boolean commaIsDelimiter)
-      throws FileNotFoundException {
+  public FileScan(final String filename, final Schema schema, final String delimiter) throws FileNotFoundException {
     Objects.requireNonNull(filename);
     Objects.requireNonNull(schema);
     this.schema = schema;
-    this.commaIsDelimiter = commaIsDelimiter;
+    this.delimiter = delimiter;
     this.filename = filename;
   }
 
@@ -94,11 +93,11 @@ public final class FileScan extends LeafOperator {
    * whitespace or comma-separated. inputStream is assumed to be set later by setInputStream().
    * 
    * @param schema the Schema of the relation contained in the file.
-   * @param commaIsDelimiter whether commas are also delimiters in the file.
+   * @param delimiter An optional non-default file delimiter
    */
-  public FileScan(final Schema schema, final boolean commaIsDelimiter) {
+  public FileScan(final Schema schema, final String delimiter) {
     this.schema = schema;
-    this.commaIsDelimiter = commaIsDelimiter;
+    this.delimiter = delimiter;
   }
 
   /**
@@ -108,7 +107,7 @@ public final class FileScan extends LeafOperator {
    * @param schema the Schema of the relation contained in the file.
    */
   public FileScan(final Schema schema) {
-    this(schema, false);
+    this(schema, null);
   }
 
   /**
@@ -140,28 +139,28 @@ public final class FileScan extends LeafOperator {
           switch (schema.getColumnType(count)) {
             case BOOLEAN_TYPE:
               if (scanner.hasNextBoolean()) {
-                buffer.put(count, scanner.nextBoolean());
+                buffer.putBoolean(count, scanner.nextBoolean());
               } else if (scanner.hasNextFloat()) {
-                buffer.put(count, scanner.nextFloat() != 0);
+                buffer.putBoolean(count, scanner.nextFloat() != 0);
               }
               break;
             case DOUBLE_TYPE:
-              buffer.put(count, scanner.nextDouble());
+              buffer.putDouble(count, scanner.nextDouble());
               break;
             case FLOAT_TYPE:
-              buffer.put(count, scanner.nextFloat());
+              buffer.putFloat(count, scanner.nextFloat());
               break;
             case INT_TYPE:
-              buffer.put(count, scanner.nextInt());
+              buffer.putInt(count, scanner.nextInt());
               break;
             case LONG_TYPE:
-              buffer.put(count, scanner.nextLong());
+              buffer.putLong(count, scanner.nextLong());
               break;
             case STRING_TYPE:
-              buffer.put(count, scanner.next());
+              buffer.putString(count, scanner.next());
               break;
             case DATETIME_TYPE:
-              buffer.put(count, DateTimeUtils.parse(scanner.next()));
+              buffer.putDateTime(count, DateTimeUtils.parse(scanner.next()));
               break;
           }
         } catch (final InputMismatchException e) {
@@ -214,8 +213,8 @@ public final class FileScan extends LeafOperator {
     }
     Preconditions.checkArgument(inputStream != null, "FileScan input stream has not been set!");
     scanner = new Scanner(new BufferedReader(new InputStreamReader(inputStream)));
-    if (commaIsDelimiter) {
-      scanner.useDelimiter("[(\\r\\n)\\n,]");
+    if (delimiter != null) {
+      scanner.useDelimiter("(\\r\\n)|\\n|(\\Q" + delimiter + "\\E)");
     }
     lineNumber = 0;
   }

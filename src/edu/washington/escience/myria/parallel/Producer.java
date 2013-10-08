@@ -1,6 +1,7 @@
 package edu.washington.escience.myria.parallel;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.jboss.netty.channel.ChannelFuture;
@@ -31,8 +32,6 @@ public abstract class Producer extends RootOperator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
-  /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Producer.class.getName());
   /**
    * The worker this operator is located at.
    */
@@ -48,14 +47,14 @@ public abstract class Producer extends RootOperator {
   private transient boolean[] ioChannelsAvail;
 
   /**
-   * output buffers.
+   * output buffers of partitions.
    * */
-  private transient TupleBatchBuffer[] buffers;
+  private transient TupleBatchBuffer[] partitionBuffers;
 
-  /**
-   * output buffers.
-   * */
-  private transient List<List<TupleBatch>> backupBuffers;
+  /** tried to send tuples for each channel. */
+  private transient List<List<TupleBatch>> triedToSendTuples;
+  /** pending tuples to be sent for each channel. */
+  private transient List<LinkedList<TupleBatch>> pendingTuplesToSend;
 
   /**
    * output channel IDs.
@@ -71,6 +70,12 @@ public abstract class Producer extends RootOperator {
    * if current query execution is in non-blocking mode.
    * */
   private transient boolean nonBlockingExecution;
+
+  /** number of parition, by default 1. */
+  private int numOfPartition = 1;
+
+  /** if the outgoing channels are totally local. */
+  private boolean totallyLocal;
 
   /**
    * no worker means to the owner worker.
@@ -159,16 +164,27 @@ public abstract class Producer extends RootOperator {
         }
       }
     }
+    totallyLocal = true;
+    for (int i : destinationWorkerIDs) {
+      if (i != IPCConnectionPool.SELF_IPC_ID) {
+        totallyLocal = false;
+        break;
+      }
+    }
   }
 
   @SuppressWarnings("unchecked")
   @Override
   public final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     taskResourceManager = (TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER);
+    partitionBuffers = new TupleBatchBuffer[numOfPartition];
+    for (int i = 0; i < numOfPartition; i++) {
+      partitionBuffers[i] = new TupleBatchBuffer(getSchema());
+    }
     ioChannels = new StreamOutputChannel[outputIDs.length];
     ioChannelsAvail = new boolean[outputIDs.length];
-    buffers = new TupleBatchBuffer[outputIDs.length];
-    backupBuffers = new ArrayList<List<TupleBatch>>();
+    triedToSendTuples = new ArrayList<List<TupleBatch>>();
+    pendingTuplesToSend = new ArrayList<LinkedList<TupleBatch>>();
     localizedOutputIDs = new StreamIOChannelID[outputIDs.length];
     for (int i = 0; i < outputIDs.length; i++) {
       if (outputIDs[i].getRemoteID() == IPCConnectionPool.SELF_IPC_ID) {
@@ -203,9 +219,9 @@ public abstract class Producer extends RootOperator {
         taskResourceManager.getOwnerTask().notifyOutputEnabled(localizedOutputIDs[i]);
       }
     });
-    buffers[i] = new TupleBatchBuffer(getSchema());
     ioChannelsAvail[i] = true;
-    backupBuffers.add(i, new ArrayList<TupleBatch>());
+    triedToSendTuples.add(i, new ArrayList<TupleBatch>());
+    pendingTuplesToSend.add(i, new LinkedList<TupleBatch>());
   }
 
   /**
@@ -244,9 +260,10 @@ public abstract class Producer extends RootOperator {
    * Pop tuple batches from each of the buffers and try to write them to corresponding channels, if possible.
    * 
    * @param usingTimeout use popAny() or popAnyUsingTimeout() when poping
+   * @param partitions the list of partitions as tuple batches.
    * */
-  protected final void popTBsFromBuffersAndWrite(final boolean usingTimeout) {
-    popTBsFromBuffersAndWrite(usingTimeout, MyriaArrayUtils.create2DIndex(numChannels()));
+  protected final void writePartitionsIntoChannels(final boolean usingTimeout, final TupleBatch[] partitions) {
+    writePartitionsIntoChannels(usingTimeout, MyriaArrayUtils.create2DVerticalIndex(numChannels()), partitions);
   }
 
   /**
@@ -254,42 +271,72 @@ public abstract class Producer extends RootOperator {
    * 
    * @param usingTimeout use popAny() or popAnyUsingTimeout() when poping
    * @param channelIndices the same as GenericShuffleProducer's cellPartition
+   * @param partitions the list of partitions as tuple batches.
    * */
-  protected final void popTBsFromBuffersAndWrite(final boolean usingTimeout, final int[][] channelIndices) {
-    final TupleBatchBuffer[] tbb = getBuffers();
+  protected final void writePartitionsIntoChannels(final boolean usingTimeout, final int[][] channelIndices,
+      final TupleBatch[] partitions) {
     FTMODE mode = taskResourceManager.getOwnerTask().getOwnerQuery().getFTMode();
-    for (int i = 0; i < numChannels(); i++) {
-      while (true) {
-        TupleBatch tb = null;
-        if (usingTimeout) {
-          tb = tbb[i].popAnyUsingTimeout();
-        } else {
-          tb = tbb[i].popAny();
+
+    if (totallyLocal) {
+      if (partitions != null) {
+        for (int i = 0; i < numOfPartition; ++i) {
+          if (partitions[i] != null) {
+            for (int j : channelIndices[i]) {
+              pendingTuplesToSend.get(j).add(partitions[i]);
+            }
+          }
         }
+      }
+    } else {
+      if (partitions != null) {
+        for (int i = 0; i < numOfPartition; ++i) {
+          if (partitions[i] != null) {
+            partitions[i].compactInto(partitionBuffers[i]);
+          }
+        }
+      }
+      for (int i = 0; i < numOfPartition; ++i) {
+        while (true) {
+          TupleBatch tb = null;
+          if (usingTimeout) {
+            tb = partitionBuffers[i].popAnyUsingTimeout();
+          } else {
+            tb = partitionBuffers[i].popAny();
+          }
+          if (tb == null) {
+            break;
+          }
+          for (int j : channelIndices[i]) {
+            pendingTuplesToSend.get(j).add(tb);
+          }
+        }
+      }
+    }
+
+    for (int i = 0; i < numChannels(); ++i) {
+      if (!ioChannelsAvail[i] && (mode.equals(FTMODE.abandon) || mode.equals(FTMODE.rejoin))) {
+        continue;
+      }
+      while (true) {
+        TupleBatch tb = pendingTuplesToSend.get(i).poll();
         if (tb == null) {
           break;
         }
-
-        for (int j : channelIndices[i]) {
-          if (mode.equals(FTMODE.rejoin)) {
-            // rejoin, append the TB into the backup buffer in case of recovering
-            backupBuffers.get(j).add(tb);
-          }
-          if (!ioChannelsAvail[j] && (mode.equals(FTMODE.abandon) || mode.equals(FTMODE.rejoin))) {
-            continue;
-          }
-          try {
-            writeMessage(j, tb);
-          } catch (IllegalStateException e) {
-            if (mode.equals(FTMODE.abandon)) {
-              ioChannelsAvail[j] = false;
-              break;
-            } else if (mode.equals(FTMODE.rejoin)) {
-              ioChannelsAvail[j] = false;
-              break;
-            } else {
-              throw e;
-            }
+        if (mode.equals(FTMODE.rejoin)) {
+          // rejoin, append the TB into the backup buffer in case of recovering
+          triedToSendTuples.get(i).add(tb);
+        }
+        try {
+          writeMessage(i, tb);
+        } catch (IllegalStateException e) {
+          if (mode.equals(FTMODE.abandon)) {
+            ioChannelsAvail[i] = false;
+            break;
+          } else if (mode.equals(FTMODE.rejoin)) {
+            ioChannelsAvail[i] = false;
+            break;
+          } else {
+            throw e;
           }
         }
       }
@@ -310,13 +357,15 @@ public abstract class Producer extends RootOperator {
   @Override
   public final void cleanup() throws DbException {
     for (int i = 0; i < localizedOutputIDs.length; i++) {
-      buffers[i] = null;
       if (ioChannels[i] != null) {
         /* RecoverProducer may detach & set its channel to be null, shouldn't call release here */
         ioChannels[i].release();
       }
     }
-    buffers = null;
+    for (int i = 0; i < numOfPartition; i++) {
+      partitionBuffers[i] = null;
+    }
+    partitionBuffers = null;
   }
 
   /**
@@ -345,13 +394,6 @@ public abstract class Producer extends RootOperator {
   }
 
   /**
-   * @return the buffers.
-   * */
-  protected final TupleBatchBuffer[] getBuffers() {
-    return buffers;
-  }
-
-  /**
    * @return The resource manager of the running task.
    * */
   protected TaskResourceManager getTaskResourceManager() {
@@ -376,8 +418,8 @@ public abstract class Producer extends RootOperator {
    * 
    * @return backup buffers.
    */
-  public final List<List<TupleBatch>> getBackupBuffers() {
-    return backupBuffers;
+  public final List<List<TupleBatch>> getTriedToSendTuples() {
+    return triedToSendTuples;
   }
 
   /**
@@ -421,8 +463,8 @@ public abstract class Producer extends RootOperator {
       child.setEOI(false);
     } else if (child.eos()) {
       if (taskResourceManager.getOwnerTask().getOwnerQuery().getFTMode().equals(FTMODE.rejoin)) {
-        for (TupleBatchBuffer tbb : buffers) {
-          if (tbb.numTuples() > 0) {
+        for (LinkedList<TupleBatch> tbs : pendingTuplesToSend) {
+          if (tbs.size() > 0) {
             // due to failure, buffers are not empty, this task needs to be executed again to push these TBs out when
             // channels are available
             return;
@@ -432,5 +474,22 @@ public abstract class Producer extends RootOperator {
       // all buffers are empty, ready to end this task
       setEOS();
     }
+  }
+
+  /**
+   * set the number of partitions.
+   * 
+   * @param num the number
+   */
+  public void setNumOfPartition(final int num) {
+    numOfPartition = num;
+  }
+
+  /**
+   * 
+   * @return the number of partitions.
+   */
+  public int getNumOfPartition() {
+    return numOfPartition;
   }
 }

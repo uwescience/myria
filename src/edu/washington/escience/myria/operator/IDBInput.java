@@ -14,6 +14,7 @@ import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
+import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.parallel.Consumer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
@@ -83,7 +84,7 @@ public class IDBInput extends Operator {
   /**
    * The same as in DupElim.
    * */
-  private transient TupleBatchBuffer uniqueTuples;
+  private transient TupleBuffer uniqueTuples;
   /**
    * The IPC channel for EOI report.
    * */
@@ -223,8 +224,8 @@ public class IDBInput extends Operator {
           iterationInput.setEOI(false);
           setEOI(true);
           final TupleBatchBuffer buffer = new TupleBatchBuffer(EOI_REPORT_SCHEMA);
-          buffer.put(0, selfIDBIdx);
-          buffer.put(1, emptyDelta);
+          buffer.putInt(0, selfIDBIdx);
+          buffer.putBoolean(1, emptyDelta);
           eoiReportChannel.write(buffer.popAny());
           emptyDelta = true;
         }
@@ -263,7 +264,7 @@ public class IDBInput extends Operator {
     initialInputEnded = false;
     emptyDelta = true;
     uniqueTupleIndices = new HashMap<Integer, List<Integer>>();
-    uniqueTuples = new TupleBatchBuffer(getSchema());
+    uniqueTuples = new TupleBuffer(getSchema());
     resourceManager = (TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER);
     eoiReportChannel = resourceManager.startAStream(controllerWorkerID, controllerOpID);
   }

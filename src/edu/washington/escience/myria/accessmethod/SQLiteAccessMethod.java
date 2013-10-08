@@ -73,16 +73,20 @@ public final class SQLiteAccessMethod extends AccessMethod {
     sqliteInfo = (SQLiteInfo) connectionInfo;
 
     File dbFile = new File(sqliteInfo.getDatabaseFilename());
-    if (!readOnly) {
-      try {
-        dbFile.createNewFile();
-      } catch (IOException e) {
-        throw new DbException("Could not create database file", e);
-      }
-    }
-
     if (!dbFile.exists()) {
-      throw new DbException("Database file " + sqliteInfo.getDatabaseFilename() + " does not exist!");
+      if (!readOnly) {
+        try {
+          File parent = dbFile.getParentFile();
+          if (parent != null && !parent.exists()) {
+            dbFile.getParentFile().mkdirs();
+          }
+          dbFile.createNewFile();
+        } catch (IOException e) {
+          throw new DbException("Could not create database file" + dbFile.getAbsolutePath(), e);
+        }
+      } else {
+        throw new DbException("Database file " + sqliteInfo.getDatabaseFilename() + " does not exist!");
+      }
     }
 
     sqliteConnection = null;
@@ -95,17 +99,11 @@ public final class SQLiteAccessMethod extends AccessMethod {
         sqliteConnection.setBusyTimeout(SQLiteAccessMethod.DEFAULT_BUSY_TIMEOUT);
       } else {
         sqliteQueue = new SQLiteQueue(new File(sqliteInfo.getDatabaseFilename())).start();
-
       }
     } catch (final SQLiteException e) {
       LOGGER.error(e.getMessage(), e);
       throw new DbException(e);
     }
-  }
-
-  @Override
-  public void init() throws DbException {
-    execute("PRAGMA journal_mode=WAL;");
   }
 
   @Override
