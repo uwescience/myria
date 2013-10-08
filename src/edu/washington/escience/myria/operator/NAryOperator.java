@@ -24,6 +24,17 @@ public abstract class NAryOperator extends Operator {
     super();
   }
 
+  /**
+   * @param children the children of this operator
+   */
+  public NAryOperator(final Operator[] children) {
+    if (children != null) {
+      setChildren(children);
+    } else {
+      this.children = null;
+    }
+  }
+
   @Override
   public Operator[] getChildren() {
     return children;
@@ -40,7 +51,7 @@ public abstract class NAryOperator extends Operator {
   }
 
   @Override
-  public void setChildren(final Operator[] children) {
+  public final void setChildren(final Operator[] children) {
     this.children = children;
   }
 

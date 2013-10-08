@@ -24,10 +24,10 @@ public final class Merge extends NAryOperator {
   private static final long serialVersionUID = 1L;
 
   /** True if the tuples coming from children are in ascending order. */
-  private final boolean[] ascending;
+  private boolean[] ascending;
 
   /** Indexes of columns that are sorted. */
-  private final int[] sortedColumns;
+  private int[] sortedColumns;
 
   /**
    * Contains a tuple batch for each child.
@@ -168,14 +168,9 @@ public final class Merge extends NAryOperator {
    * 
    * */
   public Merge(final Operator[] children, final int[] sortedColumns, final boolean[] ascending) {
-    this.ascending = ascending;
-    this.sortedColumns = sortedColumns;
+    super(children);
 
-    if (children != null) {
-      setChildren(children);
-    } else {
-      super.setChildren(children);
-    }
+    setSortedColumns(sortedColumns, ascending);
   }
 
   @Override
@@ -272,24 +267,32 @@ public final class Merge extends NAryOperator {
 
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws Exception {
+    Objects.requireNonNull(getChildren());
+    Preconditions.checkArgument(getNumChildren() > 0);
+
+    Preconditions.checkArgument(ascending.length == sortedColumns.length);
+
     ans = new TupleBatchBuffer(getSchema());
-    for (int i = 0; i < getNumChildren(); i++) {
+    for (Operator child : getChildren()) {
+      Preconditions.checkNotNull(child);
+      Preconditions.checkArgument(getSchema().equals(child.getSchema()));
+
       childBatches.add(null);
+      pointerIntoChildBatches.add(-1);
     }
 
     Comparator<Integer> comparator = new TupleComparator();
     heap = new PriorityQueue<Integer>(getNumChildren(), comparator);
   }
 
-  @Override
-  public void setChildren(final Operator[] children) {
-    Objects.requireNonNull(children);
-    Preconditions.checkArgument(children.length > 0);
-    for (Operator op : children) {
-      Preconditions.checkNotNull(op);
-      Preconditions.checkArgument(op.getSchema().equals(children[0].getSchema()));
-      pointerIntoChildBatches.add(-1);
-    }
-    super.setChildren(children);
+  /**
+   * Define how the tuples are sorted in the input and how they should be sorted in the output.
+   * 
+   * @param sortedColumns the indexes of columns that should be sorted by
+   * @param ascending true for each column that should be sorted ascending
+   */
+  void setSortedColumns(final int[] sortedColumns, final boolean[] ascending) {
+    this.sortedColumns = sortedColumns;
+    this.ascending = ascending;
   }
 }

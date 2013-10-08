@@ -71,6 +71,14 @@ public class OperatorTest {
   }
 
   @Test
+  public void testUnionAllConstructorWithNull() throws DbException {
+    TupleSource[] children = new TupleSource[1];
+    children[0] = new TupleSource(generateRandomTuples(10, false));
+    UnionAll union = new UnionAll(null);
+    union.setChildren(children);
+  }
+
+  @Test
   public void testUnionAllCount() throws DbException {
     TupleSource[] children = new TupleSource[3];
     children[0] = new TupleSource(generateRandomTuples(123, false));
@@ -129,6 +137,15 @@ public class OperatorTest {
     for (Multiset.Entry<Long> expectedEntry : expectedCounts.entrySet()) {
       assertEquals(expectedEntry.getCount(), actualCounts.count(expectedEntry.getElement()));
     }
+  }
+
+  @Test
+  public void testMergeConstructorWithNull() throws DbException {
+    TupleSource[] children = new TupleSource[1];
+    children[0] = new TupleSource(generateRandomTuples(10, false));
+    Merge merge = new Merge(null, null, null);
+    merge.setChildren(children);
+    merge.setSortedColumns(new int[] { 0 }, new boolean[] { true });
   }
 
   @Test

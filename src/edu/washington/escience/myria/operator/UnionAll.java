@@ -32,11 +32,7 @@ public final class UnionAll extends NAryOperator {
    * @param children the children to be united.
    * */
   public UnionAll(final Operator[] children) {
-    if (children != null) {
-      setChildren(children);
-    } else {
-      super.setChildren(children);
-    }
+    super(children);
   }
 
   @Override
@@ -68,20 +64,16 @@ public final class UnionAll extends NAryOperator {
 
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-  }
+    Objects.requireNonNull(getChildren());
+    Preconditions.checkArgument(getNumChildren() > 0);
 
-  @Override
-  public void setChildren(final Operator[] children) {
-    Objects.requireNonNull(children);
-    Preconditions.checkArgument(children.length > 0);
     childrenWithData = new LinkedList<Integer>();
     int i = 0;
-    for (Operator op : children) {
-      Preconditions.checkNotNull(op);
-      Preconditions.checkArgument(op.getSchema().equals(children[0].getSchema()));
+    for (Operator child : getChildren()) {
+      Preconditions.checkNotNull(child);
+      Preconditions.checkArgument(getSchema().equals(child.getSchema()));
       childrenWithData.add(i++);
     }
     itr = childrenWithData.iterator();
-    super.setChildren(children);
   }
 }
