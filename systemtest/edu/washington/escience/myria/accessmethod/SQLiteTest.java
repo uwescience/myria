@@ -1,8 +1,11 @@
 package edu.washington.escience.myria.accessmethod;
 
+import static org.junit.Assert.assertTrue;
+
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -18,8 +21,6 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.accessmethod.SQLiteAccessMethod;
-import edu.washington.escience.myria.accessmethod.SQLiteInfo;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.util.FSUtils;
@@ -62,7 +63,9 @@ public class SQLiteTest {
     final HashMap<Tuple, Integer> expectedResult = TestUtils.tupleBatchToTupleBag(tbb);
 
     /* Scan the testtable in database */
-    final DbQueryScan scan = new DbQueryScan(SQLiteInfo.of(dbAbsolutePath), testtableKey, outputSchema);
+    final DbQueryScan scan =
+        new DbQueryScan(SQLiteInfo.of(dbAbsolutePath), testtableKey, outputSchema, new int[] { 0, 1 }, new boolean[] {
+            true, false });
 
     /* Filter on first column INTEGER >= 50 */
     // Filter filter1 = new Filter(Predicate.Op.GREATER_THAN_OR_EQ, 0, new Long(50), scan);
@@ -103,6 +106,26 @@ public class SQLiteTest {
     root.close();
 
     final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(result);
+
+    List<TupleBatch> batches = result.getAll();
+
+    Long previousId = null;
+    String previousName = null;
+    for (TupleBatch tb1 : batches) {
+      for (int i = 0; i < tb1.numTuples(); i++) {
+        long currentId = tb1.getLong(0, i);
+        String currentName = tb1.getString(1, i);
+        if (previousId != null) {
+          assertTrue(previousId <= currentId);
+          if (previousId == currentId) {
+            assertTrue(previousName.compareTo(currentName) >= 0);
+          }
+        }
+        previousId = currentId;
+        previousName = currentName;
+      }
+
+    }
 
     TestUtils.assertTupleBagEqual(expectedResult, resultBag);
 
