@@ -399,6 +399,9 @@ public final class LocalJoin extends BinaryOperator {
 
   @Override
   public Schema getSchema() {
+    if (outputSchema == null) {
+      generateSchema();
+    }
     return outputSchema;
   }
 

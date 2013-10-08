@@ -142,4 +142,11 @@ public class DbInsert extends RootOperator {
   protected void childEOI() throws DbException {
   }
 
+  /**
+   * @return the name of the relation that this operator will write to.
+   */
+  public RelationKey getRelationKey() {
+    return relationKey;
+  }
+
 }
