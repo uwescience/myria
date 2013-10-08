@@ -14,7 +14,7 @@ import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.DbQueryScan;
-import edu.washington.escience.myria.operator.Merge;
+import edu.washington.escience.myria.operator.UnionAll;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
@@ -23,7 +23,7 @@ import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.util.TestUtils;
 
-public class MergeTest extends SystemTestBase {
+public class UnionAllTest extends SystemTestBase {
 
   // change configuration here
   private final int MaxID = 100;
@@ -31,7 +31,7 @@ public class MergeTest extends SystemTestBase {
   private final int numTbl2 = 82;
 
   @Test
-  public void mergeTest() throws Exception {
+  public void unionAllTest() throws Exception {
 
     final ImmutableList<Type> table1Types = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
     final ImmutableList<String> table1ColumnNames = ImmutableList.of("follower", "followee");
@@ -67,9 +67,9 @@ public class MergeTest extends SystemTestBase {
 
     final DbQueryScan scan1 = new DbQueryScan(testtable0Key, tableSchema);
     final DbQueryScan scan2 = new DbQueryScan(testtable1Key, tableSchema);
-    final Merge merge = new Merge(new Operator[] { scan1, scan2 });
+    final UnionAll unionAll = new UnionAll(new Operator[] { scan1, scan2 });
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
-    final CollectProducer cp = new CollectProducer(merge, serverReceiveID, MASTER_ID);
+    final CollectProducer cp = new CollectProducer(unionAll, serverReceiveID, MASTER_ID);
 
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
     workerPlans.put(workerIDs[0], new RootOperator[] { cp });

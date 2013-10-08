@@ -229,7 +229,7 @@ public class TupleBatchBuffer {
   /**
    * @param another TBB.
    * */
-  public final void merge(final TupleBatchBuffer another) {
+  public final void unionAll(final TupleBatchBuffer another) {
     readyTuples.addAll(another.readyTuples);
     readyTuplesNum += another.getReadyTuplesNum();
     if (another.currentInProgressTuples > 0) {
@@ -429,6 +429,19 @@ public class TupleBatchBuffer {
         break;
     }
     columnPut(destColumn);
+  }
+
+  /**
+   * Append the referenced row from the source {@link TupleBatch} to this {@link TupleBatchBuffer}.
+   * 
+   * @param sourceBatch the {@link TupleBatch} from which data will be retrieved.
+   * @param sourceRow the row in the source column from which data will be retrieved.
+   */
+  public final void put(final TupleBatch sourceBatch, final int sourceRow) {
+    List<Column<?>> sourceColumns = sourceBatch.getDataColumns();
+    for (int col = 0; col < sourceColumns.size(); ++col) {
+      put(col, sourceColumns.get(col), sourceRow);
+    }
   }
 
   /**
