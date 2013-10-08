@@ -203,29 +203,7 @@ public enum Type implements Serializable {
    * @param operand the operand
    * */
   public static final boolean compare(final SimplePredicate.Op op, final int valueInTuple, final int operand) {
-    switch (op) {
-      case EQUALS:
-        return valueInTuple == operand;
-      case NOT_EQUALS:
-        return valueInTuple != operand;
-
-      case GREATER_THAN:
-        return valueInTuple > operand;
-
-      case GREATER_THAN_OR_EQ:
-        return valueInTuple >= operand;
-
-      case LESS_THAN:
-        return valueInTuple < operand;
-
-      case LESS_THAN_OR_EQ:
-        return valueInTuple <= operand;
-
-      case LIKE:
-        return valueInTuple == operand;
-    }
-
-    return false;
+    return evalOp(op, Integer.compare(valueInTuple, operand));
   }
 
   /**
@@ -235,25 +213,7 @@ public enum Type implements Serializable {
    * @param operand the operand
    * */
   public static final boolean compare(final SimplePredicate.Op op, final boolean valueInTuple, final boolean operand) {
-    // comparison operators are here to support ordering
-    switch (op) {
-      case EQUALS:
-        return valueInTuple == operand;
-      case NOT_EQUALS:
-        return valueInTuple != operand;
-      case LIKE:
-        return valueInTuple == operand;
-      case GREATER_THAN:
-        return valueInTuple && !operand;
-      case LESS_THAN:
-        return !valueInTuple && operand;
-      case GREATER_THAN_OR_EQ:
-        return valueInTuple;
-      case LESS_THAN_OR_EQ:
-        return !operand;
-    }
-
-    return false;
+    return evalOp(op, Boolean.compare(valueInTuple, operand));
   }
 
   /**
@@ -263,24 +223,7 @@ public enum Type implements Serializable {
    * @param operand the operand
    * */
   public static final boolean compare(final SimplePredicate.Op op, final DateTime valueInTuple, final DateTime operand) {
-    switch (op) {
-      case EQUALS:
-        return valueInTuple.equals(operand);
-      case NOT_EQUALS:
-        return !valueInTuple.equals(operand);
-      case GREATER_THAN:
-        return valueInTuple.compareTo(operand) > 0;
-      case GREATER_THAN_OR_EQ:
-        return valueInTuple.compareTo(operand) >= 0;
-      case LESS_THAN:
-        return valueInTuple.compareTo(operand) < 0;
-      case LESS_THAN_OR_EQ:
-        return valueInTuple.compareTo(operand) <= 0;
-      case LIKE:
-        return valueInTuple.equals(operand);
-    }
-
-    return false;
+    return evalOp(op, valueInTuple.compareTo(operand));
   }
 
   /**
@@ -290,25 +233,7 @@ public enum Type implements Serializable {
    * @param operand the operand
    * */
   public static final boolean compare(final SimplePredicate.Op op, final double valueInTuple, final double operand) {
-    int compVal = Double.compare(valueInTuple, operand);
-    switch (op) {
-      case EQUALS:
-        return compVal == 0;
-      case NOT_EQUALS:
-        return compVal != 0;
-      case GREATER_THAN:
-        return compVal > 0;
-      case GREATER_THAN_OR_EQ:
-        return compVal >= 0;
-      case LESS_THAN:
-        return compVal < 0;
-      case LESS_THAN_OR_EQ:
-        return compVal <= 0;
-      case LIKE:
-        return compVal == 0;
-    }
-
-    return false;
+    return evalOp(op, Double.compare(valueInTuple, operand));
   }
 
   /**
@@ -318,30 +243,7 @@ public enum Type implements Serializable {
    * @param operand the operand
    * */
   public static final boolean compare(final SimplePredicate.Op op, final float valueInTuple, final float operand) {
-    int compVal = Float.compare(valueInTuple, operand);
-    switch (op) {
-      case EQUALS:
-        return compVal == 0;
-      case NOT_EQUALS:
-        return compVal != 0;
-
-      case GREATER_THAN:
-        return compVal > 0;
-
-      case GREATER_THAN_OR_EQ:
-        return compVal >= 0;
-
-      case LESS_THAN:
-        return compVal < 0;
-
-      case LESS_THAN_OR_EQ:
-        return compVal <= 0;
-
-      case LIKE:
-        return compVal == 0;
-    }
-
-    return false;
+    return evalOp(op, Float.compare(valueInTuple, operand));
   }
 
   /**
@@ -351,62 +253,54 @@ public enum Type implements Serializable {
    * @param operand the operand
    * */
   public static final boolean compare(final SimplePredicate.Op op, final long valueInTuple, final long operand) {
-    switch (op) {
-      case EQUALS:
-        return valueInTuple == operand;
-      case NOT_EQUALS:
-        return valueInTuple != operand;
-
-      case GREATER_THAN:
-        return valueInTuple > operand;
-
-      case GREATER_THAN_OR_EQ:
-        return valueInTuple >= operand;
-
-      case LESS_THAN:
-        return valueInTuple < operand;
-
-      case LESS_THAN_OR_EQ:
-        return valueInTuple <= operand;
-
-      case LIKE:
-        return valueInTuple == operand;
-    }
-
-    return false;
+    return evalOp(op, Long.compare(valueInTuple, operand));
   }
 
   /**
    * @return true if valueInTuple op operand.
    * @param op the operation
-   * @param valInTuple the value to be compared in a tuple
+   * @param valueInTuple the value to be compared in a tuple
    * @param operand the operand
    * */
-  public static final boolean compare(final SimplePredicate.Op op, final String valInTuple, final String operand) {
-
-    final int cmpVal = valInTuple.compareTo(operand);
+  public static final boolean compare(final SimplePredicate.Op op, final String valueInTuple, final String operand) {
 
     switch (op) {
+      case LIKE:
+        return valueInTuple.indexOf(operand) >= 0;
+      default:
+        return evalOp(op, valueInTuple.compareTo(operand));
+    }
+  }
+
+  /**
+   * Given an int that is the output of a <code>compareTo</code> function, return true if that comparison value
+   * satisfies that operator.
+   * 
+   * @param op the comparison operator.
+   * @param compared the comparison value, output using <code>compareTo</code> semantics.
+   * @return true if that comparison value satisfies the operator.
+   */
+  private static boolean evalOp(final SimplePredicate.Op op, final int compared) {
+    switch (op) {
       case EQUALS:
-        return cmpVal == 0;
+        return compared == 0;
 
       case NOT_EQUALS:
-        return cmpVal != 0;
+        return compared != 0;
 
       case GREATER_THAN:
-        return cmpVal > 0;
+        return compared > 0;
 
       case GREATER_THAN_OR_EQ:
-        return cmpVal >= 0;
+        return compared >= 0;
 
       case LESS_THAN:
-        return cmpVal < 0;
+        return compared < 0;
 
       case LESS_THAN_OR_EQ:
-        return cmpVal <= 0;
-
+        return compared <= 0;
       case LIKE:
-        return valInTuple.indexOf(operand) >= 0;
+        throw new UnsupportedOperationException();
     }
 
     return false;
