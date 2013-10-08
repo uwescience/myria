@@ -174,7 +174,7 @@ public final class Merge extends NAryOperator {
     if (children != null) {
       setChildren(children);
     } else {
-      this.children = null;
+      super.setChildren(children);
     }
   }
 
@@ -197,13 +197,13 @@ public final class Merge extends NAryOperator {
 
       // fill the buffers, if possible and necessary
       boolean notEnoughData = false;
-      for (int childId = 0; childId < getNumChildren(); childId++) {
-        Operator child = children[childId];
+      for (int childIdx = 0; childIdx < getNumChildren(); childIdx++) {
+        Operator child = getChild(childIdx);
         if (child.eos()) {
           numEOS++;
           continue;
         }
-        if (childBatches.get(childId) == null) {
+        if (childBatches.get(childIdx) == null) {
           TupleBatch tb = child.fetchNextReady();
 
           // After fetching from a child, it might be EOS.
@@ -214,12 +214,12 @@ public final class Merge extends NAryOperator {
             continue;
           }
           if (tb != null) {
-            childBatches.set(childId, tb);
-            pointerIntoChildBatches.set(childId, 0);
+            childBatches.set(childIdx, tb);
+            pointerIntoChildBatches.set(childIdx, 0);
 
             // add the index after we refilled the batch or
             // when the batches are initially loaded
-            heap.add(childId);
+            heap.add(childIdx);
           } else {
             notEnoughData = true;
             break;
@@ -284,7 +284,9 @@ public final class Merge extends NAryOperator {
   @Override
   public void setChildren(final Operator[] children) {
     Objects.requireNonNull(children);
+    Preconditions.checkArgument(children.length > 0);
     for (Operator op : children) {
+      Preconditions.checkNotNull(op);
       Preconditions.checkArgument(op.getSchema().equals(children[0].getSchema()));
       pointerIntoChildBatches.add(-1);
     }

@@ -35,7 +35,7 @@ public final class UnionAll extends NAryOperator {
     if (children != null) {
       setChildren(children);
     } else {
-      this.children = null;
+      super.setChildren(children);
     }
   }
 
@@ -46,13 +46,13 @@ public final class UnionAll extends NAryOperator {
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
     for (int i = 0; i < childrenWithData.size(); i++) {
-      Integer childId = itr.next();
+      Integer childIdx = itr.next();
       if (!itr.hasNext()) {
         // simulate circular linked list
         itr = childrenWithData.iterator();
       }
 
-      Operator child = children[childId];
+      Operator child = getChild(childIdx);
       if (child.eos()) {
         itr.remove();
         continue;
@@ -73,9 +73,11 @@ public final class UnionAll extends NAryOperator {
   @Override
   public void setChildren(final Operator[] children) {
     Objects.requireNonNull(children);
+    Preconditions.checkArgument(children.length > 0);
     childrenWithData = new LinkedList<Integer>();
     int i = 0;
     for (Operator op : children) {
+      Preconditions.checkNotNull(op);
       Preconditions.checkArgument(op.getSchema().equals(children[0].getSchema()));
       childrenWithData.add(i++);
     }

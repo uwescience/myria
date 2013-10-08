@@ -1,9 +1,5 @@
 package edu.washington.escience.myria.operator;
 
-import java.util.Objects;
-
-import com.google.common.base.Preconditions;
-
 import edu.washington.escience.myria.Schema;
 
 /**
@@ -19,7 +15,7 @@ public abstract class NAryOperator extends Operator {
   /**
    * The children of the n-ary operator.
    * */
-  protected Operator[] children;
+  private Operator[] children;
 
   /**
    * Default, empty constructor.
@@ -33,10 +29,18 @@ public abstract class NAryOperator extends Operator {
     return children;
   }
 
+  /**
+   * Return a child.
+   * 
+   * @param childIdx the index of the child to return
+   * @return the child
+   */
+  public Operator getChild(final int childIdx) {
+    return children[childIdx];
+  }
+
   @Override
   public void setChildren(final Operator[] children) {
-    Objects.requireNonNull(children);
-    Preconditions.checkArgument(children.length > 0);
     this.children = children;
   }
 
