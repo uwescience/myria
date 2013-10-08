@@ -32,7 +32,11 @@ public final class UnionAll extends NAryOperator {
    * @param children the children to be united.
    * */
   public UnionAll(final Operator[] children) {
-    setChildren(children);
+    if (children != null) {
+      setChildren(children);
+    } else {
+      this.children = null;
+    }
   }
 
   @Override
@@ -69,7 +73,6 @@ public final class UnionAll extends NAryOperator {
   @Override
   public void setChildren(final Operator[] children) {
     Objects.requireNonNull(children);
-    Preconditions.checkArgument(children.length > 0);
     childrenWithData = new LinkedList<Integer>();
     int i = 0;
     for (Operator op : children) {
@@ -77,6 +80,6 @@ public final class UnionAll extends NAryOperator {
       childrenWithData.add(i++);
     }
     itr = childrenWithData.iterator();
-    this.children = children;
+    super.setChildren(children);
   }
 }

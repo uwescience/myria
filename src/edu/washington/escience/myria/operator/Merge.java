@@ -170,7 +170,12 @@ public final class Merge extends NAryOperator {
   public Merge(final Operator[] children, final int[] sortedColumns, final boolean[] ascending) {
     this.ascending = ascending;
     this.sortedColumns = sortedColumns;
-    setChildren(children);
+
+    if (children != null) {
+      setChildren(children);
+    } else {
+      this.children = null;
+    }
   }
 
   @Override
@@ -279,11 +284,10 @@ public final class Merge extends NAryOperator {
   @Override
   public void setChildren(final Operator[] children) {
     Objects.requireNonNull(children);
-    Preconditions.checkArgument(children.length > 0);
     for (Operator op : children) {
       Preconditions.checkArgument(op.getSchema().equals(children[0].getSchema()));
       pointerIntoChildBatches.add(-1);
     }
-    this.children = children;
+    super.setChildren(children);
   }
 }
