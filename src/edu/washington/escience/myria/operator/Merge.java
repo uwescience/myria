@@ -163,8 +163,8 @@ public final class Merge extends NAryOperator {
 
   /**
    * @param children the children to be merged.
-   * @param ascending tuple coming from children are in ascending order
-   * @param sortedColumns the columns that are sorted in the input
+   * @param sortedColumns the indexes of columns that tuples are ordered by in the input
+   * @param ascending true for each column that is ordered ascending
    * 
    * */
   public Merge(final Operator[] children, final int[] sortedColumns, final boolean[] ascending) {
@@ -288,8 +288,8 @@ public final class Merge extends NAryOperator {
   /**
    * Define how the tuples are sorted in the input and how they should be sorted in the output.
    * 
-   * @param sortedColumns the indexes of columns that should be sorted by
-   * @param ascending true for each column that should be sorted ascending
+   * @param sortedColumns the indexes of columns that tuples are ordered by in the input
+   * @param ascending true for each column that is ordered ascending
    */
   void setSortedColumns(final int[] sortedColumns, final boolean[] ascending) {
     this.sortedColumns = sortedColumns;
