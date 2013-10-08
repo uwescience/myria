@@ -9,14 +9,11 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.parallel.QueryExecutionMode;
-import edu.washington.escience.myria.parallel.TaskResourceManager;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.hash.TIntObjectHashMap;
 
@@ -245,10 +242,10 @@ public final class LocalUnbalancedJoin extends BinaryOperator {
 
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
-    if (!nonBlocking) {
-      // TODO(chushumo) to be implemented
-      ;
-    }
+
+    /*
+     * blocking mode will have the same logic
+     */
 
     /* If any full tuple batches are ready, output them. */
     TupleBatch nexttb = ans.popAnyUsingTimeout();
@@ -317,14 +314,7 @@ public final class LocalUnbalancedJoin extends BinaryOperator {
       generateSchema();
     }
     ans = new TupleBatchBuffer(outputSchema);
-    TaskResourceManager qem = (TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER);
-    nonBlocking = qem.getExecutionMode() == QueryExecutionMode.NON_BLOCKING;
   }
-
-  /**
-   * The query execution mode is nonBlocking.
-   */
-  private transient boolean nonBlocking = true;
 
   /**
    * Check if a tuple in uniqueTuples equals to the comparing tuple (cntTuple).
