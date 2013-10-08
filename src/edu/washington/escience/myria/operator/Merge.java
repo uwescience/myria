@@ -188,8 +188,6 @@ public final class Merge extends NAryOperator {
 
       numEOS = 0;
 
-      // TODO: might break if children never deliver anything
-
       // fill the buffers, if possible and necessary
       boolean notEnoughData = false;
       for (int childId = 0; childId < numChildren(); childId++) {
@@ -200,11 +198,20 @@ public final class Merge extends NAryOperator {
         }
         if (childBatches.get(childId) == null) {
           TupleBatch tb = child.fetchNextReady();
+
+          // After fetching from a child, it might be EOS.
+          // If we don't catch this case here but return null,
+          // this method might not be called again.
+          if (child.eos()) {
+            // System.out.println("foo");
+            numEOS++;
+            continue;
+          }
           if (tb != null) {
             childBatches.set(childId, tb);
             pointerIntoChildBatches.set(childId, 0);
-            // this reads the index after we refilled the batch or
-            // when the batches are initially loaded
+            // This reads the index after we refilled the batch or
+            // when the batches are initially loaded.
             heap.add(childId);
           } else {
             notEnoughData = true;
@@ -214,7 +221,11 @@ public final class Merge extends NAryOperator {
       }
 
       if (notEnoughData) {
-        break;
+        if (numEOS == numChildren()) {
+          break;
+        }
+        // System.out.println("Return " + ans.numTuples());
+        return nexttb;
       }
 
       // System.out.println("Size of heap " + heap.size() + " num EOS:" + numEOS + " heap " + heap);
@@ -246,9 +257,9 @@ public final class Merge extends NAryOperator {
 
       if (numEOS == numChildren()) {
         setEOS();
+        // System.out.println("Should be EOS");
         Preconditions.checkArgument(heap.size() == 0);
-        // Preconditions.checkArgument(nexttb != null);
-        Preconditions.checkArgument(ans.numTuples() == 0);
+        Preconditions.checkArgument(ans.numTuples() == 0 || nexttb == null);
         break;
       }
     }

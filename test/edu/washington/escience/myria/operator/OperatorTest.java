@@ -46,7 +46,7 @@ public class OperatorTest {
   public TupleBatchBuffer generateRandomTuples(final int numTuples, boolean sorted) {
     final ArrayList<Entry<Long, String>> entries = new ArrayList<Entry<Long, String>>();
 
-    final String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, numTuples, 20);
+    final String[] names = TestUtils.randomFixedLengthNumericString(0, 5000, numTuples, 20);
     final long[] ids = TestUtils.randomLong(0, 2000, names.length);
 
     for (int i = 0; i < names.length; i++) {
@@ -176,6 +176,8 @@ public class OperatorTest {
       }
     }
     merge.close();
+
+    assertEquals(12300 + 4200 + 9900, entries.size());
 
     Comparator<Entry<Long, String>> comparator = new EntryComparator();
     Entry<Long, String> previous = null;
