@@ -1047,7 +1047,27 @@ public final class MasterCatalog {
    * @return the newly generated ID of this query.
    * @throws CatalogException if there is an error adding the new query.
    */
-  public Long newQuery(final String rawQuery, final String logicalRa, final Object physicalPlan)
+  public Long newQuery(final String rawQuery, final String logicalRa, final QueryEncoding physicalPlan)
+      throws CatalogException {
+    final String physicalString;
+    try {
+      physicalString = MyriaJsonMapperProvider.newMapper().writeValueAsString(physicalPlan);
+    } catch (JsonProcessingException e) {
+      throw new CatalogException(e);
+    }
+    return newQuery(rawQuery, logicalRa, physicalString);
+  }
+
+  /**
+   * Insert a new query into the Catalog.
+   * 
+   * @param rawQuery the original user data of the query.
+   * @param logicalRa the compiled logical relational algebra plan of the query.
+   * @param physicalPlan a String describing the physical execution plan for the query.
+   * @return the newly generated ID of this query.
+   * @throws CatalogException if there is an error adding the new query.
+   */
+  public Long newQuery(final String rawQuery, final String logicalRa, final String physicalPlan)
       throws CatalogException {
     Objects.requireNonNull(rawQuery);
     Objects.requireNonNull(logicalRa);
@@ -1057,16 +1077,6 @@ public final class MasterCatalog {
     }
 
     final QueryStatusEncoding queryStatus = QueryStatusEncoding.submitted(rawQuery, logicalRa, physicalPlan);
-    final String physicalString;
-    if (queryStatus.physicalPlan instanceof String) {
-      physicalString = (String) queryStatus.physicalPlan;
-    } else {
-      try {
-        physicalString = MyriaJsonMapperProvider.newMapper().writeValueAsString(queryStatus.physicalPlan);
-      } catch (JsonProcessingException e) {
-        throw new CatalogException(e);
-      }
-    }
 
     try {
       return queue.execute(new SQLiteJob<Long>() {
@@ -1078,7 +1088,7 @@ public final class MasterCatalog {
                     .prepare("INSERT INTO queries (raw_query, logical_ra, physical_plan, submit_time, start_time, finish_time, elapsed_nanos, status) VALUES (?,?,?,?,?,?,?,?);");
             statement.bind(1, queryStatus.rawQuery);
             statement.bind(2, queryStatus.logicalRa);
-            statement.bind(3, physicalString);
+            statement.bind(3, physicalPlan);
             statement.bind(4, queryStatus.submitTime);
             statement.bind(5, queryStatus.startTime);
             statement.bind(6, queryStatus.finishTime);

@@ -43,6 +43,7 @@ import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleWriter;
 import edu.washington.escience.myria.api.encoding.DatasetStatus;
+import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
@@ -945,12 +946,48 @@ public final class Server {
    * @throws CatalogException if any error in processing catalog
    * @return the query future from which the query status can be looked up.
    * */
-  public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final Object physicalPlan,
+  public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final String physicalPlan,
       final SingleQueryPlanWithArgs masterPlan, final Map<Integer, SingleQueryPlanWithArgs> workerPlans)
       throws DbException, CatalogException {
-    workerPlans.remove(MyriaConstants.MASTER_ID);
     final long queryID = catalog.newQuery(rawQuery, logicalRa, physicalPlan);
+    return submitQuery(queryID, masterPlan, workerPlans);
+  }
 
+  /**
+   * Submit a query for execution. The workerPlans may be removed in the future if the query compiler and schedulers are
+   * ready.
+   * 
+   * @param rawQuery the raw user-defined query. E.g., the source Datalog program.
+   * @param logicalRa the logical relational algebra of the compiled plan.
+   * @param physicalPlan the Myria physical plan for the query.
+   * @param workerPlans the physical parallel plan fragments for each worker.
+   * @param masterPlan the physical parallel plan fragment for the master.
+   * @throws DbException if any error in non-catalog data processing
+   * @throws CatalogException if any error in processing catalog
+   * @return the query future from which the query status can be looked up.
+   * */
+  public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final QueryEncoding physicalPlan,
+      final SingleQueryPlanWithArgs masterPlan, final Map<Integer, SingleQueryPlanWithArgs> workerPlans)
+      throws DbException, CatalogException {
+    final long queryID = catalog.newQuery(rawQuery, logicalRa, physicalPlan);
+    return submitQuery(queryID, masterPlan, workerPlans);
+  }
+
+  /**
+   * Submit a query for execution. The workerPlans may be removed in the future if the query compiler and schedulers are
+   * ready.
+   * 
+   * @param queryID the catalog's assigned ID for this query.
+   * @param workerPlans the physical parallel plan fragments for each worker.
+   * @param masterPlan the physical parallel plan fragment for the master.
+   * @throws DbException if any error in non-catalog data processing
+   * @throws CatalogException if any error in processing catalog
+   * @return the query future from which the query status can be looked up.
+   * */
+  private QueryFuture submitQuery(final long queryID, final SingleQueryPlanWithArgs masterPlan,
+      final Map<Integer, SingleQueryPlanWithArgs> workerPlans) throws DbException, CatalogException {
+
+    workerPlans.remove(MyriaConstants.MASTER_ID);
     try {
       final MasterQueryPartition mqp = new MasterQueryPartition(masterPlan, workerPlans, queryID, this);
       activeQueries.put(queryID, mqp);
