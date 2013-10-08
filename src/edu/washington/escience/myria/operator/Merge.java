@@ -10,7 +10,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.SimplePredicate.Op;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
@@ -71,90 +70,57 @@ public final class Merge extends NAryOperator {
       Preconditions.checkArgument(rightTb.numTuples() > rightPointer);
       for (int columnIndex = 0; columnIndex < sortedColumns.length; columnIndex++) {
         Type columnType = getSchema().getColumnType(columnIndex);
-        Op op0, op1;
+        int compared, factor;
         if (ascending[columnIndex]) {
-          op0 = Op.GREATER_THAN;
-          op1 = Op.LESS_THAN;
+          factor = 1;
         } else {
-          op0 = Op.LESS_THAN;
-          op1 = Op.GREATER_THAN;
+          factor = -1;
         }
         switch (columnType) {
           case INT_TYPE:
-            if (Type.compare(op0, leftTb.getInt(columnIndex, leftPointer), rightTb.getInt(columnIndex, rightPointer))) {
-              return 1;
-            }
-            if (Type.compare(op1, leftTb.getInt(columnIndex, leftPointer), rightTb.getInt(columnIndex, rightPointer))) {
-              return -1;
-            }
+            compared =
+                Type.compareRaw(leftTb.getInt(columnIndex, leftPointer), rightTb.getInt(columnIndex, rightPointer));
             break;
 
           case FLOAT_TYPE:
-            if (Type.compare(op0, leftTb.getFloat(columnIndex, leftPointer), rightTb
-                .getFloat(columnIndex, rightPointer))) {
-              return 1;
-            }
-            if (Type.compare(op1, leftTb.getFloat(columnIndex, leftPointer), rightTb
-                .getFloat(columnIndex, rightPointer))) {
-              return -1;
-            }
+            compared =
+                Type.compareRaw(leftTb.getFloat(columnIndex, leftPointer), rightTb.getFloat(columnIndex, rightPointer));
             break;
 
           case LONG_TYPE:
-            if (Type.compare(op0, leftTb.getLong(columnIndex, leftPointer), rightTb.getLong(columnIndex, rightPointer))) {
-              return 1;
-            }
-            if (Type.compare(op1, leftTb.getLong(columnIndex, leftPointer), rightTb.getLong(columnIndex, rightPointer))) {
-              return -1;
-            }
+            compared =
+                Type.compareRaw(leftTb.getLong(columnIndex, leftPointer), rightTb.getLong(columnIndex, rightPointer));
             break;
 
           case DOUBLE_TYPE:
-            if (Type.compare(op0, leftTb.getDouble(columnIndex, leftPointer), rightTb.getDouble(columnIndex,
-                rightPointer))) {
-              return 1;
-            }
-            if (Type.compare(op1, leftTb.getDouble(columnIndex, leftPointer), rightTb.getDouble(columnIndex,
-                rightPointer))) {
-              return -1;
-            }
+            compared =
+                Type.compareRaw(leftTb.getDouble(columnIndex, leftPointer), rightTb
+                    .getDouble(columnIndex, rightPointer));
             break;
 
           case BOOLEAN_TYPE:
-            if (Type.compare(op0, leftTb.getBoolean(columnIndex, leftPointer), rightTb.getBoolean(columnIndex,
-                rightPointer))) {
-              return 1;
-            }
-            if (Type.compare(op1, leftTb.getBoolean(columnIndex, leftPointer), rightTb.getBoolean(columnIndex,
-                rightPointer))) {
-              return -1;
-            }
+            compared =
+                Type.compareRaw(leftTb.getBoolean(columnIndex, leftPointer), rightTb.getBoolean(columnIndex,
+                    rightPointer));
             break;
 
           case STRING_TYPE:
-            if (Type.compare(op0, leftTb.getString(columnIndex, leftPointer), rightTb.getString(columnIndex,
-                rightPointer))) {
-              return 1;
-            }
-            if (Type.compare(op1, leftTb.getString(columnIndex, leftPointer), rightTb.getString(columnIndex,
-                rightPointer))) {
-              return -1;
-            }
+            compared =
+                Type.compareRaw(leftTb.getString(columnIndex, leftPointer), rightTb
+                    .getString(columnIndex, rightPointer));
             break;
 
           case DATETIME_TYPE:
-            if (Type.compare(op0, leftTb.getDateTime(columnIndex, leftPointer), rightTb.getDateTime(columnIndex,
-                rightPointer))) {
-              return 1;
-            }
-            if (Type.compare(op1, leftTb.getDateTime(columnIndex, leftPointer), rightTb.getDateTime(columnIndex,
-                rightPointer))) {
-              return -1;
-            }
+            compared =
+                Type.compareRaw(leftTb.getDateTime(columnIndex, leftPointer), rightTb.getDateTime(columnIndex,
+                    rightPointer));
             break;
 
           default:
             throw new UnsupportedOperationException("Unknown type " + columnType);
+        }
+        if (compared != 0) {
+          return compared * factor;
         }
       }
       return 0;

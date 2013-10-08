@@ -198,77 +198,135 @@ public enum Type implements Serializable {
 
   /**
    * @return true if valueInTuple op operand.
-   * @param op the operation
    * @param valueInTuple the value to be compared in a tuple
    * @param operand the operand
    * */
-  public static final boolean compare(final SimplePredicate.Op op, final int valueInTuple, final int operand) {
-    return evalOp(op, Integer.compare(valueInTuple, operand));
+  public static final int compareRaw(final int valueInTuple, final int operand) {
+    return Integer.compare(valueInTuple, operand);
   }
 
   /**
    * @return true if valueInTuple op operand.
-   * @param op the operation
    * @param valueInTuple the value to be compared in a tuple
    * @param operand the operand
    * */
-  public static final boolean compare(final SimplePredicate.Op op, final boolean valueInTuple, final boolean operand) {
-    return evalOp(op, Boolean.compare(valueInTuple, operand));
+  public static final int compareRaw(final boolean valueInTuple, final boolean operand) {
+    return Boolean.compare(valueInTuple, operand);
   }
 
   /**
    * @return true if valueInTuple op operand.
-   * @param op the operation
    * @param valueInTuple the value to be compared in a tuple
    * @param operand the operand
    * */
-  public static final boolean compare(final SimplePredicate.Op op, final DateTime valueInTuple, final DateTime operand) {
-    return evalOp(op, valueInTuple.compareTo(operand));
+  public static final int compareRaw(final DateTime valueInTuple, final DateTime operand) {
+    return valueInTuple.compareTo(operand);
   }
 
   /**
    * @return true if valueInTuple op operand.
-   * @param op the operation
    * @param valueInTuple the value to be compared in a tuple
    * @param operand the operand
    * */
-  public static final boolean compare(final SimplePredicate.Op op, final double valueInTuple, final double operand) {
-    return evalOp(op, Double.compare(valueInTuple, operand));
+  public static final int compareRaw(final double valueInTuple, final double operand) {
+    return Double.compare(valueInTuple, operand);
   }
 
   /**
    * @return true if valueInTuple op operand.
-   * @param op the operation
    * @param valueInTuple the value to be compared in a tuple
    * @param operand the operand
    * */
-  public static final boolean compare(final SimplePredicate.Op op, final float valueInTuple, final float operand) {
-    return evalOp(op, Float.compare(valueInTuple, operand));
+  public static final int compareRaw(final float valueInTuple, final float operand) {
+    return Float.compare(valueInTuple, operand);
   }
 
   /**
    * @return true if valueInTuple op operand.
-   * @param op the operation
    * @param valueInTuple the value to be compared in a tuple
    * @param operand the operand
    * */
-  public static final boolean compare(final SimplePredicate.Op op, final long valueInTuple, final long operand) {
-    return evalOp(op, Long.compare(valueInTuple, operand));
+  public static final int compareRaw(final long valueInTuple, final long operand) {
+    return Long.compare(valueInTuple, operand);
   }
 
   /**
    * @return true if valueInTuple op operand.
-   * @param op the operation
    * @param valueInTuple the value to be compared in a tuple
    * @param operand the operand
    * */
-  public static final boolean compare(final SimplePredicate.Op op, final String valueInTuple, final String operand) {
+  public static final int compareRaw(final String valueInTuple, final String operand) {
+    return valueInTuple.compareTo(operand);
+  }
 
+  /**
+   * @param op the operation
+   * @param valueInTuple the value to be compared in a tuple
+   * @param operand the operand
+   * @return true if valueInTuple op operand.
+   */
+  private static boolean compare(final SimplePredicate.Op op, final long valueInTuple, final long operand) {
+    int compared = compareRaw(valueInTuple, operand);
+    return evalOp(op, compared);
+  }
+
+  /**
+   * @param op the operation
+   * @param valueInTuple the value to be compared in a tuple
+   * @param operand the operand
+   * @return true if valueInTuple op operand.
+   */
+  private static boolean compare(final SimplePredicate.Op op, final double valueInTuple, final double operand) {
+    int compared = compareRaw(valueInTuple, operand);
+    return evalOp(op, compared);
+  }
+
+  /**
+   * @param op the operation
+   * @param valueInTuple the value to be compared in a tuple
+   * @param operand the operand
+   * @return true if valueInTuple op operand.
+   */
+  private static boolean compare(final SimplePredicate.Op op, final boolean valueInTuple, final boolean operand) {
+    int compared = compareRaw(valueInTuple, operand);
+    return evalOp(op, compared);
+  }
+
+  /**
+   * @param op the operation
+   * @param valueInTuple the value to be compared in a tuple
+   * @param operand the operand
+   * @return true if valueInTuple op operand.
+   */
+  private static boolean compare(final SimplePredicate.Op op, final DateTime valueInTuple, final DateTime operand) {
+    int compared = compareRaw(valueInTuple, operand);
+    return evalOp(op, compared);
+  }
+
+  /**
+   * @param op the operation
+   * @param valueInTuple the value to be compared in a tuple
+   * @param operand the operand
+   * @return true if valueInTuple op operand.
+   */
+  private static boolean compare(final SimplePredicate.Op op, final int valueInTuple, final int operand) {
+    int compared = compareRaw(valueInTuple, operand);
+    return evalOp(op, compared);
+  }
+
+  /**
+   * @param op the operation
+   * @param valueInTuple the value to be compared in a tuple
+   * @param operand the operand
+   * @return true if valueInTuple op operand.
+   */
+  private static boolean compare(final SimplePredicate.Op op, final String valueInTuple, final String operand) {
     switch (op) {
       case LIKE:
         return valueInTuple.indexOf(operand) >= 0;
       default:
-        return evalOp(op, valueInTuple.compareTo(operand));
+        int compared = compareRaw(valueInTuple, operand);
+        return evalOp(op, compared);
     }
   }
 
