@@ -48,7 +48,7 @@ public abstract class NAryOperator extends Operator {
   /**
    * @return number of children
    */
-  protected int numChildren() {
+  protected int getNumChildren() {
     return children.length;
   }
 

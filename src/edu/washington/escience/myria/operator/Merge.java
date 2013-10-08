@@ -197,7 +197,7 @@ public final class Merge extends NAryOperator {
 
       // fill the buffers, if possible and necessary
       boolean notEnoughData = false;
-      for (int childId = 0; childId < numChildren(); childId++) {
+      for (int childId = 0; childId < getNumChildren(); childId++) {
         Operator child = children[childId];
         if (child.eos()) {
           numEOS++;
@@ -231,7 +231,7 @@ public final class Merge extends NAryOperator {
         // break if this is EOS to ensure that we don't return
         // null and have data in buffer which would mean that this
         // method is never called again.
-        if (numEOS == numChildren()) {
+        if (numEOS == getNumChildren()) {
           break;
         }
         return null;
@@ -255,7 +255,7 @@ public final class Merge extends NAryOperator {
         nexttb = ans.popFilled();
       }
 
-      if (numEOS == numChildren()) {
+      if (numEOS == getNumChildren()) {
         setEOS();
         Preconditions.checkArgument(heap.size() == 0);
         Preconditions.checkArgument(nexttb == null);
@@ -273,12 +273,12 @@ public final class Merge extends NAryOperator {
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws Exception {
     ans = new TupleBatchBuffer(getSchema());
-    for (int i = 0; i < numChildren(); i++) {
+    for (int i = 0; i < getNumChildren(); i++) {
       childBatches.add(null);
     }
 
     Comparator<Integer> comparator = new TupleComparator();
-    heap = new PriorityQueue<Integer>(numChildren(), comparator);
+    heap = new PriorityQueue<Integer>(getNumChildren(), comparator);
   }
 
   @Override
