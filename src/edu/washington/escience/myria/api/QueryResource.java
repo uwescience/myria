@@ -52,6 +52,23 @@ public final class QueryResource {
   private Server server;
 
   /**
+   * For testing purposes, simply deserialize the submitted query and instantiate it with physical parameters (specific
+   * machines, etc.). Return the result.
+   * 
+   * @param query the query to be validated.
+   * @param uriInfo the URI of the current request.
+   * @return the deserialized query.
+   */
+  @POST
+  @Path("validate")
+  public Response validateQuery(final QueryEncoding query, @Context final UriInfo uriInfo) {
+    /* Validate the input. */
+    query.validate();
+    /* Send back the deserialized query. */
+    return Response.ok(query).build();
+  }
+
+  /**
    * For now, simply echoes back its input.
    * 
    * @param query the query to be executed.
