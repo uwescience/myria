@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.operator;
 
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.Objects;
 
 import com.google.common.base.Preconditions;
@@ -17,9 +19,14 @@ public final class UnionAll extends NAryOperator {
   private static final long serialVersionUID = 1L;
 
   /**
-   * Fairly get data from children.
-   * */
-  private transient int childIdxToUnion;
+   * List of children that have not yet returned EOS.
+   */
+  private transient LinkedList<Integer> childrenWithData;
+
+  /**
+   * Iterator into {@link #childrenWithData}. Global to fairly get data from children.
+   */
+  private transient Iterator<Integer> itr;
 
   /**
    * @param children the children to be united.
@@ -34,10 +41,16 @@ public final class UnionAll extends NAryOperator {
 
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
-    for (int unionCount = 0; unionCount < numChildren(); unionCount++) {
-      Operator child = children[childIdxToUnion];
-      childIdxToUnion = (childIdxToUnion + 1) % numChildren();
+    for (int i = 0; i < childrenWithData.size(); i++) {
+      Integer childId = itr.next();
+      if (!itr.hasNext()) {
+        // simulate circular linked list
+        itr = childrenWithData.iterator();
+      }
+
+      Operator child = children[childId];
       if (child.eos()) {
+        itr.remove();
         continue;
       }
       TupleBatch tb = child.nextReady();
@@ -51,16 +64,19 @@ public final class UnionAll extends NAryOperator {
 
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    childIdxToUnion = 0;
   }
 
   @Override
   public void setChildren(final Operator[] children) {
     Objects.requireNonNull(children);
     Preconditions.checkArgument(children.length > 0);
+    childrenWithData = new LinkedList<Integer>();
+    int i = 0;
     for (Operator op : children) {
       Preconditions.checkArgument(op.getSchema().equals(children[0].getSchema()));
+      childrenWithData.add(i++);
     }
+    itr = childrenWithData.iterator();
     this.children = children;
   }
 }
