@@ -90,7 +90,6 @@ public final class Merge extends NAryOperator {
                 .getFloat(columnIndex, rightPointer))) {
               return 1;
             }
-
             if (Type.compare(op1, leftTb.getFloat(columnIndex, leftPointer), rightTb
                 .getFloat(columnIndex, rightPointer))) {
               return -1;

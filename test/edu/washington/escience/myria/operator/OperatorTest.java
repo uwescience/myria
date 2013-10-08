@@ -3,8 +3,11 @@ package edu.washington.escience.myria.operator;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Map.Entry;
 
 import org.junit.Test;
 
@@ -20,6 +23,20 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.util.TestUtils;
 
 public class OperatorTest {
+
+  public class EntryComparator implements Comparator<Entry<Long, String>> {
+
+    @Override
+    public int compare(Entry<Long, String> o1, Entry<Long, String> o2) {
+      int res = o1.getKey().compareTo(o2.getKey());
+      if (res != 0) {
+        return res;
+      }
+      return o1.getValue().compareTo(o2.getValue());
+    }
+
+  }
+
   /**
    * 
    * @param numTuples
@@ -27,20 +44,28 @@ public class OperatorTest {
    * @return
    */
   public TupleBatchBuffer generateRandomTuples(final int numTuples, boolean sorted) {
+    final ArrayList<Entry<Long, String>> entries = new ArrayList<Entry<Long, String>>();
+
     final String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, numTuples, 20);
     final long[] ids = TestUtils.randomLong(0, 2000, names.length);
 
+    for (int i = 0; i < names.length; i++) {
+      entries.add(new SimpleEntry<Long, String>(ids[i], names[i]));
+    }
+
+    Comparator<Entry<Long, String>> comparator = new EntryComparator();
     if (sorted) {
-      Arrays.sort(ids);
+      Collections.sort(entries, comparator);
     }
 
     final Schema schema =
         new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
-    for (int i = 0; i < names.length; i++) {
-      tbb.put(0, ids[i]);
-      tbb.put(1, names[i]);
+
+    for (Entry<Long, String> entry : entries) {
+      tbb.put(0, entry.getKey());
+      tbb.put(1, entry.getValue());
     }
     return tbb;
   }
@@ -138,26 +163,27 @@ public class OperatorTest {
     children[1] = new TupleSource(randomTuples[1]);
     children[2] = new TupleSource(randomTuples[2]);
 
-    NAryOperator merge = new Merge(children, new int[] { 0 }, new boolean[] { true });
+    NAryOperator merge = new Merge(children, new int[] { 0, 1 }, new boolean[] { true, true });
     merge.open(null);
     TupleBatch tb;
-    ArrayList<Long> idCollector = new ArrayList<Long>();
+    final ArrayList<Entry<Long, String>> entries = new ArrayList<Entry<Long, String>>();
     while (!merge.eos()) {
       tb = merge.nextReady();
       if (tb != null) {
         for (int i = 0; i < tb.numTuples(); i++) {
-          idCollector.add(tb.getLong(0, i));
+          entries.add(new SimpleEntry<Long, String>(tb.getLong(0, i), tb.getString(1, i)));
         }
       }
     }
     merge.close();
 
-    Long previous = null;
-    for (Long index : idCollector) {
+    Comparator<Entry<Long, String>> comparator = new EntryComparator();
+    Entry<Long, String> previous = null;
+    for (Entry<Long, String> entry : entries) {
       if (previous != null) {
-        assertTrue(previous <= index);
+        assertTrue(comparator.compare(previous, entry) <= 0);
       }
-      previous = index;
+      previous = entry;
     }
 
   }
