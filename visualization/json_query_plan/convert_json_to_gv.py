@@ -12,6 +12,8 @@ children['CollectProducer'] = ['arg_child']
 children['EOSController'] = ['arg_child']
 children['IDBInput'] = ['arg_initial_input', 'arg_iteration_input', 'arg_eos_controller_input']
 children['LocalJoin'] = ['arg_child1', 'arg_child2']
+children['LocalUnbalancedJoin'] = ['arg_child1', 'arg_child2']
+children['LocalUnbalancedCountingJoin'] = ['arg_child1', 'arg_child2']
 children['LocalMultiwayProducer'] = ['arg_child']
 children['MultiGroupByAggregate'] = ['arg_child']
 children['SingleGroupByAggregate'] = ['arg_child']
@@ -26,6 +28,7 @@ children['Project'] = ['arg_child']
 children['LocalCountingJoin'] = ['arg_child1', 'arg_child2']
 children['BroadcastProducer'] = ['arg_child']
 children['HyperShuffleProducer'] = ['arg_child']
+children['SinkRoot'] = ['arg_child']
 
 # Colors supported by graphviz, in some pleasing order
 colors = [

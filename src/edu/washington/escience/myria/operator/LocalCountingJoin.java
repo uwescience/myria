@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
@@ -92,6 +93,11 @@ public final class LocalCountingJoin extends BinaryOperator {
   protected void cleanup() throws DbException {
     hashTable1 = null;
     hashTable2 = null;
+    occurredTimes1 = null;
+    occurredTimes2 = null;
+    hashTable1Indices = null;
+    hashTable2Indices = null;
+    ansTBB = null;
     ans = 0;
   }
 
@@ -166,42 +172,85 @@ public final class LocalCountingJoin extends BinaryOperator {
 
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
-    final Operator left = getLeft();
-    final Operator right = getRight();
+
     if (!nonBlocking) {
       return fetchNextReadySynchronousEOI();
     }
-    TupleBatch tb;
-    if (left.eos() && right.eos()) {
-      return ansTBB.popAny();
-    }
-    while (!left.eos()) {
-      while ((tb = left.nextReady()) != null) {
-        processChildTB(tb, true);
-      }
-      if (left.eoi()) {
-        left.setEOI(false);
-        childrenEOI[0] = true;
-      } else {
-        break;
-      }
-    }
-    while (!right.eos()) {
-      while ((tb = right.nextReady()) != null) {
-        processChildTB(tb, false);
-      }
-      if (right.eoi()) {
-        right.setEOI(false);
-        childrenEOI[1] = true;
-      } else {
-        break;
-      }
-    }
-    checkEOSAndEOI();
-    if (eos() || eoi()) {
+
+    if (eoi()) {
       ansTBB.put(0, ans);
       return ansTBB.popAny();
     }
+
+    final Operator left = getLeft();
+    final Operator right = getRight();
+    TupleBatch leftTB = null;
+    TupleBatch rightTB = null;
+    int numEOS = 0;
+    int numNoData = 0;
+
+    while (numEOS < 2 && numNoData < 2) {
+
+      numEOS = 0;
+      if (left.eos()) {
+        numEOS += 1;
+      }
+      if (right.eos()) {
+        numEOS += 1;
+      }
+      numNoData = numEOS;
+
+      leftTB = null;
+      rightTB = null;
+      if (!left.eos()) {
+        leftTB = left.nextReady();
+        if (leftTB != null) { // data
+          processChildTB(leftTB, true);
+        } else {
+          // eoi or eos or no data
+          if (left.eoi()) {
+            left.setEOI(false);
+            childrenEOI[0] = true;
+            checkEOSAndEOI();
+            if (eoi()) {
+              break;
+            }
+          } else if (left.eos()) {
+            numEOS++;
+          } else {
+            numNoData++;
+          }
+        }
+      }
+      if (!right.eos()) {
+        rightTB = right.nextReady();
+        if (rightTB != null) {
+          processChildTB(rightTB, false);
+        } else {
+          if (right.eoi()) {
+            right.setEOI(false);
+            childrenEOI[1] = true;
+            checkEOSAndEOI();
+            if (eoi()) {
+              break;
+            }
+          } else if (right.eos()) {
+            numEOS++;
+          } else {
+            numNoData++;
+          }
+        }
+      }
+    }
+    Preconditions.checkArgument(numEOS <= 2);
+    Preconditions.checkArgument(numNoData <= 2);
+
+    checkEOSAndEOI();
+    if (eoi() || eos()) {
+      ansTBB.put(0, ans);
+      return ansTBB.popAny();
+    }
+
     return null;
   }
 
@@ -218,12 +267,11 @@ public final class LocalCountingJoin extends BinaryOperator {
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     hashTable1Indices = new HashMap<Integer, List<Integer>>();
-    hashTable1Indices = new HashMap<Integer, List<Integer>>();
+    hashTable2Indices = new HashMap<Integer, List<Integer>>();
     occurredTimes1 = new ArrayList<Integer>();
     occurredTimes2 = new ArrayList<Integer>();
-    hashTable2Indices = new HashMap<Integer, List<Integer>>();
     hashTable1 = new TupleBuffer(getLeft().getSchema().getSubSchema(compareIndx1));
-    hashTable2 = new TupleBuffer(getLeft().getSchema().getSubSchema(compareIndx2));
+    hashTable2 = new TupleBuffer(getRight().getSchema().getSubSchema(compareIndx2));
     ans = 0;
     ansTBB = new TupleBatchBuffer(outputSchema);
     TaskResourceManager qem = (TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER);
