@@ -31,11 +31,15 @@ public final class Merge extends NAryOperator {
 
   /**
    * Contains a tuple batch for each child.
+   * 
+   * Contains null if there is no batch.
    */
   private transient ArrayList<TupleBatch> childBatches = new ArrayList<TupleBatch>();
 
   /**
    * Index that points to the current location in the tupleBuffer of all children.
+   * 
+   * -1 indicates an invalid pointer.
    */
   private transient ArrayList<Integer> pointerIntoChildBatches = new ArrayList<Integer>();
 
@@ -45,7 +49,8 @@ public final class Merge extends NAryOperator {
   private transient TupleBatchBuffer ans;
 
   /**
-   * Use a heap to find the smallest tuple (actually just the child, where the pointer points to the smallest tuple).
+   * Use a heap to find the smallest tuple (actually just the index in {@link #childBatches} to a child, where the
+   * pointer in {@link #pointerIntoChildBatches} points to the smallest tuple).
    */
   private transient Queue<Integer> heap;
 
@@ -58,7 +63,6 @@ public final class Merge extends NAryOperator {
   class TupleComparator implements Comparator<Integer> {
     @Override
     public int compare(final Integer left, final Integer right) {
-      // System.out.println("compare " + left + " " + right);
       Integer leftPointer = pointerIntoChildBatches.get(left);
       Integer rightPointer = pointerIntoChildBatches.get(right);
       TupleBatch leftTb = childBatches.get(left);
@@ -184,8 +188,6 @@ public final class Merge extends NAryOperator {
     int numEOS = 0;
 
     while (nexttb == null) {
-      // System.out.println("Size of ans " + ans.numTuples());
-
       numEOS = 0;
 
       // fill the buffers, if possible and necessary
@@ -203,15 +205,15 @@ public final class Merge extends NAryOperator {
           // If we don't catch this case here but return null,
           // this method might not be called again.
           if (child.eos()) {
-            // System.out.println("foo");
             numEOS++;
             continue;
           }
           if (tb != null) {
             childBatches.set(childId, tb);
             pointerIntoChildBatches.set(childId, 0);
-            // This reads the index after we refilled the batch or
-            // when the batches are initially loaded.
+
+            // add the index after we refilled the batch or
+            // when the batches are initially loaded
             heap.add(childId);
           } else {
             notEnoughData = true;
@@ -221,35 +223,28 @@ public final class Merge extends NAryOperator {
       }
 
       if (notEnoughData) {
+        // break if this is EOS to ensure that we don't return
+        // null and have data in buffer which would mean that this
+        // method is never called again.
         if (numEOS == numChildren()) {
           break;
         }
-        // System.out.println("Return " + ans.numTuples());
-        return nexttb;
+        return null;
       }
-
-      // System.out.println("Size of heap " + heap.size() + " num EOS:" + numEOS + " heap " + heap);
-      for (int i = 0; i < children.length; i++) {
-        if (!children[i].eos() && (childBatches.get(i) != null)) {
-          // System.out.print(childBatches.get(i).getObject(0, pointerIntoChildBatches.get(i)) + " ");
-        }
-      }
-      // System.out.println();
 
       Integer smallestTb = heap.poll();
-      // System.out.println("Smallest " + smallestTb);
       if (smallestTb != null) {
         Integer positionInSmallestTb = pointerIntoChildBatches.get(smallestTb);
         ans.put(childBatches.get(smallestTb), positionInSmallestTb);
 
-        // reset tb or increase position pointer
+        // reset tb or advance position pointer
         if (positionInSmallestTb == childBatches.get(smallestTb).numTuples() - 1) {
           pointerIntoChildBatches.set(smallestTb, -1);
           childBatches.set(smallestTb, null);
         } else {
           pointerIntoChildBatches.set(smallestTb, positionInSmallestTb + 1);
-          // we either re-add the index to the child here or when we fetched more data
-          // we cannot re-add it here if the data is not present
+          // We either re-add the index to the child here or when we fetch more data.
+          // We cannot re-add it here because we don't know whether there will be data or not.
           heap.add(smallestTb);
         }
         nexttb = ans.popFilled();
@@ -257,9 +252,8 @@ public final class Merge extends NAryOperator {
 
       if (numEOS == numChildren()) {
         setEOS();
-        // System.out.println("Should be EOS");
         Preconditions.checkArgument(heap.size() == 0);
-        Preconditions.checkArgument(ans.numTuples() == 0 || nexttb == null);
+        Preconditions.checkArgument(nexttb == null);
         break;
       }
     }
@@ -268,7 +262,6 @@ public final class Merge extends NAryOperator {
       nexttb = ans.popAny();
     }
 
-    // System.out.println("Tuple buffer " + nexttb);
     return nexttb;
   }
 

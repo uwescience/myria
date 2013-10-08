@@ -154,9 +154,9 @@ public class OperatorTest {
   @Test
   public void testMergeTuplesSorted() throws DbException {
     TupleBatchBuffer[] randomTuples = new TupleBatchBuffer[3];
-    randomTuples[0] = generateRandomTuples(12300, true);
-    randomTuples[1] = generateRandomTuples(4200, true);
-    randomTuples[2] = generateRandomTuples(9900, true);
+    randomTuples[0] = generateRandomTuples(52300, true);
+    randomTuples[1] = generateRandomTuples(14200, true);
+    randomTuples[2] = generateRandomTuples(29900, true);
 
     TupleSource[] children = new TupleSource[3];
     children[0] = new TupleSource(randomTuples[0]);
@@ -177,7 +177,7 @@ public class OperatorTest {
     }
     merge.close();
 
-    assertEquals(12300 + 4200 + 9900, entries.size());
+    assertEquals(52300 + 14200 + 29900, entries.size());
 
     Comparator<Entry<Long, String>> comparator = new EntryComparator();
     Entry<Long, String> previous = null;
