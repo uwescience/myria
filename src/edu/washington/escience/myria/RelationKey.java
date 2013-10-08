@@ -20,8 +20,6 @@ public final class RelationKey implements Serializable {
   private final String programName;
   /** The name of the relation. */
   private final String relationName;
-  /** Canonical table name. Used as a lazy cache for the toString operator. */
-  private String canonicalTableName;
 
   /**
    * Static function to create a RelationKey object.
@@ -80,11 +78,7 @@ public final class RelationKey implements Serializable {
     if (true) {
       throw new UnsupportedOperationException("Use toString(dbms)!");
     }
-    if (canonicalTableName != null) {
-      return canonicalTableName;
-    }
-    canonicalTableName = toString('[', '#', ']');
-    return canonicalTableName;
+    return toString('[', '#', ']');
   }
 
   /**
@@ -96,14 +90,10 @@ public final class RelationKey implements Serializable {
    * @return [user#program#relation].
    */
   private String toString(final char leftEscape, final char separate, final char rightEscape) {
-    if (canonicalTableName != null) {
-      return canonicalTableName;
-    }
     StringBuilder sb = new StringBuilder();
     sb.append(leftEscape).append(userName).append(separate).append(programName).append(separate).append(relationName)
         .append(rightEscape);
-    canonicalTableName = sb.toString();
-    return canonicalTableName;
+    return sb.toString();
   }
 
   /**
@@ -115,10 +105,12 @@ public final class RelationKey implements Serializable {
   public String toString(final String dbms) {
     switch (dbms) {
       case MyriaConstants.STORAGE_SYSTEM_SQLITE:
-      case MyriaConstants.STORAGE_SYSTEM_MYSQL:
         return toString('[', '#', ']');
+      case MyriaConstants.STORAGE_SYSTEM_POSTGRESQL:
       case MyriaConstants.STORAGE_SYSTEM_MONETDB:
         return toString('\"', ' ', '\"');
+      case MyriaConstants.STORAGE_SYSTEM_MYSQL:
+        return toString('`', ' ', '`');
       default:
         throw new IllegalArgumentException("Unsupported dbms " + dbms);
     }
