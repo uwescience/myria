@@ -54,7 +54,7 @@
         <!--
         <script type="text/javascript" src="http://stechu.github.io/gantt-chart.js"></script>
         -->
-        <script type="text/javascript" src="/Users/steve/Project/Gantt-Chart/gantt-chart-d3.js"></script>
+        <script type="text/javascript" src="/Users/chushumo/Project/Gantt-Chart/gantt-chart-d3.js"></script>
 
         <script>
  
@@ -97,8 +97,8 @@
                         var tasks = [];
                         for (var i=0;i<rawTasks.length;i++){
                             tasks.push({
-                                "startDate":new Date(rawTasks[i].begin_date.year,rawTasks[i].begin_date.month, rawTasks[i].begin_date.day, rawTasks[i].begin_date.hours, rawTasks[i].begin_date.minutes, rawTasks[i].begin_date.seconds, rawTasks[i].begin_date.milliseconds ), 
-                                "endDate": new Date(rawTasks[i].end_date.year,rawTasks[i].end_date.month, rawTasks[i].end_date.day, rawTasks[i].end_date.hours, rawTasks[i].end_date.minutes, rawTasks[i].end_date.seconds, rawTasks[i].end_date.milliseconds), 
+                                "startDate":new Date(rawTasks[i].begin_date.year,rawTasks[i].begin_date.month, rawTasks[i].begin_date.day, rawTasks[i].begin_date.hour, rawTasks[i].begin_date.minute, rawTasks[i].begin_date.second, rawTasks[i].begin_date.millisecond ), 
+                                "endDate": new Date(rawTasks[i].end_date.year,rawTasks[i].end_date.month, rawTasks[i].end_date.day, rawTasks[i].end_date.hour, rawTasks[i].end_date.minute, rawTasks[i].end_date.second, rawTasks[i].end_date.millisecond), 
                                 "taskName":rawTasks[i].taskName
                             });
                         }           
