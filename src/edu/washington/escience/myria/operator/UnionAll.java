@@ -1,6 +1,5 @@
 package edu.washington.escience.myria.operator;
 
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Objects;
 
@@ -21,12 +20,7 @@ public final class UnionAll extends NAryOperator {
   /**
    * List of children that have not yet returned EOS.
    */
-  private transient LinkedList<Integer> childrenWithData;
-
-  /**
-   * Iterator into {@link #childrenWithData}. Global to fairly get data from children.
-   */
-  private transient Iterator<Integer> itr;
+  private transient LinkedList<Operator> childrenWithData;
 
   /**
    * @param children the children to be united.
@@ -41,19 +35,28 @@ public final class UnionAll extends NAryOperator {
 
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
-    for (int i = 0; i < childrenWithData.size(); i++) {
-      Integer childIdx = itr.next();
-      if (!itr.hasNext()) {
-        // simulate circular linked list
-        itr = childrenWithData.iterator();
-      }
+    /*
+     * If this variable gets to 0, it means that we've checked every child that could have data and none currently do.
+     * At that point, we return null and sleep until one of those children gets data.
+     */
+    int uncheckedChildren = childrenWithData.size();
 
-      Operator child = getChild(childIdx);
+    while (!childrenWithData.isEmpty()) {
+      if (uncheckedChildren == 0) {
+        return null;
+      }
+      uncheckedChildren--;
+      Operator child = childrenWithData.removeFirst();
+
       if (child.eos()) {
-        itr.remove();
         continue;
       }
+
       TupleBatch tb = child.nextReady();
+      if (!child.eos()) {
+        childrenWithData.addLast(child);
+      }
+
       if (tb != null) {
         return tb;
       }
@@ -64,16 +67,14 @@ public final class UnionAll extends NAryOperator {
 
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    Objects.requireNonNull(getChildren());
-    Preconditions.checkArgument(getNumChildren() > 0);
+    final Operator[] children = Objects.requireNonNull(getChildren());
+    Preconditions.checkArgument(children.length > 0);
 
-    childrenWithData = new LinkedList<Integer>();
-    int i = 0;
+    childrenWithData = new LinkedList<Operator>();
     for (Operator child : getChildren()) {
       Preconditions.checkNotNull(child);
       Preconditions.checkArgument(getSchema().equals(child.getSchema()));
-      childrenWithData.add(i++);
+      childrenWithData.add(child);
     }
-    itr = childrenWithData.iterator();
   }
 }
