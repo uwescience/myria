@@ -18,12 +18,12 @@ import gnu.trove.map.hash.TIntObjectHashMap;
 
 /**
  * 
- * Local counting join which will only build hash table of the right child.
+ * Counting join which will only build hash table of the right child.
  * 
  * @author Shumo Chu <chushumo@cs.washington.edu>
  * 
  */
-public class LocalUnbalancedCountingJoin extends BinaryOperator {
+public class RightHashCountingJoin extends BinaryOperator {
   /**
    * This is required for serialization.
    */
@@ -72,13 +72,12 @@ public class LocalUnbalancedCountingJoin extends BinaryOperator {
    * @param compareIndx2 the columns of the right child to be compared with the left. Order matters.
    * @throw IllegalArgumentException if there are duplicated column names from the children.
    */
-  public LocalUnbalancedCountingJoin(final Operator left, final Operator right, final int[] compareIndx1,
-      final int[] compareIndx2) {
+  public RightHashCountingJoin(final Operator left, final Operator right, final int[] compareIndx1, final int[] compareIndx2) {
     this(null, left, right, compareIndx1, compareIndx2);
   }
 
   /**
-   * Construct a LocalCountingJoin operator with schema specified.
+   * Construct a {@link RightHashCountingJoin} operator with output column name specified.
    * 
    * @param outputColumnName the name of the column of the output table.
    * @param left the left child.
@@ -88,7 +87,7 @@ public class LocalUnbalancedCountingJoin extends BinaryOperator {
    * @throw IllegalArgumentException if there are duplicated column names in <tt>outputSchema</tt>, or if
    *        <tt>outputSchema</tt> does not have the correct number of columns and column types.
    */
-  public LocalUnbalancedCountingJoin(final String outputColumnName, final Operator left, final Operator right,
+  public RightHashCountingJoin(final String outputColumnName, final Operator left, final Operator right,
       final int[] compareIndx1, final int[] compareIndx2) {
     super(left, right);
     ImmutableList<Type> types = ImmutableList.of(Type.LONG_TYPE);

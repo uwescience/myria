@@ -5,24 +5,27 @@ import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myria.operator.LocalUnbalancedCountingJoin;
 import edu.washington.escience.myria.operator.Operator;
+import edu.washington.escience.myria.operator.RightHashJoin;
 import edu.washington.escience.myria.parallel.Server;
 
 /**
  * 
- * Encoding for LocalUnbalancedCountingJoin.
+ * Encoding for {@link RightHashJoin}.
  * 
  * @author Shumo Chu <chushumo@cs.washington.edu>
  * 
  */
-public class LocalUnbalancedCountingJoinEncoding extends OperatorEncoding<LocalUnbalancedCountingJoin> {
+public class RightHashJoinEncoding extends OperatorEncoding<RightHashJoin> {
   public String argChild1;
   public String argChild2;
+  public List<String> argColumnNames;
   public int[] argColumns1;
   public int[] argColumns2;
+  public int[] argSelect1;
+  public int[] argSelect2;
   private static final List<String> requiredArguments = ImmutableList.of("argChild1", "argChild2", "argColumns1",
-      "argColumns2");
+      "argColumns2", "argSelect1", "argSelect2");
 
   @Override
   public void connect(final Operator current, final Map<String, Operator> operators) {
@@ -30,8 +33,8 @@ public class LocalUnbalancedCountingJoinEncoding extends OperatorEncoding<LocalU
   }
 
   @Override
-  public LocalUnbalancedCountingJoin construct(Server server) {
-    return new LocalUnbalancedCountingJoin(null, null, argColumns1, argColumns2);
+  public RightHashJoin construct(Server server) {
+    return new RightHashJoin(argColumnNames, null, null, argColumns1, argColumns2, argSelect1, argSelect2);
   }
 
   @Override
