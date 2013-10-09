@@ -81,9 +81,9 @@ public class OperatorTest {
   @Test
   public void testUnionAllCount() throws DbException {
     TupleSource[] children = new TupleSource[3];
-    children[0] = new TupleSource(generateRandomTuples(123, false));
-    children[1] = new TupleSource(generateRandomTuples(42, false));
-    children[2] = new TupleSource(generateRandomTuples(99, false));
+    children[0] = new TupleSource(generateRandomTuples(12300, false));
+    children[1] = new TupleSource(generateRandomTuples(4200, false));
+    children[2] = new TupleSource(generateRandomTuples(19900, false));
     UnionAll union = new UnionAll(children);
     union.open(null);
     TupleBatch tb = null;
@@ -95,14 +95,14 @@ public class OperatorTest {
       }
     }
     union.close();
-    assertEquals(123 + 42 + 99, count);
+    assertEquals(12300 + 4200 + 19900, count);
   }
 
   @Test
   public void testUnionAllCorrectTuples() throws DbException {
     TupleBatchBuffer[] randomTuples = new TupleBatchBuffer[2];
-    randomTuples[0] = generateRandomTuples(123, false);
-    randomTuples[1] = generateRandomTuples(42, false);
+    randomTuples[0] = generateRandomTuples(12300, false);
+    randomTuples[1] = generateRandomTuples(4200, false);
 
     TupleSource[] children = new TupleSource[2];
     children[0] = new TupleSource(randomTuples[0]);
