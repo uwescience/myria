@@ -13,12 +13,12 @@ import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.TupleSource;
-import edu.washington.escience.myria.operator.apply.Apply;
+import edu.washington.escience.myria.operator.apply.DirectApply;
 import edu.washington.escience.myria.operator.apply.ConstantMultiplicationIFunction;
 import edu.washington.escience.myria.operator.apply.IFunctionCaller;
 import edu.washington.escience.myria.operator.apply.SqrtIFunction;
 
-public class ApplyTest {
+public class DirectApplyTest {
 
   private int numTuples;
   private int multiplicationFactor;
@@ -42,12 +42,12 @@ public class ApplyTest {
     arguments.add(0, 2);
     ImmutableList.Builder<IFunctionCaller> callers = ImmutableList.builder();
     callers.add(new IFunctionCaller(new SqrtIFunction(), arguments.build()));
-    Apply apply = new Apply(new TupleSource(tbb), callers.build());
-    apply.open(null);
+    DirectApply directApply = new DirectApply(new TupleSource(tbb), callers.build());
+    directApply.open(null);
     TupleBatch result;
     int resultSize = 0;
-    while (!apply.eos()) {
-      result = apply.nextReady();
+    while (!directApply.eos()) {
+      result = directApply.nextReady();
       if (result != null) {
         assertEquals(2, result.getSchema().numColumns());
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(1));
@@ -58,7 +58,7 @@ public class ApplyTest {
       }
     }
     assertEquals(numTuples, resultSize);
-    apply.close();
+    directApply.close();
   }
 
   @Test
@@ -76,12 +76,12 @@ public class ApplyTest {
     ImmutableList.Builder<IFunctionCaller> callers = ImmutableList.builder();
     callers.add(new IFunctionCaller(new SqrtIFunction(), argumentsOne.build()));
     callers.add(new IFunctionCaller(new ConstantMultiplicationIFunction(), argumentsTwo.build()));
-    Apply apply = new Apply(new TupleSource(tbb), callers.build());
-    apply.open(null);
+    DirectApply directApply = new DirectApply(new TupleSource(tbb), callers.build());
+    directApply.open(null);
     TupleBatch result;
     int resultSize = 0;
-    while (!apply.eos()) {
-      result = apply.nextReady();
+    while (!directApply.eos()) {
+      result = directApply.nextReady();
       if (result != null) {
         assertEquals(3, result.getSchema().numColumns());
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(1));
@@ -94,6 +94,6 @@ public class ApplyTest {
       }
     }
     assertEquals(numTuples, resultSize);
-    apply.close();
+    directApply.close();
   }
 }

@@ -21,7 +21,7 @@ import edu.washington.escience.myria.operator.UnaryOperator;
  * The column type will be the same as that of the attribute specified
  * 
  */
-public final class Apply extends UnaryOperator {
+public final class DirectApply extends UnaryOperator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -42,7 +42,7 @@ public final class Apply extends UnaryOperator {
    * @param child TupleBatch that will feed us with tuples
    * @param callers the fields we want to apply the operation on
    */
-  public Apply(final Operator child, final List<IFunctionCaller> callers) {
+  public DirectApply(final Operator child, final List<IFunctionCaller> callers) {
     super(child);
     this.callers = callers;
   }
