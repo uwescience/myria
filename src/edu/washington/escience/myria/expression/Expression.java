@@ -23,7 +23,7 @@ public class Expression {
   /**
    * List of variables used in {@link #javaExpression}.
    */
-  private final List<Variable> indexes;
+  private final List<VariableExpression> indexes;
 
   /**
    * Constructs the Expression object.
@@ -32,7 +32,7 @@ public class Expression {
    * @param javaExpression the expression to be evaluated
    * @param indexes variables that are used in the javaExpression
    */
-  public Expression(final String outputName, final String javaExpression, final List<Variable> indexes) {
+  public Expression(final String outputName, final String javaExpression, final List<VariableExpression> indexes) {
     this.outputName = outputName;
     this.javaExpression = javaExpression;
     this.indexes = indexes;

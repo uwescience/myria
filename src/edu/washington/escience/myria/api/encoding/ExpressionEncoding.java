@@ -8,7 +8,7 @@ import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
 
 /**
- * Holds the AST and output name
+ * Holds the AST and output name.
  */
 public class ExpressionEncoding extends MyriaApiEncoding {
   public String outputName;
@@ -22,7 +22,7 @@ public class ExpressionEncoding extends MyriaApiEncoding {
   }
 
   public Expression construct() {
-    // TODO: build expression object
-    return null;
+    return new Expression(outputName, rootExpressionOperator.getJavaString(), ImmutableList
+        .copyOf(rootExpressionOperator.getVariables()));
   }
 }
