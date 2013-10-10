@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.expression;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
@@ -17,7 +19,9 @@ public class PlusExpression extends BinaryExpression {
    * @param left the left operand.
    * @param right the right operand.
    */
-  public PlusExpression(final ExpressionOperator left, final ExpressionOperator right) {
+  @JsonCreator
+  public PlusExpression(@JsonProperty("left") final ExpressionOperator left,
+      @JsonProperty("right") final ExpressionOperator right) {
     super(left, right);
   }
 

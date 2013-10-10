@@ -2,6 +2,8 @@ package edu.washington.escience.myria.expression;
 
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.Schema;
@@ -20,7 +22,8 @@ public class VariableExpression extends ZeroaryExpression {
    * 
    * @param columnIdx the index in the input that this {@link VariableExpression} references.
    */
-  public VariableExpression(final int columnIdx) {
+  @JsonCreator
+  public VariableExpression(@JsonProperty("column_idx") final int columnIdx) {
     this.columnIdx = columnIdx;
   }
 

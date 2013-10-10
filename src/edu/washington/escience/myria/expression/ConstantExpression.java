@@ -3,6 +3,8 @@ package edu.washington.escience.myria.expression;
 import java.util.Objects;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.Schema;
@@ -21,7 +23,8 @@ public class ConstantExpression extends ZeroaryExpression {
    * @param type the type of this object.
    * @param value the value of this object.
    */
-  public ConstantExpression(final Type type, final String value) {
+  @JsonCreator
+  public ConstantExpression(@JsonProperty("value_type") final Type type, @JsonProperty("value") final String value) {
     this.type = type;
     this.value = value;
   }
