@@ -152,7 +152,7 @@ public final class DeploymentUtils {
       final String maxHeapSize, final String workerId, final int port, final boolean debug) {
     StringBuilder builder = new StringBuilder();
     String path = workingDir + "/" + description + "-files";
-    String workerDir = description + "/" + "worker_" + workerId;;
+    String workerDir = description + "/" + "worker_" + workerId;
     String classpath = "'conf:libs/*'";
     String librarypath = "sqlite4java-282";
     String heapSize = maxHeapSize;
