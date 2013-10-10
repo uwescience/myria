@@ -25,7 +25,7 @@ public enum TypeFunnel implements Funnel<Object> {
     } else if (o instanceof Long) {
       into.putLong((Long) o);
     } else if (o instanceof String) {
-      into.putString((String) o);
+      into.putUnencodedChars((String) o);
     }
   }
 }
