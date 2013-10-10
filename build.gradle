@@ -83,7 +83,6 @@ dependencies {
   compile "com.google.code.findbugs:findbugs:2.0.2"
   compile "net.jcip:jcip-annotations:1.0"
   compile "org.ini4j:ini4j:0.5.2"
-  compile "com.carrotsearch:hppc:0.4.3"
   compile "com.almworks.sqlite4java:sqlite4java:0.282"
 
   compile "com.google.guava:guava:15.0"
