@@ -33,7 +33,7 @@ public class DefaultOperationFuture extends OperationFutureBase<Void> {
 
   @Override
   public OperationFuture addListener(final OperationFutureListener listener) {
-    super.addListener0(listener);;
+    super.addListener0(listener);
     return this;
   }
 
