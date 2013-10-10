@@ -167,9 +167,7 @@ eclipse.classpath {
   /* Ensure Eclipse compiled output appears in build directory. */
   defaultOutputDir = file('build/main')
 
-  /* We don't need to download source code. Why not? With sources, it's much
-   * more convenient in debugging.
-   */
+  /* Download library sources and Javadoc for use in debugging. */
   downloadSources = true
   downloadJavadoc = true
 
