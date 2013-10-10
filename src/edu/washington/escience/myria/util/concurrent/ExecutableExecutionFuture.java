@@ -147,7 +147,7 @@ public class ExecutableExecutionFuture<T> extends OperationFutureBase<T> impleme
 
   @Override
   public ExecutionFuture<T> addListener(final OperationFutureListener listener) {
-    super.addListener0(listener);;
+    super.addListener0(listener);
     return this;
   }
 
