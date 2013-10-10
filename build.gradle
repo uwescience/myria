@@ -103,7 +103,7 @@ dependencies {
   compile "com.sun.jersey:jersey-client:${jerseyVersion}"
   compile "com.sun.jersey:jersey-grizzly2:${jerseyVersion}"
 
-  compile "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:2.2.2"
+  compile "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:2.2.3"
 
   compile "org.slf4j:slf4j-api:${slf4jVersion}"
   //runtime "org.slf4j:slf4j-simple:${slf4jVersion}"
