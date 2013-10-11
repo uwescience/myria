@@ -19,6 +19,7 @@ public class ShuffleProducerEncoding extends AbstractProducerEncoding<GenericShu
   public String argChild;
   public String argOperatorId;
   public PartitionFunctionEncoding<?> argPf;
+  public StreamingStateUpdaterEncoding<?> argBufferStateUpdater;
   private static final List<String> requiredArguments = ImmutableList.of("argChild", "argOperatorId", "argPf");
 
   @Override
@@ -29,8 +30,18 @@ public class ShuffleProducerEncoding extends AbstractProducerEncoding<GenericShu
   @Override
   public GenericShuffleProducer construct(Server server) {
     Set<Integer> workerIds = getRealWorkerIds();
-    return new GenericShuffleProducer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), MyriaUtils
-        .integerCollectionToIntArray(workerIds), argPf.construct(workerIds.size()));
+    GenericShuffleProducer producer =
+        new GenericShuffleProducer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), MyriaUtils
+            .integerCollectionToIntArray(workerIds), argPf.construct(workerIds.size()));
+    if (argBufferStateUpdater != null) {
+      if (argBufferStateUpdater instanceof KeepMinValueEncoding) {
+        producer.setBackupBufferAsMin(((KeepMinValueEncoding) argBufferStateUpdater).keyColIndices,
+            ((KeepMinValueEncoding) argBufferStateUpdater).valueColIndex);
+      } else if (argBufferStateUpdater instanceof DupElimEncoding) {
+        producer.setBackupBufferAsDupElim();
+      }
+    }
+    return producer;
   }
 
   @Override
