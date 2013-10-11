@@ -87,7 +87,7 @@ public final class DirectApply extends UnaryOperator {
         }
       }
       if (resultBuffer.hasFilledTB()) {
-        resultBuffer.popFilled();
+        return resultBuffer.popFilled();
       }
     }
     if (getChild().eoi() || getChild().eos()) {

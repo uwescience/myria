@@ -13,10 +13,6 @@ import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.TupleSource;
-import edu.washington.escience.myria.operator.apply.DirectApply;
-import edu.washington.escience.myria.operator.apply.ConstantMultiplicationIFunction;
-import edu.washington.escience.myria.operator.apply.IFunctionCaller;
-import edu.washington.escience.myria.operator.apply.SqrtIFunction;
 
 public class DirectApplyTest {
 
@@ -26,7 +22,7 @@ public class DirectApplyTest {
   @Before
   public void setUp() throws Exception {
     // numTuples = rand.nextInt(RANDOM_LIMIT);
-    numTuples = 1000;
+    numTuples = 20000;
     // multiplicationFactor = rand.nextInt(RANDOM_LIMIT);
     multiplicationFactor = 2;
   }
