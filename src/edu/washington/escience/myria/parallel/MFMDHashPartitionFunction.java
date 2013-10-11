@@ -2,6 +2,8 @@ package edu.washington.escience.myria.parallel;
 
 import java.util.Arrays;
 
+import com.google.common.base.Preconditions;
+
 import edu.washington.escience.myria.TupleBatch;
 
 /**
@@ -17,24 +19,29 @@ public class MFMDHashPartitionFunction extends PartitionFunction {
 
   /**
    * Partition functions on different dimensions.
-   * */
+   */
   private final SingleFieldHashPartitionFunction[] partitionFunctions;
 
   /**
    * 
-   * @param numPartition number of buckets
-   * @param partitionFunctions define partitions on different dimensions.
+   * @param numPartitions number of buckets
+   * @param hypercubeDimensions the sizes of each dimension of the hypercube.
+   * @param fieldIndexes which fields are hashed.
    * 
-   * */
-  public MFMDHashPartitionFunction(final int numPartition, final SingleFieldHashPartitionFunction[] partitionFunctions) {
-    super(numPartition);
-    this.partitionFunctions = partitionFunctions;
+   */
+  public MFMDHashPartitionFunction(final int numPartitions, final int[] hypercubeDimensions, final int[] fieldIndexes) {
+    super(numPartitions);
+    partitionFunctions = new SingleFieldHashPartitionFunction[fieldIndexes.length];
+    for (int i : fieldIndexes) {
+      Preconditions.checkPositionIndex(i, hypercubeDimensions.length);
+      partitionFunctions[i] = new SingleFieldHashPartitionFunction(numPartitions, hypercubeDimensions[i]);
+    }
   }
 
   /**
    * @param tb data.
    * @return partitions.
-   * */
+   */
   @Override
   public int[] partition(final TupleBatch tb) {
     int[] result = new int[tb.numTuples()];

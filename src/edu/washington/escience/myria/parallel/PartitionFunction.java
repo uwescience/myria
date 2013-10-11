@@ -2,6 +2,10 @@ package edu.washington.escience.myria.parallel;
 
 import java.io.Serializable;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
 import edu.washington.escience.myria.TupleBatch;
 
 /**
@@ -9,6 +13,11 @@ import edu.washington.escience.myria.TupleBatch;
  * routed to. Typically, the ShuffleProducer class invokes {@link partition(Tuple, Schema) partition} on every tuple it
  * generates.
  */
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
+@JsonSubTypes({
+    @Type(value = RoundRobinPartitionFunction.class, name = "RoundRobin"),
+    @Type(value = MultiFieldHashPartitionFunction.class, name = "MultiFieldHash"),
+    @Type(value = SingleFieldHashPartitionFunction.class, name = "SingleFieldHash") })
 public abstract class PartitionFunction implements Serializable {
 
   /** Required for Java serialization. */
@@ -17,22 +26,22 @@ public abstract class PartitionFunction implements Serializable {
   /**
    * number of partitions.
    * */
-  private final int numPartition;
+  private Integer numPartitions;
 
   /**
    * Each partition function implementation must has a Class(int) style constructor.
    * 
-   * @param numPartition number of partitions.
+   * @param numPartitions number of partitions.
    */
-  public PartitionFunction(final int numPartition) {
-    this.numPartition = numPartition;
+  public PartitionFunction(final Integer numPartitions) {
+    this.numPartitions = numPartitions;
   }
 
   /**
    * @return the number of partitions.
-   * */
+   */
   public final int numPartition() {
-    return numPartition;
+    return numPartitions;
   }
 
   /**
@@ -44,5 +53,14 @@ public abstract class PartitionFunction implements Serializable {
    * @return the partition
    * 
    */
-  public abstract int[] partition(TupleBatch data);
+  public abstract int[] partition(final TupleBatch data);
+
+  /**
+   * Set the number of output partitions.
+   * 
+   * @param numPartitions the number of output partitions.
+   */
+  public final void setNumPartitions(final int numPartitions) {
+    this.numPartitions = numPartitions;
+  }
 }

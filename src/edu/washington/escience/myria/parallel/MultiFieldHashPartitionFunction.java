@@ -1,6 +1,8 @@
 package edu.washington.escience.myria.parallel;
 
-import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.TupleBatch;
 
@@ -21,9 +23,33 @@ public final class MultiFieldHashPartitionFunction extends PartitionFunction {
    * @param numPartition number of partitions
    * @param fieldIndexes the indices used for partitioning.
    */
-  public MultiFieldHashPartitionFunction(final int numPartition, final int[] fieldIndexes) {
+  @JsonCreator
+  public MultiFieldHashPartitionFunction(@JsonProperty("num_partitions") final Integer numPartition,
+      @JsonProperty(value = "field_indexes", required = true) final Integer[] fieldIndexes) {
     super(numPartition);
-    this.fieldIndexes = Objects.requireNonNull(fieldIndexes);
+    Preconditions.checkArgument(fieldIndexes.length > 1, "MultiFieldHash requires at least 2 fields to hash");
+    this.fieldIndexes = new int[fieldIndexes.length];
+    for (int i = 0; i < fieldIndexes.length; ++i) {
+      int index = Preconditions.checkNotNull(fieldIndexes[i], "MultiFieldHash field index %s cannot be null", i);
+      Preconditions.checkArgument(index >= 0, "MultiFieldHash field index %s cannot take negative value %s", i, index);
+      this.fieldIndexes[i] = index;
+    }
+  }
+
+  /**
+   * @param numPartition number of partitions
+   * @param fieldIndexes the indices used for partitioning.
+   */
+  @JsonCreator
+  public MultiFieldHashPartitionFunction(@JsonProperty("num_partitions") final Integer numPartition,
+      @JsonProperty(value = "field_indexes", required = true) final int[] fieldIndexes) {
+    super(numPartition);
+    Preconditions.checkArgument(fieldIndexes.length > 1, "MultiFieldHash requires at least 2 fields to hash");
+    this.fieldIndexes = fieldIndexes;
+    for (int i = 0; i < fieldIndexes.length; ++i) {
+      int index = fieldIndexes[i];
+      Preconditions.checkArgument(index >= 0, "MultiFieldHash field index %s cannot take negative value %s", i, index);
+    }
   }
 
   @Override

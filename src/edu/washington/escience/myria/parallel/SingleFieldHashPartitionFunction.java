@@ -2,6 +2,10 @@ package edu.washington.escience.myria.parallel;
 
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Preconditions;
+
 import edu.washington.escience.myria.TupleBatch;
 
 /**
@@ -15,22 +19,22 @@ public final class SingleFieldHashPartitionFunction extends PartitionFunction {
   private static final long serialVersionUID = 1L;
 
   /**
-   * The field index attribute name.
-   * */
-  public static final String FIELD_INDEX = "field_index";
-
-  /**
    * The index of the partition field.
    */
   private final int fieldIndex;
 
   /**
-   * @param numPartition number of partitions.
+   * @param numPartitions number of partitions.
    * @param fieldIndex the index of the partition field.
-   * */
-  public SingleFieldHashPartitionFunction(final int numPartition, final Integer fieldIndex) {
-    super(numPartition);
-    this.fieldIndex = Objects.requireNonNull(fieldIndex);
+   */
+  @JsonCreator
+  public SingleFieldHashPartitionFunction(@JsonProperty("num_partitions") final Integer numPartitions,
+      @JsonProperty(value = "index", required = true) final Integer fieldIndex) {
+    super(numPartitions);
+    /* TODO(dhalperi) once Jackson actually implements support for required, remove these checks. */
+    this.fieldIndex = Objects.requireNonNull(fieldIndex, "missing property index");
+    Preconditions.checkArgument(this.fieldIndex >= 0, "SingleFieldHash field index cannot take negative value %s",
+        this.fieldIndex);
   }
 
   /**

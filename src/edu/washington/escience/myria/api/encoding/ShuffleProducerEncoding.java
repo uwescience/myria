@@ -8,6 +8,7 @@ import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.parallel.GenericShuffleProducer;
+import edu.washington.escience.myria.parallel.PartitionFunction;
 import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.util.MyriaUtils;
 
@@ -18,7 +19,7 @@ import edu.washington.escience.myria.util.MyriaUtils;
 public class ShuffleProducerEncoding extends AbstractProducerEncoding<GenericShuffleProducer> {
   public String argChild;
   public String argOperatorId;
-  public PartitionFunctionEncoding<?> argPf;
+  public PartitionFunction argPf;
   private static final List<String> requiredArguments = ImmutableList.of("argChild", "argOperatorId", "argPf");
 
   @Override
@@ -29,18 +30,14 @@ public class ShuffleProducerEncoding extends AbstractProducerEncoding<GenericShu
   @Override
   public GenericShuffleProducer construct(Server server) {
     Set<Integer> workerIds = getRealWorkerIds();
+    argPf.setNumPartitions(workerIds.size());
     return new GenericShuffleProducer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), MyriaUtils
-        .integerCollectionToIntArray(workerIds), argPf.construct(workerIds.size()));
+        .integerCollectionToIntArray(workerIds), argPf);
   }
 
   @Override
   protected List<String> getRequiredArguments() {
     return requiredArguments;
-  }
-
-  @Override
-  protected void validateExtra() {
-    argPf.validate();
   }
 
   @Override

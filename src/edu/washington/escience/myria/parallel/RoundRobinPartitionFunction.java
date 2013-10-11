@@ -1,5 +1,8 @@
 package edu.washington.escience.myria.parallel;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import edu.washington.escience.myria.TupleBatch;
 
 /**
@@ -18,7 +21,8 @@ public class RoundRobinPartitionFunction extends PartitionFunction {
   /**
    * @param numPartitions the number of partitions.
    */
-  public RoundRobinPartitionFunction(final int numPartitions) {
+  @JsonCreator
+  public RoundRobinPartitionFunction(@JsonProperty("num_partitions") final Integer numPartitions) {
     super(numPartitions);
   }
 
