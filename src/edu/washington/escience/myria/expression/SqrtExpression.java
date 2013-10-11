@@ -27,7 +27,7 @@ public class SqrtExpression extends UnaryExpression {
     int operandIdx = validTypes.indexOf(operandType);
     Preconditions.checkArgument(operandIdx != -1, "SqrtExpression cannot handle operand [%s] of Type %s", getChild(),
         operandType);
-    return operandType;
+    return Type.DOUBLE_TYPE;
   }
 
   @Override
