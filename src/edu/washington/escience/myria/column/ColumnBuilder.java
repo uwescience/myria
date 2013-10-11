@@ -110,4 +110,6 @@ public interface ColumnBuilder<T extends Comparable<?>> {
    */
   T get(int row);
 
+  void reset();
+
 }

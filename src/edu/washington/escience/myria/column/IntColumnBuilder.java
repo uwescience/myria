@@ -113,7 +113,20 @@ public final class IntColumnBuilder implements ColumnBuilder<Integer> {
   }
 
   @Override
+  @Deprecated
   public IntColumnBuilder replace(final int idx, final Integer value) throws IndexOutOfBoundsException {
+    return replace(idx, value.intValue());
+  }
+
+  /**
+   * Replace the specified element.
+   * 
+   * @param value element to be inserted.
+   * @param idx where to insert the element.
+   * @return this column builder.
+   * @throws IndexOutOfBoundsException if the idx exceeds the currently valid indices, i.e. the currently built size.
+   */
+  public IntColumnBuilder replace(final int idx, final int value) throws IndexOutOfBoundsException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
     Preconditions.checkElementIndex(idx, data.position());
     data.put(idx, value);
@@ -145,5 +158,14 @@ public final class IntColumnBuilder implements ColumnBuilder<Integer> {
     int[] arr = new int[data.array().length];
     System.arraycopy(data.array(), 0, arr, 0, data.position());
     return new IntColumnBuilder((IntBuffer) IntBuffer.wrap(arr).position(data.position()).limit(data.limit()));
+  }
+
+  @Override
+  public void reset() {
+    if (!built) {
+      data.rewind();
+    } else {
+      throw new IllegalStateException("Column already built.");
+    }
   }
 }

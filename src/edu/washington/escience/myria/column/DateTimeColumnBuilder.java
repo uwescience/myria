@@ -179,4 +179,13 @@ public final class DateTimeColumnBuilder implements ColumnBuilder<DateTime> {
     return new DateTimeColumnBuilder(newData, numDates);
   }
 
+  @Override
+  public void reset() {
+    if (!built) {
+      numDates = 0;
+    } else {
+      throw new IllegalStateException("Column already built.");
+    }
+  }
+
 }

@@ -131,7 +131,20 @@ public final class BooleanColumnBuilder implements ColumnBuilder<Boolean> {
   }
 
   @Override
+  @Deprecated
   public BooleanColumnBuilder replace(final int idx, final Boolean value) throws IndexOutOfBoundsException {
+    return replace(idx, value.booleanValue());
+  }
+
+  /**
+   * Replace the specified element.
+   * 
+   * @param value element to be inserted.
+   * @param idx where to insert the element.
+   * @return this column builder.
+   * @throws IndexOutOfBoundsException if the idx exceeds the currently valid indices, i.e. the currently built size.
+   */
+  public BooleanColumnBuilder replace(final int idx, final boolean value) throws IndexOutOfBoundsException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
     Preconditions.checkElementIndex(idx, numBits);
     data.set(idx, value);
@@ -165,5 +178,14 @@ public final class BooleanColumnBuilder implements ColumnBuilder<Boolean> {
   @Override
   public BooleanColumnBuilder forkNewBuilder() {
     return new BooleanColumnBuilder(capacity, BitSet.valueOf(data.toByteArray()), numBits);
+  }
+
+  @Override
+  public void reset() {
+    if (!built) {
+      numBits = 0;
+    } else {
+      throw new IllegalStateException("Column already built.");
+    }
   }
 }

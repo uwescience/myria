@@ -167,4 +167,12 @@ public final class StringColumnBuilder implements ColumnBuilder<String> {
     return new StringColumnBuilder(newData, numStrings);
   }
 
+  @Override
+  public void reset() {
+    if (!built) {
+      numStrings = 0;
+    } else {
+      throw new IllegalStateException("Column already built.");
+    }
+  }
 }
