@@ -54,4 +54,11 @@ public class VariableExpression extends ZeroaryExpression {
   public int hashCode() {
     return columnIdx;
   }
+
+  /**
+   * @return the column index of this variable.
+   */
+  public int getColumnIdx() {
+    return columnIdx;
+  }
 }
