@@ -12,7 +12,7 @@ import edu.washington.escience.myria.TupleBatch;
  * @author Shumo Chu <chushumo@cs.washington.edu>
  * 
  */
-public class MFMDHashPartitionFunction extends PartitionFunction {
+public final class MFMDHashPartitionFunction extends PartitionFunction {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -38,10 +38,6 @@ public class MFMDHashPartitionFunction extends PartitionFunction {
     }
   }
 
-  /**
-   * @param tb data.
-   * @return partitions.
-   */
   @Override
   public int[] partition(final TupleBatch tb) {
     int[] result = new int[tb.numTuples()];

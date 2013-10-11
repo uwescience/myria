@@ -1,5 +1,8 @@
 package edu.washington.escience.myria.parallel;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
@@ -24,7 +27,7 @@ public final class MultiFieldHashPartitionFunction extends PartitionFunction {
    * @param fieldIndexes the indices used for partitioning.
    */
   @JsonCreator
-  public MultiFieldHashPartitionFunction(@JsonProperty("num_partitions") final Integer numPartition,
+  public MultiFieldHashPartitionFunction(@Nullable @JsonProperty("num_partitions") final Integer numPartition,
       @JsonProperty(value = "field_indexes", required = true) final Integer[] fieldIndexes) {
     super(numPartition);
     Preconditions.checkArgument(fieldIndexes.length > 1, "MultiFieldHash requires at least 2 fields to hash");
@@ -53,7 +56,7 @@ public final class MultiFieldHashPartitionFunction extends PartitionFunction {
   }
 
   @Override
-  public int[] partition(final TupleBatch tb) {
+  public int[] partition(@Nonnull final TupleBatch tb) {
     final int[] result = new int[tb.numTuples()];
     for (int i = 0; i < result.length; i++) {
       int p = tb.hashCode(i, fieldIndexes) % numPartition();
