@@ -11,7 +11,7 @@ import edu.washington.escience.myria.TupleBatch;
  * @author dhalperi
  * 
  */
-public class RoundRobinPartitionFunction extends PartitionFunction {
+public final class RoundRobinPartitionFunction extends PartitionFunction {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -31,7 +31,7 @@ public class RoundRobinPartitionFunction extends PartitionFunction {
    * @return partitions.
    */
   @Override
-  public final int[] partition(final TupleBatch tb) {
+  public int[] partition(final TupleBatch tb) {
     final int[] result = new int[tb.numTuples()];
     for (int i = 0; i < result.length; i++) {
       result[i] = partition;
