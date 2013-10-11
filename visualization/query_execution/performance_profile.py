@@ -6,6 +6,7 @@ import sys
 import time
 import json
 import datetime
+import copy
 
 def read_json(filename):
     with open(filename, 'r') as f:
@@ -104,16 +105,26 @@ def generateProfile(path,query_id):
 
     #generate the fake execution start time
     for task in tasks:
-        task['execution_start_time'] = task['end_date'] - datetime.timedelta(milliseconds=task['executionTime'])
-        if task['execution_start_time']<task['begin_date'] :
-            task['execution_start_time'] = task['begin_date']
-            task['executionTime'] = int(round((task['end_date']-task['begin_date']).total_seconds()*1000))
+    
+        if 'executionTime' in task:
+            execution_start_time = task['end_date'] - datetime.timedelta(milliseconds=task['executionTime'])
+            if execution_start_time<task['begin_date'] :
+                execution_start_time = task['begin_date']
+            task.pop('executionTime')
+        
+            #splite the tasks
+            etask = copy.deepcopy(task)    
+            etask['begin_date'] = execution_start_time
+            etask['status'] = 'EXECUTION_TIME'
+            tasks.append(etask)
 
-        # serialize the date    
-        task['execution_start_time'] = serialize_datetime(task['execution_start_time'])
+            task['end_date'] = execution_start_time
+            task['status'] = 'SLEEP_TIME'
+
+    # serialize the date    
+    for task in tasks:
         task['begin_date'] = serialize_datetime(task['begin_date'])
         task['end_date'] = serialize_datetime(task['end_date'])
-
 
     taskNames.sort()
     output = {
@@ -124,15 +135,13 @@ def generateProfile(path,query_id):
 
 def main(argv):
 # Usage
-    if len(argv) != 2:
-        print >> sys.stderr, "Usage: %s <deployment.cfg> <json_query_plan>" % (argv[0])
-        print >> sys.stderr, "       deployment.cfg: a configuration file modeled after deployment.cfg.sample"
-        print >> sys.stderr, "       json_query_plan: target json query plan"
+    if len(argv) != 3:
+        print >> sys.stderr, "Usage: %s <log_file_path> <query_id>" % (argv[0])
+        print >> sys.stderr, "       log_file_path "
+        print >> sys.stderr, "       query_id "
         sys.exit(1)
 
-    #config = myriadeploy.read_config_file(argv[1])
-    #get_logs.getlog(config)
-    generateProfile(argv[1],28)
+    generateProfile(argv[1],int(argv[2]))
 
 if __name__ == "__main__":
     main(sys.argv)
