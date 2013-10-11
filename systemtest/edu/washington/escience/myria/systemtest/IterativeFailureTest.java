@@ -158,10 +158,8 @@ public class IterativeFailureTest extends SystemTestBase {
       final ExchangePairID serverReceivingOpID, final int selfIDBID) throws DbException {
 
     final int numPartition = 2;
-    final PartitionFunction<String, Integer> pf0 = new SingleFieldHashPartitionFunction(numPartition);
-    pf0.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
-    final PartitionFunction<String, Integer> pf1 = new SingleFieldHashPartitionFunction(numPartition);
-    pf1.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1);
+    final PartitionFunction pf0 = new SingleFieldHashPartitionFunction(numPartition, 0);
+    final PartitionFunction pf1 = new SingleFieldHashPartitionFunction(numPartition, 1);
 
     GenericShuffleConsumer sc1;
     if (isHead) {

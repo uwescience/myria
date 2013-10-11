@@ -198,8 +198,7 @@ public class MultithreadScanTest extends SystemTestBase {
     final DupElim de2 = new DupElim(localjoin2);
 
     final int numPartition = 2;
-    final PartitionFunction<String, Integer> pf0 = new SingleFieldHashPartitionFunction(numPartition); // 2 workers
-    pf0.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0); // partition by 1st column
+    final PartitionFunction pf0 = new SingleFieldHashPartitionFunction(numPartition, 0); // 2 workers
 
     ExchangePairID arrayID1, arrayID2;
     arrayID1 = ExchangePairID.newID();

@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.parallel;
 
+import java.util.Objects;
+
 import edu.washington.escience.myria.TupleBatch;
 
 /**
@@ -7,7 +9,7 @@ import edu.washington.escience.myria.TupleBatch;
  * 
  * The partition of a tuple is decided by the hash code of a preset field of the tuple.
  */
-public final class SingleFieldHashPartitionFunction extends PartitionFunction<String, Integer> {
+public final class SingleFieldHashPartitionFunction extends PartitionFunction {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -19,14 +21,16 @@ public final class SingleFieldHashPartitionFunction extends PartitionFunction<St
 
   /**
    * The index of the partition field.
-   * */
-  private int fieldIndex;
+   */
+  private final int fieldIndex;
 
   /**
    * @param numPartition number of partitions.
+   * @param fieldIndex the index of the partition field.
    * */
-  public SingleFieldHashPartitionFunction(final int numPartition) {
+  public SingleFieldHashPartitionFunction(final int numPartition, final Integer fieldIndex) {
     super(numPartition);
+    this.fieldIndex = Objects.requireNonNull(fieldIndex);
   }
 
   /**
@@ -45,13 +49,4 @@ public final class SingleFieldHashPartitionFunction extends PartitionFunction<St
     }
     return result;
   }
-
-  @Override
-  public void setAttribute(final String attribute, final Integer value) {
-    super.setAttribute(attribute, value);
-    if (attribute.equals(FIELD_INDEX)) {
-      fieldIndex = value;
-    }
-  }
-
 }

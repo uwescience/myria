@@ -43,12 +43,8 @@ public class ErdosExtraVerbose {
   final static ExchangePairID sendToMasterID = ExchangePairID.newID();
 
   public static DupElim erdosOne(int[] allWorkers, ArrayList<Producer> producers) throws DbException {
-    final SingleFieldHashPartitionFunction pfOn0 = new SingleFieldHashPartitionFunction(allWorkers.length);
-    final SingleFieldHashPartitionFunction pfOn1 = new SingleFieldHashPartitionFunction(allWorkers.length);
-    final SingleFieldHashPartitionFunction pfOn2 = new SingleFieldHashPartitionFunction(allWorkers.length);
-    pfOn0.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
-    pfOn1.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1);
-    pfOn2.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 2);
+    final SingleFieldHashPartitionFunction pfOn0 = new SingleFieldHashPartitionFunction(allWorkers.length, 0);
+    final SingleFieldHashPartitionFunction pfOn2 = new SingleFieldHashPartitionFunction(allWorkers.length, 2);
 
     final ExchangePairID paulErdoesPubsShuffleID = ExchangePairID.newID();
     final ExchangePairID coAuthorShuffleID = ExchangePairID.newID();
@@ -113,12 +109,9 @@ public class ErdosExtraVerbose {
   public static DupElim erdosN(DupElim erdosNMinus1, int[] allWorkers, ArrayList<Producer> producers)
       throws DbException {
 
-    final SingleFieldHashPartitionFunction pfOn0 = new SingleFieldHashPartitionFunction(allWorkers.length);
-    final SingleFieldHashPartitionFunction pfOn1 = new SingleFieldHashPartitionFunction(allWorkers.length);
-    final SingleFieldHashPartitionFunction pfOn2 = new SingleFieldHashPartitionFunction(allWorkers.length);
-    pfOn0.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
-    pfOn1.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1);
-    pfOn2.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 2);
+    final SingleFieldHashPartitionFunction pfOn0 = new SingleFieldHashPartitionFunction(allWorkers.length, 0);
+    final SingleFieldHashPartitionFunction pfOn1 = new SingleFieldHashPartitionFunction(allWorkers.length, 1);
+    final SingleFieldHashPartitionFunction pfOn2 = new SingleFieldHashPartitionFunction(allWorkers.length, 2);
 
     final DbQueryScan allPubs2 = new DbQueryScan(//
         "select pubName.val, authorName.val " + //

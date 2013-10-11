@@ -12,8 +12,7 @@ public class SingleFieldPartitionFunctionEncoding extends PartitionFunctionEncod
 
   @Override
   public SingleFieldHashPartitionFunction construct(final int numPartitions) {
-    final SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(numPartitions);
-    pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, index);
+    final SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(numPartitions, index);
     return pf;
   }
 

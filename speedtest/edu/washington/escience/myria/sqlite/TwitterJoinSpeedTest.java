@@ -84,13 +84,11 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
      */
     final int numPartition = 2;
     // PF0 : follower (field 0 of the tuple)
-    final PartitionFunction<String, Integer> pf0 = new SingleFieldHashPartitionFunction(numPartition);
-    pf0.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
+    final PartitionFunction pf0 = new SingleFieldHashPartitionFunction(numPartition, 0);
     final ExchangePairID arrayID1 = ExchangePairID.newID();
     final GenericShuffleProducer sp1 = new GenericShuffleProducer(scan1, arrayID1, workerIDs, pf0);
     // PF1 : followee (field 1 of the tuple)
-    final PartitionFunction<String, Integer> pf1 = new SingleFieldHashPartitionFunction(numPartition);
-    pf1.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1);
+    final PartitionFunction pf1 = new SingleFieldHashPartitionFunction(numPartition, 1);
     final ExchangePairID arrayID2 = ExchangePairID.newID();
     final GenericShuffleProducer sp2 = new GenericShuffleProducer(scan2, arrayID2, workerIDs, pf1);
 
@@ -151,13 +149,11 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
      */
     final int numPartition = 2;
     // PF0 : follower (field 0 of the tuple)
-    final PartitionFunction<String, Integer> pf0 = new SingleFieldHashPartitionFunction(numPartition);
-    pf0.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
+    final PartitionFunction pf0 = new SingleFieldHashPartitionFunction(numPartition, 0);
     final ExchangePairID arrayID1 = ExchangePairID.newID();
     final GenericShuffleProducer sp1 = new GenericShuffleProducer(scan1, arrayID1, workerIDs, pf0);
     // PF1 : followee (field 1 of the tuple)
-    final PartitionFunction<String, Integer> pf1 = new SingleFieldHashPartitionFunction(numPartition);
-    pf1.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1);
+    final PartitionFunction pf1 = new SingleFieldHashPartitionFunction(numPartition, 1);
     final ExchangePairID arrayID2 = ExchangePairID.newID();
     final GenericShuffleProducer sp2 = new GenericShuffleProducer(scan2, arrayID2, workerIDs, pf1);
 
@@ -215,13 +211,11 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
      */
     final int numPartition = 2;
     // PF0 : follower (field 0 of the tuple)
-    final PartitionFunction<String, Integer> pf0 = new SingleFieldHashPartitionFunction(numPartition);
-    pf0.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
+    final PartitionFunction pf0 = new SingleFieldHashPartitionFunction(numPartition, 0);
     final ExchangePairID arrayID1 = ExchangePairID.newID();
     final GenericShuffleProducer sp1 = new GenericShuffleProducer(scan1, arrayID1, workerIDs, pf0);
     // PF1 : followee (field 1 of the tuple)
-    final PartitionFunction<String, Integer> pf1 = new SingleFieldHashPartitionFunction(numPartition);
-    pf1.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1);
+    final PartitionFunction pf1 = new SingleFieldHashPartitionFunction(numPartition, 1);
     final ExchangePairID arrayID2 = ExchangePairID.newID();
     final GenericShuffleProducer sp2 = new GenericShuffleProducer(scan2, arrayID2, workerIDs, pf1);
 

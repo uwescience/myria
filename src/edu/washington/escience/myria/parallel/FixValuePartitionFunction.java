@@ -9,7 +9,7 @@ import edu.washington.escience.myria.TupleBatch;
  * @author Shumo Chu <chushumo@cs.washington.edu>
  * 
  */
-public class FixValuePartitionFunction extends PartitionFunction<String, Integer> {
+public class FixValuePartitionFunction extends PartitionFunction {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;

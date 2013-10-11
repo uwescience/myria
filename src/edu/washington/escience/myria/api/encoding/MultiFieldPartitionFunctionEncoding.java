@@ -13,8 +13,7 @@ public class MultiFieldPartitionFunctionEncoding extends PartitionFunctionEncodi
 
   @Override
   public MultiFieldHashPartitionFunction construct(int numPartitions) {
-    MultiFieldHashPartitionFunction pf = new MultiFieldHashPartitionFunction(numPartitions);
-    pf.setAttribute(MultiFieldHashPartitionFunction.FIELD_INDEX, index);
+    MultiFieldHashPartitionFunction pf = new MultiFieldHashPartitionFunction(numPartitions, index);
     return pf;
   }
 

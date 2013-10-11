@@ -60,8 +60,7 @@ public class HyperShuffleProducerEncoding extends AbstractProducerEncoding<Gener
     for (int i = 0; i < pfs.length; i++) {
       pfs[i] = argPfs[i].construct(hyperCubeDimensions[argPfs[i].index]);
     }
-    MFMDHashPartitionFunction pf = new MFMDHashPartitionFunction(cellPartition.length);
-    pf.setAttribute("partition_functions", pfs);
+    MFMDHashPartitionFunction pf = new MFMDHashPartitionFunction(cellPartition.length, pfs);
 
     return new GenericShuffleProducer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), cellPartition,
         MyriaUtils.integerCollectionToIntArray(getRealWorkerIds()), pf);

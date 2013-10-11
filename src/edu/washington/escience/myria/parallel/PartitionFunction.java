@@ -1,7 +1,6 @@
 package edu.washington.escience.myria.parallel;
 
 import java.io.Serializable;
-import java.util.HashMap;
 
 import edu.washington.escience.myria.TupleBatch;
 
@@ -9,19 +8,11 @@ import edu.washington.escience.myria.TupleBatch;
  * The ShuffleProducer class uses an instance of the PartitionFunction class to decide which worker a tuple should be
  * routed to. Typically, the ShuffleProducer class invokes {@link partition(Tuple, Schema) partition} on every tuple it
  * generates.
- * 
- * @param <K> the type that attributes of this partition function have. Usually String.
- * @param <V> the value that attributed of this partition function have. Usually Integer.
  */
-public abstract class PartitionFunction<K, V> implements Serializable {
+public abstract class PartitionFunction implements Serializable {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
-
-  /**
-   * attributes of this partition function.
-   * */
-  private final HashMap<K, V> attributes = new HashMap<K, V>();
 
   /**
    * number of partitions.
@@ -38,18 +29,10 @@ public abstract class PartitionFunction<K, V> implements Serializable {
   }
 
   /**
-   * @return attribute value.
-   * @param attribute attribute key.
-   * */
-  public final V getAttribute(final K attribute) {
-    return attributes.get(attribute);
-  }
-
-  /**
    * @return the number of partitions.
    * */
   public final int numPartition() {
-    return this.numPartition;
+    return numPartition;
   }
 
   /**
@@ -62,15 +45,4 @@ public abstract class PartitionFunction<K, V> implements Serializable {
    * 
    */
   public abstract int[] partition(TupleBatch data);
-
-  /**
-   * A concrete implementation of a partition function may need some information to help it decide the tuple partitions.
-   * 
-   * @param attribute an attribute.
-   * @param value the value of that attribute.
-   */
-  public void setAttribute(final K attribute, final V value) {
-    this.attributes.put(attribute, value);
-  }
-
 }

@@ -1,6 +1,6 @@
 package edu.washington.escience.myria.parallel;
 
-import java.util.Arrays;
+import java.util.Objects;
 
 import edu.washington.escience.myria.TupleBatch;
 
@@ -9,28 +9,23 @@ import edu.washington.escience.myria.TupleBatch;
  * 
  * The partition of a tuple is decided by the hash code of a group of fields of the tuple.
  */
-public final class MultiFieldHashPartitionFunction extends PartitionFunction<String, int[]> {
+public final class MultiFieldHashPartitionFunction extends PartitionFunction {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
-  /** The field index attribute name. */
-  public static final String FIELD_INDEX = "field_index";
-
   /** The indices used for partitioning. */
-  private int[] fieldIndexes;
+  private final int[] fieldIndexes;
 
   /**
    * @param numPartition number of partitions
+   * @param fieldIndexes the indices used for partitioning.
    */
-  public MultiFieldHashPartitionFunction(final int numPartition) {
+  public MultiFieldHashPartitionFunction(final int numPartition, final int[] fieldIndexes) {
     super(numPartition);
+    this.fieldIndexes = Objects.requireNonNull(fieldIndexes);
   }
 
-  /**
-   * @param tb data.
-   * @return partitions.
-   * */
   @Override
   public int[] partition(final TupleBatch tb) {
     final int[] result = new int[tb.numTuples()];
@@ -43,17 +38,4 @@ public final class MultiFieldHashPartitionFunction extends PartitionFunction<Str
     }
     return result;
   }
-
-  /**
-   * @param attribute the attribute name
-   * @param value accepts the fields that we want to partition on
-   */
-  @Override
-  public void setAttribute(final String attribute, final int[] value) {
-    super.setAttribute(attribute, value);
-    if (attribute.equals(FIELD_INDEX)) {
-      fieldIndexes = Arrays.copyOf(value, value.length);
-    }
-  }
-
 }

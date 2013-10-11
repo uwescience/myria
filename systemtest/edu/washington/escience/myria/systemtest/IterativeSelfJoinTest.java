@@ -18,9 +18,9 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
-import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
+import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
@@ -147,10 +147,8 @@ public class IterativeSelfJoinTest extends SystemTestBase {
     final DbQueryScan scan2 = new DbQueryScan(testtableKeys.get(0), tableSchema);
 
     final int numPartition = 2;
-    final PartitionFunction<String, Integer> pf0 = new SingleFieldHashPartitionFunction(numPartition); // 2 workers
-    pf0.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0); // partition by 1st column
-    final PartitionFunction<String, Integer> pf1 = new SingleFieldHashPartitionFunction(numPartition); // 2 workers
-    pf1.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1); // partition by 2nd column
+    final PartitionFunction pf0 = new SingleFieldHashPartitionFunction(numPartition, 0);
+    final PartitionFunction pf1 = new SingleFieldHashPartitionFunction(numPartition, 1);
 
     ArrayList<RootOperator> subqueries = new ArrayList<RootOperator>();
     final GenericShuffleProducer sp0[] = new GenericShuffleProducer[numIteration];
@@ -175,7 +173,8 @@ public class IterativeSelfJoinTest extends SystemTestBase {
 
       sc1[i] = new GenericShuffleConsumer(sp1[i - 1].getSchema(), arrayID1, new int[] { workerIDs[0], workerIDs[1] });
       sc2[i] = new GenericShuffleConsumer(sp2[i - 1].getSchema(), arrayID2, new int[] { workerIDs[0], workerIDs[1] });
-      localjoin[i] = new SymmetricHashJoin(sc1[i], sc2[i], new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
+      localjoin[i] =
+          new SymmetricHashJoin(sc1[i], sc2[i], new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
       arrayID0 = ExchangePairID.newID();
 
       sp0[i] = new GenericShuffleProducer(localjoin[i], arrayID0, new int[] { workerIDs[0], workerIDs[1] }, pf0);

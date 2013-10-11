@@ -15,11 +15,11 @@ import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.operator.ColumnSelect;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.IDBInput;
 import edu.washington.escience.myria.operator.Operator;
-import edu.washington.escience.myria.operator.ColumnSelect;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
@@ -136,10 +136,8 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     final DbQueryScan scan2 = new DbQueryScan(testtableKey, tableSchema);
 
     final int numPartition = 2;
-    final PartitionFunction<String, Integer> pf0 = new SingleFieldHashPartitionFunction(numPartition);
-    pf0.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
-    final PartitionFunction<String, Integer> pf1 = new SingleFieldHashPartitionFunction(numPartition);
-    pf1.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1);
+    final PartitionFunction pf0 = new SingleFieldHashPartitionFunction(numPartition, 0);
+    final PartitionFunction pf1 = new SingleFieldHashPartitionFunction(numPartition, 1);
 
     ExchangePairID joinArray1ID = ExchangePairID.newID();
 
@@ -285,10 +283,8 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
         new EOSController(unionAll, new ExchangePairID[] { eosReceiverOpID }, new int[] { workerIDs[0] });
 
     final int numPartition = 1;
-    final PartitionFunction<String, Integer> pf0 = new SingleFieldHashPartitionFunction(numPartition);
-    pf0.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0); // partition by 1st column
-    final PartitionFunction<String, Integer> pf1 = new SingleFieldHashPartitionFunction(numPartition);
-    pf1.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1); // partition by 2nd column
+    final PartitionFunction pf0 = new SingleFieldHashPartitionFunction(numPartition, 0);
+    final PartitionFunction pf1 = new SingleFieldHashPartitionFunction(numPartition, 1);
     ExchangePairID joinArray1ID, joinArray2ID;
     joinArray1ID = ExchangePairID.newID();
     joinArray2ID = ExchangePairID.newID();

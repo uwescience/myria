@@ -5,7 +5,7 @@ import edu.washington.escience.myria.TupleBatch;
 /**
  * Partition of tuples by the hash code of the whole tuple.
  */
-public final class WholeTupleHashPartitionFunction extends PartitionFunction<String, Integer> {
+public final class WholeTupleHashPartitionFunction extends PartitionFunction {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;

@@ -25,7 +25,7 @@ public class GenericShuffleProducer extends Producer {
   /**
    * the partition function.
    * */
-  private final PartitionFunction<?, ?> partitionFunction;
+  private final PartitionFunction partitionFunction;
 
   /**
    * partition of cells.
@@ -49,7 +49,7 @@ public class GenericShuffleProducer extends Producer {
    * @param pf the partition function
    */
   public GenericShuffleProducer(final Operator child, final ExchangePairID operatorID, final int[] workerIDs,
-      final PartitionFunction<?, ?> pf) {
+      final PartitionFunction pf) {
     this(child, new ExchangePairID[] { operatorID }, MyriaArrayUtils.create2DVerticalIndex(pf.numPartition()),
         workerIDs, pf, false);
     Preconditions.checkArgument(workerIDs.length == pf.numPartition());
@@ -68,7 +68,7 @@ public class GenericShuffleProducer extends Producer {
    * @param pf the partition function
    * */
   public GenericShuffleProducer(final Operator child, final ExchangePairID operatorID, final int[][] cellPartition,
-      final int[] workerIDs, final PartitionFunction<?, ?> pf) {
+      final int[] workerIDs, final PartitionFunction pf) {
     this(child, new ExchangePairID[] { operatorID }, cellPartition, workerIDs, pf, false);
     Preconditions.checkArgument(cellPartition.length == pf.numPartition());
   }
@@ -84,7 +84,7 @@ public class GenericShuffleProducer extends Producer {
    * @param isOneToOneMapping the same as the one in Producer
    * */
   public GenericShuffleProducer(final Operator child, final ExchangePairID[] operatorIDs,
-      final int[][] partitionToChannel, final int[] workerIDs, final PartitionFunction<?, ?> pf,
+      final int[][] partitionToChannel, final int[] workerIDs, final PartitionFunction pf,
       final boolean isOneToOneMapping) {
     super(child, operatorIDs, workerIDs, isOneToOneMapping);
     Preconditions.checkArgument(partitionToChannel.length == pf.numPartition());
@@ -96,7 +96,7 @@ public class GenericShuffleProducer extends Producer {
   /**
    * @return return partition function.
    * */
-  public final PartitionFunction<?, ?> getPartitionFunction() {
+  public final PartitionFunction getPartitionFunction() {
     return partitionFunction;
   }
 

@@ -11,7 +11,7 @@ import edu.washington.escience.myria.parallel.PartitionFunction;
     @Type(value = RoundRobinPartitionFunctionEncoding.class, name = "RoundRobin"),
     @Type(value = MultiFieldPartitionFunctionEncoding.class, name = "MultiFieldHash"),
     @Type(value = SingleFieldPartitionFunctionEncoding.class, name = "SingleFieldHash") })
-public abstract class PartitionFunctionEncoding<T extends PartitionFunction<?, ?>> extends MyriaApiEncoding {
+public abstract class PartitionFunctionEncoding<T extends PartitionFunction> extends MyriaApiEncoding {
   /**
    * @param numPartitions the number of ways to partition the data.
    * @return the instantiated partition function.

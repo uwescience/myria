@@ -9,11 +9,11 @@ import com.google.common.collect.ImmutableList;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.operator.DbQueryScan;
-import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.ColumnSelect;
+import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
+import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
@@ -59,8 +59,7 @@ public class Q1 implements QueryPlanGenerator {
             "select t.subject,dyear.val from Triples t, Dictionary dtype, Dictionary dyear where t.predicate=dtype.ID and dtype.val='dcterms:issued' and t.object=dyear.ID;",
             subjectYearSchema);
 
-    final SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(allWorkers.length);
-    pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
+    final SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(allWorkers.length, 0);
 
     final GenericShuffleProducer shuffleJournalsP =
         new GenericShuffleProducer(allJournals, allJournalsShuffleID, allWorkers, pf);

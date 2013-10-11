@@ -10,28 +10,25 @@ import edu.washington.escience.myria.TupleBatch;
  * @author Shumo Chu <chushumo@cs.washington.edu>
  * 
  */
-public class MFMDHashPartitionFunction extends PartitionFunction<String, SingleFieldHashPartitionFunction[]> {
+public class MFMDHashPartitionFunction extends PartitionFunction {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   /**
-   * The partition functions attribute name.
-   * */
-  public static final String PARTITON_FUNCTIONS = "partition_functions";
-
-  /**
    * Partition functions on different dimensions.
    * */
-  private SingleFieldHashPartitionFunction[] partitionFunctions;
+  private final SingleFieldHashPartitionFunction[] partitionFunctions;
 
   /**
    * 
    * @param numPartition number of buckets
+   * @param partitionFunctions define partitions on different dimensions.
    * 
    * */
-  public MFMDHashPartitionFunction(final int numPartition) {
+  public MFMDHashPartitionFunction(final int numPartition, final SingleFieldHashPartitionFunction[] partitionFunctions) {
     super(numPartition);
+    this.partitionFunctions = partitionFunctions;
   }
 
   /**
@@ -53,14 +50,6 @@ public class MFMDHashPartitionFunction extends PartitionFunction<String, SingleF
     }
 
     return result;
-  }
-
-  @Override
-  public void setAttribute(final String attribute, final SingleFieldHashPartitionFunction[] value) {
-    super.setAttribute(attribute, value);
-    if (attribute.equals(PARTITON_FUNCTIONS)) {
-      partitionFunctions = value;
-    }
   }
 
 }

@@ -12,14 +12,14 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.operator.ColumnSelect;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
-import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.Operator;
-import edu.washington.escience.myria.operator.ColumnSelect;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SQLiteSetFilter;
 import edu.washington.escience.myria.operator.SinkRoot;
+import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
@@ -47,10 +47,7 @@ public class Erdos {
   final static ExchangePairID sendToMasterID = ExchangePairID.newID();
 
   public static DupElim erdosOne(int[] allWorkers, ArrayList<Producer> producers) throws DbException {
-    final SingleFieldHashPartitionFunction pfOn0 = new SingleFieldHashPartitionFunction(allWorkers.length);
-    final SingleFieldHashPartitionFunction pfOn1 = new SingleFieldHashPartitionFunction(allWorkers.length);
-    pfOn0.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
-    pfOn1.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1);
+    final SingleFieldHashPartitionFunction pfOn0 = new SingleFieldHashPartitionFunction(allWorkers.length, 0);
 
     final ExchangePairID paulErdoesPubsShuffleID = ExchangePairID.newID();
     final ExchangePairID coAuthorShuffleID = ExchangePairID.newID();
@@ -88,7 +85,8 @@ public class Erdos {
 
     final List<String> joinColumnNames = ImmutableList.of("pubId1", "pubId2", "authorId");
     final SymmetricHashJoin joinCoAuthors =
-        new SymmetricHashJoin(joinColumnNames, paulErdoesPubsShuffleC, allPubsShuffleC, new int[] { 0 }, new int[] { 0 });
+        new SymmetricHashJoin(joinColumnNames, paulErdoesPubsShuffleC, allPubsShuffleC, new int[] { 0 },
+            new int[] { 0 });
     // schema: (pubId long, pubId long, authorId long)
 
     final ColumnSelect projCoAuthorID = new ColumnSelect(new int[] { 2 }, joinCoAuthors);
@@ -111,10 +109,8 @@ public class Erdos {
   public static DupElim erdosN(DupElim erdosNMinus1, int[] allWorkers, ArrayList<Producer> producers)
       throws DbException {
 
-    final SingleFieldHashPartitionFunction pfOn0 = new SingleFieldHashPartitionFunction(allWorkers.length);
-    final SingleFieldHashPartitionFunction pfOn1 = new SingleFieldHashPartitionFunction(allWorkers.length);
-    pfOn0.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
-    pfOn1.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1);
+    final SingleFieldHashPartitionFunction pfOn0 = new SingleFieldHashPartitionFunction(allWorkers.length, 0);
+    final SingleFieldHashPartitionFunction pfOn1 = new SingleFieldHashPartitionFunction(allWorkers.length, 1);
 
     final DbQueryScan allPubs2 = new DbQueryScan(//
         "select authors.subject as pubId, authors.object as authorId " + //
