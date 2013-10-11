@@ -19,6 +19,7 @@ import edu.washington.escience.myria.util.MyriaUtils;
 public class ShuffleProducerEncoding extends AbstractProducerEncoding<GenericShuffleProducer> {
   public String argChild;
   public PartitionFunction argPf;
+  public StreamingStateUpdaterEncoding<?> argBufferStateUpdater;
   private static final List<String> requiredArguments = ImmutableList.of("argChild", "argPf");
 
   @Override
@@ -30,8 +31,18 @@ public class ShuffleProducerEncoding extends AbstractProducerEncoding<GenericShu
   public GenericShuffleProducer construct(Server server) {
     Set<Integer> workerIds = getRealWorkerIds();
     argPf.setNumPartitions(workerIds.size());
-    return new GenericShuffleProducer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), MyriaUtils
-        .integerCollectionToIntArray(workerIds), argPf);
+    GenericShuffleProducer producer =
+        new GenericShuffleProducer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), MyriaUtils
+            .integerCollectionToIntArray(workerIds), argPf);
+    if (argBufferStateUpdater != null) {
+      if (argBufferStateUpdater instanceof KeepMinValueEncoding) {
+        producer.setBackupBufferAsMin(((KeepMinValueEncoding) argBufferStateUpdater).keyColIndices,
+            ((KeepMinValueEncoding) argBufferStateUpdater).valueColIndex);
+      } else if (argBufferStateUpdater instanceof DupElimEncoding) {
+        producer.setBackupBufferAsDupElim();
+      }
+    }
+    return producer;
   }
 
   @Override
