@@ -26,20 +26,12 @@
                 fill: #33b5e5;
             }
              
-            .bar-root {
-                fill: #CC0000;
-            }
-             
-            .bar-binary {
-                fill: #669900;
-            }
-             
-            .bar-unary {
+            .bar-sleep {
                 fill: #33b5e5;
             }
              
-            .bar-idb {
-                fill: #ffbb33;
+            .bar-execution {
+                fill: #FFFF00;
             }
              
         </style>
@@ -51,10 +43,7 @@
         <output id="viz"></output>
         <output id="viz2"></output>
         <script type="text/javascript" src="http://d3js.org/d3.v3.min.js"></script>
-        <!--
-        <script type="text/javascript" src="http://stechu.github.io/gantt-chart.js"></script>
-        -->
-        <script type="text/javascript" src="/Users/chushumo/Project/Gantt-Chart/gantt-chart-d3.js"></script>
+        <script type="text/javascript" src="gantt-chart-d3.js"></script>
 
         <script>
  
@@ -64,11 +53,8 @@
                 var format = "%H:%M";
 
                 var taskStatus = {
-                    "LEAF_OPERATOR" : "bar",
-                    "ROOT_OPERATOR" : "bar-root",
-                    "BINARY_OPERATOR" : "bar-binary",
-                    "UNARY_OPERAOTR" : "bar-unary",
-                    "IDB_INPUT": "bar-idb"
+                    "SLEEP_TIME" : "bar-sleep",
+                    "EXECUTION_TIME" : "bar-execution"
                 };
 
                 // See what they selected and make sure at least one file.
@@ -87,18 +73,12 @@
                         var obj = eval("(" + input + ")");
                         var rawTasks = obj.tasks;
                         var taskNames = obj.taskNames;
-                        // tasks = [ { 
-                        //         "startDate":new Date(task.begin_date.year,task.begin_date.month, task.begin_date.day, task.begin_date.hours, task.begin_date.minutes, task.begin_date.seconds, task.begin_date.milliseconds ), 
-                        //         "endDate": new Date(task.end_date.year,task.end_date.month, task.end_date.day, task.end_date.hours, task.end_date.minutes, task.end_date.seconds, task.end_date.milliseconds), 
-                        //         "taskName":task.taskName
-                        //          } 
-                        //         for each (task in tasks)];
-                        
                         var tasks = [];
                         for (var i=0;i<rawTasks.length;i++){
                             tasks.push({
                                 "startDate":new Date(rawTasks[i].begin_date.year,rawTasks[i].begin_date.month, rawTasks[i].begin_date.day, rawTasks[i].begin_date.hour, rawTasks[i].begin_date.minute, rawTasks[i].begin_date.second, rawTasks[i].begin_date.millisecond ), 
                                 "endDate": new Date(rawTasks[i].end_date.year,rawTasks[i].end_date.month, rawTasks[i].end_date.day, rawTasks[i].end_date.hour, rawTasks[i].end_date.minute, rawTasks[i].end_date.second, rawTasks[i].end_date.millisecond), 
+                                "status": rawTasks[i].status,
                                 "taskName":rawTasks[i].taskName
                             });
                         }           
