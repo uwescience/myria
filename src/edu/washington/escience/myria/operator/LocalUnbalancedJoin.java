@@ -1,8 +1,6 @@
 package edu.washington.escience.myria.operator;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 
 import com.google.common.base.Preconditions;
@@ -11,21 +9,26 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.parallel.QueryExecutionMode;
-import edu.washington.escience.myria.parallel.TaskResourceManager;
+import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.map.hash.TIntObjectHashMap;
 
 /**
- * This is an implementation of hash equal join. The same as in DupElim, this implementation does not keep the
- * references to the incoming TupleBatches in order to get better memory performance.
+ * This is an implementation of unbalanced hash join. This operator only builds hash tables for its right child, thus
+ * will begin to output tuples after right child EOS.
+ * 
+ * @author Shumo Chu <chushumo@cs.washington.edu>
+ * 
  */
-public final class LocalJoin extends BinaryOperator {
-  /** Required for Java serialization. */
+public final class LocalUnbalancedJoin extends BinaryOperator {
+
+  /**
+   * This is required for serialization.
+   */
   private static final long serialVersionUID = 1L;
 
   /**
@@ -45,22 +48,16 @@ public final class LocalJoin extends BinaryOperator {
    * The column indices for comparing of child 2.
    */
   private final int[] compareIndx2;
-  /**
-   * A hash table for tuples from child 1. {Hashcode -> List of tuple indices with the same hash code}
-   */
-  private transient HashMap<Integer, List<Integer>> hashTable1Indices;
+
   /**
    * A hash table for tuples from child 2. {Hashcode -> List of tuple indices with the same hash code}
    */
-  private transient HashMap<Integer, List<Integer>> hashTable2Indices;
-  /**
-   * The buffer holding the valid tuples from left.
-   */
-  private transient TupleBuffer hashTable1;
+  private transient TIntObjectHashMap<TIntArrayList> hashTableIndices;
+
   /**
    * The buffer holding the valid tuples from right.
    */
-  private transient TupleBuffer hashTable2;
+  private transient TupleBuffer hashTable;
   /**
    * The buffer holding the results.
    */
@@ -80,7 +77,8 @@ public final class LocalJoin extends BinaryOperator {
    * @param compareIndx2 the columns of the right child to be compared with the left. Order matters.
    * @throw IllegalArgumentException if there are duplicated column names from the children.
    */
-  public LocalJoin(final Operator left, final Operator right, final int[] compareIndx1, final int[] compareIndx2) {
+  public LocalUnbalancedJoin(final Operator left, final Operator right, final int[] compareIndx1,
+      final int[] compareIndx2) {
     this(null, left, right, compareIndx1, compareIndx2);
   }
 
@@ -97,8 +95,8 @@ public final class LocalJoin extends BinaryOperator {
    * @throw IllegalArgumentException if there are duplicated column names in <tt>outputSchema</tt>, or if
    *        <tt>outputSchema</tt> does not have the correct number of columns and column types.
    */
-  public LocalJoin(final Operator left, final Operator right, final int[] compareIndx1, final int[] compareIndx2,
-      final int[] answerColumns1, final int[] answerColumns2) {
+  public LocalUnbalancedJoin(final Operator left, final Operator right, final int[] compareIndx1,
+      final int[] compareIndx2, final int[] answerColumns1, final int[] answerColumns2) {
     this(null, left, right, compareIndx1, compareIndx2, answerColumns1, answerColumns2);
   }
 
@@ -117,7 +115,7 @@ public final class LocalJoin extends BinaryOperator {
    * @throw IllegalArgumentException if there are duplicated column names in <tt>outputColumns</tt>, or if
    *        <tt>outputColumns</tt> does not have the correct number of columns and column types.
    */
-  public LocalJoin(final List<String> outputColumns, final Operator left, final Operator right,
+  public LocalUnbalancedJoin(final List<String> outputColumns, final Operator left, final Operator right,
       final int[] compareIndx1, final int[] compareIndx2, final int[] answerColumns1, final int[] answerColumns2) {
     super(left, right);
     Preconditions.checkArgument(compareIndx1.length == compareIndx2.length);
@@ -152,7 +150,7 @@ public final class LocalJoin extends BinaryOperator {
    * @throw IllegalArgumentException if there are duplicated column names in <tt>outputSchema</tt>, or if
    *        <tt>outputSchema</tt> does not have the correct number of columns and column types.
    */
-  public LocalJoin(final List<String> outputColumns, final Operator left, final Operator right,
+  public LocalUnbalancedJoin(final List<String> outputColumns, final Operator left, final Operator right,
       final int[] compareIndx1, final int[] compareIndx2) {
     this(outputColumns, left, right, compareIndx1, compareIndx2, range(left.getSchema().numColumns()), range(right
         .getSchema().numColumns()));
@@ -202,85 +200,21 @@ public final class LocalJoin extends BinaryOperator {
    * @param cntTuple a list representation of a tuple
    * @param hashTable the buffer holding the tuples to join against
    * @param index the index of hashTable, which the cntTuple is to join with
-   * @param fromleft if the tuple is from child 1
    */
-  protected void addToAns(final List<Object> cntTuple, final TupleBuffer hashTable, final int index,
-      final boolean fromleft) {
-    if (fromleft) {
-      for (int i = 0; i < answerColumns1.length; ++i) {
-        ans.put(i, cntTuple.get(answerColumns1[i]));
-      }
-      for (int i = 0; i < answerColumns2.length; ++i) {
-        ans.put(i + answerColumns1.length, hashTable.get(answerColumns2[i], index));
-      }
-    } else {
-      for (int i = 0; i < answerColumns1.length; ++i) {
-        ans.put(i, hashTable.get(answerColumns1[i], index));
-      }
-      for (int i = 0; i < answerColumns2.length; ++i) {
-        ans.put(i + answerColumns1.length, cntTuple.get(answerColumns2[i]));
-      }
+  protected void addToAns(final List<Object> cntTuple, final TupleBuffer hashTable, final int index) {
+    for (int i = 0; i < answerColumns1.length; ++i) {
+      ans.put(i, cntTuple.get(answerColumns1[i]));
     }
+    for (int i = 0; i < answerColumns2.length; ++i) {
+      ans.put(i + answerColumns1.length, hashTable.get(answerColumns2[i], index));
+    }
+
   }
 
   @Override
   protected void cleanup() throws DbException {
-    hashTable1 = null;
-    hashTable2 = null;
+    hashTable = null;
     ans = null;
-  }
-
-  /**
-   * In blocking mode, asynchronous EOI semantic may make system hang. Only synchronous EOI semantic works.
-   * 
-   * @return result TB.
-   * @throws DbException if any error occurs.
-   */
-  private TupleBatch fetchNextReadySynchronousEOI() throws DbException {
-    final Operator left = getLeft();
-    final Operator right = getRight();
-    TupleBatch nexttb = ans.popFilled();
-    while (nexttb == null) {
-      boolean hasnewtuple = false;
-      if (!left.eos() && !childrenEOI[0]) {
-        TupleBatch tb = left.nextReady();
-        if (tb != null) {
-          hasnewtuple = true;
-          processChildTB(tb, true);
-        } else {
-          if (left.eoi()) {
-            left.setEOI(false);
-            childrenEOI[0] = true;
-          }
-        }
-      }
-      if (!right.eos() && !childrenEOI[1]) {
-        TupleBatch tb = right.nextReady();
-        if (tb != null) {
-          hasnewtuple = true;
-          processChildTB(tb, false);
-        } else {
-          if (right.eoi()) {
-            right.setEOI(false);
-            childrenEOI[1] = true;
-          }
-        }
-      }
-      nexttb = ans.popFilled();
-      if (nexttb != null) {
-        return nexttb;
-      }
-      if (!hasnewtuple) {
-        break;
-      }
-    }
-    if (nexttb == null) {
-      if (ans.numTuples() > 0) {
-        nexttb = ans.popAny();
-      }
-      checkEOSAndEOI();
-    }
-    return nexttb;
   }
 
   @Override
@@ -288,107 +222,76 @@ public final class LocalJoin extends BinaryOperator {
     final Operator left = getLeft();
     final Operator right = getRight();
 
-    if (left.eos() && right.eos()) {
+    /* If right didn't finish yet, we cannot be EOI or EOS. */
+    if (!right.eos()) {
+      return;
+    }
+
+    /* If left has reached EOS, we are EOS. */
+    if (left.eos()) {
       setEOS();
       return;
     }
 
-    // EOS could be used as an EOI
-    if ((childrenEOI[0] || left.eos()) && (childrenEOI[1] || right.eos())) {
+    /* If left has reached EOI, we are EOI. */
+    if (left.eoi()) {
       setEOI(true);
-      Arrays.fill(childrenEOI, false);
+      left.setEOI(false);
     }
   }
 
-  /**
-   * Recording the EOI status of the children.
-   */
-  private final boolean[] childrenEOI = new boolean[2];
-
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
-    if (!nonBlocking) {
-      return fetchNextReadySynchronousEOI();
-    }
-    TupleBatch nexttb = ans.popFilled();
+
+    /*
+     * blocking mode will have the same logic
+     */
+
+    /* If any full tuple batches are ready, output them. */
+    TupleBatch nexttb = ans.popAnyUsingTimeout();
     if (nexttb != null) {
       return nexttb;
     }
 
-    if (eoi()) {
-      return ans.popAny();
-    }
-
-    final Operator left = getLeft();
     final Operator right = getRight();
-    TupleBatch leftTB = null;
-    TupleBatch rightTB = null;
-    int numEOS = 0;
-    int numNoData = 0;
 
-    while (numEOS < 2 && numNoData < 2) {
-
-      numEOS = 0;
-      if (left.eos()) {
-        numEOS += 1;
-      }
-      if (right.eos()) {
-        numEOS += 1;
-      }
-      numNoData = numEOS;
-
-      leftTB = null;
-      rightTB = null;
-      if (!left.eos()) {
-        leftTB = left.nextReady();
-        if (leftTB != null) { // data
-          processChildTB(leftTB, true);
-          nexttb = ans.popAnyUsingTimeout();
-          if (nexttb != null) {
-            return nexttb;
-          }
-        } else {
-          // eoi or eos or no data
-          if (left.eoi()) {
-            left.setEOI(false);
-            childrenEOI[0] = true;
-            checkEOSAndEOI();
-            if (eoi()) {
-              break;
-            }
-          } else if (left.eos()) {
-            numEOS++;
-          } else {
-            numNoData++;
-          }
+    /* Drain the right child. */
+    while (!right.eos()) {
+      TupleBatch rightTB = right.nextReady();
+      if (rightTB == null) {
+        /* The right child may have realized it's EOS now. If so, we must move onto left child to avoid livelock. */
+        if (right.eos()) {
+          break;
         }
+        return null;
       }
-      if (!right.eos()) {
-        rightTB = right.nextReady();
-        if (rightTB != null) {
-          processChildTB(rightTB, false);
-          nexttb = ans.popAnyUsingTimeout();
-          if (nexttb != null) {
-            return nexttb;
-          }
-        } else {
-          if (right.eoi()) {
-            right.setEOI(false);
-            childrenEOI[1] = true;
-            checkEOSAndEOI();
-            if (eoi()) {
-              break;
-            }
-          } else if (right.eos()) {
-            numEOS++;
-          } else {
-            numNoData++;
-          }
-        }
-      }
+      processRightChildTB(rightTB);
     }
-    Preconditions.checkArgument(numEOS <= 2);
-    Preconditions.checkArgument(numNoData <= 2);
+
+    /* The right child is done, let's drain the left child. */
+    final Operator left = getLeft();
+    while (!left.eos()) {
+      TupleBatch leftTB = left.nextReady();
+      /*
+       * Left tuple has no data, but we may need to pop partially-full existing batches if left reached EOI/EOS. Break
+       * and check for termination.
+       */
+      if (leftTB == null) {
+        break;
+      }
+
+      /* Process the data and add new results to ans. */
+      processLeftChildTB(leftTB);
+
+      nexttb = ans.popAnyUsingTimeout();
+      if (nexttb != null) {
+        return nexttb;
+      }
+      /*
+       * We didn't time out or there is no data in ans, and there are no full tuple batches. Either way, check for more
+       * data.
+       */
+    }
 
     checkEOSAndEOI();
     if (eoi() || eos()) {
@@ -399,32 +302,19 @@ public final class LocalJoin extends BinaryOperator {
 
   @Override
   public Schema getSchema() {
-    if (outputSchema == null) {
-      generateSchema();
-    }
     return outputSchema;
   }
 
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    final Operator left = getLeft();
     final Operator right = getRight();
-    hashTable1Indices = new HashMap<Integer, List<Integer>>();
-    hashTable2Indices = new HashMap<Integer, List<Integer>>();
-    hashTable1 = new TupleBuffer(left.getSchema());
-    hashTable2 = new TupleBuffer(right.getSchema());
+    hashTableIndices = new TIntObjectHashMap<TIntArrayList>();
+    hashTable = new TupleBuffer(right.getSchema());
     if (outputSchema == null) {
       generateSchema();
     }
     ans = new TupleBatchBuffer(outputSchema);
-    TaskResourceManager qem = (TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER);
-    nonBlocking = qem.getExecutionMode() == QueryExecutionMode.NON_BLOCKING;
   }
-
-  /**
-   * The query execution mode is nonBlocking.
-   */
-  private transient boolean nonBlocking = true;
 
   /**
    * Check if a tuple in uniqueTuples equals to the comparing tuple (cntTuple).
@@ -450,73 +340,51 @@ public final class LocalJoin extends BinaryOperator {
   }
 
   /**
-   * @param tb the incoming TupleBatch for processing join.
-   * @param fromleft if the tb is from left.
+   * Process tuples from right child: build up hash tables.
+   * 
+   * @param tb the incoming TupleBatch.
    */
-  protected void processChildTB(final TupleBatch tb, final boolean fromleft) {
-
-    final Operator left = getLeft();
-    final Operator right = getRight();
-
-    TupleBuffer hashTable1Local = hashTable1;
-    TupleBuffer hashTable2Local = hashTable2;
-    HashMap<Integer, List<Integer>> hashTable1IndicesLocal = hashTable1Indices;
-    HashMap<Integer, List<Integer>> hashTable2IndicesLocal = hashTable2Indices;
-    int[] compareIndx1Local = compareIndx1;
-    int[] compareIndx2Local = compareIndx2;
-    if (!fromleft) {
-      hashTable1Local = hashTable2;
-      hashTable2Local = hashTable1;
-      hashTable1IndicesLocal = hashTable2Indices;
-      hashTable2IndicesLocal = hashTable1Indices;
-      compareIndx1Local = compareIndx2;
-      compareIndx2Local = compareIndx1;
-    }
-
-    if (left.eos() && !right.eos()) {
-      /*
-       * delete right child's hash table if the left child is EOS, since there will be no incoming tuples from right as
-       * it will never be probed again.
-       */
-      hashTable2Indices = null;
-      hashTable2 = null;
-    } else if (right.eos() && !left.eos()) {
-      /*
-       * delete left child's hash table if the right child is EOS, since there will be no incoming tuples from left as
-       * it will never be probed again.
-       */
-      hashTable1Indices = null;
-      hashTable1 = null;
-    }
-
+  protected void processRightChildTB(final TupleBatch tb) {
     for (int i = 0; i < tb.numTuples(); ++i) {
       final List<Object> cntTuple = new ArrayList<Object>();
       for (int j = 0; j < tb.numColumns(); ++j) {
         cntTuple.add(tb.getObject(j, i));
       }
-      final int cntHashCode = tb.hashCode(i, compareIndx1Local);
-      List<Integer> indexList = hashTable2IndicesLocal.get(cntHashCode);
+      final int nextIndex = hashTable.numTuples();
+      final int cntHashCode = tb.hashCode(i, compareIndx2);
 
+      if (hashTableIndices.get(cntHashCode) == null) {
+        hashTableIndices.put(cntHashCode, new TIntArrayList());
+      }
+      hashTableIndices.get(cntHashCode).add(nextIndex);
+      for (int j = 0; j < tb.numColumns(); ++j) {
+        hashTable.put(j, cntTuple.get(j));
+      }
+    }
+  }
+
+  /**
+   * Process tuples from the left child: do the actual join.
+   * 
+   * @param tb the incoming TupleBatch for processing join.
+   */
+  protected void processLeftChildTB(final TupleBatch tb) {
+    for (int i = 0; i < tb.numTuples(); ++i) {
+      final List<Object> cntTuple = new ArrayList<Object>();
+      for (int j = 0; j < tb.numColumns(); ++j) {
+        cntTuple.add(tb.getObject(j, i));
+      }
+
+      final int cntHashCode = tb.hashCode(i, compareIndx1);
+      TIntArrayList indexList = hashTableIndices.get(cntHashCode);
       if (indexList != null) {
-        for (final int index : indexList) {
-          if (tupleEquals(cntTuple, hashTable2Local, index, compareIndx1Local, compareIndx2Local)) {
-            addToAns(cntTuple, hashTable2Local, index, fromleft);
+        for (int j = 0; j < indexList.size(); j++) {
+          int index = indexList.get(j);
+          if (tupleEquals(cntTuple, hashTable, index, compareIndx1, compareIndx2)) {
+            addToAns(cntTuple, hashTable, index);
           }
         }
       }
-
-      // only build hash table on two sides if none of the children is EOS
-      if (!left.eos() && !right.eos()) {
-        final int nextIndex = hashTable1Local.numTuples();
-        if (hashTable1IndicesLocal.get(cntHashCode) == null) {
-          hashTable1IndicesLocal.put(cntHashCode, new ArrayList<Integer>());
-        }
-        hashTable1IndicesLocal.get(cntHashCode).add(nextIndex);
-        for (int j = 0; j < tb.numColumns(); ++j) {
-          hashTable1Local.put(j, cntTuple.get(j));
-        }
-      }
     }
-
   }
 }

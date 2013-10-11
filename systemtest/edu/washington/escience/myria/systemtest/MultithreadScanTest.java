@@ -18,7 +18,7 @@ import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.LocalJoin;
-import edu.washington.escience.myria.operator.Merge;
+import edu.washington.escience.myria.operator.UnionAll;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
@@ -110,7 +110,7 @@ public class MultithreadScanTest extends SystemTestBase {
 
     final TupleBatchBuffer expectedTBB = getResultInMemory(tbl1Worker1, tableSchema, 2);
     final TupleBatchBuffer expectedTBBCopy = new TupleBatchBuffer(tableSchema);
-    expectedTBBCopy.merge(expectedTBB);
+    expectedTBBCopy.unionAll(expectedTBB);
     final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
 
     createTable(workerIDs[0], testtableKey, "follower long, followee long");
@@ -150,7 +150,7 @@ public class MultithreadScanTest extends SystemTestBase {
       }
     }
     final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
-    expectedTBB.merge(expectedTBBCopy);
+    expectedTBB.unionAll(expectedTBBCopy);
     TestUtils.assertTupleBagEqual(TestUtils.tupleBatchToTupleBag(expectedTBB), resultBag);
 
   }
@@ -171,7 +171,7 @@ public class MultithreadScanTest extends SystemTestBase {
       tbl1Worker1.put(1, tbl1ID2Worker1[i]);
     }
     final TupleBatchBuffer table1 = new TupleBatchBuffer(tableSchema);
-    table1.merge(tbl1Worker1);
+    table1.unionAll(tbl1Worker1);
 
     final TupleBatchBuffer expectedTBB = getResultInMemory(table1, tableSchema, 2);
     final TupleBatchBuffer expectedTBBCopy = getResultInMemory(table1, tableSchema, 2);
@@ -213,10 +213,10 @@ public class MultithreadScanTest extends SystemTestBase {
         new GenericShuffleConsumer(sp1.getSchema(), arrayID1, new int[] { workerIDs[0], workerIDs[1] });
     final GenericShuffleConsumer sc2 =
         new GenericShuffleConsumer(sp2.getSchema(), arrayID2, new int[] { workerIDs[0], workerIDs[1] });
-    final Merge merge = new Merge(new Operator[] { sc1, sc2 });
+    final UnionAll unionAll = new UnionAll(new Operator[] { sc1, sc2 });
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
-    final CollectProducer cp = new CollectProducer(merge, serverReceiveID, MASTER_ID);
+    final CollectProducer cp = new CollectProducer(unionAll, serverReceiveID, MASTER_ID);
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
     workerPlans.put(workerIDs[0], new RootOperator[] { cp, sp1, sp2 });
     workerPlans.put(workerIDs[1], new RootOperator[] { cp, sp1, sp2 });
@@ -237,9 +237,9 @@ public class MultithreadScanTest extends SystemTestBase {
     }
     final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
 
-    expectedTBB.merge(expectedTBBCopy);
-    expectedTBB.merge(expectedTBBCopy);
-    expectedTBB.merge(expectedTBBCopy);
+    expectedTBB.unionAll(expectedTBBCopy);
+    expectedTBB.unionAll(expectedTBBCopy);
+    expectedTBB.unionAll(expectedTBBCopy);
     TestUtils.assertTupleBagEqual(TestUtils.tupleBatchToTupleBag(expectedTBB), resultBag);
 
   }

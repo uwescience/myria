@@ -75,11 +75,11 @@
                         "eoiReceiverB",
                         "eoiReceiverC"
                     ],
-                    "op_name": "merge",
-                    "op_type": "Merge"
+                    "op_name": "unionAll",
+                    "op_type": "UnionAll"
                 },
                 {
-                    "arg_child": "merge",
+                    "arg_child": "unionAll",
                     "arg_idb_operator_ids": [
                         "3",
                         "4",

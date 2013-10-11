@@ -23,12 +23,12 @@ def stop_all(config):
 
     # Stop the Master
     hostname = get_hostname(master)
-    cmd = "ssh %s@%s $'ps aux | grep edu.washington.escience.myria.daemon.MasterDaemon | grep %s | grep -v grep | awk \\'{print $2}\\''" % (username, hostname, username)
+    cmd = "ssh -o ConnectTimeout=6 %s@%s $'ps aux | grep edu.washington.escience.myria.daemon.MasterDaemon | grep %s | grep -v grep | awk \\'{print $2}\\''" % (username, hostname, username)
     pids = subprocess.check_output(cmd, shell=True).split('\n')
     for pid in pids:
         if pid != "":
             print  "killing %s on %s" % (pid, hostname)
-            cmd = "ssh %s@%s kill -9 %s" % (username, hostname, pid)
+            cmd = "ssh -o ConnectTimeout=6 %s@%s kill -9 %s" % (username, hostname, pid)
             subprocess.call(cmd, shell=True)
 
     # Workers
@@ -38,12 +38,15 @@ def stop_all(config):
         if hostname in done:
             continue
         done.add(hostname)
-        cmd = "ssh %s@%s $'ps aux | grep edu.washington.escience.myria.parallel.Worker | grep %s | grep -v grep | awk \\'{print $2}\\''" % (username, hostname, username)
-        pids = subprocess.check_output(cmd, shell=True).split('\n')
+        cmd = "ssh -o ConnectTimeout=6 %s@%s $'ps aux | grep edu.washington.escience.myria.parallel.Worker | grep %s | grep -v grep | awk \\'{print $2}\\''" % (username, hostname, username)
+        try:
+            pids = subprocess.check_output(cmd, shell=True).split('\n')
+        except:
+            continue
         for pid in pids:
             if pid != "":
                 print  "killing %s on %s" % (pid, hostname)
-                cmd = "ssh %s@%s kill -9 %s" % (username, hostname, pid)
+                cmd = "ssh -o ConnectTimeout=6 %s@%s kill -9 %s" % (username, hostname, pid)
                 subprocess.call(cmd, shell=True)
 
 def main(argv):

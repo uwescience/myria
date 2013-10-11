@@ -71,13 +71,8 @@ public final class RelationKey implements Serializable {
     return userName;
   }
 
-  @SuppressWarnings("unused")
   @Override
-  @Deprecated
   public String toString() {
-    if (true) {
-      throw new UnsupportedOperationException("Use toString(dbms)!");
-    }
     return toString('[', '#', ']');
   }
 

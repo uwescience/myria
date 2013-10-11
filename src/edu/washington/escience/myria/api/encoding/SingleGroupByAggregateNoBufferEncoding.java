@@ -6,30 +6,33 @@ import java.util.Map;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.operator.Operator;
-import edu.washington.escience.myria.operator.agg.Aggregate;
 import edu.washington.escience.myria.operator.agg.Aggregator;
+import edu.washington.escience.myria.operator.agg.SingleGroupByAggregateNoBuffer;
 import edu.washington.escience.myria.parallel.Server;
 
-public class AggregateEncoding extends OperatorEncoding<Aggregate> {
-  public List<List<String>> argAggOperators;
-  public int[] argAggFields;
+public class SingleGroupByAggregateNoBufferEncoding extends OperatorEncoding<SingleGroupByAggregateNoBuffer> {
+
   public String argChild;
-  private static final List<String> requiredFields = ImmutableList.of("argChild", "argAggOperators", "argAggFields");
+  public int[] argAggFields;
+  public List<List<String>> argAggOperators;
+  public int argGroupField;
+  private static final List<String> requiredArguments = ImmutableList.of("argChild", "argAggFields", "argAggOperators",
+      "argGroupField");
 
   @Override
-  public Aggregate construct(Server server) {
-    int[] ops = deserializeAggregateOperator(argAggOperators);
-    return new Aggregate(null, argAggFields, ops);
+  public void connect(Operator operator, Map<String, Operator> operators) {
+    operator.setChildren(new Operator[] { operators.get(argChild) });
   }
 
   @Override
-  public void connect(Operator current, Map<String, Operator> operators) {
-    current.setChildren(new Operator[] { operators.get(argChild) });
+  public SingleGroupByAggregateNoBuffer construct(Server server) {
+    int[] ops = deserializeAggregateOperator(argAggOperators);
+    return new SingleGroupByAggregateNoBuffer(null, argAggFields, argGroupField, ops);
   }
 
   @Override
   protected List<String> getRequiredArguments() {
-    return requiredFields;
+    return requiredArguments;
   }
 
   /**
@@ -69,4 +72,5 @@ public class AggregateEncoding extends OperatorEncoding<Aggregate> {
     }
     return result;
   }
+
 }

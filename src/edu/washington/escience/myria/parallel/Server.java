@@ -7,11 +7,15 @@ import java.io.ObjectInputStream;
 import java.nio.file.Files;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.NavigableSet;
 import java.util.Set;
 import java.util.TimerTask;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -37,12 +41,17 @@ import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.TupleWriter;
+import edu.washington.escience.myria.api.encoding.DatasetStatus;
+import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding;
 import edu.washington.escience.myria.api.encoding.QueryStatusEncoding.Status;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.coordinator.catalog.CatalogMaker;
 import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
+import edu.washington.escience.myria.operator.DataOutput;
 import edu.washington.escience.myria.operator.DbInsert;
+import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
@@ -940,58 +949,110 @@ public final class Server {
   public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final String physicalPlan,
       final SingleQueryPlanWithArgs masterPlan, final Map<Integer, SingleQueryPlanWithArgs> workerPlans)
       throws DbException, CatalogException {
-    workerPlans.remove(MyriaConstants.MASTER_ID);
     final long queryID = catalog.newQuery(rawQuery, logicalRa, physicalPlan);
-    final MasterQueryPartition mqp = new MasterQueryPartition(masterPlan, workerPlans, queryID, this);
-    activeQueries.put(queryID, mqp);
-    mqp.getQueryExecutionFuture().addListener(new QueryFutureListener() {
-      @Override
-      public void operationComplete(final QueryFuture future) throws Exception {
+    return submitQuery(queryID, masterPlan, workerPlans);
+  }
 
-        /* Before removing this query from the list of active queries, update it in the Catalog. */
-        final QueryExecutionStatistics stats = mqp.getExecutionStatistics();
-        final String startTime = stats.getStartTime();
-        final String endTime = stats.getEndTime();
-        final long elapsedNanos = stats.getQueryExecutionElapse();
-        final QueryStatusEncoding.Status status;
-        if (mqp.isKilled()) {
-          /* This is a catch-all for both ERROR and KILLED, right? */
-          status = Status.KILLED;
-        } else {
-          status = Status.SUCCESS;
+  /**
+   * Submit a query for execution. The workerPlans may be removed in the future if the query compiler and schedulers are
+   * ready.
+   * 
+   * @param rawQuery the raw user-defined query. E.g., the source Datalog program.
+   * @param logicalRa the logical relational algebra of the compiled plan.
+   * @param physicalPlan the Myria physical plan for the query.
+   * @param workerPlans the physical parallel plan fragments for each worker.
+   * @param masterPlan the physical parallel plan fragment for the master.
+   * @throws DbException if any error in non-catalog data processing
+   * @throws CatalogException if any error in processing catalog
+   * @return the query future from which the query status can be looked up.
+   * */
+  public QueryFuture submitQuery(final String rawQuery, final String logicalRa, final QueryEncoding physicalPlan,
+      final SingleQueryPlanWithArgs masterPlan, final Map<Integer, SingleQueryPlanWithArgs> workerPlans)
+      throws DbException, CatalogException {
+    final long queryID = catalog.newQuery(rawQuery, logicalRa, physicalPlan);
+    return submitQuery(queryID, masterPlan, workerPlans);
+  }
+
+  /**
+   * Submit a query for execution. The workerPlans may be removed in the future if the query compiler and schedulers are
+   * ready.
+   * 
+   * @param queryID the catalog's assigned ID for this query.
+   * @param workerPlans the physical parallel plan fragments for each worker.
+   * @param masterPlan the physical parallel plan fragment for the master.
+   * @throws DbException if any error in non-catalog data processing
+   * @throws CatalogException if any error in processing catalog
+   * @return the query future from which the query status can be looked up.
+   * */
+  private QueryFuture submitQuery(final long queryID, final SingleQueryPlanWithArgs masterPlan,
+      final Map<Integer, SingleQueryPlanWithArgs> workerPlans) throws DbException, CatalogException {
+
+    workerPlans.remove(MyriaConstants.MASTER_ID);
+    try {
+      final MasterQueryPartition mqp = new MasterQueryPartition(masterPlan, workerPlans, queryID, this);
+      activeQueries.put(queryID, mqp);
+
+      final QueryFuture queryExecutionFuture = mqp.getQueryExecutionFuture();
+
+      /*
+       * Add the DatasetMetadataUpdater, which will update the catalog with the set of workers created when the query
+       * succeeds.
+       */
+      queryExecutionFuture.addListener(new DatasetMetadataUpdater(catalog, workerPlans, queryID));
+
+      queryExecutionFuture.addListener(new QueryFutureListener() {
+        @Override
+        public void operationComplete(final QueryFuture future) throws Exception {
+
+          /* Before removing this query from the list of active queries, update it in the Catalog. */
+          final QueryExecutionStatistics stats = mqp.getExecutionStatistics();
+          final String startTime = stats.getStartTime();
+          final String endTime = stats.getEndTime();
+          final long elapsedNanos = stats.getQueryExecutionElapse();
+          final QueryStatusEncoding.Status status;
+          if (mqp.isKilled()) {
+            /* This is a catch-all for both ERROR and KILLED, right? */
+            status = Status.KILLED;
+          } else {
+            status = Status.SUCCESS;
+          }
+          catalog.queryFinished(queryID, startTime, endTime, elapsedNanos, status);
+          activeQueries.remove(queryID);
+
+          if (future.isSuccess()) {
+            if (LOGGER.isInfoEnabled()) {
+              LOGGER.info("The query #{} succeeds. Time elapse: {}.", queryID, DateTimeUtils
+                  .nanoElapseToHumanReadable(elapsedNanos));
+            }
+            if (mqp.getRootOperator() instanceof SinkRoot) {
+              succeededQueryResults.put(queryID, ((SinkRoot) mqp.getRootOperator()).getCount());
+            }
+            // TODO success management.
+          } else {
+            if (LOGGER.isInfoEnabled()) {
+              LOGGER.info("The query #{} failes. Time elapse: {}. Failure cause is {}.", queryID, DateTimeUtils
+                  .nanoElapseToHumanReadable(elapsedNanos), future.getCause());
+            }
+            // TODO failure management.
+          }
         }
-        catalog.queryFinished(queryID, startTime, endTime, elapsedNanos, status);
-        activeQueries.remove(queryID);
+      });
 
-        if (future.isSuccess()) {
-          if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("The query #{} succeeds. Time elapse: {}.", queryID, DateTimeUtils
-                .nanoElapseToHumanReadable(elapsedNanos));
-          }
-          if (mqp.getRootOperator() instanceof SinkRoot) {
-            succeededQueryResults.put(queryID, ((SinkRoot) mqp.getRootOperator()).getCount());
-          }
-          // TODO success management.
-        } else {
-          if (LOGGER.isInfoEnabled()) {
-            LOGGER.info("The query #{} failes. Time elapse: {}. Failure cause is {}.", queryID, DateTimeUtils
-                .nanoElapseToHumanReadable(elapsedNanos), future.getCause());
-          }
-          // TODO failure management.
+      dispatchWorkerQueryPlans(mqp).addListener(new QueryFutureListener() {
+        @Override
+        public void operationComplete(final QueryFuture future) throws Exception {
+          mqp.init();
+          mqp.startExecution();
+          Server.this.startWorkerQuery(future.getQuery().getQueryID());
         }
-      }
-    });
+      });
 
-    dispatchWorkerQueryPlans(mqp).addListener(new QueryFutureListener() {
-      @Override
-      public void operationComplete(final QueryFuture future) throws Exception {
-        mqp.init();
-        mqp.startExecution();
-        Server.this.startWorkerQuery(future.getQuery().getQueryID());
-      }
-    });
-
-    return mqp.getQueryExecutionFuture();
+      return mqp.getQueryExecutionFuture();
+    } catch (DbException | CatalogException | RuntimeException e) {
+      catalog.queryFinished(queryID, "error during submission", null, null, Status.KILLED);
+      activeQueries.remove(queryID);
+      throw e;
+    }
   }
 
   /**
@@ -1026,11 +1087,12 @@ public final class Server {
    * @param relationKey the name of the dataset.
    * @param workersToIngest restrict the workers to ingest data (null for all)
    * @param source the source of tuples to be ingested.
+   * @return the status of the ingested dataset.
    * @throws InterruptedException interrupted
    * @throws DbException if there is an error
    */
-  public void ingestDataset(final RelationKey relationKey, final Set<Integer> workersToIngest, final Operator source)
-      throws InterruptedException, DbException {
+  public DatasetStatus ingestDataset(final RelationKey relationKey, final Set<Integer> workersToIngest,
+      final Operator source) throws InterruptedException, DbException {
     /* Figure out the workers we will use. If workersToIngest is null, use all active workers. */
     Set<Integer> actualWorkers = workersToIngest;
     if (workersToIngest == null) {
@@ -1045,7 +1107,6 @@ public final class Server {
             new RoundRobinPartitionFunction(workersArray.length));
 
     /* The workers' plan */
-
     GenericShuffleConsumer gather =
         new GenericShuffleConsumer(source.getSchema(), scatterId, new int[] { MyriaConstants.MASTER_ID });
     DbInsert insert = new DbInsert(gather, relationKey, true);
@@ -1056,13 +1117,15 @@ public final class Server {
 
     try {
       /* Start the workers */
-      submitQuery("ingest " + relationKey.toString("sqlite"), "ingest " + relationKey.toString("sqlite"),
-          "ingest " + relationKey.toString("sqlite"), new SingleQueryPlanWithArgs(scatter), workerPlans).sync();
-      /* Now that the query has finished, add the metadata about this relation to the dataset. */
-      catalog.addRelationMetadata(relationKey, source.getSchema());
+      QueryFuture qf =
+          submitQuery("ingest " + relationKey.toString("sqlite"), "ingest " + relationKey.toString("sqlite"),
+              "ingest " + relationKey.toString("sqlite"), new SingleQueryPlanWithArgs(scatter), workerPlans).sync();
+      /* TODO(dhalperi) -- figure out how to populate the numTuples column. */
+      DatasetStatus status =
+          new DatasetStatus(relationKey, source.getSchema(), -1, qf.getQuery().getQueryID(), qf.getQuery()
+              .getExecutionStatistics().getEndTime());
 
-      /* Add the round robin-partitioned shard. */
-      catalog.addStoredRelation(relationKey, actualWorkers, "RoundRobin");
+      return status;
     } catch (CatalogException e) {
       throw new DbException(e);
     }
@@ -1085,7 +1148,8 @@ public final class Server {
 
     try {
       /* Now that the query has finished, add the metadata about this relation to the dataset. */
-      catalog.addRelationMetadata(relationKey, schema);
+      /* TODO(dhalperi) -- figure out how to populate the numTuples column. */
+      catalog.addRelationMetadata(relationKey, schema, -1, -1);
       /* Add the round robin-partitioned shard. */
       catalog.addStoredRelation(relationKey, actualWorkers, "RoundRobin");
     } catch (CatalogException e) {
@@ -1176,5 +1240,146 @@ public final class Server {
       queryStatus.status = QueryStatusEncoding.Status.ACCEPTED;
     }
     return queryStatus;
+  }
+
+  /**
+   * Computes and returns the status of queries that have been submitted to Myria.
+   * 
+   * @throws CatalogException if there is an error in the catalog.
+   * @return a list of the status of every query that has been submitted to Myria.
+   */
+  public List<QueryStatusEncoding> getQueries() throws CatalogException {
+    List<QueryStatusEncoding> ret = new LinkedList<QueryStatusEncoding>();
+
+    /* Begin by adding the status for all the active queries. */
+    NavigableSet<Long> activeQueryIds = new TreeSet<Long>(activeQueries.keySet());
+    final Iterator<Long> iter = activeQueryIds.descendingIterator();
+    while (iter.hasNext()) {
+      final Long queryId = iter.next();
+      final QueryStatusEncoding status = getQueryStatus(queryId);
+      if (status == null) {
+        LOGGER.warn("Weird: query status for active query {} is null.", queryId);
+        continue;
+      }
+      ret.add(status);
+    }
+
+    /* Now add in the status for all the inactive (finished, killed, etc.) queries. */
+    for (QueryStatusEncoding q : catalog.getQueries()) {
+      if (!activeQueryIds.contains(q.queryId)) {
+        ret.add(q);
+      }
+    }
+
+    return ret;
+  }
+
+  /**
+   * @return A list of datasets in the system.
+   * @throws DbException if there is an error accessing the desired Schema.
+   */
+  public List<DatasetStatus> getDatasets() throws DbException {
+    try {
+      return catalog.getDatasets();
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+  }
+
+  /**
+   * Get the metadata about a relation.
+   * 
+   * @param relationKey specified which relation to get the metadata about.
+   * @return the metadata of the specified relation.
+   * @throws DbException if there is an error getting the status.
+   */
+  public DatasetStatus getDatasetStatus(final RelationKey relationKey) throws DbException {
+    try {
+      return catalog.getDatasetStatus(relationKey);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+  }
+
+  /**
+   * @param userName the user whose datasets we want to access.
+   * @return a list of datasets belonging to the specified user.
+   * @throws DbException if there is an error accessing the Catalog.
+   */
+  public List<DatasetStatus> getDatasetsForUser(final String userName) throws DbException {
+    try {
+      return catalog.getDatasetsForUser(userName);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+  }
+
+  /**
+   * @param userName the user whose datasets we want to access.
+   * @param programName the program by that user whose datasets we want to access.
+   * @return a list of datasets belonging to the specified program.
+   * @throws DbException if there is an error accessing the Catalog.
+   */
+  public List<DatasetStatus> getDatasetsForProgram(final String userName, final String programName) throws DbException {
+    try {
+      return catalog.getDatasetsForProgram(userName, programName);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+  }
+
+  /**
+   * Start a query that streams tuples from the specified relation to the specified {@link TupleWriter}.
+   * 
+   * @param relationKey the relation to be downloaded.
+   * @param writer the {@link TupleWriter} which will serialize the tuples.
+   * @return the query future from which the query status can be looked up.
+   * @throws DbException if there is an error in the system.
+   */
+  public QueryFuture startDataStream(final RelationKey relationKey, final TupleWriter writer) throws DbException {
+    /* Get the relation's schema, to make sure it exists. */
+    final Schema schema;
+    try {
+      schema = catalog.getSchema(relationKey);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+    if (schema == null) {
+      throw new IllegalArgumentException("the requested relation was not found.");
+    }
+
+    /* Get the workers that store it. */
+    List<Integer> scanWorkers;
+    try {
+      scanWorkers = getWorkersForRelation(relationKey, null);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
+
+    /* Construct the operators that go elsewhere. */
+    DbQueryScan scan = new DbQueryScan(relationKey, schema);
+    final ExchangePairID operatorId = ExchangePairID.newID();
+    CollectProducer producer = new CollectProducer(scan, operatorId, MyriaConstants.MASTER_ID);
+
+    /* Construct the workers' {@link SingleQueryPlanWithArgs}. */
+    SingleQueryPlanWithArgs workerPlan = new SingleQueryPlanWithArgs(producer);
+    Map<Integer, SingleQueryPlanWithArgs> workerPlans =
+        new HashMap<Integer, SingleQueryPlanWithArgs>(scanWorkers.size());
+    for (Integer worker : scanWorkers) {
+      workerPlans.put(worker, workerPlan);
+    }
+
+    /* Construct the master plan. */
+    final CollectConsumer consumer = new CollectConsumer(schema, operatorId, ImmutableSet.copyOf(scanWorkers));
+    DataOutput output = new DataOutput(consumer, writer);
+    final SingleQueryPlanWithArgs masterPlan = new SingleQueryPlanWithArgs(output);
+
+    /* Submit the plan for the download. */
+    String planString = "download " + relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE);
+    try {
+      return submitQuery(planString, planString, planString, masterPlan, workerPlans);
+    } catch (CatalogException e) {
+      throw new DbException(e);
+    }
   }
 }

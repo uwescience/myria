@@ -94,8 +94,11 @@ public class QueryEncoding extends MyriaApiEncoding {
         /* The workers are set in the plan. */
         continue;
       }
+
       /* The workers are *not* set in the plan. Let's find out what they are. */
       List<Integer> workers = new ArrayList<Integer>();
+      fragment.workers = workers;
+
       /* If the plan has scans, it has to run on all of those workers. */
       for (OperatorEncoding<?> operator : fragment.operators) {
         if (operator instanceof TableScanEncoding) {
@@ -108,11 +111,25 @@ public class QueryEncoding extends MyriaApiEncoding {
           workers.addAll(scanWorkers);
         }
       }
-      /* If not, just add all the alive workers in the cluster. */
-      if (workers.size() == 0) {
-        workers.addAll(server.getAliveWorkers());
+      if (workers.size() > 0) {
+        continue;
       }
-      fragment.workers = workers;
+
+      /* No scans found: See if there's a CollectConsumer. */
+      for (OperatorEncoding<?> operator : fragment.operators) {
+        /* If the fragment has a CollectConsumer, it has to run on a single worker. */
+        if (operator instanceof CollectConsumerEncoding) {
+          /* Just pick the first alive worker. */
+          workers.add(server.getAliveWorkers().iterator().next());
+          break;
+        }
+      }
+      if (workers.size() > 0) {
+        continue;
+      }
+
+      /* If not, just add all the alive workers in the cluster. */
+      workers.addAll(server.getAliveWorkers());
     }
   }
 

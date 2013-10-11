@@ -108,6 +108,11 @@ public final class MyriaConstants {
   public static final long SCHEDULED_WORKER_UNABLE_TO_START = 15000;
 
   /**
+   * Short wait interval 1 millisecond.
+   */
+  public static final int SHORT_WAITING_INTERVAL_1_MS = 1;
+
+  /**
    * Short wait interval 10 milliseconds.
    * */
   public static final int SHORT_WAITING_INTERVAL_10_MS = 10;
@@ -211,6 +216,12 @@ public final class MyriaConstants {
    * Default value for {@link MyriaSystemConfigKeys#WORKER_STORAGE_DATABASE_SYSTEM}.
    * */
   public static final String WORKER_STORAGE_DATABASE_SYSTEM_DEFAULT_VALUE = STORAGE_SYSTEM_SQLITE;
+
+  /**
+   * The number of bytes that can back up in a {@link java.io.PipedInputStream} before we stop writing tuples and wait
+   * for the client to read them. 16 MB.
+   */
+  public static final int DEFAULT_PIPED_INPUT_STREAM_SIZE = 1024 * 1024 * 16;
 
   /** Private constructor to disallow building utility class. */
   private MyriaConstants() {

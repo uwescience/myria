@@ -15,13 +15,9 @@ import org.apache.commons.io.FilenameUtils;
 import org.ini4j.Wini;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
-import edu.washington.escience.myria.RelationKey;
-import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.tool.MyriaConfigurationReader;
@@ -135,10 +131,6 @@ public final class CatalogMaker {
       for (final String id : workers.keySet()) {
         c.addWorker(Integer.parseInt(id), workers.get(id));
       }
-
-      /* A simple test relation. */
-      c.addRelationMetadata(RelationKey.of("test", "test", "testRelation"), new Schema(ImmutableList.of(Type.LONG_TYPE,
-          Type.LONG_TYPE), ImmutableList.of("x", "y")));
 
       HashMap<String, String> configurationValues = new HashMap<String, String>(masterConfigurations);
       MyriaSystemConfigKeys.addDeploymentKeysFromConfigFile(configurationValues, config.get("deployment"));

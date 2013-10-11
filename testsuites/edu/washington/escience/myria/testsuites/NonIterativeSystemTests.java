@@ -13,7 +13,7 @@ import edu.washington.escience.myria.systemtest.CollectTest;
 import edu.washington.escience.myria.systemtest.FlowControlTest;
 import edu.washington.escience.myria.systemtest.IterativeSelfJoinTest;
 import edu.washington.escience.myria.systemtest.LocalMultiwayProducerTest;
-import edu.washington.escience.myria.systemtest.MergeTest;
+import edu.washington.escience.myria.systemtest.UnionAllTest;
 import edu.washington.escience.myria.systemtest.MultithreadScanTest;
 import edu.washington.escience.myria.systemtest.OperatorTestUsingSQLiteStorage;
 import edu.washington.escience.myria.systemtest.ParallelDistinctUsingSQLiteTest;
@@ -31,7 +31,7 @@ import edu.washington.escience.myria.systemtest.SplitDataTest;
     FlowControlTest.class, //
     IterativeSelfJoinTest.class, //
     LocalMultiwayProducerTest.class, //
-    MergeTest.class, //
+    UnionAllTest.class, //
     MultithreadScanTest.class, //
     OperatorTestUsingSQLiteStorage.class, //
     ParallelDistinctUsingSQLiteTest.class, //

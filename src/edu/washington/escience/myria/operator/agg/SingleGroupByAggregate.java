@@ -207,6 +207,9 @@ public class SingleGroupByAggregate extends UnaryOperator {
 
   @Override
   public final Schema getSchema() {
+    if (schema == null) {
+      schema = generateSchema(getChild(), groupAggs, gColumn, afields, agg, aggOps);
+    }
     return schema;
   }
 

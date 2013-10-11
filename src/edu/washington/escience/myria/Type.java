@@ -22,38 +22,6 @@ public enum Type implements Serializable {
    * int type.
    * */
   INT_TYPE() {
-    /**
-     * @return true if valueInTuple op operand.
-     * @param op the operation
-     * @param valueInTuple the value to be compared in a tuple
-     * @param operand the operand
-     * */
-    public boolean compare(final SimplePredicate.Op op, final int valueInTuple, final int operand) {
-      switch (op) {
-        case EQUALS:
-          return valueInTuple == operand;
-        case NOT_EQUALS:
-          return valueInTuple != operand;
-
-        case GREATER_THAN:
-          return valueInTuple > operand;
-
-        case GREATER_THAN_OR_EQ:
-          return valueInTuple >= operand;
-
-        case LESS_THAN:
-          return valueInTuple < operand;
-
-        case LESS_THAN_OR_EQ:
-          return valueInTuple <= operand;
-
-        case LIKE:
-          return valueInTuple == operand;
-      }
-
-      return false;
-    }
-
     @Override
     public boolean filter(final SimplePredicate.Op op, final Column<?> intColumn, final int tupleIndex,
         final Object operand) {
@@ -76,39 +44,6 @@ public enum Type implements Serializable {
    * float type.
    * */
   FLOAT_TYPE() {
-    /**
-     * @return true if valueInTuple op operand.
-     * @param op the operation
-     * @param valueInTuple the value to be compared in a tuple
-     * @param operand the operand
-     * */
-    public boolean compare(final SimplePredicate.Op op, final float valueInTuple, final float operand) {
-      int compVal = Float.compare(valueInTuple, operand);
-      switch (op) {
-        case EQUALS:
-          return compVal == 0;
-        case NOT_EQUALS:
-          return compVal != 0;
-
-        case GREATER_THAN:
-          return compVal > 0;
-
-        case GREATER_THAN_OR_EQ:
-          return compVal >= 0;
-
-        case LESS_THAN:
-          return compVal < 0;
-
-        case LESS_THAN_OR_EQ:
-          return compVal <= 0;
-
-        case LIKE:
-          return compVal == 0;
-      }
-
-      return false;
-    }
-
     @Override
     public boolean filter(final SimplePredicate.Op op, final Column<?> floatColumn, final int tupleIndex,
         final Object operand) {
@@ -130,34 +65,6 @@ public enum Type implements Serializable {
    * Double type.
    * */
   DOUBLE_TYPE() {
-    /**
-     * @return true if valueInTuple op operand.
-     * @param op the operation
-     * @param valueInTuple the value to be compared in a tuple
-     * @param operand the operand
-     * */
-    public boolean compare(final SimplePredicate.Op op, final double valueInTuple, final double operand) {
-      int compVal = Double.compare(valueInTuple, operand);
-      switch (op) {
-        case EQUALS:
-          return compVal == 0;
-        case NOT_EQUALS:
-          return compVal != 0;
-        case GREATER_THAN:
-          return compVal > 0;
-        case GREATER_THAN_OR_EQ:
-          return compVal >= 0;
-        case LESS_THAN:
-          return compVal < 0;
-        case LESS_THAN_OR_EQ:
-          return compVal <= 0;
-        case LIKE:
-          return compVal == 0;
-      }
-
-      return false;
-    }
-
     @Override
     public boolean filter(final SimplePredicate.Op op, final Column<?> doubleColumn, final int tupleIndex,
         final Object operand) {
@@ -179,31 +86,6 @@ public enum Type implements Serializable {
    * Boolean type.
    * */
   BOOLEAN_TYPE() {
-    /**
-     * @return true if valueInTuple op operand.
-     * @param op the operation
-     * @param valueInTuple the value to be compared in a tuple
-     * @param operand the operand
-     * */
-    public boolean compare(final SimplePredicate.Op op, final boolean valueInTuple, final boolean operand) {
-      switch (op) {
-        case EQUALS:
-          return valueInTuple == operand;
-        case NOT_EQUALS:
-          return valueInTuple != operand;
-        case LIKE:
-          return valueInTuple == operand;
-
-        case GREATER_THAN:
-        case GREATER_THAN_OR_EQ:
-        case LESS_THAN:
-        case LESS_THAN_OR_EQ:
-          throw new UnsupportedOperationException("BOOLEAN_TYPE not == or != or LIKE");
-      }
-
-      return false;
-    }
-
     @Override
     public boolean filter(final SimplePredicate.Op op, final Column<?> booleanColumn, final int tupleIndex,
         final Object operand) {
@@ -226,42 +108,6 @@ public enum Type implements Serializable {
    * String type.
    * */
   STRING_TYPE() {
-    /**
-     * @return true if valueInTuple op operand.
-     * @param op the operation
-     * @param valInTuple the value to be compared in a tuple
-     * @param operand the operand
-     * */
-    public boolean compare(final SimplePredicate.Op op, final String valInTuple, final String operand) {
-
-      final int cmpVal = valInTuple.compareTo(operand);
-
-      switch (op) {
-        case EQUALS:
-          return cmpVal == 0;
-
-        case NOT_EQUALS:
-          return cmpVal != 0;
-
-        case GREATER_THAN:
-          return cmpVal > 0;
-
-        case GREATER_THAN_OR_EQ:
-          return cmpVal >= 0;
-
-        case LESS_THAN:
-          return cmpVal < 0;
-
-        case LESS_THAN_OR_EQ:
-          return cmpVal <= 0;
-
-        case LIKE:
-          return valInTuple.indexOf(operand) >= 0;
-      }
-
-      return false;
-    }
-
     @Override
     public boolean filter(final SimplePredicate.Op op, final Column<?> stringColumn, final int tupleIndex,
         final Object operand) {
@@ -283,38 +129,6 @@ public enum Type implements Serializable {
    * Long type.
    * */
   LONG_TYPE() {
-    /**
-     * @return true if valueInTuple op operand.
-     * @param op the operation
-     * @param valueInTuple the value to be compared in a tuple
-     * @param operand the operand
-     * */
-    public boolean compare(final SimplePredicate.Op op, final long valueInTuple, final long operand) {
-      switch (op) {
-        case EQUALS:
-          return valueInTuple == operand;
-        case NOT_EQUALS:
-          return valueInTuple != operand;
-
-        case GREATER_THAN:
-          return valueInTuple > operand;
-
-        case GREATER_THAN_OR_EQ:
-          return valueInTuple >= operand;
-
-        case LESS_THAN:
-          return valueInTuple < operand;
-
-        case LESS_THAN_OR_EQ:
-          return valueInTuple <= operand;
-
-        case LIKE:
-          return valueInTuple == operand;
-      }
-
-      return false;
-    }
-
     @Override
     public boolean filter(final SimplePredicate.Op op, final Column<?> longColumn, final int tupleIndex,
         final Object operand) {
@@ -337,33 +151,6 @@ public enum Type implements Serializable {
    * date type.
    * */
   DATETIME_TYPE() {
-    /**
-     * @return true if valueInTuple op operand.
-     * @param op the operation
-     * @param valueInTuple the value to be compared in a tuple
-     * @param operand the operand
-     * */
-    public boolean compare(final SimplePredicate.Op op, final DateTime valueInTuple, final DateTime operand) {
-      switch (op) {
-        case EQUALS:
-          return valueInTuple.equals(operand);
-        case NOT_EQUALS:
-          return !valueInTuple.equals(operand);
-        case GREATER_THAN:
-          return valueInTuple.compareTo(operand) > 0;
-        case GREATER_THAN_OR_EQ:
-          return valueInTuple.compareTo(operand) >= 0;
-        case LESS_THAN:
-          return valueInTuple.compareTo(operand) < 0;
-        case LESS_THAN_OR_EQ:
-          return valueInTuple.compareTo(operand) <= 0;
-        case LIKE:
-          return valueInTuple.equals(operand);
-      }
-
-      return false;
-    }
-
     @Override
     public boolean filter(final SimplePredicate.Op op, final Column<?> dateColumn, final int tupleIndex,
         final Object operand) {
@@ -407,5 +194,173 @@ public enum Type implements Serializable {
    */
   public Object fromString(final String str) {
     throw new UnsupportedOperationException();
+  }
+
+  /**
+   * @return true if valueInTuple op operand.
+   * @param valueInTuple the value to be compared in a tuple
+   * @param operand the operand
+   * */
+  public static final int compareRaw(final int valueInTuple, final int operand) {
+    return Integer.compare(valueInTuple, operand);
+  }
+
+  /**
+   * @return true if valueInTuple op operand.
+   * @param valueInTuple the value to be compared in a tuple
+   * @param operand the operand
+   * */
+  public static final int compareRaw(final boolean valueInTuple, final boolean operand) {
+    return Boolean.compare(valueInTuple, operand);
+  }
+
+  /**
+   * @return true if valueInTuple op operand.
+   * @param valueInTuple the value to be compared in a tuple
+   * @param operand the operand
+   * */
+  public static final int compareRaw(final DateTime valueInTuple, final DateTime operand) {
+    return valueInTuple.compareTo(operand);
+  }
+
+  /**
+   * @return true if valueInTuple op operand.
+   * @param valueInTuple the value to be compared in a tuple
+   * @param operand the operand
+   * */
+  public static final int compareRaw(final double valueInTuple, final double operand) {
+    return Double.compare(valueInTuple, operand);
+  }
+
+  /**
+   * @return true if valueInTuple op operand.
+   * @param valueInTuple the value to be compared in a tuple
+   * @param operand the operand
+   * */
+  public static final int compareRaw(final float valueInTuple, final float operand) {
+    return Float.compare(valueInTuple, operand);
+  }
+
+  /**
+   * @return true if valueInTuple op operand.
+   * @param valueInTuple the value to be compared in a tuple
+   * @param operand the operand
+   * */
+  public static final int compareRaw(final long valueInTuple, final long operand) {
+    return Long.compare(valueInTuple, operand);
+  }
+
+  /**
+   * @return true if valueInTuple op operand.
+   * @param valueInTuple the value to be compared in a tuple
+   * @param operand the operand
+   * */
+  public static final int compareRaw(final String valueInTuple, final String operand) {
+    return valueInTuple.compareTo(operand);
+  }
+
+  /**
+   * @param op the operation
+   * @param valueInTuple the value to be compared in a tuple
+   * @param operand the operand
+   * @return true if valueInTuple op operand.
+   */
+  private static boolean compare(final SimplePredicate.Op op, final long valueInTuple, final long operand) {
+    int compared = compareRaw(valueInTuple, operand);
+    return evalOp(op, compared);
+  }
+
+  /**
+   * @param op the operation
+   * @param valueInTuple the value to be compared in a tuple
+   * @param operand the operand
+   * @return true if valueInTuple op operand.
+   */
+  private static boolean compare(final SimplePredicate.Op op, final double valueInTuple, final double operand) {
+    int compared = compareRaw(valueInTuple, operand);
+    return evalOp(op, compared);
+  }
+
+  /**
+   * @param op the operation
+   * @param valueInTuple the value to be compared in a tuple
+   * @param operand the operand
+   * @return true if valueInTuple op operand.
+   */
+  private static boolean compare(final SimplePredicate.Op op, final boolean valueInTuple, final boolean operand) {
+    int compared = compareRaw(valueInTuple, operand);
+    return evalOp(op, compared);
+  }
+
+  /**
+   * @param op the operation
+   * @param valueInTuple the value to be compared in a tuple
+   * @param operand the operand
+   * @return true if valueInTuple op operand.
+   */
+  private static boolean compare(final SimplePredicate.Op op, final DateTime valueInTuple, final DateTime operand) {
+    int compared = compareRaw(valueInTuple, operand);
+    return evalOp(op, compared);
+  }
+
+  /**
+   * @param op the operation
+   * @param valueInTuple the value to be compared in a tuple
+   * @param operand the operand
+   * @return true if valueInTuple op operand.
+   */
+  private static boolean compare(final SimplePredicate.Op op, final int valueInTuple, final int operand) {
+    int compared = compareRaw(valueInTuple, operand);
+    return evalOp(op, compared);
+  }
+
+  /**
+   * @param op the operation
+   * @param valueInTuple the value to be compared in a tuple
+   * @param operand the operand
+   * @return true if valueInTuple op operand.
+   */
+  private static boolean compare(final SimplePredicate.Op op, final String valueInTuple, final String operand) {
+    switch (op) {
+      case LIKE:
+        return valueInTuple.indexOf(operand) >= 0;
+      default:
+        int compared = compareRaw(valueInTuple, operand);
+        return evalOp(op, compared);
+    }
+  }
+
+  /**
+   * Given an int that is the output of a <code>compareTo</code> function, return true if that comparison value
+   * satisfies that operator.
+   * 
+   * @param op the comparison operator.
+   * @param compared the comparison value, output using <code>compareTo</code> semantics.
+   * @return true if that comparison value satisfies the operator.
+   */
+  private static boolean evalOp(final SimplePredicate.Op op, final int compared) {
+    switch (op) {
+      case EQUALS:
+        return compared == 0;
+
+      case NOT_EQUALS:
+        return compared != 0;
+
+      case GREATER_THAN:
+        return compared > 0;
+
+      case GREATER_THAN_OR_EQ:
+        return compared >= 0;
+
+      case LESS_THAN:
+        return compared < 0;
+
+      case LESS_THAN_OR_EQ:
+        return compared <= 0;
+      case LIKE:
+        throw new UnsupportedOperationException();
+    }
+
+    return false;
   }
 }

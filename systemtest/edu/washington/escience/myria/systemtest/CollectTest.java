@@ -43,8 +43,8 @@ public class CollectTest extends SystemTestBase {
     }
 
     final TupleBatchBuffer resultTBB = new TupleBatchBuffer(schema);
-    resultTBB.merge(tbb);
-    resultTBB.merge(tbb);
+    resultTBB.unionAll(tbb);
+    resultTBB.unionAll(tbb);
     final HashMap<Tuple, Integer> expectedResults = TestUtils.tupleBatchToTupleBag(resultTBB);
 
     TupleBatch tb = null;
