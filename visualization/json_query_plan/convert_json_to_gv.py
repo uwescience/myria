@@ -29,6 +29,7 @@ children['LocalCountingJoin'] = ['arg_child1', 'arg_child2']
 children['BroadcastProducer'] = ['arg_child']
 children['HyperShuffleProducer'] = ['arg_child']
 children['SinkRoot'] = ['arg_child']
+children['DupElim'] = ['arg_child']
 
 # Colors supported by graphviz, in some pleasing order
 colors = [
