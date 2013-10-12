@@ -1,8 +1,6 @@
 package edu.washington.escience.myria.operator;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 
 import com.google.common.base.Preconditions;
@@ -17,8 +15,16 @@ import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.column.ColumnBuilder;
 import edu.washington.escience.myria.parallel.QueryExecutionMode;
 import edu.washington.escience.myria.parallel.TaskResourceManager;
+import edu.washington.escience.myria.util.MyriaArrayUtils;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.procedure.TIntProcedure;
 
 /**
  * This is an implementation of hash equal join. The same as in DupElim, this implementation does not keep the
@@ -32,6 +38,7 @@ public final class LocalJoin extends BinaryOperator {
    * The result schema.
    */
   private Schema outputSchema;
+
   /**
    * The names of the output columns.
    */
@@ -40,19 +47,20 @@ public final class LocalJoin extends BinaryOperator {
   /**
    * The column indices for comparing of child 1.
    */
-  private final int[] compareIndx1;
+  private final int[] leftCompareIndx;
   /**
    * The column indices for comparing of child 2.
    */
-  private final int[] compareIndx2;
+  private final int[] rightCompareIndx;
   /**
    * A hash table for tuples from child 1. {Hashcode -> List of tuple indices with the same hash code}
    */
-  private transient HashMap<Integer, List<Integer>> hashTable1Indices;
+  private transient TIntObjectMap<TIntList> leftHashTableIndices;
   /**
    * A hash table for tuples from child 2. {Hashcode -> List of tuple indices with the same hash code}
    */
-  private transient HashMap<Integer, List<Integer>> hashTable2Indices;
+  private transient TIntObjectMap<TIntList> rightHashTableIndices;
+
   /**
    * The buffer holding the valid tuples from left.
    */
@@ -66,9 +74,56 @@ public final class LocalJoin extends BinaryOperator {
    */
   private transient TupleBatchBuffer ans;
   /** Which columns in the left child are to be output. */
-  private final int[] answerColumns1;
+  private final int[] leftAnswerColumns;
   /** Which columns in the right child are to be output. */
-  private final int[] answerColumns2;
+  private final int[] rightAnswerColumns;
+
+  /**
+   * Traverse through the list of tuples with the same hash code.
+   * */
+  private final class JoinProcedure implements TIntProcedure {
+
+    /**
+     * Hash table.
+     * */
+    private TupleBuffer joinAgainstHashTable;
+
+    /**
+     * 
+     * */
+    private int[] inputCmpColumns;
+
+    /**
+     * the columns to compare against.
+     * */
+    private int[] joinAgainstCmpColumns;
+    /**
+     * row index of the tuple.
+     * */
+    private int row;
+
+    /**
+     * input TupleBatch.
+     * */
+    private TupleBatch inputTB;
+    /**
+     * if the tuple which is comparing against the list of tuples with the same hash code is from left child.
+     * */
+    private boolean fromLeft;
+
+    @Override
+    public boolean execute(final int index) {
+      if (inputTB.tupleEquals(row, joinAgainstHashTable, index, inputCmpColumns, joinAgainstCmpColumns)) {
+        addToAns(inputTB, row, joinAgainstHashTable, index, fromLeft);
+      }
+      return true;
+    }
+  };
+
+  /**
+   * Traverse through the list of tuples.
+   * */
+  private transient JoinProcedure doJoin;
 
   /**
    * Construct an EquiJoin operator. It returns all columns from both children when the corresponding columns in
@@ -130,10 +185,11 @@ public final class LocalJoin extends BinaryOperator {
     } else {
       this.outputColumns = null;
     }
-    this.compareIndx1 = compareIndx1;
-    this.compareIndx2 = compareIndx2;
-    this.answerColumns1 = answerColumns1;
-    this.answerColumns2 = answerColumns2;
+    leftCompareIndx = MyriaArrayUtils.checkSet(compareIndx1);
+    rightCompareIndx = MyriaArrayUtils.checkSet(compareIndx2);
+    leftAnswerColumns = MyriaArrayUtils.checkSet(answerColumns1);
+    rightAnswerColumns = MyriaArrayUtils.checkSet(answerColumns2);
+
     if (left != null && right != null) {
       generateSchema();
     }
@@ -181,12 +237,12 @@ public final class LocalJoin extends BinaryOperator {
     ImmutableList.Builder<Type> types = ImmutableList.builder();
     ImmutableList.Builder<String> names = ImmutableList.builder();
 
-    for (int i : answerColumns1) {
+    for (int i : leftAnswerColumns) {
       types.add(left.getSchema().getColumnType(i));
       names.add(left.getSchema().getColumnName(i));
     }
 
-    for (int i : answerColumns2) {
+    for (int i : rightAnswerColumns) {
       types.add(right.getSchema().getColumnType(i));
       names.add(right.getSchema().getColumnName(i));
     }
@@ -199,27 +255,47 @@ public final class LocalJoin extends BinaryOperator {
   }
 
   /**
-   * @param cntTuple a list representation of a tuple
+   * @param cntTB current TB
+   * @param row current row
    * @param hashTable the buffer holding the tuples to join against
    * @param index the index of hashTable, which the cntTuple is to join with
-   * @param fromleft if the tuple is from child 1
+   * @param fromLeft if the tuple is from child 1
    */
-  protected void addToAns(final List<Object> cntTuple, final TupleBuffer hashTable, final int index,
-      final boolean fromleft) {
-    if (fromleft) {
-      for (int i = 0; i < answerColumns1.length; ++i) {
-        ans.put(i, cntTuple.get(answerColumns1[i]));
+  protected void addToAns(final TupleBatch cntTB, final int row, final TupleBuffer hashTable, final int index,
+      final boolean fromLeft) {
+    List<Column<?>> tbColumns = cntTB.getDataColumns();
+    final int rowInColumn = cntTB.getValidIndices().get(row);
+    Column<?>[] hashTblColumns = hashTable.getColumns(index);
+    ColumnBuilder<?>[] hashTblColumnBuilders = null;
+    if (hashTblColumns == null) {
+      hashTblColumnBuilders = hashTable.getColumnBuilders(index);
+    }
+    int tupleIdx = hashTable.getTupleIndexInContainingTB(index);
+    if (fromLeft) {
+      for (int i = 0; i < leftAnswerColumns.length; ++i) {
+        ans.put(i, tbColumns.get(leftAnswerColumns[i]), rowInColumn);
       }
-      for (int i = 0; i < answerColumns2.length; ++i) {
-        ans.put(i + answerColumns1.length, hashTable.get(answerColumns2[i], index));
+
+      for (int i = 0; i < rightAnswerColumns.length; ++i) {
+        if (hashTblColumns != null) {
+          ans.put(i + leftAnswerColumns.length, hashTblColumns[rightAnswerColumns[i]], tupleIdx);
+        } else {
+          ans.put(i + leftAnswerColumns.length, hashTblColumnBuilders[rightAnswerColumns[i]], tupleIdx);
+        }
       }
     } else {
-      for (int i = 0; i < answerColumns1.length; ++i) {
-        ans.put(i, hashTable.get(answerColumns1[i], index));
+      for (int i = 0; i < leftAnswerColumns.length; ++i) {
+        if (hashTblColumns != null) {
+          ans.put(i, hashTblColumns[leftAnswerColumns[i]], tupleIdx);
+        } else {
+          ans.put(i, hashTblColumnBuilders[leftAnswerColumns[i]], tupleIdx);
+        }
       }
-      for (int i = 0; i < answerColumns2.length; ++i) {
-        ans.put(i + answerColumns1.length, cntTuple.get(answerColumns2[i]));
+
+      for (int i = 0; i < rightAnswerColumns.length; ++i) {
+        ans.put(i + leftAnswerColumns.length, tbColumns.get(rightAnswerColumns[i]), rowInColumn);
       }
+
     }
   }
 
@@ -409,16 +485,20 @@ public final class LocalJoin extends BinaryOperator {
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     final Operator left = getLeft();
     final Operator right = getRight();
-    hashTable1Indices = new HashMap<Integer, List<Integer>>();
-    hashTable2Indices = new HashMap<Integer, List<Integer>>();
-    hashTable1 = new TupleBuffer(left.getSchema());
-    hashTable2 = new TupleBuffer(right.getSchema());
+    leftHashTableIndices = new TIntObjectHashMap<TIntList>();
+    rightHashTableIndices = new TIntObjectHashMap<TIntList>();
+
     if (outputSchema == null) {
       generateSchema();
     }
+
+    hashTable1 = new TupleBuffer(left.getSchema());
+    hashTable2 = new TupleBuffer(right.getSchema());
+
     ans = new TupleBatchBuffer(outputSchema);
     TaskResourceManager qem = (TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER);
     nonBlocking = qem.getExecutionMode() == QueryExecutionMode.NON_BLOCKING;
+    doJoin = new JoinProcedure();
   }
 
   /**
@@ -427,96 +507,87 @@ public final class LocalJoin extends BinaryOperator {
   private transient boolean nonBlocking = true;
 
   /**
-   * Check if a tuple in uniqueTuples equals to the comparing tuple (cntTuple).
-   * 
-   * @param hashTable the TupleBatchBuffer holding the tuples to compare against
-   * @param index the index in the hashTable
-   * @param cntTuple a list representation of a tuple
-   * @param compareIndx1 the comparing list of columns of cntTuple
-   * @param compareIndx2 the comparing list of columns of hashTable
-   * @return true if equals.
-   */
-  private boolean tupleEquals(final List<Object> cntTuple, final TupleBuffer hashTable, final int index,
-      final int[] compareIndx1, final int[] compareIndx2) {
-    if (compareIndx1.length != compareIndx2.length) {
-      return false;
-    }
-    for (int i = 0; i < compareIndx1.length; ++i) {
-      if (!cntTuple.get(compareIndx1[i]).equals(hashTable.get(compareIndx2[i], index))) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  /**
    * @param tb the incoming TupleBatch for processing join.
-   * @param fromleft if the tb is from left.
+   * @param fromLeft if the tb is from left.
    */
-  protected void processChildTB(final TupleBatch tb, final boolean fromleft) {
+  protected void processChildTB(final TupleBatch tb, final boolean fromLeft) {
 
     final Operator left = getLeft();
     final Operator right = getRight();
 
-    TupleBuffer hashTable1Local = hashTable1;
-    TupleBuffer hashTable2Local = hashTable2;
-    HashMap<Integer, List<Integer>> hashTable1IndicesLocal = hashTable1Indices;
-    HashMap<Integer, List<Integer>> hashTable2IndicesLocal = hashTable2Indices;
-    int[] compareIndx1Local = compareIndx1;
-    int[] compareIndx2Local = compareIndx2;
-    if (!fromleft) {
-      hashTable1Local = hashTable2;
-      hashTable2Local = hashTable1;
-      hashTable1IndicesLocal = hashTable2Indices;
-      hashTable2IndicesLocal = hashTable1Indices;
-      compareIndx1Local = compareIndx2;
-      compareIndx2Local = compareIndx1;
-    }
-
-    if (left.eos() && !right.eos()) {
+    if (left.eos() && rightHashTableIndices != null) {
       /*
        * delete right child's hash table if the left child is EOS, since there will be no incoming tuples from right as
        * it will never be probed again.
        */
-      hashTable2Indices = null;
+      rightHashTableIndices = null;
       hashTable2 = null;
-    } else if (right.eos() && !left.eos()) {
+    }
+    if (right.eos() && leftHashTableIndices != null) {
       /*
        * delete left child's hash table if the right child is EOS, since there will be no incoming tuples from left as
        * it will never be probed again.
        */
-      hashTable1Indices = null;
+      leftHashTableIndices = null;
       hashTable1 = null;
     }
 
-    for (int i = 0; i < tb.numTuples(); ++i) {
-      final List<Object> cntTuple = new ArrayList<Object>();
-      for (int j = 0; j < tb.numColumns(); ++j) {
-        cntTuple.add(tb.getObject(j, i));
-      }
-      final int cntHashCode = tb.hashCode(i, compareIndx1Local);
-      List<Integer> indexList = hashTable2IndicesLocal.get(cntHashCode);
+    TupleBuffer hashTable1Local = null;
+    TIntObjectMap<TIntList> hashTable1IndicesLocal = null;
+    TIntObjectMap<TIntList> hashTable2IndicesLocal = null;
+    if (fromLeft) {
+      hashTable1Local = hashTable1;
+      doJoin.joinAgainstHashTable = hashTable2;
+      hashTable1IndicesLocal = leftHashTableIndices;
+      hashTable2IndicesLocal = rightHashTableIndices;
+      doJoin.inputCmpColumns = leftCompareIndx;
+      doJoin.joinAgainstCmpColumns = rightCompareIndx;
+    } else {
+      hashTable1Local = hashTable2;
+      doJoin.joinAgainstHashTable = hashTable1;
+      hashTable1IndicesLocal = rightHashTableIndices;
+      hashTable2IndicesLocal = leftHashTableIndices;
+      doJoin.inputCmpColumns = rightCompareIndx;
+      doJoin.joinAgainstCmpColumns = leftCompareIndx;
+    }
+    doJoin.fromLeft = fromLeft;
+    doJoin.inputTB = tb;
 
-      if (indexList != null) {
-        for (final int index : indexList) {
-          if (tupleEquals(cntTuple, hashTable2Local, index, compareIndx1Local, compareIndx2Local)) {
-            addToAns(cntTuple, hashTable2Local, index, fromleft);
-          }
-        }
+    for (int row = 0; row < tb.numTuples(); ++row) {
+      final int cntHashCode = tb.hashCode(row, doJoin.inputCmpColumns);
+      TIntList tuplesWithHashCode = hashTable2IndicesLocal.get(cntHashCode);
+      if (tuplesWithHashCode != null) {
+        doJoin.row = row;
+        tuplesWithHashCode.forEach(doJoin);
       }
 
-      // only build hash table on two sides if none of the children is EOS
-      if (!left.eos() && !right.eos()) {
-        final int nextIndex = hashTable1Local.numTuples();
-        if (hashTable1IndicesLocal.get(cntHashCode) == null) {
-          hashTable1IndicesLocal.put(cntHashCode, new ArrayList<Integer>());
-        }
-        hashTable1IndicesLocal.get(cntHashCode).add(nextIndex);
-        for (int j = 0; j < tb.numColumns(); ++j) {
-          hashTable1Local.put(j, cntTuple.get(j));
-        }
+      if (hashTable1Local != null) {
+        // only build hash table on two sides if none of the children is EOS
+        addToHashTable(tb, row, hashTable1Local, hashTable1IndicesLocal, cntHashCode);
       }
     }
+  }
 
+  /**
+   * @param tb the source TupleBatch
+   * @param row the row number to get added to hash table
+   * @param hashTable the target hash table
+   * @param hashTable1IndicesLocal hash table 1 indices local
+   * @param hashCode the hashCode of the tb.
+   * */
+  private void addToHashTable(final TupleBatch tb, final int row, final TupleBuffer hashTable,
+      final TIntObjectMap<TIntList> hashTable1IndicesLocal, final int hashCode) {
+    final int nextIndex = hashTable.numTuples();
+    TIntList tupleIndicesList = hashTable1IndicesLocal.get(hashCode);
+    if (tupleIndicesList == null) {
+      tupleIndicesList = new TIntArrayList();
+      hashTable1IndicesLocal.put(hashCode, tupleIndicesList);
+    }
+    tupleIndicesList.add(nextIndex);
+    List<Column<?>> inputColumns = tb.getDataColumns();
+    int inColumnRow = tb.getValidIndices().get(row);
+    for (int column = 0; column < tb.numColumns(); column++) {
+      hashTable.put(column, inputColumns.get(column), inColumnRow);
+    }
   }
 }
