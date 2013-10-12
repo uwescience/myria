@@ -155,7 +155,16 @@ public final class FloatColumnBuilder implements ColumnBuilder<Float> {
   }
 
   @Override
+  @Deprecated
   public Float get(final int row) {
+    return data.get(row);
+  }
+
+  /**
+   * @param row the row to get
+   * @return primitive value of the row
+   * */
+  public float getFloat(final int row) {
     return data.get(row);
   }
 
@@ -164,14 +173,5 @@ public final class FloatColumnBuilder implements ColumnBuilder<Float> {
     float[] arr = new float[data.array().length];
     System.arraycopy(data.array(), 0, arr, 0, data.position());
     return new FloatColumnBuilder((FloatBuffer) FloatBuffer.wrap(arr).position(data.position()).limit(data.limit()));
-  }
-
-  @Override
-  public void reset() {
-    if (!built) {
-      data.rewind();
-    } else {
-      throw new IllegalStateException("Column already built.");
-    }
   }
 }

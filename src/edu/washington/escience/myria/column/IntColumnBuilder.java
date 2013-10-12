@@ -149,7 +149,16 @@ public final class IntColumnBuilder implements ColumnBuilder<Integer> {
   }
 
   @Override
+  @Deprecated
   public Integer get(final int row) {
+    return data.get(row);
+  }
+
+  /**
+   * @param row the row to get
+   * @return primitive value of the row
+   * */
+  public int getInt(final int row) {
     return data.get(row);
   }
 
@@ -160,12 +169,4 @@ public final class IntColumnBuilder implements ColumnBuilder<Integer> {
     return new IntColumnBuilder((IntBuffer) IntBuffer.wrap(arr).position(data.position()).limit(data.limit()));
   }
 
-  @Override
-  public void reset() {
-    if (!built) {
-      data.rewind();
-    } else {
-      throw new IllegalStateException("Column already built.");
-    }
-  }
 }

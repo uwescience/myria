@@ -155,7 +155,16 @@ public final class DoubleColumnBuilder implements ColumnBuilder<Double> {
   }
 
   @Override
+  @Deprecated
   public Double get(final int row) {
+    return data.get(row);
+  }
+
+  /**
+   * @param row the row to get
+   * @return primitive value of the row
+   * */
+  public double getDouble(final int row) {
     return data.get(row);
   }
 
@@ -166,12 +175,4 @@ public final class DoubleColumnBuilder implements ColumnBuilder<Double> {
     return new DoubleColumnBuilder((DoubleBuffer) DoubleBuffer.wrap(arr).position(data.position()).limit(data.limit()));
   }
 
-  @Override
-  public void reset() {
-    if (!built) {
-      data.rewind();
-    } else {
-      throw new IllegalStateException("Column already built.");
-    }
-  }
 }

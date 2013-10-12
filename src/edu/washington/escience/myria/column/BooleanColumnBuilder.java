@@ -170,7 +170,17 @@ public final class BooleanColumnBuilder implements ColumnBuilder<Boolean> {
   }
 
   @Override
+  @Deprecated
   public Boolean get(final int row) {
+    Preconditions.checkArgument(row >= 0 && row < numBits);
+    return data.get(row);
+  }
+
+  /**
+   * @param row the row to get
+   * @return primitive value of the row
+   * */
+  public boolean getBoolean(final int row) {
     Preconditions.checkArgument(row >= 0 && row < numBits);
     return data.get(row);
   }
@@ -180,12 +190,4 @@ public final class BooleanColumnBuilder implements ColumnBuilder<Boolean> {
     return new BooleanColumnBuilder(capacity, BitSet.valueOf(data.toByteArray()), numBits);
   }
 
-  @Override
-  public void reset() {
-    if (!built) {
-      numBits = 0;
-    } else {
-      throw new IllegalStateException("Column already built.");
-    }
-  }
 }

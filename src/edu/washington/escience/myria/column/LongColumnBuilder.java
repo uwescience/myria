@@ -155,7 +155,16 @@ public final class LongColumnBuilder implements ColumnBuilder<Long> {
   }
 
   @Override
+  @Deprecated
   public Long get(final int row) {
+    return data.get(row);
+  }
+
+  /**
+   * @param row the row to get
+   * @return primitive value of the row
+   * */
+  public long getLong(final int row) {
     return data.get(row);
   }
 
@@ -166,12 +175,4 @@ public final class LongColumnBuilder implements ColumnBuilder<Long> {
     return new LongColumnBuilder((LongBuffer) LongBuffer.wrap(arr).position(data.position()).limit(data.limit()));
   }
 
-  @Override
-  public void reset() {
-    if (!built) {
-      data.rewind();
-    } else {
-      throw new IllegalStateException("Column already built.");
-    }
-  }
 }
