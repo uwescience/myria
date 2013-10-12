@@ -11,6 +11,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import javax.annotation.Nullable;
+
 import net.jcip.annotations.ThreadSafe;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -148,7 +150,7 @@ public class TupleBatch implements Serializable {
    * @return shallow copy
    */
   protected TupleBatch shallowCopy(final Schema schema, final ImmutableList<Column<?>> columns,
-      final ImmutableBitSet validTuples, final ImmutableIntArray validIndices, final boolean isEOI) {
+      final ImmutableBitSet validTuples, @Nullable final ImmutableIntArray validIndices, final boolean isEOI) {
     return new TupleBatch(schema, columns, validTuples, validIndices, isEOI);
   }
 
@@ -276,6 +278,39 @@ public class TupleBatch implements Serializable {
     /* If no tuples are filtered, new TupleBatch instance is not needed */
     return this;
 
+  }
+
+  /**
+   * Return a new TupleBatch that contains only the filtered rows of the current dataset. Note that if some of the
+   * tuples in this batch are invalid, we will have to map the indices in the specified filter to the "real" indices in
+   * the tuple.
+   * 
+   * @param filter the rows to be retained.
+   * @return a TupleBatch that contains only the filtered rows of the current dataset.
+   */
+  public final TupleBatch filter(final BitSet filter) {
+    /* Shortcut 1: the filter is full, so all current tuples are retained. Just return this. */
+    if (filter.cardinality() == numTuples()) {
+      return this;
+    }
+
+    /* Shortcut 2: all current tuples in this batch are valid. filter actually is indexed correctly. */
+    if (validTuples.cardinality() == validTuples.size()) {
+      return new TupleBatch(getSchema(), getDataColumns(), new ImmutableBitSet(filter));
+    }
+
+    /* Okay, we have to do work. */
+    BitSet realFilter = new BitSet(validTuples.size());
+    int[] realValidIndices = new int[filter.cardinality()];
+    int row = 0;
+    for (int i = filter.nextSetBit(0); i >= 0; i = filter.nextSetBit(i + 1)) {
+      int realIndex = getValidIndices().get(i);
+      realFilter.set(realIndex);
+      realValidIndices[row] = realIndex;
+      ++row;
+    }
+    return new TupleBatch(getSchema(), getDataColumns(), new ImmutableBitSet(realFilter), new ImmutableIntArray(
+        realValidIndices), false);
   }
 
   /**
