@@ -2,7 +2,6 @@ package edu.washington.escience.myria;
 
 import java.util.ArrayList;
 import java.util.BitSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
@@ -29,9 +28,9 @@ public class TupleBuffer {
   /** Convenience constant; must match schema.numColumns() and currentColumns.size(). */
   private final int numColumns;
   /** List of completed TupleBatch objects. */
-  private final List<List<Column<?>>> readyTuples;
+  private final List<Column<?>[]> readyTuples;
   /** Internal state used to build up a TupleBatch. */
-  private List<ColumnBuilder<?>> currentBuildingColumns;
+  private ColumnBuilder<?>[] currentBuildingColumns;
   /** Internal state representing which columns are ready in the current tuple. */
   private final BitSet columnsReady;
   /** Internal state representing the number of columns that are ready in the current tuple. */
@@ -46,8 +45,8 @@ public class TupleBuffer {
    */
   public TupleBuffer(final Schema schema) {
     this.schema = Objects.requireNonNull(schema);
-    readyTuples = new LinkedList<List<Column<?>>>();
-    currentBuildingColumns = ColumnFactory.allocateColumns(schema);
+    readyTuples = new ArrayList<Column<?>[]>();
+    currentBuildingColumns = ColumnFactory.allocateColumns(schema).toArray(new ColumnBuilder<?>[] {});
     numColumns = schema.numColumns();
     columnsReady = new BitSet(numColumns);
     numColumnsReady = 0;
@@ -59,7 +58,7 @@ public class TupleBuffer {
    * */
   public final void clear() {
     columnsReady.clear();
-    currentBuildingColumns.clear();
+    currentBuildingColumns = null;
     currentInProgressTuples = 0;
     numColumnsReady = 0;
     readyTuples.clear();
@@ -72,12 +71,13 @@ public class TupleBuffer {
   private void finishBatch() {
     Preconditions.checkArgument(numColumnsReady == 0);
     Preconditions.checkArgument(currentInProgressTuples == TupleBatch.BATCH_SIZE);
-    List<Column<?>> buildingColumns = new ArrayList<Column<?>>(currentBuildingColumns.size());
+    Column<?>[] buildingColumns = new Column<?>[numColumns];
+    int i = 0;
     for (ColumnBuilder<?> cb : currentBuildingColumns) {
-      buildingColumns.add(cb.build());
+      buildingColumns[i++] = cb.build();
     }
     readyTuples.add(buildingColumns);
-    currentBuildingColumns = ColumnFactory.allocateColumns(schema);
+    currentBuildingColumns = ColumnFactory.allocateColumns(schema).toArray(new ColumnBuilder<?>[] {});
     currentInProgressTuples = 0;
   }
 
@@ -101,6 +101,7 @@ public class TupleBuffer {
    * @return the element at (rowIndex, colIndex)
    * @throws IndexOutOfBoundsException if indices are out of bounds.
    * */
+  @Deprecated
   public final Object get(final int colIndex, final int rowIndex) throws IndexOutOfBoundsException {
     int tupleBatchIndex = rowIndex / TupleBatch.BATCH_SIZE;
     int tupleIndex = rowIndex % TupleBatch.BATCH_SIZE;
@@ -109,9 +110,9 @@ public class TupleBuffer {
       throw new IndexOutOfBoundsException();
     }
     if (tupleBatchIndex < readyTuples.size()) {
-      return readyTuples.get(tupleBatchIndex).get(colIndex).get(tupleIndex);
+      return readyTuples.get(tupleBatchIndex)[colIndex].get(tupleIndex);
     }
-    return currentBuildingColumns.get(colIndex).get(tupleIndex);
+    return currentBuildingColumns[colIndex].get(tupleIndex);
   }
 
   /**
@@ -127,9 +128,10 @@ public class TupleBuffer {
    * @param column index of the column.
    * @param value value to be appended.
    */
+  @Deprecated
   public final void put(final int column, final Object value) {
     checkPutIndex(column);
-    currentBuildingColumns.get(column).appendObject(value);
+    currentBuildingColumns[column].appendObject(value);
     columnPut(column);
   }
 
@@ -141,7 +143,7 @@ public class TupleBuffer {
    */
   public final void putBoolean(final int column, final boolean value) {
     checkPutIndex(column);
-    ((BooleanColumnBuilder) currentBuildingColumns.get(column)).append(value);
+    ((BooleanColumnBuilder) currentBuildingColumns[column]).append(value);
     columnPut(column);
   }
 
@@ -153,7 +155,7 @@ public class TupleBuffer {
    */
   public final void putDateTime(final int column, final DateTime value) {
     checkPutIndex(column);
-    ((DateTimeColumnBuilder) currentBuildingColumns.get(column)).append(value);
+    ((DateTimeColumnBuilder) currentBuildingColumns[column]).append(value);
     columnPut(column);
   }
 
@@ -165,7 +167,7 @@ public class TupleBuffer {
    */
   public final void putDouble(final int column, final double value) {
     checkPutIndex(column);
-    ((DoubleColumnBuilder) currentBuildingColumns.get(column)).append(value);
+    ((DoubleColumnBuilder) currentBuildingColumns[column]).append(value);
     columnPut(column);
   }
 
@@ -177,7 +179,7 @@ public class TupleBuffer {
    */
   public final void putFloat(final int column, final float value) {
     checkPutIndex(column);
-    ((FloatColumnBuilder) currentBuildingColumns.get(column)).append(value);
+    ((FloatColumnBuilder) currentBuildingColumns[column]).append(value);
     columnPut(column);
   }
 
@@ -189,7 +191,7 @@ public class TupleBuffer {
    */
   public final void putInt(final int column, final int value) {
     checkPutIndex(column);
-    ((IntColumnBuilder) currentBuildingColumns.get(column)).append(value);
+    ((IntColumnBuilder) currentBuildingColumns[column]).append(value);
     columnPut(column);
   }
 
@@ -201,7 +203,7 @@ public class TupleBuffer {
    */
   public final void putLong(final int column, final long value) {
     checkPutIndex(column);
-    ((LongColumnBuilder) currentBuildingColumns.get(column)).append(value);
+    ((LongColumnBuilder) currentBuildingColumns[column]).append(value);
     columnPut(column);
   }
 
@@ -213,7 +215,7 @@ public class TupleBuffer {
    */
   public final void putString(final int column, final String value) {
     checkPutIndex(column);
-    ((StringColumnBuilder) currentBuildingColumns.get(column)).append(value);
+    ((StringColumnBuilder) currentBuildingColumns[column]).append(value);
     columnPut(column);
   }
 
