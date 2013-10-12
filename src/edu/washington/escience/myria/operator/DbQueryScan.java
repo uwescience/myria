@@ -46,12 +46,12 @@ public class DbQueryScan extends LeafOperator {
   /**
    * Column indexes that the output should be ordered by.
    */
-  private int[] sortedColumns;
+  private final int[] sortedColumns;
 
   /**
    * True for each column in {@link #sortedColumns} that should be ordered ascending.
    */
-  private boolean[] ascending;
+  private final boolean[] ascending;
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -73,6 +73,8 @@ public class DbQueryScan extends LeafOperator {
     this.outputSchema = outputSchema;
     connectionInfo = null;
     tuples = null;
+    sortedColumns = null;
+    ascending = null;
   }
 
   /**
@@ -103,6 +105,8 @@ public class DbQueryScan extends LeafOperator {
     baseSQL = null;
     connectionInfo = null;
     tuples = null;
+    sortedColumns = null;
+    ascending = null;
   }
 
   /**
@@ -129,10 +133,16 @@ public class DbQueryScan extends LeafOperator {
    */
   public DbQueryScan(final RelationKey relationKey, final Schema outputSchema, final int[] sortedColumns,
       final boolean[] ascending) {
-    this(relationKey, outputSchema);
+    Objects.requireNonNull(relationKey);
+    Objects.requireNonNull(outputSchema);
 
+    this.relationKey = relationKey;
+    this.outputSchema = outputSchema;
     this.sortedColumns = sortedColumns;
     this.ascending = ascending;
+    baseSQL = null;
+    connectionInfo = null;
+    tuples = null;
   }
 
   /**
