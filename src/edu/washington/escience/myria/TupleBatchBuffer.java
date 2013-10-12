@@ -362,6 +362,7 @@ public class TupleBatchBuffer {
    * @param column index of the column.
    * @param value value to be appended.
    */
+  @Deprecated
   public final void put(final int column, final Object value) {
     checkPutIndex(column);
     currentBuildingColumns.get(column).appendObject(value);
@@ -442,6 +443,42 @@ public class TupleBatchBuffer {
     for (int col = 0; col < sourceColumns.size(); ++col) {
       put(col, sourceColumns.get(col), sourceRow);
     }
+  }
+
+  /**
+   * Append the specified value to the specified destination column in this TupleBatchBuffer from the source column.
+   * 
+   * @param destColumn which column in this TBB the value will be inserted.
+   * @param sourceColumnB the column builder from which data will be retrieved.
+   * @param sourceRow the row in the source column from which data will be retrieved.
+   */
+  public final void put(final int destColumn, final ColumnBuilder<?> sourceColumnB, final int sourceRow) {
+    checkPutIndex(destColumn);
+    ColumnBuilder<?> dest = currentBuildingColumns.get(destColumn);
+    switch (dest.getType()) {
+      case BOOLEAN_TYPE:
+        ((BooleanColumnBuilder) dest).append(((BooleanColumnBuilder) sourceColumnB).getBoolean(sourceRow));
+        break;
+      case DATETIME_TYPE:
+        ((DateTimeColumnBuilder) dest).append(((DateTimeColumnBuilder) sourceColumnB).get(sourceRow));
+        break;
+      case DOUBLE_TYPE:
+        ((DoubleColumnBuilder) dest).append(((DoubleColumnBuilder) sourceColumnB).getDouble(sourceRow));
+        break;
+      case FLOAT_TYPE:
+        ((FloatColumnBuilder) dest).append(((FloatColumnBuilder) sourceColumnB).getFloat(sourceRow));
+        break;
+      case INT_TYPE:
+        ((IntColumnBuilder) dest).append(((IntColumnBuilder) sourceColumnB).getInt(sourceRow));
+        break;
+      case LONG_TYPE:
+        ((LongColumnBuilder) dest).append(((LongColumnBuilder) sourceColumnB).getLong(sourceRow));
+        break;
+      case STRING_TYPE:
+        ((StringColumnBuilder) dest).append(((StringColumnBuilder) sourceColumnB).get(sourceRow));
+        break;
+    }
+    columnPut(destColumn);
   }
 
   /**
