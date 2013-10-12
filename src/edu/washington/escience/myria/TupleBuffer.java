@@ -9,15 +9,22 @@ import org.joda.time.DateTime;
 
 import com.google.common.base.Preconditions;
 
+import edu.washington.escience.myria.column.BooleanColumn;
 import edu.washington.escience.myria.column.BooleanColumnBuilder;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.ColumnBuilder;
 import edu.washington.escience.myria.column.ColumnFactory;
+import edu.washington.escience.myria.column.DateTimeColumn;
 import edu.washington.escience.myria.column.DateTimeColumnBuilder;
+import edu.washington.escience.myria.column.DoubleColumn;
 import edu.washington.escience.myria.column.DoubleColumnBuilder;
+import edu.washington.escience.myria.column.FloatColumn;
 import edu.washington.escience.myria.column.FloatColumnBuilder;
+import edu.washington.escience.myria.column.IntColumn;
 import edu.washington.escience.myria.column.IntColumnBuilder;
+import edu.washington.escience.myria.column.LongColumn;
 import edu.washington.escience.myria.column.LongColumnBuilder;
+import edu.washington.escience.myria.column.StringColumn;
 import edu.washington.escience.myria.column.StringColumnBuilder;
 
 /** A simplified TupleBatchBuffer which supports random access. Designed for hash tables to use. */
@@ -113,6 +120,156 @@ public class TupleBuffer {
       return readyTuples.get(tupleBatchIndex)[colIndex].get(tupleIndex);
     }
     return currentBuildingColumns[colIndex].get(tupleIndex);
+  }
+
+  /**
+   * @param column the column of the desired value.
+   * @param row the row of the desired value.
+   * @return the value in the specified column and row.
+   */
+  public final boolean getBoolean(final int column, final int row) {
+    int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
+    int tupleIndex = row % TupleBatch.BATCH_SIZE;
+    if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
+        && tupleIndex >= currentInProgressTuples) {
+      throw new IndexOutOfBoundsException();
+    }
+    if (tupleBatchIndex < readyTuples.size()) {
+      return ((BooleanColumn) (readyTuples.get(tupleBatchIndex)[column])).getBoolean(tupleIndex);
+    }
+    return ((BooleanColumnBuilder) (currentBuildingColumns[column])).getBoolean(tupleIndex);
+  }
+
+  /**
+   * @param column the column of the desired value.
+   * @param row the row of the desired value.
+   * @return the value in the specified column and row.
+   */
+  public final double getDouble(final int column, final int row) {
+    int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
+    int tupleIndex = row % TupleBatch.BATCH_SIZE;
+    if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
+        && tupleIndex >= currentInProgressTuples) {
+      throw new IndexOutOfBoundsException();
+    }
+    if (tupleBatchIndex < readyTuples.size()) {
+      return ((DoubleColumn) (readyTuples.get(tupleBatchIndex)[column])).getDouble(tupleIndex);
+    }
+    return ((DoubleColumnBuilder) (currentBuildingColumns[column])).getDouble(tupleIndex);
+  }
+
+  /**
+   * @param column the column of the desired value.
+   * @param row the row of the desired value.
+   * @return the value in the specified column and row.
+   */
+  public final float getFloat(final int column, final int row) {
+    int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
+    int tupleIndex = row % TupleBatch.BATCH_SIZE;
+    if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
+        && tupleIndex >= currentInProgressTuples) {
+      throw new IndexOutOfBoundsException();
+    }
+    if (tupleBatchIndex < readyTuples.size()) {
+      return ((FloatColumn) (readyTuples.get(tupleBatchIndex)[column])).getFloat(tupleIndex);
+    }
+    return ((FloatColumnBuilder) (currentBuildingColumns[column])).getFloat(tupleIndex);
+  }
+
+  /**
+   * @param column the column of the desired value.
+   * @param row the row of the desired value.
+   * @return the value in the specified column and row.
+   */
+  public final long getLong(final int column, final int row) {
+    int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
+    int tupleIndex = row % TupleBatch.BATCH_SIZE;
+    if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
+        && tupleIndex >= currentInProgressTuples) {
+      throw new IndexOutOfBoundsException();
+    }
+    if (tupleBatchIndex < readyTuples.size()) {
+      return ((LongColumn) (readyTuples.get(tupleBatchIndex)[column])).getLong(tupleIndex);
+    }
+    return ((LongColumnBuilder) (currentBuildingColumns[column])).getLong(tupleIndex);
+  }
+
+  /**
+   * @param column the column of the desired value.
+   * @param row the row of the desired value.
+   * @return the value in the specified column and row.
+   */
+  public final int getInt(final int column, final int row) {
+    int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
+    int tupleIndex = row % TupleBatch.BATCH_SIZE;
+    if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
+        && tupleIndex >= currentInProgressTuples) {
+      throw new IndexOutOfBoundsException();
+    }
+    if (tupleBatchIndex < readyTuples.size()) {
+      return ((IntColumn) (readyTuples.get(tupleBatchIndex)[column])).getInt(tupleIndex);
+    }
+    return ((IntColumnBuilder) (currentBuildingColumns[column])).getInt(tupleIndex);
+  }
+
+  /**
+   * @param column the column of the desired value.
+   * @param row the row of the desired value.
+   * @return the value in the specified column and row.
+   */
+  public final String getString(final int column, final int row) {
+    int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
+    int tupleIndex = row % TupleBatch.BATCH_SIZE;
+    if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
+        && tupleIndex >= currentInProgressTuples) {
+      throw new IndexOutOfBoundsException();
+    }
+    if (tupleBatchIndex < readyTuples.size()) {
+      return ((StringColumn) (readyTuples.get(tupleBatchIndex)[column])).getString(tupleIndex);
+    }
+    return ((StringColumnBuilder) (currentBuildingColumns[column])).get(tupleIndex);
+  }
+
+  /**
+   * @param row the row number
+   * @return the columns of the TB that the row resides.
+   * */
+  public Column<?>[] getColumns(final int row) {
+    int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
+    int tupleIndex = row % TupleBatch.BATCH_SIZE;
+    if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
+        && tupleIndex >= currentInProgressTuples) {
+      throw new IndexOutOfBoundsException();
+    }
+    if (tupleBatchIndex < readyTuples.size()) {
+      return readyTuples.get(tupleBatchIndex);
+    }
+    return null;
+  }
+
+  /**
+   * @param row the row number
+   * @return the index of the row in the containing TB.
+   * */
+  public final int getTupleIndexInContainingTB(final int row) {
+    return row % TupleBatch.BATCH_SIZE;
+  }
+
+  /**
+   * @param row the row number
+   * @return the ColumnBuilder if the row resides in a in-building TB
+   * */
+  public ColumnBuilder<?>[] getColumnBuilders(final int row) {
+    int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
+    int tupleIndex = row % TupleBatch.BATCH_SIZE;
+    if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
+        && tupleIndex >= currentInProgressTuples) {
+      throw new IndexOutOfBoundsException();
+    }
+    if (tupleBatchIndex < readyTuples.size()) {
+      return null;
+    }
+    return currentBuildingColumns;
   }
 
   /**
@@ -247,5 +404,41 @@ public class TupleBuffer {
         finishBatch();
       }
     }
+  }
+
+  /**
+   * Append the specified value to the specified destination column in this TupleBatchBuffer from the source column.
+   * 
+   * @param destColumn which column in this TBB the value will be inserted.
+   * @param sourceColumn the column from which data will be retrieved.
+   * @param sourceRow the row in the source column from which data will be retrieved.
+   */
+  public final void put(final int destColumn, final Column<?> sourceColumn, final int sourceRow) {
+    checkPutIndex(destColumn);
+    ColumnBuilder<?> dest = currentBuildingColumns[destColumn];
+    switch (dest.getType()) {
+      case BOOLEAN_TYPE:
+        ((BooleanColumnBuilder) dest).append(((BooleanColumn) sourceColumn).getBoolean(sourceRow));
+        break;
+      case DATETIME_TYPE:
+        ((DateTimeColumnBuilder) dest).append(((DateTimeColumn) sourceColumn).getDateTime(sourceRow));
+        break;
+      case DOUBLE_TYPE:
+        ((DoubleColumnBuilder) dest).append(((DoubleColumn) sourceColumn).getDouble(sourceRow));
+        break;
+      case FLOAT_TYPE:
+        ((FloatColumnBuilder) dest).append(((FloatColumn) sourceColumn).getFloat(sourceRow));
+        break;
+      case INT_TYPE:
+        ((IntColumnBuilder) dest).append(((IntColumn) sourceColumn).getInt(sourceRow));
+        break;
+      case LONG_TYPE:
+        ((LongColumnBuilder) dest).append(((LongColumn) sourceColumn).getLong(sourceRow));
+        break;
+      case STRING_TYPE:
+        ((StringColumnBuilder) dest).append(((StringColumn) sourceColumn).getString(sourceRow));
+        break;
+    }
+    columnPut(destColumn);
   }
 }
