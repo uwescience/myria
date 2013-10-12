@@ -43,7 +43,7 @@ public final class Project extends UnaryOperator {
   protected TupleBatch fetchNextReady() throws DbException {
     TupleBatch tb = getChild().nextReady();
     if (tb != null) {
-      return tb.project(outColumnIndices);
+      return tb.project(outColumnIndices, getSchema());
     }
     return null;
   }
