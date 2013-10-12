@@ -1,0 +1,52 @@
+{
+    "fragments": [
+        {
+            "operators": [
+                {
+                    "op_name": "Scan",
+                    "op_type": "TableScan",
+                    "relation_key": {
+                        "program_name": "adhoc",
+                        "relation_name": "TwitterK",
+                        "user_name": "public"
+                    }
+                },
+                {
+                    "arg_child": "Scan",
+                    "expressions": [
+                        {
+                            "output_name": "EvalResult",
+                            "root_expression_operator": {
+                                "left": {
+                                    "type": "Constant",
+                                    "value": 5,
+                                    "value_type": "INT_TYPE"
+                                },
+                                "right": {
+                                    "column_idx": 0,
+                                    "type": "Variable"
+                                },
+                                "type": "Plus"
+                            }
+                        }
+                    ],
+                    "op_name": "Apply",
+                    "op_type": "Apply"
+                },
+                {
+                    "arg_child": "Apply",
+                    "arg_overwrite_table": true,
+                    "op_name": "Insert",
+                    "op_type": "DbInsert",
+                    "relation_key": {
+                        "program_name": "adhoc",
+                        "relation_name": "TwitterKApply",
+                        "user_name": "public"
+                    }
+                }
+            ]
+        }
+    ],
+    "logical_ra": "TwitterKApply :- Apply($0+5)[Scan(TwitterK)].",
+    "raw_datalog": "TwitterKApply :- Apply($0+5)[Scan(TwitterK)]."
+}
