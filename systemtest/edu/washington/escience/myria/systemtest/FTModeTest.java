@@ -583,6 +583,7 @@ public class FTModeTest extends SystemTestBase {
       }
     }
     LOGGER.info(actualResult.numTuples() + " " + expectedResult.numTuples());
-    Preconditions.checkState(actualResult.numTuples() == expectedResult.numTuples());
+    TestUtils.assertTupleBagEqual(TestUtils.tupleBatchToTupleBag(expectedResult), TestUtils
+        .tupleBatchToTupleBag(actualResult));
   }
 }

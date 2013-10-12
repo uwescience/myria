@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableMap;
 
+import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.operator.RootOperator;
@@ -411,7 +412,7 @@ public class WorkerQueryPartition implements QueryPartition {
             break;
           }
           try {
-            Thread.sleep(100);
+            Thread.sleep(MyriaConstants.SHORT_WAITING_INTERVAL_100_MS);
           } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
           }
