@@ -2,6 +2,7 @@ package edu.washington.escience.myria.api.encoding;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.Schema;
@@ -12,14 +13,18 @@ import edu.washington.escience.myria.expression.ExpressionOperator;
 /**
  * Holds the AST and output name.
  */
-public class ExpressionEncoding extends MyriaApiEncoding {
-  public String outputName;
-  public ExpressionOperator rootExpressionOperator;
+public final class ExpressionEncoding extends MyriaApiEncoding {
+  @JsonProperty
+  private final String outputName;
+
+  @JsonProperty
+  private final ExpressionOperator rootExpressionOperator;
 
   private static final ImmutableList<String> requiredFields = ImmutableList.of("outputName", "rootExpressionOperator");
 
   public ExpressionEncoding() {
-    super();
+    outputName = null;
+    rootExpressionOperator = null;
   }
 
   public ExpressionEncoding(String outputName, ExpressionOperator rootExpressionOperator) {
