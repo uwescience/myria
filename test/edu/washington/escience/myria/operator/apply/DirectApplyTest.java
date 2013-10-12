@@ -22,7 +22,7 @@ public class DirectApplyTest {
   @Before
   public void setUp() throws Exception {
     // numTuples = rand.nextInt(RANDOM_LIMIT);
-    numTuples = 20000;
+    numTuples = 2 * TupleBatch.BATCH_SIZE;
     // multiplicationFactor = rand.nextInt(RANDOM_LIMIT);
     multiplicationFactor = 2;
   }

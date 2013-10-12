@@ -8,6 +8,8 @@ import org.codehaus.janino.ExpressionEvaluator;
 import org.codehaus.janino.Parser.ParseException;
 import org.codehaus.janino.Scanner.ScanException;
 
+import com.google.common.base.Preconditions;
+
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
@@ -44,6 +46,11 @@ public class Expression {
   private ExpressionEvaluator evaluator;
 
   /**
+   * Array of arguments passed to {@link #evaluator}.
+   */
+  private final ThreadLocal<Object[]> args;
+
+  /**
    * Constructs the Expression object.
    * 
    * @param outputName the name of the resulting element
@@ -57,37 +64,40 @@ public class Expression {
     this.javaExpression = javaExpression;
     this.indexes = indexes;
     this.expressionEncoding = expressionEncoding;
+
+    args = new ThreadLocal<Object[]>();
+    args.set(new Object[indexes.size()]);
   }
 
   /**
    * Compiles the {@link #javaExpression}.
    * 
-   * @param schema the input schema
+   * @param inputSchema the input schema
+   * @param outputType the output type
    * @throws DbException compilation failed
    */
-  public void compile(final Schema schema) throws DbException {
+  public void compile(final Schema inputSchema, final Type outputType) throws DbException {
     String[] parameterNames = new String[indexes.size()];
     Class<?>[] parameterTypes = new Class[indexes.size()];
 
     int i = 0;
     for (VariableExpression var : indexes) {
       parameterNames[i] = var.getJavaString();
-      parameterTypes[i] = var.getOutputType(schema).toJavaType();
+      parameterTypes[i] = inputSchema.getColumnType(i).toJavaType();
       i++;
     }
 
-    Class<?> outputType = expressionEncoding.getOutputType(schema).toJavaType();
+    Class<?> javaOutputType = outputType.toJavaType();
 
     try {
-      evaluator = new ExpressionEvaluator(javaExpression, outputType, parameterNames, parameterTypes);
+      evaluator = new ExpressionEvaluator(javaExpression, javaOutputType, parameterNames, parameterTypes);
     } catch (CompileException | ParseException | ScanException e) {
-      e.printStackTrace();
-      throw new DbException("Error when compiling expression " + this);
+      throw new DbException("Error when compiling expression " + this, e);
     }
   }
 
   /**
-   * Evaluates the expression. Make sure you ran {@link #compile} first.
+   * Evaluates the expression.
    * 
    * @param tb a tuple batch
    * @param rowId the row that should be used for input data
@@ -95,14 +105,14 @@ public class Expression {
    * @throws InvocationTargetException exception thrown from janino
    */
   public Object eval(final TupleBatch tb, final int rowId) throws InvocationTargetException {
-    Object[] args = new Object[indexes.size()];
+    Preconditions.checkArgument(evaluator != null, "Call compile first.");
 
     int i = 0;
     for (VariableExpression var : indexes) {
-      args[i++] = tb.getObject(var.getColumnIdx(), rowId);
+      args.get()[i++] = tb.getObject(var.getColumnIdx(), rowId);
     }
     // System.out.println(this + " on " + args[0] + " is " + evaluator.evaluate(args));
-    return evaluator.evaluate(args);
+    return evaluator.evaluate(args.get());
   }
 
   /**
