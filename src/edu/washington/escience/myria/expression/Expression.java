@@ -3,10 +3,8 @@ package edu.washington.escience.myria.expression;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 
-import org.codehaus.janino.CompileException;
+import org.codehaus.commons.compiler.CompileException;
 import org.codehaus.janino.ExpressionEvaluator;
-import org.codehaus.janino.Parser.ParseException;
-import org.codehaus.janino.Scanner.ScanException;
 
 import com.google.common.base.Preconditions;
 
@@ -95,7 +93,7 @@ public class Expression {
 
     try {
       evaluator = new ExpressionEvaluator(javaExpression, javaOutputType, parameterNames, parameterTypes);
-    } catch (CompileException | ParseException | ScanException e) {
+    } catch (CompileException e) {
       throw new DbException("Error when compiling expression " + this, e);
     }
   }

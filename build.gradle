@@ -113,7 +113,7 @@ dependencies {
   compile "net.sf.opencsv:opencsv:2.3"
   
   // Expression compiler
-  compile "janino:janino:2.5.10"
+  compile "org.codehaus.janino:janino:2.6.1"
 
   runtime "monetdb:monetdb-jdbc:2.8"
   runtime "mysql:mysql-connector-java:5.1.24"
