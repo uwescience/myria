@@ -717,6 +717,12 @@ public final class Server {
     messageProcessingExecutor.shutdownNow();
     scheduledTaskExecutor.shutdownNow();
 
+    /*
+     * Close the catalog before shutting down the IPC because there may be Catalog jobs pending that were triggered by
+     * IPC events.
+     */
+    catalog.close();
+
     while (aliveWorkers.size() > 0) {
       // TODO add process kill
       for (final Integer workerId : aliveWorkers.keySet()) {
@@ -752,7 +758,6 @@ public final class Server {
     if (LOGGER.isInfoEnabled()) {
       LOGGER.info("Master connection pool shutdown complete.");
     }
-    catalog.close();
 
     if (LOGGER.isInfoEnabled()) {
       LOGGER.info("Master finishes cleanup.");

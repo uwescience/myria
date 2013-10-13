@@ -107,7 +107,7 @@
                         "1"
                     ],
                     "op_name": "JoinOnIOrder",
-                    "op_type": "LocalJoin"
+                    "op_type": "SymmetricHashJoin"
                 },
                 {
                     "arg_child": "JoinOnIOrder",
@@ -194,7 +194,7 @@
                         "0"
                     ],
                     "op_name": "JoinOnIOrderWihGroupsOfInterest",
-                    "op_type": "LocalJoin"
+                    "op_type": "SymmetricHashJoin"
                 },
                 {
                     "arg_child": "JoinOnIOrderWihGroupsOfInterest",
@@ -368,7 +368,7 @@
                         "0"
                     ],
                     "op_name": "SelectedProgenitorJoined",
-                    "op_type": "LocalJoin"
+                    "op_type": "SymmetricHashJoin"
                 },
                 {
                     "arg_agg_fields": [
@@ -401,7 +401,7 @@
                         "1"
                     ],
                     "op_name": "result",
-                    "op_type": "LocalJoin"
+                    "op_type": "SymmetricHashJoin"
                 },
                 {
                     "arg_child": "result",

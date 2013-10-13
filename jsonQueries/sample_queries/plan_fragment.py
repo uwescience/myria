@@ -152,7 +152,7 @@ def single_join():
     }
 
     join = {
-        'op_type' : 'LocalJoin',
+        'op_type' : 'SymmetricHashJoin',
         'op_name' : 'Join',
         'arg_child1' : 'Gather1',
         'arg_child2' : 'Gather0',

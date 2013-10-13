@@ -75,12 +75,16 @@ public final class BlockingJDBCDataReceiver extends UnaryOperator {
   }
 
   @Override
-  public Schema getSchema() {
-    return getChild().getSchema();
+  public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
   }
 
   @Override
-  public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+  protected Schema generateSchema() {
+    Operator child = getChild();
+    if (child == null) {
+      return null;
+    }
+    return child.getSchema();
   }
 
 }

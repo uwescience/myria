@@ -179,7 +179,7 @@ public final class FileScan extends LeafOperator {
   }
 
   @Override
-  public Schema getSchema() {
+  public Schema generateSchema() {
     return schema;
   }
 

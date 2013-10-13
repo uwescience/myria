@@ -10,7 +10,7 @@ import edu.washington.escience.myria.daemon.MasterDaemon;
 import edu.washington.escience.myria.parallel.Server;
 
 /**
- * This object simply configures which resources can be requested via the Restlet server.
+ * This object simply configures which resources can be requested via the REST server.
  * 
  * @author dhalperi, jwang
  */

@@ -123,7 +123,7 @@ public class SQLiteSetFilter extends UnaryOperator {
   }
 
   @Override
-  public final Schema getSchema() {
+  protected final Schema generateSchema() {
     return outputSchema;
   }
 

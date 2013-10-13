@@ -5,18 +5,18 @@ import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myria.operator.LocalUnbalancedJoin;
 import edu.washington.escience.myria.operator.Operator;
+import edu.washington.escience.myria.operator.RightHashJoin;
 import edu.washington.escience.myria.parallel.Server;
 
 /**
  * 
- * Encoding for LocalUnbalancedJoin.
+ * Encoding for {@link RightHashJoin}.
  * 
  * @author Shumo Chu <chushumo@cs.washington.edu>
  * 
  */
-public class LocalUnbalancedJoinEncoding extends OperatorEncoding<LocalUnbalancedJoin> {
+public class RightHashJoinEncoding extends OperatorEncoding<RightHashJoin> {
   public String argChild1;
   public String argChild2;
   public List<String> argColumnNames;
@@ -33,8 +33,8 @@ public class LocalUnbalancedJoinEncoding extends OperatorEncoding<LocalUnbalance
   }
 
   @Override
-  public LocalUnbalancedJoin construct(Server server) {
-    return new LocalUnbalancedJoin(argColumnNames, null, null, argColumns1, argColumns2, argSelect1, argSelect2);
+  public RightHashJoin construct(Server server) {
+    return new RightHashJoin(argColumnNames, null, null, argColumns1, argColumns2, argSelect1, argSelect2);
   }
 
   @Override

@@ -13,7 +13,7 @@ import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.DbQueryScan;
-import edu.washington.escience.myria.operator.LocalJoin;
+import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.TBQueueExporter;
@@ -72,7 +72,7 @@ public class BroadcastTest extends SystemTestBase {
     final DbQueryScan scan2 = new DbQueryScan(testtable2Key, schema);
 
     final ImmutableList<String> outputColumnNames = ImmutableList.of("id1", "name1", "id2", "name2");
-    final LocalJoin localjoin = new LocalJoin(outputColumnNames, bs, scan2, new int[] { 0 }, new int[] { 0 });
+    final SymmetricHashJoin localjoin = new SymmetricHashJoin(outputColumnNames, bs, scan2, new int[] { 0 }, new int[] { 0 });
 
     final CollectProducer cp = new CollectProducer(localjoin, serverReceiveID, MASTER_ID);
 

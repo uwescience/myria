@@ -31,7 +31,6 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.accessmethod.ConnectionInfo;
 import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.TupleSource;
@@ -202,11 +201,11 @@ public class BenchmarkTest {
   }
 
   @Test
-  public void benchmarkSelectProjectTest() throws Exception {
+  public void benchmarkSelectColumnTest() throws Exception {
     assertTrue(successfulSetup);
 
     for (ConnectionInfo conn : connections) {
-      LOGGER.info("Starting Project tests with DBMS: {}", conn.getDbms());
+      LOGGER.info("Starting ColumnSelect tests with DBMS: {}", conn.getDbms());
       double t1 = System.nanoTime();
       double t2 = 0;
       for (int i = 0; i < NUM_RUNS; i++) {

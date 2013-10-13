@@ -10,7 +10,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.DbQueryScan;
-import edu.washington.escience.myria.operator.LocalJoin;
+import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.TBQueueExporter;
@@ -64,8 +64,8 @@ public class Q3 implements QueryPlanGenerator {
     final GenericShuffleConsumer shuffleSwrcPagesC =
         new GenericShuffleConsumer(shuffleSwrcPagesP.getSchema(), allSwrcPagesShuffleID, allWorkers);
 
-    final LocalJoin joinArticleSwrcPages =
-        new LocalJoin(shuffleArticlesC, shuffleSwrcPagesC, new int[] { 0 }, new int[] { 0 });
+    final SymmetricHashJoin joinArticleSwrcPages =
+        new SymmetricHashJoin(shuffleArticlesC, shuffleSwrcPagesC, new int[] { 0 }, new int[] { 0 });
 
     final Aggregate agg = new Aggregate(joinArticleSwrcPages, new int[] { 0 }, new int[] { Aggregator.AGG_OP_COUNT });
 

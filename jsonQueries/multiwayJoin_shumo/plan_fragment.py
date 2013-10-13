@@ -87,8 +87,8 @@ def receive_then_join():
             "column_names" : ["follower", "followee"]
         }
     }
-    localJoin = {
-        "op_type" : "LocalJoin",
+    join = {
+        "op_type" : "SymmetricHashJoin",
         "op_name" : "Join",
         "arg_child1" : "GatherR",
         "arg_child2" : "GatherS",
@@ -104,7 +104,7 @@ def receive_then_join():
         "op_type": "CollectProducer"
     }
     fragment = {
-        "operators": [gatherR, gatherS, localJoin, collect]
+        "operators": [gatherR, gatherS, join, collect]
     }
     return fragment
 
@@ -215,8 +215,8 @@ def receive_partition_then_join():
             "column_names" : ["follower", "followee"]
         }
     }
-    localJoin = {
-        "op_type" : "LocalJoin",
+    join = {
+        "op_type" : "SymmetricHashJoin",
         "op_name" : "Join",
         "arg_child1" : "GatherR",
         "arg_child2" : "GatherS",
@@ -232,7 +232,7 @@ def receive_partition_then_join():
         "op_type": "CollectProducer"
     }
     fragment = {
-        "operators": [gatherR, gatherS, localJoin, collect]
+        "operators": [gatherR, gatherS, join, collect]
     }
     return fragment
 

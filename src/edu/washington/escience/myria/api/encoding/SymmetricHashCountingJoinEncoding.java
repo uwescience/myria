@@ -5,11 +5,11 @@ import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myria.operator.LocalCountingJoin;
+import edu.washington.escience.myria.operator.SymmetricHashCountingJoin;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.parallel.Server;
 
-public class LocalCountingJoinEncoding extends OperatorEncoding<LocalCountingJoin> {
+public class SymmetricHashCountingJoinEncoding extends OperatorEncoding<SymmetricHashCountingJoin> {
   public String argChild1;
   public String argChild2;
   public int[] argColumns1;
@@ -23,8 +23,8 @@ public class LocalCountingJoinEncoding extends OperatorEncoding<LocalCountingJoi
   }
 
   @Override
-  public LocalCountingJoin construct(Server server) {
-    return new LocalCountingJoin(null, null, argColumns1, argColumns2);
+  public SymmetricHashCountingJoin construct(Server server) {
+    return new SymmetricHashCountingJoin(null, null, argColumns1, argColumns2);
   }
 
   @Override
