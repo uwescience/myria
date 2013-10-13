@@ -21,19 +21,19 @@ public final class DateTimeUtils {
   /**
    * If time elapse is more than a day, use this format.
    * */
-  public static final String DAY_ELAPSE_FORMAT = "%1$dd %2$dh %3$dm %4$d.%5$03ds";
+  public static final String DAY_ELAPSE_FORMAT = "%1$dd %2$dh %3$dm %4$d.%5$09ds";
   /**
    * If time elapse is less than a day, but more than an hour, use this format.
    * */
-  public static final String HOUR_ELAPSE_FORMAT = "%2$dh %3$dm %4$d.%5$03ds";
+  public static final String HOUR_ELAPSE_FORMAT = "%2$dh %3$dm %4$d.%5$09ds";
   /**
    * If time elapse is less than an hour, but more than a minute, use this format.
    * */
-  public static final String MINUTE_ELAPSE_FORMAT = "%3$dm %4$d.%5$03ds";
+  public static final String MINUTE_ELAPSE_FORMAT = "%3$dm %4$d.%5$09ds";
   /**
    * If time elapse is less than a minute use this format.
    * */
-  public static final String SECOND_ELAPSE_FORMAT = "%4$d.%5$03ds";
+  public static final String SECOND_ELAPSE_FORMAT = "%4$d.%5$09ds";
 
   /**
    * @return Convert nanoElapse to human readable format.
