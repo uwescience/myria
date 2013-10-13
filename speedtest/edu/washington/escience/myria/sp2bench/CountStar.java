@@ -10,7 +10,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.DbQueryScan;
-import edu.washington.escience.myria.operator.LocalJoin;
+import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.TBQueueExporter;
@@ -39,7 +39,7 @@ public class CountStar implements QueryPlanGenerator {
     final DbQueryScan countDictionary = new DbQueryScan("select count(*),0 from Dictionary", countSchema);
     final DbQueryScan countTriples = new DbQueryScan("select count(*),0 from Triples", countSchema);
 
-    final LocalJoin countMergeJoin = new LocalJoin(countDictionary, countTriples, new int[] { 1 }, new int[] { 1 });
+    final SymmetricHashJoin countMergeJoin = new SymmetricHashJoin(countDictionary, countTriples, new int[] { 1 }, new int[] { 1 });
 
     final CollectProducer collectCountP = new CollectProducer(countMergeJoin, collectCountID, allWorkers[0]);
     final CollectConsumer collectCountC = new CollectConsumer(collectCountP.getSchema(), collectCountID, allWorkers);

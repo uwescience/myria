@@ -92,7 +92,7 @@ public final class TupleSource extends LeafOperator {
   }
 
   @Override
-  public Schema getSchema() {
+  protected Schema generateSchema() {
     return schema;
   }
 

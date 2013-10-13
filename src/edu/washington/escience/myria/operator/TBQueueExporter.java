@@ -2,8 +2,6 @@ package edu.washington.escience.myria.operator;
 
 import java.util.Queue;
 
-import com.google.common.collect.ImmutableMap;
-
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
@@ -36,14 +34,6 @@ public class TBQueueExporter extends UnaryOperator {
   }
 
   @Override
-  protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-  }
-
-  @Override
-  protected final void cleanup() throws DbException {
-  }
-
-  @Override
   protected final TupleBatch fetchNextReady() throws DbException {
     TupleBatch tb = getChild().nextReady();
 
@@ -54,8 +44,11 @@ public class TBQueueExporter extends UnaryOperator {
   }
 
   @Override
-  public final Schema getSchema() {
-    return getChild().getSchema();
+  protected final Schema generateSchema() {
+    Operator child = getChild();
+    if (child == null) {
+      return null;
+    }
+    return child.getSchema();
   }
-
 }

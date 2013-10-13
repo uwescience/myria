@@ -29,11 +29,6 @@ public class SingleGroupByAggregate extends UnaryOperator {
   private static final long serialVersionUID = 1L;
 
   /**
-   * result schema.
-   * */
-  private Schema schema;
-
-  /**
    * compute multiple aggregates in the same time. The columns to compute the aggregates are
    * {@link SingleGroupByAggregate#afields}.
    * */
@@ -206,11 +201,8 @@ public class SingleGroupByAggregate extends UnaryOperator {
   }
 
   @Override
-  public final Schema getSchema() {
-    if (schema == null) {
-      schema = generateSchema(getChild(), groupAggs, gColumn, afields, agg, aggOps);
-    }
-    return schema;
+  protected final Schema generateSchema() {
+    return generateSchema(getChild(), groupAggs, gColumn, afields, agg, aggOps);
   }
 
   /**
@@ -222,10 +214,9 @@ public class SingleGroupByAggregate extends UnaryOperator {
 
   @Override
   protected final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    schema = generateSchema(getChild(), groupAggs, gColumn, afields, agg, aggOps);
     groupAggs = new HashMap<Object, Aggregator<?>[]>();
     groupedTupleBatches = new HashMap<Object, Pair<Object, TupleBatchBuffer>>();
-    resultBuffer = new TupleBatchBuffer(schema);
+    resultBuffer = new TupleBatchBuffer(getSchema());
   }
 
   /**

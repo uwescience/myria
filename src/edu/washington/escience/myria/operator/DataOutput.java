@@ -15,7 +15,7 @@ import edu.washington.escience.myria.TupleWriter;
  * @author dhalperi
  * 
  */
-public class DataOutput extends RootOperator {
+public final class DataOutput extends RootOperator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;

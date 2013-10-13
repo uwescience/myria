@@ -252,7 +252,7 @@
                         "1"
                     ],
                     "op_name": "joina",
-                    "op_type": "LocalJoin"
+                    "op_type": "SymmetricHashJoin"
                 },
                 {
                     "arg_child": "joina",
@@ -431,7 +431,7 @@
                         "1"
                     ],
                     "op_name": "joinb",
-                    "op_type": "LocalJoin"
+                    "op_type": "SymmetricHashJoin"
                 },
                 {
                     "arg_child": "joinb",
@@ -610,7 +610,7 @@
                         "1"
                     ],
                     "op_name": "joinc",
-                    "op_type": "LocalJoin"
+                    "op_type": "SymmetricHashJoin"
                 },
                 {
                     "arg_child": "joinc",
