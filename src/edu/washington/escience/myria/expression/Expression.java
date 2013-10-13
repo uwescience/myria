@@ -65,8 +65,12 @@ public class Expression {
     this.indexes = indexes;
     this.expressionEncoding = expressionEncoding;
 
-    args = new ThreadLocal<Object[]>();
-    args.set(new Object[indexes.size()]);
+    args = new ThreadLocal<Object[]>() {
+      @Override
+      protected Object[] initialValue() {
+        return new Object[indexes.size()];
+      }
+    };
   }
 
   /**
