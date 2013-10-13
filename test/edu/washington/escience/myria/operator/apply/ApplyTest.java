@@ -12,10 +12,12 @@ import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.api.encoding.ExpressionEncoding;
+import edu.washington.escience.myria.expression.ConstantExpression;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
 import edu.washington.escience.myria.expression.MinusExpression;
 import edu.washington.escience.myria.expression.PlusExpression;
+import edu.washington.escience.myria.expression.PowExpression;
 import edu.washington.escience.myria.expression.SqrtExpression;
 import edu.washington.escience.myria.expression.TimesExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
@@ -42,24 +44,42 @@ public class ApplyTest {
     ExpressionOperator varb = new VariableExpression(1);
     ExpressionOperator varc = new VariableExpression(2);
 
-    // Expression: Math.sqrt(a);
+    {
+      // Expression: Math.sqrt(a);
 
-    ExpressionOperator squareRoot = new SqrtExpression(vara);
+      ExpressionOperator squareRoot = new SqrtExpression(vara);
 
-    ExpressionEncoding exprEnc = new ExpressionEncoding("first", squareRoot);
+      ExpressionEncoding exprEnc = new ExpressionEncoding("first", squareRoot);
 
-    // System.out.println(exprEnc.construct());
-    expressions.add(exprEnc.construct());
+      expressions.add(exprEnc.construct());
+    }
 
-    // Expression: (b+c) * (b-c)
+    {
+      // Expression: (b+c) * (b-c)
 
-    ExpressionOperator plus = new PlusExpression(varb, varc);
-    ExpressionOperator minus = new MinusExpression(varb, varc);
+      ExpressionOperator plus = new PlusExpression(varb, varc);
+      ExpressionOperator minus = new MinusExpression(varb, varc);
 
-    ExpressionOperator times = new TimesExpression(plus, minus);
+      ExpressionOperator times = new TimesExpression(plus, minus);
 
-    exprEnc = new ExpressionEncoding("second", times);
-    expressions.add(exprEnc.construct());
+      ExpressionEncoding exprEnc = new ExpressionEncoding("second", times);
+      expressions.add(exprEnc.construct());
+    }
+
+    {
+      // Expression: Math.sqrt(Math.pow(a, 2) + Math.pow(b, 2))
+
+      ExpressionOperator two = new ConstantExpression(Type.INT_TYPE, "2");
+      ExpressionOperator pow1 = new PowExpression(vara, two);
+      ExpressionOperator pow2 = new PowExpression(varb, two);
+
+      ExpressionOperator plus = new PlusExpression(pow1, pow2);
+
+      ExpressionOperator sqrt = new SqrtExpression(plus);
+
+      ExpressionEncoding exprEnc = new ExpressionEncoding("third", sqrt);
+      expressions.add(exprEnc.construct());
+    }
 
     Apply apply = new Apply(new TupleSource(tbb), expressions.build());
 
@@ -69,9 +89,10 @@ public class ApplyTest {
     while (!apply.eos()) {
       result = apply.nextReady();
       if (result != null) {
-        assertEquals(2, result.getSchema().numColumns());
+        assertEquals(3, result.getSchema().numColumns());
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(0));
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(1));
+        assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(2));
 
         assertEquals("first", result.getSchema().getColumnName(0));
         assertEquals("second", result.getSchema().getColumnName(1));
