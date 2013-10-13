@@ -396,7 +396,7 @@ public abstract class Operator implements Serializable {
    * Operators should not be able to unset an already set EOS except reopen it.
    */
   protected final void setEOS() {
-    if (startProcessing && isProfilingMode()) {
+    if (startProcessing && isProfilingMode() && !eos()) {
       LOGGER.info("[{}#{}][{}@{}][{}]:End of Processing (EOS)", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
           getOpName(), getFragmentId(), this);
       LOGGER.info("[{}#{}][{}@{}][{}]: executionTime {} ms", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
