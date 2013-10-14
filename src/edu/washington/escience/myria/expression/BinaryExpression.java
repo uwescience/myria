@@ -9,6 +9,10 @@ import edu.washington.escience.myria.Schema;
  * An ExpressionOperator with one child.
  */
 public abstract class BinaryExpression extends ExpressionOperator {
+
+  /***/
+  private static final long serialVersionUID = 1L;
+
   /** The left child. */
   @JsonProperty("left")
   private final ExpressionOperator left;

@@ -10,6 +10,8 @@ import edu.washington.escience.myria.Type;
  * Represents a reference to a child field in an expression tree.
  */
 public class VariableExpression extends ZeroaryExpression {
+  /***/
+  private static final long serialVersionUID = 1L;
 
   /** The index in the input that this {@link VariableExpression} references. */
   private final int columnIdx;

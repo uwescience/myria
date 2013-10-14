@@ -10,6 +10,8 @@ import edu.washington.escience.myria.Type;
  * Subtract two operands in an expression tree.
  */
 public class MinusExpression extends BinaryExpression {
+  /***/
+  private static final long serialVersionUID = 1L;
 
   /**
    * Subtract the two operands together.

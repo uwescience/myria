@@ -10,6 +10,8 @@ import edu.washington.escience.myria.Type;
  * Negate (Unary minus) the operand.
  */
 public class NegateExpression extends UnaryExpression {
+  /***/
+  private static final long serialVersionUID = 1L;
 
   /**
    * Negate (unary minus) the operand.

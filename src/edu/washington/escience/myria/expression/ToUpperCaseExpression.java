@@ -10,6 +10,8 @@ import edu.washington.escience.myria.Type;
  * Return the upper case representation of the operand.
  */
 public class ToUpperCaseExpression extends UnaryExpression {
+  /***/
+  private static final long serialVersionUID = 1L;
 
   /**
    * Take the square root of the operand.

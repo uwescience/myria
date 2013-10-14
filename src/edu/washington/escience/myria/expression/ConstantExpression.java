@@ -12,6 +12,10 @@ import edu.washington.escience.myria.Type;
  * An expression that returns a constant value.
  */
 public class ConstantExpression extends ZeroaryExpression {
+
+  /***/
+  private static final long serialVersionUID = 1L;
+
   /** The type of this object. */
   private final Type type;
   /** The value of this object. */

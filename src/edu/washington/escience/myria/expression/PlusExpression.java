@@ -12,6 +12,8 @@ import edu.washington.escience.myria.Type;
  * Add two operands in an expression tree.
  */
 public class PlusExpression extends BinaryExpression {
+  /***/
+  private static final long serialVersionUID = 1L;
 
   /**
    * Add the two operands together.

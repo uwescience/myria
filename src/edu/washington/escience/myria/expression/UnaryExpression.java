@@ -8,6 +8,9 @@ import edu.washington.escience.myria.Schema;
  * An ExpressionOperator with one child.
  */
 public abstract class UnaryExpression extends ExpressionOperator {
+  /***/
+  private static final long serialVersionUID = 1L;
+
   /**
    * The child expression.
    */

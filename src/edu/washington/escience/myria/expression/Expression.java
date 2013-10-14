@@ -65,6 +65,7 @@ public class Expression implements Serializable {
    * @param outputType the output type
    * @throws DbException compilation failed
    */
+  @SuppressWarnings("deprecation")
   public void compile(final Schema inputSchema, final Type outputType) throws DbException {
     javaExpression = expressionEncoding.getJavaString(inputSchema);
     this.outputType = outputType;

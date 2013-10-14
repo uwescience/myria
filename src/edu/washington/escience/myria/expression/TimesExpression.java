@@ -10,6 +10,8 @@ import edu.washington.escience.myria.Type;
  * Multiply two operands in an expression tree.
  */
 public class TimesExpression extends BinaryExpression {
+  /***/
+  private static final long serialVersionUID = 1L;
 
   /**
    * Multiply the two operands together.

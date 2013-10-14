@@ -11,6 +11,9 @@ import edu.washington.escience.myria.Type;
  */
 public class DivideExpression extends BinaryExpression {
 
+  /***/
+  private static final long serialVersionUID = 1L;
+
   /**
    * Divide the two operands together.
    * 

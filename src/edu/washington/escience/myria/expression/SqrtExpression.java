@@ -10,6 +10,8 @@ import edu.washington.escience.myria.Type;
  * Take the square root of the operand.
  */
 public class SqrtExpression extends UnaryExpression {
+  /***/
+  private static final long serialVersionUID = 1L;
 
   /**
    * Take the square root of the operand.

@@ -7,6 +7,8 @@ import edu.washington.escience.myria.Type;
  * Exponentiate left^right for two operands in an expression tree. Always evaluates to a double.
  */
 public class PowExpression extends BinaryExpression {
+  /***/
+  private static final long serialVersionUID = 1L;
 
   /**
    * Exponentiate left^right. Always evaluates to a double.
