@@ -1,7 +1,5 @@
 package edu.washington.escience.myria.expression;
 
-import java.util.Set;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import edu.washington.escience.myria.Schema;
@@ -27,11 +25,6 @@ public abstract class UnaryExpression extends ExpressionOperator {
    */
   public final ExpressionOperator getChild() {
     return child;
-  }
-
-  @Override
-  public Set<VariableExpression> getVariables() {
-    return child.getVariables();
   }
 
   /**

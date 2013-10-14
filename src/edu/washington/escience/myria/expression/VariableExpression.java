@@ -1,10 +1,7 @@
 package edu.washington.escience.myria.expression;
 
-import java.util.Set;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
@@ -25,11 +22,6 @@ public class VariableExpression extends ZeroaryExpression {
   @JsonCreator
   public VariableExpression(@JsonProperty("column_idx") final int columnIdx) {
     this.columnIdx = columnIdx;
-  }
-
-  @Override
-  public Set<VariableExpression> getVariables() {
-    return ImmutableSet.of(this);
   }
 
   @Override
@@ -74,8 +66,7 @@ public class VariableExpression extends ZeroaryExpression {
         tName = getOutputType(schema).name();
     }
 
-    // We generate a variable access into the tuple buffer. using the
-
+    // We generate a variable access into the tuple buffer.
     return new StringBuilder("tb.get").append(tName).append("(").append(columnIdx).append(", rowId)").toString();
   }
 

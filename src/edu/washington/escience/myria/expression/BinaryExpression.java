@@ -1,10 +1,7 @@
 package edu.washington.escience.myria.expression;
 
-import java.util.Set;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableSet;
 
 import edu.washington.escience.myria.Schema;
 
@@ -40,15 +37,6 @@ public abstract class BinaryExpression extends ExpressionOperator {
    */
   public final ExpressionOperator getRight() {
     return right;
-  }
-
-  @Override
-  @JsonIgnore
-  public final Set<VariableExpression> getVariables() {
-    ImmutableSet.Builder<VariableExpression> builder = ImmutableSet.builder();
-    builder.addAll(left.getVariables());
-    builder.addAll(right.getVariables());
-    return builder.build();
   }
 
   /**

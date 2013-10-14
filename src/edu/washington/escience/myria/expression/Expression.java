@@ -1,7 +1,6 @@
 package edu.washington.escience.myria.expression;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.List;
 
 import org.codehaus.commons.compiler.CompileException;
 import org.codehaus.janino.ExpressionEvaluator;
@@ -29,11 +28,6 @@ public class Expression {
   private String javaExpression;
 
   /**
-   * List of variables used in {@link #javaExpression}.
-   */
-  private final List<VariableExpression> indexes;
-
-  /**
    * Expression encoding reference is needed to get the output type.
    */
   private final ExpressionEncoding expressionEncoding;
@@ -52,13 +46,10 @@ public class Expression {
    * Constructs the Expression object.
    * 
    * @param outputName the name of the resulting element
-   * @param indexes variables that are used in the javaExpression
    * @param expressionEncoding Expression encoding that created this expression. Necessary to get output type.
    */
-  public Expression(final String outputName, final List<VariableExpression> indexes,
-      final ExpressionEncoding expressionEncoding) {
+  public Expression(final String outputName, final ExpressionEncoding expressionEncoding) {
     this.outputName = outputName;
-    this.indexes = indexes;
     this.expressionEncoding = expressionEncoding;
   }
 
@@ -92,7 +83,6 @@ public class Expression {
    */
   public Object eval(final TupleBatch tb, final int rowId) throws InvocationTargetException {
     Preconditions.checkArgument(evaluator != null, "Call compile first.");
-
     return evaluator.evaluate(tb, rowId);
   }
 

@@ -50,6 +50,6 @@ public final class ExpressionEncoding extends MyriaApiEncoding {
   }
 
   public Expression construct() {
-    return new Expression(outputName, ImmutableList.copyOf(rootExpressionOperator.getVariables()), this);
+    return new Expression(outputName, this);
   }
 }

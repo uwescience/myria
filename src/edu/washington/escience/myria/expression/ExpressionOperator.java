@@ -3,7 +3,6 @@
  */
 package edu.washington.escience.myria.expression;
 
-import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
@@ -24,10 +23,8 @@ import edu.washington.escience.myria.Schema;
     @Type(name = "Variable", value = VariableExpression.class), })
 public abstract class ExpressionOperator {
   /**
-   * @return the set of all variables used in this expression.
+   * 
    */
-  @JsonIgnore
-  public abstract Set<VariableExpression> getVariables();
 
   /**
    * @param schema the schema of the tuples this expression references.
