@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.expression;
 
+import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 
 import org.codehaus.commons.compiler.CompileException;
@@ -16,7 +17,10 @@ import edu.washington.escience.myria.api.encoding.ExpressionEncoding;
 /**
  * An expression that can be applied to a tuple.
  */
-public class Expression {
+public class Expression implements Serializable {
+  /***/
+  private static final long serialVersionUID = 1L;
+
   /**
    * Name of the column that the result will be written to.
    */
@@ -40,6 +44,7 @@ public class Expression {
   /**
    * The output type of the expression.
    */
+  @SuppressWarnings("unused")
   private Type outputType;
 
   /**

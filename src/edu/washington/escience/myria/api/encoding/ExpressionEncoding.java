@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.api.encoding;
 
+import java.io.Serializable;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -13,7 +14,10 @@ import edu.washington.escience.myria.expression.ExpressionOperator;
 /**
  * Holds the AST and output name.
  */
-public final class ExpressionEncoding extends MyriaApiEncoding {
+public final class ExpressionEncoding extends MyriaApiEncoding implements Serializable {
+  /***/
+  private static final long serialVersionUID = 1L;
+
   @JsonProperty
   private final String outputName;
 

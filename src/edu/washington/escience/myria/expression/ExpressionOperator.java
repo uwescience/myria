@@ -3,6 +3,7 @@
  */
 package edu.washington.escience.myria.expression;
 
+import java.io.Serializable;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
@@ -21,10 +22,9 @@ import edu.washington.escience.myria.Schema;
     @Type(name = "Plus", value = PlusExpression.class), @Type(name = "Pow", value = PowExpression.class),
     @Type(name = "Sqrt", value = SqrtExpression.class), @Type(name = "Times", value = TimesExpression.class),
     @Type(name = "Variable", value = VariableExpression.class), })
-public abstract class ExpressionOperator {
-  /**
-   * 
-   */
+public abstract class ExpressionOperator implements Serializable {
+  /***/
+  private static final long serialVersionUID = 1L;
 
   /**
    * @param schema the schema of the tuples this expression references.
