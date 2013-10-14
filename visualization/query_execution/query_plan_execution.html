@@ -2,7 +2,7 @@
 <html>
     <head>
         <meta charset="utf-8">
-        <title>Myria Operator Time Viz</title>
+        <title>Query execution visualization</title>
         <link type="text/css" href="http://mbostock.github.io/d3/style.css" rel="stylesheet" />
         <style>
             html,body,#wrapper {
@@ -37,11 +37,11 @@
         </style>
     </head>
     <body>
+        <h1>Query execution gantt chart</h1>
         <form id="fileform">
             <input type="file" id="dotfile" />
         </form>
         <output id="viz"></output>
-        <output id="viz2"></output>
         <script type="text/javascript" src="http://d3js.org/d3.v3.min.js"></script>
         <script type="text/javascript" src="gantt-chart-d3.js"></script>
 
@@ -103,7 +103,6 @@
 
                 // Read the file as text.
                 reader.readAsText(f);   
-
             }
             document.getElementById('dotfile').addEventListener('change', handleFileSelect, false);
         </script>
