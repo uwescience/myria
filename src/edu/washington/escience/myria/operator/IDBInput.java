@@ -1,8 +1,5 @@
 package edu.washington.escience.myria.operator;
 
-import java.util.BitSet;
-import java.util.List;
-
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -12,22 +9,17 @@ import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
-import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.operator.agg.StreamingAggregate;
 import edu.washington.escience.myria.parallel.Consumer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.TaskResourceManager;
 import edu.washington.escience.myria.parallel.ipc.StreamOutputChannel;
-import gnu.trove.list.TIntList;
-import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.map.TIntObjectMap;
-import gnu.trove.map.hash.TIntObjectHashMap;
 
 /**
  * Together with the EOSController, the IDBInput controls what to serve into an iteration and when to stop an iteration.
  * */
-public class IDBInput extends Operator {
+public class IDBInput extends Operator implements StreamingAggregate {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -81,17 +73,12 @@ public class IDBInput extends Operator {
    * */
   private transient TaskResourceManager resourceManager;
   /**
-   * The same as in DupElim.
-   * */
-  private transient TIntObjectMap<TIntList> uniqueTupleIndices;
-  /**
-   * The same as in DupElim.
-   * */
-  private transient TupleBuffer uniqueTuples;
-  /**
    * The IPC channel for EOI report.
    * */
   private transient StreamOutputChannel<TupleBatch> eoiReportChannel;
+
+  /** The state updater. */
+  private StreamingStateUpdater stateUpdater;
 
   /**
    * The index of the initialIDBInput in children array.
@@ -115,9 +102,11 @@ public class IDBInput extends Operator {
    * @param initialIDBInput see the corresponding field comment.
    * @param iterationInput see the corresponding field comment.
    * @param eosControllerInput see the corresponding field comment.
+   * @param stateUpdater the thing to process state update.
    * */
   public IDBInput(final int selfIDBIdx, final ExchangePairID controllerOpID, final int controllerWorkerID,
-      final Operator initialIDBInput, final Consumer iterationInput, final Consumer eosControllerInput) {
+      final Operator initialIDBInput, final Operator iterationInput, final Consumer eosControllerInput,
+      final StreamingStateUpdater stateUpdater) {
     Preconditions.checkNotNull(selfIDBIdx);
     Preconditions.checkNotNull(controllerOpID);
     Preconditions.checkNotNull(controllerWorkerID);
@@ -128,59 +117,8 @@ public class IDBInput extends Operator {
     this.initialIDBInput = initialIDBInput;
     this.iterationInput = iterationInput;
     this.eosControllerInput = eosControllerInput;
-  }
-
-  /**
-   * Do duplicate elimination for tb.
-   * 
-   * @param tb the TupleBatch for performing dupelim.
-   * @return the duplicate eliminated TB.
-   * */
-  protected TupleBatch doDupElim(final TupleBatch tb) {
-    final int numTuples = tb.numTuples();
-    /* if tb is empty, directly return. */
-    if (numTuples <= 0) {
-      return tb;
-    }
-    final BitSet toRemove = new BitSet(numTuples);
-    final List<Column<?>> tbColumns = tb.getDataColumns();
-    for (int row = 0; row < numTuples; ++row) {
-      final int nextIndex = uniqueTuples.numTuples();
-      final int cntHashCode = tb.hashCode(row);
-      TIntList tupleIndexList = uniqueTupleIndices.get(cntHashCode);
-      int inColumnRow = tb.getValidIndices().get(row);
-
-      /* update hash table if the hash entry of the hash value of this tuple does not exist. */
-      if (tupleIndexList == null) {
-        for (int column = 0; column < tb.numColumns(); ++column) {
-          uniqueTuples.put(column, tbColumns.get(column), inColumnRow);
-        }
-        tupleIndexList = new TIntArrayList();
-        tupleIndexList.add(nextIndex);
-        uniqueTupleIndices.put(cntHashCode, tupleIndexList);
-        continue;
-      }
-
-      /* detect is there a equal tuple existing. */
-      boolean unique = true;
-      for (int i = 0; i < tupleIndexList.size(); ++i) {
-        if (tb.tupleEquals(row, uniqueTuples, tupleIndexList.get(i))) {
-          unique = false;
-          break;
-        }
-      }
-
-      /* update the hash table if current tuple is unique, delete it otherwise. */
-      if (unique) {
-        for (int column = 0; column < tb.numColumns(); ++column) {
-          uniqueTuples.put(column, tbColumns.get(column), inColumnRow);
-        }
-        tupleIndexList.add(nextIndex);
-      } else {
-        toRemove.set(row);
-      }
-    }
-    return tb.remove(toRemove);
+    this.stateUpdater = stateUpdater;
+    this.stateUpdater.setAttachedOperator(this);
   }
 
   @Override
@@ -188,8 +126,8 @@ public class IDBInput extends Operator {
     TupleBatch tb;
     if (!initialInputEnded) {
       while ((tb = initialIDBInput.nextReady()) != null) {
-        tb = doDupElim(tb);
-        if (tb.numTuples() > 0) {
+        tb = stateUpdater.update(tb);
+        if (tb != null && tb.numTuples() > 0) {
           emptyDelta = false;
           return tb;
         }
@@ -198,8 +136,8 @@ public class IDBInput extends Operator {
     }
 
     while ((tb = iterationInput.nextReady()) != null) {
-      tb = doDupElim(tb);
-      if (tb.numTuples() > 0) {
+      tb = stateUpdater.update(tb);
+      if (tb != null && tb.numTuples() > 0) {
         emptyDelta = false;
         return tb;
       }
@@ -273,10 +211,9 @@ public class IDBInput extends Operator {
   public final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     initialInputEnded = false;
     emptyDelta = true;
-    uniqueTupleIndices = new TIntObjectHashMap<TIntList>();
-    uniqueTuples = new TupleBuffer(getSchema());
     resourceManager = (TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER);
     eoiReportChannel = resourceManager.startAStream(controllerWorkerID, controllerOpID);
+    stateUpdater.init(execEnvVars);
   }
 
   @Override
@@ -292,11 +229,10 @@ public class IDBInput extends Operator {
 
   @Override
   protected final void cleanup() throws DbException {
-    uniqueTupleIndices = null;
-    uniqueTuples = null;
     eoiReportChannel.release();
     eoiReportChannel = null;
     resourceManager = null;
+    stateUpdater.cleanup();
   }
 
   /**
@@ -313,4 +249,13 @@ public class IDBInput extends Operator {
     return controllerWorkerID;
   }
 
+  @Override
+  public void setStateUpdater(final StreamingStateUpdater updater) {
+    stateUpdater = updater;
+  }
+
+  @Override
+  public StreamingStateUpdater getStateUpdater() {
+    return stateUpdater;
+  }
 }
