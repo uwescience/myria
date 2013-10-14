@@ -24,7 +24,7 @@ import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
-import edu.washington.escience.myria.operator.IDBInput;
+import edu.washington.escience.myria.operator.IDBController;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
@@ -216,10 +216,10 @@ public class IterativeFlowControlTest extends SystemTestBase {
         new GenericShuffleConsumer(tableSchema, beforeIngress2, new int[] { workerIDs[0], workerIDs[1] });
     final Consumer eosReceiver = new Consumer(Schema.EMPTY_SCHEMA, eosReceiverOpID, new int[] { workerIDs[0] });
 
-    final IDBInput idbinput_worker1 =
-        new IDBInput(selfIDBID, eoiReceiverOpID, workerIDs[0], sc2, sc3_worker1, eosReceiver, new DupElim());
-    final IDBInput idbinput_worker2 =
-        new IDBInput(selfIDBID, eoiReceiverOpID, workerIDs[0], sc2, sc3_worker2, eosReceiver, new DupElim());
+    final IDBController idbController_worker1 =
+        new IDBController(selfIDBID, eoiReceiverOpID, workerIDs[0], sc2, sc3_worker1, eosReceiver, new DupElim());
+    final IDBController idbController_worker2 =
+        new IDBController(selfIDBID, eoiReceiverOpID, workerIDs[0], sc2, sc3_worker2, eosReceiver, new DupElim());
 
     final ExchangePairID[] consumerIDs = new ExchangePairID[] { ExchangePairID.newID(), null, null };
     if (sendingOpID != null) {
@@ -229,9 +229,9 @@ public class IterativeFlowControlTest extends SystemTestBase {
       consumerIDs[2] = ExchangePairID.newID();
     }
     final LocalMultiwayProducer multiProducer_worker1 =
-        new LocalMultiwayProducer(idbinput_worker1, removeNull(consumerIDs));
+        new LocalMultiwayProducer(idbController_worker1, removeNull(consumerIDs));
     final LocalMultiwayProducer multiProducer_worker2 =
-        new LocalMultiwayProducer(idbinput_worker2, removeNull(consumerIDs));
+        new LocalMultiwayProducer(idbController_worker2, removeNull(consumerIDs));
     final LocalMultiwayConsumer send2join_worker1 = new LocalMultiwayConsumer(tableSchema, consumerIDs[0]);
     final LocalMultiwayConsumer send2join_worker2 = new LocalMultiwayConsumer(tableSchema, consumerIDs[0]);
     LocalMultiwayConsumer send2others_worker1 = null;
@@ -324,9 +324,9 @@ public class IterativeFlowControlTest extends SystemTestBase {
     generateJoinPlan(workerPlan, tableSchema, "c0", eoiReceiverOpID3, false, null, receivingBonC, eosReceiverOpID_idb3,
         serverReceiveID, 2);
 
-    final Consumer eoiReceiver1 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID1, workerIDs);
-    final Consumer eoiReceiver2 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID2, workerIDs);
-    final Consumer eoiReceiver3 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID3, workerIDs);
+    final Consumer eoiReceiver1 = new Consumer(IDBController.EOI_REPORT_SCHEMA, eoiReceiverOpID1, workerIDs);
+    final Consumer eoiReceiver2 = new Consumer(IDBController.EOI_REPORT_SCHEMA, eoiReceiverOpID2, workerIDs);
+    final Consumer eoiReceiver3 = new Consumer(IDBController.EOI_REPORT_SCHEMA, eoiReceiverOpID3, workerIDs);
 
     final UnionAll unionAll = new UnionAll(new Operator[] { eoiReceiver1, eoiReceiver2, eoiReceiver3 });
     final EOSController eosController =
@@ -487,9 +487,9 @@ public class IterativeFlowControlTest extends SystemTestBase {
     generateJoinPlan(workerPlan, tableSchema, "c0", eoiReceiverOpID3, false, receivingConA, receivingBonC,
         eosReceiverOpID_idb3, serverReceiveID, 2);
 
-    final Consumer eoiReceiver1 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID1, workerIDs);
-    final Consumer eoiReceiver2 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID2, workerIDs);
-    final Consumer eoiReceiver3 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID3, workerIDs);
+    final Consumer eoiReceiver1 = new Consumer(IDBController.EOI_REPORT_SCHEMA, eoiReceiverOpID1, workerIDs);
+    final Consumer eoiReceiver2 = new Consumer(IDBController.EOI_REPORT_SCHEMA, eoiReceiverOpID2, workerIDs);
+    final Consumer eoiReceiver3 = new Consumer(IDBController.EOI_REPORT_SCHEMA, eoiReceiverOpID3, workerIDs);
 
     final UnionAll unionAll = new UnionAll(new Operator[] { eoiReceiver1, eoiReceiver2, eoiReceiver3 });
     final EOSController eosController =

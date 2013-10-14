@@ -16,15 +16,16 @@ import edu.washington.escience.myria.parallel.TaskResourceManager;
 import edu.washington.escience.myria.parallel.ipc.StreamOutputChannel;
 
 /**
- * Together with the EOSController, the IDBInput controls what to serve into an iteration and when to stop an iteration.
+ * Together with the EOSController, the IDBController controls what to serve into an iteration and when to stop an
+ * iteration.
  * */
-public class IDBInput extends Operator implements StreamingAggregate {
+public class IDBController extends Operator implements StreamingAggregate {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   /** The logger for this class. */
-  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(IDBInput.class.getName());
+  private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(IDBController.class.getName());
 
   /**
    * Initial IDB input.
@@ -52,8 +53,8 @@ public class IDBInput extends Operator implements StreamingAggregate {
   private final ExchangePairID controllerOpID;
 
   /**
-   * The index of this IDBInput. This is to differentiate the IDBInput operators in the same worker. Note that this
-   * number is the index, it must start from 0 and to (The number of IDBInput operators in a worker -1)
+   * The index of this IDBController. This is to differentiate the IDBController operators in the same worker. Note that
+   * this number is the index, it must start from 0 and to (The number of IDBController operators in a worker -1)
    * */
   private final int selfIDBIdx;
 
@@ -88,7 +89,7 @@ public class IDBInput extends Operator implements StreamingAggregate {
    * @param eosControllerInput see the corresponding field comment.
    * @param stateUpdater the thing to process state update.
    * */
-  public IDBInput(final int selfIDBIdx, final ExchangePairID controllerOpID, final int controllerWorkerID,
+  public IDBController(final int selfIDBIdx, final ExchangePairID controllerOpID, final int controllerWorkerID,
       final Operator initialIDBInput, final Operator iterationInput, final Consumer eosControllerInput,
       final StreamingStateUpdater stateUpdater) {
     Preconditions.checkNotNull(selfIDBIdx);
