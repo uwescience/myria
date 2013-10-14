@@ -2,6 +2,7 @@ package edu.washington.escience.myria.column;
 
 import java.nio.IntBuffer;
 
+import com.google.common.base.Preconditions;
 import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
@@ -53,4 +54,9 @@ public final class IntProtoColumn extends IntColumn {
     return intBuffer.get(row);
   }
 
+  @Override
+  public void replace(final int index, final Integer value) {
+    Preconditions.checkElementIndex(index, size());
+    intBuffer.put(index, value);
+  }
 }

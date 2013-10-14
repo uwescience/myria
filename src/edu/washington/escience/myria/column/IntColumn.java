@@ -15,7 +15,7 @@ import edu.washington.escience.myria.Type;
  * @author dhalperi
  * 
  */
-public abstract class IntColumn implements Column<Integer> {
+public abstract class IntColumn implements Column<Integer>, MutableColumn<Integer> {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 

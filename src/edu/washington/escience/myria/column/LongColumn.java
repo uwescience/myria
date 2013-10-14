@@ -20,7 +20,7 @@ import edu.washington.escience.myria.proto.DataProto.LongColumnMessage;
  * @author dhalperi
  * 
  */
-public final class LongColumn implements Column<Long> {
+public final class LongColumn implements Column<Long>, MutableColumn<Long> {
   /**
    * 
    */
@@ -118,5 +118,11 @@ public final class LongColumn implements Column<Long> {
   @Override
   public void addToHasher(final int row, final Hasher hasher) {
     hasher.putLong(getLong(row));
+  }
+
+  @Override
+  public void replace(final int index, final Long value) {
+    Preconditions.checkElementIndex(index, size());
+    data[index] = value;
   }
 }

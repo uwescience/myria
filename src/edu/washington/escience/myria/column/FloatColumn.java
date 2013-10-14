@@ -21,7 +21,7 @@ import edu.washington.escience.myria.proto.DataProto.FloatColumnMessage;
  * @author dhalperi
  * 
  */
-public final class FloatColumn implements Column<Float> {
+public final class FloatColumn implements Column<Float>, MutableColumn<Float> {
   /**
    * 
    */
@@ -120,5 +120,11 @@ public final class FloatColumn implements Column<Float> {
   @Override
   public void addToHasher(final int row, final Hasher hasher) {
     hasher.putFloat(getFloat(row));
+  }
+
+  @Override
+  public void replace(final int index, final Float value) {
+    Preconditions.checkElementIndex(index, size());
+    data[index] = value;
   }
 }

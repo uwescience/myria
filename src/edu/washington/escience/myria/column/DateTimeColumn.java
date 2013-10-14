@@ -22,7 +22,7 @@ import edu.washington.escience.myria.util.TypeFunnel;
  * A column of Date values.
  * 
  */
-public final class DateTimeColumn implements Column<DateTime> {
+public final class DateTimeColumn implements Column<DateTime>, MutableColumn<DateTime> {
   /**
    * 
    */
@@ -121,5 +121,11 @@ public final class DateTimeColumn implements Column<DateTime> {
   @Override
   public void addToHasher(final int row, final Hasher hasher) {
     hasher.putObject(getDateTime(row), TypeFunnel.INSTANCE);
+  }
+
+  @Override
+  public void replace(final int index, final DateTime value) {
+    Preconditions.checkElementIndex(index, size());
+    data[index] = value;
   }
 }

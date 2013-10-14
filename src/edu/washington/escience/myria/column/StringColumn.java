@@ -20,7 +20,7 @@ import edu.washington.escience.myria.util.TypeFunnel;
  * @author dhalperi
  * 
  */
-public final class StringColumn implements Column<String> {
+public final class StringColumn implements Column<String>, MutableColumn<String> {
   /**
    * 
    */
@@ -123,5 +123,11 @@ public final class StringColumn implements Column<String> {
   @Override
   public void addToHasher(final int row, final Hasher hasher) {
     hasher.putObject(getString(row), TypeFunnel.INSTANCE);
+  }
+
+  @Override
+  public void replace(final int index, final String value) {
+    Preconditions.checkElementIndex(index, size());
+    data[index] = value;
   }
 }

@@ -21,7 +21,7 @@ import edu.washington.escience.myria.util.ImmutableBitSet;
  * @author dhalperi
  * 
  */
-public final class BooleanColumn implements Column<Boolean> {
+public final class BooleanColumn implements Column<Boolean>, MutableColumn<Boolean> {
   /**
    * 
    */
@@ -112,5 +112,11 @@ public final class BooleanColumn implements Column<Boolean> {
   @Override
   public void addToHasher(final int row, final Hasher hasher) {
     hasher.putBoolean(getBoolean(row));
+  }
+
+  @Override
+  public void replace(final int index, final Boolean value) {
+    Preconditions.checkElementIndex(index, size());
+    data.set(index, value);
   }
 }
