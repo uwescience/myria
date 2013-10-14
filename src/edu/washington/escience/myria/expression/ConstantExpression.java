@@ -40,7 +40,7 @@ public class ConstantExpression extends ZeroaryExpression {
   }
 
   @Override
-  public String getJavaString() {
+  public String getJavaString(final Schema schema) {
     return value;
   }
 

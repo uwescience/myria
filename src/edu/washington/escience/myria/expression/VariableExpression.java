@@ -38,8 +38,45 @@ public class VariableExpression extends ZeroaryExpression {
   }
 
   @Override
-  public String getJavaString() {
-    return "col" + columnIdx;
+  public String getJavaString(final Schema schema) {
+    String tName;
+    switch (getOutputType(schema)) {
+      case DOUBLE_TYPE:
+        tName = "Double";
+        break;
+
+      case LONG_TYPE:
+        tName = "Long";
+        break;
+
+      case INT_TYPE:
+        tName = "Int";
+        break;
+
+      case FLOAT_TYPE:
+        tName = "Float";
+        break;
+
+      case BOOLEAN_TYPE:
+        tName = "Boolean";
+        break;
+
+      case STRING_TYPE:
+        tName = "String";
+        break;
+
+      case DATETIME_TYPE:
+        tName = "DateTime";
+        break;
+
+      default:
+        // TODO: better exception
+        tName = getOutputType(schema).name();
+    }
+
+    // We generate a variable access into the tuple buffer. using the
+
+    return new StringBuilder("tb.get").append(tName).append("(").append(columnIdx).append(", rowId)").toString();
   }
 
   @Override

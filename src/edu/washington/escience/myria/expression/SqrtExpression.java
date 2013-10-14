@@ -31,7 +31,7 @@ public class SqrtExpression extends UnaryExpression {
   }
 
   @Override
-  public String getJavaString() {
-    return getFunctionCallUnaryString("Math.sqrt");
+  public String getJavaString(final Schema schema) {
+    return getFunctionCallUnaryString("Math.sqrt", schema);
   }
 }

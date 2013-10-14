@@ -38,12 +38,9 @@ public abstract class ExpressionOperator {
 
   /**
    * @return the entire tree represented as an expression.
+   * 
+   * @param schema the input schema
    */
   @JsonIgnore
-  public abstract String getJavaString();
-
-  @Override
-  public final String toString() {
-    return getJavaString();
-  }
+  public abstract String getJavaString(final Schema schema);
 }

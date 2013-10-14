@@ -36,7 +36,7 @@ public class MinusExpression extends BinaryExpression {
   }
 
   @Override
-  public String getJavaString() {
-    return getInfixBinaryString("-");
+  public String getJavaString(final Schema schema) {
+    return getInfixBinaryString("-", schema);
   }
 }

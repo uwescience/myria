@@ -1,6 +1,7 @@
 package edu.washington.escience.myria.operator.apply;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
@@ -20,6 +21,7 @@ import edu.washington.escience.myria.expression.PlusExpression;
 import edu.washington.escience.myria.expression.PowExpression;
 import edu.washington.escience.myria.expression.SqrtExpression;
 import edu.washington.escience.myria.expression.TimesExpression;
+import edu.washington.escience.myria.expression.ToUpperCaseExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.TupleSource;
@@ -31,18 +33,21 @@ public class ApplyTest {
   @Test
   public void testApplySqrt() throws DbException {
     final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.INT_TYPE), ImmutableList.of("a", "b", "c"));
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.INT_TYPE, Type.STRING_TYPE), ImmutableList.of(
+            "a", "b", "c", "d"));
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (long i = 0; i < NUM_TUPLES; i++) {
       tbb.put(0, (long) Math.pow(i, 2));
       tbb.put(1, i + 1);
       tbb.put(2, (int) i);
+      tbb.put(3, "Foo" + i);
     }
     ImmutableList.Builder<Expression> expressions = ImmutableList.builder();
 
     ExpressionOperator vara = new VariableExpression(0);
     ExpressionOperator varb = new VariableExpression(1);
     ExpressionOperator varc = new VariableExpression(2);
+    ExpressionOperator vard = new VariableExpression(3);
 
     {
       // Expression: Math.sqrt(a);
@@ -81,6 +86,15 @@ public class ApplyTest {
       expressions.add(exprEnc.construct());
     }
 
+    {
+      // Expression: d.toUpperCase()
+
+      ExpressionOperator upper = new ToUpperCaseExpression(vard);
+
+      ExpressionEncoding exprEnc = new ExpressionEncoding("fourth", upper);
+      expressions.add(exprEnc.construct());
+    }
+
     Apply apply = new Apply(new TupleSource(tbb), expressions.build());
 
     apply.open(null);
@@ -89,18 +103,22 @@ public class ApplyTest {
     while (!apply.eos()) {
       result = apply.nextReady();
       if (result != null) {
-        assertEquals(3, result.getSchema().numColumns());
+        assertEquals(4, result.getSchema().numColumns());
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(0));
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(1));
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(2));
+        assertEquals(Type.STRING_TYPE, result.getSchema().getColumnType(3));
 
         assertEquals("first", result.getSchema().getColumnName(0));
         assertEquals("second", result.getSchema().getColumnName(1));
+        assertEquals("third", result.getSchema().getColumnName(2));
+        assertEquals("fourth", result.getSchema().getColumnName(3));
         for (int i = 0; i < result.numTuples(); i++) {
           assertEquals(i + resultSize, result.getDouble(0, i), 0.0000001);
           long b = i + resultSize + 1;
           int c = i + resultSize;
           assertEquals((b + c) * (b - c), result.getLong(1, i));
+          assertTrue(("FOO" + (i + resultSize)).equals(result.getString(3, i)));
         }
         resultSize += result.numTuples();
       }

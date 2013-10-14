@@ -79,15 +79,16 @@ public class Apply extends UnaryOperator {
     resultBuffer = new TupleBatchBuffer(getSchema());
 
     Schema inputSchema = getChild().getSchema();
+
     int i = 0;
     for (Expression expr : expressions) {
-      expr.compile(inputSchema, getSchema().getColumnType(i++));
+      expr.compile(inputSchema, getSchema().getColumnType(i));
+      i++;
     }
   }
 
   @Override
   public Schema getSchema() {
-    // TODO: use column names
     if (schema == null) {
       ImmutableList.Builder<Type> typesBuilder = ImmutableList.builder();
       ImmutableList.Builder<String> namesBuilder = ImmutableList.builder();

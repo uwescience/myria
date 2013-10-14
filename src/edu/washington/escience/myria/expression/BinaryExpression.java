@@ -6,6 +6,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
 
+import edu.washington.escience.myria.Schema;
+
 /**
  * An ExpressionOperator with one child.
  */
@@ -54,12 +56,13 @@ public abstract class BinaryExpression extends ExpressionOperator {
    * <code>infix</code> is <code>"+"</code>.
    * 
    * @param infix the string representation of the Operator.
+   * @param schema the input schema
    * @return the Java string for this operator.
    */
   @JsonIgnore
-  protected final String getInfixBinaryString(final String infix) {
-    return new StringBuilder("(").append(getLeft().getJavaString()).append(infix).append(getRight().getJavaString())
-        .append(')').toString();
+  protected final String getInfixBinaryString(final String infix, final Schema schema) {
+    return new StringBuilder("(").append(getLeft().getJavaString(schema)).append(infix).append(
+        getRight().getJavaString(schema)).append(')').toString();
   }
 
   /**
@@ -67,11 +70,12 @@ public abstract class BinaryExpression extends ExpressionOperator {
    * {@link PowExpression}, <code>functionName</code> is <code>"Math.pow"</code>.
    * 
    * @param functionName the string representation of the Java function name.
+   * @param schema the input schema
    * @return the Java string for this operator.
    */
   @JsonIgnore
-  protected final String getFunctionCallBinaryString(final String functionName) {
-    return new StringBuilder(functionName).append('(').append(getLeft().getJavaString()).append(',').append(
-        getRight().getJavaString()).append(')').toString();
+  protected final String getFunctionCallBinaryString(final String functionName, final Schema schema) {
+    return new StringBuilder(functionName).append('(').append(getLeft().getJavaString(schema)).append(',').append(
+        getRight().getJavaString(schema)).append(')').toString();
   }
 }

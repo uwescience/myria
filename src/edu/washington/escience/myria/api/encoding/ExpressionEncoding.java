@@ -41,12 +41,15 @@ public final class ExpressionEncoding extends MyriaApiEncoding {
    * @param schema the input schema
    * @return the type of the output of the expression
    */
-  public Type getOutputType(Schema schema) {
+  public Type getOutputType(final Schema schema) {
     return rootExpressionOperator.getOutputType(schema);
   }
 
+  public String getJavaString(final Schema schema) {
+    return rootExpressionOperator.getJavaString(schema);
+  }
+
   public Expression construct() {
-    return new Expression(outputName, rootExpressionOperator.getJavaString(), ImmutableList
-        .copyOf(rootExpressionOperator.getVariables()), this);
+    return new Expression(outputName, ImmutableList.copyOf(rootExpressionOperator.getVariables()), this);
   }
 }
