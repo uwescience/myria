@@ -91,6 +91,10 @@
                     "arg_eos_controller_input": "eosReceivera",
                     "arg_initial_input": "sc2a",
                     "arg_iteration_input": "sc3a",
+                    "arg_state_updater": 
+                    {
+                        "type" : "DupElim"
+                    },
                     "arg_self_idb_id": "0",
                     "op_name": "idbinputa",
                     "op_type": "IDBInput"
@@ -204,6 +208,10 @@
                     "arg_eos_controller_input": "eosReceiverb",
                     "arg_initial_input": "sc2b",
                     "arg_iteration_input": "sc3b",
+                    "arg_state_updater": 
+                    {
+                        "type" : "DupElim"
+                    },
                     "arg_self_idb_id": "1",
                     "op_name": "idbinputb",
                     "op_type": "IDBInput"
@@ -316,6 +324,10 @@
                 {
                     "arg_eos_controller_input": "eosReceiverc",
                     "arg_initial_input": "sc2c",
+                    "arg_state_updater": 
+                    {
+                        "type" : "DupElim"
+                    },
                     "arg_iteration_input": "sc3c",
                     "arg_self_idb_id": "2",
                     "op_name": "idbinputc",
