@@ -2,6 +2,7 @@ package edu.washington.escience.myria.operator;
 
 import java.util.List;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
@@ -20,17 +21,12 @@ public class Apply extends UnaryOperator {
   /**
    * List of expressions that will be used to create the output.
    */
-  private final ImmutableList<Expression> expressions;
+  private ImmutableList<Expression> expressions;
 
   /**
    * Buffers the output tuples.
    */
   private TupleBatchBuffer resultBuffer;
-
-  /**
-   * The output schema.
-   */
-  private Schema schema;
 
   /**
    * 
@@ -39,6 +35,17 @@ public class Apply extends UnaryOperator {
    */
   public Apply(final Operator child, final List<Expression> expressions) {
     super(child);
+    if (expressions != null) {
+      setExpressions(expressions);
+    }
+  }
+
+  /**
+   * Set the expressions for each column.
+   * 
+   * @param expressions the expressions
+   */
+  private void setExpressions(final List<Expression> expressions) {
     this.expressions = ImmutableList.copyOf(expressions);
   }
 
@@ -76,6 +83,8 @@ public class Apply extends UnaryOperator {
 
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+    Preconditions.checkNotNull(expressions);
+
     resultBuffer = new TupleBatchBuffer(getSchema());
 
     Schema inputSchema = getChild().getSchema();
@@ -88,18 +97,18 @@ public class Apply extends UnaryOperator {
   }
 
   @Override
-  public Schema getSchema() {
-    if (schema == null) {
-      ImmutableList.Builder<Type> typesBuilder = ImmutableList.builder();
-      ImmutableList.Builder<String> namesBuilder = ImmutableList.builder();
-
-      for (Expression expr : expressions) {
-        typesBuilder.add(expr.getOutputType(getChild().getSchema()));
-        namesBuilder.add(expr.getOutputName());
-      }
-      schema = new Schema(typesBuilder.build(), namesBuilder.build());
+  public Schema generateSchema() {
+    if (expressions == null) {
+      return null;
     }
 
-    return schema;
+    ImmutableList.Builder<Type> typesBuilder = ImmutableList.builder();
+    ImmutableList.Builder<String> namesBuilder = ImmutableList.builder();
+
+    for (Expression expr : expressions) {
+      typesBuilder.add(expr.getOutputType(getChild().getSchema()));
+      namesBuilder.add(expr.getOutputName());
+    }
+    return new Schema(typesBuilder.build(), namesBuilder.build());
   }
 }
