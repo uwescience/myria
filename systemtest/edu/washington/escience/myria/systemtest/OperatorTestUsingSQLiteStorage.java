@@ -24,6 +24,7 @@ import edu.washington.escience.myria.operator.RightHashCountingJoin;
 import edu.washington.escience.myria.operator.RightHashJoin;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
+import edu.washington.escience.myria.operator.StreamingAggregateAdaptor;
 import edu.washington.escience.myria.operator.SymmetricHashCountingJoin;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.TBQueueExporter;
@@ -78,11 +79,11 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
 
     final DbQueryScan scanTable = new DbQueryScan(testtableKey, schema);
 
-    final DupElim dupElimOnScan = new DupElim(scanTable);
+    final StreamingAggregateAdaptor dupElimOnScan = new StreamingAggregateAdaptor(scanTable, new DupElim());
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
     final CollectProducer cp1 = new CollectProducer(dupElimOnScan, collectID, workerIDs[0]);
     final CollectConsumer cc1 = new CollectConsumer(cp1.getSchema(), collectID, workerIDs);
-    final DupElim dumElim3 = new DupElim(cc1);
+    final StreamingAggregateAdaptor dumElim3 = new StreamingAggregateAdaptor(cc1, new DupElim());
     workerPlans
         .put(workerIDs[0], new RootOperator[] { cp1, new CollectProducer(dumElim3, serverReceiveID, MASTER_ID) });
     workerPlans.put(workerIDs[1], new RootOperator[] { cp1 });
@@ -137,7 +138,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
 
     final DbQueryScan scanTable = new DbQueryScan(testtableKey, schema);
 
-    final DupElim dupElimOnScan = new DupElim(scanTable);
+    final StreamingAggregateAdaptor dupElimOnScan = new StreamingAggregateAdaptor(scanTable, new DupElim());
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
 
     final CollectProducer cp1 = new CollectProducer(dupElimOnScan, serverReceiveID, MASTER_ID);
@@ -250,8 +251,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final GenericShuffleConsumer sc2 =
         new GenericShuffleConsumer(sp2.getSchema(), table2ShuffleID, new int[] { workerIDs[0], workerIDs[1] });
 
-    final RightHashJoin localjoin =
-        new RightHashJoin(outputColumnNames, sc1, sc2, new int[] { 0 }, new int[] { 0 });
+    final RightHashJoin localjoin = new RightHashJoin(outputColumnNames, sc1, sc2, new int[] { 0 }, new int[] { 0 });
 
     final CollectProducer cp1 = new CollectProducer(localjoin, serverReceiveID, MASTER_ID);
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
@@ -476,8 +476,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final GenericShuffleConsumer sc2 =
         new GenericShuffleConsumer(sp2.getSchema(), table2ShuffleID, new int[] { workerIDs[0], workerIDs[1] });
 
-    final RightHashCountingJoin localjoin =
-        new RightHashCountingJoin(sc1, sc2, new int[] { 0 }, new int[] { 0 });
+    final RightHashCountingJoin localjoin = new RightHashCountingJoin(sc1, sc2, new int[] { 0 }, new int[] { 0 });
 
     final CollectProducer cp1 = new CollectProducer(localjoin, serverReceiveID, MASTER_ID);
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();

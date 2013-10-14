@@ -440,7 +440,7 @@ public class SingleGroupByAggregateNoBuffer extends UnaryOperator {
       return resultBuffer.popAny();
     }
 
-    if (child.eos() || child.eoi()) {
+    if (child.eos()) {
       return null;
     }
 
@@ -452,7 +452,7 @@ public class SingleGroupByAggregateNoBuffer extends UnaryOperator {
       processTupleBatch(tb);
     }
 
-    if (child.eos() || child.eoi()) {
+    if (child.eos()) {
       generateResult(resultBuffer);
     }
     return resultBuffer.popAny();

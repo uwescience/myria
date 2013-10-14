@@ -42,7 +42,7 @@ import edu.washington.escience.myria.parallel.Server;
     @Type(name = "BinaryFileScan", value = BinaryFileScanEncoding.class),
     @Type(name = "TipsyFileScan", value = TipsyFileScanEncoding.class),
     @Type(name = "EOSController", value = EOSControllerEncoding.class),
-    @Type(name = "IDBInput", value = IDBInputEncoding.class),
+    @Type(name = "IDBController", value = IDBControllerEncoding.class),
     @Type(name = "Aggregate", value = AggregateEncoding.class),
     @Type(name = "UnionAll", value = UnionAllEncoding.class),
     @Type(name = "TableScan", value = TableScanEncoding.class),
