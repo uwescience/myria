@@ -7,13 +7,13 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myria.operator.IDBInput;
+import edu.washington.escience.myria.operator.IDBController;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.Server;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class IDBInputEncoding extends OperatorEncoding<IDBInput> {
+public class IDBControllerEncoding extends OperatorEncoding<IDBController> {
   @JsonProperty
   public Integer argSelfIdbId;
   @JsonProperty
@@ -31,8 +31,8 @@ public class IDBInputEncoding extends OperatorEncoding<IDBInput> {
       "argIterationInput", "argEosControllerInput", "argStateUpdater");
 
   @Override
-  public IDBInput construct(Server server) {
-    return new IDBInput(argSelfIdbId, realControllerOperatorId, realControllerWorkerId, null, null, null,
+  public IDBController construct(Server server) {
+    return new IDBController(argSelfIdbId, realControllerOperatorId, realControllerWorkerId, null, null, null,
         argStateUpdater.construct());
   }
 

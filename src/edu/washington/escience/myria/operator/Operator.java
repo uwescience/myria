@@ -207,8 +207,8 @@ public abstract class Operator implements Serializable {
    * process EOS and EOI logic.
    * */
   protected void checkEOSAndEOI() {
-    // this is the implementation for ordinary operators, e.g. join.
-    // some operators have their own logics, e.g. LeafOperator, IDBInput.
+    // this is the implementation for ordinary operators, e.g. join, project.
+    // some operators have their own logics, e.g. LeafOperator, IDBController.
     // so they should override this function
     Operator[] children = getChildren();
     childrenEOI = getChildrenEOI();

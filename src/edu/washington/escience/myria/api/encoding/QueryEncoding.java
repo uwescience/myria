@@ -22,7 +22,7 @@ import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.api.MyriaApiException;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
-import edu.washington.escience.myria.operator.IDBInput;
+import edu.washington.escience.myria.operator.IDBController;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
@@ -164,7 +164,7 @@ public class QueryEncoding extends MyriaApiEncoding {
     Map<String, Set<Integer>> producerWorkerMap = new HashMap<String, Set<Integer>>();
     Map<ExchangePairID, Set<Integer>> consumerWorkerMap = new HashMap<ExchangePairID, Set<Integer>>();
     Map<String, List<ExchangePairID>> producerOutputChannels = new HashMap<String, List<ExchangePairID>>();
-    List<IDBInputEncoding> idbInputs = new ArrayList<IDBInputEncoding>();
+    List<IDBControllerEncoding> idbInputs = new ArrayList<IDBControllerEncoding>();
     /* Pass 1: map strings to real operator IDs, also collect producers and consumers. */
     for (PlanFragmentEncoding fragment : fragments) {
       for (OperatorEncoding<?> operator : fragment.operators) {
@@ -191,8 +191,8 @@ public class QueryEncoding extends MyriaApiEncoding {
           }
           producer.setRealOperatorIds(sourceProducerOutputChannels);
           producerWorkerMap.put(producer.opName, ImmutableSet.<Integer> builder().addAll(fragment.workers).build());
-        } else if (operator instanceof IDBInputEncoding) {
-          IDBInputEncoding idbInput = (IDBInputEncoding) operator;
+        } else if (operator instanceof IDBControllerEncoding) {
+          IDBControllerEncoding idbInput = (IDBControllerEncoding) operator;
           idbInputs.add(idbInput);
           List<ExchangePairID> sourceProducerOutputChannels = producerOutputChannels.get(idbInput.opName);
           if (sourceProducerOutputChannels == null) {
@@ -200,11 +200,10 @@ public class QueryEncoding extends MyriaApiEncoding {
             producerOutputChannels.put(idbInput.opName, sourceProducerOutputChannels);
           }
           producerWorkerMap.put(idbInput.opName, new HashSet<Integer>(fragment.workers));
-
         }
       }
     }
-    for (IDBInputEncoding idbInput : idbInputs) {
+    for (IDBControllerEncoding idbInput : idbInputs) {
       idbInput.setRealControllerOperatorID(producerOutputChannels.get(idbInput.opName).get(0));
     }
     /* Pass 2: Populate the right fields in producers and consumers. */
@@ -231,10 +230,10 @@ public class QueryEncoding extends MyriaApiEncoding {
             }
           }
           exchange.setRealWorkerIds(workers.build());
-        } else if (operator instanceof IDBInputEncoding) {
-          IDBInputEncoding idbInput = (IDBInputEncoding) operator;
-          idbInput.realControllerWorkerId =
-              MyriaUtils.getSingleElement(consumerWorkerMap.get(idbInput.getRealControllerOperatorID()));
+        } else if (operator instanceof IDBControllerEncoding) {
+          IDBControllerEncoding idbController = (IDBControllerEncoding) operator;
+          idbController.realControllerWorkerId =
+              MyriaUtils.getSingleElement(consumerWorkerMap.get(idbController.getRealControllerOperatorID()));
         }
       }
     }
@@ -266,11 +265,11 @@ public class QueryEncoding extends MyriaApiEncoding {
     Map<String, Operator> myOperators = new HashMap<String, Operator>();
     HashMap<String, AbstractConsumerEncoding<?>> nonIterativeConsumers =
         new HashMap<String, AbstractConsumerEncoding<?>>();
-    HashSet<IDBInputEncoding> idbs = new HashSet<IDBInputEncoding>();
+    HashSet<IDBControllerEncoding> idbs = new HashSet<IDBControllerEncoding>();
     /* Instantiate all the operators. */
     for (OperatorEncoding<?> encoding : planFragment.operators) {
-      if (encoding instanceof IDBInputEncoding) {
-        idbs.add((IDBInputEncoding) encoding);
+      if (encoding instanceof IDBControllerEncoding) {
+        idbs.add((IDBControllerEncoding) encoding);
       }
       if (encoding instanceof AbstractConsumerEncoding<?>) {
         nonIterativeConsumers.put(encoding.opName, (AbstractConsumerEncoding<?>) encoding);
@@ -294,7 +293,7 @@ public class QueryEncoding extends MyriaApiEncoding {
     }
     allOperators.putAll(myOperators);
 
-    for (IDBInputEncoding idb : idbs) {
+    for (IDBControllerEncoding idb : idbs) {
       nonIterativeConsumers.remove(idb.argIterationInput);
       nonIterativeConsumers.remove(idb.argEosControllerInput);
     }
@@ -320,11 +319,11 @@ public class QueryEncoding extends MyriaApiEncoding {
       encoding.connect(myOperators.get(encoding.opName), myOperators);
     }
 
-    for (IDBInputEncoding idb : idbs) {
-      IDBInput idbOp = (IDBInput) myOperators.get(idb.opName);
-      Operator initialInput = idbOp.getChildren()[IDBInput.CHILDREN_IDX_INITIAL_IDB_INPUT];
-      Consumer iterativeInput = (Consumer) idbOp.getChildren()[IDBInput.CHILDREN_IDX_ITERATION_INPUT];
-      Consumer eosControllerInput = (Consumer) idbOp.getChildren()[IDBInput.CHILDREN_IDX_EOS_CONTROLLER_INPUT];
+    for (IDBControllerEncoding idb : idbs) {
+      IDBController idbOp = (IDBController) myOperators.get(idb.opName);
+      Operator initialInput = idbOp.getChildren()[IDBController.CHILDREN_IDX_INITIAL_IDB_INPUT];
+      Consumer iterativeInput = (Consumer) idbOp.getChildren()[IDBController.CHILDREN_IDX_ITERATION_INPUT];
+      Consumer eosControllerInput = (Consumer) idbOp.getChildren()[IDBController.CHILDREN_IDX_EOS_CONTROLLER_INPUT];
       iterativeInput.setSchema(initialInput.getSchema());
       eosControllerInput.setSchema(EOSController.EOS_REPORT_SCHEMA);
     }

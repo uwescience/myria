@@ -12,9 +12,9 @@ import edu.washington.escience.myria.ExchangeTupleBatch;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.operator.IDBInput;
-import edu.washington.escience.myria.operator.UnionAll;
+import edu.washington.escience.myria.operator.IDBController;
 import edu.washington.escience.myria.operator.Operator;
+import edu.washington.escience.myria.operator.UnionAll;
 import gnu.trove.impl.unmodifiable.TUnmodifiableIntIntMap;
 import gnu.trove.map.TIntIntMap;
 import gnu.trove.map.hash.TIntIntHashMap;
@@ -34,7 +34,7 @@ public class EOSController extends Producer {
   /** The logger for this class. */
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(EOSController.class.getName());
   /**
-   * Recording the number of EOI received from each controlled {@link IDBInput}.
+   * Recording the number of EOI received from each controlled {@link IDBController}.
    * */
   private final int[][] numEOI;
   /**
@@ -57,11 +57,11 @@ public class EOSController extends Producer {
   // private final TLongIntMap idbEOSReceiverIDToIndex;
 
   /**
-   * Each worker in workerIDs has the whole array of idbOpIDS. So the total number of IDBInput operators are
+   * Each worker in workerIDs has the whole array of idbOpIDS. So the total number of IDBController operators are
    * idbOpIDs.length*workerIDs.length.
    * 
-   * @param child The child are responsible for receiving EOI report from all controlled IDBInputs.
-   * @param workerIDs the workers where the IDBInput operators resides
+   * @param child The child are responsible for receiving EOI report from all controlled IDBControllers.
+   * @param workerIDs the workers where the IDBController operators resides
    * @param idbOpIDs the IDB operatorIDs in each Worker
    * */
   public EOSController(final UnionAll child, final ExchangePairID[] idbOpIDs, final int[] workerIDs) {

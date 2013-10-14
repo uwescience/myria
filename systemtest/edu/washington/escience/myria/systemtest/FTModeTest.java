@@ -27,7 +27,7 @@ import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.EOSSource;
-import edu.washington.escience.myria.operator.IDBInput;
+import edu.washington.escience.myria.operator.IDBController;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
@@ -189,12 +189,12 @@ public class FTModeTest extends SystemTestBase {
     final Consumer eosReceiver = new Consumer(Schema.EMPTY_SCHEMA, eosReceiverOpID, new int[] { workerIDs[0] });
     eosReceiver.setOpName("eosReceiver_" + initName);
 
-    final IDBInput idbinput_worker1 =
-        new IDBInput(selfIDBID, eoiReceiverOpID, workerIDs[0], sc2, sc3_worker1, eosReceiver, new DupElim());
-    idbinput_worker1.setOpName("idbinput_worker1_" + initName);
-    final IDBInput idbinput_worker2 =
-        new IDBInput(selfIDBID, eoiReceiverOpID, workerIDs[0], sc2, sc3_worker2, eosReceiver, new DupElim());
-    idbinput_worker2.setOpName("idbinput_worker2_" + initName);
+    final IDBController idbController_worker1 =
+        new IDBController(selfIDBID, eoiReceiverOpID, workerIDs[0], sc2, sc3_worker1, eosReceiver, new DupElim());
+    idbController_worker1.setOpName("idbController_worker1_" + initName);
+    final IDBController idbController_worker2 =
+        new IDBController(selfIDBID, eoiReceiverOpID, workerIDs[0], sc2, sc3_worker2, eosReceiver, new DupElim());
+    idbController_worker2.setOpName("idbController_worker2_" + initName);
 
     final ExchangePairID[] consumerIDs = new ExchangePairID[] { ExchangePairID.newID(), null, null };
     if (sendingOpID != null) {
@@ -204,10 +204,10 @@ public class FTModeTest extends SystemTestBase {
       consumerIDs[2] = ExchangePairID.newID();
     }
     final LocalMultiwayProducer multiProducer_worker1 =
-        new LocalMultiwayProducer(idbinput_worker1, removeNull(consumerIDs));
+        new LocalMultiwayProducer(idbController_worker1, removeNull(consumerIDs));
     multiProducer_worker1.setOpName("mp_worker1_" + initName);
     final LocalMultiwayProducer multiProducer_worker2 =
-        new LocalMultiwayProducer(idbinput_worker2, removeNull(consumerIDs));
+        new LocalMultiwayProducer(idbController_worker2, removeNull(consumerIDs));
     multiProducer_worker2.setOpName("mp_worker2_" + initName);
     final LocalMultiwayConsumer send2join_worker1 = new LocalMultiwayConsumer(tableSchema, consumerIDs[0]);
     send2join_worker1.setOpName("send2join_worker1_" + initName);
@@ -412,9 +412,9 @@ public class FTModeTest extends SystemTestBase {
     generateJoinPlan(workerPlan, tableSchema, "c0", eoiReceiverOpID3, false, receivingConA, receivingBonC,
         eosReceiverOpID_idb3, serverReceiveID, 2, "abandon");
 
-    final Consumer eoiReceiver1 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID1, workerIDs);
-    final Consumer eoiReceiver2 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID2, workerIDs);
-    final Consumer eoiReceiver3 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID3, workerIDs);
+    final Consumer eoiReceiver1 = new Consumer(IDBController.EOI_REPORT_SCHEMA, eoiReceiverOpID1, workerIDs);
+    final Consumer eoiReceiver2 = new Consumer(IDBController.EOI_REPORT_SCHEMA, eoiReceiverOpID2, workerIDs);
+    final Consumer eoiReceiver3 = new Consumer(IDBController.EOI_REPORT_SCHEMA, eoiReceiverOpID3, workerIDs);
     final UnionAll unionAll = new UnionAll(new Operator[] { eoiReceiver1, eoiReceiver2, eoiReceiver3 });
     final EOSController eosController =
         new EOSController(unionAll, new ExchangePairID[] {
@@ -512,11 +512,11 @@ public class FTModeTest extends SystemTestBase {
     generateJoinPlan(workerPlan, tableSchema, "c0", eoiReceiverOpID3, false, receivingConA, receivingBonC,
         eosReceiverOpID_idb3, serverReceiveID, 2, "rejoin");
 
-    final Consumer eoiReceiver1 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID1, workerIDs);
+    final Consumer eoiReceiver1 = new Consumer(IDBController.EOI_REPORT_SCHEMA, eoiReceiverOpID1, workerIDs);
     eoiReceiver1.setOpName("eoiReceiver1");
-    final Consumer eoiReceiver2 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID2, workerIDs);
+    final Consumer eoiReceiver2 = new Consumer(IDBController.EOI_REPORT_SCHEMA, eoiReceiverOpID2, workerIDs);
     eoiReceiver2.setOpName("eoiReceiver2");
-    final Consumer eoiReceiver3 = new Consumer(IDBInput.EOI_REPORT_SCHEMA, eoiReceiverOpID3, workerIDs);
+    final Consumer eoiReceiver3 = new Consumer(IDBController.EOI_REPORT_SCHEMA, eoiReceiverOpID3, workerIDs);
     eoiReceiver3.setOpName("eoiReceiver3");
     final UnionAll unionAll = new UnionAll(new Operator[] { eoiReceiver1, eoiReceiver2, eoiReceiver3 });
     unionAll.setOpName("merge");
