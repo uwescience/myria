@@ -11,13 +11,13 @@ import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
-import edu.washington.escience.myria.operator.LocalJoin;
-import edu.washington.escience.myria.operator.UnionAll;
 import edu.washington.escience.myria.operator.Operator;
-import edu.washington.escience.myria.operator.Project;
+import edu.washington.escience.myria.operator.ColumnSelect;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
+import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.TBQueueExporter;
+import edu.washington.escience.myria.operator.UnionAll;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
@@ -89,18 +89,18 @@ public class Q9 implements QueryPlanGenerator {
     final LocalMultiwayConsumer multiTriplesOutConsumer =
         new LocalMultiwayConsumer(multiTriplesProducer.getSchema(), allTriplesOutLocalMultiWayID);
 
-    final LocalJoin joinPersonsTriplesIn =
-        new LocalJoin(multiPersonInConsumer, multiTriplesInConsumer, new int[] { 0 }, new int[] { 2 });
+    final SymmetricHashJoin joinPersonsTriplesIn =
+        new SymmetricHashJoin(multiPersonInConsumer, multiTriplesInConsumer, new int[] { 0 }, new int[] { 2 });
     // schema: (personID long, subject long, predicateName String, personID long)
 
-    final Project projInPredicates = new Project(new int[] { 2 }, joinPersonsTriplesIn);
+    final ColumnSelect projInPredicates = new ColumnSelect(new int[] { 2 }, joinPersonsTriplesIn);
     // schema: (predicateName string)
 
-    final LocalJoin joinPersonsTriplesOut =
-        new LocalJoin(multiPersonOutConsumer, multiTriplesOutConsumer, new int[] { 0 }, new int[] { 0 });
+    final SymmetricHashJoin joinPersonsTriplesOut =
+        new SymmetricHashJoin(multiPersonOutConsumer, multiTriplesOutConsumer, new int[] { 0 }, new int[] { 0 });
     // schema: (personID long, personID long, predicateName String, object long)
 
-    final Project projOutPredicates = new Project(new int[] { 2 }, joinPersonsTriplesOut);
+    final ColumnSelect projOutPredicates = new ColumnSelect(new int[] { 2 }, joinPersonsTriplesOut);
     // schema: (predicateName String)
 
     final UnionAll union = new UnionAll(new Operator[] { projInPredicates, projOutPredicates });

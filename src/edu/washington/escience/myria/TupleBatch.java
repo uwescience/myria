@@ -582,12 +582,13 @@ public class TupleBatch implements Serializable {
   /**
    * Creates a new TupleBatch with only the indicated columns.
    * 
-   * Internal implementation of a (non-duplicate-eliminating) PROJECT statement.
+   * Internal implementation of column selection, like a relational algebra project operator but without duplicate
+   * elimination.
    * 
    * @param remainingColumns zero-indexed array of columns to retain.
-   * @return a projected TupleBatch.
+   * @return a TupleBatch with only the specified columns remaining.
    */
-  public final TupleBatch project(final int[] remainingColumns) {
+  public final TupleBatch selectColumns(final int[] remainingColumns) {
     Objects.requireNonNull(remainingColumns);
     final ImmutableList.Builder<Type> newTypes = new ImmutableList.Builder<Type>();
     final ImmutableList.Builder<String> newNames = new ImmutableList.Builder<String>();
@@ -603,14 +604,15 @@ public class TupleBatch implements Serializable {
   /**
    * Creates a new TupleBatch with only the indicated columns.
    * 
-   * Internal implementation of a (non-duplicate-eliminating) PROJECT statement.
+   * Internal implementation of column selection, like a relational algebra project operator but without duplicate
+   * elimination.
    * 
    * @param remainingColumns zero-indexed array of columns to retain.
-   * @return a projected TupleBatch.
+   * @return a TupleBatch with only the specified columns remaining.
    */
-  public final TupleBatch project(final Integer[] remainingColumns) {
+  public final TupleBatch selectColumns(final Integer[] remainingColumns) {
     Objects.requireNonNull(remainingColumns);
-    return project(Ints.toArray(Arrays.asList(remainingColumns)));
+    return selectColumns(Ints.toArray(Arrays.asList(remainingColumns)));
   }
 
   /**

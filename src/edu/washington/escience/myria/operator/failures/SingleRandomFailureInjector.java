@@ -134,8 +134,12 @@ public class SingleRandomFailureInjector extends UnaryOperator {
   }
 
   @Override
-  public final Schema getSchema() {
-    return getChild().getSchema();
+  protected final Schema generateSchema() {
+    Operator child = getChild();
+    if (child == null) {
+      return null;
+    }
+    return child.getSchema();
   }
 
 }

@@ -7,6 +7,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 
 /**
@@ -76,5 +77,17 @@ public final class UnionAll extends NAryOperator {
       Preconditions.checkArgument(getSchema().equals(child.getSchema()));
       childrenWithData.add(child);
     }
+  }
+
+  @Override
+  public Schema generateSchema() {
+    Operator[] children = getChildren();
+    if (children == null) {
+      return null;
+    }
+    if (children[0] == null) {
+      return null;
+    }
+    return children[0].getSchema();
   }
 }

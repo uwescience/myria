@@ -18,7 +18,7 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
-import edu.washington.escience.myria.operator.LocalJoin;
+import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.TBQueueExporter;
@@ -159,7 +159,7 @@ public class IterativeSelfJoinTest extends SystemTestBase {
     final GenericShuffleConsumer sc0[] = new GenericShuffleConsumer[numIteration];
     final GenericShuffleConsumer sc1[] = new GenericShuffleConsumer[numIteration];
     final GenericShuffleConsumer sc2[] = new GenericShuffleConsumer[numIteration];
-    final LocalJoin localjoin[] = new LocalJoin[numIteration];
+    final SymmetricHashJoin localjoin[] = new SymmetricHashJoin[numIteration];
     final DupElim dupelim[] = new DupElim[numIteration];
     final DbQueryScan scan[] = new DbQueryScan[numIteration];
     ExchangePairID arrayID1, arrayID2, arrayID0;
@@ -175,7 +175,7 @@ public class IterativeSelfJoinTest extends SystemTestBase {
 
       sc1[i] = new GenericShuffleConsumer(sp1[i - 1].getSchema(), arrayID1, new int[] { workerIDs[0], workerIDs[1] });
       sc2[i] = new GenericShuffleConsumer(sp2[i - 1].getSchema(), arrayID2, new int[] { workerIDs[0], workerIDs[1] });
-      localjoin[i] = new LocalJoin(sc1[i], sc2[i], new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
+      localjoin[i] = new SymmetricHashJoin(sc1[i], sc2[i], new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
       arrayID0 = ExchangePairID.newID();
 
       sp0[i] = new GenericShuffleProducer(localjoin[i], arrayID0, new int[] { workerIDs[0], workerIDs[1] }, pf0);

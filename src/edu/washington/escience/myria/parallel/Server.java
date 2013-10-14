@@ -52,6 +52,7 @@ import edu.washington.escience.myria.coordinator.catalog.MasterCatalog;
 import edu.washington.escience.myria.operator.DataOutput;
 import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
+import edu.washington.escience.myria.operator.EOSSource;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
@@ -716,6 +717,12 @@ public final class Server {
     messageProcessingExecutor.shutdownNow();
     scheduledTaskExecutor.shutdownNow();
 
+    /*
+     * Close the catalog before shutting down the IPC because there may be Catalog jobs pending that were triggered by
+     * IPC events.
+     */
+    catalog.close();
+
     while (aliveWorkers.size() > 0) {
       // TODO add process kill
       for (final Integer workerId : aliveWorkers.keySet()) {
@@ -751,7 +758,6 @@ public final class Server {
     if (LOGGER.isInfoEnabled()) {
       LOGGER.info("Master connection pool shutdown complete.");
     }
-    catalog.close();
 
     if (LOGGER.isInfoEnabled()) {
       LOGGER.info("Master finishes cleanup.");
@@ -1136,9 +1142,10 @@ public final class Server {
    * @param schema the schema of the dataset to import
    * @param workersToImportFrom the set of workers
    * @throws DbException if there is an error
+   * @throws InterruptedException interrupted
    */
   public void importDataset(final RelationKey relationKey, final Schema schema, final Set<Integer> workersToImportFrom)
-      throws DbException {
+      throws DbException, InterruptedException {
 
     /* Figure out the workers we will use. If workersToIngest is null, use all active workers. */
     Set<Integer> actualWorkers = workersToImportFrom;
@@ -1147,9 +1154,18 @@ public final class Server {
     }
 
     try {
+      Map<Integer, SingleQueryPlanWithArgs> workerPlans = new HashMap<Integer, SingleQueryPlanWithArgs>();
+      for (Integer workerId : actualWorkers) {
+        workerPlans.put(workerId, new SingleQueryPlanWithArgs(new SinkRoot(new EOSSource())));
+      }
+      QueryFuture qf =
+          submitQuery("import " + relationKey.toString("sqlite"), "import " + relationKey.toString("sqlite"),
+              "import " + relationKey.toString("sqlite"), new SingleQueryPlanWithArgs(new SinkRoot(new EOSSource())),
+              workerPlans).sync();
+
       /* Now that the query has finished, add the metadata about this relation to the dataset. */
       /* TODO(dhalperi) -- figure out how to populate the numTuples column. */
-      catalog.addRelationMetadata(relationKey, schema, -1, -1);
+      catalog.addRelationMetadata(relationKey, schema, -1, qf.getQuery().getQueryID());
       /* Add the round robin-partitioned shard. */
       catalog.addStoredRelation(relationKey, actualWorkers, "RoundRobin");
     } catch (CatalogException e) {

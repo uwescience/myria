@@ -28,8 +28,6 @@ public final class DirectApply extends UnaryOperator {
 
   /** the field we want to apply the function on. */
   private final List<IFunctionCaller> callers;
-  /** the resulting schema. */
-  private Schema schema;
 
   /**
    * output buffer.
@@ -71,7 +69,7 @@ public final class DirectApply extends UnaryOperator {
           final ImmutableList.Builder<Number> srcNums = ImmutableList.builder();
           Number value = null;
           for (Integer index : callers.get(j).getApplyField()) {
-            Type applyFieldType = schema.getColumnType(index);
+            Type applyFieldType = getSchema().getColumnType(index);
             if (applyFieldType == Type.INT_TYPE) {
               srcNums.add(tb.getInt(index, i));
             } else if (applyFieldType == Type.LONG_TYPE) {
@@ -98,13 +96,20 @@ public final class DirectApply extends UnaryOperator {
   }
 
   @Override
-  public Schema getSchema() {
-    return schema;
+  protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+    resultBuffer = new TupleBatchBuffer(getSchema());
   }
 
   @Override
-  protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    final Schema childSchema = getChild().getSchema();
+  protected Schema generateSchema() {
+    final Operator child = getChild();
+    if (child == null) {
+      return null;
+    }
+    final Schema childSchema = child.getSchema();
+    if (childSchema == null) {
+      return null;
+    }
 
     final ImmutableList.Builder<Type> schemaTypes = ImmutableList.builder();
     final ImmutableList.Builder<String> schemaNames = ImmutableList.builder();
@@ -124,8 +129,7 @@ public final class DirectApply extends UnaryOperator {
       schemaTypes.add(caller.getResultType(typesList.build()));
     }
 
-    schema = new Schema(schemaTypes, schemaNames);
-    resultBuffer = new TupleBatchBuffer(schema);
+    return new Schema(schemaTypes, schemaNames);
   }
 
 }

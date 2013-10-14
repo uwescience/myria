@@ -1,6 +1,5 @@
 package edu.washington.escience.myria.operator;
 
-import edu.washington.escience.myria.Schema;
 
 /**
  * 
@@ -53,11 +52,6 @@ public abstract class NAryOperator extends Operator {
   @Override
   public final void setChildren(final Operator[] children) {
     this.children = children;
-  }
-
-  @Override
-  public Schema getSchema() {
-    return children[0].getSchema();
   }
 
   /**

@@ -10,6 +10,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
@@ -249,6 +250,17 @@ public final class Merge extends NAryOperator {
 
     Comparator<Integer> comparator = new TupleComparator();
     heap = new PriorityQueue<Integer>(getNumChildren(), comparator);
+  }
+
+  @Override
+  public Schema generateSchema() {
+    if (getChildren() == null) {
+      return null;
+    }
+    if (getChild(0) == null) {
+      return null;
+    }
+    return getChild(0).getSchema();
   }
 
   /**

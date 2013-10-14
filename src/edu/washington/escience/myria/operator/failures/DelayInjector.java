@@ -75,8 +75,12 @@ public class DelayInjector extends UnaryOperator {
   }
 
   @Override
-  public final Schema getSchema() {
-    return getChild().getSchema();
+  public final Schema generateSchema() {
+    Operator child = getChild();
+    if (child == null) {
+      return null;
+    }
+    return child.getSchema();
   }
 
 }

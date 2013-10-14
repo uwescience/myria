@@ -1,13 +1,5 @@
 package edu.washington.escience.myria.operator;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
@@ -17,6 +9,14 @@ import edu.washington.escience.myria.Type;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.hash.TIntObjectHashMap;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+
 /**
  * This is an implementation of unbalanced hash join. This operator only builds hash tables for its right child, thus
  * will begin to output tuples after right child EOS.
@@ -24,17 +24,13 @@ import gnu.trove.map.hash.TIntObjectHashMap;
  * @author Shumo Chu <chushumo@cs.washington.edu>
  * 
  */
-public final class LocalUnbalancedJoin extends BinaryOperator {
+public final class RightHashJoin extends BinaryOperator {
 
   /**
    * This is required for serialization.
    */
   private static final long serialVersionUID = 1L;
 
-  /**
-   * The result schema.
-   */
-  private Schema outputSchema;
   /**
    * The names of the output columns.
    */
@@ -77,7 +73,7 @@ public final class LocalUnbalancedJoin extends BinaryOperator {
    * @param compareIndx2 the columns of the right child to be compared with the left. Order matters.
    * @throw IllegalArgumentException if there are duplicated column names from the children.
    */
-  public LocalUnbalancedJoin(final Operator left, final Operator right, final int[] compareIndx1,
+  public RightHashJoin(final Operator left, final Operator right, final int[] compareIndx1,
       final int[] compareIndx2) {
     this(null, left, right, compareIndx1, compareIndx2);
   }
@@ -95,7 +91,7 @@ public final class LocalUnbalancedJoin extends BinaryOperator {
    * @throw IllegalArgumentException if there are duplicated column names in <tt>outputSchema</tt>, or if
    *        <tt>outputSchema</tt> does not have the correct number of columns and column types.
    */
-  public LocalUnbalancedJoin(final Operator left, final Operator right, final int[] compareIndx1,
+  public RightHashJoin(final Operator left, final Operator right, final int[] compareIndx1,
       final int[] compareIndx2, final int[] answerColumns1, final int[] answerColumns2) {
     this(null, left, right, compareIndx1, compareIndx2, answerColumns1, answerColumns2);
   }
@@ -115,7 +111,7 @@ public final class LocalUnbalancedJoin extends BinaryOperator {
    * @throw IllegalArgumentException if there are duplicated column names in <tt>outputColumns</tt>, or if
    *        <tt>outputColumns</tt> does not have the correct number of columns and column types.
    */
-  public LocalUnbalancedJoin(final List<String> outputColumns, final Operator left, final Operator right,
+  public RightHashJoin(final List<String> outputColumns, final Operator left, final Operator right,
       final int[] compareIndx1, final int[] compareIndx2, final int[] answerColumns1, final int[] answerColumns2) {
     super(left, right);
     Preconditions.checkArgument(compareIndx1.length == compareIndx2.length);
@@ -150,7 +146,7 @@ public final class LocalUnbalancedJoin extends BinaryOperator {
    * @throw IllegalArgumentException if there are duplicated column names in <tt>outputSchema</tt>, or if
    *        <tt>outputSchema</tt> does not have the correct number of columns and column types.
    */
-  public LocalUnbalancedJoin(final List<String> outputColumns, final Operator left, final Operator right,
+  public RightHashJoin(final List<String> outputColumns, final Operator left, final Operator right,
       final int[] compareIndx1, final int[] compareIndx2) {
     this(outputColumns, left, right, compareIndx1, compareIndx2, range(left.getSchema().numColumns()), range(right
         .getSchema().numColumns()));
@@ -170,10 +166,8 @@ public final class LocalUnbalancedJoin extends BinaryOperator {
     return ret;
   }
 
-  /**
-   * Generate the proper output schema from the parameters.
-   */
-  private void generateSchema() {
+  @Override
+  protected Schema generateSchema() {
     final Operator left = getLeft();
     final Operator right = getRight();
     ImmutableList.Builder<Type> types = ImmutableList.builder();
@@ -190,9 +184,9 @@ public final class LocalUnbalancedJoin extends BinaryOperator {
     }
 
     if (outputColumns != null) {
-      outputSchema = new Schema(types.build(), outputColumns);
+      return new Schema(types.build(), outputColumns);
     } else {
-      outputSchema = new Schema(types, names);
+      return new Schema(types, names);
     }
   }
 
@@ -301,19 +295,11 @@ public final class LocalUnbalancedJoin extends BinaryOperator {
   }
 
   @Override
-  public Schema getSchema() {
-    return outputSchema;
-  }
-
-  @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     final Operator right = getRight();
     hashTableIndices = new TIntObjectHashMap<TIntArrayList>();
     hashTable = new TupleBuffer(right.getSchema());
-    if (outputSchema == null) {
-      generateSchema();
-    }
-    ans = new TupleBatchBuffer(outputSchema);
+    ans = new TupleBatchBuffer(getSchema());
   }
 
   /**
