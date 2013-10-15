@@ -1,8 +1,8 @@
-package edu.washington.escience.myria.column;
+package edu.washington.escience.myria.column.builder;
 
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
-import java.nio.LongBuffer;
+import java.nio.FloatBuffer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -12,16 +12,17 @@ import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.column.mutable.LongMutableColumn;
+import edu.washington.escience.myria.column.FloatColumn;
+import edu.washington.escience.myria.column.mutable.FloatMutableColumn;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 
 /**
- * A column of Long values.
+ * A column of Float values.
  * 
  */
-public final class LongColumnBuilder implements ColumnBuilder<Long> {
-  /** View of the column data as longs. */
-  private final LongBuffer data;
+public final class FloatColumnBuilder implements ColumnBuilder<Float> {
+  /** View of the column data as floats. */
+  private final FloatBuffer data;
 
   /**
    * If the builder has built the column.
@@ -29,8 +30,8 @@ public final class LongColumnBuilder implements ColumnBuilder<Long> {
   private boolean built = false;
 
   /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
-  public LongColumnBuilder() {
-    data = LongBuffer.allocate(TupleBatch.BATCH_SIZE);
+  public FloatColumnBuilder() {
+    data = FloatBuffer.allocate(TupleBatch.BATCH_SIZE);
   }
 
   /**
@@ -38,35 +39,35 @@ public final class LongColumnBuilder implements ColumnBuilder<Long> {
    * 
    * @param data the underlying data
    * */
-  private LongColumnBuilder(final LongBuffer data) {
+  private FloatColumnBuilder(final FloatBuffer data) {
     this.data = data;
   }
 
   /**
-   * Constructs a LongColumn by deserializing the given ColumnMessage.
+   * Constructs a FloatColumn by deserializing the given ColumnMessage.
    * 
    * @param message a ColumnMessage containing the contents of this column.
    * @param numTuples num tuples in the column message
    * @return the built column
    */
-  public static LongColumn buildFromProtobuf(final ColumnMessage message, final int numTuples) {
-    if (message.getType().ordinal() != ColumnMessage.Type.LONG_VALUE) {
-      throw new IllegalArgumentException("Trying to construct LongColumn from non-LONG ColumnMessage");
+  public static FloatColumn buildFromProtobuf(final ColumnMessage message, final int numTuples) {
+    if (message.getType().ordinal() != ColumnMessage.Type.FLOAT_VALUE) {
+      throw new IllegalArgumentException("Trying to construct FloatColumn from non-FLOAT ColumnMessage");
     }
-    if (!message.hasLongColumn()) {
-      throw new IllegalArgumentException("ColumnMessage has type LONG but no LongColumn");
+    if (!message.hasFloatColumn()) {
+      throw new IllegalArgumentException("ColumnMessage has type FLOAT but no FloatColumn");
     }
-    ByteBuffer dataBytes = message.getLongColumn().getData().asReadOnlyByteBuffer();
-    LongBuffer newData = LongBuffer.allocate(numTuples);
+    ByteBuffer dataBytes = message.getFloatColumn().getData().asReadOnlyByteBuffer();
+    FloatBuffer data = FloatBuffer.allocate(numTuples);
     for (int i = 0; i < numTuples; i++) {
-      newData.put(dataBytes.getLong());
+      data.put(dataBytes.getFloat());
     }
-    return new LongColumnBuilder(newData).build();
+    return new FloatColumn(data.array(), numTuples);
   }
 
   @Override
   public Type getType() {
-    return Type.LONG_TYPE;
+    return Type.FLOAT_TYPE;
   }
 
   /**
@@ -76,36 +77,36 @@ public final class LongColumnBuilder implements ColumnBuilder<Long> {
    * @return this column.
    * @throws BufferOverflowException if exceeds buffer up bound.
    */
-  public LongColumnBuilder append(final long value) throws BufferOverflowException {
+  public FloatColumnBuilder append(final float value) throws BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
     data.put(value);
     return this;
   }
 
   @Override
-  public ColumnBuilder<Long> appendFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException,
+  public FloatColumnBuilder appendObject(final Object value) throws BufferOverflowException {
+    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
+    return append((Float) value);
+  }
+
+  @Override
+  public FloatColumnBuilder appendFromJdbc(final ResultSet resultSet, final int jdbcIndex) throws SQLException,
       BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    return append(resultSet.getLong(jdbcIndex));
+    return append(resultSet.getFloat(jdbcIndex));
   }
 
   @Override
-  public ColumnBuilder<Long> appendFromSQLite(final SQLiteStatement statement, final int index) throws SQLiteException,
+  public FloatColumnBuilder appendFromSQLite(final SQLiteStatement statement, final int index) throws SQLiteException,
       BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    return append(statement.columnLong(index));
+    return append((float) statement.columnDouble(index));
   }
 
   @Override
-  public ColumnBuilder<Long> append(final Long value) throws BufferOverflowException {
+  public FloatColumnBuilder append(final Float value) throws BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    return append(value.longValue());
-  }
-
-  @Override
-  public ColumnBuilder<Long> appendObject(final Object value) throws BufferOverflowException {
-    Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    return append((Long) value);
+    return append(value.floatValue());
   }
 
   @Override
@@ -114,21 +115,21 @@ public final class LongColumnBuilder implements ColumnBuilder<Long> {
   }
 
   @Override
-  public LongColumn build() {
+  public FloatColumn build() {
     built = true;
-    return new LongColumn(data.array(), data.position());
+    return new FloatColumn(data.array(), data.position());
   }
 
   @Override
-  public LongMutableColumn buildMutable() {
+  public FloatMutableColumn buildMutable() {
     built = true;
-    return new LongMutableColumn(data.array(), data.position());
+    return new FloatMutableColumn(data.array(), data.position());
   }
 
   @Override
   @Deprecated
-  public ColumnBuilder<Long> replace(final int idx, final Long value) throws IndexOutOfBoundsException {
-    return replace(idx, value.longValue());
+  public FloatColumnBuilder replace(final int idx, final Float value) throws IndexOutOfBoundsException {
+    return replace(idx, value.floatValue());
   }
 
   /**
@@ -139,7 +140,7 @@ public final class LongColumnBuilder implements ColumnBuilder<Long> {
    * @return this column builder.
    * @throws IndexOutOfBoundsException if the idx exceeds the currently valid indices, i.e. the currently built size.
    */
-  public ColumnBuilder<Long> replace(final int idx, final long value) throws IndexOutOfBoundsException {
+  public FloatColumnBuilder replace(final int idx, final float value) throws IndexOutOfBoundsException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
     Preconditions.checkElementIndex(idx, data.position());
     data.put(idx, value);
@@ -147,7 +148,7 @@ public final class LongColumnBuilder implements ColumnBuilder<Long> {
   }
 
   @Override
-  public ColumnBuilder<Long> expand(final int size) {
+  public FloatColumnBuilder expand(final int size) {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
     Preconditions.checkArgument(size >= 0);
     data.position(data.position() + size);
@@ -155,15 +156,15 @@ public final class LongColumnBuilder implements ColumnBuilder<Long> {
   }
 
   @Override
-  public ColumnBuilder<Long> expandAll() {
+  public FloatColumnBuilder expandAll() {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    data.position(data.limit());
+    data.position(data.capacity());
     return this;
   }
 
   @Override
   @Deprecated
-  public Long get(final int row) {
+  public Float get(final int row) {
     return data.get(row);
   }
 
@@ -171,15 +172,14 @@ public final class LongColumnBuilder implements ColumnBuilder<Long> {
    * @param row the row to get
    * @return primitive value of the row
    * */
-  public long getLong(final int row) {
+  public float getFloat(final int row) {
     return data.get(row);
   }
 
   @Override
-  public LongColumnBuilder forkNewBuilder() {
-    long[] arr = new long[data.array().length];
-    System.arraycopy(data.array(), 0, arr, 0, arr.length);
-    return new LongColumnBuilder((LongBuffer) LongBuffer.wrap(arr).position(data.position()).limit(data.limit()));
+  public FloatColumnBuilder forkNewBuilder() {
+    float[] arr = new float[data.array().length];
+    System.arraycopy(data.array(), 0, arr, 0, data.position());
+    return new FloatColumnBuilder((FloatBuffer) FloatBuffer.wrap(arr).position(data.position()).limit(data.limit()));
   }
-
 }

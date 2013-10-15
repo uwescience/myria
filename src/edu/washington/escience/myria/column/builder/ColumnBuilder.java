@@ -1,4 +1,4 @@
-package edu.washington.escience.myria.column;
+package edu.washington.escience.myria.column.builder;
 
 import java.nio.BufferOverflowException;
 import java.sql.ResultSet;
@@ -8,6 +8,7 @@ import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.mutable.MutableColumn;
 
 /**

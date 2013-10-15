@@ -11,22 +11,22 @@ import org.joda.time.DateTime;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.column.BooleanColumn;
-import edu.washington.escience.myria.column.BooleanColumnBuilder;
 import edu.washington.escience.myria.column.Column;
-import edu.washington.escience.myria.column.ColumnBuilder;
-import edu.washington.escience.myria.column.ColumnFactory;
 import edu.washington.escience.myria.column.DateTimeColumn;
-import edu.washington.escience.myria.column.DateTimeColumnBuilder;
 import edu.washington.escience.myria.column.DoubleColumn;
-import edu.washington.escience.myria.column.DoubleColumnBuilder;
 import edu.washington.escience.myria.column.FloatColumn;
-import edu.washington.escience.myria.column.FloatColumnBuilder;
 import edu.washington.escience.myria.column.IntColumn;
-import edu.washington.escience.myria.column.IntColumnBuilder;
 import edu.washington.escience.myria.column.LongColumn;
-import edu.washington.escience.myria.column.LongColumnBuilder;
 import edu.washington.escience.myria.column.StringColumn;
-import edu.washington.escience.myria.column.StringColumnBuilder;
+import edu.washington.escience.myria.column.builder.BooleanColumnBuilder;
+import edu.washington.escience.myria.column.builder.ColumnBuilder;
+import edu.washington.escience.myria.column.builder.ColumnFactory;
+import edu.washington.escience.myria.column.builder.DateTimeColumnBuilder;
+import edu.washington.escience.myria.column.builder.DoubleColumnBuilder;
+import edu.washington.escience.myria.column.builder.FloatColumnBuilder;
+import edu.washington.escience.myria.column.builder.IntColumnBuilder;
+import edu.washington.escience.myria.column.builder.LongColumnBuilder;
+import edu.washington.escience.myria.column.builder.StringColumnBuilder;
 
 /**
  * Used for creating TupleBatch objects on the fly. A helper class used in, e.g., the Scatter operator. Currently it

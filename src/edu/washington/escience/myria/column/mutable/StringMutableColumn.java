@@ -11,8 +11,8 @@ import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
-import edu.washington.escience.myria.column.ColumnBuilder;
-import edu.washington.escience.myria.column.StringColumnBuilder;
+import edu.washington.escience.myria.column.builder.ColumnBuilder;
+import edu.washington.escience.myria.column.builder.StringColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.StringColumnMessage;
 import edu.washington.escience.myria.util.TypeFunnel;

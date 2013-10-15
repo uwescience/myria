@@ -16,7 +16,7 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.column.Column;
-import edu.washington.escience.myria.column.ColumnFactory;
+import edu.washington.escience.myria.column.builder.ColumnFactory;
 import edu.washington.escience.myria.parallel.QueryExecutionStatistics;
 import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
 import edu.washington.escience.myria.parallel.SocketInfo;

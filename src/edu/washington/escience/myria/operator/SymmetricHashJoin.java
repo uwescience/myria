@@ -8,7 +8,7 @@ import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
-import edu.washington.escience.myria.column.ColumnBuilder;
+import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.parallel.QueryExecutionMode;
 import edu.washington.escience.myria.parallel.TaskResourceManager;
 import edu.washington.escience.myria.util.MyriaArrayUtils;

@@ -8,8 +8,8 @@ import org.junit.Test;
 
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.column.IntColumn;
-import edu.washington.escience.myria.column.IntColumnBuilder;
 import edu.washington.escience.myria.column.IntProtoColumn;
+import edu.washington.escience.myria.column.builder.IntColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 
 public class IntColumnTest {

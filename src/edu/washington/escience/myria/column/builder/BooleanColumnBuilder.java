@@ -1,4 +1,4 @@
-package edu.washington.escience.myria.column;
+package edu.washington.escience.myria.column.builder;
 
 import java.nio.BufferOverflowException;
 import java.sql.ResultSet;
@@ -11,6 +11,7 @@ import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.BooleanColumn;
 import edu.washington.escience.myria.column.mutable.BooleanMutableColumn;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 
