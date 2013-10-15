@@ -1,6 +1,5 @@
 package edu.washington.escience.myria.expression;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import edu.washington.escience.myria.Schema;
@@ -14,15 +13,23 @@ public class VariableExpression extends ZeroaryExpression {
   private static final long serialVersionUID = 1L;
 
   /** The index in the input that this {@link VariableExpression} references. */
+  @JsonProperty
   private final int columnIdx;
+
+  /**
+   * This is not really unused, it's used automagically by Jackson deserialization.
+   */
+  @SuppressWarnings("unused")
+  private VariableExpression() {
+    columnIdx = -1;
+  }
 
   /**
    * A {@link VariableExpression} that references column <code>columnIdx</code> from the input.
    * 
    * @param columnIdx the index in the input that this {@link VariableExpression} references.
    */
-  @JsonCreator
-  public VariableExpression(@JsonProperty("column_idx") final int columnIdx) {
+  public VariableExpression(final int columnIdx) {
     this.columnIdx = columnIdx;
   }
 
@@ -33,7 +40,7 @@ public class VariableExpression extends ZeroaryExpression {
 
   @Override
   public String getJavaString(final Schema schema) {
-    String tName;
+    String tName = null;
     switch (getOutputType(schema)) {
       case INT_TYPE:
         tName = "Int";
@@ -62,10 +69,6 @@ public class VariableExpression extends ZeroaryExpression {
       case DATETIME_TYPE:
         tName = "DateTime";
         break;
-
-      default:
-        // TODO: better exception
-        tName = getOutputType(schema).name();
     }
 
     // We generate a variable access into the tuple buffer.

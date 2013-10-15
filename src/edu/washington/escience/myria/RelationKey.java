@@ -15,11 +15,24 @@ public final class RelationKey implements Serializable {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** The user who owns/creates this relation. */
+  @JsonProperty
   private final String userName;
   /** The user's program that owns/creates this relation. */
+  @JsonProperty
   private final String programName;
   /** The name of the relation. */
+  @JsonProperty
   private final String relationName;
+
+  /**
+   * This is not really unused, it's used automagically by Jackson deserialization.
+   */
+  @SuppressWarnings("unused")
+  private RelationKey() {
+    userName = null;
+    programName = null;
+    relationName = null;
+  }
 
   /**
    * Static function to create a RelationKey object.
@@ -40,8 +53,7 @@ public final class RelationKey implements Serializable {
    * @param programName the user's program that owns/creates this relation.
    * @param relationName the name of the relation.
    */
-  public RelationKey(@JsonProperty("user_name") final String userName,
-      @JsonProperty("program_name") final String programName, @JsonProperty("relation_name") final String relationName) {
+  public RelationKey(final String userName, final String programName, final String relationName) {
     Objects.requireNonNull(userName);
     Objects.requireNonNull(programName);
     Objects.requireNonNull(relationName);
