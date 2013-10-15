@@ -64,8 +64,8 @@ public class OperatorTest {
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
 
     for (Entry<Long, String> entry : entries) {
-      tbb.put(0, entry.getKey());
-      tbb.put(1, entry.getValue());
+      tbb.putLong(0, entry.getKey());
+      tbb.putString(1, entry.getValue());
     }
     return tbb;
   }

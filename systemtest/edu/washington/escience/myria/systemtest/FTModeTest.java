@@ -101,8 +101,8 @@ public class FTModeTest extends SystemTestBase {
     for (int i = 0; i < MaxID; ++i) {
       for (int j = 0; j < MaxID; ++j) {
         if (s[i][j]) {
-          result.put(0, (long) i);
-          result.put(1, (long) j);
+          result.putLong(0, i);
+          result.putLong(1, j);
         }
       }
     }
@@ -124,12 +124,12 @@ public class FTModeTest extends SystemTestBase {
     TupleBatchBuffer tblAWorker1 = new TupleBatchBuffer(tableSchema);
     TupleBatchBuffer tblAWorker2 = new TupleBatchBuffer(tableSchema);
     for (int i = 0; i < numTbl1Worker1; i++) {
-      tblAWorker1.put(0, tblAID1Worker1[i]);
-      tblAWorker1.put(1, tblAID2Worker1[i]);
+      tblAWorker1.putLong(0, tblAID1Worker1[i]);
+      tblAWorker1.putLong(1, tblAID2Worker1[i]);
     }
     for (int i = 0; i < numTbl1Worker2; i++) {
-      tblAWorker2.put(0, tblAID1Worker2[i]);
-      tblAWorker2.put(1, tblAID2Worker2[i]);
+      tblAWorker2.putLong(0, tblAID1Worker2[i]);
+      tblAWorker2.putLong(1, tblAID2Worker2[i]);
     }
     TupleBatchBuffer table1 = new TupleBatchBuffer(tableSchema);
     table1.unionAll(tblAWorker1);
@@ -356,8 +356,8 @@ public class FTModeTest extends SystemTestBase {
     for (int i = 0; i < MaxID; ++i) {
       for (int j = 0; j < MaxID; ++j) {
         if (s3[i][j]) {
-          result.put(0, (long) i);
-          result.put(1, (long) j);
+          result.putLong(0, i);
+          result.putLong(1, j);
           if (LOGGER.isTraceEnabled()) {
             LOGGER.trace(i + "\t" + j);
           }

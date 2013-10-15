@@ -31,8 +31,8 @@ public class NoBufferAggregateTest {
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
-      tbb.put(0, ids[i]);
-      tbb.put(1, names[i]);
+      tbb.putLong(0, ids[i]);
+      tbb.putString(1, names[i]);
     }
     return tbb;
   }
@@ -325,15 +325,15 @@ public class NoBufferAggregateTest {
     // inserting { 0, 1, 2, i / 2 } on even rows, { 0, 1, 4, i / 2 } on odd rows
     for (long i = 0; i < numTuples; i++) {
       long value = i / 2;
-      tbb.put(0, 0L);
-      tbb.put(1, 1L);
+      tbb.putLong(0, 0L);
+      tbb.putLong(1, 1L);
       if (i % 2 == 0) {
-        tbb.put(2, 2L);
+        tbb.putLong(2, 2L);
         expectedSecond += value;
       } else {
-        tbb.put(2, 4L);
+        tbb.putLong(2, 4L);
       }
-      tbb.put(3, value);
+      tbb.putLong(3, value);
       expectedFirst += value;
     }
 
@@ -371,8 +371,8 @@ public class NoBufferAggregateTest {
             "value")));
     int sum = 0;
     for (int i = from; i <= to; ++i) {
-      testBase.put(0, Integer.valueOf(0));
-      testBase.put(1, Integer.valueOf(i));
+      testBase.putInt(0, 0);
+      testBase.putInt(1, i);
       sum += i;
     }
 

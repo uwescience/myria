@@ -316,27 +316,27 @@ public class SystemTestBase {
     final TupleBatchBuffer tbl2Worker2 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA);
 
     for (int i = 0; i < tbl1NamesWorker1.length; i++) {
-      tbl1Worker1.put(0, tbl1IDsWorker1[i]);
-      tbl1Worker1.put(1, tbl1NamesWorker1[i]);
+      tbl1Worker1.putLong(0, tbl1IDsWorker1[i]);
+      tbl1Worker1.putString(1, tbl1NamesWorker1[i]);
     }
     for (int i = 0; i < tbl1NamesWorker2.length; i++) {
-      tbl1Worker2.put(0, tbl1IDsWorker2[i]);
-      tbl1Worker2.put(1, tbl1NamesWorker2[i]);
+      tbl1Worker2.putLong(0, tbl1IDsWorker2[i]);
+      tbl1Worker2.putString(1, tbl1NamesWorker2[i]);
     }
     for (int i = 0; i < tbl2NamesWorker1.length; i++) {
-      tbl2Worker1.put(0, tbl2IDsWorker1[i]);
-      tbl2Worker1.put(1, tbl2NamesWorker1[i]);
+      tbl2Worker1.putLong(0, tbl2IDsWorker1[i]);
+      tbl2Worker1.putString(1, tbl2NamesWorker1[i]);
     }
     for (int i = 0; i < tbl2NamesWorker2.length; i++) {
-      tbl2Worker2.put(0, tbl2IDsWorker2[i]);
-      tbl2Worker2.put(1, tbl2NamesWorker2[i]);
+      tbl2Worker2.putLong(0, tbl2IDsWorker2[i]);
+      tbl2Worker2.putString(1, tbl2NamesWorker2[i]);
     }
 
     for (int i = 0; i < idsCommon.length; i++) {
-      tbl1Worker1.put(0, idsCommon[i]);
-      tbl1Worker1.put(1, namesCommon[i]);
-      tbl2Worker2.put(0, idsCommon[i]);
-      tbl2Worker2.put(1, namesCommon[i]);
+      tbl1Worker1.putLong(0, idsCommon[i]);
+      tbl1Worker1.putString(1, namesCommon[i]);
+      tbl2Worker2.putLong(0, idsCommon[i]);
+      tbl2Worker2.putString(1, namesCommon[i]);
     }
 
     final TupleBatchBuffer table1 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA);
@@ -406,20 +406,20 @@ public class SystemTestBase {
     final TupleBatchBuffer tbl2Worker2 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA);
 
     for (int i = 0; i < tbl1NamesWorker1.length; i++) {
-      tbl1Worker1.put(0, tbl1IDsWorker1[i]);
-      tbl1Worker1.put(1, tbl1NamesWorker1[i]);
+      tbl1Worker1.putLong(0, tbl1IDsWorker1[i]);
+      tbl1Worker1.putString(1, tbl1NamesWorker1[i]);
     }
     for (int i = 0; i < tbl1NamesWorker2.length; i++) {
-      tbl1Worker2.put(0, tbl1IDsWorker2[i]);
-      tbl1Worker2.put(1, tbl1NamesWorker2[i]);
+      tbl1Worker2.putLong(0, tbl1IDsWorker2[i]);
+      tbl1Worker2.putString(1, tbl1NamesWorker2[i]);
     }
     for (int i = 0; i < tbl2NamesWorker1.length; i++) {
-      tbl2Worker1.put(0, tbl2IDsWorker1[i]);
-      tbl2Worker1.put(1, tbl2NamesWorker1[i]);
+      tbl2Worker1.putLong(0, tbl2IDsWorker1[i]);
+      tbl2Worker1.putString(1, tbl2NamesWorker1[i]);
     }
     for (int i = 0; i < tbl2NamesWorker2.length; i++) {
-      tbl2Worker2.put(0, tbl2IDsWorker2[i]);
-      tbl2Worker2.put(1, tbl2NamesWorker2[i]);
+      tbl2Worker2.putLong(0, tbl2IDsWorker2[i]);
+      tbl2Worker2.putString(1, tbl2NamesWorker2[i]);
     }
 
     final TupleBatchBuffer table1 = new TupleBatchBuffer(JOIN_INPUT_SCHEMA);

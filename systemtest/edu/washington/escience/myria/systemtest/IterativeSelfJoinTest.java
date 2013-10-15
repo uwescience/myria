@@ -18,9 +18,9 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
-import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
+import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
@@ -83,8 +83,8 @@ public class IterativeSelfJoinTest extends SystemTestBase {
     for (int i = 0; i < MaxID; ++i) {
       for (int j = 0; j < MaxID; ++j) {
         if (cntgraph[i][j]) {
-          result.put(0, (long) i);
-          result.put(1, (long) j);
+          result.putLong(0, i);
+          result.putLong(1, j);
           LOGGER.trace(i + "\t" + j);
         }
       }
@@ -106,12 +106,12 @@ public class IterativeSelfJoinTest extends SystemTestBase {
     final TupleBatchBuffer tbl1Worker1 = new TupleBatchBuffer(tableSchema);
     final TupleBatchBuffer tbl1Worker2 = new TupleBatchBuffer(tableSchema);
     for (int i = 0; i < numTbl1Worker1; i++) {
-      tbl1Worker1.put(0, tbl1ID1Worker1[i]);
-      tbl1Worker1.put(1, tbl1ID2Worker1[i]);
+      tbl1Worker1.putLong(0, tbl1ID1Worker1[i]);
+      tbl1Worker1.putLong(1, tbl1ID2Worker1[i]);
     }
     for (int i = 0; i < numTbl1Worker2; i++) {
-      tbl1Worker2.put(0, tbl1ID1Worker2[i]);
-      tbl1Worker2.put(1, tbl1ID2Worker2[i]);
+      tbl1Worker2.putLong(0, tbl1ID1Worker2[i]);
+      tbl1Worker2.putLong(1, tbl1ID2Worker2[i]);
     }
     final TupleBatchBuffer table1 = new TupleBatchBuffer(tableSchema);
     table1.unionAll(tbl1Worker1);
@@ -175,7 +175,8 @@ public class IterativeSelfJoinTest extends SystemTestBase {
 
       sc1[i] = new GenericShuffleConsumer(sp1[i - 1].getSchema(), arrayID1, new int[] { workerIDs[0], workerIDs[1] });
       sc2[i] = new GenericShuffleConsumer(sp2[i - 1].getSchema(), arrayID2, new int[] { workerIDs[0], workerIDs[1] });
-      localjoin[i] = new SymmetricHashJoin(sc1[i], sc2[i], new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
+      localjoin[i] =
+          new SymmetricHashJoin(sc1[i], sc2[i], new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
       arrayID0 = ExchangePairID.newID();
 
       sp0[i] = new GenericShuffleProducer(localjoin[i], arrayID0, new int[] { workerIDs[0], workerIDs[1] }, pf0);

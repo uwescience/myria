@@ -56,8 +56,8 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
-      tbb.put(0, ids[i]);
-      tbb.put(1, names[i]);
+      tbb.putLong(0, ids[i]);
+      tbb.putString(1, names[i]);
     }
 
     final HashMap<Tuple, Integer> expectedResults = TestUtils.distinct(tbb);
@@ -118,8 +118,8 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
-      tbb.put(0, ids[i]);
-      tbb.put(1, names[i]);
+      tbb.putLong(0, ids[i]);
+      tbb.putString(1, names[i]);
     }
 
     final HashMap<Tuple, Integer> expectedResults = TestUtils.distinct(tbb);
@@ -250,8 +250,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final GenericShuffleConsumer sc2 =
         new GenericShuffleConsumer(sp2.getSchema(), table2ShuffleID, new int[] { workerIDs[0], workerIDs[1] });
 
-    final RightHashJoin localjoin =
-        new RightHashJoin(outputColumnNames, sc1, sc2, new int[] { 0 }, new int[] { 0 });
+    final RightHashJoin localjoin = new RightHashJoin(outputColumnNames, sc1, sc2, new int[] { 0 }, new int[] { 0 });
 
     final CollectProducer cp1 = new CollectProducer(localjoin, serverReceiveID, MASTER_ID);
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
@@ -476,8 +475,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final GenericShuffleConsumer sc2 =
         new GenericShuffleConsumer(sp2.getSchema(), table2ShuffleID, new int[] { workerIDs[0], workerIDs[1] });
 
-    final RightHashCountingJoin localjoin =
-        new RightHashCountingJoin(sc1, sc2, new int[] { 0 }, new int[] { 0 });
+    final RightHashCountingJoin localjoin = new RightHashCountingJoin(sc1, sc2, new int[] { 0 }, new int[] { 0 });
 
     final CollectProducer cp1 = new CollectProducer(localjoin, serverReceiveID, MASTER_ID);
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();

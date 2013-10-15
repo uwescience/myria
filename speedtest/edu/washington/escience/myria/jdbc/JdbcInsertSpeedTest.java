@@ -243,8 +243,8 @@ public class JdbcInsertSpeedTest {
     // Create tuples and put them into the batch buffer
     tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < NUM_TUPLES; i++) {
-      tbb.put(0, i);
-      tbb.put(1, (i + ""));
+      tbb.putInt(0, i);
+      tbb.putString(1, (i + ""));
     }
 
     String host;

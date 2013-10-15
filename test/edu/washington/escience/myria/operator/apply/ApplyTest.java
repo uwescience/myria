@@ -13,10 +13,6 @@ import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.TupleSource;
-import edu.washington.escience.myria.operator.apply.Apply;
-import edu.washington.escience.myria.operator.apply.ConstantMultiplicationIFunction;
-import edu.washington.escience.myria.operator.apply.IFunctionCaller;
-import edu.washington.escience.myria.operator.apply.SqrtIFunction;
 
 public class ApplyTest {
 
@@ -36,7 +32,7 @@ public class ApplyTest {
     final Schema schema = new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("a"));
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (long i = 0; i < numTuples; i++) {
-      tbb.put(0, (long) Math.pow(i, 2));
+      tbb.putLong(0, (long) Math.pow(i, 2));
     }
     ImmutableList.Builder<Integer> arguments = ImmutableList.builder();
     arguments.add(0, 2);
@@ -67,7 +63,7 @@ public class ApplyTest {
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (long i = 0; i < numTuples; i++) {
-      tbb.put(0, (long) Math.pow(i, 2));
+      tbb.putLong(0, (long) Math.pow(i, 2));
     }
     ImmutableList.Builder<Integer> argumentsOne = ImmutableList.builder();
     argumentsOne.add(0);

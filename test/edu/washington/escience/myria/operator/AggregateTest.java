@@ -33,8 +33,8 @@ public class AggregateTest {
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
-      tbb.put(0, ids[i]);
-      tbb.put(1, names[i]);
+      tbb.putLong(0, ids[i]);
+      tbb.putString(1, names[i]);
     }
     return tbb;
   }
@@ -548,15 +548,15 @@ public class AggregateTest {
     // inserting { 0, 1, 2, i / 2 } on even rows, { 0, 1, 4, i / 2 } on odd rows
     for (long i = 0; i < numTuples; i++) {
       long value = i / 2;
-      tbb.put(0, 0L);
-      tbb.put(1, 1L);
+      tbb.putLong(0, 0L);
+      tbb.putLong(1, 1L);
       if (i % 2 == 0) {
-        tbb.put(2, 2L);
+        tbb.putLong(2, 2L);
         expectedSecond += value;
       } else {
-        tbb.put(2, 4L);
+        tbb.putLong(2, 4L);
       }
-      tbb.put(3, value);
+      tbb.putLong(3, value);
       expectedFirst += value;
     }
 
@@ -594,15 +594,15 @@ public class AggregateTest {
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     double expected = 0.0;
     for (long i = 0; i < numTuples; i++) {
-      tbb.put(0, 0L);
-      tbb.put(1, 1L);
+      tbb.putLong(0, 0L);
+      tbb.putLong(1, 1L);
       if (i % 2 == 0) {
-        tbb.put(2, 2L);
+        tbb.putLong(2, 2L);
         expected += i;
       } else {
-        tbb.put(2, 4L);
+        tbb.putLong(2, 4L);
       }
-      tbb.put(3, i / 2);
+      tbb.putLong(3, i / 2);
     }
     expected /= numTuples;
     MultiGroupByAggregate mga =
@@ -625,14 +625,14 @@ public class AggregateTest {
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     long expected = 0;
     for (long i = 0; i < numTuples; i++) {
-      tbb.put(0, 0L);
-      tbb.put(1, 1L);
+      tbb.putLong(0, 0L);
+      tbb.putLong(1, 1L);
       if (i % 2 == 0) {
-        tbb.put(2, 2L);
+        tbb.putLong(2, 2L);
       } else {
-        tbb.put(2, 4L);
+        tbb.putLong(2, 4L);
       }
-      tbb.put(3, i / 2);
+      tbb.putLong(3, i / 2);
     }
     MultiGroupByAggregate mga =
         new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 3 }, new int[] { 0, 1 },
@@ -654,14 +654,14 @@ public class AggregateTest {
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     long expected = numTuples - 1;
     for (long i = 0; i < numTuples; i++) {
-      tbb.put(0, 0L);
-      tbb.put(1, 1L);
+      tbb.putLong(0, 0L);
+      tbb.putLong(1, 1L);
       if (i % 2 == 0) {
-        tbb.put(2, 2L);
+        tbb.putLong(2, 2L);
       } else {
-        tbb.put(2, 4L);
+        tbb.putLong(2, 4L);
       }
-      tbb.put(3, i);
+      tbb.putLong(3, i);
     }
     MultiGroupByAggregate mga =
         new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 3 }, new int[] { 0, 1 },
@@ -685,14 +685,14 @@ public class AggregateTest {
     long expectedMin = 0;
     long expectedMax = numTuples - 1 + expectedMin;
     for (long i = expectedMin; i < numTuples; i++) {
-      tbb.put(0, 0L);
-      tbb.put(1, 1L);
+      tbb.putLong(0, 0L);
+      tbb.putLong(1, 1L);
       if (i % 2 == 0) {
-        tbb.put(2, 2L);
+        tbb.putLong(2, 2L);
       } else {
-        tbb.put(2, 4L);
+        tbb.putLong(2, 4L);
       }
-      tbb.put(3, i);
+      tbb.putLong(3, i);
     }
     MultiGroupByAggregate mga =
         new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 3, 3 }, new int[] { 0, 1 }, new int[] {
@@ -716,14 +716,14 @@ public class AggregateTest {
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (long i = 0; i < numTuples; i++) {
-      tbb.put(0, 0L);
-      tbb.put(1, 1L);
+      tbb.putLong(0, 0L);
+      tbb.putLong(1, 1L);
       if (i % 2 == 0) {
-        tbb.put(2, 2L);
+        tbb.putLong(2, 2L);
       } else {
-        tbb.put(2, 4L);
+        tbb.putLong(2, 4L);
       }
-      tbb.put(3, i);
+      tbb.putLong(3, i);
     }
     MultiGroupByAggregate mga =
         new MultiGroupByAggregate(new TupleSource(tbb), new int[] { 0 }, new int[] { 0, 1 },
@@ -762,8 +762,8 @@ public class AggregateTest {
             "value")));
     int sum = 0;
     for (int i = from; i <= to; ++i) {
-      testBase.put(0, Integer.valueOf(0));
-      testBase.put(1, Integer.valueOf(i));
+      testBase.putInt(0, 0);
+      testBase.putInt(1, i);
       sum += i;
     }
 
