@@ -231,6 +231,24 @@ public class TupleBuffer {
   }
 
   /**
+   * @param column the column of the desired value.
+   * @param row the row of the desired value.
+   * @return the value in the specified column and row.
+   */
+  public final DateTime getDateTime(final int column, final int row) {
+    int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
+    int tupleIndex = row % TupleBatch.BATCH_SIZE;
+    if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
+        && tupleIndex >= currentInProgressTuples) {
+      throw new IndexOutOfBoundsException();
+    }
+    if (tupleBatchIndex < readyTuples.size()) {
+      return ((DateTimeColumn) (readyTuples.get(tupleBatchIndex)[column])).getDateTime(tupleIndex);
+    }
+    return ((DateTimeColumnBuilder) (currentBuildingColumns[column])).get(tupleIndex);
+  }
+
+  /**
    * @param row the row number
    * @return the columns of the TB that the row resides.
    * */
