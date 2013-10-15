@@ -35,14 +35,6 @@ public class VariableExpression extends ZeroaryExpression {
   public String getJavaString(final Schema schema) {
     String tName;
     switch (getOutputType(schema)) {
-      case DOUBLE_TYPE:
-        tName = "Double";
-        break;
-
-      case LONG_TYPE:
-        tName = "Long";
-        break;
-
       case INT_TYPE:
         tName = "Int";
         break;
@@ -51,12 +43,20 @@ public class VariableExpression extends ZeroaryExpression {
         tName = "Float";
         break;
 
+      case DOUBLE_TYPE:
+        tName = "Double";
+        break;
+
       case BOOLEAN_TYPE:
         tName = "Boolean";
         break;
 
       case STRING_TYPE:
         tName = "String";
+        break;
+
+      case LONG_TYPE:
+        tName = "Long";
         break;
 
       case DATETIME_TYPE:
