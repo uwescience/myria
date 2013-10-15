@@ -328,7 +328,7 @@ public class SingleGroupByAggregateNoBuffer extends UnaryOperator {
       case BOOLEAN_TYPE:
         Aggregator<?>[] t = groupAggsBoolean[0];
         if (t != null) {
-          resultBuffer.put(0, true);
+          resultBuffer.putBoolean(0, true);
           int fromIndex = 1;
           for (final Aggregator<?> element : t) {
             element.getResult(resultBuffer, fromIndex);
@@ -337,7 +337,7 @@ public class SingleGroupByAggregateNoBuffer extends UnaryOperator {
         }
         Aggregator<?>[] f = groupAggsBoolean[1];
         if (f != null) {
-          resultBuffer.put(1, true);
+          resultBuffer.putBoolean(1, true);
           int fromIndex = 1;
           for (final Aggregator<?> element : f) {
             element.getResult(resultBuffer, fromIndex);
@@ -349,7 +349,7 @@ public class SingleGroupByAggregateNoBuffer extends UnaryOperator {
         for (final Map.Entry<String, Aggregator<?>[]> e : groupAggsString.entrySet()) {
           final String groupByValue = e.getKey();
           final Aggregator<?>[] aggLocal = e.getValue();
-          resultBuffer.put(0, groupByValue);
+          resultBuffer.putString(0, groupByValue);
           int fromIndex = 1;
           for (final Aggregator<?> element : aggLocal) {
             element.getResult(resultBuffer, fromIndex);
@@ -361,7 +361,7 @@ public class SingleGroupByAggregateNoBuffer extends UnaryOperator {
         for (final Map.Entry<DateTime, Aggregator<?>[]> e : groupAggsDatetime.entrySet()) {
           final DateTime groupByValue = e.getKey();
           final Aggregator<?>[] aggLocal = e.getValue();
-          resultBuffer.put(0, groupByValue);
+          resultBuffer.putDateTime(0, groupByValue);
           int fromIndex = 1;
           for (final Aggregator<?> element : aggLocal) {
             element.getResult(resultBuffer, fromIndex);
@@ -375,7 +375,7 @@ public class SingleGroupByAggregateNoBuffer extends UnaryOperator {
           itInt.advance();
           int groupByValue = itInt.key();
           final Aggregator<?>[] aggLocal = itInt.value();
-          resultBuffer.put(0, groupByValue);
+          resultBuffer.putInt(0, groupByValue);
           int fromIndex = 1;
           for (final Aggregator<?> element : aggLocal) {
             element.getResult(resultBuffer, fromIndex);
@@ -389,7 +389,7 @@ public class SingleGroupByAggregateNoBuffer extends UnaryOperator {
           itLong.advance();
           long groupByValue = itLong.key();
           final Aggregator<?>[] aggLocal = itLong.value();
-          resultBuffer.put(0, groupByValue);
+          resultBuffer.putLong(0, groupByValue);
           int fromIndex = 1;
           for (final Aggregator<?> element : aggLocal) {
             element.getResult(resultBuffer, fromIndex);
@@ -405,7 +405,7 @@ public class SingleGroupByAggregateNoBuffer extends UnaryOperator {
           itFloat.advance();
           float groupByValue = itFloat.key();
           final Aggregator<?>[] aggLocal = itFloat.value();
-          resultBuffer.put(0, groupByValue);
+          resultBuffer.putFloat(0, groupByValue);
           int fromIndex = 1;
           for (final Aggregator<?> element : aggLocal) {
             element.getResult(resultBuffer, fromIndex);
@@ -419,7 +419,7 @@ public class SingleGroupByAggregateNoBuffer extends UnaryOperator {
           itDouble.advance();
           double groupByValue = itDouble.key();
           final Aggregator<?>[] aggLocal = itDouble.value();
-          resultBuffer.put(0, groupByValue);
+          resultBuffer.putDouble(0, groupByValue);
           int fromIndex = 1;
           for (final Aggregator<?> element : aggLocal) {
             element.getResult(resultBuffer, fromIndex);
