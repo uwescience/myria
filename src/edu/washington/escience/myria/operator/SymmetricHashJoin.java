@@ -9,6 +9,7 @@ import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
+import edu.washington.escience.myria.column.mutable.MutableColumn;
 import edu.washington.escience.myria.parallel.QueryExecutionMode;
 import edu.washington.escience.myria.parallel.TaskResourceManager;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
@@ -357,7 +358,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
       final boolean fromLeft) {
     List<Column<?>> tbColumns = cntTB.getDataColumns();
     final int rowInColumn = cntTB.getValidIndices().get(row);
-    Column<?>[] hashTblColumns = hashTable.getColumns(index);
+    MutableColumn<?>[] hashTblColumns = hashTable.getColumns(index);
     ColumnBuilder<?>[] hashTblColumnBuilders = null;
     if (hashTblColumns == null) {
       hashTblColumnBuilders = hashTable.getColumnBuilders(index);

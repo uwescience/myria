@@ -260,7 +260,7 @@ public class TupleBuffer {
    * @param row the row number
    * @return the columns of the TB that the row resides.
    * */
-  public Column<?>[] getColumns(final int row) {
+  public MutableColumn<?>[] getColumns(final int row) {
     int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
     int tupleIndex = row % TupleBatch.BATCH_SIZE;
     if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
