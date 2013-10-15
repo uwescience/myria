@@ -148,8 +148,9 @@ public final class SymmetricHashJoin extends BinaryOperator {
       if (inputTB.tupleEquals(row, hashTable, index, keyColumns, keyColumns)) {
         replaced = true;
         List<Column<?>> columns = inputTB.getDataColumns();
+        int inColumnRow = inputTB.getValidIndices().get(row);
         for (int j = 0; j < inputTB.numColumns(); ++j) {
-          hashTable.replace(j, index, columns.get(j).get(row));
+          hashTable.replace(j, index, columns.get(j), inColumnRow);
         }
       }
       return replaced;

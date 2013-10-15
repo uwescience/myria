@@ -433,9 +433,9 @@ public class TupleBuffer {
   }
 
   /**
-   * Append the specified value to the specified destination column in this TupleBatchBuffer from the source column.
+   * Append the specified value to the specified destination column in this TupleBuffer from the source column.
    * 
-   * @param destColumn which column in this TBB the value will be inserted.
+   * @param destColumn which column in this TB the value will be inserted.
    * @param sourceColumn the column from which data will be retrieved.
    * @param sourceRow the row in the source column from which data will be retrieved.
    */
@@ -477,6 +477,7 @@ public class TupleBuffer {
    * 
    * @throws IndexOutOfBoundsException if indices are out of bounds.
    */
+  @Deprecated
   public final void replace(final int colIndex, final int rowIndex, final Object value)
       throws IndexOutOfBoundsException {
     int tupleBatchIndex = rowIndex / TupleBatch.BATCH_SIZE;
@@ -533,6 +534,75 @@ public class TupleBuffer {
           break;
         case STRING_TYPE:
           ((StringColumnBuilder) dest).replace(tupleIndex, (String) value);
+          break;
+      }
+    }
+  }
+
+  /**
+   * Replace the specified value to the specified destination column in this TupleBuffer from the source column.
+   * 
+   * @param destColumn which column in this TB the value will be inserted.
+   * @param destRow the row in the dest column from which data will be retrieved.
+   * @param sourceColumn the column from which data will be retrieved.
+   * @param sourceRow the row in the source column from which data will be retrieved.
+   */
+  public final void replace(final int destColumn, final int destRow, final Column<?> sourceColumn, final int sourceRow) {
+    checkPutIndex(destColumn);
+    int tupleBatchIndex = destRow / TupleBatch.BATCH_SIZE;
+    int tupleIndex = destRow % TupleBatch.BATCH_SIZE;
+    if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
+        && tupleIndex >= currentInProgressTuples) {
+      throw new IndexOutOfBoundsException();
+    }
+    if (tupleBatchIndex < readyTuples.size()) {
+      MutableColumn<?> dest = readyTuples.get(tupleBatchIndex)[destColumn];
+      switch (dest.getType()) {
+        case BOOLEAN_TYPE:
+          ((BooleanMutableColumn) dest).replace(tupleIndex, ((BooleanColumn) sourceColumn).getBoolean(sourceRow));
+          break;
+        case DATETIME_TYPE:
+          ((DateTimeMutableColumn) dest).replace(tupleIndex, ((DateTimeColumn) sourceColumn).getDateTime(sourceRow));
+          break;
+        case DOUBLE_TYPE:
+          ((DoubleMutableColumn) dest).replace(tupleIndex, ((DoubleColumn) sourceColumn).getDouble(sourceRow));
+          break;
+        case FLOAT_TYPE:
+          ((FloatMutableColumn) dest).replace(tupleIndex, ((FloatColumn) sourceColumn).getFloat(sourceRow));
+          break;
+        case INT_TYPE:
+          ((IntMutableColumn) dest).replace(tupleIndex, ((IntColumn) sourceColumn).getInt(sourceRow));
+          break;
+        case LONG_TYPE:
+          ((LongMutableColumn) dest).replace(tupleIndex, ((LongColumn) sourceColumn).getLong(sourceRow));
+          break;
+        case STRING_TYPE:
+          ((StringMutableColumn) dest).replace(tupleIndex, ((StringColumn) sourceColumn).getString(sourceRow));
+          break;
+      }
+    } else {
+      ColumnBuilder<?> dest = currentBuildingColumns[destColumn];
+      switch (dest.getType()) {
+        case BOOLEAN_TYPE:
+          ((BooleanColumnBuilder) dest).replace(tupleIndex, ((BooleanColumn) sourceColumn).getBoolean(sourceRow));
+          break;
+        case DATETIME_TYPE:
+          ((DateTimeColumnBuilder) dest).replace(tupleIndex, ((DateTimeColumn) sourceColumn).getDateTime(sourceRow));
+          break;
+        case DOUBLE_TYPE:
+          ((DoubleColumnBuilder) dest).replace(tupleIndex, ((DoubleColumn) sourceColumn).getDouble(sourceRow));
+          break;
+        case FLOAT_TYPE:
+          ((FloatColumnBuilder) dest).replace(tupleIndex, ((FloatColumn) sourceColumn).getFloat(sourceRow));
+          break;
+        case INT_TYPE:
+          ((IntColumnBuilder) dest).replace(tupleIndex, ((IntColumn) sourceColumn).getInt(sourceRow));
+          break;
+        case LONG_TYPE:
+          ((LongColumnBuilder) dest).replace(tupleIndex, ((LongColumn) sourceColumn).getLong(sourceRow));
+          break;
+        case STRING_TYPE:
+          ((StringColumnBuilder) dest).replace(tupleIndex, ((StringColumn) sourceColumn).getString(sourceRow));
           break;
       }
     }
