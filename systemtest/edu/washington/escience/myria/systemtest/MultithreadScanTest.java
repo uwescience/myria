@@ -17,12 +17,12 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
-import edu.washington.escience.myria.operator.LocalJoin;
-import edu.washington.escience.myria.operator.UnionAll;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
+import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.TBQueueExporter;
+import edu.washington.escience.myria.operator.UnionAll;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
@@ -124,8 +124,8 @@ public class MultithreadScanTest extends SystemTestBase {
 
     final DbQueryScan scan1 = new DbQueryScan(testtableKey, tableSchema);
     final DbQueryScan scan2 = new DbQueryScan(testtableKey, tableSchema);
-    final LocalJoin localjoin =
-        new LocalJoin(scan1, scan2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
+    final SymmetricHashJoin localjoin =
+        new SymmetricHashJoin(scan1, scan2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
     final DupElim de = new DupElim(localjoin);
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
@@ -188,13 +188,13 @@ public class MultithreadScanTest extends SystemTestBase {
 
     final DbQueryScan scan1 = new DbQueryScan(testtableKey, tableSchema);
     final DbQueryScan scan2 = new DbQueryScan(testtableKey, tableSchema);
-    final LocalJoin localjoin1 =
-        new LocalJoin(scan1, scan2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
+    final SymmetricHashJoin localjoin1 =
+        new SymmetricHashJoin(scan1, scan2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
     final DupElim de1 = new DupElim(localjoin1);
     final DbQueryScan scan3 = new DbQueryScan(testtableKey, tableSchema);
     final DbQueryScan scan4 = new DbQueryScan(testtableKey, tableSchema);
-    final LocalJoin localjoin2 =
-        new LocalJoin(scan3, scan4, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
+    final SymmetricHashJoin localjoin2 =
+        new SymmetricHashJoin(scan3, scan4, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
     final DupElim de2 = new DupElim(localjoin2);
 
     final int numPartition = 2;

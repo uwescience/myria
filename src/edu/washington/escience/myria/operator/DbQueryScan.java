@@ -131,7 +131,7 @@ public class DbQueryScan extends LeafOperator {
   }
 
   @Override
-  public final Schema getSchema() {
+  public final Schema generateSchema() {
     return outputSchema;
   }
 

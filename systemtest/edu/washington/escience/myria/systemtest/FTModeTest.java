@@ -27,12 +27,12 @@ import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.EOSSource;
 import edu.washington.escience.myria.operator.IDBInput;
-import edu.washington.escience.myria.operator.LocalJoin;
-import edu.washington.escience.myria.operator.UnionAll;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
+import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.TBQueueExporter;
+import edu.washington.escience.myria.operator.UnionAll;
 import edu.washington.escience.myria.operator.failures.DelayInjector;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
@@ -230,11 +230,13 @@ public class FTModeTest extends SystemTestBase {
       send2server_worker2 = new LocalMultiwayConsumer(tableSchema, consumerIDs[2]);
       send2server_worker2.setOpName("send2server_worker2_" + initName);
     }
-    final LocalJoin join_worker1 =
-        new LocalJoin(sc1, send2join_worker1, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
+    final SymmetricHashJoin join_worker1 =
+        new SymmetricHashJoin(sc1, send2join_worker1, new int[] { 1 }, new int[] { 0 }, new int[] { 0 },
+            new int[] { 1 });
     join_worker1.setOpName("join_worker1_" + initName);
-    final LocalJoin join_worker2 =
-        new LocalJoin(sc1, send2join_worker2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 });
+    final SymmetricHashJoin join_worker2 =
+        new SymmetricHashJoin(sc1, send2join_worker2, new int[] { 1 }, new int[] { 0 }, new int[] { 0 },
+            new int[] { 1 });
     join_worker2.setOpName("join_worker2_" + initName);
     sp3_worker1.setChildren(new Operator[] { join_worker1 });
     sp3_worker2.setChildren(new Operator[] { join_worker2 });

@@ -263,7 +263,11 @@ public final class DatasetResource {
       throw new MyriaApiException(Status.SERVICE_UNAVAILABLE, "Do not specify the workers of the dataset correctly");
     }
 
-    server.importDataset(dataset.relationKey, dataset.schema, dataset.workers);
+    try {
+      server.importDataset(dataset.relationKey, dataset.schema, dataset.workers);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
 
     /* In the response, tell the client the path to the relation. */
     return Response.created(getCanonicalResourcePath(uriInfo, dataset.relationKey)).build();

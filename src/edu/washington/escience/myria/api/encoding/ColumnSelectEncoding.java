@@ -7,7 +7,7 @@ import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.operator.Operator;
-import edu.washington.escience.myria.operator.Project;
+import edu.washington.escience.myria.operator.ColumnSelect;
 import edu.washington.escience.myria.parallel.Server;
 
 /**
@@ -16,7 +16,7 @@ import edu.washington.escience.myria.parallel.Server;
  * @author leelee
  * 
  */
-public class ProjectEncoding extends OperatorEncoding<Project> {
+public class ColumnSelectEncoding extends OperatorEncoding<ColumnSelect> {
 
   public int[] argFieldList;
   public String argChild;
@@ -28,9 +28,9 @@ public class ProjectEncoding extends OperatorEncoding<Project> {
   }
 
   @Override
-  public Project construct(Server server) {
+  public ColumnSelect construct(Server server) {
     try {
-      return new Project(argFieldList, null);
+      return new ColumnSelect(argFieldList, null);
     } catch (DbException e) {
       throw new RuntimeException(e);
     }

@@ -5,20 +5,24 @@ import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myria.operator.LocalJoin;
 import edu.washington.escience.myria.operator.Operator;
+import edu.washington.escience.myria.operator.RightHashCountingJoin;
 import edu.washington.escience.myria.parallel.Server;
 
-public class LocalJoinEncoding extends OperatorEncoding<LocalJoin> {
+/**
+ * 
+ * Encoding for {@link RightHashCountingJoin}.
+ * 
+ * @author Shumo Chu <chushumo@cs.washington.edu>
+ * 
+ */
+public class RightHashCountingJoinEncoding extends OperatorEncoding<RightHashCountingJoin> {
   public String argChild1;
   public String argChild2;
-  public List<String> argColumnNames;
   public int[] argColumns1;
   public int[] argColumns2;
-  public int[] argSelect1;
-  public int[] argSelect2;
   private static final List<String> requiredArguments = ImmutableList.of("argChild1", "argChild2", "argColumns1",
-      "argColumns2", "argSelect1", "argSelect2");
+      "argColumns2");
 
   @Override
   public void connect(final Operator current, final Map<String, Operator> operators) {
@@ -26,8 +30,8 @@ public class LocalJoinEncoding extends OperatorEncoding<LocalJoin> {
   }
 
   @Override
-  public LocalJoin construct(Server server) {
-    return new LocalJoin(argColumnNames, null, null, argColumns1, argColumns2, argSelect1, argSelect2);
+  public RightHashCountingJoin construct(Server server) {
+    return new RightHashCountingJoin(null, null, argColumns1, argColumns2);
   }
 
   @Override

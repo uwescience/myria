@@ -64,7 +64,7 @@ public class SubStr extends UnaryOperator {
   }
 
   @Override
-  public Schema getSchema() {
+  public Schema generateSchema() {
     return null;
   }
 

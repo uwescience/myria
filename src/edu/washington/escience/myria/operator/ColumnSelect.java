@@ -7,9 +7,10 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 
 /**
- * Project is an operator that implements a relational projection.
+ * {@link ColumnSelect} is an operator that implements column selection on tuples. This is like a relational project,
+ * but without duplicate elimination.
  */
-public final class Project extends UnaryOperator {
+public final class ColumnSelect extends UnaryOperator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -27,7 +28,7 @@ public final class Project extends UnaryOperator {
    * @param child the child
    * @throws DbException if any error occurs.
    * */
-  public Project(final int[] fieldList, final Operator child) throws DbException {
+  public ColumnSelect(final int[] fieldList, final Operator child) throws DbException {
     super(child);
     outColumnIndices = fieldList;
     if (child != null) {
@@ -43,17 +44,9 @@ public final class Project extends UnaryOperator {
   protected TupleBatch fetchNextReady() throws DbException {
     TupleBatch tb = getChild().nextReady();
     if (tb != null) {
-      return tb.project(outColumnIndices, getSchema());
+      return tb.selectColumns(outColumnIndices, getSchema());
     }
     return null;
-  }
-
-  @Override
-  public Schema getSchema() {
-    if (schema == null) {
-      schema = generateSchema();
-    }
-    return schema;
   }
 
   @Override
@@ -63,13 +56,16 @@ public final class Project extends UnaryOperator {
     }
   }
 
-  /**
-   * @return the schema for this object.
-   */
-  private Schema generateSchema() {
-    if (getChild().getSchema() == null) {
+  @Override
+  protected Schema generateSchema() {
+    final Operator child = getChild();
+    if (child == null) {
       return null;
     }
-    return getChild().getSchema().getSubSchema(outColumnIndices);
+    final Schema childSchema = child.getSchema();
+    if (childSchema == null) {
+      return null;
+    }
+    return childSchema.getSubSchema(outColumnIndices);
   }
 }

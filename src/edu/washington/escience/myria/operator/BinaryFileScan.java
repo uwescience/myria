@@ -116,11 +116,6 @@ public class BinaryFileScan extends LeafOperator {
   }
 
   @Override
-  public final Schema getSchema() {
-    return schema;
-  }
-
-  @Override
   protected final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     buffer = new TupleBatchBuffer(getSchema());
     if (fileName != null) {
@@ -140,5 +135,10 @@ public class BinaryFileScan extends LeafOperator {
         dataInput = new DataInputStream(fStream);
       }
     }
+  }
+
+  @Override
+  protected Schema generateSchema() {
+    return schema;
   }
 }

@@ -24,8 +24,6 @@ public final class Aggregate extends UnaryOperator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
-  /** The schema of the tuples returned by this operator. */
-  private Schema schema;
   /** Does the actual aggregation work. */
   private final Aggregator<?>[] agg;
   /** Which fields the aggregate is computed over. */
@@ -133,21 +131,20 @@ public final class Aggregate extends UnaryOperator {
   }
 
   @Override
-  public Schema getSchema() {
-    if (schema == null) {
-      generateSchema();
-    }
-    return schema;
-  }
-
-  @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     aggBuffer = new TupleBatchBuffer(getSchema());
   }
 
-  /** Generate the schema for this aggregate. */
-  private void generateSchema() {
+  @Override
+  protected Schema generateSchema() {
+    if (getChild() == null) {
+      return null;
+    }
     final Schema childSchema = getChild().getSchema();
+    if (childSchema == null) {
+      return null;
+    }
+
     final ImmutableList.Builder<Type> gTypes = ImmutableList.builder();
     final ImmutableList.Builder<String> gNames = ImmutableList.builder();
 
@@ -180,6 +177,6 @@ public final class Aggregate extends UnaryOperator {
       gNames.addAll(agg[idx].getResultSchema().getColumnNames());
       idx++;
     }
-    schema = new Schema(gTypes, gNames);
+    return new Schema(gTypes, gNames);
   }
 }

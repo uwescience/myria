@@ -32,12 +32,6 @@ public class GlobalAvg extends UnaryOperator {
 
   @Override
   protected void init(ImmutableMap<String, Object> execEnvVars) throws DbException {
-    Schema cs = getChild().getSchema();
-    ImmutableList.Builder<String> newNamesB = ImmutableList.builder();
-    newNamesB.addAll(cs.getColumnNames());
-    ImmutableList.Builder<Type> newTypesB = ImmutableList.builder();
-    newTypesB.addAll(cs.getColumnTypes());
-    schema = Schema.of(newTypesB.build(), newNamesB.build());
   }
 
   @Override
@@ -61,17 +55,27 @@ public class GlobalAvg extends UnaryOperator {
       newColumnsB.addAll(inputColumns);
       newColumnsB.add(rc.build());
 
-      tb = new TupleBatch(schema, newColumnsB.build(), tb.getValidTuples());
+      tb = new TupleBatch(getSchema(), newColumnsB.build(), tb.getValidTuples());
     }
     return tb;
   }
 
   @Override
-  public Schema getSchema() {
-    return schema;
+  public Schema generateSchema() {
+    Operator child = getChild();
+    if (child == null) {
+      return null;
+    }
+    Schema cs = getChild().getSchema();
+    if (cs == null) {
+      return null;
+    }
+    ImmutableList.Builder<String> newNamesB = ImmutableList.builder();
+    newNamesB.addAll(cs.getColumnNames());
+    ImmutableList.Builder<Type> newTypesB = ImmutableList.builder();
+    newTypesB.addAll(cs.getColumnTypes());
+    return Schema.of(newTypesB.build(), newNamesB.build());
   }
-
-  private Schema schema;
 
   private final int sumIdx;
   private final int countIdx;

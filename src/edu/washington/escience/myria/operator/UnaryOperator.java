@@ -53,6 +53,8 @@ public abstract class UnaryOperator extends Operator {
     Preconditions.checkArgument(children.length == 1, "setChildren() must be called with an array of length 1");
     Preconditions.checkNotNull(children[0]);
     child = children[0];
+    /* Trigger Schema updating. */
+    getSchema();
   }
 
 }

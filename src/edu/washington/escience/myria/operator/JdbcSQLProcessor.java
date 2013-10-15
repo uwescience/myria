@@ -118,7 +118,7 @@ public class JdbcSQLProcessor extends Operator {
   }
 
   @Override
-  public final Schema getSchema() {
+  public final Schema generateSchema() {
     return schema;
   }
 

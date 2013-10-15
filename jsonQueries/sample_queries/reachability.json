@@ -146,7 +146,7 @@
 			},
 			{
 				"op_name" : "joina",
-				"op_type" : "LocalJoin",
+				"op_type" : "SymmetricHashJoin",
 				"arg_child1" : "send2joina",
 				"arg_child2" : "sc1g",
 				"arg_columns1" : ["0"],

@@ -33,7 +33,7 @@ public class EOSSource extends LeafOperator {
   }
 
   @Override
-  public final Schema getSchema() {
+  public final Schema generateSchema() {
     return Schema.EMPTY_SCHEMA;
   }
 

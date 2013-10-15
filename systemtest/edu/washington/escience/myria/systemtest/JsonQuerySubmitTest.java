@@ -1,7 +1,6 @@
 package edu.washington.escience.myria.systemtest;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 
 import java.io.File;
@@ -39,22 +38,22 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     File ingestJson = new File("./jsonQueries/globalJoin_jwang/ingest_smallTable.json");
 
     HttpURLConnection conn = JsonAPIUtils.submitQuery("localhost", masterDaemonPort, queryJson);
-    assertNotEquals(conn.getResponseCode(), HttpURLConnection.HTTP_OK);
-    LOGGER.error(getContents(conn));
+    assertEquals(conn.getResponseCode(), HttpURLConnection.HTTP_BAD_REQUEST);
+    conn.disconnect();
 
     conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingestJson);
     if (null != conn.getErrorStream()) {
       throw new IllegalStateException(getContents(conn));
     }
     assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
-    LOGGER.info(getContents(conn));
+    conn.disconnect();
 
     conn = JsonAPIUtils.submitQuery("localhost", masterDaemonPort, queryJson);
     if (null != conn.getErrorStream()) {
       throw new IllegalStateException(getContents(conn));
     }
     assertEquals(HttpURLConnection.HTTP_ACCEPTED, conn.getResponseCode());
-    LOGGER.info(getContents(conn));
+    conn.disconnect();
   }
 
   private String getContents(HttpURLConnection conn) {
