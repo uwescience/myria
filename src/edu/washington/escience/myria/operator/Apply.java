@@ -89,10 +89,8 @@ public class Apply extends UnaryOperator {
 
     Schema inputSchema = getChild().getSchema();
 
-    int i = 0;
     for (Expression expr : expressions) {
-      expr.compile(inputSchema, getSchema().getColumnType(i));
-      i++;
+      expr.compile(inputSchema);
     }
   }
 

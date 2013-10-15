@@ -3,8 +3,8 @@ package edu.washington.escience.myria.expression;
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 
-import org.codehaus.commons.compiler.CompileException;
-import org.codehaus.janino.ExpressionEvaluator;
+import org.codehaus.commons.compiler.CompilerFactoryFactory;
+import org.codehaus.commons.compiler.IScriptEvaluator;
 
 import com.google.common.base.Preconditions;
 
@@ -37,15 +37,9 @@ public class Expression implements Serializable {
   private final ExpressionEncoding expressionEncoding;
 
   /**
-   * 
+   * Expression evaluator.
    */
   private Evaluator evaluator;
-
-  /**
-   * The output type of the expression.
-   */
-  @SuppressWarnings("unused")
-  private Type outputType;
 
   /**
    * Constructs the Expression object.
@@ -62,25 +56,22 @@ public class Expression implements Serializable {
    * Compiles the {@link #javaExpression}.
    * 
    * @param inputSchema the input schema
-   * @param outputType the output type
    * @throws DbException compilation failed
    */
-  @SuppressWarnings("deprecation")
-  public void compile(final Schema inputSchema, final Type outputType) throws DbException {
+  public void compile(final Schema inputSchema) throws DbException {
     javaExpression = expressionEncoding.getJavaString(inputSchema);
-    this.outputType = outputType;
 
     try {
-      evaluator =
-          (Evaluator) ExpressionEvaluator.createFastExpressionEvaluator(javaExpression, Evaluator.class, new String[] {
-              "tb", "rowId" }, (ClassLoader) null);
-    } catch (CompileException e) {
+      IScriptEvaluator se = CompilerFactoryFactory.getDefaultCompilerFactory().newExpressionEvaluator();
+
+      evaluator = (Evaluator) se.createFastEvaluator(javaExpression, Evaluator.class, new String[] { "tb", "rowId" });
+    } catch (Exception e) {
       throw new DbException("Error when compiling expression " + this, e);
     }
   }
 
   /**
-   * Evaluates the expression.
+   * Evaluates the expression using the {@link #evaluator}.
    * 
    * @param tb a tuple batch
    * @param rowId the row that should be used for input data
