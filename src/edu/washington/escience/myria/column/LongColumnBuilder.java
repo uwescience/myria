@@ -12,6 +12,7 @@ import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.mutable.LongMutableColumn;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 
 /**
@@ -116,6 +117,12 @@ public final class LongColumnBuilder implements ColumnBuilder<Long> {
   public LongColumn build() {
     built = true;
     return new LongColumn(data.array(), data.position());
+  }
+
+  @Override
+  public LongMutableColumn buildMutable() {
+    built = true;
+    return new LongMutableColumn(data.array(), data.position());
   }
 
   @Override

@@ -12,6 +12,7 @@ import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.mutable.FloatMutableColumn;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 
 /**
@@ -116,6 +117,12 @@ public final class FloatColumnBuilder implements ColumnBuilder<Float> {
   public FloatColumn build() {
     built = true;
     return new FloatColumn(data.array(), data.position());
+  }
+
+  @Override
+  public FloatMutableColumn buildMutable() {
+    built = true;
+    return new FloatMutableColumn(data.array(), data.position());
   }
 
   @Override

@@ -11,6 +11,8 @@ import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.mutable.IntArrayMutableColumn;
+import edu.washington.escience.myria.column.mutable.IntMutableColumn;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 
 /**
@@ -110,6 +112,12 @@ public final class IntColumnBuilder implements ColumnBuilder<Integer> {
   public IntColumn build() {
     built = true;
     return new IntArrayColumn(data.array(), data.position());
+  }
+
+  @Override
+  public IntMutableColumn buildMutable() {
+    built = true;
+    return new IntArrayMutableColumn(data.array(), data.position());
   }
 
   @Override

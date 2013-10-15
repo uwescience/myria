@@ -11,6 +11,7 @@ import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.mutable.BooleanMutableColumn;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 
 /**
@@ -128,6 +129,12 @@ public final class BooleanColumnBuilder implements ColumnBuilder<Boolean> {
   public BooleanColumn build() {
     built = true;
     return new BooleanColumn(data, numBits);
+  }
+
+  @Override
+  public BooleanMutableColumn buildMutable() {
+    built = true;
+    return new BooleanMutableColumn(data, numBits);
   }
 
   @Override
