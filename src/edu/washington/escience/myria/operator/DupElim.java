@@ -1,6 +1,5 @@
 package edu.washington.escience.myria.operator;
 
-import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBuffer;
@@ -13,16 +12,24 @@ import gnu.trove.map.hash.TIntObjectHashMap;
 import java.util.BitSet;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.collect.ImmutableMap;
 
 /**
  * Duplicate elimination. It adds newly meet unique tuples into a buffer so that the source TupleBatches are not
  * referenced. This implementation reduces memory consumption.
  * */
-public final class DupElim extends UnaryOperator {
+public final class DupElim extends StreamingStateUpdater {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
+
+  /**
+   * The logger for this class.
+   * */
+  private static final Logger LOGGER = LoggerFactory.getLogger(DupElim.class.getName());
 
   /**
    * Indices to unique tuples.
@@ -34,15 +41,8 @@ public final class DupElim extends UnaryOperator {
    * */
   private transient TupleBuffer uniqueTuples = null;
 
-  /**
-   * @param child the child.
-   * */
-  public DupElim(final Operator child) {
-    super(child);
-  }
-
   @Override
-  protected void cleanup() throws DbException {
+  public void cleanup() {
     uniqueTuples = null;
     uniqueTupleIndices = null;
   }
@@ -101,31 +101,22 @@ public final class DupElim extends UnaryOperator {
   }
 
   @Override
-  protected TupleBatch fetchNextReady() throws DbException {
-    TupleBatch tb = null;
-    tb = getChild().nextReady();
-    while (tb != null) {
-      tb = doDupElim(tb);
-      if (tb.numTuples() > 0) {
-        return tb;
-      }
-      tb = getChild().nextReady();
-    }
-    return null;
+  public Schema getSchema() {
+    return op.getSchema();
   }
 
   @Override
-  public Schema generateSchema() {
-    Operator child = getChild();
-    if (child == null) {
-      return null;
-    }
-    return child.getSchema();
-  }
-
-  @Override
-  public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+  public void init(final ImmutableMap<String, Object> execEnvVars) {
     uniqueTupleIndices = new TIntObjectHashMap<TIntList>();
     uniqueTuples = new TupleBuffer(getSchema());
+  }
+
+  @Override
+  public TupleBatch update(final TupleBatch tb) {
+    TupleBatch newtb = doDupElim(tb);
+    if (newtb.numTuples() > 0) {
+      return newtb;
+    }
+    return null;
   }
 }

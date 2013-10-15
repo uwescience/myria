@@ -26,6 +26,14 @@ import edu.washington.escience.myria.column.LongColumn;
 import edu.washington.escience.myria.column.LongColumnBuilder;
 import edu.washington.escience.myria.column.StringColumn;
 import edu.washington.escience.myria.column.StringColumnBuilder;
+import edu.washington.escience.myria.column.mutable.BooleanMutableColumn;
+import edu.washington.escience.myria.column.mutable.DateTimeMutableColumn;
+import edu.washington.escience.myria.column.mutable.DoubleMutableColumn;
+import edu.washington.escience.myria.column.mutable.FloatMutableColumn;
+import edu.washington.escience.myria.column.mutable.IntMutableColumn;
+import edu.washington.escience.myria.column.mutable.LongMutableColumn;
+import edu.washington.escience.myria.column.mutable.MutableColumn;
+import edu.washington.escience.myria.column.mutable.StringMutableColumn;
 
 /** A simplified TupleBatchBuffer which supports random access. Designed for hash tables to use. */
 
@@ -35,7 +43,7 @@ public class TupleBuffer {
   /** Convenience constant; must match schema.numColumns() and currentColumns.size(). */
   private final int numColumns;
   /** List of completed TupleBatch objects. */
-  private final List<Column<?>[]> readyTuples;
+  private final List<MutableColumn<?>[]> readyTuples;
   /** Internal state used to build up a TupleBatch. */
   private ColumnBuilder<?>[] currentBuildingColumns;
   /** Internal state representing which columns are ready in the current tuple. */
@@ -52,7 +60,7 @@ public class TupleBuffer {
    */
   public TupleBuffer(final Schema schema) {
     this.schema = Objects.requireNonNull(schema);
-    readyTuples = new ArrayList<Column<?>[]>();
+    readyTuples = new ArrayList<MutableColumn<?>[]>();
     currentBuildingColumns = ColumnFactory.allocateColumns(schema).toArray(new ColumnBuilder<?>[] {});
     numColumns = schema.numColumns();
     columnsReady = new BitSet(numColumns);
@@ -78,10 +86,10 @@ public class TupleBuffer {
   private void finishBatch() {
     Preconditions.checkArgument(numColumnsReady == 0);
     Preconditions.checkArgument(currentInProgressTuples == TupleBatch.BATCH_SIZE);
-    Column<?>[] buildingColumns = new Column<?>[numColumns];
+    MutableColumn<?>[] buildingColumns = new MutableColumn<?>[numColumns];
     int i = 0;
     for (ColumnBuilder<?> cb : currentBuildingColumns) {
-      buildingColumns[i++] = cb.build();
+      buildingColumns[i++] = cb.buildMutable();
     }
     readyTuples.add(buildingColumns);
     currentBuildingColumns = ColumnFactory.allocateColumns(schema).toArray(new ColumnBuilder<?>[] {});
@@ -135,7 +143,7 @@ public class TupleBuffer {
       throw new IndexOutOfBoundsException();
     }
     if (tupleBatchIndex < readyTuples.size()) {
-      return ((BooleanColumn) (readyTuples.get(tupleBatchIndex)[column])).getBoolean(tupleIndex);
+      return ((BooleanMutableColumn) (readyTuples.get(tupleBatchIndex)[column])).getBoolean(tupleIndex);
     }
     return ((BooleanColumnBuilder) (currentBuildingColumns[column])).getBoolean(tupleIndex);
   }
@@ -153,7 +161,7 @@ public class TupleBuffer {
       throw new IndexOutOfBoundsException();
     }
     if (tupleBatchIndex < readyTuples.size()) {
-      return ((DoubleColumn) (readyTuples.get(tupleBatchIndex)[column])).getDouble(tupleIndex);
+      return ((DoubleMutableColumn) (readyTuples.get(tupleBatchIndex)[column])).getDouble(tupleIndex);
     }
     return ((DoubleColumnBuilder) (currentBuildingColumns[column])).getDouble(tupleIndex);
   }
@@ -171,7 +179,7 @@ public class TupleBuffer {
       throw new IndexOutOfBoundsException();
     }
     if (tupleBatchIndex < readyTuples.size()) {
-      return ((FloatColumn) (readyTuples.get(tupleBatchIndex)[column])).getFloat(tupleIndex);
+      return ((FloatMutableColumn) (readyTuples.get(tupleBatchIndex)[column])).getFloat(tupleIndex);
     }
     return ((FloatColumnBuilder) (currentBuildingColumns[column])).getFloat(tupleIndex);
   }
@@ -189,7 +197,7 @@ public class TupleBuffer {
       throw new IndexOutOfBoundsException();
     }
     if (tupleBatchIndex < readyTuples.size()) {
-      return ((LongColumn) (readyTuples.get(tupleBatchIndex)[column])).getLong(tupleIndex);
+      return ((LongMutableColumn) (readyTuples.get(tupleBatchIndex)[column])).getLong(tupleIndex);
     }
     return ((LongColumnBuilder) (currentBuildingColumns[column])).getLong(tupleIndex);
   }
@@ -207,7 +215,7 @@ public class TupleBuffer {
       throw new IndexOutOfBoundsException();
     }
     if (tupleBatchIndex < readyTuples.size()) {
-      return ((IntColumn) (readyTuples.get(tupleBatchIndex)[column])).getInt(tupleIndex);
+      return ((IntMutableColumn) (readyTuples.get(tupleBatchIndex)[column])).getInt(tupleIndex);
     }
     return ((IntColumnBuilder) (currentBuildingColumns[column])).getInt(tupleIndex);
   }
@@ -225,7 +233,7 @@ public class TupleBuffer {
       throw new IndexOutOfBoundsException();
     }
     if (tupleBatchIndex < readyTuples.size()) {
-      return ((StringColumn) (readyTuples.get(tupleBatchIndex)[column])).getString(tupleIndex);
+      return ((StringMutableColumn) (readyTuples.get(tupleBatchIndex)[column])).getString(tupleIndex);
     }
     return ((StringColumnBuilder) (currentBuildingColumns[column])).get(tupleIndex);
   }
@@ -243,7 +251,7 @@ public class TupleBuffer {
       throw new IndexOutOfBoundsException();
     }
     if (tupleBatchIndex < readyTuples.size()) {
-      return ((DateTimeColumn) (readyTuples.get(tupleBatchIndex)[column])).getDateTime(tupleIndex);
+      return ((DateTimeMutableColumn) (readyTuples.get(tupleBatchIndex)[column])).getDateTime(tupleIndex);
     }
     return ((DateTimeColumnBuilder) (currentBuildingColumns[column])).get(tupleIndex);
   }
@@ -458,5 +466,75 @@ public class TupleBuffer {
         break;
     }
     columnPut(destColumn);
+  }
+
+  /**
+   * @param colIndex column index
+   * 
+   * @param rowIndex row index
+   * 
+   * @param value the new value
+   * 
+   * @throws IndexOutOfBoundsException if indices are out of bounds.
+   */
+  public final void replace(final int colIndex, final int rowIndex, final Object value)
+      throws IndexOutOfBoundsException {
+    int tupleBatchIndex = rowIndex / TupleBatch.BATCH_SIZE;
+    int tupleIndex = rowIndex % TupleBatch.BATCH_SIZE;
+    if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
+        && tupleIndex >= currentInProgressTuples) {
+      throw new IndexOutOfBoundsException();
+    }
+    if (tupleBatchIndex < readyTuples.size()) {
+      MutableColumn<?> dest = readyTuples.get(tupleBatchIndex)[colIndex];
+      switch (dest.getType()) {
+        case BOOLEAN_TYPE:
+          ((BooleanMutableColumn) dest).replace(tupleIndex, (Boolean) value);
+          break;
+        case DATETIME_TYPE:
+          ((DateTimeMutableColumn) dest).replace(tupleIndex, (DateTime) value);
+          break;
+        case DOUBLE_TYPE:
+          ((DoubleMutableColumn) dest).replace(tupleIndex, (Double) value);
+          break;
+        case FLOAT_TYPE:
+          ((FloatMutableColumn) dest).replace(tupleIndex, (Float) value);
+          break;
+        case INT_TYPE:
+          ((IntMutableColumn) dest).replace(tupleIndex, (Integer) value);
+          break;
+        case LONG_TYPE:
+          ((LongMutableColumn) dest).replace(tupleIndex, (Long) value);
+          break;
+        case STRING_TYPE:
+          ((StringMutableColumn) dest).replace(tupleIndex, (String) value);
+          break;
+      }
+    } else {
+      ColumnBuilder<?> dest = currentBuildingColumns[colIndex];
+      switch (dest.getType()) {
+        case BOOLEAN_TYPE:
+          ((BooleanColumnBuilder) dest).replace(tupleIndex, (boolean) value);
+          break;
+        case DATETIME_TYPE:
+          ((DateTimeColumnBuilder) dest).replace(tupleIndex, (DateTime) value);
+          break;
+        case DOUBLE_TYPE:
+          ((DoubleColumnBuilder) dest).replace(tupleIndex, (double) value);
+          break;
+        case FLOAT_TYPE:
+          ((FloatColumnBuilder) dest).replace(tupleIndex, (float) value);
+          break;
+        case INT_TYPE:
+          ((IntColumnBuilder) dest).replace(tupleIndex, (int) value);
+          break;
+        case LONG_TYPE:
+          ((LongColumnBuilder) dest).replace(tupleIndex, (long) value);
+          break;
+        case STRING_TYPE:
+          ((StringColumnBuilder) dest).replace(tupleIndex, (String) value);
+          break;
+      }
+    }
   }
 }
