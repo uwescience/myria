@@ -26,12 +26,16 @@ public final class ExpressionEncoding extends MyriaApiEncoding implements Serial
 
   private static final ImmutableList<String> requiredFields = ImmutableList.of("outputName", "rootExpressionOperator");
 
-  public ExpressionEncoding() {
+  /**
+   * This is not really unused, it's used automagically by Jackson deserialization.
+   */
+  @SuppressWarnings("unused")
+  private ExpressionEncoding() {
     outputName = null;
     rootExpressionOperator = null;
   }
 
-  public ExpressionEncoding(String outputName, ExpressionOperator rootExpressionOperator) {
+  public ExpressionEncoding(final String outputName, final ExpressionOperator rootExpressionOperator) {
     this.outputName = outputName;
     this.rootExpressionOperator = rootExpressionOperator;
   }
