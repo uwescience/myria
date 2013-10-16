@@ -24,11 +24,11 @@ public class ToUpperCaseExpression extends UnaryExpression {
 
   @Override
   public Type getOutputType(final Schema schema) {
-    Type operandType = getChild().getOutputType(schema);
+    Type operandType = getOperand().getOutputType(schema);
     ImmutableList<Type> validTypes = ImmutableList.of(Type.STRING_TYPE);
     int operandIdx = validTypes.indexOf(operandType);
     Preconditions.checkArgument(operandIdx != -1, "ToUpperCaseExpression cannot handle operand [%s] of Type %s",
-        getChild(), operandType);
+        getOperand(), operandType);
     return Type.STRING_TYPE;
   }
 

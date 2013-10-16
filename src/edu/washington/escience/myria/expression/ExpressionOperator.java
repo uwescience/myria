@@ -18,10 +18,10 @@ import edu.washington.escience.myria.Schema;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
     @Type(name = "Constant", value = ConstantExpression.class), @Type(name = "Divide", value = DivideExpression.class),
-    @Type(name = "Minus", value = MinusExpression.class), @Type(name = "Negate", value = NegateExpression.class),
-    @Type(name = "Plus", value = PlusExpression.class), @Type(name = "Pow", value = PowExpression.class),
-    @Type(name = "Sqrt", value = SqrtExpression.class), @Type(name = "Times", value = TimesExpression.class),
-    @Type(name = "Variable", value = VariableExpression.class), })
+    @Type(name = "Log", value = LogExpression.class), @Type(name = "Minus", value = MinusExpression.class),
+    @Type(name = "Negate", value = NegateExpression.class), @Type(name = "Plus", value = PlusExpression.class),
+    @Type(name = "Pow", value = PowExpression.class), @Type(name = "Sqrt", value = SqrtExpression.class),
+    @Type(name = "Times", value = TimesExpression.class), @Type(name = "Variable", value = VariableExpression.class), })
 public abstract class ExpressionOperator implements Serializable {
   /***/
   private static final long serialVersionUID = 1L;

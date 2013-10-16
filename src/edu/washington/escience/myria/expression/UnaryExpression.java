@@ -1,6 +1,7 @@
 package edu.washington.escience.myria.expression;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import edu.washington.escience.myria.Schema;
 
@@ -12,22 +13,30 @@ public abstract class UnaryExpression extends ExpressionOperator {
   private static final long serialVersionUID = 1L;
 
   /**
-   * The child expression.
+   * This is not really unused, it's used automagically by Jackson deserialization.
    */
-  private final ExpressionOperator child;
+  protected UnaryExpression() {
+    operand = null;
+  }
 
   /**
-   * @param child the child expression.
+   * The child expression.
    */
-  protected UnaryExpression(final ExpressionOperator child) {
-    this.child = child;
+  @JsonProperty
+  private final ExpressionOperator operand;
+
+  /**
+   * @param operand the operand.
+   */
+  protected UnaryExpression(final ExpressionOperator operand) {
+    this.operand = operand;
   }
 
   /**
    * @return the child expression.
    */
-  public final ExpressionOperator getChild() {
-    return child;
+  public final ExpressionOperator getOperand() {
+    return operand;
   }
 
   /**
@@ -40,7 +49,7 @@ public abstract class UnaryExpression extends ExpressionOperator {
    */
   @JsonIgnore
   protected final String getFunctionCallUnaryString(final String functionName, final Schema schema) {
-    return new StringBuilder(functionName).append('(').append(child.getJavaString(schema)).append(')').toString();
+    return new StringBuilder(functionName).append('(').append(operand.getJavaString(schema)).append(')').toString();
   }
 
   /**
@@ -53,6 +62,6 @@ public abstract class UnaryExpression extends ExpressionOperator {
    */
   @JsonIgnore
   protected final String getDotFunctionCallUnaryString(final String functionName, final Schema schema) {
-    return new StringBuilder(child.getJavaString(schema)).append(functionName).toString();
+    return new StringBuilder(operand.getJavaString(schema)).append(functionName).toString();
   }
 }
