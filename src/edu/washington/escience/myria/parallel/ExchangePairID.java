@@ -3,6 +3,8 @@ package edu.washington.escience.myria.parallel;
 import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 /**
  * 
  * The identifier of exchange operators. In a query plan, there may be a set of exchange operators, this ID class is
@@ -18,6 +20,7 @@ public final class ExchangePairID implements Serializable {
   /**
    * The id.
    */
+  @JsonProperty
   private final long oId;
 
   /**

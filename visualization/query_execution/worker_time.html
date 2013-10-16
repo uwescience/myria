@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Myria worker time chart</title>
+    <link type="text/css" href="http://mbostock.github.io/d3/style.css" rel="stylesheet" />
+  <style>
+
+  body {
+    font: 10px sans-serif;
+  }
+
+  .axis path,
+  .axis line {
+    fill: none;
+    stroke: #000;
+    shape-rendering: crispEdges;
+  }
+
+  .bar {
+    fill: orange;
+  }
+
+  .bar:hover {
+    fill: orangered ;
+  }
+
+  .x.axis path {
+    display: none;
+  }
+
+  .d3-tip {
+    line-height: 1;
+    font-weight: bold;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #fff;
+    border-radius: 2px;
+  }
+
+  /* Creates a small triangle extender for the tooltip */
+  .d3-tip:after {
+    box-sizing: border-box;
+    display: inline;
+    font-size: 10px;
+    width: 100%;
+    line-height: 1;
+    color: rgba(0, 0, 0, 0.8);
+    content: "\25BC";
+    position: absolute;
+    text-align: center;
+  }
+
+  /* Style northward tooltips differently */
+  .d3-tip.n:after {
+    margin: -1px 0 0 0;
+    top: 100%;
+    left: 0;
+  }
+  </style>
+  <body>
+    <h1>Running time of workers</h1>
+    <form id="fileform">
+      <input type="file" id="dotfile" />
+    </form>
+    <script src="http://d3js.org/d3.v3.js"></script>
+    <script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.min.js"></script>
+    <script>
+
+    function handleFileSelect(evt) { 
+
+      // See what they selected and make sure at least one file.
+      var f = evt.target.files;
+      if (!f.length) {
+        alert('please select a file');
+      }
+      // f is the file
+      f = f[0];
+
+      var margin = {top: 40, right: 20, bottom: 30, left: 40},
+      width = 960 - margin.left - margin.right,
+      height = 500 - margin.top - margin.bottom;
+
+      //var formatPercent = d3.format(".0%");
+
+      var x = d3.scale.ordinal()
+      .rangeRoundBands([0, width], .1);
+
+      var y = d3.scale.linear()
+      .range([height, 0]);
+
+      var xAxis = d3.svg.axis()
+      .scale(x)
+      .orient("bottom");
+
+      var yAxis = d3.svg.axis()
+      .scale(y)
+      .orient("left")
+      .tickSize(0);
+
+
+
+      var reader = new FileReader();
+      reader.onload = (function(theFile) {
+        return function(e) {  
+
+          var tip = d3.tip()
+          .attr('class', 'd3-tip')
+          .offset([-10, 0])
+          .html(function(d) {
+            return "<strong>Running Time:</strong> <span style='color:red'>" + d.running_time + "</span>";
+          })
+
+          var svg = d3.select("body").append("svg")
+          .attr("width", width + margin.left + margin.right)
+          .attr("height", height + margin.top + margin.bottom)
+          .append("g")
+          .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+          svg.call(tip);
+
+          var data= d3.csv.parse(e.target.result, 
+            function(d){d.running_time = +d.running_time;
+              return d;});
+
+          x.domain(data.map(function(d) { return d.worker_id; }));
+          y.domain([0, d3.max(data, function(d) { return d.running_time; })]);
+
+          svg.append("g")
+          .attr("class", "x axis")
+          .attr("transform", "translate(0," + height + ")")
+          .call(xAxis);
+
+          svg.append("g")
+          .attr("class", "y axis")
+          .call(yAxis)
+          .append("text")
+          .attr("transform", "rotate(-90)")
+          .attr("y", 6)
+          .attr("dy", ".71em")
+          .style("text-anchor", "end")
+          .text("Worker Time (sec)");
+
+          svg.selectAll(".bar")
+          .data(data)
+          .enter().append("rect")
+          .attr("class", "bar")
+          .attr("x", function(d) { return x(d.worker_id); })
+          .attr("width", x.rangeBand())
+          .attr("y", function(d) { return y(d.running_time); })
+          .attr("height", function(d) { return height - y(d.running_time); })
+          .on('mouseover', tip.show)
+          .on('mouseout', tip.hide);
+
+        }
+      })(f);
+
+
+
+  // Read the file as text.
+  reader.readAsText(f);   
+
+}
+
+document.getElementById('dotfile').addEventListener('change', handleFileSelect, false);
+
+</script>
+</body>
+</html>

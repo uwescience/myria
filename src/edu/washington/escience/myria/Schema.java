@@ -187,9 +187,11 @@ public final class Schema implements Serializable {
   }
 
   /** The types of the columns in this relation. */
+  @JsonProperty
   private final List<Type> columnTypes;
 
   /** The names of the columns in this relation. */
+  @JsonProperty
   private final List<String> columnNames;
 
   /**
@@ -218,14 +220,22 @@ public final class Schema implements Serializable {
   }
 
   /**
+   * This is not really unused, it's used automagically by Jackson deserialization.
+   */
+  @SuppressWarnings("unused")
+  private Schema() {
+    columnTypes = null;
+    columnNames = null;
+  }
+
+  /**
    * Create a new Schema with typeAr.length columns with columns of the specified types, with associated named columns.
    * 
    * @param columnTypes array specifying the number of and types of columns in this Schema. It must contain at least one
    *          entry.
    * @param columnNames array specifying the names of the columns.
    */
-  public Schema(@JsonProperty("column_types") final List<Type> columnTypes,
-      @JsonProperty("column_names") final List<String> columnNames) {
+  public Schema(final List<Type> columnTypes, final List<String> columnNames) {
     Objects.requireNonNull(columnTypes, "Column types cannot be null");
     Objects.requireNonNull(columnNames, "Column names cannot be null");
     if (columnTypes.size() != columnNames.size()) {

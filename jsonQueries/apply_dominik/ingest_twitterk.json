@@ -1,0 +1,12 @@
+{
+  "relation_key" : {
+    "user_name" : "public",
+    "program_name" : "adhoc",
+    "relation_name" : "TwitterK"
+  },
+  "schema" : {
+    "column_types" : ["LONG_TYPE", "LONG_TYPE"],
+    "column_names" : ["follower", "followee"]
+  },
+  "file_name" : "/Users/dominik/Developer/Workspace/myria/jsonQueries/apply_dominik/TwitterK.csv"
+}
