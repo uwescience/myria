@@ -357,7 +357,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
     final Operator left = getLeft();
     final Operator right = getRight();
 
-    if (left.eos() && right.eos()) {
+    if (left.eos() && right.eos() && ans.numTuples() == 0) {
       setEOS();
       return;
     }
@@ -460,7 +460,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
     Preconditions.checkArgument(numNoData <= 2);
 
     checkEOSAndEOI();
-    if (eoi() || eos()) {
+    if (eoi() || (left.eos() && right.eos())) {
       nexttb = ans.popAny();
     }
     return nexttb;
