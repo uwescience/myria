@@ -3,7 +3,12 @@
  */
 package edu.washington.escience.myria.accessmethod;
 
+import java.io.Serializable;
 import java.util.Iterator;
+
+import org.apache.commons.lang.builder.HashCodeBuilder;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
@@ -145,4 +150,81 @@ public abstract class AccessMethod {
    * @throws DbException if there is an error dropping the table.
    */
   public abstract void dropTableIfExists(RelationKey relationKey) throws DbException;
+
+  /**
+   * Holds a reference to a column and whether it is ascending or descending.
+   */
+  public final class IndexRef implements Serializable {
+
+    /** Required for Java serialization. */
+    private static final long serialVersionUID = 1L;
+    /** Which column should be hashed. */
+    @JsonProperty
+    private final int column;
+    /** True if the column should be hashed in ascending order. */
+    @JsonProperty
+    private final boolean ascending;
+
+    /**
+     * This is not really unused, it's used automagically by Jackson deserialization.
+     */
+    @SuppressWarnings("unused")
+    private IndexRef() {
+      column = -1;
+      ascending = true;
+    }
+
+    /**
+     * Constructs a new IndexRef.
+     * 
+     * @param column which column should be hashed.
+     * @param ascending true if the column should be hashed in ascending order.
+     */
+    public IndexRef(final int column, final boolean ascending) {
+      this.column = column;
+      this.ascending = ascending;
+    }
+
+    /**
+     * Constructs a new IndexRef.
+     * 
+     * @param column which column should be hashed.
+     */
+    public IndexRef(final int column) {
+      this(column, true);
+    }
+
+    /**
+     * @return which column should be hashed.
+     */
+    public int getColumn() {
+      return column;
+    }
+
+    /**
+     * @return true if the column should be hashed in ascending order.
+     */
+    public boolean isAscending() {
+      return ascending;
+    }
+
+    @Override
+    public int hashCode() {
+      HashCodeBuilder hb = new HashCodeBuilder();
+      hb.append(ascending).append(column);
+      return hb.toHashCode();
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+      if (o == null) {
+        return false;
+      }
+      if (!(o instanceof IndexRef)) {
+        return false;
+      }
+      IndexRef other = (IndexRef) o;
+      return ascending == other.ascending && column == other.column;
+    }
+  }
 }
