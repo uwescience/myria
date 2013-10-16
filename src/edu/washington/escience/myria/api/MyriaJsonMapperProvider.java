@@ -4,6 +4,8 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.Provider;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.jaxrs.json.JacksonJaxbJsonProvider;
@@ -45,6 +47,11 @@ public class MyriaJsonMapperProvider extends JacksonJaxbJsonProvider {
     // mapper.setSerializationInclusion(JsonInclude.Include.NON_DEFAULT);
     // mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
     // mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+    /* Don't automatically detect getters, explicit is better than implicit. */
+    mapper.setVisibility(PropertyAccessor.GETTER, Visibility.NONE);
+    mapper.setVisibility(PropertyAccessor.IS_GETTER, Visibility.NONE);
+    mapper.setVisibility(PropertyAccessor.SETTER, Visibility.NONE);
 
     /* Use the Web's property naming strategy. */
     mapper.setPropertyNamingStrategy(PropertyNamingStrategy.CAMEL_CASE_TO_LOWER_CASE_WITH_UNDERSCORES);
