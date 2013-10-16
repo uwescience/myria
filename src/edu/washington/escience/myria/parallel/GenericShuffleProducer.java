@@ -127,8 +127,8 @@ public class GenericShuffleProducer extends Producer {
     }
 
     if (isProfilingMode()) {
-      LOGGER.info("[{}#{}]{}[{}]: shuffle network time {} ms", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
-          getOpName(), shuffleNetworkTime);
+      LOGGER.info("[{}#{}][{}@{}][{}]: shuffle network time {} ms", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
+          getOpName(), getFragmentId(), this, shuffleNetworkTime);
     }
   }
 
