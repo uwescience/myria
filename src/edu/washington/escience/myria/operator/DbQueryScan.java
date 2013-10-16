@@ -3,6 +3,7 @@ package edu.washington.escience.myria.operator;
 import java.util.Iterator;
 import java.util.Objects;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.DbException;
@@ -42,6 +43,16 @@ public class DbQueryScan extends LeafOperator {
    * */
   private String baseSQL;
 
+  /**
+   * Column indexes that the output should be ordered by.
+   */
+  private final int[] sortedColumns;
+
+  /**
+   * True for each column in {@link #sortedColumns} that should be ordered ascending.
+   */
+  private final boolean[] ascending;
+
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
@@ -62,6 +73,8 @@ public class DbQueryScan extends LeafOperator {
     this.outputSchema = outputSchema;
     connectionInfo = null;
     tuples = null;
+    sortedColumns = null;
+    ascending = null;
   }
 
   /**
@@ -92,6 +105,8 @@ public class DbQueryScan extends LeafOperator {
     baseSQL = null;
     connectionInfo = null;
     tuples = null;
+    sortedColumns = null;
+    ascending = null;
   }
 
   /**
@@ -104,6 +119,45 @@ public class DbQueryScan extends LeafOperator {
    */
   public DbQueryScan(final ConnectionInfo connectionInfo, final RelationKey relationKey, final Schema outputSchema) {
     this(relationKey, outputSchema);
+    Objects.requireNonNull(connectionInfo);
+    this.connectionInfo = connectionInfo;
+  }
+
+  /**
+   * Construct a new DbQueryScan object that runs <code>SELECT * FROM relationKey ORDER BY [...]</code>.
+   * 
+   * @param relationKey the relation to be scanned.
+   * @param outputSchema the Schema of the returned tuples.
+   * @param sortedColumns the columns by which the tuples should be ordered by.
+   * @param ascending true for columns that should be ordered ascending.
+   */
+  public DbQueryScan(final RelationKey relationKey, final Schema outputSchema, final int[] sortedColumns,
+      final boolean[] ascending) {
+    Objects.requireNonNull(relationKey);
+    Objects.requireNonNull(outputSchema);
+
+    this.relationKey = relationKey;
+    this.outputSchema = outputSchema;
+    this.sortedColumns = sortedColumns;
+    this.ascending = ascending;
+    baseSQL = null;
+    connectionInfo = null;
+    tuples = null;
+  }
+
+  /**
+   * Construct a new DbQueryScan object that runs <code>SELECT * FROM relationKey ORDER BY [...]</code>, but receiving
+   * the connection info as input.
+   * 
+   * @param connectionInfo the connection information.
+   * @param relationKey the relation to be scanned.
+   * @param outputSchema the Schema of the returned tuples.
+   * @param sortedColumns the columns by which the tuples should be ordered by.
+   * @param ascending true for columns that should be ordered ascending.
+   */
+  public DbQueryScan(final ConnectionInfo connectionInfo, final RelationKey relationKey, final Schema outputSchema,
+      final int[] sortedColumns, final boolean[] ascending) {
+    this(relationKey, outputSchema, sortedColumns, ascending);
     Objects.requireNonNull(connectionInfo);
     this.connectionInfo = connectionInfo;
   }
@@ -156,6 +210,25 @@ public class DbQueryScan extends LeafOperator {
 
     if (relationKey != null) {
       baseSQL = "SELECT * FROM " + relationKey.toString(connectionInfo.getDbms());
+
+      String prefix = "";
+      if (sortedColumns != null && sortedColumns.length > 0) {
+        Preconditions.checkArgument(sortedColumns.length == ascending.length);
+        StringBuilder orderByClause = new StringBuilder(" ORDER BY");
+
+        for (int columnIdx : sortedColumns) {
+          orderByClause.append(prefix + " " + getSchema().getColumnName(columnIdx));
+          if (ascending[columnIdx]) {
+            orderByClause.append(" ASC");
+          } else {
+            orderByClause.append(" DESC");
+          }
+
+          prefix = ",";
+        }
+
+        baseSQL = baseSQL.concat(orderByClause.toString());
+      }
     }
   }
 
