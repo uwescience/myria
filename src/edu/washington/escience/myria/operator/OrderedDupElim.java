@@ -23,7 +23,7 @@ public final class OrderedDupElim extends UnaryOperator {
   private int lastTupleRow;
 
   /**
-   * The order in which columns of the input tuple are scanend. So named because we want to scan in the reverse order
+   * The order in which columns of the input tuple are scanned. So named because we want to scan in the reverse order
    * that columns were sorted to find differences as quickly as possible.
    */
   private int[] invSortColumns;
@@ -95,11 +95,6 @@ public final class OrderedDupElim extends UnaryOperator {
         lastTupleBatch = tb;
         lastTupleRow = row;
       }
-    }
-
-    /* All tuples in the batch are set to be output. */
-    if (output.cardinality() == tb.numTuples()) {
-      return tb;
     }
 
     return tb.filter(output);
