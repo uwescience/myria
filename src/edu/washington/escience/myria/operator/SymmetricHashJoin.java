@@ -363,7 +363,7 @@ public final class SymmetricHashJoin extends BinaryOperator {
     }
 
     // EOS could be used as an EOI
-    if ((childrenEOI[0] || left.eos()) && (childrenEOI[1] || right.eos())) {
+    if ((childrenEOI[0] || left.eos()) && (childrenEOI[1] || right.eos()) && ans.numTuples() == 0) {
       setEOI(true);
       Arrays.fill(childrenEOI, false);
     }
@@ -374,93 +374,118 @@ public final class SymmetricHashJoin extends BinaryOperator {
    */
   private final boolean[] childrenEOI = new boolean[2];
 
+  /**
+   * consume EOI from Child 1. reset the child's EOI to false 2. record the EOI in childrenEOI[]
+   * 
+   * @param fromLeft true if consuming eoi from left child, false if consuming eoi from right child
+   */
+  private void consumeChildEOI(final boolean fromLeft) {
+    final Operator left = getLeft();
+    final Operator right = getRight();
+    if (fromLeft) {
+      Preconditions.checkArgument(left.eoi());
+      left.setEOI(false);
+      childrenEOI[0] = true;
+    } else {
+      Preconditions.checkArgument(right.eoi());
+      right.setEOI(false);
+      childrenEOI[1] = true;
+    }
+  }
+
+  /**
+   * @return whether all children have recorded eoi.
+   */
+  private boolean whetherAllChildrenRecordedEOI() {
+    if (childrenEOI[1] && childrenEOI[0]) {
+      return true;
+    }
+    return false;
+  }
+
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
     if (!nonBlocking) {
       return fetchNextReadySynchronousEOI();
     }
+
+    final Operator left = getLeft();
+    final Operator right = getRight();
+
+    /* Check eos and eoi first. */
+    checkEOSAndEOI();
+    if (eos() || eoi()) {
+      System.out.println("eos :" + eos() + " eoi:" + eoi() + " this:" + this);
+      return null;
+    }
+
+    /*
+     * if both children are eos or both children have recorded eoi, pop any tuples in buffer (EOI or EOS will be set in
+     * next call).
+     */
+    if ((left.eos() && right.eos()) || whetherAllChildrenRecordedEOI()) {
+      System.out.println("1");
+      return ans.popAny();
+    }
+
+    /* If any full tuple batches are ready, output them. */
     TupleBatch nexttb = ans.popFilled();
     if (nexttb != null) {
       return nexttb;
     }
 
-    if (eoi()) {
-      return ans.popAny();
-    }
+    int numOfChildNoData = 0;
+    while (numOfChildNoData < 2 && (!left.eos() || !right.eos())) {
 
-    final Operator left = getLeft();
-    final Operator right = getRight();
-    TupleBatch leftTB = null;
-    TupleBatch rightTB = null;
-    int numEOS = 0;
-    int numNoData = 0;
+      numOfChildNoData = 0;
 
-    while (numEOS < 2 && numNoData < 2) {
-
-      numEOS = 0;
-      if (left.eos()) {
-        numEOS += 1;
-      }
-      if (right.eos()) {
-        numEOS += 1;
-      }
-      numNoData = numEOS;
-
-      leftTB = null;
-      rightTB = null;
+      /* process tuple from left child */
       if (!left.eos()) {
-        leftTB = left.nextReady();
-        if (leftTB != null) { // data
+        TupleBatch leftTB = left.nextReady();
+
+        if (leftTB != null) { // process the data that is pulled from left child
           processChildTB(leftTB, true);
           nexttb = ans.popAnyUsingTimeout();
           if (nexttb != null) {
             return nexttb;
           }
         } else {
-          // eoi or eos or no data
+          /* if left eoi, consume it, check whether it will cause EOI of this operator */
           if (left.eoi()) {
-            left.setEOI(false);
-            childrenEOI[0] = true;
-            checkEOSAndEOI();
-            if (eoi()) {
-              break;
+            consumeChildEOI(true);
+            if (whetherAllChildrenRecordedEOI()) {
+              return ans.popAny();
             }
-          } else if (left.eos()) {
-            numEOS++;
-          } else {
-            numNoData++;
           }
+          numOfChildNoData++;
         }
       }
+
+      /* process tuple from right child */
       if (!right.eos()) {
-        rightTB = right.nextReady();
-        if (rightTB != null) {
+        TupleBatch rightTB = right.nextReady();
+        if (rightTB != null) { // process the data that is pulled from left child
           processChildTB(rightTB, false);
           nexttb = ans.popAnyUsingTimeout();
           if (nexttb != null) {
             return nexttb;
           }
         } else {
+          /* if left eoi, consume it, check whether it will cause EOI of this operator */
           if (right.eoi()) {
-            right.setEOI(false);
-            childrenEOI[1] = true;
-            checkEOSAndEOI();
-            if (eoi()) {
-              break;
+            consumeChildEOI(false);
+            if (whetherAllChildrenRecordedEOI()) {
+              return ans.popAny();
             }
-          } else if (right.eos()) {
-            numEOS++;
-          } else {
-            numNoData++;
           }
+          numOfChildNoData++;
         }
       }
     }
-    Preconditions.checkArgument(numEOS <= 2);
-    Preconditions.checkArgument(numNoData <= 2);
 
     checkEOSAndEOI();
-    if (eoi() || (left.eos() && right.eos())) {
+    if (left.eos() && right.eos()) {
+      System.out.println("3");
       nexttb = ans.popAny();
     }
     return nexttb;
