@@ -36,8 +36,8 @@ public class ToUpperCaseExpression extends UnaryExpression {
     Type operandType = getOperand().getOutputType(schema);
     ImmutableList<Type> validTypes = ImmutableList.of(Type.STRING_TYPE);
     int operandIdx = validTypes.indexOf(operandType);
-    Preconditions.checkArgument(operandIdx != -1, "ToUpperCaseExpression cannot handle operand [%s] of Type %s",
-        getOperand(), operandType);
+    Preconditions.checkArgument(operandIdx != -1, "%s cannot handle operand [%s] of Type %s", getClass()
+        .getSimpleName(), getOperand(), operandType);
     return Type.STRING_TYPE;
   }
 

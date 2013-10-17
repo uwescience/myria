@@ -35,8 +35,8 @@ public class NegateExpression extends UnaryExpression {
     Type operandType = getOperand().getOutputType(schema);
     ImmutableList<Type> validTypes = ImmutableList.of(Type.DOUBLE_TYPE, Type.FLOAT_TYPE, Type.LONG_TYPE, Type.INT_TYPE);
     int operandIdx = validTypes.indexOf(operandType);
-    Preconditions.checkArgument(operandIdx != -1, "NegateExpression cannot handle operand [%s] of Type %s",
-        getOperand(), operandType);
+    Preconditions.checkArgument(operandIdx != -1, "%s cannot handle operand [%s] of Type %s", getClass()
+        .getSimpleName(), getOperand(), operandType);
     return operandType;
   }
 
