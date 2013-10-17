@@ -28,7 +28,7 @@ public abstract class ConnectionInfo {
    * @return the connection info
    */
   public static ConnectionInfo of(final String dbms, final String jsonConnInfo) {
-    ObjectMapper mapper = MyriaJsonMapperProvider.newMapper();
+    ObjectMapper mapper = MyriaJsonMapperProvider.getMapper();
     try {
       switch (dbms) {
         case MyriaConstants.STORAGE_SYSTEM_SQLITE:
@@ -50,7 +50,7 @@ public abstract class ConnectionInfo {
    * @return the JSON representation
    */
   public String toJson() {
-    ObjectMapper mapper = MyriaJsonMapperProvider.newMapper();
+    ObjectMapper mapper = MyriaJsonMapperProvider.getMapper();
     try {
       return mapper.writeValueAsString(this);
     } catch (JsonProcessingException e) {
