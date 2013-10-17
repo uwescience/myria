@@ -3,8 +3,11 @@ package edu.washington.escience.myria.expression;
 import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.Type;
 
 /**
  * An ExpressionOperator with one child.
@@ -83,7 +86,41 @@ public abstract class BinaryExpression extends ExpressionOperator {
    * 
    * @return a hash of (getClass().getCanonicalName(), left, right).
    */
-  public final int defaultHashCode() {
+  protected final int defaultHashCode() {
     return Objects.hash(getClass().getCanonicalName(), left, right);
+  }
+
+  @Override
+  public int hashCode() {
+    return defaultHashCode();
+  }
+
+  @Override
+  public boolean equals(final Object other) {
+    if (other == null || !getClass().equals(other.getClass())) {
+      return false;
+    }
+    BinaryExpression otherExpr = (BinaryExpression) other;
+    return Objects.equals(left, otherExpr.left) && Objects.equals(right, otherExpr.right);
+  }
+
+  /**
+   * A function that could be used as the default type checker for a binary expression where both operands must be
+   * numeric.
+   * 
+   * @param schema the schema of the input tuples.
+   * @return the default numeric type, based on the types of the children and Java type precedence.
+   */
+  protected final Type checkAndReturnDefaultNumericType(final Schema schema) {
+    Type leftType = getLeft().getOutputType(schema);
+    Type rightType = getRight().getOutputType(schema);
+    ImmutableList<Type> validTypes = ImmutableList.of(Type.DOUBLE_TYPE, Type.FLOAT_TYPE, Type.LONG_TYPE, Type.INT_TYPE);
+    int leftIdx = validTypes.indexOf(leftType);
+    int rightIdx = validTypes.indexOf(rightType);
+    Preconditions.checkArgument(leftIdx != -1, "%s cannot handle left child [%s] of Type %s", getClass()
+        .getSimpleName(), getLeft(), leftType);
+    Preconditions.checkArgument(rightIdx != -1, "%s cannot handle right child [%s] of Type %s", getClass()
+        .getSimpleName(), getRight(), rightType);
+    return validTypes.get(Math.min(leftIdx, rightIdx));
   }
 }
