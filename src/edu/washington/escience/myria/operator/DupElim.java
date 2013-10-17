@@ -72,7 +72,7 @@ public final class DupElim extends UnaryOperator {
       return tb;
     }
     final BitSet toRemove = new BitSet(numTuples);
-    final List<Object> cntTuple = new ArrayList<Object>();
+    final List<Object> cntTuple = new ArrayList<Object>(tb.numColumns());
     for (int i = 0; i < numTuples; ++i) {
       cntTuple.clear();
       for (int j = 0; j < tb.numColumns(); ++j) {
@@ -85,7 +85,7 @@ public final class DupElim extends UnaryOperator {
         for (int j = 0; j < tb.numColumns(); ++j) {
           uniqueTuples.put(j, cntTuple.get(j));
         }
-        tupleIndexList = new ArrayList<Integer>();
+        tupleIndexList = new ArrayList<Integer>(1);
         tupleIndexList.add(nextIndex);
         uniqueTupleIndices.put(cntHashCode, tupleIndexList);
         continue;
