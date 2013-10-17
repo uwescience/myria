@@ -2,17 +2,18 @@ package edu.washington.escience.myria.expression;
 
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Objects;
 
 import org.codehaus.commons.compiler.CompilerFactoryFactory;
 import org.codehaus.commons.compiler.IScriptEvaluator;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.api.encoding.ExpressionEncoding;
 
 /**
  * An expression that can be applied to a tuple.
@@ -24,17 +25,20 @@ public class Expression implements Serializable {
   /**
    * Name of the column that the result will be written to.
    */
+  @JsonProperty
   private final String outputName;
 
   /**
    * The java expression to be evaluated in {@link #eval}.
    */
+  @JsonProperty
   private String javaExpression;
 
   /**
    * Expression encoding reference is needed to get the output type.
    */
-  private final ExpressionEncoding expressionEncoding;
+  @JsonProperty
+  private final ExpressionOperator rootExpressionOperator;
 
   /**
    * Expression evaluator.
@@ -42,24 +46,50 @@ public class Expression implements Serializable {
   private Evaluator evaluator;
 
   /**
+   * The schema of the input tuples to this expression.
+   */
+  private Schema inputSchema;
+
+  /**
+   * This is not really unused, it's used automagically by Jackson deserialization.
+   */
+  @SuppressWarnings("unused")
+  private Expression() {
+    outputName = null;
+    rootExpressionOperator = null;
+  }
+
+  /**
    * Constructs the Expression object.
    * 
    * @param outputName the name of the resulting element
-   * @param expressionEncoding Expression encoding that created this expression. Necessary to get output type.
+   * @param rootExpressionOperator the root of the AST representing this expression.
    */
-  public Expression(final String outputName, final ExpressionEncoding expressionEncoding) {
+  public Expression(final String outputName, final ExpressionOperator rootExpressionOperator) {
     this.outputName = outputName;
-    this.expressionEncoding = expressionEncoding;
+    this.rootExpressionOperator = rootExpressionOperator;
+  }
+
+  /**
+   * Constructs the Expression object.
+   * 
+   * @param outputName the name of the resulting element
+   * @param rootExpressionOperator the root of the AST representing this expression.
+   * @param inputSchema the schema of the input tuples to this expression.
+   */
+  public Expression(final String outputName, final ExpressionOperator rootExpressionOperator, final Schema inputSchema) {
+    this.outputName = outputName;
+    this.rootExpressionOperator = rootExpressionOperator;
+    this.inputSchema = inputSchema;
   }
 
   /**
    * Compiles the {@link #javaExpression}.
    * 
-   * @param inputSchema the input schema
    * @throws DbException compilation failed
    */
-  public void compile(final Schema inputSchema) throws DbException {
-    javaExpression = expressionEncoding.getJavaString(inputSchema);
+  public void compile() throws DbException {
+    javaExpression = rootExpressionOperator.getJavaString(Objects.requireNonNull(inputSchema));
 
     try {
       IScriptEvaluator se = CompilerFactoryFactory.getDefaultCompilerFactory().newExpressionEvaluator();
@@ -91,15 +121,36 @@ public class Expression implements Serializable {
   }
 
   /**
-   * @param schema the input schema
+   * @return the Java form of this expression.
+   */
+  @JsonProperty
+  public String getJavaExpression() {
+    if (javaExpression == null) {
+      return rootExpressionOperator.getJavaString(Objects.requireNonNull(inputSchema));
+    }
+    return javaExpression;
+  }
+
+  /**
    * @return the type of the output
    */
-  public Type getOutputType(final Schema schema) {
-    return expressionEncoding.getOutputType(schema);
+  public Type getOutputType() {
+    return rootExpressionOperator.getOutputType(Objects.requireNonNull(inputSchema));
   }
 
   @Override
   public String toString() {
-    return "Expression: " + javaExpression;
+    return getJavaExpression();
+  }
+
+  /**
+   * Set the schema of the input tuples to this expression.
+   * 
+   * @param inputSchema the schema of the input tuples to this expression.
+   */
+  public void setSchema(final Schema inputSchema) {
+    this.inputSchema = inputSchema;
+    javaExpression = null;
+    evaluator = null;
   }
 }

@@ -11,7 +11,6 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.api.encoding.ExpressionEncoding;
 import edu.washington.escience.myria.expression.AbsExpression;
 import edu.washington.escience.myria.expression.AndExpression;
 import edu.washington.escience.myria.expression.CeilExpression;
@@ -74,9 +73,9 @@ public class ApplyTest {
 
       ExpressionOperator squareRoot = new SqrtExpression(vara);
 
-      ExpressionEncoding exprEnc = new ExpressionEncoding("first", squareRoot);
+      Expression expr = new Expression("first", squareRoot);
 
-      expressions.add(exprEnc.construct());
+      expressions.add(expr);
     }
 
     {
@@ -87,8 +86,8 @@ public class ApplyTest {
 
       ExpressionOperator times = new TimesExpression(plus, minus);
 
-      ExpressionEncoding exprEnc = new ExpressionEncoding("second", times);
-      expressions.add(exprEnc.construct());
+      Expression expr = new Expression("second", times);
+      expressions.add(expr);
     }
 
     {
@@ -102,8 +101,8 @@ public class ApplyTest {
 
       ExpressionOperator sqrt = new SqrtExpression(plus);
 
-      ExpressionEncoding exprEnc = new ExpressionEncoding("third", sqrt);
-      expressions.add(exprEnc.construct());
+      Expression expr = new Expression("third", sqrt);
+      expressions.add(expr);
     }
 
     {
@@ -111,8 +110,8 @@ public class ApplyTest {
 
       ExpressionOperator upper = new ToUpperCaseExpression(vard);
 
-      ExpressionEncoding exprEnc = new ExpressionEncoding("fourth", upper);
-      expressions.add(exprEnc.construct());
+      Expression expr = new Expression("fourth", upper);
+      expressions.add(expr);
     }
 
     {
@@ -120,8 +119,8 @@ public class ApplyTest {
 
       ExpressionOperator abs = new AbsExpression(new MinusExpression(varb, vara));
 
-      ExpressionEncoding exprEnc = new ExpressionEncoding("fifth", abs);
-      expressions.add(exprEnc.construct());
+      Expression expr = new Expression("fifth", abs);
+      expressions.add(expr);
     }
 
     {
@@ -132,9 +131,9 @@ public class ApplyTest {
       ExpressionOperator ceil = new CeilExpression(squareRoot);
       ExpressionOperator plus = new PlusExpression(floor, ceil);
 
-      ExpressionEncoding exprEnc = new ExpressionEncoding("sixth", plus);
+      Expression expr = new Expression("sixth", plus);
 
-      expressions.add(exprEnc.construct());
+      expressions.add(expr);
     }
 
     {
@@ -152,20 +151,20 @@ public class ApplyTest {
           new TimesExpression(new TanExpression(angle), new ConstantExpression(Type.INT_TYPE, "4"));
       ExpressionOperator add = new PlusExpression(new PlusExpression(cos, sin), tan);
 
-      ExpressionEncoding exprEnc = new ExpressionEncoding("trig", add);
+      Expression expr = new Expression("trig", add);
 
-      expressions.add(exprEnc.construct());
+      expressions.add(expr);
     }
 
     {
-      // Expression: !(false || vard && true);
+      // Expression: !(false || e && true);
 
       ExpressionOperator and = new AndExpression(vare, new ConstantExpression(Type.BOOLEAN_TYPE, "true"));
       ExpressionOperator or = new OrExpression(new ConstantExpression(Type.BOOLEAN_TYPE, "false"), and);
       ExpressionOperator not = new NotExpression(or);
-      ExpressionEncoding exprEnc = new ExpressionEncoding("boolean", not);
+      Expression expr = new Expression("boolean", not);
 
-      expressions.add(exprEnc.construct());
+      expressions.add(expr);
     }
 
     Apply apply = new Apply(new TupleSource(tbb), expressions.build());
@@ -237,54 +236,54 @@ public class ApplyTest {
       // Expression: vara == varb;
 
       ExpressionOperator eq = new EqualsExpression(vara, varb);
-      ExpressionEncoding exprEnc = new ExpressionEncoding("equals", eq);
+      Expression expr = new Expression("equals", eq);
 
-      expressions.add(exprEnc.construct());
+      expressions.add(expr);
     }
 
     {
       // Expression: vara != varb;
 
       ExpressionOperator neq = new NotEqualsExpression(vara, varb);
-      ExpressionEncoding exprEnc = new ExpressionEncoding("notequals", neq);
+      Expression expr = new Expression("notequals", neq);
 
-      expressions.add(exprEnc.construct());
+      expressions.add(expr);
     }
 
     {
       // Expression: vara > varb;
 
       ExpressionOperator gt = new GreaterThanExpression(vara, varb);
-      ExpressionEncoding exprEnc = new ExpressionEncoding("greaterthan", gt);
+      Expression expr = new Expression("greaterthan", gt);
 
-      expressions.add(exprEnc.construct());
+      expressions.add(expr);
     }
 
     {
       // Expression: vara < varb;
 
       ExpressionOperator lt = new LessThanExpression(vara, varb);
-      ExpressionEncoding exprEnc = new ExpressionEncoding("lessthan", lt);
+      Expression expr = new Expression("lessthan", lt);
 
-      expressions.add(exprEnc.construct());
+      expressions.add(expr);
     }
 
     {
       // Expression: vara >= varb;
 
       ExpressionOperator gteq = new GreaterThanOrEqualsExpression(vara, varb);
-      ExpressionEncoding exprEnc = new ExpressionEncoding("greaterthanequals", gteq);
+      Expression expr = new Expression("greaterthanequals", gteq);
 
-      expressions.add(exprEnc.construct());
+      expressions.add(expr);
     }
 
     {
       // Expression: vara <= varb;
 
       ExpressionOperator lteq = new LessThanOrEqualsExpression(vara, varb);
-      ExpressionEncoding exprEnc = new ExpressionEncoding("lessthanequals", lteq);
+      Expression expr = new Expression("lessthanequals", lteq);
 
-      expressions.add(exprEnc.construct());
+      expressions.add(expr);
     }
 
     Apply apply = new Apply(new TupleSource(tbb), expressions.build());
@@ -338,54 +337,54 @@ public class ApplyTest {
       // Expression: varc == vard;
 
       ExpressionOperator eq = new EqualsExpression(varc, vard);
-      ExpressionEncoding exprEnc = new ExpressionEncoding("s_equals", eq);
+      Expression expr = new Expression("s_equals", eq);
 
-      expressions.add(exprEnc.construct());
+      expressions.add(expr);
     }
 
     {
       // Expression: varc != vard;
 
       ExpressionOperator neq = new NotEqualsExpression(varc, vard);
-      ExpressionEncoding exprEnc = new ExpressionEncoding("s_notequals", neq);
+      Expression expr = new Expression("s_notequals", neq);
 
-      expressions.add(exprEnc.construct());
+      expressions.add(expr);
     }
 
     {
       // Expression: varc > vard;
 
       ExpressionOperator gt = new GreaterThanExpression(varc, vard);
-      ExpressionEncoding exprEnc = new ExpressionEncoding("s_greaterthan", gt);
+      Expression expr = new Expression("s_greaterthan", gt);
 
-      expressions.add(exprEnc.construct());
+      expressions.add(expr);
     }
 
     {
       // Expression: varc < vard;
 
       ExpressionOperator lt = new LessThanExpression(varc, vard);
-      ExpressionEncoding exprEnc = new ExpressionEncoding("s_lessthan", lt);
+      Expression expr = new Expression("s_lessthan", lt);
 
-      expressions.add(exprEnc.construct());
+      expressions.add(expr);
     }
 
     {
       // Expression: varc >= vard;
 
       ExpressionOperator gteq = new GreaterThanOrEqualsExpression(varc, vard);
-      ExpressionEncoding exprEnc = new ExpressionEncoding("s_greaterthanequals", gteq);
+      Expression expr = new Expression("s_greaterthanequals", gteq);
 
-      expressions.add(exprEnc.construct());
+      expressions.add(expr);
     }
 
     {
       // Expression: varc <= vard;
 
       ExpressionOperator lteq = new LessThanOrEqualsExpression(varc, vard);
-      ExpressionEncoding exprEnc = new ExpressionEncoding("s_lessthanequals", lteq);
+      Expression expr = new Expression("s_lessthanequals", lteq);
 
-      expressions.add(exprEnc.construct());
+      expressions.add(expr);
     }
 
     Apply apply = new Apply(new TupleSource(tbb), expressions.build());

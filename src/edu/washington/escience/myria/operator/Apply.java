@@ -90,7 +90,8 @@ public class Apply extends UnaryOperator {
     Schema inputSchema = getChild().getSchema();
 
     for (Expression expr : expressions) {
-      expr.compile(inputSchema);
+      expr.setSchema(inputSchema);
+      expr.compile();
     }
   }
 
@@ -99,12 +100,21 @@ public class Apply extends UnaryOperator {
     if (expressions == null) {
       return null;
     }
+    Operator child = getChild();
+    if (child == null) {
+      return null;
+    }
+    Schema childSchema = child.getSchema();
+    if (childSchema == null) {
+      return null;
+    }
 
     ImmutableList.Builder<Type> typesBuilder = ImmutableList.builder();
     ImmutableList.Builder<String> namesBuilder = ImmutableList.builder();
 
     for (Expression expr : expressions) {
-      typesBuilder.add(expr.getOutputType(getChild().getSchema()));
+      expr.setSchema(childSchema);
+      typesBuilder.add(expr.getOutputType());
       namesBuilder.add(expr.getOutputName());
     }
     return new Schema(typesBuilder.build(), namesBuilder.build());
