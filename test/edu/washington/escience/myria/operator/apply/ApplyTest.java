@@ -21,6 +21,7 @@ import edu.washington.escience.myria.api.encoding.ExpressionEncoding;
 import edu.washington.escience.myria.expression.AbsExpression;
 import edu.washington.escience.myria.expression.CeilExpression;
 import edu.washington.escience.myria.expression.ConstantExpression;
+import edu.washington.escience.myria.expression.CosExpression;
 import edu.washington.escience.myria.expression.DivideExpression;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
@@ -30,7 +31,9 @@ import edu.washington.escience.myria.expression.MinusExpression;
 import edu.washington.escience.myria.expression.NegateExpression;
 import edu.washington.escience.myria.expression.PlusExpression;
 import edu.washington.escience.myria.expression.PowExpression;
+import edu.washington.escience.myria.expression.SinExpression;
 import edu.washington.escience.myria.expression.SqrtExpression;
+import edu.washington.escience.myria.expression.TanExpression;
 import edu.washington.escience.myria.expression.TimesExpression;
 import edu.washington.escience.myria.expression.ToUpperCaseExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
@@ -128,6 +131,26 @@ public class ApplyTest {
       expressions.add(exprEnc.construct());
     }
 
+    {
+      // Expression: Math.cos(a * Math.PI / 180) * 2 + Math.sin(a * Math.PI / 180) * 3 + Math.tan(a * Math.PI / 180) *
+      // 4;
+
+      ExpressionOperator angle =
+          new DivideExpression(new TimesExpression(vara, new ConstantExpression(Type.DOUBLE_TYPE, "Math.PI")),
+              new ConstantExpression(Type.INT_TYPE, "180"));
+      ExpressionOperator cos =
+          new TimesExpression(new CosExpression(angle), new ConstantExpression(Type.INT_TYPE, "2"));
+      ExpressionOperator sin =
+          new TimesExpression(new SinExpression(angle), new ConstantExpression(Type.INT_TYPE, "3"));
+      ExpressionOperator tan =
+          new TimesExpression(new TanExpression(angle), new ConstantExpression(Type.INT_TYPE, "4"));
+      ExpressionOperator add = new PlusExpression(new PlusExpression(cos, sin), tan);
+
+      ExpressionEncoding exprEnc = new ExpressionEncoding("trig", add);
+
+      expressions.add(exprEnc.construct());
+    }
+
     Apply apply = new Apply(new TupleSource(tbb), expressions.build());
 
     apply.open(null);
@@ -137,13 +160,14 @@ public class ApplyTest {
     while (!apply.eos()) {
       result = apply.nextReady();
       if (result != null) {
-        assertEquals(6, result.getSchema().numColumns());
+        assertEquals(7, result.getSchema().numColumns());
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(0));
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(1));
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(2));
         assertEquals(Type.STRING_TYPE, result.getSchema().getColumnType(3));
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(4));
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(5));
+        assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(6));
 
         assertEquals("first", result.getSchema().getColumnName(0));
         assertEquals("second", result.getSchema().getColumnName(1));
@@ -151,6 +175,8 @@ public class ApplyTest {
         assertEquals("fourth", result.getSchema().getColumnName(3));
         assertEquals("fifth", result.getSchema().getColumnName(4));
         assertEquals("sixth", result.getSchema().getColumnName(5));
+        assertEquals("trig", result.getSchema().getColumnName(6));
+
         for (int curI = 0; curI < result.numTuples(); curI++) {
           long i = curI + resultSize;
           long a = (long) Math.pow(i, 2);
@@ -163,6 +189,8 @@ public class ApplyTest {
           assertEquals(d, result.getString(3, curI));
           assertEquals(Math.abs(b - a), result.getLong(4, curI));
           assertEquals(Math.floor(Math.sqrt(a)) + Math.ceil(Math.sqrt(a)), result.getDouble(5, curI), tolerance);
+          assertEquals(Math.cos(a * Math.PI / 180) * 2 + Math.sin(a * Math.PI / 180) * 3 + Math.tan(a * Math.PI / 180)
+              * 4, result.getDouble(6, curI), tolerance);
         }
         resultSize += result.numTuples();
       }
@@ -189,9 +217,12 @@ public class ApplyTest {
     FloorExpression floor = new FloorExpression(constant);
     LogExpression log = new LogExpression(constant);
     NegateExpression negate = new NegateExpression(constant);
+    CosExpression cos = new CosExpression(constant);
+    SinExpression sin = new SinExpression(constant);
     SqrtExpression sqrt = new SqrtExpression(constant);
+    TanExpression tan = new TanExpression(constant);
     ToUpperCaseExpression upper = new ToUpperCaseExpression(constant);
-    expressions.add(abs).add(ceil).add(floor).add(log).add(negate).add(sqrt).add(upper);
+    expressions.add(abs).add(ceil).add(cos).add(floor).add(log).add(negate).add(sin).add(sqrt).add(tan).add(upper);
 
     /* Binary */
     DivideExpression divide = new DivideExpression(constant, variable);
