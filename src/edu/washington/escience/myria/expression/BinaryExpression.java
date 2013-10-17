@@ -7,6 +7,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.SimplePredicate;
 import edu.washington.escience.myria.Type;
 
 /**
@@ -66,6 +67,19 @@ public abstract class BinaryExpression extends ExpressionOperator {
   protected final String getInfixBinaryString(final String infix, final Schema schema) {
     return new StringBuilder("(").append(getLeft().getJavaString(schema)).append(infix).append(
         getRight().getJavaString(schema)).append(')').toString();
+  }
+
+  /**
+   * Returns the object comparison string: right + ".compareTo(" + left + ")" + op + "0". E.g, for
+   * {@link EqualsExpression}, <code>op</code> is <code>LIKE</code> and <code>value</code> is <code>0</code>.
+   * 
+   * @param op integer comparison operator >, <, ==, >=, <=.
+   * @param schema the input schema
+   * @return the Java string for this operator.
+   */
+  protected final String getObjectComparisonString(final SimplePredicate.Op op, final Schema schema) {
+    return new StringBuilder("(").append(getRight().getJavaString(schema)).append(".compareTo(").append(
+        getLeft().getJavaString(schema)).append(')').append(op.toString()).append(0).append(")").toString();
   }
 
   /**

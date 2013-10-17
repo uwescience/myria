@@ -28,7 +28,9 @@ public class SimplePredicate implements Serializable, Predicate {
     /** == . */
     LIKE,
     /** <> . */
-    NOT_EQUALS;
+    NOT_EQUALS,
+    /** != . */
+    NOT_LIKE;
 
     /**
      * Interface to access operations by integer value for command-line convenience.
@@ -58,6 +60,8 @@ public class SimplePredicate implements Serializable, Predicate {
           return "==";
         case NOT_EQUALS:
           return "<>";
+        case NOT_LIKE:
+          return "!=";
       }
       throw new IllegalStateException("Shouldn't reach here");
     }

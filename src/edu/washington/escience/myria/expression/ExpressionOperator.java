@@ -26,7 +26,11 @@ import edu.washington.escience.myria.Schema;
     @Type(name = "Tan", value = TanExpression.class), @Type(name = "Times", value = TimesExpression.class),
     @Type(name = "Upper", value = ToUpperCaseExpression.class),
     @Type(name = "Variable", value = VariableExpression.class), @Type(name = "And", value = AndExpression.class),
-    @Type(name = "Or", value = OrExpression.class), })
+    @Type(name = "Or", value = OrExpression.class), @Type(name = "Eq", value = EqualsExpression.class),
+    @Type(name = "Neq", value = NotEqualsExpression.class), @Type(name = "Gt", value = GreaterThanExpression.class),
+    @Type(name = "Lt", value = LessThanExpression.class),
+    @Type(name = "Gte", value = GreaterThanOrEqualsExpression.class),
+    @Type(name = "Leq", value = LessThanOrEqualsExpression.class), })
 public abstract class ExpressionOperator implements Serializable {
   /***/
   private static final long serialVersionUID = 1L;

@@ -1,14 +1,9 @@
 package edu.washington.escience.myria.operator.apply;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import java.io.IOException;
 
 import org.junit.Test;
 
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.DbException;
@@ -16,7 +11,6 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.api.encoding.ExpressionEncoding;
 import edu.washington.escience.myria.expression.AbsExpression;
 import edu.washington.escience.myria.expression.AndExpression;
@@ -24,12 +18,16 @@ import edu.washington.escience.myria.expression.CeilExpression;
 import edu.washington.escience.myria.expression.ConstantExpression;
 import edu.washington.escience.myria.expression.CosExpression;
 import edu.washington.escience.myria.expression.DivideExpression;
+import edu.washington.escience.myria.expression.EqualsExpression;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
 import edu.washington.escience.myria.expression.FloorExpression;
-import edu.washington.escience.myria.expression.LogExpression;
+import edu.washington.escience.myria.expression.GreaterThanExpression;
+import edu.washington.escience.myria.expression.GreaterThanOrEqualsExpression;
+import edu.washington.escience.myria.expression.LessThanExpression;
+import edu.washington.escience.myria.expression.LessThanOrEqualsExpression;
 import edu.washington.escience.myria.expression.MinusExpression;
-import edu.washington.escience.myria.expression.NegateExpression;
+import edu.washington.escience.myria.expression.NotEqualsExpression;
 import edu.washington.escience.myria.expression.NotExpression;
 import edu.washington.escience.myria.expression.OrExpression;
 import edu.washington.escience.myria.expression.PlusExpression;
@@ -46,6 +44,7 @@ import edu.washington.escience.myria.operator.TupleSource;
 public class ApplyTest {
 
   private final int NUM_TUPLES = 2 * TupleBatch.BATCH_SIZE;
+  private final int SMALL_NUM_TUPLES = 10;
 
   @Test
   public void testApply() throws DbException {
@@ -203,6 +202,7 @@ public class ApplyTest {
           long b = i + 1;
           int c = (int) i;
           String d = ("Foo" + i).toUpperCase();
+          boolean e = i % 2 == 0;
           assertEquals(i, result.getDouble(0, curI), tolerance);
           assertEquals((b + c) * (b - c), result.getLong(1, curI));
           assertEquals(Math.sqrt(Math.pow(a, 2) + Math.pow(b, 2)), result.getDouble(2, curI), tolerance);
@@ -211,7 +211,7 @@ public class ApplyTest {
           assertEquals(Math.floor(Math.sqrt(a)) + Math.ceil(Math.sqrt(a)), result.getDouble(5, curI), tolerance);
           assertEquals(Math.cos(a * Math.PI / 180) * 2 + Math.sin(a * Math.PI / 180) * 3 + Math.tan(a * Math.PI / 180)
               * 4, result.getDouble(6, curI), tolerance);
-          assertEquals(!(false || (i % 2 == 0) && true), result.getBoolean(7, curI));
+          assertEquals(!(false || e && true), result.getBoolean(7, curI));
         }
         resultSize += result.numTuples();
       }
@@ -221,48 +221,205 @@ public class ApplyTest {
   }
 
   @Test
-  public void testJsonMapping() throws IOException {
-    ObjectReader reader = MyriaJsonMapperProvider.getReader().withType(ExpressionOperator.class);
-    ObjectWriter writer = MyriaJsonMapperProvider.getWriter();
-
-    ImmutableList.Builder<ExpressionOperator> expressions = ImmutableList.builder();
-
-    /* Zeroary */
-    ConstantExpression constant = new ConstantExpression(Type.INT_TYPE, "5");
-    VariableExpression variable = new VariableExpression(0);
-    expressions.add(constant).add(variable);
-
-    /* Unary */
-    AbsExpression abs = new AbsExpression(constant);
-    CeilExpression ceil = new CeilExpression(constant);
-    FloorExpression floor = new FloorExpression(constant);
-    LogExpression log = new LogExpression(constant);
-    NegateExpression negate = new NegateExpression(constant);
-    CosExpression cos = new CosExpression(constant);
-    SinExpression sin = new SinExpression(constant);
-    SqrtExpression sqrt = new SqrtExpression(constant);
-    TanExpression tan = new TanExpression(constant);
-    ToUpperCaseExpression upper = new ToUpperCaseExpression(constant);
-    NotExpression not = new NotExpression(constant);
-    expressions.add(abs).add(ceil).add(cos).add(floor).add(log).add(negate).add(sin).add(sqrt).add(tan).add(upper).add(
-        not);
-
-    /* Binary */
-    DivideExpression divide = new DivideExpression(constant, variable);
-    MinusExpression minus = new MinusExpression(constant, variable);
-    PlusExpression plus = new PlusExpression(constant, variable);
-    PowExpression pow = new PowExpression(constant, variable);
-    TimesExpression times = new TimesExpression(constant, variable);
-    AndExpression and = new AndExpression(constant, variable);
-    OrExpression or = new OrExpression(constant, variable);
-    expressions.add(divide).add(minus).add(plus).add(pow).add(times).add(and).add(or);
-
-    /* Test serializing and deserializing all of them. */
-    for (ExpressionOperator op : expressions.build()) {
-      assertTrue(writer.canSerialize(op.getClass()));
-      String serialized = writer.writeValueAsString(op);
-      ExpressionOperator op2 = reader.readValue(serialized);
-      assertEquals(op2, op);
+  public void testComparisonApply() throws DbException {
+    final Schema schema = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("a", "b"));
+    final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
+    for (long i = 0; i < SMALL_NUM_TUPLES; i++) {
+      tbb.put(0, i + 1);
+      tbb.put(1, 2 * i);
     }
+    ImmutableList.Builder<Expression> expressions = ImmutableList.builder();
+
+    ExpressionOperator vara = new VariableExpression(0);
+    ExpressionOperator varb = new VariableExpression(1);
+
+    {
+      // Expression: vara == varb;
+
+      ExpressionOperator eq = new EqualsExpression(vara, varb);
+      ExpressionEncoding exprEnc = new ExpressionEncoding("equals", eq);
+
+      expressions.add(exprEnc.construct());
+    }
+
+    {
+      // Expression: vara != varb;
+
+      ExpressionOperator neq = new NotEqualsExpression(vara, varb);
+      ExpressionEncoding exprEnc = new ExpressionEncoding("notequals", neq);
+
+      expressions.add(exprEnc.construct());
+    }
+
+    {
+      // Expression: vara > varb;
+
+      ExpressionOperator gt = new GreaterThanExpression(vara, varb);
+      ExpressionEncoding exprEnc = new ExpressionEncoding("greaterthan", gt);
+
+      expressions.add(exprEnc.construct());
+    }
+
+    {
+      // Expression: vara < varb;
+
+      ExpressionOperator lt = new LessThanExpression(vara, varb);
+      ExpressionEncoding exprEnc = new ExpressionEncoding("lessthan", lt);
+
+      expressions.add(exprEnc.construct());
+    }
+
+    {
+      // Expression: vara >= varb;
+
+      ExpressionOperator gteq = new GreaterThanOrEqualsExpression(vara, varb);
+      ExpressionEncoding exprEnc = new ExpressionEncoding("greaterthanequals", gteq);
+
+      expressions.add(exprEnc.construct());
+    }
+
+    {
+      // Expression: vara <= varb;
+
+      ExpressionOperator lteq = new LessThanOrEqualsExpression(vara, varb);
+      ExpressionEncoding exprEnc = new ExpressionEncoding("lessthanequals", lteq);
+
+      expressions.add(exprEnc.construct());
+    }
+
+    Apply apply = new Apply(new TupleSource(tbb), expressions.build());
+
+    apply.open(null);
+    TupleBatch result;
+    int resultSize = 0;
+    while (!apply.eos()) {
+      result = apply.nextReady();
+      if (result != null) {
+        assertEquals(6, result.getSchema().numColumns());
+        assertEquals(Type.BOOLEAN_TYPE, result.getSchema().getColumnType(0));
+        assertEquals(Type.BOOLEAN_TYPE, result.getSchema().getColumnType(1));
+        assertEquals(Type.BOOLEAN_TYPE, result.getSchema().getColumnType(2));
+        assertEquals(Type.BOOLEAN_TYPE, result.getSchema().getColumnType(3));
+        assertEquals(Type.BOOLEAN_TYPE, result.getSchema().getColumnType(4));
+        assertEquals(Type.BOOLEAN_TYPE, result.getSchema().getColumnType(5));
+
+        for (int curI = 0; curI < result.numTuples(); curI++) {
+          long i = curI + resultSize;
+          long a = i + 1;
+          long b = 2 * i;
+          assertEquals(a == b, result.getBoolean(0, curI));
+          assertEquals(a != b, result.getBoolean(1, curI));
+          assertEquals(a > b, result.getBoolean(2, curI));
+          assertEquals(a < b, result.getBoolean(3, curI));
+          assertEquals(a >= b, result.getBoolean(4, curI));
+          assertEquals(a <= b, result.getBoolean(5, curI));
+        }
+        resultSize += result.numTuples();
+      }
+    }
+    assertEquals(SMALL_NUM_TUPLES, resultSize);
+    apply.close();
+  }
+
+  @Test
+  public void testStringComparisonApply() throws DbException {
+    final Schema schema = new Schema(ImmutableList.of(Type.STRING_TYPE, Type.STRING_TYPE), ImmutableList.of("c", "d"));
+    final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
+    for (long i = 0; i < SMALL_NUM_TUPLES; i++) {
+      tbb.put(0, "Foo" + i);
+      tbb.put(1, "Foo" + (2 - i));
+    }
+    ImmutableList.Builder<Expression> expressions = ImmutableList.builder();
+
+    ExpressionOperator varc = new VariableExpression(0);
+    ExpressionOperator vard = new VariableExpression(1);
+
+    {
+      // Expression: varc == vard;
+
+      ExpressionOperator eq = new EqualsExpression(varc, vard);
+      ExpressionEncoding exprEnc = new ExpressionEncoding("s_equals", eq);
+
+      expressions.add(exprEnc.construct());
+    }
+
+    {
+      // Expression: varc != vard;
+
+      ExpressionOperator neq = new NotEqualsExpression(varc, vard);
+      ExpressionEncoding exprEnc = new ExpressionEncoding("s_notequals", neq);
+
+      expressions.add(exprEnc.construct());
+    }
+
+    {
+      // Expression: varc > vard;
+
+      ExpressionOperator gt = new GreaterThanExpression(varc, vard);
+      ExpressionEncoding exprEnc = new ExpressionEncoding("s_greaterthan", gt);
+
+      expressions.add(exprEnc.construct());
+    }
+
+    {
+      // Expression: varc < vard;
+
+      ExpressionOperator lt = new LessThanExpression(varc, vard);
+      ExpressionEncoding exprEnc = new ExpressionEncoding("s_lessthan", lt);
+
+      expressions.add(exprEnc.construct());
+    }
+
+    {
+      // Expression: varc >= vard;
+
+      ExpressionOperator gteq = new GreaterThanOrEqualsExpression(varc, vard);
+      ExpressionEncoding exprEnc = new ExpressionEncoding("s_greaterthanequals", gteq);
+
+      expressions.add(exprEnc.construct());
+    }
+
+    {
+      // Expression: varc <= vard;
+
+      ExpressionOperator lteq = new LessThanOrEqualsExpression(varc, vard);
+      ExpressionEncoding exprEnc = new ExpressionEncoding("s_lessthanequals", lteq);
+
+      expressions.add(exprEnc.construct());
+    }
+
+    Apply apply = new Apply(new TupleSource(tbb), expressions.build());
+
+    apply.open(null);
+    TupleBatch result;
+    int resultSize = 0;
+    while (!apply.eos()) {
+      result = apply.nextReady();
+      if (result != null) {
+        assertEquals(6, result.getSchema().numColumns());
+        assertEquals(Type.BOOLEAN_TYPE, result.getSchema().getColumnType(0));
+        assertEquals(Type.BOOLEAN_TYPE, result.getSchema().getColumnType(1));
+        assertEquals(Type.BOOLEAN_TYPE, result.getSchema().getColumnType(2));
+        assertEquals(Type.BOOLEAN_TYPE, result.getSchema().getColumnType(3));
+        assertEquals(Type.BOOLEAN_TYPE, result.getSchema().getColumnType(4));
+        assertEquals(Type.BOOLEAN_TYPE, result.getSchema().getColumnType(5));
+
+        for (int curI = 0; curI < result.numTuples(); curI++) {
+          long i = curI + resultSize;
+          String c = "Foo" + (2 - i);
+          String d = "Foo" + i;
+
+          assertEquals(c.compareTo(d) == 0, result.getBoolean(0, curI));
+          assertEquals(c.compareTo(d) != 0, result.getBoolean(1, curI));
+          assertEquals(c.compareTo(d) > 0, result.getBoolean(2, curI));
+          assertEquals(c.compareTo(d) < 0, result.getBoolean(3, curI));
+          assertEquals(c.compareTo(d) >= 0, result.getBoolean(4, curI));
+          assertEquals(c.compareTo(d) <= 0, result.getBoolean(5, curI));
+        }
+        resultSize += result.numTuples();
+      }
+    }
+    assertEquals(SMALL_NUM_TUPLES, resultSize);
+    apply.close();
   }
 }
