@@ -1,10 +1,12 @@
 package edu.washington.escience.myria.util;
 
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.Set;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
+import com.google.common.primitives.Ints;
 
 /**
  * Array related utility functions.
@@ -142,10 +144,7 @@ public final class MyriaArrayUtils extends org.apache.commons.lang3.ArrayUtils {
    * @throws IllegalArgumentException if the data array is not a set.
    * */
   public static int[] checkSet(final int[] maybeSetArray) {
-    HashSet<Integer> tmp = new HashSet<Integer>();
-    for (int i : maybeSetArray) {
-      tmp.add(i);
-    }
+    Set<Integer> tmp = Sets.newHashSet(Ints.asList(maybeSetArray));
     if (maybeSetArray.length != tmp.size()) {
       throw new IllegalArgumentException("The array is not a set");
     }
