@@ -1,8 +1,6 @@
 package edu.washington.escience.myria.expression;
 
 import com.google.common.base.Objects;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
@@ -23,7 +21,7 @@ public class AndExpression extends BinaryExpression {
 
   /**
    * True if left and right are true.
-   *
+   * 
    * @param left the left operand.
    * @param right the right operand.
    */
@@ -33,15 +31,7 @@ public class AndExpression extends BinaryExpression {
 
   @Override
   public Type getOutputType(final Schema schema) {
-    Type leftType = getLeft().getOutputType(schema);
-    Type rightType = getRight().getOutputType(schema);
-    ImmutableList<Type> validTypes = ImmutableList.of(Type.BOOLEAN_TYPE);
-    int leftIdx = validTypes.indexOf(leftType);
-    int rightIdx = validTypes.indexOf(rightType);
-    Preconditions.checkArgument(leftIdx != -1, "AndExpression cannot handle left child [%s] of Type %s", getLeft(),
-        leftType);
-    Preconditions.checkArgument(rightIdx != -1, "AndExpression cannot handle right child [%s] of Type %s", getRight(),
-        rightType);
+    checkBooleanType(schema);
     return Type.BOOLEAN_TYPE;
   }
 

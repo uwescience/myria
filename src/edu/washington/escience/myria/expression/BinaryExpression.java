@@ -123,4 +123,19 @@ public abstract class BinaryExpression extends ExpressionOperator {
         .getSimpleName(), getRight(), rightType);
     return validTypes.get(Math.min(leftIdx, rightIdx));
   }
+
+  /**
+   * A function that could be used as the default type checker for a binary expression where both operands must be
+   * boolean.
+   * 
+   * @param schema the schema of the input tuples.
+   */
+  protected final void checkBooleanType(final Schema schema) {
+    Type leftType = getLeft().getOutputType(schema);
+    Type rightType = getRight().getOutputType(schema);
+    Preconditions.checkArgument(leftType == Type.BOOLEAN_TYPE, "%s cannot handle left child [%s] of Type %s",
+        getClass().getSimpleName(), getLeft(), leftType);
+    Preconditions.checkArgument(rightType == Type.BOOLEAN_TYPE, "%s cannot handle right child [%s] of Type %s",
+        getClass().getSimpleName(), getRight(), rightType);
+  }
 }

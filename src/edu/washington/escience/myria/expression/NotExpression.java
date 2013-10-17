@@ -1,8 +1,6 @@
 package edu.washington.escience.myria.expression;
 
 import com.google.common.base.Objects;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
@@ -23,7 +21,7 @@ public class NotExpression extends UnaryExpression {
 
   /**
    * Negate (boolean not) the operand.
-   *
+   * 
    * @param operand the operand.
    */
   public NotExpression(final ExpressionOperator operand) {
@@ -32,11 +30,7 @@ public class NotExpression extends UnaryExpression {
 
   @Override
   public Type getOutputType(final Schema schema) {
-    Type operandType = getOperand().getOutputType(schema);
-    ImmutableList<Type> validTypes = ImmutableList.of(Type.BOOLEAN_TYPE);
-    int operandIdx = validTypes.indexOf(operandType);
-    Preconditions.checkArgument(operandIdx != -1, "NotExpression cannot handle operand [%s] of Type %s", getOperand(),
-        operandType);
+    checkBooleanType(schema);
     return Type.BOOLEAN_TYPE;
   }
 

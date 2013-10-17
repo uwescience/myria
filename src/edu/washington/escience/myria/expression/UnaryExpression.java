@@ -103,4 +103,15 @@ public abstract class UnaryExpression extends ExpressionOperator {
         getClass().getSimpleName(), getOperand(), operandType);
     return operandType;
   }
+
+  /**
+   * A function that could be used as the default type checker for a unary expression where the operand must be numeric.
+   * 
+   * @param schema the schema of the input tuples.
+   */
+  protected void checkBooleanType(final Schema schema) {
+    Type operandType = getOperand().getOutputType(schema);
+    Preconditions.checkArgument(operandType == Type.BOOLEAN_TYPE, "%s cannot handle operand [%s] of Type %s",
+        getClass().getSimpleName(), getOperand(), operandType);
+  }
 }
