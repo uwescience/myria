@@ -14,7 +14,15 @@ public class ToUpperCaseExpression extends UnaryExpression {
   private static final long serialVersionUID = 1L;
 
   /**
-   * Take the square root of the operand.
+   * This is not really unused, it's used automagically by Jackson deserialization.
+   */
+  @SuppressWarnings("unused")
+  private ToUpperCaseExpression() {
+    super();
+  }
+
+  /**
+   * Change all characters in a string to upper case.
    * 
    * @param operand the operand.
    */
