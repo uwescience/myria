@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.expression;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
@@ -43,5 +44,19 @@ public class SqrtExpression extends UnaryExpression {
   @Override
   public String getJavaString(final Schema schema) {
     return getFunctionCallUnaryString("Math.sqrt", schema);
+  }
+
+  @Override
+  public int hashCode() {
+    return defaultHashCode();
+  }
+
+  @Override
+  public boolean equals(final Object other) {
+    if (other == null || !(other instanceof SqrtExpression)) {
+      return false;
+    }
+    SqrtExpression otherExpr = (SqrtExpression) other;
+    return Objects.equal(getOperand(), otherExpr.getOperand());
   }
 }

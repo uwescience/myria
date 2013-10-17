@@ -22,6 +22,7 @@ import edu.washington.escience.myria.Schema;
     @Type(name = "Minus", value = MinusExpression.class), @Type(name = "Negate", value = NegateExpression.class),
     @Type(name = "Plus", value = PlusExpression.class), @Type(name = "Pow", value = PowExpression.class),
     @Type(name = "Sqrt", value = SqrtExpression.class), @Type(name = "Times", value = TimesExpression.class),
+    @Type(name = "Upper", value = ToUpperCaseExpression.class),
     @Type(name = "Variable", value = VariableExpression.class), })
 public abstract class ExpressionOperator implements Serializable {
   /***/

@@ -1,7 +1,6 @@
 package edu.washington.escience.myria.expression;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
@@ -16,14 +15,19 @@ public class PlusExpression extends BinaryExpression {
   private static final long serialVersionUID = 1L;
 
   /**
+   * This is not really unused, it's used automagically by Jackson deserialization.
+   */
+  @SuppressWarnings("unused")
+  private PlusExpression() {
+  }
+
+  /**
    * Add the two operands together.
    * 
    * @param left the left operand.
    * @param right the right operand.
    */
-  @JsonCreator
-  public PlusExpression(@JsonProperty("left") final ExpressionOperator left,
-      @JsonProperty("right") final ExpressionOperator right) {
+  public PlusExpression(final ExpressionOperator left, final ExpressionOperator right) {
     super(left, right);
   }
 
@@ -44,5 +48,19 @@ public class PlusExpression extends BinaryExpression {
   @Override
   public String getJavaString(final Schema schema) {
     return getInfixBinaryString("+", schema);
+  }
+
+  @Override
+  public int hashCode() {
+    return defaultHashCode();
+  }
+
+  @Override
+  public boolean equals(final Object other) {
+    if (other == null || !(other instanceof PlusExpression)) {
+      return false;
+    }
+    PlusExpression bOther = (PlusExpression) other;
+    return Objects.equal(getLeft(), bOther.getLeft()) && Objects.equal(getRight(), bOther.getRight());
   }
 }

@@ -1,6 +1,7 @@
 package edu.washington.escience.myria.expression;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.Objects;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import edu.washington.escience.myria.Schema;
@@ -14,11 +15,19 @@ public abstract class BinaryExpression extends ExpressionOperator {
   private static final long serialVersionUID = 1L;
 
   /** The left child. */
-  @JsonProperty("left")
+  @JsonProperty
   private final ExpressionOperator left;
   /** The right child. */
-  @JsonProperty("right")
+  @JsonProperty
   private final ExpressionOperator right;
+
+  /**
+   * This is not really unused, it's used automagically by Jackson deserialization.
+   */
+  protected BinaryExpression() {
+    left = null;
+    right = null;
+  }
 
   /**
    * @param left the left child.
@@ -51,7 +60,6 @@ public abstract class BinaryExpression extends ExpressionOperator {
    * @param schema the input schema
    * @return the Java string for this operator.
    */
-  @JsonIgnore
   protected final String getInfixBinaryString(final String infix, final Schema schema) {
     return new StringBuilder("(").append(getLeft().getJavaString(schema)).append(infix).append(
         getRight().getJavaString(schema)).append(')').toString();
@@ -65,9 +73,17 @@ public abstract class BinaryExpression extends ExpressionOperator {
    * @param schema the input schema
    * @return the Java string for this operator.
    */
-  @JsonIgnore
   protected final String getFunctionCallBinaryString(final String functionName, final Schema schema) {
     return new StringBuilder(functionName).append('(').append(getLeft().getJavaString(schema)).append(',').append(
         getRight().getJavaString(schema)).append(')').toString();
+  }
+
+  /**
+   * A function that could be used as the default hash code for a binary expression.
+   * 
+   * @return a hash of (getClass().getCanonicalName(), left, right).
+   */
+  public final int defaultHashCode() {
+    return Objects.hash(getClass().getCanonicalName(), left, right);
   }
 }

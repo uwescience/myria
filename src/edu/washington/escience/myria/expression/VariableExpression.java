@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.expression;
 
+import java.util.Objects;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import edu.washington.escience.myria.Schema;
@@ -75,23 +77,24 @@ public class VariableExpression extends ZeroaryExpression {
     return new StringBuilder("tb.get").append(tName).append("(").append(columnIdx).append(", rowId)").toString();
   }
 
-  @Override
-  public boolean equals(final Object other) {
-    if (!(other instanceof VariableExpression)) {
-      return false;
-    }
-    return ((VariableExpression) other).columnIdx == columnIdx;
-  }
-
-  @Override
-  public int hashCode() {
-    return columnIdx;
-  }
-
   /**
    * @return the column index of this variable.
    */
   public int getColumnIdx() {
     return columnIdx;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(getClass().getCanonicalName(), columnIdx);
+  }
+
+  @Override
+  public boolean equals(final Object other) {
+    if (other == null || !(other instanceof VariableExpression)) {
+      return false;
+    }
+    VariableExpression otherExp = (VariableExpression) other;
+    return Objects.equals(columnIdx, otherExp.columnIdx);
   }
 }

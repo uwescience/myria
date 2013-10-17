@@ -1,9 +1,14 @@
 package edu.washington.escience.myria.operator.apply;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import java.io.IOException;
 
 import org.junit.Test;
 
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.DbException;
@@ -11,12 +16,16 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.api.encoding.ExpressionEncoding;
 import edu.washington.escience.myria.expression.AbsExpression;
 import edu.washington.escience.myria.expression.ConstantExpression;
+import edu.washington.escience.myria.expression.DivideExpression;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
+import edu.washington.escience.myria.expression.LogExpression;
 import edu.washington.escience.myria.expression.MinusExpression;
+import edu.washington.escience.myria.expression.NegateExpression;
 import edu.washington.escience.myria.expression.PlusExpression;
 import edu.washington.escience.myria.expression.PowExpression;
 import edu.washington.escience.myria.expression.SqrtExpression;
@@ -141,5 +150,42 @@ public class ApplyTest {
     }
     assertEquals(NUM_TUPLES, resultSize);
     apply.close();
+  }
+
+  @Test
+  public void testJsonMapping() throws IOException {
+    ObjectReader reader = MyriaJsonMapperProvider.getReader().withType(ExpressionOperator.class);
+    ObjectWriter writer = MyriaJsonMapperProvider.getWriter();
+
+    ImmutableList.Builder<ExpressionOperator> expressions = ImmutableList.builder();
+
+    /* Zeroary */
+    ConstantExpression constant = new ConstantExpression(Type.INT_TYPE, "5");
+    VariableExpression variable = new VariableExpression(0);
+    expressions.add(constant).add(variable);
+
+    /* Unary */
+    AbsExpression abs = new AbsExpression(constant);
+    LogExpression log = new LogExpression(constant);
+    NegateExpression negate = new NegateExpression(constant);
+    SqrtExpression sqrt = new SqrtExpression(constant);
+    ToUpperCaseExpression upper = new ToUpperCaseExpression(constant);
+    expressions.add(abs).add(log).add(negate).add(sqrt).add(upper);
+
+    /* Binary */
+    DivideExpression divide = new DivideExpression(constant, variable);
+    MinusExpression minus = new MinusExpression(constant, variable);
+    PlusExpression plus = new PlusExpression(constant, variable);
+    PowExpression pow = new PowExpression(constant, variable);
+    TimesExpression times = new TimesExpression(constant, variable);
+    expressions.add(divide).add(minus).add(plus).add(pow).add(times);
+
+    /* Test serializing and deserializing all of them. */
+    for (ExpressionOperator op : expressions.build()) {
+      assertTrue(writer.canSerialize(op.getClass()));
+      String serialized = writer.writeValueAsString(op);
+      ExpressionOperator op2 = reader.readValue(serialized);
+      assertEquals(op2, op);
+    }
   }
 }

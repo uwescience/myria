@@ -51,16 +51,16 @@ public class ConstantExpression extends ZeroaryExpression {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(getClass().getCanonicalName(), valueType, value);
+  }
+
+  @Override
   public boolean equals(final Object other) {
-    if (!(other instanceof ConstantExpression)) {
+    if (other == null || !(other instanceof ConstantExpression)) {
       return false;
     }
     ConstantExpression otherExp = (ConstantExpression) other;
     return Objects.equals(valueType, otherExp.valueType) && Objects.equals(value, otherExp.value);
-  }
-
-  @Override
-  public int hashCode() {
-    return value.hashCode();
   }
 }

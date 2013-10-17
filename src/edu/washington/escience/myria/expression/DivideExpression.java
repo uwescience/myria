@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.expression;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
@@ -13,6 +14,13 @@ public class DivideExpression extends BinaryExpression {
 
   /***/
   private static final long serialVersionUID = 1L;
+
+  /**
+   * This is not really unused, it's used automagically by Jackson deserialization.
+   */
+  @SuppressWarnings("unused")
+  private DivideExpression() {
+  }
 
   /**
    * Divide the two operands together.
@@ -41,5 +49,19 @@ public class DivideExpression extends BinaryExpression {
   @Override
   public String getJavaString(final Schema schema) {
     return getInfixBinaryString("/", schema);
+  }
+
+  @Override
+  public int hashCode() {
+    return defaultHashCode();
+  }
+
+  @Override
+  public boolean equals(final Object other) {
+    if (other == null || !(other instanceof DivideExpression)) {
+      return false;
+    }
+    DivideExpression bOther = (DivideExpression) other;
+    return Objects.equal(getLeft(), bOther.getLeft()) && Objects.equal(getRight(), bOther.getRight());
   }
 }
