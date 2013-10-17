@@ -19,6 +19,7 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.api.encoding.ExpressionEncoding;
 import edu.washington.escience.myria.expression.AbsExpression;
+import edu.washington.escience.myria.expression.AndExpression;
 import edu.washington.escience.myria.expression.CeilExpression;
 import edu.washington.escience.myria.expression.ConstantExpression;
 import edu.washington.escience.myria.expression.CosExpression;
@@ -29,6 +30,8 @@ import edu.washington.escience.myria.expression.FloorExpression;
 import edu.washington.escience.myria.expression.LogExpression;
 import edu.washington.escience.myria.expression.MinusExpression;
 import edu.washington.escience.myria.expression.NegateExpression;
+import edu.washington.escience.myria.expression.NotExpression;
+import edu.washington.escience.myria.expression.OrExpression;
 import edu.washington.escience.myria.expression.PlusExpression;
 import edu.washington.escience.myria.expression.PowExpression;
 import edu.washington.escience.myria.expression.SinExpression;
@@ -47,14 +50,17 @@ public class ApplyTest {
   @Test
   public void testApply() throws DbException {
     final Schema schema =
-        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.INT_TYPE, Type.STRING_TYPE), ImmutableList.of(
-            "a", "b", "c", "d"));
+        new Schema(
+            ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.INT_TYPE, Type.STRING_TYPE, Type.BOOLEAN_TYPE),
+            ImmutableList.of("a", "b", "c", "d", "e"));
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (long i = 0; i < NUM_TUPLES; i++) {
       tbb.put(0, (long) Math.pow(i, 2));
       tbb.put(1, i + 1);
       tbb.put(2, (int) i);
       tbb.put(3, "Foo" + i);
+      tbb.put(4, i % 2 == 0);
+
     }
     ImmutableList.Builder<Expression> expressions = ImmutableList.builder();
 
@@ -62,6 +68,7 @@ public class ApplyTest {
     ExpressionOperator varb = new VariableExpression(1);
     ExpressionOperator varc = new VariableExpression(2);
     ExpressionOperator vard = new VariableExpression(3);
+    ExpressionOperator vare = new VariableExpression(4);
 
     {
       // Expression: Math.sqrt(a);
@@ -151,6 +158,17 @@ public class ApplyTest {
       expressions.add(exprEnc.construct());
     }
 
+    {
+      // Expression: !(false || vard && true);
+
+      ExpressionOperator and = new AndExpression(vare, new ConstantExpression(Type.BOOLEAN_TYPE, "true"));
+      ExpressionOperator or = new OrExpression(new ConstantExpression(Type.BOOLEAN_TYPE, "false"), and);
+      ExpressionOperator not = new NotExpression(or);
+      ExpressionEncoding exprEnc = new ExpressionEncoding("boolean", not);
+
+      expressions.add(exprEnc.construct());
+    }
+
     Apply apply = new Apply(new TupleSource(tbb), expressions.build());
 
     apply.open(null);
@@ -160,7 +178,7 @@ public class ApplyTest {
     while (!apply.eos()) {
       result = apply.nextReady();
       if (result != null) {
-        assertEquals(7, result.getSchema().numColumns());
+        assertEquals(8, result.getSchema().numColumns());
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(0));
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(1));
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(2));
@@ -168,6 +186,7 @@ public class ApplyTest {
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(4));
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(5));
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(6));
+        assertEquals(Type.BOOLEAN_TYPE, result.getSchema().getColumnType(7));
 
         assertEquals("first", result.getSchema().getColumnName(0));
         assertEquals("second", result.getSchema().getColumnName(1));
@@ -176,6 +195,7 @@ public class ApplyTest {
         assertEquals("fifth", result.getSchema().getColumnName(4));
         assertEquals("sixth", result.getSchema().getColumnName(5));
         assertEquals("trig", result.getSchema().getColumnName(6));
+        assertEquals("boolean", result.getSchema().getColumnName(7));
 
         for (int curI = 0; curI < result.numTuples(); curI++) {
           long i = curI + resultSize;
@@ -191,6 +211,7 @@ public class ApplyTest {
           assertEquals(Math.floor(Math.sqrt(a)) + Math.ceil(Math.sqrt(a)), result.getDouble(5, curI), tolerance);
           assertEquals(Math.cos(a * Math.PI / 180) * 2 + Math.sin(a * Math.PI / 180) * 3 + Math.tan(a * Math.PI / 180)
               * 4, result.getDouble(6, curI), tolerance);
+          assertEquals(!(false || (i % 2 == 0) && true), result.getBoolean(7, curI));
         }
         resultSize += result.numTuples();
       }
@@ -222,7 +243,9 @@ public class ApplyTest {
     SqrtExpression sqrt = new SqrtExpression(constant);
     TanExpression tan = new TanExpression(constant);
     ToUpperCaseExpression upper = new ToUpperCaseExpression(constant);
-    expressions.add(abs).add(ceil).add(cos).add(floor).add(log).add(negate).add(sin).add(sqrt).add(tan).add(upper);
+    NotExpression not = new NotExpression(constant);
+    expressions.add(abs).add(ceil).add(cos).add(floor).add(log).add(negate).add(sin).add(sqrt).add(tan).add(upper).add(
+        not);
 
     /* Binary */
     DivideExpression divide = new DivideExpression(constant, variable);
@@ -230,7 +253,9 @@ public class ApplyTest {
     PlusExpression plus = new PlusExpression(constant, variable);
     PowExpression pow = new PowExpression(constant, variable);
     TimesExpression times = new TimesExpression(constant, variable);
-    expressions.add(divide).add(minus).add(plus).add(pow).add(times);
+    AndExpression and = new AndExpression(constant, variable);
+    OrExpression or = new OrExpression(constant, variable);
+    expressions.add(divide).add(minus).add(plus).add(pow).add(times).add(and).add(or);
 
     /* Test serializing and deserializing all of them. */
     for (ExpressionOperator op : expressions.build()) {

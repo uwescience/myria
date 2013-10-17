@@ -20,11 +20,13 @@ import edu.washington.escience.myria.Schema;
     @Type(name = "Constant", value = ConstantExpression.class), @Type(name = "Cos", value = CosExpression.class),
     @Type(name = "Divide", value = DivideExpression.class), @Type(name = "Floor", value = FloorExpression.class),
     @Type(name = "Log", value = LogExpression.class), @Type(name = "Minus", value = MinusExpression.class),
-    @Type(name = "Negate", value = NegateExpression.class), @Type(name = "Plus", value = PlusExpression.class),
-    @Type(name = "Pow", value = PowExpression.class), @Type(name = "Sin", value = SinExpression.class),
-    @Type(name = "Sqrt", value = SqrtExpression.class), @Type(name = "Tan", value = TanExpression.class),
-    @Type(name = "Times", value = TimesExpression.class), @Type(name = "Upper", value = ToUpperCaseExpression.class),
-    @Type(name = "Variable", value = VariableExpression.class), })
+    @Type(name = "Not", value = NotExpression.class), @Type(name = "Negate", value = NegateExpression.class),
+    @Type(name = "Plus", value = PlusExpression.class), @Type(name = "Pow", value = PowExpression.class),
+    @Type(name = "Sin", value = SinExpression.class), @Type(name = "Sqrt", value = SqrtExpression.class),
+    @Type(name = "Tan", value = TanExpression.class), @Type(name = "Times", value = TimesExpression.class),
+    @Type(name = "Upper", value = ToUpperCaseExpression.class),
+    @Type(name = "Variable", value = VariableExpression.class), @Type(name = "And", value = AndExpression.class),
+    @Type(name = "Or", value = OrExpression.class), })
 public abstract class ExpressionOperator implements Serializable {
   /***/
   private static final long serialVersionUID = 1L;
