@@ -394,10 +394,12 @@ public final class SymmetricHashJoin extends BinaryOperator {
   }
 
   /**
-   * @return whether all children have recorded eoi.
+   * Note: If this operator is ready for EOS, this function will return true since EOS is a special EOI.
+   * 
+   * @return whether this operator is ready to set itself EOI
    */
-  private boolean whetherAllChildrenRecordedEOI() {
-    if (childrenEOI[1] && childrenEOI[0]) {
+  private boolean isEOIReady() {
+    if ((childrenEOI[0] || getLeft().eos()) && (childrenEOI[1] || getRight().eos())) {
       return true;
     }
     return false;
@@ -412,37 +414,40 @@ public final class SymmetricHashJoin extends BinaryOperator {
     final Operator left = getLeft();
     final Operator right = getRight();
 
-    /* Check eos and eoi first. */
-    checkEOSAndEOI();
-    if (eos() || eoi()) {
-      System.out.println("eos :" + eos() + " eoi:" + eoi() + " this:" + this);
-      return null;
-    }
-
-    /*
-     * if both children are eos or both children have recorded eoi, pop any tuples in buffer (EOI or EOS will be set in
-     * next call).
-     */
-    if ((left.eos() && right.eos()) || whetherAllChildrenRecordedEOI()) {
-      System.out.println("1");
-      return ans.popAny();
-    }
-
     /* If any full tuple batches are ready, output them. */
     TupleBatch nexttb = ans.popFilled();
     if (nexttb != null) {
       return nexttb;
     }
 
+    /*
+     * if both children are eos or both children have recorded eoi, pop any tuples in buffer. If the buffer is empty,
+     * set EOS or EOI.
+     */
+    if (isEOIReady()) {
+      nexttb = ans.popAny();
+      if (nexttb == null) {
+        checkEOSAndEOI();
+      }
+      return nexttb;
+    }
+
     int numOfChildNoData = 0;
     while (numOfChildNoData < 2 && (!left.eos() || !right.eos())) {
 
-      numOfChildNoData = 0;
+      /*
+       * If one of the children is already EOS, we need to set numOfChildNoData to 1 since "numOfChildNoData++" for this
+       * child will not be called.
+       */
+      if (left.eos() || right.eos()) {
+        numOfChildNoData = 1;
+      } else {
+        numOfChildNoData = 0;
+      }
 
       /* process tuple from left child */
       if (!left.eos()) {
         TupleBatch leftTB = left.nextReady();
-
         if (leftTB != null) { // process the data that is pulled from left child
           processChildTB(leftTB, true);
           nexttb = ans.popAnyUsingTimeout();
@@ -453,8 +458,12 @@ public final class SymmetricHashJoin extends BinaryOperator {
           /* if left eoi, consume it, check whether it will cause EOI of this operator */
           if (left.eoi()) {
             consumeChildEOI(true);
-            if (whetherAllChildrenRecordedEOI()) {
-              return ans.popAny();
+            /*
+             * If this operator is ready to emit EOI ( reminder that it might need to clear buffer), break to EOI handle
+             * part
+             */
+            if (isEOIReady()) {
+              break;
             }
           }
           numOfChildNoData++;
@@ -464,18 +473,22 @@ public final class SymmetricHashJoin extends BinaryOperator {
       /* process tuple from right child */
       if (!right.eos()) {
         TupleBatch rightTB = right.nextReady();
-        if (rightTB != null) { // process the data that is pulled from left child
+        if (rightTB != null) { // process the data that is pulled from right child
           processChildTB(rightTB, false);
           nexttb = ans.popAnyUsingTimeout();
           if (nexttb != null) {
             return nexttb;
           }
         } else {
-          /* if left eoi, consume it, check whether it will cause EOI of this operator */
+          /* if right eoi, consume it, check whether it will cause EOI of this operator */
           if (right.eoi()) {
             consumeChildEOI(false);
-            if (whetherAllChildrenRecordedEOI()) {
-              return ans.popAny();
+            /*
+             * If this operator is ready to emit EOI ( reminder that it might need to clear buffer), break to EOI handle
+             * part
+             */
+            if (isEOIReady()) {
+              break;
             }
           }
           numOfChildNoData++;
@@ -483,10 +496,15 @@ public final class SymmetricHashJoin extends BinaryOperator {
       }
     }
 
-    checkEOSAndEOI();
-    if (left.eos() && right.eos()) {
-      System.out.println("3");
+    /*
+     * If the operator is ready to emit EOI, empty its output buffer first. If the buffer is already empty, set EOI
+     * and/or EOS
+     */
+    if (isEOIReady()) {
       nexttb = ans.popAny();
+      if (nexttb == null) {
+        checkEOSAndEOI();
+      }
     }
     return nexttb;
   }
