@@ -19,10 +19,12 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.api.MyriaJsonMapperProvider;
 import edu.washington.escience.myria.api.encoding.ExpressionEncoding;
 import edu.washington.escience.myria.expression.AbsExpression;
+import edu.washington.escience.myria.expression.CeilExpression;
 import edu.washington.escience.myria.expression.ConstantExpression;
 import edu.washington.escience.myria.expression.DivideExpression;
 import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
+import edu.washington.escience.myria.expression.FloorExpression;
 import edu.washington.escience.myria.expression.LogExpression;
 import edu.washington.escience.myria.expression.MinusExpression;
 import edu.washington.escience.myria.expression.NegateExpression;
@@ -113,37 +115,54 @@ public class ApplyTest {
       expressions.add(exprEnc.construct());
     }
 
+    {
+      // Expression: Math.floor(Math.sqrt(a)) + Math.ceil(Math.sqrt(a));
+
+      ExpressionOperator squareRoot = new SqrtExpression(vara);
+      ExpressionOperator floor = new FloorExpression(squareRoot);
+      ExpressionOperator ceil = new CeilExpression(squareRoot);
+      ExpressionOperator plus = new PlusExpression(floor, ceil);
+
+      ExpressionEncoding exprEnc = new ExpressionEncoding("sixth", plus);
+
+      expressions.add(exprEnc.construct());
+    }
+
     Apply apply = new Apply(new TupleSource(tbb), expressions.build());
 
     apply.open(null);
     TupleBatch result;
     int resultSize = 0;
+    final double tolerance = 0.0000001;
     while (!apply.eos()) {
       result = apply.nextReady();
       if (result != null) {
-        assertEquals(5, result.getSchema().numColumns());
+        assertEquals(6, result.getSchema().numColumns());
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(0));
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(1));
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(2));
         assertEquals(Type.STRING_TYPE, result.getSchema().getColumnType(3));
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(4));
+        assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(5));
 
         assertEquals("first", result.getSchema().getColumnName(0));
         assertEquals("second", result.getSchema().getColumnName(1));
         assertEquals("third", result.getSchema().getColumnName(2));
         assertEquals("fourth", result.getSchema().getColumnName(3));
         assertEquals("fifth", result.getSchema().getColumnName(4));
+        assertEquals("sixth", result.getSchema().getColumnName(5));
         for (int curI = 0; curI < result.numTuples(); curI++) {
           long i = curI + resultSize;
-          assertEquals(i, result.getDouble(0, curI), 0.0000001);
           long a = (long) Math.pow(i, 2);
           long b = i + 1;
           int c = (int) i;
           String d = ("Foo" + i).toUpperCase();
+          assertEquals(i, result.getDouble(0, curI), tolerance);
           assertEquals((b + c) * (b - c), result.getLong(1, curI));
-          assertEquals(Math.sqrt(Math.pow(a, 2) + Math.pow(b, 2)), result.getDouble(2, curI), 0.0000001);
+          assertEquals(Math.sqrt(Math.pow(a, 2) + Math.pow(b, 2)), result.getDouble(2, curI), tolerance);
           assertEquals(d, result.getString(3, curI));
           assertEquals(Math.abs(b - a), result.getLong(4, curI));
+          assertEquals(Math.floor(Math.sqrt(a)) + Math.ceil(Math.sqrt(a)), result.getDouble(5, curI), tolerance);
         }
         resultSize += result.numTuples();
       }
@@ -166,11 +185,13 @@ public class ApplyTest {
 
     /* Unary */
     AbsExpression abs = new AbsExpression(constant);
+    CeilExpression ceil = new CeilExpression(constant);
+    FloorExpression floor = new FloorExpression(constant);
     LogExpression log = new LogExpression(constant);
     NegateExpression negate = new NegateExpression(constant);
     SqrtExpression sqrt = new SqrtExpression(constant);
     ToUpperCaseExpression upper = new ToUpperCaseExpression(constant);
-    expressions.add(abs).add(log).add(negate).add(sqrt).add(upper);
+    expressions.add(abs).add(ceil).add(floor).add(log).add(negate).add(sqrt).add(upper);
 
     /* Binary */
     DivideExpression divide = new DivideExpression(constant, variable);

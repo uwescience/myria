@@ -17,8 +17,9 @@ import edu.washington.escience.myria.Schema;
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
-    @Type(name = "Abs", value = AbsExpression.class), @Type(name = "Constant", value = ConstantExpression.class),
-    @Type(name = "Divide", value = DivideExpression.class), @Type(name = "Log", value = LogExpression.class),
+    @Type(name = "Abs", value = AbsExpression.class), @Type(name = "Ceil", value = CeilExpression.class),
+    @Type(name = "Constant", value = ConstantExpression.class), @Type(name = "Divide", value = DivideExpression.class),
+    @Type(name = "Floor", value = FloorExpression.class), @Type(name = "Log", value = LogExpression.class),
     @Type(name = "Minus", value = MinusExpression.class), @Type(name = "Negate", value = NegateExpression.class),
     @Type(name = "Plus", value = PlusExpression.class), @Type(name = "Pow", value = PowExpression.class),
     @Type(name = "Sqrt", value = SqrtExpression.class), @Type(name = "Times", value = TimesExpression.class),
