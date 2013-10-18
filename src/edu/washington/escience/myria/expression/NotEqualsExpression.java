@@ -10,10 +10,10 @@ public class NotEqualsExpression extends ComparisonExpression {
   private static final long serialVersionUID = 1L;
 
   /**
-   * This is not really unused, it's used automagically by Jackson deserialization.
+   * This is used automagically by Jackson deserialization.
    */
-  @SuppressWarnings("unused")
   private NotEqualsExpression() {
+    super(SimplePredicate.Op.NOT_EQUALS);
   }
 
   /**
@@ -23,6 +23,6 @@ public class NotEqualsExpression extends ComparisonExpression {
    * @param right the right operand.
    */
   public NotEqualsExpression(final ExpressionOperator left, final ExpressionOperator right) {
-    super(left, right, SimplePredicate.Op.NOT_LIKE);
+    super(left, right, SimplePredicate.Op.NOT_EQUALS);
   }
 }

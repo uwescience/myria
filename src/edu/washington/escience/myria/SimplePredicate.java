@@ -15,7 +15,7 @@ public class SimplePredicate implements Serializable, Predicate {
 
   /** Constants used for return codes in Field.compare. */
   public enum Op implements Serializable {
-    /** = . */
+    /** = or ==. */
     EQUALS,
     /** > . */
     GREATER_THAN,
@@ -25,12 +25,10 @@ public class SimplePredicate implements Serializable, Predicate {
     LESS_THAN_OR_EQ,
     /** >= . */
     GREATER_THAN_OR_EQ,
-    /** == . */
+    /** LIKE . */
     LIKE,
-    /** <> . */
-    NOT_EQUALS,
-    /** != . */
-    NOT_LIKE;
+    /** <> or !=. */
+    NOT_EQUALS;
 
     /**
      * Interface to access operations by integer value for command-line convenience.
@@ -57,11 +55,32 @@ public class SimplePredicate implements Serializable, Predicate {
         case LESS_THAN_OR_EQ:
           return "<=";
         case LIKE:
-          return "==";
+          return "LIKE";
         case NOT_EQUALS:
           return "<>";
-        case NOT_LIKE:
+      }
+      throw new IllegalStateException("Shouldn't reach here");
+    }
+
+    /**
+     * @return the representation of this Java string as an infix Java operator.
+     */
+    public String toJavaString() {
+      switch (this) {
+        case EQUALS:
+          return "==";
+        case GREATER_THAN:
+          return ">";
+        case LESS_THAN:
+          return "<";
+        case GREATER_THAN_OR_EQ:
+          return ">=";
+        case LESS_THAN_OR_EQ:
+          return "<=";
+        case NOT_EQUALS:
           return "!=";
+        case LIKE:
+          throw new UnsupportedOperationException();
       }
       throw new IllegalStateException("Shouldn't reach here");
     }

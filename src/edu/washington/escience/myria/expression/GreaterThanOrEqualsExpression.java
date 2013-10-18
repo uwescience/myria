@@ -10,10 +10,10 @@ public class GreaterThanOrEqualsExpression extends ComparisonExpression {
   private static final long serialVersionUID = 1L;
 
   /**
-   * This is not really unused, it's used automagically by Jackson deserialization.
+   * This is used used automagically by Jackson deserialization.
    */
-  @SuppressWarnings("unused")
   private GreaterThanOrEqualsExpression() {
+    super(SimplePredicate.Op.GREATER_THAN_OR_EQ);
   }
 
   /**

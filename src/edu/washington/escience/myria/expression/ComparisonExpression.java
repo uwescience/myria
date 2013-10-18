@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.SimplePredicate;
+import edu.washington.escience.myria.SimplePredicate.Op;
 import edu.washington.escience.myria.Type;
 
 /**
@@ -17,13 +18,6 @@ public abstract class ComparisonExpression extends BinaryExpression {
    * The operation the operation that this comparison expression implements.
    */
   private final SimplePredicate.Op operation;
-
-  /**
-   * This is not really unused, it's used automagically by Jackson deserialization.
-   */
-  protected ComparisonExpression() {
-    operation = null;
-  }
 
   /**
    * Returns the operation.
@@ -47,6 +41,13 @@ public abstract class ComparisonExpression extends BinaryExpression {
     this.operation = operation;
   }
 
+  /**
+   * @param operation the operation for this comparison expression.
+   */
+  public ComparisonExpression(final Op operation) {
+    this.operation = operation;
+  }
+
   @Override
   public Type getOutputType(final Schema schema) {
     Type leftType = getLeft().getOutputType(schema);
@@ -67,6 +68,6 @@ public abstract class ComparisonExpression extends BinaryExpression {
     if (getLeft().getOutputType(schema) == Type.STRING_TYPE) {
       return getObjectComparisonString(getOperation(), schema);
     }
-    return getInfixBinaryString(getOperation().toString(), schema);
+    return getInfixBinaryString(getOperation().toJavaString(), schema);
   }
 }

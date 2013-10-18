@@ -10,10 +10,10 @@ public class EqualsExpression extends ComparisonExpression {
   private static final long serialVersionUID = 1L;
 
   /**
-   * This is not really unused, it's used automagically by Jackson deserialization.
+   * This is used automagically by Jackson deserialization.
    */
-  @SuppressWarnings("unused")
   private EqualsExpression() {
+    super(SimplePredicate.Op.EQUALS);
   }
 
   /**
@@ -23,6 +23,6 @@ public class EqualsExpression extends ComparisonExpression {
    * @param right the right operand.
    */
   public EqualsExpression(final ExpressionOperator left, final ExpressionOperator right) {
-    super(left, right, SimplePredicate.Op.LIKE);
+    super(left, right, SimplePredicate.Op.EQUALS);
   }
 }
