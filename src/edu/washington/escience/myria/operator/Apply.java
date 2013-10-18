@@ -17,6 +17,8 @@ import edu.washington.escience.myria.expression.Expression;
  * Generic apply operator.
  */
 public class Apply extends UnaryOperator {
+  /***/
+  private static final long serialVersionUID = 1L;
 
   /**
    * List of expressions that will be used to create the output.
@@ -49,11 +51,6 @@ public class Apply extends UnaryOperator {
     this.expressions = ImmutableList.copyOf(expressions);
   }
 
-  /**
-   * 
-   */
-  private static final long serialVersionUID = 1L;
-
   @Override
   protected TupleBatch fetchNextReady() throws Exception {
     TupleBatch tb = null;
@@ -65,8 +62,7 @@ public class Apply extends UnaryOperator {
       for (int rowIdx = 0; rowIdx < tb.numTuples(); rowIdx++) {
         int columnIdx = 0;
         for (Expression expr : expressions) {
-          Object result = expr.eval(tb, rowIdx);
-          resultBuffer.put(columnIdx, result);
+          expr.evalAndPut(tb, rowIdx, resultBuffer, columnIdx);
           columnIdx++;
         }
       }
@@ -90,8 +86,11 @@ public class Apply extends UnaryOperator {
     Schema inputSchema = getChild().getSchema();
 
     for (Expression expr : expressions) {
+
       expr.setSchema(inputSchema);
-      expr.compile();
+      if (expr.needsCompiling()) {
+        expr.compile();
+      }
     }
   }
 

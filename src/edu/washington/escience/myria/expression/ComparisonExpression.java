@@ -25,6 +25,7 @@ public abstract class ComparisonExpression extends BinaryExpression {
    * @return the operation for this comparison expression
    */
   private SimplePredicate.Op getOperation() {
+    Preconditions.checkNotNull(operation);
     return operation;
   }
 

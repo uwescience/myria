@@ -49,9 +49,7 @@ import edu.washington.escience.myria.util.ImmutableIntArray;
  */
 @ThreadSafe
 public class TupleBatch implements Serializable {
-  /**
-   * 
-   */
+  /***/
   private static final long serialVersionUID = 1L;
 
   /** The hard-coded number of tuples in a batch. */

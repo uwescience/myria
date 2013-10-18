@@ -13,7 +13,9 @@ import com.google.common.base.Preconditions;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
+import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.Column;
 
 /**
  * An expression that can be applied to a tuple.
@@ -51,12 +53,19 @@ public class Expression implements Serializable {
   private Schema inputSchema;
 
   /**
+   * An expression does not have to be compiled when it only renames or copies a column. This is an optimization to
+   * avoid evaluating the expression and avoid autoboxing values.
+   */
+  private final boolean copyFromInput;
+
+  /**
    * This is not really unused, it's used automagically by Jackson deserialization.
    */
   @SuppressWarnings("unused")
   private Expression() {
     outputName = null;
     rootExpressionOperator = null;
+    copyFromInput = false;
   }
 
   /**
@@ -68,6 +77,11 @@ public class Expression implements Serializable {
   public Expression(final String outputName, final ExpressionOperator rootExpressionOperator) {
     this.outputName = outputName;
     this.rootExpressionOperator = rootExpressionOperator;
+    if (rootExpressionOperator instanceof VariableExpression) {
+      copyFromInput = true;
+    } else {
+      copyFromInput = false;
+    }
   }
 
   /**
@@ -78,8 +92,7 @@ public class Expression implements Serializable {
    * @param inputSchema the schema of the input tuples to this expression.
    */
   public Expression(final String outputName, final ExpressionOperator rootExpressionOperator, final Schema inputSchema) {
-    this.outputName = outputName;
-    this.rootExpressionOperator = rootExpressionOperator;
+    this(outputName, rootExpressionOperator);
     this.inputSchema = inputSchema;
   }
 
@@ -89,6 +102,8 @@ public class Expression implements Serializable {
    * @throws DbException compilation failed
    */
   public void compile() throws DbException {
+    Preconditions.checkArgument(!copyFromInput,
+        "This expression does not need to be compiled because the data can be copied from the input.");
     javaExpression = rootExpressionOperator.getJavaString(Objects.requireNonNull(inputSchema));
 
     try {
@@ -101,7 +116,8 @@ public class Expression implements Serializable {
   }
 
   /**
-   * Evaluates the expression using the {@link #evaluator}.
+   * Evaluates the expression using the {@link #evaluator}. Prefer to use
+   * {@link #evalAndPut(TupleBatch, int, TupleBatchBuffer, int)} as it can copy data without evaluating the expression.
    * 
    * @param tb a tuple batch
    * @param rowId the row that should be used for input data
@@ -109,7 +125,8 @@ public class Expression implements Serializable {
    * @throws InvocationTargetException exception thrown from janino
    */
   public Object eval(final TupleBatch tb, final int rowId) throws InvocationTargetException {
-    Preconditions.checkArgument(evaluator != null, "Call compile first.");
+    Preconditions.checkArgument(evaluator != null,
+        "Call compile first or copy the data if it is the same in the input.");
     return evaluator.evaluate(tb, rowId);
   }
 
@@ -152,5 +169,38 @@ public class Expression implements Serializable {
     this.inputSchema = inputSchema;
     javaExpression = null;
     evaluator = null;
+  }
+
+  /**
+   * Often, there is no need to compile this expression because the input value is the same as the output.
+   *
+   * @return true if the expression does not have to be compiled.
+   */
+  public boolean needsCompiling() {
+    return !copyFromInput;
+  }
+
+  /**
+   * Runs {@link #eval(TupleBatch, int)} if necessary and puts the result in the target tuple buffer.
+   *
+   * If evaluating is not necessary, the data is copied directly from the source tuple batch into the target buffer.
+   *
+   * @param sourceTupleBatch the tuple buffer that should be used as input
+   * @param sourceRowIdx the row that should be used in the input batch
+   * @param targetTupleBuffer the tuple buffer that should be used as output
+   * @param targetColumnIdx the column that the data should be written to
+   * @throws InvocationTargetException exception thrown from janino
+   */
+  public void evalAndPut(final TupleBatch sourceTupleBatch, final int sourceRowIdx,
+      final TupleBatchBuffer targetTupleBuffer, final int targetColumnIdx) throws InvocationTargetException {
+    if (copyFromInput) {
+      final Column<?> sourceColumn =
+          sourceTupleBatch.getDataColumns().get(((VariableExpression) rootExpressionOperator).getColumnIdx());
+      targetTupleBuffer.put(targetColumnIdx, sourceColumn, sourceRowIdx);
+    } else {
+      Object result = eval(sourceTupleBatch, sourceRowIdx);
+      targetTupleBuffer.put(targetColumnIdx, result);
+    }
+
   }
 }

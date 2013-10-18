@@ -1,6 +1,7 @@
 package edu.washington.escience.myria.operator.apply;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
@@ -167,6 +168,14 @@ public class ApplyTest {
       expressions.add(expr);
     }
 
+    {
+      // Expression (just copy/ rename): a;
+      Expression expr = new Expression("copy", vara);
+
+      assertTrue(!expr.needsCompiling());
+      expressions.add(expr);
+    }
+
     Apply apply = new Apply(new TupleSource(tbb), expressions.build());
 
     apply.open(null);
@@ -176,7 +185,7 @@ public class ApplyTest {
     while (!apply.eos()) {
       result = apply.nextReady();
       if (result != null) {
-        assertEquals(8, result.getSchema().numColumns());
+        assertEquals(9, result.getSchema().numColumns());
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(0));
         assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(1));
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(2));
@@ -185,6 +194,7 @@ public class ApplyTest {
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(5));
         assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(6));
         assertEquals(Type.BOOLEAN_TYPE, result.getSchema().getColumnType(7));
+        assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(8));
 
         assertEquals("first", result.getSchema().getColumnName(0));
         assertEquals("second", result.getSchema().getColumnName(1));
@@ -194,6 +204,7 @@ public class ApplyTest {
         assertEquals("sixth", result.getSchema().getColumnName(5));
         assertEquals("trig", result.getSchema().getColumnName(6));
         assertEquals("boolean", result.getSchema().getColumnName(7));
+        assertEquals("copy", result.getSchema().getColumnName(8));
 
         for (int curI = 0; curI < result.numTuples(); curI++) {
           long i = curI + resultSize;
@@ -211,6 +222,7 @@ public class ApplyTest {
           assertEquals(Math.cos(a * Math.PI / 180) * 2 + Math.sin(a * Math.PI / 180) * 3 + Math.tan(a * Math.PI / 180)
               * 4, result.getDouble(6, curI), tolerance);
           assertEquals(!(false || e && true), result.getBoolean(7, curI));
+          assertEquals(a, result.getLong(8, curI));
         }
         resultSize += result.numTuples();
       }
