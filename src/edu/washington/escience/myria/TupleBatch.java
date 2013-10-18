@@ -846,4 +846,54 @@ public class TupleBatch implements Serializable {
     return true;
   }
 
+  /**
+   * Compare tb use compareColumns against a hashtable only containing columns which need to be compared.
+   * 
+   * @param row number of the tuple to compare
+   * @param hashTable the TupleBatchBuffer holding the tuples to compare against
+   * @param index the index in the hashTable
+   * @param compareColumns the columns of the tuple which will compare
+   * @return true if equals
+   */
+  public boolean tupleEquals(final int row, final TupleBuffer hashTable, final int index, final int[] compareColumns) {
+    if (compareColumns.length != hashTable.numColumns()) {
+      return false;
+    }
+    for (int i = 0; i < compareColumns.length; ++i) {
+      switch (schema.getColumnType(i)) {
+        case BOOLEAN_TYPE:
+          if (getBoolean(compareColumns[i], row) != hashTable.getBoolean(i, index)) {
+            return false;
+          }
+          break;
+        case DOUBLE_TYPE:
+          if (getDouble(compareColumns[i], row) != hashTable.getDouble(i, index)) {
+            return false;
+          }
+          break;
+        case FLOAT_TYPE:
+          if (getFloat(compareColumns[i], row) != hashTable.getFloat(i, index)) {
+            return false;
+          }
+          break;
+        case INT_TYPE:
+          if (getInt(compareColumns[i], row) != hashTable.getInt(i, index)) {
+            return false;
+          }
+          break;
+        case LONG_TYPE:
+          if (getLong(compareColumns[i], row) != hashTable.getLong(i, index)) {
+            return false;
+          }
+          break;
+        case STRING_TYPE:
+        case DATETIME_TYPE:
+          if (!getDateTime(compareColumns[i], row).equals(hashTable.getDateTime(i, index))) {
+            return false;
+          }
+          break;
+      }
+    }
+    return true;
+  }
 }
