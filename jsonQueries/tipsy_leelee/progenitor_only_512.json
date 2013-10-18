@@ -19,7 +19,6 @@
                 },
                 {
                     "arg_child": "Scan_base",
-                    "arg_operator_id": "0",
                     "arg_pf": {
                         "index": "0",
                         "type": "SingleFieldHash"
@@ -48,7 +47,6 @@
                 },
                 {
                     "arg_child": "Scan_pgtr",
-                    "arg_operator_id": "1",
                     "arg_pf": {
                         "index": "0",
                         "type": "SingleFieldHash"
@@ -61,32 +59,12 @@
         {
             "operators": [
                 {
-                    "arg_operator_id": "0",
-                    "arg_schema": {
-                        "column_names": [
-                            "iOrder",
-                            "grp"
-                        ],
-                        "column_types": [
-                            "LONG_TYPE",
-                            "INT_TYPE"
-                        ]
-                    },
+                    "arg_operator_id": "SP_base",
                     "op_name": "SC1",
                     "op_type": "ShuffleConsumer"
                 },
                 {
-                    "arg_operator_id": "1",
-                    "arg_schema": {
-                        "column_names": [
-                            "iOrder2",
-                            "grp2"
-                        ],
-                        "column_types": [
-                            "LONG_TYPE",
-                            "INT_TYPE"
-                        ]
-                    },
+                    "arg_operator_id": "SP_pgtr",
                     "op_name": "SC2",
                     "op_type": "ShuffleConsumer"
                 },
@@ -111,7 +89,6 @@
                 },
                 {
                     "arg_child": "JoinOnIOrder",
-                    "arg_operator_id": "2",
                     "arg_pf": {
                         "index": "1",
                         "type": "SingleFieldHash"
@@ -134,7 +111,6 @@
                 },
                 {
                     "arg_child": "Scan_grps_of_interest",
-                    "arg_operator_id": "3",
                     "arg_pf": {
                         "index": "0",
                         "type": "SingleFieldHash"
@@ -147,32 +123,12 @@
         {
             "operators": [
                 {
-                    "arg_operator_id": "2",
-                    "arg_schema": {
-                        "column_names": [
-                            "iOrder",
-                            "grp1",
-                            "pgtr"
-                        ],
-                        "column_types": [
-                            "LONG_TYPE",
-                            "INT_TYPE",
-                            "INT_TYPE"
-                        ]
-                    },
+                    "arg_operator_id": "SP_JoinOnIOrder",
                     "op_name": "SC3",
                     "op_type": "ShuffleConsumer"
                 },
                 {
-                    "arg_operator_id": "3",
-                    "arg_schema": {
-                        "column_names": [
-                            "grp"
-                        ],
-                        "column_types": [
-                            "INT_TYPE"
-                        ]
-                    },
+                    "arg_operator_id": "SP_grps_of_interest",
                     "op_name": "SC4",
                     "op_type": "ShuffleConsumer"
                 },
@@ -198,7 +154,6 @@
                 },
                 {
                     "arg_child": "JoinOnIOrderWihGroupsOfInterest",
-                    "arg_operator_id": "4",
                     "arg_pf": {
                         "index": [
                             "1",
@@ -214,21 +169,7 @@
         {
             "operators": [
                 {
-                    "arg_operator_id": "4",
-                    "arg_schema": {
-                        "column_names": [
-                            "iOrder",
-                            "base_grp",
-                            "pgtr",
-                            "grp"
-                        ],
-                        "column_types": [
-                            "LONG_TYPE",
-                            "INT_TYPE",
-                            "INT_TYPE",
-                            "INT_TYPE"
-                        ]
-                    },
+                    "arg_operator_id": "SP_JoinOnIOrderWithGroupsOfInterest",
                     "op_name": "SC_JoinOnIOrderWithGroupsOfInterest",
                     "op_type": "ShuffleConsumer"
                 },
@@ -251,10 +192,6 @@
                 },
                 {
                     "arg_child": "PotentialProgenitorGroup",
-                    "arg_operator_ids": [
-                        "5",
-                        "6"
-                    ],
                     "op_name": "PotPro",
                     "op_type": "LocalMultiwayProducer"
                 }
@@ -273,7 +210,6 @@
                 },
                 {
                     "arg_child": "Scan_masstable",
-                    "arg_operator_id": "7",
                     "arg_pf": {
                         "index": "0",
                         "type": "SingleFieldHash"
@@ -286,34 +222,12 @@
         {
             "operators": [
                 {
-                    "arg_operator_id": "7",
-                    "arg_schema": {
-                        "column_names": [
-                            "grp_m",
-                            "tot_mass"
-                        ],
-                        "column_types": [
-                            "INT_TYPE",
-                            "FLOAT_TYPE"
-                        ]
-                    },
+                    "arg_operator_id": "SP_masstable",
                     "op_name": "SC_masstable",
                     "op_type": "ShuffleConsumer"
                 },
                 {
-                    "arg_operator_id": "5",
-                    "arg_schema": {
-                        "column_names": [
-                            "grp1",
-                            "pgrt1",
-                            "aggr_col1"
-                        ],
-                        "column_types": [
-                            "INT_TYPE",
-                            "INT_TYPE",
-                            "LONG_TYPE"
-                        ]
-                    },
+                    "arg_operator_id": "PotPro",
                     "op_name": "PotPro1",
                     "op_type": "LocalMultiwayConsumer"
                 },
@@ -332,19 +246,7 @@
                     "op_type": "SingleGroupByAggregate"
                 },
                 {
-                    "arg_operator_id": "6",
-                    "arg_schema": {
-                        "column_names": [
-                            "grp",
-                            "pgrt",
-                            "aggr_col"
-                        ],
-                        "column_types": [
-                            "INT_TYPE",
-                            "INT_TYPE",
-                            "LONG_TYPE"
-                        ]
-                    },
+                    "arg_operator_id": "PotPro",
                     "op_name": "PotPro2",
                     "op_type": "LocalMultiwayConsumer"
                 },

@@ -3,17 +3,7 @@
         {
             "operators": [
                 {
-                    "arg_operator_id": "21",
-                    "arg_schema": {
-                        "column_names": [
-                            "follower",
-                            "followee"
-                        ],
-                        "column_types": [
-                            "LONG_TYPE",
-                            "LONG_TYPE"
-                        ]
-                    },
+                    "arg_operator_id": "cpc",
                     "op_name": "cc",
                     "op_type": "CollectConsumer"
                 }
@@ -25,47 +15,17 @@
         {
             "operators": [
                 {
-                    "arg_operator_id": "0",
-                    "arg_schema": {
-                        "column_names": [
-                            "idbID",
-                            "isDeltaEmpty"
-                        ],
-                        "column_types": [
-                            "INT_TYPE",
-                            "BOOLEAN_TYPE"
-                        ]
-                    },
+                    "arg_operator_id": "idbinputa",
                     "op_name": "eoiReceiverA",
                     "op_type": "Consumer"
                 },
                 {
-                    "arg_operator_id": "1",
-                    "arg_schema": {
-                        "column_names": [
-                            "idbID",
-                            "isDeltaEmpty"
-                        ],
-                        "column_types": [
-                            "INT_TYPE",
-                            "BOOLEAN_TYPE"
-                        ]
-                    },
+                    "arg_operator_id": "idbinputb",
                     "op_name": "eoiReceiverB",
                     "op_type": "Consumer"
                 },
                 {
-                    "arg_operator_id": "2",
-                    "arg_schema": {
-                        "column_names": [
-                            "idbID",
-                            "isDeltaEmpty"
-                        ],
-                        "column_types": [
-                            "INT_TYPE",
-                            "BOOLEAN_TYPE"
-                        ]
-                    },
+                    "arg_operator_id": "idbinputc",
                     "op_name": "eoiReceiverC",
                     "op_type": "Consumer"
                 },
@@ -80,11 +40,6 @@
                 },
                 {
                     "arg_child": "unionAll",
-                    "arg_idb_operator_ids": [
-                        "3",
-                        "4",
-                        "5"
-                    ],
                     "op_name": "eosController",
                     "op_type": "EOSController"
                 }
@@ -106,7 +61,6 @@
                 },
                 {
                     "arg_child": "scan2a",
-                    "arg_operator_id": "6",
                     "arg_pf": {
                         "index": "0",
                         "type": "SingleFieldHash"
@@ -119,50 +73,21 @@
         {
             "operators": [
                 {
-                    "arg_operator_id": "6",
-                    "arg_schema": {
-                        "column_names": [
-                            "follower",
-                            "followee"
-                        ],
-                        "column_types": [
-                            "LONG_TYPE",
-                            "LONG_TYPE"
-                        ]
-                    },
+                    "arg_operator_id": "sp2a",
                     "op_name": "sc2a",
                     "op_type": "ShuffleConsumer"
                 },
                 {
-                    "arg_operator_id": "7",
-                    "arg_schema": {
-                        "column_names": [
-                            "follower",
-                            "followee"
-                        ],
-                        "column_types": [
-                            "LONG_TYPE",
-                            "LONG_TYPE"
-                        ]
-                    },
+                    "arg_operator_id": "sp3a",
                     "op_name": "sc3a",
                     "op_type": "ShuffleConsumer"
                 },
                 {
-                    "arg_operator_id": "3",
-                    "arg_schema": {
-                        "column_names": [
-                            "EOS"
-                        ],
-                        "column_types": [
-                            "BOOLEAN_TYPE"
-                        ]
-                    },
+                    "arg_operator_id": "eosController",
                     "op_name": "eosReceivera",
                     "op_type": "Consumer"
                 },
                 {
-                    "arg_controller_operator_id": "0",
                     "arg_eos_controller_input": "eosReceivera",
                     "arg_initial_input": "sc2a",
                     "arg_iteration_input": "sc3a",
@@ -172,10 +97,6 @@
                 },
                 {
                     "arg_child": "idbinputa",
-                    "arg_operator_ids": [
-                        "8",
-                        "9"
-                    ],
                     "op_name": "mpa",
                     "op_type": "LocalMultiwayProducer"
                 }
@@ -194,7 +115,6 @@
                 },
                 {
                     "arg_child": "scanr",
-                    "arg_operator_id": "10",
                     "arg_pf": {
                         "index": "1",
                         "type": "SingleFieldHash"
@@ -207,32 +127,12 @@
         {
             "operators": [
                 {
-                    "arg_operator_id": "10",
-                    "arg_schema": {
-                        "column_names": [
-                            "follower",
-                            "followee"
-                        ],
-                        "column_types": [
-                            "LONG_TYPE",
-                            "LONG_TYPE"
-                        ]
-                    },
+                    "arg_operator_id": "spr",
                     "op_name": "sc1a",
                     "op_type": "ShuffleConsumer"
                 },
                 {
-                    "arg_operator_id": "8",
-                    "arg_schema": {
-                        "column_names": [
-                            "follower",
-                            "followee"
-                        ],
-                        "column_types": [
-                            "LONG_TYPE",
-                            "LONG_TYPE"
-                        ]
-                    },
+                    "arg_operator_id": "mpa",
                     "op_name": "send2joina",
                     "op_type": "LocalMultiwayConsumer"
                 },
@@ -256,7 +156,6 @@
                 },
                 {
                     "arg_child": "joina",
-                    "arg_operator_id": "7",
                     "arg_pf": {
                         "index": "0",
                         "type": "SingleFieldHash"
@@ -269,23 +168,12 @@
         {
             "operators": [
                 {
-                    "arg_operator_id": "9",
-                    "arg_schema": {
-                        "column_names": [
-                            "follower",
-                            "followee"
-                        ],
-                        "column_types": [
-                            "LONG_TYPE",
-                            "LONG_TYPE"
-                        ]
-                    },
+                    "arg_operator_id": "mpa",
                     "op_name": "send2othersa",
                     "op_type": "LocalMultiwayConsumer"
                 },
                 {
                     "arg_child": "send2othersa",
-                    "arg_operator_id": "11",
                     "arg_pf": {
                         "index": "1",
                         "type": "SingleFieldHash"
@@ -308,7 +196,6 @@
                 },
                 {
                     "arg_child": "scan2b",
-                    "arg_operator_id": "12",
                     "arg_pf": {
                         "index": "0",
                         "type": "SingleFieldHash"
@@ -321,50 +208,21 @@
         {
             "operators": [
                 {
-                    "arg_operator_id": "12",
-                    "arg_schema": {
-                        "column_names": [
-                            "follower",
-                            "followee"
-                        ],
-                        "column_types": [
-                            "LONG_TYPE",
-                            "LONG_TYPE"
-                        ]
-                    },
+                    "arg_operator_id": "sp2b",
                     "op_name": "sc2b",
                     "op_type": "ShuffleConsumer"
                 },
                 {
-                    "arg_operator_id": "13",
-                    "arg_schema": {
-                        "column_names": [
-                            "follower",
-                            "followee"
-                        ],
-                        "column_types": [
-                            "LONG_TYPE",
-                            "LONG_TYPE"
-                        ]
-                    },
+                    "arg_operator_id": "sp3b",
                     "op_name": "sc3b",
                     "op_type": "ShuffleConsumer"
                 },
                 {
-                    "arg_operator_id": "4",
-                    "arg_schema": {
-                        "column_names": [
-                            "EOS"
-                        ],
-                        "column_types": [
-                            "BOOLEAN_TYPE"
-                        ]
-                    },
+                    "arg_operator_id": "eosController",
                     "op_name": "eosReceiverb",
                     "op_type": "Consumer"
                 },
                 {
-                    "arg_controller_operator_id": "1",
                     "arg_eos_controller_input": "eosReceiverb",
                     "arg_initial_input": "sc2b",
                     "arg_iteration_input": "sc3b",
@@ -374,10 +232,6 @@
                 },
                 {
                     "arg_child": "idbinputb",
-                    "arg_operator_ids": [
-                        "14",
-                        "15"
-                    ],
                     "op_name": "mpb",
                     "op_type": "LocalMultiwayProducer"
                 }
@@ -386,32 +240,12 @@
         {
             "operators": [
                 {
-                    "arg_operator_id": "11",
-                    "arg_schema": {
-                        "column_names": [
-                            "follower",
-                            "followee"
-                        ],
-                        "column_types": [
-                            "LONG_TYPE",
-                            "LONG_TYPE"
-                        ]
-                    },
+                    "arg_operator_id": "spOthersa",
                     "op_name": "sc1b",
                     "op_type": "ShuffleConsumer"
                 },
                 {
-                    "arg_operator_id": "14",
-                    "arg_schema": {
-                        "column_names": [
-                            "follower",
-                            "followee"
-                        ],
-                        "column_types": [
-                            "LONG_TYPE",
-                            "LONG_TYPE"
-                        ]
-                    },
+                    "arg_operator_id": "mpb",
                     "op_name": "send2joinb",
                     "op_type": "LocalMultiwayConsumer"
                 },
@@ -435,7 +269,6 @@
                 },
                 {
                     "arg_child": "joinb",
-                    "arg_operator_id": "13",
                     "arg_pf": {
                         "index": "0",
                         "type": "SingleFieldHash"
@@ -448,23 +281,12 @@
         {
             "operators": [
                 {
-                    "arg_operator_id": "15",
-                    "arg_schema": {
-                        "column_names": [
-                            "follower",
-                            "followee"
-                        ],
-                        "column_types": [
-                            "LONG_TYPE",
-                            "LONG_TYPE"
-                        ]
-                    },
+                    "arg_operator_id": "mpb",
                     "op_name": "send2othersb",
                     "op_type": "LocalMultiwayConsumer"
                 },
                 {
                     "arg_child": "send2othersb",
-                    "arg_operator_id": "16",
                     "arg_pf": {
                         "index": "1",
                         "type": "SingleFieldHash"
@@ -487,7 +309,6 @@
                 },
                 {
                     "arg_child": "scan2c",
-                    "arg_operator_id": "17",
                     "arg_pf": {
                         "index": "0",
                         "type": "SingleFieldHash"
@@ -500,50 +321,21 @@
         {
             "operators": [
                 {
-                    "arg_operator_id": "17",
-                    "arg_schema": {
-                        "column_names": [
-                            "follower",
-                            "followee"
-                        ],
-                        "column_types": [
-                            "LONG_TYPE",
-                            "LONG_TYPE"
-                        ]
-                    },
+                    "arg_operator_id": "sp2c",
                     "op_name": "sc2c",
                     "op_type": "ShuffleConsumer"
                 },
                 {
-                    "arg_operator_id": "18",
-                    "arg_schema": {
-                        "column_names": [
-                            "follower",
-                            "followee"
-                        ],
-                        "column_types": [
-                            "LONG_TYPE",
-                            "LONG_TYPE"
-                        ]
-                    },
+                    "arg_operator_id": "sp3c",
                     "op_name": "sc3c",
                     "op_type": "ShuffleConsumer"
                 },
                 {
-                    "arg_operator_id": "5",
-                    "arg_schema": {
-                        "column_names": [
-                            "EOS"
-                        ],
-                        "column_types": [
-                            "BOOLEAN_TYPE"
-                        ]
-                    },
+                    "arg_operator_id": "eosController",
                     "op_name": "eosReceiverc",
                     "op_type": "Consumer"
                 },
                 {
-                    "arg_controller_operator_id": "2",
                     "arg_eos_controller_input": "eosReceiverc",
                     "arg_initial_input": "sc2c",
                     "arg_iteration_input": "sc3c",
@@ -553,10 +345,6 @@
                 },
                 {
                     "arg_child": "idbinputc",
-                    "arg_operator_ids": [
-                        "19",
-                        "20"
-                    ],
                     "op_name": "mpc",
                     "op_type": "LocalMultiwayProducer"
                 }
@@ -565,32 +353,12 @@
         {
             "operators": [
                 {
-                    "arg_operator_id": "16",
-                    "arg_schema": {
-                        "column_names": [
-                            "follower",
-                            "followee"
-                        ],
-                        "column_types": [
-                            "LONG_TYPE",
-                            "LONG_TYPE"
-                        ]
-                    },
+                    "arg_operator_id": "spOthersb",
                     "op_name": "sc1c",
                     "op_type": "ShuffleConsumer"
                 },
                 {
-                    "arg_operator_id": "19",
-                    "arg_schema": {
-                        "column_names": [
-                            "follower",
-                            "followee"
-                        ],
-                        "column_types": [
-                            "LONG_TYPE",
-                            "LONG_TYPE"
-                        ]
-                    },
+                    "arg_operator_id": "mpc",
                     "op_name": "send2joinc",
                     "op_type": "LocalMultiwayConsumer"
                 },
@@ -614,7 +382,6 @@
                 },
                 {
                     "arg_child": "joinc",
-                    "arg_operator_id": "18",
                     "arg_pf": {
                         "index": "0",
                         "type": "SingleFieldHash"
@@ -627,23 +394,12 @@
         {
             "operators": [
                 {
-                    "arg_operator_id": "20",
-                    "arg_schema": {
-                        "column_names": [
-                            "follower",
-                            "followee"
-                        ],
-                        "column_types": [
-                            "LONG_TYPE",
-                            "LONG_TYPE"
-                        ]
-                    },
+                    "arg_operator_id": "mpc",
                     "op_name": "send2serverc",
                     "op_type": "LocalMultiwayConsumer"
                 },
                 {
                     "arg_child": "send2serverc",
-                    "arg_operator_id": "21",
                     "op_name": "cpc",
                     "op_type": "CollectProducer"
                 }

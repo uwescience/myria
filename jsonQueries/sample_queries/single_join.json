@@ -13,7 +13,6 @@
                 },
                 {
                     "arg_child": "Scan0",
-                    "arg_operator_id": "hash(x)",
                     "arg_pf": {
                         "index": 0,
                         "type": "SingleFieldHash"
@@ -36,7 +35,6 @@
                 },
                 {
                     "arg_child": "Scan1",
-                    "arg_operator_id": "hash(y)",
                     "arg_pf": {
                         "index": 1,
                         "type": "SingleFieldHash"
@@ -49,32 +47,12 @@
         {
             "operators": [
                 {
-                    "arg_operator_id": "hash(x)",
-                    "arg_schema": {
-                        "column_names": [
-                            "follower",
-                            "followee"
-                        ],
-                        "column_types": [
-                            "LONG_TYPE",
-                            "LONG_TYPE"
-                        ]
-                    },
+                    "arg_operator_id": "Scatter0",
                     "op_name": "Gather0",
                     "op_type": "ShuffleConsumer"
                 },
                 {
-                    "arg_operator_id": "hash(y)",
-                    "arg_schema": {
-                        "column_names": [
-                            "follower",
-                            "followee"
-                        ],
-                        "column_types": [
-                            "LONG_TYPE",
-                            "LONG_TYPE"
-                        ]
-                    },
+                    "arg_operator_id": "Scatter1",
                     "op_name": "Gather1",
                     "op_type": "ShuffleConsumer"
                 },

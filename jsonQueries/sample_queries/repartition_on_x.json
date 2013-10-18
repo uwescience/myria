@@ -13,7 +13,6 @@
                 },
                 {
                     "arg_child": "Scan",
-                    "arg_operator_id": "hash(follower)",
                     "arg_pf": {
                         "index": 0,
                         "type": "SingleFieldHash"
@@ -26,17 +25,7 @@
         {
             "operators": [
                 {
-                    "arg_operator_id": "hash(follower)",
-                    "arg_schema": {
-                        "column_names": [
-                            "follower",
-                            "followee"
-                        ],
-                        "column_types": [
-                            "LONG_TYPE",
-                            "LONG_TYPE"
-                        ]
-                    },
+                    "arg_operator_id": "Scatter",
                     "op_name": "Gather",
                     "op_type": "ShuffleConsumer"
                 },

@@ -3,17 +3,7 @@
         {
             "operators": [
                 {
-                    "arg_operator_id": 2,
-                    "arg_schema": {
-                        "column_names": [
-                            "follower",
-                            "followee"
-                        ],
-                        "column_types": [
-                            "LONG_TYPE",
-                            "LONG_TYPE"
-                        ]
-                    },
+                    "arg_operator_id": "CP1",
                     "op_name": "CC1",
                     "op_type": "CollectConsumer"
                 }
@@ -35,7 +25,6 @@
                 },
                 {
                     "arg_child": "SCAN1",
-                    "arg_operator_id": "0",
                     "arg_pf": {
                         "index": "1",
                         "type": "SingleFieldHash"
@@ -58,7 +47,6 @@
                 },
                 {
                     "arg_child": "SCAN2",
-                    "arg_operator_id": "1",
                     "arg_pf": {
                         "index": "0",
                         "type": "SingleFieldHash"
@@ -71,32 +59,12 @@
         {
             "operators": [
                 {
-                    "arg_operator_id": "0",
-                    "arg_schema": {
-                        "column_names": [
-                            "follower",
-                            "followee"
-                        ],
-                        "column_types": [
-                            "LONG_TYPE",
-                            "LONG_TYPE"
-                        ]
-                    },
+                    "arg_operator_id": "SP1",
                     "op_name": "SC1",
                     "op_type": "ShuffleConsumer"
                 },
                 {
-                    "arg_operator_id": "1",
-                    "arg_schema": {
-                        "column_names": [
-                            "follower",
-                            "followee"
-                        ],
-                        "column_types": [
-                            "LONG_TYPE",
-                            "LONG_TYPE"
-                        ]
-                    },
+                    "arg_operator_id": "SP2",
                     "op_name": "SC2",
                     "op_type": "ShuffleConsumer"
                 },
@@ -120,7 +88,6 @@
                 },
                 {
                     "arg_child": "JOIN",
-                    "arg_operator_id": "2",
                     "op_name": "CP1",
                     "op_type": "CollectProducer"
                 }
