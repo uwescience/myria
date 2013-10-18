@@ -91,6 +91,21 @@ public class IDBInput extends Operator {
   private transient StreamOutputChannel<TupleBatch> eoiReportChannel;
 
   /**
+   * The index of the initialIDBInput in children array.
+   * */
+  public static final int CHILDREN_IDX_INITIAL_IDB_INPUT = 0;
+
+  /**
+   * The index of the iterationInput in children array.
+   * */
+  public static final int CHILDREN_IDX_ITERATION_INPUT = 1;
+
+  /**
+   * The index of the eosControllerInput in children array.
+   * */
+  public static final int CHILDREN_IDX_EOS_CONTROLLER_INPUT = 2;
+
+  /**
    * @param selfIDBIdx see the corresponding field comment.
    * @param controllerOpID see the corresponding field comment.
    * @param controllerWorkerID see the corresponding field comment.
@@ -99,7 +114,7 @@ public class IDBInput extends Operator {
    * @param eosControllerInput see the corresponding field comment.
    * */
   public IDBInput(final int selfIDBIdx, final ExchangePairID controllerOpID, final int controllerWorkerID,
-      final Operator initialIDBInput, final Operator iterationInput, final Consumer eosControllerInput) {
+      final Operator initialIDBInput, final Consumer iterationInput, final Consumer eosControllerInput) {
     Preconditions.checkNotNull(selfIDBIdx);
     Preconditions.checkNotNull(controllerOpID);
     Preconditions.checkNotNull(controllerWorkerID);
@@ -239,7 +254,11 @@ public class IDBInput extends Operator {
 
   @Override
   public final Operator[] getChildren() {
-    return new Operator[] { initialIDBInput, iterationInput, eosControllerInput };
+    Operator[] result = new Operator[3];
+    result[CHILDREN_IDX_INITIAL_IDB_INPUT] = initialIDBInput;
+    result[CHILDREN_IDX_ITERATION_INPUT] = iterationInput;
+    result[CHILDREN_IDX_EOS_CONTROLLER_INPUT] = eosControllerInput;
+    return result;
   }
 
   @Override
@@ -275,10 +294,9 @@ public class IDBInput extends Operator {
     Preconditions.checkNotNull(children[0]);
     Preconditions.checkNotNull(children[1]);
     Preconditions.checkNotNull(children[2]);
-    initialIDBInput = children[0];
-    iterationInput = children[1];
-    eosControllerInput = (Consumer) children[2];
-    Preconditions.checkArgument(initialIDBInput.getSchema().equals(iterationInput.getSchema()));
+    initialIDBInput = children[CHILDREN_IDX_INITIAL_IDB_INPUT];
+    iterationInput = children[CHILDREN_IDX_ITERATION_INPUT];
+    eosControllerInput = (Consumer) children[CHILDREN_IDX_EOS_CONTROLLER_INPUT];
   }
 
   @Override
