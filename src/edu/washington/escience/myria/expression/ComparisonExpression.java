@@ -1,6 +1,5 @@
 package edu.washington.escience.myria.expression;
 
-import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 
 import edu.washington.escience.myria.Schema;
@@ -15,9 +14,15 @@ public abstract class ComparisonExpression extends BinaryExpression {
   private static final long serialVersionUID = 1L;
 
   /**
+   * The operation the operation that this comparison expression implements.
+   */
+  private final SimplePredicate.Op operation;
+
+  /**
    * This is not really unused, it's used automagically by Jackson deserialization.
    */
   protected ComparisonExpression() {
+    operation = null;
   }
 
   /**
@@ -25,16 +30,21 @@ public abstract class ComparisonExpression extends BinaryExpression {
    * 
    * @return the operation for this comparison expression
    */
-  protected abstract SimplePredicate.Op getOperation();
+  private SimplePredicate.Op getOperation() {
+    return operation;
+  }
 
   /**
    * True if left {@link #getOperation()} right.
    * 
    * @param left the left operand.
    * @param right the right operand.
+   * @param operation the operation that this comparison expression uses.
    */
-  public ComparisonExpression(final ExpressionOperator left, final ExpressionOperator right) {
+  public ComparisonExpression(final ExpressionOperator left, final ExpressionOperator right,
+      final SimplePredicate.Op operation) {
     super(left, right);
+    this.operation = operation;
   }
 
   @Override
@@ -42,10 +52,10 @@ public abstract class ComparisonExpression extends BinaryExpression {
     Type leftType = getLeft().getOutputType(schema);
     Type rightType = getRight().getOutputType(schema);
 
-    if (leftType == Type.STRING_TYPE) {
-      Preconditions.checkArgument(rightType == Type.STRING_TYPE,
-          "If the type of the left child is String, %s requires right child [%s] of Type %s to be String as well.",
-          getClass().getSimpleName(), getRight(), rightType);
+    if (leftType == Type.STRING_TYPE || leftType == Type.DATETIME_TYPE) {
+      Preconditions.checkArgument(rightType == leftType,
+          "If the type of the left child is %s, %s requires right child [%s] of Type %s to be %s as well.", leftType,
+          getClass().getSimpleName(), getRight(), rightType, leftType);
     } else {
       checkAndReturnDefaultNumericType(schema);
     }
@@ -58,19 +68,5 @@ public abstract class ComparisonExpression extends BinaryExpression {
       return getObjectComparisonString(getOperation(), schema);
     }
     return getInfixBinaryString(getOperation().toString(), schema);
-  }
-
-  @Override
-  public int hashCode() {
-    return defaultHashCode();
-  }
-
-  @Override
-  public boolean equals(final Object other) {
-    if (other == null || !(other instanceof ComparisonExpression)) {
-      return false;
-    }
-    ComparisonExpression bOther = (ComparisonExpression) other;
-    return Objects.equal(getLeft(), bOther.getLeft()) && Objects.equal(getRight(), bOther.getRight());
   }
 }
