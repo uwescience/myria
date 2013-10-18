@@ -4,7 +4,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
-import edu.washington.escience.myria.operator.apply.DirectApplyTest;
 import edu.washington.escience.myria.operator.apply.ConstantMultiplicationIFunctionTest;
 import edu.washington.escience.myria.operator.apply.PowIFunctionTest;
 import edu.washington.escience.myria.operator.apply.SqrtIFunctionTest;
@@ -13,7 +12,6 @@ import edu.washington.escience.myria.systemtest.CollectTest;
 import edu.washington.escience.myria.systemtest.FlowControlTest;
 import edu.washington.escience.myria.systemtest.IterativeSelfJoinTest;
 import edu.washington.escience.myria.systemtest.LocalMultiwayProducerTest;
-import edu.washington.escience.myria.systemtest.UnionAllTest;
 import edu.washington.escience.myria.systemtest.MultithreadScanTest;
 import edu.washington.escience.myria.systemtest.OperatorTestUsingSQLiteStorage;
 import edu.washington.escience.myria.systemtest.ParallelDistinctUsingSQLiteTest;
@@ -21,12 +19,12 @@ import edu.washington.escience.myria.systemtest.QueryFailureTest;
 import edu.washington.escience.myria.systemtest.QueryKillTest;
 import edu.washington.escience.myria.systemtest.ShuffleSQLiteTest;
 import edu.washington.escience.myria.systemtest.SplitDataTest;
+import edu.washington.escience.myria.systemtest.UnionAllTest;
 
 @RunWith(Suite.class)
 @SuiteClasses({ ConstantMultiplicationIFunctionTest.class,//
     PowIFunctionTest.class,//
     SqrtIFunctionTest.class,//
-    DirectApplyTest.class,//
     CollectTest.class,//
     FlowControlTest.class, //
     IterativeSelfJoinTest.class, //
