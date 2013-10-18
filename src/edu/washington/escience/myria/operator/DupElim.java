@@ -8,6 +8,7 @@ import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.TIntObjectMap;
 import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.procedure.TIntProcedure;
 
 import java.util.BitSet;
 import java.util.List;
@@ -59,42 +60,30 @@ public final class DupElim extends StreamingStateUpdater {
     if (numTuples <= 0) {
       return tb;
     }
+    checkUniqueness.inputTB = tb;
+    List<Column<?>> columns = tb.getDataColumns();
     final BitSet toRemove = new BitSet(numTuples);
-    final List<Column<?>> tbColumns = tb.getDataColumns();
-    for (int row = 0; row < numTuples; ++row) {
+    for (int i = 0; i < numTuples; ++i) {
       final int nextIndex = uniqueTuples.numTuples();
-      final int cntHashCode = tb.hashCode(row);
+      final int cntHashCode = tb.hashCode(i);
       TIntList tupleIndexList = uniqueTupleIndices.get(cntHashCode);
-      int inColumnRow = tb.getValidIndices().get(row);
-
-      /* update hash table if the hash entry of the hash value of this tuple does not exist. */
+      checkUniqueness.row = i;
+      checkUniqueness.unique = true;
       if (tupleIndexList == null) {
-        for (int column = 0; column < tb.numColumns(); ++column) {
-          uniqueTuples.put(column, tbColumns.get(column), inColumnRow);
-        }
         tupleIndexList = new TIntArrayList();
         tupleIndexList.add(nextIndex);
         uniqueTupleIndices.put(cntHashCode, tupleIndexList);
-        continue;
+      } else {
+        tupleIndexList.forEach(checkUniqueness);
       }
-
-      /* detect is there a equal tuple existing. */
-      boolean unique = true;
-      for (int i = 0; i < tupleIndexList.size(); ++i) {
-        if (tb.tupleEquals(row, uniqueTuples, tupleIndexList.get(i))) {
-          unique = false;
-          break;
-        }
-      }
-
-      /* update the hash table if current tuple is unique, delete it otherwise. */
-      if (unique) {
-        for (int column = 0; column < tb.numColumns(); ++column) {
-          uniqueTuples.put(column, tbColumns.get(column), inColumnRow);
+      if (checkUniqueness.unique) {
+        int inColumnRow = tb.getValidIndices().get(i);
+        for (int j = 0; j < tb.numColumns(); ++j) {
+          uniqueTuples.put(j, columns.get(j), inColumnRow);
         }
         tupleIndexList.add(nextIndex);
       } else {
-        toRemove.set(row);
+        toRemove.set(i);
       }
     }
     return tb.remove(toRemove);
@@ -109,6 +98,7 @@ public final class DupElim extends StreamingStateUpdater {
   public void init(final ImmutableMap<String, Object> execEnvVars) {
     uniqueTupleIndices = new TIntObjectHashMap<TIntList>();
     uniqueTuples = new TupleBuffer(getSchema());
+    checkUniqueness = new CheckUniquenessProcedure();
   }
 
   @Override
@@ -124,4 +114,32 @@ public final class DupElim extends StreamingStateUpdater {
   public List<TupleBatch> exportState() {
     return uniqueTuples.getAll();
   }
+
+  /**
+   * Traverse through the list of tuples.
+   * */
+  private transient CheckUniquenessProcedure checkUniqueness;
+
+  /**
+   * Traverse through the list of tuples with the same hash code.
+   * */
+  private final class CheckUniquenessProcedure implements TIntProcedure {
+
+    /** row index of the tuple. */
+    private int row;
+
+    /** input TupleBatch. */
+    private TupleBatch inputTB;
+
+    /** if found a replacement. */
+    private boolean unique;
+
+    @Override
+    public boolean execute(final int index) {
+      if (inputTB.tupleEquals(row, uniqueTuples, index)) {
+        unique = false;
+      }
+      return unique;
+    }
+  };
 }

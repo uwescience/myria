@@ -1,19 +1,27 @@
 package edu.washington.escience.myria.operator;
 
-import java.util.ArrayList;
+import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.TupleBatch;
+import edu.washington.escience.myria.TupleBuffer;
+import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.column.DoubleColumn;
+import edu.washington.escience.myria.column.FloatColumn;
+import edu.washington.escience.myria.column.IntColumn;
+import edu.washington.escience.myria.column.LongColumn;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.procedure.TIntProcedure;
+
 import java.util.BitSet;
-import java.util.HashMap;
 import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableMap;
-
-import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBuffer;
-import edu.washington.escience.myria.Type;
 
 /**
  * Keeps min vaule. It adds newly meet unique tuples into a buffer so that the source TupleBatches are not referenced.
@@ -32,7 +40,7 @@ public final class KeepMinValue extends StreamingStateUpdater {
   /**
    * Indices to unique tuples.
    * */
-  private transient HashMap<Integer, List<Integer>> uniqueTupleIndices;
+  private transient TIntObjectMap<TIntList> uniqueTupleIndices;
 
   /**
    * The buffer for stroing unique tuples.
@@ -64,36 +72,21 @@ public final class KeepMinValue extends StreamingStateUpdater {
    * Check if a tuple in uniqueTuples equals to the comparing tuple (cntTuple).
    * 
    * @param index the index in uniqueTuples
-   * @param cntTuple a list representation of a tuple to compare
+   * @param column the source column
+   * @param row the index of the source row
    * @return true if equals.
    * */
-  private boolean tupleEquals(final int index, final List<Object> cntTuple) {
-    for (int i : keyColIndices) {
-      if (!(uniqueTuples.get(i, index)).equals(cntTuple.get(i))) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  /**
-   * Check if a tuple in uniqueTuples equals to the comparing tuple (cntTuple).
-   * 
-   * @param index the index in uniqueTuples
-   * @param cntTuple a list representation of a tuple to compare
-   * @return true if equals.
-   * */
-  private boolean replace(final int index, final List<Object> cntTuple) {
-    Type t = uniqueTuples.getSchema().getColumnType(valueColIndex);
+  private boolean shouldReplace(final int index, final Column<?> column, final int row) {
+    Type t = column.getType();
     switch (t) {
       case INT_TYPE:
-        return ((Integer) cntTuple.get(valueColIndex)) < ((Integer) uniqueTuples.get(valueColIndex, index));
+        return (((IntColumn) column).get(row)) < uniqueTuples.getInt(valueColIndex, index);
       case FLOAT_TYPE:
-        return ((Float) cntTuple.get(valueColIndex)) < ((Float) uniqueTuples.get(valueColIndex, index));
+        return (((FloatColumn) column).get(row)) < uniqueTuples.getFloat(valueColIndex, index);
       case DOUBLE_TYPE:
-        return ((Double) cntTuple.get(valueColIndex)) < ((Double) uniqueTuples.get(valueColIndex, index));
+        return (((DoubleColumn) column).get(row)) < uniqueTuples.getDouble(valueColIndex, index);
       case LONG_TYPE:
-        return ((Long) cntTuple.get(valueColIndex)) < ((Long) uniqueTuples.get(valueColIndex, index));
+        return (((LongColumn) column).get(row)) < uniqueTuples.getLong(valueColIndex, index);
       default:
         throw new IllegalStateException("type " + t + " is not supported in KeepMinValue.replace()");
     }
@@ -110,40 +103,30 @@ public final class KeepMinValue extends StreamingStateUpdater {
     if (numTuples <= 0) {
       return tb;
     }
+    doReplace.inputTB = tb;
+    final List<Column<?>> columns = tb.getDataColumns();
     final BitSet toRemove = new BitSet(numTuples);
-    final List<Object> cntTuple = new ArrayList<Object>();
     for (int i = 0; i < numTuples; ++i) {
-      cntTuple.clear();
-      for (int j = 0; j < tb.numColumns(); ++j) {
-        cntTuple.add(tb.getObject(j, i));
-      }
       final int nextIndex = uniqueTuples.numTuples();
       final int cntHashCode = tb.hashCode(i, keyColIndices);
-      List<Integer> tupleIndexList = uniqueTupleIndices.get(cntHashCode);
+      TIntList tupleIndexList = uniqueTupleIndices.get(cntHashCode);
+      doReplace.unique = true;
       if (tupleIndexList == null) {
-        for (int j = 0; j < tb.numColumns(); ++j) {
-          uniqueTuples.put(j, cntTuple.get(j));
-        }
-        tupleIndexList = new ArrayList<Integer>();
+        tupleIndexList = new TIntArrayList();
         tupleIndexList.add(nextIndex);
         uniqueTupleIndices.put(cntHashCode, tupleIndexList);
-        continue;
-      }
-      boolean unique = true;
-      for (final int oldTupleIndex : tupleIndexList) {
-        if (tupleEquals(oldTupleIndex, cntTuple)) {
-          unique = false;
-          if (replace(oldTupleIndex, cntTuple)) {
-            uniqueTuples.replace(valueColIndex, oldTupleIndex, cntTuple.get(valueColIndex));
-          } else {
-            toRemove.set(i);
-          }
-          break;
+      } else {
+        doReplace.replaced = false;
+        doReplace.row = i;
+        tupleIndexList.forEach(doReplace);
+        if (!doReplace.unique && !doReplace.replaced) {
+          toRemove.set(i);
         }
       }
-      if (unique) {
+      if (doReplace.unique) {
+        int inColumnRow = tb.getValidIndices().get(i);
         for (int j = 0; j < tb.numColumns(); ++j) {
-          uniqueTuples.put(j, cntTuple.get(j));
+          uniqueTuples.put(j, columns.get(j), inColumnRow);
         }
         tupleIndexList.add(nextIndex);
       }
@@ -158,8 +141,9 @@ public final class KeepMinValue extends StreamingStateUpdater {
 
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) {
-    uniqueTupleIndices = new HashMap<Integer, List<Integer>>();
+    uniqueTupleIndices = new TIntObjectHashMap<TIntList>();
     uniqueTuples = new TupleBuffer(getSchema());
+    doReplace = new ReplaceProcedure();
   }
 
   @Override
@@ -175,4 +159,41 @@ public final class KeepMinValue extends StreamingStateUpdater {
   public List<TupleBatch> exportState() {
     return uniqueTuples.getAll();
   }
+
+  /**
+   * Traverse through the list of tuples and replace old values.
+   * */
+  private transient ReplaceProcedure doReplace;
+
+  /**
+   * Traverse through the list of tuples with the same hash code.
+   * */
+  private final class ReplaceProcedure implements TIntProcedure {
+
+    /** row index of the tuple. */
+    private int row;
+
+    /** input TupleBatch. */
+    private TupleBatch inputTB;
+
+    /** if found a replacement. */
+    private boolean replaced;
+
+    /** if the given tuple doesn't exist. */
+    private boolean unique;
+
+    @Override
+    public boolean execute(final int index) {
+      if (inputTB.tupleEquals(row, uniqueTuples, index, keyColIndices, keyColIndices)) {
+        unique = false;
+        Column<?> valueColumn = inputTB.getDataColumns().get(valueColIndex);
+        int inColumnRow = inputTB.getValidIndices().get(row);
+        if (shouldReplace(index, valueColumn, inColumnRow)) {
+          uniqueTuples.replace(valueColIndex, index, valueColumn, inColumnRow);
+          replaced = true;
+        }
+      }
+      return unique;
+    }
+  };
 }
