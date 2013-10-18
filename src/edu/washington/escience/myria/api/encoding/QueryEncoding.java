@@ -1,14 +1,19 @@
 package edu.washington.escience.myria.api.encoding;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.ws.rs.core.Response.Status;
 
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -17,10 +22,13 @@ import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.api.MyriaApiException;
 import edu.washington.escience.myria.coordinator.catalog.CatalogException;
+import edu.washington.escience.myria.operator.IDBInput;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.parallel.CollectConsumer;
+import edu.washington.escience.myria.parallel.Consumer;
+import edu.washington.escience.myria.parallel.EOSController;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.parallel.SingleQueryPlanWithArgs;
@@ -61,14 +69,29 @@ public class QueryEncoding extends MyriaApiEncoding {
     }
   }
 
+  @JsonIgnore
   public Map<Integer, SingleQueryPlanWithArgs> instantiate(final Server server) throws CatalogException {
     /* First, we need to know which workers run on each plan. */
     setupWorkersForFragments(server);
     /* Next, we need to know which pipes (operators) are produced and consumed on which workers. */
     setupWorkerNetworkOperators();
-    Map<Integer, SingleQueryPlanWithArgs> plan = new HashMap<Integer, SingleQueryPlanWithArgs>();
+
+    HashMap<String, PlanFragmentEncoding> op2OwnerFragmentMapping = new HashMap<String, PlanFragmentEncoding>();
     for (PlanFragmentEncoding fragment : fragments) {
-      RootOperator op = instantiatePlanFragment(fragment.operators, fragments.indexOf(fragment), server);
+      for (OperatorEncoding<?> op : fragment.operators) {
+        op2OwnerFragmentMapping.put(op.opName, fragment);
+      }
+    }
+
+    Map<Integer, SingleQueryPlanWithArgs> plan = new HashMap<Integer, SingleQueryPlanWithArgs>();
+    HashMap<PlanFragmentEncoding, RootOperator> instantiatedFragments =
+        new HashMap<PlanFragmentEncoding, RootOperator>();
+    HashMap<String, Operator> allOperators = new HashMap<String, Operator>();
+    MutableLong fragmentID = new MutableLong();
+    for (PlanFragmentEncoding fragment : fragments) {
+      RootOperator op =
+          instantiateFragment(fragment, fragmentID, server, instantiatedFragments, op2OwnerFragmentMapping,
+              allOperators);
       for (Integer worker : fragment.workers) {
         SingleQueryPlanWithArgs workerPlan = plan.get(worker);
         if (workerPlan == null) {
@@ -88,6 +111,7 @@ public class QueryEncoding extends MyriaApiEncoding {
    * 
    * @throws CatalogException if there is an error in the Catalog.
    */
+  @JsonIgnore
   private void setupWorkersForFragments(final Server server) throws CatalogException {
     for (PlanFragmentEncoding fragment : fragments) {
       if (fragment.workers != null && fragment.workers.size() > 0) {
@@ -96,8 +120,7 @@ public class QueryEncoding extends MyriaApiEncoding {
       }
 
       /* The workers are *not* set in the plan. Let's find out what they are. */
-      List<Integer> workers = new ArrayList<Integer>();
-      fragment.workers = workers;
+      fragment.workers = new ArrayList<Integer>();
 
       /* If the plan has scans, it has to run on all of those workers. */
       for (OperatorEncoding<?> operator : fragment.operators) {
@@ -108,10 +131,10 @@ public class QueryEncoding extends MyriaApiEncoding {
             throw new MyriaApiException(Status.BAD_REQUEST, "Unable to find workers that store "
                 + scan.relationKey.toString(MyriaConstants.STORAGE_SYSTEM_SQLITE));
           }
-          workers.addAll(scanWorkers);
+          fragment.workers.addAll(scanWorkers);
         }
       }
-      if (workers.size() > 0) {
+      if (fragment.workers.size() > 0) {
         continue;
       }
 
@@ -120,65 +143,69 @@ public class QueryEncoding extends MyriaApiEncoding {
         /* If the fragment has a CollectConsumer, it has to run on a single worker. */
         if (operator instanceof CollectConsumerEncoding) {
           /* Just pick the first alive worker. */
-          workers.add(server.getAliveWorkers().iterator().next());
+          fragment.workers.add(server.getAliveWorkers().iterator().next());
           break;
         }
       }
-      if (workers.size() > 0) {
+      if (fragment.workers.size() > 0) {
         continue;
       }
 
       /* If not, just add all the alive workers in the cluster. */
-      workers.addAll(server.getAliveWorkers());
+      fragment.workers.addAll(server.getAliveWorkers());
     }
   }
 
   /**
    * Loop through all the operators in a plan fragment and connect them up.
    */
+  @JsonIgnore
   private void setupWorkerNetworkOperators() {
-    Map<String, ExchangePairID> operatorIdMap = new HashMap<String, ExchangePairID>();
-    Map<ExchangePairID, List<Integer>> producerMap = new HashMap<ExchangePairID, List<Integer>>();
-    Map<ExchangePairID, List<Integer>> consumerMap = new HashMap<ExchangePairID, List<Integer>>();
+    Map<String, Set<Integer>> producerWorkerMap = new HashMap<String, Set<Integer>>();
+    Map<ExchangePairID, Set<Integer>> consumerWorkerMap = new HashMap<ExchangePairID, Set<Integer>>();
+    Map<String, List<ExchangePairID>> producerOutputChannels = new HashMap<String, List<ExchangePairID>>();
+    List<IDBInputEncoding> idbInputs = new ArrayList<IDBInputEncoding>();
     /* Pass 1: map strings to real operator IDs, also collect producers and consumers. */
     for (PlanFragmentEncoding fragment : fragments) {
       for (OperatorEncoding<?> operator : fragment.operators) {
-        if (operator instanceof ExchangeEncoding) {
-          ExchangeEncoding<?> exchange = (ExchangeEncoding<?>) operator;
-          List<String> argIds = exchange.getOperatorIds();
-          List<ExchangePairID> ids = new ArrayList<ExchangePairID>(argIds.size());
-          for (String argId : argIds) {
-            ExchangePairID id = operatorIdMap.get(argId);
-            if (id == null) {
-              id = ExchangePairID.newID();
-              operatorIdMap.put(argId, id);
-              producerMap.put(id, new ArrayList<Integer>());
-              consumerMap.put(id, new ArrayList<Integer>());
-            }
-            if (exchange instanceof AbstractConsumerEncoding) {
-              consumerMap.get(id).addAll(fragment.workers);
-            } else if (exchange instanceof AbstractProducerEncoding) {
-              producerMap.get(id).addAll(fragment.workers);
-            } else {
-              throw new IllegalStateException("ExchangeEncoding " + operator.getClass().getSimpleName()
-                  + " is not a Producer or Consumer encoding");
-            }
-            ids.add(id);
+        if (operator instanceof AbstractConsumerEncoding) {
+          AbstractConsumerEncoding<?> consumer = (AbstractConsumerEncoding<?>) operator;
+          String sourceProducerID = consumer.getOperatorId();
+          List<ExchangePairID> sourceProducerOutputChannels = producerOutputChannels.get(sourceProducerID);
+          if (sourceProducerOutputChannels == null) {
+            // The producer is not yet met
+            sourceProducerOutputChannels = new ArrayList<ExchangePairID>();
+            producerOutputChannels.put(sourceProducerID, sourceProducerOutputChannels);
           }
-          exchange.setRealOperatorIds(ids);
+          ExchangePairID channelID = ExchangePairID.newID();
+          consumer.setRealOperatorIds(Arrays.asList(new ExchangePairID[] { channelID }));
+          sourceProducerOutputChannels.add(channelID);
+          consumerWorkerMap.put(channelID, ImmutableSet.<Integer> builder().addAll(fragment.workers).build());
+
+        } else if (operator instanceof AbstractProducerEncoding) {
+          AbstractProducerEncoding<?> producer = (AbstractProducerEncoding<?>) operator;
+          List<ExchangePairID> sourceProducerOutputChannels = producerOutputChannels.get(producer.opName);
+          if (sourceProducerOutputChannels == null) {
+            sourceProducerOutputChannels = new ArrayList<ExchangePairID>();
+            producerOutputChannels.put(producer.opName, sourceProducerOutputChannels);
+          }
+          producer.setRealOperatorIds(sourceProducerOutputChannels);
+          producerWorkerMap.put(producer.opName, ImmutableSet.<Integer> builder().addAll(fragment.workers).build());
         } else if (operator instanceof IDBInputEncoding) {
           IDBInputEncoding idbInput = (IDBInputEncoding) operator;
-          ExchangePairID id = operatorIdMap.get(idbInput.argControllerOperatorId);
-          if (id == null) {
-            id = ExchangePairID.newID();
-            operatorIdMap.put(idbInput.argControllerOperatorId, id);
-            producerMap.put(id, new ArrayList<Integer>());
-            consumerMap.put(id, new ArrayList<Integer>());
+          idbInputs.add(idbInput);
+          List<ExchangePairID> sourceProducerOutputChannels = producerOutputChannels.get(idbInput.opName);
+          if (sourceProducerOutputChannels == null) {
+            sourceProducerOutputChannels = new ArrayList<ExchangePairID>();
+            producerOutputChannels.put(idbInput.opName, sourceProducerOutputChannels);
           }
-          producerMap.get(id).addAll(fragment.workers);
-          idbInput.realControllerOperatorId = id;
+          producerWorkerMap.put(idbInput.opName, new HashSet<Integer>(fragment.workers));
+
         }
       }
+    }
+    for (IDBInputEncoding idbInput : idbInputs) {
+      idbInput.setRealControllerOperatorID(producerOutputChannels.get(idbInput.opName).get(0));
     }
     /* Pass 2: Populate the right fields in producers and consumers. */
     for (PlanFragmentEncoding fragment : fragments) {
@@ -188,9 +215,16 @@ public class QueryEncoding extends MyriaApiEncoding {
           ImmutableSet.Builder<Integer> workers = ImmutableSet.builder();
           for (ExchangePairID id : exchange.getRealOperatorIds()) {
             if (exchange instanceof AbstractConsumerEncoding) {
-              workers.addAll(producerMap.get(id));
+              try {
+                workers.addAll(producerWorkerMap.get(((AbstractConsumerEncoding<?>) exchange).getOperatorId()));
+              } catch (NullPointerException ee) {
+                System.err.println("Consumer: " + ((AbstractConsumerEncoding<?>) exchange).opName);
+                System.err.println("Producer: " + ((AbstractConsumerEncoding<?>) exchange).argOperatorId);
+                System.err.println("producerWorkerMap: " + producerWorkerMap);
+                throw ee;
+              }
             } else if (exchange instanceof AbstractProducerEncoding) {
-              workers.addAll(consumerMap.get(id));
+              workers.addAll(consumerWorkerMap.get(id));
             } else {
               throw new IllegalStateException("ExchangeEncoding " + operator.getClass().getSimpleName()
                   + " is not a Producer or Consumer encoding");
@@ -200,10 +234,11 @@ public class QueryEncoding extends MyriaApiEncoding {
         } else if (operator instanceof IDBInputEncoding) {
           IDBInputEncoding idbInput = (IDBInputEncoding) operator;
           idbInput.realControllerWorkerId =
-              MyriaUtils.getSingleElement(consumerMap.get(idbInput.realControllerOperatorId));
+              MyriaUtils.getSingleElement(consumerWorkerMap.get(idbInput.getRealControllerOperatorID()));
         }
       }
     }
+
   }
 
   /**
@@ -215,34 +250,97 @@ public class QueryEncoding extends MyriaApiEncoding {
    * @param planFragment the encoded plan fragment.
    * @return the actual plan fragment.
    */
-  private static RootOperator instantiatePlanFragment(final List<OperatorEncoding<?>> planFragment,
-      final long fragmentId, final Server server) {
-    Map<String, Operator> operators = new HashMap<String, Operator>();
+  @JsonIgnore
+  private RootOperator instantiateFragment(final PlanFragmentEncoding planFragment, final MutableLong fragmentId,
+      final Server server, final HashMap<PlanFragmentEncoding, RootOperator> instantiatedFragments,
+      final Map<String, PlanFragmentEncoding> opOwnerFragment, final Map<String, Operator> allOperators) {
+    long myFragmentID = fragmentId.longValue();
+    fragmentId.increment();
+    RootOperator instantiatedFragment = instantiatedFragments.get(planFragment);
+    if (instantiatedFragment != null) {
+      return instantiatedFragment;
+    }
 
+    RootOperator fragmentRoot = null;
+    CollectConsumer oldRoot = null;
+    Map<String, Operator> myOperators = new HashMap<String, Operator>();
+    HashMap<String, AbstractConsumerEncoding<?>> nonIterativeConsumers =
+        new HashMap<String, AbstractConsumerEncoding<?>>();
+    HashSet<IDBInputEncoding> idbs = new HashSet<IDBInputEncoding>();
     /* Instantiate all the operators. */
-    for (OperatorEncoding<?> encoding : planFragment) {
+    for (OperatorEncoding<?> encoding : planFragment.operators) {
+      if (encoding instanceof IDBInputEncoding) {
+        idbs.add((IDBInputEncoding) encoding);
+      }
+      if (encoding instanceof AbstractConsumerEncoding<?>) {
+        nonIterativeConsumers.put(encoding.opName, (AbstractConsumerEncoding<?>) encoding);
+      }
+
       Operator op = encoding.construct(server);
       /* helpful for debugging. */
       op.setOpName(encoding.opName);
-      op.setFragmentId(fragmentId);
-      operators.put(encoding.opName, op);
+      op.setFragmentId(myFragmentID);
+      myOperators.put(encoding.opName, op);
+      if (op instanceof RootOperator) {
+        if (fragmentRoot != null) {
+          throw new MyriaApiException(Status.BAD_REQUEST, "Multiple " + RootOperator.class.getSimpleName()
+              + " detected in the fragment: " + fragmentRoot.getOpName() + ", and " + encoding.opName);
+        }
+        fragmentRoot = (RootOperator) op;
+      }
+      if (op instanceof CollectConsumer) {
+        oldRoot = (CollectConsumer) op;
+      }
     }
+    allOperators.putAll(myOperators);
+
+    for (IDBInputEncoding idb : idbs) {
+      nonIterativeConsumers.remove(idb.argIterationInput);
+      nonIterativeConsumers.remove(idb.argEosControllerInput);
+    }
+
+    Set<PlanFragmentEncoding> dependantFragments = new HashSet<PlanFragmentEncoding>();
+    for (AbstractConsumerEncoding<?> c : nonIterativeConsumers.values()) {
+      dependantFragments.add(opOwnerFragment.get(c.argOperatorId));
+    }
+
+    for (PlanFragmentEncoding f : dependantFragments) {
+      instantiateFragment(f, fragmentId, server, instantiatedFragments, opOwnerFragment, allOperators);
+    }
+
+    for (AbstractConsumerEncoding<?> c : nonIterativeConsumers.values()) {
+      Consumer consumer = (Consumer) myOperators.get(c.opName);
+      String producingOpName = c.argOperatorId;
+      Operator producingOp = allOperators.get(producingOpName);
+      consumer.setSchema(producingOp.getSchema());
+    }
+
     /* Connect all the operators. */
-    for (OperatorEncoding<?> encoding : planFragment) {
-      encoding.connect(operators.get(encoding.opName), (operators));
+    for (OperatorEncoding<?> encoding : planFragment.operators) {
+      encoding.connect(myOperators.get(encoding.opName), myOperators);
     }
-    /* Return the first one. */
-    Operator ret = operators.get(planFragment.get(planFragment.size() - 1).opName);
-    if (ret instanceof RootOperator) {
-      return (RootOperator) ret;
-    } else if (ret instanceof CollectConsumer) {
+
+    for (IDBInputEncoding idb : idbs) {
+      IDBInput idbOp = (IDBInput) myOperators.get(idb.opName);
+      Operator initialInput = idbOp.getChildren()[IDBInput.CHILDREN_IDX_INITIAL_IDB_INPUT];
+      Consumer iterativeInput = (Consumer) idbOp.getChildren()[IDBInput.CHILDREN_IDX_ITERATION_INPUT];
+      Consumer eosControllerInput = (Consumer) idbOp.getChildren()[IDBInput.CHILDREN_IDX_EOS_CONTROLLER_INPUT];
+      iterativeInput.setSchema(initialInput.getSchema());
+      eosControllerInput.setSchema(EOSController.EOS_REPORT_SCHEMA);
+    }
+    /* Return the root. */
+    if (fragmentRoot == null && oldRoot != null) {
       /* Old query plan, add a SinkRoot to the top. */
       LOGGER.info("Adding a SinkRoot to the top of an old query plan.");
-      SinkRoot sinkRoot = new SinkRoot(ret);
-      return sinkRoot;
-    } else {
-      throw new MyriaApiException(Status.BAD_REQUEST,
-          "The last operator in a plan fragment must be a RootOperator, not " + ret.getClass());
+      fragmentRoot = new SinkRoot(oldRoot);
     }
+
+    if (fragmentRoot == null) {
+      throw new MyriaApiException(Status.BAD_REQUEST, "No " + RootOperator.class.getSimpleName()
+          + " detected in the fragment.");
+    }
+
+    instantiatedFragments.put(planFragment, fragmentRoot);
+    return fragmentRoot;
   }
 }
