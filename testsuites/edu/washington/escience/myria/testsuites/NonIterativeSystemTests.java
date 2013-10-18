@@ -4,9 +4,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
-import edu.washington.escience.myria.operator.apply.ConstantMultiplicationIFunctionTest;
-import edu.washington.escience.myria.operator.apply.PowIFunctionTest;
-import edu.washington.escience.myria.operator.apply.SqrtIFunctionTest;
 import edu.washington.escience.myria.systemtest.BroadcastTest;
 import edu.washington.escience.myria.systemtest.CollectTest;
 import edu.washington.escience.myria.systemtest.FlowControlTest;
@@ -22,10 +19,7 @@ import edu.washington.escience.myria.systemtest.SplitDataTest;
 import edu.washington.escience.myria.systemtest.UnionAllTest;
 
 @RunWith(Suite.class)
-@SuiteClasses({ ConstantMultiplicationIFunctionTest.class,//
-    PowIFunctionTest.class,//
-    SqrtIFunctionTest.class,//
-    CollectTest.class,//
+@SuiteClasses({ CollectTest.class,//
     FlowControlTest.class, //
     IterativeSelfJoinTest.class, //
     LocalMultiwayProducerTest.class, //
