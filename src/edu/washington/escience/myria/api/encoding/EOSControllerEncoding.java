@@ -12,9 +12,8 @@ import edu.washington.escience.myria.parallel.Server;
 import edu.washington.escience.myria.util.MyriaUtils;
 
 public class EOSControllerEncoding extends AbstractProducerEncoding<EOSController> {
-  public List<String> argIdbOperatorIds;
   public String argChild;
-  private static final List<String> requiredArguments = ImmutableList.of("argIdbOperatorIds", "argChild");
+  private static final List<String> requiredArguments = ImmutableList.of("argChild");
 
   @Override
   public EOSController construct(Server server) {
@@ -33,8 +32,4 @@ public class EOSControllerEncoding extends AbstractProducerEncoding<EOSControlle
     return requiredArguments;
   }
 
-  @Override
-  protected List<String> getOperatorIds() {
-    return argIdbOperatorIds;
-  }
 }

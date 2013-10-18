@@ -17,9 +17,8 @@ import edu.washington.escience.myria.util.MyriaUtils;
  */
 public class ShuffleProducerEncoding extends AbstractProducerEncoding<GenericShuffleProducer> {
   public String argChild;
-  public String argOperatorId;
   public PartitionFunctionEncoding<?> argPf;
-  private static final List<String> requiredArguments = ImmutableList.of("argChild", "argOperatorId", "argPf");
+  private static final List<String> requiredArguments = ImmutableList.of("argChild", "argPf");
 
   @Override
   public void connect(final Operator current, final Map<String, Operator> operators) {
@@ -43,8 +42,4 @@ public class ShuffleProducerEncoding extends AbstractProducerEncoding<GenericShu
     argPf.validate();
   }
 
-  @Override
-  protected List<String> getOperatorIds() {
-    return ImmutableList.of(argOperatorId);
-  }
 }

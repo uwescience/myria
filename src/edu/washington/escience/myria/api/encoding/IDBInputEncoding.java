@@ -3,6 +3,7 @@ package edu.washington.escience.myria.api.encoding;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
 
@@ -11,23 +12,21 @@ import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.Server;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class IDBInputEncoding extends OperatorEncoding<IDBInput> {
   @JsonProperty
   public Integer argSelfIdbId;
-  @JsonProperty
-  public String argControllerOperatorId;
   @JsonProperty
   public String argInitialInput;
   @JsonProperty
   public String argIterationInput;
   @JsonProperty
   public String argEosControllerInput;
-  @JsonProperty
-  public ExchangePairID realControllerOperatorId;
-  @JsonProperty
+
+  private ExchangePairID realControllerOperatorId;
   public Integer realControllerWorkerId;
-  private static final List<String> requiredArguments = ImmutableList.of("argSelfIdbId", "argControllerOperatorId",
-      "argInitialInput", "argIterationInput", "argEosControllerInput");
+  private static final List<String> requiredArguments = ImmutableList.of("argSelfIdbId", "argInitialInput",
+      "argIterationInput", "argEosControllerInput");
 
   @Override
   public IDBInput construct(Server server) {
@@ -43,5 +42,13 @@ public class IDBInputEncoding extends OperatorEncoding<IDBInput> {
   @Override
   protected List<String> getRequiredArguments() {
     return requiredArguments;
+  }
+
+  protected void setRealControllerOperatorID(final ExchangePairID realControllerOperatorId) {
+    this.realControllerOperatorId = realControllerOperatorId;
+  }
+
+  protected ExchangePairID getRealControllerOperatorID() {
+    return realControllerOperatorId;
   }
 }

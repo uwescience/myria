@@ -21,9 +21,8 @@ import edu.washington.escience.myria.util.MyriaUtils;
 public class BroadcastProducerEncoding extends AbstractProducerEncoding<GenericShuffleProducer> {
 
   public String argChild;
-  public String argOperatorId;
 
-  private static final List<String> requiredArguments = ImmutableList.of("argChild", "argOperatorId");
+  private static final List<String> requiredArguments = ImmutableList.of("argChild");
 
   @Override
   public void connect(final Operator current, final Map<String, Operator> operators) {
@@ -45,11 +44,6 @@ public class BroadcastProducerEncoding extends AbstractProducerEncoding<GenericS
   @Override
   protected List<String> getRequiredArguments() {
     return requiredArguments;
-  }
-
-  @Override
-  protected List<String> getOperatorIds() {
-    return ImmutableList.of(argOperatorId);
   }
 
 }
