@@ -125,8 +125,8 @@ public class ProtobufTest {
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
-      tbb.put(0, ids[i]);
-      tbb.put(1, names[i]);
+      tbb.putLong(0, ids[i]);
+      tbb.putString(1, names[i]);
     }
 
     final HashMap<Tuple, Integer> expectedOne = TestUtils.tupleBatchToTupleBag(tbb);
@@ -229,7 +229,8 @@ public class ProtobufTest {
         new LinkedBlockingQueue<IPCMessage.Data<TransportMessage>>();
 
     final IPCConnectionPool connectionPool =
-        IPCTestUtil.startIPCConnectionPool(serverID, computingUnits, shortMessageQueue, new TransportMessageSerializer());
+        IPCTestUtil.startIPCConnectionPool(serverID, computingUnits, shortMessageQueue,
+            new TransportMessageSerializer());
 
     final Thread[] threads = new Thread[numThreads];
     final AtomicInteger numSent = new AtomicInteger();
@@ -299,8 +300,8 @@ public class ProtobufTest {
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
-      tbb.put(0, ids[i]);
-      tbb.put(1, names[i]);
+      tbb.putLong(0, ids[i]);
+      tbb.putString(1, names[i]);
     }
 
     final HashMap<Tuple, Integer> expectedOne = TestUtils.tupleBatchToTupleBag(tbb);
@@ -427,8 +428,8 @@ public class ProtobufTest {
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
-      tbb.put(0, ids[i]);
-      tbb.put(1, names[i]);
+      tbb.putLong(0, ids[i]);
+      tbb.putString(1, names[i]);
     }
 
     final HashMap<Tuple, Integer> expectedOne = TestUtils.tupleBatchToTupleBag(tbb);
@@ -540,8 +541,8 @@ public class ProtobufTest {
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
-      tbb.put(0, ids[i]);
-      tbb.put(1, names[i]);
+      tbb.putLong(0, ids[i]);
+      tbb.putString(1, names[i]);
     }
 
     final HashMap<Tuple, Integer> expected = TestUtils.tupleBatchToTupleBag(tbb);
@@ -615,7 +616,8 @@ public class ProtobufTest {
     LinkedBlockingQueue<Data<TransportMessage>> shortMessageQueue =
         new LinkedBlockingQueue<IPCMessage.Data<TransportMessage>>();
     final IPCConnectionPool connectionPool =
-        IPCTestUtil.startIPCConnectionPool(serverID, computingUnits, shortMessageQueue, new TransportMessageSerializer());
+        IPCTestUtil.startIPCConnectionPool(serverID, computingUnits, shortMessageQueue,
+            new TransportMessageSerializer());
 
     final AtomicInteger numSent = new AtomicInteger();
     try {
@@ -666,8 +668,8 @@ public class ProtobufTest {
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
-      tbb.put(0, ids[i]);
-      tbb.put(1, names[i]);
+      tbb.putLong(0, ids[i]);
+      tbb.putString(1, names[i]);
     }
 
     final HashMap<Tuple, Integer> expected = TestUtils.tupleBatchToTupleBag(tbb);
@@ -812,8 +814,8 @@ public class ProtobufTest {
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
-      tbb.put(0, ids[i]);
-      tbb.put(1, names[i]);
+      tbb.putLong(0, ids[i]);
+      tbb.putString(1, names[i]);
     }
 
     final HashMap<Tuple, Integer> expected = TestUtils.tupleBatchToTupleBag(tbb);

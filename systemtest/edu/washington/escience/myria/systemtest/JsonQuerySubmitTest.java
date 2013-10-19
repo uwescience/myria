@@ -1,6 +1,7 @@
 package edu.washington.escience.myria.systemtest;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,9 +15,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sun.misc.IOUtils;
-
-import com.google.common.base.Preconditions;
-
 import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.util.JsonAPIUtils;
 
@@ -142,7 +140,7 @@ public class JsonQuerySubmitTest extends SystemTestBase {
       Thread.sleep(100);
     }
     Long result = server.getQueryResult(5);
-    Preconditions.checkNotNull(result);
-    Preconditions.checkArgument(result == 4121);
+    assertNotNull(result);
+    assertEquals(result.longValue(), 4121l);
   }
 }

@@ -12,9 +12,6 @@ import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.WithinSumRangePredicate;
-import edu.washington.escience.myria.operator.Filter;
-import edu.washington.escience.myria.operator.Operator;
-import edu.washington.escience.myria.operator.TupleSource;
 
 public class FilterTest {
 
@@ -25,17 +22,17 @@ public class FilterTest {
         new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE, Type.INT_TYPE), ImmutableList.of("a", "b", "c"));
     final TupleBatchBuffer testBase = new TupleBatchBuffer(schema);
     // The middle case
-    testBase.put(0, 4);
-    testBase.put(1, 1);
-    testBase.put(2, 4);
+    testBase.putInt(0, 4);
+    testBase.putInt(1, 1);
+    testBase.putInt(2, 4);
     // Way out of range
-    testBase.put(0, 4);
-    testBase.put(1, 1);
-    testBase.put(2, 10);
+    testBase.putInt(0, 4);
+    testBase.putInt(1, 1);
+    testBase.putInt(2, 10);
     // Right at the edge, but shouldn't be included
-    testBase.put(0, 4);
-    testBase.put(1, 1);
-    testBase.put(2, 3);
+    testBase.putInt(0, 4);
+    testBase.putInt(1, 1);
+    testBase.putInt(2, 3);
     ImmutableList<Integer> operandList = ImmutableList.of(0, 1);
     Filter filter = new Filter(new WithinSumRangePredicate(2, operandList), new TupleSource(testBase));
     assertEquals(1, getRowCount(filter));
@@ -48,17 +45,17 @@ public class FilterTest {
         new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("a", "b", "c"));
     final TupleBatchBuffer testBase = new TupleBatchBuffer(schema);
     // The middle case
-    testBase.put(0, 4L);
-    testBase.put(1, 1L);
-    testBase.put(2, 4L);
+    testBase.putLong(0, 4L);
+    testBase.putLong(1, 1L);
+    testBase.putLong(2, 4L);
     // Way out of range
-    testBase.put(0, 4L);
-    testBase.put(1, 1L);
-    testBase.put(2, 10L);
+    testBase.putLong(0, 4L);
+    testBase.putLong(1, 1L);
+    testBase.putLong(2, 10L);
     // Right at the edge, but shouldn't be included
-    testBase.put(0, 4L);
-    testBase.put(1, 1L);
-    testBase.put(2, 3L);
+    testBase.putLong(0, 4L);
+    testBase.putLong(1, 1L);
+    testBase.putLong(2, 3L);
     ImmutableList<Integer> operandList = ImmutableList.of(0, 1);
     Filter filter = new Filter(new WithinSumRangePredicate(2, operandList), new TupleSource(testBase));
     assertEquals(1, getRowCount(filter));
@@ -72,25 +69,25 @@ public class FilterTest {
             "c"));
     final TupleBatchBuffer testBase = new TupleBatchBuffer(schema);
     // The middle case
-    testBase.put(0, 4.0);
-    testBase.put(1, 1.0);
-    testBase.put(2, 4.0);
+    testBase.putDouble(0, 4.0);
+    testBase.putDouble(1, 1.0);
+    testBase.putDouble(2, 4.0);
     // Way out of range
-    testBase.put(0, 4.0);
-    testBase.put(1, 1.0);
-    testBase.put(2, 10.0);
+    testBase.putDouble(0, 4.0);
+    testBase.putDouble(1, 1.0);
+    testBase.putDouble(2, 10.0);
     // Right at the edge, but shouldn't be in the tb after the filter
-    testBase.put(0, 4.0);
-    testBase.put(1, 1.0);
-    testBase.put(2, 3.0);
+    testBase.putDouble(0, 4.0);
+    testBase.putDouble(1, 1.0);
+    testBase.putDouble(2, 3.0);
     // Right inside
-    testBase.put(0, 4.0);
-    testBase.put(1, 1.0);
-    testBase.put(2, 3.1);
+    testBase.putDouble(0, 4.0);
+    testBase.putDouble(1, 1.0);
+    testBase.putDouble(2, 3.1);
     // Right outside
-    testBase.put(0, 4.0);
-    testBase.put(1, 1.0);
-    testBase.put(2, 5.1);
+    testBase.putDouble(0, 4.0);
+    testBase.putDouble(1, 1.0);
+    testBase.putDouble(2, 5.1);
     ImmutableList<Integer> operandList = ImmutableList.of(0, 1);
     Filter filter = new Filter(new WithinSumRangePredicate(2, operandList), new TupleSource(testBase));
     assertEquals(2, getRowCount(filter));
@@ -103,25 +100,25 @@ public class FilterTest {
         new Schema(ImmutableList.of(Type.FLOAT_TYPE, Type.FLOAT_TYPE, Type.FLOAT_TYPE), ImmutableList.of("a", "b", "c"));
     final TupleBatchBuffer testBase = new TupleBatchBuffer(schema);
     // The middle case
-    testBase.put(0, 4.0f);
-    testBase.put(1, 1.0f);
-    testBase.put(2, 4.0f);
+    testBase.putFloat(0, 4.0f);
+    testBase.putFloat(1, 1.0f);
+    testBase.putFloat(2, 4.0f);
     // Way out of range
-    testBase.put(0, 4.0f);
-    testBase.put(1, 1.0f);
-    testBase.put(2, 10.0f);
+    testBase.putFloat(0, 4.0f);
+    testBase.putFloat(1, 1.0f);
+    testBase.putFloat(2, 10.0f);
     // Right at the edge, but shouldn't be in the tb after the filter
-    testBase.put(0, 4.0f);
-    testBase.put(1, 1.0f);
-    testBase.put(2, 3.0f);
+    testBase.putFloat(0, 4.0f);
+    testBase.putFloat(1, 1.0f);
+    testBase.putFloat(2, 3.0f);
     // Right inside
-    testBase.put(0, 4.0f);
-    testBase.put(1, 1.0f);
-    testBase.put(2, 3.1f);
+    testBase.putFloat(0, 4.0f);
+    testBase.putFloat(1, 1.0f);
+    testBase.putFloat(2, 3.1f);
     // Right outside
-    testBase.put(0, 4.0f);
-    testBase.put(1, 1.0f);
-    testBase.put(2, 5.1f);
+    testBase.putFloat(0, 4.0f);
+    testBase.putFloat(1, 1.0f);
+    testBase.putFloat(2, 5.1f);
     ImmutableList<Integer> operandList = ImmutableList.of(0, 1);
     Filter filter = new Filter(new WithinSumRangePredicate(2, operandList), new TupleSource(testBase));
     assertEquals(2, getRowCount(filter));

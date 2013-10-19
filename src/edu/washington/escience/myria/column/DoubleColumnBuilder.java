@@ -134,7 +134,20 @@ public final class DoubleColumnBuilder implements ColumnBuilder<Double> {
   }
 
   @Override
+  @Deprecated
   public DoubleColumnBuilder replace(final int idx, final Double value) throws IndexOutOfBoundsException {
+    return replace(idx, value.doubleValue());
+  }
+
+  /**
+   * Replace the specified element.
+   * 
+   * @param value element to be inserted.
+   * @param idx where to insert the element.
+   * @return this column builder.
+   * @throws IndexOutOfBoundsException if the idx exceeds the currently valid indices, i.e. the currently built size.
+   */
+  public DoubleColumnBuilder replace(final int idx, final double value) throws IndexOutOfBoundsException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
     Preconditions.checkElementIndex(idx, data.position());
     data.put(idx, value);
@@ -142,7 +155,16 @@ public final class DoubleColumnBuilder implements ColumnBuilder<Double> {
   }
 
   @Override
+  @Deprecated
   public Double get(final int row) {
+    return data.get(row);
+  }
+
+  /**
+   * @param row the row to get
+   * @return primitive value of the row
+   * */
+  public double getDouble(final int row) {
     return data.get(row);
   }
 
@@ -152,4 +174,5 @@ public final class DoubleColumnBuilder implements ColumnBuilder<Double> {
     System.arraycopy(data.array(), 0, arr, 0, data.position());
     return new DoubleColumnBuilder((DoubleBuffer) DoubleBuffer.wrap(arr).position(data.position()).limit(data.limit()));
   }
+
 }

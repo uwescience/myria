@@ -16,7 +16,6 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.accessmethod.JdbcInfo;
 import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.TupleSource;
@@ -52,7 +51,7 @@ public class MonetDbJdbcAccessMethodTest {
     if (buffer == null || buffer.numTuples() < NUM_TUPLES) {
       buffer = new TupleBatchBuffer(schema);
       for (int i = 0; i < NUM_TUPLES; ++i) {
-        buffer.put(0, i);
+        buffer.putInt(0, i);
       }
     }
   }

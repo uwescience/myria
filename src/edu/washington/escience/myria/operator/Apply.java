@@ -55,6 +55,7 @@ public class Apply extends UnaryOperator {
   private static final long serialVersionUID = 1L;
 
   @Override
+  @SuppressWarnings("deprecation")
   protected TupleBatch fetchNextReady() throws Exception {
     TupleBatch tb = null;
     if (getChild().eoi() || getChild().eos()) {
@@ -66,6 +67,7 @@ public class Apply extends UnaryOperator {
         int columnIdx = 0;
         for (Expression expr : expressions) {
           Object result = expr.eval(tb, rowIdx);
+          /* We ignore the deprecation warning here since the value has already been boxed. */
           resultBuffer.put(columnIdx, result);
           columnIdx++;
         }
