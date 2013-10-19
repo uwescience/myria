@@ -15,6 +15,7 @@ import edu.washington.escience.myria.MyriaConstants.FTMODE;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.operator.DupElim;
+import edu.washington.escience.myria.operator.KeepAndSortOnMinValue;
 import edu.washington.escience.myria.operator.KeepMinValue;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
@@ -239,6 +240,20 @@ public abstract class Producer extends RootOperator {
     triedToSendTuples = new ArrayList<StreamingStateUpdater>();
     for (int i = 0; i < outputIDs.length; i++) {
       triedToSendTuples.add(i, new KeepMinValue(keyColIndices, valueCol));
+      triedToSendTuples.get(i).setAttachedOperator(this);
+    }
+  }
+
+  /**
+   * set backup buffers as KeepAndSortOnMinValue.
+   * 
+   * @param keyColIndices the same as the one in KeepMinValue
+   * @param valueCol the same as the one in KeepMinValue
+   */
+  public void setBackupBufferAsPrioritizedMin(final int[] keyColIndices, final int valueCol) {
+    triedToSendTuples = new ArrayList<StreamingStateUpdater>();
+    for (int i = 0; i < outputIDs.length; i++) {
+      triedToSendTuples.add(i, new KeepAndSortOnMinValue(keyColIndices, valueCol));
       triedToSendTuples.get(i).setAttachedOperator(this);
     }
   }
