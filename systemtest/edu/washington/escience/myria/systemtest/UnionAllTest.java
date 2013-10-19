@@ -14,10 +14,10 @@ import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.DbQueryScan;
-import edu.washington.escience.myria.operator.UnionAll;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
+import edu.washington.escience.myria.operator.UnionAll;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
@@ -44,12 +44,12 @@ public class UnionAllTest extends SystemTestBase {
     final TupleBatchBuffer tbl1 = new TupleBatchBuffer(tableSchema);
     final TupleBatchBuffer tbl2 = new TupleBatchBuffer(tableSchema);
     for (int i = 0; i < numTbl1; i++) {
-      tbl1.put(0, tbl1ID1[i]);
-      tbl1.put(1, tbl1ID2[i]);
+      tbl1.putLong(0, tbl1ID1[i]);
+      tbl1.putLong(1, tbl1ID2[i]);
     }
     for (int i = 0; i < numTbl2; i++) {
-      tbl2.put(0, tbl2ID1[i]);
-      tbl2.put(1, tbl2ID2[i]);
+      tbl2.putLong(0, tbl2ID1[i]);
+      tbl2.putLong(1, tbl2ID2[i]);
     }
 
     final RelationKey testtable0Key = RelationKey.of("test", "test", "testtable0");

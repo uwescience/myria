@@ -15,11 +15,11 @@ import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.operator.ColumnSelect;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.IDBInput;
 import edu.washington.escience.myria.operator.Operator;
-import edu.washington.escience.myria.operator.ColumnSelect;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
@@ -96,12 +96,12 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     TupleBatchBuffer tbl1Worker1 = new TupleBatchBuffer(tableSchema);
     TupleBatchBuffer tbl1Worker2 = new TupleBatchBuffer(tableSchema);
     for (int i = 0; i < numTbl1Worker1; i++) {
-      tbl1Worker1.put(0, tbl1ID1Worker1[i]);
-      tbl1Worker1.put(1, tbl1ID2Worker1[i]);
+      tbl1Worker1.putLong(0, tbl1ID1Worker1[i]);
+      tbl1Worker1.putLong(1, tbl1ID2Worker1[i]);
     }
     for (int i = 0; i < numTbl1Worker2; i++) {
-      tbl1Worker2.put(0, tbl1ID1Worker2[i]);
-      tbl1Worker2.put(1, tbl1ID2Worker2[i]);
+      tbl1Worker2.putLong(0, tbl1ID1Worker2[i]);
+      tbl1Worker2.putLong(1, tbl1ID2Worker2[i]);
     }
     TupleBatchBuffer table1 = new TupleBatchBuffer(tableSchema);
     table1.unionAll(tbl1Worker1);
@@ -123,8 +123,8 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     for (int i = 0; i < MaxID; ++i) {
       for (int j = 0; j < MaxID; ++j) {
         if (graph[i][j]) {
-          expectedTBB.put(0, (long) i);
-          expectedTBB.put(1, (long) j);
+          expectedTBB.putLong(0, i);
+          expectedTBB.putLong(1, j);
           LOGGER.debug(i + "\t" + j);
         }
       }
@@ -237,13 +237,13 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     long[] tbl1ID2Worker1 = new long[] { 1, 2, 3, 4 };
     TupleBatchBuffer table1 = new TupleBatchBuffer(tableSchema);
     for (int i = 0; i < tbl1ID1Worker1.length; i++) {
-      table1.put(0, tbl1ID1Worker1[i]);
-      table1.put(1, tbl1ID2Worker1[i]);
+      table1.putLong(0, tbl1ID1Worker1[i]);
+      table1.putLong(1, tbl1ID2Worker1[i]);
     }
 
     TupleBatchBuffer seed = new TupleBatchBuffer(tableSchema);
-    seed.put(0, 0l);
-    seed.put(1, 0l);
+    seed.putLong(0, 0l);
+    seed.putLong(1, 0l);
     RelationKey seedKey = RelationKey.of("test", "test", "identity");
     RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
     createTable(workerIDs[0], seedKey, "follower long, followee long");
@@ -259,8 +259,8 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     TupleBatchBuffer expectedTBB = new TupleBatchBuffer(tableSchema);
     for (int j = 0; j < MaxID; ++j) {
       if (graph[0][j]) {
-        expectedTBB.put(0, 0l);
-        expectedTBB.put(1, (long) j);
+        expectedTBB.putLong(0, 0l);
+        expectedTBB.putLong(1, j);
         LOGGER.debug(0 + "\t" + j);
       }
     }

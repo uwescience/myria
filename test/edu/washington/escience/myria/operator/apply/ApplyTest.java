@@ -37,10 +37,10 @@ public class ApplyTest {
             "a", "b", "c", "d"));
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (long i = 0; i < NUM_TUPLES; i++) {
-      tbb.put(0, (long) Math.pow(i, 2));
-      tbb.put(1, i + 1);
-      tbb.put(2, (int) i);
-      tbb.put(3, "Foo" + i);
+      tbb.putLong(0, (long) Math.pow(i, 2));
+      tbb.putLong(1, i + 1);
+      tbb.putInt(2, (int) i);
+      tbb.putString(3, "Foo" + i);
     }
     ImmutableList.Builder<Expression> expressions = ImmutableList.builder();
 

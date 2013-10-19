@@ -55,8 +55,8 @@ public class FlowControlTest extends SystemTestBase {
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < numTuples; i++) {
-      tbb.put(0, TestUtils.randomLong(0, 100000, 1)[0]);
-      tbb.put(1, TestUtils.randomFixedLengthNumericString(0, 100000, 1, 20)[0]);
+      tbb.putLong(0, TestUtils.randomLong(0, 100000, 1)[0]);
+      tbb.putString(1, TestUtils.randomFixedLengthNumericString(0, 100000, 1, 20)[0]);
     }
 
     final TupleSource ts = new TupleSource(tbb);

@@ -119,7 +119,20 @@ public final class LongColumnBuilder implements ColumnBuilder<Long> {
   }
 
   @Override
+  @Deprecated
   public ColumnBuilder<Long> replace(final int idx, final Long value) throws IndexOutOfBoundsException {
+    return replace(idx, value.longValue());
+  }
+
+  /**
+   * Replace the specified element.
+   * 
+   * @param value element to be inserted.
+   * @param idx where to insert the element.
+   * @return this column builder.
+   * @throws IndexOutOfBoundsException if the idx exceeds the currently valid indices, i.e. the currently built size.
+   */
+  public ColumnBuilder<Long> replace(final int idx, final long value) throws IndexOutOfBoundsException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
     Preconditions.checkElementIndex(idx, data.position());
     data.put(idx, value);
@@ -142,7 +155,16 @@ public final class LongColumnBuilder implements ColumnBuilder<Long> {
   }
 
   @Override
+  @Deprecated
   public Long get(final int row) {
+    return data.get(row);
+  }
+
+  /**
+   * @param row the row to get
+   * @return primitive value of the row
+   * */
+  public long getLong(final int row) {
     return data.get(row);
   }
 
@@ -152,4 +174,5 @@ public final class LongColumnBuilder implements ColumnBuilder<Long> {
     System.arraycopy(data.array(), 0, arr, 0, arr.length);
     return new LongColumnBuilder((LongBuffer) LongBuffer.wrap(arr).position(data.position()).limit(data.limit()));
   }
+
 }

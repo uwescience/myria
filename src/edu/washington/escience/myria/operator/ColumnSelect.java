@@ -44,7 +44,7 @@ public final class ColumnSelect extends UnaryOperator {
   protected TupleBatch fetchNextReady() throws DbException {
     TupleBatch tb = getChild().nextReady();
     if (tb != null) {
-      return tb.selectColumns(outColumnIndices);
+      return tb.selectColumns(outColumnIndices, getSchema());
     }
     return null;
   }

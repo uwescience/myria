@@ -186,8 +186,8 @@ public final class TestUtils {
 
   }
 
-  public static HashMap<Tuple, Integer> groupByAvgLongColumn(final TupleBatchBuffer source,
-      final int groupByColumn, final int aggColumn) {
+  public static HashMap<Tuple, Integer> groupByAvgLongColumn(final TupleBatchBuffer source, final int groupByColumn,
+      final int aggColumn) {
     final List<List<Column<?>>> tbs = source.getAllAsRawColumn();
     final HashMap<Object, Long> sum = new HashMap<Object, Long>();
     final HashMap<Object, Integer> count = new HashMap<Object, Integer>();
@@ -219,8 +219,7 @@ public final class TestUtils {
     return result;
   }
 
-  public static HashMap<Tuple, Integer> groupByCount(final TupleBatchBuffer source,
-      final int groupByColumn) {
+  public static HashMap<Tuple, Integer> groupByCount(final TupleBatchBuffer source, final int groupByColumn) {
     final List<List<Column<?>>> tbs = source.getAllAsRawColumn();
     final HashMap<Object, Long> count = new HashMap<Object, Long>();
     for (final List<Column<?>> rawData : tbs) {
@@ -247,8 +246,8 @@ public final class TestUtils {
     return result;
   }
 
-  public static <T extends Comparable<T>> HashMap<Tuple, Integer> groupByMax(
-      final TupleBatchBuffer source, final int groupByColumn, final int aggColumn) {
+  public static <T extends Comparable<T>> HashMap<Tuple, Integer> groupByMax(final TupleBatchBuffer source,
+      final int groupByColumn, final int aggColumn) {
     final List<List<Column<?>>> tbs = source.getAllAsRawColumn();
     final HashMap<Object, T> max = new HashMap<Object, T>();
     for (final List<Column<?>> rawData : tbs) {
@@ -278,8 +277,8 @@ public final class TestUtils {
     return result;
   }
 
-  public static <T extends Comparable<T>> HashMap<Tuple, Integer> groupByMin(
-      final TupleBatchBuffer source, final int groupByColumn, final int aggColumn) {
+  public static <T extends Comparable<T>> HashMap<Tuple, Integer> groupByMin(final TupleBatchBuffer source,
+      final int groupByColumn, final int aggColumn) {
     final List<List<Column<?>>> tbs = source.getAllAsRawColumn();
     final HashMap<Object, T> min = new HashMap<Object, T>();
     for (final List<Column<?>> rawData : tbs) {
@@ -309,8 +308,8 @@ public final class TestUtils {
     return result;
   }
 
-  public static HashMap<Tuple, Integer> groupBySumLongColumn(final TupleBatchBuffer source,
-      final int groupByColumn, final int aggColumn) {
+  public static HashMap<Tuple, Integer> groupBySumLongColumn(final TupleBatchBuffer source, final int groupByColumn,
+      final int aggColumn) {
     final List<List<Column<?>>> tbs = source.getAllAsRawColumn();
     final HashMap<Object, Long> sum = new HashMap<Object, Long>();
     for (final List<Column<?>> rawData : tbs) {

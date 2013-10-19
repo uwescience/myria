@@ -32,7 +32,7 @@ public class DirectApplyTest {
     final Schema schema = new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("a"));
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (long i = 0; i < numTuples; i++) {
-      tbb.put(0, (long) Math.pow(i, 2));
+      tbb.putLong(0, (long) Math.pow(i, 2));
     }
     ImmutableList.Builder<Integer> arguments = ImmutableList.builder();
     arguments.add(0, 2);
@@ -63,7 +63,7 @@ public class DirectApplyTest {
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (long i = 0; i < numTuples; i++) {
-      tbb.put(0, (long) Math.pow(i, 2));
+      tbb.putLong(0, (long) Math.pow(i, 2));
     }
     ImmutableList.Builder<Integer> argumentsOne = ImmutableList.builder();
     argumentsOne.add(0);

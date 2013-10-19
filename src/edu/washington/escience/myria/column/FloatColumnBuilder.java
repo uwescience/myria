@@ -119,7 +119,20 @@ public final class FloatColumnBuilder implements ColumnBuilder<Float> {
   }
 
   @Override
+  @Deprecated
   public FloatColumnBuilder replace(final int idx, final Float value) throws IndexOutOfBoundsException {
+    return replace(idx, value.floatValue());
+  }
+
+  /**
+   * Replace the specified element.
+   * 
+   * @param value element to be inserted.
+   * @param idx where to insert the element.
+   * @return this column builder.
+   * @throws IndexOutOfBoundsException if the idx exceeds the currently valid indices, i.e. the currently built size.
+   */
+  public FloatColumnBuilder replace(final int idx, final float value) throws IndexOutOfBoundsException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
     Preconditions.checkElementIndex(idx, data.position());
     data.put(idx, value);
@@ -142,7 +155,16 @@ public final class FloatColumnBuilder implements ColumnBuilder<Float> {
   }
 
   @Override
+  @Deprecated
   public Float get(final int row) {
+    return data.get(row);
+  }
+
+  /**
+   * @param row the row to get
+   * @return primitive value of the row
+   * */
+  public float getFloat(final int row) {
     return data.get(row);
   }
 

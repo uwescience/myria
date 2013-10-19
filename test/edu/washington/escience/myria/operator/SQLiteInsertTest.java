@@ -23,8 +23,6 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.accessmethod.SQLiteInfo;
-import edu.washington.escience.myria.operator.DbInsert;
-import edu.washington.escience.myria.operator.TupleSource;
 import edu.washington.escience.myria.util.FSUtils;
 
 public class SQLiteInsertTest {
@@ -59,8 +57,8 @@ public class SQLiteInsertTest {
     /* Populate the TupleBatchBuffer. */
     final Random r = new Random();
     for (int i = 0; i < NUM_TUPLES; ++i) {
-      data.put(0, i);
-      data.put(1, i + "th " + r.nextInt());
+      data.putInt(0, i);
+      data.putString(1, i + "th " + r.nextInt());
     }
   }
 

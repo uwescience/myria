@@ -41,8 +41,8 @@ public class QueryKillTest extends SystemTestBase {
     TupleBatch tb = null;
     int numTB = 0;
     for (int i = 0; i < numTuples; i++) {
-      tbb.put(0, TestUtils.randomLong(0, 100000, 1)[0]);
-      tbb.put(1, TestUtils.randomFixedLengthNumericString(0, 100000, 1, 20)[0]);
+      tbb.putLong(0, TestUtils.randomLong(0, 100000, 1)[0]);
+      tbb.putString(1, TestUtils.randomFixedLengthNumericString(0, 100000, 1, 20)[0]);
       while ((tb = tbb.popFilled()) != null) {
         LOGGER.debug("Insert a TB into testbed. #" + numTB + ".");
         numTB++;

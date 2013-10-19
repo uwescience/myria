@@ -7,7 +7,11 @@ import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.junit.Test;
 
@@ -46,8 +50,8 @@ public class OperatorTest {
   public TupleBatchBuffer generateRandomTuples(final int numTuples, boolean sorted) {
     final ArrayList<Entry<Long, String>> entries = new ArrayList<Entry<Long, String>>();
 
-    final String[] names = TestUtils.randomFixedLengthNumericString(0, 5000, numTuples, 20);
-    final long[] ids = TestUtils.randomLong(0, 2000, names.length);
+    final String[] names = TestUtils.randomFixedLengthNumericString(0, 1000, numTuples, 20);
+    final long[] ids = TestUtils.randomLong(0, 1000, names.length);
 
     for (int i = 0; i < names.length; i++) {
       entries.add(new SimpleEntry<Long, String>(ids[i], names[i]));
@@ -64,8 +68,8 @@ public class OperatorTest {
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
 
     for (Entry<Long, String> entry : entries) {
-      tbb.put(0, entry.getKey());
-      tbb.put(1, entry.getValue());
+      tbb.putLong(0, entry.getKey());
+      tbb.putString(1, entry.getValue());
     }
     return tbb;
   }
@@ -205,5 +209,43 @@ public class OperatorTest {
       previous = entry;
     }
 
+  }
+
+  @Test
+  public void testOrderedDupElim() throws DbException {
+    TupleBatchBuffer randomTuples = generateRandomTuples(52300, true);
+    TupleSource child = new TupleSource(randomTuples);
+    OrderedDupElim dupElim = new OrderedDupElim(child);
+    int count = 0;
+
+    /* Count the dupelim */
+    dupElim.open(null);
+    while (!dupElim.eos()) {
+      TupleBatch tb = dupElim.nextReady();
+      if (tb == null) {
+        continue;
+      }
+      count += tb.numTuples();
+    }
+    dupElim.close();
+
+    /* Count the real answer */
+    Map<Long, Set<String>> map = new HashMap<Long, Set<String>>();
+    for (TupleBatch tuples : randomTuples.getAll()) {
+      for (int i = 0; i < tuples.numTuples(); ++i) {
+        Set<String> set = map.get(tuples.getLong(0, i));
+        if (set == null) {
+          set = new HashSet<String>();
+          map.put(tuples.getLong(0, i), set);
+        }
+        set.add(tuples.getString(1, i));
+      }
+    }
+    int realCount = 0;
+    for (Set<String> set : map.values()) {
+      realCount += set.size();
+    }
+
+    assertEquals(count, realCount);
   }
 }
