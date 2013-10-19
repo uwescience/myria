@@ -94,7 +94,8 @@ public class ConnectedComponentTest extends SystemTestBase {
 
   public List<RootOperator> generatePlan(final Schema table1Schema, final Schema table2Schema,
       final ExchangePairID joinArrayId1, final ExchangePairID joinArrayId2, final ExchangePairID joinArrayId3,
-      final ExchangePairID eoiReceiverOpId, final ExchangePairID eosReceiverOpId, final ExchangePairID serverOpId) {
+      final ExchangePairID eoiReceiverOpId, final ExchangePairID eosReceiverOpId, final ExchangePairID serverOpId,
+      final boolean prioritized) {
     final int numPartition = 2;
     final PartitionFunction pf0 = new SingleFieldHashPartitionFunction(numPartition, 0);
     final PartitionFunction pf1 = new SingleFieldHashPartitionFunction(numPartition, 1);
@@ -123,7 +124,11 @@ public class ConnectedComponentTest extends SystemTestBase {
         new SingleGroupByAggregateNoBuffer(mc2, new int[] { 1 }, 0, new int[] { Aggregator.AGG_OP_MIN });
     final CollectProducer cp = new CollectProducer(agg, serverOpId, MASTER_ID);
     final GenericShuffleProducer sp3 = new GenericShuffleProducer(join, joinArrayId3, workerIDs, pf0);
-    sp3.setBackupBufferAsMin(new int[] { 0 }, 1);
+    if (prioritized) {
+      sp3.setBackupBufferAsPrioritizedMin(new int[] { 0 }, 1);
+    } else {
+      sp3.setBackupBufferAsMin(new int[] { 0 }, 1);
+    }
 
     List<RootOperator> ret = new ArrayList<RootOperator>();
     ret.add(sp1);
@@ -134,7 +139,7 @@ public class ConnectedComponentTest extends SystemTestBase {
     return ret;
   }
 
-  public void connectedComponents(final boolean failure) throws Exception {
+  public void connectedComponents(final boolean failure, final boolean prioritized) throws Exception {
 
     // data generation
     final ImmutableList<Type> table1Types = ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE);
@@ -208,14 +213,14 @@ public class ConnectedComponentTest extends SystemTestBase {
     final ExchangePairID serverOpId = ExchangePairID.newID();
     List<RootOperator> plan1 =
         generatePlan(table1Schema, table2Schema, joinArrayId1, joinArrayId2, joinArrayId3, eoiReceiverOpId,
-            eosReceiverOpId, serverOpId);
+            eosReceiverOpId, serverOpId, prioritized);
     final Consumer eoiReceiver = new Consumer(IDBController.EOI_REPORT_SCHEMA, eoiReceiverOpId, workerIDs);
     final UnionAll union = new UnionAll(new Operator[] { eoiReceiver });
     final EOSController eosController = new EOSController(union, new ExchangePairID[] { eosReceiverOpId }, workerIDs);
     plan1.add(eosController);
     List<RootOperator> plan2 =
         generatePlan(table1Schema, table2Schema, joinArrayId1, joinArrayId2, joinArrayId3, eoiReceiverOpId,
-            eosReceiverOpId, serverOpId);
+            eosReceiverOpId, serverOpId, prioritized);
 
     if (failure) {
       for (RootOperator root : plan1) {
@@ -273,11 +278,21 @@ public class ConnectedComponentTest extends SystemTestBase {
 
   @Test
   public void connectedComponentsNoFailureTest() throws Exception {
-    connectedComponents(false);
+    connectedComponents(false, false);
   }
 
   @Test
   public void connectedComponentsFailureTest() throws Exception {
-    connectedComponents(true);
+    connectedComponents(true, false);
+  }
+
+  @Test
+  public void connectedComponentsNoFailurePrioritizedTest() throws Exception {
+    connectedComponents(false, true);
+  }
+
+  @Test
+  public void connectedComponentsFailurePrioritizedTest() throws Exception {
+    connectedComponents(true, true);
   }
 }
