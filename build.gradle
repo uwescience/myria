@@ -110,6 +110,9 @@ dependencies {
 
   // OpenCSV for reading/writing CSV files
   compile "net.sf.opencsv:opencsv:2.3"
+  
+  // Expression compiler
+  compile "org.codehaus.janino:janino:2.6.1"
 
   runtime "monetdb:monetdb-jdbc:2.8"
   runtime "mysql:mysql-connector-java:5.1.24"

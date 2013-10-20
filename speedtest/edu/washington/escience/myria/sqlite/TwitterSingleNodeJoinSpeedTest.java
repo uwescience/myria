@@ -92,6 +92,7 @@ public class TwitterSingleNodeJoinSpeedTest {
         result += next.numTuples();
       }
     }
+    dupelim.close();
 
     /* Make sure the count matches the known result. */
     assertTrue(result == 3361461);
@@ -123,6 +124,7 @@ public class TwitterSingleNodeJoinSpeedTest {
         result += next.numTuples();
       }
     }
+    dupelim.close();
 
     /* Make sure the count matches the known result. */
     assertTrue(result == 3361461);
@@ -169,6 +171,8 @@ public class TwitterSingleNodeJoinSpeedTest {
         result += next.numTuples();
       }
     }
+    scanResult.cleanup();
+    scanResult.close();
 
     /* Make sure the count matches the known result. */
     assertTrue(result == 3361461);
@@ -190,6 +194,8 @@ public class TwitterSingleNodeJoinSpeedTest {
       tb = scanResult.nextReady();
     }
     assertTrue(tb != null);
+    scanResult.cleanup();
+    scanResult.close();
 
     /* Check the result. */
     assertTrue(tb.getLong(0, 0) == 3361461);

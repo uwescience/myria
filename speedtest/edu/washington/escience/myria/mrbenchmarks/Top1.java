@@ -110,7 +110,7 @@ public class Top1 extends UnaryOperator {
       if (currentTopTB != null) {
         TupleBatchBuffer tbb = new TupleBatchBuffer(getSchema());
         for (int i = 0; i < getSchema().numColumns(); i++) {
-          tbb.put(i, currentTopTB.getObject(i, currentTopIdx));
+          tbb.put(i, currentTopTB.getDataColumns().get(i), currentTopIdx);
         }
         currentTopTB = null;
         return tbb.popAny();

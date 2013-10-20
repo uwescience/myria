@@ -111,8 +111,8 @@ public class BenchmarkTest {
     if (buffer == null || buffer.numTuples() < NUM_TUPLES) {
       buffer = new TupleBatchBuffer(schema);
       for (int i = 0; i < NUM_TUPLES; ++i) {
-        buffer.put(0, generator.nextInt());
-        buffer.put(1, generator.nextInt());
+        buffer.putInt(0, generator.nextInt());
+        buffer.putInt(1, generator.nextInt());
       }
     }
     connections = new ArrayList<ConnectionInfo>();

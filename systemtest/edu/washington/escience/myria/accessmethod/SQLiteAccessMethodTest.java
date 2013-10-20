@@ -45,8 +45,8 @@ public class SQLiteAccessMethodTest {
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
-      tbb.put(0, ids[i]);
-      tbb.put(1, names[i]);
+      tbb.putLong(0, ids[i]);
+      tbb.putString(1, names[i]);
     }
 
     Path tempDir = Files.createTempDirectory(MyriaConstants.SYSTEM_NAME + "_sqlite_access_method_test");
@@ -112,8 +112,8 @@ public class SQLiteAccessMethodTest {
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
-      tbb.put(0, ids[i]);
-      tbb.put(1, names[i]);
+      tbb.putLong(0, ids[i]);
+      tbb.putString(1, names[i]);
     }
 
     Path tempDir = Files.createTempDirectory(MyriaConstants.SYSTEM_NAME + "_sqlite_access_method_test");
@@ -173,8 +173,8 @@ public class SQLiteAccessMethodTest {
     final long[] tbl1ID2 = TestUtils.randomLong(1, 1000, numTuples);
     final TupleBatchBuffer tbl1 = new TupleBatchBuffer(tableSchema);
     for (int i = 0; i < numTuples; i++) {
-      tbl1.put(0, tbl1ID1[i]);
-      tbl1.put(1, tbl1ID2[i]);
+      tbl1.putLong(0, tbl1ID1[i]);
+      tbl1.putLong(1, tbl1ID2[i]);
     }
 
     Path tempDir = Files.createTempDirectory(MyriaConstants.SYSTEM_NAME + "_sqlite_access_method_test");

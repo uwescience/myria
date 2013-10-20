@@ -162,8 +162,10 @@ public class Erdos {
         new GenericShuffleConsumer(coAuthorNamesPubsShuffleP.getSchema(), coAuthorNamesPubsShuffleID, allWorkers);
     // schema: (pubId long, authorId long)
 
+    final List<String> joinCoCoAuthorPubsNames = ImmutableList.of("subject1", "subject2", "object");
     final SymmetricHashJoin joinCoCoAuthorPubs =
-        new SymmetricHashJoin(coAuthorPubsGlobalDE, coAuthorNamesPubsShuffleC, new int[] { 0 }, new int[] { 0 });
+        new SymmetricHashJoin(joinCoCoAuthorPubsNames, coAuthorPubsGlobalDE, coAuthorNamesPubsShuffleC,
+            new int[] { 0 }, new int[] { 0 });
     // schema: (pubId long, pubId long, authorId long)
 
     final ColumnSelect projCoCoAuthorName = new ColumnSelect(new int[] { 2 }, joinCoCoAuthorPubs);

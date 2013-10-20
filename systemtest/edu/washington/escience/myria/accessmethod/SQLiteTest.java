@@ -1,7 +1,10 @@
 package edu.washington.escience.myria.accessmethod;
 
+import static org.junit.Assert.assertTrue;
+
 import java.nio.file.Files;
 import java.util.HashMap;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -47,8 +50,8 @@ public class SQLiteTest {
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(outputSchema);
     for (int i = 0; i < names.length; i++) {
-      tbb.put(0, ids[i]);
-      tbb.put(1, names[i]);
+      tbb.putLong(0, ids[i]);
+      tbb.putString(1, names[i]);
     }
 
     for (final TupleBatch tb : tbb.getAll()) {
@@ -59,7 +62,9 @@ public class SQLiteTest {
     final HashMap<Tuple, Integer> expectedResult = TestUtils.tupleBatchToTupleBag(tbb);
 
     /* Scan the testtable in database */
-    final DbQueryScan scan = new DbQueryScan(SQLiteInfo.of(dbAbsolutePath), testtableKey, outputSchema);
+    final DbQueryScan scan =
+        new DbQueryScan(SQLiteInfo.of(dbAbsolutePath), testtableKey, outputSchema, new int[] { 0, 1 }, new boolean[] {
+            true, false });
 
     final Operator root = scan;
     root.open(null);
@@ -87,6 +92,26 @@ public class SQLiteTest {
     root.close();
 
     final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(result);
+
+    List<TupleBatch> batches = result.getAll();
+
+    Long previousId = null;
+    String previousName = null;
+    for (TupleBatch tb1 : batches) {
+      for (int i = 0; i < tb1.numTuples(); i++) {
+        long currentId = tb1.getLong(0, i);
+        String currentName = tb1.getString(1, i);
+        if (previousId != null) {
+          assertTrue(previousId <= currentId);
+          if (previousId == currentId) {
+            assertTrue(previousName.compareTo(currentName) >= 0);
+          }
+        }
+        previousId = currentId;
+        previousName = currentName;
+      }
+
+    }
 
     TestUtils.assertTupleBagEqual(expectedResult, resultBag);
 

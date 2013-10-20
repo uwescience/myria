@@ -83,8 +83,8 @@ public class IterativeSelfJoinTest extends SystemTestBase {
     for (int i = 0; i < MaxID; ++i) {
       for (int j = 0; j < MaxID; ++j) {
         if (cntgraph[i][j]) {
-          result.put(0, (long) i);
-          result.put(1, (long) j);
+          result.putLong(0, i);
+          result.putLong(1, j);
           LOGGER.trace(i + "\t" + j);
         }
       }
@@ -106,12 +106,12 @@ public class IterativeSelfJoinTest extends SystemTestBase {
     final TupleBatchBuffer tbl1Worker1 = new TupleBatchBuffer(tableSchema);
     final TupleBatchBuffer tbl1Worker2 = new TupleBatchBuffer(tableSchema);
     for (int i = 0; i < numTbl1Worker1; i++) {
-      tbl1Worker1.put(0, tbl1ID1Worker1[i]);
-      tbl1Worker1.put(1, tbl1ID2Worker1[i]);
+      tbl1Worker1.putLong(0, tbl1ID1Worker1[i]);
+      tbl1Worker1.putLong(1, tbl1ID2Worker1[i]);
     }
     for (int i = 0; i < numTbl1Worker2; i++) {
-      tbl1Worker2.put(0, tbl1ID1Worker2[i]);
-      tbl1Worker2.put(1, tbl1ID2Worker2[i]);
+      tbl1Worker2.putLong(0, tbl1ID1Worker2[i]);
+      tbl1Worker2.putLong(1, tbl1ID2Worker2[i]);
     }
     final TupleBatchBuffer table1 = new TupleBatchBuffer(tableSchema);
     table1.unionAll(tbl1Worker1);

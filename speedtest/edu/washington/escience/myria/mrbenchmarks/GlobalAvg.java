@@ -47,7 +47,7 @@ public class GlobalAvg extends UnaryOperator {
       DoubleColumnBuilder rc = new DoubleColumnBuilder();
       rc.expandAll();
       for (Integer idx : tb.getValidIndices()) {
-        rc.replace(idx, ((LongColumn) inputColumns.get(sumIdx)).get(idx) * 1.0
+        rc.replace(idx.intValue(), ((LongColumn) inputColumns.get(sumIdx)).get(idx) * 1.0
             / ((LongColumn) inputColumns.get(countIdx)).get(idx));
       }
 

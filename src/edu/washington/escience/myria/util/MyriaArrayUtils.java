@@ -1,8 +1,12 @@
 package edu.washington.escience.myria.util;
 
 import java.util.Arrays;
+import java.util.Set;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
+import com.google.common.primitives.Ints;
 
 /**
  * Array related utility functions.
@@ -130,6 +134,36 @@ public final class MyriaArrayUtils extends org.apache.commons.lang3.ArrayUtils {
       throw new IllegalArgumentException("The array is not a set");
     }
     return r;
+  }
+
+  /**
+   * Check if an array of int is a set.
+   * 
+   * @param maybeSetArray data array
+   * @return the array it self
+   * @throws IllegalArgumentException if the data array is not a set.
+   * */
+  public static int[] checkSet(final int[] maybeSetArray) {
+    Set<Integer> tmp = Sets.newHashSet(Ints.asList(maybeSetArray));
+    if (maybeSetArray.length != tmp.size()) {
+      throw new IllegalArgumentException("The array is not a set");
+    }
+    return maybeSetArray;
+  }
+
+  /**
+   * Check if an array of int is a list of valid indices of another data array .
+   * 
+   * @param arrayOfIndices indices array
+   * @param size the size of another array, i.e. the data array
+   * @return the arrayOfIndices it self
+   * @throws IllegalArgumentException if check fails.
+   * */
+  public static int[] checkPositionIndices(final int[] arrayOfIndices, final int size) {
+    for (int i : arrayOfIndices) {
+      Preconditions.checkPositionIndex(i, size);
+    }
+    return arrayOfIndices;
   }
 
 }

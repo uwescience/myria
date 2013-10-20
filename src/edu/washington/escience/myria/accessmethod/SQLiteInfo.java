@@ -2,7 +2,6 @@ package edu.washington.escience.myria.accessmethod;
 
 import java.io.Serializable;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Preconditions;
 
@@ -18,7 +17,15 @@ public final class SQLiteInfo extends ConnectionInfo implements Serializable {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
   /** The database to connect to. */
+  @JsonProperty
   private final String databaseFilename;
+
+  /**
+   * This is not really unused, it's used automagically by Jackson deserialization.
+   */
+  private SQLiteInfo() {
+    databaseFilename = null;
+  }
 
   /**
    * Private constructor.
@@ -36,9 +43,7 @@ public final class SQLiteInfo extends ConnectionInfo implements Serializable {
    * @param databaseFilename the file containing the database.
    * @return a new SQLiteInfo containing this information.
    */
-  @JsonCreator
-  public static SQLiteInfo of(@JsonProperty("dbms") final String dbms,
-      @JsonProperty("database_filename") final String databaseFilename) {
+  public static SQLiteInfo of(final String dbms, final String databaseFilename) {
     Preconditions.checkArgument(dbms.equals(MyriaConstants.STORAGE_SYSTEM_SQLITE), "The dbms parameter must equal "
         + MyriaConstants.STORAGE_SYSTEM_SQLITE);
     return new SQLiteInfo(databaseFilename);

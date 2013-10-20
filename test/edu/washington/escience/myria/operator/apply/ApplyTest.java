@@ -1,8 +1,8 @@
 package edu.washington.escience.myria.operator.apply;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
-import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -12,88 +12,118 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.api.encoding.ExpressionEncoding;
+import edu.washington.escience.myria.expression.ConstantExpression;
+import edu.washington.escience.myria.expression.Expression;
+import edu.washington.escience.myria.expression.ExpressionOperator;
+import edu.washington.escience.myria.expression.MinusExpression;
+import edu.washington.escience.myria.expression.PlusExpression;
+import edu.washington.escience.myria.expression.PowExpression;
+import edu.washington.escience.myria.expression.SqrtExpression;
+import edu.washington.escience.myria.expression.TimesExpression;
+import edu.washington.escience.myria.expression.ToUpperCaseExpression;
+import edu.washington.escience.myria.expression.VariableExpression;
+import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.TupleSource;
-import edu.washington.escience.myria.operator.apply.Apply;
-import edu.washington.escience.myria.operator.apply.ConstantMultiplicationIFunction;
-import edu.washington.escience.myria.operator.apply.IFunctionCaller;
-import edu.washington.escience.myria.operator.apply.SqrtIFunction;
 
 public class ApplyTest {
 
-  private int numTuples;
-  private int multiplicationFactor;
-
-  @Before
-  public void setUp() throws Exception {
-    // numTuples = rand.nextInt(RANDOM_LIMIT);
-    numTuples = 1000;
-    // multiplicationFactor = rand.nextInt(RANDOM_LIMIT);
-    multiplicationFactor = 2;
-  }
+  private final int NUM_TUPLES = 2 * TupleBatch.BATCH_SIZE;
 
   @Test
   public void testApplySqrt() throws DbException {
-    final Schema schema = new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("a"));
+    final Schema schema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE, Type.INT_TYPE, Type.STRING_TYPE), ImmutableList.of(
+            "a", "b", "c", "d"));
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
-    for (long i = 0; i < numTuples; i++) {
-      tbb.put(0, (long) Math.pow(i, 2));
+    for (long i = 0; i < NUM_TUPLES; i++) {
+      tbb.putLong(0, (long) Math.pow(i, 2));
+      tbb.putLong(1, i + 1);
+      tbb.putInt(2, (int) i);
+      tbb.putString(3, "Foo" + i);
     }
-    ImmutableList.Builder<Integer> arguments = ImmutableList.builder();
-    arguments.add(0, 2);
-    ImmutableList.Builder<IFunctionCaller> callers = ImmutableList.builder();
-    callers.add(new IFunctionCaller(new SqrtIFunction(), arguments.build()));
-    Apply apply = new Apply(new TupleSource(tbb), callers.build());
+    ImmutableList.Builder<Expression> expressions = ImmutableList.builder();
+
+    ExpressionOperator vara = new VariableExpression(0);
+    ExpressionOperator varb = new VariableExpression(1);
+    ExpressionOperator varc = new VariableExpression(2);
+    ExpressionOperator vard = new VariableExpression(3);
+
+    {
+      // Expression: Math.sqrt(a);
+
+      ExpressionOperator squareRoot = new SqrtExpression(vara);
+
+      ExpressionEncoding exprEnc = new ExpressionEncoding("first", squareRoot);
+
+      expressions.add(exprEnc.construct());
+    }
+
+    {
+      // Expression: (b+c) * (b-c)
+
+      ExpressionOperator plus = new PlusExpression(varb, varc);
+      ExpressionOperator minus = new MinusExpression(varb, varc);
+
+      ExpressionOperator times = new TimesExpression(plus, minus);
+
+      ExpressionEncoding exprEnc = new ExpressionEncoding("second", times);
+      expressions.add(exprEnc.construct());
+    }
+
+    {
+      // Expression: Math.sqrt(Math.pow(a, 2) + Math.pow(b, 2))
+
+      ExpressionOperator two = new ConstantExpression(Type.INT_TYPE, "2");
+      ExpressionOperator pow1 = new PowExpression(vara, two);
+      ExpressionOperator pow2 = new PowExpression(varb, two);
+
+      ExpressionOperator plus = new PlusExpression(pow1, pow2);
+
+      ExpressionOperator sqrt = new SqrtExpression(plus);
+
+      ExpressionEncoding exprEnc = new ExpressionEncoding("third", sqrt);
+      expressions.add(exprEnc.construct());
+    }
+
+    {
+      // Expression: d.toUpperCase()
+
+      ExpressionOperator upper = new ToUpperCaseExpression(vard);
+
+      ExpressionEncoding exprEnc = new ExpressionEncoding("fourth", upper);
+      expressions.add(exprEnc.construct());
+    }
+
+    Apply apply = new Apply(new TupleSource(tbb), expressions.build());
+
     apply.open(null);
     TupleBatch result;
     int resultSize = 0;
     while (!apply.eos()) {
       result = apply.nextReady();
       if (result != null) {
-        assertEquals(2, result.getSchema().numColumns());
-        assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(1));
+        assertEquals(4, result.getSchema().numColumns());
+        assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(0));
+        assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(1));
+        assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(2));
+        assertEquals(Type.STRING_TYPE, result.getSchema().getColumnType(3));
+
+        assertEquals("first", result.getSchema().getColumnName(0));
+        assertEquals("second", result.getSchema().getColumnName(1));
+        assertEquals("third", result.getSchema().getColumnName(2));
+        assertEquals("fourth", result.getSchema().getColumnName(3));
         for (int i = 0; i < result.numTuples(); i++) {
-          assertEquals(i + resultSize, result.getDouble(1, i), 0.0000001);
+          assertEquals(i + resultSize, result.getDouble(0, i), 0.0000001);
+          long b = i + resultSize + 1;
+          int c = i + resultSize;
+          assertEquals((b + c) * (b - c), result.getLong(1, i));
+          assertTrue(("FOO" + (i + resultSize)).equals(result.getString(3, i)));
         }
         resultSize += result.numTuples();
       }
     }
-    assertEquals(numTuples, resultSize);
-    apply.close();
-  }
-
-  @Test
-  public void testApplyMultiFunctions() throws DbException {
-    final Schema schema = new Schema(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of("a"));
-
-    final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
-    for (long i = 0; i < numTuples; i++) {
-      tbb.put(0, (long) Math.pow(i, 2));
-    }
-    ImmutableList.Builder<Integer> argumentsOne = ImmutableList.builder();
-    argumentsOne.add(0);
-    ImmutableList.Builder<Integer> argumentsTwo = ImmutableList.builder();
-    argumentsTwo.add(0, multiplicationFactor);
-    ImmutableList.Builder<IFunctionCaller> callers = ImmutableList.builder();
-    callers.add(new IFunctionCaller(new SqrtIFunction(), argumentsOne.build()));
-    callers.add(new IFunctionCaller(new ConstantMultiplicationIFunction(), argumentsTwo.build()));
-    Apply apply = new Apply(new TupleSource(tbb), callers.build());
-    apply.open(null);
-    TupleBatch result;
-    int resultSize = 0;
-    while (!apply.eos()) {
-      result = apply.nextReady();
-      if (result != null) {
-        assertEquals(3, result.getSchema().numColumns());
-        assertEquals(Type.DOUBLE_TYPE, result.getSchema().getColumnType(1));
-        assertEquals(Type.LONG_TYPE, result.getSchema().getColumnType(2));
-        for (int i = 0; i < result.numTuples(); i++) {
-          assertEquals(i + resultSize, result.getDouble(1, i), 0.0000001);
-          assertEquals((long) Math.pow(i + resultSize, 2) * multiplicationFactor, result.getLong(2, i));
-        }
-        resultSize += result.numTuples();
-      }
-    }
-    assertEquals(numTuples, resultSize);
+    assertEquals(NUM_TUPLES, resultSize);
     apply.close();
   }
 }

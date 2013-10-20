@@ -109,8 +109,8 @@ public class TenGBTupleBatchSenderUsingConnectionPool {
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < ids.length; i++) {
-      tbb.put(0, ids[i]);
-      tbb.put(1, ids2[i]);
+      tbb.putLong(0, ids[i]);
+      tbb.putLong(1, ids2[i]);
     }
     doSend(args, tbb, (Long.SIZE / 8) * 2);
   }

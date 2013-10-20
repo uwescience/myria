@@ -55,8 +55,8 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
-      tbb.put(0, ids[i]);
-      tbb.put(1, names[i]);
+      tbb.putLong(0, ids[i]);
+      tbb.putString(1, names[i]);
     }
 
     final HashMap<Tuple, Integer> expectedResults = TestUtils.distinct(tbb);
@@ -112,8 +112,8 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
-      tbb.put(0, ids[i]);
-      tbb.put(1, names[i]);
+      tbb.putLong(0, ids[i]);
+      tbb.putString(1, names[i]);
     }
 
     final HashMap<Tuple, Integer> expectedResults = TestUtils.distinct(tbb);
