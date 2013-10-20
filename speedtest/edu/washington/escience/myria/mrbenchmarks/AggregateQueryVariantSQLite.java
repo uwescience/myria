@@ -44,8 +44,7 @@ public class AggregateQueryVariantSQLite implements QueryPlanGenerator {
 
     final ExchangePairID shuffleLocalGroupByID = ExchangePairID.newID();
 
-    PartitionFunction<String, Integer> pf = new SingleFieldHashPartitionFunction(allWorkers.length);
-    pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
+    PartitionFunction pf = new SingleFieldHashPartitionFunction(allWorkers.length, 0);
 
     final GenericShuffleProducer shuffleLocalGroupBy =
         new GenericShuffleProducer(localGroupBy, shuffleLocalGroupByID, allWorkers, pf);

@@ -26,12 +26,7 @@ def scan_R_then_shuffle():
         "op_name" : "HyperShuffle(R)",
         "arg_child" : "Scan(R)",
         "arg_operator_id" : "hash(follower)",
-        "arg_pfs" : [
-            {
-                "type" : "SingleFieldHash",
-                "index" : 0
-            }
-        ],
+        "field_indexes" : [0],
         "hyper_cube_dimensions" : [2,2],
         "cell_partition": [ [0,1],[2,3] ]           
     }
@@ -54,12 +49,7 @@ def scan_S_then_shuffle():
         "op_name" : "HyperShuffle(S)",
         "arg_child" : "Scan(S)",
         "arg_operator_id" : "hash(followee)",
-        "arg_pfs" : [
-            {
-                "type" : "SingleFieldHash",
-                "index" : 1
-            }
-        ],
+        "field_indexes" : [1],
         "hyper_cube_dimensions" : [2,2],
         "cell_partition": [ [0,2],[1,3] ]           
     }

@@ -147,10 +147,8 @@ public class IterativeSelfJoinTest extends SystemTestBase {
     final DbQueryScan scan2 = new DbQueryScan(testtableKeys.get(0), tableSchema);
 
     final int numPartition = 2;
-    final PartitionFunction<String, Integer> pf0 = new SingleFieldHashPartitionFunction(numPartition); // 2 workers
-    pf0.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0); // partition by 1st column
-    final PartitionFunction<String, Integer> pf1 = new SingleFieldHashPartitionFunction(numPartition); // 2 workers
-    pf1.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1); // partition by 2nd column
+    final PartitionFunction pf0 = new SingleFieldHashPartitionFunction(numPartition, 0);
+    final PartitionFunction pf1 = new SingleFieldHashPartitionFunction(numPartition, 1);
 
     ArrayList<RootOperator> subqueries = new ArrayList<RootOperator>();
     final GenericShuffleProducer sp0[] = new GenericShuffleProducer[numIteration];
