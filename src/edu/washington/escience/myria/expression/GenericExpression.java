@@ -17,7 +17,7 @@ import edu.washington.escience.myria.column.Column;
 /**
  * An expression that can be applied to a tuple. This is the generic version where the evaluator returns objects.
  */
-public class ObjectExpression extends Expression {
+public class GenericExpression extends Expression {
   /***/
   private static final long serialVersionUID = 1L;
 
@@ -32,7 +32,7 @@ public class ObjectExpression extends Expression {
    * @param outputName the name of the resulting element
    * @param rootExpressionOperator the root of the AST representing this expression.
    */
-  public ObjectExpression(final String outputName, final ExpressionOperator rootExpressionOperator) {
+  public GenericExpression(final String outputName, final ExpressionOperator rootExpressionOperator) {
     super(outputName, rootExpressionOperator);
   }
 

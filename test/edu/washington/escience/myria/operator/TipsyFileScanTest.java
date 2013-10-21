@@ -14,9 +14,9 @@ import org.junit.Test;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.expression.BooleanExpression;
 import edu.washington.escience.myria.expression.ConstantExpression;
 import edu.washington.escience.myria.expression.EqualsExpression;
-import edu.washington.escience.myria.expression.Expression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
 import edu.washington.escience.myria.expression.VariableExpression;
 
@@ -67,7 +67,7 @@ public class TipsyFileScanTest {
     TipsyFileScan filescan = new TipsyFileScan(binFilename, iOrderFilename, grpFilename);
     ExpressionOperator expr =
         new EqualsExpression(new VariableExpression(16), new ConstantExpression(Type.STRING_TYPE, "star"));
-    Filter filter = new Filter(new Expression(null, expr), filescan);
+    Filter filter = new Filter(new BooleanExpression(null, expr), filescan);
     assertEquals(3, getRowCount(filter));
   }
 
@@ -79,7 +79,7 @@ public class TipsyFileScanTest {
     TipsyFileScan filescan = new TipsyFileScan(binFilename, iOrderFilename, grpFilename);
     ExpressionOperator expr =
         new EqualsExpression(new VariableExpression(16), new ConstantExpression(Type.STRING_TYPE, "dark"));
-    Filter filter = new Filter(new Expression(null, expr), filescan);
+    Filter filter = new Filter(new BooleanExpression(null, expr), filescan);
     assertEquals(2, getRowCount(filter));
   }
 
@@ -91,7 +91,7 @@ public class TipsyFileScanTest {
     TipsyFileScan filescan = new TipsyFileScan(binFilename, iOrderFilename, grpFilename);
     ExpressionOperator expr =
         new EqualsExpression(new VariableExpression(16), new ConstantExpression(Type.STRING_TYPE, "gas"));
-    Filter filter = new Filter(new Expression(null, expr), filescan);
+    Filter filter = new Filter(new BooleanExpression(null, expr), filescan);
     assertEquals(4, getRowCount(filter));
   }
 
@@ -108,7 +108,7 @@ public class TipsyFileScanTest {
     TipsyFileScan tfScan = new TipsyFileScan(binFileName, iOrderFileName, grpFileName);
     ExpressionOperator expr =
         new EqualsExpression(new VariableExpression(16), new ConstantExpression(Type.STRING_TYPE, "star"));
-    Filter filter = new Filter(new Expression(null, expr), tfScan);
+    Filter filter = new Filter(new BooleanExpression(null, expr), tfScan);
     assertEquals(6949401, getRowCount(filter));
   }
 

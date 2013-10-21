@@ -19,7 +19,7 @@ import edu.washington.escience.myria.expression.ConstantExpression;
 import edu.washington.escience.myria.expression.CosExpression;
 import edu.washington.escience.myria.expression.DivideExpression;
 import edu.washington.escience.myria.expression.EqualsExpression;
-import edu.washington.escience.myria.expression.ObjectExpression;
+import edu.washington.escience.myria.expression.GenericExpression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
 import edu.washington.escience.myria.expression.FloorExpression;
 import edu.washington.escience.myria.expression.GreaterThanExpression;
@@ -60,7 +60,7 @@ public class ApplyTest {
       tbb.putString(3, "Foo" + i);
       tbb.putBoolean(4, i % 2 == 0);
     }
-    ImmutableList.Builder<ObjectExpression> objectExpressions = ImmutableList.builder();
+    ImmutableList.Builder<GenericExpression> genericExpressions = ImmutableList.builder();
 
     ExpressionOperator vara = new VariableExpression(0);
     ExpressionOperator varb = new VariableExpression(1);
@@ -73,9 +73,9 @@ public class ApplyTest {
 
       ExpressionOperator squareRoot = new SqrtExpression(vara);
 
-      ObjectExpression expr = new ObjectExpression("first", squareRoot);
+      GenericExpression expr = new GenericExpression("first", squareRoot);
 
-      objectExpressions.add(expr);
+      genericExpressions.add(expr);
     }
 
     {
@@ -86,8 +86,8 @@ public class ApplyTest {
 
       ExpressionOperator times = new TimesExpression(plus, minus);
 
-      ObjectExpression expr = new ObjectExpression("second", times);
-      objectExpressions.add(expr);
+      GenericExpression expr = new GenericExpression("second", times);
+      genericExpressions.add(expr);
     }
 
     {
@@ -101,8 +101,8 @@ public class ApplyTest {
 
       ExpressionOperator sqrt = new SqrtExpression(plus);
 
-      ObjectExpression expr = new ObjectExpression("third", sqrt);
-      objectExpressions.add(expr);
+      GenericExpression expr = new GenericExpression("third", sqrt);
+      genericExpressions.add(expr);
     }
 
     {
@@ -110,8 +110,8 @@ public class ApplyTest {
 
       ExpressionOperator upper = new ToUpperCaseExpression(vard);
 
-      ObjectExpression expr = new ObjectExpression("fourth", upper);
-      objectExpressions.add(expr);
+      GenericExpression expr = new GenericExpression("fourth", upper);
+      genericExpressions.add(expr);
     }
 
     {
@@ -119,8 +119,8 @@ public class ApplyTest {
 
       ExpressionOperator abs = new AbsExpression(new MinusExpression(varb, vara));
 
-      ObjectExpression expr = new ObjectExpression("fifth", abs);
-      objectExpressions.add(expr);
+      GenericExpression expr = new GenericExpression("fifth", abs);
+      genericExpressions.add(expr);
     }
 
     {
@@ -131,9 +131,9 @@ public class ApplyTest {
       ExpressionOperator ceil = new CeilExpression(squareRoot);
       ExpressionOperator plus = new PlusExpression(floor, ceil);
 
-      ObjectExpression expr = new ObjectExpression("sixth", plus);
+      GenericExpression expr = new GenericExpression("sixth", plus);
 
-      objectExpressions.add(expr);
+      genericExpressions.add(expr);
     }
 
     {
@@ -151,9 +151,9 @@ public class ApplyTest {
           new TimesExpression(new TanExpression(angle), new ConstantExpression(Type.INT_TYPE, "4"));
       ExpressionOperator add = new PlusExpression(new PlusExpression(cos, sin), tan);
 
-      ObjectExpression expr = new ObjectExpression("trig", add);
+      GenericExpression expr = new GenericExpression("trig", add);
 
-      objectExpressions.add(expr);
+      genericExpressions.add(expr);
     }
 
     {
@@ -162,20 +162,20 @@ public class ApplyTest {
       ExpressionOperator and = new AndExpression(vare, new ConstantExpression(Type.BOOLEAN_TYPE, "true"));
       ExpressionOperator or = new OrExpression(new ConstantExpression(Type.BOOLEAN_TYPE, "false"), and);
       ExpressionOperator not = new NotExpression(or);
-      ObjectExpression expr = new ObjectExpression("boolean", not);
+      GenericExpression expr = new GenericExpression("boolean", not);
 
-      objectExpressions.add(expr);
+      genericExpressions.add(expr);
     }
 
     {
       // Expression (just copy/ rename): a;
-      ObjectExpression expr = new ObjectExpression("copy", vara);
+      GenericExpression expr = new GenericExpression("copy", vara);
 
       assertTrue(!expr.needsCompiling());
-      objectExpressions.add(expr);
+      genericExpressions.add(expr);
     }
 
-    Apply apply = new Apply(new TupleSource(tbb), objectExpressions.build());
+    Apply apply = new Apply(new TupleSource(tbb), genericExpressions.build());
 
     apply.open(null);
     TupleBatch result;
@@ -238,7 +238,7 @@ public class ApplyTest {
       tbb.putLong(0, i + 1);
       tbb.putLong(1, 2 * i);
     }
-    ImmutableList.Builder<ObjectExpression> objectExpressions = ImmutableList.builder();
+    ImmutableList.Builder<GenericExpression> genericExpressions = ImmutableList.builder();
 
     ExpressionOperator vara = new VariableExpression(0);
     ExpressionOperator varb = new VariableExpression(1);
@@ -247,57 +247,57 @@ public class ApplyTest {
       // Expression: vara == varb;
 
       ExpressionOperator eq = new EqualsExpression(vara, varb);
-      ObjectExpression expr = new ObjectExpression("equals", eq);
+      GenericExpression expr = new GenericExpression("equals", eq);
 
-      objectExpressions.add(expr);
+      genericExpressions.add(expr);
     }
 
     {
       // Expression: vara != varb;
 
       ExpressionOperator neq = new NotEqualsExpression(vara, varb);
-      ObjectExpression expr = new ObjectExpression("notequals", neq);
+      GenericExpression expr = new GenericExpression("notequals", neq);
 
-      objectExpressions.add(expr);
+      genericExpressions.add(expr);
     }
 
     {
       // Expression: vara > varb;
 
       ExpressionOperator gt = new GreaterThanExpression(vara, varb);
-      ObjectExpression expr = new ObjectExpression("greaterthan", gt);
+      GenericExpression expr = new GenericExpression("greaterthan", gt);
 
-      objectExpressions.add(expr);
+      genericExpressions.add(expr);
     }
 
     {
       // Expression: vara < varb;
 
       ExpressionOperator lt = new LessThanExpression(vara, varb);
-      ObjectExpression expr = new ObjectExpression("lessthan", lt);
+      GenericExpression expr = new GenericExpression("lessthan", lt);
 
-      objectExpressions.add(expr);
+      genericExpressions.add(expr);
     }
 
     {
       // Expression: vara >= varb;
 
       ExpressionOperator gteq = new GreaterThanOrEqualsExpression(vara, varb);
-      ObjectExpression expr = new ObjectExpression("greaterthanequals", gteq);
+      GenericExpression expr = new GenericExpression("greaterthanequals", gteq);
 
-      objectExpressions.add(expr);
+      genericExpressions.add(expr);
     }
 
     {
       // Expression: vara <= varb;
 
       ExpressionOperator lteq = new LessThanOrEqualsExpression(vara, varb);
-      ObjectExpression expr = new ObjectExpression("lessthanequals", lteq);
+      GenericExpression expr = new GenericExpression("lessthanequals", lteq);
 
-      objectExpressions.add(expr);
+      genericExpressions.add(expr);
     }
 
-    Apply apply = new Apply(new TupleSource(tbb), objectExpressions.build());
+    Apply apply = new Apply(new TupleSource(tbb), genericExpressions.build());
 
     apply.open(null);
     TupleBatch result;
@@ -339,7 +339,7 @@ public class ApplyTest {
       tbb.putString(0, "Foo" + i);
       tbb.putString(1, "Foo" + (2 - i));
     }
-    ImmutableList.Builder<ObjectExpression> objectExpressions = ImmutableList.builder();
+    ImmutableList.Builder<GenericExpression> genericExpressions = ImmutableList.builder();
 
     ExpressionOperator varc = new VariableExpression(0);
     ExpressionOperator vard = new VariableExpression(1);
@@ -348,57 +348,57 @@ public class ApplyTest {
       // Expression: varc == vard;
 
       ExpressionOperator eq = new EqualsExpression(varc, vard);
-      ObjectExpression expr = new ObjectExpression("s_equals", eq);
+      GenericExpression expr = new GenericExpression("s_equals", eq);
 
-      objectExpressions.add(expr);
+      genericExpressions.add(expr);
     }
 
     {
       // Expression: varc != vard;
 
       ExpressionOperator neq = new NotEqualsExpression(varc, vard);
-      ObjectExpression expr = new ObjectExpression("s_notequals", neq);
+      GenericExpression expr = new GenericExpression("s_notequals", neq);
 
-      objectExpressions.add(expr);
+      genericExpressions.add(expr);
     }
 
     {
       // Expression: varc > vard;
 
       ExpressionOperator gt = new GreaterThanExpression(varc, vard);
-      ObjectExpression expr = new ObjectExpression("s_greaterthan", gt);
+      GenericExpression expr = new GenericExpression("s_greaterthan", gt);
 
-      objectExpressions.add(expr);
+      genericExpressions.add(expr);
     }
 
     {
       // Expression: varc < vard;
 
       ExpressionOperator lt = new LessThanExpression(varc, vard);
-      ObjectExpression expr = new ObjectExpression("s_lessthan", lt);
+      GenericExpression expr = new GenericExpression("s_lessthan", lt);
 
-      objectExpressions.add(expr);
+      genericExpressions.add(expr);
     }
 
     {
       // Expression: varc >= vard;
 
       ExpressionOperator gteq = new GreaterThanOrEqualsExpression(varc, vard);
-      ObjectExpression expr = new ObjectExpression("s_greaterthanequals", gteq);
+      GenericExpression expr = new GenericExpression("s_greaterthanequals", gteq);
 
-      objectExpressions.add(expr);
+      genericExpressions.add(expr);
     }
 
     {
       // Expression: varc <= vard;
 
       ExpressionOperator lteq = new LessThanOrEqualsExpression(varc, vard);
-      ObjectExpression expr = new ObjectExpression("s_lessthanequals", lteq);
+      GenericExpression expr = new GenericExpression("s_lessthanequals", lteq);
 
-      objectExpressions.add(expr);
+      genericExpressions.add(expr);
     }
 
-    Apply apply = new Apply(new TupleSource(tbb), objectExpressions.build());
+    Apply apply = new Apply(new TupleSource(tbb), genericExpressions.build());
 
     apply.open(null);
     TupleBatch result;

@@ -10,7 +10,7 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.expression.Expression;
+import edu.washington.escience.myria.expression.BooleanExpression;
 
 /**
  * Filter is an operator that implements a relational select.
@@ -22,7 +22,7 @@ public final class Filter extends UnaryOperator {
   /**
    * The operator.
    * */
-  private final Expression predicate;
+  private final BooleanExpression predicate;
 
   /**
    * Constructor accepts a predicate to apply and a child operator to read tuples to filter from.
@@ -30,7 +30,7 @@ public final class Filter extends UnaryOperator {
    * @param predicate the predicate by which to filter tuples.
    * @param child The child operator
    */
-  public Filter(final Expression predicate, final Operator child) {
+  public Filter(final BooleanExpression predicate, final Operator child) {
     super(child);
     this.predicate = predicate;
   }
@@ -43,7 +43,7 @@ public final class Filter extends UnaryOperator {
       for (int rowIdx = 0; rowIdx < tb.numTuples(); rowIdx++) {
         Boolean valid;
         try {
-          valid = (Boolean) predicate.eval(tb, rowIdx);
+          valid = predicate.eval(tb, rowIdx);
         } catch (InvocationTargetException e) {
           throw new DbException(e);
         }

@@ -14,6 +14,7 @@ import com.google.common.base.Preconditions;
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
+import edu.washington.escience.myria.Type;
 
 /**
  * An expression that can be applied to a tuple. This is the specialized version where the evaluator returns booleans.
@@ -28,6 +29,16 @@ public class BooleanExpression extends Expression {
   private BooleanEvaluator evaluator;
 
   /**
+   * Constructs the Expression object.
+   * 
+   * @param outputName the name of the resulting element
+   * @param rootExpressionOperator the root of the AST representing this expression.
+   */
+  public BooleanExpression(final String outputName, final ExpressionOperator rootExpressionOperator) {
+    super(outputName, rootExpressionOperator);
+  }
+
+  /**
    * Compiles the {@link #javaExpression}.
    * 
    * @throws DbException compilation failed
@@ -35,6 +46,7 @@ public class BooleanExpression extends Expression {
   public void compile() throws DbException {
     Preconditions.checkArgument(!isCopyFromInput(),
         "This expression does not need to be compiled because the data can be copied from the input.");
+    Preconditions.checkArgument(getRootExpressionOperator().getOutputType(getInputSchema()) == Type.BOOLEAN_TYPE);
     setJavaExpression(getRootExpressionOperator().getJavaString(Objects.requireNonNull(getInputSchema())));
 
     try {
