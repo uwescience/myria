@@ -42,11 +42,9 @@ public class AggregateQueryVariantMonetDBMyriaSubStr implements QueryPlanGenerat
 
     final int NUM_LOCAL_TASKS = 5;
 
-    PartitionFunction<String, Integer> pf0 = new SingleFieldHashPartitionFunction(allWorkers.length);
-    pf0.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
+    PartitionFunction pf0 = new SingleFieldHashPartitionFunction(allWorkers.length, 0);
 
-    PartitionFunction<String, Integer> pfLocal0 = new SingleFieldHashPartitionFunction(NUM_LOCAL_TASKS);
-    pfLocal0.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
+    PartitionFunction pfLocal0 = new SingleFieldHashPartitionFunction(NUM_LOCAL_TASKS, 0);
 
     ExchangePairID[] localShuffleIDs = new ExchangePairID[NUM_LOCAL_TASKS];
     for (int i = 0; i < localShuffleIDs.length; i++) {

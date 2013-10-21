@@ -527,7 +527,7 @@ public final class Server {
           }
         }
         try {
-          Thread.sleep(100);
+          Thread.sleep(MyriaConstants.SHORT_WAITING_INTERVAL_100_MS);
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
         }

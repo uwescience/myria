@@ -112,8 +112,8 @@ public class IterativeFlowControlTest extends SystemTestBase {
     for (int i = 0; i < MaxID; ++i) {
       for (int j = 0; j < MaxID; ++j) {
         if (s[i][j]) {
-          result.put(0, (long) i);
-          result.put(1, (long) j);
+          result.putLong(0, i);
+          result.putLong(1, j);
           // LOGGER.debug(i + "\t" + j);
         }
       }
@@ -148,12 +148,12 @@ public class IterativeFlowControlTest extends SystemTestBase {
     TupleBatchBuffer tblAWorker1 = new TupleBatchBuffer(tableSchema);
     TupleBatchBuffer tblAWorker2 = new TupleBatchBuffer(tableSchema);
     for (int i = 0; i < numTbl1Worker1; i++) {
-      tblAWorker1.put(0, tblAID1Worker1[i]);
-      tblAWorker1.put(1, tblAID2Worker1[i]);
+      tblAWorker1.putLong(0, tblAID1Worker1[i]);
+      tblAWorker1.putLong(1, tblAID2Worker1[i]);
     }
     for (int i = 0; i < numTbl1Worker2; i++) {
-      tblAWorker2.put(0, tblAID1Worker2[i]);
-      tblAWorker2.put(1, tblAID2Worker2[i]);
+      tblAWorker2.putLong(0, tblAID1Worker2[i]);
+      tblAWorker2.putLong(1, tblAID2Worker2[i]);
     }
     TupleBatchBuffer table1 = new TupleBatchBuffer(tableSchema);
     table1.unionAll(tblAWorker1);
@@ -177,10 +177,8 @@ public class IterativeFlowControlTest extends SystemTestBase {
       final ExchangePairID serverReceivingOpID, final int selfIDBID) throws DbException {
 
     final int numPartition = 2;
-    final PartitionFunction<String, Integer> pf0 = new SingleFieldHashPartitionFunction(numPartition);
-    pf0.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
-    final PartitionFunction<String, Integer> pf1 = new SingleFieldHashPartitionFunction(numPartition);
-    pf1.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1);
+    final PartitionFunction pf0 = new SingleFieldHashPartitionFunction(numPartition, 0);
+    final PartitionFunction pf1 = new SingleFieldHashPartitionFunction(numPartition, 1);
 
     GenericShuffleConsumer sc1;
     if (isHead) {
@@ -430,8 +428,8 @@ public class IterativeFlowControlTest extends SystemTestBase {
     for (int i = 0; i < MaxID; ++i) {
       for (int j = 0; j < MaxID; ++j) {
         if (s3[i][j]) {
-          result.put(0, (long) i);
-          result.put(1, (long) j);
+          result.putLong(0, i);
+          result.putLong(1, j);
           LOGGER.debug(i + "\t" + j);
         }
       }

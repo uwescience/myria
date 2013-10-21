@@ -540,7 +540,7 @@ public class TupleBatch implements Serializable {
    * @param pf the partition function.
    * @param buffers the buffers storing the partitioned data.
    * */
-  public final void partition(final PartitionFunction<?, ?> pf, final TupleBatchBuffer[] buffers) {
+  public final void partition(final PartitionFunction pf, final TupleBatchBuffer[] buffers) {
     final int numColumns = numColumns();
 
     final int[] partitions = pf.partition(this);
@@ -563,7 +563,7 @@ public class TupleBatch implements Serializable {
    *         partition, say the i'th partition, the i'th element in the result array is null.
    * @param pf the partition function.
    * */
-  public final TupleBatch[] partition(final PartitionFunction<?, ?> pf) {
+  public final TupleBatch[] partition(final PartitionFunction pf) {
     TupleBatch[] result = new TupleBatch[pf.numPartition()];
     if (isEOI) {
       Arrays.fill(result, this);
@@ -646,6 +646,24 @@ public class TupleBatch implements Serializable {
   public final TupleBatch selectColumns(final Integer[] remainingColumns) {
     Objects.requireNonNull(remainingColumns);
     return selectColumns(Ints.toArray(Arrays.asList(remainingColumns)));
+  }
+
+  /**
+   * Creates a new TupleBatch with only the indicated columns.
+   * 
+   * Internal implementation of a (non-duplicate-eliminating) PROJECT statement.
+   * 
+   * @param remainingColumns zero-indexed array of columns to retain.
+   * @param resultSchema computing a schema every time is usually not necessary
+   * @return a projected TupleBatch.
+   */
+  public final TupleBatch selectColumns(final int[] remainingColumns, final Schema resultSchema) {
+    Objects.requireNonNull(remainingColumns);
+    final ImmutableList.Builder<Column<?>> newColumns = new ImmutableList.Builder<Column<?>>();
+    for (final int i : remainingColumns) {
+      newColumns.add(columns.get(i));
+    }
+    return shallowCopy(resultSchema, newColumns.build(), validTuples, validIndices, isEOI);
   }
 
   /**
@@ -774,4 +792,58 @@ public class TupleBatch implements Serializable {
   public final boolean isEOI() {
     return isEOI;
   }
+
+  /**
+   * Check if a tuple in uniqueTuples equals to the comparing tuple (cntTuple).
+   * 
+   * @param hashTable the TupleBatchBuffer holding the tuples to compare against
+   * @param index the index in the hashTable
+   * @param row row number of the tuple to compare
+   * @param compareColumns1 the comparing list of columns of cntTuple
+   * @param compareColumns2 the comparing list of columns of hashTable
+   * @return true if equals.
+   */
+  public boolean tupleEquals(final int row, final TupleBuffer hashTable, final int index, final int[] compareColumns1,
+      final int[] compareColumns2) {
+    if (compareColumns1.length != compareColumns2.length) {
+      return false;
+    }
+    for (int i = 0; i < compareColumns1.length; ++i) {
+      switch (schema.getColumnType(i)) {
+        case BOOLEAN_TYPE:
+          if (getBoolean(compareColumns1[i], row) != hashTable.getBoolean(compareColumns2[i], index)) {
+            return false;
+          }
+          break;
+        case DOUBLE_TYPE:
+          if (getDouble(compareColumns1[i], row) != hashTable.getDouble(compareColumns2[i], index)) {
+            return false;
+          }
+          break;
+        case FLOAT_TYPE:
+          if (getFloat(compareColumns1[i], row) != hashTable.getFloat(compareColumns2[i], index)) {
+            return false;
+          }
+          break;
+        case INT_TYPE:
+          if (getInt(compareColumns1[i], row) != hashTable.getInt(compareColumns2[i], index)) {
+            return false;
+          }
+          break;
+        case LONG_TYPE:
+          if (getLong(compareColumns1[i], row) != hashTable.getLong(compareColumns2[i], index)) {
+            return false;
+          }
+          break;
+        case STRING_TYPE:
+        case DATETIME_TYPE:
+          if (!getDateTime(compareColumns1[i], row).equals(hashTable.getDateTime(compareColumns2[i], index))) {
+            return false;
+          }
+          break;
+      }
+    }
+    return true;
+  }
+
 }

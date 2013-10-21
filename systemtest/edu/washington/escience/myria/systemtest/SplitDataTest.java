@@ -40,8 +40,8 @@ public class SplitDataTest extends SystemTestBase {
     final TupleBatchBuffer tuples = new TupleBatchBuffer(schema);
     final int numTuplesInserted = 10001;
     for (long i = 0; i < numTuplesInserted; ++i) {
-      tuples.put(0, i);
-      tuples.put(1, "row" + i);
+      tuples.putLong(0, i);
+      tuples.putString(1, "row" + i);
     }
     final TupleSource source = new TupleSource(tuples);
 

@@ -12,7 +12,6 @@ import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.parallel.GenericShuffleProducer;
 import edu.washington.escience.myria.parallel.MFMDHashPartitionFunction;
 import edu.washington.escience.myria.parallel.Server;
-import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
 import edu.washington.escience.myria.util.MyriaUtils;
 
@@ -26,11 +25,11 @@ public class HyperShuffleProducerEncoding extends AbstractProducerEncoding<Gener
 
   public String argChild;
   public String argOperatorId;
-  public SingleFieldPartitionFunctionEncoding[] argPfs;
+  public int[] fieldIndexes;
   public int[] hyperCubeDimensions;
   public int[][] cellPartition;
 
-  private static final List<String> requiredArguments = ImmutableList.of("argChild", "argOperatorId", "argPfs",
+  private static final List<String> requiredArguments = ImmutableList.of("argChild", "argOperatorId", "fieldIndexes",
       "hyperCubeDimensions", "cellPartition");
 
   @Override
@@ -56,12 +55,8 @@ public class HyperShuffleProducerEncoding extends AbstractProducerEncoding<Gener
     }
 
     /* constructing a MFMDHashPartitionFunction. */
-    SingleFieldHashPartitionFunction[] pfs = new SingleFieldHashPartitionFunction[argPfs.length];
-    for (int i = 0; i < pfs.length; i++) {
-      pfs[i] = argPfs[i].construct(hyperCubeDimensions[argPfs[i].index]);
-    }
-    MFMDHashPartitionFunction pf = new MFMDHashPartitionFunction(cellPartition.length);
-    pf.setAttribute("partition_functions", pfs);
+    MFMDHashPartitionFunction pf =
+        new MFMDHashPartitionFunction(cellPartition.length, hyperCubeDimensions, fieldIndexes);
 
     return new GenericShuffleProducer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), cellPartition,
         MyriaUtils.integerCollectionToIntArray(getRealWorkerIds()), pf);

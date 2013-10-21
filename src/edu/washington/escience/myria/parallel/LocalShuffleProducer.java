@@ -23,7 +23,7 @@ public class LocalShuffleProducer extends GenericShuffleProducer {
    * @param operatorIDs destination operators the data goes
    * @param pf the partition function
    * */
-  public LocalShuffleProducer(final Operator child, final ExchangePairID[] operatorIDs, final PartitionFunction<?, ?> pf) {
+  public LocalShuffleProducer(final Operator child, final ExchangePairID[] operatorIDs, final PartitionFunction pf) {
     super(child, operatorIDs, MyriaArrayUtils.create2DVerticalIndex(pf.numPartition()),
         new int[] { IPCConnectionPool.SELF_IPC_ID }, pf, false);
     Preconditions.checkArgument(operatorIDs.length == pf.numPartition());

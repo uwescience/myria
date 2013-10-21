@@ -69,8 +69,7 @@ public class ShuffleSQLiteTest extends SystemTestBase {
 
     /* Create partition function */
     final int numPartition = 2;
-    final PartitionFunction<String, Integer> pf = new SingleFieldHashPartitionFunction(numPartition);
-    pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1); // partition by name
+    final PartitionFunction pf = new SingleFieldHashPartitionFunction(numPartition, 1);
 
     /* Set shuffle producers, sp1, sp2 , which load data from scan1, scan 2 */
     final DbQueryScan scan1 = new DbQueryScan(testtable1Key, schema);

@@ -9,10 +9,10 @@ import com.google.common.collect.ImmutableList;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.operator.ColumnSelect;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.Operator;
-import edu.washington.escience.myria.operator.ColumnSelect;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
@@ -44,11 +44,7 @@ public class Q9 implements QueryPlanGenerator {
     final ExchangePairID allTriplesOutLocalMultiWayID = ExchangePairID.newID();
     final ExchangePairID allTriplesInLocalMultiWayID = ExchangePairID.newID();
 
-    final SingleFieldHashPartitionFunction pfOn0 = new SingleFieldHashPartitionFunction(allWorkers.length);
-    pfOn0.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
-
-    final SingleFieldHashPartitionFunction pfOn1 = new SingleFieldHashPartitionFunction(allWorkers.length);
-    pfOn1.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1);
+    final SingleFieldHashPartitionFunction pfOn0 = new SingleFieldHashPartitionFunction(allWorkers.length, 0);
 
     final DbQueryScan allPersons = new DbQueryScan(//
         "SELECT distinct t.subject AS person FROM Triples t " + //

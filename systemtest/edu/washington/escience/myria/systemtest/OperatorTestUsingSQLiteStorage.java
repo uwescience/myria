@@ -32,7 +32,6 @@ import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
 import edu.washington.escience.myria.parallel.GenericShuffleProducer;
-import edu.washington.escience.myria.parallel.PartitionFunction;
 import edu.washington.escience.myria.parallel.SingleFieldHashPartitionFunction;
 import edu.washington.escience.myria.util.TestUtils;
 import edu.washington.escience.myria.util.Tuple;
@@ -56,8 +55,8 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
-      tbb.put(0, ids[i]);
-      tbb.put(1, names[i]);
+      tbb.putLong(0, ids[i]);
+      tbb.putString(1, names[i]);
     }
 
     final HashMap<Tuple, Integer> expectedResults = TestUtils.distinct(tbb);
@@ -70,11 +69,6 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final ExchangePairID collectID = ExchangePairID.newID();
-
-    final int numPartition = 2;
-
-    final PartitionFunction<String, Integer> pf = new SingleFieldHashPartitionFunction(numPartition);
-    pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1); // partition by id
 
     final DbQueryScan scanTable = new DbQueryScan(testtableKey, schema);
 
@@ -118,8 +112,8 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (int i = 0; i < names.length; i++) {
-      tbb.put(0, ids[i]);
-      tbb.put(1, names[i]);
+      tbb.putLong(0, ids[i]);
+      tbb.putString(1, names[i]);
     }
 
     final HashMap<Tuple, Integer> expectedResults = TestUtils.distinct(tbb);
@@ -130,10 +124,6 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     }
 
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
-    final int numPartition = 2;
-
-    final PartitionFunction<String, Integer> pf = new SingleFieldHashPartitionFunction(numPartition);
-    pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 1); // partition by id
 
     final DbQueryScan scanTable = new DbQueryScan(testtableKey, schema);
 
@@ -171,8 +161,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final ExchangePairID table1ShuffleID = ExchangePairID.newID();
     final ExchangePairID table2ShuffleID = ExchangePairID.newID();
-    final SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(2);
-    pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
+    final SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(2, 0);
 
     final ImmutableList<Type> outputTypes =
         ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE, Type.LONG_TYPE, Type.STRING_TYPE);
@@ -230,8 +219,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final ExchangePairID table1ShuffleID = ExchangePairID.newID();
     final ExchangePairID table2ShuffleID = ExchangePairID.newID();
-    final SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(2);
-    pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
+    final SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(2, 0);
 
     final ImmutableList<Type> outputTypes =
         ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE, Type.LONG_TYPE, Type.STRING_TYPE);
@@ -250,8 +238,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final GenericShuffleConsumer sc2 =
         new GenericShuffleConsumer(sp2.getSchema(), table2ShuffleID, new int[] { workerIDs[0], workerIDs[1] });
 
-    final RightHashJoin localjoin =
-        new RightHashJoin(outputColumnNames, sc1, sc2, new int[] { 0 }, new int[] { 0 });
+    final RightHashJoin localjoin = new RightHashJoin(outputColumnNames, sc1, sc2, new int[] { 0 }, new int[] { 0 });
 
     final CollectProducer cp1 = new CollectProducer(localjoin, serverReceiveID, MASTER_ID);
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
@@ -288,8 +275,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final ExchangePairID table1ShuffleID = ExchangePairID.newID();
     final ExchangePairID table2ShuffleID = ExchangePairID.newID();
-    final SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(2);
-    pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
+    final SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(2, 0);
 
     final DbQueryScan scan1 = new DbQueryScan(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA);
     final DbQueryScan scan2 = new DbQueryScan(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA);
@@ -343,8 +329,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final ExchangePairID table1ShuffleID = ExchangePairID.newID();
     final ExchangePairID table2ShuffleID = ExchangePairID.newID();
-    final SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(2);
-    pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
+    final SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(2, 0);
 
     final DbQueryScan scan1 = new DbQueryScan(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA);
     final DbQueryScan scan2 = new DbQueryScan(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA);
@@ -402,8 +387,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final ExchangePairID table1ShuffleID = ExchangePairID.newID();
     final ExchangePairID table2ShuffleID = ExchangePairID.newID();
-    final SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(2);
-    pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
+    final SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(2, 0);
 
     final DbQueryScan scan1 = new DbQueryScan(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA);
     final DbQueryScan scan2 = new DbQueryScan(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA);
@@ -459,8 +443,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
     final ExchangePairID table1ShuffleID = ExchangePairID.newID();
     final ExchangePairID table2ShuffleID = ExchangePairID.newID();
-    final SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(2);
-    pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
+    final SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(2, 0);
 
     final DbQueryScan scan1 = new DbQueryScan(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA);
     final DbQueryScan scan2 = new DbQueryScan(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA);
@@ -476,8 +459,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     final GenericShuffleConsumer sc2 =
         new GenericShuffleConsumer(sp2.getSchema(), table2ShuffleID, new int[] { workerIDs[0], workerIDs[1] });
 
-    final RightHashCountingJoin localjoin =
-        new RightHashCountingJoin(sc1, sc2, new int[] { 0 }, new int[] { 0 });
+    final RightHashCountingJoin localjoin = new RightHashCountingJoin(sc1, sc2, new int[] { 0 }, new int[] { 0 });
 
     final CollectProducer cp1 = new CollectProducer(localjoin, serverReceiveID, MASTER_ID);
     final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();

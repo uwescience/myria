@@ -54,12 +54,11 @@ public class ApplyTest {
             ImmutableList.of("a", "b", "c", "d", "e"));
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (long i = 0; i < NUM_TUPLES; i++) {
-      tbb.put(0, (long) Math.pow(i, 2));
-      tbb.put(1, i + 1);
-      tbb.put(2, (int) i);
-      tbb.put(3, "Foo" + i);
-      tbb.put(4, i % 2 == 0);
-
+      tbb.putLong(0, (long) Math.pow(i, 2));
+      tbb.putLong(1, i + 1);
+      tbb.putInt(2, (int) i);
+      tbb.putString(3, "Foo" + i);
+      tbb.putBoolean(4, i % 2 == 0);
     }
     ImmutableList.Builder<Expression> expressions = ImmutableList.builder();
 
@@ -236,8 +235,8 @@ public class ApplyTest {
     final Schema schema = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("a", "b"));
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (long i = 0; i < SMALL_NUM_TUPLES; i++) {
-      tbb.put(0, i + 1);
-      tbb.put(1, 2 * i);
+      tbb.putLong(0, i + 1);
+      tbb.putLong(1, 2 * i);
     }
     ImmutableList.Builder<Expression> expressions = ImmutableList.builder();
 
@@ -337,8 +336,8 @@ public class ApplyTest {
     final Schema schema = new Schema(ImmutableList.of(Type.STRING_TYPE, Type.STRING_TYPE), ImmutableList.of("c", "d"));
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
     for (long i = 0; i < SMALL_NUM_TUPLES; i++) {
-      tbb.put(0, "Foo" + i);
-      tbb.put(1, "Foo" + (2 - i));
+      tbb.putString(0, "Foo" + i);
+      tbb.putString(1, "Foo" + (2 - i));
     }
     ImmutableList.Builder<Expression> expressions = ImmutableList.builder();
 

@@ -82,8 +82,8 @@ public class MultithreadScanTest extends SystemTestBase {
     for (int i = 0; i < MaxID; ++i) {
       for (int j = 0; j < MaxID; ++j) {
         if (cntgraph[i][j]) {
-          result.put(0, (long) i);
-          result.put(1, (long) j);
+          result.putLong(0, i);
+          result.putLong(1, j);
           LOGGER.debug(i + "\t" + j);
         }
       }
@@ -104,8 +104,8 @@ public class MultithreadScanTest extends SystemTestBase {
     final long[] tbl1ID2Worker1 = TestUtils.randomLong(1, MaxID - 1, numTbl1Worker1);
     final TupleBatchBuffer tbl1Worker1 = new TupleBatchBuffer(tableSchema);
     for (int i = 0; i < numTbl1Worker1; i++) {
-      tbl1Worker1.put(0, tbl1ID1Worker1[i]);
-      tbl1Worker1.put(1, tbl1ID2Worker1[i]);
+      tbl1Worker1.putLong(0, tbl1ID1Worker1[i]);
+      tbl1Worker1.putLong(1, tbl1ID2Worker1[i]);
     }
 
     final TupleBatchBuffer expectedTBB = getResultInMemory(tbl1Worker1, tableSchema, 2);
@@ -167,8 +167,8 @@ public class MultithreadScanTest extends SystemTestBase {
     final long[] tbl1ID2Worker1 = TestUtils.randomLong(1, MaxID - 1, numTbl1Worker1);
     final TupleBatchBuffer tbl1Worker1 = new TupleBatchBuffer(tableSchema);
     for (int i = 0; i < numTbl1Worker1; i++) {
-      tbl1Worker1.put(0, tbl1ID1Worker1[i]);
-      tbl1Worker1.put(1, tbl1ID2Worker1[i]);
+      tbl1Worker1.putLong(0, tbl1ID1Worker1[i]);
+      tbl1Worker1.putLong(1, tbl1ID2Worker1[i]);
     }
     final TupleBatchBuffer table1 = new TupleBatchBuffer(tableSchema);
     table1.unionAll(tbl1Worker1);
@@ -198,8 +198,7 @@ public class MultithreadScanTest extends SystemTestBase {
     final DupElim de2 = new DupElim(localjoin2);
 
     final int numPartition = 2;
-    final PartitionFunction<String, Integer> pf0 = new SingleFieldHashPartitionFunction(numPartition); // 2 workers
-    pf0.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0); // partition by 1st column
+    final PartitionFunction pf0 = new SingleFieldHashPartitionFunction(numPartition, 0); // 2 workers
 
     ExchangePairID arrayID1, arrayID2;
     arrayID1 = ExchangePairID.newID();

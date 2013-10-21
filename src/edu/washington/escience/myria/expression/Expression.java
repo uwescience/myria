@@ -173,7 +173,7 @@ public class Expression implements Serializable {
 
   /**
    * Often, there is no need to compile this expression because the input value is the same as the output.
-   *
+   * 
    * @return true if the expression does not have to be compiled.
    */
   public boolean needsCompiling() {
@@ -182,15 +182,16 @@ public class Expression implements Serializable {
 
   /**
    * Runs {@link #eval(TupleBatch, int)} if necessary and puts the result in the target tuple buffer.
-   *
+   * 
    * If evaluating is not necessary, the data is copied directly from the source tuple batch into the target buffer.
-   *
+   * 
    * @param sourceTupleBatch the tuple buffer that should be used as input
    * @param sourceRowIdx the row that should be used in the input batch
    * @param targetTupleBuffer the tuple buffer that should be used as output
    * @param targetColumnIdx the column that the data should be written to
    * @throws InvocationTargetException exception thrown from janino
    */
+  @SuppressWarnings("deprecation")
   public void evalAndPut(final TupleBatch sourceTupleBatch, final int sourceRowIdx,
       final TupleBatchBuffer targetTupleBuffer, final int targetColumnIdx) throws InvocationTargetException {
     if (copyFromInput) {
@@ -199,6 +200,7 @@ public class Expression implements Serializable {
       targetTupleBuffer.put(targetColumnIdx, sourceColumn, sourceRowIdx);
     } else {
       Object result = eval(sourceTupleBatch, sourceRowIdx);
+      /** We already have an object, so we're not using the wrong version of put. Remove the warning. */
       targetTupleBuffer.put(targetColumnIdx, result);
     }
 

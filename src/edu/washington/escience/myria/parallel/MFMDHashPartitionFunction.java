@@ -2,6 +2,8 @@ package edu.washington.escience.myria.parallel;
 
 import java.util.Arrays;
 
+import com.google.common.base.Preconditions;
+
 import edu.washington.escience.myria.TupleBatch;
 
 /**
@@ -10,34 +12,32 @@ import edu.washington.escience.myria.TupleBatch;
  * @author Shumo Chu <chushumo@cs.washington.edu>
  * 
  */
-public class MFMDHashPartitionFunction extends PartitionFunction<String, SingleFieldHashPartitionFunction[]> {
+public final class MFMDHashPartitionFunction extends PartitionFunction {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   /**
-   * The partition functions attribute name.
-   * */
-  public static final String PARTITON_FUNCTIONS = "partition_functions";
-
-  /**
    * Partition functions on different dimensions.
-   * */
-  private SingleFieldHashPartitionFunction[] partitionFunctions;
+   */
+  private final SingleFieldHashPartitionFunction[] partitionFunctions;
 
   /**
    * 
-   * @param numPartition number of buckets
+   * @param numPartitions number of buckets
+   * @param hypercubeDimensions the sizes of each dimension of the hypercube.
+   * @param fieldIndexes which fields are hashed.
    * 
-   * */
-  public MFMDHashPartitionFunction(final int numPartition) {
-    super(numPartition);
+   */
+  public MFMDHashPartitionFunction(final int numPartitions, final int[] hypercubeDimensions, final int[] fieldIndexes) {
+    super(numPartitions);
+    partitionFunctions = new SingleFieldHashPartitionFunction[fieldIndexes.length];
+    for (int i : fieldIndexes) {
+      Preconditions.checkPositionIndex(i, hypercubeDimensions.length);
+      partitionFunctions[i] = new SingleFieldHashPartitionFunction(numPartitions, hypercubeDimensions[i]);
+    }
   }
 
-  /**
-   * @param tb data.
-   * @return partitions.
-   * */
   @Override
   public int[] partition(final TupleBatch tb) {
     int[] result = new int[tb.numTuples()];
@@ -53,14 +53,6 @@ public class MFMDHashPartitionFunction extends PartitionFunction<String, SingleF
     }
 
     return result;
-  }
-
-  @Override
-  public void setAttribute(final String attribute, final SingleFieldHashPartitionFunction[] value) {
-    super.setAttribute(attribute, value);
-    if (attribute.equals(PARTITON_FUNCTIONS)) {
-      partitionFunctions = value;
-    }
   }
 
 }
