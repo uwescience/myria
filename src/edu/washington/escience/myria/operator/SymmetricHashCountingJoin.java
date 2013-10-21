@@ -59,7 +59,7 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
   /**
    * Whether this operator has returned answer or not.
    * */
-  private final boolean hasReturnedAnswer = false;
+  private boolean hasReturnedAnswer = false;
 
   /**
    * Traverse through the list of tuples with the same hash code.
@@ -179,13 +179,13 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
   public void checkEOSAndEOI() {
     final Operator left = getLeft();
     final Operator right = getRight();
-    if (left.eos() && right.eos()) {
+    if (left.eos() && right.eos() && hasReturnedAnswer) {
       setEOS();
       return;
     }
 
     // at the time of eos, this operator will not return any data, so it can be safely set EOI to true
-    if ((childrenEOI[0] || left.eos()) && (childrenEOI[1] || right.eos())) {
+    if ((childrenEOI[0] || left.eos()) && (childrenEOI[1] || right.eos()) && hasReturnedAnswer) {
       setEOI(true);
       Arrays.fill(childrenEOI, false);
     }
@@ -270,6 +270,7 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
     if (isEOIReady()) {
       checkEOSAndEOI();
       if (left.eos() && right.eos() && (!hasReturnedAnswer)) {
+        hasReturnedAnswer = true;
         ansTBB.putLong(0, ans);
         return ansTBB.popAny();
       }
