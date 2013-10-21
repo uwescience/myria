@@ -55,7 +55,7 @@ public class SimplePredicate implements Serializable {
         case NOT_EQUALS:
           return "<>";
       }
-      throw new IllegalStateException("Shouldn't reach here");
+      throw new UnsupportedOperationException("Don't know how to convert op to string " + name());
     }
 
     /**
@@ -78,7 +78,7 @@ public class SimplePredicate implements Serializable {
         case LIKE:
           throw new UnsupportedOperationException();
       }
-      throw new IllegalStateException("Shouldn't reach here");
+      throw new UnsupportedOperationException("Don't know how to convert op to string " + name());
     }
 
   }
