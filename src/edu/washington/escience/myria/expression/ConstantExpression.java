@@ -2,6 +2,8 @@ package edu.washington.escience.myria.expression;
 
 import java.util.Objects;
 
+import org.apache.commons.lang.StringEscapeUtils;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import edu.washington.escience.myria.Schema;
@@ -47,7 +49,19 @@ public class ConstantExpression extends ZeroaryExpression {
 
   @Override
   public String getJavaString(final Schema schema) {
-    return value;
+    switch (valueType) {
+      case BOOLEAN_TYPE:
+      case DOUBLE_TYPE:
+      case FLOAT_TYPE:
+      case INT_TYPE:
+      case LONG_TYPE:
+        return value;
+      case DATETIME_TYPE:
+        throw new UnsupportedOperationException("using constant value of type DateTime");
+      case STRING_TYPE:
+        return '\"' + StringEscapeUtils.escapeJava(value) + '\"';
+    }
+    throw new UnsupportedOperationException("using constant value of type " + valueType);
   }
 
   @Override
