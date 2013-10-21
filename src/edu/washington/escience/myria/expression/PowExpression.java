@@ -11,6 +11,13 @@ public class PowExpression extends BinaryExpression {
   private static final long serialVersionUID = 1L;
 
   /**
+   * This is not really unused, it's used automagically by Jackson deserialization.
+   */
+  @SuppressWarnings("unused")
+  private PowExpression() {
+  }
+
+  /**
    * Exponentiate left^right. Always evaluates to a double.
    * 
    * @param left the left operand.
@@ -22,6 +29,7 @@ public class PowExpression extends BinaryExpression {
 
   @Override
   public Type getOutputType(final Schema schema) {
+    checkAndReturnDefaultNumericType(schema);
     return Type.DOUBLE_TYPE;
   }
 

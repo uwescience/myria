@@ -7,6 +7,8 @@ import javax.ws.rs.ext.Provider;
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.jaxrs.json.JacksonJaxbJsonProvider;
 
@@ -21,14 +23,32 @@ import com.fasterxml.jackson.jaxrs.json.JacksonJaxbJsonProvider;
 @Produces(MediaType.APPLICATION_JSON)
 public class MyriaJsonMapperProvider extends JacksonJaxbJsonProvider {
   /** Only create this object once, and share it among instances. */
-  private static ObjectMapper commonMapper = null;
+  private static final ObjectMapper MAPPER = newMapper();
 
   /** Get (or create) the custom ObjectMapper and then set it in the parent. */
   public MyriaJsonMapperProvider() {
-    if (commonMapper == null) {
-      commonMapper = newMapper();
-    }
-    super.setMapper(commonMapper);
+    super.setMapper(MAPPER);
+  }
+
+  /**
+   * @return An {@link ObjectMapper} that fits Myria's customizations.
+   */
+  public static ObjectMapper getMapper() {
+    return MAPPER;
+  }
+
+  /**
+   * @return An {@link ObjectReader} that fits Myria's customizations.
+   */
+  public static ObjectReader getReader() {
+    return MAPPER.reader();
+  }
+
+  /**
+   * @return An {@link ObjectWriter} that fits Myria's customizations.
+   */
+  public static ObjectWriter getWriter() {
+    return MAPPER.writer();
   }
 
   /**
@@ -36,7 +56,7 @@ public class MyriaJsonMapperProvider extends JacksonJaxbJsonProvider {
    * 
    * @return the standard Myria custom ObjectMapper.
    */
-  public static ObjectMapper newMapper() {
+  private static ObjectMapper newMapper() {
     ObjectMapper mapper = new ObjectMapper();
 
     /*

@@ -393,6 +393,7 @@ public enum Type implements Serializable {
 
       case LESS_THAN_OR_EQ:
         return compared <= 0;
+
       case LIKE:
         throw new UnsupportedOperationException();
     }

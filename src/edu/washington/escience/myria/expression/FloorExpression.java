@@ -4,9 +4,9 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 
 /**
- * Take the square root of the operand.
+ * Take the {@link Math.floor} of the operand.
  */
-public class SqrtExpression extends UnaryExpression {
+public class FloorExpression extends UnaryExpression {
   /***/
   private static final long serialVersionUID = 1L;
 
@@ -14,16 +14,16 @@ public class SqrtExpression extends UnaryExpression {
    * This is not really unused, it's used automagically by Jackson deserialization.
    */
   @SuppressWarnings("unused")
-  private SqrtExpression() {
+  private FloorExpression() {
     super();
   }
 
   /**
-   * Take the square root of the operand.
+   * Take the {@link Math.floor} of the operand.
    * 
    * @param operand the operand.
    */
-  public SqrtExpression(final ExpressionOperator operand) {
+  public FloorExpression(final ExpressionOperator operand) {
     super(operand);
   }
 
@@ -35,6 +35,6 @@ public class SqrtExpression extends UnaryExpression {
 
   @Override
   public String getJavaString(final Schema schema) {
-    return getFunctionCallUnaryString("Math.sqrt", schema);
+    return getFunctionCallUnaryString("Math.floor", schema);
   }
 }

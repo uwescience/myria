@@ -1,8 +1,5 @@
 package edu.washington.escience.myria.expression;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 
@@ -32,11 +29,7 @@ public class LogExpression extends UnaryExpression {
 
   @Override
   public Type getOutputType(final Schema schema) {
-    Type operandType = getOperand().getOutputType(schema);
-    ImmutableList<Type> validTypes = ImmutableList.of(Type.DOUBLE_TYPE, Type.FLOAT_TYPE, Type.LONG_TYPE, Type.INT_TYPE);
-    int operandIdx = validTypes.indexOf(operandType);
-    Preconditions.checkArgument(operandIdx != -1, "LogExpression cannot handle operand [%s] of Type %s", getOperand(),
-        operandType);
+    checkAndReturnDefaultNumericType(schema);
     return Type.DOUBLE_TYPE;
   }
 
