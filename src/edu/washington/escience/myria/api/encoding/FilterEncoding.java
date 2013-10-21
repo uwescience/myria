@@ -5,7 +5,7 @@ import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myria.expression.Expression;
+import edu.washington.escience.myria.expression.BooleanExpression;
 import edu.washington.escience.myria.operator.Filter;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.parallel.Server;
@@ -13,7 +13,7 @@ import edu.washington.escience.myria.parallel.Server;
 public class FilterEncoding extends OperatorEncoding<Filter> {
 
   public String argChild;
-  public Expression argPredicate;
+  public BooleanExpression argPredicate;
   private static List<String> requiredArguments = ImmutableList.of("argChild", "argPredicate");
 
   @Override

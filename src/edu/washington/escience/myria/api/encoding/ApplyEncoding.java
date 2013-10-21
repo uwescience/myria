@@ -5,7 +5,7 @@ import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myria.expression.ObjectExpression;
+import edu.washington.escience.myria.expression.GenericExpression;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.parallel.Server;
@@ -14,13 +14,13 @@ public class ApplyEncoding extends OperatorEncoding<Apply> {
 
   public String argChild;
 
-  public List<ObjectExpression> objectExpressions;
+  public List<GenericExpression> genericExpressions;
 
   private static final ImmutableList<String> requiredArguments = ImmutableList.of("argChild", "expressions");
 
   @Override
   public Apply construct(Server server) {
-    return new Apply(null, objectExpressions);
+    return new Apply(null, genericExpressions);
   }
 
   @Override
