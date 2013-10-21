@@ -248,37 +248,6 @@ public class TupleBatch implements Serializable {
   }
 
   /**
-   * Returns a new TupleBatch where all rows that do not match the specified predicate have been removed. Makes a
-   * shallow copy of the data, possibly resulting in slowed access to the result, but no copies.
-   * 
-   * Internal implementation of a SELECT statement.
-   * 
-   * @param predicate predicate by which to filter rows
-   * @return a new TupleBatch where all rows that do not match the specified predicate have been removed.
-   */
-  public final TupleBatch filter(final Predicate predicate) {
-    BitSet newValidTuples = null;
-    if (numValidTuples > 0) {
-      ImmutableBitSet filterResult = predicate.filter(this);
-      newValidTuples = validTuples.cloneAsBitSet();
-      newValidTuples.and(filterResult);
-    }
-
-    if (newValidTuples != null && newValidTuples.cardinality() != validTuples.cardinality()) {
-      if (newValidTuples.nextClearBit(0) == newValidTuples.cardinality()) {
-        // compact
-        return new TupleBatch(schema, columns, newValidTuples.cardinality());
-      } else {
-        return shallowCopy(schema, columns, new ImmutableBitSet(newValidTuples), null, isEOI);
-      }
-    }
-
-    /* If no tuples are filtered, new TupleBatch instance is not needed */
-    return this;
-
-  }
-
-  /**
    * Return a new TupleBatch that contains only the filtered rows of the current dataset. Note that if some of the
    * tuples in this batch are invalid, we will have to map the indices in the specified filter to the "real" indices in
    * the tuple.

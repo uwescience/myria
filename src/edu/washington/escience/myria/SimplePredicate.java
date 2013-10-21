@@ -1,17 +1,13 @@
 package edu.washington.escience.myria;
 
 import java.io.Serializable;
-import java.util.BitSet;
 
 import com.google.common.base.Preconditions;
-
-import edu.washington.escience.myria.column.Column;
-import edu.washington.escience.myria.util.ImmutableBitSet;
 
 /**
  * Predicate compares tuples to a specified Field value.
  */
-public class SimplePredicate implements Serializable, Predicate {
+public class SimplePredicate implements Serializable {
 
   /** Constants used for return codes in Field.compare. */
   public enum Op implements Serializable {
@@ -135,22 +131,5 @@ public class SimplePredicate implements Serializable, Predicate {
     String p = "";
     p += "f = " + columnIndex + " op = " + op + " operand = " + operand;
     return p;
-  }
-
-  @Override
-  public final ImmutableBitSet filter(final TupleBatch tb) {
-    Preconditions.checkNotNull(tb);
-    BitSet newValidTuples = new BitSet();
-    if (tb.numTuples() > 0) {
-      final Column<?> columnValues = tb.getDataColumns().get(getField());
-      final Type columnType = tb.getSchema().getColumnType(getField());
-      Object val = columnType.fromString(getOperand());
-      for (final int validIdx : tb.getValidIndices()) {
-        if (columnType.filter(getOp(), columnValues, validIdx, val)) {
-          newValidTuples.set(validIdx);
-        }
-      }
-    }
-    return new ImmutableBitSet(newValidTuples);
   }
 }
