@@ -17,24 +17,24 @@ import edu.washington.escience.myria.Schema;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
     /* Zeroary */
-    @Type(name = "Constant", value = ConstantExpression.class),
-    @Type(name = "Variable", value = VariableExpression.class),
+    @Type(name = "CONSTANT", value = ConstantExpression.class),
+    @Type(name = "VARIABLE", value = VariableExpression.class),
     /* Unary */
-    @Type(name = "Abs", value = AbsExpression.class), @Type(name = "Ceil", value = CeilExpression.class),
-    @Type(name = "Cos", value = CosExpression.class), @Type(name = "Floor", value = FloorExpression.class),
-    @Type(name = "Log", value = LogExpression.class), @Type(name = "Not", value = NotExpression.class),
-    @Type(name = "Negate", value = NegateExpression.class), @Type(name = "Sin", value = SinExpression.class),
-    @Type(name = "Sqrt", value = SqrtExpression.class), @Type(name = "Tan", value = TanExpression.class),
-    @Type(name = "Upper", value = ToUpperCaseExpression.class),
+    @Type(name = "ABS", value = AbsExpression.class), @Type(name = "CEIL", value = CeilExpression.class),
+    @Type(name = "COS", value = CosExpression.class), @Type(name = "FLOOR", value = FloorExpression.class),
+    @Type(name = "LOG", value = LogExpression.class), @Type(name = "NOT", value = NotExpression.class),
+    @Type(name = "NEG", value = NegateExpression.class), @Type(name = "SIN", value = SinExpression.class),
+    @Type(name = "SQRT", value = SqrtExpression.class), @Type(name = "TAN", value = TanExpression.class),
+    @Type(name = "UPPER", value = ToUpperCaseExpression.class),
     /* Binary */
-    @Type(name = "And", value = AndExpression.class), @Type(name = "Divide", value = DivideExpression.class),
-    @Type(name = "Eq", value = EqualsExpression.class), @Type(name = "Gt", value = GreaterThanExpression.class),
-    @Type(name = "Gte", value = GreaterThanOrEqualsExpression.class),
-    @Type(name = "Leq", value = LessThanOrEqualsExpression.class),
-    @Type(name = "Lt", value = LessThanExpression.class), @Type(name = "Minus", value = MinusExpression.class),
-    @Type(name = "Neq", value = NotEqualsExpression.class), @Type(name = "Or", value = OrExpression.class),
-    @Type(name = "Plus", value = PlusExpression.class), @Type(name = "Pow", value = PowExpression.class),
-    @Type(name = "Times", value = TimesExpression.class), })
+    @Type(name = "AND", value = AndExpression.class), @Type(name = "DIVIDE", value = DivideExpression.class),
+    @Type(name = "EQ", value = EqualsExpression.class), @Type(name = "GT", value = GreaterThanExpression.class),
+    @Type(name = "GTEQ", value = GreaterThanOrEqualsExpression.class),
+    @Type(name = "LTEQ", value = LessThanOrEqualsExpression.class),
+    @Type(name = "LT", value = LessThanExpression.class), @Type(name = "MINUS", value = MinusExpression.class),
+    @Type(name = "NEQ", value = NotEqualsExpression.class), @Type(name = "OR", value = OrExpression.class),
+    @Type(name = "PLUS", value = PlusExpression.class), @Type(name = "POW", value = PowExpression.class),
+    @Type(name = "TIMES", value = TimesExpression.class), })
 public abstract class ExpressionOperator implements Serializable {
   /***/
   private static final long serialVersionUID = 1L;
