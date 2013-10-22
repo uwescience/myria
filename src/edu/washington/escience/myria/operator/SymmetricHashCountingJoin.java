@@ -159,7 +159,7 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
 
     checkEOSAndEOI();
     if (eoi() || eos()) {
-      ansTBB.put(0, ans);
+      ansTBB.putObject(0, ans);
       return ansTBB.popAny();
     }
     return null;
@@ -173,7 +173,7 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
     }
 
     if (eoi()) {
-      ansTBB.put(0, ans);
+      ansTBB.putLong(0, ans);
       return ansTBB.popAny();
     }
 
@@ -242,7 +242,7 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
 
     checkEOSAndEOI();
     if (eoi() || eos()) {
-      ansTBB.put(0, ans);
+      ansTBB.putLong(0, ans);
       return ansTBB.popAny();
     }
 

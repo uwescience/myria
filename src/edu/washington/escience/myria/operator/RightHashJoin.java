@@ -197,10 +197,10 @@ public final class RightHashJoin extends BinaryOperator {
    */
   protected void addToAns(final List<Object> cntTuple, final TupleBuffer hashTable, final int index) {
     for (int i = 0; i < answerColumns1.length; ++i) {
-      ans.put(i, cntTuple.get(answerColumns1[i]));
+      ans.putObject(i, cntTuple.get(answerColumns1[i]));
     }
     for (int i = 0; i < answerColumns2.length; ++i) {
-      ans.put(i + answerColumns1.length, hashTable.get(answerColumns2[i], index));
+      ans.putObject(i + answerColumns1.length, hashTable.get(answerColumns2[i], index));
     }
 
   }

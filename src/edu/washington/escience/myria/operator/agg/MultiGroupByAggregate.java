@@ -186,7 +186,7 @@ public final class MultiGroupByAggregate extends UnaryOperator {
       for (SimpleArrayWrapper groupByFields : groupAggs.keySet()) {
         // populate the result tuple batch buffer
         for (int i = 0; i < gfields.length; i++) {
-          resultBuffer.put(i, groupByFields.groupFields[i]);
+          resultBuffer.putObject(i, groupByFields.groupFields[i]);
         }
         Aggregator<?>[] value = groupAggs.get(groupByFields);
         int currentIndex = gfields.length;

@@ -72,7 +72,8 @@ public class RightHashCountingJoin extends BinaryOperator {
    * @param compareIndx2 the columns of the right child to be compared with the left. Order matters.
    * @throw IllegalArgumentException if there are duplicated column names from the children.
    */
-  public RightHashCountingJoin(final Operator left, final Operator right, final int[] compareIndx1, final int[] compareIndx2) {
+  public RightHashCountingJoin(final Operator left, final Operator right, final int[] compareIndx1,
+      final int[] compareIndx2) {
     this(null, left, right, compareIndx1, compareIndx2);
   }
 
@@ -173,7 +174,7 @@ public class RightHashCountingJoin extends BinaryOperator {
 
     checkEOSAndEOI();
     if (eos()) {
-      ansTBB.put(0, ans);
+      ansTBB.putLong(0, ans);
       return ansTBB.popAny();
     }
 
