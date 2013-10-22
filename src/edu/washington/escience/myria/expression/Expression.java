@@ -21,7 +21,7 @@ public abstract class Expression implements Serializable {
   @JsonProperty
   private final String outputName;
   /**
-   * The java expression to be evaluated in {@link #eval}.
+   * The java expression to be evaluated.
    */
   @JsonProperty
   private String javaExpression;
@@ -107,8 +107,6 @@ public abstract class Expression implements Serializable {
 
   /**
    * @return the Java form of this expression.
-   * 
-   *         TODO: why is this a JsonProperty
    */
   @JsonProperty
   public String getJavaExpression() {

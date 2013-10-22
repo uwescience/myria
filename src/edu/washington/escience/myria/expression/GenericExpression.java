@@ -57,7 +57,7 @@ public class GenericExpression extends Expression {
   }
 
   /**
-   * Evaluates the expression using the {@link #evaluator}. Prefer to use
+   * Evaluates the {@link #getJavaExpression()} using the {@link #evaluator}. Prefer to use
    * {@link #evalAndPut(TupleBatch, int, TupleBatchBuffer, int)} as it can copy data without evaluating the expression.
    * 
    * @param tb a tuple batch
