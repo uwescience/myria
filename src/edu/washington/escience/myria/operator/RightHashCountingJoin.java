@@ -207,7 +207,7 @@ public class RightHashCountingJoin extends BinaryOperator {
       return false;
     }
     for (int i = 0; i < compareIndx.length; ++i) {
-      if (!cntTuple.get(compareIndx[i]).equals(hashTable.get(i, index))) {
+      if (!cntTuple.get(compareIndx[i]).equals(hashTable.getObject(i, index))) {
         return false;
       }
     }
@@ -250,7 +250,7 @@ public class RightHashCountingJoin extends BinaryOperator {
         // if this key didn't appear before, create the count for this key as 1
         hashTableIndices.get(cntHashCode).add(nextIndex);
         for (int j = 0; j < compareIndx2.length; ++j) {
-          hashTable.put(j, cntTuple.get(compareIndx2[j]));
+          hashTable.putObject(j, cntTuple.get(compareIndx2[j]));
         }
         occurredTimes.add(1);
       }

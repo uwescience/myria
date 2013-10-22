@@ -88,6 +88,7 @@ public class GenericExpression extends Expression {
    * @param targetColumnIdx the column that the data should be written to
    * @throws InvocationTargetException exception thrown from janino
    */
+  @SuppressWarnings("deprecation")
   public void evalAndPut(final TupleBatch sourceTupleBatch, final int sourceRowIdx,
       final TupleBatchBuffer targetTupleBuffer, final int targetColumnIdx) throws InvocationTargetException {
     if (isCopyFromInput()) {
@@ -96,6 +97,7 @@ public class GenericExpression extends Expression {
       targetTupleBuffer.put(targetColumnIdx, sourceColumn, sourceRowIdx);
     } else {
       Object result = eval(sourceTupleBatch, sourceRowIdx);
+      /** We already have an object, so we're not using the wrong version of put. */
       targetTupleBuffer.putObject(targetColumnIdx, result);
     }
 

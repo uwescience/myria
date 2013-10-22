@@ -103,13 +103,15 @@ public class TupleBuffer {
   }
 
   /**
+   * Prefer to use specific methods such as {@link #getInt(int, int)}.
+   * 
    * @param colIndex column index
    * @param rowIndex row index
    * @return the element at (rowIndex, colIndex)
    * @throws IndexOutOfBoundsException if indices are out of bounds.
    * */
   @Deprecated
-  public final Object get(final int colIndex, final int rowIndex) throws IndexOutOfBoundsException {
+  public final Object getObject(final int colIndex, final int rowIndex) throws IndexOutOfBoundsException {
     int tupleBatchIndex = rowIndex / TupleBatch.BATCH_SIZE;
     int tupleIndex = rowIndex % TupleBatch.BATCH_SIZE;
     if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
@@ -300,11 +302,13 @@ public class TupleBuffer {
   /**
    * Append the specified value to the specified column.
    * 
+   * Prefer to use specific methods such as {@link #putInt(int, int)}.
+   * 
    * @param column index of the column.
    * @param value value to be appended.
    */
   @Deprecated
-  public final void put(final int column, final Object value) {
+  public final void putObject(final int column, final Object value) {
     checkPutIndex(column);
     currentBuildingColumns[column].appendObject(value);
     columnPut(column);

@@ -121,7 +121,7 @@ public class IDBInput extends Operator {
    * */
   private boolean tupleEquals(final int index, final List<Object> cntTuple) {
     for (int i = 0; i < cntTuple.size(); ++i) {
-      if (!(uniqueTuples.get(i, index).equals(cntTuple.get(i)))) {
+      if (!(uniqueTuples.getObject(i, index).equals(cntTuple.get(i)))) {
         return false;
       }
     }
@@ -151,7 +151,7 @@ public class IDBInput extends Operator {
       List<Integer> tupleIndexList = uniqueTupleIndices.get(cntHashCode);
       if (tupleIndexList == null) {
         for (int j = 0; j < tb.numColumns(); ++j) {
-          uniqueTuples.put(j, cntTuple.get(j));
+          uniqueTuples.putObject(j, cntTuple.get(j));
         }
         tupleIndexList = new ArrayList<Integer>();
         tupleIndexList.add(nextIndex);
@@ -167,7 +167,7 @@ public class IDBInput extends Operator {
       }
       if (unique) {
         for (int j = 0; j < tb.numColumns(); ++j) {
-          uniqueTuples.put(j, cntTuple.get(j));
+          uniqueTuples.putObject(j, cntTuple.get(j));
         }
         tupleIndexList.add(nextIndex);
       } else {

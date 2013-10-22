@@ -473,10 +473,11 @@ public class TupleBatchBuffer {
    * 
    * Usage of this method is discouraged because of autoboxing.Prefer to use specific methods such as
    * {@link #putInt(int, int)}.
-   *
+   * 
    * @param column index of the column.
    * @param value value to be appended.
    */
+  @Deprecated
   public final void putObject(final int column, final Object value) {
     checkPutIndex(column);
     currentBuildingColumns.get(column).appendObject(value);
@@ -485,7 +486,7 @@ public class TupleBatchBuffer {
 
   /**
    * Append the specified value to the specified column.
-   *
+   * 
    * @param column index of the column.
    * @param value value to be appended.
    */
