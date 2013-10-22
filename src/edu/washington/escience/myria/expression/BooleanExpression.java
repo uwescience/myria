@@ -46,7 +46,7 @@ public class BooleanExpression extends Expression {
   public void compile() throws DbException {
     Preconditions.checkArgument(!isCopyFromInput(),
         "This expression does not need to be compiled because the data can be copied from the input.");
-    Preconditions.checkArgument(getRootExpressionOperator().getOutputType(getInputSchema()) == Type.BOOLEAN_TYPE);
+    Preconditions.checkArgument(super.getOutputType() == Type.BOOLEAN_TYPE);
     setJavaExpression(getRootExpressionOperator().getJavaString(Objects.requireNonNull(getInputSchema())));
 
     try {
@@ -61,7 +61,7 @@ public class BooleanExpression extends Expression {
   }
 
   /**
-   * Evaluates the expression using the {@link #evaluator}.
+   * Evaluates the {@link #getJavaExpression()} using the {@link #evaluator}.
    * 
    * @param tb a tuple batch
    * @param rowId the row that should be used for input data
@@ -72,6 +72,12 @@ public class BooleanExpression extends Expression {
     Preconditions.checkArgument(evaluator != null,
         "Call compile first or copy the data if it is the same in the input.");
     return evaluator.evaluate(tb, rowId);
+  }
+
+  @Override
+  public Type getOutputType() {
+    Preconditions.checkArgument(super.getOutputType() == Type.BOOLEAN_TYPE);
+    return Type.BOOLEAN_TYPE;
   }
 
   @Override
