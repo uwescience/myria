@@ -836,6 +836,10 @@ public class TupleBatch implements Serializable {
           }
           break;
         case STRING_TYPE:
+          if (!getString(compareColumns1[i], row).equals(hashTable.getString(compareColumns2[i], index))) {
+            return false;
+          }
+          break;
         case DATETIME_TYPE:
           if (!getDateTime(compareColumns1[i], row).equals(hashTable.getDateTime(compareColumns2[i], index))) {
             return false;
@@ -887,8 +891,66 @@ public class TupleBatch implements Serializable {
           }
           break;
         case STRING_TYPE:
+          if (!getString(compareColumns[i], row).equals(hashTable.getString(i, index))) {
+            return false;
+          }
+          break;
         case DATETIME_TYPE:
           if (!getDateTime(compareColumns[i], row).equals(hashTable.getDateTime(i, index))) {
+            return false;
+          }
+          break;
+      }
+    }
+    return true;
+  }
+
+  /**
+   * Compare tb against a hash table on all columns.
+   * 
+   * @param row number of the tuple to compare
+   * @param hashTable the TupleBatchBuffer holding the tuples to compare against
+   * @param index the index in the hashTable
+   * @return true if equals
+   */
+  public boolean tupleEquals(final int row, final TupleBuffer hashTable, final int index) {
+    if (numColumns() != hashTable.numColumns()) {
+      return false;
+    }
+    for (int i = 0; i < numColumns(); ++i) {
+      switch (schema.getColumnType(i)) {
+        case BOOLEAN_TYPE:
+          if (getBoolean(i, row) != hashTable.getBoolean(i, index)) {
+            return false;
+          }
+          break;
+        case DOUBLE_TYPE:
+          if (getDouble(i, row) != hashTable.getDouble(i, index)) {
+            return false;
+          }
+          break;
+        case FLOAT_TYPE:
+          if (getFloat(i, row) != hashTable.getFloat(i, index)) {
+            return false;
+          }
+          break;
+        case INT_TYPE:
+          if (getInt(i, row) != hashTable.getInt(i, index)) {
+            return false;
+          }
+          break;
+        case LONG_TYPE:
+          if (getLong(i, row) != hashTable.getLong(i, index)) {
+            return false;
+          }
+          break;
+        case STRING_TYPE:
+          if (!getString(i, row).equals(hashTable.getString(i, index))) {
+            return false;
+          }
+          break;
+        case DATETIME_TYPE:
+          if (!getDateTime(i, row).equals(hashTable.getDateTime(i, index))) {
             return false;
           }
           break;

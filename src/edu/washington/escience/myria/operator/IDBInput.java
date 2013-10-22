@@ -1,8 +1,6 @@
 package edu.washington.escience.myria.operator;
 
-import java.util.ArrayList;
 import java.util.BitSet;
-import java.util.HashMap;
 import java.util.List;
 
 import com.google.common.base.Preconditions;
@@ -16,10 +14,15 @@ import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.TupleBuffer;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.parallel.Consumer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.TaskResourceManager;
 import edu.washington.escience.myria.parallel.ipc.StreamOutputChannel;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
 
 /**
  * Together with the EOSController, the IDBInput controls what to serve into an iteration and when to stop an iteration.
@@ -80,7 +83,7 @@ public class IDBInput extends Operator {
   /**
    * The same as in DupElim.
    * */
-  private transient HashMap<Integer, List<Integer>> uniqueTupleIndices;
+  private transient TIntObjectMap<TIntList> uniqueTupleIndices;
   /**
    * The same as in DupElim.
    * */
@@ -113,65 +116,53 @@ public class IDBInput extends Operator {
   }
 
   /**
-   * Check if a tuple in uniqueTuples equals to the comparing tuple (cntTuple).
-   * 
-   * @param index the index in uniqueTuples
-   * @param cntTuple a list representation of a tuple to compare
-   * @return true if equals.
-   * */
-  private boolean tupleEquals(final int index, final List<Object> cntTuple) {
-    for (int i = 0; i < cntTuple.size(); ++i) {
-      if (!(uniqueTuples.get(i, index).equals(cntTuple.get(i)))) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  /**
    * Do duplicate elimination for tb.
    * 
    * @param tb the TupleBatch for performing dupelim.
    * @return the duplicate eliminated TB.
    * */
-  protected final TupleBatch doDupElim(final TupleBatch tb) {
+  protected TupleBatch doDupElim(final TupleBatch tb) {
     final int numTuples = tb.numTuples();
+    /* if tb is empty, directly return. */
     if (numTuples <= 0) {
       return tb;
     }
     final BitSet toRemove = new BitSet(numTuples);
-    final List<Object> cntTuple = new ArrayList<Object>();
-    for (int i = 0; i < numTuples; ++i) {
-      cntTuple.clear();
-      for (int j = 0; j < tb.numColumns(); ++j) {
-        cntTuple.add(tb.getObject(j, i));
-      }
+    final List<Column<?>> tbColumns = tb.getDataColumns();
+    for (int row = 0; row < numTuples; ++row) {
       final int nextIndex = uniqueTuples.numTuples();
-      final int cntHashCode = tb.hashCode(i);
-      List<Integer> tupleIndexList = uniqueTupleIndices.get(cntHashCode);
+      final int cntHashCode = tb.hashCode(row);
+      TIntList tupleIndexList = uniqueTupleIndices.get(cntHashCode);
+      int inColumnRow = tb.getValidIndices().get(row);
+
+      /* update hash table if the hash entry of the hash value of this tuple does not exist. */
       if (tupleIndexList == null) {
-        for (int j = 0; j < tb.numColumns(); ++j) {
-          uniqueTuples.put(j, cntTuple.get(j));
+        for (int column = 0; column < tb.numColumns(); ++column) {
+          uniqueTuples.put(column, tbColumns.get(column), inColumnRow);
         }
-        tupleIndexList = new ArrayList<Integer>();
+        tupleIndexList = new TIntArrayList();
         tupleIndexList.add(nextIndex);
         uniqueTupleIndices.put(cntHashCode, tupleIndexList);
         continue;
       }
+
+      /* detect is there a equal tuple existing. */
       boolean unique = true;
-      for (final int oldTupleIndex : tupleIndexList) {
-        if (tupleEquals(oldTupleIndex, cntTuple)) {
+      for (int i = 0; i < tupleIndexList.size(); ++i) {
+        if (tb.tupleEquals(row, uniqueTuples, tupleIndexList.get(i))) {
           unique = false;
           break;
         }
       }
+
+      /* update the hash table if current tuple is unique, delete it otherwise. */
       if (unique) {
-        for (int j = 0; j < tb.numColumns(); ++j) {
-          uniqueTuples.put(j, cntTuple.get(j));
+        for (int column = 0; column < tb.numColumns(); ++column) {
+          uniqueTuples.put(column, tbColumns.get(column), inColumnRow);
         }
         tupleIndexList.add(nextIndex);
       } else {
-        toRemove.set(i);
+        toRemove.set(row);
       }
     }
     return tb.remove(toRemove);
@@ -263,7 +254,7 @@ public class IDBInput extends Operator {
   public final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     initialInputEnded = false;
     emptyDelta = true;
-    uniqueTupleIndices = new HashMap<Integer, List<Integer>>();
+    uniqueTupleIndices = new TIntObjectHashMap<TIntList>();
     uniqueTuples = new TupleBuffer(getSchema());
     resourceManager = (TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER);
     eoiReportChannel = resourceManager.startAStream(controllerWorkerID, controllerOpID);
