@@ -809,7 +809,7 @@ public class TupleBatch implements Serializable {
       return false;
     }
     for (int i = 0; i < compareColumns1.length; ++i) {
-      switch (schema.getColumnType(i)) {
+      switch (schema.getColumnType(compareColumns1[i])) {
         case BOOLEAN_TYPE:
           if (getBoolean(compareColumns1[i], row) != hashTable.getBoolean(compareColumns2[i], index)) {
             return false;
