@@ -60,8 +60,7 @@ public class JoinQueryMonetDB implements QueryPlanGenerator, Serializable {
     final ExchangePairID localScanID = ExchangePairID.newID();
 
     // shuffle by destURL to get pageRanks
-    PartitionFunction<String, Integer> pf = new SingleFieldHashPartitionFunction(allWorkers.length);
-    pf.setAttribute(SingleFieldHashPartitionFunction.FIELD_INDEX, 0);
+    PartitionFunction pf = new SingleFieldHashPartitionFunction(allWorkers.length, 0);
 
     final GenericShuffleProducer spLocalScan = new GenericShuffleProducer(localScan, localScanID, allWorkers, pf);
     final GenericShuffleConsumer scLocalScan =

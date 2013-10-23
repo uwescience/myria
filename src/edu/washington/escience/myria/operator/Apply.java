@@ -17,6 +17,8 @@ import edu.washington.escience.myria.expression.Expression;
  * Generic apply operator.
  */
 public class Apply extends UnaryOperator {
+  /***/
+  private static final long serialVersionUID = 1L;
 
   /**
    * List of expressions that will be used to create the output.
@@ -49,13 +51,7 @@ public class Apply extends UnaryOperator {
     this.expressions = ImmutableList.copyOf(expressions);
   }
 
-  /**
-   * 
-   */
-  private static final long serialVersionUID = 1L;
-
   @Override
-  @SuppressWarnings("deprecation")
   protected TupleBatch fetchNextReady() throws Exception {
     TupleBatch tb = null;
     if (getChild().eoi() || getChild().eos()) {
@@ -66,9 +62,7 @@ public class Apply extends UnaryOperator {
       for (int rowIdx = 0; rowIdx < tb.numTuples(); rowIdx++) {
         int columnIdx = 0;
         for (Expression expr : expressions) {
-          Object result = expr.eval(tb, rowIdx);
-          /* We ignore the deprecation warning here since the value has already been boxed. */
-          resultBuffer.put(columnIdx, result);
+          expr.evalAndPut(tb, rowIdx, resultBuffer, columnIdx);
           columnIdx++;
         }
       }
@@ -92,7 +86,11 @@ public class Apply extends UnaryOperator {
     Schema inputSchema = getChild().getSchema();
 
     for (Expression expr : expressions) {
-      expr.compile(inputSchema);
+
+      expr.setSchema(inputSchema);
+      if (expr.needsCompiling()) {
+        expr.compile();
+      }
     }
   }
 
@@ -101,12 +99,21 @@ public class Apply extends UnaryOperator {
     if (expressions == null) {
       return null;
     }
+    Operator child = getChild();
+    if (child == null) {
+      return null;
+    }
+    Schema childSchema = child.getSchema();
+    if (childSchema == null) {
+      return null;
+    }
 
     ImmutableList.Builder<Type> typesBuilder = ImmutableList.builder();
     ImmutableList.Builder<String> namesBuilder = ImmutableList.builder();
 
     for (Expression expr : expressions) {
-      typesBuilder.add(expr.getOutputType(getChild().getSchema()));
+      expr.setSchema(childSchema);
+      typesBuilder.add(expr.getOutputType());
       namesBuilder.add(expr.getOutputName());
     }
     return new Schema(typesBuilder.build(), namesBuilder.build());

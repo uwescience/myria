@@ -14,7 +14,8 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import sun.misc.IOUtils;
+import com.google.protobuf.ByteString;
+
 import edu.washington.escience.myria.parallel.SocketInfo;
 import edu.washington.escience.myria.util.JsonAPIUtils;
 
@@ -57,25 +58,35 @@ public class JsonQuerySubmitTest extends SystemTestBase {
   }
 
   private String getContents(HttpURLConnection conn) {
-    byte[] input = new byte[0];
-    byte[] error = new byte[0];
+    /* If there was any content returned, get it. */
+    String content = null;
     try {
       InputStream is = conn.getInputStream();
       if (is != null) {
-        input = IOUtils.readFully(is, -1, true);
+        content = ByteString.readFrom(is).toStringUtf8();
       }
     } catch (IOException e) {
       e.printStackTrace();
     }
+
+    /* If there was any error returned, get it. */
+    String error = null;
     try {
       InputStream is = conn.getErrorStream();
       if (is != null) {
-        error = IOUtils.readFully(is, -1, true);
+        error = ByteString.readFrom(is).toStringUtf8();
       }
     } catch (IOException e) {
       e.printStackTrace();
     }
-    return "Content: \n" + new String(input) + "\nError: \n" + new String(error);
+    StringBuilder ret = new StringBuilder();
+    if (content != null) {
+      ret.append("Content:\n").append(content);
+    }
+    if (error != null) {
+      ret.append("Error:\n").append(error);
+    }
+    return ret.toString();
   }
 
   @Test

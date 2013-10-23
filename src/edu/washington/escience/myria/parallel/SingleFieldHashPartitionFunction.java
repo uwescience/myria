@@ -1,5 +1,11 @@
 package edu.washington.escience.myria.parallel;
 
+import java.util.Objects;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Preconditions;
+
 import edu.washington.escience.myria.TupleBatch;
 
 /**
@@ -7,26 +13,28 @@ import edu.washington.escience.myria.TupleBatch;
  * 
  * The partition of a tuple is decided by the hash code of a preset field of the tuple.
  */
-public final class SingleFieldHashPartitionFunction extends PartitionFunction<String, Integer> {
+public final class SingleFieldHashPartitionFunction extends PartitionFunction {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   /**
-   * The field index attribute name.
-   * */
-  public static final String FIELD_INDEX = "field_index";
-
-  /**
    * The index of the partition field.
-   * */
-  private int fieldIndex;
+   */
+  private final int fieldIndex;
 
   /**
-   * @param numPartition number of partitions.
-   * */
-  public SingleFieldHashPartitionFunction(final int numPartition) {
-    super(numPartition);
+   * @param numPartitions number of partitions.
+   * @param fieldIndex the index of the partition field.
+   */
+  @JsonCreator
+  public SingleFieldHashPartitionFunction(@JsonProperty("num_partitions") final Integer numPartitions,
+      @JsonProperty(value = "index", required = true) final Integer fieldIndex) {
+    super(numPartitions);
+    /* TODO(dhalperi) once Jackson actually implements support for required, remove these checks. */
+    this.fieldIndex = Objects.requireNonNull(fieldIndex, "missing property index");
+    Preconditions.checkArgument(this.fieldIndex >= 0, "SingleFieldHash field index cannot take negative value %s",
+        this.fieldIndex);
   }
 
   /**
@@ -45,13 +53,4 @@ public final class SingleFieldHashPartitionFunction extends PartitionFunction<St
     }
     return result;
   }
-
-  @Override
-  public void setAttribute(final String attribute, final Integer value) {
-    super.setAttribute(attribute, value);
-    if (attribute.equals(FIELD_INDEX)) {
-      fieldIndex = value;
-    }
-  }
-
 }

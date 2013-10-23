@@ -1051,7 +1051,7 @@ public final class MasterCatalog {
       throws CatalogException {
     final String physicalString;
     try {
-      physicalString = MyriaJsonMapperProvider.newMapper().writeValueAsString(physicalPlan);
+      physicalString = MyriaJsonMapperProvider.getMapper().writeValueAsString(physicalPlan);
     } catch (JsonProcessingException e) {
       throw new CatalogException(e);
     }
@@ -1165,7 +1165,7 @@ public final class MasterCatalog {
     queryStatus.logicalRa = statement.columnString(2);
     String physicalString = statement.columnString(3);
     try {
-      queryStatus.physicalPlan = MyriaJsonMapperProvider.newMapper().readValue(physicalString, QueryEncoding.class);
+      queryStatus.physicalPlan = MyriaJsonMapperProvider.getMapper().readValue(physicalString, QueryEncoding.class);
     } catch (IOException e) {
       queryStatus.physicalPlan = physicalString;
     }

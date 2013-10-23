@@ -32,7 +32,6 @@ import edu.washington.escience.myria.parallel.Server;
     @Type(name = "ColumnSelect", value = ColumnSelectEncoding.class),
     @Type(name = "Consumer", value = ConsumerEncoding.class), @Type(name = "DbInsert", value = DbInsertEncoding.class),
     @Type(name = "DbQueryScan", value = QueryScanEncoding.class),
-    @Type(name = "DirectApply", value = DirectApplyEncoding.class),
     @Type(name = "DupElim", value = DupElimEncoding.class),
     @Type(name = "EOSController", value = EOSControllerEncoding.class),
     @Type(name = "FileScan", value = FileScanEncoding.class), @Type(name = "Filter", value = FilterEncoding.class),

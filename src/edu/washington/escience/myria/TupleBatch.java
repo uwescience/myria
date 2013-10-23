@@ -49,9 +49,7 @@ import edu.washington.escience.myria.util.ImmutableIntArray;
  */
 @ThreadSafe
 public class TupleBatch implements Serializable {
-  /**
-   * 
-   */
+  /***/
   private static final long serialVersionUID = 1L;
 
   /** The hard-coded number of tuples in a batch. */
@@ -542,7 +540,7 @@ public class TupleBatch implements Serializable {
    * @param pf the partition function.
    * @param buffers the buffers storing the partitioned data.
    * */
-  public final void partition(final PartitionFunction<?, ?> pf, final TupleBatchBuffer[] buffers) {
+  public final void partition(final PartitionFunction pf, final TupleBatchBuffer[] buffers) {
     final int numColumns = numColumns();
 
     final int[] partitions = pf.partition(this);
@@ -565,7 +563,7 @@ public class TupleBatch implements Serializable {
    *         partition, say the i'th partition, the i'th element in the result array is null.
    * @param pf the partition function.
    * */
-  public final TupleBatch[] partition(final PartitionFunction<?, ?> pf) {
+  public final TupleBatch[] partition(final PartitionFunction pf) {
     TupleBatch[] result = new TupleBatch[pf.numPartition()];
     if (isEOI) {
       Arrays.fill(result, this);

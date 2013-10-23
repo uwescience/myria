@@ -1,28 +1,31 @@
 package edu.washington.escience.myria.parallel;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import edu.washington.escience.myria.TupleBatch;
 
 /**
  * Partition of tuples by the hash code of the whole tuple.
  */
-public final class WholeTupleHashPartitionFunction extends PartitionFunction<String, Integer> {
+public final class WholeTupleHashPartitionFunction extends PartitionFunction {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
   /**
-   * @param numPartition total number of partitions.
-   * */
-  public WholeTupleHashPartitionFunction(final int numPartition) {
-    super(numPartition);
+   * @param numPartitions total number of partitions.
+   */
+  @JsonCreator
+  public WholeTupleHashPartitionFunction(@Nullable @JsonProperty("num_partitions") final Integer numPartitions) {
+    super(numPartitions);
   }
 
-  /**
-   * @param tb data.
-   * @return partitions.
-   * */
   @Override
-  public int[] partition(final TupleBatch tb) {
+  public int[] partition(@Nonnull final TupleBatch tb) {
     final int[] result = new int[tb.numTuples()];
     for (int i = 0; i < result.length; i++) {
       int p = tb.hashCode(i) % numPartition();
@@ -33,5 +36,4 @@ public final class WholeTupleHashPartitionFunction extends PartitionFunction<Str
     }
     return result;
   }
-
 }

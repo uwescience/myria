@@ -13,12 +13,7 @@
                 },
                 {
                     "arg_child":"Scan(R)",
-                    "arg_pfs":[
-                        {
-                            "index":0,
-                            "type":"SingleFieldHash"
-                        }
-                    ],
+                    "field_indexes": [0],
                     "cell_partition":[
                         [
                             0,
@@ -51,12 +46,7 @@
                 },
                 {
                     "arg_child":"Scan(S)",
-                    "arg_pfs":[
-                        {
-                            "index":1,
-                            "type":"SingleFieldHash"
-                        }
-                    ],
+                    "field_indexes": [1],
                     "cell_partition":[
                         [
                             0,
