@@ -32,9 +32,10 @@ public final class MFMDHashPartitionFunction extends PartitionFunction {
   public MFMDHashPartitionFunction(final int numPartitions, final int[] hypercubeDimensions, final int[] fieldIndexes) {
     super(numPartitions);
     partitionFunctions = new SingleFieldHashPartitionFunction[fieldIndexes.length];
-    for (int i : fieldIndexes) {
-      Preconditions.checkPositionIndex(i, hypercubeDimensions.length);
-      partitionFunctions[i] = new SingleFieldHashPartitionFunction(numPartitions, hypercubeDimensions[i]);
+    for (int i = 0; i < fieldIndexes.length; ++i) {
+      Preconditions.checkPositionIndex(fieldIndexes[i], hypercubeDimensions.length);
+      partitionFunctions[i] =
+          new SingleFieldHashPartitionFunction(hypercubeDimensions[fieldIndexes[i]], fieldIndexes[i]);
     }
   }
 
