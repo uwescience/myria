@@ -839,6 +839,7 @@ public class TupleBatch implements Serializable {
           if (!getString(compareColumns1[i], row).equals(hashTable.getString(compareColumns2[i], index))) {
             return false;
           }
+          break;
         case DATETIME_TYPE:
           if (!getDateTime(compareColumns1[i], row).equals(hashTable.getDateTime(compareColumns2[i], index))) {
             return false;
