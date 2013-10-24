@@ -27,7 +27,7 @@ public final class DupElim extends UnaryOperator {
   private transient HashMap<Integer, List<Integer>> uniqueTupleIndices;
 
   /**
-   * The buffer for stroing unique tuples.
+   * The buffer for storing unique tuples.
    * */
   private transient TupleBuffer uniqueTuples = null;
 
@@ -53,7 +53,7 @@ public final class DupElim extends UnaryOperator {
    * */
   private boolean tupleEquals(final int index, final List<Object> cntTuple) {
     for (int i = 0; i < cntTuple.size(); ++i) {
-      if (!(uniqueTuples.get(i, index)).equals(cntTuple.get(i))) {
+      if (!(uniqueTuples.getObject(i, index)).equals(cntTuple.get(i))) {
         return false;
       }
     }
@@ -83,7 +83,7 @@ public final class DupElim extends UnaryOperator {
       List<Integer> tupleIndexList = uniqueTupleIndices.get(cntHashCode);
       if (tupleIndexList == null) {
         for (int j = 0; j < tb.numColumns(); ++j) {
-          uniqueTuples.put(j, cntTuple.get(j));
+          uniqueTuples.putObject(j, cntTuple.get(j));
         }
         tupleIndexList = new ArrayList<Integer>(1);
         tupleIndexList.add(nextIndex);
@@ -99,7 +99,7 @@ public final class DupElim extends UnaryOperator {
       }
       if (unique) {
         for (int j = 0; j < tb.numColumns(); ++j) {
-          uniqueTuples.put(j, cntTuple.get(j));
+          uniqueTuples.putObject(j, cntTuple.get(j));
         }
         tupleIndexList.add(nextIndex);
       } else {

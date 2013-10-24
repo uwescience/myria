@@ -159,7 +159,7 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
 
     checkEOSAndEOI();
     if (eoi() || eos()) {
-      ansTBB.put(0, ans);
+      ansTBB.putObject(0, ans);
       return ansTBB.popAny();
     }
     return null;
@@ -173,7 +173,7 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
     }
 
     if (eoi()) {
-      ansTBB.put(0, ans);
+      ansTBB.putLong(0, ans);
       return ansTBB.popAny();
     }
 
@@ -242,7 +242,7 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
 
     checkEOSAndEOI();
     if (eoi() || eos()) {
-      ansTBB.put(0, ans);
+      ansTBB.putLong(0, ans);
       return ansTBB.popAny();
     }
 
@@ -283,7 +283,7 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
       return false;
     }
     for (int i = 0; i < compareIndx.length; ++i) {
-      if (!cntTuple.get(compareIndx[i]).equals(hashTable.get(i, rowIndex))) {
+      if (!cntTuple.get(compareIndx[i]).equals(hashTable.getObject(i, rowIndex))) {
         return false;
       }
     }
@@ -374,7 +374,7 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
           }
           hashTable1IndicesLocal.get(cntHashCode).add(nextIndex);
           for (int j = 0; j < compareIndx1Local.length; ++j) {
-            hashTable1Local.put(j, cntTuple.get(compareIndx1Local[j]));
+            hashTable1Local.putObject(j, cntTuple.get(compareIndx1Local[j]));
           }
           occurredTimes1Local.add(1);
         }

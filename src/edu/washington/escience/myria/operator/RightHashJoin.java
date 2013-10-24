@@ -73,8 +73,7 @@ public final class RightHashJoin extends BinaryOperator {
    * @param compareIndx2 the columns of the right child to be compared with the left. Order matters.
    * @throw IllegalArgumentException if there are duplicated column names from the children.
    */
-  public RightHashJoin(final Operator left, final Operator right, final int[] compareIndx1,
-      final int[] compareIndx2) {
+  public RightHashJoin(final Operator left, final Operator right, final int[] compareIndx1, final int[] compareIndx2) {
     this(null, left, right, compareIndx1, compareIndx2);
   }
 
@@ -91,8 +90,8 @@ public final class RightHashJoin extends BinaryOperator {
    * @throw IllegalArgumentException if there are duplicated column names in <tt>outputSchema</tt>, or if
    *        <tt>outputSchema</tt> does not have the correct number of columns and column types.
    */
-  public RightHashJoin(final Operator left, final Operator right, final int[] compareIndx1,
-      final int[] compareIndx2, final int[] answerColumns1, final int[] answerColumns2) {
+  public RightHashJoin(final Operator left, final Operator right, final int[] compareIndx1, final int[] compareIndx2,
+      final int[] answerColumns1, final int[] answerColumns2) {
     this(null, left, right, compareIndx1, compareIndx2, answerColumns1, answerColumns2);
   }
 
@@ -197,10 +196,10 @@ public final class RightHashJoin extends BinaryOperator {
    */
   protected void addToAns(final List<Object> cntTuple, final TupleBuffer hashTable, final int index) {
     for (int i = 0; i < answerColumns1.length; ++i) {
-      ans.put(i, cntTuple.get(answerColumns1[i]));
+      ans.putObject(i, cntTuple.get(answerColumns1[i]));
     }
     for (int i = 0; i < answerColumns2.length; ++i) {
-      ans.put(i + answerColumns1.length, hashTable.get(answerColumns2[i], index));
+      ans.putObject(i + answerColumns1.length, hashTable.getObject(answerColumns2[i], index));
     }
 
   }
@@ -318,7 +317,7 @@ public final class RightHashJoin extends BinaryOperator {
       return false;
     }
     for (int i = 0; i < compareIndx1.length; ++i) {
-      if (!cntTuple.get(compareIndx1[i]).equals(hashTable.get(compareIndx2[i], index))) {
+      if (!cntTuple.get(compareIndx1[i]).equals(hashTable.getObject(compareIndx2[i], index))) {
         return false;
       }
     }
@@ -344,7 +343,7 @@ public final class RightHashJoin extends BinaryOperator {
       }
       hashTableIndices.get(cntHashCode).add(nextIndex);
       for (int j = 0; j < tb.numColumns(); ++j) {
-        hashTable.put(j, cntTuple.get(j));
+        hashTable.putObject(j, cntTuple.get(j));
       }
     }
   }

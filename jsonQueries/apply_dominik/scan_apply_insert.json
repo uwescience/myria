@@ -17,18 +17,18 @@
                         {
                             "output_name": "EvalResult",
                             "root_expression_operator": {
-                                "type" : "Sqrt",
+                                "type" : "SQRT",
                                 "operand" : {
                                     "left": {
-                                        "type": "Constant",
+                                        "type": "CONSTANT",
                                         "value": -500,
                                         "value_type": "INT_TYPE"
                                     },
                                     "right": {
                                         "column_idx": 0,
-                                        "type": "Variable"
+                                        "type": "VARIABLE"
                                     },
-                                    "type": "Plus"
+                                    "type": "PLUS"
                                 }
                             }
                         }

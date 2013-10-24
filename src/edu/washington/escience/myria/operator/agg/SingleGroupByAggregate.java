@@ -159,7 +159,7 @@ public class SingleGroupByAggregate extends UnaryOperator {
     for (final Map.Entry<Object, Aggregator<?>[]> e : groupAggs.entrySet()) {
       final Object groupByValue = e.getKey();
       final Aggregator<?>[] aggLocal = e.getValue();
-      resultBuffer.put(0, groupByValue);
+      resultBuffer.putObject(0, groupByValue);
       int fromIndex = 1;
       for (final Aggregator<?> element : aggLocal) {
         element.getResult(resultBuffer, fromIndex);

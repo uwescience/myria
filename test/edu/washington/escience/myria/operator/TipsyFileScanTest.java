@@ -12,11 +12,13 @@ import java.io.PrintStream;
 import org.junit.Test;
 
 import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.SimplePredicate;
 import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.operator.Filter;
-import edu.washington.escience.myria.operator.Operator;
-import edu.washington.escience.myria.operator.TipsyFileScan;
+import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.expression.BooleanExpression;
+import edu.washington.escience.myria.expression.ConstantExpression;
+import edu.washington.escience.myria.expression.EqualsExpression;
+import edu.washington.escience.myria.expression.ExpressionOperator;
+import edu.washington.escience.myria.expression.VariableExpression;
 
 /**
  * 
@@ -63,7 +65,9 @@ public class TipsyFileScanTest {
     String iOrderFilename = "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "iOrder3.iord";
     String grpFilename = "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "grp3.amiga.grp";
     TipsyFileScan filescan = new TipsyFileScan(binFilename, iOrderFilename, grpFilename);
-    Filter filter = new Filter(new SimplePredicate(16, SimplePredicate.Op.EQUALS, "star"), filescan);
+    ExpressionOperator expr =
+        new EqualsExpression(new VariableExpression(16), new ConstantExpression(Type.STRING_TYPE, "star"));
+    Filter filter = new Filter(new BooleanExpression(null, expr), filescan);
     assertEquals(3, getRowCount(filter));
   }
 
@@ -73,7 +77,9 @@ public class TipsyFileScanTest {
     String iOrderFilename = "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "iOrder3.iord";
     String grpFilename = "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "grp3.amiga.grp";
     TipsyFileScan filescan = new TipsyFileScan(binFilename, iOrderFilename, grpFilename);
-    Filter filter = new Filter(new SimplePredicate(16, SimplePredicate.Op.EQUALS, "dark"), filescan);
+    ExpressionOperator expr =
+        new EqualsExpression(new VariableExpression(16), new ConstantExpression(Type.STRING_TYPE, "dark"));
+    Filter filter = new Filter(new BooleanExpression(null, expr), filescan);
     assertEquals(2, getRowCount(filter));
   }
 
@@ -83,7 +89,9 @@ public class TipsyFileScanTest {
     String iOrderFilename = "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "iOrder3.iord";
     String grpFilename = "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "grp3.amiga.grp";
     TipsyFileScan filescan = new TipsyFileScan(binFilename, iOrderFilename, grpFilename);
-    Filter filter = new Filter(new SimplePredicate(16, SimplePredicate.Op.EQUALS, "gas"), filescan);
+    ExpressionOperator expr =
+        new EqualsExpression(new VariableExpression(16), new ConstantExpression(Type.STRING_TYPE, "gas"));
+    Filter filter = new Filter(new BooleanExpression(null, expr), filescan);
     assertEquals(4, getRowCount(filter));
   }
 
@@ -98,7 +106,9 @@ public class TipsyFileScanTest {
     String grpFileName =
         "testdata" + File.separatorChar + "tipsyfilescan" + File.separatorChar + "cosmo50cmb.256g2MbwK.00512.amiga.grp";
     TipsyFileScan tfScan = new TipsyFileScan(binFileName, iOrderFileName, grpFileName);
-    Filter filter = new Filter(new SimplePredicate(16, SimplePredicate.Op.EQUALS, "star"), tfScan);
+    ExpressionOperator expr =
+        new EqualsExpression(new VariableExpression(16), new ConstantExpression(Type.STRING_TYPE, "star"));
+    Filter filter = new Filter(new BooleanExpression(null, expr), tfScan);
     assertEquals(6949401, getRowCount(filter));
   }
 

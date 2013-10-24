@@ -72,7 +72,8 @@ public class RightHashCountingJoin extends BinaryOperator {
    * @param compareIndx2 the columns of the right child to be compared with the left. Order matters.
    * @throw IllegalArgumentException if there are duplicated column names from the children.
    */
-  public RightHashCountingJoin(final Operator left, final Operator right, final int[] compareIndx1, final int[] compareIndx2) {
+  public RightHashCountingJoin(final Operator left, final Operator right, final int[] compareIndx1,
+      final int[] compareIndx2) {
     this(null, left, right, compareIndx1, compareIndx2);
   }
 
@@ -173,7 +174,7 @@ public class RightHashCountingJoin extends BinaryOperator {
 
     checkEOSAndEOI();
     if (eos()) {
-      ansTBB.put(0, ans);
+      ansTBB.putLong(0, ans);
       return ansTBB.popAny();
     }
 
@@ -206,7 +207,7 @@ public class RightHashCountingJoin extends BinaryOperator {
       return false;
     }
     for (int i = 0; i < compareIndx.length; ++i) {
-      if (!cntTuple.get(compareIndx[i]).equals(hashTable.get(i, index))) {
+      if (!cntTuple.get(compareIndx[i]).equals(hashTable.getObject(i, index))) {
         return false;
       }
     }
@@ -249,7 +250,7 @@ public class RightHashCountingJoin extends BinaryOperator {
         // if this key didn't appear before, create the count for this key as 1
         hashTableIndices.get(cntHashCode).add(nextIndex);
         for (int j = 0; j < compareIndx2.length; ++j) {
-          hashTable.put(j, cntTuple.get(compareIndx2[j]));
+          hashTable.putObject(j, cntTuple.get(compareIndx2[j]));
         }
         occurredTimes.add(1);
       }
