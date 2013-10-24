@@ -22,7 +22,6 @@
                 },
                 {
                     "arg_child": "Scan(R)",
-                    "arg_operator_id": "Shuffle(R)",
                     "arg_pf": {
                         "index": 1,
                         "type": "SingleFieldHash"
@@ -54,7 +53,6 @@
                 },
                 {
                     "arg_child": "Scan(S)",
-                    "arg_operator_id": "Shuffle(S)",
                     "arg_pf": {
                         "index": 1,
                         "type": "SingleFieldHash"
@@ -68,47 +66,11 @@
             "operators": [
                 {
                     "arg_operator_id": "Shuffle(R)",
-                    "arg_schema": {
-                        "column_names": [
-                            "pageRank",
-                            "pageURL",
-                            "avgDuration"
-                        ],
-                        "column_types": [
-                            "LONG_TYPE",
-                            "STRING_TYPE",
-                            "LONG_TYPE"
-                        ]
-                    },
                     "op_name": "Gather(R)",
                     "op_type": "ShuffleConsumer"
                 },
                 {
                     "arg_operator_id": "Shuffle(S)",
-                    "arg_schema": {
-                        "column_names": [
-                            "sourceIPAddr",
-                            "destinationURL",
-                            "visitDate",
-                            "adRevenue",
-                            "UserAgent",
-                            "cCode",
-                            "lCode",
-                            "sKeyword",
-                            "avgTimeOnSite"
-                        ],
-                        "column_types": [
-                            "STRING_TYPE",
-                            "STRING_TYPE",
-                            "DATETIME_TYPE",
-                            "FLOAT_TYPE",
-                            "STRING_TYPE",
-                            "STRING_TYPE",
-                            "STRING_TYPE",
-                            "STRING_TYPE",
-                            "LONG_TYPE"
-                        ]
-                    },
                     "op_name": "Gather(S)",
                     "op_type": "ShuffleConsumer"
                 },

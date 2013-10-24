@@ -16,8 +16,7 @@ import edu.washington.escience.myria.parallel.Server;
  */
 public class LocalMultiwayProducerEncoding extends AbstractProducerEncoding<LocalMultiwayProducer> {
   public String argChild;
-  public List<String> argOperatorIds;
-  private static final List<String> requiredArguments = ImmutableList.of("argChild", "argOperatorIds");
+  private static final List<String> requiredArguments = ImmutableList.of("argChild");
 
   @Override
   public void connect(Operator current, Map<String, Operator> operators) {
@@ -35,8 +34,4 @@ public class LocalMultiwayProducerEncoding extends AbstractProducerEncoding<Loca
     return requiredArguments;
   }
 
-  @Override
-  protected List<String> getOperatorIds() {
-    return argOperatorIds;
-  }
 }

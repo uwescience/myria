@@ -13,7 +13,6 @@
                 },
                 {
                     "arg_child":"Scan(R)",
-                    "arg_operator_id":"hash(follower)",
                     "field_indexes": [0],
                     "cell_partition":[
                         [
@@ -47,7 +46,6 @@
                 },
                 {
                     "arg_child":"Scan(S)",
-                    "arg_operator_id":"hash(followee)",
                     "field_indexes": [1],
                     "cell_partition":[
                         [
@@ -71,32 +69,12 @@
         {
             "operators":[
                 {
-                    "arg_operator_id":"hash(follower)",
-                    "arg_schema":{
-                        "column_names":[
-                            "follower",
-                            "followee"
-                        ],
-                        "column_types":[
-                            "LONG_TYPE",
-                            "LONG_TYPE"
-                        ]
-                    },
+                    "arg_operator_id":"HyperShuffle(R)",
                     "op_name":"GatherR",
                     "op_type":"HyperShuffleConsumer"
                 },
                 {
-                    "arg_operator_id":"hash(followee)",
-                    "arg_schema":{
-                        "column_names":[
-                            "follower",
-                            "followee"
-                        ],
-                        "column_types":[
-                            "LONG_TYPE",
-                            "LONG_TYPE"
-                        ]
-                    },
+                    "arg_operator_id":"HyperShuffle(S)",
                     "op_name":"GatherS",
                     "op_type":"HyperShuffleConsumer"
                 },
@@ -120,7 +98,6 @@
                 },
                 {
                     "arg_child":"Join",
-                    "arg_operator_id":"collect",
                     "op_name":"SendResult",
                     "op_type":"CollectProducer"
                 }
@@ -129,17 +106,7 @@
         {
             "operators":[
                 {
-                    "arg_operator_id":"collect",
-                    "arg_schema":{
-                        "column_names":[
-                            "follower",
-                            "followee"
-                        ],
-                        "column_types":[
-                            "LONG_TYPE",
-                            "LONG_TYPE"
-                        ]
-                    },
+                    "arg_operator_id":"SendResult",
                     "op_name":"CollectResult",
                     "op_type":"CollectConsumer"
                 },

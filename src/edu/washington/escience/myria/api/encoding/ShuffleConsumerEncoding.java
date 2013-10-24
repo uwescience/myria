@@ -5,7 +5,6 @@ import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.parallel.GenericShuffleConsumer;
 import edu.washington.escience.myria.parallel.Server;
@@ -16,9 +15,7 @@ import edu.washington.escience.myria.util.MyriaUtils;
  * 
  */
 public class ShuffleConsumerEncoding extends AbstractConsumerEncoding<GenericShuffleConsumer> {
-  public Schema argSchema;
-  public String argOperatorId;
-  private static final List<String> requiredArguments = ImmutableList.of("argSchema", "argOperatorId");
+  private static final List<String> requiredArguments = ImmutableList.of("argOperatorId");
 
   @Override
   public void connect(final Operator current, final Map<String, Operator> operators) {
@@ -27,7 +24,7 @@ public class ShuffleConsumerEncoding extends AbstractConsumerEncoding<GenericShu
 
   @Override
   public GenericShuffleConsumer construct(Server server) {
-    return new GenericShuffleConsumer(argSchema, MyriaUtils.getSingleElement(getRealOperatorIds()), MyriaUtils
+    return new GenericShuffleConsumer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), MyriaUtils
         .integerCollectionToIntArray(getRealWorkerIds()));
   }
 
@@ -36,8 +33,4 @@ public class ShuffleConsumerEncoding extends AbstractConsumerEncoding<GenericShu
     return requiredArguments;
   }
 
-  @Override
-  protected List<String> getOperatorIds() {
-    return ImmutableList.of(argOperatorId);
-  }
 }

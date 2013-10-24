@@ -5,7 +5,6 @@ import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.parallel.LocalMultiwayConsumer;
 import edu.washington.escience.myria.parallel.Server;
@@ -16,9 +15,7 @@ import edu.washington.escience.myria.util.MyriaUtils;
  * 
  */
 public class LocalMultiwayConsumerEncoding extends AbstractConsumerEncoding<LocalMultiwayConsumer> {
-  public Schema argSchema;
-  public String argOperatorId;
-  private static final List<String> requiredArguments = ImmutableList.of("argSchema", "argOperatorId");
+  private static final List<String> requiredArguments = ImmutableList.of("argOperatorId");
 
   @Override
   public void connect(Operator operator, Map<String, Operator> operators) {
@@ -27,17 +24,12 @@ public class LocalMultiwayConsumerEncoding extends AbstractConsumerEncoding<Loca
 
   @Override
   public LocalMultiwayConsumer construct(Server server) {
-    return new LocalMultiwayConsumer(argSchema, MyriaUtils.getSingleElement(getRealOperatorIds()));
+    return new LocalMultiwayConsumer(null, MyriaUtils.getSingleElement(getRealOperatorIds()));
   }
 
   @Override
   protected List<String> getRequiredArguments() {
     return requiredArguments;
-  }
-
-  @Override
-  protected List<String> getOperatorIds() {
-    return ImmutableList.of(argOperatorId);
   }
 
 }

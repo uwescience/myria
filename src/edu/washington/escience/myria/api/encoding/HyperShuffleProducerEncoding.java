@@ -77,9 +77,4 @@ public class HyperShuffleProducerEncoding extends AbstractProducerEncoding<Gener
     }
   }
 
-  @Override
-  protected List<String> getOperatorIds() {
-    return ImmutableList.of(argOperatorId);
-  }
-
 }

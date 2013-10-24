@@ -13,7 +13,6 @@
                 },
                 {
                     "arg_child": "SCAN1",
-                    "arg_operator_id": "0",
                     "arg_pf": {
                         "index": [
                             "0",
@@ -21,7 +20,7 @@
                         ],
                         "type": "MultiFieldHash"
                     },
-                    "op_name": "SP1",
+                    "op_name": "SP11",
                     "op_type": "ShuffleProducer"
                 }
             ],
@@ -44,7 +43,6 @@
                 },
                 {
                     "arg_child": "SCAN2",
-                    "arg_operator_id": "2",
                     "arg_pf": {
                         "index": [
                             "0",
@@ -52,7 +50,7 @@
                         ],
                         "type": "MultiFieldHash"
                     },
-                    "op_name": "SP1",
+                    "op_name": "SP12",
                     "op_type": "ShuffleProducer"
                 }
             ],
@@ -65,21 +63,7 @@
         {
             "operators": [
                 {
-                    "arg_operator_id": "0",
-                    "arg_schema": {
-                        "column_names": [
-                            "x",
-                            "y",
-                            "time",
-                            "data"
-                        ],
-                        "column_types": [
-                            "LONG_TYPE",
-                            "LONG_TYPE",
-                            "LONG_TYPE",
-                            "DOUBLE_TYPE"
-                        ]
-                    },
+                    "arg_operator_id": "SP11",
                     "op_name": "SC1",
                     "op_type": "ShuffleConsumer"
                 },
@@ -102,21 +86,7 @@
                     "op_type": "MultiGroupByAggregate"
                 },
                 {
-                    "arg_operator_id": "2",
-                    "arg_schema": {
-                        "column_names": [
-                            "x",
-                            "y",
-                            "time",
-                            "data"
-                        ],
-                        "column_types": [
-                            "LONG_TYPE",
-                            "LONG_TYPE",
-                            "LONG_TYPE",
-                            "DOUBLE_TYPE"
-                        ]
-                    },
+                    "arg_operator_id": "SP12",
                     "op_name": "SC3",
                     "op_type": "ShuffleConsumer"
                 },
@@ -159,7 +129,6 @@
                 },
                 {
                     "arg_child": "FILTER",
-                    "arg_operator_id": "3",
                     "op_name": "CP1",
                     "op_type": "CollectProducer"
                 }
@@ -173,25 +142,7 @@
         {
             "operators": [
                 {
-                    "arg_operator_id": "3",
-                    "arg_schema": {
-                        "column_names": [
-                            "x",
-                            "y",
-                            "avg(data)",
-                            "stdev(data)",
-                            "time",
-                            "data"
-                        ],
-                        "column_types": [
-                            "LONG_TYPE",
-                            "LONG_TYPE",
-                            "DOUBLE_TYPE",
-                            "DOUBLE_TYPE",
-                            "LONG_TYPE",
-                            "DOUBLE_TYPE"
-                        ]
-                    },
+                    "arg_operator_id": "CP1",
                     "op_name": "CC1",
                     "op_type": "CollectConsumer"
                 },

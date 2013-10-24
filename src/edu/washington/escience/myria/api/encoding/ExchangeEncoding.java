@@ -7,7 +7,6 @@ import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 
 public abstract class ExchangeEncoding<E extends Operator> extends OperatorEncoding<E> {
-  abstract List<String> getOperatorIds();
 
   private Set<Integer> realWorkerIds;
   private List<ExchangePairID> realOperatorIds;

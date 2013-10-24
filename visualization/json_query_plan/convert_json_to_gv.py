@@ -49,21 +49,15 @@ def read_json(filename):
 
 def unify_fragments(fragments):
     """Returns a list of operators, adding to each operator a field
-    fragment_id, a field id, and updating all the children links with the
-    fragment id."""
+    fragment_id, a field id, and converting all the children links to
+    list type."""
     ret = []
     for (i, fragment) in enumerate(fragments):
         for operator in fragment['operators']:
             operator['fragment_id'] = i
-            operator['id'] = str(i) + '-' + operator['op_name']
             for field in children[operator['op_type']]:
-                names = []
-                if isinstance(operator[field], list):
-                    for child in operator[field]:
-                        names.append(str(i) + '-' + child)
-                else:
-                    names.append(str(i) + '-' + operator[field])
-                operator[field] = names         
+                if not isinstance(operator[field], list):
+                    operator[field] = [operator[field]]        
             ret.append(operator)
     return ret
 
@@ -110,20 +104,19 @@ def get_graph(unified_plan):
     nodes = unified_plan
     local_edges = []
     in_pipes = defaultdict(list)
-    out_pipes = defaultdict(list)
     for op in unified_plan:
         # Operator id
-        op_id = op['id']
+        op_id = op['op_name']
         # Add child edges
         local_edges.extend([(x,op_id) for x in operator_get_children(op)])
         # Add pipes
-        for pipe_id in operator_get_in_pipes(op):
-            in_pipes[pipe_id].append(op_id)
-        for pipe_id in operator_get_out_pipes(op):
-            out_pipes[pipe_id].append(op_id)
+        for producing_op_id in operator_get_in_pipes(op):
+            in_pipes[producing_op_id].append(op_id)
+        #for pipe_id in operator_get_out_pipes(op):
+        #    out_pipes[pipe_id].append(op_id)
     pipe_edges = []
-    for pipe_id in out_pipes:
-        pipe_edges.extend([(x,y,pipe_id) for x in out_pipes[pipe_id] for y in in_pipes[pipe_id]])
+    for producing_op_id in in_pipes:
+        pipe_edges.extend([(producing_op_id,y,str(producing_op_id)+"->"+str(y)) for y in in_pipes[producing_op_id]])
     return (unified_plan, local_edges, pipe_edges)
 
 def export_dot(nodes, edges, pipe_edges, filename=""):
@@ -137,7 +130,7 @@ def export_dot(nodes, edges, pipe_edges, filename=""):
   edge [fontname="Helvetica", fontsize=9 ] ;
 """ % (filename,)
     for n in nodes:
-       print "\"%s\" [label=\"%s\", color=%s, penwidth=2];" % (n['id'], n['op_name'], colors[n['fragment_id'] % len(colors)])
+       print "\"%s\" [label=\"%s\", color=%s, penwidth=2];" % (n['op_name'], n['op_name'], colors[n['fragment_id'] % len(colors)])
     for (x,y) in edges:
         print "\"%s\" -> \"%s\" [color=black]" % (x, y)
     for (x,y,label) in pipe_edges:
