@@ -12,6 +12,7 @@ import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.column.LongColumn;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.LongColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
@@ -125,5 +126,10 @@ public final class LongMutableColumn implements MutableColumn<Long> {
   public void replace(final int index, final Long value) {
     Preconditions.checkElementIndex(index, size());
     data[index] = value;
+  }
+
+  @Override
+  public LongColumn toColumn() {
+    return new LongColumn(data.clone(), position);
   }
 }

@@ -11,6 +11,7 @@ import com.google.common.hash.Hasher;
 import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.BooleanColumn;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.builder.BooleanColumnBuilder;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
@@ -119,5 +120,10 @@ public class BooleanMutableColumn implements MutableColumn<Boolean> {
   public void replace(final int index, final Boolean value) {
     Preconditions.checkElementIndex(index, size());
     data.set(index, value);
+  }
+
+  @Override
+  public BooleanColumn toColumn() {
+    return new BooleanColumn((BitSet) data.clone(), numBits);
   }
 }

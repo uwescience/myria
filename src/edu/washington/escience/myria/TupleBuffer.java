@@ -618,7 +618,7 @@ public class TupleBuffer {
     for (final MutableColumn<?>[] mutableColumns : readyTuples) {
       List<Column<?>> columns = new ArrayList<Column<?>>();
       for (MutableColumn<?> mutableColumn : mutableColumns) {
-        columns.add(mutableColumn);
+        columns.add(mutableColumn.toColumn());
       }
       output.add(new TupleBatch(schema, columns, TupleBatch.BATCH_SIZE));
     }

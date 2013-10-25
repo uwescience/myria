@@ -11,6 +11,7 @@ import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.column.StringColumn;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.StringColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
@@ -130,5 +131,10 @@ public final class StringMutableColumn implements MutableColumn<String> {
   public void replace(final int index, final String value) {
     Preconditions.checkElementIndex(index, size());
     data[index] = value;
+  }
+
+  @Override
+  public StringColumn toColumn() {
+    return new StringColumn(data.clone(), numStrings);
   }
 }

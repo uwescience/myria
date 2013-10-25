@@ -13,6 +13,7 @@ import com.google.protobuf.ByteString;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.column.FloatColumn;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.FloatColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
@@ -127,5 +128,10 @@ public final class FloatMutableColumn implements MutableColumn<Float> {
   public void replace(final int index, final Float value) {
     Preconditions.checkElementIndex(index, size());
     data[index] = value;
+  }
+
+  @Override
+  public FloatColumn toColumn() {
+    return new FloatColumn(data.clone(), position);
   }
 }

@@ -17,4 +17,11 @@ public interface MutableColumn<T extends Comparable<?>> extends Column<T> {
    * @param value the new value
    */
   void replace(int index, T value);
+
+  /**
+   * return the column representation of this mutable column. It copies data.
+   * 
+   * @return the column representation of this mutable column.
+   */
+  Column<T> toColumn();
 }

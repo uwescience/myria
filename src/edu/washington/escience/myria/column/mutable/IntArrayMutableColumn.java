@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import com.google.common.base.Preconditions;
 import com.google.protobuf.ByteString;
 
+import edu.washington.escience.myria.column.IntArrayColumn;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.IntColumnMessage;
 
@@ -67,5 +68,10 @@ public final class IntArrayMutableColumn extends IntMutableColumn {
   public void replace(final int index, final Integer value) {
     Preconditions.checkElementIndex(index, size());
     data[index] = value;
+  }
+
+  @Override
+  public IntArrayColumn toColumn() {
+    return new IntArrayColumn(data.clone(), position);
   }
 }

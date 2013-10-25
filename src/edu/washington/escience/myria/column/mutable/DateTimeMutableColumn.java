@@ -15,6 +15,7 @@ import com.google.protobuf.ByteString;
 
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.column.DateTimeColumn;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.DateTimeColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
@@ -130,5 +131,10 @@ public final class DateTimeMutableColumn implements MutableColumn<DateTime> {
   public void replace(final int index, final DateTime value) {
     Preconditions.checkElementIndex(index, size());
     data[index] = value;
+  }
+
+  @Override
+  public DateTimeColumn toColumn() {
+    return new DateTimeColumn(data.clone(), position);
   }
 }

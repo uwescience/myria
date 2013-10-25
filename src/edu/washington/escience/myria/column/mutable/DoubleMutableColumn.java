@@ -13,6 +13,7 @@ import com.google.protobuf.ByteString;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
+import edu.washington.escience.myria.column.DoubleColumn;
 import edu.washington.escience.myria.column.builder.ColumnBuilder;
 import edu.washington.escience.myria.column.builder.DoubleColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
@@ -127,5 +128,10 @@ public final class DoubleMutableColumn implements MutableColumn<Double> {
   public void replace(final int index, final Double value) {
     Preconditions.checkElementIndex(index, size());
     data[index] = value;
+  }
+
+  @Override
+  public DoubleColumn toColumn() {
+    return new DoubleColumn(data.clone(), position);
   }
 }
