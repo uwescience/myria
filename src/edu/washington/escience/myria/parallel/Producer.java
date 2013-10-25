@@ -319,6 +319,9 @@ public abstract class Producer extends RootOperator {
         for (int i = 0; i < numOfPartition; ++i) {
           if (partitions[i] != null) {
             for (int j : channelIndices[i]) {
+              if (!ioChannelsAvail[j] && mode.equals(FTMODE.abandon)) {
+                continue;
+              }
               pendingTuplesToSend.get(j).add(partitions[i]);
             }
           }
@@ -344,6 +347,9 @@ public abstract class Producer extends RootOperator {
             break;
           }
           for (int j : channelIndices[i]) {
+            if (!ioChannelsAvail[j] && mode.equals(FTMODE.abandon)) {
+              continue;
+            }
             pendingTuplesToSend.get(j).add(tb);
           }
         }
