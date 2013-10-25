@@ -38,6 +38,9 @@ public class ShuffleProducerEncoding extends AbstractProducerEncoding<GenericShu
       if (argBufferStateUpdater instanceof KeepMinValueEncoding) {
         producer.setBackupBufferAsMin(((KeepMinValueEncoding) argBufferStateUpdater).keyColIndices,
             ((KeepMinValueEncoding) argBufferStateUpdater).valueColIndex);
+      } else if (argBufferStateUpdater instanceof KeepAndSortOnMinValueEncoding) {
+        producer.setBackupBufferAsPrioritizedMin(((KeepAndSortOnMinValueEncoding) argBufferStateUpdater).keyColIndices,
+            ((KeepAndSortOnMinValueEncoding) argBufferStateUpdater).valueColIndex);
       } else if (argBufferStateUpdater instanceof DupElimEncoding) {
         producer.setBackupBufferAsDupElim();
       }
