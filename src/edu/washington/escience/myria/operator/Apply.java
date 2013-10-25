@@ -12,6 +12,7 @@ import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.expression.Expression;
+import edu.washington.escience.myria.expression.GenericExpression;
 
 /**
  * Generic apply operator.
@@ -23,7 +24,7 @@ public class Apply extends UnaryOperator {
   /**
    * List of expressions that will be used to create the output.
    */
-  private ImmutableList<Expression> expressions;
+  private ImmutableList<GenericExpression> genericExpressions;
 
   /**
    * Buffers the output tuples.
@@ -33,22 +34,22 @@ public class Apply extends UnaryOperator {
   /**
    * 
    * @param child child operator that data is fetched from
-   * @param expressions expression that created the output
+   * @param genericExpressions expression that created the output
    */
-  public Apply(final Operator child, final List<Expression> expressions) {
+  public Apply(final Operator child, final List<GenericExpression> genericExpressions) {
     super(child);
-    if (expressions != null) {
-      setExpressions(expressions);
+    if (genericExpressions != null) {
+      setExpressions(genericExpressions);
     }
   }
 
   /**
    * Set the expressions for each column.
    * 
-   * @param expressions the expressions
+   * @param genericExpressions the expressions
    */
-  private void setExpressions(final List<Expression> expressions) {
-    this.expressions = ImmutableList.copyOf(expressions);
+  private void setExpressions(final List<GenericExpression> genericExpressions) {
+    this.genericExpressions = ImmutableList.copyOf(genericExpressions);
   }
 
   @Override
@@ -61,7 +62,7 @@ public class Apply extends UnaryOperator {
     while ((tb = getChild().nextReady()) != null) {
       for (int rowIdx = 0; rowIdx < tb.numTuples(); rowIdx++) {
         int columnIdx = 0;
-        for (Expression expr : expressions) {
+        for (GenericExpression expr : genericExpressions) {
           expr.evalAndPut(tb, rowIdx, resultBuffer, columnIdx);
           columnIdx++;
         }
@@ -79,13 +80,13 @@ public class Apply extends UnaryOperator {
 
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    Preconditions.checkNotNull(expressions);
+    Preconditions.checkNotNull(genericExpressions);
 
     resultBuffer = new TupleBatchBuffer(getSchema());
 
     Schema inputSchema = getChild().getSchema();
 
-    for (Expression expr : expressions) {
+    for (GenericExpression expr : genericExpressions) {
 
       expr.setSchema(inputSchema);
       if (expr.needsCompiling()) {
@@ -96,7 +97,7 @@ public class Apply extends UnaryOperator {
 
   @Override
   public Schema generateSchema() {
-    if (expressions == null) {
+    if (genericExpressions == null) {
       return null;
     }
     Operator child = getChild();
@@ -111,7 +112,7 @@ public class Apply extends UnaryOperator {
     ImmutableList.Builder<Type> typesBuilder = ImmutableList.builder();
     ImmutableList.Builder<String> namesBuilder = ImmutableList.builder();
 
-    for (Expression expr : expressions) {
+    for (Expression expr : genericExpressions) {
       expr.setSchema(childSchema);
       typesBuilder.add(expr.getOutputType());
       namesBuilder.add(expr.getOutputName());
