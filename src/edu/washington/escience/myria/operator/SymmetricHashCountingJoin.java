@@ -1,24 +1,25 @@
 package edu.washington.escience.myria.operator;
 
-import java.util.ArrayList;
+import edu.washington.escience.myria.DbException;
+import edu.washington.escience.myria.Schema;
+import edu.washington.escience.myria.TupleBatch;
+import edu.washington.escience.myria.TupleBatchBuffer;
+import edu.washington.escience.myria.TupleBuffer;
+import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.column.Column;
+import gnu.trove.list.TIntList;
+import gnu.trove.list.array.TIntArrayList;
+import gnu.trove.map.TIntObjectMap;
+import gnu.trove.map.hash.TIntObjectHashMap;
+import gnu.trove.procedure.TIntProcedure;
+
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-
-import edu.washington.escience.myria.DbException;
-import edu.washington.escience.myria.MyriaConstants;
-import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.TupleBatchBuffer;
-import edu.washington.escience.myria.TupleBuffer;
-import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.parallel.QueryExecutionMode;
-import edu.washington.escience.myria.parallel.TaskResourceManager;
 
 /**
  * This is an implementation of hash equal join. The same as in DupElim, this implementation does not keep the
@@ -28,28 +29,75 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
-  /** The column indices for comparing of child 1. */
-  private final int[] compareIndx1;
-  /** The column indices for comparing of child 2. */
-  private final int[] compareIndx2;
-  /** A hash table for tuples from child 1. {Hashcode -> List of tuple indices with the same hash code} */
-  private transient HashMap<Integer, List<Integer>> hashTable1Indices;
-  /** A hash table for tuples from child 2. {Hashcode -> List of tuple indices with the same hash code} */
-  private transient HashMap<Integer, List<Integer>> hashTable2Indices;
+  /** The column indices for comparing of left child. */
+  private final int[] leftCompareIndx;
+  /** The column indices for comparing of right child. */
+  private final int[] rightCompareIndx;
+  /** A hash table for tuples from left child. {Hashcode -> List of tuple indices with the same hash code} */
+  private transient TIntObjectMap<TIntList> leftHashTableIndices;
+  /** A hash table for tuples from right child. {Hashcode -> List of tuple indices with the same hash code} */
+  private transient TIntObjectMap<TIntList> rightHashTableIndices;
   /** The buffer holding the valid tuples from left. */
-  private transient TupleBuffer hashTable1;
+  private transient TupleBuffer leftHashTable;
   /** The buffer holding the valid tuples from right. */
-  private transient TupleBuffer hashTable2;
+  private transient TupleBuffer rightHashTable;
   /** How many times each key occurred from left. */
-  private transient List<Integer> occurredTimes1;
+  private transient TIntList occuredTimesOnLeft;
   /** How many times each key occurred from right. */
-  private transient List<Integer> occurredTimes2;
+  private transient TIntList occuredTimesOnRight;
   /** The number of join output tuples so far. */
   private long ans;
   /** The buffer for storing and returning answer. */
   private transient TupleBatchBuffer ansTBB;
   /** The name of the single column output from this operator. */
   private final String columnName;
+  /**
+   * Traverse through the list of tuples.
+   * */
+  private transient CountingJoinProcedure doCountingJoin;
+
+  /**
+   * Whether this operator has returned answer or not.
+   * */
+  private boolean hasReturnedAnswer = false;
+
+  /**
+   * Traverse through the list of tuples with the same hash code.
+   * */
+  private final class CountingJoinProcedure implements TIntProcedure {
+
+    /**
+     * Hash table.
+     * */
+    private TupleBuffer joinAgainstHashTable;
+
+    /**
+     * times of occure of a key.
+     * */
+    private TIntList occuredTimesOnJoinAgainstChild;
+    /**
+     * 
+     * */
+    private int[] inputCmpColumns;
+
+    /**
+     * row index of the tuple.
+     * */
+    private int row;
+
+    /**
+     * input TupleBatch.
+     * */
+    private TupleBatch inputTB;
+
+    @Override
+    public boolean execute(final int index) {
+      if (inputTB.tupleEquals(row, joinAgainstHashTable, index, inputCmpColumns)) {
+        ans += occuredTimesOnJoinAgainstChild.get(index);
+      }
+      return true;
+    }
+  };
 
   /**
    * Construct a {@link SymmetricHashCountingJoin}.
@@ -79,19 +127,50 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
   public SymmetricHashCountingJoin(final String outputColumnName, final Operator left, final Operator right,
       final int[] compareIndx1, final int[] compareIndx2) {
     super(left, right);
-    this.compareIndx1 = compareIndx1;
-    this.compareIndx2 = compareIndx2;
+    leftCompareIndx = compareIndx1;
+    rightCompareIndx = compareIndx2;
     columnName = Objects.requireNonNull(outputColumnName);
+  }
+
+  /**
+   * consume EOI from Child 1. reset the child's EOI to false 2. record the EOI in childrenEOI[]
+   * 
+   * @param fromLeft true if consuming eoi from left child, false if consuming eoi from right child
+   */
+  private void consumeChildEOI(final boolean fromLeft) {
+    final Operator left = getLeft();
+    final Operator right = getRight();
+    if (fromLeft) {
+      Preconditions.checkArgument(left.eoi());
+      left.setEOI(false);
+      childrenEOI[0] = true;
+    } else {
+      Preconditions.checkArgument(right.eoi());
+      right.setEOI(false);
+      childrenEOI[1] = true;
+    }
+  }
+
+  /**
+   * Note: If this operator is ready for EOS, this function will return true since EOS is a special EOI.
+   * 
+   * @return whether this operator is ready to set itself EOI
+   */
+  private boolean isEOIReady() {
+    if ((childrenEOI[0] || getLeft().eos()) && (childrenEOI[1] || getRight().eos())) {
+      return true;
+    }
+    return false;
   }
 
   @Override
   protected void cleanup() throws DbException {
-    hashTable1 = null;
-    hashTable2 = null;
-    occurredTimes1 = null;
-    occurredTimes2 = null;
-    hashTable1Indices = null;
-    hashTable2Indices = null;
+    leftHashTable = null;
+    rightHashTable = null;
+    occuredTimesOnLeft = null;
+    occuredTimesOnRight = null;
+    leftHashTableIndices = null;
+    rightHashTableIndices = null;
     ansTBB = null;
     ans = 0;
   }
@@ -100,13 +179,13 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
   public void checkEOSAndEOI() {
     final Operator left = getLeft();
     final Operator right = getRight();
-    if (left.eos() && right.eos()) {
+    if (left.eos() && right.eos() && hasReturnedAnswer) {
       setEOS();
       return;
     }
 
-    // EOS could be used as an EOI
-    if ((childrenEOI[0] || left.eos()) && (childrenEOI[1] || right.eos())) {
+    // at the time of eos, this operator will not return any data, so it can be safely set EOI to true
+    if ((childrenEOI[0] || left.eos()) && (childrenEOI[1] || right.eos()) && hasReturnedAnswer) {
       setEOI(true);
       Arrays.fill(childrenEOI, false);
     }
@@ -117,268 +196,167 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
    * */
   private final boolean[] childrenEOI = new boolean[2];
 
-  /**
-   * In blocking mode, asynchronous EOI semantic may make system hang. Only synchronous EOI semantic works.
-   * 
-   * @return result TB.
-   * @throws DbException if any error occurs.
-   * */
-  private TupleBatch fetchNextReadySynchronousEOI() throws DbException {
-    final Operator left = getLeft();
-    final Operator right = getRight();
-    while (true) {
-      boolean hasNewTuple = false;
-      if (!left.eos() && !childrenEOI[0]) {
-        TupleBatch tb = left.nextReady();
-        if (tb != null) {
-          hasNewTuple = true;
-          processChildTB(tb, true);
-        } else {
-          if (left.eoi()) {
-            left.setEOI(false);
-            childrenEOI[0] = true;
-          }
-        }
-      }
-      if (!right.eos() && !childrenEOI[1]) {
-        TupleBatch tb = right.nextReady();
-        if (tb != null) {
-          hasNewTuple = true;
-          processChildTB(tb, false);
-        } else {
-          if (right.eoi()) {
-            right.setEOI(false);
-            childrenEOI[1] = true;
-          }
-        }
-      }
-      if (!hasNewTuple) {
-        break;
-      }
-    }
-
-    checkEOSAndEOI();
-    if (eoi() || eos()) {
-      ansTBB.put(0, ans);
-      return ansTBB.popAny();
-    }
-    return null;
-  }
-
   @Override
   protected TupleBatch fetchNextReady() throws DbException {
 
-    if (!nonBlocking) {
-      return fetchNextReadySynchronousEOI();
-    }
-
-    if (eoi()) {
-      ansTBB.put(0, ans);
-      return ansTBB.popAny();
-    }
+    /**
+     * There is no distinction between synchronous EOI and asynchronous EOI
+     * 
+     * */
 
     final Operator left = getLeft();
     final Operator right = getRight();
-    TupleBatch leftTB = null;
-    TupleBatch rightTB = null;
-    int numEOS = 0;
-    int numNoData = 0;
 
-    while (numEOS < 2 && numNoData < 2) {
+    int numOfChildNoData = 0;
+    while (numOfChildNoData < 2 && (!left.eos() || !right.eos())) {
 
-      numEOS = 0;
-      if (left.eos()) {
-        numEOS += 1;
+      /*
+       * If one of the children is already EOS, we need to set numOfChildNoData to 1 since "numOfChildNoData++" for this
+       * child will not be called.
+       */
+      if (left.eos() || right.eos()) {
+        numOfChildNoData = 1;
+      } else {
+        numOfChildNoData = 0;
       }
-      if (right.eos()) {
-        numEOS += 1;
-      }
-      numNoData = numEOS;
 
-      leftTB = null;
-      rightTB = null;
+      /* process tuple from left child */
       if (!left.eos()) {
-        leftTB = left.nextReady();
-        if (leftTB != null) { // data
+        TupleBatch leftTB = left.nextReady();
+        if (leftTB != null) { // process the data that is pulled from left child
           processChildTB(leftTB, true);
         } else {
-          // eoi or eos or no data
+          /* if left eoi, consume it, check whether it will cause EOI of this operator */
           if (left.eoi()) {
-            left.setEOI(false);
-            childrenEOI[0] = true;
-            checkEOSAndEOI();
-            if (eoi()) {
+            consumeChildEOI(true);
+            /*
+             * If this operator is ready to emit EOI ( reminder that it might need to clear buffer), break to EOI handle
+             * part
+             */
+            if (isEOIReady()) {
               break;
             }
-          } else if (left.eos()) {
-            numEOS++;
-          } else {
-            numNoData++;
           }
+          numOfChildNoData++;
         }
       }
+
+      /* process tuple from right child */
       if (!right.eos()) {
-        rightTB = right.nextReady();
-        if (rightTB != null) {
+        TupleBatch rightTB = right.nextReady();
+        if (rightTB != null) { // process the data that is pulled from right child
           processChildTB(rightTB, false);
         } else {
+          /* if right eoi, consume it, check whether it will cause EOI of this operator */
           if (right.eoi()) {
-            right.setEOI(false);
-            childrenEOI[1] = true;
-            checkEOSAndEOI();
-            if (eoi()) {
+            consumeChildEOI(false);
+            /*
+             * If this operator is ready to emit EOI ( reminder that it might need to clear buffer), break to EOI handle
+             * part
+             */
+            if (isEOIReady()) {
               break;
             }
-          } else if (right.eos()) {
-            numEOS++;
-          } else {
-            numNoData++;
           }
+          numOfChildNoData++;
         }
       }
     }
-    Preconditions.checkArgument(numEOS <= 2);
-    Preconditions.checkArgument(numNoData <= 2);
 
-    checkEOSAndEOI();
-    if (eoi() || eos()) {
-      ansTBB.put(0, ans);
-      return ansTBB.popAny();
+    /*
+     * If the operator is ready to EOI, just set EOI since EOI will not return any data. If the operator is ready to
+     * EOS, return answer first, then at the next round set EOS
+     */
+    if (isEOIReady()) {
+      checkEOSAndEOI();
+      if (left.eos() && right.eos() && (!hasReturnedAnswer)) {
+        hasReturnedAnswer = true;
+        ansTBB.putLong(0, ans);
+        return ansTBB.popAny();
+      }
     }
-
     return null;
   }
 
-  /**
-   * The query execution mode is nonBlocking.
-   * */
-  private transient boolean nonBlocking = true;
-
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
-    hashTable1Indices = new HashMap<Integer, List<Integer>>();
-    hashTable2Indices = new HashMap<Integer, List<Integer>>();
-    occurredTimes1 = new ArrayList<Integer>();
-    occurredTimes2 = new ArrayList<Integer>();
-    hashTable1 = new TupleBuffer(getLeft().getSchema().getSubSchema(compareIndx1));
-    hashTable2 = new TupleBuffer(getRight().getSchema().getSubSchema(compareIndx2));
+    leftHashTableIndices = new TIntObjectHashMap<TIntList>();
+    rightHashTableIndices = new TIntObjectHashMap<TIntList>();
+    occuredTimesOnLeft = new TIntArrayList();
+    occuredTimesOnRight = new TIntArrayList();
+    leftHashTable = new TupleBuffer(getLeft().getSchema().getSubSchema(leftCompareIndx));
+    rightHashTable = new TupleBuffer(getRight().getSchema().getSubSchema(rightCompareIndx));
     ans = 0;
     ansTBB = new TupleBatchBuffer(getSchema());
-    TaskResourceManager qem = (TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER);
-    nonBlocking = qem.getExecutionMode() == QueryExecutionMode.NON_BLOCKING;
-  }
-
-  /**
-   * Check if a tuple in uniqueTuples equals to the comparing tuple (cntTuple).
-   * 
-   * @param hashTable the TupleBatchBuffer holding the tuples to compare against
-   * @param rowIndex the row index in the hashTable
-   * @param cntTuple a list representation of a tuple
-   * @param compareIndx the comparing list of columns of cntTuple
-   * @return true if equals.
-   * */
-  private boolean tupleEquals(final List<Object> cntTuple, final TupleBuffer hashTable, final int rowIndex,
-      final int[] compareIndx) {
-    if (compareIndx.length != hashTable.getSchema().numColumns()) {
-      return false;
-    }
-    for (int i = 0; i < compareIndx.length; ++i) {
-      if (!cntTuple.get(compareIndx[i]).equals(hashTable.get(i, rowIndex))) {
-        return false;
-      }
-    }
-    return true;
+    doCountingJoin = new CountingJoinProcedure();
   }
 
   /**
    * @param tb the incoming TupleBatch for processing join.
-   * @param fromleft if the tb is from left.
+   * @param fromLeft if the tb is from left.
    * */
-  protected void processChildTB(final TupleBatch tb, final boolean fromleft) {
+  protected void processChildTB(final TupleBatch tb, final boolean fromLeft) {
 
     final Operator left = getLeft();
     final Operator right = getRight();
 
-    TupleBuffer hashTable1Local = hashTable1;
-    TupleBuffer hashTable2Local = hashTable2;
-    HashMap<Integer, List<Integer>> hashTable1IndicesLocal = hashTable1Indices;
-    HashMap<Integer, List<Integer>> hashTable2IndicesLocal = hashTable2Indices;
-    List<Integer> occurredTimes1Local = occurredTimes1;
-    List<Integer> occurredTimes2Local = occurredTimes2;
-    int[] compareIndx1Local = compareIndx1;
-    if (!fromleft) {
-      hashTable1Local = hashTable2;
-      hashTable2Local = hashTable1;
-      hashTable1IndicesLocal = hashTable2Indices;
-      hashTable2IndicesLocal = hashTable1Indices;
-      compareIndx1Local = compareIndx2;
-      occurredTimes1Local = occurredTimes2;
-      occurredTimes2Local = occurredTimes1;
+    TupleBuffer hashTable1Local = null;
+    TIntObjectMap<TIntList> hashTable1IndicesLocal = null;
+    TIntObjectMap<TIntList> hashTable2IndicesLocal = null;
+    TIntList ownOccuredTimes = null;
+    if (fromLeft) {
+      hashTable1Local = leftHashTable;
+      doCountingJoin.joinAgainstHashTable = rightHashTable;
+      hashTable1IndicesLocal = leftHashTableIndices;
+      hashTable2IndicesLocal = rightHashTableIndices;
+      doCountingJoin.inputCmpColumns = leftCompareIndx;
+      doCountingJoin.occuredTimesOnJoinAgainstChild = occuredTimesOnRight;
+      ownOccuredTimes = occuredTimesOnLeft;
+    } else {
+      hashTable1Local = rightHashTable;
+      doCountingJoin.joinAgainstHashTable = leftHashTable;
+      hashTable1IndicesLocal = rightHashTableIndices;
+      hashTable2IndicesLocal = leftHashTableIndices;
+      doCountingJoin.inputCmpColumns = rightCompareIndx;
+      doCountingJoin.occuredTimesOnJoinAgainstChild = occuredTimesOnLeft;
+      ownOccuredTimes = occuredTimesOnRight;
     }
+    doCountingJoin.inputTB = tb;
 
     if (left.eos() && !right.eos()) {
       /*
        * delete right child's hash table if the left child is EOS, since there will be no incoming tuples from right as
        * it will never be probed again.
        */
-      hashTable2Indices = null;
-      hashTable2 = null;
+      rightHashTableIndices = null;
+      rightHashTable = null;
     } else if (right.eos() && !left.eos()) {
       /*
        * delete left child's hash table if the right child is EOS, since there will be no incoming tuples from left as
        * it will never be probed again.
        */
-      hashTable1Indices = null;
-      hashTable1 = null;
+      leftHashTableIndices = null;
+      leftHashTable = null;
     }
 
-    for (int i = 0; i < tb.numTuples(); ++i) {
+    for (int row = 0; row < tb.numTuples(); ++row) {
 
       /*
-       * update number of count by probing the other child's hash table.
+       * update number of count of probing the other child's hash table.
        */
-      final List<Object> cntTuple = new ArrayList<Object>();
-      for (int j = 0; j < tb.numColumns(); ++j) {
-        cntTuple.add(tb.getObject(j, i));
+      final int cntHashCode = tb.hashCode(row, doCountingJoin.inputCmpColumns);
+      TIntList tuplesWithHashCode = hashTable2IndicesLocal.get(cntHashCode);
+      if (tuplesWithHashCode != null) {
+        doCountingJoin.row = row;
+        tuplesWithHashCode.forEach(doCountingJoin);
       }
 
-      final int cntHashCode = tb.hashCode(i, compareIndx1Local);
-      List<Integer> indexList = hashTable2IndicesLocal.get(cntHashCode);
-      if (indexList != null) {
-        for (final int index : indexList) {
-          if (tupleEquals(cntTuple, hashTable2Local, index, compareIndx1Local)) {
-            ans += occurredTimes2Local.get(index);
-          }
-        }
+      if (hashTable1Local != null) {
+        // only build hash table on two sides if none of the children is EOS
+        updateHashTableAndOccureTimes(tb, row, cntHashCode, hashTable1Local, hashTable1IndicesLocal,
+            doCountingJoin.inputCmpColumns, ownOccuredTimes);
       }
 
-      /*
-       * update its own hash table when necessary.
-       */
-      if (!left.eos() && !right.eos()) {
-        final int nextIndex = hashTable1Local.numTuples();
-        boolean found = false;
-        indexList = hashTable1IndicesLocal.get(cntHashCode);
-        if (indexList != null) {
-          for (final int index : indexList) {
-            if (tupleEquals(cntTuple, hashTable1Local, index, compareIndx1Local)) {
-              occurredTimes1Local.set(index, occurredTimes1Local.get(index) + 1);
-              found = true;
-              break;
-            }
-          }
-        }
-        if (!found) {
-          if (hashTable1IndicesLocal.get(cntHashCode) == null) {
-            hashTable1IndicesLocal.put(cntHashCode, new ArrayList<Integer>());
-          }
-          hashTable1IndicesLocal.get(cntHashCode).add(nextIndex);
-          for (int j = 0; j < compareIndx1Local.length; ++j) {
-            hashTable1Local.put(j, cntTuple.get(compareIndx1Local[j]));
-          }
-          occurredTimes1Local.add(1);
-        }
-      }
     }
   }
 
@@ -386,4 +364,53 @@ public final class SymmetricHashCountingJoin extends BinaryOperator {
   protected Schema generateSchema() {
     return Schema.of(ImmutableList.of(Type.LONG_TYPE), ImmutableList.of(columnName));
   }
+
+  /**
+   * @param tb the source TupleBatch
+   * @param row the row number of the to be processed tuple in the source TupleBatch
+   * @param hashCode the hashCode of the to be processed tuple
+   * @param hashTable the hash table to be updated
+   * @param hashTableIndices the hash indices to be updated
+   * @param compareColumns compareColumns of input tuple
+   * @param occuredTimes occuredTimes array to be updated
+   * */
+  private void updateHashTableAndOccureTimes(final TupleBatch tb, final int row, final int hashCode,
+      final TupleBuffer hashTable, final TIntObjectMap<TIntList> hashTableIndices, final int[] compareColumns,
+      final TIntList occuredTimes) {
+
+    /* get the index of the tuple's hash code corresponding to */
+    final int nextIndex = hashTable.numTuples();
+    TIntList tupleIndicesList = hashTableIndices.get(hashCode);
+
+    /* create one is there is no such a index yet (there is no tuple with the same hash code has been processed ) */
+    if (tupleIndicesList == null) {
+      tupleIndicesList = new TIntArrayList();
+      hashTableIndices.put(hashCode, tupleIndicesList);
+    }
+
+    Preconditions.checkArgument(hashTable.numColumns() == compareColumns.length);
+    List<Column<?>> inputColumns = tb.getDataColumns();
+    int inColumnRow = tb.getValidIndices().get(row);
+
+    /* find whether this tuple's comparing key has occured before. If it is, only update occurred times */
+    boolean found = false;
+    for (int i = 0; i < tupleIndicesList.size(); ++i) {
+      int index = tupleIndicesList.get(i);
+      if (tb.tupleEquals(inColumnRow, hashTable, index, compareColumns)) {
+        occuredTimes.set(index, occuredTimes.get(index) + 1);
+        found = true;
+        break;
+      }
+    }
+
+    if (!found) {
+      tupleIndicesList.add(nextIndex);
+      for (int column = 0; column < hashTable.numColumns(); ++column) {
+        hashTable.put(column, inputColumns.get(compareColumns[column]), inColumnRow);
+      }
+      occuredTimes.add(1);
+    }
+
+  }
+
 }

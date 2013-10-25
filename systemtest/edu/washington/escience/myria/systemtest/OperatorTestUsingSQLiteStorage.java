@@ -209,7 +209,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
   }
 
   @Test
-  public void unbalancedJoinTest() throws Exception {
+  public void rightHashJoinTest() throws Exception {
 
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
     Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
@@ -320,7 +320,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
   }
 
   @Test
-  public void simpleUnbalancedJoinTest() throws Exception {
+  public void simpleRightHashJoinTest() throws Exception {
     Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
     Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
 
