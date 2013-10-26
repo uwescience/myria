@@ -66,6 +66,16 @@ public final class IntArrayMutableColumn extends IntMutableColumn {
 
   @Override
   public void replace(final int index, final Integer value) {
+    replace(index, value);
+  }
+
+  /**
+   * replace the value on a row with the given int value.
+   * 
+   * @param index row index
+   * @param value the int value.
+   */
+  public void replace(final int index, final int value) {
     Preconditions.checkElementIndex(index, size());
     data[index] = value;
   }
@@ -73,5 +83,10 @@ public final class IntArrayMutableColumn extends IntMutableColumn {
   @Override
   public IntArrayColumn toColumn() {
     return new IntArrayColumn(data.clone(), position);
+  }
+
+  @Override
+  public IntArrayMutableColumn cloneItself() {
+    return new IntArrayMutableColumn(data.clone(), position);
   }
 }

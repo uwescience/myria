@@ -118,6 +118,16 @@ public class BooleanMutableColumn implements MutableColumn<Boolean> {
 
   @Override
   public void replace(final int index, final Boolean value) {
+    replace(index, value);
+  }
+
+  /**
+   * replace the value on a row with the given boolean value.
+   * 
+   * @param index row index
+   * @param value the boolean value.
+   */
+  public void replace(final int index, final boolean value) {
     Preconditions.checkElementIndex(index, size());
     data.set(index, value);
   }
@@ -125,5 +135,10 @@ public class BooleanMutableColumn implements MutableColumn<Boolean> {
   @Override
   public BooleanColumn toColumn() {
     return new BooleanColumn((BitSet) data.clone(), numBits);
+  }
+
+  @Override
+  public BooleanMutableColumn cloneItself() {
+    return new BooleanMutableColumn((BitSet) data.clone(), numBits);
   }
 }

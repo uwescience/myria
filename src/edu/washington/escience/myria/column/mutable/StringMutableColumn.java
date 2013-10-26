@@ -137,4 +137,9 @@ public final class StringMutableColumn implements MutableColumn<String> {
   public StringColumn toColumn() {
     return new StringColumn(data.clone(), numStrings);
   }
+
+  @Override
+  public StringMutableColumn cloneItself() {
+    return new StringMutableColumn(data.clone(), numStrings);
+  }
 }

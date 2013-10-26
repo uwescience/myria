@@ -124,6 +124,16 @@ public final class LongMutableColumn implements MutableColumn<Long> {
 
   @Override
   public void replace(final int index, final Long value) {
+    replace(index, value);
+  }
+
+  /**
+   * replace the value on a row with the given long value.
+   * 
+   * @param index row index
+   * @param value the long value.
+   */
+  public void replace(final int index, final long value) {
     Preconditions.checkElementIndex(index, size());
     data[index] = value;
   }
@@ -131,5 +141,10 @@ public final class LongMutableColumn implements MutableColumn<Long> {
   @Override
   public LongColumn toColumn() {
     return new LongColumn(data.clone(), position);
+  }
+
+  @Override
+  public LongMutableColumn cloneItself() {
+    return new LongMutableColumn(data.clone(), position);
   }
 }

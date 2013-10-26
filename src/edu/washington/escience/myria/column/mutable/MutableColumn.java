@@ -24,4 +24,11 @@ public interface MutableColumn<T extends Comparable<?>> extends Column<T> {
    * @return the column representation of this mutable column.
    */
   Column<T> toColumn();
+
+  /**
+   * clone itself by copying data.
+   * 
+   * @return the clone
+   */
+  MutableColumn<T> cloneItself();
 }

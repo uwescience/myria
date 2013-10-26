@@ -126,6 +126,16 @@ public final class DoubleMutableColumn implements MutableColumn<Double> {
 
   @Override
   public void replace(final int index, final Double value) {
+    replace(index, value);
+  }
+
+  /**
+   * replace the value on a row with the given double value.
+   * 
+   * @param index row index
+   * @param value the double value.
+   */
+  public void replace(final int index, final double value) {
     Preconditions.checkElementIndex(index, size());
     data[index] = value;
   }
@@ -133,5 +143,10 @@ public final class DoubleMutableColumn implements MutableColumn<Double> {
   @Override
   public DoubleColumn toColumn() {
     return new DoubleColumn(data.clone(), position);
+  }
+
+  @Override
+  public DoubleMutableColumn cloneItself() {
+    return new DoubleMutableColumn(data.clone(), position);
   }
 }

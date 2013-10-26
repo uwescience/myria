@@ -126,6 +126,16 @@ public final class FloatMutableColumn implements MutableColumn<Float> {
 
   @Override
   public void replace(final int index, final Float value) {
+    replace(index, value);
+  }
+
+  /**
+   * replace the value on a row with the given float value.
+   * 
+   * @param index row index
+   * @param value the float value.
+   */
+  public void replace(final int index, final float value) {
     Preconditions.checkElementIndex(index, size());
     data[index] = value;
   }
@@ -133,5 +143,10 @@ public final class FloatMutableColumn implements MutableColumn<Float> {
   @Override
   public FloatColumn toColumn() {
     return new FloatColumn(data.clone(), position);
+  }
+
+  @Override
+  public FloatMutableColumn cloneItself() {
+    return new FloatMutableColumn(data.clone(), position);
   }
 }
