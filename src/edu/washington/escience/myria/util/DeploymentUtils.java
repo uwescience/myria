@@ -170,7 +170,8 @@ public final class DeploymentUtils {
     builder.append(" nohup java -ea");
     builder.append(" -cp " + classpath);
     builder.append(" -Djava.util.logging.config.file=logging.properties");
-    builder.append(" -Dlog4j.configuration=log4j.properties");
+    // builder.append(" -Dlog4j.configuration=log4j.properties");
+    builder.append(" -Dlogback.configurationFile=logback.xml");
     builder.append(" -Djava.library.path=" + librarypath);
     if (debug) {
       // required to run in debug mode
@@ -205,7 +206,8 @@ public final class DeploymentUtils {
     builder.append(" cd " + workingDir + "/" + description + "-files;");
     builder.append(" nohup java -cp 'conf:libs/*'");
     builder.append(" -Djava.util.logging.config.file=logging.properties");
-    builder.append(" -Dlog4j.configuration=log4j.properties");
+    // builder.append(" -Dlog4j.configuration=log4j.properties");
+    builder.append(" -Dlogback.configurationFile=logback.xml");
     builder.append(" -Djava.library.path=sqlite4java-282");
     builder.append(" " + maxHeapSize);
     builder.append(" edu.washington.escience.myria.daemon.MasterDaemon");
