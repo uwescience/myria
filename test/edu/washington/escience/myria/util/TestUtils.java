@@ -17,6 +17,21 @@ import edu.washington.escience.myria.column.Column;
 
 public final class TestUtils {
 
+  private static Random random = null;
+
+  private synchronized static Random getRandom() {
+    if (random == null) {
+      random = new Random();
+      // Un-comment next line to have random number seeded to be able to compare runs
+      // random.setSeed(42);
+    }
+    return random;
+  }
+
+  public static void resetRandom() {
+    random = null;
+  }
+
   public static void assertEqualsToStringBuilder(final StringBuilder errorMessageHolder, final String currentEM,
       final Object expected, final Object actual) {
     if (expected == null) {
@@ -399,20 +414,18 @@ public final class TestUtils {
 
   public static long[] randomLong(final long min, final long max, final int size) {
     final long[] result = new long[size];
-    final Random r = new Random();
     final long top = max - min + 1;
     for (int i = 0; i < size; i++) {
-      result[i] = r.nextInt((int) top) + min;
+      result[i] = getRandom().nextInt((int) top) + min;
     }
     return result;
   }
 
   public static float[] randomFloat(final float min, final float max, final int size) {
     final float[] result = new float[size];
-    final Random r = new Random();
     final float range = max - min;
     for (int i = 0; i < size; i++) {
-      result[i] = r.nextFloat() * range + min;
+      result[i] = getRandom().nextFloat() * range + min;
     }
     return result;
   }
