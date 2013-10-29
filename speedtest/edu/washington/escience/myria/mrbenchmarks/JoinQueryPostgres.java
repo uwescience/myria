@@ -17,7 +17,7 @@ import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.agg.Aggregator;
-import edu.washington.escience.myria.operator.agg.SingleGroupByAggregateNoBuffer;
+import edu.washington.escience.myria.operator.agg.SingleGroupByAggregate;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
@@ -69,8 +69,8 @@ public class JoinQueryPostgres implements QueryPlanGenerator, Serializable {
     final GenericShuffleConsumer scLocalScan =
         new GenericShuffleConsumer(spLocalScan.getSchema(), localScanID, allWorkers);
 
-    final SingleGroupByAggregateNoBuffer globalAgg =
-        new SingleGroupByAggregateNoBuffer(scLocalScan, new int[] { 1, 2, 3 }, 0, new int[] {
+    final SingleGroupByAggregate globalAgg =
+        new SingleGroupByAggregate(scLocalScan, new int[] { 1, 2, 3 }, 0, new int[] {
             Aggregator.AGG_OP_SUM, Aggregator.AGG_OP_SUM, Aggregator.AGG_OP_SUM });
 
     GlobalAvg globalAvg = new GlobalAvg(1, 0);

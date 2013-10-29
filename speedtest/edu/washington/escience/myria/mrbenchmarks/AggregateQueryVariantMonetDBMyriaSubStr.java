@@ -14,7 +14,7 @@ import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.operator.agg.Aggregator;
-import edu.washington.escience.myria.operator.agg.SingleGroupByAggregateNoBuffer;
+import edu.washington.escience.myria.operator.agg.SingleGroupByAggregate;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
@@ -62,8 +62,8 @@ public class AggregateQueryVariantMonetDBMyriaSubStr implements QueryPlanGenerat
       SubStr ss = new SubStr(0, 1, 7);
       ss.setChildren(new Operator[] { lsc[i] });
 
-      final SingleGroupByAggregateNoBuffer localAgg =
-          new SingleGroupByAggregateNoBuffer(ss, new int[] { 0 }, 1, new int[] { Aggregator.AGG_OP_SUM });
+      final SingleGroupByAggregate localAgg =
+          new SingleGroupByAggregate(ss, new int[] { 0 }, 1, new int[] { Aggregator.AGG_OP_SUM });
 
       shuffleLocalGroupBys[i] = new GenericShuffleProducer(localAgg, shuffleLocalGroupByID, allWorkers, pf0);
     }
@@ -71,8 +71,8 @@ public class AggregateQueryVariantMonetDBMyriaSubStr implements QueryPlanGenerat
     final GenericShuffleConsumer sc =
         new GenericShuffleConsumer(shuffleLocalGroupBys[0].getSchema(), shuffleLocalGroupByID, allWorkers);
 
-    final SingleGroupByAggregateNoBuffer agg =
-        new SingleGroupByAggregateNoBuffer(sc, new int[] { 1 }, 0, new int[] { Aggregator.AGG_OP_SUM });
+    final SingleGroupByAggregate agg =
+        new SingleGroupByAggregate(sc, new int[] { 1 }, 0, new int[] { Aggregator.AGG_OP_SUM });
 
     final CollectProducer sendToMaster = new CollectProducer(agg, sendToMasterID, 0);
 
