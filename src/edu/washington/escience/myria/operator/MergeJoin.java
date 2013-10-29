@@ -72,6 +72,8 @@ public final class MergeJoin extends BinaryOperator {
    */
   private int leftBeginIndex;
 
+  private boolean leftOutstandingAdvance;
+
   /**
    * Location of reader in right batch.
    * 
@@ -83,6 +85,8 @@ public final class MergeJoin extends BinaryOperator {
    * Index of first row that is equal to the one in {@link #rightRowIndex}.
    */
   private int rightBeginIndex;
+
+  private boolean rightOutstandingAdvance;
 
   /**
    * The buffer holding the results.
@@ -277,19 +281,6 @@ public final class MergeJoin extends BinaryOperator {
    */
   private final boolean[] childrenEOI = new boolean[2];
 
-  /**
-   * Note: If this operator is ready for EOS, this function will return true since EOS is a special EOI.
-   * 
-   * @return whether this operator is ready to set itself EOI
-   */
-  private boolean isEOIReady() {
-    // we want or here because if one is finished, we are done
-    if ((childrenEOI[0] || getLeft().eos()) || (childrenEOI[1] || getRight().eos())) {
-      return true;
-    }
-    return false;
-  }
-
   @Override
   protected TupleBatch fetchNextReady() throws Exception {
     /* If any full tuple batches are ready, output them. */
@@ -298,7 +289,7 @@ public final class MergeJoin extends BinaryOperator {
       return nexttb;
     }
 
-    if (leftBatches.isEmpty() && !getLeft().eoi()) {
+    if (leftBatches.isEmpty() && !getLeft().eos()) {
       TupleBatch tb = getLeft().fetchNextReady();
       if (tb != null) {
         leftBatches.add(tb);
@@ -316,28 +307,51 @@ public final class MergeJoin extends BinaryOperator {
       }
     }
 
+    /**
+     * Invariant: row index always points to the last tuple that has been processed. That means that if the row indexes
+     * point to equal tuples, they have been joined by the end of the loop. In other words, we join first, then advance
+     * the index.
+     */
     while (nexttb == null) {
       System.out.println("==========");
 
       // Get data from children if possible (no eos) and necessary (we are at the end of the last TB)
-      if (leftRowIndex == leftBatches.getLast().numTuples() - 1 && !getLeft().eos()) {
+      if (leftOutstandingAdvance && !getLeft().eos()) {
         TupleBatch tb = getLeft().fetchNextReady();
         if (tb != null) {
           leftBatches.add(tb);
-          // TODO
+          if (leftBeginIndex == leftRowIndex && leftBatches.size() == 1) {
+            // we had an outstanding advance that we can process without further joins
+            leftRowIndex = 0;
+            leftOutstandingAdvance = false;
+            leftRowIndex++;
+            joinCurrentIfPossible();
+          } else {
+            // we were joining before and need to make sure that we don't break the join
+            if (leftBatches.getLast().tupleCompare(leftCompareIndx, 0, rightBatches.getLast(), rightCompareIndx,
+                rightRowIndex, ascending) == 0) {
+              // if we continued here, we would break the join because the
+
+            }
+          }
         } else {
           System.out.println("Left is empty. eos: " + getLeft().eos());
+          setEOS();
           break;
         }
       }
 
-      if (rightRowIndex == rightBatches.getLast().numTuples() - 1 && !getRight().eos()) {
+      if (rightOutstandingAdvance && !getRight().eos()) {
         TupleBatch tb = getRight().fetchNextReady();
         if (tb != null) {
           rightBatches.add(tb);
-          // TODO
+          rightRowIndex = 0;
+          rightOutstandingAdvance = false;
+          rightRowIndex++;
+          joinCurrentIfPossible();
         } else {
           System.out.println("Right is empty. eos: " + getRight().eos());
+          setEOS();
           break;
         }
       }
@@ -345,60 +359,92 @@ public final class MergeJoin extends BinaryOperator {
       System.out.println("Indexes " + leftBatches.getLast().getLong(0, leftRowIndex) + " "
           + rightBatches.getLast().getLong(0, rightRowIndex));
 
-      final int compared =
-          leftBatches.getLast().tupleCompare(leftCompareIndx, leftRowIndex, rightBatches.getLast(), rightCompareIndx,
-              rightRowIndex, ascending);
+      // stay in this loop as long as no new data is required
+      while (nexttb == null) {
 
-      if (compared == 0) {
-        System.out.println("Match");
+        final int compared =
+            leftBatches.getLast().tupleCompare(leftCompareIndx, leftRowIndex, rightBatches.getLast(), rightCompareIndx,
+                rightRowIndex, ascending);
 
-        boolean advanceLeftFirst = rightRowIndex > leftRowIndex;
+        if (compared == 0) {
+          boolean advanceLeftFirst = rightRowIndex > leftRowIndex;
 
-        boolean advanced = false;
-        if (advanceLeftFirst) {
-          advanced = advanceLeft();
-          if (!advanced) {
-            advanced = advanceRight();
-          }
-        } else {
-          advanced = advanceRight();
-          if (!advanced) {
+          boolean advanced = false;
+          if (advanceLeftFirst) {
             advanced = advanceLeft();
+            if (!advanced) {
+              advanced = advanceRight();
+            }
+          } else {
+            advanced = advanceRight();
+            if (!advanced) {
+              advanced = advanceLeft();
+            }
           }
-        }
 
-        if (!advanced) {
-          // we merged all tuples with a certain value
-          leftRowIndex++;
-          rightRowIndex++;
-          leftBeginIndex = leftRowIndex;
-          rightBeginIndex = rightRowIndex;
-          System.out.println("Advance left to " + leftRowIndex);
-          System.out.println("Advance right to " + rightRowIndex);
-          while (leftBatches.size() > 1) {
-            leftBatches.removeFirst();
-          }
-          while (rightBatches.size() > 1) {
-            rightBatches.removeFirst();
+          if (!advanced) {
+            if (rightRowIndex < rightBatches.getLast().numTuples() - 1
+                && leftRowIndex < leftBatches.getLast().numTuples() - 1) {
+              Preconditions.checkArgument(leftBatches.getLast().tupleCompare(leftCompareIndx, leftRowIndex,
+                  leftRowIndex + 1, ascending) != 0);
+              Preconditions.checkArgument(rightBatches.getLast().tupleCompare(rightCompareIndx, rightRowIndex,
+                  rightRowIndex + 1, ascending) != 0);
+
+              // we merged all tuples with a certain value
+              leftRowIndex++;
+              rightRowIndex++;
+              leftBeginIndex = leftRowIndex;
+              rightBeginIndex = rightRowIndex;
+              System.out.println("Advance left (both) to " + leftRowIndex);
+              System.out.println("Advance right (both) to " + rightRowIndex);
+              while (leftBatches.size() > 1) {
+                leftBatches.removeFirst();
+              }
+              while (rightBatches.size() > 1) {
+                rightBatches.removeFirst();
+              }
+              joinCurrentIfPossible();
+            } else {
+              System.out.println("Could not advance both.");
+              leftOutstandingAdvance = true;
+              rightOutstandingAdvance = true;
+              break;
+            }
           }
         } else {
-          System.out.println("We joined");
+          if (compared > 0) {
+            if (rightRowIndex == rightBatches.getLast().numTuples() - 1) {
+              System.out.println("Cannot advance. Need more data at right.");
+              rightOutstandingAdvance = true;
+              break;
+            } else {
+              rightRowIndex++;
+              rightBeginIndex = rightRowIndex;
+              System.out.println("Advance right to " + rightRowIndex);
+            }
+          } else {
+            if (leftRowIndex == leftBatches.getLast().numTuples() - 1) {
+              System.out.println("Cannot advance. Need more data at left.");
+              leftOutstandingAdvance = true;
+              break;
+            } else {
+              leftRowIndex++;
+              leftBeginIndex = leftRowIndex;
+              System.out.println("Advance left to " + leftRowIndex);
+            }
+          }
+          joinCurrentIfPossible();
         }
 
-      } else if (compared > 0) {
-        rightRowIndex++;
-        rightBeginIndex = rightRowIndex;
-        System.out.println("Advance right to " + rightRowIndex);
-      } else {
-        leftRowIndex++;
-        leftBeginIndex = leftRowIndex;
-        System.out.println("Advance left to " + leftRowIndex);
-      }
+        nexttb = ans.popFilled();
 
-      nexttb = ans.popFilled();
+        if (leftRowIndex == leftBatches.getLast().numTuples() || rightRowIndex == rightBatches.getLast().numTuples()) {
+          throw new Exception("Outside");
+        }
+      }
     }
 
-    if (isEOIReady()) {
+    if (eos()) {
       nexttb = ans.popAny();
       if (nexttb == null) {
         checkEOSAndEOI();
@@ -406,6 +452,16 @@ public final class MergeJoin extends BinaryOperator {
     }
 
     return nexttb;
+  }
+
+  /**
+   * Joins the tuples that the row indexes currently point to, if the join keys match.
+   */
+  protected void joinCurrentIfPossible() {
+    if (leftBatches.getLast().tupleCompare(leftCompareIndx, leftRowIndex, rightBatches.getLast(), rightCompareIndx,
+        rightRowIndex, ascending) == 0) {
+      addToAns(leftBatches.getLast(), leftRowIndex, rightBatches.getLast(), rightRowIndex);
+    }
   }
 
   /**
@@ -425,7 +481,7 @@ public final class MergeJoin extends BinaryOperator {
             secondEndRow);
     if (newLeftRowIndex != leftRowIndex) {
       leftRowIndex = newLeftRowIndex;
-      System.out.println("Advance left to " + leftRowIndex);
+      System.out.println("Advance left to " + leftRowIndex + " in join");
       return true;
     }
     return false;
@@ -448,7 +504,7 @@ public final class MergeJoin extends BinaryOperator {
             secondEndRow);
     if (newRightRowIndex != rightRowIndex) {
       rightRowIndex = newRightRowIndex;
-      System.out.println("Advance right to " + rightRowIndex);
+      System.out.println("Advance right to " + rightRowIndex + " in join");
       return true;
     }
     return false;
@@ -477,7 +533,7 @@ public final class MergeJoin extends BinaryOperator {
     int newFirstBatchRow = firstBatchRow;
 
     if (firstBatchRow == firstBatch.numTuples() - 1) {
-      System.out.println("At the end");
+      System.out.println("At the end of a batch");
       return newFirstBatchRow;
     }
 
@@ -513,6 +569,9 @@ public final class MergeJoin extends BinaryOperator {
     rightRowIndex = 0;
     leftBeginIndex = 0;
     rightBeginIndex = 0;
+
+    leftOutstandingAdvance = false;
+    rightOutstandingAdvance = false;
 
     leftBatches = new LinkedList<TupleBatch>();
     rightBatches = new LinkedList<TupleBatch>();

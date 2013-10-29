@@ -253,9 +253,62 @@ public class OperatorTest {
 
   @Test
   public void testMergeJoin() throws DbException {
+    final Schema leftSchema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+    TupleBatchBuffer leftTbb = new TupleBatchBuffer(leftSchema);
+
+    {
+      long[] ids = new long[] { 0, 2, 2, 2, 3, 5, 6, 8, 8, 10 };
+      String[] names = new String[] { "a", "b", "c", "d", "e", "f", "g", "h", "i", "j" };
+
+      for (int i = 0; i < ids.length; i++) {
+        leftTbb.putLong(0, ids[i]);
+        leftTbb.putString(1, names[i]);
+      }
+    }
+
+    final Schema rightSchema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id2", "name2"));
+
+    TupleBatchBuffer rightTbb = new TupleBatchBuffer(rightSchema);
+
+    {
+      long[] ids = new long[] { 1, 2, 2, 4, 8, 8 };
+      String[] names = new String[] { "a", "b", "c", "d", "e", "f" };
+
+      for (int i = 0; i < ids.length; i++) {
+        rightTbb.putLong(0, ids[i]);
+        rightTbb.putString(1, names[i]);
+      }
+    }
+
+    TupleSource[] children = new TupleSource[2];
+    children[0] = new TupleSource(leftTbb);
+    children[1] = new TupleSource(rightTbb);
+
+    BinaryOperator join =
+        new MergeJoin(children[0], children[1], new int[] { 0 }, new int[] { 0 }, new boolean[] { true });
+    join.open(null);
+    TupleBatch tb;
+    final ArrayList<TupleBatch> batches = new ArrayList<TupleBatch>();
+    while (!join.eos()) {
+      tb = join.nextReady();
+      if (tb != null) {
+        batches.add(tb);
+      }
+    }
+    join.close();
+
+    assertEquals(1, batches.size());
+    assertEquals(10, batches.get(0).numTuples());
+
+  }
+
+  @Test
+  public void testMergeJoinLarge() throws DbException {
     TupleBatchBuffer[] randomTuples = new TupleBatchBuffer[2];
-    randomTuples[0] = generateRandomTuples(10, 10, true);
-    randomTuples[1] = generateRandomTuples(20, 10, true);
+    randomTuples[0] = generateRandomTuples(15000, 14000, true);
+    randomTuples[1] = generateRandomTuples(20000, 19000, true);
 
     // we need to rename the columns from the second tuples
     ImmutableList.Builder<String> sb = ImmutableList.builder();
@@ -278,6 +331,6 @@ public class OperatorTest {
     }
     join.close();
 
-    assertEquals(1, batches.size());
+    assertEquals(2, batches.size());
   }
 }
