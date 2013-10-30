@@ -166,7 +166,7 @@ public final class Merge extends NAryOperator {
           continue;
         }
         if (childBatches.get(childIdx) == null) {
-          TupleBatch tb = child.fetchNextReady();
+          TupleBatch tb = child.nextReady();
 
           // After fetching from a child, it might be EOS.
           // If we don't catch this case here but return null,
