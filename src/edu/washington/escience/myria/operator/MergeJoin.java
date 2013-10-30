@@ -72,7 +72,11 @@ public final class MergeJoin extends BinaryOperator {
    */
   private int leftBeginIndex;
 
-  private boolean leftNeedsData;
+  /**
+   * A tuple batch that goes into {@link #leftBatches} but does not fit yet because {@link #leftRowIndex} should always
+   * point into the last TB in {@link #leftBatches}.
+   */
+  private TupleBatch leftNotProcessed;
 
   /**
    * Location of reader in right batch.
@@ -86,9 +90,11 @@ public final class MergeJoin extends BinaryOperator {
    */
   private int rightBeginIndex;
 
-  private boolean rightNeedsData;
-
-  private boolean needsData;
+  /**
+   * A tuple batch that goes into {@link #rightBatches} but does not fit yet because {@link #rightRowIndex} should
+   * always point into the last TB in {@link #rightBatches}.
+   */
+  private TupleBatch rightNotProcessed;
 
   /**
    * The buffer holding the results.
@@ -99,6 +105,23 @@ public final class MergeJoin extends BinaryOperator {
   private final int[] leftAnswerColumns;
   /** Which columns in the right child are to be output. */
   private final int[] rightAnswerColumns;
+
+  /**
+   * Enum for return values from methods that advance indexes after a join.
+   */
+  enum AdvanceResult {
+    /** Could advance, no need to try other one. **/
+    OK,
+    /** Could not advance because the next tuple is not equal to the current one on this side. **/
+    NOT_EQUAL,
+    /**
+     * Could not advance because we don't have enough information available (but we tried to get it). Could be because
+     * of EOS.
+     **/
+    NOT_ENOUGH_DATA,
+    /** Nothing has been returned because method has not been called. **/
+    INVALID
+  }
 
   /**
    * Construct an EquiJoin operator. It returns all columns from both children when the corresponding columns in
@@ -244,7 +267,10 @@ public final class MergeJoin extends BinaryOperator {
    * @param rightRow in the right TB
    */
   protected void addToAns(final TupleBatch leftTb, final int leftRow, final TupleBatch rightTb, final int rightRow) {
-    System.out.println("=> Add join tuple from " + leftRow + " and " + rightRow);
+    Preconditions.checkArgument(leftTb.tupleCompare(leftCompareIndx, leftRow, rightTb, rightCompareIndx, rightRow,
+        ascending) == 0);
+
+    // System.out.println("=> Add join tuple from " + leftRow + " and " + rightRow);
     final int leftRowInColumn = leftTb.getValidIndices().get(leftRow);
     final int rightRowInColumn = rightTb.getValidIndices().get(rightRow);
 
@@ -283,297 +309,343 @@ public final class MergeJoin extends BinaryOperator {
    */
   private final boolean[] childrenEOI = new boolean[2];
 
+  /**
+   * True if a join tuple has been created for the tuples that {@link #leftRowIndex} and {@link #rightRowIndex} point
+   * to.
+   */
+  private boolean joined;
+
+  /**
+   * Note: If this operator is ready for EOS, this function will return true since EOS is a special EOI.
+   * 
+   * @return whether this operator is ready to set itself EOI
+   */
+  private boolean isEOIReady() {
+    if ((childrenEOI[0] || getLeft().eos()) && (childrenEOI[1] || getRight().eos())) {
+      return true;
+    }
+    return false;
+  }
+
   @Override
   protected TupleBatch fetchNextReady() throws Exception {
-    System.out.println("New fetch");
-
     /* If any full tuple batches are ready, output them. */
     TupleBatch nexttb = ans.popAnyUsingTimeout();
     if (nexttb != null) {
       return nexttb;
     }
 
+    /* Load data into buffers initially */
     if (leftBatches.isEmpty() && !getLeft().eos()) {
       TupleBatch tb = getLeft().fetchNextReady();
-      if (tb != null) {
-        leftBatches.add(tb);
-      } else {
+      if (tb == null) {
         return null;
       }
+      leftBatches.add(tb);
     }
 
     if (rightBatches.isEmpty() && !getRight().eos()) {
       TupleBatch tb = getRight().fetchNextReady();
-      if (tb != null) {
-        rightBatches.add(tb);
-      } else {
+      if (tb == null) {
         return null;
       }
+      rightBatches.add(tb);
     }
 
-    /**
-     * Invariant: row index always points to the last tuple that has been processed. That means that if the row indexes
-     * point to equal tuples, they have been joined by the end of the loop. In other words, we join first, then advance
-     * the index.
-     */
     while (nexttb == null && !eos()) {
-      System.out.println("==========");
+      // System.out.println("Indexes " + leftBatches.getLast().getLong(0, leftRowIndex) + " "
+      // + rightBatches.getLast().getLong(0, rightRowIndex));
+      final int compared =
+          leftBatches.getLast().tupleCompare(leftCompareIndx, leftRowIndex, rightBatches.getLast(), rightCompareIndx,
+              rightRowIndex, ascending);
 
-      if (needsData) {
-        TupleBatch tb = getLeft().fetchNextReady();
-        if (tb == null) {
-          tb = getRight().fetchNextReady();
-          if (tb == null) {
-            if (getLeft().eos() && getRight().eos()) {
+      if (compared == 0) {
+        // advance the one with the larger set of equal tuples because this produces fewer join tuples
+        // not exact but good approximation
+        final int leftSizeOfGroupOfEqualTuples =
+            leftRowIndex + TupleBatch.BATCH_SIZE * (leftBatches.size() - 1) - leftBeginIndex;
+        final int rightSizeOfGroupOfEqualTuples =
+            rightRowIndex + TupleBatch.BATCH_SIZE * (rightBatches.size() - 1) - rightBeginIndex;
+        final boolean joinFromLeft = leftSizeOfGroupOfEqualTuples > rightSizeOfGroupOfEqualTuples;
+
+        if (!joined) {
+          if (joinFromLeft) {
+            TupleBatch firstBatch = leftBatches.getLast();
+            LinkedList<TupleBatch> secondBatches = rightBatches;
+            int firstBatchRow = leftRowIndex;
+            int[] firstCompareIndx = leftCompareIndx;
+            int secondBeginRow = rightBeginIndex;
+            int secondEndRow = rightRowIndex;
+            addAllToAns(firstBatch, secondBatches, firstBatchRow, firstCompareIndx, secondBeginRow, secondEndRow);
+          } else {
+            TupleBatch firstBatch = rightBatches.getLast();
+            LinkedList<TupleBatch> secondBatches = leftBatches;
+            int firstBatchRow = rightRowIndex;
+            int[] firstCompareIndx = rightCompareIndx;
+            int secondBeginRow = leftBeginIndex;
+            int secondEndRow = leftRowIndex;
+            addAllToAns(firstBatch, secondBatches, firstBatchRow, firstCompareIndx, secondBeginRow, secondEndRow);
+          }
+          joined = true;
+        }
+
+        final boolean advanceLeftFirst = joinFromLeft;
+
+        AdvanceResult r1, r2 = AdvanceResult.INVALID;
+        if (advanceLeftFirst) {
+          // System.out.println("Try left");
+          r1 = advanceLeft();
+          if (r1 != AdvanceResult.OK) {
+            r2 = advanceRight();
+          }
+        } else {
+          // System.out.println("Try right");
+          r1 = advanceRight();
+          if (r1 != AdvanceResult.OK) {
+            r2 = advanceLeft();
+          }
+        }
+
+        // System.out.println("Results " + r1 + " " + r2);
+
+        if (r1 != AdvanceResult.OK && r2 != AdvanceResult.OK) {
+
+          Operator child1, child2;
+          if (advanceLeftFirst) {
+            child1 = getLeft();
+            child2 = getRight();
+          } else {
+            child1 = getRight();
+            child2 = getLeft();
+          }
+
+          Preconditions.checkState(r2 != AdvanceResult.INVALID);
+          if (r1 == AdvanceResult.NOT_EQUAL && r2 == AdvanceResult.NOT_EQUAL) {
+            // We know that we do not need to join anything anymore so we can advance both sides.
+            // This cannot be done earlier because we need information about both sides.
+
+            final boolean leftAtLast = leftRowIndex == leftBatches.getLast().numTuples() - 1;
+            if (leftAtLast) {
+              Preconditions.checkState(leftNotProcessed != null);
+              leftBatches.clear();
+              leftBatches.add(leftNotProcessed);
+              leftNotProcessed = null;
+              leftRowIndex = 0;
+            } else {
+              leftRowIndex++;
+            }
+            leftBeginIndex = leftRowIndex;
+
+            final boolean rightAtLast = rightRowIndex == rightBatches.getLast().numTuples() - 1;
+            if (rightAtLast) {
+              Preconditions.checkState(rightNotProcessed != null);
+              rightBatches.clear();
+              rightBatches.add(rightNotProcessed);
+              rightNotProcessed = null;
+              rightRowIndex = 0;
+            } else {
+              rightRowIndex++;
+            }
+            rightBeginIndex = rightRowIndex;
+
+            joined = false;
+          } else if (r1 == AdvanceResult.NOT_EQUAL && child2.eos() || r2 == AdvanceResult.NOT_EQUAL && child1.eos()
+              || getLeft().eos() && getRight().eos()) {
+            setEOS();
+            break;
+          } else if (r1 == AdvanceResult.NOT_ENOUGH_DATA || r2 == AdvanceResult.NOT_ENOUGH_DATA) {
+            break;
+          } else {
+            throw new Exception("implement me");
+          }
+        }
+      } else {
+        if (compared > 0) {
+          final boolean atLast = rightRowIndex == rightBatches.getLast().numTuples() - 1;
+          if (atLast) {
+            if (!getRight().eos() && rightNotProcessed == null) {
+              TupleBatch tb = getLeft().fetchNextReady();
+              if (tb != null) {
+                rightNotProcessed = tb;
+              }
+            }
+
+            if (rightNotProcessed != null) {
+              rightRowIndex = 0;
+              rightBatches.clear();
+              rightBatches.add(rightNotProcessed);
+              rightNotProcessed = null;
+            } else if (getRight().eos()) {
+              // System.err.println("Right set EOS");
               setEOS();
               break;
             } else {
-              System.out.println("No data");
-              return null;
+              break;
             }
           } else {
-            rightBatches.add(tb);
-            rightBatches.removeFirst();
-            rightRowIndex = 0;
-            rightBeginIndex = rightRowIndex;
-            needsData = false;
+            rightRowIndex++;
           }
-        } else {
-          leftBatches.add(tb);
-          leftBatches.removeFirst();
-          leftRowIndex = 0;
-          leftBeginIndex = leftRowIndex;
-          needsData = false;
-        }
-      }
-
-      if (leftNeedsData) {
-        Preconditions.checkArgument(!getLeft().eos());
-        TupleBatch tb = getLeft().fetchNextReady();
-        if (tb != null) {
-          leftBatches.add(tb);
-          leftBatches.removeFirst();
-          leftRowIndex = 0;
-          leftBeginIndex = leftRowIndex;
-          leftNeedsData = false;
-        } else {
-          System.err.println("Left is empty. eos: " + getLeft().eos());
-          setEOS();
-          break;
-        }
-      }
-
-      if (rightNeedsData) {
-        Preconditions.checkArgument(!getRight().eos());
-        TupleBatch tb = getRight().fetchNextReady();
-        if (tb != null) {
-          rightBatches.add(tb);
-          rightBatches.removeFirst();
-          rightRowIndex = 0;
           rightBeginIndex = rightRowIndex;
-          rightNeedsData = false;
+          System.out.println("Advance right to " + rightRowIndex);
         } else {
-          System.err.println("Right is empty. eos: " + getRight().eos());
-          setEOS();
-          break;
-        }
-      }
+          final boolean atLast = leftRowIndex == leftBatches.getLast().numTuples() - 1;
+          if (atLast) {
+            if (!getLeft().eos() && leftNotProcessed == null) {
+              TupleBatch tb = getLeft().fetchNextReady();
+              if (tb != null) {
+                leftNotProcessed = tb;
+              }
+            }
 
-      // System.out.println("Indexes " + leftBatches.getLast().getLong(0, leftRowIndex) + " "
-      // + rightBatches.getLast().getLong(0, rightRowIndex));
-
-      // stay in this loop as long as no new data is required
-      while (nexttb == null && !leftNeedsData && !rightNeedsData && !needsData) {
-        System.out.println("====");
-        final int compared =
-            leftBatches.getLast().tupleCompare(leftCompareIndx, leftRowIndex, rightBatches.getLast(), rightCompareIndx,
-                rightRowIndex, ascending);
-
-        if (compared == 0) {
-          boolean advanceLeftFirst = rightRowIndex > leftRowIndex;
-
-          boolean advanced = false;
-          if (advanceLeftFirst) {
-            advanced = advanceLeft();
-            if (!advanced) {
-              advanced = advanceRight();
+            if (leftNotProcessed != null) {
+              leftRowIndex = 0;
+              leftBatches.clear();
+              leftBatches.add(leftNotProcessed);
+              leftNotProcessed = null;
+            } else if (getLeft().eos()) {
+              // System.err.println("Left set EOS");
+              setEOS();
+              break;
+            } else {
+              break;
             }
           } else {
-            advanced = advanceRight();
-            if (!advanced) {
-              advanced = advanceLeft();
-            }
+            leftRowIndex++;
           }
-
-          if (!advanced) {
-            if (rightRowIndex < rightBatches.getLast().numTuples() - 1
-                && leftRowIndex < leftBatches.getLast().numTuples() - 1) {
-              Preconditions.checkArgument(leftBatches.getLast().tupleCompare(leftCompareIndx, leftRowIndex,
-                  leftRowIndex + 1, ascending) != 0);
-              Preconditions.checkArgument(rightBatches.getLast().tupleCompare(rightCompareIndx, rightRowIndex,
-                  rightRowIndex + 1, ascending) != 0);
-
-              // we merged all tuples with a certain value
-              leftRowIndex++;
-              rightRowIndex++;
-              leftBeginIndex = leftRowIndex;
-              rightBeginIndex = rightRowIndex;
-              System.out.println("Advance left (both) to " + leftRowIndex);
-              System.out.println("Advance right (both) to " + rightRowIndex);
-              while (leftBatches.size() > 1) {
-                leftBatches.removeFirst();
-              }
-              while (rightBatches.size() > 1) {
-                rightBatches.removeFirst();
-              }
-            } else {
-              needsData = true;
-            }
-          }
-        } else {
-          if (compared > 0) {
-            if (rightRowIndex == rightBatches.getLast().numTuples() - 1) {
-              rightNeedsData = true;
-              System.out.println("Cannot advance. Need more data at right.");
-            } else {
-              rightRowIndex++;
-              rightBeginIndex = rightRowIndex;
-              System.out.println("Advance right to " + rightRowIndex);
-              joinCurrentIfPossible();
-            }
-          } else {
-            if (leftRowIndex == leftBatches.getLast().numTuples() - 1) {
-              leftNeedsData = true;
-              System.out.println("Cannot advance. Need more data at left.");
-            } else {
-              leftRowIndex++;
-              leftBeginIndex = leftRowIndex;
-              System.out.println("Advance left to " + leftRowIndex);
-              joinCurrentIfPossible();
-            }
-          }
+          leftBeginIndex = leftRowIndex;
+          System.out.println("Advance left to " + leftRowIndex);
         }
-
-        nexttb = ans.popFilled();
       }
+      nexttb = ans.popFilled();
     }
 
     if (eos()) {
+      Preconditions.checkState(ans.numTuples() == 0 || nexttb == null);
+      System.out.println("EOS " + getLeft().eos() + " " + getRight().eos());
+      System.out.println("Indexes " + rightRowIndex + " " + leftRowIndex);
+      System.out.println("Sizes " + rightBatches.size() + " " + leftBatches.size());
+      Preconditions.checkState(leftNotProcessed == null);
+      Preconditions.checkState(rightNotProcessed == null);
+
       nexttb = ans.popAny();
-      if (nexttb == null) {
-        checkEOSAndEOI();
-      }
+    }
+
+    if (nexttb != null) {
+      System.out.println("Size " + nexttb.numTuples());
+    } else {
+      System.out.println("Return null");
     }
 
     return nexttb;
   }
 
   /**
-   * Joins the tuples that the row indexes currently point to, if the join keys match.
+   * @return {@link AdvanceResult.OK} if we could advance
+   * @throws Exception if any error occurs
    */
-  protected void joinCurrentIfPossible() {
-    if (leftBatches.getLast().tupleCompare(leftCompareIndx, leftRowIndex, rightBatches.getLast(), rightCompareIndx,
-        rightRowIndex, ascending) == 0) {
-      addToAns(leftBatches.getLast(), leftRowIndex, rightBatches.getLast(), rightRowIndex);
+  protected AdvanceResult advanceLeft() throws Exception {
+    final boolean atLast = leftRowIndex == leftBatches.getLast().numTuples() - 1;
+    if (atLast) {
+      // we might be able to get some information
+      if (!getLeft().eos() && leftNotProcessed == null) {
+        TupleBatch tb = getLeft().fetchNextReady();
+        if (tb != null) {
+          leftNotProcessed = tb;
+        }
+      }
+
+      if (leftNotProcessed != null) {
+        if (leftBatches.getLast().tupleCompare(leftCompareIndx, leftRowIndex, leftNotProcessed, leftCompareIndx, 0,
+            ascending) == 0) {
+          leftBatches.add(leftNotProcessed);
+          leftNotProcessed = null;
+          leftRowIndex = 0;
+          joined = false;
+          return AdvanceResult.OK;
+        } else {
+          return AdvanceResult.NOT_EQUAL;
+        }
+      } else {
+        return AdvanceResult.NOT_ENOUGH_DATA;
+      }
+    } else if (leftBatches.getLast().tupleCompare(leftCompareIndx, leftRowIndex, leftRowIndex + 1, ascending) == 0) {
+      leftRowIndex++;
+      joined = false;
+      return AdvanceResult.OK;
+    } else {
+      return AdvanceResult.NOT_EQUAL;
     }
   }
 
   /**
-   * @return true, if it could be advanced
+   * @return {@link AdvanceResult.OK} if we could advance
+   * @throws Exception if any error occurs
    */
-  protected boolean advanceLeft() {
-    TupleBatch firstBatch = leftBatches.getLast();
-    LinkedList<TupleBatch> secondBatches = rightBatches;
-    Operator firstChild = getLeft();
-    int firstBatchRow = leftRowIndex;
-    int[] firstCompareIndx = leftCompareIndx;
-    int secondBeginRow = rightBeginIndex;
-    int secondEndRow = rightRowIndex;
+  protected AdvanceResult advanceRight() throws Exception {
+    final boolean atLast = rightRowIndex == rightBatches.getLast().numTuples() - 1;
+    if (atLast) {
+      // we might be able to get some information
+      if (!getRight().eos() && rightNotProcessed == null) {
+        TupleBatch tb = getRight().fetchNextReady();
+        if (tb != null) {
+          rightNotProcessed = tb;
+        }
+      }
 
-    final int newLeftRowIndex =
-        addAllToAns(firstBatch, secondBatches, firstChild, firstBatchRow, firstCompareIndx, secondBeginRow,
-            secondEndRow);
-    if (newLeftRowIndex != leftRowIndex) {
-      leftRowIndex = newLeftRowIndex;
-      System.out.println("Advance left to " + leftRowIndex + " in join");
-      return true;
+      if (rightNotProcessed != null) {
+        if (rightBatches.getLast().tupleCompare(rightCompareIndx, rightRowIndex, rightNotProcessed, rightCompareIndx,
+            0, ascending) == 0) {
+          rightBatches.add(rightNotProcessed);
+          rightNotProcessed = null;
+          rightRowIndex = 0;
+          joined = false;
+          return AdvanceResult.OK;
+        } else {
+          return AdvanceResult.NOT_EQUAL;
+        }
+      } else {
+        return AdvanceResult.NOT_ENOUGH_DATA;
+      }
+    } else if (rightBatches.getLast().tupleCompare(rightCompareIndx, rightRowIndex, rightRowIndex + 1, ascending) == 0) {
+      rightRowIndex++;
+      joined = false;
+      return AdvanceResult.OK;
+    } else {
+      return AdvanceResult.NOT_EQUAL;
     }
-    return false;
   }
 
   /**
-   * @return true, if it could be advanced
-   */
-  protected boolean advanceRight() {
-    TupleBatch firstBatch = rightBatches.getLast();
-    LinkedList<TupleBatch> secondBatches = leftBatches;
-    Operator firstChild = getRight();
-    int firstBatchRow = rightRowIndex;
-    int[] firstCompareIndx = rightCompareIndx;
-    int secondBeginRow = leftBeginIndex;
-    int secondEndRow = leftRowIndex;
-
-    final int newRightRowIndex =
-        addAllToAns(firstBatch, secondBatches, firstChild, firstBatchRow, firstCompareIndx, secondBeginRow,
-            secondEndRow);
-    if (newRightRowIndex != rightRowIndex) {
-      rightRowIndex = newRightRowIndex;
-      System.out.println("Advance right to " + rightRowIndex + " in join");
-      return true;
-    }
-    return false;
-  }
-
-  /**
-   * Joins tuple from first batch with all tuples from the second batch between start and end. This only joins, if the
-   * row index can be advanced.
+   * Joins tuple from first batch with all tuples from the second batch between start and end.
    * 
    * @param firstBatch the batch that has one tuple to be joined with n others
    * @param secondBatches the batches that have n tuples to joined with one
-   * @param firstChild the first child
    * @param firstBatchRow the row in which we can find the tuple to join n other with
    * @param firstCompareIndx the compare index in the first TB. Used to determine whether the next tuple is equal to the
    *          one under the current index.
    * @param secondBeginRow the start of the n tuples (points into first TB in linked list)
    * @param secondEndRow the end of the n tuples (points into last TB in linked list)
-   * @return new row index for first child
    */
-  protected int addAllToAns(final TupleBatch firstBatch, final LinkedList<TupleBatch> secondBatches,
-      final Operator firstChild, final int firstBatchRow, final int[] firstCompareIndx, final int secondBeginRow,
-      final int secondEndRow) {
+  protected void addAllToAns(final TupleBatch firstBatch, final LinkedList<TupleBatch> secondBatches,
+      final int firstBatchRow, final int[] firstCompareIndx, final int secondBeginRow, final int secondEndRow) {
 
-    System.out
-        .println("Try to join one at " + firstBatchRow + " with all of " + secondBeginRow + " to " + secondEndRow);
-    int newFirstBatchRow = firstBatchRow;
+    // System.out.println("Join one at " + firstBatchRow + " with all of " + secondBeginRow + " to " + secondEndRow);
 
-    if (firstBatchRow == firstBatch.numTuples() - 1) {
-      System.out.println("At the end of a batch");
-      return newFirstBatchRow;
-    }
+    int beginIndex = secondBeginRow;
 
-    if (!firstChild.eos()) {
-      // if the next tuple is the same, we can advance and join
-      int compare = firstBatch.tupleCompare(firstCompareIndx, firstBatchRow, firstBatchRow + 1, ascending);
-
-      if (compare == 0) {
-        newFirstBatchRow++;
-        Iterator<TupleBatch> it = secondBatches.iterator();
-        while (it.hasNext()) {
-          TupleBatch tb = it.next();
-          // in the last TB we only want to go till we hit the last processed tuple
-          int endIndex = tb.numTuples();
-          if (!it.hasNext()) {
-            endIndex = secondEndRow + 1;
-          }
-          for (int i = secondBeginRow; i < endIndex; i++) {
-            addToAns(firstBatch, firstBatchRow, secondBatches.getFirst(), i);
-          }
-        }
+    Iterator<TupleBatch> it = secondBatches.iterator();
+    while (it.hasNext()) {
+      TupleBatch tb = it.next();
+      // in the last TB we only want to go till we hit the last processed tuple
+      int endIndex = tb.numTuples();
+      if (!it.hasNext()) {
+        endIndex = secondEndRow + 1;
       }
+      for (int i = beginIndex; i < endIndex; i++) {
+        addToAns(firstBatch, firstBatchRow, tb, i);
+      }
+      beginIndex = 0;
     }
-
-    return newFirstBatchRow;
-
   }
 
   @Override
@@ -583,9 +655,10 @@ public final class MergeJoin extends BinaryOperator {
     leftBeginIndex = 0;
     rightBeginIndex = 0;
 
-    leftNeedsData = false;
-    rightNeedsData = false;
-    needsData = false;
+    joined = false;
+
+    leftNotProcessed = null;
+    rightNotProcessed = null;
 
     leftBatches = new LinkedList<TupleBatch>();
     rightBatches = new LinkedList<TupleBatch>();

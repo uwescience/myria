@@ -67,9 +67,8 @@ public class OperatorTest {
 
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
 
-    System.out.println("====");
     for (Entry<Long, String> entry : entries) {
-      System.out.println(entry.getKey());
+      // System.out.println(entry.getKey());
       tbb.putLong(0, entry.getKey());
       tbb.putString(1, entry.getValue());
     }
@@ -283,8 +282,8 @@ public class OperatorTest {
     }
 
     TupleSource[] children = new TupleSource[2];
-    children[0] = new TupleSource(leftTbb);
-    children[1] = new TupleSource(rightTbb);
+    children[0] = new TupleSource(leftTbb, 3);
+    children[1] = new TupleSource(rightTbb, 3);
 
     BinaryOperator join =
         new MergeJoin(children[0], children[1], new int[] { 0 }, new int[] { 0 }, new boolean[] { true });
@@ -301,22 +300,21 @@ public class OperatorTest {
 
     assertEquals(1, batches.size());
     assertEquals(10, batches.get(0).numTuples());
-
   }
 
   @Test
   public void testMergeJoinLarge() throws DbException {
     TupleBatchBuffer[] randomTuples = new TupleBatchBuffer[2];
-    randomTuples[0] = generateRandomTuples(16000, 15000, true);
-    randomTuples[1] = generateRandomTuples(22000, 21000, true);
+    randomTuples[0] = generateRandomTuples(1220, 900, true);
+    randomTuples[1] = generateRandomTuples(1360, 900, true);
 
     // we need to rename the columns from the second tuples
     ImmutableList.Builder<String> sb = ImmutableList.builder();
     sb.add("id2");
     sb.add("name2");
     TupleSource[] children = new TupleSource[2];
-    children[0] = new TupleSource(randomTuples[0]);
-    children[1] = new TupleSource(randomTuples[1]);
+    children[0] = new TupleSource(randomTuples[0], 100);
+    children[1] = new TupleSource(randomTuples[1], 100);
     UnaryOperator rename = new Rename(children[1], sb.build());
 
     BinaryOperator join = new MergeJoin(children[0], rename, new int[] { 0 }, new int[] { 0 }, new boolean[] { true });
@@ -330,7 +328,5 @@ public class OperatorTest {
       }
     }
     join.close();
-
-    // assertEquals(2, batches.size());
   }
 }

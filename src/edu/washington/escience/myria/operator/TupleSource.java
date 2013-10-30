@@ -42,6 +42,17 @@ public final class TupleSource extends LeafOperator {
   }
 
   /**
+   * Constructs a TupleSource operator that will serve the tuples in the given TupleBatchBuffer.
+   * 
+   * @param data the tuples that this operator will serve.
+   * @param batchSize the size of the tuple batches.
+   */
+  public TupleSource(final TupleBatchBuffer data, final int batchSize) {
+    this.data = data.getAll(batchSize);
+    schema = data.getSchema();
+  }
+
+  /**
    * Constructs a TupleSource operator that will serve the tuples in the given List<TupleBatch>. Data must contain at
    * least one TupleBatch.
    * 

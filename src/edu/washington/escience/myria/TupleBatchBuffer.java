@@ -154,17 +154,27 @@ public class TupleBatchBuffer {
   /**
    * Return all tuples in this buffer. The data do not get removed.
    * 
+   * @param batchSize the size of the tuple batches.
    * @return a List<TupleBatch> containing all complete tuples that have been inserted into this buffer.
    */
-  public final List<TupleBatch> getAll() {
+  public final List<TupleBatch> getAll(final int batchSize) {
     final List<TupleBatch> output = new ArrayList<TupleBatch>();
     for (final List<Column<?>> columns : readyTuples) {
-      output.add(new TupleBatch(schema, columns, TupleBatch.BATCH_SIZE));
+      output.add(new TupleBatch(schema, columns, batchSize));
     }
     if (currentInProgressTuples > 0) {
       output.add(new TupleBatch(schema, getInProgressColumns(), currentInProgressTuples));
     }
     return output;
+  }
+
+  /**
+   * Return all tuples in this buffer. The data do not get removed.
+   * 
+   * @return a List<TupleBatch> containing all complete tuples that have been inserted into this buffer.
+   */
+  public final List<TupleBatch> getAll() {
+    return getAll(TupleBatch.BATCH_SIZE);
   }
 
   /**
