@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.api;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.HashSet;
 import java.util.List;
@@ -22,6 +23,8 @@ import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
 import org.slf4j.LoggerFactory;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.MyriaConstants;
@@ -64,6 +67,13 @@ public final class QueryResource {
   public Response validateQuery(final QueryEncoding query, @Context final UriInfo uriInfo) {
     /* Validate the input. */
     query.validate();
+    /* Make sure we can serialize it properly. */
+    try {
+      MyriaJsonMapperProvider.getWriter().writeValueAsString(query);
+    } catch (JsonProcessingException e) {
+      throw new MyriaApiException(Status.INTERNAL_SERVER_ERROR, new IOException(
+          "Unable to re-serialize the validated query", e));
+    }
     /* Send back the deserialized query. */
     return Response.ok(query).build();
   }
