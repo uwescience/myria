@@ -72,7 +72,7 @@ public final class MergeJoin extends BinaryOperator {
    */
   private int leftBeginIndex;
 
-  private boolean leftOutstandingAdvance;
+  private boolean leftNeedsData;
 
   /**
    * Location of reader in right batch.
@@ -86,7 +86,9 @@ public final class MergeJoin extends BinaryOperator {
    */
   private int rightBeginIndex;
 
-  private boolean rightOutstandingAdvance;
+  private boolean rightNeedsData;
+
+  private boolean needsData;
 
   /**
    * The buffer holding the results.
@@ -242,7 +244,7 @@ public final class MergeJoin extends BinaryOperator {
    * @param rightRow in the right TB
    */
   protected void addToAns(final TupleBatch leftTb, final int leftRow, final TupleBatch rightTb, final int rightRow) {
-    System.out.println("Add join tuple from " + leftRow + " and " + rightRow);
+    System.out.println("=> Add join tuple from " + leftRow + " and " + rightRow);
     final int leftRowInColumn = leftTb.getValidIndices().get(leftRow);
     final int rightRowInColumn = rightTb.getValidIndices().get(rightRow);
 
@@ -283,6 +285,8 @@ public final class MergeJoin extends BinaryOperator {
 
   @Override
   protected TupleBatch fetchNextReady() throws Exception {
+    System.out.println("New fetch");
+
     /* If any full tuple batches are ready, output them. */
     TupleBatch nexttb = ans.popAnyUsingTimeout();
     if (nexttb != null) {
@@ -312,56 +316,75 @@ public final class MergeJoin extends BinaryOperator {
      * point to equal tuples, they have been joined by the end of the loop. In other words, we join first, then advance
      * the index.
      */
-    while (nexttb == null) {
+    while (nexttb == null && !eos()) {
       System.out.println("==========");
 
-      // Get data from children if possible (no eos) and necessary (we are at the end of the last TB)
-      if (leftOutstandingAdvance && !getLeft().eos()) {
+      if (needsData) {
+        TupleBatch tb = getLeft().fetchNextReady();
+        if (tb == null) {
+          tb = getRight().fetchNextReady();
+          if (tb == null) {
+            if (getLeft().eos() && getRight().eos()) {
+              setEOS();
+              break;
+            } else {
+              System.out.println("No data");
+              return null;
+            }
+          } else {
+            rightBatches.add(tb);
+            rightBatches.removeFirst();
+            rightRowIndex = 0;
+            rightBeginIndex = rightRowIndex;
+            needsData = false;
+          }
+        } else {
+          leftBatches.add(tb);
+          leftBatches.removeFirst();
+          leftRowIndex = 0;
+          leftBeginIndex = leftRowIndex;
+          needsData = false;
+        }
+      }
+
+      if (leftNeedsData) {
+        Preconditions.checkArgument(!getLeft().eos());
         TupleBatch tb = getLeft().fetchNextReady();
         if (tb != null) {
           leftBatches.add(tb);
-          if (leftBeginIndex == leftRowIndex && leftBatches.size() == 1) {
-            // we had an outstanding advance that we can process without further joins
-            leftRowIndex = 0;
-            leftOutstandingAdvance = false;
-            leftRowIndex++;
-            joinCurrentIfPossible();
-          } else {
-            // we were joining before and need to make sure that we don't break the join
-            if (leftBatches.getLast().tupleCompare(leftCompareIndx, 0, rightBatches.getLast(), rightCompareIndx,
-                rightRowIndex, ascending) == 0) {
-              // if we continued here, we would break the join because the
-
-            }
-          }
+          leftBatches.removeFirst();
+          leftRowIndex = 0;
+          leftBeginIndex = leftRowIndex;
+          leftNeedsData = false;
         } else {
-          System.out.println("Left is empty. eos: " + getLeft().eos());
+          System.err.println("Left is empty. eos: " + getLeft().eos());
           setEOS();
           break;
         }
       }
 
-      if (rightOutstandingAdvance && !getRight().eos()) {
+      if (rightNeedsData) {
+        Preconditions.checkArgument(!getRight().eos());
         TupleBatch tb = getRight().fetchNextReady();
         if (tb != null) {
           rightBatches.add(tb);
+          rightBatches.removeFirst();
           rightRowIndex = 0;
-          rightOutstandingAdvance = false;
-          rightRowIndex++;
-          joinCurrentIfPossible();
+          rightBeginIndex = rightRowIndex;
+          rightNeedsData = false;
         } else {
-          System.out.println("Right is empty. eos: " + getRight().eos());
+          System.err.println("Right is empty. eos: " + getRight().eos());
           setEOS();
           break;
         }
       }
 
-      System.out.println("Indexes " + leftBatches.getLast().getLong(0, leftRowIndex) + " "
-          + rightBatches.getLast().getLong(0, rightRowIndex));
+      // System.out.println("Indexes " + leftBatches.getLast().getLong(0, leftRowIndex) + " "
+      // + rightBatches.getLast().getLong(0, rightRowIndex));
 
       // stay in this loop as long as no new data is required
-      while (nexttb == null) {
-
+      while (nexttb == null && !leftNeedsData && !rightNeedsData && !needsData) {
+        System.out.println("====");
         final int compared =
             leftBatches.getLast().tupleCompare(leftCompareIndx, leftRowIndex, rightBatches.getLast(), rightCompareIndx,
                 rightRowIndex, ascending);
@@ -403,44 +426,35 @@ public final class MergeJoin extends BinaryOperator {
               while (rightBatches.size() > 1) {
                 rightBatches.removeFirst();
               }
-              joinCurrentIfPossible();
             } else {
-              System.out.println("Could not advance both.");
-              leftOutstandingAdvance = true;
-              rightOutstandingAdvance = true;
-              break;
+              needsData = true;
             }
           }
         } else {
           if (compared > 0) {
             if (rightRowIndex == rightBatches.getLast().numTuples() - 1) {
+              rightNeedsData = true;
               System.out.println("Cannot advance. Need more data at right.");
-              rightOutstandingAdvance = true;
-              break;
             } else {
               rightRowIndex++;
               rightBeginIndex = rightRowIndex;
               System.out.println("Advance right to " + rightRowIndex);
+              joinCurrentIfPossible();
             }
           } else {
             if (leftRowIndex == leftBatches.getLast().numTuples() - 1) {
+              leftNeedsData = true;
               System.out.println("Cannot advance. Need more data at left.");
-              leftOutstandingAdvance = true;
-              break;
             } else {
               leftRowIndex++;
               leftBeginIndex = leftRowIndex;
               System.out.println("Advance left to " + leftRowIndex);
+              joinCurrentIfPossible();
             }
           }
-          joinCurrentIfPossible();
         }
 
         nexttb = ans.popFilled();
-
-        if (leftRowIndex == leftBatches.getLast().numTuples() || rightRowIndex == rightBatches.getLast().numTuples()) {
-          throw new Exception("Outside");
-        }
       }
     }
 
@@ -542,7 +556,6 @@ public final class MergeJoin extends BinaryOperator {
       int compare = firstBatch.tupleCompare(firstCompareIndx, firstBatchRow, firstBatchRow + 1, ascending);
 
       if (compare == 0) {
-        System.out.println("Do join multiple.");
         newFirstBatchRow++;
         Iterator<TupleBatch> it = secondBatches.iterator();
         while (it.hasNext()) {
@@ -570,8 +583,9 @@ public final class MergeJoin extends BinaryOperator {
     leftBeginIndex = 0;
     rightBeginIndex = 0;
 
-    leftOutstandingAdvance = false;
-    rightOutstandingAdvance = false;
+    leftNeedsData = false;
+    rightNeedsData = false;
+    needsData = false;
 
     leftBatches = new LinkedList<TupleBatch>();
     rightBatches = new LinkedList<TupleBatch>();
