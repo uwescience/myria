@@ -8,7 +8,7 @@
 			  "op_name" : "cc",
 			  "op_type" : "CollectConsumer",
 			  "arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["node_id","cluster_id"]},
-			  "arg_operator_id" : "serverCollect"
+			  "arg_operator_id" : "cpc"
 			}
 			],
 			"workers": 
@@ -23,18 +23,17 @@
 				"op_name" : "eoiReceiverA",
 				"op_type" : "Consumer",
 				"arg_schema" : {"column_types":["INT_TYPE","BOOLEAN_TYPE"],"column_names":["idbID","isDeltaEmpty"]},
-				"arg_operator_id" : "eoiReceiverOpId"
+				"arg_operator_id" : "idbinput"
 			},
 			{
 				"op_name" : "merge",
-				"op_type" : "Merge",
+				"op_type" : "UnionAll",
 				"arg_children" : ["eoiReceiverA"]
 			},
 			{
 				"op_name" : "eosController",
 				"op_type" : "EOSController",
-				"arg_child" : "merge",
-				"arg_idb_operator_ids" : ["eosReceiverOpId"]
+				"arg_child" : "merge"
 			}
 			],
 			"workers": 
@@ -61,8 +60,7 @@
 				"arg_pf" : {
 					"type" : "SingleFieldHash",
 					"index" : 0
-				},
-				"arg_operator_id" : "joinArray2"
+				}
 			}
 			]
 		},
@@ -82,7 +80,6 @@
 				"op_name" : "spG",
 				"op_type" : "ShuffleProducer",
 				"arg_child" : "scanG",
-				"arg_operator_id" : "joinArray1",
 				"arg_pf" : {
 					"type" : "SingleFieldHash",
 					"index" : 1
@@ -96,25 +93,24 @@
 			{
 				"op_name" : "scC",
 				"op_type" : "ShuffleConsumer",
-				"arg_operator_id" : "joinArray2",
+				"arg_operator_id" : "spC",
 				"arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["node_id", "cluster_id"]}
 			},
 			{
 				"op_name" : "scJoin",
 				"op_type" : "ShuffleConsumer",
-				"arg_operator_id" : "joinResult",
+				"arg_operator_id" : "spJoin",
 				"arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["node_id", "cluster_id"]}
 			},
 			{
 				"op_name" : "eosReceiver",
 				"op_type" : "Consumer",
-				"arg_operator_id" : "eosReceiverOpId",
+				"arg_operator_id" : "eosController",
 				"arg_schema" : {"column_types":["BOOLEAN_TYPE"],"column_names":["EOS"]}
 			},
 			{
 				"op_name" : "idbinput",
 				"op_type" : "IDBController",
-				"arg_controller_operator_id" : "eoiReceiverOpId",
 				"arg_self_idb_id" : "0",
 				"arg_initial_input" : "scC",
 				"arg_iteration_input" : "scJoin",
@@ -128,7 +124,6 @@
 			{
 				"op_name" : "mp",
 				"op_type" : "LocalMultiwayProducer",
-				"arg_operator_ids" : ["mpId1", "mpId2"],
 				"arg_child" : "idbinput"
 			}
 			]
@@ -139,18 +134,18 @@
 			{
 				"op_name" : "sc1g",
 				"op_type" : "ShuffleConsumer",
-				"arg_operator_id" : "joinArray1",
+				"arg_operator_id" : "spG",
 				"arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["node_id_1", "node_id_2"]}
 			},
 			{
 				"op_name" : "send2join",
 				"op_type" : "LocalMultiwayConsumer",
-				"arg_operator_id" : "mpId1",
+				"arg_operator_id" : "mp",
 				"arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["node_id", "cluster_id"]}
 			},
 			{
 				"op_name" : "join",
-				"op_type" : "LocalJoin",
+				"op_type" : "SymmetricHashJoin",
 				"arg_child1" : "sc1g",
 				"arg_child2" : "send2join",
 				"arg_columns1" : ["1"],
@@ -164,7 +159,6 @@
 				"op_name" : "spJoin",
 				"op_type" : "ShuffleProducer",
 				"arg_child" : "join",
-				"arg_operator_id" : "joinResult",
 				"arg_pf" : {
 					"type" : "SingleFieldHash",
 					"index" : 0
@@ -178,7 +172,7 @@
 			{
 				"op_name" : "send2server",
 				"op_type" : "LocalMultiwayConsumer",
-				"arg_operator_id" : "mpId2",
+				"arg_operator_id" : "mp",
 				"arg_schema" : {"column_types":["LONG_TYPE","LONG_TYPE"],"column_names":["node_id", "cluster_id"]}
 			},
 			{
@@ -192,7 +186,6 @@
 			{
 				"op_name" : "cpc",
 				"op_type" : "CollectProducer",
-				"arg_operator_id" : "serverCollect",
 				"arg_child" : "agg"
 			}
 			]
