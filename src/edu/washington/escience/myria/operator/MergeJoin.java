@@ -15,7 +15,6 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.operator.MergeJoin.AdvanceResult;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
 
 /**
@@ -346,7 +345,7 @@ public final class MergeJoin extends BinaryOperator {
     }
 
     if (rightBatches.isEmpty() && !getRight().eos()) {
-      TupleBatch tb = getRight().fetchNextReady();
+      TupleBatch tb = getRight().nextReady();
       if (tb == null) {
         return null;
       }
@@ -465,7 +464,7 @@ public final class MergeJoin extends BinaryOperator {
           final boolean atLast = rightRowIndex == rightBatches.getLast().numTuples() - 1;
           if (atLast) {
             if (!getRight().eos() && rightNotProcessed == null) {
-              TupleBatch tb = getRight().fetchNextReady();
+              TupleBatch tb = getRight().nextReady();
               if (tb != null) {
                 rightNotProcessed = tb;
               }
@@ -587,7 +586,7 @@ public final class MergeJoin extends BinaryOperator {
     if (atLast) {
       // we might be able to get some information
       if (!getRight().eos() && rightNotProcessed == null) {
-        TupleBatch tb = getRight().fetchNextReady();
+        TupleBatch tb = getRight().nextReady();
         if (tb != null) {
           rightNotProcessed = tb;
         }
