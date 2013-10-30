@@ -13,6 +13,13 @@ def twitter_small_relation_key():
     }
     return relation_key
 
+def twitter_median_relation_key():
+    relation_key = {
+        "user_name" : "chushumo",
+        "program_name" : "multiway_join",
+        "relation_name" : "twitter_median"
+    }
+    return relation_key
 
 def scan_R_then_shuffle():
     scan = {
@@ -144,7 +151,7 @@ def scan_R_then_partition():
     scan = {
         "op_type" : "TableScan",
         "op_name" : "Scan(R)",
-        "relation_key" : twitter_small_relation_key()
+        "relation_key" : twitter_median_relation_key()
     }
     shuffle = {
         "op_type" : "ShuffleProducer",
@@ -167,7 +174,7 @@ def scan_S_then_partition():
     scan = {
         "op_type" : "TableScan",
         "op_name" : "Scan(S)",
-        "relation_key" : twitter_small_relation_key()
+        "relation_key" : twitter_median_relation_key()
     }
 
     shuffle = {
@@ -214,12 +221,31 @@ def receive_partition_then_join():
         "arg_columns2" : [0],
         "arg_select1" : [0],
         "arg_select2" : [1]
+    }
+    localCountingJoin = {
+        "op_type" : "LocalCountingJoin",
+        "op_name" : "Join",
+        "arg_child1" : "GatherR",
+        "arg_child2" : "GatherS",
+        "arg_columns1" : [1],
+        "arg_columns2" : [0]
     }    
     collect = {
         "arg_child": "Join",
         "arg_operator_id": "collect",
         "op_name": "SendResult",
         "op_type": "CollectProducer"
+    }
+    insert = {
+        "arg_child": "Join",
+        "arg_overwrite_table": True,
+        "op_name": "Insert",
+        "op_type": "DbInsert",
+        "relation_key": {
+            "program_name": "multiway_join",
+            "relation_name": "twitter_median_join_small_median",
+            "user_name": "chushumo"
+        }
     }
     fragment = {
         "operators": [gatherR, gatherS, join, collect]
@@ -261,7 +287,7 @@ def collect_partition_join_result():
 
 # as a baseline to validate
 def partition_join():
-    fragments = [scan_R_then_partition(), scan_S_then_partition(), receive_partition_then_join(), collect_partition_join_result()]
+    fragments = [scan_R_then_partition(), scan_S_then_partition(), receive_partition_then_join()]
     whole_plan = {
         "fragments":fragments,
         "logical_ra" : "partition join",
