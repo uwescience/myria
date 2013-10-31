@@ -64,7 +64,12 @@ public final class BooleanColumn implements Column<Boolean> {
   @Override
   public void getIntoSQLite(final int row, final SQLiteStatement statement, final int sqliteIndex)
       throws SQLiteException {
-    throw new UnsupportedOperationException("SQLite does not support Boolean columns.");
+    /* In SQLite, booleans are integers represented as 0 (false) or 1 (true). */
+    int value = 0;
+    if (getBoolean(row)) {
+      value = 1;
+    }
+    statement.bind(sqliteIndex, value);
   }
 
   @Override
