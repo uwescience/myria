@@ -283,6 +283,10 @@ public final class MergeJoin extends BinaryOperator {
   @Override
   protected void cleanup() throws DbException {
     ans = null;
+    leftBatches.clear();
+    rightBatches.clear();
+    leftNotProcessed = null;
+    rightNotProcessed = null;
   }
 
   /**
