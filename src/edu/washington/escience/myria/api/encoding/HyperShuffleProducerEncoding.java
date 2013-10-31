@@ -24,12 +24,11 @@ import edu.washington.escience.myria.util.MyriaUtils;
 public class HyperShuffleProducerEncoding extends AbstractProducerEncoding<GenericShuffleProducer> {
 
   public String argChild;
-  public String argOperatorId;
   public int[] fieldIndexes;
   public int[] hyperCubeDimensions;
   public int[][] cellPartition;
 
-  private static final List<String> requiredArguments = ImmutableList.of("argChild", "argOperatorId", "fieldIndexes",
+  private static final List<String> requiredArguments = ImmutableList.of("argChild", "fieldIndexes",
       "hyperCubeDimensions", "cellPartition");
 
   @Override
