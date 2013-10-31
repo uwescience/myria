@@ -300,6 +300,11 @@ public final class MergeJoin extends BinaryOperator {
    */
   private boolean joined;
 
+  /**
+   * If set to true, the children will be drained and EOI will be set as soon as possible.
+   */
+  private boolean deferredEOI;
+
   @Override
   protected TupleBatch fetchNextReady() throws Exception {
     /* If any full tuple batches are ready, output them. */
@@ -312,43 +317,34 @@ public final class MergeJoin extends BinaryOperator {
       return null;
     }
 
-    while (nexttb == null && !eoi() && !eos()) {
-      final int compared =
-          leftBatches.getLast().tupleCompare(leftCompareIndx, leftRowIndex, rightBatches.getLast(), rightCompareIndx,
-              rightRowIndex, ascending);
+    final Operator left = getLeft();
+    final Operator right = getRight();
 
-      if (compared == 0) {
-        // advance the one with the larger set of equal tuples because this produces fewer join tuples
-        // not exact but good approximation
-        final int leftSizeOfGroupOfEqualTuples =
-            leftRowIndex + TupleBatch.BATCH_SIZE * (leftBatches.size() - 1) - leftBeginIndex;
-        final int rightSizeOfGroupOfEqualTuples =
-            rightRowIndex + TupleBatch.BATCH_SIZE * (rightBatches.size() - 1) - rightBeginIndex;
-        final boolean joinFromLeft = leftSizeOfGroupOfEqualTuples > rightSizeOfGroupOfEqualTuples;
-
-        if (!joined && joinFromLeft) {
-          addAllToAns(leftBatches.getLast(), rightBatches, leftRowIndex, leftCompareIndx, rightBeginIndex,
-              rightRowIndex);
-        } else if (!joined) {
-          addAllToAns(rightBatches.getLast(), leftBatches, rightRowIndex, rightCompareIndx, leftBeginIndex,
-              leftRowIndex);
+    /* drain until we have an EOI from both children */
+    if (deferredEOI) {
+      if (!childrenEOI[0]) {
+        left.nextReady();
+        Preconditions.checkState(!left.eos(), "Unequal number of EOI form children.");
+        if (left.eoi()) {
+          left.setEOI(false);
+          childrenEOI[0] = true;
         }
-        joined = true;
-
-        final boolean advanceLeftFirst = joinFromLeft;
-
-        AdvanceResult r1, r2 = AdvanceResult.INVALID;
-        if (advanceLeftFirst) {
-          r1 = advanceLeft();
-          if (r1 != AdvanceResult.OK) {
-            r2 = advanceRight();
-          }
-        } else {
-          r1 = advanceRight();
-          if (r1 != AdvanceResult.OK) {
-            r2 = advanceLeft();
-          }
+      } else if (!childrenEOI[1]) {
+        right.nextReady();
+        Preconditions.checkState(!right.eos(), "Unequal number of EOI form children.");
+        if (right.eoi()) {
+          right.setEOI(false);
+          childrenEOI[1] = true;
         }
+      }
+
+      if (childrenEOI[0] && childrenEOI[1]) {
+        deferredEOI = false;
+        setEOI(true);
+      }
+    }
+
+    while (nexttb == null && !deferredEOI && !eoi() && !eos()) {
       final int compared =
           leftBatches.getLast().tupleCompare(leftCompareIndx, leftRowIndex, rightBatches.getLast(), rightCompareIndx,
               rightRowIndex, ascending);
@@ -363,7 +359,7 @@ public final class MergeJoin extends BinaryOperator {
       nexttb = ans.popFilled();
     }
 
-    if (eos()) {
+    if (eos() || eoi()) {
       Preconditions.checkState(ans.numTuples() == 0 || nexttb == null);
       Preconditions.checkState(leftNotProcessed == null);
       Preconditions.checkState(rightNotProcessed == null);
@@ -470,15 +466,20 @@ public final class MergeJoin extends BinaryOperator {
    * @throws DbException if any problem in {@link Operator.#nextReady()}.
    */
   private void leftIsLess() throws DbException {
+    final Operator left = getLeft();
+
     final boolean atLast = leftRowIndex == leftBatches.getLast().numTuples() - 1;
     if (atLast) {
       if (!leftEosOrEoi() && leftNotProcessed == null) {
-        TupleBatch tb = getLeft().nextReady();
+        TupleBatch tb = left.nextReady();
         if (tb != null) {
           leftNotProcessed = tb;
-        } else if (getRight().eoi()) {
-          setEOI(true);
-        } else if (getLeft().eos()) {
+        } else if (left.eoi()) {
+          left.setEOI(false);
+          childrenEOI[0] = true;
+          // we cannot set EOI yet because there may be more TB coming on the other child.
+          deferredEOI = true;
+        } else if (left.eos()) {
           setEOS();
         }
       }
@@ -495,15 +496,20 @@ public final class MergeJoin extends BinaryOperator {
    * @throws DbException if any problem in {@link Operator.#nextReady()}.
    */
   private void rightIsLess() throws DbException {
+    final Operator right = getRight();
+
     final boolean atLast = rightRowIndex == rightBatches.getLast().numTuples() - 1;
     if (atLast) {
       if (!rightEosOrEoi() && rightNotProcessed == null) {
-        TupleBatch tb = getRight().nextReady();
+        TupleBatch tb = right.nextReady();
         if (tb != null) {
           rightNotProcessed = tb;
-        } else if (getLeft().eoi()) {
-          setEOI(true);
-        } else if (getRight().eos()) {
+        } else if (right.eoi()) {
+          right.setEOI(false);
+          childrenEOI[1] = true;
+          // we cannot set EOI yet because there may be more TB coming on the other child.
+          deferredEOI = true;
+        } else if (right.eos()) {
           setEOS();
         }
       }
