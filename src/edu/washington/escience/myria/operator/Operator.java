@@ -325,7 +325,7 @@ public abstract class Operator implements Serializable {
     // open the children first
     if (open) {
       // XXX Do some error handling to multi-open?
-      throw new DbException("Operator already open.");
+      throw new DbException("Operator (opName=" + getOpName() + ") already open.");
     }
     this.execEnvVars = execEnvVars;
     final Operator[] children = getChildren();
