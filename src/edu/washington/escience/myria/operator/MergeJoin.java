@@ -312,7 +312,7 @@ public final class MergeJoin extends BinaryOperator {
       return null;
     }
 
-    while (nexttb == null && !eos()) {
+    while (nexttb == null && !eoi() && !eos()) {
       final int compared =
           leftBatches.getLast().tupleCompare(leftCompareIndx, leftRowIndex, rightBatches.getLast(), rightCompareIndx,
               rightRowIndex, ascending);
@@ -393,54 +393,16 @@ public final class MergeJoin extends BinaryOperator {
             setEOS();
           } else if (r1 == AdvanceResult.NOT_EQUAL && childrenEOI[child2i] || r2 == AdvanceResult.NOT_EQUAL
               && childrenEOI[child1i] || childrenEOI[0] && childrenEOI[1]) {
-            // setEOI();
-          } else if (r1 == AdvanceResult.NOT_ENOUGH_DATA || r2 == AdvanceResult.NOT_ENOUGH_DATA) {
-            break;
+            setEOI(true);
+          } else {
+            Preconditions.checkState(!(r1 == AdvanceResult.NOT_ENOUGH_DATA || r2 == AdvanceResult.NOT_ENOUGH_DATA));
           }
         }
       } else {
         if (compared > 0) {
-          final boolean atLast = rightRowIndex == rightBatches.getLast().numTuples() - 1;
-          if (atLast) {
-            if (!rightEosOrEoi() && rightNotProcessed == null) {
-              TupleBatch tb = getRight().nextReady();
-              if (tb != null) {
-                rightNotProcessed = tb;
-              } else if (getLeft().eoi()) {
-                getLeft().setEOI(false);
-                childrenEOI[0] = true;
-              } else if (getRight().eos()) {
-                setEOS();
-              }
-            }
-            if (rightNotProcessed != null) {
-              rightMoveFromNotProcessed();
-            }
-          } else {
-            rightRowIndex++;
-          }
-          rightBeginIndex = rightRowIndex;
+          rightIsLess();
         } else {
-          final boolean atLast = leftRowIndex == leftBatches.getLast().numTuples() - 1;
-          if (atLast) {
-            if (!leftEosOrEoi() && leftNotProcessed == null) {
-              TupleBatch tb = getLeft().nextReady();
-              if (tb != null) {
-                leftNotProcessed = tb;
-              } else if (getRight().eoi()) {
-                getRight().setEOI(false);
-                childrenEOI[1] = true;
-              } else if (getLeft().eos()) {
-                setEOS();
-              }
-            }
-            if (leftNotProcessed != null) {
-              leftMoveFromNotProcessed();
-            }
-          } else {
-            leftRowIndex++;
-          }
-          leftBeginIndex = leftRowIndex;
+          leftIsLess();
         }
       }
       nexttb = ans.popFilled();
@@ -454,6 +416,64 @@ public final class MergeJoin extends BinaryOperator {
     }
 
     return nexttb;
+  }
+
+  @Override
+  /**
+   * This method is different in mergeJoin because we can be EOS or EOI even if not both children are EOI or EOS.
+   * We make sure that EOS and EOI are set in {@link #fetchNextReady}.
+   */
+  public void checkEOSAndEOI() {
+  }
+
+  /**
+   * @throws DbException if any problem in {@link Operator.#nextReady()}.
+   */
+  private void leftIsLess() throws DbException {
+    final boolean atLast = leftRowIndex == leftBatches.getLast().numTuples() - 1;
+    if (atLast) {
+      if (!leftEosOrEoi() && leftNotProcessed == null) {
+        TupleBatch tb = getLeft().nextReady();
+        if (tb != null) {
+          leftNotProcessed = tb;
+        } else if (getRight().eoi()) {
+          setEOI(true);
+        } else if (getLeft().eos()) {
+          setEOS();
+        }
+      }
+      if (leftNotProcessed != null) {
+        leftMoveFromNotProcessed();
+      }
+    } else {
+      leftRowIndex++;
+    }
+    leftBeginIndex = leftRowIndex;
+  }
+
+  /**
+   * @throws DbException if any problem in {@link Operator.#nextReady()}.
+   */
+  private void rightIsLess() throws DbException {
+    final boolean atLast = rightRowIndex == rightBatches.getLast().numTuples() - 1;
+    if (atLast) {
+      if (!rightEosOrEoi() && rightNotProcessed == null) {
+        TupleBatch tb = getRight().nextReady();
+        if (tb != null) {
+          rightNotProcessed = tb;
+        } else if (getLeft().eoi()) {
+          setEOI(true);
+        } else if (getRight().eos()) {
+          setEOS();
+        }
+      }
+      if (rightNotProcessed != null) {
+        rightMoveFromNotProcessed();
+      }
+    } else {
+      rightRowIndex++;
+    }
+    rightBeginIndex = rightRowIndex;
   }
 
   /**
@@ -515,6 +535,9 @@ public final class MergeJoin extends BinaryOperator {
         TupleBatch tb = getLeft().nextReady();
         if (tb != null) {
           leftNotProcessed = tb;
+        } else if (getLeft().eoi()) {
+          getLeft().setEOI(false);
+          childrenEOI[0] = true;
         }
       }
 
@@ -553,6 +576,9 @@ public final class MergeJoin extends BinaryOperator {
         TupleBatch tb = getRight().nextReady();
         if (tb != null) {
           rightNotProcessed = tb;
+        } else if (getRight().eoi()) {
+          getRight().setEOI(false);
+          childrenEOI[1] = true;
         }
       }
 
