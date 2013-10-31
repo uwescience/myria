@@ -219,7 +219,7 @@ public final class SQLiteAccessMethod extends AccessMethod {
         }
       }).get();
     } catch (InterruptedException | ExecutionException e) {
-      throw new DbException(e);
+      throw new DbException("Error executing DDL command: " + ddlCommand, e);
     }
   }
 
