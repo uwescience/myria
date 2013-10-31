@@ -51,6 +51,7 @@ import edu.washington.escience.myria.parallel.Server;
     @Type(name = "SinkRoot", value = SinkRootEncoding.class),
     @Type(name = "SymmetricHashJoin", value = SymmetricHashJoinEncoding.class),
     @Type(name = "SymmetricHashCountingJoin", value = SymmetricHashCountingJoinEncoding.class),
+    @Type(name = "MergeJoin", value = MergeJoinEncoding.class),
     @Type(name = "TableScan", value = TableScanEncoding.class),
     @Type(name = "TipsyFileScan", value = TipsyFileScanEncoding.class),
     @Type(name = "UnionAll", value = UnionAllEncoding.class), })
