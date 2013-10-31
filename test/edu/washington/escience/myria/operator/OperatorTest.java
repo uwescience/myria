@@ -272,8 +272,8 @@ public class OperatorTest {
     TupleBatchBuffer rightTbb = new TupleBatchBuffer(rightSchema);
 
     {
-      long[] ids = new long[] { 1, 2, 2, 4, 8, 8 };
-      String[] names = new String[] { "a", "b", "c", "d", "e", "f" };
+      long[] ids = new long[] { 1, 2, 2, 4, 8, 8, 10 };
+      String[] names = new String[] { "a", "b", "c", "d", "e", "f", "g" };
 
       for (int i = 0; i < ids.length; i++) {
         rightTbb.putLong(0, ids[i]);
@@ -299,7 +299,7 @@ public class OperatorTest {
     join.close();
 
     assertEquals(1, batches.size());
-    assertEquals(10, batches.get(0).numTuples());
+    assertEquals(11, batches.get(0).numTuples());
   }
 
   @Test
