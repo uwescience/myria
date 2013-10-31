@@ -592,8 +592,18 @@ public final class MergeJoin extends BinaryOperator {
     }
   }
 
+  /**
+   * @param ascending whether the values in the compare index are sorted ascending.
+   */
+  public void setAscending(final boolean[] ascending) {
+    this.ascending = ascending;
+  }
+
   @Override
   public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+    Preconditions.checkArgument(ascending.length == leftCompareIndx.length);
+    Preconditions.checkArgument(ascending.length == rightCompareIndx.length);
+
     leftRowIndex = 0;
     rightRowIndex = 0;
     leftBeginIndex = 0;
