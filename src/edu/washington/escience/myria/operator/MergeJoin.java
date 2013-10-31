@@ -349,61 +349,16 @@ public final class MergeJoin extends BinaryOperator {
             r2 = advanceLeft();
           }
         }
+      final int compared =
+          leftBatches.getLast().tupleCompare(leftCompareIndx, leftRowIndex, rightBatches.getLast(), rightCompareIndx,
+              rightRowIndex, ascending);
 
-        if (r1 != AdvanceResult.OK && r2 != AdvanceResult.OK) {
-          Operator child1, child2;
-          int child1i, child2i;
-          if (advanceLeftFirst) {
-            child1 = getLeft();
-            child2 = getRight();
-            child1i = 0;
-            child2i = 1;
-          } else {
-            child1 = getRight();
-            child2 = getLeft();
-            child1i = 1;
-            child2i = 0;
-          }
-
-          Preconditions.checkState(r2 != AdvanceResult.INVALID);
-          if (r1 == AdvanceResult.NOT_EQUAL && r2 == AdvanceResult.NOT_EQUAL) {
-            // We know that we do not need to join anything anymore so we can advance both sides.
-            // This cannot be done earlier because we need information about both sides.
-            final boolean leftAtLast = leftRowIndex == leftBatches.getLast().numTuples() - 1;
-            if (leftAtLast) {
-              Preconditions.checkState(leftNotProcessed != null, "Buffered TB ensured in advance.");
-              leftMoveFromNotProcessed();
-            } else {
-              leftRowIndex++;
-            }
-            leftBeginIndex = leftRowIndex;
-
-            final boolean rightAtLast = rightRowIndex == rightBatches.getLast().numTuples() - 1;
-            if (rightAtLast) {
-              Preconditions.checkState(rightNotProcessed != null, "Buffered TB ensured in advance.");
-              rightMoveFromNotProcessed();
-            } else {
-              rightRowIndex++;
-            }
-            rightBeginIndex = rightRowIndex;
-
-            joined = false;
-          } else if (r1 == AdvanceResult.NOT_EQUAL && child2.eos() || r2 == AdvanceResult.NOT_EQUAL && child1.eos()
-              || getLeft().eos() && getRight().eos()) {
-            setEOS();
-          } else if (r1 == AdvanceResult.NOT_EQUAL && childrenEOI[child2i] || r2 == AdvanceResult.NOT_EQUAL
-              && childrenEOI[child1i] || childrenEOI[0] && childrenEOI[1]) {
-            setEOI(true);
-          } else {
-            Preconditions.checkState(!(r1 == AdvanceResult.NOT_ENOUGH_DATA || r2 == AdvanceResult.NOT_ENOUGH_DATA));
-          }
-        }
+      if (compared == 0) {
+        leftAndRightEqual();
+      } else if (compared > 0) {
+        rightIsLess();
       } else {
-        if (compared > 0) {
-          rightIsLess();
-        } else {
-          leftIsLess();
-        }
+        leftIsLess();
       }
       nexttb = ans.popFilled();
     }
@@ -419,11 +374,96 @@ public final class MergeJoin extends BinaryOperator {
   }
 
   @Override
-  /**
-   * This method is different in mergeJoin because we can be EOS or EOI even if not both children are EOI or EOS.
-   * We make sure that EOS and EOI are set in {@link #fetchNextReady}.
-   */
   public void checkEOSAndEOI() {
+    // This method is different in mergeJoin because we can be EOS or EOI even if not both children are EOI or EOS. We
+    // make sure that EOS and EOI are set in {@link #fetchNextReady}.
+  }
+
+  /**
+   * @throws Exception if any error occurs
+   */
+  private void leftAndRightEqual() throws Exception {
+    final Operator left = getLeft();
+    final Operator right = getRight();
+
+    // advance the one with the larger set of equal tuples because this produces fewer join tuples
+    // not exact but good approximation
+    final int leftSizeOfGroupOfEqualTuples =
+        leftRowIndex + TupleBatch.BATCH_SIZE * (leftBatches.size() - 1) - leftBeginIndex;
+    final int rightSizeOfGroupOfEqualTuples =
+        rightRowIndex + TupleBatch.BATCH_SIZE * (rightBatches.size() - 1) - rightBeginIndex;
+    final boolean joinFromLeft = leftSizeOfGroupOfEqualTuples > rightSizeOfGroupOfEqualTuples;
+
+    if (!joined && joinFromLeft) {
+      addAllToAns(leftBatches.getLast(), rightBatches, leftRowIndex, leftCompareIndx, rightBeginIndex, rightRowIndex);
+    } else if (!joined) {
+      addAllToAns(rightBatches.getLast(), leftBatches, rightRowIndex, rightCompareIndx, leftBeginIndex, leftRowIndex);
+    }
+    joined = true;
+
+    final boolean advanceLeftFirst = joinFromLeft;
+
+    AdvanceResult r1, r2 = AdvanceResult.INVALID;
+    if (advanceLeftFirst) {
+      r1 = advanceLeft();
+      if (r1 != AdvanceResult.OK) {
+        r2 = advanceRight();
+      }
+    } else {
+      r1 = advanceRight();
+      if (r1 != AdvanceResult.OK) {
+        r2 = advanceLeft();
+      }
+    }
+
+    if (r1 != AdvanceResult.OK && r2 != AdvanceResult.OK) {
+      Operator child1, child2;
+      int child1i, child2i;
+      if (advanceLeftFirst) {
+        child1 = left;
+        child2 = right;
+        child1i = 0;
+        child2i = 1;
+      } else {
+        child1 = right;
+        child2 = left;
+        child1i = 1;
+        child2i = 0;
+      }
+
+      Preconditions.checkState(r2 != AdvanceResult.INVALID);
+      if (r1 == AdvanceResult.NOT_EQUAL && r2 == AdvanceResult.NOT_EQUAL) {
+        // We know that we do not need to join anything anymore so we can advance both sides.
+        // This cannot be done earlier because we need information about both sides.
+        final boolean leftAtLast = leftRowIndex == leftBatches.getLast().numTuples() - 1;
+        if (leftAtLast) {
+          Preconditions.checkState(leftNotProcessed != null, "Buffered TB ensured in advance.");
+          leftMoveFromNotProcessed();
+        } else {
+          leftRowIndex++;
+        }
+        leftBeginIndex = leftRowIndex;
+
+        final boolean rightAtLast = rightRowIndex == rightBatches.getLast().numTuples() - 1;
+        if (rightAtLast) {
+          Preconditions.checkState(rightNotProcessed != null, "Buffered TB ensured in advance.");
+          rightMoveFromNotProcessed();
+        } else {
+          rightRowIndex++;
+        }
+        rightBeginIndex = rightRowIndex;
+
+        joined = false;
+      } else if (r1 == AdvanceResult.NOT_EQUAL && child2.eos() || r2 == AdvanceResult.NOT_EQUAL && child1.eos()
+          || left.eos() && right.eos()) {
+        setEOS();
+      } else if (r1 == AdvanceResult.NOT_EQUAL && childrenEOI[child2i] || r2 == AdvanceResult.NOT_EQUAL
+          && childrenEOI[child1i] || childrenEOI[0] && childrenEOI[1]) {
+        setEOI(true);
+      } else {
+        Preconditions.checkState(!(r1 == AdvanceResult.NOT_ENOUGH_DATA || r2 == AdvanceResult.NOT_ENOUGH_DATA));
+      }
+    }
   }
 
   /**
