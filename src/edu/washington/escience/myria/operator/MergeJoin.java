@@ -1,6 +1,5 @@
 package edu.washington.escience.myria.operator;
 
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -15,7 +14,6 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.operator.MergeJoin.AdvanceResult;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
 
 /**
@@ -46,7 +44,7 @@ public final class MergeJoin extends BinaryOperator {
   /**
    * True if column is sorted ascending in {@link #leftCompareIndx} and {@link MergeJoin#rightCompareIndx}.
    */
-  private final boolean[] ascending;
+  private boolean[] ascending;
 
   /**
    * The tuples from the left.
@@ -270,8 +268,6 @@ public final class MergeJoin extends BinaryOperator {
   protected void addToAns(final TupleBatch leftTb, final int leftRow, final TupleBatch rightTb, final int rightRow) {
     Preconditions.checkArgument(leftTb.tupleCompare(leftCompareIndx, leftRow, rightTb, rightCompareIndx, rightRow,
         ascending) == 0);
-
-    // System.out.println("=> Add join tuple from " + leftRow + " and " + rightRow);
     final int leftRowInColumn = leftTb.getValidIndices().get(leftRow);
     final int rightRowInColumn = rightTb.getValidIndices().get(rightRow);
 
@@ -288,23 +284,6 @@ public final class MergeJoin extends BinaryOperator {
     ans = null;
   }
 
-  @Override
-  public void checkEOSAndEOI() {
-    final Operator left = getLeft();
-    final Operator right = getRight();
-
-    if (left.eos() && right.eos() && ans.numTuples() == 0) {
-      setEOS();
-      return;
-    }
-
-    // EOS could be used as an EOI
-    if ((childrenEOI[0] || left.eos()) && (childrenEOI[1] || right.eos()) && ans.numTuples() == 0) {
-      setEOI(true);
-      Arrays.fill(childrenEOI, false);
-    }
-  }
-
   /**
    * Recording the EOI status of the children.
    */
@@ -316,18 +295,6 @@ public final class MergeJoin extends BinaryOperator {
    */
   private boolean joined;
 
-  /**
-   * Note: If this operator is ready for EOS, this function will return true since EOS is a special EOI.
-   * 
-   * @return whether this operator is ready to set itself EOI
-   */
-  private boolean isEOIReady() {
-    if ((childrenEOI[0] || getLeft().eos()) && (childrenEOI[1] || getRight().eos())) {
-      return true;
-    }
-    return false;
-  }
-
   @Override
   protected TupleBatch fetchNextReady() throws Exception {
     /* If any full tuple batches are ready, output them. */
@@ -336,26 +303,11 @@ public final class MergeJoin extends BinaryOperator {
       return nexttb;
     }
 
-    /* Load data into buffers initially */
-    if (leftBatches.isEmpty() && !getLeft().eos()) {
-      TupleBatch tb = getLeft().nextReady();
-      if (tb == null) {
-        return null;
-      }
-      leftBatches.add(tb);
-    }
-
-    if (rightBatches.isEmpty() && !getRight().eos()) {
-      TupleBatch tb = getRight().nextReady();
-      if (tb == null) {
-        return null;
-      }
-      rightBatches.add(tb);
+    if (!loadInitially()) {
+      return null;
     }
 
     while (nexttb == null && !eos()) {
-      // System.out.println("Indexes " + leftBatches.getLast().getLong(0, leftRowIndex) + " "
-      // + rightBatches.getLast().getLong(0, rightRowIndex));
       final int compared =
           leftBatches.getLast().tupleCompare(leftCompareIndx, leftRowIndex, rightBatches.getLast(), rightCompareIndx,
               rightRowIndex, ascending);
@@ -369,48 +321,31 @@ public final class MergeJoin extends BinaryOperator {
             rightRowIndex + TupleBatch.BATCH_SIZE * (rightBatches.size() - 1) - rightBeginIndex;
         final boolean joinFromLeft = leftSizeOfGroupOfEqualTuples > rightSizeOfGroupOfEqualTuples;
 
-        if (!joined) {
-          if (joinFromLeft) {
-            TupleBatch firstBatch = leftBatches.getLast();
-            LinkedList<TupleBatch> secondBatches = rightBatches;
-            int firstBatchRow = leftRowIndex;
-            int[] firstCompareIndx = leftCompareIndx;
-            int secondBeginRow = rightBeginIndex;
-            int secondEndRow = rightRowIndex;
-            addAllToAns(firstBatch, secondBatches, firstBatchRow, firstCompareIndx, secondBeginRow, secondEndRow);
-          } else {
-            TupleBatch firstBatch = rightBatches.getLast();
-            LinkedList<TupleBatch> secondBatches = leftBatches;
-            int firstBatchRow = rightRowIndex;
-            int[] firstCompareIndx = rightCompareIndx;
-            int secondBeginRow = leftBeginIndex;
-            int secondEndRow = leftRowIndex;
-            addAllToAns(firstBatch, secondBatches, firstBatchRow, firstCompareIndx, secondBeginRow, secondEndRow);
-          }
-          joined = true;
+        if (!joined && joinFromLeft) {
+          addAllToAns(leftBatches.getLast(), rightBatches, leftRowIndex, leftCompareIndx, rightBeginIndex,
+              rightRowIndex);
+        } else if (!joined) {
+          addAllToAns(rightBatches.getLast(), leftBatches, rightRowIndex, rightCompareIndx, leftBeginIndex,
+              leftRowIndex);
         }
+        joined = true;
 
         final boolean advanceLeftFirst = joinFromLeft;
 
         AdvanceResult r1, r2 = AdvanceResult.INVALID;
         if (advanceLeftFirst) {
-          // System.out.println("Try left");
           r1 = advanceLeft();
           if (r1 != AdvanceResult.OK) {
             r2 = advanceRight();
           }
         } else {
-          // System.out.println("Try right");
           r1 = advanceRight();
           if (r1 != AdvanceResult.OK) {
             r2 = advanceLeft();
           }
         }
 
-        // System.out.println("Results " + r1 + " " + r2);
-
         if (r1 != AdvanceResult.OK && r2 != AdvanceResult.OK) {
-
           Operator child1, child2;
           if (advanceLeftFirst) {
             child1 = getLeft();
@@ -424,14 +359,10 @@ public final class MergeJoin extends BinaryOperator {
           if (r1 == AdvanceResult.NOT_EQUAL && r2 == AdvanceResult.NOT_EQUAL) {
             // We know that we do not need to join anything anymore so we can advance both sides.
             // This cannot be done earlier because we need information about both sides.
-
             final boolean leftAtLast = leftRowIndex == leftBatches.getLast().numTuples() - 1;
             if (leftAtLast) {
-              Preconditions.checkState(leftNotProcessed != null);
-              leftBatches.clear();
-              leftBatches.add(leftNotProcessed);
-              leftNotProcessed = null;
-              leftRowIndex = 0;
+              Preconditions.checkState(leftNotProcessed != null, "Buffered TB ensured in advance.");
+              leftMoveFromNotProcessed();
             } else {
               leftRowIndex++;
             }
@@ -439,11 +370,8 @@ public final class MergeJoin extends BinaryOperator {
 
             final boolean rightAtLast = rightRowIndex == rightBatches.getLast().numTuples() - 1;
             if (rightAtLast) {
-              Preconditions.checkState(rightNotProcessed != null);
-              rightBatches.clear();
-              rightBatches.add(rightNotProcessed);
-              rightNotProcessed = null;
-              rightRowIndex = 0;
+              Preconditions.checkState(rightNotProcessed != null, "Buffered TB ensured in advance.");
+              rightMoveFromNotProcessed();
             } else {
               rightRowIndex++;
             }
@@ -453,11 +381,8 @@ public final class MergeJoin extends BinaryOperator {
           } else if (r1 == AdvanceResult.NOT_EQUAL && child2.eos() || r2 == AdvanceResult.NOT_EQUAL && child1.eos()
               || getLeft().eos() && getRight().eos()) {
             setEOS();
-            break;
           } else if (r1 == AdvanceResult.NOT_ENOUGH_DATA || r2 == AdvanceResult.NOT_ENOUGH_DATA) {
             break;
-          } else {
-            throw new Exception("implement me");
           }
         }
       } else {
@@ -470,24 +395,16 @@ public final class MergeJoin extends BinaryOperator {
                 rightNotProcessed = tb;
               }
             }
-
             if (rightNotProcessed != null) {
-              rightRowIndex = 0;
-              rightBatches.clear();
-              rightBatches.add(rightNotProcessed);
-              rightNotProcessed = null;
+              rightMoveFromNotProcessed();
             } else if (getRight().eos()) {
-              // System.err.println("Right set EOS");
               setEOS();
-              break;
-            } else {
-              break;
             }
+            break;
           } else {
             rightRowIndex++;
           }
           rightBeginIndex = rightRowIndex;
-          System.out.println("Advance right to " + rightRowIndex);
         } else {
           final boolean atLast = leftRowIndex == leftBatches.getLast().numTuples() - 1;
           if (atLast) {
@@ -497,24 +414,16 @@ public final class MergeJoin extends BinaryOperator {
                 leftNotProcessed = tb;
               }
             }
-
             if (leftNotProcessed != null) {
-              leftRowIndex = 0;
-              leftBatches.clear();
-              leftBatches.add(leftNotProcessed);
-              leftNotProcessed = null;
+              leftMoveFromNotProcessed();
             } else if (getLeft().eos()) {
-              // System.err.println("Left set EOS");
               setEOS();
-              break;
-            } else {
-              break;
             }
+            break;
           } else {
             leftRowIndex++;
           }
           leftBeginIndex = leftRowIndex;
-          System.out.println("Advance left to " + leftRowIndex);
         }
       }
       nexttb = ans.popFilled();
@@ -522,22 +431,59 @@ public final class MergeJoin extends BinaryOperator {
 
     if (eos()) {
       Preconditions.checkState(ans.numTuples() == 0 || nexttb == null);
-      System.out.println("EOS " + getLeft().eos() + " " + getRight().eos());
-      System.out.println("Indexes " + rightRowIndex + " " + leftRowIndex);
-      System.out.println("Sizes " + rightBatches.size() + " " + leftBatches.size());
       Preconditions.checkState(leftNotProcessed == null);
       Preconditions.checkState(rightNotProcessed == null);
-
       nexttb = ans.popAny();
     }
 
-    if (nexttb != null) {
-      System.out.println("Size " + nexttb.numTuples());
-    } else {
-      System.out.println("Return null");
+    return nexttb;
+  }
+
+  /**
+   * Add {@link #leftNotProcessed} into {@link #leftBatches}.
+   */
+  private void leftMoveFromNotProcessed() {
+    leftRowIndex = 0;
+    leftBatches.clear();
+    leftBatches.add(leftNotProcessed);
+    leftNotProcessed = null;
+  }
+
+  /**
+   * Add {@link #rightNotProcessed} into {@link #rightBatches}.
+   */
+  private void rightMoveFromNotProcessed() {
+    rightRowIndex = 0;
+    rightBatches.clear();
+    rightBatches.add(rightNotProcessed);
+    rightNotProcessed = null;
+  }
+
+  /**
+   * Establishes invariant that buffers have at least one batch.
+   * 
+   * @return false, if we cannot proceed because we could not fetch data for empty buffers.
+   * @throws DbException if any problem on fetching
+   */
+  private boolean loadInitially() throws DbException {
+    /* Load data into buffers initially */
+    if (leftBatches.isEmpty() && !getLeft().eos()) {
+      TupleBatch tb = getLeft().nextReady();
+      if (tb == null) {
+        return false;
+      }
+      leftBatches.add(tb);
     }
 
-    return nexttb;
+    if (rightBatches.isEmpty() && !getRight().eos()) {
+      TupleBatch tb = getRight().nextReady();
+      if (tb == null) {
+        return false;
+      }
+      rightBatches.add(tb);
+    }
+
+    return true;
   }
 
   /**
@@ -629,9 +575,6 @@ public final class MergeJoin extends BinaryOperator {
    */
   protected void addAllToAns(final TupleBatch firstBatch, final LinkedList<TupleBatch> secondBatches,
       final int firstBatchRow, final int[] firstCompareIndx, final int secondBeginRow, final int secondEndRow) {
-
-    // System.out.println("Join one at " + firstBatchRow + " with all of " + secondBeginRow + " to " + secondEndRow);
-
     int beginIndex = secondBeginRow;
 
     Iterator<TupleBatch> it = secondBatches.iterator();
