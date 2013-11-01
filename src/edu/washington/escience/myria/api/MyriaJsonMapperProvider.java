@@ -56,7 +56,7 @@ public class MyriaJsonMapperProvider extends JacksonJaxbJsonProvider {
    * 
    * @return the standard Myria custom ObjectMapper.
    */
-  private static ObjectMapper newMapper() {
+  public static ObjectMapper newMapper() {
     ObjectMapper mapper = new ObjectMapper();
 
     /*
