@@ -125,8 +125,7 @@
 			{
 				"op_name" : "send2joina",
 				"op_type" : "LocalMultiwayConsumer",
-				"arg_operator_id" : "mpa",
-				"arg_schema" : {"column_types":["LONG_TYPE"],"column_names":["followee"]}
+				"arg_operator_id" : "mpa"
 			},
 			{
 				"op_name" : "sc1g",
