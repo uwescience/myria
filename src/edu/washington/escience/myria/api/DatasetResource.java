@@ -172,7 +172,11 @@ public final class DatasetResource {
     }
 
     /* Start streaming tuples into the TupleWriter, and through the pipes to the PipedStreamingOutput. */
-    server.startDataStream(relationKey, writer);
+    try {
+      server.startDataStream(relationKey, writer);
+    } catch (IllegalArgumentException e) {
+      throw new MyriaApiException(Status.BAD_REQUEST, e);
+    }
 
     /* Yay, worked! Ensure the file has the correct filename. */
     return response.build();
