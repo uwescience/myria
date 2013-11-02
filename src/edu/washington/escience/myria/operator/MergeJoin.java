@@ -1,6 +1,5 @@
 package edu.washington.escience.myria.operator;
 
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -290,11 +289,6 @@ public final class MergeJoin extends BinaryOperator {
   }
 
   /**
-   * Recording the EOI status of the children.
-   */
-  private final boolean[] childrenEOI = new boolean[2];
-
-  /**
    * True if a join tuple has been created for the tuples that {@link #leftRowIndex} and {@link #rightRowIndex} point
    * to.
    */
@@ -317,7 +311,7 @@ public final class MergeJoin extends BinaryOperator {
       return null;
     }
 
-    while (nexttb == null && !eos() && !isEOIReady() && !deferredEOS) {
+    while (nexttb == null && !eos() && !deferredEOS) {
       final int compared =
           leftBatches.getLast().tupleCompare(leftCompareIndx, leftRowIndex, rightBatches.getLast(), rightCompareIndx,
               rightRowIndex, ascending);
@@ -335,46 +329,16 @@ public final class MergeJoin extends BinaryOperator {
       }
     }
 
-    /*
-     * If the operator is ready to emit EOI, empty its output buffer first. If the buffer is already empty, set EOI
-     * and/or EOS
-     */
-    if (isEOIReady()) {
+    if (deferredEOS) {
       nexttb = ans.popAny();
       if (nexttb == null) {
-        checkEOSAndEOI();
+        setEOS();
+      } else {
+        return nexttb;
       }
     }
+
     return nexttb;
-  }
-
-  @Override
-  public void checkEOSAndEOI() {
-    final Operator left = getLeft();
-    final Operator right = getRight();
-
-    if ((left.eos() && right.eos() || deferredEOS) && ans.numTuples() == 0) {
-      setEOS();
-      return;
-    }
-
-    // EOS could be used as an EOI
-    if ((childrenEOI[0] || left.eos()) && (childrenEOI[1] || right.eos()) && ans.numTuples() == 0) {
-      setEOI(true);
-      Arrays.fill(childrenEOI, false);
-    }
-  }
-
-  /**
-   * Note: If this operator is ready for EOS, this function will return true since EOS is a special EOI.
-   * 
-   * @return whether this operator is ready to set itself EOI
-   */
-  private boolean isEOIReady() {
-    if ((childrenEOI[0] || getLeft().eos()) && (childrenEOI[1] || getRight().eos())) {
-      return true;
-    }
-    return false;
   }
 
   /**
@@ -449,7 +413,7 @@ public final class MergeJoin extends BinaryOperator {
         joined = false;
       } else if (r1 == AdvanceResult.NOT_EQUAL && child2.eos() || r2 == AdvanceResult.NOT_EQUAL && child1.eos()
           || left.eos() && right.eos()) {
-        setEOS();
+        deferredEOS = true;
       } else {
         Preconditions.checkState(!(r1 == AdvanceResult.NOT_ENOUGH_DATA || r2 == AdvanceResult.NOT_ENOUGH_DATA));
       }
@@ -468,9 +432,6 @@ public final class MergeJoin extends BinaryOperator {
         TupleBatch tb = left.nextReady();
         if (tb != null) {
           leftNotProcessed = tb;
-        } else if (left.eoi()) {
-          left.setEOI(false);
-          childrenEOI[0] = true;
         } else if (left.eos()) {
           deferredEOS = true;
         }
@@ -496,9 +457,6 @@ public final class MergeJoin extends BinaryOperator {
         TupleBatch tb = right.nextReady();
         if (tb != null) {
           rightNotProcessed = tb;
-        } else if (right.eoi()) {
-          right.setEOI(false);
-          childrenEOI[1] = true;
         } else if (right.eos()) {
           deferredEOS = true;
         }
@@ -539,17 +497,19 @@ public final class MergeJoin extends BinaryOperator {
    * @throws DbException if any problem on fetching
    */
   private boolean loadInitially() throws DbException {
-    /* Load data into buffers initially */
-    if (leftBatches.isEmpty() && !leftEosOrEoi()) {
-      TupleBatch tb = getLeft().nextReady();
+    final Operator left = getLeft();
+    final Operator right = getRight();
+
+    if (leftBatches.isEmpty() && !left.eos()) {
+      TupleBatch tb = left.nextReady();
       if (tb == null) {
         return false;
       }
       leftBatches.add(tb);
     }
 
-    if (rightBatches.isEmpty() && !rightEosOrEoi()) {
-      TupleBatch tb = getRight().nextReady();
+    if (rightBatches.isEmpty() && !right.eos()) {
+      TupleBatch tb = right.nextReady();
       if (tb == null) {
         return false;
       }
@@ -564,16 +524,13 @@ public final class MergeJoin extends BinaryOperator {
    * @throws Exception if any error occurs
    */
   protected AdvanceResult advanceLeft() throws Exception {
+    final Operator left = getLeft();
     final boolean atLast = leftRowIndex == leftBatches.getLast().numTuples() - 1;
     if (atLast) {
-      // we might be able to get some information
-      if (!leftEosOrEoi() && leftNotProcessed == null) {
-        TupleBatch tb = getLeft().nextReady();
+      if (!left.eos() && leftNotProcessed == null) {
+        TupleBatch tb = left.nextReady();
         if (tb != null) {
           leftNotProcessed = tb;
-        } else if (getLeft().eoi()) {
-          getLeft().setEOI(false);
-          childrenEOI[0] = true;
         }
       }
 
@@ -605,16 +562,13 @@ public final class MergeJoin extends BinaryOperator {
    * @throws Exception if any error occurs
    */
   protected AdvanceResult advanceRight() throws Exception {
+    final Operator right = getRight();
     final boolean atLast = rightRowIndex == rightBatches.getLast().numTuples() - 1;
     if (atLast) {
-      // we might be able to get some information
-      if (!rightEosOrEoi() && rightNotProcessed == null) {
-        TupleBatch tb = getRight().nextReady();
+      if (!right.eos() && rightNotProcessed == null) {
+        TupleBatch tb = right.nextReady();
         if (tb != null) {
           rightNotProcessed = tb;
-        } else if (getRight().eoi()) {
-          getRight().setEOI(false);
-          childrenEOI[1] = true;
         }
       }
 
@@ -639,20 +593,6 @@ public final class MergeJoin extends BinaryOperator {
     } else {
       return AdvanceResult.NOT_EQUAL;
     }
-  }
-
-  /**
-   * @return true if the left child is EOI or EOS
-   */
-  private boolean leftEosOrEoi() {
-    return getLeft().eos() || childrenEOI[0];
-  }
-
-  /**
-   * @return true if the right child is EOI or EOS
-   */
-  private boolean rightEosOrEoi() {
-    return getRight().eos() || childrenEOI[1];
   }
 
   /**
@@ -709,8 +649,6 @@ public final class MergeJoin extends BinaryOperator {
 
     leftBatches = new LinkedList<TupleBatch>();
     rightBatches = new LinkedList<TupleBatch>();
-
-    Arrays.fill(childrenEOI, false);
 
     ans = new TupleBatchBuffer(getSchema());
   }
