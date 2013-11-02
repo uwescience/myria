@@ -159,7 +159,7 @@ public class TupleBatchBuffer {
   public final List<TupleBatch> getAll() {
     final List<TupleBatch> output = new ArrayList<TupleBatch>();
     for (final List<Column<?>> columns : readyTuples) {
-      output.add(new TupleBatch(schema, columns));
+      output.add(new TupleBatch(schema, columns, TupleBatch.BATCH_SIZE));
     }
     if (currentInProgressTuples > 0) {
       output.add(new TupleBatch(schema, getInProgressColumns(), currentInProgressTuples));
