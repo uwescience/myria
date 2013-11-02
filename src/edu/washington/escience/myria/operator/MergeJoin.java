@@ -302,6 +302,7 @@ public final class MergeJoin extends BinaryOperator {
   @Override
   protected TupleBatch fetchNextReady() throws Exception {
     /* If any full tuple batches are ready, output them. */
+
     TupleBatch nexttb = ans.popAnyUsingTimeout();
     if (nexttb != null) {
       return nexttb;
@@ -311,7 +312,7 @@ public final class MergeJoin extends BinaryOperator {
       return null;
     }
 
-    while (nexttb == null && !eos() && !deferredEOS) {
+    while (nexttb == null && !deferredEOS) {
       final int compared =
           leftBatches.getLast().tupleCompare(leftCompareIndx, leftRowIndex, rightBatches.getLast(), rightCompareIndx,
               rightRowIndex, ascending);
@@ -453,7 +454,7 @@ public final class MergeJoin extends BinaryOperator {
 
     final boolean atLast = rightRowIndex == rightBatches.getLast().numTuples() - 1;
     if (atLast) {
-      if (right.eos() && rightNotProcessed == null) {
+      if (!right.eos() && rightNotProcessed == null) {
         TupleBatch tb = right.nextReady();
         if (tb != null) {
           rightNotProcessed = tb;
