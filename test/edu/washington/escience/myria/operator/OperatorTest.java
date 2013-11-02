@@ -282,8 +282,8 @@ public class OperatorTest {
     }
 
     TupleSource[] children = new TupleSource[2];
-    children[0] = new TupleSource(leftTbb, 3);
-    children[1] = new TupleSource(rightTbb, 3);
+    children[0] = new TupleSource(leftTbb);
+    children[1] = new TupleSource(rightTbb);
 
     BinaryOperator join =
         new MergeJoin(children[0], children[1], new int[] { 0 }, new int[] { 0 }, new boolean[] { true });
@@ -305,16 +305,16 @@ public class OperatorTest {
   @Test
   public void testMergeJoinLarge() throws DbException {
     TupleBatchBuffer[] randomTuples = new TupleBatchBuffer[2];
-    randomTuples[0] = generateRandomTuples(1220, 900, true);
-    randomTuples[1] = generateRandomTuples(1360, 900, true);
+    randomTuples[0] = generateRandomTuples(12200, 12000, true);
+    randomTuples[1] = generateRandomTuples(13200, 13000, true);
 
     // we need to rename the columns from the second tuples
     ImmutableList.Builder<String> sb = ImmutableList.builder();
     sb.add("id2");
     sb.add("name2");
     TupleSource[] children = new TupleSource[2];
-    children[0] = new TupleSource(randomTuples[0], 100);
-    children[1] = new TupleSource(randomTuples[1], 100);
+    children[0] = new TupleSource(randomTuples[0]);
+    children[1] = new TupleSource(randomTuples[1]);
     UnaryOperator rename = new Rename(children[1], sb.build());
 
     BinaryOperator join = new MergeJoin(children[0], rename, new int[] { 0 }, new int[] { 0 }, new boolean[] { true });

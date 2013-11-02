@@ -55,9 +55,6 @@ public final class Merge extends NAryOperator {
 
   /**
    * Comparator for tuples in tuple batch.
-   * 
-   * @author dominik
-   * 
    */
   class TupleComparator implements Comparator<Integer> {
     @Override
