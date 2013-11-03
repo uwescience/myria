@@ -54,6 +54,7 @@ import edu.washington.escience.myria.api.encoding.TableScanEncoding;
 import edu.washington.escience.myria.api.encoding.TipsyFileScanEncoding;
 import edu.washington.escience.myria.api.encoding.UnionAllEncoding;
 import edu.washington.escience.myria.expression.BooleanExpression;
+import edu.washington.escience.myria.operator.ColumnSelect;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.FileScan;
@@ -790,8 +791,6 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
   }
 
   /**
-   * Query scan.
-   * 
    * {@link Filter}.
    * 
    * @return builder.
@@ -804,9 +803,9 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
   }
 
   /**
-   * Query scan.
+   * Column selection (Project).
    * 
-   * {@link Filter}.
+   * {@link ColumnSelect}.
    * 
    * @return builder.
    * @param fieldList list of fields to be remained
