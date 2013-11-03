@@ -31,6 +31,7 @@ import edu.washington.escience.myria.api.encoding.BroadcastConsumerEncoding;
 import edu.washington.escience.myria.api.encoding.BroadcastProducerEncoding;
 import edu.washington.escience.myria.api.encoding.CollectConsumerEncoding;
 import edu.washington.escience.myria.api.encoding.CollectProducerEncoding;
+import edu.washington.escience.myria.api.encoding.ColumnSelectEncoding;
 import edu.washington.escience.myria.api.encoding.ConsumerEncoding;
 import edu.washington.escience.myria.api.encoding.DbInsertEncoding;
 import edu.washington.escience.myria.api.encoding.DupElimEncoding;
@@ -113,6 +114,9 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * */
   private final Set<JsonQueryBaseBuilder> parents;
 
+  /**
+   * Operator name prefix. For use in automatically constructing operator names.
+   * */
   public static final Map<Class<? extends OperatorEncoding<?>>, String> OPERATOR_PREFICES =
       new HashMap<Class<? extends OperatorEncoding<?>>, String>();
   static {
@@ -132,6 +136,7 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
     OPERATOR_PREFICES.put(TipsyFileScanEncoding.class, "tipsy");
     OPERATOR_PREFICES.put(FileScanEncoding.class, "file");
     OPERATOR_PREFICES.put(FilterEncoding.class, "filter");
+    OPERATOR_PREFICES.put(ColumnSelectEncoding.class, "project");
   }
 
   /**
@@ -796,6 +801,20 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
     JsonQueryBaseBuilder filter = buildOperator(FilterEncoding.class, NO_PREFERENCE);
     ((FilterEncoding) filter.op).argPredicate = predicate;
     return filter;
+  }
+
+  /**
+   * Query scan.
+   * 
+   * {@link Filter}.
+   * 
+   * @return builder.
+   * @param fieldList list of fields to be remained
+   */
+  public JsonQueryBaseBuilder project(final int[] fieldList) {
+    JsonQueryBaseBuilder project = buildOperator(ColumnSelectEncoding.class, NO_PREFERENCE);
+    ((ColumnSelectEncoding) project.op).argFieldList = fieldList;
+    return project;
   }
 
   /**
