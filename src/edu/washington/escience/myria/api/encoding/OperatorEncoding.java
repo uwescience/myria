@@ -47,7 +47,6 @@ import edu.washington.escience.myria.parallel.Server;
     @Type(name = "ShuffleConsumer", value = ShuffleConsumerEncoding.class),
     @Type(name = "ShuffleProducer", value = ShuffleProducerEncoding.class),
     @Type(name = "SingleGroupByAggregate", value = SingleGroupByAggregateEncoding.class),
-    @Type(name = "SingleGroupByAggregateNoBuffer", value = SingleGroupByAggregateNoBufferEncoding.class),
     @Type(name = "SinkRoot", value = SinkRootEncoding.class),
     @Type(name = "SymmetricHashJoin", value = SymmetricHashJoinEncoding.class),
     @Type(name = "SymmetricHashCountingJoin", value = SymmetricHashCountingJoinEncoding.class),
