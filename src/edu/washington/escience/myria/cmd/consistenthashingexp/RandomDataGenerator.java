@@ -1,8 +1,9 @@
 package edu.washington.escience.myria.cmd.consistenthashingexp;
 
-import java.io.File;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.util.Random;
 import java.util.Scanner;
 
@@ -61,8 +62,8 @@ public final class RandomDataGenerator {
    * @throws IOException IOException
    */
   private static void generateRandomDataHelper(final int numDataPoint, final Random randomizer) throws IOException {
-    PrintStream out = new PrintStream(new File(FILENAME));
-    System.out.println("Generating data...");
+    PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(FILENAME)));
+    System.out.print("Generating data...");
     for (int i = 0; i < numDataPoint; i++) {
       // generate in a smaller range?
       out.println(randomizer.nextInt());
