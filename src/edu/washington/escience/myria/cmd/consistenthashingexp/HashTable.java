@@ -9,6 +9,7 @@ import java.util.List;
 
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
+import com.google.common.math.IntMath;
 
 /**
  * Represents a HashTable.
@@ -52,8 +53,8 @@ public final class HashTable {
    * @param value the value to be added
    */
   public void add(final int value) {
-    int index = HASH_FUNCTION.newHasher().putInt(value).hash().asInt() % buckets.size();
-    List<Integer> bucket = buckets.get(Math.abs(index));
+    int index = IntMath.mod(HASH_FUNCTION.newHasher().putInt(value).hash().asInt(), buckets.size());
+    List<Integer> bucket = buckets.get(index);
     bucket.add(value);
   }
 
