@@ -19,8 +19,6 @@ public class ConsistentHash {
   private static final int MAGIC_HASHCODE = 243;
   /** The hash function for this class. */
   private static final HashFunction HASH_FUNCTION = Hashing.murmur3_32(MAGIC_HASHCODE);
-  /** The mod constant. */
-  private static final int MOD_CONSTANT = Integer.MAX_VALUE;
   /** the circle representation of the data structure. */
   private final TreeMap<Integer, ArrayList<Integer>> circle;
 
@@ -136,6 +134,6 @@ public class ConsistentHash {
    * @return the hashcode of val
    */
   private int hashDataPoint(final int val) {
-    return Math.abs(HASH_FUNCTION.newHasher().putInt(val).hash().asInt() % MOD_CONSTANT);
+    return HASH_FUNCTION.newHasher().putInt(val).hash().asInt();
   }
 }
