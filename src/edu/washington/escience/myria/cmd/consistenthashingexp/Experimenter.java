@@ -29,7 +29,7 @@ public final class Experimenter {
   public static void main(final String[] args) throws Throwable {
     // Generate new data
     RandomDataGenerator.generateRandomData(1000000);
-    findSkewnessOfConsistHashingVariesReplicas(100, 48);
+    findSkewnessByVaryingNumNodes(48);
   }
 
   private static void findSkewnessOfConsistHashingVariesReplicas(int maxReplica, int numNodes) throws IOException,
@@ -116,7 +116,30 @@ public final class Experimenter {
     chOut.close();
   }
 
-  private static void simpleExperiment(int numDataPoints) throws IOException, FileNotFoundException {
+  private static void findSkewnessByVaryingNumNodes(int numNodes) throws IOException, FileNotFoundException {
+    PrintWriter htOut = new PrintWriter(new BufferedWriter(new FileWriter("hashtable_result.txt")));
+    PrintWriter chOut = new PrintWriter(new BufferedWriter(new FileWriter("consistenthash_result.txt")));
+    for (int i = 1; i < numNodes; i++) {
+      ConsistentHashingWithGuava ch = new ConsistentHashingWithGuava(i);
+      HashTable ht = new HashTable(i);
+      Scanner scan = new Scanner(new BufferedReader(new FileReader(RandomDataGenerator.FILENAME)));
+      while (scan.hasNextInt()) {
+        int data = scan.nextInt();
+        ch.add(data);
+        ht.add(data);
+      }
+      System.out.println("CH; node size = " + i + ", skewness = " + ch.getSkewness());
+      System.out.println("HT; node size = " + i + ", skewness = " + ht.getSkewness());
+      htOut.println(ht.getSkewness());
+      chOut.println(ch.getSkewness());
+      scan.close();
+    }
+    htOut.close();
+    chOut.close();
+
+  }
+
+  private static void simpleExperimentWithOwnCH(int numDataPoints) throws IOException, FileNotFoundException {
     RandomDataGenerator.generateRandomData(numDataPoints);
     int bucketSize = 48;
     HashTable ht = new HashTable(bucketSize);
