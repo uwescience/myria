@@ -66,6 +66,9 @@ public final class QueryResource {
   @Path("validate")
   public Response validateQuery(final QueryEncoding query, @Context final UriInfo uriInfo) {
     /* Validate the input. */
+    if (query == null) {
+      throw new MyriaApiException(Status.BAD_REQUEST, "Missing query encoding.");
+    }
     query.validate();
     /* Make sure we can serialize it properly. */
     try {
@@ -89,6 +92,9 @@ public final class QueryResource {
   @POST
   public Response postNewQuery(final QueryEncoding query, @Context final UriInfo uriInfo) throws CatalogException {
     /* Validate the input. */
+    if (query == null) {
+      throw new MyriaApiException(Status.BAD_REQUEST, "Missing query encoding.");
+    }
     query.validate();
 
     /* Deserialize the three arguments we need */
