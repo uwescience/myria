@@ -2,12 +2,10 @@ package edu.washington.escience.myria.cmd.consistenthashingexp;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,27 +30,24 @@ public final class Experimenter {
     // Generate new data
     RandomDataGenerator.generateRandomData(1000000);
     findSkewnessOfConsistHashingVariesReplicas(100, 48);
-    // for (int nodeSize = 12; nodeSize < 100; nodeSize += 12) {
-    //
-    // }
   }
 
   private static void findSkewnessOfConsistHashingVariesReplicas(int maxReplica, int numNodes) throws IOException,
       FileNotFoundException {
     String fileName = "consistenthash_result_" + numNodes + ".txt";
     PrintWriter chOut = new PrintWriter(new BufferedWriter(new FileWriter(fileName)));
-    List<Integer> nodeIds = generateRandomNodes(numNodes);
     for (int i = 1; i <= maxReplica; i += 2) {
-      ConsistentHash ch = new ConsistentHash(nodeIds, i);
-      Scanner scan = new Scanner(new BufferedReader(new FileReader("test_data.dat")));
-      while (scan.hasNextInt()) {
-        int data = scan.nextInt();
-        ch.add(data);
+      ConsistentHash ch = new ConsistentHash(generateRandomNodes(numNodes), i);
+      Scanner scan = new Scanner(new BufferedReader(new FileReader(RandomDataGenerator.FILENAME)));
+      int count;
+      for (count = 0; scan.hasNextInt(); ++count) {
+        ch.add(scan.nextInt());
       }
-      System.out.println("CH; replica size = " + i + ", skewness = " + ch.getSkewness());
+      scan.close();
+      System.out.println("CH; data size = " + count + ", num nodes = " + numNodes + ", replica size = " + i
+          + ", skewness = " + ch.getSkewness());
       chOut.println(ch.getSkewness());
       System.out.println("histogram: " + ch.getDistribution());
-      scan.close();
     }
     chOut.close();
   }
@@ -65,7 +60,7 @@ public final class Experimenter {
       List<Integer> nodeIds = generateRandomNodes(i);
       ConsistentHash ch = new ConsistentHash(nodeIds, replication);
       HashTable ht = new HashTable(i);
-      Scanner scan = new Scanner(new BufferedReader(new FileReader("test_data.dat")));
+      Scanner scan = new Scanner(new BufferedReader(new FileReader(RandomDataGenerator.FILENAME)));
       while (scan.hasNextInt()) {
         int data = scan.nextInt();
         ch.add(data);
@@ -82,10 +77,10 @@ public final class Experimenter {
   }
 
   private static void findSkewnessOfBuckets(int maxNode) throws IOException, FileNotFoundException {
-    PrintStream htOut = new PrintStream(new File("hashtable_result.txt"));
+    PrintWriter htOut = new PrintWriter(new BufferedWriter(new FileWriter("hashtable_result.txt")));
     for (int i = 2; i < maxNode; i++) {
       HashTable ht = new HashTable(i);
-      Scanner scan = new Scanner(new File("test_data.dat"));
+      Scanner scan = new Scanner(new BufferedReader(new FileReader(RandomDataGenerator.FILENAME)));
       while (scan.hasNextInt()) {
         int data = scan.nextInt();
         ht.add(data);
@@ -99,13 +94,13 @@ public final class Experimenter {
 
   private static void findSkewnessBasedOnReplicas(int maxReplica) throws IOException, FileNotFoundException {
     int numNodes = 10;
-    PrintStream htOut = new PrintStream(new File("hashtable_result.txt"));
-    PrintStream chOut = new PrintStream(new File("consistenthash_result.txt"));
+    PrintWriter htOut = new PrintWriter(new BufferedWriter(new FileWriter("hashtable_result.txt")));
+    PrintWriter chOut = new PrintWriter(new BufferedWriter(new FileWriter("consistenthash_result.txt")));
     for (int i = 1; i < maxReplica; i++) {
       List<Integer> nodeIds = generateRandomNodes(numNodes);
       ConsistentHash ch = new ConsistentHash(nodeIds, i);
       HashTable ht = new HashTable(i);
-      Scanner scan = new Scanner(new File("test_data.dat"));
+      Scanner scan = new Scanner(new BufferedReader(new FileReader(RandomDataGenerator.FILENAME)));
       while (scan.hasNextInt()) {
         int data = scan.nextInt();
         ch.add(data);
@@ -127,7 +122,7 @@ public final class Experimenter {
     HashTable ht = new HashTable(bucketSize);
     List<Integer> nodeIds = generateRandomNodes(bucketSize);
     ConsistentHash ch = new ConsistentHash(nodeIds, 10);
-    Scanner scan = new Scanner(new File("test_data.dat"));
+    Scanner scan = new Scanner(new BufferedReader(new FileReader(RandomDataGenerator.FILENAME)));
     int numData = 0;
     while (scan.hasNextInt()) {
       int data = scan.nextInt();
