@@ -48,16 +48,36 @@ public class ConsistentHash {
     for (Integer node : nodeIds) {
       hashNumbers.put(node, new ArrayList<Integer>());
       for (int i = 0; i < numReplicas; i++) {
-        int hashCode = hashDataPoint(node + i);
-        int counter = 1;
+        int hashVal = node + i * MAGIC_HASHCODE;
+        int hashCode = hashDataPoint(hashVal);
+        /* In the case of a hash collision, increment the value hashed. */
         while (circle.containsKey(hashCode)) {
-          hashCode = hashDataPoint(node + i * MAGIC_HASHCODE + counter);
-          counter++;
+          hashVal++;
+          hashCode = hashDataPoint(hashVal);
         }
         circle.put(hashCode, new ArrayList<Integer>());
         hashNumbers.get(node).add(hashCode);
       }
     }
+
+    /* Compute the expected skew for this CHT, based on the number of keys assigned to each node. */
+    int maxInterval = -1;
+    for (Map.Entry<Integer, ArrayList<Integer>> node : hashNumbers.entrySet()) {
+      int curInterval = 0;
+      /*
+       * The number of keys held at a particular bucket is id(bucket) - id(prev bucket). Handle first bucket with null
+       * check.
+       */
+      for (int id : node.getValue()) {
+        Integer prev = circle.floorKey(id - 1);
+        if (prev == null) {
+          prev = circle.lastKey();
+        }
+        curInterval += id - prev;
+      }
+      maxInterval = Math.max(maxInterval, curInterval);
+    }
+    System.out.println("Expected skew = " + (1.0 * maxInterval * hashNumbers.size() / Math.pow(2, 32)));
   }
 
   /**
@@ -67,22 +87,14 @@ public class ConsistentHash {
    */
   public void add(final int value) {
     int hashCode = hashDataPoint(value);
-    int index = -1;
-    // TODO: Binary search
-    for (Integer val : circle.keySet()) {
-      if (hashCode >= val) {
-        index = val;
-      } else {
-        break;
-      }
+    /* We want to stick this data point at the (virtual) node with the "next" key after hashCode. */
+    if (circle.lastKey() < hashCode) {
+      /* hashCode is after the last (greatest) node key, so it goes in the first entry. */
+      circle.firstEntry().getValue().add(value);
+    } else {
+      /* Some node key is greater than hashCode, so put it there. */
+      circle.ceilingEntry(hashCode).getValue().add(value);
     }
-    if (index == -1) {
-      for (Integer val : circle.keySet()) {
-        index = Math.max(val, index);
-      }
-    }
-    List<Integer> bucket = circle.get(index);
-    bucket.add(value);
   }
 
   /**
