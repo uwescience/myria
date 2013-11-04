@@ -47,7 +47,7 @@ import edu.washington.escience.myria.api.encoding.QueryEncoding;
 import edu.washington.escience.myria.api.encoding.QueryScanEncoding;
 import edu.washington.escience.myria.api.encoding.ShuffleConsumerEncoding;
 import edu.washington.escience.myria.api.encoding.ShuffleProducerEncoding;
-import edu.washington.escience.myria.api.encoding.SingleGroupByAggregateNoBufferEncoding;
+import edu.washington.escience.myria.api.encoding.SingleGroupByAggregateEncoding;
 import edu.washington.escience.myria.api.encoding.SinkRootEncoding;
 import edu.washington.escience.myria.api.encoding.SymmetricHashJoinEncoding;
 import edu.washington.escience.myria.api.encoding.TableScanEncoding;
@@ -999,11 +999,10 @@ public class JsonQueryBaseBuilder implements JsonQueryBuilder {
    * */
   public JsonQueryBaseBuilder groupBy(final int groupColumn, final int[] aggColumns, final int[] aggOps) {
     List<List<String>> ops = AggregateEncoding.serializeAggregateOperator(aggOps);
-    JsonQueryBaseBuilder gp =
-        buildOperator(SingleGroupByAggregateNoBufferEncoding.class, "argChild", this, NO_PREFERENCE);
-    ((SingleGroupByAggregateNoBufferEncoding) gp.op).argAggFields = aggColumns;
-    ((SingleGroupByAggregateNoBufferEncoding) gp.op).argAggOperators = ops;
-    ((SingleGroupByAggregateNoBufferEncoding) gp.op).argGroupField = groupColumn;
+    JsonQueryBaseBuilder gp = buildOperator(SingleGroupByAggregateEncoding.class, "argChild", this, NO_PREFERENCE);
+    ((SingleGroupByAggregateEncoding) gp.op).argAggFields = aggColumns;
+    ((SingleGroupByAggregateEncoding) gp.op).argAggOperators = ops;
+    ((SingleGroupByAggregateEncoding) gp.op).argGroupField = groupColumn;
     return gp;
   }
 
