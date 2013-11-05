@@ -114,6 +114,13 @@ public class FileScanTest {
   }
 
   @Test
+  public void testCommaTwoColumnIntUnixNoTrailingNewline() throws DbException, InterruptedException {
+    final String filename = "comma_two_col_int_unix_no_trailing_newline.txt";
+    final Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE));
+    assertTrue(getRowCount(filename, schema, ",") == 7);
+  }
+
+  @Test
   public void testCommaTwoColumnIntDos() throws DbException, InterruptedException {
     final String filename = "comma_two_col_int_dos.txt";
     final Schema schema = new Schema(ImmutableList.of(Type.INT_TYPE, Type.INT_TYPE));
