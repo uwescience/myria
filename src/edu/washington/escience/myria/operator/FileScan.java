@@ -10,6 +10,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.InputMismatchException;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Scanner;
 
@@ -167,7 +168,13 @@ public final class FileScan extends LeafOperator {
           throw new DbException("Error parsing column " + count + " of row " + lineNumber + ": ", e);
         }
       }
-      final String rest = scanner.nextLine().trim();
+      String rest = null;
+      try {
+        rest = scanner.nextLine().trim();
+      } catch (final NoSuchElementException e) {
+        rest = "";
+      }
+
       if (rest.length() > 0) {
         throw new DbException("Unexpected output at the end of line " + lineNumber + ": " + rest);
       }
