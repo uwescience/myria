@@ -406,6 +406,18 @@ public class TupleBatchBuffer {
   }
 
   /**
+   * @param tb source TupleBuffer
+   * @param sourceColumnIdx column index in source TupleBuffer
+   * @param sourceRow row number in source TupleBuffer
+   * @param destColumn destination column number
+   */
+  public final void put(final TupleBuffer tb, final int sourceColumnIdx, final int sourceRow, final int destColumn) {
+    checkPutIndex(destColumn);
+    Column<?> sourceColumn = tb.getColumns(sourceRow)[sourceColumnIdx];
+    put(destColumn, sourceColumn, sourceRow);
+  }
+
+  /**
    * Append the specified value to the specified destination column in this TupleBatchBuffer from the source column.
    * 
    * @param destColumn which column in this TBB the value will be inserted.

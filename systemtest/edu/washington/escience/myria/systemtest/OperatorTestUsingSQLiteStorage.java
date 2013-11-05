@@ -1,7 +1,9 @@
 package edu.washington.escience.myria.systemtest;
 
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertTrue;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -22,6 +24,8 @@ import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.InMemoryOrderBy;
 import edu.washington.escience.myria.operator.MergeJoin;
+import edu.washington.escience.myria.operator.MultiwayJoin;
+import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RightHashCountingJoin;
 import edu.washington.escience.myria.operator.RightHashJoin;
 import edu.washington.escience.myria.operator.RootOperator;
@@ -265,7 +269,6 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
     }
     final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
     TestUtils.assertTupleBagEqual(expectedResult, resultBag);
-
   }
 
   @Test
@@ -555,6 +558,22 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
 
     final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
     TestUtils.assertTupleBagEqual(expectedResult, resultBag);
+  }
 
+  @Test
+  public void multiwayJoinTest() throws Exception {
+    final DbQueryScan scan1 = new DbQueryScan(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA);
+    final DbQueryScan scan2 = new DbQueryScan(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA);
+    final DbQueryScan scan3 = new DbQueryScan(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA);
+    List<List<List<Integer>>> fieldMap =
+        new ArrayList<List<List<Integer>>>(asList(new ArrayList<List<Integer>>(asList(new ArrayList<Integer>(asList(0,
+            0)), new ArrayList<Integer>(asList(2, 1)))), new ArrayList<List<Integer>>(asList(new ArrayList<Integer>(
+            asList(1, 0)), new ArrayList<Integer>(asList(0, 1)))), new ArrayList<List<Integer>>(asList(
+            new ArrayList<Integer>(asList(1, 1)), new ArrayList<Integer>(asList(2, 0))))));
+
+    final MultiwayJoin mj =
+        new MultiwayJoin(new Operator[] { scan1, scan2, scan3 }, fieldMap, new ArrayList<List<Integer>>(asList(
+            new ArrayList<Integer>(asList(0, 0)), new ArrayList<Integer>(asList(1, 0)), new ArrayList<Integer>(asList(
+                1, 1)))), new ArrayList<String>(asList("x", "y", "z")));
   }
 }
