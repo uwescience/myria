@@ -30,6 +30,7 @@ children['BroadcastProducer'] = ['arg_child']
 children['HyperShuffleProducer'] = ['arg_child']
 children['SinkRoot'] = ['arg_child']
 children['DupElim'] = ['arg_child']
+children['Rename'] = ['arg_child']
 
 # Colors supported by graphviz, in some pleasing order
 colors = [
