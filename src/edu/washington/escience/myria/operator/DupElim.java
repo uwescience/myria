@@ -72,7 +72,7 @@ public final class DupElim extends UnaryOperator {
         for (int column = 0; column < tb.numColumns(); ++column) {
           uniqueTuples.put(column, tbColumns.get(column), inColumnRow);
         }
-        tupleIndexList = new TIntArrayList();
+        tupleIndexList = new TIntArrayList(1);
         tupleIndexList.add(nextIndex);
         uniqueTupleIndices.put(cntHashCode, tupleIndexList);
         continue;
