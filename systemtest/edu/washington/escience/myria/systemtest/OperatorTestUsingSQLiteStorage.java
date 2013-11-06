@@ -20,6 +20,8 @@ import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
+import edu.washington.escience.myria.operator.InMemoryOrderBy;
+import edu.washington.escience.myria.operator.MergeJoin;
 import edu.washington.escience.myria.operator.RightHashCountingJoin;
 import edu.washington.escience.myria.operator.RightHashJoin;
 import edu.washington.escience.myria.operator.RootOperator;
@@ -482,5 +484,76 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
       }
     }
     assertTrue(actual == expectedCount);
+  }
+
+  @Test
+  public void mergeJoinTest() throws Exception {
+    Logger.getLogger("com.almworks.sqlite4java").setLevel(Level.SEVERE);
+    Logger.getLogger("com.almworks.sqlite4java.Internal").setLevel(Level.SEVERE);
+
+    final HashMap<Tuple, Integer> expectedResult = simpleFixedJoinTestBase();
+
+    final ExchangePairID serverReceiveID = ExchangePairID.newID();
+    final ExchangePairID table1ShuffleID = ExchangePairID.newID();
+    final ExchangePairID table2ShuffleID = ExchangePairID.newID();
+    final SingleFieldHashPartitionFunction pf = new SingleFieldHashPartitionFunction(2, 0);
+
+    final DbQueryScan scan1 = new DbQueryScan(JOIN_TEST_TABLE_1, JOIN_INPUT_SCHEMA);
+    final DbQueryScan scan2 = new DbQueryScan(JOIN_TEST_TABLE_2, JOIN_INPUT_SCHEMA);
+
+    final GenericShuffleProducer sp1 =
+        new GenericShuffleProducer(scan1, table1ShuffleID, new int[] { workerIDs[0], workerIDs[1] }, pf);
+    final GenericShuffleConsumer sc1 =
+        new GenericShuffleConsumer(sp1.getSchema(), table1ShuffleID, new int[] { workerIDs[0], workerIDs[1] });
+
+    // final String schema = "id long, name varchar(20)";
+
+    final InMemoryOrderBy order1 = new InMemoryOrderBy(sc1, new int[] { 0 }, new boolean[] { true });
+    /*
+     * RelationKey tmp0 = RelationKey.of("test", "test", "tmp0"); createTable(workerIDs[0], tmp0, schema);
+     * createTable(workerIDs[1], tmp0, schema); final DbInsert ins1 = new DbInsert(sc1, tmp0, true); final DbQueryScan
+     * order1 = new DbQueryScan(tmp0, sp1.getSchema(), new int[] { 0 }, new boolean[] { true });
+     */
+
+    final GenericShuffleProducer sp2 =
+        new GenericShuffleProducer(scan2, table2ShuffleID, new int[] { workerIDs[0], workerIDs[1] }, pf);
+    final GenericShuffleConsumer sc2 =
+        new GenericShuffleConsumer(sp2.getSchema(), table2ShuffleID, new int[] { workerIDs[0], workerIDs[1] });
+
+    final InMemoryOrderBy order2 = new InMemoryOrderBy(sc2, new int[] { 0 }, new boolean[] { true });
+    /*
+     * RelationKey tmp1 = RelationKey.of("test", "test", "tmp1"); createTable(workerIDs[0], tmp1, schema);
+     * createTable(workerIDs[1], tmp1, schema); final DbInsert ins2 = new DbInsert(sc2, tmp1, true); final DbQueryScan
+     * order2 = new DbQueryScan(tmp1, sp1.getSchema(), new int[] { 0 }, new boolean[] { true });
+     */
+
+    final List<String> joinOutputColumnNames = ImmutableList.of("id_1", "name_1", "id_2", "name_2");
+    final MergeJoin localjoin =
+        new MergeJoin(joinOutputColumnNames, order1, order2, new int[] { 0 }, new int[] { 0 }, new boolean[] { true });
+
+    final CollectProducer cp1 = new CollectProducer(localjoin, serverReceiveID, MASTER_ID);
+    final HashMap<Integer, RootOperator[]> workerPlans = new HashMap<Integer, RootOperator[]>();
+    workerPlans.put(workerIDs[0], new RootOperator[] { sp1, sp2, cp1 });
+    workerPlans.put(workerIDs[1], new RootOperator[] { sp1, sp2, cp1 });
+
+    final CollectConsumer serverCollect =
+        new CollectConsumer(cp1.getSchema(), serverReceiveID, new int[] { workerIDs[0], workerIDs[1] });
+    final LinkedBlockingQueue<TupleBatch> receivedTupleBatches = new LinkedBlockingQueue<TupleBatch>();
+    final TBQueueExporter queueStore = new TBQueueExporter(receivedTupleBatches, serverCollect);
+    SinkRoot serverPlan = new SinkRoot(queueStore);
+
+    server.submitQueryPlan(serverPlan, workerPlans).sync();
+    TupleBatchBuffer actualResult = new TupleBatchBuffer(queueStore.getSchema());
+    TupleBatch tb = null;
+    while (!receivedTupleBatches.isEmpty()) {
+      tb = receivedTupleBatches.poll();
+      if (tb != null) {
+        tb.compactInto(actualResult);
+      }
+    }
+
+    final HashMap<Tuple, Integer> resultBag = TestUtils.tupleBatchToTupleBag(actualResult);
+    TestUtils.assertTupleBagEqual(expectedResult, resultBag);
+
   }
 }
