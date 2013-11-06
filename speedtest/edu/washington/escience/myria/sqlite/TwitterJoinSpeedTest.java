@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.sqlite;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.nio.file.FileSystems;
@@ -126,7 +127,7 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
 
     server.submitQueryPlan(serverPlan, workerPlans).sync();
     /* Make sure the count matches the known result. */
-    assertTrue(receivedTupleBatches.take().getLong(0, 0) == 3361461);
+    assertEquals(3361461, receivedTupleBatches.take().getLong(0, 0));
 
   }
 
@@ -188,7 +189,7 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
 
     server.submitQueryPlan(serverPlan, workerPlans).sync();
     /* Make sure the count matches the known result. */
-    assertTrue(serverPlan.getCount() == 3361461);
+    assertEquals(3361461, serverPlan.getCount());
 
   }
 
@@ -248,7 +249,7 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
 
     server.submitQueryPlan(serverPlan, workerPlans).sync();
     /* Make sure the count matches the known result. */
-    assertTrue(serverPlan.getCount() == 3361461);
+    assertEquals(3361461, serverPlan.getCount());
 
   }
 }

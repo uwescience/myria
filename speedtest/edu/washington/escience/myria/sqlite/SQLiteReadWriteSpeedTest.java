@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.sqlite;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -123,7 +124,7 @@ public class SQLiteReadWriteSpeedTest {
     /* Make sure all the tuples actually got inserted. */
     statement = sqliteConnection.prepare("SELECT COUNT(*) FROM insertTestTable;");
     statement.step();
-    assertTrue(statement.columnInt(0) == numTuples);
+    assertEquals(numTuples, statement.columnInt(0));
     statement.dispose();
     statement = null;
     totalSeconds = (new Date().getTime() - begin.getTime()) * 1.0 / 1000;

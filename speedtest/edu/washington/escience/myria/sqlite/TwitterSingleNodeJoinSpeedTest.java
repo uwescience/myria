@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.sqlite;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -115,7 +116,7 @@ public class TwitterSingleNodeJoinSpeedTest {
     dupelim.close();
 
     /* Make sure the count matches the known result. */
-    assertTrue(result == 3361461);
+    assertEquals(3361461, result);
   }
 
   @Test
@@ -147,7 +148,7 @@ public class TwitterSingleNodeJoinSpeedTest {
     dupelim.close();
 
     /* Make sure the count matches the known result. */
-    assertTrue(result == 3361461);
+    assertEquals(3361461, result);
   }
 
   @Test
@@ -195,7 +196,7 @@ public class TwitterSingleNodeJoinSpeedTest {
     scanResult.close();
 
     /* Make sure the count matches the known result. */
-    assertTrue(result == 3361461);
+    assertEquals(3361461, result);
   }
 
   @Test
@@ -218,7 +219,7 @@ public class TwitterSingleNodeJoinSpeedTest {
     scanResult.close();
 
     /* Check the result. */
-    assertTrue(tb.getLong(0, 0) == 3361461);
+    assertEquals(3361461, tb.getLong(0, 0));
   }
 
   @Test
@@ -244,6 +245,6 @@ public class TwitterSingleNodeJoinSpeedTest {
     scanResult.close();
 
     /* Check the result. */
-    assertTrue(tb.getLong(0, 0) == 3361461);
+    assertEquals(3361461, tb.getLong(0, 0));
   }
 }

@@ -1,6 +1,6 @@
 package edu.washington.escience.myria.systemtest;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 import java.util.HashMap;
 import java.util.List;
@@ -426,7 +426,7 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
         actual += tb.getLong(0, 0);
       }
     }
-    assertTrue(actual == expectedCount);
+    assertEquals(expectedCount, actual);
   }
 
   @Test
@@ -481,6 +481,6 @@ public class OperatorTestUsingSQLiteStorage extends SystemTestBase {
         actual += tb.getLong(0, 0);
       }
     }
-    assertTrue(actual == expectedCount);
+    assertEquals(expectedCount, actual);
   }
 }
