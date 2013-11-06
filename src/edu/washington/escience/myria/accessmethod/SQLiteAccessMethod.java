@@ -399,7 +399,7 @@ public final class SQLiteAccessMethod extends AccessMethod {
       for (IndexRef i : index) {
         Objects.requireNonNull(i);
         Preconditions.checkElementIndex(i.getColumn(), schema.numColumns());
-        name.append('_').append(i);
+        name.append('_').append(i.getColumn());
         if (!first) {
           columns.append(',');
         }
