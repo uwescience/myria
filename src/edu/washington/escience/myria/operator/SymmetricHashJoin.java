@@ -417,11 +417,9 @@ public final class SymmetricHashJoin extends BinaryOperator {
         if (tb != null) {
           hasnewtuple = true;
           processChildTB(tb, true);
-        } else {
-          if (left.eoi()) {
-            left.setEOI(false);
-            childrenEOI[0] = true;
-          }
+        } else if (left.eoi()) {
+          left.setEOI(false);
+          childrenEOI[0] = true;
         }
       }
       if (!right.eos() && !childrenEOI[1]) {
@@ -429,11 +427,9 @@ public final class SymmetricHashJoin extends BinaryOperator {
         if (tb != null) {
           hasnewtuple = true;
           processChildTB(tb, false);
-        } else {
-          if (right.eoi()) {
-            right.setEOI(false);
-            childrenEOI[1] = true;
-          }
+        } else if (right.eoi()) {
+          right.setEOI(false);
+          childrenEOI[1] = true;
         }
       }
       nexttb = ans.popFilled();
