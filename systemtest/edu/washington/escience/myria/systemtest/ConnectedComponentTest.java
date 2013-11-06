@@ -29,7 +29,7 @@ import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.operator.UnionAll;
 import edu.washington.escience.myria.operator.agg.Aggregator;
-import edu.washington.escience.myria.operator.agg.SingleGroupByAggregateNoBuffer;
+import edu.washington.escience.myria.operator.agg.SingleGroupByAggregate;
 import edu.washington.escience.myria.operator.failures.DelayInjector;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
@@ -120,8 +120,8 @@ public class ConnectedComponentTest extends SystemTestBase {
     final LocalMultiwayConsumer mc2 = new LocalMultiwayConsumer(table1Schema, mpId2);
     final SymmetricHashJoin join =
         new SymmetricHashJoin(sc2, mc1, new int[] { 1 }, new int[] { 0 }, new int[] { 0 }, new int[] { 1 }, false, true);
-    final SingleGroupByAggregateNoBuffer agg =
-        new SingleGroupByAggregateNoBuffer(mc2, new int[] { 1 }, 0, new int[] { Aggregator.AGG_OP_MIN });
+    final SingleGroupByAggregate agg =
+        new SingleGroupByAggregate(mc2, new int[] { 1 }, 0, new int[] { Aggregator.AGG_OP_MIN });
     final CollectProducer cp = new CollectProducer(agg, serverOpId, MASTER_ID);
     final GenericShuffleProducer sp3 = new GenericShuffleProducer(join, joinArrayId3, workerIDs, pf0);
     if (prioritized) {
