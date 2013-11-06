@@ -177,7 +177,7 @@
 			},
 			{
 				"op_name" : "agg",
-				"op_type" : "SingleGroupByAggregateNoBuffer",
+				"op_type" : "SingleGroupByAggregate",
 				"arg_child" : "send2server",
 				"arg_agg_fields" : ["1"],
 				"arg_group_field" : "0",
