@@ -361,4 +361,58 @@ public class OperatorTest {
       previous = entry;
     }
   }
+
+  @Test
+  public void testOrderByAndMergeJoin() throws DbException {
+    final Schema leftSchema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+    TupleBatchBuffer leftTbb = new TupleBatchBuffer(leftSchema);
+
+    {
+      long[] ids = new long[] { 2, 3, 5, 6, 8, 8, 10, 0, 2, 2 };
+      String[] names = new String[] { "d", "e", "f", "g", "h", "i", "j", "a", "b", "c" };
+
+      for (int i = 0; i < ids.length; i++) {
+        leftTbb.putLong(0, ids[i]);
+        leftTbb.putString(1, names[i]);
+      }
+    }
+
+    final Schema rightSchema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id2", "name2"));
+
+    TupleBatchBuffer rightTbb = new TupleBatchBuffer(rightSchema);
+
+    {
+      long[] ids = new long[] { 1, 2, 2, 4, 8, 8, 10 };
+      String[] names = new String[] { "a", "b", "c", "d", "e", "f", "g" };
+
+      for (int i = 0; i < ids.length; i++) {
+        rightTbb.putLong(0, ids[i]);
+        rightTbb.putString(1, names[i]);
+      }
+    }
+
+    TupleSource[] children = new TupleSource[2];
+    children[0] = new TupleSource(leftTbb);
+    children[1] = new TupleSource(rightTbb);
+
+    InMemoryOrderBy sort0 = new InMemoryOrderBy(children[0], new int[] { 0, 1 }, new boolean[] { true, true });
+    InMemoryOrderBy sort1 = new InMemoryOrderBy(children[1], new int[] { 0, 1 }, new boolean[] { true, true });
+
+    BinaryOperator join = new MergeJoin(sort0, sort1, new int[] { 0 }, new int[] { 0 }, new boolean[] { true });
+    join.open(null);
+    TupleBatch tb;
+    final ArrayList<TupleBatch> batches = new ArrayList<TupleBatch>();
+    while (!join.eos()) {
+      tb = join.nextReady();
+      if (tb != null) {
+        batches.add(tb);
+      }
+    }
+    join.close();
+
+    assertEquals(1, batches.size());
+    assertEquals(11, batches.get(0).numTuples());
+  }
 }

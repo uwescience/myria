@@ -299,6 +299,11 @@ public final class MergeJoin extends BinaryOperator {
    */
   private boolean deferredEOS;
 
+  /**
+   * Set to true if data is needed from children and we cannot proceed without it.
+   */
+  private boolean needData;
+
   @Override
   protected TupleBatch fetchNextReady() throws Exception {
     /* If any full tuple batches are ready, output them. */
@@ -312,7 +317,9 @@ public final class MergeJoin extends BinaryOperator {
       return null;
     }
 
-    while (nexttb == null && !deferredEOS) {
+    needData = false;
+
+    while (nexttb == null && !deferredEOS && !needData) {
       final int compared =
           leftBatches.getLast().tupleCompare(leftCompareIndx, leftRowIndex, rightBatches.getLast(), rightCompareIndx,
               rightRowIndex, ascending);
@@ -416,7 +423,8 @@ public final class MergeJoin extends BinaryOperator {
           || left.eos() && right.eos()) {
         deferredEOS = true;
       } else {
-        Preconditions.checkState(!(r1 == AdvanceResult.NOT_ENOUGH_DATA || r2 == AdvanceResult.NOT_ENOUGH_DATA));
+        Preconditions.checkState(r1 == AdvanceResult.NOT_ENOUGH_DATA || r2 == AdvanceResult.NOT_ENOUGH_DATA);
+        needData = true;
       }
     }
   }
@@ -642,6 +650,9 @@ public final class MergeJoin extends BinaryOperator {
     rightRowIndex = 0;
     leftBeginIndex = 0;
     rightBeginIndex = 0;
+
+    needData = false;
+    deferredEOS = false;
 
     joined = false;
 
