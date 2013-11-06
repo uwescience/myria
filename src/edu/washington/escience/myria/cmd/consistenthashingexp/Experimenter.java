@@ -29,7 +29,7 @@ public final class Experimenter {
   public static void main(final String[] args) throws Throwable {
     // Generate new data
     RandomDataGenerator.generateRandomData(1000000);
-    findSkewnessByVaryingNumNodes(48);
+    dataMovementExperiment(48, 50);
   }
 
   private static void findSkewnessOfConsistHashingVariesReplicas(int maxReplica, int numNodes) throws IOException,
@@ -136,7 +136,20 @@ public final class Experimenter {
     }
     htOut.close();
     chOut.close();
+  }
 
+  private static void dataMovementExperiment(final int initial, final int after) throws IOException,
+      FileNotFoundException {
+    ConsistentHashingWithGuava ch = new ConsistentHashingWithGuava(initial);
+    Scanner scan = new Scanner(new BufferedReader(new FileReader(RandomDataGenerator.FILENAME)));
+    // populate the data structure
+    while (scan.hasNextInt()) {
+      int data = scan.nextInt();
+      ch.add(data);
+    }
+    ch.addNode(after);
+    System.out.println("The moving statistics: " + ch.getDataMoveStats());
+    scan.close();
   }
 
   private static void simpleExperimentWithOwnCH(int numDataPoints) throws IOException, FileNotFoundException {
