@@ -397,10 +397,10 @@ public class OperatorTest {
     children[0] = new TupleSource(leftTbb);
     children[1] = new TupleSource(rightTbb);
 
-    InMemoryOrderBy sort0 = new InMemoryOrderBy(children[0], new int[] { 0, 1 }, new boolean[] { true, true });
-    InMemoryOrderBy sort1 = new InMemoryOrderBy(children[1], new int[] { 0, 1 }, new boolean[] { true, true });
+    InMemoryOrderBy sort0 = new InMemoryOrderBy(children[0], new int[] { 0 }, new boolean[] { false });
+    InMemoryOrderBy sort1 = new InMemoryOrderBy(children[1], new int[] { 0 }, new boolean[] { false });
 
-    BinaryOperator join = new MergeJoin(sort0, sort1, new int[] { 0 }, new int[] { 0 }, new boolean[] { true });
+    BinaryOperator join = new MergeJoin(sort0, sort1, new int[] { 0 }, new int[] { 0 }, new boolean[] { false });
     join.open(null);
     TupleBatch tb;
     final ArrayList<TupleBatch> batches = new ArrayList<TupleBatch>();
