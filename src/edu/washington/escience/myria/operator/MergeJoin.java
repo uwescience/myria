@@ -313,7 +313,8 @@ public final class MergeJoin extends BinaryOperator {
       return nexttb;
     }
 
-    if (!loadInitially()) {
+    loadInitially();
+    if (leftBatches.size() == 0 || rightBatches.size() == 0) {
       return null;
     }
 
@@ -341,8 +342,6 @@ public final class MergeJoin extends BinaryOperator {
       nexttb = ans.popAny();
       if (nexttb == null) {
         setEOS();
-      } else {
-        return nexttb;
       }
     }
 
@@ -365,9 +364,11 @@ public final class MergeJoin extends BinaryOperator {
     final boolean joinFromLeft = leftSizeOfGroupOfEqualTuples > rightSizeOfGroupOfEqualTuples;
 
     if (!joined && joinFromLeft) {
-      addAllToAns(leftBatches.getLast(), rightBatches, leftRowIndex, leftCompareIndx, rightBeginIndex, rightRowIndex);
+      addAllToAns(leftBatches.getLast(), rightBatches, leftRowIndex, leftCompareIndx, rightBeginIndex, rightRowIndex,
+          true);
     } else if (!joined) {
-      addAllToAns(rightBatches.getLast(), leftBatches, rightRowIndex, rightCompareIndx, leftBeginIndex, leftRowIndex);
+      addAllToAns(rightBatches.getLast(), leftBatches, rightRowIndex, rightCompareIndx, leftBeginIndex, leftRowIndex,
+          false);
     }
     joined = true;
 
@@ -502,30 +503,25 @@ public final class MergeJoin extends BinaryOperator {
   /**
    * Establishes invariant that buffers have at least one batch.
    * 
-   * @return false, if we cannot proceed because we could not fetch data for empty buffers.
    * @throws DbException if any problem on fetching
    */
-  private boolean loadInitially() throws DbException {
+  private void loadInitially() throws DbException {
     final Operator left = getLeft();
     final Operator right = getRight();
 
     if (leftBatches.isEmpty() && !left.eos()) {
       TupleBatch tb = left.nextReady();
-      if (tb == null) {
-        return false;
+      if (tb != null) {
+        leftBatches.add(tb);
       }
-      leftBatches.add(tb);
     }
 
     if (rightBatches.isEmpty() && !right.eos()) {
       TupleBatch tb = right.nextReady();
-      if (tb == null) {
-        return false;
+      if (tb != null) {
+        rightBatches.add(tb);
       }
-      rightBatches.add(tb);
     }
-
-    return true;
   }
 
   /**
@@ -613,10 +609,12 @@ public final class MergeJoin extends BinaryOperator {
    * @param firstCompareIndx the compare index in the first TB. Used to determine whether the next tuple is equal to the
    *          one under the current index.
    * @param secondBeginRow the start of the n tuples (points into first TB in linked list)
+   * @param leftIsFirst set true if first refers to left
    * @param secondEndRow the end of the n tuples (points into last TB in linked list)
    */
   protected void addAllToAns(final TupleBatch firstBatch, final LinkedList<TupleBatch> secondBatches,
-      final int firstBatchRow, final int[] firstCompareIndx, final int secondBeginRow, final int secondEndRow) {
+      final int firstBatchRow, final int[] firstCompareIndx, final int secondBeginRow, final int secondEndRow,
+      final boolean leftIsFirst) {
     int beginIndex = secondBeginRow;
 
     Iterator<TupleBatch> it = secondBatches.iterator();
@@ -628,7 +626,11 @@ public final class MergeJoin extends BinaryOperator {
         endIndex = secondEndRow + 1;
       }
       for (int i = beginIndex; i < endIndex; i++) {
-        addToAns(firstBatch, firstBatchRow, tb, i);
+        if (leftIsFirst) {
+          addToAns(firstBatch, firstBatchRow, tb, i);
+        } else {
+          addToAns(tb, i, firstBatch, firstBatchRow);
+        }
       }
       beginIndex = 0;
     }
@@ -651,7 +653,6 @@ public final class MergeJoin extends BinaryOperator {
     leftBeginIndex = 0;
     rightBeginIndex = 0;
 
-    needData = false;
     deferredEOS = false;
 
     joined = false;
