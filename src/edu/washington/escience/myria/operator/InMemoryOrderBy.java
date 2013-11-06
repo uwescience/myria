@@ -51,6 +51,8 @@ public final class InMemoryOrderBy extends UnaryOperator {
     this(child, null, null);
   }
 
+  ArrayList<Integer> indexes;
+
   /**
    * @param child the source of the tuples.
    * @param sortColumns the columns that should be ordered by
@@ -82,7 +84,7 @@ public final class InMemoryOrderBy extends UnaryOperator {
       return ans.popAny();
     }
 
-    if (columns.get(0).size() > 0) {
+    if (columns.get(0).size() > 0 && getChild().eos()) {
       setEOS();
       return null;
     }
@@ -108,7 +110,7 @@ public final class InMemoryOrderBy extends UnaryOperator {
     final int numTuples = columns.get(0).size();
     for (int rowIdx = 0; rowIdx < numTuples; rowIdx++) {
       for (int columnIdx = 0; columnIdx < getSchema().numColumns(); columnIdx++) {
-        ans.put(columnIdx, columns.get(columnIdx).get(rowIdx));
+        ans.put(columnIdx, columns.get(columnIdx).get(indexes.get(rowIdx)));
       }
     }
 
@@ -169,7 +171,7 @@ public final class InMemoryOrderBy extends UnaryOperator {
    */
   public void sort() {
     final int numTuples = columns.get(0).size();
-    ArrayList<Integer> indexes = new ArrayList<>();
+    indexes = new ArrayList<>();
     indexes.ensureCapacity(numTuples);
     for (int i = 0; i < numTuples; i++) {
       indexes.add(i);
@@ -177,21 +179,6 @@ public final class InMemoryOrderBy extends UnaryOperator {
 
     TupleComparator comparator = new TupleComparator();
     Collections.sort(indexes, comparator);
-
-    // very inefficient out of place sort
-    ArrayList<ArrayList<Object>> newColumns = new ArrayList<ArrayList<Object>>();
-    for (int columnIdx = 0; columnIdx < getSchema().numColumns(); columnIdx++) {
-      ArrayList<Object> column = new ArrayList<Object>();
-      column.ensureCapacity(numTuples);
-      for (int rowIdx = 0; rowIdx < numTuples; rowIdx++) {
-        column.add(new Object());
-      }
-      for (int rowIdx = 0; rowIdx < numTuples; rowIdx++) {
-        column.set(rowIdx, columns.get(columnIdx).get(indexes.get(rowIdx)));
-      }
-      newColumns.add(column);
-    }
-    columns = newColumns;
   }
 
   @Override
