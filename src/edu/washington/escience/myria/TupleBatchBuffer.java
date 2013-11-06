@@ -82,11 +82,12 @@ public class TupleBatchBuffer {
   }
 
   /**
-   * Append the tuple batch directly into readTuples.
+   * Append the tuple batch directly into readTuples. The tuple batch cannot have any invalid tuples.
    * 
    * @param tb the TB.
    */
   public final void appendTB(final TupleBatch tb) {
+    Preconditions.checkArgument(tb.isEOI() || tb.numTuples() == tb.getDataColumns().get(0).size());
     finishBatch();
     readyTuplesNum += tb.numTuples();
     readyTuples.add(tb.getDataColumns());
