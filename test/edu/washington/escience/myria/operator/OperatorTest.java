@@ -329,4 +329,36 @@ public class OperatorTest {
     }
     join.close();
   }
+
+  @Test
+  public void testInMemoryOrderBy() throws DbException {
+    TupleBatchBuffer randomTuples = generateRandomTuples(52300, 5000, false);
+
+    TupleSource child = new TupleSource(randomTuples);
+
+    InMemoryOrderBy order = new InMemoryOrderBy(child, new int[] { 0, 1 }, new boolean[] { true, true });
+    order.open(null);
+    TupleBatch tb;
+    final ArrayList<Entry<Long, String>> entries = new ArrayList<Entry<Long, String>>();
+    while (!order.eos()) {
+      tb = order.nextReady();
+      if (tb != null) {
+        for (int i = 0; i < tb.numTuples(); i++) {
+          entries.add(new SimpleEntry<Long, String>(tb.getLong(0, i), tb.getString(1, i)));
+        }
+      }
+    }
+    order.close();
+
+    assertEquals(52300, entries.size());
+
+    Comparator<Entry<Long, String>> comparator = new EntryComparator();
+    Entry<Long, String> previous = null;
+    for (Entry<Long, String> entry : entries) {
+      if (previous != null) {
+        assertTrue(comparator.compare(previous, entry) <= 0);
+      }
+      previous = entry;
+    }
+  }
 }
