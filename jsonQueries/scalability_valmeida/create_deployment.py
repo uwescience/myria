@@ -207,6 +207,127 @@ if args.run_filename:
   st = os.stat(run_filename)
   os.chmod(run_filename, st.st_mode | stat.S_IEXEC)
 
+  n = num_dn
+  while n <= (num_dn+num_cn):
+
+    query_filename = "myfiles/query_twitter_join_%d_%d.json" % (num_dn, n)
+    query = open(query_filename, 'w')
+
+    relation_key = {
+      "program_name": "twitter_join",
+      "relation_name": "twitter_%ddn" % num_dn,
+      "user_name": username 
+    }
+
+    scan1 = {
+      "op_name": "SCAN1",
+      "op_type": "TableScan",
+      "relation_key": relation_key
+    }
+
+    shuffle1 = {
+      "arg_child": "SCAN1",
+      "arg_operator_id": "0",
+      "op_name": "SP1",
+      "op_type": "ShuffleProducer",
+      "arg_pf": {
+        "index": 1,
+        "type": "SingleFieldHash"
+      }
+    }
+
+    data_nodes = range(1,num_dn+1)
+    fragment1 = {
+      "operators": [scan1, shuffle1 ],
+      "workers": data_nodes
+    }
+
+    scan2 = {
+      "op_name": "SCAN2",
+      "op_type": "TableScan",
+      "relation_key": relation_key
+    }
+
+    shuffle2 = {
+      "arg_child": "SCAN2",
+      "arg_operator_id": "1",
+      "op_name": "SP2",
+      "op_type": "ShuffleProducer",
+      "arg_pf": {
+        "index": 1,
+        "type": "SingleFieldHash"
+      }
+    }
+ 
+    fragment2 = {
+      "operators": [scan2, shuffle2 ],
+      "workers": data_nodes
+    }
+ 
+    shuffle_consumer1 = {
+      "arg_operator_id": "0",
+      "arg_schema": {
+        "column_types" : ["LONG_TYPE","LONG_TYPE"],
+        "column_names" : ["follower","followee"]
+      },
+      "op_name": "SC1",
+      "op_type": "ShuffleConsumer"
+    }
+
+    shuffle_consumer2 = {
+      "arg_operator_id": "1",
+      "arg_schema": {
+        "column_types" : ["LONG_TYPE","LONG_TYPE"],
+        "column_names" : ["follower","followee"]
+      },
+      "op_name": "SC2",
+      "op_type": "ShuffleConsumer"
+    }
+ 
+    join = {
+      "arg_child1": "SC1",
+      "arg_child2": "SC2",
+      "arg_columns1": [
+        "1"
+      ],
+      "arg_columns2": [
+        "0"
+      ],
+      "arg_select1": [
+        "0"
+      ],
+      "arg_select2": [
+        "1"
+      ],
+      "op_name": "JOIN",
+      "op_type": "SymmetricHashJoin"
+    }
+
+    sink_root = {
+      "arg_child": "JOIN",
+      "op_name": "SINK",
+      "op_type": "SinkRoot"
+    }
+
+    worker_nodes = range(1, n+1)
+    fragment3 = {
+      "operators": [ shuffle_consumer1, shuffle_consumer2, join, sink_root ],
+      "workers": worker_nodes
+    }
+ 
+    fragments = [ fragment1, fragment2, fragment3 ]
+
+    plan = {
+      "fragments": fragments,
+      "logical_ra": "SINK(JOIN(SCAN1,SCAN2))",
+      "raw_datalog": "twitter(x,z) :- twitter(x,y),twitter(y,z)."
+    }
+
+    query.write(json.dumps(plan, indent=2))
+    query.close
+
+    n = n * 2
+
 # write the teardown script
 if args.teardown_filename:
   teardown_filename=args.teardown_filename
@@ -225,127 +346,6 @@ if args.teardown_filename:
   teardown.close
   st = os.stat(teardown_filename)
   os.chmod(teardown_filename, st.st_mode | stat.S_IEXEC)
-
-n = num_dn
-while n <= (num_dn+num_cn):
-
-  query_filename = "myfiles/query_twitter_join_%d_%d.json" % (num_dn, n)
-  query = open(query_filename, 'w')
-
-  relation_key = {
-    "program_name": "twitter_join",
-    "relation_name": "twitter_%ddn" % num_dn,
-    "user_name": username 
-  }
-
-  scan1 = {
-    "op_name": "SCAN1",
-    "op_type": "TableScan",
-    "relation_key": relation_key
-  }
-
-  shuffle1 = {
-    "arg_child": "SCAN1",
-    "arg_operator_id": "0",
-    "op_name": "SP1",
-    "op_type": "ShuffleProducer",
-    "arg_pf": {
-      "index": 1,
-      "type": "SingleFieldHash"
-    }
-  }
-
-  data_nodes = range(1,num_dn+1)
-  fragment1 = {
-    "operators": [scan1, shuffle1 ],
-    "workers": data_nodes
-  }
-
-  scan2 = {
-    "op_name": "SCAN2",
-    "op_type": "TableScan",
-    "relation_key": relation_key
-  }
-
-  shuffle2 = {
-    "arg_child": "SCAN2",
-    "arg_operator_id": "1",
-    "op_name": "SP2",
-    "op_type": "ShuffleProducer",
-    "arg_pf": {
-      "index": 1,
-      "type": "SingleFieldHash"
-    }
-  }
-
-  fragment2 = {
-    "operators": [scan2, shuffle2 ],
-    "workers": data_nodes
-  }
-
-  shuffle_consumer1 = {
-    "arg_operator_id": "0",
-    "arg_schema": {
-      "column_types" : ["LONG_TYPE","LONG_TYPE"],
-      "column_names" : ["follower","followee"]
-    },
-    "op_name": "SC1",
-    "op_type": "ShuffleConsumer"
-  }
-
-  shuffle_consumer2 = {
-    "arg_operator_id": "1",
-    "arg_schema": {
-      "column_types" : ["LONG_TYPE","LONG_TYPE"],
-      "column_names" : ["follower","followee"]
-    },
-    "op_name": "SC2",
-    "op_type": "ShuffleConsumer"
-  }
-
-  join = {
-    "arg_child1": "SC1",
-    "arg_child2": "SC2",
-    "arg_columns1": [
-      "1"
-    ],
-    "arg_columns2": [
-      "0"
-    ],
-    "arg_select1": [
-      "0"
-    ],
-    "arg_select2": [
-      "1"
-    ],
-    "op_name": "JOIN",
-    "op_type": "SymmetricHashJoin"
-  }
-
-  sink_root = {
-    "arg_child": "JOIN",
-    "op_name": "SINK",
-    "op_type": "SinkRoot"
-  }
-
-  worker_nodes = range(1, n+1)
-  fragment3 = {
-    "operators": [ shuffle_consumer1, shuffle_consumer2, join, sink_root ],
-    "workers": worker_nodes
-  }
-
-  fragments = [ fragment1, fragment2, fragment3 ]
-
-  plan = {
-    "fragments": fragments,
-    "logical_ra": "SINK(JOIN(SCAN1,SCAN2))",
-    "raw_datalog": "twitter(x,z) :- twitter(x,y),twitter(y,z)."
-  }
-
-  query.write(json.dumps(plan, indent=2))
-  query.close
-
-  n = n * 2
 
 # write the script to run all scripts
 if args.all_filename:
