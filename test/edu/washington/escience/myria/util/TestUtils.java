@@ -22,10 +22,12 @@ public final class TestUtils {
   private synchronized static Random getRandom() {
     if (random == null) {
       random = new Random();
-      // Un-comment next line to have random number seeded to be able to compare runs
-      // random.setSeed(42);
     }
     return random;
+  }
+
+  public static void setSeed(long seed) {
+    getRandom().setSeed(seed);
   }
 
   public static void resetRandom() {
