@@ -326,6 +326,10 @@ public final class MergeJoin extends BinaryOperator {
               rightRowIndex, ascending);
 
       if (compared == 0) {
+        Preconditions.checkState(leftBatches.getLast().tupleCompare(leftCompareIndx, leftRowIndex,
+            rightBatches.getLast(), rightCompareIndx, rightRowIndex, ascending) == 0);
+        Preconditions.checkState(leftBatches.getFirst().tupleCompare(leftCompareIndx, leftBeginIndex,
+            rightBatches.getFirst(), rightCompareIndx, rightBeginIndex, ascending) == 0);
         leftAndRightEqual();
       } else if (compared > 0) {
         rightIsLess();
@@ -363,12 +367,12 @@ public final class MergeJoin extends BinaryOperator {
         rightRowIndex + TupleBatch.BATCH_SIZE * (rightBatches.size() - 1) - rightBeginIndex;
     final boolean joinFromLeft = leftSizeOfGroupOfEqualTuples > rightSizeOfGroupOfEqualTuples;
 
-    if (!joined && joinFromLeft) {
-      addAllToAns(leftBatches.getLast(), rightBatches, leftRowIndex, leftCompareIndx, rightBeginIndex, rightRowIndex,
-          true);
-    } else if (!joined) {
-      addAllToAns(rightBatches.getLast(), leftBatches, rightRowIndex, rightCompareIndx, leftBeginIndex, leftRowIndex,
-          false);
+    if (!joined) {
+      if (joinFromLeft) {
+        addAllToAns(leftBatches.getLast(), rightBatches, leftRowIndex, leftCompareIndx, rightBeginIndex, rightRowIndex);
+      } else {
+        addAllToAns(rightBatches.getLast(), leftBatches, rightRowIndex, rightCompareIndx, leftBeginIndex, leftRowIndex);
+      }
     }
     joined = true;
 
@@ -403,18 +407,24 @@ public final class MergeJoin extends BinaryOperator {
         // This cannot be done earlier because we need information about both sides.
         final boolean leftAtLast = leftRowIndex == leftBatches.getLast().numTuples() - 1;
         if (leftAtLast) {
-          Preconditions.checkState(leftNotProcessed != null, "Buffered TB ensured in advance.");
+          Preconditions.checkState(leftNotProcessed != null, "Buffered TB should be ensured in advance.");
           leftMoveFromNotProcessed();
         } else {
+          while (leftBatches.size() > 1) {
+            leftBatches.removeFirst();
+          }
           leftRowIndex++;
         }
         leftBeginIndex = leftRowIndex;
 
         final boolean rightAtLast = rightRowIndex == rightBatches.getLast().numTuples() - 1;
         if (rightAtLast) {
-          Preconditions.checkState(rightNotProcessed != null, "Buffered TB ensured in advance.");
+          Preconditions.checkState(rightNotProcessed != null, "Buffered TB should be ensured in advance.");
           rightMoveFromNotProcessed();
         } else {
+          while (rightBatches.size() > 1) {
+            rightBatches.removeFirst();
+          }
           rightRowIndex++;
         }
         rightBeginIndex = rightRowIndex;
@@ -484,6 +494,7 @@ public final class MergeJoin extends BinaryOperator {
    * Add {@link #leftNotProcessed} into {@link #leftBatches}.
    */
   private void leftMoveFromNotProcessed() {
+    Preconditions.checkNotNull(leftNotProcessed);
     leftRowIndex = 0;
     leftBatches.clear();
     leftBatches.add(leftNotProcessed);
@@ -494,6 +505,7 @@ public final class MergeJoin extends BinaryOperator {
    * Add {@link #rightNotProcessed} into {@link #rightBatches}.
    */
   private void rightMoveFromNotProcessed() {
+    Preconditions.checkNotNull(rightNotProcessed);
     rightRowIndex = 0;
     rightBatches.clear();
     rightBatches.add(rightNotProcessed);
@@ -609,13 +621,15 @@ public final class MergeJoin extends BinaryOperator {
    * @param firstCompareIndx the compare index in the first TB. Used to determine whether the next tuple is equal to the
    *          one under the current index.
    * @param secondBeginRow the start of the n tuples (points into first TB in linked list)
-   * @param leftIsFirst set true if first refers to left
    * @param secondEndRow the end of the n tuples (points into last TB in linked list)
    */
   protected void addAllToAns(final TupleBatch firstBatch, final LinkedList<TupleBatch> secondBatches,
-      final int firstBatchRow, final int[] firstCompareIndx, final int secondBeginRow, final int secondEndRow,
-      final boolean leftIsFirst) {
+      final int firstBatchRow, final int[] firstCompareIndx, final int secondBeginRow, final int secondEndRow) {
     int beginIndex = secondBeginRow;
+
+    Preconditions.checkArgument(firstBatch != secondBatches.getLast());
+
+    final boolean leftIsFirst = firstBatch == leftBatches.getLast();
 
     Iterator<TupleBatch> it = secondBatches.iterator();
     while (it.hasNext()) {
