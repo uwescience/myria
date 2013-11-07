@@ -51,7 +51,10 @@ public final class InMemoryOrderBy extends UnaryOperator {
     this(child, null, null);
   }
 
-  ArrayList<Integer> indexes;
+  /**
+   * A list of indexes into columns that defines the sort order.
+   */
+  private ArrayList<Integer> indexes;
 
   /**
    * @param child the source of the tuples.
@@ -75,6 +78,7 @@ public final class InMemoryOrderBy extends UnaryOperator {
     }
   };
 
+  @SuppressWarnings("deprecation")
   @Override
   protected TupleBatch fetchNextReady() throws Exception {
     TupleBatch nexttb = ans.popFilled();
