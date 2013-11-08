@@ -415,4 +415,56 @@ public class OperatorTest {
     assertEquals(1, batches.size());
     assertEquals(11, batches.get(0).numTuples());
   }
+
+  @Test
+  public void testMergeJoinOnMultipleKeys() throws DbException {
+    final Schema leftSchema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+    TupleBatchBuffer leftTbb = new TupleBatchBuffer(leftSchema);
+
+    {
+      long[] ids = new long[] { 0, 2, 2, 2, 3, 5, 6, 8, 8, 10 };
+      String[] names = new String[] { "c", "c", "c", "b", "b", "b", "b", "a", "a", "a" };
+
+      for (int i = 0; i < ids.length; i++) {
+        leftTbb.putLong(0, ids[i]);
+        leftTbb.putString(1, names[i]);
+      }
+    }
+
+    final Schema rightSchema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id2", "name2"));
+
+    TupleBatchBuffer rightTbb = new TupleBatchBuffer(rightSchema);
+
+    {
+      long[] ids = new long[] { 1, 2, 2, 4, 8, 8, 10, 11 };
+      String[] names = new String[] { "d", "d", "c", "c", "a", "a", "a", "a" };
+
+      for (int i = 0; i < ids.length; i++) {
+        rightTbb.putLong(0, ids[i]);
+        rightTbb.putString(1, names[i]);
+      }
+    }
+
+    TupleSource[] children = new TupleSource[2];
+    children[0] = new TupleSource(leftTbb);
+    children[1] = new TupleSource(rightTbb);
+
+    BinaryOperator join =
+        new MergeJoin(children[0], children[1], new int[] { 0, 1 }, new int[] { 0, 1 }, new boolean[] { true, false });
+    join.open(null);
+    TupleBatch tb;
+    final ArrayList<TupleBatch> batches = new ArrayList<TupleBatch>();
+    while (!join.eos()) {
+      tb = join.nextReady();
+      if (tb != null) {
+        batches.add(tb);
+      }
+    }
+    join.close();
+
+    assertEquals(1, batches.size());
+    assertEquals(7, batches.get(0).numTuples());
+  }
 }
