@@ -129,6 +129,18 @@ public class TupleBatch implements Serializable {
   }
 
   /**
+   * @return if this TB is full, i.e., the underlying columns are full and all rows are valid.
+   */
+  public final boolean isFull() {
+    /* EOI TupleBatches, for instance, have no columns and should be considered full. */
+    if (columns.size() == 0) {
+      return true;
+    }
+    /* Note: We don't need to that this TB is compact if possible size == numValidTuples. */
+    return columns.get(0).size() == numValidTuples;
+  }
+
+  /**
    * @param columnNames the new column names.
    * @return a shallow copy of the specified TupleBatch with the new column names.
    */
