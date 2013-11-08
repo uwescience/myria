@@ -738,9 +738,7 @@ public class TupleBatch implements Serializable {
     if (isCompact()) {
       return IPCUtils.normalDataMessage(columns, numValidTuples);
     } else {
-      TupleBatchBuffer tbb = new TupleBatchBuffer(getSchema());
-      compactInto(tbb);
-      return IPCUtils.normalDataMessage(tbb.popAnyAsRawColumn(), numValidTuples);
+      return IPCUtils.normalDataMessage(columns, validIndices);
     }
   }
 
