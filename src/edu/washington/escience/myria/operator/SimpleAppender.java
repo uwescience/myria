@@ -48,7 +48,7 @@ public final class SimpleAppender extends StreamingState {
   @Override
   public TupleBatch update(final TupleBatch tb) {
     tuples.add(tb);
-    return null;
+    return tb;
   }
 
   @Override
