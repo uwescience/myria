@@ -149,7 +149,7 @@ public final class KeepMinValue extends StreamingState {
   @Override
   public TupleBatch update(final TupleBatch tb) {
     TupleBatch newtb = keepMinValue(tb);
-    if (newtb.numTuples() > 0) {
+    if (newtb.numTuples() > 0 || newtb.isEOI()) {
       return newtb;
     }
     return null;

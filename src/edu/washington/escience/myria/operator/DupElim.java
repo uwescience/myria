@@ -104,7 +104,7 @@ public final class DupElim extends StreamingState {
   @Override
   public TupleBatch update(final TupleBatch tb) {
     TupleBatch newtb = doDupElim(tb);
-    if (newtb.numTuples() > 0) {
+    if (newtb.numTuples() > 0 || tb.isEOI()) {
       return newtb;
     }
     return null;
