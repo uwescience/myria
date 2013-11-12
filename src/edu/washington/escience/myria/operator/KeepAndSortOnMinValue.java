@@ -35,7 +35,7 @@ public final class KeepAndSortOnMinValue extends StreamingStateUpdater {
   /**
    * The logger for this class.
    * */
-  private static final Logger LOGGER = LoggerFactory.getLogger(KeepAndSortOnMinValue.class.getName());
+  static final Logger LOGGER = LoggerFactory.getLogger(KeepAndSortOnMinValue.class.getName());
 
   /**
    * Indices to unique tuples.

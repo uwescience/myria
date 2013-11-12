@@ -23,7 +23,7 @@ public final class SimpleAppender extends StreamingStateUpdater {
   /**
    * The logger for this class.
    * */
-  private static final Logger LOGGER = LoggerFactory.getLogger(SimpleAppender.class.getName());
+  static final Logger LOGGER = LoggerFactory.getLogger(SimpleAppender.class.getName());
 
   /**
    * list of tuple batches.

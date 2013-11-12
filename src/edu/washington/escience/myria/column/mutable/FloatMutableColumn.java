@@ -126,7 +126,7 @@ public final class FloatMutableColumn implements MutableColumn<Float> {
 
   @Override
   public void replace(final int index, final Float value) {
-    replace(index, value);
+    replace(index, value.floatValue());
   }
 
   /**

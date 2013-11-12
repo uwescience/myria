@@ -30,7 +30,7 @@ public final class DupElim extends StreamingStateUpdater {
   /**
    * The logger for this class.
    * */
-  private static final Logger LOGGER = LoggerFactory.getLogger(DupElim.class.getName());
+  static final Logger LOGGER = LoggerFactory.getLogger(DupElim.class.getName());
 
   /**
    * Indices to unique tuples.

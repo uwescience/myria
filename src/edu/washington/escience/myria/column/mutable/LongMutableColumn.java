@@ -124,7 +124,7 @@ public final class LongMutableColumn implements MutableColumn<Long> {
 
   @Override
   public void replace(final int index, final Long value) {
-    replace(index, value);
+    replace(index, value.longValue());
   }
 
   /**

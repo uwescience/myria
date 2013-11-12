@@ -126,7 +126,7 @@ public final class DoubleMutableColumn implements MutableColumn<Double> {
 
   @Override
   public void replace(final int index, final Double value) {
-    replace(index, value);
+    replace(index, value.doubleValue());
   }
 
   /**

@@ -118,7 +118,7 @@ public class BooleanMutableColumn implements MutableColumn<Boolean> {
 
   @Override
   public void replace(final int index, final Boolean value) {
-    replace(index, value);
+    replace(index, value.booleanValue());
   }
 
   /**

@@ -77,8 +77,8 @@ public class ConnectedComponentTest extends SystemTestBase {
       int index = 0;
       while (index < queue.size()) {
         int cnt = queue.get(index);
-        ans.put(0, (long) cnt);
-        ans.put(1, (long) i);
+        ans.putLong(0, cnt);
+        ans.putLong(1, i);
 
         for (int j = 0; j < MaxID; ++j) {
           if (!visited[j] && graph[cnt][j]) {
@@ -148,12 +148,12 @@ public class ConnectedComponentTest extends SystemTestBase {
     TupleBatchBuffer tbl1Worker1 = new TupleBatchBuffer(table1Schema);
     TupleBatchBuffer tbl1Worker2 = new TupleBatchBuffer(table1Schema);
     for (int i = 0; i < MaxID / 2; i++) {
-      tbl1Worker1.put(0, (long) i);
-      tbl1Worker1.put(1, (long) i);
+      tbl1Worker1.putLong(0, i);
+      tbl1Worker1.putLong(1, i);
     }
     for (int i = MaxID / 2; i < MaxID; i++) {
-      tbl1Worker2.put(0, (long) i);
-      tbl1Worker2.put(1, (long) i);
+      tbl1Worker2.putLong(0, i);
+      tbl1Worker2.putLong(1, i);
     }
     TupleBatchBuffer table1 = new TupleBatchBuffer(table1Schema);
     table1.unionAll(tbl1Worker1);
@@ -178,16 +178,16 @@ public class ConnectedComponentTest extends SystemTestBase {
     TupleBatchBuffer tbl2Worker1 = new TupleBatchBuffer(table1Schema);
     TupleBatchBuffer tbl2Worker2 = new TupleBatchBuffer(table1Schema);
     for (int i = 0; i < numTbl2Worker1; i++) {
-      tbl2Worker1.put(0, tbl2ID1Worker1[i]);
-      tbl2Worker1.put(1, tbl2ID2Worker1[i]);
-      tbl2Worker1.put(1, tbl2ID1Worker1[i]);
-      tbl2Worker1.put(0, tbl2ID2Worker1[i]);
+      tbl2Worker1.putLong(0, tbl2ID1Worker1[i]);
+      tbl2Worker1.putLong(1, tbl2ID2Worker1[i]);
+      tbl2Worker1.putLong(1, tbl2ID1Worker1[i]);
+      tbl2Worker1.putLong(0, tbl2ID2Worker1[i]);
     }
     for (int i = 0; i < numTbl2Worker2; i++) {
-      tbl2Worker2.put(0, tbl2ID1Worker2[i]);
-      tbl2Worker2.put(1, tbl2ID2Worker2[i]);
-      tbl2Worker2.put(1, tbl2ID1Worker2[i]);
-      tbl2Worker2.put(0, tbl2ID2Worker2[i]);
+      tbl2Worker2.putLong(0, tbl2ID1Worker2[i]);
+      tbl2Worker2.putLong(1, tbl2ID2Worker2[i]);
+      tbl2Worker2.putLong(1, tbl2ID1Worker2[i]);
+      tbl2Worker2.putLong(0, tbl2ID2Worker2[i]);
     }
     TupleBatchBuffer table2 = new TupleBatchBuffer(table1Schema);
     table2.unionAll(tbl2Worker1);

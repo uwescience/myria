@@ -66,7 +66,7 @@ public final class IntArrayMutableColumn extends IntMutableColumn {
 
   @Override
   public void replace(final int index, final Integer value) {
-    replace(index, value);
+    replace(index, value.intValue());
   }
 
   /**
