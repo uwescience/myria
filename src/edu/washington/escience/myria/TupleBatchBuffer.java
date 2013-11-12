@@ -618,4 +618,19 @@ public class TupleBatchBuffer {
     lastPoppedTime = System.nanoTime();
   }
 
+  /**
+   * Add the specified {@link TupleBatch} to this buffer. The implementation is O(1) when possible, i.e. if the
+   * TupleBatch is full and this buffer is not building a partially-complete TupleBatch. Otherwise, it's O(N) in the
+   * size of the TupleBatch because it is a full copy.
+   * 
+   * @param tupleBatch the tuple data to be added to this buffer.
+   */
+  public void absorb(final TupleBatch tupleBatch) {
+    if (currentInProgressTuples == 0 && tupleBatch.isFull()) {
+      appendTB(tupleBatch);
+    } else {
+      tupleBatch.compactInto(this);
+    }
+  }
+
 }
