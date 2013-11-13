@@ -6,7 +6,7 @@ import java.io.DataInputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.channels.FileChannel;
+import java.io.InputStream;
 import java.util.Objects;
 
 import org.codehaus.commons.compiler.CompilerFactoryFactory;
@@ -39,12 +39,8 @@ public class BinaryFileScan extends LeafOperator {
   private transient TupleBatchBuffer buffer;
   /** Indicates the endianess of the bin file to read. */
   private final boolean isLittleEndian;
-  /** FileInputStream for the bin file. */
-  private transient FileInputStream fStream;
   /** Data input to read data from the bin file. */
   private transient DataInput dataInput;
-  /** FileChannel for fStream. */
-  private transient FileChannel fc;
   /** Keeps track of the file size. */
   private long fileLength;
   /** Janino evaluator to that compiles reading. */
@@ -103,22 +99,21 @@ public class BinaryFileScan extends LeafOperator {
   @Override
   protected final void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
     buffer = new TupleBatchBuffer(getSchema());
-    if (fileName != null) {
-      fStream = null;
-      try {
-        fStream = new FileInputStream(fileName);
-        fc = fStream.getChannel();
-        fileLength = fc.size();
-      } catch (FileNotFoundException e) {
-        throw new DbException(e);
-      } catch (IOException e) {
-        throw new DbException(e);
-      }
-      if (isLittleEndian) {
-        dataInput = new LittleEndianDataInputStream(new BufferedInputStream(fStream));
-      } else {
-        dataInput = new DataInputStream(new BufferedInputStream(fStream));
-      }
+    InputStream inputStream;
+    try {
+      FileInputStream fStream = new FileInputStream(Objects.requireNonNull(fileName));
+      fileLength = fStream.getChannel().size();
+      inputStream = new BufferedInputStream(fStream);
+    } catch (FileNotFoundException e) {
+      throw new DbException(e);
+    } catch (IOException e) {
+      throw new DbException(e);
+    }
+
+    if (isLittleEndian) {
+      dataInput = new LittleEndianDataInputStream(inputStream);
+    } else {
+      dataInput = new DataInputStream(inputStream);
     }
 
     // compile reader script
@@ -143,7 +138,7 @@ public class BinaryFileScan extends LeafOperator {
           break;
         default:
           throw new UnsupportedOperationException(
-              "BinaryFileScan only support reading fixed width type from the binary file.");
+              "BinaryFileScan only supports reading fixed-width types from the binary file.");
       }
     }
 
