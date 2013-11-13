@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.binary;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -34,23 +35,21 @@ public class BinaryFileScanSpeedTest {
         Type.FLOAT_TYPE, // vx
         Type.FLOAT_TYPE, // vy
         Type.FLOAT_TYPE, // vz
-        Type.FLOAT_TYPE, // rho
-        Type.FLOAT_TYPE, // temp
-        Type.FLOAT_TYPE, // hsmooth
         Type.FLOAT_TYPE, // metals
         Type.FLOAT_TYPE, // tform
         Type.FLOAT_TYPE, // eps
-        Type.FLOAT_TYPE // phi
-        };
+        Type.FLOAT_TYPE, // phi
+    };
     Schema schema = new Schema(Arrays.asList(typeAr));
 
     BinaryFileScan scan = new BinaryFileScan(schema, binaryFile.getAbsolutePath());
-    SinkRoot sink = new SinkRoot(scan, 1000 * 1000);
+    SinkRoot sink = new SinkRoot(scan);
     sink.open(null);
     while (!sink.eos()) {
       sink.nextReady();
     }
     sink.close();
     LOGGER.info("Read {} tuples from the file.", sink.getCount());
+    assertEquals(2743966, sink.getCount());
   }
 }
