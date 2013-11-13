@@ -125,6 +125,8 @@ dependencies {
   systemtestCompile sourceSets.test.output
   systemtestRuntime configurations.testRuntime
 
+  speedtestCompile "com.carrotsearch:junit-benchmarks:0.7.0"
+
   speedtestCompile sourceSets.main.output
   speedtestCompile configurations.systemtestCompile
   speedtestCompile sourceSets.systemtest.output

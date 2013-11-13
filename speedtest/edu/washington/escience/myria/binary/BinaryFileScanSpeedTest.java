@@ -10,21 +10,24 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.carrotsearch.junitbenchmarks.AbstractBenchmark;
+import com.carrotsearch.junitbenchmarks.BenchmarkOptions;
+
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.BinaryFileScan;
 import edu.washington.escience.myria.operator.SinkRoot;
 import edu.washington.escience.myria.tipsy.TipsyFileScanSpeedTest;
 
-public class BinaryFileScanSpeedTest {
+public class BinaryFileScanSpeedTest extends AbstractBenchmark {
   /** The logger for this class. */
   private static final Logger LOGGER = LoggerFactory.getLogger(TipsyFileScanSpeedTest.class);
 
+  @BenchmarkOptions(benchmarkRounds = 5, warmupRounds = 1)
   @Test
   public void binaryFileScanTest() throws Exception {
-    /* The three files */
-    File binaryFile = new File("data_nocommit/speedtest/dbcosmo50/cosmo50cmb.256g2bwK.00128.star.bin");
-    /* We can read them, right? */
+    File binaryFile = new File("data_nocommit/speedtest/dbcosmo50/cosmo50cmb.256g2bwK.00512.star.bin");
+    /* We can read the file, right? */
     assertTrue(binaryFile.canRead());
 
     Type[] typeAr = { Type.LONG_TYPE, // iOrder
@@ -50,6 +53,6 @@ public class BinaryFileScanSpeedTest {
     }
     sink.close();
     LOGGER.info("Read {} tuples from the file.", sink.getCount());
-    assertEquals(2743966, sink.getCount());
+    assertEquals(12417544, sink.getCount());
   }
 }
