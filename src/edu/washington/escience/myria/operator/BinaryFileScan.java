@@ -8,6 +8,9 @@ import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.util.Objects;
 
+import org.codehaus.commons.compiler.CompilerFactoryFactory;
+import org.codehaus.commons.compiler.IScriptEvaluator;
+
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.LittleEndianDataInputStream;
 
@@ -43,6 +46,10 @@ public class BinaryFileScan extends LeafOperator {
   private transient FileChannel fc;
   /** Keeps track of the file size. */
   private long fileLength;
+  /** Janino evaluator to that compiles reading. */
+  private Reader evaluator;
+  /** The sum of all column sizes in bytes. */
+  private int tupleSize = 0;
 
   /**
    * Construct a new BinaryFileScan object that reads the given binary file and create tuples from the file data that
@@ -75,31 +82,8 @@ public class BinaryFileScan extends LeafOperator {
   protected final TupleBatch fetchNextReady() throws DbException {
     try {
       while (fileLength > 0 && buffer.numTuples() < TupleBatch.BATCH_SIZE) {
-        for (int count = 0; count < schema.numColumns(); ++count) {
-          switch (schema.getColumnType(count)) {
-            case DOUBLE_TYPE:
-              buffer.putDouble(count, dataInput.readDouble());
-              fileLength -= 8;
-              break;
-            case FLOAT_TYPE:
-              float readFloat = dataInput.readFloat();
-              buffer.putFloat(count, readFloat);
-              fileLength -= 4;
-              break;
-            case INT_TYPE:
-              buffer.putInt(count, dataInput.readInt());
-              fileLength -= 4;
-              break;
-            case LONG_TYPE:
-              long readLong = dataInput.readLong();
-              buffer.putLong(count, readLong);
-              fileLength -= 8;
-              break;
-            default:
-              throw new UnsupportedOperationException(
-                  "BinaryFileScan only support reading fixed width type from the binary file.");
-          }
-        }
+        evaluator.read(buffer, dataInput);
+        fileLength -= tupleSize;
       }
     } catch (IOException e) {
       throw new DbException(e);
@@ -134,6 +118,39 @@ public class BinaryFileScan extends LeafOperator {
       } else {
         dataInput = new DataInputStream(fStream);
       }
+    }
+
+    // compile reader script
+    StringBuilder eb = new StringBuilder();
+    for (int count = 0; count < schema.numColumns(); ++count) {
+      switch (schema.getColumnType(count)) {
+        case DOUBLE_TYPE:
+          eb.append("buffer.putDouble(").append(count).append(", dataInput.readDouble());\n");
+          tupleSize += 8;
+          break;
+        case FLOAT_TYPE:
+          eb.append("buffer.putFloat(").append(count).append(", dataInput.readFloat());\n");
+          tupleSize += 4;
+          break;
+        case INT_TYPE:
+          eb.append("buffer.putInt(").append(count).append(", dataInput.readInt());\n");
+          tupleSize += 4;
+          break;
+        case LONG_TYPE:
+          eb.append("buffer.putLong(").append(count).append(", dataInput.readLong());\n");
+          tupleSize += 8;
+          break;
+        default:
+          throw new UnsupportedOperationException(
+              "BinaryFileScan only support reading fixed width type from the binary file.");
+      }
+    }
+
+    try {
+      IScriptEvaluator se = CompilerFactoryFactory.getDefaultCompilerFactory().newScriptEvaluator();
+      evaluator = (Reader) se.createFastEvaluator(eb.toString(), Reader.class, new String[] { "buffer", "dataInput" });
+    } catch (Exception e) {
+      throw new DbException("Error when compiling script " + this, e);
     }
   }
 
