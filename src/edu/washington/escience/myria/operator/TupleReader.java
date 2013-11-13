@@ -8,7 +8,7 @@ import edu.washington.escience.myria.TupleBatchBuffer;
 /**
  * Interface for evaluating janino expressions.
  */
-public interface Reader {
+public interface TupleReader {
   /**
    * 
    * @param buffer the tuple buffer the data should be read into
