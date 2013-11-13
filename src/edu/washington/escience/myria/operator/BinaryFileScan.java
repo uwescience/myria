@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.operator;
 
+import java.io.BufferedInputStream;
 import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.FileInputStream;
@@ -114,9 +115,9 @@ public class BinaryFileScan extends LeafOperator {
         throw new DbException(e);
       }
       if (isLittleEndian) {
-        dataInput = new LittleEndianDataInputStream(fStream);
+        dataInput = new LittleEndianDataInputStream(new BufferedInputStream(fStream));
       } else {
-        dataInput = new DataInputStream(fStream);
+        dataInput = new DataInputStream(new BufferedInputStream(fStream));
       }
     }
 
