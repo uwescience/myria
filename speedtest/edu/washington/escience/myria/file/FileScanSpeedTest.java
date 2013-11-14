@@ -1,5 +1,7 @@
 package edu.washington.escience.myria.file;
 
+import static org.junit.Assert.assertEquals;
+
 import java.util.Arrays;
 
 import org.junit.Test;
@@ -26,15 +28,16 @@ public class FileScanSpeedTest extends AbstractBenchmark {
         Type.INT_TYPE, // follower
     };
     Schema schema = new Schema(Arrays.asList(typeAr));
+    final int limit = 10 * 1000 * 1000;
 
     FileScan scan = new FileScan("hdfs://vega.cs.washington.edu:8020//datasets/twitter/twitter_rv.net", schema, "\t");
-    SinkRoot sink = new SinkRoot(scan);
+    SinkRoot sink = new SinkRoot(scan, limit);
     sink.open(null);
     while (!sink.eos()) {
       sink.nextReady();
     }
     sink.close();
     LOGGER.info("Read {} tuples from the file.", sink.getCount());
-    // assertEquals(12417544, sink.getCount());
+    assertEquals(limit, sink.getCount());
   }
 }
