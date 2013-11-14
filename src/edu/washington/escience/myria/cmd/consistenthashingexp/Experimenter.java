@@ -176,7 +176,7 @@ public final class Experimenter {
   }
 
   private static void simpleExperimentWithOwnCH(int numDataPoints) throws IOException, FileNotFoundException {
-    RandomDataGenerator.generateRandomData(numDataPoints);
+    RandomDataGenerator.generateRandomUniformData(numDataPoints);
     int bucketSize = 48;
     HashTable ht = new HashTable(bucketSize);
     List<Integer> nodeIds = generateRandomNodes(bucketSize);
