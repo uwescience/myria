@@ -119,13 +119,12 @@ dependencies {
   runtime "postgresql:postgresql:9.1-901.jdbc4"
 
   testCompile "junit:junit:4.11"
+  testCompile "com.carrotsearch:junit-benchmarks:0.7.0"
 
   systemtestCompile sourceSets.main.output
   systemtestCompile configurations.testCompile
   systemtestCompile sourceSets.test.output
   systemtestRuntime configurations.testRuntime
-
-  speedtestCompile "com.carrotsearch:junit-benchmarks:0.7.0"
 
   speedtestCompile sourceSets.main.output
   speedtestCompile configurations.systemtestCompile
