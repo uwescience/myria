@@ -28,26 +28,49 @@ public final class Experimenter {
    */
   public static void main(final String[] args) throws Throwable {
     // Generate new data
-    RandomDataGenerator.generateRandomData(1000000);
-    dataMovementExperiment(48, 50);
+    // RandomDataGenerator.generateRandomData(1000000);
+    experimentToProveONotation(100, 10000);
+    experimentToProveONotation(10000, 100);
+  }
+
+  /**
+   * We want to prove that if numNodes * numReplica is very large, the skew should be minimal so we set numNodes *
+   * numReplica = 1m.
+   * 
+   * Then, see the effect of switching between nodeSize and repSize
+   * 
+   * @throws IOException exception
+   */
+  private static void experimentToProveONotation(final int nodeSize, final int repSize) throws IOException {
+    double skew = findSkewnessOfConsistentHashing(nodeSize, repSize);
+    System.out.println("With node = " + nodeSize + " and numReplica = " + repSize + ", skew = " + skew);
+  }
+
+  /**
+   * Finds the skewness of data in consistent hashing with the specified number of nodes, replica size.
+   * 
+   * @param numNodes the number of nodes
+   * @param numReplica the number of replicas
+   * @return the data skew
+   * @throws IOException exception
+   */
+  private static double findSkewnessOfConsistentHashing(final int numNodes, final int numReplica) throws IOException {
+    ConsistentHash ch = new ConsistentHash(generateRandomNodes(numNodes), numReplica);
+    Scanner scan = new Scanner(new BufferedReader(new FileReader(RandomDataGenerator.FILENAME)));
+    int count;
+    for (count = 0; scan.hasNextInt(); ++count) {
+      ch.add(scan.nextInt());
+    }
+    scan.close();
+    return ch.getSkewness();
   }
 
   private static void findSkewnessOfConsistHashingVariesReplicas(int maxReplica, int numNodes) throws IOException,
       FileNotFoundException {
     String fileName = "consistenthash_result_" + numNodes + ".txt";
     PrintWriter chOut = new PrintWriter(new BufferedWriter(new FileWriter(fileName)));
-    for (int i = 1; i <= maxReplica; i += 2) {
-      ConsistentHash ch = new ConsistentHash(generateRandomNodes(numNodes), i);
-      Scanner scan = new Scanner(new BufferedReader(new FileReader(RandomDataGenerator.FILENAME)));
-      int count;
-      for (count = 0; scan.hasNextInt(); ++count) {
-        ch.add(scan.nextInt());
-      }
-      scan.close();
-      System.out.println("CH; data size = " + count + ", num nodes = " + numNodes + ", replica size = " + i
-          + ", skewness = " + ch.getSkewness());
-      chOut.println(ch.getSkewness());
-      System.out.println("histogram: " + ch.getDistribution());
+    for (int replicaSize = 1; replicaSize <= maxReplica; replicaSize += 2) {
+      chOut.println(findSkewnessOfConsistentHashing(numNodes, replicaSize));
     }
     chOut.close();
   }
