@@ -18,6 +18,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.codehaus.commons.compiler.CompilerFactoryFactory;
+import org.codehaus.commons.compiler.IScriptEvaluator;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
@@ -26,7 +28,6 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
-import edu.washington.escience.myria.util.DateTimeUtils;
 
 /**
  * Reads data from a file.
@@ -51,6 +52,8 @@ public final class FileScan extends LeafOperator {
   private transient TupleBatchBuffer buffer;
   /** Which line of the file the scanner is currently on. */
   private int lineNumber = 0;
+  /** Janino evaluator to that compiles reading. */
+  private TextTupleReader evaluator;
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -134,39 +137,10 @@ public final class FileScan extends LeafOperator {
     while (scanner.hasNext() && (buffer.numTuples() < TupleBatch.BATCH_SIZE)) {
       lineNumber++;
 
-      for (int count = 0; count < schema.numColumns(); ++count) {
-        /* Make sure the schema matches. */
-        try {
-          switch (schema.getColumnType(count)) {
-            case BOOLEAN_TYPE:
-              if (scanner.hasNextBoolean()) {
-                buffer.putBoolean(count, scanner.nextBoolean());
-              } else if (scanner.hasNextFloat()) {
-                buffer.putBoolean(count, scanner.nextFloat() != 0);
-              }
-              break;
-            case DOUBLE_TYPE:
-              buffer.putDouble(count, scanner.nextDouble());
-              break;
-            case FLOAT_TYPE:
-              buffer.putFloat(count, scanner.nextFloat());
-              break;
-            case INT_TYPE:
-              buffer.putInt(count, scanner.nextInt());
-              break;
-            case LONG_TYPE:
-              buffer.putLong(count, scanner.nextLong());
-              break;
-            case STRING_TYPE:
-              buffer.putString(count, scanner.next());
-              break;
-            case DATETIME_TYPE:
-              buffer.putDateTime(count, DateTimeUtils.parse(scanner.next()));
-              break;
-          }
-        } catch (final InputMismatchException e) {
-          throw new DbException("Error parsing column " + count + " of row " + lineNumber + ": ", e);
-        }
+      try {
+        evaluator.read(buffer, scanner);
+      } catch (final InputMismatchException e) {
+        throw new DbException("Error parsing row " + lineNumber + ": ", e);
       }
       String rest = null;
       try {
@@ -224,5 +198,46 @@ public final class FileScan extends LeafOperator {
       scanner.useDelimiter("(\\r\\n)|\\n|(\\Q" + delimiter + "\\E)");
     }
     lineNumber = 0;
+
+    // compile reader script
+    StringBuilder eb = new StringBuilder();
+    for (int count = 0; count < schema.numColumns(); ++count) {
+      switch (schema.getColumnType(count)) {
+        case BOOLEAN_TYPE:
+          eb.append("if (scanner.hasNextBoolean()) {");
+          eb.append("    buffer.putBoolean(").append(count).append(", scanner.nextBoolean());\n");
+          eb.append("} else if (scanner.hasNextFloat()) {");
+          eb.append("    buffer.putBoolean(").append(count).append(", scanner.nextFloat() != 0);\n");
+          eb.append("}");
+          break;
+        case DOUBLE_TYPE:
+          eb.append("buffer.putDouble(").append(count).append(", scanner.nextDouble());\n");
+          break;
+        case FLOAT_TYPE:
+          eb.append("buffer.putFloat(").append(count).append(", scanner.nextFloat());\n");
+          break;
+        case INT_TYPE:
+          eb.append("buffer.putInt(").append(count).append(", scanner.nextInt());\n");
+          break;
+        case LONG_TYPE:
+          eb.append("buffer.putLong(").append(count).append(", scanner.nextLong());\n");
+          break;
+        case STRING_TYPE:
+          eb.append("buffer.putString(").append(count).append(", scanner.next());\n");
+          break;
+        case DATETIME_TYPE:
+          eb.append("buffer.putDateTime(").append(count).append(", DateTimeUtils.parse(scanner.next()));\n");
+          break;
+      }
+    }
+
+    try {
+      IScriptEvaluator se = CompilerFactoryFactory.getDefaultCompilerFactory().newScriptEvaluator();
+      evaluator =
+          (TextTupleReader) se.createFastEvaluator(eb.toString(), TextTupleReader.class, new String[] {
+              "buffer", "scanner" });
+    } catch (Exception e) {
+      throw new DbException("Error when compiling script " + this, e);
+    }
   }
 }

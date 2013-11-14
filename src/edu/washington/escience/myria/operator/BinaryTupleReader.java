@@ -8,8 +8,9 @@ import edu.washington.escience.myria.TupleBatchBuffer;
 /**
  * Interface for evaluating janino expressions.
  */
-public interface TupleReader {
+public interface BinaryTupleReader {
   /**
+   * Method to scan a tuple in {@link BinaryFileScan}.
    * 
    * @param buffer the tuple buffer the data should be read into
    * @param dataInput the data input

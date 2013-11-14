@@ -44,7 +44,7 @@ public class BinaryFileScan extends LeafOperator {
   /** Keeps track of the file size. */
   private long fileLength;
   /** Janino evaluator to that compiles reading. */
-  private TupleReader evaluator;
+  private BinaryTupleReader evaluator;
   /** The sum of all column sizes in bytes. */
   private int tupleSize = 0;
 
@@ -144,7 +144,9 @@ public class BinaryFileScan extends LeafOperator {
 
     try {
       IScriptEvaluator se = CompilerFactoryFactory.getDefaultCompilerFactory().newScriptEvaluator();
-      evaluator = (TupleReader) se.createFastEvaluator(eb.toString(), TupleReader.class, new String[] { "buffer", "dataInput" });
+      evaluator =
+          (BinaryTupleReader) se.createFastEvaluator(eb.toString(), BinaryTupleReader.class, new String[] {
+              "buffer", "dataInput" });
     } catch (Exception e) {
       throw new DbException("Error when compiling script " + this, e);
     }
