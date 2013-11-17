@@ -94,4 +94,29 @@ public final class JsonAPIUtils {
     return conn;
   }
 
+  /**
+   * @param masterHostname master hostname
+   * @param apiPort rest api port
+   * @param queryFile query file
+   * @return a HTTPURLConnection instance of retrieving responses.
+   * @throws IOException if IO errors
+   * */
+  public static HttpURLConnection ingestTipsyData(final String masterHostname, final int apiPort, final File queryFile)
+      throws IOException {
+    String type = "application/json";
+    URL u = new URL("http://" + masterHostname + ":" + apiPort + "/dataset/tipsy");
+    HttpURLConnection conn = (HttpURLConnection) u.openConnection();
+    conn.setDoOutput(true);
+    conn.setRequestMethod("POST");
+    conn.setRequestProperty("Content-Type", type);
+    byte[] e = FileUtils.readFileToString(queryFile).getBytes();
+    conn.setRequestProperty("Content-Length", String.valueOf(e.length));
+    OutputStream os = conn.getOutputStream();
+    os.write(e);
+    os.close();
+    conn.connect();
+    conn.getResponseCode();
+    return conn;
+  }
+
 }

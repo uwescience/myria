@@ -1,0 +1,24 @@
+{
+    "fragments": [
+        {
+            "operators": [
+                {
+                    "op_name": "Scan_masstable",
+                    "op_type": "TableScan",
+                    "relation_key": {
+                        "program_name": "astro",
+                        "relation_name": "cosmo512",
+                        "user_name": "leelee"
+                    }
+                },
+                {
+                    "arg_child":"Scan_masstable",
+                    "op_name":"SendResult",
+                    "op_type":"CollectProducer"
+                }
+            ]
+        }
+    ],
+    "logical_ra": "512 mass table",
+    "raw_datalog": "blah."
+}

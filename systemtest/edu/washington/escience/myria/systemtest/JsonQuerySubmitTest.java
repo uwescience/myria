@@ -154,4 +154,59 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     assertNotNull(result);
     assertEquals(result.longValue(), 4121l);
   }
+
+  @Test
+  public void progenitor512OnlyTest() throws Exception {
+    // DeploymentUtils.ensureMasterStart("localhost", masterDaemonPort);
+
+    File ingestCosmo512Mass = new File("./jsonQueries/tipsy_leelee/test/ingest_cosmo512_mass.json");
+    File ingestGrpsOfInterest = new File("./jsonQueries/tipsy_leelee/test/ingest_grps_of_interest.json");
+    File ingestTipsy512 = new File("./jsonQueries/tipsy_leelee/test/ingest_cosmo512.json");
+
+    HttpURLConnection conn;
+    conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingestCosmo512Mass);
+    if (null != conn.getErrorStream()) {
+      throw new IllegalStateException(getContents(conn));
+    }
+    assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
+    LOGGER.info(getContents(conn));
+    /* make sure the ingestion is done. */
+    while (!server.queryCompleted(1)) {
+      Thread.sleep(100);
+    }
+
+    conn = JsonAPIUtils.ingestData("localhost", masterDaemonPort, ingestGrpsOfInterest);
+    if (null != conn.getErrorStream()) {
+      throw new IllegalStateException(getContents(conn));
+    }
+    assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
+    LOGGER.info(getContents(conn));
+    while (!server.queryCompleted(2)) {
+      Thread.sleep(100);
+    }
+
+    conn = JsonAPIUtils.ingestTipsyData("localhost", masterDaemonPort, ingestTipsy512);
+    if (null != conn.getErrorStream()) {
+      throw new IllegalStateException(getContents(conn));
+    }
+    assertEquals(HttpURLConnection.HTTP_CREATED, conn.getResponseCode());
+    LOGGER.info(getContents(conn));
+    while (!server.queryCompleted(3)) {
+      Thread.sleep(100);
+    }
+
+    File queryJson = new File("./jsonQueries/tipsy_leelee/progenitor_only_512.json");
+    conn = JsonAPIUtils.submitQuery("localhost", masterDaemonPort, queryJson);
+    if (null != conn.getErrorStream()) {
+      throw new IllegalStateException(getContents(conn));
+    }
+    assertEquals(HttpURLConnection.HTTP_ACCEPTED, conn.getResponseCode());
+    LOGGER.info(getContents(conn));
+    while (!server.queryCompleted(4)) {
+      Thread.sleep(100);
+    }
+    Long result = server.getQueryResult(4);
+    assertNotNull(result);
+    assertEquals(result.longValue(), 8l);
+  }
 }

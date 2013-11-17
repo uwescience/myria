@@ -1,0 +1,10 @@
+{
+    "grp_filename": "/projects/db8/leelee-testdata/cosmo512Groups.txt",
+    "iorder_filename": "/projects/db8/leelee-testdata/cosmoIOrder.txt",
+    "relation_key": {
+        "program_name": "astro",
+        "relation_name": "cosmo512",
+        "user_name": "leelee"
+    },
+    "tipsy_filename": "/projects/db8/leelee-testdata/cosmo512.bin"
+}
