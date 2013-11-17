@@ -29,7 +29,7 @@ public class MultiFieldHashPartitionFunctionTest {
   @Test
   public void testMultiFieldPartitionFunction() {
     MultiFieldHashPartitionFunction multiFieldPartitionFunction =
-        new MultiFieldHashPartitionFunction(NUM_PARTITIONS, new int[] { 0, 1 });
+        new MultiFieldHashPartitionFunction(NUM_PARTITIONS, new Integer[] { 0, 1 });
     int numGroups = rand.nextInt(10) + 1;
     int tuplesPerGroup = rand.nextInt(10) + 1;
     TupleSource source = generateTupleBatchSource(numGroups, tuplesPerGroup);
