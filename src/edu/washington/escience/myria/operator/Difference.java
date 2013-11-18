@@ -1,5 +1,8 @@
 package edu.washington.escience.myria.operator;
 
+import com.google.common.collect.ImmutableMap;
+
+import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 
@@ -23,14 +26,53 @@ public class Difference extends BinaryOperator {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
+  private TupleBatch processLeftChildTB(TupleBatch leftTB) {
+    // TODO Auto-generated method stub
+    return null;
+  }
+
+  private void processRightChildTB(TupleBatch rightTB) {
+
+  }
+
   @Override
   protected TupleBatch fetchNextReady() throws Exception {
-    // TODO Auto-generated method stub
+    final Operator right = getRight();
+
+    /* Drain the right child. */
+    while (!right.eos()) {
+      TupleBatch rightTB = right.nextReady();
+      if (rightTB == null) {
+        if (right.eos()) {
+          break;
+        }
+        return null;
+      }
+      processRightChildTB(rightTB);
+    }
+
+    final Operator left = getLeft();
+    while (!left.eos()) {
+      TupleBatch leftTB = left.nextReady();
+      if (leftTB == null) {
+        return null;
+      }
+      return processLeftChildTB(leftTB);
+    }
+
     return null;
   }
 
   @Override
   protected Schema generateSchema() {
     return getLeft().getSchema();
+  }
+
+  @Override
+  public void init(final ImmutableMap<String, Object> execEnvVars) throws DbException {
+  }
+
+  @Override
+  protected void cleanup() throws DbException {
   }
 }
