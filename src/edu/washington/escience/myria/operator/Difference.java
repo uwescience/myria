@@ -13,6 +13,9 @@ import edu.washington.escience.myria.TupleBatch;
  */
 public class Difference extends BinaryOperator {
 
+  /** Required for Java serialization. */
+  private static final long serialVersionUID = 1L;
+
   /**
    * Instantiate a set difference operator.
    * 
@@ -22,9 +25,6 @@ public class Difference extends BinaryOperator {
   public Difference(final Operator left, final Operator right) {
     super(left, right);
   }
-
-  /** Required for Java serialization. */
-  private static final long serialVersionUID = 1L;
 
   private TupleBatch processLeftChildTB(TupleBatch leftTB) {
     // TODO Auto-generated method stub
