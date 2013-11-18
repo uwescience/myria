@@ -31,7 +31,6 @@ public class Difference extends BinaryOperator {
 
   @Override
   protected Schema generateSchema() {
-    // TODO Auto-generated method stub
-    return null;
+    return getLeft().getSchema();
   }
 }
