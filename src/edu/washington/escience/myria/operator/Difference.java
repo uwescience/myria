@@ -1,5 +1,6 @@
 package edu.washington.escience.myria.operator;
 
+import java.util.BitSet;
 import java.util.List;
 
 import com.google.common.collect.ImmutableMap;
@@ -35,17 +36,13 @@ public class Difference extends BinaryOperator {
   private transient TIntObjectMap<TIntList> tupleIndices;
 
   /**
-   * Instantiate a set difference operator.
+   * Instantiate a set difference operator: left EXCEPT right.
    * 
    * @param left the operator being subtracted from.
    * @param right the operator to be subtracted.
    */
   public Difference(final Operator left, final Operator right) {
     super(left, right);
-  }
-
-  private TupleBatch processLeftChildTB(final TupleBatch leftTB) {
-    return null;
   }
 
   /**
@@ -97,6 +94,26 @@ public class Difference extends BinaryOperator {
     }
   }
 
+  /**
+   * Process a batch of tuples that are subtracted from to produce the final result.
+   * 
+   * @param batch A tuple batch.
+   * 
+   * @return A filtered batch of tuples.
+   */
+  private TupleBatch processLeftChildTB(final TupleBatch batch) {
+    final int numValidTuples = batch.numTuples();
+    final BitSet toRemove = new BitSet(numValidTuples);
+
+    for (int row = 0; row < numValidTuples; row++) {
+      if (!markAsSeen(batch, row)) {
+        toRemove.set(row);
+      }
+    }
+
+    return batch.remove(toRemove);
+  }
+
   @Override
   protected TupleBatch fetchNextReady() throws Exception {
     final Operator right = getRight();
@@ -113,6 +130,7 @@ public class Difference extends BinaryOperator {
       processRightChildTB(rightTB);
     }
 
+    /* Drain the left child */
     final Operator left = getLeft();
     while (!left.eos()) {
       TupleBatch leftTB = left.nextReady();
