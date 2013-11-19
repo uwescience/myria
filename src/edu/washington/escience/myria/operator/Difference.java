@@ -18,6 +18,9 @@ import gnu.trove.map.hash.TIntObjectHashMap;
 /**
  * Implementation of set difference. Duplicates are not preserved.
  * 
+ * This implementation is similar to RightHashJoin: read the right relation into a hash table; probe the left relation's
+ * tuples with this hash table; eliminate duplicates by adding the left relation to the hash table.
+ * 
  * @author whitaker
  */
 public final class Difference extends BinaryOperator {
