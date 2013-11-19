@@ -20,7 +20,7 @@ import gnu.trove.map.hash.TIntObjectHashMap;
  * 
  * @author whitaker
  */
-public class Difference extends BinaryOperator {
+public final class Difference extends BinaryOperator {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
