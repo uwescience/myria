@@ -453,6 +453,30 @@
                     "op_type":"CollectProducer"
                 }
             ]
+        },
+        {
+            "operators":[
+                {
+                    "arg_operator_id":"SendResult",
+                    "arg_schema":{
+                        "column_names":[
+                            "result_grp",
+                            "result_min_pgtr",
+                            "result_tot_mass"
+                        ],
+                        "column_types":[
+                            "INT_TYPE",
+                            "INT_TYPE",
+                            "DOUBLE_TYPE"
+                        ]
+                    },
+                    "op_name":"CollectResult",
+                    "op_type":"CollectConsumer"
+                }
+            ],
+            "workers":[
+                0
+            ]
         }
     ],
     "logical_ra": "progenitor512-512 holds the results of a large progenitor query",

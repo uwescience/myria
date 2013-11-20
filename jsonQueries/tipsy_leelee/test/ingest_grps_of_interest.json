@@ -8,5 +8,5 @@
     "column_types" : ["INT_TYPE"],
     "column_names" : ["grp"]
   },
-  "file_name" : "/Users/leelee/myria/myria/testdata/progenitor512OnlyJsonQuery/cosmo512Groups.txt"
+  "file_name" : "/Users/leelee/myria/myria/testdata/progenitor512OnlyJsonQuery/groups_of_interest.txt"
 }

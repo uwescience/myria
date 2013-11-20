@@ -195,7 +195,7 @@ public class JsonQuerySubmitTest extends SystemTestBase {
       Thread.sleep(100);
     }
 
-    File queryJson = new File("./jsonQueries/tipsy_leelee/progenitor_only_512.json");
+    File queryJson = new File("./jsonQueries/tipsy_leelee/test/progenitor_only_512_test.json");
     conn = JsonAPIUtils.submitQuery("localhost", masterDaemonPort, queryJson);
     if (null != conn.getErrorStream()) {
       throw new IllegalStateException(getContents(conn));
@@ -207,6 +207,6 @@ public class JsonQuerySubmitTest extends SystemTestBase {
     }
     Long result = server.getQueryResult(4);
     assertNotNull(result);
-    assertEquals(result.longValue(), 8l);
+    assertEquals(result.longValue(), 286l);
   }
 }

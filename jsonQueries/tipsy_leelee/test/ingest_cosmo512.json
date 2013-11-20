@@ -1,10 +1,10 @@
 {
-    "grp_filename": "/Users/leelee/myria/myria/testdata/progenitor512OnlyJsonQuery/cosmo512Groups.txt",
-    "iorder_filename": "/Users/leelee/myria/myria/testdata/progenitor512OnlyJsonQuery/cosmoIOrder.txt",
+    "grp_filename": "/Users/leelee/myria/myria/testdata/tipsyfilescan/cosmo50cmb.256g2MbwK.00512.amiga.grp",
+    "iorder_filename": "/Users/leelee/myria/myria/testdata/tipsyfilescan/cosmo50cmb.256g2MbwK.00512.iord",
     "relation_key": {
         "program_name": "astro",
         "relation_name": "cosmo512",
         "user_name": "leelee"
     },
-    "tipsy_filename": "/Users/leelee/myria/myria/testdata/progenitor512OnlyJsonQuery/cosmo512.bin"
+    "tipsy_filename": "/Users/leelee/myria/myria/testdata/tipsyfilescan/cosmo50cmb.256g2MbwK.00512"
 }

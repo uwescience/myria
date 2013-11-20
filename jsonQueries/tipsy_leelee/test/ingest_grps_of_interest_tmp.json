@@ -8,5 +8,5 @@
     "column_types" : ["INT_TYPE"],
     "column_names" : ["grp"]
   },
-  "file_name" : "/projects/db8/leelee-testdata/cosmo512Groups.txt"
+  "file_name" : "/projects/db8/leelee-testdata/groups_of_interest.txt"
 }
