@@ -23,16 +23,17 @@ def collect_worker_time(path, query_id, worker_id):
 
 def main(argv):
 # Usage
-    if len(argv) != 3:
-        print >> sys.stderr, "Usage: %s <log_file_path> <# of workers>" % (argv[0])
+    if len(argv) != 4:
+        print >> sys.stderr, "Usage: %s <log_file_path> <# of workers> <query id>" % (argv[0])
         print >> sys.stderr, "       log_file_path "
         print >> sys.stderr, "       # of workers "
+        print >> sys.stderr, "       query id "
         sys.exit(1)
 
     print "worker_id,running_time"
     number_of_workers = int(argv[2])
     for i in range(1,number_of_workers+1):
-        collect_worker_time(argv[1]+"/worker_%d_stdout"%i,37,i)
+        collect_worker_time(argv[1]+"/worker_%d_stdout"%i,int(argv[3]),i)
 
 if __name__ == "__main__":
     main(sys.argv)
