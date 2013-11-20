@@ -26,9 +26,10 @@ import edu.washington.escience.myria.parallel.TaskResourceManager;
 public abstract class Operator implements Serializable {
 
   /**
-   * logger.
+   * loggers.
    * */
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Operator.class);
+  private static final org.slf4j.Logger PROFILING_LOGGER = org.slf4j.LoggerFactory.getLogger("PROFILE");
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -271,8 +272,8 @@ public abstract class Operator implements Serializable {
 
     if (!startProcessing) {
       if (isProfilingMode()) {
-        LOGGER.info("[{}#{}][{}@{}][{}]:begin to process", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
-            getOpName(), getFragmentId(), this);
+        PROFILING_LOGGER.info("[{}#{}][{}@{}][{}]:begin to process", MyriaConstants.EXEC_ENV_VAR_QUERY_ID,
+            getQueryId(), getOpName(), getFragmentId(), this);
       }
       startProcessing = true;
     }
@@ -402,10 +403,10 @@ public abstract class Operator implements Serializable {
    */
   protected final void setEOS() {
     if (startProcessing && isProfilingMode() && !eos()) {
-      LOGGER.info("[{}#{}][{}@{}][{}]:End of Processing (EOS)", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
-          getOpName(), getFragmentId(), this);
-      LOGGER.info("[{}#{}][{}@{}][{}]: executionTime {} ms", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
-          getOpName(), getFragmentId(), this, executionTime);
+      PROFILING_LOGGER.info("[{}#{}][{}@{}][{}]:End of Processing (EOS)", MyriaConstants.EXEC_ENV_VAR_QUERY_ID,
+          getQueryId(), getOpName(), getFragmentId(), this);
+      PROFILING_LOGGER.info("[{}#{}][{}@{}][{}]: executionTime {} ms", MyriaConstants.EXEC_ENV_VAR_QUERY_ID,
+          getQueryId(), getOpName(), getFragmentId(), this, executionTime);
     }
     eos = true;
   }
