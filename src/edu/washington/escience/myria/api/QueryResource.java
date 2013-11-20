@@ -208,6 +208,13 @@ public final class QueryResource {
     return Response.ok().cacheControl(MyriaApiUtils.doNotCache()).entity(queries).build();
   }
 
+  @GET
+  @Path("id-{query_id}/qf={qf_number}&worker={worker_id}")
+  public Response getProfile(@PathParam("query_id") final long queryId, @PathParam("qf_number") final long qf_number,
+      @PathParam("worker_id") final long workerId, @Context final UriInfo uriInfo) {
+    return Response.ok().cacheControl(MyriaApiUtils.doNotCache()).entity("Hi there").build();
+  }
+
   /**
    * @param uriInfo information about the URL of the request.
    * @return the canonical URL for this API.
