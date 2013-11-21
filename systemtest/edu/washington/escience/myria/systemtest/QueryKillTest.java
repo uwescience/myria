@@ -22,6 +22,7 @@ import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.QueryFuture;
 import edu.washington.escience.myria.parallel.QueryKilledException;
+import edu.washington.escience.myria.util.Constants;
 import edu.washington.escience.myria.util.TestUtils;
 
 public class QueryKillTest extends SystemTestBase {
@@ -32,7 +33,7 @@ public class QueryKillTest extends SystemTestBase {
     createTable(workerIDs[0], testtableKey, "id long, name varchar(20)");
     createTable(workerIDs[1], testtableKey, "id long, name varchar(20)");
 
-    final int numTuples = TupleBatch.BATCH_SIZE * 10;
+    final int numTuples = Constants.getBatchSize() * 10;
 
     final Schema schema =
         new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));

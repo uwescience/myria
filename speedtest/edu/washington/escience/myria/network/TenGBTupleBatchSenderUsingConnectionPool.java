@@ -19,6 +19,7 @@ import edu.washington.escience.myria.parallel.TransportMessageSerializer;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.IPCMessage;
 import edu.washington.escience.myria.parallel.ipc.StreamOutputChannel;
+import edu.washington.escience.myria.util.Constants;
 import edu.washington.escience.myria.util.TestUtils;
 
 public class TenGBTupleBatchSenderUsingConnectionPool {
@@ -58,7 +59,7 @@ public class TenGBTupleBatchSenderUsingConnectionPool {
 
     final TupleBatch tm = dataToSend.popAny();
     final long serializedSize = tm.toTransportMessage().getSerializedSize();
-    System.out.println("TupleBatch payload size: " + ((Long.SIZE / 8) + tupleSize * TupleBatch.BATCH_SIZE));
+    System.out.println("TupleBatch payload size: " + ((Long.SIZE / 8) + tupleSize * Constants.getBatchSize()));
     System.out.println("TupleBatch serialized size: " + serializedSize);
     final long tenGBytes = 10L * 1024L * 1024L * 1024L;
     System.out.println("Total bytes to send: " + tenGBytes);
@@ -102,7 +103,7 @@ public class TenGBTupleBatchSenderUsingConnectionPool {
   }
 
   public static void main(final String[] args) throws Exception {
-    final int totalRestrict = TupleBatch.BATCH_SIZE;
+    final int totalRestrict = Constants.getBatchSize();
 
     final long[] ids = TestUtils.randomLong(1000, 1005, totalRestrict);
     final long[] ids2 = TestUtils.randomLong(1000, 1005, totalRestrict);

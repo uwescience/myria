@@ -11,10 +11,10 @@ import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
 
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.DateTimeColumnMessage;
+import edu.washington.escience.myria.util.Constants;
 
 /**
  * A column of Date values.
@@ -35,10 +35,10 @@ public final class DateTimeColumnBuilder implements ColumnBuilder<DateTime> {
    * */
   private boolean built = false;
 
-  /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
+  /** Constructs an empty column that can hold up to Constants.getBatchSize() elements. */
   public DateTimeColumnBuilder() {
     numDates = 0;
-    data = new DateTime[TupleBatch.BATCH_SIZE];
+    data = new DateTime[Constants.getBatchSize()];
   }
 
   /**
@@ -85,7 +85,7 @@ public final class DateTimeColumnBuilder implements ColumnBuilder<DateTime> {
   @Override
   public DateTimeColumnBuilder append(final DateTime value) throws BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    if (numDates >= TupleBatch.BATCH_SIZE) {
+    if (numDates >= Constants.getBatchSize()) {
       throw new BufferOverflowException();
     }
     data[numDates++] = value;

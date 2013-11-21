@@ -4,14 +4,17 @@ import static org.junit.Assert.assertTrue;
 
 import java.nio.BufferOverflowException;
 
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.column.DoubleColumn;
-import edu.washington.escience.myria.column.DoubleColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
+import edu.washington.escience.myria.util.Constants;
 
 public class DoubleColumnTest {
+  @BeforeClass
+  public static void initializeBatchSize() {
+    Constants.setBatchSize(100);
+  }
 
   @Test
   public void testProto() {
@@ -25,7 +28,7 @@ public class DoubleColumnTest {
   @Test
   public void testFull() {
     final DoubleColumnBuilder builder = new DoubleColumnBuilder();
-    for (int i = 0; i < TupleBatch.BATCH_SIZE; i++) {
+    for (int i = 0; i < Constants.getBatchSize(); i++) {
       builder.append(i * 1.0);
     }
     builder.build();
@@ -34,7 +37,7 @@ public class DoubleColumnTest {
   @Test(expected = BufferOverflowException.class)
   public void testOverflow() {
     final DoubleColumnBuilder builder = new DoubleColumnBuilder();
-    for (int i = 0; i < TupleBatch.BATCH_SIZE; i++) {
+    for (int i = 0; i < Constants.getBatchSize(); i++) {
       builder.append(i * 1.0);
     }
     builder.append(0.0);

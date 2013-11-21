@@ -26,6 +26,7 @@ import edu.washington.escience.myria.column.LongColumn;
 import edu.washington.escience.myria.column.LongColumnBuilder;
 import edu.washington.escience.myria.column.StringColumn;
 import edu.washington.escience.myria.column.StringColumnBuilder;
+import edu.washington.escience.myria.util.Constants;
 
 /** A simplified TupleBatchBuffer which supports random access. Designed for hash tables to use. */
 
@@ -77,7 +78,7 @@ public class TupleBuffer {
    */
   private void finishBatch() {
     Preconditions.checkArgument(numColumnsReady == 0);
-    Preconditions.checkArgument(currentInProgressTuples == TupleBatch.BATCH_SIZE);
+    Preconditions.checkArgument(currentInProgressTuples == Constants.getBatchSize());
     Column<?>[] buildingColumns = new Column<?>[numColumns];
     int i = 0;
     for (ColumnBuilder<?> cb : currentBuildingColumns) {
@@ -99,7 +100,7 @@ public class TupleBuffer {
    * @return the number of complete tuples stored in this TupleBuffer.
    */
   public final int numTuples() {
-    return readyTuples.size() * TupleBatch.BATCH_SIZE + currentInProgressTuples;
+    return readyTuples.size() * Constants.getBatchSize() + currentInProgressTuples;
   }
 
   /**
@@ -110,8 +111,8 @@ public class TupleBuffer {
    * */
   @Deprecated
   public final Object get(final int colIndex, final int rowIndex) throws IndexOutOfBoundsException {
-    int tupleBatchIndex = rowIndex / TupleBatch.BATCH_SIZE;
-    int tupleIndex = rowIndex % TupleBatch.BATCH_SIZE;
+    int tupleBatchIndex = rowIndex / Constants.getBatchSize();
+    int tupleIndex = rowIndex % Constants.getBatchSize();
     if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
         && tupleIndex >= currentInProgressTuples) {
       throw new IndexOutOfBoundsException();
@@ -128,8 +129,8 @@ public class TupleBuffer {
    * @return the value in the specified column and row.
    */
   public final boolean getBoolean(final int column, final int row) {
-    int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
-    int tupleIndex = row % TupleBatch.BATCH_SIZE;
+    int tupleBatchIndex = row / Constants.getBatchSize();
+    int tupleIndex = row % Constants.getBatchSize();
     if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
         && tupleIndex >= currentInProgressTuples) {
       throw new IndexOutOfBoundsException();
@@ -146,8 +147,8 @@ public class TupleBuffer {
    * @return the value in the specified column and row.
    */
   public final double getDouble(final int column, final int row) {
-    int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
-    int tupleIndex = row % TupleBatch.BATCH_SIZE;
+    int tupleBatchIndex = row / Constants.getBatchSize();
+    int tupleIndex = row % Constants.getBatchSize();
     if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
         && tupleIndex >= currentInProgressTuples) {
       throw new IndexOutOfBoundsException();
@@ -164,8 +165,8 @@ public class TupleBuffer {
    * @return the value in the specified column and row.
    */
   public final float getFloat(final int column, final int row) {
-    int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
-    int tupleIndex = row % TupleBatch.BATCH_SIZE;
+    int tupleBatchIndex = row / Constants.getBatchSize();
+    int tupleIndex = row % Constants.getBatchSize();
     if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
         && tupleIndex >= currentInProgressTuples) {
       throw new IndexOutOfBoundsException();
@@ -182,8 +183,8 @@ public class TupleBuffer {
    * @return the value in the specified column and row.
    */
   public final long getLong(final int column, final int row) {
-    int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
-    int tupleIndex = row % TupleBatch.BATCH_SIZE;
+    int tupleBatchIndex = row / Constants.getBatchSize();
+    int tupleIndex = row % Constants.getBatchSize();
     if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
         && tupleIndex >= currentInProgressTuples) {
       throw new IndexOutOfBoundsException();
@@ -200,8 +201,8 @@ public class TupleBuffer {
    * @return the value in the specified column and row.
    */
   public final int getInt(final int column, final int row) {
-    int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
-    int tupleIndex = row % TupleBatch.BATCH_SIZE;
+    int tupleBatchIndex = row / Constants.getBatchSize();
+    int tupleIndex = row % Constants.getBatchSize();
     if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
         && tupleIndex >= currentInProgressTuples) {
       throw new IndexOutOfBoundsException();
@@ -218,8 +219,8 @@ public class TupleBuffer {
    * @return the value in the specified column and row.
    */
   public final String getString(final int column, final int row) {
-    int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
-    int tupleIndex = row % TupleBatch.BATCH_SIZE;
+    int tupleBatchIndex = row / Constants.getBatchSize();
+    int tupleIndex = row % Constants.getBatchSize();
     if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
         && tupleIndex >= currentInProgressTuples) {
       throw new IndexOutOfBoundsException();
@@ -236,8 +237,8 @@ public class TupleBuffer {
    * @return the value in the specified column and row.
    */
   public final DateTime getDateTime(final int column, final int row) {
-    int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
-    int tupleIndex = row % TupleBatch.BATCH_SIZE;
+    int tupleBatchIndex = row / Constants.getBatchSize();
+    int tupleIndex = row % Constants.getBatchSize();
     if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
         && tupleIndex >= currentInProgressTuples) {
       throw new IndexOutOfBoundsException();
@@ -253,8 +254,8 @@ public class TupleBuffer {
    * @return the columns of the TB that the row resides.
    * */
   public Column<?>[] getColumns(final int row) {
-    int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
-    int tupleIndex = row % TupleBatch.BATCH_SIZE;
+    int tupleBatchIndex = row / Constants.getBatchSize();
+    int tupleIndex = row % Constants.getBatchSize();
     if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
         && tupleIndex >= currentInProgressTuples) {
       throw new IndexOutOfBoundsException();
@@ -270,7 +271,7 @@ public class TupleBuffer {
    * @return the index of the row in the containing TB.
    * */
   public final int getTupleIndexInContainingTB(final int row) {
-    return row % TupleBatch.BATCH_SIZE;
+    return row % Constants.getBatchSize();
   }
 
   /**
@@ -278,8 +279,8 @@ public class TupleBuffer {
    * @return the ColumnBuilder if the row resides in a in-building TB
    * */
   public ColumnBuilder<?>[] getColumnBuilders(final int row) {
-    int tupleBatchIndex = row / TupleBatch.BATCH_SIZE;
-    int tupleIndex = row % TupleBatch.BATCH_SIZE;
+    int tupleBatchIndex = row / Constants.getBatchSize();
+    int tupleIndex = row % Constants.getBatchSize();
     if (tupleBatchIndex > readyTuples.size() || tupleBatchIndex == readyTuples.size()
         && tupleIndex >= currentInProgressTuples) {
       throw new IndexOutOfBoundsException();
@@ -418,7 +419,7 @@ public class TupleBuffer {
       currentInProgressTuples++;
       numColumnsReady = 0;
       columnsReady.clear();
-      if (currentInProgressTuples == TupleBatch.BATCH_SIZE) {
+      if (currentInProgressTuples == Constants.getBatchSize()) {
         finishBatch();
       }
     }

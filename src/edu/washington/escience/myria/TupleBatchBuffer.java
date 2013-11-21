@@ -27,6 +27,7 @@ import edu.washington.escience.myria.column.LongColumn;
 import edu.washington.escience.myria.column.LongColumnBuilder;
 import edu.washington.escience.myria.column.StringColumn;
 import edu.washington.escience.myria.column.StringColumnBuilder;
+import edu.washington.escience.myria.util.Constants;
 
 /**
  * Used for creating TupleBatch objects on the fly. A helper class used in, e.g., the Scatter operator. Currently it
@@ -120,7 +121,7 @@ public class TupleBatchBuffer {
       currentInProgressTuples++;
       numColumnsReady = 0;
       columnsReady.clear();
-      if (currentInProgressTuples == TupleBatch.BATCH_SIZE) {
+      if (currentInProgressTuples == Constants.getBatchSize()) {
         finishBatch();
       }
     }
@@ -159,7 +160,7 @@ public class TupleBatchBuffer {
   public final List<TupleBatch> getAll() {
     final List<TupleBatch> output = new ArrayList<TupleBatch>();
     for (final List<Column<?>> columns : readyTuples) {
-      output.add(new TupleBatch(schema, columns, TupleBatch.BATCH_SIZE));
+      output.add(new TupleBatch(schema, columns, Constants.getBatchSize()));
     }
     if (currentInProgressTuples > 0) {
       output.add(new TupleBatch(schema, getInProgressColumns(), currentInProgressTuples));
@@ -391,7 +392,7 @@ public class TupleBatchBuffer {
           currentBuildingColumns.get(i + leftAnswerColumns.length));
     }
     currentInProgressTuples++;
-    if (currentInProgressTuples == TupleBatch.BATCH_SIZE) {
+    if (currentInProgressTuples == Constants.getBatchSize()) {
       finishBatch();
     }
   }

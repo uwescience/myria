@@ -5,6 +5,7 @@ import static org.junit.Assert.assertEquals;
 import java.util.Random;
 
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -15,8 +16,13 @@ import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.TupleSource;
 import edu.washington.escience.myria.parallel.MultiFieldHashPartitionFunction;
+import edu.washington.escience.myria.util.Constants;
 
 public class MultiFieldHashPartitionFunctionTest {
+  @BeforeClass
+  public static void initializeBatchSize() {
+    Constants.setBatchSize(100);
+  }
 
   private static final int NUM_PARTITIONS = 3;
   private Random rand; // for randomizing numbers

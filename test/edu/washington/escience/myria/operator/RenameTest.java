@@ -16,8 +16,13 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.ColumnBuilder;
 import edu.washington.escience.myria.column.ColumnFactory;
+import edu.washington.escience.myria.util.Constants;
 
 public class RenameTest {
+  @BeforeClass
+  public static void initializeBatchSize() {
+    Constants.setBatchSize(100);
+  }
 
   /**
    * The original schema of the TupleBatch to be renamed.

@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.Arrays;
 
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -16,7 +17,7 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
-import edu.washington.escience.myria.operator.BinaryFileScan;
+import edu.washington.escience.myria.util.Constants;
 
 /**
  * To test BinaryFileScan, and it is based on the code from FileScanTest
@@ -25,6 +26,10 @@ import edu.washington.escience.myria.operator.BinaryFileScan;
  * 
  */
 public class BinaryFileScanTest {
+  @BeforeClass
+  public static void initializeBatchSize() {
+    Constants.setBatchSize(100);
+  }
 
   @Test
   /**

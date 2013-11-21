@@ -13,7 +13,6 @@ import com.google.common.collect.ImmutableList;
 import edu.washington.escience.myria.MyriaSystemConfigKeys;
 import edu.washington.escience.myria.RelationKey;
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.RootOperator;
@@ -23,6 +22,7 @@ import edu.washington.escience.myria.operator.failures.DelayInjector;
 import edu.washington.escience.myria.parallel.CollectConsumer;
 import edu.washington.escience.myria.parallel.CollectProducer;
 import edu.washington.escience.myria.parallel.ExchangePairID;
+import edu.washington.escience.myria.util.Constants;
 import edu.washington.escience.myria.util.TestUtils;
 
 public class FlowControlTest extends SystemTestBase {
@@ -48,7 +48,7 @@ public class FlowControlTest extends SystemTestBase {
     final RelationKey testtableKey = RelationKey.of("test", "test", "testtable");
     createTable(workerIDs[0], testtableKey, "id long, name varchar(20)");
 
-    final int numTuples = TupleBatch.BATCH_SIZE * 100;
+    final int numTuples = Constants.getBatchSize() * 100;
 
     final Schema schema =
         new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));

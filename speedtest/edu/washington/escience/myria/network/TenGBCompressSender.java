@@ -22,9 +22,9 @@ import org.jboss.netty.handler.codec.protobuf.ProtobufVarint32LengthFieldPrepend
 import com.google.common.collect.ImmutableList;
 
 import edu.washington.escience.myria.Schema;
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.util.Constants;
 import edu.washington.escience.myria.util.TestUtils;
 
 public class TenGBCompressSender {
@@ -64,7 +64,7 @@ public class TenGBCompressSender {
     final String hostName = args[0];
     final int port = Integer.valueOf(args[1]);
 
-    final int totalRestrict = TupleBatch.BATCH_SIZE;
+    final int totalRestrict = Constants.getBatchSize();
 
     final long[] ids = TestUtils.randomLong(1000, 1005, totalRestrict);
     final long[] ids2 = TestUtils.randomLong(1000, 1005, totalRestrict);

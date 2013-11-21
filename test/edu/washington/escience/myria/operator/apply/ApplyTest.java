@@ -3,6 +3,7 @@ package edu.washington.escience.myria.operator.apply;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -19,9 +20,9 @@ import edu.washington.escience.myria.expression.ConstantExpression;
 import edu.washington.escience.myria.expression.CosExpression;
 import edu.washington.escience.myria.expression.DivideExpression;
 import edu.washington.escience.myria.expression.EqualsExpression;
-import edu.washington.escience.myria.expression.GenericExpression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
 import edu.washington.escience.myria.expression.FloorExpression;
+import edu.washington.escience.myria.expression.GenericExpression;
 import edu.washington.escience.myria.expression.GreaterThanExpression;
 import edu.washington.escience.myria.expression.GreaterThanOrEqualsExpression;
 import edu.washington.escience.myria.expression.LessThanExpression;
@@ -40,10 +41,15 @@ import edu.washington.escience.myria.expression.ToUpperCaseExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
 import edu.washington.escience.myria.operator.Apply;
 import edu.washington.escience.myria.operator.TupleSource;
+import edu.washington.escience.myria.util.Constants;
 
 public class ApplyTest {
+  @BeforeClass
+  public static void initializeBatchSize() {
+    Constants.setBatchSize(100);
+  }
 
-  private final int NUM_TUPLES = 2 * TupleBatch.BATCH_SIZE;
+  private final int NUM_TUPLES = 2 * Constants.getBatchSize();
   private final int SMALL_NUM_TUPLES = 10;
 
   @Test

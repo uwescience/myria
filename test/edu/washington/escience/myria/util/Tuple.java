@@ -1,7 +1,14 @@
 package edu.washington.escience.myria.util;
 
+import org.junit.BeforeClass;
+
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public class Tuple implements Comparable<Tuple> {
+  @BeforeClass
+  public static void initializeBatchSize() {
+    Constants.setBatchSize(100);
+  }
+
   Comparable[] values;
 
   public Tuple(final int numFields) {

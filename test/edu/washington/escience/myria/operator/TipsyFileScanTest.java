@@ -9,6 +9,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import edu.washington.escience.myria.DbException;
@@ -19,6 +20,7 @@ import edu.washington.escience.myria.expression.ConstantExpression;
 import edu.washington.escience.myria.expression.EqualsExpression;
 import edu.washington.escience.myria.expression.ExpressionOperator;
 import edu.washington.escience.myria.expression.VariableExpression;
+import edu.washington.escience.myria.util.Constants;
 
 /**
  * 
@@ -26,6 +28,10 @@ import edu.washington.escience.myria.expression.VariableExpression;
  * 
  */
 public class TipsyFileScanTest {
+  @BeforeClass
+  public static void initializeBatchSize() {
+    Constants.setBatchSize(100);
+  }
 
   private static final int NUM_COLUMN_GAS = 12;
   private static final int NUM_COLUMN_DARK = 9;

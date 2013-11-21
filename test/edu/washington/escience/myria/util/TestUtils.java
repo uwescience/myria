@@ -9,6 +9,7 @@ import java.util.Map.Entry;
 import java.util.Random;
 
 import org.junit.Assert;
+import org.junit.BeforeClass;
 
 import com.google.common.collect.ImmutableList;
 
@@ -16,6 +17,10 @@ import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.column.Column;
 
 public final class TestUtils {
+  @BeforeClass
+  public static void initializeBatchSize() {
+    Constants.setBatchSize(100);
+  }
 
   private static Random random = null;
 

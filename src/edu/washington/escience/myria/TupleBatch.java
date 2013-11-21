@@ -37,6 +37,7 @@ import edu.washington.escience.myria.column.LongColumn;
 import edu.washington.escience.myria.column.StringColumn;
 import edu.washington.escience.myria.parallel.PartitionFunction;
 import edu.washington.escience.myria.proto.TransportProto.TransportMessage;
+import edu.washington.escience.myria.util.Constants;
 import edu.washington.escience.myria.util.IPCUtils;
 import edu.washington.escience.myria.util.ImmutableBitSet;
 import edu.washington.escience.myria.util.ImmutableIntArray;
@@ -52,8 +53,6 @@ public class TupleBatch implements Serializable {
   /***/
   private static final long serialVersionUID = 1L;
 
-  /** The hard-coded number of tuples in a batch. */
-  public static final int BATCH_SIZE = 10 * 1000;
   /** Class-specific magic number used to generate the hash code. */
   private static final int MAGIC_HASHCODE = 243;
   /** The hash function for this class. */
@@ -78,13 +77,21 @@ public class TupleBatch implements Serializable {
   private final boolean isEOI;
 
   /** Identity mapping. */
-  protected static final int[] IDENTITY_MAPPING;
+  private static int[] identityMapping;
 
-  static {
-    IDENTITY_MAPPING = new int[BATCH_SIZE];
-    for (int i = 0; i < BATCH_SIZE; i++) {
-      IDENTITY_MAPPING[i] = i;
+  /**
+   * Lazy initialization of identity mapping.
+   * 
+   * @return the identity mapping
+   */
+  protected static synchronized int[] getIdentityMapping() {
+    if (identityMapping == null) {
+      identityMapping = new int[Constants.getBatchSize()];
+      for (int i = 0; i < Constants.getBatchSize(); i++) {
+        identityMapping[i] = i;
+      }
     }
+    return identityMapping;
   }
 
   /**
@@ -170,10 +177,10 @@ public class TupleBatch implements Serializable {
     } else {
       this.columns = ImmutableList.copyOf(columns);
     }
-    Preconditions.checkArgument(numTuples >= 0 && numTuples <= BATCH_SIZE,
-        "numTuples must be non negative and no more than TupleBatch.BATCH_SIZE");
+    Preconditions.checkArgument(numTuples >= 0 && numTuples <= Constants.getBatchSize(),
+        "numTuples must be non negative and no more than Constants.getBatchSize()");
     numValidTuples = numTuples;
-    validIndices = new ImmutableIntArray(Arrays.copyOfRange(IDENTITY_MAPPING, 0, numTuples));
+    validIndices = new ImmutableIntArray(Arrays.copyOfRange(getIdentityMapping(), 0, numTuples));
     /* All tuples are valid */
     final BitSet tmp = new BitSet(numTuples);
     tmp.set(0, numTuples);

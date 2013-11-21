@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
@@ -23,11 +24,17 @@ import com.google.common.collect.ImmutableMap;
 
 import edu.washington.escience.myria.MyriaConstants;
 import edu.washington.escience.myria.parallel.SocketInfo;
+import edu.washington.escience.myria.util.Constants;
 import edu.washington.escience.myria.util.FSUtils;
 
 public class CatalogTest {
   /** The logger for this class. */
   private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(CatalogTest.class);
+
+  @BeforeClass
+  public static void initializeBatchSize() {
+    Constants.setBatchSize(100);
+  }
 
   @Rule
   public TestRule watcher = new TestWatcher() {

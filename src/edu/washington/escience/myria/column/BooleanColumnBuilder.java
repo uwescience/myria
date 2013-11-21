@@ -9,9 +9,9 @@ import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
 
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
+import edu.washington.escience.myria.util.Constants;
 
 /**
  * A column of Boolean values. To save space, this implementation uses a BitSet as the internal representation.
@@ -32,11 +32,11 @@ public final class BooleanColumnBuilder implements ColumnBuilder<Boolean> {
    * */
   private boolean built = false;
 
-  /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
+  /** Constructs an empty column that can hold up to Constants.getBatchSize() elements. */
   public BooleanColumnBuilder() {
     data = new BitSet();
     numBits = 0;
-    capacity = TupleBatch.BATCH_SIZE;
+    capacity = Constants.getBatchSize();
   }
 
   /**
@@ -86,7 +86,7 @@ public final class BooleanColumnBuilder implements ColumnBuilder<Boolean> {
    */
   public BooleanColumnBuilder append(final boolean value) throws BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    if (numBits >= TupleBatch.BATCH_SIZE) {
+    if (numBits >= Constants.getBatchSize()) {
       throw new BufferOverflowException();
     }
     data.set(numBits++, value);

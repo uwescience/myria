@@ -23,9 +23,14 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.accessmethod.SQLiteInfo;
+import edu.washington.escience.myria.util.Constants;
 import edu.washington.escience.myria.util.FSUtils;
 
 public class SQLiteInsertTest {
+  @BeforeClass
+  public static void initializeBatchSize() {
+    Constants.setBatchSize(100);
+  }
 
   private static Path tempDir;
   private static File tempFile;
