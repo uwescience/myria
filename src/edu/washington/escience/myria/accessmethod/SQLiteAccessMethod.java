@@ -28,6 +28,7 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.ColumnBuilder;
 import edu.washington.escience.myria.column.ColumnFactory;
+import edu.washington.escience.myria.util.Constants;
 
 /**
  * Access method for a SQLite database. Exposes data as TupleBatches.
@@ -431,7 +432,7 @@ class SQLiteTupleBatchIterator implements Iterator<TupleBatch> {
      */
     int numTuples;
     try {
-      for (numTuples = 0; numTuples < TupleBatch.BATCH_SIZE && statement.hasRow(); ++numTuples) {
+      for (numTuples = 0; numTuples < Constants.getBatchSize() && statement.hasRow(); ++numTuples) {
         for (int column = 0; column < numFields; ++column) {
           columnBuilders.get(column).appendFromSQLite(statement, column);
         }

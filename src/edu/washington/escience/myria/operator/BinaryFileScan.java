@@ -15,6 +15,7 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
+import edu.washington.escience.myria.util.Constants;
 
 /**
  * Reads data from binary file. This class is written base on the code from FileScan.java
@@ -74,7 +75,7 @@ public class BinaryFileScan extends LeafOperator {
   @Override
   protected final TupleBatch fetchNextReady() throws DbException {
     try {
-      while (fileLength > 0 && buffer.numTuples() < TupleBatch.BATCH_SIZE) {
+      while (fileLength > 0 && buffer.numTuples() < Constants.getBatchSize()) {
         for (int count = 0; count < schema.numColumns(); ++count) {
           switch (schema.getColumnType(count)) {
             case DOUBLE_TYPE:

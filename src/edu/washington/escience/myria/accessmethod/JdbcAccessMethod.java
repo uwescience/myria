@@ -23,6 +23,7 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.ColumnBuilder;
 import edu.washington.escience.myria.column.ColumnFactory;
+import edu.washington.escience.myria.util.Constants;
 
 /**
  * Access method for a JDBC database. Exposes data as TupleBatches.
@@ -374,7 +375,7 @@ class JdbcTupleBatchIterator implements Iterator<TupleBatch> {
     final int numFields = schema.numColumns();
     final List<ColumnBuilder<?>> columnBuilders = ColumnFactory.allocateColumns(schema);
     int numTuples = 0;
-    for (numTuples = 0; numTuples < TupleBatch.BATCH_SIZE; ++numTuples) {
+    for (numTuples = 0; numTuples < Constants.getBatchSize(); ++numTuples) {
       if (!resultSet.next()) {
         final Connection connection = resultSet.getStatement().getConnection();
         resultSet.getStatement().close();

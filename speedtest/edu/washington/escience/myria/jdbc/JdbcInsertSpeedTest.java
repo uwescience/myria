@@ -17,6 +17,7 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.accessmethod.JdbcAccessMethod;
 import edu.washington.escience.myria.accessmethod.JdbcInfo;
 import edu.washington.escience.myria.operator.DbQueryScan;
+import edu.washington.escience.myria.util.Constants;
 import edu.washington.escience.myria.util.ErrorUtils;
 
 /**
@@ -186,7 +187,7 @@ public class JdbcInsertSpeedTest {
       final StringBuilder sb = new StringBuilder("");
       sb.append("Results");
       sb.append("\n\tNumber of trials = " + NTRIALS);
-      sb.append("\n\tTuple batch size = " + TupleBatch.BATCH_SIZE); // TODO : implement ability to alter batch sizes?
+      sb.append("\n\tTuple batch size = " + Constants.getBatchSize()); // TODO : implement ability to alter batch sizes?
       sb.append("\n\tTuples per trial = " + NUM_TUPLES);
       sb.append("\n\n\tTotal time = " + String.format("%1$,.2f", seconds) + " seconds");
       sb.append("\n\tTuples per second = " + String.format("%1$,.2f", (NUM_TUPLES * numSuccessfulTrials / seconds)));

@@ -6,6 +6,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.HashMap;
 
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -19,10 +20,15 @@ import edu.washington.escience.myria.operator.agg.Aggregate;
 import edu.washington.escience.myria.operator.agg.Aggregator;
 import edu.washington.escience.myria.operator.agg.MultiGroupByAggregate;
 import edu.washington.escience.myria.operator.agg.SingleGroupByAggregate;
+import edu.washington.escience.myria.util.Constants;
 import edu.washington.escience.myria.util.TestUtils;
 import edu.washington.escience.myria.util.Tuple;
 
 public class AggregateTest {
+  @BeforeClass
+  public static void initializeBatchSize() {
+    Constants.setBatchSize(100);
+  }
 
   public TupleBatchBuffer generateRandomTuples(final int numTuples) {
     final String[] names = TestUtils.randomFixedLengthNumericString(1000, 1005, numTuples, 20);

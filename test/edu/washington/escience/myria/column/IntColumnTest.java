@@ -4,15 +4,17 @@ import static org.junit.Assert.assertTrue;
 
 import java.nio.BufferOverflowException;
 
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.column.IntColumn;
-import edu.washington.escience.myria.column.IntColumnBuilder;
-import edu.washington.escience.myria.column.IntProtoColumn;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
+import edu.washington.escience.myria.util.Constants;
 
 public class IntColumnTest {
+  @BeforeClass
+  public static void initializeBatchSize() {
+    Constants.setBatchSize(100);
+  }
 
   @Test
   public void testProto() {
@@ -37,7 +39,7 @@ public class IntColumnTest {
   @Test
   public void testFull() {
     final IntColumnBuilder builder = new IntColumnBuilder();
-    for (int i = 0; i < TupleBatch.BATCH_SIZE; i++) {
+    for (int i = 0; i < Constants.getBatchSize(); i++) {
       builder.append(i);
     }
     builder.build();
@@ -46,10 +48,10 @@ public class IntColumnTest {
   @Test(expected = BufferOverflowException.class)
   public void testOverflow() {
     final IntColumnBuilder builder = new IntColumnBuilder();
-    for (int i = 0; i < TupleBatch.BATCH_SIZE; i++) {
+    for (int i = 0; i < Constants.getBatchSize(); i++) {
       builder.append(i);
     }
-    builder.append(TupleBatch.BATCH_SIZE);
+    builder.append(Constants.getBatchSize());
     builder.build();
   }
 

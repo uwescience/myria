@@ -26,6 +26,7 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
+import edu.washington.escience.myria.util.Constants;
 import edu.washington.escience.myria.util.DateTimeUtils;
 
 /**
@@ -131,7 +132,7 @@ public final class FileScan extends LeafOperator {
     /* Let's assume that the scanner always starts at the beginning of a line. */
     int lineNumberBegin = lineNumber;
 
-    while (scanner.hasNext() && (buffer.numTuples() < TupleBatch.BATCH_SIZE)) {
+    while (scanner.hasNext() && (buffer.numTuples() < Constants.getBatchSize())) {
       lineNumber++;
 
       for (int count = 0; count < schema.numColumns(); ++count) {

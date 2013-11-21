@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintStream;
 
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -16,8 +17,13 @@ import edu.washington.escience.myria.DbException;
 import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.util.Constants;
 
 public class FileScanTest {
+  @BeforeClass
+  public static void initializeBatchSize() {
+    Constants.setBatchSize(100);
+  }
 
   /**
    * Helper function used to run tests.
@@ -145,15 +151,15 @@ public class FileScanTest {
   public void testBigFile() throws Exception {
     ByteArrayOutputStream bytes = new ByteArrayOutputStream();
     PrintStream printedBytes = new PrintStream(bytes);
-    /* Print 2*TupleBatch.BATCH_SIZE lines */
-    for (int i = 0; i < TupleBatch.BATCH_SIZE * 2; ++i) {
+    /* Print 2*batchSize lines */
+    for (int i = 0; i < Constants.getBatchSize() * 2; ++i) {
       printedBytes.print(i);
       printedBytes.print('\n');
     }
     printedBytes.flush();
     FileScan scanBytes = new FileScan(Schema.of(ImmutableList.of(Type.INT_TYPE), ImmutableList.of("col1")));
     scanBytes.setInputStream(new ByteArrayInputStream(bytes.toByteArray()));
-    assertTrue(getRowCount(scanBytes) == 2 * TupleBatch.BATCH_SIZE);
+    assertTrue(getRowCount(scanBytes) == 2 * Constants.getBatchSize());
   }
 
   @Test

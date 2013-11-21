@@ -10,10 +10,10 @@ import com.google.common.base.Preconditions;
 import com.google.common.hash.Hasher;
 import com.google.protobuf.ByteString;
 
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.FloatColumnMessage;
+import edu.washington.escience.myria.util.Constants;
 
 /**
  * A column of Float values.
@@ -39,7 +39,7 @@ public final class FloatColumn implements Column<Float> {
    * */
   FloatColumn(final float[] data, final int numData) {
     Preconditions.checkNotNull(data);
-    Preconditions.checkArgument(numData <= TupleBatch.BATCH_SIZE);
+    Preconditions.checkArgument(numData <= Constants.getBatchSize());
     this.data = data;
     position = numData;
   }

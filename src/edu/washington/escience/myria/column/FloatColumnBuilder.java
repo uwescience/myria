@@ -10,9 +10,9 @@ import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
 
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
+import edu.washington.escience.myria.util.Constants;
 
 /**
  * A column of Float values.
@@ -27,9 +27,9 @@ public final class FloatColumnBuilder implements ColumnBuilder<Float> {
    * */
   private boolean built = false;
 
-  /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
+  /** Constructs an empty column that can hold up to Constants.getBatchSize() elements. */
   public FloatColumnBuilder() {
-    data = FloatBuffer.allocate(TupleBatch.BATCH_SIZE);
+    data = FloatBuffer.allocate(Constants.getBatchSize());
   }
 
   /**

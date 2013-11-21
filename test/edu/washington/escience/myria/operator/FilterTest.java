@@ -2,6 +2,7 @@ package edu.washington.escience.myria.operator;
 
 import static org.junit.Assert.assertEquals;
 
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -18,8 +19,13 @@ import edu.washington.escience.myria.expression.LessThanExpression;
 import edu.washington.escience.myria.expression.MinusExpression;
 import edu.washington.escience.myria.expression.PlusExpression;
 import edu.washington.escience.myria.expression.VariableExpression;
+import edu.washington.escience.myria.util.Constants;
 
 public class FilterTest {
+  @BeforeClass
+  public static void initializeBatchSize() {
+    Constants.setBatchSize(100);
+  }
 
   /**
    * A predicate for filtering x - y < target < x + y. Assuming both the columns have the same type.

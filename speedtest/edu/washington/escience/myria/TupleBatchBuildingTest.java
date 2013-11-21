@@ -6,6 +6,7 @@ import org.junit.Test;
 
 import edu.washington.escience.myria.column.Column;
 import edu.washington.escience.myria.column.LongColumnBuilder;
+import edu.washington.escience.myria.util.Constants;
 import edu.washington.escience.myria.util.DateTimeUtils;
 import edu.washington.escience.myria.util.TestUtils;
 
@@ -35,8 +36,8 @@ public class TupleBatchBuildingTest {
   @Test
   public void buildImmutableTB() {
 
-    long[] icb1Source = TestUtils.randomLong(10, Integer.MAX_VALUE, TupleBatch.BATCH_SIZE);
-    long[] icb2Source = TestUtils.randomLong(10, Integer.MAX_VALUE, TupleBatch.BATCH_SIZE);
+    long[] icb1Source = TestUtils.randomLong(10, Integer.MAX_VALUE, Constants.getBatchSize());
+    long[] icb2Source = TestUtils.randomLong(10, Integer.MAX_VALUE, Constants.getBatchSize());
     Column<?>[] lcs = new Column<?>[2];
     long totalCount = 0;
 
@@ -44,7 +45,7 @@ public class TupleBatchBuildingTest {
     for (long i = 0; i < testSize; i++) {
       LongColumnBuilder icb1 = new LongColumnBuilder();
       LongColumnBuilder icb2 = new LongColumnBuilder();
-      for (int j = 0; j < TupleBatch.BATCH_SIZE; j++) {
+      for (int j = 0; j < Constants.getBatchSize(); j++) {
         icb1.append(icb1Source[j]);
         icb2.append(icb2Source[j]);
       }
@@ -63,8 +64,8 @@ public class TupleBatchBuildingTest {
 
     LongColumnBuilder icb1 = new LongColumnBuilder();
     LongColumnBuilder icb2 = new LongColumnBuilder();
-    long[] icb1Source = TestUtils.randomLong(10, Integer.MAX_VALUE, TupleBatch.BATCH_SIZE);
-    long[] icb2Source = TestUtils.randomLong(10, Integer.MAX_VALUE, TupleBatch.BATCH_SIZE);
+    long[] icb1Source = TestUtils.randomLong(10, Integer.MAX_VALUE, Constants.getBatchSize());
+    long[] icb2Source = TestUtils.randomLong(10, Integer.MAX_VALUE, Constants.getBatchSize());
     long totalCount = 0;
 
     icb1.expandAll();
@@ -72,7 +73,7 @@ public class TupleBatchBuildingTest {
 
     long start = System.nanoTime();
     for (long i = 0; i < testSize; i++) {
-      for (int j = 0; j < TupleBatch.BATCH_SIZE; j++) {
+      for (int j = 0; j < Constants.getBatchSize(); j++) {
         icb1.replace(j, icb1Source[j]);
         icb2.replace(j, icb2Source[j]);
       }

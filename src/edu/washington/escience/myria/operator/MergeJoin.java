@@ -14,6 +14,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.TupleBatchBuffer;
 import edu.washington.escience.myria.Type;
+import edu.washington.escience.myria.util.Constants;
 import edu.washington.escience.myria.util.MyriaArrayUtils;
 
 /**
@@ -362,9 +363,9 @@ public final class MergeJoin extends BinaryOperator {
     // advance the one with the larger set of equal tuples because this produces fewer join tuples
     // not exact but good approximation
     final int leftSizeOfGroupOfEqualTuples =
-        leftRowIndex + TupleBatch.BATCH_SIZE * (leftBatches.size() - 1) - leftBeginIndex;
+        leftRowIndex + Constants.getBatchSize() * (leftBatches.size() - 1) - leftBeginIndex;
     final int rightSizeOfGroupOfEqualTuples =
-        rightRowIndex + TupleBatch.BATCH_SIZE * (rightBatches.size() - 1) - rightBeginIndex;
+        rightRowIndex + Constants.getBatchSize() * (rightBatches.size() - 1) - rightBeginIndex;
     final boolean joinFromLeft = leftSizeOfGroupOfEqualTuples > rightSizeOfGroupOfEqualTuples;
 
     if (!joined) {

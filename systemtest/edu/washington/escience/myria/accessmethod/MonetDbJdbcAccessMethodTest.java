@@ -19,6 +19,7 @@ import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.DbInsert;
 import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.TupleSource;
+import edu.washington.escience.myria.util.Constants;
 
 /**
  * @author dhalperi
@@ -30,7 +31,7 @@ public class MonetDbJdbcAccessMethodTest {
   private TupleBatchBuffer buffer;
   private Schema schema;
   private RelationKey relationKey;
-  private final static int NUM_TUPLES = 2 * TupleBatch.BATCH_SIZE + 1;
+  private final static int NUM_TUPLES = 2 * Constants.getBatchSize() + 1;
 
   /* Connection information */
   private final String host = "54.213.118.143";

@@ -5,15 +5,18 @@ import static org.junit.Assert.assertTrue;
 import java.nio.BufferOverflowException;
 
 import org.joda.time.DateTime;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-import edu.washington.escience.myria.TupleBatch;
-import edu.washington.escience.myria.column.DateTimeColumn;
-import edu.washington.escience.myria.column.DateTimeColumnBuilder;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
+import edu.washington.escience.myria.util.Constants;
 import edu.washington.escience.myria.util.DateTimeUtils;
 
 public class DateTimeColumnTest {
+  @BeforeClass
+  public static void initializeBatchSize() {
+    Constants.setBatchSize(100);
+  }
 
   @Test
   public void testProto() {
@@ -28,7 +31,7 @@ public class DateTimeColumnTest {
   @Test
   public void testFull() {
     final DateTimeColumnBuilder builder = new DateTimeColumnBuilder();
-    for (int i = 0; i < TupleBatch.BATCH_SIZE; i++) {
+    for (int i = 0; i < Constants.getBatchSize(); i++) {
       builder.append(new DateTime());
     }
     builder.build();
@@ -37,7 +40,7 @@ public class DateTimeColumnTest {
   @Test(expected = BufferOverflowException.class)
   public void testOverflow() {
     final DateTimeColumnBuilder builder = new DateTimeColumnBuilder();
-    for (int i = 0; i < TupleBatch.BATCH_SIZE; i++) {
+    for (int i = 0; i < Constants.getBatchSize(); i++) {
       builder.append(new DateTime());
     }
     builder.append(new DateTime());

@@ -9,10 +9,10 @@ import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 import com.google.common.base.Preconditions;
 
-import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.proto.DataProto.ColumnMessage;
 import edu.washington.escience.myria.proto.DataProto.StringColumnMessage;
+import edu.washington.escience.myria.util.Constants;
 
 /**
  * A column of String values.
@@ -32,10 +32,10 @@ public final class StringColumnBuilder implements ColumnBuilder<String> {
    * */
   private boolean built = false;
 
-  /** Constructs an empty column that can hold up to TupleBatch.BATCH_SIZE elements. */
+  /** Constructs an empty column that can hold up to Constants.getBatchSize() elements. */
   public StringColumnBuilder() {
     numStrings = 0;
-    data = new String[TupleBatch.BATCH_SIZE];
+    data = new String[Constants.getBatchSize()];
   }
 
   /**
@@ -84,7 +84,7 @@ public final class StringColumnBuilder implements ColumnBuilder<String> {
   @Override
   public StringColumnBuilder append(final String value) throws BufferOverflowException {
     Preconditions.checkArgument(!built, "No further changes are allowed after the builder has built the column.");
-    if (numStrings >= TupleBatch.BATCH_SIZE) {
+    if (numStrings >= Constants.getBatchSize()) {
       throw new BufferOverflowException();
     }
     data[numStrings++] = value;
