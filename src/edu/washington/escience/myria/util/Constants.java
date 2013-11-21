@@ -34,7 +34,7 @@ public final class Constants {
    * 
    * @param batchSize the batch size
    */
-  public static void setBatchSize(final int batchSize) {
+  public static synchronized void setBatchSize(final int batchSize) {
     if (batchSize == Constants.batchSize) {
       return;
     }
@@ -47,7 +47,7 @@ public final class Constants {
    * 
    * @return the batch size
    */
-  public static int getBatchSize() {
+  public static synchronized int getBatchSize() {
     batchSizeRead = true;
     return batchSize;
   }
