@@ -265,8 +265,6 @@ public abstract class Operator implements Serializable {
       return null;
     }
 
-    long startTime = System.currentTimeMillis();
-
     if (!startProcessing) {
       if (isProfilingMode()) {
         PROFILING_LOGGER.info("[{}#{}][{}@{}][{}]:init", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
