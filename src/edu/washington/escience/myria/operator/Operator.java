@@ -50,11 +50,6 @@ public abstract class Operator implements Serializable {
   private Schema schema;
 
   /**
-   * A bit denoting whether the operator has began to consume tuples.
-   */
-  private boolean startProcessing = false;
-
-  /**
    * EOS. Initially set it as true;
    * */
   private volatile boolean eos = true;
@@ -265,14 +260,6 @@ public abstract class Operator implements Serializable {
       return null;
     }
 
-    if (!startProcessing) {
-      if (isProfilingMode()) {
-        PROFILING_LOGGER.info("[{}#{}][{}@{}][{}]:init", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
-            getOpName(), getFragmentId(), System.nanoTime());
-      }
-      startProcessing = true;
-    }
-
     if (isProfilingMode()) {
       PROFILING_LOGGER.info("[{}#{}][{}@{}][{}]:live", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(), getOpName(),
           getFragmentId(), System.nanoTime());
@@ -403,7 +390,7 @@ public abstract class Operator implements Serializable {
    * Operators should not be able to unset an already set EOS except reopen it.
    */
   protected final void setEOS() {
-    if (startProcessing && isProfilingMode() && !eos()) {
+    if (isProfilingMode() && !eos()) {
       PROFILING_LOGGER.info("[{}#{}][{}@{}][{}]:end", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(), getOpName(),
           getFragmentId(), System.nanoTime());
     }

@@ -68,7 +68,7 @@ def name_type_mapping(query_plan_file):
                 mapping[operator['op_name']]= operator['op_type']
     return mapping
 
-# unify fragment
+# build parent mapping
 def get_parent(fragment):  
     ret = dict()
     for operator in fragment['operators']:
@@ -80,13 +80,72 @@ def get_parent(fragment):
                     ret[operator[field]] = operator['op_name']      
     return ret
 
-def generateProfile(path,query_id,fragment_id,query_plan_file):  
-    # get operator name to type mapping
-    mapping = name_type_mapping(query_plan_file);
+# build child list dictionary
+def get_children(fragment):
+    ret = defaultdict(list)
+    for operator in fragment['operators']:
+        for field in children[operator['op_type']]:
+            if not isinstance(operator[field], list):
+                ret[operator['op_name']].append(operator[field])
+            else:
+                for op in field:
+                    ret[operator['op_name']].append(op);     
+    return ret
 
-    # create gantt tasks
-    tasks = []
-    taskNames = []
+# build operator state
+def build_operator_state(op_name, operators, children_dict, type_dict):
+
+    # build state from events
+    states = []
+    last_state = 'null'
+    last_time = 0
+   
+    for event in operators[op_name]:
+        if last_state!='null':
+            if last_state=='live' or last_state=='wake':
+                state = {
+                            'begin': last_time,
+                            'end': event['time'],
+                            'name': 'compute'
+                        }
+            elif last_state=='wait':
+                state = {
+                            'begin': last_time,
+                            'end': event['time'],
+                            'name': 'wait'
+                        }
+            elif last_state=='hang':
+                state = {
+                            'begin': last_time,
+                            'end': event['time'],
+                            'name': 'sleep'
+                        }
+            else:
+                last_state=event['message']
+                last_time=event['time']    
+                continue;
+            states.append(state)               
+        
+        last_state=event['message']
+        last_time=event['time']    
+
+    chilren_ops = []
+    
+    for op in children_dict[op_name]:
+        chilren_ops.append(build_operator_state(op, operators, children_dict, type_dict))
+
+    qf = {
+            'type': type_dict[op_name],
+            'name': op_name,
+            'states': states,
+            'children': chilren_ops
+        }
+
+    return qf
+
+def generateProfile(path,query_id,fragment_id,query_plan_file):  
+    # get name type mapping
+    type_dict = name_type_mapping(query_plan_file)
             
     # Workers are numbered from 1, not 0
     lines = [ line.strip() for line in open(path)]
@@ -117,22 +176,49 @@ def generateProfile(path,query_id,fragment_id,query_plan_file):
     query_plan = read_json(query_plan_file)
     fragment = query_plan['fragments'][fragment_id]
     parent = get_parent(fragment)
+    children_dict = get_children(fragment)
 
-    # update parent state
+    # update parent's events
     induced_operators = defaultdict(list)
     for k,v in operators.items():
         if parent.has_key(k):
             for state in v:            
                 if state['message']=='live':
-                    state['message'] = 'wait'
-                    induced_operators[parent[k]].append(state)
-                elif state['message']=='hang':                 
-                    state['message']= 'wake'
-                    induced_operators[parent[k]].append(state)             
-
+                    new_state = copy.deepcopy(state)
+                    new_state['message'] = 'wait'
+                    induced_operators[parent[k]].append(new_state)
+                elif state['message']=='hang':
+                    new_state = copy.deepcopy(state)                 
+                    new_state['message']= 'wake'
+                    induced_operators[parent[k]].append(new_state)             
+    '''                
     for k,v in induced_operators.items():
         print k
-        print v[0:3]   
+        for i in v[0:10]:
+            print i['message']  '''
+
+    for k,v in induced_operators.items():
+        operators[k].extend(v)
+        sorted_list = sorted(v,key=lambda k:k['time'])
+        operators[k] = sorted_list
+        if type_dict[k] in root_operators:
+            start_time = sorted_list[0]['time']
+            end_time = sorted_list[-1]['time']
+
+    # build json
+    for k,v in operators.items():
+        if type_dict[k] in root_operators:
+           data = build_operator_state( k, operators, children_dict, type_dict)
+           break                     
+            
+
+    qf_details = {
+        'begin': start_time,
+        'end': end_time,
+        'hierachy': [data]
+    }
+
+    print pretty_json(qf_details)
 
 
 def main(argv):
@@ -144,7 +230,7 @@ def main(argv):
         print >> sys.stderr, "       query_plan_file "
         sys.exit(1)
 
-    generateProfile(argv[1],int(argv[2]),1,argv[3])
+    generateProfile(argv[1],int(argv[2]),0,argv[3])
 
 if __name__ == "__main__":
     main(sys.argv)
