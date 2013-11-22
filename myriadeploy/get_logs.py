@@ -20,32 +20,37 @@ def mkdir_if_not_exists(description):
     args = ["mkdir", "-p", description]
     return subprocess.call(args)
 
-def get_logs_from_worker(hostname, dirname, username, worker_id, description):
-    print hostname
+def get_std_logs_from_worker(hostname, dirname, username, worker_id, description):
     mkdir_if_not_exists(description)
     args = ["scp", "%s@%s:%s/worker_%s_stdout" % (username, hostname, dirname, worker_id), "%s/worker_%s_stdout" % (description, worker_id,)]
     return subprocess.call(args)
 
 def get_error_logs_from_worker(hostname, dirname, username, worker_id, description):
-    print hostname
     mkdir_if_not_exists(description)
     args = ["scp", "%s@%s:%s/worker_%s_stderr" % (username, hostname, dirname, worker_id), "%s/worker_%s_stderr" % (description, worker_id,)]
     return subprocess.call(args)
 
+def get_profiling_logs_from_worker(hostname, dirname, username, worker_id, description):
+    mkdir_if_not_exists(description)
+    args = ["scp", "%s@%s:%s/profile.log" % (username, hostname, dirname), "%s/worker_%s_profile" % (description, worker_id,)]
+    return subprocess.call(args)  
+
+
 def get_logs_from_master(hostname, dirname, username, description):
-    print hostname
     mkdir_if_not_exists(description)
     args = ["scp", "%s@%s:%s/master_stdout" % (username, hostname, dirname), "%s/master_stdout" % (description)]
     return subprocess.call(args)
 
 def get_error_logs_from_master(hostname, dirname, username, description):
-    print hostname
     mkdir_if_not_exists(description)
     args = ["scp", "%s@%s:%s/master_stderr" % (username, hostname, dirname), "%s/master_stderr" % (description)]
     return subprocess.call(args)
 
 
-def getlog(config):
+def getlog(config_file):
+    ''' get configuration'''
+    config = myriadeploy.read_config_file(config_file)
+
     """Copies the master and worker catalogs to the remote hosts."""
     description = config['description']
     default_path = config['path']
@@ -71,7 +76,7 @@ def getlog(config):
 
         # get logs from workers
         (hostname, _, path) = get_host_port_path(worker, default_path)
-        if get_logs_from_worker(hostname, "%s/%s-files" \
+        if get_std_logs_from_worker(hostname, "%s/%s-files" \
                 % (path, description), username, worker_id, description):
             raise Exception("Error on getting logs from worker %d %s" \
                     % (worker_id, hostname))
@@ -79,6 +84,10 @@ def getlog(config):
                 % (path, description), username, worker_id, description):
             raise Exception("Error on getting error logs from worker %d %s" \
                     % (worker_id, hostname))    
+        if get_profiling_logs_from_worker(hostname, "%s/%s-files" \
+                % (path, description), username, worker_id, description):
+            raise Exception("Error on getting profiling logs from worker %d %s" \
+                    % (worker_id, hostname)) 
 
 
 def main(argv):
@@ -89,8 +98,7 @@ def main(argv):
         print >> sys.stderr, "       logs will be put in the directory named after \"description\" in .cfg."
         sys.exit(1)
 
-    config = myriadeploy.read_config_file(argv[1])
-    getlog(config)
+    getlog(argv[1])
 
 if __name__ == "__main__":
     main(sys.argv)

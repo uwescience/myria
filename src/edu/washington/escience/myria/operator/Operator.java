@@ -272,8 +272,8 @@ public abstract class Operator implements Serializable {
 
     if (!startProcessing) {
       if (isProfilingMode()) {
-        PROFILING_LOGGER.info("[{}#{}][{}@{}][{}]:begin to process", MyriaConstants.EXEC_ENV_VAR_QUERY_ID,
-            getQueryId(), getOpName(), getFragmentId(), this);
+        PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]:begin to process", MyriaConstants.EXEC_ENV_VAR_QUERY_ID,
+            getQueryId(), getOpName(), getFragmentId(), this, System.nanoTime());
       }
       startProcessing = true;
     }
@@ -403,10 +403,10 @@ public abstract class Operator implements Serializable {
    */
   protected final void setEOS() {
     if (startProcessing && isProfilingMode() && !eos()) {
-      PROFILING_LOGGER.info("[{}#{}][{}@{}][{}]:End of Processing (EOS)", MyriaConstants.EXEC_ENV_VAR_QUERY_ID,
-          getQueryId(), getOpName(), getFragmentId(), this);
-      PROFILING_LOGGER.info("[{}#{}][{}@{}][{}]: executionTime {} ms", MyriaConstants.EXEC_ENV_VAR_QUERY_ID,
-          getQueryId(), getOpName(), getFragmentId(), this, executionTime);
+      PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]:End of Processing (EOS)", MyriaConstants.EXEC_ENV_VAR_QUERY_ID,
+          getQueryId(), getOpName(), getFragmentId(), this, System.nanoTime());
+      PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]: executionTime {} ms", MyriaConstants.EXEC_ENV_VAR_QUERY_ID,
+          getQueryId(), getOpName(), getFragmentId(), this, System.nanoTime(), executionTime);
     }
     eos = true;
   }
