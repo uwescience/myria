@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableMap;
  * Duplicate elimination. It adds newly meet unique tuples into a buffer so that the source TupleBatches are not
  * referenced. This implementation reduces memory consumption.
  * */
-public final class DupElim extends StreamingStateUpdater {
+public final class DupElim extends StreamingState {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;

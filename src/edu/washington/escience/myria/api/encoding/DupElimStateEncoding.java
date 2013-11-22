@@ -4,17 +4,14 @@ import java.util.List;
 
 import com.google.common.collect.ImmutableList;
 
-import edu.washington.escience.myria.operator.KeepMinValue;
+import edu.washington.escience.myria.operator.DupElim;
 
-public class KeepMinValueEncoding extends StreamingStateUpdaterEncoding<KeepMinValue> {
+public class DupElimStateEncoding extends StreamingStateEncoding<DupElim> {
   private static final List<String> requiredFields = ImmutableList.of();
 
-  public int[] keyColIndices;
-  public int valueColIndex;
-
   @Override
-  public KeepMinValue construct() {
-    return new KeepMinValue(keyColIndices, valueColIndex);
+  public DupElim construct() {
+    return new DupElim();
   }
 
   @Override

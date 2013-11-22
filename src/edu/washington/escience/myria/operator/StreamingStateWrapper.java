@@ -7,43 +7,43 @@ import edu.washington.escience.myria.TupleBatch;
 
 /**
  */
-public class StreamingAggregateAdaptor extends UnaryOperator implements StreamingAggregate {
+public class StreamingStateWrapper extends UnaryOperator implements StreamingStateful {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 
-  /** Its updater. */
-  private StreamingStateUpdater updater;
+  /** Its state. */
+  private StreamingState state;
 
   /**
    * @param child the child operator.
-   * @param updater the updater.
+   * @param state the internal state.
    */
-  public StreamingAggregateAdaptor(final Operator child, final StreamingStateUpdater updater) {
+  public StreamingStateWrapper(final Operator child, final StreamingState state) {
     super(child);
-    if (updater != null) {
-      setStateUpdater(updater);
-      updater.setAttachedOperator(this);
+    if (state != null) {
+      setStreamingState(state);
+      state.setAttachedOperator(this);
     }
   }
 
   @Override
-  public void setStateUpdater(final StreamingStateUpdater updater) {
-    this.updater = updater;
+  public void setStreamingState(final StreamingState state) {
+    this.state = state;
   }
 
   @Override
-  public StreamingStateUpdater getStateUpdater() {
-    return updater;
+  public StreamingState getStreamingState() {
+    return state;
   }
 
   @Override
   protected void init(final ImmutableMap<String, Object> execEnvVars) throws Exception {
-    updater.init(execEnvVars);
+    state.init(execEnvVars);
   }
 
   @Override
   protected void cleanup() throws Exception {
-    updater.cleanup();
+    state.cleanup();
   }
 
   @Override
@@ -51,7 +51,7 @@ public class StreamingAggregateAdaptor extends UnaryOperator implements Streamin
     Operator child = getChild();
     TupleBatch tb;
     while ((tb = child.nextReady()) != null) {
-      tb = updater.update(tb);
+      tb = state.update(tb);
       if (tb != null && tb.numTuples() > 0) {
         return tb;
       }

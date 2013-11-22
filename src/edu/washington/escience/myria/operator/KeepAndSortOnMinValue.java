@@ -27,7 +27,7 @@ import com.google.common.collect.ImmutableMap;
  * Keeps min vaule. It adds newly meet unique tuples into a buffer so that the source TupleBatches are not referenced.
  * This implementation reduces memory consumption.
  * */
-public final class KeepAndSortOnMinValue extends StreamingStateUpdater {
+public final class KeepAndSortOnMinValue extends StreamingState {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;

@@ -19,7 +19,7 @@ import edu.washington.escience.myria.util.MyriaUtils;
 public class ShuffleProducerEncoding extends AbstractProducerEncoding<GenericShuffleProducer> {
   public String argChild;
   public PartitionFunction argPf;
-  public StreamingStateUpdaterEncoding<?> argBufferStateUpdater;
+  public StreamingStateEncoding<?> argBufferStateType;
   private static final List<String> requiredArguments = ImmutableList.of("argChild", "argPf");
 
   @Override
@@ -34,14 +34,15 @@ public class ShuffleProducerEncoding extends AbstractProducerEncoding<GenericShu
     GenericShuffleProducer producer =
         new GenericShuffleProducer(null, MyriaUtils.getSingleElement(getRealOperatorIds()), MyriaUtils
             .integerCollectionToIntArray(workerIds), argPf);
-    if (argBufferStateUpdater != null) {
-      if (argBufferStateUpdater instanceof KeepMinValueEncoding) {
-        producer.setBackupBufferAsMin(((KeepMinValueEncoding) argBufferStateUpdater).keyColIndices,
-            ((KeepMinValueEncoding) argBufferStateUpdater).valueColIndex);
-      } else if (argBufferStateUpdater instanceof KeepAndSortOnMinValueEncoding) {
-        producer.setBackupBufferAsPrioritizedMin(((KeepAndSortOnMinValueEncoding) argBufferStateUpdater).keyColIndices,
-            ((KeepAndSortOnMinValueEncoding) argBufferStateUpdater).valueColIndex);
-      } else if (argBufferStateUpdater instanceof DupElimEncoding) {
+    if (argBufferStateType != null) {
+      if (argBufferStateType instanceof KeepMinValueStateEncoding) {
+        producer.setBackupBufferAsMin(((KeepMinValueStateEncoding) argBufferStateType).keyColIndices,
+            ((KeepMinValueStateEncoding) argBufferStateType).valueColIndex);
+      } else if (argBufferStateType instanceof KeepAndSortOnMinValueStateEncoding) {
+        producer.setBackupBufferAsPrioritizedMin(
+            ((KeepAndSortOnMinValueStateEncoding) argBufferStateType).keyColIndices,
+            ((KeepAndSortOnMinValueStateEncoding) argBufferStateType).valueColIndex);
+      } else if (argBufferStateType instanceof DupElimStateEncoding) {
         producer.setBackupBufferAsDupElim();
       }
     }

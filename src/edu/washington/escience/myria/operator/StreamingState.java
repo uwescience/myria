@@ -10,7 +10,7 @@ import edu.washington.escience.myria.TupleBatch;
 
 /**
  * */
-public abstract class StreamingStateUpdater implements Serializable {
+public abstract class StreamingState implements Serializable {
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
 

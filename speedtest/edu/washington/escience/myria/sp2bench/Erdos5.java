@@ -10,7 +10,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.Type;
 import edu.washington.escience.myria.operator.RootOperator;
-import edu.washington.escience.myria.operator.StreamingAggregateAdaptor;
+import edu.washington.escience.myria.operator.StreamingStateWrapper;
 import edu.washington.escience.myria.parallel.ExchangePairID;
 import edu.washington.escience.myria.parallel.Producer;
 
@@ -25,7 +25,7 @@ public class Erdos5 implements QueryPlanGenerator {
   @Override
   public Map<Integer, RootOperator[]> getWorkerPlan(int[] allWorkers) throws Exception {
     ArrayList<Producer> producers = new ArrayList<Producer>();
-    StreamingAggregateAdaptor e5 = Erdos.erdosN(5, allWorkers, producers);
+    StreamingStateWrapper e5 = Erdos.erdosN(5, allWorkers, producers);
     return Erdos.getWorkerPlan(allWorkers, Erdos.extractName(e5), producers);
   }
 

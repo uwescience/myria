@@ -276,13 +276,13 @@ public class OperatorTest {
     }
 
     TupleSource scan = new TupleSource(input);
-    StreamingAggregateAdaptor keepmin =
-        new StreamingAggregateAdaptor(scan, new KeepAndSortOnMinValue(new int[] { 0 }, 1));
+    StreamingStateWrapper keepmin =
+        new StreamingStateWrapper(scan, new KeepAndSortOnMinValue(new int[] { 0 }, 1));
     keepmin.open(null);
     while (!keepmin.eos()) {
       keepmin.nextReady();
       long lastValue = -1;
-      List<TupleBatch> result = keepmin.getStateUpdater().exportState();
+      List<TupleBatch> result = keepmin.getStreamingState().exportState();
       for (TupleBatch tb : result) {
         for (int i = 0; i < tb.numTuples(); i++) {
           long value = tb.getLong(1, i);
@@ -294,7 +294,7 @@ public class OperatorTest {
 
     long lastValue = -1;
     double sum = 0;
-    List<TupleBatch> result = keepmin.getStateUpdater().exportState();
+    List<TupleBatch> result = keepmin.getStreamingState().exportState();
     for (TupleBatch tb : result) {
       for (int i = 0; i < tb.numTuples(); i++) {
         long value = tb.getLong(1, i);

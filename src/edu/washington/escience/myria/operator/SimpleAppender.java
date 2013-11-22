@@ -15,7 +15,7 @@ import edu.washington.escience.myria.TupleBatch;
  * Duplicate elimination. It adds newly meet unique tuples into a buffer so that the source TupleBatches are not
  * referenced. This implementation reduces memory consumption.
  * */
-public final class SimpleAppender extends StreamingStateUpdater {
+public final class SimpleAppender extends StreamingState {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;

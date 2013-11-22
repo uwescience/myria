@@ -26,14 +26,14 @@ public class IDBControllerEncoding extends OperatorEncoding<IDBController> {
   private ExchangePairID realControllerOperatorId;
   public Integer realControllerWorkerId;
 
-  public StreamingStateUpdaterEncoding<?> argStateUpdater;
+  public StreamingStateEncoding<?> argState;
   private static final List<String> requiredArguments = ImmutableList.of("argSelfIdbId", "argInitialInput",
-      "argIterationInput", "argEosControllerInput", "argStateUpdater");
+      "argIterationInput", "argEosControllerInput", "argState");
 
   @Override
   public IDBController construct(Server server) {
-    return new IDBController(argSelfIdbId, realControllerOperatorId, realControllerWorkerId, null, null, null,
-        argStateUpdater.construct());
+    return new IDBController(argSelfIdbId, realControllerOperatorId, realControllerWorkerId, null, null, null, argState
+        .construct());
   }
 
   @Override

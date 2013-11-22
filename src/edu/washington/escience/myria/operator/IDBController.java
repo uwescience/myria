@@ -19,7 +19,7 @@ import edu.washington.escience.myria.parallel.ipc.StreamOutputChannel;
  * Together with the EOSController, the IDBController controls what to serve into an iteration and when to stop an
  * iteration.
  * */
-public class IDBController extends Operator implements StreamingAggregate {
+public class IDBController extends Operator implements StreamingStateful {
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -77,8 +77,8 @@ public class IDBController extends Operator implements StreamingAggregate {
    * */
   private transient StreamOutputChannel<TupleBatch> eoiReportChannel;
 
-  /** The state updater. */
-  private StreamingStateUpdater stateUpdater;
+  /** The state. */
+  private StreamingState state;
 
   /**
    * The index of the initialIDBInput in children array.
@@ -102,11 +102,11 @@ public class IDBController extends Operator implements StreamingAggregate {
    * @param initialIDBInput see the corresponding field comment.
    * @param iterationInput see the corresponding field comment.
    * @param eosControllerInput see the corresponding field comment.
-   * @param stateUpdater the thing to process state update.
+   * @param state the internal state.
    * */
   public IDBController(final int selfIDBIdx, final ExchangePairID controllerOpID, final int controllerWorkerID,
       final Operator initialIDBInput, final Operator iterationInput, final Consumer eosControllerInput,
-      final StreamingStateUpdater stateUpdater) {
+      final StreamingState state) {
     Preconditions.checkNotNull(selfIDBIdx);
     Preconditions.checkNotNull(controllerOpID);
     Preconditions.checkNotNull(controllerWorkerID);
@@ -117,8 +117,8 @@ public class IDBController extends Operator implements StreamingAggregate {
     this.initialIDBInput = initialIDBInput;
     this.iterationInput = iterationInput;
     this.eosControllerInput = eosControllerInput;
-    this.stateUpdater = stateUpdater;
-    this.stateUpdater.setAttachedOperator(this);
+    this.state = state;
+    this.state.setAttachedOperator(this);
   }
 
   @Override
@@ -126,7 +126,7 @@ public class IDBController extends Operator implements StreamingAggregate {
     TupleBatch tb;
     if (!initialInputEnded) {
       while ((tb = initialIDBInput.nextReady()) != null) {
-        tb = stateUpdater.update(tb);
+        tb = state.update(tb);
         if (tb != null && tb.numTuples() > 0) {
           emptyDelta = false;
           return tb;
@@ -136,7 +136,7 @@ public class IDBController extends Operator implements StreamingAggregate {
     }
 
     while ((tb = iterationInput.nextReady()) != null) {
-      tb = stateUpdater.update(tb);
+      tb = state.update(tb);
       if (tb != null && tb.numTuples() > 0) {
         emptyDelta = false;
         return tb;
@@ -213,7 +213,7 @@ public class IDBController extends Operator implements StreamingAggregate {
     emptyDelta = true;
     resourceManager = (TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER);
     eoiReportChannel = resourceManager.startAStream(controllerWorkerID, controllerOpID);
-    stateUpdater.init(execEnvVars);
+    state.init(execEnvVars);
   }
 
   @Override
@@ -232,7 +232,7 @@ public class IDBController extends Operator implements StreamingAggregate {
     eoiReportChannel.release();
     eoiReportChannel = null;
     resourceManager = null;
-    stateUpdater.cleanup();
+    state.cleanup();
   }
 
   /**
@@ -250,12 +250,12 @@ public class IDBController extends Operator implements StreamingAggregate {
   }
 
   @Override
-  public void setStateUpdater(final StreamingStateUpdater updater) {
-    stateUpdater = updater;
+  public void setStreamingState(final StreamingState state) {
+    this.state = state;
   }
 
   @Override
-  public StreamingStateUpdater getStateUpdater() {
-    return stateUpdater;
+  public StreamingState getStreamingState() {
+    return state;
   }
 }

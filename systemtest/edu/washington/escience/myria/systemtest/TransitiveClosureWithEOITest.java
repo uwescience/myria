@@ -22,7 +22,7 @@ import edu.washington.escience.myria.operator.IDBController;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
-import edu.washington.escience.myria.operator.StreamingAggregateAdaptor;
+import edu.washington.escience.myria.operator.StreamingStateWrapper;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.operator.UnionAll;
@@ -310,7 +310,7 @@ public class TransitiveClosureWithEOITest extends SystemTestBase {
     final GenericShuffleProducer sp3 = new GenericShuffleProducer(proj, beforeDE, new int[] { workerIDs[0] }, pf0);
     final GenericShuffleConsumer sc3 =
         new GenericShuffleConsumer(sp3.getSchema(), beforeDE, new int[] { workerIDs[0] });
-    final StreamingAggregateAdaptor dupelim = new StreamingAggregateAdaptor(sc3, new DupElim());
+    final StreamingStateWrapper dupelim = new StreamingStateWrapper(sc3, new DupElim());
     final LocalMultiwayProducer multiProducer =
         new LocalMultiwayProducer(dupelim, new ExchangePairID[] { consumerID1, consumerID2 });
 

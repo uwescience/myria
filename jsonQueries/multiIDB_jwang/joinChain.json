@@ -90,7 +90,7 @@
                 {
                     "arg_eos_controller_input": "eosReceivera",
                     "arg_initial_input": "sc2a",
-                    "arg_state_updater": 
+                    "arg_state": 
                     {
                         "type": "DupElim"
                     },
@@ -229,7 +229,7 @@
                 {
                     "arg_eos_controller_input": "eosReceiverb",
                     "arg_initial_input": "sc2b",
-                    "arg_state_updater": 
+                    "arg_state": 
                     {
                         "type": "DupElim"
                     },
@@ -346,7 +346,7 @@
                 {
                     "arg_eos_controller_input": "eosReceiverc",
                     "arg_initial_input": "sc2c",
-                    "arg_state_updater": 
+                    "arg_state": 
                     {
                         "type": "DupElim"
                     },

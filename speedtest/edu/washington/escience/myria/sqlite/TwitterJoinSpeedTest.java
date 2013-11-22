@@ -22,7 +22,7 @@ import edu.washington.escience.myria.operator.DbQueryScan;
 import edu.washington.escience.myria.operator.DupElim;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SinkRoot;
-import edu.washington.escience.myria.operator.StreamingAggregateAdaptor;
+import edu.washington.escience.myria.operator.StreamingStateWrapper;
 import edu.washington.escience.myria.operator.SymmetricHashJoin;
 import edu.washington.escience.myria.operator.TBQueueExporter;
 import edu.washington.escience.myria.operator.agg.Aggregate;
@@ -105,7 +105,7 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     final ExchangePairID arrayID0 = ExchangePairID.newID();
     final GenericShuffleProducer sp0 = new GenericShuffleProducer(localProjJoin, arrayID0, workerIDs, pf0);
     final GenericShuffleConsumer sc0 = new GenericShuffleConsumer(sp0.getSchema(), arrayID0, workerIDs);
-    final StreamingAggregateAdaptor dupelim = new StreamingAggregateAdaptor(sc0, new DupElim());
+    final StreamingStateWrapper dupelim = new StreamingStateWrapper(sc0, new DupElim());
     final Aggregate count = new Aggregate(dupelim, new int[] { 0 }, new int[] { Aggregator.AGG_OP_COUNT });
 
     /* Finally, send (CollectProduce) all the results to the master. */
@@ -172,7 +172,7 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     final ExchangePairID arrayID0 = ExchangePairID.newID();
     final GenericShuffleProducer sp0 = new GenericShuffleProducer(proj, arrayID0, workerIDs, pf0);
     final GenericShuffleConsumer sc0 = new GenericShuffleConsumer(sp0.getSchema(), arrayID0, workerIDs);
-    final StreamingAggregateAdaptor dupelim = new StreamingAggregateAdaptor(sc0, new DupElim());
+    final StreamingStateWrapper dupelim = new StreamingStateWrapper(sc0, new DupElim());
 
     /* Finally, send (CollectProduce) all the results to the master. */
     final ExchangePairID serverReceiveID = ExchangePairID.newID();
@@ -232,7 +232,7 @@ public class TwitterJoinSpeedTest extends SystemTestBase {
     final ExchangePairID arrayID0 = ExchangePairID.newID();
     final GenericShuffleProducer sp0 = new GenericShuffleProducer(localProjJoin, arrayID0, workerIDs, pf0);
     final GenericShuffleConsumer sc0 = new GenericShuffleConsumer(sp0.getSchema(), arrayID0, workerIDs);
-    final StreamingAggregateAdaptor dupelim = new StreamingAggregateAdaptor(sc0, new DupElim());
+    final StreamingStateWrapper dupelim = new StreamingStateWrapper(sc0, new DupElim());
 
     /* Finally, send (CollectProduce) all the results to the master. */
     final ExchangePairID serverReceiveID = ExchangePairID.newID();

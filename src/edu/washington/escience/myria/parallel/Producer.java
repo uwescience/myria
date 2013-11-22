@@ -20,7 +20,7 @@ import edu.washington.escience.myria.operator.KeepMinValue;
 import edu.washington.escience.myria.operator.Operator;
 import edu.washington.escience.myria.operator.RootOperator;
 import edu.washington.escience.myria.operator.SimpleAppender;
-import edu.washington.escience.myria.operator.StreamingStateUpdater;
+import edu.washington.escience.myria.operator.StreamingState;
 import edu.washington.escience.myria.parallel.ipc.IPCConnectionPool;
 import edu.washington.escience.myria.parallel.ipc.IPCEvent;
 import edu.washington.escience.myria.parallel.ipc.IPCEventListener;
@@ -57,7 +57,7 @@ public abstract class Producer extends RootOperator {
   private transient TupleBatchBuffer[] partitionBuffers;
 
   /** tried to send tuples for each channel. */
-  private List<StreamingStateUpdater> triedToSendTuples;
+  private List<StreamingState> triedToSendTuples;
   /** pending tuples to be sent for each channel. */
   private transient List<LinkedList<TupleBatch>> pendingTuplesToSend;
 
@@ -237,7 +237,7 @@ public abstract class Producer extends RootOperator {
    * @param valueCol the same as the one in KeepMinValue
    */
   public void setBackupBufferAsMin(final int[] keyColIndices, final int valueCol) {
-    triedToSendTuples = new ArrayList<StreamingStateUpdater>();
+    triedToSendTuples = new ArrayList<StreamingState>();
     for (int i = 0; i < outputIDs.length; i++) {
       triedToSendTuples.add(i, new KeepMinValue(keyColIndices, valueCol));
       triedToSendTuples.get(i).setAttachedOperator(this);
@@ -251,7 +251,7 @@ public abstract class Producer extends RootOperator {
    * @param valueCol the same as the one in KeepMinValue
    */
   public void setBackupBufferAsPrioritizedMin(final int[] keyColIndices, final int valueCol) {
-    triedToSendTuples = new ArrayList<StreamingStateUpdater>();
+    triedToSendTuples = new ArrayList<StreamingState>();
     for (int i = 0; i < outputIDs.length; i++) {
       triedToSendTuples.add(i, new KeepAndSortOnMinValue(keyColIndices, valueCol));
       triedToSendTuples.get(i).setAttachedOperator(this);
@@ -260,7 +260,7 @@ public abstract class Producer extends RootOperator {
 
   /** set backup buffers as DupElim. */
   public void setBackupBufferAsDupElim() {
-    triedToSendTuples = new ArrayList<StreamingStateUpdater>();
+    triedToSendTuples = new ArrayList<StreamingState>();
     for (int i = 0; i < outputIDs.length; i++) {
       triedToSendTuples.add(i, new DupElim());
       triedToSendTuples.get(i).setAttachedOperator(this);
@@ -269,7 +269,7 @@ public abstract class Producer extends RootOperator {
 
   /** set backup buffers as SimpleAppender. */
   public void setBackupBufferAsAppender() {
-    triedToSendTuples = new ArrayList<StreamingStateUpdater>();
+    triedToSendTuples = new ArrayList<StreamingState>();
     for (int i = 0; i < outputIDs.length; i++) {
       triedToSendTuples.add(i, new SimpleAppender());
       triedToSendTuples.get(i).setAttachedOperator(this);
@@ -476,7 +476,7 @@ public abstract class Producer extends RootOperator {
    * 
    * @return backup buffers.
    */
-  public final List<StreamingStateUpdater> getTriedToSendTuples() {
+  public final List<StreamingState> getTriedToSendTuples() {
     return triedToSendTuples;
   }
 

@@ -114,7 +114,7 @@
 				"arg_self_idb_id" : "0",
 				"arg_initial_input" : "scC",
 				"arg_iteration_input" : "scJoin",
-				"arg_state_updater" : {
+				"arg_state" : {
 					"type" : "KeepMinValue",
 					"key_col_indices" : ["0"],
 					"value_col_index" : "1"
