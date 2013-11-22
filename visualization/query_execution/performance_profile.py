@@ -7,8 +7,6 @@ import time
 import json
 import datetime
 import copy
-import myriadeploy
-import get_logs
 
 def read_json(filename):
     with open(filename, 'r') as f:
@@ -143,7 +141,6 @@ def main(argv):
         print >> sys.stderr, "       query_id "
         sys.exit(1)
 
-    
     generateProfile(argv[1],int(argv[2]))
 
 if __name__ == "__main__":

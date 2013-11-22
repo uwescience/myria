@@ -29,7 +29,7 @@ public abstract class Operator implements Serializable {
    * loggers.
    * */
   private static final org.slf4j.Logger LOGGER = org.slf4j.LoggerFactory.getLogger(Operator.class);
-  private static final org.slf4j.Logger PROFILING_LOGGER = org.slf4j.LoggerFactory.getLogger("PROFILE");
+  private static final org.slf4j.Logger PROFILING_LOGGER = org.slf4j.LoggerFactory.getLogger("profile");
 
   /** Required for Java serialization. */
   private static final long serialVersionUID = 1L;
@@ -63,11 +63,6 @@ public abstract class Operator implements Serializable {
    * End of iteration.
    * */
   private boolean eoi = false;
-
-  /**
-   * Actual execution time.
-   */
-  private long executionTime = 0;
 
   /**
    * Environmental variables during execution.
@@ -270,15 +265,20 @@ public abstract class Operator implements Serializable {
       return null;
     }
 
+    long startTime = System.currentTimeMillis();
+
     if (!startProcessing) {
       if (isProfilingMode()) {
-        PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]:begin to process", MyriaConstants.EXEC_ENV_VAR_QUERY_ID,
-            getQueryId(), getOpName(), getFragmentId(), this, System.nanoTime());
+        PROFILING_LOGGER.info("[{}#{}][{}@{}][{}]:init", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
+            getOpName(), getFragmentId(), System.nanoTime());
       }
       startProcessing = true;
     }
 
-    long startTime = System.currentTimeMillis();
+    if (isProfilingMode()) {
+      PROFILING_LOGGER.info("[{}#{}][{}@{}][{}]:live", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(), getOpName(),
+          getFragmentId(), System.nanoTime());
+    }
 
     TupleBatch result = null;
     try {
@@ -293,7 +293,10 @@ public abstract class Operator implements Serializable {
       throw new DbException(e);
     }
 
-    executionTime += System.currentTimeMillis() - startTime;
+    if (isProfilingMode()) {
+      PROFILING_LOGGER.info("[{}#{}][{}@{}][{}]:hang", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(), getOpName(),
+          getFragmentId(), System.nanoTime());
+    }
 
     if (result == null) {
       checkEOSAndEOI();
@@ -403,10 +406,8 @@ public abstract class Operator implements Serializable {
    */
   protected final void setEOS() {
     if (startProcessing && isProfilingMode() && !eos()) {
-      PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]:End of Processing (EOS)", MyriaConstants.EXEC_ENV_VAR_QUERY_ID,
-          getQueryId(), getOpName(), getFragmentId(), this, System.nanoTime());
-      PROFILING_LOGGER.info("[{}#{}][{}@{}][{}][{}]: executionTime {} ms", MyriaConstants.EXEC_ENV_VAR_QUERY_ID,
-          getQueryId(), getOpName(), getFragmentId(), this, System.nanoTime(), executionTime);
+      PROFILING_LOGGER.info("[{}#{}][{}@{}][{}]:end", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(), getOpName(),
+          getFragmentId(), System.nanoTime());
     }
     eos = true;
   }

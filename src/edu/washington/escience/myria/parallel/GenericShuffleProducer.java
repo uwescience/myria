@@ -35,7 +35,7 @@ public class GenericShuffleProducer extends Producer {
   /**
    * The time spends on sending tuples via network.
    */
-  private long shuffleNetworkTime = 0;
+  private final long shuffleNetworkTime = 0;
 
   /** The logger for this class. */
   private static final org.slf4j.Logger LOGGER = LoggerFactory.getLogger(GenericShuffleProducer.class);
@@ -103,9 +103,15 @@ public class GenericShuffleProducer extends Producer {
   @Override
   protected final void consumeTuples(final TupleBatch tup) throws DbException {
     TupleBatch[] partitions = getTupleBatchPartitions(tup);
-    long startTime = System.currentTimeMillis();
+    if (isProfilingMode()) {
+      LOGGER.info("[{}#{}][{}@{}][{}]: send begins", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(), getOpName(),
+          getFragmentId(), System.nanoTime(), shuffleNetworkTime);
+    }
     writePartitionsIntoChannels(true, partitionToChannel, partitions);
-    shuffleNetworkTime += System.currentTimeMillis() - startTime;
+    if (isProfilingMode()) {
+      LOGGER.info("[{}#{}][{}@{}][{}]: send ends", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(), getOpName(),
+          getFragmentId(), System.nanoTime(), shuffleNetworkTime);
+    }
   }
 
   /**
@@ -124,11 +130,6 @@ public class GenericShuffleProducer extends Producer {
     writePartitionsIntoChannels(false, partitionToChannel, null);
     for (int p = 0; p < numChannels(); p++) {
       super.channelEnds(p);
-    }
-
-    if (isProfilingMode()) {
-      LOGGER.info("[{}#{}][{}@{}][{}]: shuffle network time {} ms", MyriaConstants.EXEC_ENV_VAR_QUERY_ID, getQueryId(),
-          getOpName(), getFragmentId(), this, shuffleNetworkTime);
     }
   }
 
