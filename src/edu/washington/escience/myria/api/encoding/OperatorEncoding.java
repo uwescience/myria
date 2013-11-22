@@ -19,7 +19,7 @@ import edu.washington.escience.myria.parallel.Server;
  * 
  * 1. Create an Encoding class that extends OperatorEncoding.
  * 
- * 2. Add the operator to the list of JsonSubTypes below.
+ * 2. Add the operator to the list of (alphabetically sorted) JsonSubTypes below.
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "op_type")
 @JsonSubTypes({
@@ -39,7 +39,7 @@ import edu.washington.escience.myria.parallel.Server;
     @Type(name = "HyperShuffleConsumer", value = HyperShuffleConsumerEncoding.class),
     @Type(name = "LocalMultiwayConsumer", value = LocalMultiwayConsumerEncoding.class),
     @Type(name = "LocalMultiwayProducer", value = LocalMultiwayProducerEncoding.class),
-    @Type(name = "Merge", value = MergeEncoding.class),
+    @Type(name = "Merge", value = MergeEncoding.class), @Type(name = "MergeJoin", value = MergeJoinEncoding.class),
     @Type(name = "MultiGroupByAggregate", value = MultiGroupByAggregateEncoding.class),
     @Type(name = "Rename", value = RenameEncoding.class),
     @Type(name = "RightHashCountingJoin", value = RightHashCountingJoinEncoding.class),

@@ -311,6 +311,11 @@ public class QueryEncoding extends MyriaApiEncoding {
       Consumer consumer = (Consumer) myOperators.get(c.opName);
       String producingOpName = c.argOperatorId;
       Operator producingOp = allOperators.get(producingOpName);
+      if (producingOp instanceof IDBController) {
+        consumer.setSchema(IDBController.EOI_REPORT_SCHEMA);
+      } else {
+        consumer.setSchema(producingOp.getSchema());
+      }
       consumer.setSchema(producingOp.getSchema());
     }
 

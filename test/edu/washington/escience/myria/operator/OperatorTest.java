@@ -43,16 +43,16 @@ public class OperatorTest {
   }
 
   /**
-   * 
-   * @param numTuples
+   * @param numTuples how many tuples in output
+   * @param sampleSize how many different values should be created at random (around numTuples/sampleSize duplicates)
    * @param sorted Generate sorted tuples, sorted by id
    * @return
    */
-  public TupleBatchBuffer generateRandomTuples(final int numTuples, boolean sorted) {
+  public TupleBatchBuffer generateRandomTuples(final int numTuples, final int sampleSize, boolean sorted) {
     final ArrayList<Entry<Long, String>> entries = new ArrayList<Entry<Long, String>>();
 
-    final String[] names = TestUtils.randomFixedLengthNumericString(0, 1000, numTuples, 20);
-    final long[] ids = TestUtils.randomLong(0, 1000, names.length);
+    final String[] names = TestUtils.randomFixedLengthNumericString(0, sampleSize, numTuples, 20);
+    final long[] ids = TestUtils.randomLong(0, sampleSize, names.length);
 
     for (int i = 0; i < names.length; i++) {
       entries.add(new SimpleEntry<Long, String>(ids[i], names[i]));
@@ -69,6 +69,7 @@ public class OperatorTest {
     final TupleBatchBuffer tbb = new TupleBatchBuffer(schema);
 
     for (Entry<Long, String> entry : entries) {
+      // System.out.println(entry.getKey());
       tbb.putLong(0, entry.getKey());
       tbb.putString(1, entry.getValue());
     }
@@ -78,7 +79,7 @@ public class OperatorTest {
   @Test
   public void testUnionAllConstructorWithNull() throws DbException {
     TupleSource[] children = new TupleSource[1];
-    children[0] = new TupleSource(generateRandomTuples(10, false));
+    children[0] = new TupleSource(generateRandomTuples(10, 1000, false));
     UnionAll union = new UnionAll(null);
     union.setChildren(children);
   }
@@ -86,9 +87,9 @@ public class OperatorTest {
   @Test
   public void testUnionAllCount() throws DbException {
     TupleSource[] children = new TupleSource[3];
-    children[0] = new TupleSource(generateRandomTuples(12300, false));
-    children[1] = new TupleSource(generateRandomTuples(4200, false));
-    children[2] = new TupleSource(generateRandomTuples(19900, false));
+    children[0] = new TupleSource(generateRandomTuples(12300, 5000, false));
+    children[1] = new TupleSource(generateRandomTuples(4200, 2000, false));
+    children[2] = new TupleSource(generateRandomTuples(19900, 5000, false));
     UnionAll union = new UnionAll(children);
     union.open(null);
     TupleBatch tb = null;
@@ -106,8 +107,8 @@ public class OperatorTest {
   @Test
   public void testUnionAllCorrectTuples() throws DbException {
     TupleBatchBuffer[] randomTuples = new TupleBatchBuffer[2];
-    randomTuples[0] = generateRandomTuples(12300, false);
-    randomTuples[1] = generateRandomTuples(4200, false);
+    randomTuples[0] = generateRandomTuples(12300, 5000, false);
+    randomTuples[1] = generateRandomTuples(4200, 2000, false);
 
     TupleSource[] children = new TupleSource[2];
     children[0] = new TupleSource(randomTuples[0]);
@@ -147,7 +148,7 @@ public class OperatorTest {
   @Test
   public void testMergeConstructorWithNull() throws DbException {
     TupleSource[] children = new TupleSource[1];
-    children[0] = new TupleSource(generateRandomTuples(10, false));
+    children[0] = new TupleSource(generateRandomTuples(10, 10, false));
     Merge merge = new Merge(null, null, null);
     merge.setChildren(children);
     merge.setSortedColumns(new int[] { 0 }, new boolean[] { true });
@@ -156,9 +157,9 @@ public class OperatorTest {
   @Test
   public void testMergeCount() throws DbException {
     TupleSource[] children = new TupleSource[3];
-    children[0] = new TupleSource(generateRandomTuples(12300, true));
-    children[1] = new TupleSource(generateRandomTuples(4200, true));
-    children[2] = new TupleSource(generateRandomTuples(9900, true));
+    children[0] = new TupleSource(generateRandomTuples(12300, 5000, true));
+    children[1] = new TupleSource(generateRandomTuples(4200, 2000, true));
+    children[2] = new TupleSource(generateRandomTuples(9900, 5000, true));
     NAryOperator merge = new Merge(children, new int[] { 0 }, new boolean[] { true });
     merge.open(null);
     TupleBatch tb = null;
@@ -176,9 +177,9 @@ public class OperatorTest {
   @Test
   public void testMergeTuplesSorted() throws DbException {
     TupleBatchBuffer[] randomTuples = new TupleBatchBuffer[3];
-    randomTuples[0] = generateRandomTuples(52300, true);
-    randomTuples[1] = generateRandomTuples(14200, true);
-    randomTuples[2] = generateRandomTuples(29900, true);
+    randomTuples[0] = generateRandomTuples(52300, 5000, true);
+    randomTuples[1] = generateRandomTuples(14200, 5000, true);
+    randomTuples[2] = generateRandomTuples(29900, 5000, true);
 
     TupleSource[] children = new TupleSource[3];
     children[0] = new TupleSource(randomTuples[0]);
@@ -214,7 +215,7 @@ public class OperatorTest {
 
   @Test
   public void testOrderedDupElim() throws DbException {
-    TupleBatchBuffer randomTuples = generateRandomTuples(52300, true);
+    TupleBatchBuffer randomTuples = generateRandomTuples(52300, 5000, true);
     TupleSource child = new TupleSource(randomTuples);
     OrderedDupElim dupElim = new OrderedDupElim(child);
     int count = 0;
@@ -251,7 +252,7 @@ public class OperatorTest {
   }
 
   @Test
-  public void testKeepAndSortedOninValue() throws DbException {
+  public void testKeepAndSortedOnMinValue() throws DbException {
     final int N = 52345;
     final int MaxID = 10000;
     final Schema schema = new Schema(ImmutableList.of(Type.LONG_TYPE, Type.LONG_TYPE), ImmutableList.of("id", "value"));
@@ -276,8 +277,7 @@ public class OperatorTest {
     }
 
     TupleSource scan = new TupleSource(input);
-    StreamingStateWrapper keepmin =
-        new StreamingStateWrapper(scan, new KeepAndSortOnMinValue(new int[] { 0 }, 1));
+    StreamingStateWrapper keepmin = new StreamingStateWrapper(scan, new KeepAndSortOnMinValue(new int[] { 0 }, 1));
     keepmin.open(null);
     while (!keepmin.eos()) {
       keepmin.nextReady();
@@ -306,5 +306,223 @@ public class OperatorTest {
     }
     keepmin.close();
     assertTrue(sum == N);
+  }
+
+  @Test
+  public void testMergeJoin() throws DbException {
+    final Schema leftSchema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+    TupleBatchBuffer leftTbb = new TupleBatchBuffer(leftSchema);
+
+    {
+      long[] ids = new long[] { 0, 2, 2, 2, 3, 5, 6, 8, 8, 10 };
+      String[] names = new String[] { "a", "b", "c", "d", "e", "f", "g", "h", "i", "j" };
+
+      for (int i = 0; i < ids.length; i++) {
+        leftTbb.putLong(0, ids[i]);
+        leftTbb.putString(1, names[i]);
+      }
+    }
+
+    final Schema rightSchema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id2", "name2"));
+
+    TupleBatchBuffer rightTbb = new TupleBatchBuffer(rightSchema);
+
+    {
+      long[] ids = new long[] { 1, 2, 2, 4, 8, 8, 10 };
+      String[] names = new String[] { "a", "b", "c", "d", "e", "f", "g" };
+
+      for (int i = 0; i < ids.length; i++) {
+        rightTbb.putLong(0, ids[i]);
+        rightTbb.putString(1, names[i]);
+      }
+    }
+
+    TupleSource[] children = new TupleSource[2];
+    children[0] = new TupleSource(leftTbb);
+    children[1] = new TupleSource(rightTbb);
+
+    BinaryOperator join =
+        new MergeJoin(children[0], children[1], new int[] { 0 }, new int[] { 0 }, new boolean[] { true });
+    join.open(null);
+    TupleBatch tb;
+    final ArrayList<TupleBatch> batches = new ArrayList<TupleBatch>();
+    while (!join.eos()) {
+      tb = join.nextReady();
+      if (tb != null) {
+        batches.add(tb);
+      }
+    }
+    join.close();
+
+    assertEquals(1, batches.size());
+    assertEquals(11, batches.get(0).numTuples());
+  }
+
+  @Test
+  public void testMergeJoinLarge() throws DbException {
+    TupleBatchBuffer[] randomTuples = new TupleBatchBuffer[2];
+    randomTuples[0] = generateRandomTuples(12200, 12000, true);
+    randomTuples[1] = generateRandomTuples(13200, 13000, true);
+
+    // we need to rename the columns from the second tuples
+    ImmutableList.Builder<String> sb = ImmutableList.builder();
+    sb.add("id2");
+    sb.add("name2");
+    TupleSource[] children = new TupleSource[2];
+    children[0] = new TupleSource(randomTuples[0]);
+    children[1] = new TupleSource(randomTuples[1]);
+    UnaryOperator rename = new Rename(children[1], sb.build());
+
+    BinaryOperator join = new MergeJoin(children[0], rename, new int[] { 0 }, new int[] { 0 }, new boolean[] { true });
+    join.open(null);
+    TupleBatch tb;
+    final ArrayList<TupleBatch> batches = new ArrayList<TupleBatch>();
+    while (!join.eos()) {
+      tb = join.nextReady();
+      if (tb != null) {
+        batches.add(tb);
+      }
+    }
+    join.close();
+  }
+
+  @Test
+  public void testInMemoryOrderBy() throws DbException {
+    TupleBatchBuffer randomTuples = generateRandomTuples(52300, 5000, false);
+
+    TupleSource child = new TupleSource(randomTuples);
+
+    InMemoryOrderBy order = new InMemoryOrderBy(child, new int[] { 0, 1 }, new boolean[] { true, true });
+    order.open(null);
+    TupleBatch tb;
+    final ArrayList<Entry<Long, String>> entries = new ArrayList<Entry<Long, String>>();
+    while (!order.eos()) {
+      tb = order.nextReady();
+      if (tb != null) {
+        for (int i = 0; i < tb.numTuples(); i++) {
+          entries.add(new SimpleEntry<Long, String>(tb.getLong(0, i), tb.getString(1, i)));
+        }
+      }
+    }
+    order.close();
+
+    assertEquals(52300, entries.size());
+
+    Comparator<Entry<Long, String>> comparator = new EntryComparator();
+    Entry<Long, String> previous = null;
+    for (Entry<Long, String> entry : entries) {
+      if (previous != null) {
+        assertTrue(comparator.compare(previous, entry) <= 0);
+      }
+      previous = entry;
+    }
+  }
+
+  @Test
+  public void testOrderByAndMergeJoin() throws DbException {
+    final Schema leftSchema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+    TupleBatchBuffer leftTbb = new TupleBatchBuffer(leftSchema);
+
+    {
+      long[] ids = new long[] { 2, 3, 5, 6, 8, 8, 10, 0, 2, 2 };
+      String[] names = new String[] { "d", "e", "f", "g", "h", "i", "j", "a", "b", "c" };
+
+      for (int i = 0; i < ids.length; i++) {
+        leftTbb.putLong(0, ids[i]);
+        leftTbb.putString(1, names[i]);
+      }
+    }
+
+    final Schema rightSchema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id2", "name2"));
+
+    TupleBatchBuffer rightTbb = new TupleBatchBuffer(rightSchema);
+
+    {
+      long[] ids = new long[] { 1, 2, 2, 4, 8, 8, 10 };
+      String[] names = new String[] { "a", "b", "c", "d", "e", "f", "g" };
+
+      for (int i = 0; i < ids.length; i++) {
+        rightTbb.putLong(0, ids[i]);
+        rightTbb.putString(1, names[i]);
+      }
+    }
+
+    TupleSource[] children = new TupleSource[2];
+    children[0] = new TupleSource(leftTbb);
+    children[1] = new TupleSource(rightTbb);
+
+    InMemoryOrderBy sort0 = new InMemoryOrderBy(children[0], new int[] { 0 }, new boolean[] { false });
+    InMemoryOrderBy sort1 = new InMemoryOrderBy(children[1], new int[] { 0 }, new boolean[] { false });
+
+    BinaryOperator join = new MergeJoin(sort0, sort1, new int[] { 0 }, new int[] { 0 }, new boolean[] { false });
+    join.open(null);
+    TupleBatch tb;
+    final ArrayList<TupleBatch> batches = new ArrayList<TupleBatch>();
+    while (!join.eos()) {
+      tb = join.nextReady();
+      if (tb != null) {
+        batches.add(tb);
+      }
+    }
+    join.close();
+
+    assertEquals(1, batches.size());
+    assertEquals(11, batches.get(0).numTuples());
+  }
+
+  @Test
+  public void testMergeJoinOnMultipleKeys() throws DbException {
+    final Schema leftSchema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id", "name"));
+    TupleBatchBuffer leftTbb = new TupleBatchBuffer(leftSchema);
+
+    {
+      long[] ids = new long[] { 0, 2, 2, 2, 3, 5, 6, 8, 8, 10 };
+      String[] names = new String[] { "c", "c", "c", "b", "b", "b", "b", "a", "a", "a" };
+
+      for (int i = 0; i < ids.length; i++) {
+        leftTbb.putLong(0, ids[i]);
+        leftTbb.putString(1, names[i]);
+      }
+    }
+
+    final Schema rightSchema =
+        new Schema(ImmutableList.of(Type.LONG_TYPE, Type.STRING_TYPE), ImmutableList.of("id2", "name2"));
+
+    TupleBatchBuffer rightTbb = new TupleBatchBuffer(rightSchema);
+
+    {
+      long[] ids = new long[] { 1, 2, 2, 4, 8, 8, 10, 11 };
+      String[] names = new String[] { "d", "d", "c", "c", "a", "a", "a", "a" };
+
+      for (int i = 0; i < ids.length; i++) {
+        rightTbb.putLong(0, ids[i]);
+        rightTbb.putString(1, names[i]);
+      }
+    }
+
+    TupleSource[] children = new TupleSource[2];
+    children[0] = new TupleSource(leftTbb);
+    children[1] = new TupleSource(rightTbb);
+
+    BinaryOperator join =
+        new MergeJoin(children[0], children[1], new int[] { 0, 1 }, new int[] { 0, 1 }, new boolean[] { true, false });
+    join.open(null);
+    TupleBatch tb;
+    final ArrayList<TupleBatch> batches = new ArrayList<TupleBatch>();
+    while (!join.eos()) {
+      tb = join.nextReady();
+      if (tb != null) {
+        batches.add(tb);
+      }
+    }
+    join.close();
+
+    assertEquals(1, batches.size());
+    assertEquals(7, batches.get(0).numTuples());
   }
 }
