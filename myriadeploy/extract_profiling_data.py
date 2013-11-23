@@ -93,7 +93,7 @@ def get_children(fragment):
     return ret
 
 # build operator state
-def build_operator_state(op_name, operators, children_dict, type_dict):
+def build_operator_state(op_name, operators, children_dict, type_dict, start_time):
 
     # build state from events
     states = []
@@ -104,35 +104,30 @@ def build_operator_state(op_name, operators, children_dict, type_dict):
         if last_state!='null':
             if last_state=='live' or last_state=='wake':
                 state = {
-                            'begin': last_time,
-                            'end': event['time'],
+                            'begin': last_time-start_time,
+                            'end': event['time']-start_time,
                             'name': 'compute'
                         }
             elif last_state=='wait':
                 state = {
-                            'begin': last_time,
-                            'end': event['time'],
+                            'begin': last_time-start_time,
+                            'end': event['time']-start_time,
                             'name': 'wait'
                         }
             elif last_state=='hang':
                 state = {
-                            'begin': last_time,
-                            'end': event['time'],
+                            'begin': last_time-start_time,
+                            'end': event['time']-start_time,
                             'name': 'sleep'
                         }
-            else:
-                last_state=event['message']
-                last_time=event['time']    
-                continue;
             states.append(state)               
-        
         last_state=event['message']
         last_time=event['time']    
 
     chilren_ops = []
     
     for op in children_dict[op_name]:
-        chilren_ops.append(build_operator_state(op, operators, children_dict, type_dict))
+        chilren_ops.append(build_operator_state(op, operators, children_dict, type_dict,start_time))
 
     qf = {
             'type': type_dict[op_name],
@@ -186,35 +181,30 @@ def generateProfile(path,query_id,fragment_id,query_plan_file):
                 if state['message']=='live':
                     new_state = copy.deepcopy(state)
                     new_state['message'] = 'wait'
+                    new_state['name'] = parent[k]
                     induced_operators[parent[k]].append(new_state)
                 elif state['message']=='hang':
                     new_state = copy.deepcopy(state)                 
-                    new_state['message']= 'wake'
+                    new_state['message'] = 'wake'
+                    new_state['name'] = parent[k]
                     induced_operators[parent[k]].append(new_state)             
-    '''                
-    for k,v in induced_operators.items():
-        print k
-        for i in v[0:10]:
-            print i['message']  '''
 
     for k,v in induced_operators.items():
         operators[k].extend(v)
-        sorted_list = sorted(v,key=lambda k:k['time'])
-        operators[k] = sorted_list
+        operators[k] = sorted(operators[k],key=lambda k:k['time'])
         if type_dict[k] in root_operators:
-            start_time = sorted_list[0]['time']
-            end_time = sorted_list[-1]['time']
+            start_time = operators[k][0]['time']
+            end_time = operators[k][-1]['time']
 
     # build json
     for k,v in operators.items():
         if type_dict[k] in root_operators:
-           data = build_operator_state( k, operators, children_dict, type_dict)
+           data = build_operator_state( k, operators, children_dict, type_dict, start_time)
            break                     
             
-
     qf_details = {
-        'begin': start_time,
-        'end': end_time,
+        'begin': 0,
+        'end': end_time-start_time,
         'hierachy': [data]
     }
 
@@ -230,7 +220,7 @@ def main(argv):
         print >> sys.stderr, "       query_plan_file "
         sys.exit(1)
 
-    generateProfile(argv[1],int(argv[2]),0,argv[3])
+    generateProfile(argv[1],int(argv[2]),2,argv[3])
 
 if __name__ == "__main__":
     main(sys.argv)
