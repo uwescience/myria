@@ -380,7 +380,7 @@ public abstract class Producer extends RootOperator {
         if (tb == null) {
           break;
         }
-        if (mode.equals(FTMODE.rejoin)) {
+        if (mode.equals(FTMODE.rejoin) && !(this instanceof LocalMultiwayProducer)) {
           // rejoin, append the TB into the backup buffer in case of recovering
           triedToSendTuples.get(i).update(tb);
         }
