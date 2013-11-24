@@ -56,4 +56,6 @@ public abstract class StreamingState implements Serializable {
    * @return its internal state as tuple batch buffer.
    */
   public abstract List<TupleBatch> exportState();
+
+  public abstract int numTuples();
 }

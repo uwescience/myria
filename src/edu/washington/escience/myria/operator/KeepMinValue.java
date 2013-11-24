@@ -196,4 +196,9 @@ public final class KeepMinValue extends StreamingState {
       return unique;
     }
   };
+
+  @Override
+  public int numTuples() {
+    return uniqueTuples.numTuples();
+  }
 }

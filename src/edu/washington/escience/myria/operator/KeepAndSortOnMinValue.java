@@ -311,4 +311,9 @@ public final class KeepAndSortOnMinValue extends StreamingState {
         throw new RuntimeException("compare() doesn't support type " + t);
     }
   }
+
+  @Override
+  public int numTuples() {
+    return uniqueTuples.numTuples();
+  }
 }

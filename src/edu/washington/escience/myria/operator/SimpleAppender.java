@@ -55,4 +55,9 @@ public final class SimpleAppender extends StreamingState {
   public List<TupleBatch> exportState() {
     return tuples;
   }
+
+  @Override
+  public int numTuples() {
+    return tuples.size();
+  }
 }

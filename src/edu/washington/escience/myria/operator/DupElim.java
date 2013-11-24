@@ -115,6 +115,10 @@ public final class DupElim extends StreamingState {
     return uniqueTuples.getAll();
   }
 
+  public int numTuples() {
+    return uniqueTuples.numTuples();
+  }
+
   /**
    * Traverse through the list of tuples.
    * */
