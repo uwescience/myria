@@ -316,7 +316,6 @@ public class QueryEncoding extends MyriaApiEncoding {
       } else {
         consumer.setSchema(producingOp.getSchema());
       }
-      consumer.setSchema(producingOp.getSchema());
     }
 
     /* Connect all the operators. */
