@@ -11,6 +11,7 @@ import edu.washington.escience.myria.Schema;
 import edu.washington.escience.myria.TupleBatch;
 import edu.washington.escience.myria.parallel.QuerySubTreeTask;
 import edu.washington.escience.myria.parallel.TaskResourceManager;
+import edu.washington.escience.myria.parallel.WorkerQueryPartition;
 
 /**
  * Abstract class for implementing operators.
@@ -86,6 +87,11 @@ public abstract class Operator implements Serializable {
   public long getQueryId() {
     return ((TaskResourceManager) execEnvVars.get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER)).getOwnerTask()
         .getOwnerQuery().getQueryID();
+  }
+
+  public WorkerQueryPartition getWorkerQueryPartition() {
+    return (WorkerQueryPartition) ((TaskResourceManager) execEnvVars
+        .get(MyriaConstants.EXEC_ENV_VAR_TASK_RESOURCE_MANAGER)).getOwnerTask().getOwnerQuery();
   }
 
   /**
