@@ -47,7 +47,9 @@ public final class SimpleAppender extends StreamingState {
 
   @Override
   public TupleBatch update(final TupleBatch tb) {
-    tuples.add(tb);
+    if (!tb.isEOI()) {
+      tuples.add(tb);
+    }
     return tb;
   }
 
